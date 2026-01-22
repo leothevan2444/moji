@@ -1,0 +1,16 @@
+model:
+  package: graphql
+  filename: ./pkg/stash/graphql/generated_models.go
+client:
+  package: graphql
+  filename: ./pkg/stash/graphql/generated_client.go
+models:
+  Date:
+    model: github.com/99designs/gqlgen/graphql.String
+schema:
+- "./graphql/stash/schema/0.30.1.graphql"
+query:
+- "./graphql/stash/*.graphql"
+generate:
+  clientV2: false
+  clientInterfaceName: "StashGraphQLClient"
