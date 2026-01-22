@@ -1,3 +1,134 @@
+fragment FingerprintFragment on Fingerprint {
+  type
+  value
+}
+
+fragment VideoFileFragment on VideoFile {
+  id
+  path
+  basename
+  size
+  fingerprints {
+    ...FingerprintFragment
+  }
+  format
+  width
+  height
+  duration
+  video_codec
+  audio_codec
+  frame_rate
+  bit_rate
+  created_at
+  updated_at
+}
+
+fragment GalleryFragment on Gallery {
+  id
+  title
+  code
+}
+
+fragment StudioFragment on Studio {
+  id
+  name
+  urls
+  stash_ids {
+    ...StashIdFragment
+  }
+}
+
+fragment StashIdFragment on StashID {
+  endpoint
+  stash_id
+  updated_at
+}
+
+fragment TagFragment on Tag {
+  name
+  id
+  stash_ids {
+    ...StashIdFragment
+  }
+}
+
+fragment SceneFragment on Scene {
+  id
+  title
+  code
+  details
+  urls
+  date
+  organized
+  files {
+    ...VideoFileFragment
+  }
+  galleries {
+    ...GalleryFragment
+  }
+  studio {
+    ...StudioFragment
+  }
+  tags {
+    ...TagFragment
+  }
+  performers {
+    id
+    name
+    gender
+    favorite
+  }
+  stash_ids {
+    ...StashIdFragment
+  }
+}
+
+fragment PerformerFragment on Performer {
+  id
+  name
+  disambiguation
+  gender
+  birthdate
+  ethnicity
+  country
+  eye_color
+  height_cm
+  alias_list
+  favorite
+  tags {
+    ...TagFragment
+  }
+  scene_count
+  scenes {
+    ...SceneFragment
+  }
+  stash_ids {
+    ...StashIdFragment
+  }
+  rating100
+}
+
+query FindPerformerByID($id: ID!) {
+  findPerformer(id: $id) {
+    ...PerformerFragment
+  }
+}
+
+query FindPerformers($performer_filter: PerformerFilterType, $filter: FindFilterType, $performer_ids: [Int!], $ids: [ID!]) {
+  findPerformers(performer_filter: $performer_filter, filter: $filter, performer_ids: $performer_ids, ids: $ids) {
+    count
+    performers {
+      ...PerformerFragment
+    }
+  }
+}
+
+query allPerformers {
+  allPerformers {
+    ...PerformerFragment
+  }
+}
+
 query GetVersion {
   version {
     hash

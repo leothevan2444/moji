@@ -11,6 +11,7 @@ import (
 
 type StashGraphQLClient interface {
 	FindPerformerByID(ctx context.Context, id string, interceptors ...clientv2.RequestInterceptor) (*FindPerformerByID, error)
+	FindPerformers(ctx context.Context, performerFilter *PerformerFilterType, filter *FindFilterType, performerIds []int, ids []string, interceptors ...clientv2.RequestInterceptor) (*FindPerformers, error)
 	AllPerformers(ctx context.Context, interceptors ...clientv2.RequestInterceptor) (*AllPerformers, error)
 	GetVersion(ctx context.Context, interceptors ...clientv2.RequestInterceptor) (*GetVersion, error)
 }
@@ -564,6 +565,56 @@ func (t *FindPerformerByID_FindPerformer_PerformerFragment_Scenes_SceneFragment_
 	return t.Name
 }
 
+type FindPerformers_FindPerformers_Performers_PerformerFragment_Scenes_SceneFragment_Performers struct {
+	Favorite bool        "json:\"favorite\" graphql:\"favorite\""
+	Gender   *GenderEnum "json:\"gender,omitempty\" graphql:\"gender\""
+	ID       string      "json:\"id\" graphql:\"id\""
+	Name     string      "json:\"name\" graphql:\"name\""
+}
+
+func (t *FindPerformers_FindPerformers_Performers_PerformerFragment_Scenes_SceneFragment_Performers) GetFavorite() bool {
+	if t == nil {
+		t = &FindPerformers_FindPerformers_Performers_PerformerFragment_Scenes_SceneFragment_Performers{}
+	}
+	return t.Favorite
+}
+func (t *FindPerformers_FindPerformers_Performers_PerformerFragment_Scenes_SceneFragment_Performers) GetGender() *GenderEnum {
+	if t == nil {
+		t = &FindPerformers_FindPerformers_Performers_PerformerFragment_Scenes_SceneFragment_Performers{}
+	}
+	return t.Gender
+}
+func (t *FindPerformers_FindPerformers_Performers_PerformerFragment_Scenes_SceneFragment_Performers) GetID() string {
+	if t == nil {
+		t = &FindPerformers_FindPerformers_Performers_PerformerFragment_Scenes_SceneFragment_Performers{}
+	}
+	return t.ID
+}
+func (t *FindPerformers_FindPerformers_Performers_PerformerFragment_Scenes_SceneFragment_Performers) GetName() string {
+	if t == nil {
+		t = &FindPerformers_FindPerformers_Performers_PerformerFragment_Scenes_SceneFragment_Performers{}
+	}
+	return t.Name
+}
+
+type FindPerformers_FindPerformers struct {
+	Count      int                  "json:\"count\" graphql:\"count\""
+	Performers []*PerformerFragment "json:\"performers\" graphql:\"performers\""
+}
+
+func (t *FindPerformers_FindPerformers) GetCount() int {
+	if t == nil {
+		t = &FindPerformers_FindPerformers{}
+	}
+	return t.Count
+}
+func (t *FindPerformers_FindPerformers) GetPerformers() []*PerformerFragment {
+	if t == nil {
+		t = &FindPerformers_FindPerformers{}
+	}
+	return t.Performers
+}
+
 type AllPerformers_AllPerformers_PerformerFragment_Scenes_SceneFragment_Performers struct {
 	Favorite bool        "json:\"favorite\" graphql:\"favorite\""
 	Gender   *GenderEnum "json:\"gender,omitempty\" graphql:\"gender\""
@@ -630,6 +681,17 @@ func (t *FindPerformerByID) GetFindPerformer() *PerformerFragment {
 		t = &FindPerformerByID{}
 	}
 	return t.FindPerformer
+}
+
+type FindPerformers struct {
+	FindPerformers FindPerformers_FindPerformers "json:\"findPerformers\" graphql:\"findPerformers\""
+}
+
+func (t *FindPerformers) GetFindPerformers() *FindPerformers_FindPerformers {
+	if t == nil {
+		t = &FindPerformers{}
+	}
+	return &t.FindPerformers
 }
 
 type AllPerformers struct {
@@ -770,6 +832,138 @@ func (c *Client) FindPerformerByID(ctx context.Context, id string, interceptors 
 
 	var res FindPerformerByID
 	if err := c.Client.Post(ctx, "FindPerformerByID", FindPerformerByIDDocument, &res, vars, interceptors...); err != nil {
+		if c.Client.ParseDataWhenErrors {
+			return &res, err
+		}
+
+		return nil, err
+	}
+
+	return &res, nil
+}
+
+const FindPerformersDocument = `query FindPerformers ($performer_filter: PerformerFilterType, $filter: FindFilterType, $performer_ids: [Int!], $ids: [ID!]) {
+	findPerformers(performer_filter: $performer_filter, filter: $filter, performer_ids: $performer_ids, ids: $ids) {
+		count
+		performers {
+			... PerformerFragment
+		}
+	}
+}
+fragment PerformerFragment on Performer {
+	id
+	name
+	disambiguation
+	gender
+	birthdate
+	ethnicity
+	country
+	eye_color
+	height_cm
+	alias_list
+	favorite
+	tags {
+		... TagFragment
+	}
+	scene_count
+	scenes {
+		... SceneFragment
+	}
+	stash_ids {
+		... StashIdFragment
+	}
+	rating100
+}
+fragment TagFragment on Tag {
+	name
+	id
+	stash_ids {
+		... StashIdFragment
+	}
+}
+fragment StashIdFragment on StashID {
+	endpoint
+	stash_id
+	updated_at
+}
+fragment SceneFragment on Scene {
+	id
+	title
+	code
+	details
+	urls
+	date
+	organized
+	files {
+		... VideoFileFragment
+	}
+	galleries {
+		... GalleryFragment
+	}
+	studio {
+		... StudioFragment
+	}
+	tags {
+		... TagFragment
+	}
+	performers {
+		id
+		name
+		gender
+		favorite
+	}
+	stash_ids {
+		... StashIdFragment
+	}
+}
+fragment VideoFileFragment on VideoFile {
+	id
+	path
+	basename
+	size
+	fingerprints {
+		... FingerprintFragment
+	}
+	format
+	width
+	height
+	duration
+	video_codec
+	audio_codec
+	frame_rate
+	bit_rate
+	created_at
+	updated_at
+}
+fragment FingerprintFragment on Fingerprint {
+	type
+	value
+}
+fragment GalleryFragment on Gallery {
+	id
+	title
+	code
+}
+fragment StudioFragment on Studio {
+	id
+	name
+	urls
+	stash_ids {
+		... StashIdFragment
+	}
+}
+`
+
+func (c *Client) FindPerformers(ctx context.Context, performerFilter *PerformerFilterType, filter *FindFilterType, performerIds []int, ids []string, interceptors ...clientv2.RequestInterceptor) (*FindPerformers, error) {
+	vars := map[string]any{
+		"performer_filter": performerFilter,
+		"filter":           filter,
+		"performer_ids":    performerIds,
+		"ids":              ids,
+	}
+
+	var res FindPerformers
+	if err := c.Client.Post(ctx, "FindPerformers", FindPerformersDocument, &res, vars, interceptors...); err != nil {
 		if c.Client.ParseDataWhenErrors {
 			return &res, err
 		}
@@ -930,6 +1124,7 @@ func (c *Client) GetVersion(ctx context.Context, interceptors ...clientv2.Reques
 
 var DocumentOperationNames = map[string]string{
 	FindPerformerByIDDocument: "FindPerformerByID",
+	FindPerformersDocument:    "FindPerformers",
 	AllPerformersDocument:     "allPerformers",
 	GetVersionDocument:        "GetVersion",
 }

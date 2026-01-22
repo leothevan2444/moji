@@ -132,10 +132,14 @@ query FindScenesByFullFingerprints($fingerprints: [FingerprintQueryInput!]!) {
   }
 }
 
-query FindScenesBySceneFingerprints(
-  $fingerprints: [[FingerprintQueryInput!]!]!
-) {
+query FindScenesBySceneFingerprints($fingerprints: [[FingerprintQueryInput!]!]!) {
   findScenesBySceneFingerprints(fingerprints: $fingerprints) {
+    ...SceneFragment
+  }
+}
+
+query FindSceneByID($id: ID!) {
+  findScene(id: $id) {
     ...SceneFragment
   }
 }
@@ -146,21 +150,24 @@ query SearchScene($term: String!) {
   }
 }
 
-query SearchPerformer($term: String!) {
-  searchPerformer(term: $term) {
-    ...PerformerFragment
-  }
-}
-
 query FindPerformerByID($id: ID!) {
   findPerformer(id: $id) {
     ...PerformerFragment
   }
 }
 
-query FindSceneByID($id: ID!) {
-  findScene(id: $id) {
-    ...SceneFragment
+query SearchPerformer($term: String!) {
+  searchPerformer(term: $term) {
+    ...PerformerFragment
+  }
+}
+
+query QueryPerformers($input: PerformerQueryInput!) {
+  queryPerformers(input: $input) {
+    count
+    performers {
+      ...PerformerFragment
+    }
   }
 }
 
@@ -185,10 +192,6 @@ query QueryTags($input: TagQueryInput!) {
   }
 }
 
-mutation SubmitFingerprint($input: FingerprintSubmission!) {
-  submitFingerprint(input: $input)
-}
-
 query Me {
   me {
     id
@@ -203,17 +206,5 @@ query GetVersion {
     build_time
     build_type
     version
-  }
-}
-
-mutation SubmitSceneDraft($input: SceneDraftInput!) {
-  submitSceneDraft(input: $input) {
-    id
-  }
-}
-
-mutation SubmitPerformerDraft($input: PerformerDraftInput!) {
-  submitPerformerDraft(input: $input) {
-    id
   }
 }
