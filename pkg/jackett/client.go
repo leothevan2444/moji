@@ -6,28 +6,70 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/http/cookiejar"
 	"net/url"
 	"strings"
 )
 
 type Client struct {
-	baseURL    string
-	apiKey     string
-	password   string
+	baseURL  string
+	apiKey   string
+	password string
+
 	httpClient *http.Client
-	cookie     http.Cookie
 }
 
-func NewClient(baseURL string, apiKey string) *Client {
-	return &Client{
-		baseURL:    baseURL,
-		apiKey:     apiKey,
-		httpClient: &http.Client{Transport: &http.Transport{Proxy: nil}},
+func NewClient(baseURL string, apiKey string, password string) *Client {
+	jar, err := cookiejar.New(nil)
+	if err != nil {
+		panic(fmt.Sprintf("failed to create cookie jar: %v", err))
 	}
+	client := &Client{
+		baseURL:  baseURL,
+		apiKey:   apiKey,
+		password: password,
+		httpClient: &http.Client{
+			Jar:       jar,
+			Transport: &http.Transport{Proxy: nil},
+		},
+	}
+	if password != "" {
+		if err := client.updateCookies(); err != nil {
+			panic(fmt.Sprintf("failed to update cookies: %v", err))
+		}
+	}
+	return client
 }
 
-func (c *Client) SetPassword(password string) {
-	c.password = password
+func (c *Client) updateCookies() error {
+	u, err := url.Parse(fmt.Sprintf("%s/UI/Dashboard", c.baseURL))
+	if err != nil {
+		return err
+	}
+
+	// fill password form data
+	formData := url.Values{}
+	formData.Set("password", c.password)
+
+	req, err := http.NewRequest("POST", u.String(), strings.NewReader(formData.Encode()))
+	if err != nil {
+		return err
+	}
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	req.Header.Set("User-Agent", "moji")
+
+	resp, err := c.httpClient.Do(req)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		body, _ := io.ReadAll(resp.Body)
+		return fmt.Errorf("jackett login error: %s, body: %s", resp.Status, string(body))
+	}
+
+	return nil
 }
 
 type SearchRequest struct {
@@ -155,36 +197,22 @@ type Indexer struct {
 }
 
 func (c *Client) GetIndexers() ([]Indexer, error) {
-	if c.cookie.String() == "" {
-		if err := c.fetchCookie(); err != nil {
-			return nil, fmt.Errorf("failed to fetch cookie: %w", err)
-		}
-	}
-
 	u, err := url.Parse(fmt.Sprintf("%s/api/v2.0/indexers", c.baseURL))
 	if err != nil {
 		return nil, err
 	}
+
 	q := u.Query()
 	q.Set("apikey", c.apiKey)
-
 	u.RawQuery = q.Encode()
 
-	req := &http.Request{}
-	req.Method = http.MethodPost
-	req.URL = u
-	req.Header.Set("Cookie", c.cookie.String())
-	resp, err := c.httpClient.Do(req)
+	resp, err := c.httpClient.Get(u.String())
 	if err != nil {
 		return nil, err
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		cookie := resp.Header.Get("Set-Cookie")
-		if cookie != "" {
-			c.apiKey = cookie
-		}
 		body, _ := io.ReadAll(resp.Body)
 		return nil, fmt.Errorf("jackett API error: %s, body: %s", resp.Status, string(body))
 	}
@@ -195,51 +223,4 @@ func (c *Client) GetIndexers() ([]Indexer, error) {
 	}
 
 	return indexers, nil
-}
-
-/*
-async function fetchJackettCookie(widget, loginURL) {
-  const url = new URL(formatApiCall(loginURL, widget));
-  const loginData = `password=${encodeURIComponent(widget.password)}`;
-  const [status, , , , params] = await httpProxy(url, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/x-www-form-urlencoded",
-    },
-    body: loginData,
-  });
-
-  if (!(status === 200) || !params?.headers?.Cookie) {
-    logger.error("Failed to fetch Jackett cookie, status: %d", status);
-    return null;
-  }
-  return params.headers.Cookie;
-}
-*/
-
-func (c *Client) fetchCookie() error {
-	u, err := url.Parse(fmt.Sprintf("%s/UI/Dashboard", c.baseURL))
-	if err != nil {
-		return err
-	}
-
-	req := &http.Request{}
-	req.Method = http.MethodPost
-	req.URL = u
-	req.Header = http.Header{}
-	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-	req.Body = io.NopCloser(strings.NewReader(fmt.Sprintf("password=%s", url.QueryEscape(c.password))))
-	resp, err := c.httpClient.Do(req)
-	if err != nil {
-		return err
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		return fmt.Errorf("failed to fetch cookie: %s", resp.Status)
-	}
-
-	c.cookie.Unparsed = resp.Header["Set-Cookie"]
-	println("Jackett cookie:", c.cookie.String())
-	return nil
 }
