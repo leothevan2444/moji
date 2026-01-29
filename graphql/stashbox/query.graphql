@@ -58,6 +58,10 @@ fragment PerformerFragment on Performer {
   images {
     ...ImageFragment
   }
+  scene_count
+  scenes {
+    id
+  }
   birth_date
   death_date
   ethnicity

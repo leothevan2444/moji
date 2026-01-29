@@ -207,6 +207,8 @@ type PerformerFragment struct {
 	MergedIntoID    *string                     "json:\"merged_into_id,omitempty\" graphql:\"merged_into_id\""
 	Urls            []*URLFragment              "json:\"urls\" graphql:\"urls\""
 	Images          []*ImageFragment            "json:\"images\" graphql:\"images\""
+	SceneCount      int                         "json:\"scene_count\" graphql:\"scene_count\""
+	Scenes          []*PerformerFragment_Scenes "json:\"scenes\" graphql:\"scenes\""
 	BirthDate       *string                     "json:\"birth_date,omitempty\" graphql:\"birth_date\""
 	DeathDate       *string                     "json:\"death_date,omitempty\" graphql:\"death_date\""
 	Ethnicity       *EthnicityEnum              "json:\"ethnicity,omitempty\" graphql:\"ethnicity\""
@@ -281,6 +283,18 @@ func (t *PerformerFragment) GetImages() []*ImageFragment {
 		t = &PerformerFragment{}
 	}
 	return t.Images
+}
+func (t *PerformerFragment) GetSceneCount() int {
+	if t == nil {
+		t = &PerformerFragment{}
+	}
+	return t.SceneCount
+}
+func (t *PerformerFragment) GetScenes() []*PerformerFragment_Scenes {
+	if t == nil {
+		t = &PerformerFragment{}
+	}
+	return t.Scenes
 }
 func (t *PerformerFragment) GetBirthDate() *string {
 	if t == nil {
@@ -517,6 +531,28 @@ func (t *StudioFragment_Parent) GetName() string {
 	return t.Name
 }
 
+type PerformerFragment_Scenes struct {
+	ID string "json:\"id\" graphql:\"id\""
+}
+
+func (t *PerformerFragment_Scenes) GetID() string {
+	if t == nil {
+		t = &PerformerFragment_Scenes{}
+	}
+	return t.ID
+}
+
+type PerformerAppearanceFragment_Performer_PerformerFragment_Scenes struct {
+	ID string "json:\"id\" graphql:\"id\""
+}
+
+func (t *PerformerAppearanceFragment_Performer_PerformerFragment_Scenes) GetID() string {
+	if t == nil {
+		t = &PerformerAppearanceFragment_Performer_PerformerFragment_Scenes{}
+	}
+	return t.ID
+}
+
 type SceneFragment_Studio_StudioFragment_Parent struct {
 	ID   string "json:\"id\" graphql:\"id\""
 	Name string "json:\"name\" graphql:\"name\""
@@ -533,6 +569,17 @@ func (t *SceneFragment_Studio_StudioFragment_Parent) GetName() string {
 		t = &SceneFragment_Studio_StudioFragment_Parent{}
 	}
 	return t.Name
+}
+
+type SceneFragment_Performers_PerformerAppearanceFragment_Performer_PerformerFragment_Scenes struct {
+	ID string "json:\"id\" graphql:\"id\""
+}
+
+func (t *SceneFragment_Performers_PerformerAppearanceFragment_Performer_PerformerFragment_Scenes) GetID() string {
+	if t == nil {
+		t = &SceneFragment_Performers_PerformerAppearanceFragment_Performer_PerformerFragment_Scenes{}
+	}
+	return t.ID
 }
 
 type FindSceneByFingerprint_FindSceneByFingerprint_SceneFragment_Studio_StudioFragment_Parent struct {
@@ -553,6 +600,17 @@ func (t *FindSceneByFingerprint_FindSceneByFingerprint_SceneFragment_Studio_Stud
 	return t.Name
 }
 
+type FindSceneByFingerprint_FindSceneByFingerprint_SceneFragment_Performers_PerformerAppearanceFragment_Performer_PerformerFragment_Scenes struct {
+	ID string "json:\"id\" graphql:\"id\""
+}
+
+func (t *FindSceneByFingerprint_FindSceneByFingerprint_SceneFragment_Performers_PerformerAppearanceFragment_Performer_PerformerFragment_Scenes) GetID() string {
+	if t == nil {
+		t = &FindSceneByFingerprint_FindSceneByFingerprint_SceneFragment_Performers_PerformerAppearanceFragment_Performer_PerformerFragment_Scenes{}
+	}
+	return t.ID
+}
+
 type FindScenesByFullFingerprints_FindScenesByFullFingerprints_SceneFragment_Studio_StudioFragment_Parent struct {
 	ID   string "json:\"id\" graphql:\"id\""
 	Name string "json:\"name\" graphql:\"name\""
@@ -569,6 +627,17 @@ func (t *FindScenesByFullFingerprints_FindScenesByFullFingerprints_SceneFragment
 		t = &FindScenesByFullFingerprints_FindScenesByFullFingerprints_SceneFragment_Studio_StudioFragment_Parent{}
 	}
 	return t.Name
+}
+
+type FindScenesByFullFingerprints_FindScenesByFullFingerprints_SceneFragment_Performers_PerformerAppearanceFragment_Performer_PerformerFragment_Scenes struct {
+	ID string "json:\"id\" graphql:\"id\""
+}
+
+func (t *FindScenesByFullFingerprints_FindScenesByFullFingerprints_SceneFragment_Performers_PerformerAppearanceFragment_Performer_PerformerFragment_Scenes) GetID() string {
+	if t == nil {
+		t = &FindScenesByFullFingerprints_FindScenesByFullFingerprints_SceneFragment_Performers_PerformerAppearanceFragment_Performer_PerformerFragment_Scenes{}
+	}
+	return t.ID
 }
 
 type FindScenesBySceneFingerprints_FindScenesBySceneFingerprints_SceneFragment_Studio_StudioFragment_Parent struct {
@@ -589,6 +658,17 @@ func (t *FindScenesBySceneFingerprints_FindScenesBySceneFingerprints_SceneFragme
 	return t.Name
 }
 
+type FindScenesBySceneFingerprints_FindScenesBySceneFingerprints_SceneFragment_Performers_PerformerAppearanceFragment_Performer_PerformerFragment_Scenes struct {
+	ID string "json:\"id\" graphql:\"id\""
+}
+
+func (t *FindScenesBySceneFingerprints_FindScenesBySceneFingerprints_SceneFragment_Performers_PerformerAppearanceFragment_Performer_PerformerFragment_Scenes) GetID() string {
+	if t == nil {
+		t = &FindScenesBySceneFingerprints_FindScenesBySceneFingerprints_SceneFragment_Performers_PerformerAppearanceFragment_Performer_PerformerFragment_Scenes{}
+	}
+	return t.ID
+}
+
 type FindSceneByID_FindScene_SceneFragment_Studio_StudioFragment_Parent struct {
 	ID   string "json:\"id\" graphql:\"id\""
 	Name string "json:\"name\" graphql:\"name\""
@@ -607,6 +687,17 @@ func (t *FindSceneByID_FindScene_SceneFragment_Studio_StudioFragment_Parent) Get
 	return t.Name
 }
 
+type FindSceneByID_FindScene_SceneFragment_Performers_PerformerAppearanceFragment_Performer_PerformerFragment_Scenes struct {
+	ID string "json:\"id\" graphql:\"id\""
+}
+
+func (t *FindSceneByID_FindScene_SceneFragment_Performers_PerformerAppearanceFragment_Performer_PerformerFragment_Scenes) GetID() string {
+	if t == nil {
+		t = &FindSceneByID_FindScene_SceneFragment_Performers_PerformerAppearanceFragment_Performer_PerformerFragment_Scenes{}
+	}
+	return t.ID
+}
+
 type SearchScene_SearchScene_SceneFragment_Studio_StudioFragment_Parent struct {
 	ID   string "json:\"id\" graphql:\"id\""
 	Name string "json:\"name\" graphql:\"name\""
@@ -623,6 +714,50 @@ func (t *SearchScene_SearchScene_SceneFragment_Studio_StudioFragment_Parent) Get
 		t = &SearchScene_SearchScene_SceneFragment_Studio_StudioFragment_Parent{}
 	}
 	return t.Name
+}
+
+type SearchScene_SearchScene_SceneFragment_Performers_PerformerAppearanceFragment_Performer_PerformerFragment_Scenes struct {
+	ID string "json:\"id\" graphql:\"id\""
+}
+
+func (t *SearchScene_SearchScene_SceneFragment_Performers_PerformerAppearanceFragment_Performer_PerformerFragment_Scenes) GetID() string {
+	if t == nil {
+		t = &SearchScene_SearchScene_SceneFragment_Performers_PerformerAppearanceFragment_Performer_PerformerFragment_Scenes{}
+	}
+	return t.ID
+}
+
+type FindPerformerByID_FindPerformer_PerformerFragment_Scenes struct {
+	ID string "json:\"id\" graphql:\"id\""
+}
+
+func (t *FindPerformerByID_FindPerformer_PerformerFragment_Scenes) GetID() string {
+	if t == nil {
+		t = &FindPerformerByID_FindPerformer_PerformerFragment_Scenes{}
+	}
+	return t.ID
+}
+
+type SearchPerformer_SearchPerformer_PerformerFragment_Scenes struct {
+	ID string "json:\"id\" graphql:\"id\""
+}
+
+func (t *SearchPerformer_SearchPerformer_PerformerFragment_Scenes) GetID() string {
+	if t == nil {
+		t = &SearchPerformer_SearchPerformer_PerformerFragment_Scenes{}
+	}
+	return t.ID
+}
+
+type QueryPerformers_QueryPerformers_Performers_PerformerFragment_Scenes struct {
+	ID string "json:\"id\" graphql:\"id\""
+}
+
+func (t *QueryPerformers_QueryPerformers_Performers_PerformerFragment_Scenes) GetID() string {
+	if t == nil {
+		t = &QueryPerformers_QueryPerformers_Performers_PerformerFragment_Scenes{}
+	}
+	return t.ID
 }
 
 type QueryPerformers_QueryPerformers struct {
@@ -961,6 +1096,10 @@ fragment PerformerFragment on Performer {
 	images {
 		... ImageFragment
 	}
+	scene_count
+	scenes {
+		id
+	}
 	birth_date
 	death_date
 	ethnicity
@@ -1096,6 +1235,10 @@ fragment PerformerFragment on Performer {
 	}
 	images {
 		... ImageFragment
+	}
+	scene_count
+	scenes {
+		id
 	}
 	birth_date
 	death_date
@@ -1233,6 +1376,10 @@ fragment PerformerFragment on Performer {
 	images {
 		... ImageFragment
 	}
+	scene_count
+	scenes {
+		id
+	}
 	birth_date
 	death_date
 	ethnicity
@@ -1368,6 +1515,10 @@ fragment PerformerFragment on Performer {
 	}
 	images {
 		... ImageFragment
+	}
+	scene_count
+	scenes {
+		id
 	}
 	birth_date
 	death_date
@@ -1505,6 +1656,10 @@ fragment PerformerFragment on Performer {
 	images {
 		... ImageFragment
 	}
+	scene_count
+	scenes {
+		id
+	}
 	birth_date
 	death_date
 	ethnicity
@@ -1578,6 +1733,10 @@ fragment PerformerFragment on Performer {
 	}
 	images {
 		... ImageFragment
+	}
+	scene_count
+	scenes {
+		id
 	}
 	birth_date
 	death_date
@@ -1657,6 +1816,10 @@ fragment PerformerFragment on Performer {
 	}
 	images {
 		... ImageFragment
+	}
+	scene_count
+	scenes {
+		id
 	}
 	birth_date
 	death_date
@@ -1739,6 +1902,10 @@ fragment PerformerFragment on Performer {
 	}
 	images {
 		... ImageFragment
+	}
+	scene_count
+	scenes {
+		id
 	}
 	birth_date
 	death_date
