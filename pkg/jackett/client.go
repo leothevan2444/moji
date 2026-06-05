@@ -148,7 +148,6 @@ func (c *Client) Search(req SearchRequest) ([]SearchResult, error) {
 	}
 
 	u.RawQuery = q.Encode()
-	println("Jackett Search URL:", u.String())
 
 	resp, err := c.httpClient.Get(u.String())
 	if err != nil {

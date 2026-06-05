@@ -2,26 +2,63 @@ package qbittorrent
 
 import (
 	"context"
+	"fmt"
+	"os"
 	"testing"
 )
-
-var host = "http://localhost:8078"
-var username = "admin"
-var password = "010728sR..."
 
 var client *Client
 
 func TestMain(m *testing.M) {
+	if os.Getenv("MOJI_RUN_INTEGRATION") != "1" {
+		os.Exit(m.Run())
+	}
+
+	host := os.Getenv("MOJI_QBT_URL")
+	username := os.Getenv("MOJI_QBT_USERNAME")
+	password := os.Getenv("MOJI_QBT_PASSWORD")
+	if host == "" || username == "" || password == "" {
+		os.Exit(m.Run())
+	}
+
 	client = NewClient(host)
 	err := client.Login(context.Background(), username, password)
 	if err != nil {
-		panic("Failed to login: " + err.Error())
+		fmt.Fprintf(os.Stderr, "failed to login to qBittorrent: %v\n", err)
+		os.Exit(1)
 	}
-	m.Run()
+	os.Exit(m.Run())
+}
+
+func requireQBT(t *testing.T) *Client {
+	t.Helper()
+	if client == nil {
+		t.Skip("set MOJI_RUN_INTEGRATION=1, MOJI_QBT_URL, MOJI_QBT_USERNAME, and MOJI_QBT_PASSWORD to run qBittorrent integration tests")
+	}
+	return client
+}
+
+func requireQBTTestHash(t *testing.T) string {
+	t.Helper()
+	hash := os.Getenv("MOJI_QBT_TEST_HASH")
+	if hash == "" {
+		t.Skip("set MOJI_QBT_TEST_HASH to run this qBittorrent integration test")
+	}
+	return hash
+}
+
+func requireDestructiveQBT(t *testing.T) *Client {
+	t.Helper()
+	c := requireQBT(t)
+	if os.Getenv("MOJI_RUN_DESTRUCTIVE_QBT_TESTS") != "1" {
+		t.Skip("set MOJI_RUN_DESTRUCTIVE_QBT_TESTS=1 to run qBittorrent tests that modify server state")
+	}
+	return c
 }
 
 func TestGetLog(t *testing.T) {
-	logs, err := client.GetLog(context.Background(), LogTypeNormal, nil)
+	c := requireQBT(t)
+	logs, err := c.GetLog(context.Background(), LogTypeNormal, nil)
 	if err != nil {
 		t.Fatalf("GetLog failed: %v", err)
 	}
@@ -32,7 +69,8 @@ func TestGetLog(t *testing.T) {
 }
 
 func TestGetPeerLog(t *testing.T) {
-	peerLogs, err := client.GetPeerLog(context.Background(), nil)
+	c := requireQBT(t)
+	peerLogs, err := c.GetPeerLog(context.Background(), nil)
 	if err != nil {
 		t.Fatalf("GetPeerLog failed: %v", err)
 	}
@@ -40,7 +78,8 @@ func TestGetPeerLog(t *testing.T) {
 }
 
 func TestGetMainData(t *testing.T) {
-	mainData, err := client.GetMainData(context.Background(), nil)
+	c := requireQBT(t)
+	mainData, err := c.GetMainData(context.Background(), nil)
 	if err != nil {
 		t.Fatalf("GetMainData failed: %v", err)
 	}

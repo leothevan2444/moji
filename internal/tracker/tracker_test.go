@@ -2,26 +2,34 @@ package tracker
 
 import (
 	"fmt"
+	"os"
 	"strings"
 	"testing"
 )
 
-var jackettURL = "http://homeserver0.local:9118"
-var jackettAPIKey = "yivm2eqtrspwajjwhi33cawxzclcagxe"
 var javID = "SONE-631"
 
 func TestJackett(t *testing.T) {
+	if os.Getenv("MOJI_RUN_INTEGRATION") != "1" {
+		t.Skip("set MOJI_RUN_INTEGRATION=1 to run Jackett integration tests")
+	}
+
+	jackettURL := os.Getenv("MOJI_JACKETT_URL")
+	jackettAPIKey := os.Getenv("MOJI_JACKETT_API_KEY")
+	if jackettURL == "" || jackettAPIKey == "" {
+		t.Skip("set MOJI_JACKETT_URL and MOJI_JACKETT_API_KEY to run Jackett integration tests")
+	}
+
 	jackett := NewJackettService(jackettURL, jackettAPIKey)
 
 	results, err := jackett.Search(javID,
 		WithTrackers([]string{"sukebeinyaasi", "onejav", "u3c3"}),
 	)
 	if err != nil {
-		fmt.Printf("Error searching: %v\n", err)
-		return
+		t.Fatalf("search failed: %v", err)
 	}
 	for _, result := range results {
-		fmt.Printf("Tracker: %s | Categories: %s | Title: %s\nLink: %s\n--------------------------------\n",
+		t.Logf("Tracker: %s | Categories: %s | Title: %s\nLink: %s\n--------------------------------",
 			result.Tracker, strings.Trim(strings.Join(strings.Fields(fmt.Sprint(result.Category)), ","), "[]"),
 			result.Title, result.Link)
 	}

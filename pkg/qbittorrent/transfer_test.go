@@ -6,7 +6,8 @@ import (
 )
 
 func TestGetGlobalTransferInfo(t *testing.T) {
-	info, err := client.GetGlobalTransferInfo(context.Background())
+	c := requireQBT(t)
+	info, err := c.GetGlobalTransferInfo(context.Background())
 	if err != nil {
 		t.Fatalf("GetGlobalTransferInfo failed: %v", err)
 	}
@@ -15,7 +16,8 @@ func TestGetGlobalTransferInfo(t *testing.T) {
 }
 
 func TestGetAlternativeSpeedLimitsState(t *testing.T) {
-	state, err := client.GetAlternativeSpeedLimitsState(context.Background())
+	c := requireQBT(t)
+	state, err := c.GetAlternativeSpeedLimitsState(context.Background())
 	if err != nil {
 		t.Fatalf("GetAlternativeSpeedLimitsState failed: %v", err)
 	}
@@ -24,7 +26,8 @@ func TestGetAlternativeSpeedLimitsState(t *testing.T) {
 }
 
 func TestToggleAlternativeSpeedLimits(t *testing.T) {
-	err := client.ToggleAlternativeSpeedLimits(context.Background())
+	c := requireDestructiveQBT(t)
+	err := c.ToggleAlternativeSpeedLimits(context.Background())
 	if err != nil {
 		t.Fatalf("ToggleAlternativeSpeedLimits failed: %v", err)
 	}
@@ -33,7 +36,8 @@ func TestToggleAlternativeSpeedLimits(t *testing.T) {
 }
 
 func TestGetGlobalDownloadLimit(t *testing.T) {
-	limit, err := client.GetGlobalDownloadLimit(context.Background())
+	c := requireQBT(t)
+	limit, err := c.GetGlobalDownloadLimit(context.Background())
 	if err != nil {
 		t.Fatalf("GetGlobalDownloadLimit failed: %v", err)
 	}
@@ -42,8 +46,9 @@ func TestGetGlobalDownloadLimit(t *testing.T) {
 }
 
 func TestSetGlobalDownloadLimit(t *testing.T) {
+	c := requireDestructiveQBT(t)
 	limit := 10240
-	err := client.SetGlobalDownloadLimit(context.Background(), limit)
+	err := c.SetGlobalDownloadLimit(context.Background(), limit)
 	if err != nil {
 		t.Fatalf("SetGlobalDownloadLimit failed: %v", err)
 	}
@@ -52,7 +57,8 @@ func TestSetGlobalDownloadLimit(t *testing.T) {
 }
 
 func TestGetGlobalUploadLimit(t *testing.T) {
-	limit, err := client.GetGlobalUploadLimit(context.Background())
+	c := requireQBT(t)
+	limit, err := c.GetGlobalUploadLimit(context.Background())
 	if err != nil {
 		t.Fatalf("GetGlobalUploadLimit failed: %v", err)
 	}
@@ -61,8 +67,9 @@ func TestGetGlobalUploadLimit(t *testing.T) {
 }
 
 func TestSetGlobalUploadLimit(t *testing.T) {
+	c := requireDestructiveQBT(t)
 	limit := 5120
-	err := client.SetGlobalUploadLimit(context.Background(), limit)
+	err := c.SetGlobalUploadLimit(context.Background(), limit)
 	if err != nil {
 		t.Fatalf("SetGlobalUploadLimit failed: %v", err)
 	}

@@ -1,15 +1,27 @@
 package jackett
 
 import (
+	"os"
 	"testing"
 )
 
-var host = "http://homeserver0.local:9118"
-var apikey = "yivm2eqtrspwajjwhi33cawxzclcagxe"
-var password = "010728"
+func requireJackettClient(t *testing.T) *Client {
+	t.Helper()
+	if os.Getenv("MOJI_RUN_INTEGRATION") != "1" {
+		t.Skip("set MOJI_RUN_INTEGRATION=1 to run Jackett integration tests")
+	}
+
+	host := os.Getenv("MOJI_JACKETT_URL")
+	apiKey := os.Getenv("MOJI_JACKETT_API_KEY")
+	if host == "" || apiKey == "" {
+		t.Skip("set MOJI_JACKETT_URL and MOJI_JACKETT_API_KEY to run Jackett integration tests")
+	}
+
+	return NewClient(host, apiKey, os.Getenv("MOJI_JACKETT_PASSWORD"))
+}
 
 func TestClientSearch(t *testing.T) {
-	client := NewClient(host, apikey, "")
+	client := requireJackettClient(t)
 	results, err := client.Search(SearchRequest{
 		Query:    "SONE-786",
 		Trackers: []string{"sukebeinyaasi", "onejav", "u3c3"},
@@ -30,7 +42,7 @@ func TestClientSearch(t *testing.T) {
 }
 
 func TestClient_GetIndexersReal(t *testing.T) {
-	client := NewClient(host, apikey, password)
+	client := requireJackettClient(t)
 	indexers, err := client.GetIndexers()
 	if err != nil {
 		t.Fatal(err)

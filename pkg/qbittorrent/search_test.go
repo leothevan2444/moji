@@ -6,7 +6,8 @@ import (
 )
 
 func TestStartSearch(t *testing.T) {
-	id, err := client.StartSearch(context.Background(), "superman", "all", "all")
+	c := requireQBT(t)
+	id, err := c.StartSearch(context.Background(), "superman", "all", "all")
 	if err != nil {
 		t.Fatalf("Failed to start search: %v", err)
 	}
@@ -14,12 +15,13 @@ func TestStartSearch(t *testing.T) {
 }
 
 func TestStopSearch(t *testing.T) {
-	id, err := client.StartSearch(context.Background(), "superman", "all", "all")
+	c := requireQBT(t)
+	id, err := c.StartSearch(context.Background(), "superman", "all", "all")
 	if err != nil {
 		t.Fatalf("Failed to start search: %v", err)
 	}
 
-	err = client.StopSearch(context.Background(), id)
+	err = c.StopSearch(context.Background(), id)
 	if err != nil {
 		t.Fatalf("Failed to stop search: %v", err)
 	}
@@ -27,12 +29,13 @@ func TestStopSearch(t *testing.T) {
 }
 
 func TestGetSearchStatus(t *testing.T) {
-	id, err := client.StartSearch(context.Background(), "superman", "all", "all")
+	c := requireQBT(t)
+	id, err := c.StartSearch(context.Background(), "superman", "all", "all")
 	if err != nil {
 		t.Fatalf("Failed to start search: %v", err)
 	}
 
-	status, err := client.GetSearchStatus(context.Background(), &id)
+	status, err := c.GetSearchStatus(context.Background(), &id)
 	if err != nil {
 		t.Fatalf("Failed to get search status: %v", err)
 	}
@@ -42,12 +45,13 @@ func TestGetSearchStatus(t *testing.T) {
 }
 
 func TestDeleteSearch(t *testing.T) {
-	id, err := client.StartSearch(context.Background(), "superman", "all", "all")
+	c := requireQBT(t)
+	id, err := c.StartSearch(context.Background(), "superman", "all", "all")
 	if err != nil {
 		t.Fatalf("Failed to start search: %v", err)
 	}
 
-	err = client.DeleteSearch(context.Background(), id)
+	err = c.DeleteSearch(context.Background(), id)
 	if err != nil {
 		t.Fatalf("Failed to delete search: %v", err)
 	}
@@ -55,12 +59,13 @@ func TestDeleteSearch(t *testing.T) {
 }
 
 func TestGetSearchResults(t *testing.T) {
-	id, err := client.StartSearch(context.Background(), "superman", "all", "all")
+	c := requireQBT(t)
+	id, err := c.StartSearch(context.Background(), "superman", "all", "all")
 	if err != nil {
 		t.Fatalf("Failed to start search: %v", err)
 	}
 
-	status, results, err := client.GetSearchResults(context.Background(), id)
+	status, results, err := c.GetSearchResults(context.Background(), id)
 	if err != nil {
 		t.Fatalf("Failed to get search results: %v", err)
 	}

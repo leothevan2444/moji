@@ -6,7 +6,8 @@ import (
 )
 
 func TestGetApplicationVersion(t *testing.T) {
-	version, err := client.GetApplicationVersion(context.Background())
+	c := requireQBT(t)
+	version, err := c.GetApplicationVersion(context.Background())
 	if err != nil {
 		t.Fatalf("Error getting application version: %v", err)
 	}
@@ -17,7 +18,8 @@ func TestGetApplicationVersion(t *testing.T) {
 }
 
 func TestGetAPIVersion(t *testing.T) {
-	apiVersion, err := client.GetAPIVersion(context.Background())
+	c := requireQBT(t)
+	apiVersion, err := c.GetAPIVersion(context.Background())
 	if err != nil {
 		t.Fatalf("Error getting API version: %v", err)
 	}
@@ -28,7 +30,8 @@ func TestGetAPIVersion(t *testing.T) {
 }
 
 func TestGetBuildInfo(t *testing.T) {
-	buildInfo, err := client.GetBuildInfo(context.Background())
+	c := requireQBT(t)
+	buildInfo, err := c.GetBuildInfo(context.Background())
 	if err != nil {
 		t.Fatalf("Error getting build info: %v", err)
 	}
@@ -39,7 +42,8 @@ func TestGetBuildInfo(t *testing.T) {
 }
 
 func TestGetApplicationPreferences(t *testing.T) {
-	prefs, err := client.GetApplicationPreferences(context.Background())
+	c := requireQBT(t)
+	prefs, err := c.GetApplicationPreferences(context.Background())
 	if err != nil {
 		t.Fatalf("Error getting application preferences: %v", err)
 	}
@@ -51,7 +55,8 @@ func TestGetApplicationPreferences(t *testing.T) {
 }
 
 func TestSetApplicationPreferences(t *testing.T) {
-	originalPrefs, err := client.GetApplicationPreferences(context.Background())
+	c := requireDestructiveQBT(t)
+	originalPrefs, err := c.GetApplicationPreferences(context.Background())
 	if err != nil {
 		t.Fatalf("Error getting original application preferences: %v", err)
 	}
@@ -59,12 +64,12 @@ func TestSetApplicationPreferences(t *testing.T) {
 	newPrefs := *originalPrefs
 	newPrefs.ProxyType.Value = 1 // Change a preference for testing
 
-	err = client.SetApplicationPreferences(context.Background(), &newPrefs)
+	err = c.SetApplicationPreferences(context.Background(), &newPrefs)
 	if err != nil {
 		t.Fatalf("Error setting application preferences: %v", err)
 	}
 
-	updatedPrefs, err := client.GetApplicationPreferences(context.Background())
+	updatedPrefs, err := c.GetApplicationPreferences(context.Background())
 	if err != nil {
 		t.Fatalf("Error getting updated application preferences: %v", err)
 	}
@@ -74,14 +79,15 @@ func TestSetApplicationPreferences(t *testing.T) {
 	}
 
 	// Restore original preferences
-	err = client.SetApplicationPreferences(context.Background(), originalPrefs)
+	err = c.SetApplicationPreferences(context.Background(), originalPrefs)
 	if err != nil {
 		t.Fatalf("Error restoring original application preferences: %v", err)
 	}
 }
 
 func TestGetDefaultSavePath(t *testing.T) {
-	savePath, err := client.GetDefaultSavePath(context.Background())
+	c := requireQBT(t)
+	savePath, err := c.GetDefaultSavePath(context.Background())
 	if err != nil {
 		t.Fatalf("Error getting default save path: %v", err)
 	}
@@ -92,7 +98,8 @@ func TestGetDefaultSavePath(t *testing.T) {
 }
 
 func TestGetCookies(t *testing.T) {
-	cookies, err := client.GetCookies(context.Background())
+	c := requireQBT(t)
+	cookies, err := c.GetCookies(context.Background())
 	if err != nil {
 		t.Fatalf("Error getting cookies: %v", err)
 	}
@@ -100,6 +107,6 @@ func TestGetCookies(t *testing.T) {
 		t.Fatal("No cookies found")
 	}
 	for _, cookie := range cookies {
-		t.Logf("Cookie: %s=%s; Domain=%s; Path=%s", cookie.Name, cookie.Value, cookie.Domain, cookie.Path)
+		t.Logf("Cookie: %s; Domain=%s; Path=%s", cookie.Name, cookie.Domain, cookie.Path)
 	}
 }

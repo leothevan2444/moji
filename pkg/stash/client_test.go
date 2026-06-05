@@ -2,18 +2,29 @@ package stash
 
 import (
 	"context"
-	"fmt"
+	"os"
 	"testing"
 )
 
-var host = "http://localhost:9999/graphql"
-var apiKey = ""
+func requireStashClient(t *testing.T) *Client {
+	t.Helper()
+	if os.Getenv("MOJI_RUN_INTEGRATION") != "1" {
+		t.Skip("set MOJI_RUN_INTEGRATION=1 to run Stash integration tests")
+	}
+
+	host := os.Getenv("MOJI_STASH_GRAPHQL_URL")
+	if host == "" {
+		t.Skip("set MOJI_STASH_GRAPHQL_URL to run Stash integration tests")
+	}
+
+	return NewClient(host, os.Getenv("MOJI_STASH_API_KEY"))
+}
 
 func TestClient(t *testing.T) {
-	client := NewClient(host, apiKey)
+	client := requireStashClient(t)
 	version, err := client.GetVersion(context.Background())
 	if err != nil {
-		t.Errorf("failed to get version: %v", err)
+		t.Fatalf("failed to get version: %v", err)
 	}
-	fmt.Printf("Version: %+v\n", *version)
+	t.Logf("Version: %+v", *version)
 }

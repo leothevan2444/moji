@@ -2,35 +2,49 @@ package stashbox
 
 import (
 	"context"
-	"fmt"
+	"os"
 	"testing"
 
 	"github.com/leothevan2444/moji/pkg/stashbox/graphql"
 )
 
 func TestFindPerformerByID(t *testing.T) {
-	client := NewClient(apikey)
-	performer, err := client.FindPerformerByID(context.Background(), "f8fe36db-b1a3-42af-803c-621d9638ff60")
-	if err != nil {
-		t.Errorf("failed to find performer: %v", err)
+	client := requireStashboxClient(t)
+	performerID := os.Getenv("MOJI_STASHBOX_TEST_PERFORMER_ID")
+	if performerID == "" {
+		t.Skip("set MOJI_STASHBOX_TEST_PERFORMER_ID to run this StashBox integration test")
 	}
-	fmt.Printf("Found performer: %+v\n", performer)
+
+	performer, err := client.FindPerformerByID(context.Background(), performerID)
+	if err != nil {
+		t.Fatalf("failed to find performer: %v", err)
+	}
+	t.Logf("Found performer: %+v", performer)
 }
 
 func TestSearchPerformer(t *testing.T) {
-	client := NewClient(apikey)
-	performers, err := client.SearchPerformer(context.Background(), "鷲尾めい")
+	client := requireStashboxClient(t)
+	performerName := os.Getenv("MOJI_STASHBOX_TEST_PERFORMER_NAME")
+	if performerName == "" {
+		t.Skip("set MOJI_STASHBOX_TEST_PERFORMER_NAME to run this StashBox integration test")
+	}
+
+	performers, err := client.SearchPerformer(context.Background(), performerName)
 	if err != nil {
-		t.Errorf("failed to find performers: %v", err)
+		t.Fatalf("failed to find performers: %v", err)
 	}
 	for _, performer := range performers {
-		fmt.Printf("Performer: %+v\n", performer)
+		t.Logf("Performer: %+v", performer)
 	}
 }
 
 func TestQueryPerformers(t *testing.T) {
-	client := NewClient(apikey)
-	name := "鷲尾めい"
+	client := requireStashboxClient(t)
+	name := os.Getenv("MOJI_STASHBOX_TEST_PERFORMER_NAME")
+	if name == "" {
+		t.Skip("set MOJI_STASHBOX_TEST_PERFORMER_NAME to run this StashBox integration test")
+	}
+
 	query := graphql.PerformerQueryInput{
 		Names: &name,
 		Age: &graphql.IntCriterionInput{
@@ -42,9 +56,9 @@ func TestQueryPerformers(t *testing.T) {
 	}
 	performers, err := client.QueryPerformers(context.Background(), query)
 	if err != nil {
-		t.Errorf("failed to get all performers: %v", err)
+		t.Fatalf("failed to get all performers: %v", err)
 	}
 	for _, performer := range performers {
-		fmt.Printf("Performer: %+v\n", performer)
+		t.Logf("Performer: %+v", performer)
 	}
 }
