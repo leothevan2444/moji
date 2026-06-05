@@ -4,3 +4,5 @@ config.yaml
 main
 moji
 !moji/
+AGENTS.md
+docs/agent_work_plan.md
