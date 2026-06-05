@@ -1,0 +1,50 @@
+package config
+
+import (
+	"fmt"
+	"os"
+
+	"gopkg.in/yaml.v3"
+)
+
+type Config struct {
+	// Database struct {
+	//     DSN string `yaml:"dsn"`
+	// } `yaml:"database"`
+
+	// Clients struct {
+	//     QBittorrent struct {
+	//         URL      string `yaml:"url"`
+	//         Username string `yaml:"username"`
+	//         Password string `yaml:"password"`
+	//     } `yaml:"qbittorrent"`
+	// } `yaml:"clients"`
+
+	// Jackett is the configuration for the Jackett service
+	Jackett struct {
+		URL    string `yaml:"url"`
+		APIKey string `yaml:"api_key"`
+	} `yaml:"jackett"`
+}
+
+func Load() (*Config, error) {
+	path := os.Getenv("MOJI_CONFIG")
+	if path == "" {
+		path = "config.yaml"
+	}
+	return LoadFromPath(path)
+}
+
+func LoadFromPath(path string) (*Config, error) {
+	file, err := os.ReadFile(path)
+	if err != nil {
+		return nil, fmt.Errorf("read config %q: %w", path, err)
+	}
+
+	var config Config
+	if err := yaml.Unmarshal(file, &config); err != nil {
+		return nil, fmt.Errorf("parse config %q: %w", path, err)
+	}
+
+	return &config, nil
+}

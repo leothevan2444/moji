@@ -10,7 +10,7 @@ type JackettService struct {
 
 func NewJackettService(url string, apiKey string) *JackettService {
 	return &JackettService{
-		client: jackett.NewClient(url, apiKey),
+		client: jackett.NewClient(url, apiKey, ""),
 	}
 }
 
