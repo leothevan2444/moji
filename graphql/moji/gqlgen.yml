@@ -1,0 +1,20 @@
+schema:
+- graphql/moji/schema.graphql
+
+exec:
+  filename: internal/graphqlapi/generated/generated.go
+  package: generated
+
+model:
+  filename: internal/graphqlapi/model/models_gen.go
+  package: model
+
+resolver:
+  layout: follow-schema
+  dir: internal/graphqlapi
+  package: graphqlapi
+
+models:
+  Long:
+    model:
+    - github.com/99designs/gqlgen/graphql.Int64

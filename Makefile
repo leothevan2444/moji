@@ -4,7 +4,7 @@ generate: generate-graphql generate-sql
 
 # Generates GraphQL files
 .PHONY: generate-graphql
-generate-graphql: generate-stash-client generate-stashbox-client
+generate-graphql: generate-stash-client generate-stashbox-client generate-moji-graphql
 
 .PHONY: generate-stash-client
 generate-stash-client:
@@ -13,6 +13,10 @@ generate-stash-client:
 .PHONY: generate-stashbox-client
 generate-stashbox-client:
 	go run github.com/Yamashou/gqlgenc generate --configdir graphql/stashbox
+
+.PHONY: generate-moji-graphql
+generate-moji-graphql:
+	go run github.com/99designs/gqlgen generate --config graphql/moji/gqlgen.yml
 
 # Generates SQL files
 .PHONY: generate-sql
@@ -27,6 +31,8 @@ generate-r18dev:
 clean-generated:
 	rm -rf ./pkg/stash/graphql
 	rm -rf ./pkg/stashbox/graphql
+	rm -rf ./internal/graphqlapi/generated
+	rm -rf ./internal/graphqlapi/model
 
 # Builds the moji binary
 .PHONY: moji

@@ -1,0 +1,66 @@
+scalar Long
+
+"Basic service health"
+type Health {
+  ok: Boolean!
+  message: String!
+}
+
+type Query {
+  health: Health!
+  version: String!
+
+  "Search torrents via Jackett"
+  jackettSearch(input: JackettSearchInput!): [JackettSearchResult!]!
+
+  "List torrents from qBittorrent"
+  qbittorrentTorrents(limit: Int): [QBTorrent!]!
+}
+
+input JackettSearchInput {
+  query: String!
+  trackers: [String!]
+  categories: [Int!]
+  limit: Int
+}
+
+type JackettSearchResult {
+  title: String!
+  size: Long!
+  seeders: Int!
+  peers: Int!
+  tracker: String!
+  trackerId: String!
+  categoryDesc: String!
+  publishDate: String!
+  details: String!
+  link: String!
+  magnetUri: String!
+}
+
+type QBTorrent {
+  hash: String!
+  name: String!
+  progress: Float!
+  state: String!
+  dlspeed: Long!
+  upspeed: Long!
+  size: Long!
+  eta: Long!
+  category: String!
+  tags: String!
+  addedOn: Long!
+}
+
+type Mutation {
+  "Add a torrent to qBittorrent via magnet or http(s) URL"
+  qbittorrentAdd(input: QBittorrentAddInput!): Boolean!
+}
+
+input QBittorrentAddInput {
+  url: String!
+  savePath: String
+  category: String
+  tags: String
+  paused: Boolean
+}
