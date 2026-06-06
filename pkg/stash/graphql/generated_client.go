@@ -14,6 +14,8 @@ type StashGraphQLClient interface {
 	FindPerformers(ctx context.Context, performerFilter *PerformerFilterType, filter *FindFilterType, performerIds []int, ids []string, interceptors ...clientv2.RequestInterceptor) (*FindPerformers, error)
 	AllPerformers(ctx context.Context, interceptors ...clientv2.RequestInterceptor) (*AllPerformers, error)
 	GetVersion(ctx context.Context, interceptors ...clientv2.RequestInterceptor) (*GetVersion, error)
+	MetadataScan(ctx context.Context, input ScanMetadataInput, interceptors ...clientv2.RequestInterceptor) (*MetadataScan, error)
+	FindJob(ctx context.Context, input FindJobInput, interceptors ...clientv2.RequestInterceptor) (*FindJob, error)
 }
 
 type Client struct {
@@ -672,6 +674,73 @@ func (t *GetVersion_Version) GetVersion() *string {
 	return t.Version
 }
 
+type FindJob_FindJob struct {
+	AddTime     time.Time  "json:\"addTime\" graphql:\"addTime\""
+	Description string     "json:\"description\" graphql:\"description\""
+	EndTime     *time.Time "json:\"endTime,omitempty\" graphql:\"endTime\""
+	Error       *string    "json:\"error,omitempty\" graphql:\"error\""
+	ID          string     "json:\"id\" graphql:\"id\""
+	Progress    *float64   "json:\"progress,omitempty\" graphql:\"progress\""
+	StartTime   *time.Time "json:\"startTime,omitempty\" graphql:\"startTime\""
+	Status      JobStatus  "json:\"status\" graphql:\"status\""
+	SubTasks    []string   "json:\"subTasks,omitempty\" graphql:\"subTasks\""
+}
+
+func (t *FindJob_FindJob) GetAddTime() *time.Time {
+	if t == nil {
+		t = &FindJob_FindJob{}
+	}
+	return &t.AddTime
+}
+func (t *FindJob_FindJob) GetDescription() string {
+	if t == nil {
+		t = &FindJob_FindJob{}
+	}
+	return t.Description
+}
+func (t *FindJob_FindJob) GetEndTime() *time.Time {
+	if t == nil {
+		t = &FindJob_FindJob{}
+	}
+	return t.EndTime
+}
+func (t *FindJob_FindJob) GetError() *string {
+	if t == nil {
+		t = &FindJob_FindJob{}
+	}
+	return t.Error
+}
+func (t *FindJob_FindJob) GetID() string {
+	if t == nil {
+		t = &FindJob_FindJob{}
+	}
+	return t.ID
+}
+func (t *FindJob_FindJob) GetProgress() *float64 {
+	if t == nil {
+		t = &FindJob_FindJob{}
+	}
+	return t.Progress
+}
+func (t *FindJob_FindJob) GetStartTime() *time.Time {
+	if t == nil {
+		t = &FindJob_FindJob{}
+	}
+	return t.StartTime
+}
+func (t *FindJob_FindJob) GetStatus() *JobStatus {
+	if t == nil {
+		t = &FindJob_FindJob{}
+	}
+	return &t.Status
+}
+func (t *FindJob_FindJob) GetSubTasks() []string {
+	if t == nil {
+		t = &FindJob_FindJob{}
+	}
+	return t.SubTasks
+}
+
 type FindPerformerByID struct {
 	FindPerformer *PerformerFragment "json:\"findPerformer,omitempty\" graphql:\"findPerformer\""
 }
@@ -714,6 +783,28 @@ func (t *GetVersion) GetVersion() *GetVersion_Version {
 		t = &GetVersion{}
 	}
 	return &t.Version
+}
+
+type MetadataScan struct {
+	MetadataScan string "json:\"metadataScan\" graphql:\"metadataScan\""
+}
+
+func (t *MetadataScan) GetMetadataScan() string {
+	if t == nil {
+		t = &MetadataScan{}
+	}
+	return t.MetadataScan
+}
+
+type FindJob struct {
+	FindJob *FindJob_FindJob "json:\"findJob,omitempty\" graphql:\"findJob\""
+}
+
+func (t *FindJob) GetFindJob() *FindJob_FindJob {
+	if t == nil {
+		t = &FindJob{}
+	}
+	return t.FindJob
 }
 
 const FindPerformerByIDDocument = `query FindPerformerByID ($id: ID!) {
@@ -1122,9 +1213,65 @@ func (c *Client) GetVersion(ctx context.Context, interceptors ...clientv2.Reques
 	return &res, nil
 }
 
+const MetadataScanDocument = `mutation MetadataScan ($input: ScanMetadataInput!) {
+	metadataScan(input: $input)
+}
+`
+
+func (c *Client) MetadataScan(ctx context.Context, input ScanMetadataInput, interceptors ...clientv2.RequestInterceptor) (*MetadataScan, error) {
+	vars := map[string]any{
+		"input": input,
+	}
+
+	var res MetadataScan
+	if err := c.Client.Post(ctx, "MetadataScan", MetadataScanDocument, &res, vars, interceptors...); err != nil {
+		if c.Client.ParseDataWhenErrors {
+			return &res, err
+		}
+
+		return nil, err
+	}
+
+	return &res, nil
+}
+
+const FindJobDocument = `query FindJob ($input: FindJobInput!) {
+	findJob(input: $input) {
+		id
+		status
+		description
+		progress
+		startTime
+		endTime
+		addTime
+		error
+		subTasks
+	}
+}
+`
+
+func (c *Client) FindJob(ctx context.Context, input FindJobInput, interceptors ...clientv2.RequestInterceptor) (*FindJob, error) {
+	vars := map[string]any{
+		"input": input,
+	}
+
+	var res FindJob
+	if err := c.Client.Post(ctx, "FindJob", FindJobDocument, &res, vars, interceptors...); err != nil {
+		if c.Client.ParseDataWhenErrors {
+			return &res, err
+		}
+
+		return nil, err
+	}
+
+	return &res, nil
+}
+
 var DocumentOperationNames = map[string]string{
 	FindPerformerByIDDocument: "FindPerformerByID",
 	FindPerformersDocument:    "FindPerformers",
 	AllPerformersDocument:     "allPerformers",
 	GetVersionDocument:        "GetVersion",
+	MetadataScanDocument:      "MetadataScan",
+	FindJobDocument:           "FindJob",
 }

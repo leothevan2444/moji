@@ -136,3 +136,21 @@ query GetVersion {
     version
   }
 }
+
+mutation MetadataScan($input: ScanMetadataInput!) {
+  metadataScan(input: $input)
+}
+
+query FindJob($input: FindJobInput!) {
+  findJob(input: $input) {
+    id
+    status
+    description
+    progress
+    startTime
+    endTime
+    addTime
+    error
+    subTasks
+  }
+}

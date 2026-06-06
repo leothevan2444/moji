@@ -15,6 +15,9 @@ type Query {
 
   "List torrents from qBittorrent"
   qbittorrentTorrents(limit: Int): [QBTorrent!]!
+
+  "Get a Stash background job by id"
+  stashJob(id: ID!): StashJob
 }
 
 input JackettSearchInput {
@@ -55,6 +58,9 @@ type QBTorrent {
 type Mutation {
   "Add a torrent to qBittorrent via magnet or http(s) URL"
   qbittorrentAdd(input: QBittorrentAddInput!): Boolean!
+
+  "Start a Stash metadata scan"
+  stashMetadataScan(input: StashMetadataScanInput!): ID!
 }
 
 input QBittorrentAddInput {
@@ -63,4 +69,28 @@ input QBittorrentAddInput {
   category: String
   tags: String
   paused: Boolean
+}
+
+input StashMetadataScanInput {
+  paths: [String!]
+  rescan: Boolean
+  scanGenerateCovers: Boolean
+  scanGeneratePreviews: Boolean
+  scanGenerateImagePreviews: Boolean
+  scanGenerateSprites: Boolean
+  scanGeneratePhashes: Boolean
+  scanGenerateThumbnails: Boolean
+  scanGenerateClipPreviews: Boolean
+}
+
+type StashJob {
+  id: ID!
+  status: String!
+  description: String!
+  progress: Float
+  startTime: String
+  endTime: String
+  addTime: String!
+  error: String
+  subTasks: [String!]
 }

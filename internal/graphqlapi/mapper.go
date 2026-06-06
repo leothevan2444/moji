@@ -1,7 +1,10 @@
 package graphqlapi
 
 import (
+	"time"
+
 	"github.com/leothevan2444/moji/internal/graphqlapi/model"
+	"github.com/leothevan2444/moji/internal/stashsync"
 	"github.com/leothevan2444/moji/pkg/jackett"
 	"github.com/leothevan2444/moji/pkg/qbittorrent"
 )
@@ -36,4 +39,35 @@ func qbTorrentToModel(torrent qbittorrent.Torrent) *model.QBTorrent {
 		Tags:     torrent.Tags,
 		AddedOn:  torrent.AddedOn,
 	}
+}
+
+func stashJobToModel(job *stashsync.Job) *model.StashJob {
+	if job == nil {
+		return nil
+	}
+
+	return &model.StashJob{
+		ID:          job.ID,
+		Status:      job.Status,
+		Description: job.Description,
+		Progress:    job.Progress,
+		StartTime:   formatOptionalTime(job.StartTime),
+		EndTime:     formatOptionalTime(job.EndTime),
+		AddTime:     formatTime(job.AddTime),
+		Error:       job.Error,
+		SubTasks:    job.SubTasks,
+	}
+}
+
+func formatOptionalTime(t *time.Time) *string {
+	if t == nil {
+		return nil
+	}
+
+	formatted := formatTime(*t)
+	return &formatted
+}
+
+func formatTime(t time.Time) string {
+	return t.UTC().Format(time.RFC3339)
 }

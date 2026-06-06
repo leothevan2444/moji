@@ -12,9 +12,16 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/99designs/gqlgen/graphql/handler"
 	"github.com/leothevan2444/moji/internal/config"
 	"github.com/leothevan2444/moji/internal/controller/api"
+	"github.com/leothevan2444/moji/internal/downloader"
+	"github.com/leothevan2444/moji/internal/graphqlapi"
+	"github.com/leothevan2444/moji/internal/graphqlapi/generated"
+	"github.com/leothevan2444/moji/internal/stashsync"
 	"github.com/leothevan2444/moji/internal/tracker"
+	"github.com/leothevan2444/moji/pkg/qbittorrent"
+	"github.com/leothevan2444/moji/pkg/stash"
 )
 
 func main() {
@@ -48,10 +55,15 @@ func main() {
 	// Dependencies
 	jackettTracker := tracker.NewJackettService(cfg.Jackett.URL, cfg.Jackett.APIKey)
 	apiHandler := api.NewHandler(jackettTracker)
+	torrentClient := configureQBittorrent(cfg)
+	stashService := configureStash(cfg)
+	resolver := graphqlapi.NewResolver(jackettTracker, torrentClient, stashService, "dev")
+	graphqlHandler := handler.NewDefaultServer(generated.NewExecutableSchema(generated.Config{Resolvers: resolver}))
 
 	// HTTP server
 	mux := http.NewServeMux()
 	apiHandler.Register(mux)
+	mux.Handle("POST /graphql", graphqlHandler)
 	// Keep root simple until web UI lands in this repo.
 	mux.HandleFunc("GET /", func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", "text/plain; charset=utf-8")
@@ -88,4 +100,43 @@ func main() {
 	if err := server.Serve(ln); err != nil && !errors.Is(err, http.ErrServerClosed) {
 		log.Fatalf("serve: %v", err)
 	}
+}
+
+func configureQBittorrent(cfg *config.Config) graphqlapi.TorrentClient {
+	if cfg.QBittorrent.URL == "" {
+		return nil
+	}
+	if cfg.QBittorrent.Username == "" {
+		log.Fatalf("invalid config: qbittorrent.username is required when qbittorrent.url is set")
+	}
+	if cfg.QBittorrent.Password == "" {
+		log.Fatalf("invalid config: qbittorrent.password is required when qbittorrent.url is set")
+	}
+
+	client := qbittorrent.NewClient(cfg.QBittorrent.URL)
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	if err := client.Login(ctx, cfg.QBittorrent.Username, cfg.QBittorrent.Password); err != nil {
+		log.Fatalf("login qBittorrent: %v", err)
+	}
+
+	return downloader.NewDefaultingTorrentClient(client, downloader.TorrentDefaults{
+		SavePath: cfg.QBittorrent.DefaultSavePath,
+		Category: cfg.QBittorrent.Category,
+		Tags:     cfg.QBittorrent.Tags,
+	})
+}
+
+func configureStash(cfg *config.Config) graphqlapi.StashService {
+	if cfg.Stash.GraphQLURL == "" {
+		return nil
+	}
+
+	client := stash.NewClient(cfg.Stash.GraphQLURL, cfg.Stash.APIKey)
+	service, err := stashsync.NewService(client, []string{cfg.Stash.LibraryPath})
+	if err != nil {
+		log.Fatalf("configure Stash: %v", err)
+	}
+
+	return service
 }

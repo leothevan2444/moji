@@ -56,3 +56,27 @@ type QBittorrentAddInput struct {
 
 type Query struct {
 }
+
+type StashJob struct {
+	ID          string   `json:"id"`
+	Status      string   `json:"status"`
+	Description string   `json:"description"`
+	Progress    *float64 `json:"progress,omitempty"`
+	StartTime   *string  `json:"startTime,omitempty"`
+	EndTime     *string  `json:"endTime,omitempty"`
+	AddTime     string   `json:"addTime"`
+	Error       *string  `json:"error,omitempty"`
+	SubTasks    []string `json:"subTasks,omitempty"`
+}
+
+type StashMetadataScanInput struct {
+	Paths                     []string `json:"paths,omitempty"`
+	Rescan                    *bool    `json:"rescan,omitempty"`
+	ScanGenerateCovers        *bool    `json:"scanGenerateCovers,omitempty"`
+	ScanGeneratePreviews      *bool    `json:"scanGeneratePreviews,omitempty"`
+	ScanGenerateImagePreviews *bool    `json:"scanGenerateImagePreviews,omitempty"`
+	ScanGenerateSprites       *bool    `json:"scanGenerateSprites,omitempty"`
+	ScanGeneratePhashes       *bool    `json:"scanGeneratePhashes,omitempty"`
+	ScanGenerateThumbnails    *bool    `json:"scanGenerateThumbnails,omitempty"`
+	ScanGenerateClipPreviews  *bool    `json:"scanGenerateClipPreviews,omitempty"`
+}

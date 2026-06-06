@@ -8,23 +8,26 @@ import (
 )
 
 type Config struct {
-	// Database struct {
-	//     DSN string `yaml:"dsn"`
-	// } `yaml:"database"`
-
-	// Clients struct {
-	//     QBittorrent struct {
-	//         URL      string `yaml:"url"`
-	//         Username string `yaml:"username"`
-	//         Password string `yaml:"password"`
-	//     } `yaml:"qbittorrent"`
-	// } `yaml:"clients"`
-
 	// Jackett is the configuration for the Jackett service
 	Jackett struct {
 		URL    string `yaml:"url"`
 		APIKey string `yaml:"api_key"`
 	} `yaml:"jackett"`
+
+	QBittorrent struct {
+		URL             string `yaml:"url"`
+		Username        string `yaml:"username"`
+		Password        string `yaml:"password"`
+		DefaultSavePath string `yaml:"default_save_path"`
+		Category        string `yaml:"category"`
+		Tags            string `yaml:"tags"`
+	} `yaml:"qbittorrent"`
+
+	Stash struct {
+		GraphQLURL  string `yaml:"graphql_url"`
+		APIKey      string `yaml:"api_key"`
+		LibraryPath string `yaml:"library_path"`
+	} `yaml:"stash"`
 }
 
 func Load() (*Config, error) {

@@ -11,6 +11,7 @@ import (
 
 	"github.com/leothevan2444/moji/internal/graphqlapi/generated"
 	"github.com/leothevan2444/moji/internal/graphqlapi/model"
+	"github.com/leothevan2444/moji/internal/stashsync"
 	"github.com/leothevan2444/moji/internal/tracker"
 	"github.com/leothevan2444/moji/pkg/qbittorrent"
 )
@@ -46,6 +47,25 @@ func (r *mutationResolver) QbittorrentAdd(ctx context.Context, input model.QBitt
 		return false, err
 	}
 	return true, nil
+}
+
+// StashMetadataScan is the resolver for the stashMetadataScan field.
+func (r *mutationResolver) StashMetadataScan(ctx context.Context, input model.StashMetadataScanInput) (string, error) {
+	if r.Stash == nil {
+		return "", errors.New("stash client is not configured")
+	}
+
+	return r.Stash.MetadataScan(ctx, stashsync.ScanRequest{
+		Paths:                     input.Paths,
+		Rescan:                    input.Rescan,
+		ScanGenerateCovers:        input.ScanGenerateCovers,
+		ScanGeneratePreviews:      input.ScanGeneratePreviews,
+		ScanGenerateImagePreviews: input.ScanGenerateImagePreviews,
+		ScanGenerateSprites:       input.ScanGenerateSprites,
+		ScanGeneratePhashes:       input.ScanGeneratePhashes,
+		ScanGenerateThumbnails:    input.ScanGenerateThumbnails,
+		ScanGenerateClipPreviews:  input.ScanGenerateClipPreviews,
+	})
 }
 
 // Health is the resolver for the health field.
@@ -116,6 +136,20 @@ func (r *queryResolver) QbittorrentTorrents(ctx context.Context, limit *int) ([]
 		out = append(out, qbTorrentToModel(torrent))
 	}
 	return out, nil
+}
+
+// StashJob is the resolver for the stashJob field.
+func (r *queryResolver) StashJob(ctx context.Context, id string) (*model.StashJob, error) {
+	if r.Stash == nil {
+		return nil, errors.New("stash client is not configured")
+	}
+
+	job, err := r.Stash.FindJob(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+
+	return stashJobToModel(job), nil
 }
 
 // Mutation returns generated.MutationResolver implementation.
