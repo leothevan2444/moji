@@ -82,6 +82,7 @@ type ComplexityRoot struct {
 		QbittorrentAdd    func(childComplexity int, input model.QBittorrentAddInput) int
 		StashMetadataScan func(childComplexity int, input model.StashMetadataScanInput) int
 		SyncTaskProgress  func(childComplexity int) int
+		TriggerStashScans func(childComplexity int) int
 	}
 
 	QBTorrent struct {
@@ -121,23 +122,27 @@ type ComplexityRoot struct {
 	}
 
 	Task struct {
-		Candidate        func(childComplexity int) int
-		Category         func(childComplexity int) int
-		CompletedAt      func(childComplexity int) int
-		ContentPath      func(childComplexity int) int
-		CreatedAt        func(childComplexity int) int
-		Error            func(childComplexity int) int
-		ID               func(childComplexity int) int
-		Progress         func(childComplexity int) int
-		QbittorrentState func(childComplexity int) int
-		Query            func(childComplexity int) int
-		SavePath         func(childComplexity int) int
-		Status           func(childComplexity int) int
-		Tags             func(childComplexity int) int
-		TorrentHash      func(childComplexity int) int
-		TorrentName      func(childComplexity int) int
-		TorrentURL       func(childComplexity int) int
-		UpdatedAt        func(childComplexity int) int
+		Candidate          func(childComplexity int) int
+		Category           func(childComplexity int) int
+		CompletedAt        func(childComplexity int) int
+		ContentPath        func(childComplexity int) int
+		CreatedAt          func(childComplexity int) int
+		Error              func(childComplexity int) int
+		ID                 func(childComplexity int) int
+		Progress           func(childComplexity int) int
+		QbittorrentState   func(childComplexity int) int
+		Query              func(childComplexity int) int
+		SavePath           func(childComplexity int) int
+		StashJobID         func(childComplexity int) int
+		StashScanError     func(childComplexity int) int
+		StashScanStartedAt func(childComplexity int) int
+		StashScanStatus    func(childComplexity int) int
+		Status             func(childComplexity int) int
+		Tags               func(childComplexity int) int
+		TorrentHash        func(childComplexity int) int
+		TorrentName        func(childComplexity int) int
+		TorrentURL         func(childComplexity int) int
+		UpdatedAt          func(childComplexity int) int
 	}
 }
 
@@ -146,6 +151,7 @@ type MutationResolver interface {
 	AddTorrent(ctx context.Context, input model.QBittorrentAddInput) (*model.Task, error)
 	DownloadMedia(ctx context.Context, input model.DownloadMediaInput) (*model.Task, error)
 	SyncTaskProgress(ctx context.Context) ([]*model.Task, error)
+	TriggerStashScans(ctx context.Context) ([]*model.Task, error)
 	StashMetadataScan(ctx context.Context, input model.StashMetadataScanInput) (string, error)
 }
 type QueryResolver interface {
@@ -378,6 +384,13 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.Mutation.SyncTaskProgress(childComplexity), true
+
+	case "Mutation.triggerStashScans":
+		if e.complexity.Mutation.TriggerStashScans == nil {
+			break
+		}
+
+		return e.complexity.Mutation.TriggerStashScans(childComplexity), true
 
 	case "QBTorrent.addedOn":
 		if e.complexity.QBTorrent.AddedOn == nil {
@@ -665,6 +678,34 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.Task.SavePath(childComplexity), true
 
+	case "Task.stashJobId":
+		if e.complexity.Task.StashJobID == nil {
+			break
+		}
+
+		return e.complexity.Task.StashJobID(childComplexity), true
+
+	case "Task.stashScanError":
+		if e.complexity.Task.StashScanError == nil {
+			break
+		}
+
+		return e.complexity.Task.StashScanError(childComplexity), true
+
+	case "Task.stashScanStartedAt":
+		if e.complexity.Task.StashScanStartedAt == nil {
+			break
+		}
+
+		return e.complexity.Task.StashScanStartedAt(childComplexity), true
+
+	case "Task.stashScanStatus":
+		if e.complexity.Task.StashScanStatus == nil {
+			break
+		}
+
+		return e.complexity.Task.StashScanStatus(childComplexity), true
+
 	case "Task.status":
 		if e.complexity.Task.Status == nil {
 			break
@@ -892,6 +933,9 @@ type Mutation {
   "Synchronize Moji task progress from qBittorrent"
   syncTaskProgress: [Task!]!
 
+  "Trigger Stash metadata scans for completed Moji tasks"
+  triggerStashScans: [Task!]!
+
   "Start a Stash metadata scan"
   stashMetadataScan(input: StashMetadataScanInput!): ID!
 }
@@ -930,6 +974,10 @@ type Task {
   qbittorrentState: String!
   contentPath: String!
   completedAt: String
+  stashJobId: ID!
+  stashScanStatus: String!
+  stashScanError: String!
+  stashScanStartedAt: String
   error: String!
   createdAt: String!
   updatedAt: String!
@@ -2395,6 +2443,14 @@ func (ec *executionContext) fieldContext_Mutation_addTorrent(ctx context.Context
 				return ec.fieldContext_Task_contentPath(ctx, field)
 			case "completedAt":
 				return ec.fieldContext_Task_completedAt(ctx, field)
+			case "stashJobId":
+				return ec.fieldContext_Task_stashJobId(ctx, field)
+			case "stashScanStatus":
+				return ec.fieldContext_Task_stashScanStatus(ctx, field)
+			case "stashScanError":
+				return ec.fieldContext_Task_stashScanError(ctx, field)
+			case "stashScanStartedAt":
+				return ec.fieldContext_Task_stashScanStartedAt(ctx, field)
 			case "error":
 				return ec.fieldContext_Task_error(ctx, field)
 			case "createdAt":
@@ -2486,6 +2542,14 @@ func (ec *executionContext) fieldContext_Mutation_downloadMedia(ctx context.Cont
 				return ec.fieldContext_Task_contentPath(ctx, field)
 			case "completedAt":
 				return ec.fieldContext_Task_completedAt(ctx, field)
+			case "stashJobId":
+				return ec.fieldContext_Task_stashJobId(ctx, field)
+			case "stashScanStatus":
+				return ec.fieldContext_Task_stashScanStatus(ctx, field)
+			case "stashScanError":
+				return ec.fieldContext_Task_stashScanError(ctx, field)
+			case "stashScanStartedAt":
+				return ec.fieldContext_Task_stashScanStartedAt(ctx, field)
 			case "error":
 				return ec.fieldContext_Task_error(ctx, field)
 			case "createdAt":
@@ -2577,6 +2641,102 @@ func (ec *executionContext) fieldContext_Mutation_syncTaskProgress(_ context.Con
 				return ec.fieldContext_Task_contentPath(ctx, field)
 			case "completedAt":
 				return ec.fieldContext_Task_completedAt(ctx, field)
+			case "stashJobId":
+				return ec.fieldContext_Task_stashJobId(ctx, field)
+			case "stashScanStatus":
+				return ec.fieldContext_Task_stashScanStatus(ctx, field)
+			case "stashScanError":
+				return ec.fieldContext_Task_stashScanError(ctx, field)
+			case "stashScanStartedAt":
+				return ec.fieldContext_Task_stashScanStartedAt(ctx, field)
+			case "error":
+				return ec.fieldContext_Task_error(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_Task_createdAt(ctx, field)
+			case "updatedAt":
+				return ec.fieldContext_Task_updatedAt(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type Task", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_triggerStashScans(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Mutation_triggerStashScans(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().TriggerStashScans(rctx)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]*model.Task)
+	fc.Result = res
+	return ec.marshalNTask2ᚕᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐTaskᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Mutation_triggerStashScans(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_Task_id(ctx, field)
+			case "query":
+				return ec.fieldContext_Task_query(ctx, field)
+			case "status":
+				return ec.fieldContext_Task_status(ctx, field)
+			case "candidate":
+				return ec.fieldContext_Task_candidate(ctx, field)
+			case "torrentUrl":
+				return ec.fieldContext_Task_torrentUrl(ctx, field)
+			case "savePath":
+				return ec.fieldContext_Task_savePath(ctx, field)
+			case "category":
+				return ec.fieldContext_Task_category(ctx, field)
+			case "tags":
+				return ec.fieldContext_Task_tags(ctx, field)
+			case "torrentHash":
+				return ec.fieldContext_Task_torrentHash(ctx, field)
+			case "torrentName":
+				return ec.fieldContext_Task_torrentName(ctx, field)
+			case "progress":
+				return ec.fieldContext_Task_progress(ctx, field)
+			case "qbittorrentState":
+				return ec.fieldContext_Task_qbittorrentState(ctx, field)
+			case "contentPath":
+				return ec.fieldContext_Task_contentPath(ctx, field)
+			case "completedAt":
+				return ec.fieldContext_Task_completedAt(ctx, field)
+			case "stashJobId":
+				return ec.fieldContext_Task_stashJobId(ctx, field)
+			case "stashScanStatus":
+				return ec.fieldContext_Task_stashScanStatus(ctx, field)
+			case "stashScanError":
+				return ec.fieldContext_Task_stashScanError(ctx, field)
+			case "stashScanStartedAt":
+				return ec.fieldContext_Task_stashScanStartedAt(ctx, field)
 			case "error":
 				return ec.fieldContext_Task_error(ctx, field)
 			case "createdAt":
@@ -3445,6 +3605,14 @@ func (ec *executionContext) fieldContext_Query_task(ctx context.Context, field g
 				return ec.fieldContext_Task_contentPath(ctx, field)
 			case "completedAt":
 				return ec.fieldContext_Task_completedAt(ctx, field)
+			case "stashJobId":
+				return ec.fieldContext_Task_stashJobId(ctx, field)
+			case "stashScanStatus":
+				return ec.fieldContext_Task_stashScanStatus(ctx, field)
+			case "stashScanError":
+				return ec.fieldContext_Task_stashScanError(ctx, field)
+			case "stashScanStartedAt":
+				return ec.fieldContext_Task_stashScanStartedAt(ctx, field)
 			case "error":
 				return ec.fieldContext_Task_error(ctx, field)
 			case "createdAt":
@@ -3536,6 +3704,14 @@ func (ec *executionContext) fieldContext_Query_tasks(_ context.Context, field gr
 				return ec.fieldContext_Task_contentPath(ctx, field)
 			case "completedAt":
 				return ec.fieldContext_Task_completedAt(ctx, field)
+			case "stashJobId":
+				return ec.fieldContext_Task_stashJobId(ctx, field)
+			case "stashScanStatus":
+				return ec.fieldContext_Task_stashScanStatus(ctx, field)
+			case "stashScanError":
+				return ec.fieldContext_Task_stashScanError(ctx, field)
+			case "stashScanStartedAt":
+				return ec.fieldContext_Task_stashScanStartedAt(ctx, field)
 			case "error":
 				return ec.fieldContext_Task_error(ctx, field)
 			case "createdAt":
@@ -4752,6 +4928,179 @@ func (ec *executionContext) _Task_completedAt(ctx context.Context, field graphql
 }
 
 func (ec *executionContext) fieldContext_Task_completedAt(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Task",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Task_stashJobId(ctx context.Context, field graphql.CollectedField, obj *model.Task) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Task_stashJobId(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.StashJobID, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNID2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Task_stashJobId(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Task",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type ID does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Task_stashScanStatus(ctx context.Context, field graphql.CollectedField, obj *model.Task) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Task_stashScanStatus(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.StashScanStatus, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Task_stashScanStatus(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Task",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Task_stashScanError(ctx context.Context, field graphql.CollectedField, obj *model.Task) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Task_stashScanError(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.StashScanError, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Task_stashScanError(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Task",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Task_stashScanStartedAt(ctx context.Context, field graphql.CollectedField, obj *model.Task) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Task_stashScanStartedAt(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.StashScanStartedAt, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*string)
+	fc.Result = res
+	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Task_stashScanStartedAt(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "Task",
 		Field:      field,
@@ -7371,6 +7720,13 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
+		case "triggerStashScans":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_triggerStashScans(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
 		case "stashMetadataScan":
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
 				return ec._Mutation_stashMetadataScan(ctx, field)
@@ -7830,6 +8186,23 @@ func (ec *executionContext) _Task(ctx context.Context, sel ast.SelectionSet, obj
 			}
 		case "completedAt":
 			out.Values[i] = ec._Task_completedAt(ctx, field, obj)
+		case "stashJobId":
+			out.Values[i] = ec._Task_stashJobId(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "stashScanStatus":
+			out.Values[i] = ec._Task_stashScanStatus(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "stashScanError":
+			out.Values[i] = ec._Task_stashScanError(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "stashScanStartedAt":
+			out.Values[i] = ec._Task_stashScanStartedAt(ctx, field, obj)
 		case "error":
 			out.Values[i] = ec._Task_error(ctx, field, obj)
 			if out.Values[i] == graphql.Null {

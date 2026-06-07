@@ -48,23 +48,27 @@ const (
 )
 
 type Task struct {
-	ID               string
-	Query            string
-	Status           TaskStatus
-	Candidate        Candidate
-	TorrentURL       string
-	SavePath         string
-	Category         string
-	Tags             string
-	TorrentHash      string
-	TorrentName      string
-	Progress         float64
-	QBittorrentState string
-	ContentPath      string
-	CompletedAt      *time.Time
-	Error            string
-	CreatedAt        time.Time
-	UpdatedAt        time.Time
+	ID                 string
+	Query              string
+	Status             TaskStatus
+	Candidate          Candidate
+	TorrentURL         string
+	SavePath           string
+	Category           string
+	Tags               string
+	TorrentHash        string
+	TorrentName        string
+	Progress           float64
+	QBittorrentState   string
+	ContentPath        string
+	CompletedAt        *time.Time
+	StashJobID         string
+	StashScanStatus    string
+	StashScanError     string
+	StashScanStartedAt *time.Time
+	Error              string
+	CreatedAt          time.Time
+	UpdatedAt          time.Time
 }
 
 type Candidate struct {
@@ -569,5 +573,7 @@ func cloneTask(task *Task) *Task {
 		return nil
 	}
 	cp := *task
+	cp.CompletedAt = cloneTime(task.CompletedAt)
+	cp.StashScanStartedAt = cloneTime(task.StashScanStartedAt)
 	return &cp
 }

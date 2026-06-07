@@ -74,6 +74,9 @@ type Mutation {
   "Synchronize Moji task progress from qBittorrent"
   syncTaskProgress: [Task!]!
 
+  "Trigger Stash metadata scans for completed Moji tasks"
+  triggerStashScans: [Task!]!
+
   "Start a Stash metadata scan"
   stashMetadataScan(input: StashMetadataScanInput!): ID!
 }
@@ -112,6 +115,10 @@ type Task {
   qbittorrentState: String!
   contentPath: String!
   completedAt: String
+  stashJobId: ID!
+  stashScanStatus: String!
+  stashScanError: String!
+  stashScanStartedAt: String
   error: String!
   createdAt: String!
   updatedAt: String!

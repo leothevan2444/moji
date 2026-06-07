@@ -12,6 +12,7 @@ import (
 	"github.com/99designs/gqlgen/graphql/handler"
 	"github.com/leothevan2444/moji/internal/downloader"
 	"github.com/leothevan2444/moji/internal/graphqlapi/generated"
+	"github.com/leothevan2444/moji/internal/stashsync"
 )
 
 func TestDownloadMediaCreatesTask(t *testing.T) {
@@ -176,6 +177,42 @@ func TestSyncTaskProgress(t *testing.T) {
 	}
 }
 
+func TestTriggerStashScans(t *testing.T) {
+	dl := &fakeDownloader{
+		stashTasks: []*downloader.Task{
+			{
+				ID:                 "task-stash",
+				Status:             downloader.TaskStatusCompleted,
+				StashJobID:         "job-1",
+				StashScanStatus:    downloader.StashScanStatusStarted,
+				StashScanStartedAt: ptrTime(time.Unix(300, 0).UTC()),
+				CreatedAt:          time.Unix(100, 0).UTC(),
+				UpdatedAt:          time.Unix(300, 0).UTC(),
+			},
+		},
+	}
+	resolver := NewResolver(nil, nil, dl, fakeStashService{}, "test-version")
+
+	resp := executeGraphQL(t, resolver, `mutation {
+		triggerStashScans {
+			id
+			stashJobId
+			stashScanStatus
+			stashScanStartedAt
+		}
+	}`)
+	if len(resp.Errors) > 0 {
+		t.Fatalf("expected no errors, got %+v", resp.Errors)
+	}
+	if len(resp.Data.TriggerStashScans) != 1 {
+		t.Fatalf("expected one stash scan task, got %+v", resp.Data.TriggerStashScans)
+	}
+	task := resp.Data.TriggerStashScans[0]
+	if task.StashJobID != "job-1" || task.StashScanStatus != downloader.StashScanStatusStarted {
+		t.Fatalf("unexpected stash scan task: %+v", task)
+	}
+}
+
 func TestDownloadMediaRequiresDownloader(t *testing.T) {
 	resolver := NewResolver(nil, nil, nil, nil, "test-version")
 
@@ -198,6 +235,7 @@ type fakeDownloader struct {
 	findTask        *downloader.Task
 	listTasks       []*downloader.Task
 	syncTasks       []*downloader.Task
+	stashTasks      []*downloader.Task
 }
 
 func (f *fakeDownloader) AddTorrentContext(_ context.Context, req downloader.AddTorrentRequest) (*downloader.Task, error) {
@@ -220,6 +258,10 @@ func (f *fakeDownloader) ListTasks(_ context.Context) ([]*downloader.Task, error
 
 func (f *fakeDownloader) SyncProgress(_ context.Context) ([]*downloader.Task, error) {
 	return f.syncTasks, nil
+}
+
+func (f *fakeDownloader) TriggerStashScans(_ context.Context, _ downloader.StashScanner) ([]*downloader.Task, error) {
+	return f.stashTasks, nil
 }
 
 type graphQLTaskResponse struct {
@@ -253,6 +295,12 @@ type graphQLTaskResponse struct {
 			QbittorrentState string  `json:"qbittorrentState"`
 			ContentPath      string  `json:"contentPath"`
 		} `json:"syncTaskProgress"`
+		TriggerStashScans []struct {
+			ID                 string  `json:"id"`
+			StashJobID         string  `json:"stashJobId"`
+			StashScanStatus    string  `json:"stashScanStatus"`
+			StashScanStartedAt *string `json:"stashScanStartedAt"`
+		} `json:"triggerStashScans"`
 		QbittorrentAdd bool `json:"qbittorrentAdd"`
 	} `json:"data"`
 	Errors []struct {
@@ -282,4 +330,18 @@ func executeGraphQL(t *testing.T, resolver *Resolver, query string) graphQLTaskR
 		t.Fatalf("decode response: %v", err)
 	}
 	return resp
+}
+
+type fakeStashService struct{}
+
+func (fakeStashService) MetadataScan(context.Context, stashsync.ScanRequest) (string, error) {
+	return "job-1", nil
+}
+
+func (fakeStashService) FindJob(context.Context, string) (*stashsync.Job, error) {
+	return nil, nil
+}
+
+func ptrTime(t time.Time) *time.Time {
+	return &t
 }

@@ -55,7 +55,7 @@ func main() {
 	}
 
 	// Dependencies
-	mux, downloaderService := newHTTPRuntime(cfg, "dev")
+	mux, downloaderService, stashService := newHTTPRuntime(cfg, "dev")
 
 	server := &http.Server{
 		Addr:              *addr,
@@ -75,7 +75,7 @@ func main() {
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
 
-	startProgressSyncWorker(ctx, downloaderService, configureProgressSyncInterval(cfg))
+	startTaskSyncWorker(ctx, downloaderService, stashService, configureProgressSyncInterval(cfg))
 
 	go func() {
 		<-ctx.Done()
@@ -92,11 +92,11 @@ func main() {
 }
 
 func newHTTPHandler(cfg *config.Config, version string) http.Handler {
-	handler, _ := newHTTPRuntime(cfg, version)
+	handler, _, _ := newHTTPRuntime(cfg, version)
 	return handler
 }
 
-func newHTTPRuntime(cfg *config.Config, version string) (http.Handler, graphqlapi.DownloaderService) {
+func newHTTPRuntime(cfg *config.Config, version string) (http.Handler, graphqlapi.DownloaderService, graphqlapi.StashService) {
 	jackettTracker := tracker.NewJackettService(cfg.Jackett.URL, cfg.Jackett.APIKey)
 	apiHandler := api.NewHandler(jackettTracker)
 	torrentClient := configureQBittorrent(cfg)
@@ -115,7 +115,7 @@ func newHTTPRuntime(cfg *config.Config, version string) (http.Handler, graphqlap
 		_, _ = w.Write([]byte("moji is running\n"))
 	})
 
-	return mux, downloaderService
+	return mux, downloaderService, stashService
 }
 
 func configureQBittorrent(cfg *config.Config) graphqlapi.TorrentClient {
@@ -187,7 +187,7 @@ func configureProgressSyncInterval(cfg *config.Config) time.Duration {
 	return time.Duration(seconds) * time.Second
 }
 
-func startProgressSyncWorker(ctx context.Context, service graphqlapi.DownloaderService, interval time.Duration) {
+func startTaskSyncWorker(ctx context.Context, service graphqlapi.DownloaderService, stash graphqlapi.StashService, interval time.Duration) {
 	if service == nil || interval <= 0 {
 		return
 	}
@@ -204,6 +204,11 @@ func startProgressSyncWorker(ctx context.Context, service graphqlapi.DownloaderS
 				syncCtx, cancel := context.WithTimeout(ctx, 30*time.Second)
 				if _, err := service.SyncProgress(syncCtx); err != nil && !errors.Is(err, context.Canceled) {
 					log.Printf("sync download progress: %v", err)
+				}
+				if stash != nil {
+					if _, err := service.TriggerStashScans(syncCtx, stash); err != nil && !errors.Is(err, context.Canceled) {
+						log.Printf("trigger stash scans: %v", err)
+					}
 				}
 				cancel()
 			}

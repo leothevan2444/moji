@@ -12,6 +12,7 @@ import (
 
 	"github.com/leothevan2444/moji/internal/config"
 	"github.com/leothevan2444/moji/internal/downloader"
+	"github.com/leothevan2444/moji/internal/stashsync"
 )
 
 func TestHTTPHandlerServesRootAndGraphQLPlayground(t *testing.T) {
@@ -90,12 +91,29 @@ func TestStartProgressSyncWorker(t *testing.T) {
 	defer cancel()
 
 	service := &fakeProgressSyncService{called: make(chan struct{}, 1)}
-	startProgressSyncWorker(ctx, service, time.Millisecond)
+	startTaskSyncWorker(ctx, service, nil, time.Millisecond)
 
 	select {
 	case <-service.called:
 	case <-time.After(time.Second):
 		t.Fatal("expected progress sync worker to call SyncProgress")
+	}
+}
+
+func TestStartTaskSyncWorkerTriggersStashScans(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	service := &fakeProgressSyncService{
+		called:      make(chan struct{}, 1),
+		stashCalled: make(chan struct{}, 1),
+	}
+	startTaskSyncWorker(ctx, service, &fakeConfiguredStashService{}, time.Millisecond)
+
+	select {
+	case <-service.stashCalled:
+	case <-time.After(time.Second):
+		t.Fatal("expected task sync worker to call TriggerStashScans")
 	}
 }
 
@@ -148,7 +166,8 @@ func strconvQuote(s string) string {
 }
 
 type fakeProgressSyncService struct {
-	called chan struct{}
+	called      chan struct{}
+	stashCalled chan struct{}
 }
 
 func (f *fakeProgressSyncService) AddTorrentContext(context.Context, downloader.AddTorrentRequest) (*downloader.Task, error) {
@@ -172,5 +191,23 @@ func (f *fakeProgressSyncService) SyncProgress(context.Context) ([]*downloader.T
 	case f.called <- struct{}{}:
 	default:
 	}
+	return nil, nil
+}
+
+func (f *fakeProgressSyncService) TriggerStashScans(context.Context, downloader.StashScanner) ([]*downloader.Task, error) {
+	select {
+	case f.stashCalled <- struct{}{}:
+	default:
+	}
+	return nil, nil
+}
+
+type fakeConfiguredStashService struct{}
+
+func (fakeConfiguredStashService) MetadataScan(context.Context, stashsync.ScanRequest) (string, error) {
+	return "job-test", nil
+}
+
+func (fakeConfiguredStashService) FindJob(context.Context, string) (*stashsync.Job, error) {
 	return nil, nil
 }
