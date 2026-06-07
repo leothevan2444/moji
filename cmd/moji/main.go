@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/99designs/gqlgen/graphql/handler"
+	"github.com/99designs/gqlgen/graphql/playground"
 	"github.com/leothevan2444/moji/internal/config"
 	"github.com/leothevan2444/moji/internal/controller/api"
 	"github.com/leothevan2444/moji/internal/downloader"
@@ -53,22 +54,7 @@ func main() {
 	}
 
 	// Dependencies
-	jackettTracker := tracker.NewJackettService(cfg.Jackett.URL, cfg.Jackett.APIKey)
-	apiHandler := api.NewHandler(jackettTracker)
-	torrentClient := configureQBittorrent(cfg)
-	stashService := configureStash(cfg)
-	resolver := graphqlapi.NewResolver(jackettTracker, torrentClient, stashService, "dev")
-	graphqlHandler := handler.NewDefaultServer(generated.NewExecutableSchema(generated.Config{Resolvers: resolver}))
-
-	// HTTP server
-	mux := http.NewServeMux()
-	apiHandler.Register(mux)
-	mux.Handle("POST /graphql", graphqlHandler)
-	// Keep root simple until web UI lands in this repo.
-	mux.HandleFunc("GET /", func(w http.ResponseWriter, _ *http.Request) {
-		w.Header().Set("Content-Type", "text/plain; charset=utf-8")
-		_, _ = w.Write([]byte("moji is running\n"))
-	})
+	mux := newHTTPHandler(cfg, "dev")
 
 	server := &http.Server{
 		Addr:              *addr,
@@ -102,15 +88,38 @@ func main() {
 	}
 }
 
+func newHTTPHandler(cfg *config.Config, version string) http.Handler {
+	jackettTracker := tracker.NewJackettService(cfg.Jackett.URL, cfg.Jackett.APIKey)
+	apiHandler := api.NewHandler(jackettTracker)
+	torrentClient := configureQBittorrent(cfg)
+	stashService := configureStash(cfg)
+	resolver := graphqlapi.NewResolver(jackettTracker, torrentClient, stashService, version)
+	graphqlHandler := handler.NewDefaultServer(generated.NewExecutableSchema(generated.Config{Resolvers: resolver}))
+
+	mux := http.NewServeMux()
+	apiHandler.Register(mux)
+	mux.Handle("GET /graphql", playground.Handler("Moji GraphQL Playground", "/graphql"))
+	mux.Handle("POST /graphql", graphqlHandler)
+	// Keep root simple until web UI lands in this repo.
+	mux.HandleFunc("GET /", func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "text/plain; charset=utf-8")
+		_, _ = w.Write([]byte("moji is running\n"))
+	})
+
+	return mux
+}
+
 func configureQBittorrent(cfg *config.Config) graphqlapi.TorrentClient {
 	if cfg.QBittorrent.URL == "" {
 		return nil
 	}
 	if cfg.QBittorrent.Username == "" {
-		log.Fatalf("invalid config: qbittorrent.username is required when qbittorrent.url is set")
+		log.Printf("qBittorrent disabled: qbittorrent.username is required when qbittorrent.url is set")
+		return nil
 	}
 	if cfg.QBittorrent.Password == "" {
-		log.Fatalf("invalid config: qbittorrent.password is required when qbittorrent.url is set")
+		log.Printf("qBittorrent disabled: qbittorrent.password is required when qbittorrent.url is set")
+		return nil
 	}
 
 	client := qbittorrent.NewClient(cfg.QBittorrent.URL)
