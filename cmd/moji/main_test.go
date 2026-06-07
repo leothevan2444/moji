@@ -2,13 +2,16 @@ package main
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/leothevan2444/moji/internal/config"
+	"github.com/leothevan2444/moji/internal/downloader"
 )
 
 func TestHTTPHandlerServesRootAndGraphQLPlayground(t *testing.T) {
@@ -65,6 +68,37 @@ func TestIncompleteQBittorrentConfigDisablesResolver(t *testing.T) {
 	}
 }
 
+func TestConfigureProgressSyncInterval(t *testing.T) {
+	cfg := testConfig()
+	if got := configureProgressSyncInterval(cfg); got != time.Minute {
+		t.Fatalf("expected default interval %s, got %s", time.Minute, got)
+	}
+
+	cfg.Tasks.ProgressSyncIntervalSeconds = 5
+	if got := configureProgressSyncInterval(cfg); got != 5*time.Second {
+		t.Fatalf("expected configured interval %s, got %s", 5*time.Second, got)
+	}
+
+	cfg.Tasks.ProgressSyncIntervalSeconds = -1
+	if got := configureProgressSyncInterval(cfg); got != 0 {
+		t.Fatalf("expected disabled interval, got %s", got)
+	}
+}
+
+func TestStartProgressSyncWorker(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	service := &fakeProgressSyncService{called: make(chan struct{}, 1)}
+	startProgressSyncWorker(ctx, service, time.Millisecond)
+
+	select {
+	case <-service.called:
+	case <-time.After(time.Second):
+		t.Fatal("expected progress sync worker to call SyncProgress")
+	}
+}
+
 type graphQLResponse struct {
 	Data struct {
 		Health struct {
@@ -111,4 +145,32 @@ func strconvQuote(s string) string {
 		panic(err)
 	}
 	return string(b)
+}
+
+type fakeProgressSyncService struct {
+	called chan struct{}
+}
+
+func (f *fakeProgressSyncService) AddTorrentContext(context.Context, downloader.AddTorrentRequest) (*downloader.Task, error) {
+	return nil, nil
+}
+
+func (f *fakeProgressSyncService) DownloadMediaContext(context.Context, downloader.DownloadRequest) (*downloader.Task, error) {
+	return nil, nil
+}
+
+func (f *fakeProgressSyncService) FindTask(context.Context, string) (*downloader.Task, error) {
+	return nil, nil
+}
+
+func (f *fakeProgressSyncService) ListTasks(context.Context) ([]*downloader.Task, error) {
+	return nil, nil
+}
+
+func (f *fakeProgressSyncService) SyncProgress(context.Context) ([]*downloader.Task, error) {
+	select {
+	case f.called <- struct{}{}:
+	default:
+	}
+	return nil, nil
 }

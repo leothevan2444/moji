@@ -6,11 +6,6 @@ import (
 	"github.com/leothevan2444/moji/pkg/qbittorrent"
 )
 
-type TorrentClient interface {
-	TorrentAdder
-	GetTorrentList(ctx context.Context, options *qbittorrent.TorrentListOptions) ([]qbittorrent.Torrent, error)
-}
-
 type TorrentDefaults struct {
 	SavePath string
 	Category string

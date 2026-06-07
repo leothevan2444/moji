@@ -71,6 +71,9 @@ type Mutation {
   "Search torrent candidates and create a Moji download task"
   downloadMedia(input: DownloadMediaInput!): Task!
 
+  "Synchronize Moji task progress from qBittorrent"
+  syncTaskProgress: [Task!]!
+
   "Start a Stash metadata scan"
   stashMetadataScan(input: StashMetadataScanInput!): ID!
 }
@@ -103,6 +106,12 @@ type Task {
   savePath: String!
   category: String!
   tags: String!
+  torrentHash: String!
+  torrentName: String!
+  progress: Float!
+  qbittorrentState: String!
+  contentPath: String!
+  completedAt: String
   error: String!
   createdAt: String!
   updatedAt: String!

@@ -48,17 +48,23 @@ func taskToModel(task *downloader.Task) *model.Task {
 	}
 
 	return &model.Task{
-		ID:         task.ID,
-		Query:      task.Query,
-		Status:     string(task.Status),
-		Candidate:  candidateToModel(task.Candidate),
-		TorrentURL: task.TorrentURL,
-		SavePath:   task.SavePath,
-		Category:   task.Category,
-		Tags:       task.Tags,
-		Error:      task.Error,
-		CreatedAt:  formatTime(task.CreatedAt),
-		UpdatedAt:  formatTime(task.UpdatedAt),
+		ID:               task.ID,
+		Query:            task.Query,
+		Status:           string(task.Status),
+		Candidate:        candidateToModel(task.Candidate),
+		TorrentURL:       task.TorrentURL,
+		SavePath:         task.SavePath,
+		Category:         task.Category,
+		Tags:             task.Tags,
+		TorrentHash:      task.TorrentHash,
+		TorrentName:      task.TorrentName,
+		Progress:         task.Progress,
+		QbittorrentState: task.QBittorrentState,
+		ContentPath:      task.ContentPath,
+		CompletedAt:      formatOptionalTime(task.CompletedAt),
+		Error:            task.Error,
+		CreatedAt:        formatTime(task.CreatedAt),
+		UpdatedAt:        formatTime(task.UpdatedAt),
 	}
 }
 

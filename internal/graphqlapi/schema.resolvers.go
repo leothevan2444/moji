@@ -84,6 +84,23 @@ func (r *mutationResolver) DownloadMedia(ctx context.Context, input model.Downlo
 	return nil, err
 }
 
+// SyncTaskProgress is the resolver for the syncTaskProgress field.
+func (r *mutationResolver) SyncTaskProgress(ctx context.Context) ([]*model.Task, error) {
+	if r.Downloader == nil {
+		return nil, errors.New("downloader is not configured")
+	}
+
+	tasks, err := r.Downloader.SyncProgress(ctx)
+	if err != nil {
+		return nil, err
+	}
+	out := make([]*model.Task, 0, len(tasks))
+	for _, task := range tasks {
+		out = append(out, taskToModel(task))
+	}
+	return out, nil
+}
+
 // StashMetadataScan is the resolver for the stashMetadataScan field.
 func (r *mutationResolver) StashMetadataScan(ctx context.Context, input model.StashMetadataScanInput) (string, error) {
 	if r.Stash == nil {

@@ -104,15 +104,21 @@ type StashMetadataScanInput struct {
 }
 
 type Task struct {
-	ID         string             `json:"id"`
-	Query      string             `json:"query"`
-	Status     string             `json:"status"`
-	Candidate  *DownloadCandidate `json:"candidate"`
-	TorrentURL string             `json:"torrentUrl"`
-	SavePath   string             `json:"savePath"`
-	Category   string             `json:"category"`
-	Tags       string             `json:"tags"`
-	Error      string             `json:"error"`
-	CreatedAt  string             `json:"createdAt"`
-	UpdatedAt  string             `json:"updatedAt"`
+	ID               string             `json:"id"`
+	Query            string             `json:"query"`
+	Status           string             `json:"status"`
+	Candidate        *DownloadCandidate `json:"candidate"`
+	TorrentURL       string             `json:"torrentUrl"`
+	SavePath         string             `json:"savePath"`
+	Category         string             `json:"category"`
+	Tags             string             `json:"tags"`
+	TorrentHash      string             `json:"torrentHash"`
+	TorrentName      string             `json:"torrentName"`
+	Progress         float64            `json:"progress"`
+	QbittorrentState string             `json:"qbittorrentState"`
+	ContentPath      string             `json:"contentPath"`
+	CompletedAt      *string            `json:"completedAt,omitempty"`
+	Error            string             `json:"error"`
+	CreatedAt        string             `json:"createdAt"`
+	UpdatedAt        string             `json:"updatedAt"`
 }

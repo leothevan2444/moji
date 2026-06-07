@@ -30,8 +30,9 @@ type Config struct {
 	} `yaml:"stash"`
 
 	Tasks struct {
-		Store    string `yaml:"store"`
-		JSONPath string `yaml:"json_path"`
+		Store                       string `yaml:"store"`
+		JSONPath                    string `yaml:"json_path"`
+		ProgressSyncIntervalSeconds int    `yaml:"progress_sync_interval_seconds"`
 	} `yaml:"tasks"`
 }
 

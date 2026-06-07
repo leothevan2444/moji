@@ -21,13 +21,18 @@ func (f fakeTracker) Search(_ string, _ ...tracker.SearchOption) ([]jackett.Sear
 }
 
 type fakeTorrentAdder struct {
-	options qbittorrent.AddTorrentOptions
-	err     error
+	options  qbittorrent.AddTorrentOptions
+	torrents []qbittorrent.Torrent
+	err      error
 }
 
 func (f *fakeTorrentAdder) AddNewTorrent(_ context.Context, opts qbittorrent.AddTorrentOptions) error {
 	f.options = opts
 	return f.err
+}
+
+func (f *fakeTorrentAdder) GetTorrentList(_ context.Context, _ *qbittorrent.TorrentListOptions) ([]qbittorrent.Torrent, error) {
+	return f.torrents, f.err
 }
 
 func TestDownloadMediaContextAddsBestTorrent(t *testing.T) {
@@ -135,6 +140,9 @@ func TestAddTorrentContextCreatesPersistedTask(t *testing.T) {
 	if task.TorrentURL != "magnet:?xt=urn:btih:manual" || task.Candidate.MagnetURI != task.TorrentURL {
 		t.Fatalf("unexpected torrent candidate: %+v", task.Candidate)
 	}
+	if task.Candidate.InfoHash != "manual" {
+		t.Fatalf("expected info hash %q, got %q", "manual", task.Candidate.InfoHash)
+	}
 	if got := qbt.options.URLs; len(got) != 1 || got[0] != task.TorrentURL {
 		t.Fatalf("unexpected qBittorrent URLs: %v", got)
 	}
@@ -145,5 +153,103 @@ func TestAddTorrentContextCreatesPersistedTask(t *testing.T) {
 	}
 	if stored.Status != TaskStatusAdded || stored.TorrentURL != task.TorrentURL {
 		t.Fatalf("unexpected stored task: %+v", stored)
+	}
+}
+
+func TestSyncProgressUpdatesTaskFromTorrentList(t *testing.T) {
+	store := NewMemoryTaskStore()
+	if err := store.Create(context.Background(), &Task{
+		ID:         "task-sync",
+		Query:      "ABCD-123",
+		Status:     TaskStatusAdded,
+		TorrentURL: "magnet:?xt=urn:btih:sync",
+		CreatedAt:  time.Unix(100, 0).UTC(),
+		UpdatedAt:  time.Unix(100, 0).UTC(),
+	}); err != nil {
+		t.Fatalf("Create failed: %v", err)
+	}
+
+	qbt := &fakeTorrentAdder{
+		torrents: []qbittorrent.Torrent{
+			{
+				Hash:        "hash-sync",
+				Name:        "ABCD-123",
+				MagnetURI:   "magnet:?xt=urn:btih:sync",
+				Progress:    0.5,
+				State:       qbittorrent.TorrentStateDownloading,
+				ContentPath: "/downloads/ABCD-123.mp4",
+			},
+		},
+	}
+	service, err := NewService(
+		fakeTracker{},
+		qbt,
+		store,
+		WithClock(func() time.Time { return time.Unix(200, 0).UTC() }),
+	)
+	if err != nil {
+		t.Fatalf("NewService failed: %v", err)
+	}
+
+	tasks, err := service.SyncProgress(context.Background())
+	if err != nil {
+		t.Fatalf("SyncProgress failed: %v", err)
+	}
+	if len(tasks) != 1 {
+		t.Fatalf("expected one task, got %d", len(tasks))
+	}
+	task := tasks[0]
+	if task.Status != TaskStatusDownloading {
+		t.Fatalf("expected status %q, got %q", TaskStatusDownloading, task.Status)
+	}
+	if task.TorrentHash != "hash-sync" || task.Progress != 0.5 || task.QBittorrentState != string(qbittorrent.TorrentStateDownloading) {
+		t.Fatalf("unexpected synced task: %+v", task)
+	}
+}
+
+func TestSyncProgressMarksCompletedTask(t *testing.T) {
+	store := NewMemoryTaskStore()
+	if err := store.Create(context.Background(), &Task{
+		ID:          "task-complete",
+		Query:       "ABCD-123",
+		Status:      TaskStatusDownloading,
+		TorrentHash: "hash-complete",
+		CreatedAt:   time.Unix(100, 0).UTC(),
+		UpdatedAt:   time.Unix(100, 0).UTC(),
+	}); err != nil {
+		t.Fatalf("Create failed: %v", err)
+	}
+
+	qbt := &fakeTorrentAdder{
+		torrents: []qbittorrent.Torrent{
+			{
+				Hash:         "hash-complete",
+				Name:         "ABCD-123",
+				Progress:     1,
+				State:        qbittorrent.TorrentStateUploading,
+				CompletionOn: 300,
+			},
+		},
+	}
+	service, err := NewService(
+		fakeTracker{},
+		qbt,
+		store,
+		WithClock(func() time.Time { return time.Unix(400, 0).UTC() }),
+	)
+	if err != nil {
+		t.Fatalf("NewService failed: %v", err)
+	}
+
+	tasks, err := service.SyncProgress(context.Background())
+	if err != nil {
+		t.Fatalf("SyncProgress failed: %v", err)
+	}
+	task := tasks[0]
+	if task.Status != TaskStatusCompleted {
+		t.Fatalf("expected status %q, got %q", TaskStatusCompleted, task.Status)
+	}
+	if task.CompletedAt == nil || !task.CompletedAt.Equal(time.Unix(300, 0).UTC()) {
+		t.Fatalf("unexpected completed at: %v", task.CompletedAt)
 	}
 }

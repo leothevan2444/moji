@@ -28,6 +28,7 @@ type DownloaderService interface {
 	DownloadMediaContext(ctx context.Context, req downloader.DownloadRequest) (*downloader.Task, error)
 	FindTask(ctx context.Context, id string) (*downloader.Task, error)
 	ListTasks(ctx context.Context) ([]*downloader.Task, error)
+	SyncProgress(ctx context.Context) ([]*downloader.Task, error)
 }
 
 type Resolver struct {

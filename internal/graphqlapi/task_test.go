@@ -135,6 +135,47 @@ func TestTasksQueryListsTasks(t *testing.T) {
 	}
 }
 
+func TestSyncTaskProgress(t *testing.T) {
+	downloader := &fakeDownloader{
+		syncTasks: []*downloader.Task{
+			{
+				ID:               "task-sync",
+				Query:            "ABCD-123",
+				Status:           downloader.TaskStatusDownloading,
+				TorrentHash:      "hash-sync",
+				TorrentName:      "ABCD-123",
+				Progress:         0.5,
+				QBittorrentState: "downloading",
+				ContentPath:      "/downloads/ABCD-123.mp4",
+				CreatedAt:        time.Unix(100, 0).UTC(),
+				UpdatedAt:        time.Unix(200, 0).UTC(),
+			},
+		},
+	}
+	resolver := NewResolver(nil, nil, downloader, nil, "test-version")
+
+	resp := executeGraphQL(t, resolver, `mutation {
+		syncTaskProgress {
+			id
+			status
+			torrentHash
+			progress
+			qbittorrentState
+			contentPath
+		}
+	}`)
+	if len(resp.Errors) > 0 {
+		t.Fatalf("expected no errors, got %+v", resp.Errors)
+	}
+	if len(resp.Data.SyncTaskProgress) != 1 {
+		t.Fatalf("expected one synced task, got %+v", resp.Data.SyncTaskProgress)
+	}
+	task := resp.Data.SyncTaskProgress[0]
+	if task.ID != "task-sync" || task.TorrentHash != "hash-sync" || task.Progress != 0.5 {
+		t.Fatalf("unexpected synced task: %+v", task)
+	}
+}
+
 func TestDownloadMediaRequiresDownloader(t *testing.T) {
 	resolver := NewResolver(nil, nil, nil, nil, "test-version")
 
@@ -156,6 +197,7 @@ type fakeDownloader struct {
 	downloadTask    *downloader.Task
 	findTask        *downloader.Task
 	listTasks       []*downloader.Task
+	syncTasks       []*downloader.Task
 }
 
 func (f *fakeDownloader) AddTorrentContext(_ context.Context, req downloader.AddTorrentRequest) (*downloader.Task, error) {
@@ -174,6 +216,10 @@ func (f *fakeDownloader) FindTask(_ context.Context, _ string) (*downloader.Task
 
 func (f *fakeDownloader) ListTasks(_ context.Context) ([]*downloader.Task, error) {
 	return f.listTasks, nil
+}
+
+func (f *fakeDownloader) SyncProgress(_ context.Context) ([]*downloader.Task, error) {
+	return f.syncTasks, nil
 }
 
 type graphQLTaskResponse struct {
@@ -199,6 +245,14 @@ type graphQLTaskResponse struct {
 			Query  string `json:"query"`
 			Status string `json:"status"`
 		} `json:"tasks"`
+		SyncTaskProgress []struct {
+			ID               string  `json:"id"`
+			Status           string  `json:"status"`
+			TorrentHash      string  `json:"torrentHash"`
+			Progress         float64 `json:"progress"`
+			QbittorrentState string  `json:"qbittorrentState"`
+			ContentPath      string  `json:"contentPath"`
+		} `json:"syncTaskProgress"`
 		QbittorrentAdd bool `json:"qbittorrentAdd"`
 	} `json:"data"`
 	Errors []struct {

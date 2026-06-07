@@ -6,6 +6,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"net/url"
 	"sort"
 	"strings"
 	"sync"
@@ -20,6 +21,15 @@ type TorrentAdder interface {
 	AddNewTorrent(ctx context.Context, opts qbittorrent.AddTorrentOptions) error
 }
 
+type TorrentLister interface {
+	GetTorrentList(ctx context.Context, options *qbittorrent.TorrentListOptions) ([]qbittorrent.Torrent, error)
+}
+
+type TorrentClient interface {
+	TorrentAdder
+	TorrentLister
+}
+
 type TaskStore interface {
 	Create(ctx context.Context, task *Task) error
 	Update(ctx context.Context, task *Task) error
@@ -30,23 +40,31 @@ type TaskStore interface {
 type TaskStatus string
 
 const (
-	TaskStatusPending TaskStatus = "pending"
-	TaskStatusAdded   TaskStatus = "added"
-	TaskStatusFailed  TaskStatus = "failed"
+	TaskStatusPending     TaskStatus = "pending"
+	TaskStatusAdded       TaskStatus = "added"
+	TaskStatusDownloading TaskStatus = "downloading"
+	TaskStatusCompleted   TaskStatus = "completed"
+	TaskStatusFailed      TaskStatus = "failed"
 )
 
 type Task struct {
-	ID         string
-	Query      string
-	Status     TaskStatus
-	Candidate  Candidate
-	TorrentURL string
-	SavePath   string
-	Category   string
-	Tags       string
-	Error      string
-	CreatedAt  time.Time
-	UpdatedAt  time.Time
+	ID               string
+	Query            string
+	Status           TaskStatus
+	Candidate        Candidate
+	TorrentURL       string
+	SavePath         string
+	Category         string
+	Tags             string
+	TorrentHash      string
+	TorrentName      string
+	Progress         float64
+	QBittorrentState string
+	ContentPath      string
+	CompletedAt      *time.Time
+	Error            string
+	CreatedAt        time.Time
+	UpdatedAt        time.Time
 }
 
 type Candidate struct {
@@ -81,7 +99,7 @@ type AddTorrentRequest struct {
 
 type Service struct {
 	tracker tracker.Tracker
-	qbt     TorrentAdder
+	qbt     TorrentClient
 	store   TaskStore
 	now     func() time.Time
 	newID   func() string
@@ -105,7 +123,7 @@ func WithIDGenerator(newID func() string) Option {
 	}
 }
 
-func NewService(tr tracker.Tracker, qbt TorrentAdder, store TaskStore, options ...Option) (*Service, error) {
+func NewService(tr tracker.Tracker, qbt TorrentClient, store TaskStore, options ...Option) (*Service, error) {
 	if tr == nil {
 		return nil, errors.New("downloader: tracker is required")
 	}
@@ -143,6 +161,41 @@ func (s *Service) FindTask(ctx context.Context, id string) (*Task, error) {
 
 func (s *Service) ListTasks(ctx context.Context) ([]*Task, error) {
 	return s.store.List(ctx)
+}
+
+func (s *Service) SyncProgress(ctx context.Context) ([]*Task, error) {
+	tasks, err := s.store.List(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	torrents, err := s.qbt.GetTorrentList(ctx, nil)
+	if err != nil {
+		return nil, fmt.Errorf("list torrents: %w", err)
+	}
+
+	updated := make([]*Task, 0, len(tasks))
+	for _, task := range tasks {
+		if task == nil || task.Status == TaskStatusFailed || task.Status == TaskStatusCompleted {
+			updated = append(updated, task)
+			continue
+		}
+
+		torrent, ok := matchTaskTorrent(task, torrents)
+		if !ok {
+			updated = append(updated, task)
+			continue
+		}
+
+		next := cloneTask(task)
+		applyTorrentProgress(next, torrent, s.now().UTC())
+		if err := s.store.Update(ctx, next); err != nil {
+			return updated, fmt.Errorf("update task %q: %w", next.ID, err)
+		}
+		updated = append(updated, next)
+	}
+
+	return updated, nil
 }
 
 func (s *Service) DownloadMediaContext(ctx context.Context, req DownloadRequest) (*Task, error) {
@@ -320,6 +373,7 @@ func candidateFromSearchResult(result jackett.SearchResult) Candidate {
 func candidateFromTorrentURL(torrentURL string) Candidate {
 	return Candidate{
 		Title:     torrentURL,
+		InfoHash:  infoHashFromMagnet(torrentURL),
 		Link:      torrentURL,
 		MagnetURI: magnetURI(torrentURL),
 	}
@@ -330,6 +384,110 @@ func magnetURI(torrentURL string) string {
 		return torrentURL
 	}
 	return ""
+}
+
+func infoHashFromMagnet(torrentURL string) string {
+	if !strings.HasPrefix(strings.ToLower(torrentURL), "magnet:") {
+		return ""
+	}
+
+	parsed, err := url.Parse(torrentURL)
+	if err != nil {
+		return ""
+	}
+	for _, xt := range parsed.Query()["xt"] {
+		parts := strings.Split(xt, ":")
+		if len(parts) >= 3 && strings.EqualFold(parts[0], "urn") && strings.EqualFold(parts[1], "btih") {
+			return parts[2]
+		}
+	}
+	return ""
+}
+
+func matchTaskTorrent(task *Task, torrents []qbittorrent.Torrent) (qbittorrent.Torrent, bool) {
+	if task.TorrentHash != "" {
+		for _, torrent := range torrents {
+			if strings.EqualFold(torrent.Hash, task.TorrentHash) {
+				return torrent, true
+			}
+		}
+	}
+
+	needle := strings.TrimSpace(task.TorrentURL)
+	for _, torrent := range torrents {
+		if needle != "" && torrent.MagnetURI == needle {
+			return torrent, true
+		}
+		if needle != "" && strings.Contains(torrent.Name, needle) {
+			return torrent, true
+		}
+		if task.Candidate.Title != "" && torrent.Name == task.Candidate.Title {
+			return torrent, true
+		}
+		if task.Candidate.InfoHash != "" && strings.EqualFold(torrent.Hash, task.Candidate.InfoHash) {
+			return torrent, true
+		}
+	}
+
+	return qbittorrent.Torrent{}, false
+}
+
+func applyTorrentProgress(task *Task, torrent qbittorrent.Torrent, now time.Time) {
+	task.TorrentHash = torrent.Hash
+	task.TorrentName = torrent.Name
+	task.Progress = torrent.Progress
+	task.QBittorrentState = string(torrent.State)
+	task.ContentPath = torrent.ContentPath
+	task.UpdatedAt = now
+
+	if torrent.Progress >= 1 || torrent.CompletionOn > 0 || isCompletedTorrentState(torrent.State) {
+		task.Status = TaskStatusCompleted
+		completedAt := now
+		if torrent.CompletionOn > 0 {
+			completedAt = time.Unix(torrent.CompletionOn, 0).UTC()
+		}
+		task.CompletedAt = &completedAt
+		return
+	}
+
+	if torrent.Progress > 0 || isDownloadingTorrentState(torrent.State) {
+		task.Status = TaskStatusDownloading
+		return
+	}
+
+	task.Status = TaskStatusAdded
+}
+
+func isCompletedTorrentState(state qbittorrent.TorrentState) bool {
+	switch state {
+	case qbittorrent.TorrentStateUploading,
+		qbittorrent.TorrentStatePausedUP,
+		qbittorrent.TorrentStateQueuedUP,
+		qbittorrent.TorrentStateStalledUP,
+		qbittorrent.TorrentStateCheckingUP,
+		qbittorrent.TorrentStateForcedUP:
+		return true
+	default:
+		return false
+	}
+}
+
+func isDownloadingTorrentState(state qbittorrent.TorrentState) bool {
+	switch state {
+	case qbittorrent.TorrentStateAllocating,
+		qbittorrent.TorrentStateDownloading,
+		qbittorrent.TorrentStateMetaDL,
+		qbittorrent.TorrentStatePausedDL,
+		qbittorrent.TorrentStateQueuedDL,
+		qbittorrent.TorrentStateStalledDL,
+		qbittorrent.TorrentStateCheckingDL,
+		qbittorrent.TorrentStateForcedDL,
+		qbittorrent.TorrentStateCheckingResumeData,
+		qbittorrent.TorrentStateMoving:
+		return true
+	default:
+		return false
+	}
 }
 
 func newTaskID() string {
