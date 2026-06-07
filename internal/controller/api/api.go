@@ -37,6 +37,8 @@ type trackerSearchResponse struct {
 }
 
 func (h *Handler) handleTrackerSearch(w http.ResponseWriter, r *http.Request) {
+	markDeprecatedRESTDebugEndpoint(w)
+
 	q := strings.TrimSpace(r.URL.Query().Get("q"))
 	if q == "" {
 		writeJSON(w, http.StatusBadRequest, errorResponse{Error: "missing query parameter: q"})
@@ -81,6 +83,12 @@ func (h *Handler) handleTrackerSearch(w http.ResponseWriter, r *http.Request) {
 	}
 
 	writeJSON(w, http.StatusOK, trackerSearchResponse{Results: results})
+}
+
+func markDeprecatedRESTDebugEndpoint(w http.ResponseWriter) {
+	w.Header().Set("Deprecation", "true")
+	w.Header().Set("Link", `</graphql>; rel="successor-version"`)
+	w.Header().Set("Warning", `299 - "REST debug endpoint is deprecated; use GraphQL"`)
 }
 
 func writeJSON(w http.ResponseWriter, status int, v any) {
