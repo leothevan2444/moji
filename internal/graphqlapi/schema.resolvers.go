@@ -9,6 +9,7 @@ import (
 	"errors"
 	"strings"
 
+	"github.com/leothevan2444/moji/internal/downloader"
 	"github.com/leothevan2444/moji/internal/graphqlapi/generated"
 	"github.com/leothevan2444/moji/internal/graphqlapi/model"
 	"github.com/leothevan2444/moji/internal/stashsync"
@@ -18,35 +19,69 @@ import (
 
 // QbittorrentAdd is the resolver for the qbittorrentAdd field.
 func (r *mutationResolver) QbittorrentAdd(ctx context.Context, input model.QBittorrentAddInput) (bool, error) {
-	if r.Torrent == nil {
-		return false, errors.New("qBittorrent client is not configured")
-	}
-
-	torrentURL := strings.TrimSpace(input.URL)
-	if torrentURL == "" {
-		return false, errors.New("url is required")
-	}
-
-	options := qbittorrent.AddTorrentOptions{
-		URLs: []string{torrentURL},
-	}
-	if input.SavePath != nil {
-		options.SavePath = input.SavePath
-	}
-	if input.Category != nil {
-		options.Category = input.Category
-	}
-	if input.Tags != nil {
-		options.Tags = input.Tags
-	}
-	if input.Paused != nil {
-		options.Paused = input.Paused
-	}
-
-	if err := r.Torrent.AddNewTorrent(ctx, options); err != nil {
+	if _, err := r.AddTorrent(ctx, input); err != nil {
 		return false, err
 	}
 	return true, nil
+}
+
+// AddTorrent is the resolver for the addTorrent field.
+func (r *mutationResolver) AddTorrent(ctx context.Context, input model.QBittorrentAddInput) (*model.Task, error) {
+	if r.Downloader == nil {
+		return nil, errors.New("downloader is not configured")
+	}
+
+	req := downloader.AddTorrentRequest{
+		URL:    input.URL,
+		Paused: input.Paused,
+	}
+	if input.SavePath != nil {
+		req.SavePath = *input.SavePath
+	}
+	if input.Category != nil {
+		req.Category = *input.Category
+	}
+	if input.Tags != nil {
+		req.Tags = *input.Tags
+	}
+
+	task, err := r.Downloader.AddTorrentContext(ctx, req)
+	if task != nil {
+		return taskToModel(task), err
+	}
+	return nil, err
+}
+
+// DownloadMedia is the resolver for the downloadMedia field.
+func (r *mutationResolver) DownloadMedia(ctx context.Context, input model.DownloadMediaInput) (*model.Task, error) {
+	if r.Downloader == nil {
+		return nil, errors.New("downloader is not configured")
+	}
+
+	req := downloader.DownloadRequest{
+		Query:      input.Query,
+		Trackers:   input.Trackers,
+		Categories: input.Categories,
+		Paused:     input.Paused,
+	}
+	if input.Limit != nil {
+		req.Limit = *input.Limit
+	}
+	if input.SavePath != nil {
+		req.SavePath = *input.SavePath
+	}
+	if input.Category != nil {
+		req.Category = *input.Category
+	}
+	if input.Tags != nil {
+		req.Tags = *input.Tags
+	}
+
+	task, err := r.Downloader.DownloadMediaContext(ctx, req)
+	if task != nil {
+		return taskToModel(task), err
+	}
+	return nil, err
 }
 
 // StashMetadataScan is the resolver for the stashMetadataScan field.
@@ -134,6 +169,36 @@ func (r *queryResolver) QbittorrentTorrents(ctx context.Context, limit *int) ([]
 	out := make([]*model.QBTorrent, 0, len(torrents))
 	for _, torrent := range torrents {
 		out = append(out, qbTorrentToModel(torrent))
+	}
+	return out, nil
+}
+
+// Task is the resolver for the task field.
+func (r *queryResolver) Task(ctx context.Context, id string) (*model.Task, error) {
+	if r.Downloader == nil {
+		return nil, errors.New("downloader is not configured")
+	}
+
+	task, err := r.Downloader.FindTask(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+	return taskToModel(task), nil
+}
+
+// Tasks is the resolver for the tasks field.
+func (r *queryResolver) Tasks(ctx context.Context) ([]*model.Task, error) {
+	if r.Downloader == nil {
+		return nil, errors.New("downloader is not configured")
+	}
+
+	tasks, err := r.Downloader.ListTasks(ctx)
+	if err != nil {
+		return nil, err
+	}
+	out := make([]*model.Task, 0, len(tasks))
+	for _, task := range tasks {
+		out = append(out, taskToModel(task))
 	}
 	return out, nil
 }

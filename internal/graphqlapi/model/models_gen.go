@@ -2,6 +2,28 @@
 
 package model
 
+type DownloadCandidate struct {
+	Title     string `json:"title"`
+	Tracker   string `json:"tracker"`
+	InfoHash  string `json:"infoHash"`
+	Link      string `json:"link"`
+	MagnetURI string `json:"magnetUri"`
+	Size      int64  `json:"size"`
+	Seeders   int    `json:"seeders"`
+	Peers     int    `json:"peers"`
+}
+
+type DownloadMediaInput struct {
+	Query      string   `json:"query"`
+	Trackers   []string `json:"trackers,omitempty"`
+	Categories []int    `json:"categories,omitempty"`
+	Limit      *int     `json:"limit,omitempty"`
+	SavePath   *string  `json:"savePath,omitempty"`
+	Category   *string  `json:"category,omitempty"`
+	Tags       *string  `json:"tags,omitempty"`
+	Paused     *bool    `json:"paused,omitempty"`
+}
+
 // Basic service health
 type Health struct {
 	Ok      bool   `json:"ok"`
@@ -79,4 +101,18 @@ type StashMetadataScanInput struct {
 	ScanGeneratePhashes       *bool    `json:"scanGeneratePhashes,omitempty"`
 	ScanGenerateThumbnails    *bool    `json:"scanGenerateThumbnails,omitempty"`
 	ScanGenerateClipPreviews  *bool    `json:"scanGenerateClipPreviews,omitempty"`
+}
+
+type Task struct {
+	ID         string             `json:"id"`
+	Query      string             `json:"query"`
+	Status     string             `json:"status"`
+	Candidate  *DownloadCandidate `json:"candidate"`
+	TorrentURL string             `json:"torrentUrl"`
+	SavePath   string             `json:"savePath"`
+	Category   string             `json:"category"`
+	Tags       string             `json:"tags"`
+	Error      string             `json:"error"`
+	CreatedAt  string             `json:"createdAt"`
+	UpdatedAt  string             `json:"updatedAt"`
 }

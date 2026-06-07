@@ -12,7 +12,7 @@ import (
 )
 
 func TestGraphQLHealthVersionSmoke(t *testing.T) {
-	resolver := NewResolver(nil, nil, nil, "test-version")
+	resolver := NewResolver(nil, nil, nil, nil, "test-version")
 	graphqlHandler := handler.NewDefaultServer(generated.NewExecutableSchema(generated.Config{Resolvers: resolver}))
 
 	mux := http.NewServeMux()

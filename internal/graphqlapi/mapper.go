@@ -3,6 +3,7 @@ package graphqlapi
 import (
 	"time"
 
+	"github.com/leothevan2444/moji/internal/downloader"
 	"github.com/leothevan2444/moji/internal/graphqlapi/model"
 	"github.com/leothevan2444/moji/internal/stashsync"
 	"github.com/leothevan2444/moji/pkg/jackett"
@@ -38,6 +39,39 @@ func qbTorrentToModel(torrent qbittorrent.Torrent) *model.QBTorrent {
 		Category: torrent.Category,
 		Tags:     torrent.Tags,
 		AddedOn:  torrent.AddedOn,
+	}
+}
+
+func taskToModel(task *downloader.Task) *model.Task {
+	if task == nil {
+		return nil
+	}
+
+	return &model.Task{
+		ID:         task.ID,
+		Query:      task.Query,
+		Status:     string(task.Status),
+		Candidate:  candidateToModel(task.Candidate),
+		TorrentURL: task.TorrentURL,
+		SavePath:   task.SavePath,
+		Category:   task.Category,
+		Tags:       task.Tags,
+		Error:      task.Error,
+		CreatedAt:  formatTime(task.CreatedAt),
+		UpdatedAt:  formatTime(task.UpdatedAt),
+	}
+}
+
+func candidateToModel(candidate downloader.Candidate) *model.DownloadCandidate {
+	return &model.DownloadCandidate{
+		Title:     candidate.Title,
+		Tracker:   candidate.Tracker,
+		InfoHash:  candidate.InfoHash,
+		Link:      candidate.Link,
+		MagnetURI: candidate.MagnetURI,
+		Size:      candidate.Size,
+		Seeders:   candidate.Seeders,
+		Peers:     candidate.Peers,
 	}
 }
 

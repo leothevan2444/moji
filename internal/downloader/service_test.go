@@ -104,3 +104,46 @@ func TestDownloadMediaContextRecordsAddFailure(t *testing.T) {
 		t.Fatalf("expected task error %q, got %q", qbtErr.Error(), task.Error)
 	}
 }
+
+func TestAddTorrentContextCreatesPersistedTask(t *testing.T) {
+	qbt := &fakeTorrentAdder{}
+	store := NewMemoryTaskStore()
+	service, err := NewService(
+		fakeTracker{},
+		qbt,
+		store,
+		WithIDGenerator(func() string { return "task-manual" }),
+		WithClock(func() time.Time { return time.Unix(100, 0) }),
+	)
+	if err != nil {
+		t.Fatalf("NewService failed: %v", err)
+	}
+
+	task, err := service.AddTorrentContext(context.Background(), AddTorrentRequest{
+		URL:      "magnet:?xt=urn:btih:manual",
+		SavePath: "/downloads/stash",
+		Category: "moji",
+		Tags:     "manual",
+	})
+	if err != nil {
+		t.Fatalf("AddTorrentContext failed: %v", err)
+	}
+
+	if task.ID != "task-manual" || task.Status != TaskStatusAdded {
+		t.Fatalf("unexpected task: %+v", task)
+	}
+	if task.TorrentURL != "magnet:?xt=urn:btih:manual" || task.Candidate.MagnetURI != task.TorrentURL {
+		t.Fatalf("unexpected torrent candidate: %+v", task.Candidate)
+	}
+	if got := qbt.options.URLs; len(got) != 1 || got[0] != task.TorrentURL {
+		t.Fatalf("unexpected qBittorrent URLs: %v", got)
+	}
+
+	stored, err := store.Find(context.Background(), "task-manual")
+	if err != nil {
+		t.Fatalf("Find failed: %v", err)
+	}
+	if stored.Status != TaskStatusAdded || stored.TorrentURL != task.TorrentURL {
+		t.Fatalf("unexpected stored task: %+v", stored)
+	}
+}

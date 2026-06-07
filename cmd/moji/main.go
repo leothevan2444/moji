@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"flag"
+	"fmt"
 	"log"
 	"net"
 	"net/http"
@@ -92,8 +93,9 @@ func newHTTPHandler(cfg *config.Config, version string) http.Handler {
 	jackettTracker := tracker.NewJackettService(cfg.Jackett.URL, cfg.Jackett.APIKey)
 	apiHandler := api.NewHandler(jackettTracker)
 	torrentClient := configureQBittorrent(cfg)
+	downloaderService := configureDownloader(cfg, jackettTracker, torrentClient)
 	stashService := configureStash(cfg)
-	resolver := graphqlapi.NewResolver(jackettTracker, torrentClient, stashService, version)
+	resolver := graphqlapi.NewResolver(jackettTracker, torrentClient, downloaderService, stashService, version)
 	graphqlHandler := handler.NewDefaultServer(generated.NewExecutableSchema(generated.Config{Resolvers: resolver}))
 
 	mux := http.NewServeMux()
@@ -134,6 +136,37 @@ func configureQBittorrent(cfg *config.Config) graphqlapi.TorrentClient {
 		Category: cfg.QBittorrent.Category,
 		Tags:     cfg.QBittorrent.Tags,
 	})
+}
+
+func configureDownloader(cfg *config.Config, tr tracker.Tracker, torrent graphqlapi.TorrentClient) graphqlapi.DownloaderService {
+	if torrent == nil {
+		return nil
+	}
+
+	store, err := configureTaskStore(cfg)
+	if err != nil {
+		log.Fatalf("configure task store: %v", err)
+	}
+	service, err := downloader.NewService(tr, torrent, store)
+	if err != nil {
+		log.Fatalf("configure downloader: %v", err)
+	}
+	return service
+}
+
+func configureTaskStore(cfg *config.Config) (downloader.TaskStore, error) {
+	switch cfg.Tasks.Store {
+	case "", "json":
+		path := cfg.Tasks.JSONPath
+		if path == "" {
+			path = "moji-tasks.json"
+		}
+		return downloader.NewJSONTaskStore(path)
+	case "memory":
+		return downloader.NewMemoryTaskStore(), nil
+	default:
+		return nil, fmt.Errorf("unsupported tasks.store %q", cfg.Tasks.Store)
+	}
 }
 
 func configureStash(cfg *config.Config) graphqlapi.StashService {

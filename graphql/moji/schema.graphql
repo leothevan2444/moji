@@ -16,6 +16,12 @@ type Query {
   "List torrents from qBittorrent"
   qbittorrentTorrents(limit: Int): [QBTorrent!]!
 
+  "Get a Moji download task by id"
+  task(id: ID!): Task
+
+  "List Moji download tasks, newest first"
+  tasks: [Task!]!
+
   "Get a Stash background job by id"
   stashJob(id: ID!): StashJob
 }
@@ -57,7 +63,13 @@ type QBTorrent {
 
 type Mutation {
   "Add a torrent to qBittorrent via magnet or http(s) URL"
-  qbittorrentAdd(input: QBittorrentAddInput!): Boolean!
+  qbittorrentAdd(input: QBittorrentAddInput!): Boolean! @deprecated(reason: "Use addTorrent for persisted Moji task tracking.")
+
+  "Add a torrent URL or magnet and create a persisted Moji task"
+  addTorrent(input: QBittorrentAddInput!): Task!
+
+  "Search torrent candidates and create a Moji download task"
+  downloadMedia(input: DownloadMediaInput!): Task!
 
   "Start a Stash metadata scan"
   stashMetadataScan(input: StashMetadataScanInput!): ID!
@@ -69,6 +81,42 @@ input QBittorrentAddInput {
   category: String
   tags: String
   paused: Boolean
+}
+
+input DownloadMediaInput {
+  query: String!
+  trackers: [String!]
+  categories: [Int!]
+  limit: Int
+  savePath: String
+  category: String
+  tags: String
+  paused: Boolean
+}
+
+type Task {
+  id: ID!
+  query: String!
+  status: String!
+  candidate: DownloadCandidate!
+  torrentUrl: String!
+  savePath: String!
+  category: String!
+  tags: String!
+  error: String!
+  createdAt: String!
+  updatedAt: String!
+}
+
+type DownloadCandidate {
+  title: String!
+  tracker: String!
+  infoHash: String!
+  link: String!
+  magnetUri: String!
+  size: Long!
+  seeders: Int!
+  peers: Int!
 }
 
 input StashMetadataScanInput {

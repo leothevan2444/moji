@@ -28,6 +28,11 @@ type Config struct {
 		APIKey      string `yaml:"api_key"`
 		LibraryPath string `yaml:"library_path"`
 	} `yaml:"stash"`
+
+	Tasks struct {
+		Store    string `yaml:"store"`
+		JSONPath string `yaml:"json_path"`
+	} `yaml:"tasks"`
 }
 
 func Load() (*Config, error) {

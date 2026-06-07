@@ -6,6 +6,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"sort"
 	"strings"
 	"sync"
 	"time"
@@ -23,6 +24,7 @@ type TaskStore interface {
 	Create(ctx context.Context, task *Task) error
 	Update(ctx context.Context, task *Task) error
 	Find(ctx context.Context, id string) (*Task, error)
+	List(ctx context.Context) ([]*Task, error)
 }
 
 type TaskStatus string
@@ -67,6 +69,14 @@ type DownloadRequest struct {
 	Category   string
 	Tags       string
 	Paused     *bool
+}
+
+type AddTorrentRequest struct {
+	URL      string
+	SavePath string
+	Category string
+	Tags     string
+	Paused   *bool
 }
 
 type Service struct {
@@ -123,6 +133,18 @@ func (s *Service) DownloadMedia(query string) (*Task, error) {
 	return s.DownloadMediaContext(context.Background(), DownloadRequest{Query: query})
 }
 
+func (s *Service) FindTask(ctx context.Context, id string) (*Task, error) {
+	id = strings.TrimSpace(id)
+	if id == "" {
+		return nil, errors.New("downloader: task id is required")
+	}
+	return s.store.Find(ctx, id)
+}
+
+func (s *Service) ListTasks(ctx context.Context) ([]*Task, error) {
+	return s.store.List(ctx)
+}
+
 func (s *Service) DownloadMediaContext(ctx context.Context, req DownloadRequest) (*Task, error) {
 	query := strings.TrimSpace(req.Query)
 	if query == "" {
@@ -155,6 +177,63 @@ func (s *Service) DownloadMediaContext(ctx context.Context, req DownloadRequest)
 		Query:      query,
 		Status:     TaskStatusPending,
 		Candidate:  candidate,
+		TorrentURL: torrentURL,
+		SavePath:   req.SavePath,
+		Category:   req.Category,
+		Tags:       req.Tags,
+		CreatedAt:  now,
+		UpdatedAt:  now,
+	}
+
+	if err := s.store.Create(ctx, task); err != nil {
+		return nil, fmt.Errorf("create task: %w", err)
+	}
+
+	addOptions := qbittorrent.AddTorrentOptions{
+		URLs: []string{torrentURL},
+	}
+	if req.SavePath != "" {
+		addOptions.SavePath = &req.SavePath
+	}
+	if req.Category != "" {
+		addOptions.Category = &req.Category
+	}
+	if req.Tags != "" {
+		addOptions.Tags = &req.Tags
+	}
+	if req.Paused != nil {
+		addOptions.Paused = req.Paused
+	}
+
+	if err := s.qbt.AddNewTorrent(ctx, addOptions); err != nil {
+		task.Status = TaskStatusFailed
+		task.Error = err.Error()
+		task.UpdatedAt = s.now().UTC()
+		_ = s.store.Update(ctx, task)
+		return task, fmt.Errorf("add torrent: %w", err)
+	}
+
+	task.Status = TaskStatusAdded
+	task.UpdatedAt = s.now().UTC()
+	if err := s.store.Update(ctx, task); err != nil {
+		return task, fmt.Errorf("update task: %w", err)
+	}
+
+	return task, nil
+}
+
+func (s *Service) AddTorrentContext(ctx context.Context, req AddTorrentRequest) (*Task, error) {
+	torrentURL := strings.TrimSpace(req.URL)
+	if torrentURL == "" {
+		return nil, errors.New("downloader: torrent url is required")
+	}
+
+	now := s.now().UTC()
+	task := &Task{
+		ID:         s.newID(),
+		Query:      torrentURL,
+		Status:     TaskStatusPending,
+		Candidate:  candidateFromTorrentURL(torrentURL),
 		TorrentURL: torrentURL,
 		SavePath:   req.SavePath,
 		Category:   req.Category,
@@ -238,6 +317,21 @@ func candidateFromSearchResult(result jackett.SearchResult) Candidate {
 	}
 }
 
+func candidateFromTorrentURL(torrentURL string) Candidate {
+	return Candidate{
+		Title:     torrentURL,
+		Link:      torrentURL,
+		MagnetURI: magnetURI(torrentURL),
+	}
+}
+
+func magnetURI(torrentURL string) string {
+	if strings.HasPrefix(strings.ToLower(torrentURL), "magnet:") {
+		return torrentURL
+	}
+	return ""
+}
+
 func newTaskID() string {
 	var b [16]byte
 	if _, err := rand.Read(b[:]); err != nil {
@@ -289,6 +383,27 @@ func (s *MemoryTaskStore) Find(_ context.Context, id string) (*Task, error) {
 		return nil, fmt.Errorf("downloader: task %q not found", id)
 	}
 	return cloneTask(task), nil
+}
+
+func (s *MemoryTaskStore) List(_ context.Context) ([]*Task, error) {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+
+	tasks := make([]*Task, 0, len(s.tasks))
+	for _, task := range s.tasks {
+		tasks = append(tasks, cloneTask(task))
+	}
+	sortTasks(tasks)
+	return tasks, nil
+}
+
+func sortTasks(tasks []*Task) {
+	sort.Slice(tasks, func(i, j int) bool {
+		if tasks[i].CreatedAt.Equal(tasks[j].CreatedAt) {
+			return tasks[i].ID < tasks[j].ID
+		}
+		return tasks[i].CreatedAt.After(tasks[j].CreatedAt)
+	})
 }
 
 func cloneTask(task *Task) *Task {
