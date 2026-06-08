@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 	"time"
 
@@ -22,6 +23,7 @@ import (
 	"github.com/leothevan2444/moji/internal/graphqlapi/generated"
 	"github.com/leothevan2444/moji/internal/stashsync"
 	"github.com/leothevan2444/moji/internal/tracker"
+	"github.com/leothevan2444/moji/internal/webui"
 	"github.com/leothevan2444/moji/pkg/qbittorrent"
 	"github.com/leothevan2444/moji/pkg/stash"
 )
@@ -105,17 +107,26 @@ func newHTTPRuntime(cfg *config.Config, version string) (http.Handler, graphqlap
 	resolver := graphqlapi.NewResolver(jackettTracker, torrentClient, downloaderService, stashService, version)
 	graphqlHandler := handler.NewDefaultServer(generated.NewExecutableSchema(generated.Config{Resolvers: resolver}))
 
-	mux := http.NewServeMux()
-	apiHandler.Register(mux)
-	mux.Handle("GET /graphql", playground.Handler("Moji GraphQL Playground", "/graphql"))
-	mux.Handle("POST /graphql", graphqlHandler)
-	// Keep root simple until web UI lands in this repo.
-	mux.HandleFunc("GET /", func(w http.ResponseWriter, _ *http.Request) {
-		w.Header().Set("Content-Type", "text/plain; charset=utf-8")
-		_, _ = w.Write([]byte("moji is running\n"))
+	apiMux := http.NewServeMux()
+	apiHandler.Register(apiMux)
+	webHandler := webui.NewHandler("web/dist")
+
+	router := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch {
+		case r.Method == http.MethodPost && r.URL.Path == "/graphql":
+			graphqlHandler.ServeHTTP(w, r)
+		case r.Method == http.MethodGet && r.URL.Path == "/playground":
+			playground.Handler("Moji GraphQL Playground", "/graphql").ServeHTTP(w, r)
+		case r.Method == http.MethodGet && r.URL.Path == "/graphql":
+			http.Error(w, http.StatusText(http.StatusMethodNotAllowed), http.StatusMethodNotAllowed)
+		case r.Method == http.MethodGet && !strings.HasPrefix(r.URL.Path, "/api/") && r.URL.Path != "/healthz":
+			webHandler.ServeHTTP(w, r)
+		default:
+			apiMux.ServeHTTP(w, r)
+		}
 	})
 
-	return mux, downloaderService, stashService
+	return router, downloaderService, stashService
 }
 
 func configureQBittorrent(cfg *config.Config) graphqlapi.TorrentClient {

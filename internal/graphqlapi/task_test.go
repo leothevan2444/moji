@@ -136,6 +136,33 @@ func TestTasksQueryListsTasks(t *testing.T) {
 	}
 }
 
+func TestTasksQueryWithoutDownloaderReturnsEmptyList(t *testing.T) {
+	resolver := NewResolver(nil, nil, nil, nil, "test-version")
+
+	resp := executeGraphQL(t, resolver, `{ tasks { id } }`)
+	if len(resp.Errors) > 0 {
+		t.Fatalf("expected no errors, got %+v", resp.Errors)
+	}
+	if resp.Data.Tasks == nil {
+		t.Fatal("expected empty tasks list, got nil")
+	}
+	if len(resp.Data.Tasks) != 0 {
+		t.Fatalf("expected empty tasks list, got %+v", resp.Data.Tasks)
+	}
+}
+
+func TestTaskQueryWithoutDownloaderReturnsNull(t *testing.T) {
+	resolver := NewResolver(nil, nil, nil, nil, "test-version")
+
+	resp := executeGraphQL(t, resolver, `{ task(id: "task-1") { id } }`)
+	if len(resp.Errors) > 0 {
+		t.Fatalf("expected no errors, got %+v", resp.Errors)
+	}
+	if resp.Data.Task != nil {
+		t.Fatalf("expected null task, got %+v", resp.Data.Task)
+	}
+}
+
 func TestSyncTaskProgress(t *testing.T) {
 	downloader := &fakeDownloader{
 		syncTasks: []*downloader.Task{
@@ -287,6 +314,9 @@ type graphQLTaskResponse struct {
 			Query  string `json:"query"`
 			Status string `json:"status"`
 		} `json:"tasks"`
+		Task *struct {
+			ID string `json:"id"`
+		} `json:"task"`
 		SyncTaskProgress []struct {
 			ID               string  `json:"id"`
 			Status           string  `json:"status"`

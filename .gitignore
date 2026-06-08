@@ -6,3 +6,7 @@ moji
 !moji/
 AGENTS.md
 docs/agent_work_plan.md
+docs/ui_design.md
+web/node_modules/
+web/dist/
+web/*.tsbuildinfo

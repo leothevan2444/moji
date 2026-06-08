@@ -1,0 +1,27 @@
+query DashboardDocument {
+  health {
+    ok
+    message
+  }
+  version
+  tasks {
+    id
+    query
+    status
+    torrentName
+    progress
+    qbittorrentState
+    contentPath
+    torrentHash
+    savePath
+    category
+    tags
+    error
+    completedAt
+    stashJobId
+    stashScanStatus
+    stashScanError
+    createdAt
+    updatedAt
+  }
+}

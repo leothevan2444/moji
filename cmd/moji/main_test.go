@@ -24,11 +24,11 @@ func TestHTTPHandlerServesRootAndGraphQLPlayground(t *testing.T) {
 	if rootRec.Code != http.StatusOK {
 		t.Fatalf("expected root status %d, got %d", http.StatusOK, rootRec.Code)
 	}
-	if body := rootRec.Body.String(); body != "moji is running\n" {
+	if body := rootRec.Body.String(); body != "moji web ui is not built; run `make web-build` or `make web-dev`\n" {
 		t.Fatalf("unexpected root body: %q", body)
 	}
 
-	playgroundReq := httptest.NewRequest(http.MethodGet, "/graphql", nil)
+	playgroundReq := httptest.NewRequest(http.MethodGet, "/playground", nil)
 	playgroundRec := httptest.NewRecorder()
 	handler.ServeHTTP(playgroundRec, playgroundReq)
 	if playgroundRec.Code != http.StatusOK {
@@ -36,6 +36,13 @@ func TestHTTPHandlerServesRootAndGraphQLPlayground(t *testing.T) {
 	}
 	if body := playgroundRec.Body.String(); !strings.Contains(body, "Moji GraphQL Playground") {
 		t.Fatalf("expected playground body to include title, got %q", body)
+	}
+
+	graphqlGetReq := httptest.NewRequest(http.MethodGet, "/graphql", nil)
+	graphqlGetRec := httptest.NewRecorder()
+	handler.ServeHTTP(graphqlGetRec, graphqlGetReq)
+	if graphqlGetRec.Code != http.StatusMethodNotAllowed {
+		t.Fatalf("expected graphql GET status %d, got %d", http.StatusMethodNotAllowed, graphqlGetRec.Code)
 	}
 }
 

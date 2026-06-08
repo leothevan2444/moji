@@ -213,7 +213,7 @@ func (r *queryResolver) QbittorrentTorrents(ctx context.Context, limit *int) ([]
 // Task is the resolver for the task field.
 func (r *queryResolver) Task(ctx context.Context, id string) (*model.Task, error) {
 	if r.Downloader == nil {
-		return nil, errors.New("downloader is not configured")
+		return nil, nil
 	}
 
 	task, err := r.Downloader.FindTask(ctx, id)
@@ -226,7 +226,7 @@ func (r *queryResolver) Task(ctx context.Context, id string) (*model.Task, error
 // Tasks is the resolver for the tasks field.
 func (r *queryResolver) Tasks(ctx context.Context) ([]*model.Task, error) {
 	if r.Downloader == nil {
-		return nil, errors.New("downloader is not configured")
+		return []*model.Task{}, nil
 	}
 
 	tasks, err := r.Downloader.ListTasks(ctx)

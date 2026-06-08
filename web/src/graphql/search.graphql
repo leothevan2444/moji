@@ -1,0 +1,13 @@
+query SearchDocument($input: JackettSearchInput!) {
+  jackettSearch(input: $input) {
+    title
+    size
+    seeders
+    peers
+    tracker
+    categoryDesc
+    publishDate
+    link
+    magnetUri
+  }
+}

@@ -1,0 +1,58 @@
+/* eslint-disable */
+import * as types from './graphql';
+import { TypedDocumentNode as DocumentNode } from '@graphql-typed-document-node/core';
+
+/**
+ * Map of all GraphQL operations in the project.
+ *
+ * This map has several performance disadvantages:
+ * 1. It is not tree-shakeable, so it will include all operations in the project.
+ * 2. It is not minifiable, so the string of a GraphQL query will be multiple times inside the bundle.
+ * 3. It does not support dead code elimination, so it will add unused operations.
+ *
+ * Therefore it is highly recommended to use the babel or swc plugin for production.
+ * Learn more about it here: https://the-guild.dev/graphql/codegen/plugins/presets/preset-client#reducing-bundle-size
+ */
+type Documents = {
+    "query DashboardDocument {\n  health {\n    ok\n    message\n  }\n  version\n  tasks {\n    id\n    query\n    status\n    torrentName\n    progress\n    qbittorrentState\n    contentPath\n    torrentHash\n    savePath\n    category\n    tags\n    error\n    completedAt\n    stashJobId\n    stashScanStatus\n    stashScanError\n    createdAt\n    updatedAt\n  }\n}": typeof types.DashboardDocumentDocument,
+    "query SearchDocument($input: JackettSearchInput!) {\n  jackettSearch(input: $input) {\n    title\n    size\n    seeders\n    peers\n    tracker\n    categoryDesc\n    publishDate\n    link\n    magnetUri\n  }\n}": typeof types.SearchDocumentDocument,
+    "mutation AddTorrentDocument($input: QBittorrentAddInput!) {\n  addTorrent(input: $input) {\n    id\n    status\n    query\n    torrentName\n    progress\n    stashScanStatus\n    createdAt\n  }\n}\n\nmutation SyncTaskProgressDocument {\n  syncTaskProgress {\n    id\n    status\n    progress\n    qbittorrentState\n    updatedAt\n  }\n}\n\nmutation TriggerStashScansDocument {\n  triggerStashScans {\n    id\n    stashJobId\n    stashScanStatus\n    stashScanError\n    updatedAt\n  }\n}": typeof types.AddTorrentDocumentDocument,
+};
+const documents: Documents = {
+    "query DashboardDocument {\n  health {\n    ok\n    message\n  }\n  version\n  tasks {\n    id\n    query\n    status\n    torrentName\n    progress\n    qbittorrentState\n    contentPath\n    torrentHash\n    savePath\n    category\n    tags\n    error\n    completedAt\n    stashJobId\n    stashScanStatus\n    stashScanError\n    createdAt\n    updatedAt\n  }\n}": types.DashboardDocumentDocument,
+    "query SearchDocument($input: JackettSearchInput!) {\n  jackettSearch(input: $input) {\n    title\n    size\n    seeders\n    peers\n    tracker\n    categoryDesc\n    publishDate\n    link\n    magnetUri\n  }\n}": types.SearchDocumentDocument,
+    "mutation AddTorrentDocument($input: QBittorrentAddInput!) {\n  addTorrent(input: $input) {\n    id\n    status\n    query\n    torrentName\n    progress\n    stashScanStatus\n    createdAt\n  }\n}\n\nmutation SyncTaskProgressDocument {\n  syncTaskProgress {\n    id\n    status\n    progress\n    qbittorrentState\n    updatedAt\n  }\n}\n\nmutation TriggerStashScansDocument {\n  triggerStashScans {\n    id\n    stashJobId\n    stashScanStatus\n    stashScanError\n    updatedAt\n  }\n}": types.AddTorrentDocumentDocument,
+};
+
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ *
+ *
+ * @example
+ * ```ts
+ * const query = graphql(`query GetUser($id: ID!) { user(id: $id) { name } }`);
+ * ```
+ *
+ * The query argument is unknown!
+ * Please regenerate the types.
+ */
+export function graphql(source: string): unknown;
+
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "query DashboardDocument {\n  health {\n    ok\n    message\n  }\n  version\n  tasks {\n    id\n    query\n    status\n    torrentName\n    progress\n    qbittorrentState\n    contentPath\n    torrentHash\n    savePath\n    category\n    tags\n    error\n    completedAt\n    stashJobId\n    stashScanStatus\n    stashScanError\n    createdAt\n    updatedAt\n  }\n}"): (typeof documents)["query DashboardDocument {\n  health {\n    ok\n    message\n  }\n  version\n  tasks {\n    id\n    query\n    status\n    torrentName\n    progress\n    qbittorrentState\n    contentPath\n    torrentHash\n    savePath\n    category\n    tags\n    error\n    completedAt\n    stashJobId\n    stashScanStatus\n    stashScanError\n    createdAt\n    updatedAt\n  }\n}"];
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "query SearchDocument($input: JackettSearchInput!) {\n  jackettSearch(input: $input) {\n    title\n    size\n    seeders\n    peers\n    tracker\n    categoryDesc\n    publishDate\n    link\n    magnetUri\n  }\n}"): (typeof documents)["query SearchDocument($input: JackettSearchInput!) {\n  jackettSearch(input: $input) {\n    title\n    size\n    seeders\n    peers\n    tracker\n    categoryDesc\n    publishDate\n    link\n    magnetUri\n  }\n}"];
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "mutation AddTorrentDocument($input: QBittorrentAddInput!) {\n  addTorrent(input: $input) {\n    id\n    status\n    query\n    torrentName\n    progress\n    stashScanStatus\n    createdAt\n  }\n}\n\nmutation SyncTaskProgressDocument {\n  syncTaskProgress {\n    id\n    status\n    progress\n    qbittorrentState\n    updatedAt\n  }\n}\n\nmutation TriggerStashScansDocument {\n  triggerStashScans {\n    id\n    stashJobId\n    stashScanStatus\n    stashScanError\n    updatedAt\n  }\n}"): (typeof documents)["mutation AddTorrentDocument($input: QBittorrentAddInput!) {\n  addTorrent(input: $input) {\n    id\n    status\n    query\n    torrentName\n    progress\n    stashScanStatus\n    createdAt\n  }\n}\n\nmutation SyncTaskProgressDocument {\n  syncTaskProgress {\n    id\n    status\n    progress\n    qbittorrentState\n    updatedAt\n  }\n}\n\nmutation TriggerStashScansDocument {\n  triggerStashScans {\n    id\n    stashJobId\n    stashScanStatus\n    stashScanError\n    updatedAt\n  }\n}"];
+
+export function graphql(source: string) {
+  return (documents as any)[source] ?? {};
+}
+
+export type DocumentType<TDocumentNode extends DocumentNode<any, any>> = TDocumentNode extends DocumentNode<  infer TType,  any>  ? TType  : never;

@@ -1,0 +1,31 @@
+mutation AddTorrentDocument($input: QBittorrentAddInput!) {
+  addTorrent(input: $input) {
+    id
+    status
+    query
+    torrentName
+    progress
+    stashScanStatus
+    createdAt
+  }
+}
+
+mutation SyncTaskProgressDocument {
+  syncTaskProgress {
+    id
+    status
+    progress
+    qbittorrentState
+    updatedAt
+  }
+}
+
+mutation TriggerStashScansDocument {
+  triggerStashScans {
+    id
+    stashJobId
+    stashScanStatus
+    stashScanError
+    updatedAt
+  }
+}
