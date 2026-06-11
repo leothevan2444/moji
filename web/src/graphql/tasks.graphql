@@ -29,3 +29,13 @@ mutation TriggerStashScansDocument {
     updatedAt
   }
 }
+
+mutation TriggerTaskStashScanDocument($id: ID!) {
+  triggerTaskStashScan(id: $id) {
+    id
+    stashJobId
+    stashScanStatus
+    stashScanError
+    updatedAt
+  }
+}

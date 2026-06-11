@@ -299,6 +299,10 @@ func (f *fakeProgressSyncService) SyncProgress(context.Context) ([]*downloader.T
 	return nil, nil
 }
 
+func (f *fakeProgressSyncService) TriggerTaskStashScan(context.Context, string, downloader.StashScanner) (*downloader.Task, error) {
+	return nil, nil
+}
+
 func (f *fakeProgressSyncService) TriggerStashScans(context.Context, downloader.StashScanner) ([]*downloader.Task, error) {
 	select {
 	case f.stashCalled <- struct{}{}:

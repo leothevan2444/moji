@@ -98,6 +98,22 @@ func (r *mutationResolver) SyncTaskProgress(ctx context.Context) ([]*model.Task,
 	return out, nil
 }
 
+// TriggerTaskStashScan is the resolver for the triggerTaskStashScan field.
+func (r *mutationResolver) TriggerTaskStashScan(ctx context.Context, id string) (*model.Task, error) {
+	if r.Downloader == nil {
+		return nil, errors.New("downloader is not configured")
+	}
+	if r.Stash == nil {
+		return nil, errors.New("stash client is not configured")
+	}
+
+	task, err := r.Downloader.TriggerTaskStashScan(ctx, id, r.Stash)
+	if task != nil {
+		return taskToModel(task), err
+	}
+	return nil, err
+}
+
 // TriggerStashScans is the resolver for the triggerStashScans field.
 func (r *mutationResolver) TriggerStashScans(ctx context.Context) ([]*model.Task, error) {
 	if r.Downloader == nil {

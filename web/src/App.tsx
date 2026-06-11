@@ -7,6 +7,7 @@ import {
   DashboardDocumentDocument,
   SearchDocumentDocument,
   SyncTaskProgressDocumentDocument,
+  TriggerTaskStashScanDocumentDocument,
   TriggerStashScansDocumentDocument,
   UpdateJackettSettingsDocumentDocument,
   UpdateQBittorrentSettingsDocumentDocument,
@@ -20,6 +21,8 @@ import {
   type SearchDocumentQueryVariables,
   type SyncTaskProgressDocumentMutation,
   type SyncTaskProgressDocumentMutationVariables,
+  type TriggerTaskStashScanDocumentMutation,
+  type TriggerTaskStashScanDocumentMutationVariables,
   type TriggerStashScansDocumentMutation,
   type TriggerStashScansDocumentMutationVariables,
   type UpdateJackettSettingsDocumentMutation,
@@ -204,6 +207,10 @@ function taskGroupDescription(group: TaskGroupKey) {
   if (group === "运行中") return "仍在下载、同步或等待外部状态推进。";
   if (group === "待入库") return "下载已完成，但 Stash 扫描尚未收口。";
   return "流程已闭环的任务。";
+}
+
+function canTriggerTaskStashScan(task: DashboardTask) {
+  return task.status.trim().toLowerCase() === "completed" && task.stashScanStatus.trim().toLowerCase() !== "started";
 }
 
 function simplifyMessage(message: string) {
@@ -507,6 +514,10 @@ function App() {
     SyncTaskProgressDocumentMutation,
     SyncTaskProgressDocumentMutationVariables
   >(SyncTaskProgressDocumentDocument);
+  const [{ fetching: triggeringTaskScan }, triggerTaskStashScan] = useMutation<
+    TriggerTaskStashScanDocumentMutation,
+    TriggerTaskStashScanDocumentMutationVariables
+  >(TriggerTaskStashScanDocumentDocument);
   const [, triggerStashScans] = useMutation<
     TriggerStashScansDocumentMutation,
     TriggerStashScansDocumentMutationVariables
@@ -1040,6 +1051,11 @@ function App() {
 
   const runScan = async () => {
     await triggerStashScans({});
+    await refreshDashboard({ requestPolicy: "network-only" });
+  };
+
+  const runTaskScan = async (taskId: string) => {
+    await triggerTaskStashScan({ id: taskId });
     await refreshDashboard({ requestPolicy: "network-only" });
   };
 
@@ -1687,6 +1703,16 @@ function App() {
                         <button type="button" className="ghost-button" onClick={() => void runSync()}>
                           同步进度
                         </button>
+                        {canTriggerTaskStashScan(activeTask) ? (
+                          <button
+                            type="button"
+                            className="ghost-button"
+                            onClick={() => void runTaskScan(activeTask.id)}
+                            disabled={triggeringTaskScan}
+                          >
+                            {triggeringTaskScan ? "触发中" : "扫描当前任务"}
+                          </button>
+                        ) : null}
                         <button type="button" className="ghost-button" onClick={() => void runScan()}>
                           触发扫描
                         </button>

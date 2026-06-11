@@ -240,6 +240,37 @@ func TestTriggerStashScans(t *testing.T) {
 	}
 }
 
+func TestTriggerTaskStashScan(t *testing.T) {
+	dl := &fakeDownloader{
+		triggerTaskScanTask: &downloader.Task{
+			ID:              "task-single",
+			Status:          downloader.TaskStatusCompleted,
+			StashJobID:      "job-single",
+			StashScanStatus: downloader.StashScanStatusStarted,
+			CreatedAt:       time.Unix(100, 0).UTC(),
+			UpdatedAt:       time.Unix(300, 0).UTC(),
+		},
+	}
+	resolver := NewResolver(nil, nil, dl, fakeStashService{}, "test-version")
+
+	resp := executeGraphQL(t, resolver, `mutation {
+		triggerTaskStashScan(id: "task-single") {
+			id
+			stashJobId
+			stashScanStatus
+		}
+	}`)
+	if len(resp.Errors) > 0 {
+		t.Fatalf("expected no errors, got %+v", resp.Errors)
+	}
+	if dl.triggerTaskScanID != "task-single" {
+		t.Fatalf("unexpected trigger task id: %q", dl.triggerTaskScanID)
+	}
+	if resp.Data.TriggerTaskStashScan.ID != "task-single" || resp.Data.TriggerTaskStashScan.StashJobID != "job-single" {
+		t.Fatalf("unexpected single stash scan response: %+v", resp.Data.TriggerTaskStashScan)
+	}
+}
+
 func TestDownloadMediaRequiresDownloader(t *testing.T) {
 	resolver := NewResolver(nil, nil, nil, nil, "test-version")
 
@@ -462,14 +493,16 @@ func TestUpdateQBittorrentSettingsRequiresEditor(t *testing.T) {
 }
 
 type fakeDownloader struct {
-	addRequest      downloader.AddTorrentRequest
-	downloadRequest downloader.DownloadRequest
-	addTask         *downloader.Task
-	downloadTask    *downloader.Task
-	findTask        *downloader.Task
-	listTasks       []*downloader.Task
-	syncTasks       []*downloader.Task
-	stashTasks      []*downloader.Task
+	addRequest          downloader.AddTorrentRequest
+	downloadRequest     downloader.DownloadRequest
+	addTask             *downloader.Task
+	downloadTask        *downloader.Task
+	findTask            *downloader.Task
+	listTasks           []*downloader.Task
+	syncTasks           []*downloader.Task
+	stashTasks          []*downloader.Task
+	triggerTaskScanID   string
+	triggerTaskScanTask *downloader.Task
 }
 
 func (f *fakeDownloader) AddTorrentContext(_ context.Context, req downloader.AddTorrentRequest) (*downloader.Task, error) {
@@ -492,6 +525,11 @@ func (f *fakeDownloader) ListTasks(_ context.Context) ([]*downloader.Task, error
 
 func (f *fakeDownloader) SyncProgress(_ context.Context) ([]*downloader.Task, error) {
 	return f.syncTasks, nil
+}
+
+func (f *fakeDownloader) TriggerTaskStashScan(_ context.Context, id string, _ downloader.StashScanner) (*downloader.Task, error) {
+	f.triggerTaskScanID = id
+	return f.triggerTaskScanTask, nil
 }
 
 func (f *fakeDownloader) TriggerStashScans(_ context.Context, _ downloader.StashScanner) ([]*downloader.Task, error) {
@@ -538,6 +576,11 @@ type graphQLTaskResponse struct {
 			StashScanStatus    string  `json:"stashScanStatus"`
 			StashScanStartedAt *string `json:"stashScanStartedAt"`
 		} `json:"triggerStashScans"`
+		TriggerTaskStashScan struct {
+			ID              string `json:"id"`
+			StashJobID      string `json:"stashJobId"`
+			StashScanStatus string `json:"stashScanStatus"`
+		} `json:"triggerTaskStashScan"`
 		Settings struct {
 			Stash struct {
 				Configured       bool   `json:"configured"`

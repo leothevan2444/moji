@@ -67,6 +67,48 @@ func (s *Service) TriggerStashScans(ctx context.Context, scanner StashScanner) (
 	return updated, firstErr
 }
 
+func (s *Service) TriggerTaskStashScan(ctx context.Context, id string, scanner StashScanner) (*Task, error) {
+	if scanner == nil {
+		return nil, errors.New("downloader: stash scanner is required")
+	}
+
+	task, err := s.store.Find(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+	if task == nil {
+		return nil, fmt.Errorf("downloader: task %q not found", id)
+	}
+	if !shouldAllowManualStashScan(task) {
+		return nil, fmt.Errorf("downloader: task %q is not ready for stash scan", id)
+	}
+
+	next := cloneTask(task)
+	jobID, err := scanner.MetadataScan(ctx, stashsync.ScanRequest{
+		Paths: scanPathsForTask(next),
+	})
+	now := s.now().UTC()
+	next.UpdatedAt = now
+	next.StashScanStartedAt = &now
+	if err != nil {
+		next.StashJobID = ""
+		next.StashScanStatus = StashScanStatusFailed
+		next.StashScanError = err.Error()
+	} else {
+		next.StashJobID = jobID
+		next.StashScanStatus = StashScanStatusStarted
+		next.StashScanError = ""
+	}
+
+	if updateErr := s.store.Update(ctx, next); updateErr != nil {
+		return nil, fmt.Errorf("update task %q: %w", next.ID, updateErr)
+	}
+	if err != nil {
+		return next, fmt.Errorf("trigger stash scan for task %q: %w", next.ID, err)
+	}
+	return next, nil
+}
+
 func shouldTriggerStashScan(task *Task) bool {
 	if task.Status != TaskStatusCompleted {
 		return false
@@ -75,6 +117,16 @@ func shouldTriggerStashScan(task *Task) bool {
 		return false
 	}
 	return task.StashScanStatus == StashScanStatusPending
+}
+
+func shouldAllowManualStashScan(task *Task) bool {
+	if task == nil || task.Status != TaskStatusCompleted {
+		return false
+	}
+	if task.StashScanStatus == StashScanStatusStarted {
+		return false
+	}
+	return task.StashJobID == "" || task.StashScanStatus == StashScanStatusFailed
 }
 
 func scanPathsForTask(task *Task) []string {
