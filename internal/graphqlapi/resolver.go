@@ -32,11 +32,57 @@ type DownloaderService interface {
 	TriggerStashScans(ctx context.Context, scanner downloader.StashScanner) ([]*downloader.Task, error)
 }
 
+type SettingsSnapshot struct {
+	Stash       StashSettingsSnapshot
+	Jackett     JackettSettingsSnapshot
+	QBittorrent QBittorrentSettingsSnapshot
+	Tasks       TaskSettingsSnapshot
+	System      SystemSettingsSnapshot
+}
+
+type StashSettingsSnapshot struct {
+	Configured       bool
+	Enabled          bool
+	GraphQLURL       string
+	APIKeyConfigured bool
+	LibraryPath      string
+}
+
+type JackettSettingsSnapshot struct {
+	Configured       bool
+	Enabled          bool
+	URL              string
+	APIKeyConfigured bool
+}
+
+type QBittorrentSettingsSnapshot struct {
+	Configured        bool
+	Enabled           bool
+	URL               string
+	UsernameConfigured bool
+	PasswordConfigured bool
+	DefaultSavePath   string
+	Category          string
+	Tags              string
+}
+
+type TaskSettingsSnapshot struct {
+	Store                       string
+	JSONPath                    string
+	ProgressSyncIntervalSeconds int
+	ProgressSyncEnabled         bool
+}
+
+type SystemSettingsSnapshot struct {
+	AppVersion string
+}
+
 type Resolver struct {
 	Tracker    tracker.Tracker
 	Torrent    TorrentClient
 	Downloader DownloaderService
 	Stash      StashService
+	RuntimeSettings *SettingsSnapshot
 	AppVersion string
 }
 

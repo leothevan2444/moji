@@ -4,6 +4,40 @@ query DashboardDocument {
     message
   }
   version
+  settings {
+    stash {
+      configured
+      enabled
+      graphqlUrl
+      apiKeyConfigured
+      libraryPath
+    }
+    jackett {
+      configured
+      enabled
+      url
+      apiKeyConfigured
+    }
+    qbittorrent {
+      configured
+      enabled
+      url
+      usernameConfigured
+      passwordConfigured
+      defaultSavePath
+      category
+      tags
+    }
+    tasks {
+      store
+      jsonPath
+      progressSyncIntervalSeconds
+      progressSyncEnabled
+    }
+    system {
+      appVersion
+    }
+  }
   tasks {
     id
     query

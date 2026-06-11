@@ -1,0 +1,49 @@
+extend type Query {
+  "Get runtime capability and configuration state for the Settings surface"
+  settings: Settings!
+}
+
+type Settings {
+  stash: StashSettings!
+  jackett: JackettSettings!
+  qbittorrent: QBittorrentSettings!
+  tasks: TaskSettings!
+  system: SystemSettings!
+}
+
+type StashSettings {
+  configured: Boolean!
+  enabled: Boolean!
+  graphqlUrl: String!
+  apiKeyConfigured: Boolean!
+  libraryPath: String!
+}
+
+type JackettSettings {
+  configured: Boolean!
+  enabled: Boolean!
+  url: String!
+  apiKeyConfigured: Boolean!
+}
+
+type QBittorrentSettings {
+  configured: Boolean!
+  enabled: Boolean!
+  url: String!
+  usernameConfigured: Boolean!
+  passwordConfigured: Boolean!
+  defaultSavePath: String!
+  category: String!
+  tags: String!
+}
+
+type TaskSettings {
+  store: String!
+  jsonPath: String!
+  progressSyncIntervalSeconds: Int!
+  progressSyncEnabled: Boolean!
+}
+
+type SystemSettings {
+  appVersion: String!
+}

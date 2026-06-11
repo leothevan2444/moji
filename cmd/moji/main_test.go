@@ -61,6 +61,32 @@ func TestHTTPHandlerServesGraphQLHealth(t *testing.T) {
 	}
 }
 
+func TestHTTPHandlerServesSettingsSnapshot(t *testing.T) {
+	handler := newHTTPHandler(testConfig(), "test-version")
+
+	resp := postGraphQL(t, handler, `{
+		settings {
+			jackett { configured enabled url apiKeyConfigured }
+			qbittorrent { configured enabled url usernameConfigured passwordConfigured defaultSavePath }
+			stash { configured enabled graphqlUrl apiKeyConfigured libraryPath }
+			tasks { store jsonPath progressSyncIntervalSeconds progressSyncEnabled }
+			system { appVersion }
+		}
+	}`)
+	if len(resp.Errors) > 0 {
+		t.Fatalf("expected no GraphQL errors, got %+v", resp.Errors)
+	}
+	if !resp.Data.Settings.Jackett.Configured || !resp.Data.Settings.Jackett.Enabled {
+		t.Fatalf("expected jackett settings to be enabled, got %+v", resp.Data.Settings.Jackett)
+	}
+	if resp.Data.Settings.Tasks.Store != "json" || resp.Data.Settings.Tasks.ProgressSyncIntervalSeconds != 60 {
+		t.Fatalf("unexpected task settings: %+v", resp.Data.Settings.Tasks)
+	}
+	if resp.Data.Settings.System.AppVersion != "test-version" {
+		t.Fatalf("expected app version %q, got %q", "test-version", resp.Data.Settings.System.AppVersion)
+	}
+}
+
 func TestIncompleteQBittorrentConfigDisablesResolver(t *testing.T) {
 	cfg := testConfig()
 	cfg.QBittorrent.URL = "http://qbittorrent.invalid"
@@ -115,6 +141,21 @@ func TestConfigureProgressSyncInterval(t *testing.T) {
 	}
 }
 
+func TestBuildSettingsSnapshotNormalizesDefaults(t *testing.T) {
+	cfg := testConfig()
+
+	snapshot := buildSettingsSnapshot(cfg, "test-version", false, false, false)
+	if snapshot.Jackett.URL != "http://jackett.invalid" || !snapshot.Jackett.APIKeyConfigured {
+		t.Fatalf("unexpected jackett snapshot: %+v", snapshot.Jackett)
+	}
+	if snapshot.Tasks.Store != "json" || snapshot.Tasks.JSONPath != "moji-tasks.json" {
+		t.Fatalf("unexpected task store snapshot: %+v", snapshot.Tasks)
+	}
+	if snapshot.Tasks.ProgressSyncIntervalSeconds != 60 || snapshot.Tasks.ProgressSyncEnabled {
+		t.Fatalf("unexpected task sync snapshot: %+v", snapshot.Tasks)
+	}
+}
+
 func TestStartProgressSyncWorker(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
@@ -153,6 +194,38 @@ type graphQLResponse struct {
 			Message string `json:"message"`
 		} `json:"health"`
 		Version string `json:"version"`
+		Settings struct {
+			Stash struct {
+				Configured       bool   `json:"configured"`
+				Enabled          bool   `json:"enabled"`
+				GraphqlURL       string `json:"graphqlUrl"`
+				APIKeyConfigured bool   `json:"apiKeyConfigured"`
+				LibraryPath      string `json:"libraryPath"`
+			} `json:"stash"`
+			Jackett struct {
+				Configured       bool   `json:"configured"`
+				Enabled          bool   `json:"enabled"`
+				URL              string `json:"url"`
+				APIKeyConfigured bool   `json:"apiKeyConfigured"`
+			} `json:"jackett"`
+			Qbittorrent struct {
+				Configured         bool   `json:"configured"`
+				Enabled            bool   `json:"enabled"`
+				URL                string `json:"url"`
+				UsernameConfigured bool   `json:"usernameConfigured"`
+				PasswordConfigured bool   `json:"passwordConfigured"`
+				DefaultSavePath    string `json:"defaultSavePath"`
+			} `json:"qbittorrent"`
+			Tasks struct {
+				Store                       string `json:"store"`
+				JSONPath                    string `json:"jsonPath"`
+				ProgressSyncIntervalSeconds int    `json:"progressSyncIntervalSeconds"`
+				ProgressSyncEnabled         bool   `json:"progressSyncEnabled"`
+			} `json:"tasks"`
+			System struct {
+				AppVersion string `json:"appVersion"`
+			} `json:"system"`
+		} `json:"settings"`
 	} `json:"data"`
 	Errors []struct {
 		Message string `json:"message"`

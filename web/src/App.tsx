@@ -25,6 +25,7 @@ import { HELP_TOPICS, type HelpTopicId } from "./help";
 type TabKey = "主页" | "任务" | "following" | "发现";
 type DrawerKey = "stats" | "settings" | "help" | "task" | null;
 type DashboardTask = DashboardDocumentQuery["tasks"][number];
+type RuntimeSettings = NonNullable<DashboardDocumentQuery["settings"]>;
 type SettingsTab =
   | "Stash"
   | "索引器"
@@ -50,6 +51,14 @@ const SETTINGS_TABS: SettingsTab[] = [
   "更新历史",
   "关于"
 ];
+
+const ENABLED_SETTINGS_TABS: ReadonlySet<SettingsTab> = new Set([
+  "Stash",
+  "索引器",
+  "下载器",
+  "任务",
+  "系统"
+]);
 
 const FOLLOWING_PLACEHOLDERS = [
   {
@@ -163,6 +172,20 @@ function describeQueryError(error: unknown) {
   }
 
   return pieces.filter(Boolean).join(" · ") || "unknown error";
+}
+
+function boolState(value: boolean, positive = "已配置", negative = "未配置") {
+  return value ? positive : negative;
+}
+
+function serviceStatus(configured: boolean, enabled: boolean) {
+  if (enabled) return { label: "已启用", tone: "tone-success" };
+  if (configured) return { label: "待启用", tone: "tone-warn" };
+  return { label: "未配置", tone: "tone-neutral" };
+}
+
+function taskSyncStatus(settings: RuntimeSettings["tasks"]) {
+  return settings.progressSyncEnabled ? "已启用" : "未启用";
 }
 
 function MarkdownBlock({ markdown }: { markdown: string }) {
@@ -318,6 +341,7 @@ function App() {
   >(TriggerStashScansDocumentDocument);
 
   const tasks = data?.tasks ?? [];
+  const runtimeSettings = data?.settings ?? null;
   const activeTask = selectedTaskId ? tasks.find((task) => task.id === selectedTaskId) ?? null : null;
 
   const visibleTasks = useMemo(() => {
@@ -366,29 +390,136 @@ function App() {
     versions: data?.version ?? "unknown"
   };
 
-  const dependencyCards = [
-    {
-      name: "Stash",
-      state: tasks.some((task) => task.stashScanStatus) ? "已接入" : "未观测",
-      detail: tasks.some((task) => task.stashScanStatus)
-        ? "扫描链路已经出现在任务数据里"
-        : "等待任务完成后触发扫描"
-    },
-    {
-      name: "Jackett",
-      state: deferredJackettQuery ? "可搜索" : "待输入",
-      detail: deferredJackettQuery
-        ? `最近一次搜索: ${deferredJackettQuery}`
-        : "在任务页输入关键词后可以发现候选"
-    },
-    {
-      name: "qBittorrent",
-      state: tasks.some((task) => task.qbittorrentState) ? "已接入" : "待观测",
-      detail: tasks.some((task) => task.qbittorrentState)
-        ? "任务状态已能同步"
-        : "当前界面没有观察到 qBittorrent 任务数据"
+  const dependencyCards = runtimeSettings
+    ? [
+        {
+          name: "Stash",
+          ...serviceStatus(runtimeSettings.stash.configured, runtimeSettings.stash.enabled),
+          detail: runtimeSettings.stash.enabled
+            ? `媒体库路径: ${runtimeSettings.stash.libraryPath || "未设置"}`
+            : runtimeSettings.stash.configured
+              ? "配置已存在，但运行时尚未启用"
+              : "缺少 GraphQL URL 或库路径"
+        },
+        {
+          name: "Jackett",
+          ...serviceStatus(runtimeSettings.jackett.configured, runtimeSettings.jackett.enabled),
+          detail: runtimeSettings.jackett.enabled
+            ? `索引地址: ${runtimeSettings.jackett.url || "未设置"}`
+            : "缺少 URL 或 API key"
+        },
+        {
+          name: "qBittorrent",
+          ...serviceStatus(runtimeSettings.qbittorrent.configured, runtimeSettings.qbittorrent.enabled),
+          detail: runtimeSettings.qbittorrent.enabled
+            ? `默认保存路径: ${runtimeSettings.qbittorrent.defaultSavePath || "未设置"}`
+            : runtimeSettings.qbittorrent.configured
+              ? "配置完整，但运行时未连接成功"
+              : "缺少 URL、用户名或密码"
+        }
+      ]
+    : [];
+
+  const settingsPanel = (() => {
+    if (!runtimeSettings) {
+      return {
+        status: { label: "载入中", tone: "tone-neutral" },
+        rows: [
+          { label: "当前状态", value: "等待后端返回配置状态" },
+          { label: "敏感值", value: "前端不展示明文" },
+          { label: "说明", value: "设置面板会在 dashboard 查询完成后显示实时状态。" }
+        ]
+      };
     }
-  ];
+
+    if (settingsTab === "Stash") {
+      return {
+        status: serviceStatus(runtimeSettings.stash.configured, runtimeSettings.stash.enabled),
+        rows: [
+          { label: "GraphQL URL", value: runtimeSettings.stash.graphqlUrl || "未配置" },
+          { label: "API key", value: boolState(runtimeSettings.stash.apiKeyConfigured) },
+          { label: "Library path", value: runtimeSettings.stash.libraryPath || "未配置" },
+          { label: "说明", value: "当前只暴露状态与路径，不返回敏感值明文。" }
+        ]
+      };
+    }
+
+    if (settingsTab === "索引器") {
+      return {
+        status: serviceStatus(runtimeSettings.jackett.configured, runtimeSettings.jackett.enabled),
+        rows: [
+          { label: "Jackett URL", value: runtimeSettings.jackett.url || "未配置" },
+          { label: "API key", value: boolState(runtimeSettings.jackett.apiKeyConfigured) },
+          { label: "运行状态", value: runtimeSettings.jackett.enabled ? "请求链路可用" : "配置不完整" },
+          { label: "说明", value: "后续可继续补 tracker 分组与默认搜索策略。" }
+        ]
+      };
+    }
+
+    if (settingsTab === "下载器") {
+      return {
+        status: serviceStatus(runtimeSettings.qbittorrent.configured, runtimeSettings.qbittorrent.enabled),
+        rows: [
+          { label: "qBittorrent URL", value: runtimeSettings.qbittorrent.url || "未配置" },
+          { label: "用户名", value: boolState(runtimeSettings.qbittorrent.usernameConfigured) },
+          { label: "密码", value: boolState(runtimeSettings.qbittorrent.passwordConfigured) },
+          { label: "默认保存路径", value: runtimeSettings.qbittorrent.defaultSavePath || "未配置" },
+          { label: "默认分类", value: runtimeSettings.qbittorrent.category || "未设置" },
+          { label: "默认标签", value: runtimeSettings.qbittorrent.tags || "未设置" }
+        ]
+      };
+    }
+
+    if (settingsTab === "任务") {
+      return {
+        status: {
+          label: taskSyncStatus(runtimeSettings.tasks),
+          tone: runtimeSettings.tasks.progressSyncEnabled ? "tone-success" : "tone-neutral"
+        },
+        rows: [
+          { label: "存储类型", value: runtimeSettings.tasks.store || "json" },
+          { label: "JSON 路径", value: runtimeSettings.tasks.jsonPath || "moji-tasks.json" },
+          { label: "同步间隔", value: `${runtimeSettings.tasks.progressSyncIntervalSeconds} 秒` },
+          { label: "进度同步", value: taskSyncStatus(runtimeSettings.tasks) },
+          { label: "说明", value: "当前同步开关由任务配置和下载链路是否启用共同决定。" }
+        ]
+      };
+    }
+
+    if (settingsTab === "系统") {
+      return {
+        status: { label: "已接线", tone: "tone-info" },
+        rows: [
+          { label: "版本", value: runtimeSettings.system.appVersion || "dev" },
+          { label: "GraphQL schema", value: "已按业务域拆分" },
+          { label: "设置数据", value: "由后端 runtime snapshot 提供" },
+          { label: "说明", value: "后续可继续补充构建信息和运行环境字段。" }
+        ]
+      };
+    }
+
+    return {
+      status: { label: "规划中", tone: "tone-neutral" },
+      rows: [
+        { label: "当前状态", value: "该分区尚未接入后端契约" },
+        { label: "敏感值", value: "前端不展示明文" },
+        { label: "接入方式", value: "后续会扩展为真实查询或操作面板" },
+        {
+          label: "说明",
+          value:
+            settingsTab === "安全性"
+              ? "这里会放访问控制、CORS 和未来登录策略。"
+              : settingsTab === "日志"
+                ? "这里会放最近日志和错误过滤器。"
+                : settingsTab === "工具"
+                  ? "这里会放重新同步、重新探测和修复动作。"
+                  : settingsTab === "更新历史"
+                    ? "这里会放版本记录和升级提示。"
+                    : "这里会放项目定位、许可证和作者信息。"
+        }
+      ]
+    };
+  })();
 
   const selectedHelpTopic =
     HELP_TOPICS.find((topic) => topic.id === helpTopicId) ?? HELP_TOPICS[0];
@@ -546,8 +677,8 @@ function App() {
                       <div>
                         <h3>{card.name}</h3>
                       </div>
-                      <span className={`status-chip ${card.state === "正常" || card.state === "已接入" ? "tone-success" : card.state === "异常" ? "tone-danger" : "tone-neutral"}`}>
-                        {card.state}
+                      <span className={`status-chip ${card.tone}`}>
+                        {card.label}
                       </span>
                     </div>
                     <p className="service-card__detail">{card.detail}</p>
@@ -943,8 +1074,9 @@ function App() {
                       <button
                         key={item}
                         type="button"
-                        className={`chip ${settingsTab === item ? "is-active" : ""}`}
+                        className={`chip ${settingsTab === item ? "is-active" : ""} ${!ENABLED_SETTINGS_TABS.has(item) ? "is-disabled" : ""}`}
                         onClick={() => setSettingsTab(item)}
+                        disabled={!ENABLED_SETTINGS_TABS.has(item)}
                       >
                         {item}
                       </button>
@@ -954,45 +1086,15 @@ function App() {
                   <article className="drawer-card">
                     <div className="drawer-card__head">
                       <h3>{settingsTab}</h3>
-                      <span className="status-chip tone-neutral">规划中</span>
+                      <span className={`status-chip ${settingsPanel.status.tone}`}>{settingsPanel.status.label}</span>
                     </div>
                     <dl className="settings-grid">
-                      <div>
-                        <dt>当前状态</dt>
-                        <dd>由后端配置驱动</dd>
-                      </div>
-                      <div>
-                        <dt>敏感值</dt>
-                        <dd>前端不展示明文</dd>
-                      </div>
-                      <div>
-                        <dt>接入方式</dt>
-                        <dd>后续可扩展可编辑表单</dd>
-                      </div>
-                      <div>
-                        <dt>说明</dt>
-                        <dd>
-                          {settingsTab === "Stash"
-                            ? "这里会放 GraphQL URL、API key、library path 和扫描策略。"
-                            : settingsTab === "索引器"
-                              ? "这里会放 Jackett URL、API key 和 tracker 分组。"
-                              : settingsTab === "下载器"
-                                ? "这里会放 qBittorrent URL、认证和默认保存路径。"
-                                : settingsTab === "任务"
-                                  ? "这里会放任务存储、同步间隔和扫描策略。"
-                                  : settingsTab === "安全性"
-                                    ? "这里会放访问控制、CORS 和未来登录策略。"
-                                    : settingsTab === "系统"
-                                      ? "这里会放版本、构建信息和运行环境。"
-                                      : settingsTab === "日志"
-                                        ? "这里会放最近日志和错误过滤器。"
-                                        : settingsTab === "工具"
-                                          ? "这里会放重新同步、重新探测和修复动作。"
-                                          : settingsTab === "更新历史"
-                                            ? "这里会放版本记录和升级提示。"
-                                            : "这里会放项目定位、许可证和作者信息。"}
-                        </dd>
-                      </div>
+                      {settingsPanel.rows.map((row) => (
+                        <div key={`${settingsTab}-${row.label}`}>
+                          <dt>{row.label}</dt>
+                          <dd>{row.value}</dd>
+                        </div>
+                      ))}
                     </dl>
                   </article>
                 </div>

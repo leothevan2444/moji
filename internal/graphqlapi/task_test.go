@@ -294,6 +294,81 @@ func TestStashJobRequiresStash(t *testing.T) {
 	}
 }
 
+func TestSettingsQueryReturnsRuntimeSnapshot(t *testing.T) {
+	resolver := NewResolver(nil, nil, nil, nil, "test-version")
+	resolver.RuntimeSettings = &SettingsSnapshot{
+		Stash: StashSettingsSnapshot{
+			Configured:       true,
+			Enabled:          true,
+			GraphQLURL:       "http://stash.invalid/graphql",
+			APIKeyConfigured: true,
+			LibraryPath:      "/data/library",
+		},
+		Jackett: JackettSettingsSnapshot{
+			Configured:       true,
+			Enabled:          true,
+			URL:              "http://jackett.invalid",
+			APIKeyConfigured: true,
+		},
+		QBittorrent: QBittorrentSettingsSnapshot{
+			Configured:         false,
+			Enabled:            false,
+			URL:                "http://qbittorrent.invalid",
+			UsernameConfigured: true,
+			PasswordConfigured: false,
+			DefaultSavePath:    "/downloads",
+			Category:           "moji",
+			Tags:               "auto",
+		},
+		Tasks: TaskSettingsSnapshot{
+			Store:                       "json",
+			JSONPath:                    "moji-tasks.json",
+			ProgressSyncIntervalSeconds: 60,
+			ProgressSyncEnabled:         true,
+		},
+		System: SystemSettingsSnapshot{
+			AppVersion: "test-version",
+		},
+	}
+
+	resp := executeGraphQL(t, resolver, `{
+		settings {
+			stash { configured enabled graphqlUrl apiKeyConfigured libraryPath }
+			jackett { configured enabled url apiKeyConfigured }
+			qbittorrent { configured enabled url usernameConfigured passwordConfigured defaultSavePath category tags }
+			tasks { store jsonPath progressSyncIntervalSeconds progressSyncEnabled }
+			system { appVersion }
+		}
+	}`)
+	if len(resp.Errors) > 0 {
+		t.Fatalf("expected no errors, got %+v", resp.Errors)
+	}
+	if !resp.Data.Settings.Stash.Configured || resp.Data.Settings.Stash.GraphqlURL != "http://stash.invalid/graphql" {
+		t.Fatalf("unexpected stash settings: %+v", resp.Data.Settings.Stash)
+	}
+	if resp.Data.Settings.Qbittorrent.PasswordConfigured {
+		t.Fatalf("expected passwordConfigured false, got %+v", resp.Data.Settings.Qbittorrent)
+	}
+	if resp.Data.Settings.Tasks.ProgressSyncIntervalSeconds != 60 || !resp.Data.Settings.Tasks.ProgressSyncEnabled {
+		t.Fatalf("unexpected task settings: %+v", resp.Data.Settings.Tasks)
+	}
+	if resp.Data.Settings.System.AppVersion != "test-version" {
+		t.Fatalf("unexpected system settings: %+v", resp.Data.Settings.System)
+	}
+}
+
+func TestSettingsQueryFallsBackToAppVersion(t *testing.T) {
+	resolver := NewResolver(nil, nil, nil, nil, "fallback-version")
+
+	resp := executeGraphQL(t, resolver, `{ settings { system { appVersion } } }`)
+	if len(resp.Errors) > 0 {
+		t.Fatalf("expected no errors, got %+v", resp.Errors)
+	}
+	if resp.Data.Settings.System.AppVersion != "fallback-version" {
+		t.Fatalf("unexpected app version: %+v", resp.Data.Settings.System)
+	}
+}
+
 type fakeDownloader struct {
 	addRequest      downloader.AddTorrentRequest
 	downloadRequest downloader.DownloadRequest
@@ -371,6 +446,40 @@ type graphQLTaskResponse struct {
 			StashScanStatus    string  `json:"stashScanStatus"`
 			StashScanStartedAt *string `json:"stashScanStartedAt"`
 		} `json:"triggerStashScans"`
+		Settings struct {
+			Stash struct {
+				Configured       bool   `json:"configured"`
+				Enabled          bool   `json:"enabled"`
+				GraphqlURL       string `json:"graphqlUrl"`
+				APIKeyConfigured bool   `json:"apiKeyConfigured"`
+				LibraryPath      string `json:"libraryPath"`
+			} `json:"stash"`
+			Jackett struct {
+				Configured       bool   `json:"configured"`
+				Enabled          bool   `json:"enabled"`
+				URL              string `json:"url"`
+				APIKeyConfigured bool   `json:"apiKeyConfigured"`
+			} `json:"jackett"`
+			Qbittorrent struct {
+				Configured         bool   `json:"configured"`
+				Enabled            bool   `json:"enabled"`
+				URL                string `json:"url"`
+				UsernameConfigured bool   `json:"usernameConfigured"`
+				PasswordConfigured bool   `json:"passwordConfigured"`
+				DefaultSavePath    string `json:"defaultSavePath"`
+				Category           string `json:"category"`
+				Tags               string `json:"tags"`
+			} `json:"qbittorrent"`
+			Tasks struct {
+				Store                       string `json:"store"`
+				JSONPath                    string `json:"jsonPath"`
+				ProgressSyncIntervalSeconds int    `json:"progressSyncIntervalSeconds"`
+				ProgressSyncEnabled         bool   `json:"progressSyncEnabled"`
+			} `json:"tasks"`
+			System struct {
+				AppVersion string `json:"appVersion"`
+			} `json:"system"`
+		} `json:"settings"`
 		QbittorrentAdd bool `json:"qbittorrentAdd"`
 	} `json:"data"`
 	Errors []struct {

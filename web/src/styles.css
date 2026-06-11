@@ -256,6 +256,17 @@ input::placeholder {
   color: var(--accent);
 }
 
+.chip.is-disabled {
+  border-color: rgba(15, 23, 42, 0.08);
+  background: rgba(226, 232, 240, 0.48);
+  color: var(--muted-2);
+  box-shadow: none;
+}
+
+.chip.is-disabled:hover {
+  transform: none;
+}
+
 .utility-button {
   display: inline-flex;
   align-items: center;

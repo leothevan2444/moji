@@ -105,6 +105,7 @@ func newHTTPRuntime(cfg *config.Config, version string) (http.Handler, graphqlap
 	downloaderService := configureDownloader(cfg, jackettTracker, torrentClient)
 	stashService := configureStash(cfg)
 	resolver := graphqlapi.NewResolver(jackettTracker, torrentClient, downloaderService, stashService, version)
+	resolver.RuntimeSettings = buildSettingsSnapshot(cfg, version, torrentClient != nil, downloaderService != nil, stashService != nil)
 	graphqlHandler := handler.NewDefaultServer(generated.NewExecutableSchema(generated.Config{Resolvers: resolver}))
 
 	apiMux := http.NewServeMux()
@@ -196,6 +197,66 @@ func configureProgressSyncInterval(cfg *config.Config) time.Duration {
 		seconds = 60
 	}
 	return time.Duration(seconds) * time.Second
+}
+
+func buildSettingsSnapshot(cfg *config.Config, version string, qbittorrentEnabled bool, downloaderEnabled bool, stashEnabled bool) *graphqlapi.SettingsSnapshot {
+	tasksStore := cfg.Tasks.Store
+	if tasksStore == "" {
+		tasksStore = "json"
+	}
+
+	jsonPath := cfg.Tasks.JSONPath
+	if jsonPath == "" {
+		jsonPath = "moji-tasks.json"
+	}
+
+	progressSyncSeconds := cfg.Tasks.ProgressSyncIntervalSeconds
+	progressSyncEnabled := progressSyncSeconds >= 0
+	if progressSyncSeconds == 0 {
+		progressSyncSeconds = 60
+	}
+	if progressSyncSeconds < 0 {
+		progressSyncSeconds = 0
+	}
+
+	jackettConfigured := cfg.Jackett.URL != "" && cfg.Jackett.APIKey != ""
+	stashConfigured := cfg.Stash.GraphQLURL != "" && cfg.Stash.LibraryPath != ""
+	qbittorrentConfigured := cfg.QBittorrent.URL != "" && cfg.QBittorrent.Username != "" && cfg.QBittorrent.Password != ""
+
+	return &graphqlapi.SettingsSnapshot{
+		Stash: graphqlapi.StashSettingsSnapshot{
+			Configured:       stashConfigured,
+			Enabled:          stashEnabled,
+			GraphQLURL:       cfg.Stash.GraphQLURL,
+			APIKeyConfigured: cfg.Stash.APIKey != "",
+			LibraryPath:      cfg.Stash.LibraryPath,
+		},
+		Jackett: graphqlapi.JackettSettingsSnapshot{
+			Configured:       jackettConfigured,
+			Enabled:          jackettConfigured,
+			URL:              cfg.Jackett.URL,
+			APIKeyConfigured: cfg.Jackett.APIKey != "",
+		},
+		QBittorrent: graphqlapi.QBittorrentSettingsSnapshot{
+			Configured:         qbittorrentConfigured,
+			Enabled:            qbittorrentEnabled,
+			URL:                cfg.QBittorrent.URL,
+			UsernameConfigured: cfg.QBittorrent.Username != "",
+			PasswordConfigured: cfg.QBittorrent.Password != "",
+			DefaultSavePath:    cfg.QBittorrent.DefaultSavePath,
+			Category:           cfg.QBittorrent.Category,
+			Tags:               cfg.QBittorrent.Tags,
+		},
+		Tasks: graphqlapi.TaskSettingsSnapshot{
+			Store:                       tasksStore,
+			JSONPath:                    jsonPath,
+			ProgressSyncIntervalSeconds: progressSyncSeconds,
+			ProgressSyncEnabled:         progressSyncEnabled && downloaderEnabled,
+		},
+		System: graphqlapi.SystemSettingsSnapshot{
+			AppVersion: version,
+		},
+	}
 }
 
 func startTaskSyncWorker(ctx context.Context, service graphqlapi.DownloaderService, stash graphqlapi.StashService, interval time.Duration) {

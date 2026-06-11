@@ -51,6 +51,13 @@ type JackettSearchResult struct {
 	MagnetURI    string `json:"magnetUri"`
 }
 
+type JackettSettings struct {
+	Configured       bool   `json:"configured"`
+	Enabled          bool   `json:"enabled"`
+	URL              string `json:"url"`
+	APIKeyConfigured bool   `json:"apiKeyConfigured"`
+}
+
 type Mutation struct {
 }
 
@@ -76,7 +83,26 @@ type QBittorrentAddInput struct {
 	Paused   *bool   `json:"paused,omitempty"`
 }
 
+type QBittorrentSettings struct {
+	Configured         bool   `json:"configured"`
+	Enabled            bool   `json:"enabled"`
+	URL                string `json:"url"`
+	UsernameConfigured bool   `json:"usernameConfigured"`
+	PasswordConfigured bool   `json:"passwordConfigured"`
+	DefaultSavePath    string `json:"defaultSavePath"`
+	Category           string `json:"category"`
+	Tags               string `json:"tags"`
+}
+
 type Query struct {
+}
+
+type Settings struct {
+	Stash       *StashSettings       `json:"stash"`
+	Jackett     *JackettSettings     `json:"jackett"`
+	Qbittorrent *QBittorrentSettings `json:"qbittorrent"`
+	Tasks       *TaskSettings        `json:"tasks"`
+	System      *SystemSettings      `json:"system"`
 }
 
 type StashJob struct {
@@ -103,6 +129,18 @@ type StashMetadataScanInput struct {
 	ScanGenerateClipPreviews  *bool    `json:"scanGenerateClipPreviews,omitempty"`
 }
 
+type StashSettings struct {
+	Configured       bool   `json:"configured"`
+	Enabled          bool   `json:"enabled"`
+	GraphqlURL       string `json:"graphqlUrl"`
+	APIKeyConfigured bool   `json:"apiKeyConfigured"`
+	LibraryPath      string `json:"libraryPath"`
+}
+
+type SystemSettings struct {
+	AppVersion string `json:"appVersion"`
+}
+
 type Task struct {
 	ID                 string             `json:"id"`
 	Query              string             `json:"query"`
@@ -125,4 +163,11 @@ type Task struct {
 	Error              string             `json:"error"`
 	CreatedAt          string             `json:"createdAt"`
 	UpdatedAt          string             `json:"updatedAt"`
+}
+
+type TaskSettings struct {
+	Store                       string `json:"store"`
+	JSONPath                    string `json:"jsonPath"`
+	ProgressSyncIntervalSeconds int    `json:"progressSyncIntervalSeconds"`
+	ProgressSyncEnabled         bool   `json:"progressSyncEnabled"`
 }
