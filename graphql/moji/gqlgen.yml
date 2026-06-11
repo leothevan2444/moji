@@ -1,5 +1,6 @@
 schema:
 - graphql/moji/schema.graphql
+- graphql/moji/types/*.graphql
 
 exec:
   filename: internal/graphqlapi/generated/generated.go

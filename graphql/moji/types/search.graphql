@@ -1,0 +1,25 @@
+extend type Query {
+  "Search torrents via Jackett"
+  jackettSearch(input: JackettSearchInput!): [JackettSearchResult!]!
+}
+
+input JackettSearchInput {
+  query: String!
+  trackers: [String!]
+  categories: [Int!]
+  limit: Int
+}
+
+type JackettSearchResult {
+  title: String!
+  size: Long!
+  seeders: Int!
+  peers: Int!
+  tracker: String!
+  trackerId: String!
+  categoryDesc: String!
+  publishDate: String!
+  details: String!
+  link: String!
+  magnetUri: String!
+}

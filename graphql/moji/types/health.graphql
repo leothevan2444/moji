@@ -1,0 +1,10 @@
+"Basic service health"
+type Health {
+  ok: Boolean!
+  message: String!
+}
+
+type Query {
+  health: Health!
+  version: String!
+}

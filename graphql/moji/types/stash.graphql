@@ -1,0 +1,33 @@
+extend type Query {
+  "Get a Stash background job by id"
+  stashJob(id: ID!): StashJob
+}
+
+extend type Mutation {
+  "Start a Stash metadata scan"
+  stashMetadataScan(input: StashMetadataScanInput!): ID!
+}
+
+input StashMetadataScanInput {
+  paths: [String!]
+  rescan: Boolean
+  scanGenerateCovers: Boolean
+  scanGeneratePreviews: Boolean
+  scanGenerateImagePreviews: Boolean
+  scanGenerateSprites: Boolean
+  scanGeneratePhashes: Boolean
+  scanGenerateThumbnails: Boolean
+  scanGenerateClipPreviews: Boolean
+}
+
+type StashJob {
+  id: ID!
+  status: String!
+  description: String!
+  progress: Float
+  startTime: String
+  endTime: String
+  addTime: String!
+  error: String
+  subTasks: [String!]
+}

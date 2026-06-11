@@ -7,13 +7,10 @@ package graphqlapi
 import (
 	"context"
 	"errors"
-	"strings"
 
 	"github.com/leothevan2444/moji/internal/downloader"
 	"github.com/leothevan2444/moji/internal/graphqlapi/generated"
 	"github.com/leothevan2444/moji/internal/graphqlapi/model"
-	"github.com/leothevan2444/moji/internal/stashsync"
-	"github.com/leothevan2444/moji/internal/tracker"
 	"github.com/leothevan2444/moji/pkg/qbittorrent"
 )
 
@@ -121,72 +118,6 @@ func (r *mutationResolver) TriggerStashScans(ctx context.Context) ([]*model.Task
 	return out, nil
 }
 
-// StashMetadataScan is the resolver for the stashMetadataScan field.
-func (r *mutationResolver) StashMetadataScan(ctx context.Context, input model.StashMetadataScanInput) (string, error) {
-	if r.Stash == nil {
-		return "", errors.New("stash client is not configured")
-	}
-
-	return r.Stash.MetadataScan(ctx, stashsync.ScanRequest{
-		Paths:                     input.Paths,
-		Rescan:                    input.Rescan,
-		ScanGenerateCovers:        input.ScanGenerateCovers,
-		ScanGeneratePreviews:      input.ScanGeneratePreviews,
-		ScanGenerateImagePreviews: input.ScanGenerateImagePreviews,
-		ScanGenerateSprites:       input.ScanGenerateSprites,
-		ScanGeneratePhashes:       input.ScanGeneratePhashes,
-		ScanGenerateThumbnails:    input.ScanGenerateThumbnails,
-		ScanGenerateClipPreviews:  input.ScanGenerateClipPreviews,
-	})
-}
-
-// Health is the resolver for the health field.
-func (r *queryResolver) Health(ctx context.Context) (*model.Health, error) {
-	return &model.Health{
-		Ok:      true,
-		Message: "ok",
-	}, nil
-}
-
-// Version is the resolver for the version field.
-func (r *queryResolver) Version(ctx context.Context) (string, error) {
-	if r.AppVersion != "" {
-		return r.AppVersion, nil
-	}
-	return "dev", nil
-}
-
-// JackettSearch is the resolver for the jackettSearch field.
-func (r *queryResolver) JackettSearch(ctx context.Context, input model.JackettSearchInput) ([]*model.JackettSearchResult, error) {
-	if r.Tracker == nil {
-		return nil, errors.New("tracker is not configured")
-	}
-
-	query := strings.TrimSpace(input.Query)
-	if query == "" {
-		return nil, errors.New("query is required")
-	}
-
-	options := []tracker.SearchOption{
-		tracker.WithTrackers(input.Trackers),
-		tracker.WithCategories(input.Categories),
-	}
-	if input.Limit != nil {
-		options = append(options, tracker.WithLimit(*input.Limit))
-	}
-
-	results, err := r.Tracker.Search(query, options...)
-	if err != nil {
-		return nil, err
-	}
-
-	out := make([]*model.JackettSearchResult, 0, len(results))
-	for _, result := range results {
-		out = append(out, jackettSearchResultToModel(result))
-	}
-	return out, nil
-}
-
 // QbittorrentTorrents is the resolver for the qbittorrentTorrents field.
 func (r *queryResolver) QbittorrentTorrents(ctx context.Context, limit *int) ([]*model.QBTorrent, error) {
 	if r.Torrent == nil {
@@ -240,25 +171,7 @@ func (r *queryResolver) Tasks(ctx context.Context) ([]*model.Task, error) {
 	return out, nil
 }
 
-// StashJob is the resolver for the stashJob field.
-func (r *queryResolver) StashJob(ctx context.Context, id string) (*model.StashJob, error) {
-	if r.Stash == nil {
-		return nil, errors.New("stash client is not configured")
-	}
-
-	job, err := r.Stash.FindJob(ctx, id)
-	if err != nil {
-		return nil, err
-	}
-
-	return stashJobToModel(job), nil
-}
-
 // Mutation returns generated.MutationResolver implementation.
 func (r *Resolver) Mutation() generated.MutationResolver { return &mutationResolver{r} }
 
-// Query returns generated.QueryResolver implementation.
-func (r *Resolver) Query() generated.QueryResolver { return &queryResolver{r} }
-
 type mutationResolver struct{ *Resolver }
-type queryResolver struct{ *Resolver }
