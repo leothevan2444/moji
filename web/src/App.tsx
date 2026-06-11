@@ -36,6 +36,7 @@ type DrawerKey = "stats" | "settings" | "help" | "task" | null;
 type DashboardTask = DashboardDocumentQuery["tasks"][number];
 type RuntimeSettings = NonNullable<DashboardDocumentQuery["settings"]>;
 type SettingsFeedback = { tone: "tone-success" | "tone-danger" | "tone-info"; message: string } | null;
+type TaskGroupKey = "需处理" | "运行中" | "待入库" | "已完成";
 type SettingsTab =
   | "Stash"
   | "索引器"
@@ -177,6 +178,36 @@ function statusTone(status: string) {
   if (normalized.includes("download") || normalized.includes("sync")) return "tone-info";
   if (normalized.includes("pending") || normalized.includes("wait")) return "tone-warn";
   return "tone-neutral";
+}
+
+function taskGroup(task: DashboardTask): TaskGroupKey {
+  if (isStatus(task, "failed") || task.stashScanError) return "需处理";
+  if (isTaskActive(task)) return "运行中";
+  if (isScanPending(task)) return "待入库";
+  return "已完成";
+}
+
+function taskGroupTone(group: TaskGroupKey) {
+  if (group === "需处理") return "tone-danger";
+  if (group === "运行中") return "tone-info";
+  if (group === "待入库") return "tone-warn";
+  return "tone-success";
+}
+
+function taskGroupDescription(group: TaskGroupKey) {
+  if (group === "需处理") return "失败、扫描报错或需要人工回看的任务。";
+  if (group === "运行中") return "仍在下载、同步或等待外部状态推进。";
+  if (group === "待入库") return "下载已完成，但 Stash 扫描尚未收口。";
+  return "流程已闭环的任务。";
+}
+
+function taskIssue(task: DashboardTask) {
+  if (task.stashScanError) return `Stash: ${task.stashScanError}`;
+  if (task.error) return `任务: ${task.error}`;
+  if (isStatus(task, "failed")) return `状态: ${task.status}`;
+  if (isScanPending(task)) return `扫描: ${task.stashScanStatus || "待开始"}`;
+  if (task.qbittorrentState) return `下载: ${task.qbittorrentState}`;
+  return "状态正常";
 }
 
 function describeQueryError(error: unknown) {
@@ -462,6 +493,16 @@ function App() {
     versions: data?.version ?? "unknown"
   };
 
+  const taskGroups = useMemo(() => {
+    const order: TaskGroupKey[] = ["需处理", "运行中", "待入库", "已完成"];
+    return order.map((group) => ({
+      group,
+      tone: taskGroupTone(group),
+      description: taskGroupDescription(group),
+      tasks: visibleTasks.filter((task) => taskGroup(task) === group)
+    }));
+  }, [visibleTasks]);
+
   const dependencyCards = runtimeSettings
     ? [
         {
@@ -471,7 +512,7 @@ function App() {
             ? `媒体库路径: ${runtimeSettings.stash.libraryPath || "未设置"}`
             : runtimeSettings.stash.configured
               ? "配置已存在，但运行时尚未启用"
-              : "缺少 GraphQL URL 或库路径"
+              : "缺少 Stash URL 或库路径"
         },
         {
           name: "Jackett",
@@ -1145,69 +1186,71 @@ function App() {
                 </button>
               </div>
 
-              <div className="chip-row">
-                {["全部", "运行中", "完成", "失败", "待扫描"].map((value) => (
-                  <button
-                    key={value}
-                    type="button"
-                    className={`chip ${taskStatus === value ? "is-active" : ""}`}
-                    onClick={() => setTaskStatus(value as typeof taskStatus)}
-                  >
-                    {value}
-                  </button>
-                ))}
-              </div>
-
-              <div className="task-grid">
-                {visibleTasks.map((task) => (
-                  <article
-                    key={task.id}
-                    className={`task-card ${statusTone(task.status)}`}
-                    onClick={() => {
-                      setSelectedTaskId(task.id);
-                      setDrawer("task");
-                    }}
-                    role="button"
-                    tabIndex={0}
-                  >
-                    <div className="task-card__head">
-                      <div>
-                        <h3>{taskSummary(task)}</h3>
-                        <p>{task.query || "无查询文本"}</p>
-                      </div>
-                      <span className={`status-chip ${statusTone(task.status)}`}>{task.status}</span>
-                    </div>
-                    <div className="progress-shell">
-                      <div className="progress-fill" style={{ width: `${Math.round(task.progress * 100)}%` }} />
-                    </div>
-                    <dl className="task-meta">
-                      <div>
-                        <dt>qBittorrent</dt>
-                        <dd>{task.qbittorrentState || "待同步"}</dd>
-                      </div>
-                      <div>
-                        <dt>Stash</dt>
-                        <dd>{task.stashScanStatus || "未开始"}</dd>
-                      </div>
-                      <div>
-                        <dt>更新时间</dt>
-                        <dd>{formatDateTime(task.updatedAt)}</dd>
-                      </div>
-                      <div>
-                        <dt>完成时间</dt>
-                        <dd>{formatDateTime(task.completedAt)}</dd>
-                      </div>
-                    </dl>
-                    {task.stashScanError ? <p className="task-error">{task.stashScanError}</p> : null}
-                  </article>
-                ))}
-                {!visibleTasks.length ? (
+              {!visibleTasks.length ? (
+                <div className="task-grid">
                   <article className="empty-card empty-card--wide">
                     <h3>没有匹配的任务</h3>
                     <p>换个过滤条件，或者先去发现区创建任务。</p>
                   </article>
-                ) : null}
-              </div>
+                </div>
+              ) : null}
+
+              {taskGroups.filter((item) => item.tasks.length > 0).map((item) => (
+                <section key={item.group} className="task-group-section">
+                  <div className="task-group-section__head">
+                    <div>
+                      <h3>{item.group}</h3>
+                      <p>{item.description}</p>
+                    </div>
+                    <span className={`status-chip ${item.tone}`}>{item.tasks.length} 项</span>
+                  </div>
+
+                  <div className="task-grid">
+                    {item.tasks.map((task) => (
+                      <article
+                        key={task.id}
+                        className={`task-card ${statusTone(task.status)}`}
+                        onClick={() => {
+                          setSelectedTaskId(task.id);
+                          setDrawer("task");
+                        }}
+                        role="button"
+                        tabIndex={0}
+                      >
+                        <div className="task-card__head">
+                          <div>
+                            <h3>{taskSummary(task)}</h3>
+                            <p>{task.query || "无查询文本"}</p>
+                          </div>
+                          <span className={`status-chip ${statusTone(task.status)}`}>{task.status}</span>
+                        </div>
+                        <div className="progress-shell">
+                          <div className="progress-fill" style={{ width: `${Math.round(task.progress * 100)}%` }} />
+                        </div>
+                        <dl className="task-meta">
+                          <div>
+                            <dt>qBittorrent</dt>
+                            <dd>{task.qbittorrentState || "待同步"}</dd>
+                          </div>
+                          <div>
+                            <dt>Stash</dt>
+                            <dd>{task.stashScanStatus || "未开始"}</dd>
+                          </div>
+                          <div>
+                            <dt>更新时间</dt>
+                            <dd>{formatDateTime(task.updatedAt)}</dd>
+                          </div>
+                          <div>
+                            <dt>完成时间</dt>
+                            <dd>{formatDateTime(task.completedAt)}</dd>
+                          </div>
+                        </dl>
+                        <p className={`task-issue ${item.tone}`}>{taskIssue(task)}</p>
+                      </article>
+                    ))}
+                  </div>
+                </section>
+              ))}
             </section>
           </>
         ) : null}
