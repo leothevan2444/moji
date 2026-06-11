@@ -574,6 +574,15 @@ input::placeholder {
   line-height: 1.5;
 }
 
+.task-issue strong,
+.task-issue span {
+  display: block;
+}
+
+.task-issue strong {
+  margin-bottom: 4px;
+}
+
 .progress-shell {
   height: 8px;
   margin-top: 14px;

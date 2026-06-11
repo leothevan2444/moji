@@ -37,6 +37,11 @@ type DashboardTask = DashboardDocumentQuery["tasks"][number];
 type RuntimeSettings = NonNullable<DashboardDocumentQuery["settings"]>;
 type SettingsFeedback = { tone: "tone-success" | "tone-danger" | "tone-info"; message: string } | null;
 type TaskGroupKey = "需处理" | "运行中" | "待入库" | "已完成";
+type TaskFailureSummary = {
+  title: string;
+  detail: string;
+  tone: "tone-danger" | "tone-warn" | "tone-info" | "tone-neutral";
+};
 type SettingsTab =
   | "Stash"
   | "索引器"
@@ -201,13 +206,111 @@ function taskGroupDescription(group: TaskGroupKey) {
   return "流程已闭环的任务。";
 }
 
-function taskIssue(task: DashboardTask) {
-  if (task.stashScanError) return `Stash: ${task.stashScanError}`;
-  if (task.error) return `任务: ${task.error}`;
-  if (isStatus(task, "failed")) return `状态: ${task.status}`;
-  if (isScanPending(task)) return `扫描: ${task.stashScanStatus || "待开始"}`;
-  if (task.qbittorrentState) return `下载: ${task.qbittorrentState}`;
-  return "状态正常";
+function simplifyMessage(message: string) {
+  return message.replace(/^downloader:\s*/i, "").replace(/^stashsync:\s*/i, "").trim();
+}
+
+function taskFailureSummary(task: DashboardTask): TaskFailureSummary {
+  const stashError = simplifyMessage(task.stashScanError || "");
+  const taskError = simplifyMessage(task.error || "");
+  const status = normalizeStatus(task.status);
+  const scanStatus = normalizeStatus(task.stashScanStatus || "");
+  const qbtState = normalizeStatus(task.qbittorrentState || "");
+
+  if (stashError) {
+    if (stashError.includes("at least one scan path is required")) {
+      return {
+        title: "缺少扫描路径",
+        detail: "任务没有可用于 Stash 扫描的内容路径或保存路径。",
+        tone: "tone-danger"
+      };
+    }
+    if (stashError.includes("not configured")) {
+      return {
+        title: "Stash 未配置",
+        detail: "当前任务需要触发 Stash 扫描，但后端未启用对应连接。",
+        tone: "tone-danger"
+      };
+    }
+    return {
+      title: "Stash 扫描失败",
+      detail: stashError,
+      tone: "tone-danger"
+    };
+  }
+
+  if (taskError) {
+    if (taskError.includes("no downloadable torrent candidate found")) {
+      return {
+        title: "没有可下载候选",
+        detail: "搜索返回了结果，但没有可直接提交的 magnet 或种子链接。",
+        tone: "tone-warn"
+      };
+    }
+    if (taskError.includes("tracker is not configured")) {
+      return {
+        title: "索引器未配置",
+        detail: "当前下载链路无法访问 Jackett 或其他搜索后端。",
+        tone: "tone-danger"
+      };
+    }
+    if (taskError.includes("torrent url is required")) {
+      return {
+        title: "缺少种子地址",
+        detail: "手动添加任务时没有提供有效的磁链或下载地址。",
+        tone: "tone-warn"
+      };
+    }
+    if (taskError.includes("qBittorrent client is required") || taskError.includes("qBittorrent client is not configured")) {
+      return {
+        title: "下载器未启用",
+        detail: "任务无法提交到 qBittorrent，需先补齐下载器配置。",
+        tone: "tone-danger"
+      };
+    }
+    if (taskError.includes("add torrent")) {
+      return {
+        title: "提交下载失败",
+        detail: taskError,
+        tone: "tone-danger"
+      };
+    }
+    return {
+      title: "任务执行失败",
+      detail: taskError,
+      tone: "tone-danger"
+    };
+  }
+
+  if (status.includes("failed")) {
+    return {
+      title: "任务状态失败",
+      detail: task.status || "任务被标记为失败，但没有更多错误上下文。",
+      tone: "tone-danger"
+    };
+  }
+
+  if (scanStatus) {
+    return {
+      title: "等待扫描收口",
+      detail: task.stashScanStatus || "下载已完成，等待 Stash 扫描继续推进。",
+      tone: "tone-warn"
+    };
+  }
+
+  if (qbtState) {
+    return {
+      title: "下载进行中",
+      detail: task.qbittorrentState || "任务仍在等待下载状态变化。",
+      tone: "tone-info"
+    };
+  }
+
+  return {
+    title: "状态正常",
+    detail: "当前任务没有显式错误，等待下一次同步。",
+    tone: "tone-neutral"
+  };
 }
 
 function describeQueryError(error: unknown) {
@@ -424,6 +527,7 @@ function App() {
   const tasks = data?.tasks ?? [];
   const runtimeSettings = data?.settings ?? null;
   const activeTask = selectedTaskId ? tasks.find((task) => task.id === selectedTaskId) ?? null : null;
+  const activeTaskFailure = activeTask ? taskFailureSummary(activeTask) : null;
 
   useEffect(() => {
     if (!runtimeSettings) return;
@@ -1206,48 +1310,54 @@ function App() {
                   </div>
 
                   <div className="task-grid">
-                    {item.tasks.map((task) => (
-                      <article
-                        key={task.id}
-                        className={`task-card ${statusTone(task.status)}`}
-                        onClick={() => {
-                          setSelectedTaskId(task.id);
-                          setDrawer("task");
-                        }}
-                        role="button"
-                        tabIndex={0}
-                      >
-                        <div className="task-card__head">
-                          <div>
-                            <h3>{taskSummary(task)}</h3>
-                            <p>{task.query || "无查询文本"}</p>
+                    {item.tasks.map((task) => {
+                      const failure = taskFailureSummary(task);
+                      return (
+                        <article
+                          key={task.id}
+                          className={`task-card ${statusTone(task.status)}`}
+                          onClick={() => {
+                            setSelectedTaskId(task.id);
+                            setDrawer("task");
+                          }}
+                          role="button"
+                          tabIndex={0}
+                        >
+                          <div className="task-card__head">
+                            <div>
+                              <h3>{taskSummary(task)}</h3>
+                              <p>{task.query || "无查询文本"}</p>
+                            </div>
+                            <span className={`status-chip ${statusTone(task.status)}`}>{task.status}</span>
                           </div>
-                          <span className={`status-chip ${statusTone(task.status)}`}>{task.status}</span>
-                        </div>
-                        <div className="progress-shell">
-                          <div className="progress-fill" style={{ width: `${Math.round(task.progress * 100)}%` }} />
-                        </div>
-                        <dl className="task-meta">
-                          <div>
-                            <dt>qBittorrent</dt>
-                            <dd>{task.qbittorrentState || "待同步"}</dd>
+                          <div className="progress-shell">
+                            <div className="progress-fill" style={{ width: `${Math.round(task.progress * 100)}%` }} />
                           </div>
-                          <div>
-                            <dt>Stash</dt>
-                            <dd>{task.stashScanStatus || "未开始"}</dd>
+                          <dl className="task-meta">
+                            <div>
+                              <dt>qBittorrent</dt>
+                              <dd>{task.qbittorrentState || "待同步"}</dd>
+                            </div>
+                            <div>
+                              <dt>Stash</dt>
+                              <dd>{task.stashScanStatus || "未开始"}</dd>
+                            </div>
+                            <div>
+                              <dt>更新时间</dt>
+                              <dd>{formatDateTime(task.updatedAt)}</dd>
+                            </div>
+                            <div>
+                              <dt>完成时间</dt>
+                              <dd>{formatDateTime(task.completedAt)}</dd>
+                            </div>
+                          </dl>
+                          <div className={`task-issue ${failure.tone}`}>
+                            <strong>{failure.title}</strong>
+                            <span>{failure.detail}</span>
                           </div>
-                          <div>
-                            <dt>更新时间</dt>
-                            <dd>{formatDateTime(task.updatedAt)}</dd>
-                          </div>
-                          <div>
-                            <dt>完成时间</dt>
-                            <dd>{formatDateTime(task.completedAt)}</dd>
-                          </div>
-                        </dl>
-                        <p className={`task-issue ${item.tone}`}>{taskIssue(task)}</p>
-                      </article>
-                    ))}
+                        </article>
+                      );
+                    })}
                   </div>
                 </section>
               ))}
@@ -1567,7 +1677,10 @@ function App() {
                             <dd>{activeTask.stashScanStatus || "未开始"}</dd>
                           </div>
                         </dl>
-                        {activeTask.stashScanError ? <p className="task-error">{activeTask.stashScanError}</p> : null}
+                        <div className={`task-issue ${activeTaskFailure?.tone ?? "tone-neutral"}`}>
+                          <strong>{activeTaskFailure?.title ?? "状态正常"}</strong>
+                          <span>{activeTaskFailure?.detail ?? "当前任务没有显式错误，等待下一次同步。"}</span>
+                        </div>
                       </article>
 
                       <div className="inline-actions">
