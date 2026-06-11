@@ -59,11 +59,12 @@ func (s *Store) Path() string {
 	return s.path
 }
 
-func (s *Store) UpdateStash(graphqlURL string, apiKey *string, libraryPath string) (*Config, error) {
+func (s *Store) UpdateStash(url string, apiKey *string, libraryPath string) (*Config, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	s.cfg.Stash.GraphQLURL = graphqlURL
+	s.cfg.Stash.URL = trimGraphQLSuffix(url)
+	s.cfg.Stash.LegacyGraphQLURL = ""
 	if apiKey != nil {
 		s.cfg.Stash.APIKey = *apiKey
 	}
@@ -121,10 +122,11 @@ func (s *Store) updateConfigNode() error {
 		"api_key": s.cfg.Jackett.APIKey,
 	})
 	setMapString(top, "stash", map[string]string{
-		"graphql_url":  s.cfg.Stash.GraphQLURL,
+		"url":          s.cfg.Stash.URL,
 		"api_key":      s.cfg.Stash.APIKey,
 		"library_path": s.cfg.Stash.LibraryPath,
 	})
+	deleteMapKey(mapValue(top, "stash"), "graphql_url")
 	setMapString(top, "qbittorrent", map[string]string{
 		"url":               s.cfg.QBittorrent.URL,
 		"username":          s.cfg.QBittorrent.Username,
@@ -207,4 +209,16 @@ func mapValue(parent *yaml.Node, key string) *yaml.Node {
 	valueNode := &yaml.Node{}
 	parent.Content = append(parent.Content, keyNode, valueNode)
 	return valueNode
+}
+
+func deleteMapKey(parent *yaml.Node, key string) {
+	if parent == nil || parent.Kind != yaml.MappingNode {
+		return
+	}
+	for i := 0; i+1 < len(parent.Content); i += 2 {
+		if parent.Content[i].Value == key {
+			parent.Content = append(parent.Content[:i], parent.Content[i+2:]...)
+			return
+		}
+	}
 }

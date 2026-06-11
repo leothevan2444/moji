@@ -98,7 +98,7 @@ const FOLLOWING_PLACEHOLDERS = [
 ] as const;
 
 const EMPTY_STASH_FORM = {
-  graphqlUrl: "",
+  url: "",
   apiKey: "",
   libraryPath: ""
 };
@@ -398,7 +398,7 @@ function App() {
     if (!runtimeSettings) return;
 
     setStashForm({
-      graphqlUrl: runtimeSettings.stash.graphqlUrl || "",
+      url: runtimeSettings.stash.url || "",
       apiKey: "",
       libraryPath: runtimeSettings.stash.libraryPath || ""
     });
@@ -522,8 +522,8 @@ function App() {
     setSettingsFeedback((current) => ({ ...current, Stash: null }));
 
     const result = await updateStashSettings({
-      input: {
-        graphqlUrl: stashForm.graphqlUrl.trim(),
+        input: {
+        url: stashForm.url.trim(),
         apiKey: stashForm.apiKey.trim() || null,
         libraryPath: stashForm.libraryPath.trim()
       }
@@ -634,11 +634,11 @@ function App() {
           </div>
           <form className="settings-form" onSubmit={(event) => void saveStashSettings(event)}>
             <label className="settings-field">
-              <span>GraphQL URL</span>
+              <span>Stash URL</span>
               <input
-                value={stashForm.graphqlUrl}
-                onChange={(event) => setStashForm((current) => ({ ...current, graphqlUrl: event.target.value }))}
-                placeholder="http://localhost:9999/graphql"
+                value={stashForm.url}
+                onChange={(event) => setStashForm((current) => ({ ...current, url: event.target.value }))}
+                placeholder="http://localhost:9999"
               />
             </label>
             <label className="settings-field">
@@ -660,7 +660,6 @@ function App() {
             </label>
             <div className="settings-meta">
               <span>当前 API key: {boolState(runtimeSettings.stash.apiKeyConfigured)}</span>
-              <span>保存后会直接写回配置文件。</span>
             </div>
             {settingsFeedback.Stash ? <p className={`settings-feedback ${settingsFeedback.Stash.tone}`}>{settingsFeedback.Stash.message}</p> : null}
             <div className="settings-actions">

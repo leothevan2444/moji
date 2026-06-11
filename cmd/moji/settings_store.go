@@ -31,7 +31,7 @@ func (s *runtimeSettingsEditor) Snapshot() *graphqlapi.SettingsSnapshot {
 
 func (s *runtimeSettingsEditor) UpdateStashSettings(input graphqlapi.UpdateStashSettingsInput) (*graphqlapi.SettingsSnapshot, error) {
 	cfg, err := s.store.UpdateStash(
-		strings.TrimSpace(input.GraphQLURL),
+		strings.TrimSpace(input.URL),
 		trimOptionalSecret(input.APIKey),
 		strings.TrimSpace(input.LibraryPath),
 	)

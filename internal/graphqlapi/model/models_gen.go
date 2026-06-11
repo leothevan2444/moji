@@ -133,7 +133,7 @@ type StashMetadataScanInput struct {
 type StashSettings struct {
 	Configured       bool   `json:"configured"`
 	Enabled          bool   `json:"enabled"`
-	GraphqlURL       string `json:"graphqlUrl"`
+	URL              string `json:"url"`
 	APIKeyConfigured bool   `json:"apiKeyConfigured"`
 	LibraryPath      string `json:"libraryPath"`
 }
@@ -188,7 +188,7 @@ type UpdateQBittorrentSettingsInput struct {
 }
 
 type UpdateStashSettingsInput struct {
-	GraphqlURL  string  `json:"graphqlUrl"`
+	URL         string  `json:"url"`
 	APIKey      *string `json:"apiKey,omitempty"`
 	LibraryPath string  `json:"libraryPath"`
 }

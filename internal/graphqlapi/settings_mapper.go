@@ -17,7 +17,7 @@ func settingsSnapshotToModel(snapshot *SettingsSnapshot, appVersion string) *mod
 		Stash: &model.StashSettings{
 			Configured:       snapshot.Stash.Configured,
 			Enabled:          snapshot.Stash.Enabled,
-			GraphqlURL:       snapshot.Stash.GraphQLURL,
+			URL:              snapshot.Stash.URL,
 			APIKeyConfigured: snapshot.Stash.APIKeyConfigured,
 			LibraryPath:      snapshot.Stash.LibraryPath,
 		},

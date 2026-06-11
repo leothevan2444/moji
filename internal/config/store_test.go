@@ -56,3 +56,27 @@ tasks:
 		t.Fatalf("expected updated username, got %q", reloaded.QBittorrent.Username)
 	}
 }
+
+func TestLoadFromPathNormalizesLegacyStashGraphQLURL(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "config.yaml")
+	content := `stash:
+  graphql_url: "http://stash.example/graphql"
+  api_key: "secret"
+  library_path: "/library"
+`
+	if err := os.WriteFile(path, []byte(content), 0o644); err != nil {
+		t.Fatalf("write config: %v", err)
+	}
+
+	cfg, err := LoadFromPath(path)
+	if err != nil {
+		t.Fatalf("load config: %v", err)
+	}
+	if cfg.Stash.URL != "http://stash.example" {
+		t.Fatalf("expected normalized stash url, got %q", cfg.Stash.URL)
+	}
+	if cfg.Stash.GraphQLEndpoint() != "http://stash.example/graphql" {
+		t.Fatalf("expected derived graphql endpoint, got %q", cfg.Stash.GraphQLEndpoint())
+	}
+}

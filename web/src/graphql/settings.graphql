@@ -3,7 +3,7 @@ mutation UpdateStashSettingsDocument($input: UpdateStashSettingsInput!) {
     stash {
       configured
       enabled
-      graphqlUrl
+      url
       apiKeyConfigured
       libraryPath
     }

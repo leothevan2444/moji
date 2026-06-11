@@ -25,7 +25,7 @@ type Settings {
 type StashSettings {
   configured: Boolean!
   enabled: Boolean!
-  graphqlUrl: String!
+  url: String!
   apiKeyConfigured: Boolean!
   libraryPath: String!
 }
@@ -61,7 +61,7 @@ type SystemSettings {
 }
 
 input UpdateStashSettingsInput {
-  graphqlUrl: String!
+  url: String!
   apiKey: String
   libraryPath: String!
 }

@@ -300,7 +300,7 @@ func TestSettingsQueryReturnsRuntimeSnapshot(t *testing.T) {
 		Stash: StashSettingsSnapshot{
 			Configured:       true,
 			Enabled:          true,
-			GraphQLURL:       "http://stash.invalid/graphql",
+			URL:              "http://stash.invalid",
 			APIKeyConfigured: true,
 			LibraryPath:      "/data/library",
 		},
@@ -334,7 +334,7 @@ func TestSettingsQueryReturnsRuntimeSnapshot(t *testing.T) {
 
 	resp := executeGraphQL(t, resolver, `{
 		settings {
-			stash { configured enabled graphqlUrl apiKeyConfigured libraryPath }
+			stash { configured enabled url apiKeyConfigured libraryPath }
 			jackett { configured enabled url apiKeyConfigured }
 			qbittorrent { configured enabled url username usernameConfigured passwordConfigured defaultSavePath category tags }
 			tasks { store jsonPath progressSyncIntervalSeconds progressSyncEnabled }
@@ -344,7 +344,7 @@ func TestSettingsQueryReturnsRuntimeSnapshot(t *testing.T) {
 	if len(resp.Errors) > 0 {
 		t.Fatalf("expected no errors, got %+v", resp.Errors)
 	}
-	if !resp.Data.Settings.Stash.Configured || resp.Data.Settings.Stash.GraphqlURL != "http://stash.invalid/graphql" {
+	if !resp.Data.Settings.Stash.Configured || resp.Data.Settings.Stash.URL != "http://stash.invalid" {
 		t.Fatalf("unexpected stash settings: %+v", resp.Data.Settings.Stash)
 	}
 	if resp.Data.Settings.Qbittorrent.PasswordConfigured {
@@ -406,7 +406,7 @@ func TestUpdateStashSettingsMutation(t *testing.T) {
 			Stash: StashSettingsSnapshot{
 				Configured:       true,
 				Enabled:          false,
-				GraphQLURL:       "http://stash.updated/graphql",
+				URL:              "http://stash.updated",
 				APIKeyConfigured: true,
 				LibraryPath:      "/library/updated",
 			},
@@ -418,23 +418,23 @@ func TestUpdateStashSettingsMutation(t *testing.T) {
 
 	resp := executeGraphQL(t, resolver, `mutation {
 		updateStashSettings(input: {
-			graphqlUrl: "http://stash.updated/graphql"
+			url: "http://stash.updated"
 			apiKey: "secret"
 			libraryPath: "/library/updated"
 		}) {
-			stash { graphqlUrl apiKeyConfigured libraryPath }
+			stash { url apiKeyConfigured libraryPath }
 		}
 	}`)
 	if len(resp.Errors) > 0 {
 		t.Fatalf("expected no errors, got %+v", resp.Errors)
 	}
-	if editor.stashInput.GraphQLURL != "http://stash.updated/graphql" || editor.stashInput.LibraryPath != "/library/updated" {
+	if editor.stashInput.URL != "http://stash.updated" || editor.stashInput.LibraryPath != "/library/updated" {
 		t.Fatalf("unexpected stash input: %+v", editor.stashInput)
 	}
 	if editor.stashInput.APIKey == nil || *editor.stashInput.APIKey != "secret" {
 		t.Fatalf("unexpected stash api key: %+v", editor.stashInput.APIKey)
 	}
-	if resp.Data.UpdateStashSettings.Stash.GraphqlURL != "http://stash.updated/graphql" {
+	if resp.Data.UpdateStashSettings.Stash.URL != "http://stash.updated" {
 		t.Fatalf("unexpected stash response: %+v", resp.Data.UpdateStashSettings.Stash)
 	}
 }
@@ -542,7 +542,7 @@ type graphQLTaskResponse struct {
 			Stash struct {
 				Configured       bool   `json:"configured"`
 				Enabled          bool   `json:"enabled"`
-				GraphqlURL       string `json:"graphqlUrl"`
+				URL              string `json:"url"`
 				APIKeyConfigured bool   `json:"apiKeyConfigured"`
 				LibraryPath      string `json:"libraryPath"`
 			} `json:"stash"`
@@ -575,7 +575,7 @@ type graphQLTaskResponse struct {
 		} `json:"settings"`
 		UpdateStashSettings struct {
 			Stash struct {
-				GraphqlURL       string `json:"graphqlUrl"`
+				URL              string `json:"url"`
 				APIKeyConfigured bool   `json:"apiKeyConfigured"`
 				LibraryPath      string `json:"libraryPath"`
 			} `json:"stash"`

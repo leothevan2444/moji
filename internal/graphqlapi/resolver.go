@@ -40,7 +40,7 @@ type SettingsEditor interface {
 }
 
 type UpdateStashSettingsInput struct {
-	GraphQLURL  string
+	URL         string
 	APIKey      *string
 	LibraryPath string
 }
@@ -70,7 +70,7 @@ type SettingsSnapshot struct {
 type StashSettingsSnapshot struct {
 	Configured       bool
 	Enabled          bool
-	GraphQLURL       string
+	URL              string
 	APIKeyConfigured bool
 	LibraryPath      string
 }

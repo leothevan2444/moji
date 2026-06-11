@@ -227,14 +227,14 @@ func buildSettingsSnapshot(cfg *config.Config, version string, qbittorrentEnable
 	}
 
 	jackettConfigured := cfg.Jackett.URL != "" && cfg.Jackett.APIKey != ""
-	stashConfigured := cfg.Stash.GraphQLURL != "" && cfg.Stash.LibraryPath != ""
+	stashConfigured := cfg.Stash.URL != "" && cfg.Stash.LibraryPath != ""
 	qbittorrentConfigured := cfg.QBittorrent.URL != "" && cfg.QBittorrent.Username != "" && cfg.QBittorrent.Password != ""
 
 	return &graphqlapi.SettingsSnapshot{
 		Stash: graphqlapi.StashSettingsSnapshot{
 			Configured:       stashConfigured,
 			Enabled:          stashEnabled,
-			GraphQLURL:       cfg.Stash.GraphQLURL,
+			URL:              cfg.Stash.URL,
 			APIKeyConfigured: cfg.Stash.APIKey != "",
 			LibraryPath:      cfg.Stash.LibraryPath,
 		},
@@ -297,11 +297,12 @@ func startTaskSyncWorker(ctx context.Context, service graphqlapi.DownloaderServi
 }
 
 func configureStash(cfg *config.Config) graphqlapi.StashService {
-	if cfg.Stash.GraphQLURL == "" {
+	graphqlURL := cfg.Stash.GraphQLEndpoint()
+	if graphqlURL == "" {
 		return nil
 	}
 
-	client := stash.NewClient(cfg.Stash.GraphQLURL, cfg.Stash.APIKey)
+	client := stash.NewClient(graphqlURL, cfg.Stash.APIKey)
 	service, err := stashsync.NewService(client, []string{cfg.Stash.LibraryPath})
 	if err != nil {
 		log.Fatalf("configure Stash: %v", err)

@@ -19,7 +19,7 @@ func (r *mutationResolver) UpdateStashSettings(ctx context.Context, input model.
 	}
 
 	snapshot, err := r.SettingsEditor.UpdateStashSettings(UpdateStashSettingsInput{
-		GraphQLURL:  input.GraphqlURL,
+		URL:         input.URL,
 		APIKey:      input.APIKey,
 		LibraryPath: input.LibraryPath,
 	})

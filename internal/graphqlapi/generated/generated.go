@@ -156,8 +156,8 @@ type ComplexityRoot struct {
 		APIKeyConfigured func(childComplexity int) int
 		Configured       func(childComplexity int) int
 		Enabled          func(childComplexity int) int
-		GraphqlURL       func(childComplexity int) int
 		LibraryPath      func(childComplexity int) int
+		URL              func(childComplexity int) int
 	}
 
 	SystemSettings struct {
@@ -845,19 +845,19 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.StashSettings.Enabled(childComplexity), true
 
-	case "StashSettings.graphqlUrl":
-		if e.complexity.StashSettings.GraphqlURL == nil {
-			break
-		}
-
-		return e.complexity.StashSettings.GraphqlURL(childComplexity), true
-
 	case "StashSettings.libraryPath":
 		if e.complexity.StashSettings.LibraryPath == nil {
 			break
 		}
 
 		return e.complexity.StashSettings.LibraryPath(childComplexity), true
+
+	case "StashSettings.url":
+		if e.complexity.StashSettings.URL == nil {
+			break
+		}
+
+		return e.complexity.StashSettings.URL(childComplexity), true
 
 	case "SystemSettings.appVersion":
 		if e.complexity.SystemSettings.AppVersion == nil {
@@ -1224,7 +1224,7 @@ type Settings {
 type StashSettings {
   configured: Boolean!
   enabled: Boolean!
-  graphqlUrl: String!
+  url: String!
   apiKeyConfigured: Boolean!
   libraryPath: String!
 }
@@ -1260,7 +1260,7 @@ type SystemSettings {
 }
 
 input UpdateStashSettingsInput {
-  graphqlUrl: String!
+  url: String!
   apiKey: String
   libraryPath: String!
 }
@@ -5275,8 +5275,8 @@ func (ec *executionContext) fieldContext_Settings_stash(_ context.Context, field
 				return ec.fieldContext_StashSettings_configured(ctx, field)
 			case "enabled":
 				return ec.fieldContext_StashSettings_enabled(ctx, field)
-			case "graphqlUrl":
-				return ec.fieldContext_StashSettings_graphqlUrl(ctx, field)
+			case "url":
+				return ec.fieldContext_StashSettings_url(ctx, field)
 			case "apiKeyConfigured":
 				return ec.fieldContext_StashSettings_apiKeyConfigured(ctx, field)
 			case "libraryPath":
@@ -5977,8 +5977,8 @@ func (ec *executionContext) fieldContext_StashSettings_enabled(_ context.Context
 	return fc, nil
 }
 
-func (ec *executionContext) _StashSettings_graphqlUrl(ctx context.Context, field graphql.CollectedField, obj *model.StashSettings) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_StashSettings_graphqlUrl(ctx, field)
+func (ec *executionContext) _StashSettings_url(ctx context.Context, field graphql.CollectedField, obj *model.StashSettings) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_StashSettings_url(ctx, field)
 	if err != nil {
 		return graphql.Null
 	}
@@ -5991,7 +5991,7 @@ func (ec *executionContext) _StashSettings_graphqlUrl(ctx context.Context, field
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
 		ctx = rctx // use context from middleware stack in children
-		return obj.GraphqlURL, nil
+		return obj.URL, nil
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -6008,7 +6008,7 @@ func (ec *executionContext) _StashSettings_graphqlUrl(ctx context.Context, field
 	return ec.marshalNString2string(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_StashSettings_graphqlUrl(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_StashSettings_url(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "StashSettings",
 		Field:      field,
@@ -9581,20 +9581,20 @@ func (ec *executionContext) unmarshalInputUpdateStashSettingsInput(ctx context.C
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"graphqlUrl", "apiKey", "libraryPath"}
+	fieldsInOrder := [...]string{"url", "apiKey", "libraryPath"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
 			continue
 		}
 		switch k {
-		case "graphqlUrl":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("graphqlUrl"))
+		case "url":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("url"))
 			data, err := ec.unmarshalNString2string(ctx, v)
 			if err != nil {
 				return it, err
 			}
-			it.GraphqlURL = data
+			it.URL = data
 		case "apiKey":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("apiKey"))
 			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
@@ -10521,8 +10521,8 @@ func (ec *executionContext) _StashSettings(ctx context.Context, sel ast.Selectio
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
-		case "graphqlUrl":
-			out.Values[i] = ec._StashSettings_graphqlUrl(ctx, field, obj)
+		case "url":
+			out.Values[i] = ec._StashSettings_url(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}

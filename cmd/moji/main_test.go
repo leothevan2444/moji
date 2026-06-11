@@ -68,7 +68,7 @@ func TestHTTPHandlerServesSettingsSnapshot(t *testing.T) {
 		settings {
 			jackett { configured enabled url apiKeyConfigured }
 			qbittorrent { configured enabled url usernameConfigured passwordConfigured defaultSavePath }
-			stash { configured enabled graphqlUrl apiKeyConfigured libraryPath }
+			stash { configured enabled url apiKeyConfigured libraryPath }
 			tasks { store jsonPath progressSyncIntervalSeconds progressSyncEnabled }
 			system { appVersion }
 		}
@@ -103,7 +103,9 @@ func TestIncompleteQBittorrentConfigDisablesResolver(t *testing.T) {
 }
 
 func TestMissingStashConfigDisablesStashResolvers(t *testing.T) {
-	handler := newHTTPHandler(testConfig(), "test-version")
+	cfg := testConfig()
+	cfg.Stash.URL = ""
+	handler := newHTTPHandler(cfg, "test-version")
 
 	jobResp := postGraphQL(t, handler, `{ stashJob(id: "job-1") { id } }`)
 	if len(jobResp.Errors) == 0 {
@@ -193,12 +195,12 @@ type graphQLResponse struct {
 			OK      bool   `json:"ok"`
 			Message string `json:"message"`
 		} `json:"health"`
-		Version string `json:"version"`
+		Version  string `json:"version"`
 		Settings struct {
 			Stash struct {
 				Configured       bool   `json:"configured"`
 				Enabled          bool   `json:"enabled"`
-				GraphqlURL       string `json:"graphqlUrl"`
+				URL              string `json:"url"`
 				APIKeyConfigured bool   `json:"apiKeyConfigured"`
 				LibraryPath      string `json:"libraryPath"`
 			} `json:"stash"`
@@ -256,6 +258,7 @@ func testConfig() *config.Config {
 	var cfg config.Config
 	cfg.Jackett.URL = "http://jackett.invalid"
 	cfg.Jackett.APIKey = "test-api-key"
+	cfg.Stash.URL = "http://stash.invalid"
 	return &cfg
 }
 

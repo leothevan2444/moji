@@ -8,7 +8,7 @@ query DashboardDocument {
     stash {
       configured
       enabled
-      graphqlUrl
+      url
       apiKeyConfigured
       libraryPath
     }
