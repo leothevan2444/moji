@@ -76,6 +76,28 @@ func TestIncompleteQBittorrentConfigDisablesResolver(t *testing.T) {
 	}
 }
 
+func TestMissingStashConfigDisablesStashResolvers(t *testing.T) {
+	handler := newHTTPHandler(testConfig(), "test-version")
+
+	jobResp := postGraphQL(t, handler, `{ stashJob(id: "job-1") { id } }`)
+	if len(jobResp.Errors) == 0 {
+		t.Fatalf("expected GraphQL error when Stash is disabled")
+	}
+	if got := jobResp.Errors[0].Message; got != "stash client is not configured" {
+		t.Fatalf("unexpected stashJob GraphQL error: %q", got)
+	}
+
+	scanResp := postGraphQL(t, handler, `mutation {
+		stashMetadataScan(input: { paths: ["/library"] })
+	}`)
+	if len(scanResp.Errors) == 0 {
+		t.Fatalf("expected GraphQL error when Stash is disabled")
+	}
+	if got := scanResp.Errors[0].Message; got != "stash client is not configured" {
+		t.Fatalf("unexpected stashMetadataScan GraphQL error: %q", got)
+	}
+}
+
 func TestConfigureProgressSyncInterval(t *testing.T) {
 	cfg := testConfig()
 	if got := configureProgressSyncInterval(cfg); got != time.Minute {

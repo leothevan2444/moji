@@ -254,6 +254,46 @@ func TestDownloadMediaRequiresDownloader(t *testing.T) {
 	}
 }
 
+func TestTriggerStashScansRequiresStash(t *testing.T) {
+	resolver := NewResolver(nil, nil, &fakeDownloader{}, nil, "test-version")
+
+	resp := executeGraphQL(t, resolver, `mutation {
+		triggerStashScans { id }
+	}`)
+	if len(resp.Errors) == 0 {
+		t.Fatal("expected stash configuration error")
+	}
+	if got := resp.Errors[0].Message; got != "stash client is not configured" {
+		t.Fatalf("unexpected error: %q", got)
+	}
+}
+
+func TestStashMetadataScanRequiresStash(t *testing.T) {
+	resolver := NewResolver(nil, nil, nil, nil, "test-version")
+
+	resp := executeGraphQL(t, resolver, `mutation {
+		stashMetadataScan(input: { paths: ["/library"] })
+	}`)
+	if len(resp.Errors) == 0 {
+		t.Fatal("expected stash configuration error")
+	}
+	if got := resp.Errors[0].Message; got != "stash client is not configured" {
+		t.Fatalf("unexpected error: %q", got)
+	}
+}
+
+func TestStashJobRequiresStash(t *testing.T) {
+	resolver := NewResolver(nil, nil, nil, nil, "test-version")
+
+	resp := executeGraphQL(t, resolver, `{ stashJob(id: "job-1") { id } }`)
+	if len(resp.Errors) == 0 {
+		t.Fatal("expected stash configuration error")
+	}
+	if got := resp.Errors[0].Message; got != "stash client is not configured" {
+		t.Fatalf("unexpected error: %q", got)
+	}
+}
+
 type fakeDownloader struct {
 	addRequest      downloader.AddTorrentRequest
 	downloadRequest downloader.DownloadRequest
