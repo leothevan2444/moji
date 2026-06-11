@@ -37,13 +37,17 @@ func main() {
 
 	// Config
 	var (
-		cfg *config.Config
-		err error
+		cfg         *config.Config
+		configStore *config.Store
+		err         error
 	)
+	path := config.DefaultPath()
 	if *configPath != "" {
-		cfg, err = config.LoadFromPath(*configPath)
-	} else {
-		cfg, err = config.Load()
+		path = *configPath
+	}
+	configStore, err = config.OpenStore(path)
+	if err == nil {
+		cfg = configStore.Config()
 	}
 	if err != nil {
 		log.Fatalf("load config: %v", err)
@@ -57,7 +61,7 @@ func main() {
 	}
 
 	// Dependencies
-	mux, downloaderService, stashService := newHTTPRuntime(cfg, "dev")
+	mux, downloaderService, stashService := newHTTPRuntime(cfg, "dev", configStore)
 
 	server := &http.Server{
 		Addr:              *addr,
@@ -94,11 +98,11 @@ func main() {
 }
 
 func newHTTPHandler(cfg *config.Config, version string) http.Handler {
-	handler, _, _ := newHTTPRuntime(cfg, version)
+	handler, _, _ := newHTTPRuntime(cfg, version, nil)
 	return handler
 }
 
-func newHTTPRuntime(cfg *config.Config, version string) (http.Handler, graphqlapi.DownloaderService, graphqlapi.StashService) {
+func newHTTPRuntime(cfg *config.Config, version string, configStore *config.Store) (http.Handler, graphqlapi.DownloaderService, graphqlapi.StashService) {
 	jackettTracker := tracker.NewJackettService(cfg.Jackett.URL, cfg.Jackett.APIKey)
 	apiHandler := api.NewHandler(jackettTracker)
 	torrentClient := configureQBittorrent(cfg)
@@ -106,6 +110,9 @@ func newHTTPRuntime(cfg *config.Config, version string) (http.Handler, graphqlap
 	stashService := configureStash(cfg)
 	resolver := graphqlapi.NewResolver(jackettTracker, torrentClient, downloaderService, stashService, version)
 	resolver.RuntimeSettings = buildSettingsSnapshot(cfg, version, torrentClient != nil, downloaderService != nil, stashService != nil)
+	if configStore != nil {
+		resolver.SettingsEditor = newRuntimeSettingsEditor(configStore, version, torrentClient != nil, downloaderService != nil, stashService != nil)
+	}
 	graphqlHandler := handler.NewDefaultServer(generated.NewExecutableSchema(generated.Config{Resolvers: resolver}))
 
 	apiMux := http.NewServeMux()
@@ -241,6 +248,7 @@ func buildSettingsSnapshot(cfg *config.Config, version string, qbittorrentEnable
 			Configured:         qbittorrentConfigured,
 			Enabled:            qbittorrentEnabled,
 			URL:                cfg.QBittorrent.URL,
+			Username:           cfg.QBittorrent.Username,
 			UsernameConfigured: cfg.QBittorrent.Username != "",
 			PasswordConfigured: cfg.QBittorrent.Password != "",
 			DefaultSavePath:    cfg.QBittorrent.DefaultSavePath,

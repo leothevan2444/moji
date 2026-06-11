@@ -8,6 +8,9 @@ import {
   SearchDocumentDocument,
   SyncTaskProgressDocumentDocument,
   TriggerStashScansDocumentDocument,
+  UpdateJackettSettingsDocumentDocument,
+  UpdateQBittorrentSettingsDocumentDocument,
+  UpdateStashSettingsDocumentDocument,
   type AddTorrentDocumentMutation,
   type AddTorrentDocumentMutationVariables,
   type DashboardDocumentQuery,
@@ -18,7 +21,13 @@ import {
   type SyncTaskProgressDocumentMutation,
   type SyncTaskProgressDocumentMutationVariables,
   type TriggerStashScansDocumentMutation,
-  type TriggerStashScansDocumentMutationVariables
+  type TriggerStashScansDocumentMutationVariables,
+  type UpdateJackettSettingsDocumentMutation,
+  type UpdateJackettSettingsDocumentMutationVariables,
+  type UpdateQBittorrentSettingsDocumentMutation,
+  type UpdateQBittorrentSettingsDocumentMutationVariables,
+  type UpdateStashSettingsDocumentMutation,
+  type UpdateStashSettingsDocumentMutationVariables
 } from "./graphql/generated/graphql";
 import { HELP_TOPICS, type HelpTopicId } from "./help";
 
@@ -26,6 +35,7 @@ type TabKey = "主页" | "任务" | "following" | "发现";
 type DrawerKey = "stats" | "settings" | "help" | "task" | null;
 type DashboardTask = DashboardDocumentQuery["tasks"][number];
 type RuntimeSettings = NonNullable<DashboardDocumentQuery["settings"]>;
+type SettingsFeedback = { tone: "tone-success" | "tone-danger" | "tone-info"; message: string } | null;
 type SettingsTab =
   | "Stash"
   | "索引器"
@@ -86,6 +96,26 @@ const FOLLOWING_PLACEHOLDERS = [
     note: "筛选与搜索预留"
   }
 ] as const;
+
+const EMPTY_STASH_FORM = {
+  graphqlUrl: "",
+  apiKey: "",
+  libraryPath: ""
+};
+
+const EMPTY_JACKETT_FORM = {
+  url: "",
+  apiKey: ""
+};
+
+const EMPTY_QBITTORRENT_FORM = {
+  url: "",
+  username: "",
+  password: "",
+  defaultSavePath: "",
+  category: "",
+  tags: ""
+};
 
 function formatBytes(size: number) {
   if (!size) return "0 B";
@@ -301,6 +331,14 @@ function App() {
   const [jackettQuery, setJackettQuery] = useState("");
   const [submittedJackettQuery, setSubmittedJackettQuery] = useState("");
   const [pendingAddId, setPendingAddId] = useState<string | null>(null);
+  const [stashForm, setStashForm] = useState(EMPTY_STASH_FORM);
+  const [jackettForm, setJackettForm] = useState(EMPTY_JACKETT_FORM);
+  const [qbittorrentForm, setQBittorrentForm] = useState(EMPTY_QBITTORRENT_FORM);
+  const [settingsFeedback, setSettingsFeedback] = useState<Record<"Stash" | "索引器" | "下载器", SettingsFeedback>>({
+    Stash: null,
+    索引器: null,
+    下载器: null
+  });
 
   const deferredTaskSearch = useDeferredValue(taskSearch.trim().toLowerCase());
   const deferredJackettQuery = useDeferredValue(submittedJackettQuery.trim());
@@ -339,10 +377,44 @@ function App() {
     TriggerStashScansDocumentMutation,
     TriggerStashScansDocumentMutationVariables
   >(TriggerStashScansDocumentDocument);
+  const [{ fetching: updatingStash }, updateStashSettings] = useMutation<
+    UpdateStashSettingsDocumentMutation,
+    UpdateStashSettingsDocumentMutationVariables
+  >(UpdateStashSettingsDocumentDocument);
+  const [{ fetching: updatingJackett }, updateJackettSettings] = useMutation<
+    UpdateJackettSettingsDocumentMutation,
+    UpdateJackettSettingsDocumentMutationVariables
+  >(UpdateJackettSettingsDocumentDocument);
+  const [{ fetching: updatingQBittorrent }, updateQBittorrentSettings] = useMutation<
+    UpdateQBittorrentSettingsDocumentMutation,
+    UpdateQBittorrentSettingsDocumentMutationVariables
+  >(UpdateQBittorrentSettingsDocumentDocument);
 
   const tasks = data?.tasks ?? [];
   const runtimeSettings = data?.settings ?? null;
   const activeTask = selectedTaskId ? tasks.find((task) => task.id === selectedTaskId) ?? null : null;
+
+  useEffect(() => {
+    if (!runtimeSettings) return;
+
+    setStashForm({
+      graphqlUrl: runtimeSettings.stash.graphqlUrl || "",
+      apiKey: "",
+      libraryPath: runtimeSettings.stash.libraryPath || ""
+    });
+    setJackettForm({
+      url: runtimeSettings.jackett.url || "",
+      apiKey: ""
+    });
+    setQBittorrentForm({
+      url: runtimeSettings.qbittorrent.url || "",
+      username: runtimeSettings.qbittorrent.username || "",
+      password: "",
+      defaultSavePath: runtimeSettings.qbittorrent.defaultSavePath || "",
+      category: runtimeSettings.qbittorrent.category || "",
+      tags: runtimeSettings.qbittorrent.tags || ""
+    });
+  }, [runtimeSettings]);
 
   const visibleTasks = useMemo(() => {
     const search = deferredTaskSearch;
@@ -420,106 +492,392 @@ function App() {
       ]
     : [];
 
-  const settingsPanel = (() => {
+  const settingsStatus = (() => {
     if (!runtimeSettings) {
+      return { label: "载入中", tone: "tone-neutral" as const };
+    }
+    if (settingsTab === "Stash") {
+      return serviceStatus(runtimeSettings.stash.configured, runtimeSettings.stash.enabled);
+    }
+    if (settingsTab === "索引器") {
+      return serviceStatus(runtimeSettings.jackett.configured, runtimeSettings.jackett.enabled);
+    }
+    if (settingsTab === "下载器") {
+      return serviceStatus(runtimeSettings.qbittorrent.configured, runtimeSettings.qbittorrent.enabled);
+    }
+    if (settingsTab === "任务") {
       return {
-        status: { label: "载入中", tone: "tone-neutral" },
-        rows: [
-          { label: "当前状态", value: "等待后端返回配置状态" },
-          { label: "敏感值", value: "前端不展示明文" },
-          { label: "说明", value: "设置面板会在 dashboard 查询完成后显示实时状态。" }
-        ]
+        label: taskSyncStatus(runtimeSettings.tasks),
+        tone: runtimeSettings.tasks.progressSyncEnabled ? "tone-success" as const : "tone-neutral" as const
       };
+    }
+    if (settingsTab === "系统") {
+      return { label: "已接线", tone: "tone-info" as const };
+    }
+    return { label: "规划中", tone: "tone-neutral" as const };
+  })();
+
+  const saveStashSettings = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setSettingsFeedback((current) => ({ ...current, Stash: null }));
+
+    const result = await updateStashSettings({
+      input: {
+        graphqlUrl: stashForm.graphqlUrl.trim(),
+        apiKey: stashForm.apiKey.trim() || null,
+        libraryPath: stashForm.libraryPath.trim()
+      }
+    });
+
+    if (result.error) {
+      setSettingsFeedback((current) => ({
+        ...current,
+        Stash: { tone: "tone-danger", message: describeQueryError(result.error) }
+      }));
+      return;
+    }
+
+    setStashForm((current) => ({ ...current, apiKey: "" }));
+    setSettingsFeedback((current) => ({
+      ...current,
+      Stash: { tone: "tone-success", message: "Stash 设置已保存，配置文件与运行时快照已刷新。" }
+    }));
+    await refreshDashboard({ requestPolicy: "network-only" });
+  };
+
+  const saveJackettSettings = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setSettingsFeedback((current) => ({ ...current, 索引器: null }));
+
+    const result = await updateJackettSettings({
+      input: {
+        url: jackettForm.url.trim(),
+        apiKey: jackettForm.apiKey.trim() || null
+      }
+    });
+
+    if (result.error) {
+      setSettingsFeedback((current) => ({
+        ...current,
+        索引器: { tone: "tone-danger", message: describeQueryError(result.error) }
+      }));
+      return;
+    }
+
+    setJackettForm((current) => ({ ...current, apiKey: "" }));
+    setSettingsFeedback((current) => ({
+      ...current,
+      索引器: { tone: "tone-success", message: "索引器设置已保存，后端配置已同步。" }
+    }));
+    await refreshDashboard({ requestPolicy: "network-only" });
+  };
+
+  const saveQBittorrentSettings = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setSettingsFeedback((current) => ({ ...current, 下载器: null }));
+
+    const result = await updateQBittorrentSettings({
+      input: {
+        url: qbittorrentForm.url.trim(),
+        username: qbittorrentForm.username.trim(),
+        password: qbittorrentForm.password.trim() || null,
+        defaultSavePath: qbittorrentForm.defaultSavePath.trim(),
+        category: qbittorrentForm.category.trim(),
+        tags: qbittorrentForm.tags.trim()
+      }
+    });
+
+    if (result.error) {
+      setSettingsFeedback((current) => ({
+        ...current,
+        下载器: { tone: "tone-danger", message: describeQueryError(result.error) }
+      }));
+      return;
+    }
+
+    setQBittorrentForm((current) => ({ ...current, password: "" }));
+    setSettingsFeedback((current) => ({
+      ...current,
+      下载器: { tone: "tone-success", message: "下载器设置已保存，新的默认值已同步到后端。" }
+    }));
+    await refreshDashboard({ requestPolicy: "network-only" });
+  };
+
+  const renderSettingsPanel = () => {
+    if (!runtimeSettings) {
+      return (
+        <article className="drawer-card">
+          <div className="drawer-card__head">
+            <h3>{settingsTab}</h3>
+            <span className={`status-chip ${settingsStatus.tone}`}>{settingsStatus.label}</span>
+          </div>
+          <dl className="settings-grid">
+            <div>
+              <dt>当前状态</dt>
+              <dd>等待后端返回配置状态</dd>
+            </div>
+            <div>
+              <dt>说明</dt>
+              <dd>设置面板会在 dashboard 查询完成后显示实时状态。</dd>
+            </div>
+          </dl>
+        </article>
+      );
     }
 
     if (settingsTab === "Stash") {
-      return {
-        status: serviceStatus(runtimeSettings.stash.configured, runtimeSettings.stash.enabled),
-        rows: [
-          { label: "GraphQL URL", value: runtimeSettings.stash.graphqlUrl || "未配置" },
-          { label: "API key", value: boolState(runtimeSettings.stash.apiKeyConfigured) },
-          { label: "Library path", value: runtimeSettings.stash.libraryPath || "未配置" },
-          { label: "说明", value: "当前只暴露状态与路径，不返回敏感值明文。" }
-        ]
-      };
+      return (
+        <article className="drawer-card">
+          <div className="drawer-card__head">
+            <h3>{settingsTab}</h3>
+            <span className={`status-chip ${settingsStatus.tone}`}>{settingsStatus.label}</span>
+          </div>
+          <form className="settings-form" onSubmit={(event) => void saveStashSettings(event)}>
+            <label className="settings-field">
+              <span>GraphQL URL</span>
+              <input
+                value={stashForm.graphqlUrl}
+                onChange={(event) => setStashForm((current) => ({ ...current, graphqlUrl: event.target.value }))}
+                placeholder="http://localhost:9999/graphql"
+              />
+            </label>
+            <label className="settings-field">
+              <span>Library path</span>
+              <input
+                value={stashForm.libraryPath}
+                onChange={(event) => setStashForm((current) => ({ ...current, libraryPath: event.target.value }))}
+                placeholder="/data/library"
+              />
+            </label>
+            <label className="settings-field">
+              <span>API key</span>
+              <input
+                type="password"
+                value={stashForm.apiKey}
+                onChange={(event) => setStashForm((current) => ({ ...current, apiKey: event.target.value }))}
+                placeholder={runtimeSettings.stash.apiKeyConfigured ? "留空则保留现有 API key" : "输入新的 API key"}
+              />
+            </label>
+            <div className="settings-meta">
+              <span>当前 API key: {boolState(runtimeSettings.stash.apiKeyConfigured)}</span>
+              <span>保存后会直接写回配置文件。</span>
+            </div>
+            {settingsFeedback.Stash ? <p className={`settings-feedback ${settingsFeedback.Stash.tone}`}>{settingsFeedback.Stash.message}</p> : null}
+            <div className="settings-actions">
+              <button type="submit" disabled={updatingStash}>保存 Stash 设置</button>
+            </div>
+          </form>
+        </article>
+      );
     }
 
     if (settingsTab === "索引器") {
-      return {
-        status: serviceStatus(runtimeSettings.jackett.configured, runtimeSettings.jackett.enabled),
-        rows: [
-          { label: "Jackett URL", value: runtimeSettings.jackett.url || "未配置" },
-          { label: "API key", value: boolState(runtimeSettings.jackett.apiKeyConfigured) },
-          { label: "运行状态", value: runtimeSettings.jackett.enabled ? "请求链路可用" : "配置不完整" },
-          { label: "说明", value: "后续可继续补 tracker 分组与默认搜索策略。" }
-        ]
-      };
+      return (
+        <article className="drawer-card">
+          <div className="drawer-card__head">
+            <h3>{settingsTab}</h3>
+            <span className={`status-chip ${settingsStatus.tone}`}>{settingsStatus.label}</span>
+          </div>
+          <form className="settings-form" onSubmit={(event) => void saveJackettSettings(event)}>
+            <label className="settings-field">
+              <span>Jackett URL</span>
+              <input
+                value={jackettForm.url}
+                onChange={(event) => setJackettForm((current) => ({ ...current, url: event.target.value }))}
+                placeholder="http://localhost:9117"
+              />
+            </label>
+            <label className="settings-field">
+              <span>API key</span>
+              <input
+                type="password"
+                value={jackettForm.apiKey}
+                onChange={(event) => setJackettForm((current) => ({ ...current, apiKey: event.target.value }))}
+                placeholder={runtimeSettings.jackett.apiKeyConfigured ? "留空则保留现有 API key" : "输入新的 API key"}
+              />
+            </label>
+            <div className="settings-meta">
+              <span>当前 API key: {boolState(runtimeSettings.jackett.apiKeyConfigured)}</span>
+              <span>后续可继续扩展 tracker 分组与默认搜索策略。</span>
+            </div>
+            {settingsFeedback.索引器 ? <p className={`settings-feedback ${settingsFeedback.索引器.tone}`}>{settingsFeedback.索引器.message}</p> : null}
+            <div className="settings-actions">
+              <button type="submit" disabled={updatingJackett}>保存索引器设置</button>
+            </div>
+          </form>
+        </article>
+      );
     }
 
     if (settingsTab === "下载器") {
-      return {
-        status: serviceStatus(runtimeSettings.qbittorrent.configured, runtimeSettings.qbittorrent.enabled),
-        rows: [
-          { label: "qBittorrent URL", value: runtimeSettings.qbittorrent.url || "未配置" },
-          { label: "用户名", value: boolState(runtimeSettings.qbittorrent.usernameConfigured) },
-          { label: "密码", value: boolState(runtimeSettings.qbittorrent.passwordConfigured) },
-          { label: "默认保存路径", value: runtimeSettings.qbittorrent.defaultSavePath || "未配置" },
-          { label: "默认分类", value: runtimeSettings.qbittorrent.category || "未设置" },
-          { label: "默认标签", value: runtimeSettings.qbittorrent.tags || "未设置" }
-        ]
-      };
+      return (
+        <article className="drawer-card">
+          <div className="drawer-card__head">
+            <h3>{settingsTab}</h3>
+            <span className={`status-chip ${settingsStatus.tone}`}>{settingsStatus.label}</span>
+          </div>
+          <form className="settings-form" onSubmit={(event) => void saveQBittorrentSettings(event)}>
+            <label className="settings-field">
+              <span>qBittorrent URL</span>
+              <input
+                value={qbittorrentForm.url}
+                onChange={(event) => setQBittorrentForm((current) => ({ ...current, url: event.target.value }))}
+                placeholder="http://localhost:8080"
+              />
+            </label>
+            <label className="settings-field">
+              <span>用户名</span>
+              <input
+                value={qbittorrentForm.username}
+                onChange={(event) => setQBittorrentForm((current) => ({ ...current, username: event.target.value }))}
+                placeholder="admin"
+              />
+            </label>
+            <label className="settings-field">
+              <span>密码</span>
+              <input
+                type="password"
+                value={qbittorrentForm.password}
+                onChange={(event) => setQBittorrentForm((current) => ({ ...current, password: event.target.value }))}
+                placeholder={runtimeSettings.qbittorrent.passwordConfigured ? "留空则保留现有密码" : "输入新的登录密码"}
+              />
+            </label>
+            <label className="settings-field">
+              <span>默认保存路径</span>
+              <input
+                value={qbittorrentForm.defaultSavePath}
+                onChange={(event) => setQBittorrentForm((current) => ({ ...current, defaultSavePath: event.target.value }))}
+                placeholder="/downloads"
+              />
+            </label>
+            <label className="settings-field">
+              <span>默认分类</span>
+              <input
+                value={qbittorrentForm.category}
+                onChange={(event) => setQBittorrentForm((current) => ({ ...current, category: event.target.value }))}
+                placeholder="moji"
+              />
+            </label>
+            <label className="settings-field">
+              <span>默认标签</span>
+              <input
+                value={qbittorrentForm.tags}
+                onChange={(event) => setQBittorrentForm((current) => ({ ...current, tags: event.target.value }))}
+                placeholder="auto"
+              />
+            </label>
+            <div className="settings-meta">
+              <span>当前密码: {boolState(runtimeSettings.qbittorrent.passwordConfigured)}</span>
+              <span>用户名会直接回显，密码仍只支持覆盖更新。</span>
+            </div>
+            {settingsFeedback.下载器 ? <p className={`settings-feedback ${settingsFeedback.下载器.tone}`}>{settingsFeedback.下载器.message}</p> : null}
+            <div className="settings-actions">
+              <button type="submit" disabled={updatingQBittorrent}>保存下载器设置</button>
+            </div>
+          </form>
+        </article>
+      );
     }
 
     if (settingsTab === "任务") {
-      return {
-        status: {
-          label: taskSyncStatus(runtimeSettings.tasks),
-          tone: runtimeSettings.tasks.progressSyncEnabled ? "tone-success" : "tone-neutral"
-        },
-        rows: [
-          { label: "存储类型", value: runtimeSettings.tasks.store || "json" },
-          { label: "JSON 路径", value: runtimeSettings.tasks.jsonPath || "moji-tasks.json" },
-          { label: "同步间隔", value: `${runtimeSettings.tasks.progressSyncIntervalSeconds} 秒` },
-          { label: "进度同步", value: taskSyncStatus(runtimeSettings.tasks) },
-          { label: "说明", value: "当前同步开关由任务配置和下载链路是否启用共同决定。" }
-        ]
-      };
+      return (
+        <article className="drawer-card">
+          <div className="drawer-card__head">
+            <h3>{settingsTab}</h3>
+            <span className={`status-chip ${settingsStatus.tone}`}>{settingsStatus.label}</span>
+          </div>
+          <dl className="settings-grid">
+            <div>
+              <dt>存储类型</dt>
+              <dd>{runtimeSettings.tasks.store || "json"}</dd>
+            </div>
+            <div>
+              <dt>JSON 路径</dt>
+              <dd>{runtimeSettings.tasks.jsonPath || "moji-tasks.json"}</dd>
+            </div>
+            <div>
+              <dt>同步间隔</dt>
+              <dd>{runtimeSettings.tasks.progressSyncIntervalSeconds} 秒</dd>
+            </div>
+            <div>
+              <dt>进度同步</dt>
+              <dd>{taskSyncStatus(runtimeSettings.tasks)}</dd>
+            </div>
+            <div>
+              <dt>说明</dt>
+              <dd>当前同步开关由任务配置和下载链路是否启用共同决定。</dd>
+            </div>
+          </dl>
+        </article>
+      );
     }
 
     if (settingsTab === "系统") {
-      return {
-        status: { label: "已接线", tone: "tone-info" },
-        rows: [
-          { label: "版本", value: runtimeSettings.system.appVersion || "dev" },
-          { label: "GraphQL schema", value: "已按业务域拆分" },
-          { label: "设置数据", value: "由后端 runtime snapshot 提供" },
-          { label: "说明", value: "后续可继续补充构建信息和运行环境字段。" }
-        ]
-      };
+      return (
+        <article className="drawer-card">
+          <div className="drawer-card__head">
+            <h3>{settingsTab}</h3>
+            <span className={`status-chip ${settingsStatus.tone}`}>{settingsStatus.label}</span>
+          </div>
+          <dl className="settings-grid">
+            <div>
+              <dt>版本</dt>
+              <dd>{runtimeSettings.system.appVersion || "dev"}</dd>
+            </div>
+            <div>
+              <dt>GraphQL schema</dt>
+              <dd>已按业务域拆分</dd>
+            </div>
+            <div>
+              <dt>设置数据</dt>
+              <dd>由后端 runtime snapshot 提供</dd>
+            </div>
+            <div>
+              <dt>说明</dt>
+              <dd>后续可继续补充构建信息和运行环境字段。</dd>
+            </div>
+          </dl>
+        </article>
+      );
     }
 
-    return {
-      status: { label: "规划中", tone: "tone-neutral" },
-      rows: [
-        { label: "当前状态", value: "该分区尚未接入后端契约" },
-        { label: "敏感值", value: "前端不展示明文" },
-        { label: "接入方式", value: "后续会扩展为真实查询或操作面板" },
-        {
-          label: "说明",
-          value:
-            settingsTab === "安全性"
-              ? "这里会放访问控制、CORS 和未来登录策略。"
-              : settingsTab === "日志"
-                ? "这里会放最近日志和错误过滤器。"
-                : settingsTab === "工具"
-                  ? "这里会放重新同步、重新探测和修复动作。"
-                  : settingsTab === "更新历史"
-                    ? "这里会放版本记录和升级提示。"
-                    : "这里会放项目定位、许可证和作者信息。"
-        }
-      ]
-    };
-  })();
+    return (
+      <article className="drawer-card">
+        <div className="drawer-card__head">
+          <h3>{settingsTab}</h3>
+          <span className={`status-chip ${settingsStatus.tone}`}>{settingsStatus.label}</span>
+        </div>
+        <dl className="settings-grid">
+          <div>
+            <dt>当前状态</dt>
+            <dd>该分区尚未接入后端契约</dd>
+          </div>
+          <div>
+            <dt>敏感值</dt>
+            <dd>前端不展示明文</dd>
+          </div>
+          <div>
+            <dt>接入方式</dt>
+            <dd>后续会扩展为真实查询或操作面板</dd>
+          </div>
+          <div>
+            <dt>说明</dt>
+            <dd>
+              {settingsTab === "安全性"
+                ? "这里会放访问控制、CORS 和未来登录策略。"
+                : settingsTab === "日志"
+                  ? "这里会放最近日志和错误过滤器。"
+                  : settingsTab === "工具"
+                    ? "这里会放重新同步、重新探测和修复动作。"
+                    : settingsTab === "更新历史"
+                      ? "这里会放版本记录和升级提示。"
+                      : "这里会放项目定位、许可证和作者信息。"}
+            </dd>
+          </div>
+        </dl>
+      </article>
+    );
+  };
 
   const selectedHelpTopic =
     HELP_TOPICS.find((topic) => topic.id === helpTopicId) ?? HELP_TOPICS[0];
@@ -1083,20 +1441,7 @@ function App() {
                     ))}
                   </div>
 
-                  <article className="drawer-card">
-                    <div className="drawer-card__head">
-                      <h3>{settingsTab}</h3>
-                      <span className={`status-chip ${settingsPanel.status.tone}`}>{settingsPanel.status.label}</span>
-                    </div>
-                    <dl className="settings-grid">
-                      {settingsPanel.rows.map((row) => (
-                        <div key={`${settingsTab}-${row.label}`}>
-                          <dt>{row.label}</dt>
-                          <dd>{row.value}</dd>
-                        </div>
-                      ))}
-                    </dl>
-                  </article>
+                  {renderSettingsPanel()}
                 </div>
               ) : null}
 

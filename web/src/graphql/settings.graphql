@@ -1,0 +1,38 @@
+mutation UpdateStashSettingsDocument($input: UpdateStashSettingsInput!) {
+  updateStashSettings(input: $input) {
+    stash {
+      configured
+      enabled
+      graphqlUrl
+      apiKeyConfigured
+      libraryPath
+    }
+  }
+}
+
+mutation UpdateJackettSettingsDocument($input: UpdateJackettSettingsInput!) {
+  updateJackettSettings(input: $input) {
+    jackett {
+      configured
+      enabled
+      url
+      apiKeyConfigured
+    }
+  }
+}
+
+mutation UpdateQBittorrentSettingsDocument($input: UpdateQBittorrentSettingsInput!) {
+  updateQBittorrentSettings(input: $input) {
+    qbittorrent {
+      configured
+      enabled
+      url
+      username
+      usernameConfigured
+      passwordConfigured
+      defaultSavePath
+      category
+      tags
+    }
+  }
+}

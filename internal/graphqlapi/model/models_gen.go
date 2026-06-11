@@ -87,6 +87,7 @@ type QBittorrentSettings struct {
 	Configured         bool   `json:"configured"`
 	Enabled            bool   `json:"enabled"`
 	URL                string `json:"url"`
+	Username           string `json:"username"`
 	UsernameConfigured bool   `json:"usernameConfigured"`
 	PasswordConfigured bool   `json:"passwordConfigured"`
 	DefaultSavePath    string `json:"defaultSavePath"`
@@ -170,4 +171,24 @@ type TaskSettings struct {
 	JSONPath                    string `json:"jsonPath"`
 	ProgressSyncIntervalSeconds int    `json:"progressSyncIntervalSeconds"`
 	ProgressSyncEnabled         bool   `json:"progressSyncEnabled"`
+}
+
+type UpdateJackettSettingsInput struct {
+	URL    string  `json:"url"`
+	APIKey *string `json:"apiKey,omitempty"`
+}
+
+type UpdateQBittorrentSettingsInput struct {
+	URL             string  `json:"url"`
+	Username        string  `json:"username"`
+	Password        *string `json:"password,omitempty"`
+	DefaultSavePath string  `json:"defaultSavePath"`
+	Category        string  `json:"category"`
+	Tags            string  `json:"tags"`
+}
+
+type UpdateStashSettingsInput struct {
+	GraphqlURL  string  `json:"graphqlUrl"`
+	APIKey      *string `json:"apiKey,omitempty"`
+	LibraryPath string  `json:"libraryPath"`
 }

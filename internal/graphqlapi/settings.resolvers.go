@@ -6,56 +6,75 @@ package graphqlapi
 
 import (
 	"context"
+	"errors"
 
 	"github.com/leothevan2444/moji/internal/graphqlapi/model"
 )
 
-// Settings is the resolver for the settings field.
-func (r *queryResolver) Settings(ctx context.Context) (*model.Settings, error) {
-	if r.RuntimeSettings == nil {
-		return &model.Settings{
-			Stash: &model.StashSettings{},
-			Jackett: &model.JackettSettings{},
-			Qbittorrent: &model.QBittorrentSettings{},
-			Tasks: &model.TaskSettings{},
-			System: &model.SystemSettings{
-				AppVersion: r.AppVersion,
-			},
-		}, nil
+// UpdateStashSettings is the resolver for the updateStashSettings field.
+func (r *mutationResolver) UpdateStashSettings(ctx context.Context, input model.UpdateStashSettingsInput) (*model.Settings, error) {
+	_ = ctx
+	if r.SettingsEditor == nil {
+		return nil, errors.New("settings editor is not configured")
 	}
 
-	return &model.Settings{
-		Stash: &model.StashSettings{
-			Configured:       r.RuntimeSettings.Stash.Configured,
-			Enabled:          r.RuntimeSettings.Stash.Enabled,
-			GraphqlURL:       r.RuntimeSettings.Stash.GraphQLURL,
-			APIKeyConfigured: r.RuntimeSettings.Stash.APIKeyConfigured,
-			LibraryPath:      r.RuntimeSettings.Stash.LibraryPath,
-		},
-		Jackett: &model.JackettSettings{
-			Configured:       r.RuntimeSettings.Jackett.Configured,
-			Enabled:          r.RuntimeSettings.Jackett.Enabled,
-			URL:              r.RuntimeSettings.Jackett.URL,
-			APIKeyConfigured: r.RuntimeSettings.Jackett.APIKeyConfigured,
-		},
-		Qbittorrent: &model.QBittorrentSettings{
-			Configured:         r.RuntimeSettings.QBittorrent.Configured,
-			Enabled:            r.RuntimeSettings.QBittorrent.Enabled,
-			URL:                r.RuntimeSettings.QBittorrent.URL,
-			UsernameConfigured: r.RuntimeSettings.QBittorrent.UsernameConfigured,
-			PasswordConfigured: r.RuntimeSettings.QBittorrent.PasswordConfigured,
-			DefaultSavePath:    r.RuntimeSettings.QBittorrent.DefaultSavePath,
-			Category:           r.RuntimeSettings.QBittorrent.Category,
-			Tags:               r.RuntimeSettings.QBittorrent.Tags,
-		},
-		Tasks: &model.TaskSettings{
-			Store:                       r.RuntimeSettings.Tasks.Store,
-			JSONPath:                    r.RuntimeSettings.Tasks.JSONPath,
-			ProgressSyncIntervalSeconds: r.RuntimeSettings.Tasks.ProgressSyncIntervalSeconds,
-			ProgressSyncEnabled:         r.RuntimeSettings.Tasks.ProgressSyncEnabled,
-		},
-		System: &model.SystemSettings{
-			AppVersion: r.RuntimeSettings.System.AppVersion,
-		},
-	}, nil
+	snapshot, err := r.SettingsEditor.UpdateStashSettings(UpdateStashSettingsInput{
+		GraphQLURL:  input.GraphqlURL,
+		APIKey:      input.APIKey,
+		LibraryPath: input.LibraryPath,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return settingsSnapshotToModel(snapshot, r.AppVersion), nil
+}
+
+// UpdateJackettSettings is the resolver for the updateJackettSettings field.
+func (r *mutationResolver) UpdateJackettSettings(ctx context.Context, input model.UpdateJackettSettingsInput) (*model.Settings, error) {
+	_ = ctx
+	if r.SettingsEditor == nil {
+		return nil, errors.New("settings editor is not configured")
+	}
+
+	snapshot, err := r.SettingsEditor.UpdateJackettSettings(UpdateJackettSettingsInput{
+		URL:    input.URL,
+		APIKey: input.APIKey,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return settingsSnapshotToModel(snapshot, r.AppVersion), nil
+}
+
+// UpdateQBittorrentSettings is the resolver for the updateQBittorrentSettings field.
+func (r *mutationResolver) UpdateQBittorrentSettings(ctx context.Context, input model.UpdateQBittorrentSettingsInput) (*model.Settings, error) {
+	_ = ctx
+	if r.SettingsEditor == nil {
+		return nil, errors.New("settings editor is not configured")
+	}
+
+	snapshot, err := r.SettingsEditor.UpdateQBittorrentSettings(UpdateQBittorrentSettingsInput{
+		URL:             input.URL,
+		Username:        input.Username,
+		Password:        input.Password,
+		DefaultSavePath: input.DefaultSavePath,
+		Category:        input.Category,
+		Tags:            input.Tags,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return settingsSnapshotToModel(snapshot, r.AppVersion), nil
+}
+
+// Settings is the resolver for the settings field.
+func (r *queryResolver) Settings(ctx context.Context) (*model.Settings, error) {
+	if r.SettingsEditor != nil {
+		return settingsSnapshotToModel(r.SettingsEditor.Snapshot(), r.AppVersion), nil
+	}
+
+	return settingsSnapshotToModel(r.RuntimeSettings, r.AppVersion), nil
 }

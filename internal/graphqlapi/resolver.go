@@ -32,6 +32,33 @@ type DownloaderService interface {
 	TriggerStashScans(ctx context.Context, scanner downloader.StashScanner) ([]*downloader.Task, error)
 }
 
+type SettingsEditor interface {
+	Snapshot() *SettingsSnapshot
+	UpdateStashSettings(input UpdateStashSettingsInput) (*SettingsSnapshot, error)
+	UpdateJackettSettings(input UpdateJackettSettingsInput) (*SettingsSnapshot, error)
+	UpdateQBittorrentSettings(input UpdateQBittorrentSettingsInput) (*SettingsSnapshot, error)
+}
+
+type UpdateStashSettingsInput struct {
+	GraphQLURL  string
+	APIKey      *string
+	LibraryPath string
+}
+
+type UpdateJackettSettingsInput struct {
+	URL    string
+	APIKey *string
+}
+
+type UpdateQBittorrentSettingsInput struct {
+	URL             string
+	Username        string
+	Password        *string
+	DefaultSavePath string
+	Category        string
+	Tags            string
+}
+
 type SettingsSnapshot struct {
 	Stash       StashSettingsSnapshot
 	Jackett     JackettSettingsSnapshot
@@ -56,14 +83,15 @@ type JackettSettingsSnapshot struct {
 }
 
 type QBittorrentSettingsSnapshot struct {
-	Configured        bool
-	Enabled           bool
-	URL               string
+	Configured         bool
+	Enabled            bool
+	URL                string
+	Username           string
 	UsernameConfigured bool
 	PasswordConfigured bool
-	DefaultSavePath   string
-	Category          string
-	Tags              string
+	DefaultSavePath    string
+	Category           string
+	Tags               string
 }
 
 type TaskSettingsSnapshot struct {
@@ -78,12 +106,13 @@ type SystemSettingsSnapshot struct {
 }
 
 type Resolver struct {
-	Tracker    tracker.Tracker
-	Torrent    TorrentClient
-	Downloader DownloaderService
-	Stash      StashService
+	Tracker         tracker.Tracker
+	Torrent         TorrentClient
+	Downloader      DownloaderService
+	Stash           StashService
+	SettingsEditor  SettingsEditor
 	RuntimeSettings *SettingsSnapshot
-	AppVersion string
+	AppVersion      string
 }
 
 func NewResolver(tr tracker.Tracker, torrent TorrentClient, downloader DownloaderService, stash StashService, version string) *Resolver {

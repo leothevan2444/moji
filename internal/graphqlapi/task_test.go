@@ -314,6 +314,7 @@ func TestSettingsQueryReturnsRuntimeSnapshot(t *testing.T) {
 			Configured:         false,
 			Enabled:            false,
 			URL:                "http://qbittorrent.invalid",
+			Username:           "operator",
 			UsernameConfigured: true,
 			PasswordConfigured: false,
 			DefaultSavePath:    "/downloads",
@@ -335,7 +336,7 @@ func TestSettingsQueryReturnsRuntimeSnapshot(t *testing.T) {
 		settings {
 			stash { configured enabled graphqlUrl apiKeyConfigured libraryPath }
 			jackett { configured enabled url apiKeyConfigured }
-			qbittorrent { configured enabled url usernameConfigured passwordConfigured defaultSavePath category tags }
+			qbittorrent { configured enabled url username usernameConfigured passwordConfigured defaultSavePath category tags }
 			tasks { store jsonPath progressSyncIntervalSeconds progressSyncEnabled }
 			system { appVersion }
 		}
@@ -348,6 +349,9 @@ func TestSettingsQueryReturnsRuntimeSnapshot(t *testing.T) {
 	}
 	if resp.Data.Settings.Qbittorrent.PasswordConfigured {
 		t.Fatalf("expected passwordConfigured false, got %+v", resp.Data.Settings.Qbittorrent)
+	}
+	if resp.Data.Settings.Qbittorrent.Username != "operator" {
+		t.Fatalf("unexpected qbittorrent username: %+v", resp.Data.Settings.Qbittorrent)
 	}
 	if resp.Data.Settings.Tasks.ProgressSyncIntervalSeconds != 60 || !resp.Data.Settings.Tasks.ProgressSyncEnabled {
 		t.Fatalf("unexpected task settings: %+v", resp.Data.Settings.Tasks)
@@ -366,6 +370,94 @@ func TestSettingsQueryFallsBackToAppVersion(t *testing.T) {
 	}
 	if resp.Data.Settings.System.AppVersion != "fallback-version" {
 		t.Fatalf("unexpected app version: %+v", resp.Data.Settings.System)
+	}
+}
+
+func TestSettingsQueryUsesSettingsEditorSnapshot(t *testing.T) {
+	resolver := NewResolver(nil, nil, nil, nil, "test-version")
+	resolver.RuntimeSettings = &SettingsSnapshot{
+		System: SystemSettingsSnapshot{AppVersion: "stale-version"},
+	}
+	resolver.SettingsEditor = &fakeSettingsEditor{
+		snapshot: &SettingsSnapshot{
+			QBittorrent: QBittorrentSettingsSnapshot{
+				URL:      "http://qb.invalid",
+				Username: "editor-user",
+			},
+			System: SystemSettingsSnapshot{AppVersion: "editor-version"},
+		},
+	}
+
+	resp := executeGraphQL(t, resolver, `{ settings { qbittorrent { url username } system { appVersion } } }`)
+	if len(resp.Errors) > 0 {
+		t.Fatalf("expected no errors, got %+v", resp.Errors)
+	}
+	if resp.Data.Settings.Qbittorrent.Username != "editor-user" {
+		t.Fatalf("unexpected qbittorrent settings: %+v", resp.Data.Settings.Qbittorrent)
+	}
+	if resp.Data.Settings.System.AppVersion != "editor-version" {
+		t.Fatalf("unexpected system settings: %+v", resp.Data.Settings.System)
+	}
+}
+
+func TestUpdateStashSettingsMutation(t *testing.T) {
+	editor := &fakeSettingsEditor{
+		updateStashSnapshot: &SettingsSnapshot{
+			Stash: StashSettingsSnapshot{
+				Configured:       true,
+				Enabled:          false,
+				GraphQLURL:       "http://stash.updated/graphql",
+				APIKeyConfigured: true,
+				LibraryPath:      "/library/updated",
+			},
+			System: SystemSettingsSnapshot{AppVersion: "test-version"},
+		},
+	}
+	resolver := NewResolver(nil, nil, nil, nil, "test-version")
+	resolver.SettingsEditor = editor
+
+	resp := executeGraphQL(t, resolver, `mutation {
+		updateStashSettings(input: {
+			graphqlUrl: "http://stash.updated/graphql"
+			apiKey: "secret"
+			libraryPath: "/library/updated"
+		}) {
+			stash { graphqlUrl apiKeyConfigured libraryPath }
+		}
+	}`)
+	if len(resp.Errors) > 0 {
+		t.Fatalf("expected no errors, got %+v", resp.Errors)
+	}
+	if editor.stashInput.GraphQLURL != "http://stash.updated/graphql" || editor.stashInput.LibraryPath != "/library/updated" {
+		t.Fatalf("unexpected stash input: %+v", editor.stashInput)
+	}
+	if editor.stashInput.APIKey == nil || *editor.stashInput.APIKey != "secret" {
+		t.Fatalf("unexpected stash api key: %+v", editor.stashInput.APIKey)
+	}
+	if resp.Data.UpdateStashSettings.Stash.GraphqlURL != "http://stash.updated/graphql" {
+		t.Fatalf("unexpected stash response: %+v", resp.Data.UpdateStashSettings.Stash)
+	}
+}
+
+func TestUpdateQBittorrentSettingsRequiresEditor(t *testing.T) {
+	resolver := NewResolver(nil, nil, nil, nil, "test-version")
+
+	resp := executeGraphQL(t, resolver, `mutation {
+		updateQBittorrentSettings(input: {
+			url: "http://localhost:8080"
+			username: "admin"
+			defaultSavePath: "/downloads"
+			category: "moji"
+			tags: "auto"
+		}) {
+			qbittorrent { url }
+		}
+	}`)
+	if len(resp.Errors) == 0 {
+		t.Fatal("expected settings editor configuration error")
+	}
+	if got := resp.Errors[0].Message; got != "settings editor is not configured" {
+		t.Fatalf("unexpected error: %q", got)
 	}
 }
 
@@ -464,6 +556,7 @@ type graphQLTaskResponse struct {
 				Configured         bool   `json:"configured"`
 				Enabled            bool   `json:"enabled"`
 				URL                string `json:"url"`
+				Username           string `json:"username"`
 				UsernameConfigured bool   `json:"usernameConfigured"`
 				PasswordConfigured bool   `json:"passwordConfigured"`
 				DefaultSavePath    string `json:"defaultSavePath"`
@@ -480,11 +573,44 @@ type graphQLTaskResponse struct {
 				AppVersion string `json:"appVersion"`
 			} `json:"system"`
 		} `json:"settings"`
+		UpdateStashSettings struct {
+			Stash struct {
+				GraphqlURL       string `json:"graphqlUrl"`
+				APIKeyConfigured bool   `json:"apiKeyConfigured"`
+				LibraryPath      string `json:"libraryPath"`
+			} `json:"stash"`
+		} `json:"updateStashSettings"`
 		QbittorrentAdd bool `json:"qbittorrentAdd"`
 	} `json:"data"`
 	Errors []struct {
 		Message string `json:"message"`
 	} `json:"errors"`
+}
+
+type fakeSettingsEditor struct {
+	snapshot                  *SettingsSnapshot
+	stashInput                UpdateStashSettingsInput
+	updateStashSnapshot       *SettingsSnapshot
+	qbittorrentInput          UpdateQBittorrentSettingsInput
+	updateQBittorrentSnapshot *SettingsSnapshot
+}
+
+func (f *fakeSettingsEditor) Snapshot() *SettingsSnapshot {
+	return f.snapshot
+}
+
+func (f *fakeSettingsEditor) UpdateStashSettings(input UpdateStashSettingsInput) (*SettingsSnapshot, error) {
+	f.stashInput = input
+	return f.updateStashSnapshot, nil
+}
+
+func (f *fakeSettingsEditor) UpdateJackettSettings(UpdateJackettSettingsInput) (*SettingsSnapshot, error) {
+	return f.snapshot, nil
+}
+
+func (f *fakeSettingsEditor) UpdateQBittorrentSettings(input UpdateQBittorrentSettingsInput) (*SettingsSnapshot, error) {
+	f.qbittorrentInput = input
+	return f.updateQBittorrentSnapshot, nil
 }
 
 func executeGraphQL(t *testing.T, resolver *Resolver, query string) graphQLTaskResponse {

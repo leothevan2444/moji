@@ -84,12 +84,15 @@ type ComplexityRoot struct {
 	}
 
 	Mutation struct {
-		AddTorrent        func(childComplexity int, input model.QBittorrentAddInput) int
-		DownloadMedia     func(childComplexity int, input model.DownloadMediaInput) int
-		QbittorrentAdd    func(childComplexity int, input model.QBittorrentAddInput) int
-		StashMetadataScan func(childComplexity int, input model.StashMetadataScanInput) int
-		SyncTaskProgress  func(childComplexity int) int
-		TriggerStashScans func(childComplexity int) int
+		AddTorrent                func(childComplexity int, input model.QBittorrentAddInput) int
+		DownloadMedia             func(childComplexity int, input model.DownloadMediaInput) int
+		QbittorrentAdd            func(childComplexity int, input model.QBittorrentAddInput) int
+		StashMetadataScan         func(childComplexity int, input model.StashMetadataScanInput) int
+		SyncTaskProgress          func(childComplexity int) int
+		TriggerStashScans         func(childComplexity int) int
+		UpdateJackettSettings     func(childComplexity int, input model.UpdateJackettSettingsInput) int
+		UpdateQBittorrentSettings func(childComplexity int, input model.UpdateQBittorrentSettingsInput) int
+		UpdateStashSettings       func(childComplexity int, input model.UpdateStashSettingsInput) int
 	}
 
 	QBTorrent struct {
@@ -114,6 +117,7 @@ type ComplexityRoot struct {
 		PasswordConfigured func(childComplexity int) int
 		Tags               func(childComplexity int) int
 		URL                func(childComplexity int) int
+		Username           func(childComplexity int) int
 		UsernameConfigured func(childComplexity int) int
 	}
 
@@ -198,6 +202,9 @@ type MutationResolver interface {
 	DownloadMedia(ctx context.Context, input model.DownloadMediaInput) (*model.Task, error)
 	SyncTaskProgress(ctx context.Context) ([]*model.Task, error)
 	TriggerStashScans(ctx context.Context) ([]*model.Task, error)
+	UpdateStashSettings(ctx context.Context, input model.UpdateStashSettingsInput) (*model.Settings, error)
+	UpdateJackettSettings(ctx context.Context, input model.UpdateJackettSettingsInput) (*model.Settings, error)
+	UpdateQBittorrentSettings(ctx context.Context, input model.UpdateQBittorrentSettingsInput) (*model.Settings, error)
 	StashMetadataScan(ctx context.Context, input model.StashMetadataScanInput) (string, error)
 }
 type QueryResolver interface {
@@ -467,6 +474,42 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.Mutation.TriggerStashScans(childComplexity), true
 
+	case "Mutation.updateJackettSettings":
+		if e.complexity.Mutation.UpdateJackettSettings == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_updateJackettSettings_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.UpdateJackettSettings(childComplexity, args["input"].(model.UpdateJackettSettingsInput)), true
+
+	case "Mutation.updateQBittorrentSettings":
+		if e.complexity.Mutation.UpdateQBittorrentSettings == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_updateQBittorrentSettings_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.UpdateQBittorrentSettings(childComplexity, args["input"].(model.UpdateQBittorrentSettingsInput)), true
+
+	case "Mutation.updateStashSettings":
+		if e.complexity.Mutation.UpdateStashSettings == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_updateStashSettings_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.UpdateStashSettings(childComplexity, args["input"].(model.UpdateStashSettingsInput)), true
+
 	case "QBTorrent.addedOn":
 		if e.complexity.QBTorrent.AddedOn == nil {
 			break
@@ -592,6 +635,13 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.QBittorrentSettings.URL(childComplexity), true
+
+	case "QBittorrentSettings.username":
+		if e.complexity.QBittorrentSettings.Username == nil {
+			break
+		}
+
+		return e.complexity.QBittorrentSettings.Username(childComplexity), true
 
 	case "QBittorrentSettings.usernameConfigured":
 		if e.complexity.QBittorrentSettings.UsernameConfigured == nil {
@@ -1003,6 +1053,9 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 		ec.unmarshalInputJackettSearchInput,
 		ec.unmarshalInputQBittorrentAddInput,
 		ec.unmarshalInputStashMetadataScanInput,
+		ec.unmarshalInputUpdateJackettSettingsInput,
+		ec.unmarshalInputUpdateQBittorrentSettingsInput,
+		ec.unmarshalInputUpdateStashSettingsInput,
 	)
 	first := true
 
@@ -1149,6 +1202,17 @@ type JackettSearchResult {
   settings: Settings!
 }
 
+extend type Mutation {
+  "Update Stash settings and persist them to backend config"
+  updateStashSettings(input: UpdateStashSettingsInput!): Settings!
+
+  "Update Jackett settings and persist them to backend config"
+  updateJackettSettings(input: UpdateJackettSettingsInput!): Settings!
+
+  "Update qBittorrent settings and persist them to backend config"
+  updateQBittorrentSettings(input: UpdateQBittorrentSettingsInput!): Settings!
+}
+
 type Settings {
   stash: StashSettings!
   jackett: JackettSettings!
@@ -1176,6 +1240,7 @@ type QBittorrentSettings {
   configured: Boolean!
   enabled: Boolean!
   url: String!
+  username: String!
   usernameConfigured: Boolean!
   passwordConfigured: Boolean!
   defaultSavePath: String!
@@ -1192,6 +1257,26 @@ type TaskSettings {
 
 type SystemSettings {
   appVersion: String!
+}
+
+input UpdateStashSettingsInput {
+  graphqlUrl: String!
+  apiKey: String
+  libraryPath: String!
+}
+
+input UpdateJackettSettingsInput {
+  url: String!
+  apiKey: String
+}
+
+input UpdateQBittorrentSettingsInput {
+  url: String!
+  username: String!
+  password: String
+  defaultSavePath: String!
+  category: String!
+  tags: String!
 }
 `, BuiltIn: false},
 	{Name: "../../../graphql/moji/types/stash.graphql", Input: `extend type Query {
@@ -1440,6 +1525,90 @@ func (ec *executionContext) field_Mutation_stashMetadataScan_argsInput(
 	}
 
 	var zeroVal model.StashMetadataScanInput
+	return zeroVal, nil
+}
+
+func (ec *executionContext) field_Mutation_updateJackettSettings_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := ec.field_Mutation_updateJackettSettings_argsInput(ctx, rawArgs)
+	if err != nil {
+		return nil, err
+	}
+	args["input"] = arg0
+	return args, nil
+}
+func (ec *executionContext) field_Mutation_updateJackettSettings_argsInput(
+	ctx context.Context,
+	rawArgs map[string]any,
+) (model.UpdateJackettSettingsInput, error) {
+	if _, ok := rawArgs["input"]; !ok {
+		var zeroVal model.UpdateJackettSettingsInput
+		return zeroVal, nil
+	}
+
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
+	if tmp, ok := rawArgs["input"]; ok {
+		return ec.unmarshalNUpdateJackettSettingsInput2githubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐUpdateJackettSettingsInput(ctx, tmp)
+	}
+
+	var zeroVal model.UpdateJackettSettingsInput
+	return zeroVal, nil
+}
+
+func (ec *executionContext) field_Mutation_updateQBittorrentSettings_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := ec.field_Mutation_updateQBittorrentSettings_argsInput(ctx, rawArgs)
+	if err != nil {
+		return nil, err
+	}
+	args["input"] = arg0
+	return args, nil
+}
+func (ec *executionContext) field_Mutation_updateQBittorrentSettings_argsInput(
+	ctx context.Context,
+	rawArgs map[string]any,
+) (model.UpdateQBittorrentSettingsInput, error) {
+	if _, ok := rawArgs["input"]; !ok {
+		var zeroVal model.UpdateQBittorrentSettingsInput
+		return zeroVal, nil
+	}
+
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
+	if tmp, ok := rawArgs["input"]; ok {
+		return ec.unmarshalNUpdateQBittorrentSettingsInput2githubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐUpdateQBittorrentSettingsInput(ctx, tmp)
+	}
+
+	var zeroVal model.UpdateQBittorrentSettingsInput
+	return zeroVal, nil
+}
+
+func (ec *executionContext) field_Mutation_updateStashSettings_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := ec.field_Mutation_updateStashSettings_argsInput(ctx, rawArgs)
+	if err != nil {
+		return nil, err
+	}
+	args["input"] = arg0
+	return args, nil
+}
+func (ec *executionContext) field_Mutation_updateStashSettings_argsInput(
+	ctx context.Context,
+	rawArgs map[string]any,
+) (model.UpdateStashSettingsInput, error) {
+	if _, ok := rawArgs["input"]; !ok {
+		var zeroVal model.UpdateStashSettingsInput
+		return zeroVal, nil
+	}
+
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
+	if tmp, ok := rawArgs["input"]; ok {
+		return ec.unmarshalNUpdateStashSettingsInput2githubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐUpdateStashSettingsInput(ctx, tmp)
+	}
+
+	var zeroVal model.UpdateStashSettingsInput
 	return zeroVal, nil
 }
 
@@ -3232,6 +3401,207 @@ func (ec *executionContext) fieldContext_Mutation_triggerStashScans(_ context.Co
 	return fc, nil
 }
 
+func (ec *executionContext) _Mutation_updateStashSettings(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Mutation_updateStashSettings(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().UpdateStashSettings(rctx, fc.Args["input"].(model.UpdateStashSettingsInput))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*model.Settings)
+	fc.Result = res
+	return ec.marshalNSettings2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐSettings(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Mutation_updateStashSettings(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "stash":
+				return ec.fieldContext_Settings_stash(ctx, field)
+			case "jackett":
+				return ec.fieldContext_Settings_jackett(ctx, field)
+			case "qbittorrent":
+				return ec.fieldContext_Settings_qbittorrent(ctx, field)
+			case "tasks":
+				return ec.fieldContext_Settings_tasks(ctx, field)
+			case "system":
+				return ec.fieldContext_Settings_system(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type Settings", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_updateStashSettings_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_updateJackettSettings(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Mutation_updateJackettSettings(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().UpdateJackettSettings(rctx, fc.Args["input"].(model.UpdateJackettSettingsInput))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*model.Settings)
+	fc.Result = res
+	return ec.marshalNSettings2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐSettings(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Mutation_updateJackettSettings(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "stash":
+				return ec.fieldContext_Settings_stash(ctx, field)
+			case "jackett":
+				return ec.fieldContext_Settings_jackett(ctx, field)
+			case "qbittorrent":
+				return ec.fieldContext_Settings_qbittorrent(ctx, field)
+			case "tasks":
+				return ec.fieldContext_Settings_tasks(ctx, field)
+			case "system":
+				return ec.fieldContext_Settings_system(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type Settings", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_updateJackettSettings_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_updateQBittorrentSettings(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Mutation_updateQBittorrentSettings(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().UpdateQBittorrentSettings(rctx, fc.Args["input"].(model.UpdateQBittorrentSettingsInput))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*model.Settings)
+	fc.Result = res
+	return ec.marshalNSettings2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐSettings(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Mutation_updateQBittorrentSettings(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "stash":
+				return ec.fieldContext_Settings_stash(ctx, field)
+			case "jackett":
+				return ec.fieldContext_Settings_jackett(ctx, field)
+			case "qbittorrent":
+				return ec.fieldContext_Settings_qbittorrent(ctx, field)
+			case "tasks":
+				return ec.fieldContext_Settings_tasks(ctx, field)
+			case "system":
+				return ec.fieldContext_Settings_system(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type Settings", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_updateQBittorrentSettings_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _Mutation_stashMetadataScan(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_Mutation_stashMetadataScan(ctx, field)
 	if err != nil {
@@ -3891,6 +4261,50 @@ func (ec *executionContext) _QBittorrentSettings_url(ctx context.Context, field 
 }
 
 func (ec *executionContext) fieldContext_QBittorrentSettings_url(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "QBittorrentSettings",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _QBittorrentSettings_username(ctx context.Context, field graphql.CollectedField, obj *model.QBittorrentSettings) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_QBittorrentSettings_username(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Username, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_QBittorrentSettings_username(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "QBittorrentSettings",
 		Field:      field,
@@ -4973,6 +5387,8 @@ func (ec *executionContext) fieldContext_Settings_qbittorrent(_ context.Context,
 				return ec.fieldContext_QBittorrentSettings_enabled(ctx, field)
 			case "url":
 				return ec.fieldContext_QBittorrentSettings_url(ctx, field)
+			case "username":
+				return ec.fieldContext_QBittorrentSettings_username(ctx, field)
 			case "usernameConfigured":
 				return ec.fieldContext_QBittorrentSettings_usernameConfigured(ctx, field)
 			case "passwordConfigured":
@@ -9062,6 +9478,143 @@ func (ec *executionContext) unmarshalInputStashMetadataScanInput(ctx context.Con
 	return it, nil
 }
 
+func (ec *executionContext) unmarshalInputUpdateJackettSettingsInput(ctx context.Context, obj any) (model.UpdateJackettSettingsInput, error) {
+	var it model.UpdateJackettSettingsInput
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"url", "apiKey"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "url":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("url"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.URL = data
+		case "apiKey":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("apiKey"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.APIKey = data
+		}
+	}
+
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputUpdateQBittorrentSettingsInput(ctx context.Context, obj any) (model.UpdateQBittorrentSettingsInput, error) {
+	var it model.UpdateQBittorrentSettingsInput
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"url", "username", "password", "defaultSavePath", "category", "tags"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "url":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("url"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.URL = data
+		case "username":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("username"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Username = data
+		case "password":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("password"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Password = data
+		case "defaultSavePath":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("defaultSavePath"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.DefaultSavePath = data
+		case "category":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("category"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Category = data
+		case "tags":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("tags"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Tags = data
+		}
+	}
+
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputUpdateStashSettingsInput(ctx context.Context, obj any) (model.UpdateStashSettingsInput, error) {
+	var it model.UpdateStashSettingsInput
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"graphqlUrl", "apiKey", "libraryPath"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "graphqlUrl":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("graphqlUrl"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.GraphqlURL = data
+		case "apiKey":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("apiKey"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.APIKey = data
+		case "libraryPath":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("libraryPath"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.LibraryPath = data
+		}
+	}
+
+	return it, nil
+}
+
 // endregion **************************** input.gotpl *****************************
 
 // region    ************************** interface.gotpl ***************************
@@ -9385,6 +9938,27 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
+		case "updateStashSettings":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_updateStashSettings(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "updateJackettSettings":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_updateJackettSettings(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "updateQBittorrentSettings":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_updateQBittorrentSettings(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
 		case "stashMetadataScan":
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
 				return ec._Mutation_stashMetadataScan(ctx, field)
@@ -9527,6 +10101,11 @@ func (ec *executionContext) _QBittorrentSettings(ctx context.Context, sel ast.Se
 			}
 		case "url":
 			out.Values[i] = ec._QBittorrentSettings_url(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "username":
+			out.Values[i] = ec._QBittorrentSettings_username(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
@@ -10909,6 +11488,21 @@ func (ec *executionContext) marshalNTaskSettings2ᚖgithubᚗcomᚋleothevan2444
 		return graphql.Null
 	}
 	return ec._TaskSettings(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalNUpdateJackettSettingsInput2githubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐUpdateJackettSettingsInput(ctx context.Context, v any) (model.UpdateJackettSettingsInput, error) {
+	res, err := ec.unmarshalInputUpdateJackettSettingsInput(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) unmarshalNUpdateQBittorrentSettingsInput2githubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐUpdateQBittorrentSettingsInput(ctx context.Context, v any) (model.UpdateQBittorrentSettingsInput, error) {
+	res, err := ec.unmarshalInputUpdateQBittorrentSettingsInput(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) unmarshalNUpdateStashSettingsInput2githubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐUpdateStashSettingsInput(ctx context.Context, v any) (model.UpdateStashSettingsInput, error) {
+	res, err := ec.unmarshalInputUpdateStashSettingsInput(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
 }
 
 func (ec *executionContext) marshalN__Directive2githubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐDirective(ctx context.Context, sel ast.SelectionSet, v introspection.Directive) graphql.Marshaler {

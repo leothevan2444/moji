@@ -37,10 +37,7 @@ type Config struct {
 }
 
 func Load() (*Config, error) {
-	path := os.Getenv("MOJI_CONFIG")
-	if path == "" {
-		path = "config.yaml"
-	}
+	path := DefaultPath()
 	return LoadFromPath(path)
 }
 

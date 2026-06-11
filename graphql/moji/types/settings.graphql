@@ -3,6 +3,17 @@ extend type Query {
   settings: Settings!
 }
 
+extend type Mutation {
+  "Update Stash settings and persist them to backend config"
+  updateStashSettings(input: UpdateStashSettingsInput!): Settings!
+
+  "Update Jackett settings and persist them to backend config"
+  updateJackettSettings(input: UpdateJackettSettingsInput!): Settings!
+
+  "Update qBittorrent settings and persist them to backend config"
+  updateQBittorrentSettings(input: UpdateQBittorrentSettingsInput!): Settings!
+}
+
 type Settings {
   stash: StashSettings!
   jackett: JackettSettings!
@@ -30,6 +41,7 @@ type QBittorrentSettings {
   configured: Boolean!
   enabled: Boolean!
   url: String!
+  username: String!
   usernameConfigured: Boolean!
   passwordConfigured: Boolean!
   defaultSavePath: String!
@@ -46,4 +58,24 @@ type TaskSettings {
 
 type SystemSettings {
   appVersion: String!
+}
+
+input UpdateStashSettingsInput {
+  graphqlUrl: String!
+  apiKey: String
+  libraryPath: String!
+}
+
+input UpdateJackettSettingsInput {
+  url: String!
+  apiKey: String
+}
+
+input UpdateQBittorrentSettingsInput {
+  url: String!
+  username: String!
+  password: String
+  defaultSavePath: String!
+  category: String!
+  tags: String!
 }

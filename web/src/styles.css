@@ -880,6 +880,49 @@ dd {
   margin-bottom: 4px;
 }
 
+.settings-form {
+  display: grid;
+  gap: 12px;
+}
+
+.settings-field {
+  display: grid;
+  gap: 6px;
+}
+
+.settings-field span {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--muted);
+}
+
+.settings-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 14px;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.settings-feedback {
+  margin: 0;
+  font-size: 13px;
+}
+
+.settings-feedback.tone-success,
+.settings-feedback.tone-danger,
+.settings-feedback.tone-info {
+  padding: 10px 12px;
+  border-radius: 10px;
+  border-width: 1px;
+  border-style: solid;
+}
+
+.settings-actions {
+  display: flex;
+  justify-content: flex-end;
+}
+
 .help-layout {
   display: grid;
   grid-template-columns: 180px minmax(0, 1fr);

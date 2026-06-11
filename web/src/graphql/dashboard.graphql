@@ -22,6 +22,7 @@ query DashboardDocument {
       configured
       enabled
       url
+      username
       usernameConfigured
       passwordConfigured
       defaultSavePath
