@@ -1,0 +1,13 @@
+extend type Query {
+  "Get aggregate task stats for the dashboard and task center"
+  dashboardStats: DashboardStats!
+}
+
+type DashboardStats {
+  total: Int!
+  active: Int!
+  completed: Int!
+  downloading: Int!
+  pendingScans: Int!
+  failed: Int!
+}

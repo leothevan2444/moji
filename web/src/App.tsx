@@ -600,11 +600,12 @@ function App() {
   }, [deferredTaskSearch, taskSort, taskStatus, tasks]);
 
   const metrics = {
-    active: tasks.filter(isTaskActive).length,
-    completed: tasks.filter((task) => isStatus(task, "completed")).length,
-    downloading: tasks.filter((task) => /download|sync|queued|stalled/i.test(task.status)).length,
-    pendingScans: tasks.filter(isScanPending).length,
-    failed: tasks.filter((task) => isStatus(task, "failed") || isScanPending(task) === false && isStatus(task, "error")).length,
+    active: data?.dashboardStats.active ?? 0,
+    completed: data?.dashboardStats.completed ?? 0,
+    downloading: data?.dashboardStats.downloading ?? 0,
+    pendingScans: data?.dashboardStats.pendingScans ?? 0,
+    failed: data?.dashboardStats.failed ?? 0,
+    total: data?.dashboardStats.total ?? 0,
     versions: data?.version ?? "unknown"
   };
 

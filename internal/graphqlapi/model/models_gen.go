@@ -2,6 +2,15 @@
 
 package model
 
+type DashboardStats struct {
+	Total        int `json:"total"`
+	Active       int `json:"active"`
+	Completed    int `json:"completed"`
+	Downloading  int `json:"downloading"`
+	PendingScans int `json:"pendingScans"`
+	Failed       int `json:"failed"`
+}
+
 type DownloadCandidate struct {
 	Title     string `json:"title"`
 	Tracker   string `json:"tracker"`

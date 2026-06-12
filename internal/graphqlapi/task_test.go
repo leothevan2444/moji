@@ -404,6 +404,36 @@ func TestSettingsQueryFallsBackToAppVersion(t *testing.T) {
 	}
 }
 
+func TestDashboardStatsQueryAggregatesTasks(t *testing.T) {
+	downloader := &fakeDownloader{
+		listTasks: []*downloader.Task{
+			{ID: "task-1", Status: downloader.TaskStatusDownloading},
+			{ID: "task-2", Status: downloader.TaskStatusCompleted, StashScanStatus: downloader.StashScanStatusStarted},
+			{ID: "task-3", Status: downloader.TaskStatusFailed},
+			{ID: "task-4", Status: downloader.TaskStatusCompleted, StashScanError: "stash rejected scan"},
+		},
+	}
+	resolver := NewResolver(nil, nil, downloader, nil, "test-version")
+
+	resp := executeGraphQL(t, resolver, `{
+		dashboardStats {
+			total
+			active
+			completed
+			downloading
+			pendingScans
+			failed
+		}
+	}`)
+	if len(resp.Errors) > 0 {
+		t.Fatalf("expected no errors, got %+v", resp.Errors)
+	}
+	stats := resp.Data.DashboardStats
+	if stats.Total != 4 || stats.Active != 1 || stats.Completed != 2 || stats.Downloading != 1 || stats.PendingScans != 1 || stats.Failed != 2 {
+		t.Fatalf("unexpected dashboard stats: %+v", stats)
+	}
+}
+
 func TestSettingsQueryUsesSettingsEditorSnapshot(t *testing.T) {
 	resolver := NewResolver(nil, nil, nil, nil, "test-version")
 	resolver.RuntimeSettings = &SettingsSnapshot{
@@ -616,6 +646,14 @@ type graphQLTaskResponse struct {
 				AppVersion string `json:"appVersion"`
 			} `json:"system"`
 		} `json:"settings"`
+		DashboardStats struct {
+			Total        int `json:"total"`
+			Active       int `json:"active"`
+			Completed    int `json:"completed"`
+			Downloading  int `json:"downloading"`
+			PendingScans int `json:"pendingScans"`
+			Failed       int `json:"failed"`
+		} `json:"dashboardStats"`
 		UpdateStashSettings struct {
 			Stash struct {
 				URL              string `json:"url"`

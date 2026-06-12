@@ -4,6 +4,14 @@ query DashboardDocument {
     message
   }
   version
+  dashboardStats {
+    total
+    active
+    completed
+    downloading
+    pendingScans
+    failed
+  }
   settings {
     stash {
       configured
