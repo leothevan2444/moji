@@ -5,10 +5,16 @@ import { faChartColumn, faGear, faCircleQuestion } from "@fortawesome/free-solid
 import {
   AddTorrentDocumentDocument,
   DashboardDocumentDocument,
+  FollowPerformerDocument,
+  FollowingPerformersDocument,
+  RefreshFollowingNowDocument,
+  RefreshFollowingPerformerDocument,
   SearchDocumentDocument,
+  StashPerformersDocument,
   SyncTaskProgressDocumentDocument,
   TriggerTaskStashScanDocumentDocument,
   TriggerStashScansDocumentDocument,
+  UnfollowPerformerDocument,
   UpdateJackettSettingsDocumentDocument,
   UpdateQBittorrentSettingsDocumentDocument,
   UpdateStashSettingsDocumentDocument,
@@ -16,15 +22,26 @@ import {
   type AddTorrentDocumentMutationVariables,
   type DashboardDocumentQuery,
   type DashboardDocumentQueryVariables,
+  type FollowPerformerMutation,
+  type FollowPerformerMutationVariables,
+  type FollowingPerformersQuery,
   type JackettSearchInput,
+  type RefreshFollowingNowMutation,
+  type RefreshFollowingNowMutationVariables,
+  type RefreshFollowingPerformerMutation,
+  type RefreshFollowingPerformerMutationVariables,
   type SearchDocumentQuery,
   type SearchDocumentQueryVariables,
+  type StashPerformersQuery,
+  type StashPerformersQueryVariables,
   type SyncTaskProgressDocumentMutation,
   type SyncTaskProgressDocumentMutationVariables,
   type TriggerTaskStashScanDocumentMutation,
   type TriggerTaskStashScanDocumentMutationVariables,
   type TriggerStashScansDocumentMutation,
   type TriggerStashScansDocumentMutationVariables,
+  type UnfollowPerformerMutation,
+  type UnfollowPerformerMutationVariables,
   type UpdateJackettSettingsDocumentMutation,
   type UpdateJackettSettingsDocumentMutationVariables,
   type UpdateQBittorrentSettingsDocumentMutation,
@@ -37,6 +54,8 @@ import { HELP_TOPICS, type HelpTopicId } from "./help";
 type TabKey = "主页" | "任务" | "following" | "发现";
 type DrawerKey = "stats" | "settings" | "help" | "task" | null;
 type DashboardTask = DashboardDocumentQuery["tasks"][number];
+type StashPerformerEntry = StashPerformersQuery["stashPerformers"][number];
+type FollowingPerformerEntry = FollowingPerformersQuery["followingPerformers"][number];
 type RuntimeSettings = NonNullable<DashboardDocumentQuery["settings"]>;
 type SettingsFeedback = { tone: "tone-success" | "tone-danger" | "tone-info"; message: string } | null;
 type TaskGroupKey = "需处理" | "运行中" | "待入库" | "已完成";
@@ -78,33 +97,6 @@ const ENABLED_SETTINGS_TABS: ReadonlySet<SettingsTab> = new Set([
   "任务",
   "系统"
 ]);
-
-const FOLLOWING_PLACEHOLDERS = [
-  {
-    name: "未接入追踪源 01",
-    alias: "alias pending",
-    status: "尚未追踪",
-    updatedAt: "规划中",
-    works: "0",
-    note: "暂无头像"
-  },
-  {
-    name: "未接入追踪源 02",
-    alias: "alias pending",
-    status: "等待导入",
-    updatedAt: "规划中",
-    works: "0",
-    note: "统一占位头像"
-  },
-  {
-    name: "未接入追踪源 03",
-    alias: "alias pending",
-    status: "未启用",
-    updatedAt: "规划中",
-    works: "0",
-    note: "筛选与搜索预留"
-  }
-] as const;
 
 const EMPTY_STASH_FORM = {
   url: "",
@@ -177,6 +169,30 @@ function isScanPending(task: DashboardTask) {
 
 function taskSummary(task: DashboardTask) {
   return task.torrentName || task.query || task.id;
+}
+
+function performerInitials(name: string) {
+  return name
+    .trim()
+    .slice(0, 2)
+    .toUpperCase();
+}
+
+function followingTone(entry?: FollowingPerformerEntry | null) {
+  if (!entry) return "tone-neutral";
+  if (entry.lastError) return "tone-danger";
+  if (entry.pendingReleaseCount > 0) return "tone-warn";
+  if (entry.processedReleaseCount > 0) return "tone-success";
+  return "tone-info";
+}
+
+function followingStatusLabel(performer: StashPerformerEntry, entry?: FollowingPerformerEntry | null) {
+  if (!performer.followed) return "未订阅";
+  if (!entry) return "已订阅";
+  if (entry.lastError) return "检查失败";
+  if (entry.pendingReleaseCount > 0) return `待处理 ${entry.pendingReleaseCount}`;
+  if (entry.processedReleaseCount > 0) return `已处理 ${entry.processedReleaseCount}`;
+  return "已订阅";
 }
 
 function statusTone(status: string) {
@@ -471,6 +487,9 @@ function App() {
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
   const [jackettQuery, setJackettQuery] = useState("");
   const [submittedJackettQuery, setSubmittedJackettQuery] = useState("");
+  const [followingSearch, setFollowingSearch] = useState("");
+  const [followingFeedback, setFollowingFeedback] = useState<SettingsFeedback>(null);
+  const [pendingFollowingID, setPendingFollowingID] = useState<string | null>(null);
   const [pendingAddId, setPendingAddId] = useState<string | null>(null);
   const [stashForm, setStashForm] = useState(EMPTY_STASH_FORM);
   const [jackettForm, setJackettForm] = useState(EMPTY_JACKETT_FORM);
@@ -483,6 +502,7 @@ function App() {
 
   const deferredTaskSearch = useDeferredValue(taskSearch.trim().toLowerCase());
   const deferredJackettQuery = useDeferredValue(submittedJackettQuery.trim());
+  const deferredFollowingSearch = useDeferredValue(followingSearch.trim());
 
   const [{ data, fetching, error }, refreshDashboard] = useQuery<
     DashboardDocumentQuery,
@@ -504,6 +524,21 @@ function App() {
       } satisfies JackettSearchInput
     },
     pause: deferredJackettQuery.length === 0
+  });
+  const [{ data: stashPerformersData, fetching: fetchingStashPerformers, error: stashPerformersError }, refreshStashPerformers] =
+    useQuery<StashPerformersQuery, StashPerformersQueryVariables>({
+      query: StashPerformersDocument,
+      variables: {
+        search: deferredFollowingSearch || null
+      },
+      requestPolicy: "cache-and-network"
+    });
+  const [{ data: followingData, fetching: fetchingFollowing, error: followingError }, refreshFollowing] = useQuery<
+    FollowingPerformersQuery,
+    Record<string, never>
+  >({
+    query: FollowingPerformersDocument,
+    requestPolicy: "cache-and-network"
   });
 
   const [, addTorrent] = useMutation<
@@ -534,9 +569,21 @@ function App() {
     UpdateQBittorrentSettingsDocumentMutation,
     UpdateQBittorrentSettingsDocumentMutationVariables
   >(UpdateQBittorrentSettingsDocumentDocument);
+  const [, followPerformer] = useMutation<FollowPerformerMutation, FollowPerformerMutationVariables>(FollowPerformerDocument);
+  const [, unfollowPerformer] = useMutation<UnfollowPerformerMutation, UnfollowPerformerMutationVariables>(UnfollowPerformerDocument);
+  const [, refreshFollowingPerformer] = useMutation<
+    RefreshFollowingPerformerMutation,
+    RefreshFollowingPerformerMutationVariables
+  >(RefreshFollowingPerformerDocument);
+  const [{ fetching: refreshingFollowingNow }, refreshFollowingNow] = useMutation<
+    RefreshFollowingNowMutation,
+    RefreshFollowingNowMutationVariables
+  >(RefreshFollowingNowDocument);
 
   const tasks = data?.tasks ?? [];
   const runtimeSettings = data?.settings ?? null;
+  const stashPerformers = stashPerformersData?.stashPerformers ?? [];
+  const followedPerformers = followingData?.followingPerformers ?? [];
   const activeTask = selectedTaskId ? tasks.find((task) => task.id === selectedTaskId) ?? null : null;
   const activeTaskFailure = activeTask ? taskFailureSummary(activeTask) : null;
 
@@ -618,6 +665,9 @@ function App() {
       tasks: visibleTasks.filter((task) => taskGroup(task) === group)
     }));
   }, [visibleTasks]);
+  const followedByID = useMemo(() => {
+    return new Map(followedPerformers.map((item) => [item.performer.id, item]));
+  }, [followedPerformers]);
 
   const dependencyCards = runtimeSettings
     ? [
@@ -758,6 +808,78 @@ function App() {
       下载器: { tone: "tone-success", message: "下载器设置已保存，新的默认值已同步到后端。" }
     }));
     await refreshDashboard({ requestPolicy: "network-only" });
+  };
+
+  const reloadFollowing = async () => {
+    await Promise.all([
+      refreshFollowing({ requestPolicy: "network-only" }),
+      refreshStashPerformers({ requestPolicy: "network-only" })
+    ]);
+  };
+
+  const handleFollowToggle = async (performer: StashPerformerEntry) => {
+    setPendingFollowingID(performer.id);
+    setFollowingFeedback(null);
+
+    const result = performer.followed
+      ? await unfollowPerformer({ stashPerformerID: performer.id })
+      : await followPerformer({ stashPerformerID: performer.id });
+
+    if (result.error) {
+      setFollowingFeedback({
+        tone: "tone-danger",
+        message: describeQueryError(result.error)
+      });
+      setPendingFollowingID(null);
+      return;
+    }
+
+    setFollowingFeedback({
+      tone: "tone-success",
+      message: performer.followed ? `已取消订阅 ${performer.name}。` : `已订阅 ${performer.name}，Moji 会通过 custom_fields 记录状态。`
+    });
+    await reloadFollowing();
+    setPendingFollowingID(null);
+  };
+
+  const handleRefreshPerformer = async (performer: StashPerformerEntry) => {
+    setPendingFollowingID(performer.id);
+    setFollowingFeedback(null);
+
+    const result = await refreshFollowingPerformer({ stashPerformerID: performer.id });
+    if (result.error) {
+      setFollowingFeedback({
+        tone: "tone-danger",
+        message: describeQueryError(result.error)
+      });
+      setPendingFollowingID(null);
+      return;
+    }
+
+    setFollowingFeedback({
+      tone: "tone-info",
+      message: `已检查 ${performer.name} 的最新发行信息。`
+    });
+    await reloadFollowing();
+    setPendingFollowingID(null);
+  };
+
+  const handleRefreshAllFollowing = async () => {
+    setFollowingFeedback(null);
+    const result = await refreshFollowingNow({});
+    if (result.error) {
+      setFollowingFeedback({
+        tone: "tone-danger",
+        message: describeQueryError(result.error)
+      });
+      return;
+    }
+
+    setFollowingFeedback({
+      tone: "tone-info",
+      message: "已触发全部订阅对象的更新检查。"
+    });
+    await reloadFollowing();
   };
 
   const renderSettingsPanel = () => {
@@ -1475,51 +1597,101 @@ function App() {
                   <p className="section-kicker">following</p>
                   <h2>追踪列表</h2>
                 </div>
-                <p className="band-note">未来会接 Stash favorite / tracked performer。</p>
+                <p className="band-note">
+                  订阅状态写入 Stash performer 的 <code>custom_fields</code>，新片来源先接入 javstash.org。
+                </p>
               </div>
 
               <div className="toolbar-inline toolbar-inline--following">
-                <input placeholder="按名称搜索" />
-                <select defaultValue="全部">
-                  <option>全部</option>
-                  <option>尚未追踪</option>
-                  <option>已追踪</option>
-                  <option>待更新</option>
-                </select>
-                <select defaultValue="全部">
-                  <option>全部</option>
-                  <option>A-Z</option>
-                  <option>最近更新</option>
-                  <option>作品数量</option>
-                </select>
+                <input placeholder="按名称或别名搜索 Stash performer" value={followingSearch} onChange={(event) => setFollowingSearch(event.target.value)} />
+                <button type="button" className="ghost-button" onClick={() => void reloadFollowing()}>
+                  刷新列表
+                </button>
+                <button
+                  type="button"
+                  className="ghost-button"
+                  disabled={refreshingFollowingNow || followedPerformers.length === 0}
+                  onClick={() => void handleRefreshAllFollowing()}
+                >
+                  {refreshingFollowingNow ? "检查中..." : "检查全部订阅"}
+                </button>
               </div>
 
+              <div className="settings-meta">
+                <span>Stash 候选: {stashPerformers.length}</span>
+                <span>已订阅: {followedPerformers.length}</span>
+                <span>载入状态: {fetchingStashPerformers || fetchingFollowing ? "同步中" : "已就绪"}</span>
+              </div>
+              {followingFeedback ? <p className={`settings-feedback ${followingFeedback.tone}`}>{followingFeedback.message}</p> : null}
+              {followingError || stashPerformersError ? (
+                <p className="settings-feedback tone-danger">{describeQueryError(followingError || stashPerformersError)}</p>
+              ) : null}
+
               <div className="profile-grid">
-                {FOLLOWING_PLACEHOLDERS.map((item, index) => (
-                  <article key={item.name} className="profile-card" style={{ animationDelay: `${index * 80}ms` }}>
-                    <div className="avatar avatar--placeholder">{item.name.slice(0, 2)}</div>
+                {stashPerformers.length === 0 && !fetchingStashPerformers ? (
+                  <article className="empty-card empty-card--wide">
+                    <h3>没有找到匹配的 performer</h3>
+                    <p>可以尝试修改关键词，或先确认 Stash 已正确返回 performer 数据。</p>
+                  </article>
+                ) : null}
+                {stashPerformers.map((performer, index) => {
+                  const followingEntry = followedByID.get(performer.id) ?? null;
+                  const aliases = performer.aliasList.filter(Boolean).slice(0, 3).join(" / ") || "暂无别名";
+                  const latestRelease = followingEntry?.recentReleases[0] ?? null;
+
+                  return (
+                  <article key={performer.id} className="profile-card" style={{ animationDelay: `${index * 80}ms` }}>
+                    <div className="avatar avatar--placeholder">{performerInitials(performer.name)}</div>
                     <div className="profile-card__body">
                       <div className="profile-card__head">
                         <div>
-                          <h3>{item.name}</h3>
-                          <p>{item.alias}</p>
+                          <h3>{performer.name}</h3>
+                          <p>{aliases}</p>
                         </div>
-                        <span className="status-chip tone-neutral">{item.status}</span>
+                        <span className={`status-chip ${performer.followed ? followingTone(followingEntry) : "tone-neutral"}`}>
+                          {followingStatusLabel(performer, followingEntry)}
+                        </span>
                       </div>
                       <dl>
                         <div>
-                          <dt>最近更新</dt>
-                          <dd>{item.updatedAt}</dd>
+                          <dt>Stash 作品数</dt>
+                          <dd>{performer.sceneCount}</dd>
                         </div>
                         <div>
-                          <dt>相关作品</dt>
-                          <dd>{item.works}</dd>
+                          <dt>最近检查</dt>
+                          <dd>{formatDateTime(followingEntry?.lastCheckedAt)}</dd>
                         </div>
                       </dl>
-                      <p className="profile-note">{item.note}</p>
+                      <p className="profile-note">
+                        {followingEntry?.lastError
+                          ? `最近错误: ${followingEntry.lastError}`
+                          : latestRelease
+                            ? `最近记录: ${latestRelease.code || latestRelease.title} · ${formatRelativeDate(latestRelease.date || latestRelease.seenAt)}`
+                            : performer.followed
+                              ? "已订阅，等待首次检查结果。"
+                              : "尚未订阅。"}
+                      </p>
+                      <div className="profile-actions">
+                        <button
+                          type="button"
+                          className="ghost-button"
+                          disabled={pendingFollowingID === performer.id}
+                          onClick={() => void handleFollowToggle(performer)}
+                        >
+                          {pendingFollowingID === performer.id ? "处理中..." : performer.followed ? "取消订阅" : "订阅"}
+                        </button>
+                        <button
+                          type="button"
+                          className="ghost-button"
+                          disabled={!performer.followed || pendingFollowingID === performer.id}
+                          onClick={() => void handleRefreshPerformer(performer)}
+                        >
+                          立即检查
+                        </button>
+                      </div>
                     </div>
                   </article>
-                ))}
+                )})}
               </div>
             </section>
           </>

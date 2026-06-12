@@ -17,6 +17,7 @@ type StashBoxGraphQLClient interface {
 	FindPerformerByID(ctx context.Context, id string, interceptors ...clientv2.RequestInterceptor) (*FindPerformerByID, error)
 	SearchPerformer(ctx context.Context, term string, interceptors ...clientv2.RequestInterceptor) (*SearchPerformer, error)
 	QueryPerformers(ctx context.Context, input PerformerQueryInput, interceptors ...clientv2.RequestInterceptor) (*QueryPerformers, error)
+	QueryScenes(ctx context.Context, input SceneQueryInput, interceptors ...clientv2.RequestInterceptor) (*QueryScenes, error)
 	FindStudio(ctx context.Context, id *string, name *string, interceptors ...clientv2.RequestInterceptor) (*FindStudio, error)
 	FindTag(ctx context.Context, id *string, name *string, interceptors ...clientv2.RequestInterceptor) (*FindTag, error)
 	QueryTags(ctx context.Context, input TagQueryInput, interceptors ...clientv2.RequestInterceptor) (*QueryTags, error)
@@ -778,6 +779,53 @@ func (t *QueryPerformers_QueryPerformers) GetPerformers() []*PerformerFragment {
 	return t.Performers
 }
 
+type QueryScenes_QueryScenes_Scenes_SceneFragment_Studio_StudioFragment_Parent struct {
+	ID   string "json:\"id\" graphql:\"id\""
+	Name string "json:\"name\" graphql:\"name\""
+}
+
+func (t *QueryScenes_QueryScenes_Scenes_SceneFragment_Studio_StudioFragment_Parent) GetID() string {
+	if t == nil {
+		t = &QueryScenes_QueryScenes_Scenes_SceneFragment_Studio_StudioFragment_Parent{}
+	}
+	return t.ID
+}
+func (t *QueryScenes_QueryScenes_Scenes_SceneFragment_Studio_StudioFragment_Parent) GetName() string {
+	if t == nil {
+		t = &QueryScenes_QueryScenes_Scenes_SceneFragment_Studio_StudioFragment_Parent{}
+	}
+	return t.Name
+}
+
+type QueryScenes_QueryScenes_Scenes_SceneFragment_Performers_PerformerAppearanceFragment_Performer_PerformerFragment_Scenes struct {
+	ID string "json:\"id\" graphql:\"id\""
+}
+
+func (t *QueryScenes_QueryScenes_Scenes_SceneFragment_Performers_PerformerAppearanceFragment_Performer_PerformerFragment_Scenes) GetID() string {
+	if t == nil {
+		t = &QueryScenes_QueryScenes_Scenes_SceneFragment_Performers_PerformerAppearanceFragment_Performer_PerformerFragment_Scenes{}
+	}
+	return t.ID
+}
+
+type QueryScenes_QueryScenes struct {
+	Count  int              "json:\"count\" graphql:\"count\""
+	Scenes []*SceneFragment "json:\"scenes\" graphql:\"scenes\""
+}
+
+func (t *QueryScenes_QueryScenes) GetCount() int {
+	if t == nil {
+		t = &QueryScenes_QueryScenes{}
+	}
+	return t.Count
+}
+func (t *QueryScenes_QueryScenes) GetScenes() []*SceneFragment {
+	if t == nil {
+		t = &QueryScenes_QueryScenes{}
+	}
+	return t.Scenes
+}
+
 type FindStudio_FindStudio_StudioFragment_Parent struct {
 	ID   string "json:\"id\" graphql:\"id\""
 	Name string "json:\"name\" graphql:\"name\""
@@ -957,6 +1005,17 @@ func (t *QueryPerformers) GetQueryPerformers() *QueryPerformers_QueryPerformers 
 		t = &QueryPerformers{}
 	}
 	return &t.QueryPerformers
+}
+
+type QueryScenes struct {
+	QueryScenes QueryScenes_QueryScenes "json:\"queryScenes\" graphql:\"queryScenes\""
+}
+
+func (t *QueryScenes) GetQueryScenes() *QueryScenes_QueryScenes {
+	if t == nil {
+		t = &QueryScenes{}
+	}
+	return &t.QueryScenes
 }
 
 type FindStudio struct {
@@ -1966,6 +2025,149 @@ func (c *Client) QueryPerformers(ctx context.Context, input PerformerQueryInput,
 	return &res, nil
 }
 
+const QueryScenesDocument = `query QueryScenes ($input: SceneQueryInput!) {
+	queryScenes(input: $input) {
+		count
+		scenes {
+			... SceneFragment
+		}
+	}
+}
+fragment SceneFragment on Scene {
+	id
+	title
+	code
+	details
+	director
+	duration
+	date
+	urls {
+		... URLFragment
+	}
+	images {
+		... ImageFragment
+	}
+	studio {
+		... StudioFragment
+	}
+	tags {
+		... TagFragment
+	}
+	performers {
+		... PerformerAppearanceFragment
+	}
+	fingerprints {
+		... FingerprintFragment
+	}
+}
+fragment URLFragment on URL {
+	url
+	type
+}
+fragment ImageFragment on Image {
+	id
+	url
+	width
+	height
+}
+fragment StudioFragment on Studio {
+	name
+	id
+	aliases
+	urls {
+		... URLFragment
+	}
+	parent {
+		name
+		id
+	}
+	images {
+		... ImageFragment
+	}
+}
+fragment TagFragment on Tag {
+	name
+	id
+}
+fragment PerformerAppearanceFragment on PerformerAppearance {
+	as
+	performer {
+		... PerformerFragment
+	}
+}
+fragment PerformerFragment on Performer {
+	id
+	name
+	disambiguation
+	aliases
+	gender
+	merged_ids
+	deleted
+	merged_into_id
+	urls {
+		... URLFragment
+	}
+	images {
+		... ImageFragment
+	}
+	scene_count
+	scenes {
+		id
+	}
+	birth_date
+	death_date
+	ethnicity
+	country
+	eye_color
+	hair_color
+	height
+	measurements {
+		... MeasurementsFragment
+	}
+	breast_type
+	career_start_year
+	career_end_year
+	tattoos {
+		... BodyModificationFragment
+	}
+	piercings {
+		... BodyModificationFragment
+	}
+}
+fragment MeasurementsFragment on Measurements {
+	band_size
+	cup_size
+	waist
+	hip
+}
+fragment BodyModificationFragment on BodyModification {
+	location
+	description
+}
+fragment FingerprintFragment on Fingerprint {
+	algorithm
+	hash
+	duration
+}
+`
+
+func (c *Client) QueryScenes(ctx context.Context, input SceneQueryInput, interceptors ...clientv2.RequestInterceptor) (*QueryScenes, error) {
+	vars := map[string]any{
+		"input": input,
+	}
+
+	var res QueryScenes
+	if err := c.Client.Post(ctx, "QueryScenes", QueryScenesDocument, &res, vars, interceptors...); err != nil {
+		if c.Client.ParseDataWhenErrors {
+			return &res, err
+		}
+
+		return nil, err
+	}
+
+	return &res, nil
+}
+
 const FindStudioDocument = `query FindStudio ($id: ID, $name: String) {
 	findStudio(id: $id, name: $name) {
 		... StudioFragment
@@ -2134,6 +2336,7 @@ var DocumentOperationNames = map[string]string{
 	FindPerformerByIDDocument:             "FindPerformerByID",
 	SearchPerformerDocument:               "SearchPerformer",
 	QueryPerformersDocument:               "QueryPerformers",
+	QueryScenesDocument:                   "QueryScenes",
 	FindStudioDocument:                    "FindStudio",
 	FindTagDocument:                       "FindTag",
 	QueryTagsDocument:                     "QueryTags",

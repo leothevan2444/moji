@@ -8,6 +8,7 @@ import (
 	"context"
 
 	"github.com/leothevan2444/moji/internal/downloader"
+	"github.com/leothevan2444/moji/internal/following"
 	"github.com/leothevan2444/moji/internal/stashsync"
 	"github.com/leothevan2444/moji/internal/tracker"
 	"github.com/leothevan2444/moji/pkg/qbittorrent"
@@ -106,11 +107,21 @@ type SystemSettingsSnapshot struct {
 	AppVersion string
 }
 
+type FollowingService interface {
+	ListStashPerformers(ctx context.Context, search string) ([]following.Performer, error)
+	ListFollowingPerformers(ctx context.Context) ([]following.FollowingPerformer, error)
+	FollowPerformer(ctx context.Context, performerID string) (following.FollowingPerformer, error)
+	UnfollowPerformer(ctx context.Context, performerID string) error
+	RefreshPerformer(ctx context.Context, performerID string) (following.FollowingPerformer, error)
+	RefreshAll(ctx context.Context) ([]following.FollowingPerformer, error)
+}
+
 type Resolver struct {
 	Tracker         tracker.Tracker
 	Torrent         TorrentClient
 	Downloader      DownloaderService
 	Stash           StashService
+	Following       FollowingService
 	SettingsEditor  SettingsEditor
 	RuntimeSettings *SettingsSnapshot
 	AppVersion      string

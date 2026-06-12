@@ -13,6 +13,7 @@ type StashGraphQLClient interface {
 	FindPerformerByID(ctx context.Context, id string, interceptors ...clientv2.RequestInterceptor) (*FindPerformerByID, error)
 	FindPerformers(ctx context.Context, performerFilter *PerformerFilterType, filter *FindFilterType, performerIds []int, ids []string, interceptors ...clientv2.RequestInterceptor) (*FindPerformers, error)
 	AllPerformers(ctx context.Context, interceptors ...clientv2.RequestInterceptor) (*AllPerformers, error)
+	UpdatePerformerCustomFields(ctx context.Context, input PerformerUpdateInput, interceptors ...clientv2.RequestInterceptor) (*UpdatePerformerCustomFields, error)
 	GetVersion(ctx context.Context, interceptors ...clientv2.RequestInterceptor) (*GetVersion, error)
 	MetadataScan(ctx context.Context, input ScanMetadataInput, interceptors ...clientv2.RequestInterceptor) (*MetadataScan, error)
 	FindJob(ctx context.Context, input FindJobInput, interceptors ...clientv2.RequestInterceptor) (*FindJob, error)
@@ -24,190 +25,6 @@ type Client struct {
 
 func NewClient(cli clientv2.HttpClient, baseURL string, options *clientv2.Options, interceptors ...clientv2.RequestInterceptor) StashGraphQLClient {
 	return &Client{Client: clientv2.NewClient(cli, baseURL, options, interceptors...)}
-}
-
-type FingerprintFragment struct {
-	Type  string "json:\"type\" graphql:\"type\""
-	Value string "json:\"value\" graphql:\"value\""
-}
-
-func (t *FingerprintFragment) GetType() string {
-	if t == nil {
-		t = &FingerprintFragment{}
-	}
-	return t.Type
-}
-func (t *FingerprintFragment) GetValue() string {
-	if t == nil {
-		t = &FingerprintFragment{}
-	}
-	return t.Value
-}
-
-type VideoFileFragment struct {
-	ID           string                 "json:\"id\" graphql:\"id\""
-	Path         string                 "json:\"path\" graphql:\"path\""
-	Basename     string                 "json:\"basename\" graphql:\"basename\""
-	Size         int                    "json:\"size\" graphql:\"size\""
-	Fingerprints []*FingerprintFragment "json:\"fingerprints\" graphql:\"fingerprints\""
-	Format       string                 "json:\"format\" graphql:\"format\""
-	Width        int                    "json:\"width\" graphql:\"width\""
-	Height       int                    "json:\"height\" graphql:\"height\""
-	Duration     float64                "json:\"duration\" graphql:\"duration\""
-	VideoCodec   string                 "json:\"video_codec\" graphql:\"video_codec\""
-	AudioCodec   string                 "json:\"audio_codec\" graphql:\"audio_codec\""
-	FrameRate    float64                "json:\"frame_rate\" graphql:\"frame_rate\""
-	BitRate      int                    "json:\"bit_rate\" graphql:\"bit_rate\""
-	CreatedAt    time.Time              "json:\"created_at\" graphql:\"created_at\""
-	UpdatedAt    time.Time              "json:\"updated_at\" graphql:\"updated_at\""
-}
-
-func (t *VideoFileFragment) GetID() string {
-	if t == nil {
-		t = &VideoFileFragment{}
-	}
-	return t.ID
-}
-func (t *VideoFileFragment) GetPath() string {
-	if t == nil {
-		t = &VideoFileFragment{}
-	}
-	return t.Path
-}
-func (t *VideoFileFragment) GetBasename() string {
-	if t == nil {
-		t = &VideoFileFragment{}
-	}
-	return t.Basename
-}
-func (t *VideoFileFragment) GetSize() int {
-	if t == nil {
-		t = &VideoFileFragment{}
-	}
-	return t.Size
-}
-func (t *VideoFileFragment) GetFingerprints() []*FingerprintFragment {
-	if t == nil {
-		t = &VideoFileFragment{}
-	}
-	return t.Fingerprints
-}
-func (t *VideoFileFragment) GetFormat() string {
-	if t == nil {
-		t = &VideoFileFragment{}
-	}
-	return t.Format
-}
-func (t *VideoFileFragment) GetWidth() int {
-	if t == nil {
-		t = &VideoFileFragment{}
-	}
-	return t.Width
-}
-func (t *VideoFileFragment) GetHeight() int {
-	if t == nil {
-		t = &VideoFileFragment{}
-	}
-	return t.Height
-}
-func (t *VideoFileFragment) GetDuration() float64 {
-	if t == nil {
-		t = &VideoFileFragment{}
-	}
-	return t.Duration
-}
-func (t *VideoFileFragment) GetVideoCodec() string {
-	if t == nil {
-		t = &VideoFileFragment{}
-	}
-	return t.VideoCodec
-}
-func (t *VideoFileFragment) GetAudioCodec() string {
-	if t == nil {
-		t = &VideoFileFragment{}
-	}
-	return t.AudioCodec
-}
-func (t *VideoFileFragment) GetFrameRate() float64 {
-	if t == nil {
-		t = &VideoFileFragment{}
-	}
-	return t.FrameRate
-}
-func (t *VideoFileFragment) GetBitRate() int {
-	if t == nil {
-		t = &VideoFileFragment{}
-	}
-	return t.BitRate
-}
-func (t *VideoFileFragment) GetCreatedAt() *time.Time {
-	if t == nil {
-		t = &VideoFileFragment{}
-	}
-	return &t.CreatedAt
-}
-func (t *VideoFileFragment) GetUpdatedAt() *time.Time {
-	if t == nil {
-		t = &VideoFileFragment{}
-	}
-	return &t.UpdatedAt
-}
-
-type GalleryFragment struct {
-	ID    string  "json:\"id\" graphql:\"id\""
-	Title *string "json:\"title,omitempty\" graphql:\"title\""
-	Code  *string "json:\"code,omitempty\" graphql:\"code\""
-}
-
-func (t *GalleryFragment) GetID() string {
-	if t == nil {
-		t = &GalleryFragment{}
-	}
-	return t.ID
-}
-func (t *GalleryFragment) GetTitle() *string {
-	if t == nil {
-		t = &GalleryFragment{}
-	}
-	return t.Title
-}
-func (t *GalleryFragment) GetCode() *string {
-	if t == nil {
-		t = &GalleryFragment{}
-	}
-	return t.Code
-}
-
-type StudioFragment struct {
-	ID       string             "json:\"id\" graphql:\"id\""
-	Name     string             "json:\"name\" graphql:\"name\""
-	Urls     []string           "json:\"urls\" graphql:\"urls\""
-	StashIds []*StashIDFragment "json:\"stash_ids\" graphql:\"stash_ids\""
-}
-
-func (t *StudioFragment) GetID() string {
-	if t == nil {
-		t = &StudioFragment{}
-	}
-	return t.ID
-}
-func (t *StudioFragment) GetName() string {
-	if t == nil {
-		t = &StudioFragment{}
-	}
-	return t.Name
-}
-func (t *StudioFragment) GetUrls() []string {
-	if t == nil {
-		t = &StudioFragment{}
-	}
-	return t.Urls
-}
-func (t *StudioFragment) GetStashIds() []*StashIDFragment {
-	if t == nil {
-		t = &StudioFragment{}
-	}
-	return t.StashIds
 }
 
 type StashIDFragment struct {
@@ -235,126 +52,6 @@ func (t *StashIDFragment) GetUpdatedAt() *time.Time {
 	return &t.UpdatedAt
 }
 
-type TagFragment struct {
-	Name     string             "json:\"name\" graphql:\"name\""
-	ID       string             "json:\"id\" graphql:\"id\""
-	StashIds []*StashIDFragment "json:\"stash_ids\" graphql:\"stash_ids\""
-}
-
-func (t *TagFragment) GetName() string {
-	if t == nil {
-		t = &TagFragment{}
-	}
-	return t.Name
-}
-func (t *TagFragment) GetID() string {
-	if t == nil {
-		t = &TagFragment{}
-	}
-	return t.ID
-}
-func (t *TagFragment) GetStashIds() []*StashIDFragment {
-	if t == nil {
-		t = &TagFragment{}
-	}
-	return t.StashIds
-}
-
-type SceneFragment struct {
-	ID         string                      "json:\"id\" graphql:\"id\""
-	Title      *string                     "json:\"title,omitempty\" graphql:\"title\""
-	Code       *string                     "json:\"code,omitempty\" graphql:\"code\""
-	Details    *string                     "json:\"details,omitempty\" graphql:\"details\""
-	Urls       []string                    "json:\"urls\" graphql:\"urls\""
-	Date       *string                     "json:\"date,omitempty\" graphql:\"date\""
-	Organized  bool                        "json:\"organized\" graphql:\"organized\""
-	Files      []*VideoFileFragment        "json:\"files\" graphql:\"files\""
-	Galleries  []*GalleryFragment          "json:\"galleries\" graphql:\"galleries\""
-	Studio     *StudioFragment             "json:\"studio,omitempty\" graphql:\"studio\""
-	Tags       []*TagFragment              "json:\"tags\" graphql:\"tags\""
-	Performers []*SceneFragment_Performers "json:\"performers\" graphql:\"performers\""
-	StashIds   []*StashIDFragment          "json:\"stash_ids\" graphql:\"stash_ids\""
-}
-
-func (t *SceneFragment) GetID() string {
-	if t == nil {
-		t = &SceneFragment{}
-	}
-	return t.ID
-}
-func (t *SceneFragment) GetTitle() *string {
-	if t == nil {
-		t = &SceneFragment{}
-	}
-	return t.Title
-}
-func (t *SceneFragment) GetCode() *string {
-	if t == nil {
-		t = &SceneFragment{}
-	}
-	return t.Code
-}
-func (t *SceneFragment) GetDetails() *string {
-	if t == nil {
-		t = &SceneFragment{}
-	}
-	return t.Details
-}
-func (t *SceneFragment) GetUrls() []string {
-	if t == nil {
-		t = &SceneFragment{}
-	}
-	return t.Urls
-}
-func (t *SceneFragment) GetDate() *string {
-	if t == nil {
-		t = &SceneFragment{}
-	}
-	return t.Date
-}
-func (t *SceneFragment) GetOrganized() bool {
-	if t == nil {
-		t = &SceneFragment{}
-	}
-	return t.Organized
-}
-func (t *SceneFragment) GetFiles() []*VideoFileFragment {
-	if t == nil {
-		t = &SceneFragment{}
-	}
-	return t.Files
-}
-func (t *SceneFragment) GetGalleries() []*GalleryFragment {
-	if t == nil {
-		t = &SceneFragment{}
-	}
-	return t.Galleries
-}
-func (t *SceneFragment) GetStudio() *StudioFragment {
-	if t == nil {
-		t = &SceneFragment{}
-	}
-	return t.Studio
-}
-func (t *SceneFragment) GetTags() []*TagFragment {
-	if t == nil {
-		t = &SceneFragment{}
-	}
-	return t.Tags
-}
-func (t *SceneFragment) GetPerformers() []*SceneFragment_Performers {
-	if t == nil {
-		t = &SceneFragment{}
-	}
-	return t.Performers
-}
-func (t *SceneFragment) GetStashIds() []*StashIDFragment {
-	if t == nil {
-		t = &SceneFragment{}
-	}
-	return t.StashIds
-}
-
 type PerformerFragment struct {
 	ID             string             "json:\"id\" graphql:\"id\""
 	Name           string             "json:\"name\" graphql:\"name\""
@@ -367,11 +64,10 @@ type PerformerFragment struct {
 	HeightCm       *int               "json:\"height_cm,omitempty\" graphql:\"height_cm\""
 	AliasList      []string           "json:\"alias_list\" graphql:\"alias_list\""
 	Favorite       bool               "json:\"favorite\" graphql:\"favorite\""
-	Tags           []*TagFragment     "json:\"tags\" graphql:\"tags\""
 	SceneCount     int                "json:\"scene_count\" graphql:\"scene_count\""
-	Scenes         []*SceneFragment   "json:\"scenes\" graphql:\"scenes\""
 	StashIds       []*StashIDFragment "json:\"stash_ids\" graphql:\"stash_ids\""
 	Rating100      *int               "json:\"rating100,omitempty\" graphql:\"rating100\""
+	CustomFields   map[string]any     "json:\"custom_fields\" graphql:\"custom_fields\""
 }
 
 func (t *PerformerFragment) GetID() string {
@@ -440,23 +136,11 @@ func (t *PerformerFragment) GetFavorite() bool {
 	}
 	return t.Favorite
 }
-func (t *PerformerFragment) GetTags() []*TagFragment {
-	if t == nil {
-		t = &PerformerFragment{}
-	}
-	return t.Tags
-}
 func (t *PerformerFragment) GetSceneCount() int {
 	if t == nil {
 		t = &PerformerFragment{}
 	}
 	return t.SceneCount
-}
-func (t *PerformerFragment) GetScenes() []*SceneFragment {
-	if t == nil {
-		t = &PerformerFragment{}
-	}
-	return t.Scenes
 }
 func (t *PerformerFragment) GetStashIds() []*StashIDFragment {
 	if t == nil {
@@ -470,133 +154,11 @@ func (t *PerformerFragment) GetRating100() *int {
 	}
 	return t.Rating100
 }
-
-type SceneFragment_Performers struct {
-	Favorite bool        "json:\"favorite\" graphql:\"favorite\""
-	Gender   *GenderEnum "json:\"gender,omitempty\" graphql:\"gender\""
-	ID       string      "json:\"id\" graphql:\"id\""
-	Name     string      "json:\"name\" graphql:\"name\""
-}
-
-func (t *SceneFragment_Performers) GetFavorite() bool {
+func (t *PerformerFragment) GetCustomFields() map[string]any {
 	if t == nil {
-		t = &SceneFragment_Performers{}
+		t = &PerformerFragment{}
 	}
-	return t.Favorite
-}
-func (t *SceneFragment_Performers) GetGender() *GenderEnum {
-	if t == nil {
-		t = &SceneFragment_Performers{}
-	}
-	return t.Gender
-}
-func (t *SceneFragment_Performers) GetID() string {
-	if t == nil {
-		t = &SceneFragment_Performers{}
-	}
-	return t.ID
-}
-func (t *SceneFragment_Performers) GetName() string {
-	if t == nil {
-		t = &SceneFragment_Performers{}
-	}
-	return t.Name
-}
-
-type PerformerFragment_Scenes_SceneFragment_Performers struct {
-	Favorite bool        "json:\"favorite\" graphql:\"favorite\""
-	Gender   *GenderEnum "json:\"gender,omitempty\" graphql:\"gender\""
-	ID       string      "json:\"id\" graphql:\"id\""
-	Name     string      "json:\"name\" graphql:\"name\""
-}
-
-func (t *PerformerFragment_Scenes_SceneFragment_Performers) GetFavorite() bool {
-	if t == nil {
-		t = &PerformerFragment_Scenes_SceneFragment_Performers{}
-	}
-	return t.Favorite
-}
-func (t *PerformerFragment_Scenes_SceneFragment_Performers) GetGender() *GenderEnum {
-	if t == nil {
-		t = &PerformerFragment_Scenes_SceneFragment_Performers{}
-	}
-	return t.Gender
-}
-func (t *PerformerFragment_Scenes_SceneFragment_Performers) GetID() string {
-	if t == nil {
-		t = &PerformerFragment_Scenes_SceneFragment_Performers{}
-	}
-	return t.ID
-}
-func (t *PerformerFragment_Scenes_SceneFragment_Performers) GetName() string {
-	if t == nil {
-		t = &PerformerFragment_Scenes_SceneFragment_Performers{}
-	}
-	return t.Name
-}
-
-type FindPerformerByID_FindPerformer_PerformerFragment_Scenes_SceneFragment_Performers struct {
-	Favorite bool        "json:\"favorite\" graphql:\"favorite\""
-	Gender   *GenderEnum "json:\"gender,omitempty\" graphql:\"gender\""
-	ID       string      "json:\"id\" graphql:\"id\""
-	Name     string      "json:\"name\" graphql:\"name\""
-}
-
-func (t *FindPerformerByID_FindPerformer_PerformerFragment_Scenes_SceneFragment_Performers) GetFavorite() bool {
-	if t == nil {
-		t = &FindPerformerByID_FindPerformer_PerformerFragment_Scenes_SceneFragment_Performers{}
-	}
-	return t.Favorite
-}
-func (t *FindPerformerByID_FindPerformer_PerformerFragment_Scenes_SceneFragment_Performers) GetGender() *GenderEnum {
-	if t == nil {
-		t = &FindPerformerByID_FindPerformer_PerformerFragment_Scenes_SceneFragment_Performers{}
-	}
-	return t.Gender
-}
-func (t *FindPerformerByID_FindPerformer_PerformerFragment_Scenes_SceneFragment_Performers) GetID() string {
-	if t == nil {
-		t = &FindPerformerByID_FindPerformer_PerformerFragment_Scenes_SceneFragment_Performers{}
-	}
-	return t.ID
-}
-func (t *FindPerformerByID_FindPerformer_PerformerFragment_Scenes_SceneFragment_Performers) GetName() string {
-	if t == nil {
-		t = &FindPerformerByID_FindPerformer_PerformerFragment_Scenes_SceneFragment_Performers{}
-	}
-	return t.Name
-}
-
-type FindPerformers_FindPerformers_Performers_PerformerFragment_Scenes_SceneFragment_Performers struct {
-	Favorite bool        "json:\"favorite\" graphql:\"favorite\""
-	Gender   *GenderEnum "json:\"gender,omitempty\" graphql:\"gender\""
-	ID       string      "json:\"id\" graphql:\"id\""
-	Name     string      "json:\"name\" graphql:\"name\""
-}
-
-func (t *FindPerformers_FindPerformers_Performers_PerformerFragment_Scenes_SceneFragment_Performers) GetFavorite() bool {
-	if t == nil {
-		t = &FindPerformers_FindPerformers_Performers_PerformerFragment_Scenes_SceneFragment_Performers{}
-	}
-	return t.Favorite
-}
-func (t *FindPerformers_FindPerformers_Performers_PerformerFragment_Scenes_SceneFragment_Performers) GetGender() *GenderEnum {
-	if t == nil {
-		t = &FindPerformers_FindPerformers_Performers_PerformerFragment_Scenes_SceneFragment_Performers{}
-	}
-	return t.Gender
-}
-func (t *FindPerformers_FindPerformers_Performers_PerformerFragment_Scenes_SceneFragment_Performers) GetID() string {
-	if t == nil {
-		t = &FindPerformers_FindPerformers_Performers_PerformerFragment_Scenes_SceneFragment_Performers{}
-	}
-	return t.ID
-}
-func (t *FindPerformers_FindPerformers_Performers_PerformerFragment_Scenes_SceneFragment_Performers) GetName() string {
-	if t == nil {
-		t = &FindPerformers_FindPerformers_Performers_PerformerFragment_Scenes_SceneFragment_Performers{}
-	}
-	return t.Name
+	return t.CustomFields
 }
 
 type FindPerformers_FindPerformers struct {
@@ -615,38 +177,6 @@ func (t *FindPerformers_FindPerformers) GetPerformers() []*PerformerFragment {
 		t = &FindPerformers_FindPerformers{}
 	}
 	return t.Performers
-}
-
-type AllPerformers_AllPerformers_PerformerFragment_Scenes_SceneFragment_Performers struct {
-	Favorite bool        "json:\"favorite\" graphql:\"favorite\""
-	Gender   *GenderEnum "json:\"gender,omitempty\" graphql:\"gender\""
-	ID       string      "json:\"id\" graphql:\"id\""
-	Name     string      "json:\"name\" graphql:\"name\""
-}
-
-func (t *AllPerformers_AllPerformers_PerformerFragment_Scenes_SceneFragment_Performers) GetFavorite() bool {
-	if t == nil {
-		t = &AllPerformers_AllPerformers_PerformerFragment_Scenes_SceneFragment_Performers{}
-	}
-	return t.Favorite
-}
-func (t *AllPerformers_AllPerformers_PerformerFragment_Scenes_SceneFragment_Performers) GetGender() *GenderEnum {
-	if t == nil {
-		t = &AllPerformers_AllPerformers_PerformerFragment_Scenes_SceneFragment_Performers{}
-	}
-	return t.Gender
-}
-func (t *AllPerformers_AllPerformers_PerformerFragment_Scenes_SceneFragment_Performers) GetID() string {
-	if t == nil {
-		t = &AllPerformers_AllPerformers_PerformerFragment_Scenes_SceneFragment_Performers{}
-	}
-	return t.ID
-}
-func (t *AllPerformers_AllPerformers_PerformerFragment_Scenes_SceneFragment_Performers) GetName() string {
-	if t == nil {
-		t = &AllPerformers_AllPerformers_PerformerFragment_Scenes_SceneFragment_Performers{}
-	}
-	return t.Name
 }
 
 type GetVersion_Version struct {
@@ -774,6 +304,17 @@ func (t *AllPerformers) GetAllPerformers() []*PerformerFragment {
 	return t.AllPerformers
 }
 
+type UpdatePerformerCustomFields struct {
+	PerformerUpdate *PerformerFragment "json:\"performerUpdate,omitempty\" graphql:\"performerUpdate\""
+}
+
+func (t *UpdatePerformerCustomFields) GetPerformerUpdate() *PerformerFragment {
+	if t == nil {
+		t = &UpdatePerformerCustomFields{}
+	}
+	return t.PerformerUpdate
+}
+
 type GetVersion struct {
 	Version GetVersion_Version "json:\"version\" graphql:\"version\""
 }
@@ -824,95 +365,17 @@ fragment PerformerFragment on Performer {
 	height_cm
 	alias_list
 	favorite
-	tags {
-		... TagFragment
-	}
 	scene_count
-	scenes {
-		... SceneFragment
-	}
 	stash_ids {
 		... StashIdFragment
 	}
 	rating100
-}
-fragment TagFragment on Tag {
-	name
-	id
-	stash_ids {
-		... StashIdFragment
-	}
+	custom_fields
 }
 fragment StashIdFragment on StashID {
 	endpoint
 	stash_id
 	updated_at
-}
-fragment SceneFragment on Scene {
-	id
-	title
-	code
-	details
-	urls
-	date
-	organized
-	files {
-		... VideoFileFragment
-	}
-	galleries {
-		... GalleryFragment
-	}
-	studio {
-		... StudioFragment
-	}
-	tags {
-		... TagFragment
-	}
-	performers {
-		id
-		name
-		gender
-		favorite
-	}
-	stash_ids {
-		... StashIdFragment
-	}
-}
-fragment VideoFileFragment on VideoFile {
-	id
-	path
-	basename
-	size
-	fingerprints {
-		... FingerprintFragment
-	}
-	format
-	width
-	height
-	duration
-	video_codec
-	audio_codec
-	frame_rate
-	bit_rate
-	created_at
-	updated_at
-}
-fragment FingerprintFragment on Fingerprint {
-	type
-	value
-}
-fragment GalleryFragment on Gallery {
-	id
-	title
-	code
-}
-fragment StudioFragment on Studio {
-	id
-	name
-	urls
-	stash_ids {
-		... StashIdFragment
-	}
 }
 `
 
@@ -953,95 +416,17 @@ fragment PerformerFragment on Performer {
 	height_cm
 	alias_list
 	favorite
-	tags {
-		... TagFragment
-	}
 	scene_count
-	scenes {
-		... SceneFragment
-	}
 	stash_ids {
 		... StashIdFragment
 	}
 	rating100
-}
-fragment TagFragment on Tag {
-	name
-	id
-	stash_ids {
-		... StashIdFragment
-	}
+	custom_fields
 }
 fragment StashIdFragment on StashID {
 	endpoint
 	stash_id
 	updated_at
-}
-fragment SceneFragment on Scene {
-	id
-	title
-	code
-	details
-	urls
-	date
-	organized
-	files {
-		... VideoFileFragment
-	}
-	galleries {
-		... GalleryFragment
-	}
-	studio {
-		... StudioFragment
-	}
-	tags {
-		... TagFragment
-	}
-	performers {
-		id
-		name
-		gender
-		favorite
-	}
-	stash_ids {
-		... StashIdFragment
-	}
-}
-fragment VideoFileFragment on VideoFile {
-	id
-	path
-	basename
-	size
-	fingerprints {
-		... FingerprintFragment
-	}
-	format
-	width
-	height
-	duration
-	video_codec
-	audio_codec
-	frame_rate
-	bit_rate
-	created_at
-	updated_at
-}
-fragment FingerprintFragment on Fingerprint {
-	type
-	value
-}
-fragment GalleryFragment on Gallery {
-	id
-	title
-	code
-}
-fragment StudioFragment on Studio {
-	id
-	name
-	urls
-	stash_ids {
-		... StashIdFragment
-	}
 }
 `
 
@@ -1082,95 +467,17 @@ fragment PerformerFragment on Performer {
 	height_cm
 	alias_list
 	favorite
-	tags {
-		... TagFragment
-	}
 	scene_count
-	scenes {
-		... SceneFragment
-	}
 	stash_ids {
 		... StashIdFragment
 	}
 	rating100
-}
-fragment TagFragment on Tag {
-	name
-	id
-	stash_ids {
-		... StashIdFragment
-	}
+	custom_fields
 }
 fragment StashIdFragment on StashID {
 	endpoint
 	stash_id
 	updated_at
-}
-fragment SceneFragment on Scene {
-	id
-	title
-	code
-	details
-	urls
-	date
-	organized
-	files {
-		... VideoFileFragment
-	}
-	galleries {
-		... GalleryFragment
-	}
-	studio {
-		... StudioFragment
-	}
-	tags {
-		... TagFragment
-	}
-	performers {
-		id
-		name
-		gender
-		favorite
-	}
-	stash_ids {
-		... StashIdFragment
-	}
-}
-fragment VideoFileFragment on VideoFile {
-	id
-	path
-	basename
-	size
-	fingerprints {
-		... FingerprintFragment
-	}
-	format
-	width
-	height
-	duration
-	video_codec
-	audio_codec
-	frame_rate
-	bit_rate
-	created_at
-	updated_at
-}
-fragment FingerprintFragment on Fingerprint {
-	type
-	value
-}
-fragment GalleryFragment on Gallery {
-	id
-	title
-	code
-}
-fragment StudioFragment on Studio {
-	id
-	name
-	urls
-	stash_ids {
-		... StashIdFragment
-	}
 }
 `
 
@@ -1179,6 +486,54 @@ func (c *Client) AllPerformers(ctx context.Context, interceptors ...clientv2.Req
 
 	var res AllPerformers
 	if err := c.Client.Post(ctx, "allPerformers", AllPerformersDocument, &res, vars, interceptors...); err != nil {
+		if c.Client.ParseDataWhenErrors {
+			return &res, err
+		}
+
+		return nil, err
+	}
+
+	return &res, nil
+}
+
+const UpdatePerformerCustomFieldsDocument = `mutation UpdatePerformerCustomFields ($input: PerformerUpdateInput!) {
+	performerUpdate(input: $input) {
+		... PerformerFragment
+	}
+}
+fragment PerformerFragment on Performer {
+	id
+	name
+	disambiguation
+	gender
+	birthdate
+	ethnicity
+	country
+	eye_color
+	height_cm
+	alias_list
+	favorite
+	scene_count
+	stash_ids {
+		... StashIdFragment
+	}
+	rating100
+	custom_fields
+}
+fragment StashIdFragment on StashID {
+	endpoint
+	stash_id
+	updated_at
+}
+`
+
+func (c *Client) UpdatePerformerCustomFields(ctx context.Context, input PerformerUpdateInput, interceptors ...clientv2.RequestInterceptor) (*UpdatePerformerCustomFields, error) {
+	vars := map[string]any{
+		"input": input,
+	}
+
+	var res UpdatePerformerCustomFields
+	if err := c.Client.Post(ctx, "UpdatePerformerCustomFields", UpdatePerformerCustomFieldsDocument, &res, vars, interceptors...); err != nil {
 		if c.Client.ParseDataWhenErrors {
 			return &res, err
 		}
@@ -1268,10 +623,11 @@ func (c *Client) FindJob(ctx context.Context, input FindJobInput, interceptors .
 }
 
 var DocumentOperationNames = map[string]string{
-	FindPerformerByIDDocument: "FindPerformerByID",
-	FindPerformersDocument:    "FindPerformers",
-	AllPerformersDocument:     "allPerformers",
-	GetVersionDocument:        "GetVersion",
-	MetadataScanDocument:      "MetadataScan",
-	FindJobDocument:           "FindJob",
+	FindPerformerByIDDocument:           "FindPerformerByID",
+	FindPerformersDocument:              "FindPerformers",
+	AllPerformersDocument:               "allPerformers",
+	UpdatePerformerCustomFieldsDocument: "UpdatePerformerCustomFields",
+	GetVersionDocument:                  "GetVersion",
+	MetadataScanDocument:                "MetadataScan",
+	FindJobDocument:                     "FindJob",
 }

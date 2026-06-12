@@ -33,6 +33,27 @@ type DownloadMediaInput struct {
 	Paused     *bool    `json:"paused,omitempty"`
 }
 
+type FollowingPerformer struct {
+	Performer             *StashPerformer     `json:"performer"`
+	LastCheckedAt         *string             `json:"lastCheckedAt,omitempty"`
+	LastError             *string             `json:"lastError,omitempty"`
+	PendingReleaseCount   int                 `json:"pendingReleaseCount"`
+	ProcessedReleaseCount int                 `json:"processedReleaseCount"`
+	RecentReleases        []*FollowingRelease `json:"recentReleases"`
+}
+
+type FollowingRelease struct {
+	Key    string  `json:"key"`
+	Source string  `json:"source"`
+	Title  string  `json:"title"`
+	Code   *string `json:"code,omitempty"`
+	Date   *string `json:"date,omitempty"`
+	URL    *string `json:"url,omitempty"`
+	Query  string  `json:"query"`
+	TaskID *string `json:"taskID,omitempty"`
+	SeenAt string  `json:"seenAt"`
+}
+
 // Basic service health
 type Health struct {
 	Ok      bool   `json:"ok"`
@@ -137,6 +158,15 @@ type StashMetadataScanInput struct {
 	ScanGeneratePhashes       *bool    `json:"scanGeneratePhashes,omitempty"`
 	ScanGenerateThumbnails    *bool    `json:"scanGenerateThumbnails,omitempty"`
 	ScanGenerateClipPreviews  *bool    `json:"scanGenerateClipPreviews,omitempty"`
+}
+
+type StashPerformer struct {
+	ID         string   `json:"id"`
+	Name       string   `json:"name"`
+	AliasList  []string `json:"aliasList"`
+	Favorite   bool     `json:"favorite"`
+	SceneCount int      `json:"sceneCount"`
+	Followed   bool     `json:"followed"`
 }
 
 type StashSettings struct {

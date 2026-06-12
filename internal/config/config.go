@@ -45,12 +45,20 @@ type TaskConfig struct {
 	ProgressSyncIntervalSeconds int    `yaml:"progress_sync_interval_seconds"`
 }
 
+type FollowingConfig struct {
+	Store               string `yaml:"store"`
+	JSONPath            string `yaml:"json_path"`
+	PollIntervalSeconds int    `yaml:"poll_interval_seconds"`
+	JAVStashAPIKey      string `yaml:"javstash_api_key"`
+}
+
 type Config struct {
 	// Jackett is the configuration for the Jackett service
 	Jackett     JackettConfig     `yaml:"jackett"`
 	QBittorrent QBittorrentConfig `yaml:"qbittorrent"`
 	Stash       StashConfig       `yaml:"stash"`
 	Tasks       TaskConfig        `yaml:"tasks"`
+	Following   FollowingConfig   `yaml:"following"`
 }
 
 func Load() (*Config, error) {

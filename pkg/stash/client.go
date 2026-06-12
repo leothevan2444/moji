@@ -55,7 +55,9 @@ func rateLimit(n int) clientv2.RequestInterceptor {
 // NewClient creates a new Stash client with the given configuration.
 func NewClient(url string, apiKey string) *Client {
 	ret := &Client{
-		httpClient:           http.DefaultClient,
+		httpClient: &http.Client{
+			Transport: &http.Transport{Proxy: nil},
+		},
 		maxRequestsPerMinute: DefaultMaxRequestsPerMinute,
 	}
 

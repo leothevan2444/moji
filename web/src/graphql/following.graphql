@@ -1,0 +1,81 @@
+query StashPerformers($search: String) {
+  stashPerformers(search: $search) {
+    id
+    name
+    aliasList
+    favorite
+    sceneCount
+    followed
+  }
+}
+
+query FollowingPerformers {
+  followingPerformers {
+    performer {
+      id
+      name
+      aliasList
+      favorite
+      sceneCount
+      followed
+    }
+    lastCheckedAt
+    lastError
+    pendingReleaseCount
+    processedReleaseCount
+    recentReleases {
+      key
+      source
+      title
+      code
+      date
+      url
+      query
+      taskID
+      seenAt
+    }
+  }
+}
+
+mutation FollowPerformer($stashPerformerID: ID!) {
+  followPerformer(stashPerformerID: $stashPerformerID) {
+    performer {
+      id
+      followed
+    }
+  }
+}
+
+mutation UnfollowPerformer($stashPerformerID: ID!) {
+  unfollowPerformer(stashPerformerID: $stashPerformerID)
+}
+
+mutation RefreshFollowingPerformer($stashPerformerID: ID!) {
+  refreshFollowingPerformer(stashPerformerID: $stashPerformerID) {
+    performer {
+      id
+      followed
+    }
+    lastCheckedAt
+    lastError
+    pendingReleaseCount
+    processedReleaseCount
+    recentReleases {
+      key
+      title
+      code
+      date
+      query
+      taskID
+      seenAt
+    }
+  }
+}
+
+mutation RefreshFollowingNow {
+  refreshFollowingNow {
+    performer {
+      id
+    }
+  }
+}

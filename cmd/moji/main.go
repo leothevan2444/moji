@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"path/filepath"
 	"strings"
 	"syscall"
 	"time"
@@ -19,6 +20,7 @@ import (
 	"github.com/leothevan2444/moji/internal/config"
 	"github.com/leothevan2444/moji/internal/controller/api"
 	"github.com/leothevan2444/moji/internal/downloader"
+	"github.com/leothevan2444/moji/internal/following"
 	"github.com/leothevan2444/moji/internal/graphqlapi"
 	"github.com/leothevan2444/moji/internal/graphqlapi/generated"
 	"github.com/leothevan2444/moji/internal/stashsync"
@@ -26,6 +28,7 @@ import (
 	"github.com/leothevan2444/moji/internal/webui"
 	"github.com/leothevan2444/moji/pkg/qbittorrent"
 	"github.com/leothevan2444/moji/pkg/stash"
+	"github.com/leothevan2444/moji/pkg/stashbox"
 )
 
 func main() {
@@ -61,7 +64,7 @@ func main() {
 	}
 
 	// Dependencies
-	mux, downloaderService, stashService := newHTTPRuntime(cfg, "dev", configStore)
+	mux, downloaderService, stashService, followingService := newHTTPRuntime(cfg, "dev", configStore)
 
 	server := &http.Server{
 		Addr:              *addr,
@@ -82,6 +85,7 @@ func main() {
 	defer stop()
 
 	startTaskSyncWorker(ctx, downloaderService, stashService, configureProgressSyncInterval(cfg))
+	startFollowingWorker(ctx, followingService, configureFollowingPollInterval(cfg))
 
 	go func() {
 		<-ctx.Done()
@@ -98,17 +102,20 @@ func main() {
 }
 
 func newHTTPHandler(cfg *config.Config, version string) http.Handler {
-	handler, _, _ := newHTTPRuntime(cfg, version, nil)
+	handler, _, _, _ := newHTTPRuntime(cfg, version, nil)
 	return handler
 }
 
-func newHTTPRuntime(cfg *config.Config, version string, configStore *config.Store) (http.Handler, graphqlapi.DownloaderService, graphqlapi.StashService) {
+func newHTTPRuntime(cfg *config.Config, version string, configStore *config.Store) (http.Handler, graphqlapi.DownloaderService, graphqlapi.StashService, graphqlapi.FollowingService) {
 	jackettTracker := tracker.NewJackettService(cfg.Jackett.URL, cfg.Jackett.APIKey)
 	apiHandler := api.NewHandler(jackettTracker)
 	torrentClient := configureQBittorrent(cfg)
 	downloaderService := configureDownloader(cfg, jackettTracker, torrentClient)
-	stashService := configureStash(cfg)
+	stashClient := configureStashClient(cfg)
+	stashService := configureStashService(cfg, stashClient)
+	followingService := configureFollowing(cfg, stashClient, downloaderService)
 	resolver := graphqlapi.NewResolver(jackettTracker, torrentClient, downloaderService, stashService, version)
+	resolver.Following = followingService
 	resolver.RuntimeSettings = buildSettingsSnapshot(cfg, version, torrentClient != nil, downloaderService != nil, stashService != nil)
 	if configStore != nil {
 		resolver.SettingsEditor = newRuntimeSettingsEditor(configStore, version, torrentClient != nil, downloaderService != nil, stashService != nil)
@@ -134,7 +141,7 @@ func newHTTPRuntime(cfg *config.Config, version string, configStore *config.Stor
 		}
 	})
 
-	return router, downloaderService, stashService
+	return router, downloaderService, stashService, followingService
 }
 
 func configureQBittorrent(cfg *config.Config) graphqlapi.TorrentClient {
@@ -296,17 +303,100 @@ func startTaskSyncWorker(ctx context.Context, service graphqlapi.DownloaderServi
 	}()
 }
 
-func configureStash(cfg *config.Config) graphqlapi.StashService {
+func configureStashClient(cfg *config.Config) *stash.Client {
 	graphqlURL := cfg.Stash.GraphQLEndpoint()
 	if graphqlURL == "" {
 		return nil
 	}
 
-	client := stash.NewClient(graphqlURL, cfg.Stash.APIKey)
+	return stash.NewClient(graphqlURL, cfg.Stash.APIKey)
+}
+
+func configureStashService(cfg *config.Config, client *stash.Client) graphqlapi.StashService {
+	if client == nil {
+		return nil
+	}
+
 	service, err := stashsync.NewService(client, []string{cfg.Stash.LibraryPath})
 	if err != nil {
 		log.Fatalf("configure Stash: %v", err)
 	}
 
 	return service
+}
+
+func configureFollowing(cfg *config.Config, stashClient *stash.Client, downloaderService graphqlapi.DownloaderService) graphqlapi.FollowingService {
+	if stashClient == nil {
+		return nil
+	}
+
+	store, err := configureFollowingStore(cfg)
+	if err != nil {
+		log.Fatalf("configure following store: %v", err)
+	}
+
+	var javstashClient *stashbox.Client
+	if strings.TrimSpace(cfg.Following.JAVStashAPIKey) != "" {
+		javstashClient = stashbox.NewClient(cfg.Following.JAVStashAPIKey)
+	}
+
+	service, err := following.NewService(stashClient, javstashClient, downloaderService, store)
+	if err != nil {
+		log.Fatalf("configure following: %v", err)
+	}
+	return service
+}
+
+func configureFollowingStore(cfg *config.Config) (following.Store, error) {
+	switch cfg.Following.Store {
+	case "", "json":
+		path := cfg.Following.JSONPath
+		if path == "" {
+			dir := "."
+			if cfg.Tasks.JSONPath != "" {
+				dir = filepath.Dir(cfg.Tasks.JSONPath)
+			}
+			path = filepath.Join(dir, "moji-following.json")
+		}
+		return following.NewJSONStore(path)
+	case "memory":
+		return following.NewMemoryStore(), nil
+	default:
+		return nil, fmt.Errorf("unsupported following.store %q", cfg.Following.Store)
+	}
+}
+
+func configureFollowingPollInterval(cfg *config.Config) time.Duration {
+	seconds := cfg.Following.PollIntervalSeconds
+	if seconds < 0 {
+		return 0
+	}
+	if seconds == 0 {
+		seconds = 3600
+	}
+	return time.Duration(seconds) * time.Second
+}
+
+func startFollowingWorker(ctx context.Context, service graphqlapi.FollowingService, interval time.Duration) {
+	if service == nil || interval <= 0 {
+		return
+	}
+
+	go func() {
+		ticker := time.NewTicker(interval)
+		defer ticker.Stop()
+
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			case <-ticker.C:
+				syncCtx, cancel := context.WithTimeout(ctx, 2*time.Minute)
+				if _, err := service.RefreshAll(syncCtx); err != nil && !errors.Is(err, context.Canceled) {
+					log.Printf("refresh following performers: %v", err)
+				}
+				cancel()
+			}
+		}
+	}()
 }

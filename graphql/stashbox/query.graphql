@@ -175,6 +175,15 @@ query QueryPerformers($input: PerformerQueryInput!) {
   }
 }
 
+query QueryScenes($input: SceneQueryInput!) {
+  queryScenes(input: $input) {
+    count
+    scenes {
+      ...SceneFragment
+    }
+  }
+}
+
 query FindStudio($id: ID, $name: String) {
   findStudio(id: $id, name: $name) {
     ...StudioFragment

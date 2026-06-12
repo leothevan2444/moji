@@ -1,0 +1,51 @@
+extend type Query {
+  "List Stash performers with current Moji following state"
+  stashPerformers(search: String): [StashPerformer!]!
+
+  "List performers currently followed by Moji"
+  followingPerformers: [FollowingPerformer!]!
+}
+
+extend type Mutation {
+  "Mark a Stash performer as followed by Moji"
+  followPerformer(stashPerformerID: ID!): FollowingPerformer!
+
+  "Remove Moji following mark from a Stash performer"
+  unfollowPerformer(stashPerformerID: ID!): Boolean!
+
+  "Refresh a followed performer against the configured release source"
+  refreshFollowingPerformer(stashPerformerID: ID!): FollowingPerformer!
+
+  "Refresh all followed performers against the configured release source"
+  refreshFollowingNow: [FollowingPerformer!]!
+}
+
+type StashPerformer {
+  id: ID!
+  name: String!
+  aliasList: [String!]!
+  favorite: Boolean!
+  sceneCount: Int!
+  followed: Boolean!
+}
+
+type FollowingPerformer {
+  performer: StashPerformer!
+  lastCheckedAt: String
+  lastError: String
+  pendingReleaseCount: Int!
+  processedReleaseCount: Int!
+  recentReleases: [FollowingRelease!]!
+}
+
+type FollowingRelease {
+  key: ID!
+  source: String!
+  title: String!
+  code: String
+  date: String
+  url: String
+  query: String!
+  taskID: ID
+  seenAt: String!
+}
