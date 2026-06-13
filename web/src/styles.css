@@ -778,15 +778,20 @@ dd {
 }
 
 .profile-card {
+  --profile-card-height: 166px;
+  --profile-card-padding: 10px;
+  --profile-avatar-height: calc(var(--profile-card-height) - var(--profile-card-padding) * 2);
   display: grid;
-  grid-template-columns: 76px minmax(0, 1fr);
-  gap: 14px;
-  align-items: start;
+  height: var(--profile-card-height);
+  padding: var(--profile-card-padding);
+  grid-template-columns: calc(var(--profile-avatar-height) * 3 / 5) minmax(0, 1fr);
+  gap: 10px;
+  align-items: stretch;
 }
 
 .avatar {
-  width: 76px;
-  height: 76px;
+  width: calc(var(--profile-avatar-height) * 3 / 5);
+  height: var(--profile-avatar-height);
   border-radius: 8px;
   display: grid;
   place-items: center;
@@ -802,27 +807,99 @@ dd {
 .avatar--image {
   object-fit: cover;
   display: block;
+  height: 100%;
   background: rgba(148, 163, 184, 0.14);
   box-shadow: inset 0 0 0 1px rgba(15, 23, 42, 0.06);
 }
 
 .profile-card__body {
   min-width: 0;
+  min-height: 0;
+  display: grid;
+  align-content: start;
+  gap: 6px;
+  overflow: hidden;
 }
 
-.profile-card__head p {
-  margin-top: 4px;
+.profile-card__head {
+  display: flex;
+  align-items: start;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.profile-card__icons {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.profile-icon {
+  width: 20px;
+  height: 20px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: rgba(100, 116, 139, 0.88);
+  border: 0;
+  background: transparent;
+  padding: 0;
+}
+
+button.profile-icon {
+  cursor: pointer;
+  transition:
+    transform 160ms ease,
+    color 160ms ease;
+}
+
+button.profile-icon:hover:not(:disabled) {
+  transform: translateY(-1px);
+  color: var(--text);
+}
+
+button.profile-icon:disabled {
+  cursor: progress;
+  opacity: 0.72;
+}
+
+.profile-icon.is-active {
+  color: #b45309;
+}
+
+.profile-icon--favorite.is-active {
+  color: #d9485f;
+}
+
+.profile-facts {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px 10px;
+  margin: 0;
 }
 
 .profile-note {
-  margin: 10px 0 0;
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.4;
+  color: var(--muted);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 
 .profile-actions {
   display: flex;
   flex-wrap: wrap;
-  gap: 10px;
-  margin-top: 12px;
+  gap: 8px;
+  margin-top: 0;
+}
+
+.profile-actions .ghost-button {
+  min-height: 30px;
+  padding: 0 10px;
+  font-size: 12px;
 }
 
 .pagination-bar {

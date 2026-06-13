@@ -1,7 +1,7 @@
 import { FormEvent, ReactNode, useDeferredValue, useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery } from "urql";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faChartColumn, faGear, faCircleQuestion } from "@fortawesome/free-solid-svg-icons";
+import { faBookmark, faChartColumn, faCircleQuestion, faGear, faHeart } from "@fortawesome/free-solid-svg-icons";
 import {
   AddTorrentDocumentDocument,
   DashboardDocumentDocument,
@@ -204,23 +204,6 @@ function performerImageURL(imagePath?: string | null, stashURL?: string | null) 
   } catch {
     return imagePath;
   }
-}
-
-function followingTone(entry?: FollowingPerformerEntry | null) {
-  if (!entry) return "tone-neutral";
-  if (entry.lastError) return "tone-danger";
-  if (entry.pendingReleaseCount > 0) return "tone-warn";
-  if (entry.processedReleaseCount > 0) return "tone-success";
-  return "tone-info";
-}
-
-function followingStatusLabel(performer: StashPerformerEntry, entry?: FollowingPerformerEntry | null) {
-  if (!performer.followed) return "未订阅";
-  if (!entry) return "已订阅";
-  if (entry.lastError) return "检查失败";
-  if (entry.pendingReleaseCount > 0) return `待处理 ${entry.pendingReleaseCount}`;
-  if (entry.processedReleaseCount > 0) return `已处理 ${entry.processedReleaseCount}`;
-  return "已订阅";
 }
 
 function statusTone(status: string) {
@@ -1799,7 +1782,6 @@ function App() {
                 ) : null}
                 {stashPerformers.map((performer, index) => {
                   const followingEntry = followedByID.get(performer.id) ?? null;
-                  const aliases = performer.aliasList.filter(Boolean).slice(0, 3).join(" / ") || "暂无别名";
                   const latestRelease = followingEntry?.recentReleases[0] ?? null;
                   const imageURL = performerImageURL(performer.imagePath, runtimeSettings?.stash.url);
 
@@ -1814,19 +1796,36 @@ function App() {
                       <div className="profile-card__head">
                         <div>
                           <h3>{performer.name}</h3>
-                          <p>{aliases}</p>
                         </div>
-                        <span className={`status-chip ${performer.followed ? followingTone(followingEntry) : "tone-neutral"}`}>
-                          {followingStatusLabel(performer, followingEntry)}
-                        </span>
+                        <div className="profile-card__icons">
+                          {performer.favorite ? (
+                            <span
+                              className="profile-icon profile-icon--favorite is-active"
+                              title="Stash 已收藏"
+                              aria-label="Stash 已收藏"
+                            >
+                              <FontAwesomeIcon icon={faHeart} />
+                            </span>
+                          ) : null}
+                          <button
+                            type="button"
+                            className={`profile-icon profile-icon--follow ${performer.followed ? "is-active" : ""}`}
+                            title={performer.followed ? "取消订阅" : "订阅"}
+                            aria-label={performer.followed ? "取消订阅" : "订阅"}
+                            disabled={pendingFollowingID === performer.id}
+                            onClick={() => void handleFollowToggle(performer)}
+                          >
+                            <FontAwesomeIcon icon={faBookmark} />
+                          </button>
+                        </div>
                       </div>
-                      <dl>
+                      <dl className="profile-facts">
                         <div>
-                          <dt>Stash 作品数</dt>
+                          <dt>作品</dt>
                           <dd>{performer.sceneCount}</dd>
                         </div>
                         <div>
-                          <dt>最近检查</dt>
+                          <dt>检查</dt>
                           <dd>{formatDateTime(followingEntry?.lastCheckedAt)}</dd>
                         </div>
                       </dl>
@@ -1840,14 +1839,6 @@ function App() {
                               : "尚未订阅。"}
                       </p>
                       <div className="profile-actions">
-                        <button
-                          type="button"
-                          className="ghost-button"
-                          disabled={pendingFollowingID === performer.id}
-                          onClick={() => void handleFollowToggle(performer)}
-                        >
-                          {pendingFollowingID === performer.id ? "处理中..." : performer.followed ? "取消订阅" : "订阅"}
-                        </button>
                         <button
                           type="button"
                           className="ghost-button"
