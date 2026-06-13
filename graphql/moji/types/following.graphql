@@ -1,6 +1,6 @@
 extend type Query {
   "List Stash performers with current Moji following state"
-  stashPerformers(search: String): [StashPerformer!]!
+  stashPerformers(search: String, page: Int = 1, pageSize: Int = 24): StashPerformerConnection!
 
   "List performers currently followed by Moji"
   followingPerformers: [FollowingPerformer!]!
@@ -25,8 +25,19 @@ type StashPerformer {
   name: String!
   aliasList: [String!]!
   favorite: Boolean!
+  imagePath: String
   sceneCount: Int!
   followed: Boolean!
+}
+
+type StashPerformerConnection {
+  items: [StashPerformer!]!
+  page: Int!
+  pageSize: Int!
+  totalCount: Int!
+  totalPages: Int!
+  hasPrevPage: Boolean!
+  hasNextPage: Boolean!
 }
 
 type FollowingPerformer {

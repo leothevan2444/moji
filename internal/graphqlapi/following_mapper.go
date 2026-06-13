@@ -14,8 +14,26 @@ func stashPerformerToModel(performer following.Performer) *model.StashPerformer 
 		Name:       performer.Name,
 		AliasList:  aliases,
 		Favorite:   performer.Favorite,
+		ImagePath:  nilIfEmpty(performer.ImagePath),
 		SceneCount: performer.SceneCount,
 		Followed:   performer.Followed,
+	}
+}
+
+func stashPerformerPageToModel(page StashPerformerPage) *model.StashPerformerConnection {
+	items := make([]*model.StashPerformer, 0, len(page.Items))
+	for _, item := range page.Items {
+		items = append(items, stashPerformerToModel(item))
+	}
+
+	return &model.StashPerformerConnection{
+		Items:       items,
+		Page:        page.Page,
+		PageSize:    page.PageSize,
+		TotalCount:  page.TotalCount,
+		TotalPages:  page.TotalPages,
+		HasPrevPage: page.HasPrevPage,
+		HasNextPage: page.HasNextPage,
 	}
 }
 

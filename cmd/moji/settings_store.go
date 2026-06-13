@@ -67,6 +67,19 @@ func (s *runtimeSettingsEditor) UpdateQBittorrentSettings(input graphqlapi.Updat
 	return buildSettingsSnapshot(cfg, s.version, s.qbittorrentEnabled, s.downloaderEnabled, s.stashEnabled), nil
 }
 
+func (s *runtimeSettingsEditor) UpdateFollowingSettings(input graphqlapi.UpdateFollowingSettingsInput) (*graphqlapi.SettingsSnapshot, error) {
+	cfg, err := s.store.UpdateFollowing(
+		strings.TrimSpace(input.Store),
+		strings.TrimSpace(input.JSONPath),
+		input.PollIntervalSeconds,
+		trimOptionalSecret(input.JAVStashAPIKey),
+	)
+	if err != nil {
+		return nil, err
+	}
+	return buildSettingsSnapshot(cfg, s.version, s.qbittorrentEnabled, s.downloaderEnabled, s.stashEnabled), nil
+}
+
 func trimOptionalSecret(raw *string) *string {
 	if raw == nil {
 		return nil

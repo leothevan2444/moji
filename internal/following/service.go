@@ -336,6 +336,7 @@ func performerFromStash(performer *stashgraphql.PerformerFragment, customFieldKe
 		Name:       performer.Name,
 		AliasList:  append([]string(nil), performer.AliasList...),
 		Favorite:   performer.Favorite,
+		ImagePath:  derefString(performer.ImagePath),
 		SceneCount: performer.SceneCount,
 		Followed:   customFieldTruthy(performer.CustomFields, customFieldKey),
 	}
@@ -357,6 +358,13 @@ func buildFollowing(performer Performer, state *PerformerState) FollowingPerform
 	item.RecentReleases = append(item.RecentReleases, state.ProcessedReleases...)
 	item.RecentReleases = trimRecordedReleases(item.RecentReleases, 10)
 	return item
+}
+
+func derefString(value *string) string {
+	if value == nil {
+		return ""
+	}
+	return *value
 }
 
 func performerMatches(performer Performer, needle string) bool {

@@ -11,6 +11,7 @@ import (
 
 	"github.com/99designs/gqlgen/graphql/handler"
 	"github.com/leothevan2444/moji/internal/downloader"
+	"github.com/leothevan2444/moji/internal/following"
 	"github.com/leothevan2444/moji/internal/graphqlapi/generated"
 	"github.com/leothevan2444/moji/internal/stashsync"
 )
@@ -148,6 +149,44 @@ func TestTasksQueryWithoutDownloaderReturnsEmptyList(t *testing.T) {
 	}
 	if len(resp.Data.Tasks) != 0 {
 		t.Fatalf("expected empty tasks list, got %+v", resp.Data.Tasks)
+	}
+}
+
+func TestStashPerformersQueryPaginatesResults(t *testing.T) {
+	resolver := NewResolver(nil, nil, nil, nil, "test-version")
+	resolver.Following = &fakeFollowingService{
+		performers: []following.Performer{
+			{ID: "performer-1", Name: "Alice", Followed: true},
+			{ID: "performer-2", Name: "Beth", Followed: false},
+			{ID: "performer-3", Name: "Clara", Followed: false},
+		},
+	}
+
+	resp := executeGraphQL(t, resolver, `{
+		stashPerformers(page: 2, pageSize: 2) {
+			items { id name followed }
+			page
+			pageSize
+			totalCount
+			totalPages
+			hasPrevPage
+			hasNextPage
+		}
+	}`)
+	if len(resp.Errors) > 0 {
+		t.Fatalf("expected no errors, got %+v", resp.Errors)
+	}
+	if resp.Data.StashPerformers.Page != 2 || resp.Data.StashPerformers.PageSize != 2 {
+		t.Fatalf("unexpected page metadata: %+v", resp.Data.StashPerformers)
+	}
+	if resp.Data.StashPerformers.TotalCount != 3 || resp.Data.StashPerformers.TotalPages != 2 {
+		t.Fatalf("unexpected total metadata: %+v", resp.Data.StashPerformers)
+	}
+	if !resp.Data.StashPerformers.HasPrevPage || resp.Data.StashPerformers.HasNextPage {
+		t.Fatalf("unexpected pagination flags: %+v", resp.Data.StashPerformers)
+	}
+	if len(resp.Data.StashPerformers.Items) != 1 || resp.Data.StashPerformers.Items[0].ID != "performer-3" {
+		t.Fatalf("unexpected page items: %+v", resp.Data.StashPerformers.Items)
 	}
 }
 
@@ -441,6 +480,13 @@ func TestSettingsQueryUsesSettingsEditorSnapshot(t *testing.T) {
 	}
 	resolver.SettingsEditor = &fakeSettingsEditor{
 		snapshot: &SettingsSnapshot{
+			Following: FollowingSettingsSnapshot{
+				Store:               "json",
+				JSONPath:            "moji-following.json",
+				PollIntervalSeconds: 3600,
+				PollEnabled:         true,
+				JAVStashEnabled:     true,
+			},
 			QBittorrent: QBittorrentSettingsSnapshot{
 				URL:      "http://qb.invalid",
 				Username: "editor-user",
@@ -449,9 +495,12 @@ func TestSettingsQueryUsesSettingsEditorSnapshot(t *testing.T) {
 		},
 	}
 
-	resp := executeGraphQL(t, resolver, `{ settings { qbittorrent { url username } system { appVersion } } }`)
+	resp := executeGraphQL(t, resolver, `{ settings { following { store jsonPath pollIntervalSeconds pollEnabled javstashEnabled } qbittorrent { url username } system { appVersion } } }`)
 	if len(resp.Errors) > 0 {
 		t.Fatalf("expected no errors, got %+v", resp.Errors)
+	}
+	if resp.Data.Settings.Following.Store != "json" || !resp.Data.Settings.Following.PollEnabled {
+		t.Fatalf("unexpected following settings: %+v", resp.Data.Settings.Following)
 	}
 	if resp.Data.Settings.Qbittorrent.Username != "editor-user" {
 		t.Fatalf("unexpected qbittorrent settings: %+v", resp.Data.Settings.Qbittorrent)
@@ -497,6 +546,56 @@ func TestUpdateStashSettingsMutation(t *testing.T) {
 	}
 	if resp.Data.UpdateStashSettings.Stash.URL != "http://stash.updated" {
 		t.Fatalf("unexpected stash response: %+v", resp.Data.UpdateStashSettings.Stash)
+	}
+}
+
+func TestUpdateFollowingSettingsMutation(t *testing.T) {
+	editor := &fakeSettingsEditor{
+		updateFollowingSnapshot: &SettingsSnapshot{
+			Following: FollowingSettingsSnapshot{
+				Store:                    "json",
+				JSONPath:                 "state/following.json",
+				PollIntervalSeconds:      1800,
+				PollEnabled:              true,
+				JAVStashEnabled:          true,
+				JAVStashAPIKeyConfigured: true,
+			},
+			System: SystemSettingsSnapshot{AppVersion: "test-version"},
+		},
+	}
+	resolver := NewResolver(nil, nil, nil, nil, "test-version")
+	resolver.SettingsEditor = editor
+
+	resp := executeGraphQL(t, resolver, `mutation {
+		updateFollowingSettings(input: {
+			store: "json"
+			jsonPath: "state/following.json"
+			pollIntervalSeconds: 1800
+			javstashApiKey: "token"
+		}) {
+			following {
+				store
+				jsonPath
+				pollIntervalSeconds
+				pollEnabled
+				javstashApiKeyConfigured
+			}
+		}
+	}`)
+	if len(resp.Errors) > 0 {
+		t.Fatalf("expected no errors, got %+v", resp.Errors)
+	}
+	if editor.followingInput.Store != "json" || editor.followingInput.JSONPath != "state/following.json" {
+		t.Fatalf("unexpected following input: %+v", editor.followingInput)
+	}
+	if editor.followingInput.PollIntervalSeconds != 1800 {
+		t.Fatalf("unexpected following interval: %+v", editor.followingInput)
+	}
+	if editor.followingInput.JAVStashAPIKey == nil || *editor.followingInput.JAVStashAPIKey != "token" {
+		t.Fatalf("unexpected following api key: %+v", editor.followingInput.JAVStashAPIKey)
+	}
+	if resp.Data.UpdateFollowingSettings.Following.JSONPath != "state/following.json" || !resp.Data.UpdateFollowingSettings.Following.JavstashAPIKeyConfigured {
+		t.Fatalf("unexpected following response: %+v", resp.Data.UpdateFollowingSettings.Following)
 	}
 }
 
@@ -642,10 +741,30 @@ type graphQLTaskResponse struct {
 				ProgressSyncIntervalSeconds int    `json:"progressSyncIntervalSeconds"`
 				ProgressSyncEnabled         bool   `json:"progressSyncEnabled"`
 			} `json:"tasks"`
+			Following struct {
+				Store               string `json:"store"`
+				JSONPath            string `json:"jsonPath"`
+				PollIntervalSeconds int    `json:"pollIntervalSeconds"`
+				PollEnabled         bool   `json:"pollEnabled"`
+				JavstashEnabled     bool   `json:"javstashEnabled"`
+			} `json:"following"`
 			System struct {
 				AppVersion string `json:"appVersion"`
 			} `json:"system"`
 		} `json:"settings"`
+		StashPerformers struct {
+			Items []struct {
+				ID       string `json:"id"`
+				Name     string `json:"name"`
+				Followed bool   `json:"followed"`
+			} `json:"items"`
+			Page        int  `json:"page"`
+			PageSize    int  `json:"pageSize"`
+			TotalCount  int  `json:"totalCount"`
+			TotalPages  int  `json:"totalPages"`
+			HasPrevPage bool `json:"hasPrevPage"`
+			HasNextPage bool `json:"hasNextPage"`
+		} `json:"stashPerformers"`
 		DashboardStats struct {
 			Total        int `json:"total"`
 			Active       int `json:"active"`
@@ -661,6 +780,15 @@ type graphQLTaskResponse struct {
 				LibraryPath      string `json:"libraryPath"`
 			} `json:"stash"`
 		} `json:"updateStashSettings"`
+		UpdateFollowingSettings struct {
+			Following struct {
+				Store                    string `json:"store"`
+				JSONPath                 string `json:"jsonPath"`
+				PollIntervalSeconds      int    `json:"pollIntervalSeconds"`
+				PollEnabled              bool   `json:"pollEnabled"`
+				JavstashAPIKeyConfigured bool   `json:"javstashApiKeyConfigured"`
+			} `json:"following"`
+		} `json:"updateFollowingSettings"`
 		QbittorrentAdd bool `json:"qbittorrentAdd"`
 	} `json:"data"`
 	Errors []struct {
@@ -674,6 +802,8 @@ type fakeSettingsEditor struct {
 	updateStashSnapshot       *SettingsSnapshot
 	qbittorrentInput          UpdateQBittorrentSettingsInput
 	updateQBittorrentSnapshot *SettingsSnapshot
+	followingInput            UpdateFollowingSettingsInput
+	updateFollowingSnapshot   *SettingsSnapshot
 }
 
 func (f *fakeSettingsEditor) Snapshot() *SettingsSnapshot {
@@ -692,6 +822,11 @@ func (f *fakeSettingsEditor) UpdateJackettSettings(UpdateJackettSettingsInput) (
 func (f *fakeSettingsEditor) UpdateQBittorrentSettings(input UpdateQBittorrentSettingsInput) (*SettingsSnapshot, error) {
 	f.qbittorrentInput = input
 	return f.updateQBittorrentSnapshot, nil
+}
+
+func (f *fakeSettingsEditor) UpdateFollowingSettings(input UpdateFollowingSettingsInput) (*SettingsSnapshot, error) {
+	f.followingInput = input
+	return f.updateFollowingSnapshot, nil
 }
 
 func executeGraphQL(t *testing.T, resolver *Resolver, query string) graphQLTaskResponse {
@@ -719,6 +854,34 @@ func executeGraphQL(t *testing.T, resolver *Resolver, query string) graphQLTaskR
 }
 
 type fakeStashService struct{}
+
+type fakeFollowingService struct {
+	performers []following.Performer
+}
+
+func (f *fakeFollowingService) ListStashPerformers(_ context.Context, _ string) ([]following.Performer, error) {
+	return f.performers, nil
+}
+
+func (f *fakeFollowingService) ListFollowingPerformers(context.Context) ([]following.FollowingPerformer, error) {
+	return nil, nil
+}
+
+func (f *fakeFollowingService) FollowPerformer(context.Context, string) (following.FollowingPerformer, error) {
+	return following.FollowingPerformer{}, nil
+}
+
+func (f *fakeFollowingService) UnfollowPerformer(context.Context, string) error {
+	return nil
+}
+
+func (f *fakeFollowingService) RefreshPerformer(context.Context, string) (following.FollowingPerformer, error) {
+	return following.FollowingPerformer{}, nil
+}
+
+func (f *fakeFollowingService) RefreshAll(context.Context) ([]following.FollowingPerformer, error) {
+	return nil, nil
+}
 
 func (fakeStashService) MetadataScan(context.Context, stashsync.ScanRequest) (string, error) {
 	return "job-1", nil

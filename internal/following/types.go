@@ -9,6 +9,7 @@ type Performer struct {
 	Name       string
 	AliasList  []string
 	Favorite   bool
+	ImagePath  string
 	SceneCount int
 	Followed   bool
 }

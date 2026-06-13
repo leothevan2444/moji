@@ -36,3 +36,16 @@ mutation UpdateQBittorrentSettingsDocument($input: UpdateQBittorrentSettingsInpu
     }
   }
 }
+
+mutation UpdateFollowingSettingsDocument($input: UpdateFollowingSettingsInput!) {
+  updateFollowingSettings(input: $input) {
+    following {
+      store
+      jsonPath
+      pollIntervalSeconds
+      pollEnabled
+      javstashEnabled
+      javstashApiKeyConfigured
+    }
+  }
+}

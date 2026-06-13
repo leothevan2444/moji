@@ -233,6 +233,29 @@ func buildSettingsSnapshot(cfg *config.Config, version string, qbittorrentEnable
 		progressSyncSeconds = 0
 	}
 
+	followingStore := cfg.Following.Store
+	if followingStore == "" {
+		followingStore = "json"
+	}
+
+	followingJSONPath := cfg.Following.JSONPath
+	if followingJSONPath == "" {
+		dir := "."
+		if cfg.Tasks.JSONPath != "" {
+			dir = filepath.Dir(cfg.Tasks.JSONPath)
+		}
+		followingJSONPath = filepath.Join(dir, "moji-following.json")
+	}
+
+	followingPollSeconds := cfg.Following.PollIntervalSeconds
+	followingPollEnabled := followingPollSeconds >= 0
+	if followingPollSeconds == 0 {
+		followingPollSeconds = 3600
+	}
+	if followingPollSeconds < 0 {
+		followingPollSeconds = 0
+	}
+
 	jackettConfigured := cfg.Jackett.URL != "" && cfg.Jackett.APIKey != ""
 	stashConfigured := cfg.Stash.URL != "" && cfg.Stash.LibraryPath != ""
 	qbittorrentConfigured := cfg.QBittorrent.URL != "" && cfg.QBittorrent.Username != "" && cfg.QBittorrent.Password != ""
@@ -267,6 +290,14 @@ func buildSettingsSnapshot(cfg *config.Config, version string, qbittorrentEnable
 			JSONPath:                    jsonPath,
 			ProgressSyncIntervalSeconds: progressSyncSeconds,
 			ProgressSyncEnabled:         progressSyncEnabled && downloaderEnabled,
+		},
+		Following: graphqlapi.FollowingSettingsSnapshot{
+			Store:                    followingStore,
+			JSONPath:                 followingJSONPath,
+			PollIntervalSeconds:      followingPollSeconds,
+			PollEnabled:              followingPollEnabled && stashEnabled,
+			JAVStashEnabled:          cfg.Following.JAVStashAPIKey != "",
+			JAVStashAPIKeyConfigured: cfg.Following.JAVStashAPIKey != "",
 		},
 		System: graphqlapi.SystemSettingsSnapshot{
 			AppVersion: version,

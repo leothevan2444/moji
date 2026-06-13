@@ -54,6 +54,15 @@ type FollowingRelease struct {
 	SeenAt string  `json:"seenAt"`
 }
 
+type FollowingSettings struct {
+	Store                    string `json:"store"`
+	JSONPath                 string `json:"jsonPath"`
+	PollIntervalSeconds      int    `json:"pollIntervalSeconds"`
+	PollEnabled              bool   `json:"pollEnabled"`
+	JavstashEnabled          bool   `json:"javstashEnabled"`
+	JavstashAPIKeyConfigured bool   `json:"javstashApiKeyConfigured"`
+}
+
 // Basic service health
 type Health struct {
 	Ok      bool   `json:"ok"`
@@ -133,6 +142,7 @@ type Settings struct {
 	Jackett     *JackettSettings     `json:"jackett"`
 	Qbittorrent *QBittorrentSettings `json:"qbittorrent"`
 	Tasks       *TaskSettings        `json:"tasks"`
+	Following   *FollowingSettings   `json:"following"`
 	System      *SystemSettings      `json:"system"`
 }
 
@@ -165,8 +175,19 @@ type StashPerformer struct {
 	Name       string   `json:"name"`
 	AliasList  []string `json:"aliasList"`
 	Favorite   bool     `json:"favorite"`
+	ImagePath  *string  `json:"imagePath,omitempty"`
 	SceneCount int      `json:"sceneCount"`
 	Followed   bool     `json:"followed"`
+}
+
+type StashPerformerConnection struct {
+	Items       []*StashPerformer `json:"items"`
+	Page        int               `json:"page"`
+	PageSize    int               `json:"pageSize"`
+	TotalCount  int               `json:"totalCount"`
+	TotalPages  int               `json:"totalPages"`
+	HasPrevPage bool              `json:"hasPrevPage"`
+	HasNextPage bool              `json:"hasNextPage"`
 }
 
 type StashSettings struct {
@@ -210,6 +231,13 @@ type TaskSettings struct {
 	JSONPath                    string `json:"jsonPath"`
 	ProgressSyncIntervalSeconds int    `json:"progressSyncIntervalSeconds"`
 	ProgressSyncEnabled         bool   `json:"progressSyncEnabled"`
+}
+
+type UpdateFollowingSettingsInput struct {
+	Store               string  `json:"store"`
+	JSONPath            string  `json:"jsonPath"`
+	PollIntervalSeconds int     `json:"pollIntervalSeconds"`
+	JavstashAPIKey      *string `json:"javstashApiKey,omitempty"`
 }
 
 type UpdateJackettSettingsInput struct {

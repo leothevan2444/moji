@@ -15,6 +15,7 @@ import {
   TriggerTaskStashScanDocumentDocument,
   TriggerStashScansDocumentDocument,
   UnfollowPerformerDocument,
+  UpdateFollowingSettingsDocumentDocument,
   UpdateJackettSettingsDocumentDocument,
   UpdateQBittorrentSettingsDocumentDocument,
   UpdateStashSettingsDocumentDocument,
@@ -42,6 +43,8 @@ import {
   type TriggerStashScansDocumentMutationVariables,
   type UnfollowPerformerMutation,
   type UnfollowPerformerMutationVariables,
+  type UpdateFollowingSettingsDocumentMutation,
+  type UpdateFollowingSettingsDocumentMutationVariables,
   type UpdateJackettSettingsDocumentMutation,
   type UpdateJackettSettingsDocumentMutationVariables,
   type UpdateQBittorrentSettingsDocumentMutation,
@@ -51,10 +54,10 @@ import {
 } from "./graphql/generated/graphql";
 import { HELP_TOPICS, type HelpTopicId } from "./help";
 
-type TabKey = "主页" | "任务" | "following" | "发现";
+type TabKey = "主页" | "任务" | "订阅" | "发现";
 type DrawerKey = "stats" | "settings" | "help" | "task" | null;
 type DashboardTask = DashboardDocumentQuery["tasks"][number];
-type StashPerformerEntry = StashPerformersQuery["stashPerformers"][number];
+type StashPerformerEntry = StashPerformersQuery["stashPerformers"]["items"][number];
 type FollowingPerformerEntry = FollowingPerformersQuery["followingPerformers"][number];
 type RuntimeSettings = NonNullable<DashboardDocumentQuery["settings"]>;
 type SettingsFeedback = { tone: "tone-success" | "tone-danger" | "tone-info"; message: string } | null;
@@ -69,6 +72,7 @@ type SettingsTab =
   | "索引器"
   | "下载器"
   | "任务"
+  | "订阅"
   | "安全性"
   | "系统"
   | "日志"
@@ -76,12 +80,13 @@ type SettingsTab =
   | "更新历史"
   | "关于";
 
-const NAV_TABS: TabKey[] = ["主页", "任务", "following", "发现"];
+const NAV_TABS: TabKey[] = ["主页", "任务", "订阅", "发现"];
 const SETTINGS_TABS: SettingsTab[] = [
   "Stash",
   "索引器",
   "下载器",
   "任务",
+  "订阅",
   "安全性",
   "系统",
   "日志",
@@ -95,6 +100,7 @@ const ENABLED_SETTINGS_TABS: ReadonlySet<SettingsTab> = new Set([
   "索引器",
   "下载器",
   "任务",
+  "订阅",
   "系统"
 ]);
 
@@ -117,6 +123,15 @@ const EMPTY_QBITTORRENT_FORM = {
   category: "",
   tags: ""
 };
+
+const EMPTY_FOLLOWING_FORM = {
+  store: "json",
+  jsonPath: "",
+  pollIntervalSeconds: "3600",
+  javstashApiKey: ""
+};
+
+const FOLLOWING_PAGE_SIZE_OPTIONS = [12, 24, 48, 96] as const;
 
 function formatBytes(size: number) {
   if (!size) return "0 B";
@@ -176,6 +191,19 @@ function performerInitials(name: string) {
     .trim()
     .slice(0, 2)
     .toUpperCase();
+}
+
+function performerImageURL(imagePath?: string | null, stashURL?: string | null) {
+  if (!imagePath) return null;
+  try {
+    if (/^https?:\/\//i.test(imagePath)) {
+      return imagePath;
+    }
+    if (!stashURL) return imagePath;
+    return new URL(imagePath, stashURL.endsWith("/") ? stashURL : `${stashURL}/`).toString();
+  } catch {
+    return imagePath;
+  }
 }
 
 function followingTone(entry?: FollowingPerformerEntry | null) {
@@ -488,16 +516,20 @@ function App() {
   const [jackettQuery, setJackettQuery] = useState("");
   const [submittedJackettQuery, setSubmittedJackettQuery] = useState("");
   const [followingSearch, setFollowingSearch] = useState("");
+  const [followingPage, setFollowingPage] = useState(1);
+  const [followingPageSize, setFollowingPageSize] = useState<number>(24);
   const [followingFeedback, setFollowingFeedback] = useState<SettingsFeedback>(null);
   const [pendingFollowingID, setPendingFollowingID] = useState<string | null>(null);
   const [pendingAddId, setPendingAddId] = useState<string | null>(null);
   const [stashForm, setStashForm] = useState(EMPTY_STASH_FORM);
   const [jackettForm, setJackettForm] = useState(EMPTY_JACKETT_FORM);
   const [qbittorrentForm, setQBittorrentForm] = useState(EMPTY_QBITTORRENT_FORM);
-  const [settingsFeedback, setSettingsFeedback] = useState<Record<"Stash" | "索引器" | "下载器", SettingsFeedback>>({
+  const [followingForm, setFollowingForm] = useState(EMPTY_FOLLOWING_FORM);
+  const [settingsFeedback, setSettingsFeedback] = useState<Record<"Stash" | "索引器" | "下载器" | "订阅", SettingsFeedback>>({
     Stash: null,
     索引器: null,
-    下载器: null
+    下载器: null,
+    订阅: null
   });
 
   const deferredTaskSearch = useDeferredValue(taskSearch.trim().toLowerCase());
@@ -529,16 +561,20 @@ function App() {
     useQuery<StashPerformersQuery, StashPerformersQueryVariables>({
       query: StashPerformersDocument,
       variables: {
-        search: deferredFollowingSearch || null
+        search: deferredFollowingSearch || null,
+        page: followingPage,
+        pageSize: followingPageSize
       },
-      requestPolicy: "cache-and-network"
+      requestPolicy: "cache-and-network",
+      pause: tab !== "订阅"
     });
   const [{ data: followingData, fetching: fetchingFollowing, error: followingError }, refreshFollowing] = useQuery<
     FollowingPerformersQuery,
     Record<string, never>
   >({
     query: FollowingPerformersDocument,
-    requestPolicy: "cache-and-network"
+    requestPolicy: "cache-and-network",
+    pause: tab !== "订阅"
   });
 
   const [, addTorrent] = useMutation<
@@ -569,6 +605,10 @@ function App() {
     UpdateQBittorrentSettingsDocumentMutation,
     UpdateQBittorrentSettingsDocumentMutationVariables
   >(UpdateQBittorrentSettingsDocumentDocument);
+  const [{ fetching: updatingFollowing }, updateFollowingSettings] = useMutation<
+    UpdateFollowingSettingsDocumentMutation,
+    UpdateFollowingSettingsDocumentMutationVariables
+  >(UpdateFollowingSettingsDocumentDocument);
   const [, followPerformer] = useMutation<FollowPerformerMutation, FollowPerformerMutationVariables>(FollowPerformerDocument);
   const [, unfollowPerformer] = useMutation<UnfollowPerformerMutation, UnfollowPerformerMutationVariables>(UnfollowPerformerDocument);
   const [, refreshFollowingPerformer] = useMutation<
@@ -582,10 +622,19 @@ function App() {
 
   const tasks = data?.tasks ?? [];
   const runtimeSettings = data?.settings ?? null;
-  const stashPerformers = stashPerformersData?.stashPerformers ?? [];
+  const stashPerformerPage = stashPerformersData?.stashPerformers ?? null;
+  const stashPerformers = stashPerformerPage?.items ?? [];
   const followedPerformers = followingData?.followingPerformers ?? [];
   const activeTask = selectedTaskId ? tasks.find((task) => task.id === selectedTaskId) ?? null : null;
   const activeTaskFailure = activeTask ? taskFailureSummary(activeTask) : null;
+
+  useEffect(() => {
+    setFollowingPage(1);
+  }, [deferredFollowingSearch]);
+
+  useEffect(() => {
+    setFollowingPage(1);
+  }, [followingPageSize]);
 
   useEffect(() => {
     if (!runtimeSettings) return;
@@ -606,6 +655,12 @@ function App() {
       defaultSavePath: runtimeSettings.qbittorrent.defaultSavePath || "",
       category: runtimeSettings.qbittorrent.category || "",
       tags: runtimeSettings.qbittorrent.tags || ""
+    });
+    setFollowingForm({
+      store: runtimeSettings.following.store || "json",
+      jsonPath: runtimeSettings.following.jsonPath || "",
+      pollIntervalSeconds: String(runtimeSettings.following.pollIntervalSeconds || 3600),
+      javstashApiKey: ""
     });
   }, [runtimeSettings]);
 
@@ -695,6 +750,14 @@ function App() {
             : runtimeSettings.qbittorrent.configured
               ? "配置完整，但运行时未连接成功"
               : "缺少 URL、用户名或密码"
+        },
+        {
+          name: "订阅",
+          label: runtimeSettings.following.pollEnabled ? "已启用" : "未启用",
+          tone: runtimeSettings.following.pollEnabled ? "tone-success" : "tone-neutral",
+          detail: runtimeSettings.following.javstashEnabled
+            ? `轮询间隔: ${runtimeSettings.following.pollIntervalSeconds} 秒`
+            : "缺少 JAVStash API key，暂时只能手动检查"
         }
       ]
     : [];
@@ -716,6 +779,12 @@ function App() {
       return {
         label: taskSyncStatus(runtimeSettings.tasks),
         tone: runtimeSettings.tasks.progressSyncEnabled ? "tone-success" as const : "tone-neutral" as const
+      };
+    }
+    if (settingsTab === "订阅") {
+      return {
+        label: runtimeSettings.following.pollEnabled ? "已启用" : "未启用",
+        tone: runtimeSettings.following.pollEnabled ? "tone-success" as const : "tone-neutral" as const
       };
     }
     if (settingsTab === "系统") {
@@ -806,6 +875,38 @@ function App() {
     setSettingsFeedback((current) => ({
       ...current,
       下载器: { tone: "tone-success", message: "下载器设置已保存，新的默认值已同步到后端。" }
+    }));
+    await refreshDashboard({ requestPolicy: "network-only" });
+  };
+
+  const saveFollowingSettings = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setSettingsFeedback((current) => ({ ...current, 订阅: null }));
+
+    const pollIntervalSeconds = Number.parseInt(followingForm.pollIntervalSeconds.trim(), 10);
+    const normalizedPollIntervalSeconds = Number.isNaN(pollIntervalSeconds) ? 0 : pollIntervalSeconds;
+
+    const result = await updateFollowingSettings({
+      input: {
+        store: followingForm.store.trim() || "json",
+        jsonPath: followingForm.jsonPath.trim(),
+        pollIntervalSeconds: normalizedPollIntervalSeconds,
+        javstashApiKey: followingForm.javstashApiKey.trim() || null
+      }
+    });
+
+    if (result.error) {
+      setSettingsFeedback((current) => ({
+        ...current,
+        订阅: { tone: "tone-danger", message: describeQueryError(result.error) }
+      }));
+      return;
+    }
+
+    setFollowingForm((current) => ({ ...current, javstashApiKey: "" }));
+    setSettingsFeedback((current) => ({
+      ...current,
+      订阅: { tone: "tone-success", message: "订阅设置已保存，轮询与 JAVStash 凭据已同步到后端。" }
     }));
     await refreshDashboard({ requestPolicy: "network-only" });
   };
@@ -1086,6 +1187,62 @@ function App() {
               <dd>当前同步开关由任务配置和下载链路是否启用共同决定。</dd>
             </div>
           </dl>
+        </article>
+      );
+    }
+
+    if (settingsTab === "订阅") {
+      return (
+        <article className="drawer-card">
+          <div className="drawer-card__head">
+            <h3>{settingsTab}</h3>
+            <span className={`status-chip ${settingsStatus.tone}`}>{settingsStatus.label}</span>
+          </div>
+          <form className="settings-form" onSubmit={(event) => void saveFollowingSettings(event)}>
+            <label className="settings-field">
+              <span>存储类型</span>
+              <input
+                value={followingForm.store}
+                onChange={(event) => setFollowingForm((current) => ({ ...current, store: event.target.value }))}
+                placeholder="json"
+              />
+            </label>
+            <label className="settings-field">
+              <span>状态文件路径</span>
+              <input
+                value={followingForm.jsonPath}
+                onChange={(event) => setFollowingForm((current) => ({ ...current, jsonPath: event.target.value }))}
+                placeholder="moji-following.json"
+              />
+            </label>
+            <label className="settings-field">
+              <span>轮询间隔（秒）</span>
+              <input
+                value={followingForm.pollIntervalSeconds}
+                onChange={(event) => setFollowingForm((current) => ({ ...current, pollIntervalSeconds: event.target.value }))}
+                placeholder="3600"
+                inputMode="numeric"
+              />
+            </label>
+            <label className="settings-field">
+              <span>JAVStash API key</span>
+              <input
+                type="password"
+                value={followingForm.javstashApiKey}
+                onChange={(event) => setFollowingForm((current) => ({ ...current, javstashApiKey: event.target.value }))}
+                placeholder={runtimeSettings.following.javstashApiKeyConfigured ? "留空则保留现有 API key" : "输入新的 API key"}
+              />
+            </label>
+            <div className="settings-meta">
+              <span>当前存储: {runtimeSettings.following.store || "json"}</span>
+              <span>JAVStash key: {boolState(runtimeSettings.following.javstashApiKeyConfigured)}</span>
+              <span>轮询状态: {runtimeSettings.following.pollEnabled ? "已启用" : "未启用"}</span>
+            </div>
+            {settingsFeedback.订阅 ? <p className={`settings-feedback ${settingsFeedback.订阅.tone}`}>{settingsFeedback.订阅.message}</p> : null}
+            <div className="settings-actions">
+              <button type="submit" disabled={updatingFollowing}>保存订阅设置</button>
+            </div>
+          </form>
         </article>
       );
     }
@@ -1589,21 +1746,25 @@ function App() {
           </>
         ) : null}
 
-        {tab === "following" ? (
+        {tab === "订阅" ? (
           <>
             <section className="section-band">
               <div className="band-head">
                 <div>
-                  <p className="section-kicker">following</p>
-                  <h2>追踪列表</h2>
+                  <p className="section-kicker">订阅</p>
+                  <h2>订阅更新</h2>
                 </div>
-                <p className="band-note">
-                  订阅状态写入 Stash performer 的 <code>custom_fields</code>，新片来源先接入 javstash.org。
-                </p>
               </div>
 
               <div className="toolbar-inline toolbar-inline--following">
                 <input placeholder="按名称或别名搜索 Stash performer" value={followingSearch} onChange={(event) => setFollowingSearch(event.target.value)} />
+                <select value={followingPageSize} onChange={(event) => setFollowingPageSize(Number(event.target.value))}>
+                  {FOLLOWING_PAGE_SIZE_OPTIONS.map((size) => (
+                    <option key={size} value={size}>
+                      每页 {size} 条
+                    </option>
+                  ))}
+                </select>
                 <button type="button" className="ghost-button" onClick={() => void reloadFollowing()}>
                   刷新列表
                 </button>
@@ -1618,7 +1779,9 @@ function App() {
               </div>
 
               <div className="settings-meta">
-                <span>Stash 候选: {stashPerformers.length}</span>
+                <span>Stash 候选: {stashPerformerPage?.totalCount ?? 0}</span>
+                <span>当前页: {stashPerformerPage?.page ?? 1} / {stashPerformerPage?.totalPages ?? 0}</span>
+                <span>每页: {stashPerformerPage?.pageSize ?? followingPageSize}</span>
                 <span>已订阅: {followedPerformers.length}</span>
                 <span>载入状态: {fetchingStashPerformers || fetchingFollowing ? "同步中" : "已就绪"}</span>
               </div>
@@ -1638,10 +1801,15 @@ function App() {
                   const followingEntry = followedByID.get(performer.id) ?? null;
                   const aliases = performer.aliasList.filter(Boolean).slice(0, 3).join(" / ") || "暂无别名";
                   const latestRelease = followingEntry?.recentReleases[0] ?? null;
+                  const imageURL = performerImageURL(performer.imagePath, runtimeSettings?.stash.url);
 
                   return (
                   <article key={performer.id} className="profile-card" style={{ animationDelay: `${index * 80}ms` }}>
-                    <div className="avatar avatar--placeholder">{performerInitials(performer.name)}</div>
+                    {imageURL ? (
+                      <img className="avatar avatar--image" src={imageURL} alt={performer.name} loading="lazy" />
+                    ) : (
+                      <div className="avatar avatar--placeholder">{performerInitials(performer.name)}</div>
+                    )}
                     <div className="profile-card__body">
                       <div className="profile-card__head">
                         <div>
@@ -1693,6 +1861,30 @@ function App() {
                   </article>
                 )})}
               </div>
+
+              {stashPerformerPage && stashPerformerPage.totalPages > 1 ? (
+                <div className="pagination-bar">
+                  <button
+                    type="button"
+                    className="ghost-button"
+                    disabled={!stashPerformerPage.hasPrevPage || fetchingStashPerformers}
+                    onClick={() => setFollowingPage((current) => Math.max(1, current - 1))}
+                  >
+                    上一页
+                  </button>
+                  <span className="status-chip tone-neutral">
+                    第 {stashPerformerPage.page} / {stashPerformerPage.totalPages} 页
+                  </span>
+                  <button
+                    type="button"
+                    className="ghost-button"
+                    disabled={!stashPerformerPage.hasNextPage || fetchingStashPerformers}
+                    onClick={() => setFollowingPage((current) => current + 1)}
+                  >
+                    下一页
+                  </button>
+                </div>
+              ) : null}
             </section>
           </>
         ) : null}

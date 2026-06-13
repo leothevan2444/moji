@@ -16,6 +16,7 @@ fragment PerformerFragment on Performer {
   height_cm
   alias_list
   favorite
+  image_path
   scene_count
   stash_ids {
     ...StashIdFragment

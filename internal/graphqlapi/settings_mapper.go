@@ -9,6 +9,7 @@ func settingsSnapshotToModel(snapshot *SettingsSnapshot, appVersion string) *mod
 			Jackett:     &model.JackettSettings{},
 			Qbittorrent: &model.QBittorrentSettings{},
 			Tasks:       &model.TaskSettings{},
+			Following:   &model.FollowingSettings{},
 			System:      &model.SystemSettings{AppVersion: appVersion},
 		}
 	}
@@ -43,6 +44,14 @@ func settingsSnapshotToModel(snapshot *SettingsSnapshot, appVersion string) *mod
 			JSONPath:                    snapshot.Tasks.JSONPath,
 			ProgressSyncIntervalSeconds: snapshot.Tasks.ProgressSyncIntervalSeconds,
 			ProgressSyncEnabled:         snapshot.Tasks.ProgressSyncEnabled,
+		},
+		Following: &model.FollowingSettings{
+			Store:                    snapshot.Following.Store,
+			JSONPath:                 snapshot.Following.JSONPath,
+			PollIntervalSeconds:      snapshot.Following.PollIntervalSeconds,
+			PollEnabled:              snapshot.Following.PollEnabled,
+			JavstashEnabled:          snapshot.Following.JAVStashEnabled,
+			JavstashAPIKeyConfigured: snapshot.Following.JAVStashAPIKeyConfigured,
 		},
 		System: &model.SystemSettings{
 			AppVersion: snapshot.System.AppVersion,

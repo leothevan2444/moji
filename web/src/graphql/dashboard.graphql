@@ -43,6 +43,14 @@ query DashboardDocument {
       progressSyncIntervalSeconds
       progressSyncEnabled
     }
+    following {
+      store
+      jsonPath
+      pollIntervalSeconds
+      pollEnabled
+      javstashEnabled
+      javstashApiKeyConfigured
+    }
     system {
       appVersion
     }

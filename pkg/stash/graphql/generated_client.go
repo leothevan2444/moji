@@ -64,6 +64,7 @@ type PerformerFragment struct {
 	HeightCm       *int               "json:\"height_cm,omitempty\" graphql:\"height_cm\""
 	AliasList      []string           "json:\"alias_list\" graphql:\"alias_list\""
 	Favorite       bool               "json:\"favorite\" graphql:\"favorite\""
+	ImagePath      *string            "json:\"image_path,omitempty\" graphql:\"image_path\""
 	SceneCount     int                "json:\"scene_count\" graphql:\"scene_count\""
 	StashIds       []*StashIDFragment "json:\"stash_ids\" graphql:\"stash_ids\""
 	Rating100      *int               "json:\"rating100,omitempty\" graphql:\"rating100\""
@@ -135,6 +136,12 @@ func (t *PerformerFragment) GetFavorite() bool {
 		t = &PerformerFragment{}
 	}
 	return t.Favorite
+}
+func (t *PerformerFragment) GetImagePath() *string {
+	if t == nil {
+		t = &PerformerFragment{}
+	}
+	return t.ImagePath
 }
 func (t *PerformerFragment) GetSceneCount() int {
 	if t == nil {
@@ -365,6 +372,7 @@ fragment PerformerFragment on Performer {
 	height_cm
 	alias_list
 	favorite
+	image_path
 	scene_count
 	stash_ids {
 		... StashIdFragment
@@ -416,6 +424,7 @@ fragment PerformerFragment on Performer {
 	height_cm
 	alias_list
 	favorite
+	image_path
 	scene_count
 	stash_ids {
 		... StashIdFragment
@@ -467,6 +476,7 @@ fragment PerformerFragment on Performer {
 	height_cm
 	alias_list
 	favorite
+	image_path
 	scene_count
 	stash_ids {
 		... StashIdFragment
@@ -513,6 +523,7 @@ fragment PerformerFragment on Performer {
 	height_cm
 	alias_list
 	favorite
+	image_path
 	scene_count
 	stash_ids {
 		... StashIdFragment

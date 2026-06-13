@@ -516,7 +516,7 @@ input::placeholder {
 }
 
 .toolbar-inline--following {
-  grid-template-columns: minmax(220px, 1.3fr) repeat(2, minmax(150px, 180px));
+  grid-template-columns: minmax(220px, 1.3fr) minmax(120px, 150px) repeat(2, minmax(150px, 180px));
   margin-bottom: 14px;
 }
 
@@ -799,6 +799,13 @@ dd {
   box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.12);
 }
 
+.avatar--image {
+  object-fit: cover;
+  display: block;
+  background: rgba(148, 163, 184, 0.14);
+  box-shadow: inset 0 0 0 1px rgba(15, 23, 42, 0.06);
+}
+
 .profile-card__body {
   min-width: 0;
 }
@@ -816,6 +823,15 @@ dd {
   flex-wrap: wrap;
   gap: 10px;
   margin-top: 12px;
+}
+
+.pagination-bar {
+  margin-top: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  flex-wrap: wrap;
 }
 
 .drawer-scrim {

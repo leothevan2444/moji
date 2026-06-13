@@ -70,6 +70,7 @@ func TestHTTPHandlerServesSettingsSnapshot(t *testing.T) {
 			qbittorrent { configured enabled url usernameConfigured passwordConfigured defaultSavePath }
 			stash { configured enabled url apiKeyConfigured libraryPath }
 			tasks { store jsonPath progressSyncIntervalSeconds progressSyncEnabled }
+			following { store jsonPath pollIntervalSeconds pollEnabled javstashEnabled javstashApiKeyConfigured }
 			system { appVersion }
 		}
 	}`)
@@ -81,6 +82,9 @@ func TestHTTPHandlerServesSettingsSnapshot(t *testing.T) {
 	}
 	if resp.Data.Settings.Tasks.Store != "json" || resp.Data.Settings.Tasks.ProgressSyncIntervalSeconds != 60 {
 		t.Fatalf("unexpected task settings: %+v", resp.Data.Settings.Tasks)
+	}
+	if resp.Data.Settings.Following.Store != "json" || !resp.Data.Settings.Following.PollEnabled || resp.Data.Settings.Following.JavstashEnabled {
+		t.Fatalf("unexpected following settings: %+v", resp.Data.Settings.Following)
 	}
 	if resp.Data.Settings.System.AppVersion != "test-version" {
 		t.Fatalf("expected app version %q, got %q", "test-version", resp.Data.Settings.System.AppVersion)
@@ -156,6 +160,9 @@ func TestBuildSettingsSnapshotNormalizesDefaults(t *testing.T) {
 	if snapshot.Tasks.ProgressSyncIntervalSeconds != 60 || snapshot.Tasks.ProgressSyncEnabled {
 		t.Fatalf("unexpected task sync snapshot: %+v", snapshot.Tasks)
 	}
+	if snapshot.Following.Store != "json" || snapshot.Following.JSONPath != "moji-following.json" || snapshot.Following.PollIntervalSeconds != 3600 || snapshot.Following.PollEnabled || snapshot.Following.JAVStashEnabled {
+		t.Fatalf("unexpected following snapshot: %+v", snapshot.Following)
+	}
 }
 
 func TestStartProgressSyncWorker(t *testing.T) {
@@ -224,6 +231,14 @@ type graphQLResponse struct {
 				ProgressSyncIntervalSeconds int    `json:"progressSyncIntervalSeconds"`
 				ProgressSyncEnabled         bool   `json:"progressSyncEnabled"`
 			} `json:"tasks"`
+			Following struct {
+				Store                    string `json:"store"`
+				JSONPath                 string `json:"jsonPath"`
+				PollIntervalSeconds      int    `json:"pollIntervalSeconds"`
+				PollEnabled              bool   `json:"pollEnabled"`
+				JavstashEnabled          bool   `json:"javstashEnabled"`
+				JavstashAPIKeyConfigured bool   `json:"javstashApiKeyConfigured"`
+			} `json:"following"`
 			System struct {
 				AppVersion string `json:"appVersion"`
 			} `json:"system"`

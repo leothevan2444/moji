@@ -7,6 +7,7 @@ package graphqlapi
 import (
 	"context"
 	"errors"
+	"math"
 
 	"github.com/leothevan2444/moji/internal/graphqlapi/model"
 )
@@ -67,9 +68,17 @@ func (r *mutationResolver) RefreshFollowingNow(ctx context.Context) ([]*model.Fo
 }
 
 // StashPerformers is the resolver for the stashPerformers field.
-func (r *queryResolver) StashPerformers(ctx context.Context, search *string) ([]*model.StashPerformer, error) {
+func (r *queryResolver) StashPerformers(ctx context.Context, search *string, page *int, pageSize *int) (*model.StashPerformerConnection, error) {
 	if r.Following == nil {
-		return []*model.StashPerformer{}, nil
+		return stashPerformerPageToModel(StashPerformerPage{
+			Items:       nil,
+			Page:        1,
+			PageSize:    normalizePageSize(pageSize),
+			TotalCount:  0,
+			TotalPages:  0,
+			HasPrevPage: false,
+			HasNextPage: false,
+		}), nil
 	}
 
 	needle := ""
@@ -81,11 +90,43 @@ func (r *queryResolver) StashPerformers(ctx context.Context, search *string) ([]
 	if err != nil {
 		return nil, err
 	}
-	out := make([]*model.StashPerformer, 0, len(items))
-	for _, item := range items {
-		out = append(out, stashPerformerToModel(item))
+
+	currentPage := normalizePage(page)
+	currentPageSize := normalizePageSize(pageSize)
+	totalCount := len(items)
+	totalPages := 0
+	if totalCount > 0 {
+		totalPages = int(math.Ceil(float64(totalCount) / float64(currentPageSize)))
 	}
-	return out, nil
+	if totalPages > 0 && currentPage > totalPages {
+		currentPage = totalPages
+	}
+
+	start := 0
+	end := 0
+	if totalCount > 0 {
+		start = (currentPage - 1) * currentPageSize
+		if start < 0 {
+			start = 0
+		}
+		if start > totalCount {
+			start = totalCount
+		}
+		end = start + currentPageSize
+		if end > totalCount {
+			end = totalCount
+		}
+	}
+
+	return stashPerformerPageToModel(StashPerformerPage{
+		Items:       items[start:end],
+		Page:        currentPage,
+		PageSize:    currentPageSize,
+		TotalCount:  totalCount,
+		TotalPages:  totalPages,
+		HasPrevPage: currentPage > 1 && totalPages > 0,
+		HasNextPage: currentPage < totalPages,
+	}), nil
 }
 
 // FollowingPerformers is the resolver for the followingPerformers field.

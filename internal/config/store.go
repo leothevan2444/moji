@@ -113,6 +113,24 @@ func (s *Store) UpdateQBittorrent(url, username string, password *string, defaul
 	return &clone, nil
 }
 
+func (s *Store) UpdateFollowing(store, jsonPath string, pollIntervalSeconds int, javstashAPIKey *string) (*Config, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	s.cfg.Following.Store = store
+	s.cfg.Following.JSONPath = jsonPath
+	s.cfg.Following.PollIntervalSeconds = pollIntervalSeconds
+	if javstashAPIKey != nil {
+		s.cfg.Following.JAVStashAPIKey = *javstashAPIKey
+	}
+
+	if err := s.updateConfigNode(); err != nil {
+		return nil, err
+	}
+	clone := *s.cfg
+	return &clone, nil
+}
+
 func (s *Store) updateConfigNode() error {
 	doc := documentNode(&s.root)
 	top := ensureMapValue(doc)
@@ -140,6 +158,12 @@ func (s *Store) updateConfigNode() error {
 		"json_path": s.cfg.Tasks.JSONPath,
 	})
 	setIntScalar(mapValue(top, "tasks"), "progress_sync_interval_seconds", s.cfg.Tasks.ProgressSyncIntervalSeconds)
+	setMapString(top, "following", map[string]string{
+		"store":            s.cfg.Following.Store,
+		"json_path":        s.cfg.Following.JSONPath,
+		"javstash_api_key": s.cfg.Following.JAVStashAPIKey,
+	})
+	setIntScalar(mapValue(top, "following"), "poll_interval_seconds", s.cfg.Following.PollIntervalSeconds)
 
 	data, err := yaml.Marshal(&s.root)
 	if err != nil {

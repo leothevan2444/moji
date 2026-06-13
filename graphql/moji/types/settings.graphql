@@ -12,6 +12,9 @@ extend type Mutation {
 
   "Update qBittorrent settings and persist them to backend config"
   updateQBittorrentSettings(input: UpdateQBittorrentSettingsInput!): Settings!
+
+  "Update Following settings and persist them to backend config"
+  updateFollowingSettings(input: UpdateFollowingSettingsInput!): Settings!
 }
 
 type Settings {
@@ -19,6 +22,7 @@ type Settings {
   jackett: JackettSettings!
   qbittorrent: QBittorrentSettings!
   tasks: TaskSettings!
+  following: FollowingSettings!
   system: SystemSettings!
 }
 
@@ -56,6 +60,15 @@ type TaskSettings {
   progressSyncEnabled: Boolean!
 }
 
+type FollowingSettings {
+  store: String!
+  jsonPath: String!
+  pollIntervalSeconds: Int!
+  pollEnabled: Boolean!
+  javstashEnabled: Boolean!
+  javstashApiKeyConfigured: Boolean!
+}
+
 type SystemSettings {
   appVersion: String!
 }
@@ -78,4 +91,11 @@ input UpdateQBittorrentSettingsInput {
   defaultSavePath: String!
   category: String!
   tags: String!
+}
+
+input UpdateFollowingSettingsInput {
+  store: String!
+  jsonPath: String!
+  pollIntervalSeconds: Int!
+  javstashApiKey: String
 }

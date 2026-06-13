@@ -1,11 +1,20 @@
-query StashPerformers($search: String) {
-  stashPerformers(search: $search) {
-    id
-    name
-    aliasList
-    favorite
-    sceneCount
-    followed
+query StashPerformers($search: String, $page: Int, $pageSize: Int) {
+  stashPerformers(search: $search, page: $page, pageSize: $pageSize) {
+    items {
+      id
+      name
+      aliasList
+      favorite
+      imagePath
+      sceneCount
+      followed
+    }
+    page
+    pageSize
+    totalCount
+    totalPages
+    hasPrevPage
+    hasNextPage
   }
 }
 
@@ -16,6 +25,7 @@ query FollowingPerformers {
       name
       aliasList
       favorite
+      imagePath
       sceneCount
       followed
     }

@@ -39,6 +39,7 @@ type SettingsEditor interface {
 	UpdateStashSettings(input UpdateStashSettingsInput) (*SettingsSnapshot, error)
 	UpdateJackettSettings(input UpdateJackettSettingsInput) (*SettingsSnapshot, error)
 	UpdateQBittorrentSettings(input UpdateQBittorrentSettingsInput) (*SettingsSnapshot, error)
+	UpdateFollowingSettings(input UpdateFollowingSettingsInput) (*SettingsSnapshot, error)
 }
 
 type UpdateStashSettingsInput struct {
@@ -61,11 +62,19 @@ type UpdateQBittorrentSettingsInput struct {
 	Tags            string
 }
 
+type UpdateFollowingSettingsInput struct {
+	Store               string
+	JSONPath            string
+	PollIntervalSeconds int
+	JAVStashAPIKey      *string
+}
+
 type SettingsSnapshot struct {
 	Stash       StashSettingsSnapshot
 	Jackett     JackettSettingsSnapshot
 	QBittorrent QBittorrentSettingsSnapshot
 	Tasks       TaskSettingsSnapshot
+	Following   FollowingSettingsSnapshot
 	System      SystemSettingsSnapshot
 }
 
@@ -101,6 +110,25 @@ type TaskSettingsSnapshot struct {
 	JSONPath                    string
 	ProgressSyncIntervalSeconds int
 	ProgressSyncEnabled         bool
+}
+
+type FollowingSettingsSnapshot struct {
+	Store                    string
+	JSONPath                 string
+	PollIntervalSeconds      int
+	PollEnabled              bool
+	JAVStashEnabled          bool
+	JAVStashAPIKeyConfigured bool
+}
+
+type StashPerformerPage struct {
+	Items       []following.Performer
+	Page        int
+	PageSize    int
+	TotalCount  int
+	TotalPages  int
+	HasPrevPage bool
+	HasNextPage bool
 }
 
 type SystemSettingsSnapshot struct {
