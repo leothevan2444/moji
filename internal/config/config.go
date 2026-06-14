@@ -3,6 +3,7 @@ package config
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 	"strings"
 
 	"gopkg.in/yaml.v3"
@@ -52,6 +53,14 @@ type FollowingConfig struct {
 	JAVStashAPIKey      string `yaml:"javstash_api_key"`
 }
 
+type LoggingConfig struct {
+	Level            string `yaml:"level"`
+	FilePath         string `yaml:"file_path"`
+	MaxEntries       int    `yaml:"max_entries"`
+	MaxFileSizeBytes int64  `yaml:"max_file_size_bytes"`
+	MaxFileBackups   int    `yaml:"max_file_backups"`
+}
+
 type Config struct {
 	// Jackett is the configuration for the Jackett service
 	Jackett     JackettConfig     `yaml:"jackett"`
@@ -59,6 +68,9 @@ type Config struct {
 	Stash       StashConfig       `yaml:"stash"`
 	Tasks       TaskConfig        `yaml:"tasks"`
 	Following   FollowingConfig   `yaml:"following"`
+	Logging     LoggingConfig     `yaml:"logging"`
+
+	path string
 }
 
 func Load() (*Config, error) {
@@ -77,8 +89,61 @@ func LoadFromPath(path string) (*Config, error) {
 		return nil, fmt.Errorf("parse config %q: %w", path, err)
 	}
 	config.Stash.normalize()
+	config.path = path
 
 	return &config, nil
+}
+
+func (c Config) Path() string {
+	return c.path
+}
+
+func (c Config) EffectiveLogLevel() string {
+	level := strings.TrimSpace(c.Logging.Level)
+	if level == "" {
+		return "info"
+	}
+	return level
+}
+
+func (c Config) EffectiveLogFilePath() string {
+	if strings.TrimSpace(c.Logging.FilePath) != "" {
+		return strings.TrimSpace(c.Logging.FilePath)
+	}
+	return defaultLogFilePathForConfig(c.path)
+}
+
+func (c Config) EffectiveLogMaxEntries() int {
+	if c.Logging.MaxEntries > 0 {
+		return c.Logging.MaxEntries
+	}
+	return 500
+}
+
+func (c Config) EffectiveLogMaxFileSizeBytes() int64 {
+	if c.Logging.MaxFileSizeBytes > 0 {
+		return c.Logging.MaxFileSizeBytes
+	}
+	return 10 * 1024 * 1024
+}
+
+func (c Config) EffectiveLogMaxFileBackups() int {
+	if c.Logging.MaxFileBackups > 0 {
+		return c.Logging.MaxFileBackups
+	}
+	return 5
+}
+
+func defaultLogFilePathForConfig(path string) string {
+	trimmed := strings.TrimSpace(path)
+	if trimmed == "" {
+		return "moji.log"
+	}
+	dir := filepath.Dir(trimmed)
+	if dir == "" || dir == "." {
+		return "moji.log"
+	}
+	return filepath.Join(dir, "moji.log")
 }
 
 func buildStashGraphQLEndpoint(raw string) string {

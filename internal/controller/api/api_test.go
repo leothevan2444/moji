@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/leothevan2444/moji/internal/tracker"
@@ -70,6 +72,44 @@ func TestTrackerSearchRESTEndpointIsDeprecatedDebugCompatibility(t *testing.T) {
 	}
 	if len(tr.options.Categories) != 2 || tr.options.Categories[0] != 1 || tr.options.Categories[1] != 2 {
 		t.Fatalf("unexpected categories: %#v", tr.options.Categories)
+	}
+}
+
+func TestCurrentLogFileEndpointDownloadsFile(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "moji.log")
+	if err := os.WriteFile(path, []byte("hello log\n"), 0o644); err != nil {
+		t.Fatalf("write log file: %v", err)
+	}
+
+	mux := http.NewServeMux()
+	NewHandler(&fakeTracker{}, WithLogFilePath(path)).Register(mux)
+
+	req := httptest.NewRequest(http.MethodGet, "/api/logs/current", nil)
+	rec := httptest.NewRecorder()
+	mux.ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusOK {
+		t.Fatalf("expected status %d, got %d: %s", http.StatusOK, rec.Code, rec.Body.String())
+	}
+	if got := rec.Header().Get("Content-Disposition"); got != `attachment; filename="moji.log"` {
+		t.Fatalf("unexpected Content-Disposition header: %q", got)
+	}
+	if body := rec.Body.String(); body != "hello log\n" {
+		t.Fatalf("unexpected body: %q", body)
+	}
+}
+
+func TestCurrentLogFileEndpointReturnsNotFoundWhenMissing(t *testing.T) {
+	mux := http.NewServeMux()
+	NewHandler(&fakeTracker{}, WithLogFilePath(filepath.Join(t.TempDir(), "missing.log"))).Register(mux)
+
+	req := httptest.NewRequest(http.MethodGet, "/api/logs/current", nil)
+	rec := httptest.NewRecorder()
+	mux.ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusNotFound {
+		t.Fatalf("expected status %d, got %d", http.StatusNotFound, rec.Code)
 	}
 }
 

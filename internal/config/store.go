@@ -34,6 +34,8 @@ func OpenStore(path string) (*Store, error) {
 	if err := yaml.Unmarshal(file, &cfg); err != nil {
 		return nil, fmt.Errorf("parse config %q: %w", path, err)
 	}
+	cfg.Stash.normalize()
+	cfg.path = path
 
 	var root yaml.Node
 	if err := yaml.Unmarshal(file, &root); err != nil {
@@ -131,6 +133,23 @@ func (s *Store) UpdateFollowing(store, jsonPath string, pollIntervalSeconds int,
 	return &clone, nil
 }
 
+func (s *Store) UpdateLogging(level, filePath string, maxEntries int, maxFileSizeBytes int64, maxFileBackups int) (*Config, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	s.cfg.Logging.Level = level
+	s.cfg.Logging.FilePath = filePath
+	s.cfg.Logging.MaxEntries = maxEntries
+	s.cfg.Logging.MaxFileSizeBytes = maxFileSizeBytes
+	s.cfg.Logging.MaxFileBackups = maxFileBackups
+
+	if err := s.updateConfigNode(); err != nil {
+		return nil, err
+	}
+	clone := *s.cfg
+	return &clone, nil
+}
+
 func (s *Store) updateConfigNode() error {
 	doc := documentNode(&s.root)
 	top := ensureMapValue(doc)
@@ -164,6 +183,13 @@ func (s *Store) updateConfigNode() error {
 		"javstash_api_key": s.cfg.Following.JAVStashAPIKey,
 	})
 	setIntScalar(mapValue(top, "following"), "poll_interval_seconds", s.cfg.Following.PollIntervalSeconds)
+	setMapString(top, "logging", map[string]string{
+		"level":     s.cfg.Logging.Level,
+		"file_path": s.cfg.Logging.FilePath,
+	})
+	setIntScalar(mapValue(top, "logging"), "max_entries", s.cfg.Logging.MaxEntries)
+	setInt64Scalar(mapValue(top, "logging"), "max_file_size_bytes", s.cfg.Logging.MaxFileSizeBytes)
+	setIntScalar(mapValue(top, "logging"), "max_file_backups", s.cfg.Logging.MaxFileBackups)
 
 	data, err := yaml.Marshal(&s.root)
 	if err != nil {
@@ -219,6 +245,14 @@ func setIntScalar(parent *yaml.Node, key string, value int) {
 	target.Kind = yaml.ScalarNode
 	target.Tag = "!!int"
 	target.Value = strconv.Itoa(value)
+	target.Style = 0
+}
+
+func setInt64Scalar(parent *yaml.Node, key string, value int64) {
+	target := mapValue(parent, key)
+	target.Kind = yaml.ScalarNode
+	target.Tag = "!!int"
+	target.Value = strconv.FormatInt(value, 10)
 	target.Style = 0
 }
 

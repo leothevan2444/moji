@@ -7,6 +7,10 @@ moji
 AGENTS.md
 docs/agent_work_plan.md
 docs/ui_design.md
+moji.log
+moji.log.*
+moji-tasks.json
+moji-following.json
 web/node_modules/
 web/dist/
 web/*.tsbuildinfo

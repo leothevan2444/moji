@@ -5,7 +5,6 @@ import (
 	"errors"
 	"flag"
 	"fmt"
-	"log"
 	"net"
 	"net/http"
 	"os"
@@ -23,6 +22,7 @@ import (
 	"github.com/leothevan2444/moji/internal/following"
 	"github.com/leothevan2444/moji/internal/graphqlapi"
 	"github.com/leothevan2444/moji/internal/graphqlapi/generated"
+	"github.com/leothevan2444/moji/internal/logging"
 	"github.com/leothevan2444/moji/internal/stashsync"
 	"github.com/leothevan2444/moji/internal/tracker"
 	"github.com/leothevan2444/moji/internal/webui"
@@ -48,19 +48,35 @@ func main() {
 	if *configPath != "" {
 		path = *configPath
 	}
+	if _, err := logging.ConfigureDefault(logging.Options{
+		Level:    "info",
+		FilePath: logging.DefaultLogFilePath(path),
+	}); err != nil {
+		fmt.Fprintf(os.Stderr, "configure logger: %v\n", err)
+		os.Exit(1)
+	}
 	configStore, err = config.OpenStore(path)
 	if err == nil {
 		cfg = configStore.Config()
 	}
 	if err != nil {
-		log.Fatalf("load config: %v", err)
+		logging.Fatalf("load config: %v", err)
+	}
+	if _, err := logging.ConfigureDefault(logging.Options{
+		Level:            cfg.EffectiveLogLevel(),
+		FilePath:         cfg.EffectiveLogFilePath(),
+		MaxEntries:       cfg.EffectiveLogMaxEntries(),
+		MaxFileSizeBytes: cfg.EffectiveLogMaxFileSizeBytes(),
+		MaxFileBackups:   cfg.EffectiveLogMaxFileBackups(),
+	}); err != nil {
+		logging.Fatalf("reconfigure logger: %v", err)
 	}
 
 	if cfg.Jackett.URL == "" {
-		log.Fatalf("invalid config: jackett.url is required")
+		logging.Fatalf("invalid config: jackett.url is required")
 	}
 	if cfg.Jackett.APIKey == "" {
-		log.Fatalf("invalid config: jackett.api_key is required")
+		logging.Fatalf("invalid config: jackett.api_key is required")
 	}
 
 	// Dependencies
@@ -75,10 +91,10 @@ func main() {
 
 	ln, err := net.Listen("tcp", server.Addr)
 	if err != nil {
-		log.Fatalf("listen %s: %v", server.Addr, err)
+		logging.Fatalf("listen %s: %v", server.Addr, err)
 	}
 
-	log.Printf("moji listening on %s", ln.Addr().String())
+	logging.Infof("moji listening on %s", ln.Addr().String())
 
 	// Graceful shutdown
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
@@ -92,12 +108,12 @@ func main() {
 		shutdownCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 		defer cancel()
 		if err := server.Shutdown(shutdownCtx); err != nil {
-			log.Printf("shutdown: %v", err)
+			logging.Warnf("shutdown: %v", err)
 		}
 	}()
 
 	if err := server.Serve(ln); err != nil && !errors.Is(err, http.ErrServerClosed) {
-		log.Fatalf("serve: %v", err)
+		logging.Fatalf("serve: %v", err)
 	}
 }
 
@@ -108,7 +124,8 @@ func newHTTPHandler(cfg *config.Config, version string) http.Handler {
 
 func newHTTPRuntime(cfg *config.Config, version string, configStore *config.Store) (http.Handler, graphqlapi.DownloaderService, graphqlapi.StashService, graphqlapi.FollowingService) {
 	jackettTracker := tracker.NewJackettService(cfg.Jackett.URL, cfg.Jackett.APIKey)
-	apiHandler := api.NewHandler(jackettTracker)
+	logging.Infof("runtime: jackett tracker configured for %s", cfg.Jackett.URL)
+	apiHandler := api.NewHandler(jackettTracker, api.WithLogFilePath(cfg.EffectiveLogFilePath()))
 	torrentClient := configureQBittorrent(cfg)
 	downloaderService := configureDownloader(cfg, jackettTracker, torrentClient)
 	stashClient := configureStashClient(cfg)
@@ -116,6 +133,7 @@ func newHTTPRuntime(cfg *config.Config, version string, configStore *config.Stor
 	followingService := configureFollowing(cfg, stashClient, downloaderService)
 	resolver := graphqlapi.NewResolver(jackettTracker, torrentClient, downloaderService, stashService, version)
 	resolver.Following = followingService
+	resolver.LogReader = logging.Default()
 	resolver.RuntimeSettings = buildSettingsSnapshot(cfg, version, torrentClient != nil, downloaderService != nil, stashService != nil)
 	if configStore != nil {
 		resolver.SettingsEditor = newRuntimeSettingsEditor(configStore, version, torrentClient != nil, downloaderService != nil, stashService != nil)
@@ -146,14 +164,15 @@ func newHTTPRuntime(cfg *config.Config, version string, configStore *config.Stor
 
 func configureQBittorrent(cfg *config.Config) graphqlapi.TorrentClient {
 	if cfg.QBittorrent.URL == "" {
+		logging.Infof("runtime: qBittorrent client disabled because qbittorrent.url is empty")
 		return nil
 	}
 	if cfg.QBittorrent.Username == "" {
-		log.Printf("qBittorrent disabled: qbittorrent.username is required when qbittorrent.url is set")
+		logging.Warn("qBittorrent disabled: qbittorrent.username is required when qbittorrent.url is set")
 		return nil
 	}
 	if cfg.QBittorrent.Password == "" {
-		log.Printf("qBittorrent disabled: qbittorrent.password is required when qbittorrent.url is set")
+		logging.Warn("qBittorrent disabled: qbittorrent.password is required when qbittorrent.url is set")
 		return nil
 	}
 
@@ -161,8 +180,9 @@ func configureQBittorrent(cfg *config.Config) graphqlapi.TorrentClient {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 	if err := client.Login(ctx, cfg.QBittorrent.Username, cfg.QBittorrent.Password); err != nil {
-		log.Fatalf("login qBittorrent: %v", err)
+		logging.Fatalf("login qBittorrent: %v", err)
 	}
+	logging.Infof("runtime: qBittorrent client connected to %s as %s", cfg.QBittorrent.URL, cfg.QBittorrent.Username)
 
 	return downloader.NewDefaultingTorrentClient(client, downloader.TorrentDefaults{
 		SavePath: cfg.QBittorrent.DefaultSavePath,
@@ -173,17 +193,19 @@ func configureQBittorrent(cfg *config.Config) graphqlapi.TorrentClient {
 
 func configureDownloader(cfg *config.Config, tr tracker.Tracker, torrent graphqlapi.TorrentClient) graphqlapi.DownloaderService {
 	if torrent == nil {
+		logging.Infof("runtime: downloader disabled because qBittorrent client is not available")
 		return nil
 	}
 
 	store, err := configureTaskStore(cfg)
 	if err != nil {
-		log.Fatalf("configure task store: %v", err)
+		logging.Fatalf("configure task store: %v", err)
 	}
 	service, err := downloader.NewService(tr, torrent, store)
 	if err != nil {
-		log.Fatalf("configure downloader: %v", err)
+		logging.Fatalf("configure downloader: %v", err)
 	}
+	logging.Infof("runtime: downloader service initialized")
 	return service
 }
 
@@ -299,6 +321,13 @@ func buildSettingsSnapshot(cfg *config.Config, version string, qbittorrentEnable
 			JAVStashEnabled:          cfg.Following.JAVStashAPIKey != "",
 			JAVStashAPIKeyConfigured: cfg.Following.JAVStashAPIKey != "",
 		},
+		Logging: graphqlapi.LoggingSettingsSnapshot{
+			Level:            cfg.EffectiveLogLevel(),
+			FilePath:         cfg.EffectiveLogFilePath(),
+			MaxEntries:       cfg.EffectiveLogMaxEntries(),
+			MaxFileSizeBytes: cfg.EffectiveLogMaxFileSizeBytes(),
+			MaxFileBackups:   cfg.EffectiveLogMaxFileBackups(),
+		},
 		System: graphqlapi.SystemSettingsSnapshot{
 			AppVersion: version,
 		},
@@ -307,8 +336,14 @@ func buildSettingsSnapshot(cfg *config.Config, version string, qbittorrentEnable
 
 func startTaskSyncWorker(ctx context.Context, service graphqlapi.DownloaderService, stash graphqlapi.StashService, interval time.Duration) {
 	if service == nil || interval <= 0 {
+		if service == nil {
+			logging.Infof("runtime: task sync worker not started because downloader service is unavailable")
+		} else {
+			logging.Infof("runtime: task sync worker disabled by sync interval")
+		}
 		return
 	}
+	logging.Infof("runtime: starting task sync worker with interval %s", interval)
 
 	go func() {
 		ticker := time.NewTicker(interval)
@@ -321,11 +356,11 @@ func startTaskSyncWorker(ctx context.Context, service graphqlapi.DownloaderServi
 			case <-ticker.C:
 				syncCtx, cancel := context.WithTimeout(ctx, 30*time.Second)
 				if _, err := service.SyncProgress(syncCtx); err != nil && !errors.Is(err, context.Canceled) {
-					log.Printf("sync download progress: %v", err)
+					logging.Errorf("sync download progress: %v", err)
 				}
 				if stash != nil {
 					if _, err := service.TriggerStashScans(syncCtx, stash); err != nil && !errors.Is(err, context.Canceled) {
-						log.Printf("trigger stash scans: %v", err)
+						logging.Errorf("trigger stash scans: %v", err)
 					}
 				}
 				cancel()
@@ -337,44 +372,52 @@ func startTaskSyncWorker(ctx context.Context, service graphqlapi.DownloaderServi
 func configureStashClient(cfg *config.Config) *stash.Client {
 	graphqlURL := cfg.Stash.GraphQLEndpoint()
 	if graphqlURL == "" {
+		logging.Infof("runtime: stash client disabled because stash.url is empty")
 		return nil
 	}
-
+	logging.Infof("runtime: stash client configured for %s", graphqlURL)
 	return stash.NewClient(graphqlURL, cfg.Stash.APIKey)
 }
 
 func configureStashService(cfg *config.Config, client *stash.Client) graphqlapi.StashService {
 	if client == nil {
+		logging.Infof("runtime: stash sync service disabled because stash client is not available")
 		return nil
 	}
 
 	service, err := stashsync.NewService(client, []string{cfg.Stash.LibraryPath})
 	if err != nil {
-		log.Fatalf("configure Stash: %v", err)
+		logging.Fatalf("configure Stash: %v", err)
 	}
+	logging.Infof("runtime: stash sync service initialized with library path %s", cfg.Stash.LibraryPath)
 
 	return service
 }
 
 func configureFollowing(cfg *config.Config, stashClient *stash.Client, downloaderService graphqlapi.DownloaderService) graphqlapi.FollowingService {
 	if stashClient == nil {
+		logging.Infof("runtime: following service disabled because stash client is not available")
 		return nil
 	}
 
 	store, err := configureFollowingStore(cfg)
 	if err != nil {
-		log.Fatalf("configure following store: %v", err)
+		logging.Fatalf("configure following store: %v", err)
 	}
 
 	var javstashClient *stashbox.Client
 	if strings.TrimSpace(cfg.Following.JAVStashAPIKey) != "" {
 		javstashClient = stashbox.NewClient(cfg.Following.JAVStashAPIKey)
+		logging.Infof("runtime: javstash client enabled for following checks")
+	} else {
+		logging.Infof("runtime: javstash client disabled because following.javstash_api_key is empty")
 	}
 
 	service, err := following.NewService(stashClient, javstashClient, downloaderService, store)
 	if err != nil {
-		log.Fatalf("configure following: %v", err)
+		logging.Fatalf("configure following: %v", err)
 	}
+	logging.Infof("runtime: following service initialized")
 	return service
 }
 
@@ -410,8 +453,14 @@ func configureFollowingPollInterval(cfg *config.Config) time.Duration {
 
 func startFollowingWorker(ctx context.Context, service graphqlapi.FollowingService, interval time.Duration) {
 	if service == nil || interval <= 0 {
+		if service == nil {
+			logging.Infof("runtime: following worker not started because following service is unavailable")
+		} else {
+			logging.Infof("runtime: following worker disabled by poll interval")
+		}
 		return
 	}
+	logging.Infof("runtime: starting following worker with interval %s", interval)
 
 	go func() {
 		ticker := time.NewTicker(interval)
@@ -424,7 +473,7 @@ func startFollowingWorker(ctx context.Context, service graphqlapi.FollowingServi
 			case <-ticker.C:
 				syncCtx, cancel := context.WithTimeout(ctx, 2*time.Minute)
 				if _, err := service.RefreshAll(syncCtx); err != nil && !errors.Is(err, context.Canceled) {
-					log.Printf("refresh following performers: %v", err)
+					logging.Errorf("refresh following performers: %v", err)
 				}
 				cancel()
 			}

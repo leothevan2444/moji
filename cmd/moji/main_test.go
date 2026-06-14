@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"strings"
 	"testing"
 	"time"
@@ -61,6 +62,28 @@ func TestHTTPHandlerServesGraphQLHealth(t *testing.T) {
 	}
 }
 
+func TestHTTPHandlerServesCurrentLogFile(t *testing.T) {
+	cfg := testConfig()
+	path := "moji.log"
+	if err := os.WriteFile(path, []byte("test log\n"), 0o644); err != nil {
+		t.Fatalf("write log file: %v", err)
+	}
+	t.Cleanup(func() { _ = os.Remove(path) })
+
+	handler := newHTTPHandler(cfg, "test-version")
+
+	req := httptest.NewRequest(http.MethodGet, "/api/logs/current", nil)
+	rec := httptest.NewRecorder()
+	handler.ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusOK {
+		t.Fatalf("expected status %d, got %d: %s", http.StatusOK, rec.Code, rec.Body.String())
+	}
+	if body := rec.Body.String(); body != "test log\n" {
+		t.Fatalf("unexpected log body: %q", body)
+	}
+}
+
 func TestHTTPHandlerServesSettingsSnapshot(t *testing.T) {
 	handler := newHTTPHandler(testConfig(), "test-version")
 
@@ -71,6 +94,7 @@ func TestHTTPHandlerServesSettingsSnapshot(t *testing.T) {
 			stash { configured enabled url apiKeyConfigured libraryPath }
 			tasks { store jsonPath progressSyncIntervalSeconds progressSyncEnabled }
 			following { store jsonPath pollIntervalSeconds pollEnabled javstashEnabled javstashApiKeyConfigured }
+			logging { level filePath maxEntries maxFileSizeBytes maxFileBackups }
 			system { appVersion }
 		}
 	}`)
@@ -85,6 +109,9 @@ func TestHTTPHandlerServesSettingsSnapshot(t *testing.T) {
 	}
 	if resp.Data.Settings.Following.Store != "json" || !resp.Data.Settings.Following.PollEnabled || resp.Data.Settings.Following.JavstashEnabled {
 		t.Fatalf("unexpected following settings: %+v", resp.Data.Settings.Following)
+	}
+	if resp.Data.Settings.Logging.Level != "info" || resp.Data.Settings.Logging.MaxEntries != 500 {
+		t.Fatalf("unexpected logging settings: %+v", resp.Data.Settings.Logging)
 	}
 	if resp.Data.Settings.System.AppVersion != "test-version" {
 		t.Fatalf("expected app version %q, got %q", "test-version", resp.Data.Settings.System.AppVersion)
@@ -163,6 +190,9 @@ func TestBuildSettingsSnapshotNormalizesDefaults(t *testing.T) {
 	if snapshot.Following.Store != "json" || snapshot.Following.JSONPath != "moji-following.json" || snapshot.Following.PollIntervalSeconds != 3600 || snapshot.Following.PollEnabled || snapshot.Following.JAVStashEnabled {
 		t.Fatalf("unexpected following snapshot: %+v", snapshot.Following)
 	}
+	if snapshot.Logging.Level != "info" || snapshot.Logging.MaxEntries != 500 || snapshot.Logging.MaxFileBackups != 5 {
+		t.Fatalf("unexpected logging snapshot: %+v", snapshot.Logging)
+	}
 }
 
 func TestStartProgressSyncWorker(t *testing.T) {
@@ -239,6 +269,13 @@ type graphQLResponse struct {
 				JavstashEnabled          bool   `json:"javstashEnabled"`
 				JavstashAPIKeyConfigured bool   `json:"javstashApiKeyConfigured"`
 			} `json:"following"`
+			Logging struct {
+				Level            string `json:"level"`
+				FilePath         string `json:"filePath"`
+				MaxEntries       int    `json:"maxEntries"`
+				MaxFileSizeBytes int    `json:"maxFileSizeBytes"`
+				MaxFileBackups   int    `json:"maxFileBackups"`
+			} `json:"logging"`
 			System struct {
 				AppVersion string `json:"appVersion"`
 			} `json:"system"`

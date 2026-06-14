@@ -9,6 +9,7 @@ import (
 
 	"github.com/leothevan2444/moji/internal/downloader"
 	"github.com/leothevan2444/moji/internal/following"
+	"github.com/leothevan2444/moji/internal/logging"
 	"github.com/leothevan2444/moji/internal/stashsync"
 	"github.com/leothevan2444/moji/internal/tracker"
 	"github.com/leothevan2444/moji/pkg/qbittorrent"
@@ -40,6 +41,7 @@ type SettingsEditor interface {
 	UpdateJackettSettings(input UpdateJackettSettingsInput) (*SettingsSnapshot, error)
 	UpdateQBittorrentSettings(input UpdateQBittorrentSettingsInput) (*SettingsSnapshot, error)
 	UpdateFollowingSettings(input UpdateFollowingSettingsInput) (*SettingsSnapshot, error)
+	UpdateLoggingSettings(input UpdateLoggingSettingsInput) (*SettingsSnapshot, error)
 }
 
 type UpdateStashSettingsInput struct {
@@ -69,12 +71,21 @@ type UpdateFollowingSettingsInput struct {
 	JAVStashAPIKey      *string
 }
 
+type UpdateLoggingSettingsInput struct {
+	Level            string
+	FilePath         string
+	MaxEntries       int
+	MaxFileSizeBytes int64
+	MaxFileBackups   int
+}
+
 type SettingsSnapshot struct {
 	Stash       StashSettingsSnapshot
 	Jackett     JackettSettingsSnapshot
 	QBittorrent QBittorrentSettingsSnapshot
 	Tasks       TaskSettingsSnapshot
 	Following   FollowingSettingsSnapshot
+	Logging     LoggingSettingsSnapshot
 	System      SystemSettingsSnapshot
 }
 
@@ -121,6 +132,14 @@ type FollowingSettingsSnapshot struct {
 	JAVStashAPIKeyConfigured bool
 }
 
+type LoggingSettingsSnapshot struct {
+	Level            string
+	FilePath         string
+	MaxEntries       int
+	MaxFileSizeBytes int64
+	MaxFileBackups   int
+}
+
 type StashPerformerPage struct {
 	Items       []following.Performer
 	Page        int
@@ -144,12 +163,17 @@ type FollowingService interface {
 	RefreshAll(ctx context.Context) ([]following.FollowingPerformer, error)
 }
 
+type LogReader interface {
+	Entries(limit int, minLevel string) []logging.Entry
+}
+
 type Resolver struct {
 	Tracker         tracker.Tracker
 	Torrent         TorrentClient
 	Downloader      DownloaderService
 	Stash           StashService
 	Following       FollowingService
+	LogReader       LogReader
 	SettingsEditor  SettingsEditor
 	RuntimeSettings *SettingsSnapshot
 	AppVersion      string

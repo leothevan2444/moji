@@ -49,3 +49,23 @@ mutation UpdateFollowingSettingsDocument($input: UpdateFollowingSettingsInput!) 
     }
   }
 }
+
+mutation UpdateLoggingSettingsDocument($input: UpdateLoggingSettingsInput!) {
+  updateLoggingSettings(input: $input) {
+    logging {
+      level
+      filePath
+      maxEntries
+      maxFileSizeBytes
+      maxFileBackups
+    }
+  }
+}
+
+query LogsDocument($limit: Int, $minLevel: LogLevel) {
+  logs(limit: $limit, minLevel: $minLevel) {
+    time
+    level
+    message
+  }
+}

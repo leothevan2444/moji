@@ -10,6 +10,7 @@ func settingsSnapshotToModel(snapshot *SettingsSnapshot, appVersion string) *mod
 			Qbittorrent: &model.QBittorrentSettings{},
 			Tasks:       &model.TaskSettings{},
 			Following:   &model.FollowingSettings{},
+			Logging:     &model.LoggingSettings{},
 			System:      &model.SystemSettings{AppVersion: appVersion},
 		}
 	}
@@ -52,6 +53,13 @@ func settingsSnapshotToModel(snapshot *SettingsSnapshot, appVersion string) *mod
 			PollEnabled:              snapshot.Following.PollEnabled,
 			JavstashEnabled:          snapshot.Following.JAVStashEnabled,
 			JavstashAPIKeyConfigured: snapshot.Following.JAVStashAPIKeyConfigured,
+		},
+		Logging: &model.LoggingSettings{
+			Level:            snapshot.Logging.Level,
+			FilePath:         snapshot.Logging.FilePath,
+			MaxEntries:       snapshot.Logging.MaxEntries,
+			MaxFileSizeBytes: int(snapshot.Logging.MaxFileSizeBytes),
+			MaxFileBackups:   snapshot.Logging.MaxFileBackups,
 		},
 		System: &model.SystemSettings{
 			AppVersion: snapshot.System.AppVersion,

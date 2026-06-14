@@ -12,6 +12,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/leothevan2444/moji/internal/logging"
 	"github.com/leothevan2444/moji/internal/tracker"
 	"github.com/leothevan2444/moji/pkg/jackett"
 	"github.com/leothevan2444/moji/pkg/qbittorrent"
@@ -192,9 +193,23 @@ func (s *Service) SyncProgress(ctx context.Context) ([]*Task, error) {
 		}
 
 		next := cloneTask(task)
+		prevStatus := next.Status
+		prevProgress := next.Progress
 		applyTorrentProgress(next, torrent, s.now().UTC())
 		if err := s.store.Update(ctx, next); err != nil {
 			return updated, fmt.Errorf("update task %q: %w", next.ID, err)
+		}
+		if next.Status != prevStatus {
+			logging.Infof(
+				"downloader: task %s status %s -> %s (%s %.1f%%)",
+				next.ID,
+				prevStatus,
+				next.Status,
+				next.Candidate.Title,
+				next.Progress*100,
+			)
+		} else if next.Status == TaskStatusCompleted && next.Progress != prevProgress {
+			logging.Infof("downloader: task %s completed with content path %s", next.ID, next.ContentPath)
 		}
 		updated = append(updated, next)
 	}
@@ -218,11 +233,14 @@ func (s *Service) DownloadMediaContext(ctx context.Context, req DownloadRequest)
 
 	results, err := s.tracker.Search(query, searchOptions...)
 	if err != nil {
+		logging.Errorf("downloader: search failed for query %q: %v", query, err)
 		return nil, fmt.Errorf("search torrents: %w", err)
 	}
+	logging.Infof("downloader: search returned %d results for query %q", len(results), query)
 
 	result, err := selectCandidate(results)
 	if err != nil {
+		logging.Errorf("downloader: select candidate failed for query %q: %v", query, err)
 		return nil, err
 	}
 
@@ -243,8 +261,16 @@ func (s *Service) DownloadMediaContext(ctx context.Context, req DownloadRequest)
 	}
 
 	if err := s.store.Create(ctx, task); err != nil {
+		logging.Errorf("downloader: create task failed for query %q: %v", query, err)
 		return nil, fmt.Errorf("create task: %w", err)
 	}
+	logging.Infof(
+		"downloader: created task %s for query %q using tracker=%s title=%q",
+		task.ID,
+		query,
+		candidate.Tracker,
+		candidate.Title,
+	)
 
 	addOptions := qbittorrent.AddTorrentOptions{
 		URLs: []string{torrentURL},
@@ -267,14 +293,17 @@ func (s *Service) DownloadMediaContext(ctx context.Context, req DownloadRequest)
 		task.Error = err.Error()
 		task.UpdatedAt = s.now().UTC()
 		_ = s.store.Update(ctx, task)
+		logging.Errorf("downloader: add torrent failed for task %s query %q: %v", task.ID, query, err)
 		return task, fmt.Errorf("add torrent: %w", err)
 	}
 
 	task.Status = TaskStatusAdded
 	task.UpdatedAt = s.now().UTC()
 	if err := s.store.Update(ctx, task); err != nil {
+		logging.Errorf("downloader: persist added task %s failed: %v", task.ID, err)
 		return task, fmt.Errorf("update task: %w", err)
 	}
+	logging.Infof("downloader: task %s added to qBittorrent for query %q", task.ID, query)
 
 	return task, nil
 }
@@ -300,8 +329,10 @@ func (s *Service) AddTorrentContext(ctx context.Context, req AddTorrentRequest) 
 	}
 
 	if err := s.store.Create(ctx, task); err != nil {
+		logging.Errorf("downloader: create manual task failed for url %q: %v", torrentURL, err)
 		return nil, fmt.Errorf("create task: %w", err)
 	}
+	logging.Infof("downloader: created manual task %s for url %q", task.ID, torrentURL)
 
 	addOptions := qbittorrent.AddTorrentOptions{
 		URLs: []string{torrentURL},
@@ -324,14 +355,17 @@ func (s *Service) AddTorrentContext(ctx context.Context, req AddTorrentRequest) 
 		task.Error = err.Error()
 		task.UpdatedAt = s.now().UTC()
 		_ = s.store.Update(ctx, task)
+		logging.Errorf("downloader: add manual torrent failed for task %s: %v", task.ID, err)
 		return task, fmt.Errorf("add torrent: %w", err)
 	}
 
 	task.Status = TaskStatusAdded
 	task.UpdatedAt = s.now().UTC()
 	if err := s.store.Update(ctx, task); err != nil {
+		logging.Errorf("downloader: persist manual task %s failed: %v", task.ID, err)
 		return task, fmt.Errorf("update task: %w", err)
 	}
+	logging.Infof("downloader: manual task %s added to qBittorrent", task.ID)
 
 	return task, nil
 }

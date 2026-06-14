@@ -13,6 +13,7 @@ import (
 	"github.com/leothevan2444/moji/internal/downloader"
 	"github.com/leothevan2444/moji/internal/following"
 	"github.com/leothevan2444/moji/internal/graphqlapi/generated"
+	"github.com/leothevan2444/moji/internal/logging"
 	"github.com/leothevan2444/moji/internal/stashsync"
 )
 
@@ -187,6 +188,32 @@ func TestStashPerformersQueryPaginatesResults(t *testing.T) {
 	}
 	if len(resp.Data.StashPerformers.Items) != 1 || resp.Data.StashPerformers.Items[0].ID != "performer-3" {
 		t.Fatalf("unexpected page items: %+v", resp.Data.StashPerformers.Items)
+	}
+}
+
+func TestLogsQueryReturnsRecentEntries(t *testing.T) {
+	resolver := NewResolver(nil, nil, nil, nil, "test-version")
+	resolver.LogReader = &fakeLogReader{
+		entries: []logging.Entry{
+			{Message: "latest error", Level: "error"},
+			{Message: "background info", Level: "info"},
+		},
+	}
+
+	resp := executeGraphQL(t, resolver, `{
+		logs(limit: 10, minLevel: Info) {
+			level
+			message
+		}
+	}`)
+	if len(resp.Errors) > 0 {
+		t.Fatalf("expected no errors, got %+v", resp.Errors)
+	}
+	if len(resp.Data.Logs) != 2 {
+		t.Fatalf("expected 2 logs, got %+v", resp.Data.Logs)
+	}
+	if resp.Data.Logs[0].Level != "Error" || resp.Data.Logs[0].Message != "latest error" {
+		t.Fatalf("unexpected first log: %+v", resp.Data.Logs[0])
 	}
 }
 
@@ -397,6 +424,13 @@ func TestSettingsQueryReturnsRuntimeSnapshot(t *testing.T) {
 			ProgressSyncIntervalSeconds: 60,
 			ProgressSyncEnabled:         true,
 		},
+		Logging: LoggingSettingsSnapshot{
+			Level:            "debug",
+			FilePath:         "runtime/moji.log",
+			MaxEntries:       300,
+			MaxFileSizeBytes: 2048,
+			MaxFileBackups:   4,
+		},
 		System: SystemSettingsSnapshot{
 			AppVersion: "test-version",
 		},
@@ -408,6 +442,7 @@ func TestSettingsQueryReturnsRuntimeSnapshot(t *testing.T) {
 			jackett { configured enabled url apiKeyConfigured }
 			qbittorrent { configured enabled url username usernameConfigured passwordConfigured defaultSavePath category tags }
 			tasks { store jsonPath progressSyncIntervalSeconds progressSyncEnabled }
+			logging { level filePath maxEntries maxFileSizeBytes maxFileBackups }
 			system { appVersion }
 		}
 	}`)
@@ -425,6 +460,9 @@ func TestSettingsQueryReturnsRuntimeSnapshot(t *testing.T) {
 	}
 	if resp.Data.Settings.Tasks.ProgressSyncIntervalSeconds != 60 || !resp.Data.Settings.Tasks.ProgressSyncEnabled {
 		t.Fatalf("unexpected task settings: %+v", resp.Data.Settings.Tasks)
+	}
+	if resp.Data.Settings.Logging.Level != "debug" || resp.Data.Settings.Logging.MaxFileBackups != 4 {
+		t.Fatalf("unexpected logging settings: %+v", resp.Data.Settings.Logging)
 	}
 	if resp.Data.Settings.System.AppVersion != "test-version" {
 		t.Fatalf("unexpected system settings: %+v", resp.Data.Settings.System)
@@ -491,11 +529,18 @@ func TestSettingsQueryUsesSettingsEditorSnapshot(t *testing.T) {
 				URL:      "http://qb.invalid",
 				Username: "editor-user",
 			},
+			Logging: LoggingSettingsSnapshot{
+				Level:            "warn",
+				FilePath:         "custom/moji.log",
+				MaxEntries:       200,
+				MaxFileSizeBytes: 4096,
+				MaxFileBackups:   3,
+			},
 			System: SystemSettingsSnapshot{AppVersion: "editor-version"},
 		},
 	}
 
-	resp := executeGraphQL(t, resolver, `{ settings { following { store jsonPath pollIntervalSeconds pollEnabled javstashEnabled } qbittorrent { url username } system { appVersion } } }`)
+	resp := executeGraphQL(t, resolver, `{ settings { following { store jsonPath pollIntervalSeconds pollEnabled javstashEnabled } qbittorrent { url username } logging { level filePath maxEntries maxFileBackups } system { appVersion } } }`)
 	if len(resp.Errors) > 0 {
 		t.Fatalf("expected no errors, got %+v", resp.Errors)
 	}
@@ -504,6 +549,9 @@ func TestSettingsQueryUsesSettingsEditorSnapshot(t *testing.T) {
 	}
 	if resp.Data.Settings.Qbittorrent.Username != "editor-user" {
 		t.Fatalf("unexpected qbittorrent settings: %+v", resp.Data.Settings.Qbittorrent)
+	}
+	if resp.Data.Settings.Logging.Level != "warn" || resp.Data.Settings.Logging.MaxEntries != 200 {
+		t.Fatalf("unexpected logging settings: %+v", resp.Data.Settings.Logging)
 	}
 	if resp.Data.Settings.System.AppVersion != "editor-version" {
 		t.Fatalf("unexpected system settings: %+v", resp.Data.Settings.System)
@@ -596,6 +644,53 @@ func TestUpdateFollowingSettingsMutation(t *testing.T) {
 	}
 	if resp.Data.UpdateFollowingSettings.Following.JSONPath != "state/following.json" || !resp.Data.UpdateFollowingSettings.Following.JavstashAPIKeyConfigured {
 		t.Fatalf("unexpected following response: %+v", resp.Data.UpdateFollowingSettings.Following)
+	}
+}
+
+func TestUpdateLoggingSettingsMutation(t *testing.T) {
+	editor := &fakeSettingsEditor{
+		updateLoggingSnapshot: &SettingsSnapshot{
+			Logging: LoggingSettingsSnapshot{
+				Level:            "debug",
+				FilePath:         "logs/custom.log",
+				MaxEntries:       250,
+				MaxFileSizeBytes: 8192,
+				MaxFileBackups:   6,
+			},
+			System: SystemSettingsSnapshot{AppVersion: "test-version"},
+		},
+	}
+	resolver := NewResolver(nil, nil, nil, nil, "test-version")
+	resolver.SettingsEditor = editor
+
+	resp := executeGraphQL(t, resolver, `mutation {
+		updateLoggingSettings(input: {
+			level: "debug"
+			filePath: "logs/custom.log"
+			maxEntries: 250
+			maxFileSizeBytes: 8192
+			maxFileBackups: 6
+		}) {
+			logging {
+				level
+				filePath
+				maxEntries
+				maxFileSizeBytes
+				maxFileBackups
+			}
+		}
+	}`)
+	if len(resp.Errors) > 0 {
+		t.Fatalf("expected no errors, got %+v", resp.Errors)
+	}
+	if editor.loggingInput.Level != "debug" || editor.loggingInput.FilePath != "logs/custom.log" {
+		t.Fatalf("unexpected logging input: %+v", editor.loggingInput)
+	}
+	if editor.loggingInput.MaxEntries != 250 || editor.loggingInput.MaxFileSizeBytes != 8192 || editor.loggingInput.MaxFileBackups != 6 {
+		t.Fatalf("unexpected logging limits: %+v", editor.loggingInput)
+	}
+	if resp.Data.UpdateLoggingSettings.Logging.Level != "debug" || resp.Data.UpdateLoggingSettings.Logging.MaxEntries != 250 {
+		t.Fatalf("unexpected logging response: %+v", resp.Data.UpdateLoggingSettings.Logging)
 	}
 }
 
@@ -748,6 +843,13 @@ type graphQLTaskResponse struct {
 				PollEnabled         bool   `json:"pollEnabled"`
 				JavstashEnabled     bool   `json:"javstashEnabled"`
 			} `json:"following"`
+			Logging struct {
+				Level            string `json:"level"`
+				FilePath         string `json:"filePath"`
+				MaxEntries       int    `json:"maxEntries"`
+				MaxFileSizeBytes int    `json:"maxFileSizeBytes"`
+				MaxFileBackups   int    `json:"maxFileBackups"`
+			} `json:"logging"`
 			System struct {
 				AppVersion string `json:"appVersion"`
 			} `json:"system"`
@@ -765,6 +867,10 @@ type graphQLTaskResponse struct {
 			HasPrevPage bool `json:"hasPrevPage"`
 			HasNextPage bool `json:"hasNextPage"`
 		} `json:"stashPerformers"`
+		Logs []struct {
+			Level   string `json:"level"`
+			Message string `json:"message"`
+		} `json:"logs"`
 		DashboardStats struct {
 			Total        int `json:"total"`
 			Active       int `json:"active"`
@@ -789,6 +895,15 @@ type graphQLTaskResponse struct {
 				JavstashAPIKeyConfigured bool   `json:"javstashApiKeyConfigured"`
 			} `json:"following"`
 		} `json:"updateFollowingSettings"`
+		UpdateLoggingSettings struct {
+			Logging struct {
+				Level            string `json:"level"`
+				FilePath         string `json:"filePath"`
+				MaxEntries       int    `json:"maxEntries"`
+				MaxFileSizeBytes int    `json:"maxFileSizeBytes"`
+				MaxFileBackups   int    `json:"maxFileBackups"`
+			} `json:"logging"`
+		} `json:"updateLoggingSettings"`
 		QbittorrentAdd bool `json:"qbittorrentAdd"`
 	} `json:"data"`
 	Errors []struct {
@@ -804,6 +919,8 @@ type fakeSettingsEditor struct {
 	updateQBittorrentSnapshot *SettingsSnapshot
 	followingInput            UpdateFollowingSettingsInput
 	updateFollowingSnapshot   *SettingsSnapshot
+	loggingInput              UpdateLoggingSettingsInput
+	updateLoggingSnapshot     *SettingsSnapshot
 }
 
 func (f *fakeSettingsEditor) Snapshot() *SettingsSnapshot {
@@ -827,6 +944,11 @@ func (f *fakeSettingsEditor) UpdateQBittorrentSettings(input UpdateQBittorrentSe
 func (f *fakeSettingsEditor) UpdateFollowingSettings(input UpdateFollowingSettingsInput) (*SettingsSnapshot, error) {
 	f.followingInput = input
 	return f.updateFollowingSnapshot, nil
+}
+
+func (f *fakeSettingsEditor) UpdateLoggingSettings(input UpdateLoggingSettingsInput) (*SettingsSnapshot, error) {
+	f.loggingInput = input
+	return f.updateLoggingSnapshot, nil
 }
 
 func executeGraphQL(t *testing.T, resolver *Resolver, query string) graphQLTaskResponse {
@@ -857,6 +979,17 @@ type fakeStashService struct{}
 
 type fakeFollowingService struct {
 	performers []following.Performer
+}
+
+type fakeLogReader struct {
+	entries []logging.Entry
+}
+
+func (f *fakeLogReader) Entries(limit int, _ string) []logging.Entry {
+	if limit <= 0 || limit >= len(f.entries) {
+		return append([]logging.Entry(nil), f.entries...)
+	}
+	return append([]logging.Entry(nil), f.entries[:limit]...)
 }
 
 func (f *fakeFollowingService) ListStashPerformers(_ context.Context, _ string) ([]following.Performer, error) {

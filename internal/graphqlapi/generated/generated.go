@@ -122,6 +122,20 @@ type ComplexityRoot struct {
 		URL              func(childComplexity int) int
 	}
 
+	LogEntry struct {
+		Level   func(childComplexity int) int
+		Message func(childComplexity int) int
+		Time    func(childComplexity int) int
+	}
+
+	LoggingSettings struct {
+		FilePath         func(childComplexity int) int
+		Level            func(childComplexity int) int
+		MaxEntries       func(childComplexity int) int
+		MaxFileBackups   func(childComplexity int) int
+		MaxFileSizeBytes func(childComplexity int) int
+	}
+
 	Mutation struct {
 		AddTorrent                func(childComplexity int, input model.QBittorrentAddInput) int
 		DownloadMedia             func(childComplexity int, input model.DownloadMediaInput) int
@@ -136,6 +150,7 @@ type ComplexityRoot struct {
 		UnfollowPerformer         func(childComplexity int, stashPerformerID string) int
 		UpdateFollowingSettings   func(childComplexity int, input model.UpdateFollowingSettingsInput) int
 		UpdateJackettSettings     func(childComplexity int, input model.UpdateJackettSettingsInput) int
+		UpdateLoggingSettings     func(childComplexity int, input model.UpdateLoggingSettingsInput) int
 		UpdateQBittorrentSettings func(childComplexity int, input model.UpdateQBittorrentSettingsInput) int
 		UpdateStashSettings       func(childComplexity int, input model.UpdateStashSettingsInput) int
 	}
@@ -171,6 +186,7 @@ type ComplexityRoot struct {
 		FollowingPerformers func(childComplexity int) int
 		Health              func(childComplexity int) int
 		JackettSearch       func(childComplexity int, input model.JackettSearchInput) int
+		Logs                func(childComplexity int, limit *int, minLevel *model.LogLevel) int
 		QbittorrentTorrents func(childComplexity int, limit *int) int
 		Settings            func(childComplexity int) int
 		StashJob            func(childComplexity int, id string) int
@@ -183,6 +199,7 @@ type ComplexityRoot struct {
 	Settings struct {
 		Following   func(childComplexity int) int
 		Jackett     func(childComplexity int) int
+		Logging     func(childComplexity int) int
 		Qbittorrent func(childComplexity int) int
 		Stash       func(childComplexity int) int
 		System      func(childComplexity int) int
@@ -280,6 +297,7 @@ type MutationResolver interface {
 	UpdateJackettSettings(ctx context.Context, input model.UpdateJackettSettingsInput) (*model.Settings, error)
 	UpdateQBittorrentSettings(ctx context.Context, input model.UpdateQBittorrentSettingsInput) (*model.Settings, error)
 	UpdateFollowingSettings(ctx context.Context, input model.UpdateFollowingSettingsInput) (*model.Settings, error)
+	UpdateLoggingSettings(ctx context.Context, input model.UpdateLoggingSettingsInput) (*model.Settings, error)
 	StashMetadataScan(ctx context.Context, input model.StashMetadataScanInput) (string, error)
 }
 type QueryResolver interface {
@@ -287,6 +305,7 @@ type QueryResolver interface {
 	Version(ctx context.Context) (string, error)
 	StashPerformers(ctx context.Context, search *string, page *int, pageSize *int) (*model.StashPerformerConnection, error)
 	FollowingPerformers(ctx context.Context) ([]*model.FollowingPerformer, error)
+	Logs(ctx context.Context, limit *int, minLevel *model.LogLevel) ([]*model.LogEntry, error)
 	JackettSearch(ctx context.Context, input model.JackettSearchInput) ([]*model.JackettSearchResult, error)
 	Settings(ctx context.Context) (*model.Settings, error)
 	StashJob(ctx context.Context, id string) (*model.StashJob, error)
@@ -679,6 +698,62 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.JackettSettings.URL(childComplexity), true
 
+	case "LogEntry.level":
+		if e.complexity.LogEntry.Level == nil {
+			break
+		}
+
+		return e.complexity.LogEntry.Level(childComplexity), true
+
+	case "LogEntry.message":
+		if e.complexity.LogEntry.Message == nil {
+			break
+		}
+
+		return e.complexity.LogEntry.Message(childComplexity), true
+
+	case "LogEntry.time":
+		if e.complexity.LogEntry.Time == nil {
+			break
+		}
+
+		return e.complexity.LogEntry.Time(childComplexity), true
+
+	case "LoggingSettings.filePath":
+		if e.complexity.LoggingSettings.FilePath == nil {
+			break
+		}
+
+		return e.complexity.LoggingSettings.FilePath(childComplexity), true
+
+	case "LoggingSettings.level":
+		if e.complexity.LoggingSettings.Level == nil {
+			break
+		}
+
+		return e.complexity.LoggingSettings.Level(childComplexity), true
+
+	case "LoggingSettings.maxEntries":
+		if e.complexity.LoggingSettings.MaxEntries == nil {
+			break
+		}
+
+		return e.complexity.LoggingSettings.MaxEntries(childComplexity), true
+
+	case "LoggingSettings.maxFileBackups":
+		if e.complexity.LoggingSettings.MaxFileBackups == nil {
+			break
+		}
+
+		return e.complexity.LoggingSettings.MaxFileBackups(childComplexity), true
+
+	case "LoggingSettings.maxFileSizeBytes":
+		if e.complexity.LoggingSettings.MaxFileSizeBytes == nil {
+			break
+		}
+
+		return e.complexity.LoggingSettings.MaxFileSizeBytes(childComplexity), true
+
 	case "Mutation.addTorrent":
 		if e.complexity.Mutation.AddTorrent == nil {
 			break
@@ -819,6 +894,18 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.Mutation.UpdateJackettSettings(childComplexity, args["input"].(model.UpdateJackettSettingsInput)), true
+
+	case "Mutation.updateLoggingSettings":
+		if e.complexity.Mutation.UpdateLoggingSettings == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_updateLoggingSettings_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.UpdateLoggingSettings(childComplexity, args["input"].(model.UpdateLoggingSettingsInput)), true
 
 	case "Mutation.updateQBittorrentSettings":
 		if e.complexity.Mutation.UpdateQBittorrentSettings == nil {
@@ -1017,6 +1104,18 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.Query.JackettSearch(childComplexity, args["input"].(model.JackettSearchInput)), true
 
+	case "Query.logs":
+		if e.complexity.Query.Logs == nil {
+			break
+		}
+
+		args, err := ec.field_Query_logs_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Query.Logs(childComplexity, args["limit"].(*int), args["minLevel"].(*model.LogLevel)), true
+
 	case "Query.qbittorrentTorrents":
 		if e.complexity.Query.QbittorrentTorrents == nil {
 			break
@@ -1099,6 +1198,13 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.Settings.Jackett(childComplexity), true
+
+	case "Settings.logging":
+		if e.complexity.Settings.Logging == nil {
+			break
+		}
+
+		return e.complexity.Settings.Logging(childComplexity), true
 
 	case "Settings.qbittorrent":
 		if e.complexity.Settings.Qbittorrent == nil {
@@ -1520,6 +1626,7 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 		ec.unmarshalInputStashMetadataScanInput,
 		ec.unmarshalInputUpdateFollowingSettingsInput,
 		ec.unmarshalInputUpdateJackettSettingsInput,
+		ec.unmarshalInputUpdateLoggingSettingsInput,
 		ec.unmarshalInputUpdateQBittorrentSettingsInput,
 		ec.unmarshalInputUpdateStashSettingsInput,
 	)
@@ -1698,6 +1805,24 @@ type Query {
   version: String!
 }
 `, BuiltIn: false},
+	{Name: "../../../graphql/moji/types/logging.graphql", Input: `extend type Query {
+  "Retrieve recent Moji logs for troubleshooting"
+  logs(limit: Int = 200, minLevel: LogLevel = Info): [LogEntry!]!
+}
+
+enum LogLevel {
+  Debug
+  Info
+  Warning
+  Error
+}
+
+type LogEntry {
+  time: String!
+  level: LogLevel!
+  message: String!
+}
+`, BuiltIn: false},
 	{Name: "../../../graphql/moji/types/scalars.graphql", Input: `scalar Long
 `, BuiltIn: false},
 	{Name: "../../../graphql/moji/types/search.graphql", Input: `extend type Query {
@@ -1743,6 +1868,9 @@ extend type Mutation {
 
   "Update Following settings and persist them to backend config"
   updateFollowingSettings(input: UpdateFollowingSettingsInput!): Settings!
+
+  "Update logging settings and persist them to backend config"
+  updateLoggingSettings(input: UpdateLoggingSettingsInput!): Settings!
 }
 
 type Settings {
@@ -1751,6 +1879,7 @@ type Settings {
   qbittorrent: QBittorrentSettings!
   tasks: TaskSettings!
   following: FollowingSettings!
+  logging: LoggingSettings!
   system: SystemSettings!
 }
 
@@ -1797,6 +1926,14 @@ type FollowingSettings {
   javstashApiKeyConfigured: Boolean!
 }
 
+type LoggingSettings {
+  level: String!
+  filePath: String!
+  maxEntries: Int!
+  maxFileSizeBytes: Int!
+  maxFileBackups: Int!
+}
+
 type SystemSettings {
   appVersion: String!
 }
@@ -1826,6 +1963,14 @@ input UpdateFollowingSettingsInput {
   jsonPath: String!
   pollIntervalSeconds: Int!
   javstashApiKey: String
+}
+
+input UpdateLoggingSettingsInput {
+  level: String!
+  filePath: String!
+  maxEntries: Int!
+  maxFileSizeBytes: Int!
+  maxFileBackups: Int!
 }
 `, BuiltIn: false},
 	{Name: "../../../graphql/moji/types/stash.graphql", Input: `extend type Query {
@@ -2262,6 +2407,34 @@ func (ec *executionContext) field_Mutation_updateJackettSettings_argsInput(
 	return zeroVal, nil
 }
 
+func (ec *executionContext) field_Mutation_updateLoggingSettings_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := ec.field_Mutation_updateLoggingSettings_argsInput(ctx, rawArgs)
+	if err != nil {
+		return nil, err
+	}
+	args["input"] = arg0
+	return args, nil
+}
+func (ec *executionContext) field_Mutation_updateLoggingSettings_argsInput(
+	ctx context.Context,
+	rawArgs map[string]any,
+) (model.UpdateLoggingSettingsInput, error) {
+	if _, ok := rawArgs["input"]; !ok {
+		var zeroVal model.UpdateLoggingSettingsInput
+		return zeroVal, nil
+	}
+
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
+	if tmp, ok := rawArgs["input"]; ok {
+		return ec.unmarshalNUpdateLoggingSettingsInput2githubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐUpdateLoggingSettingsInput(ctx, tmp)
+	}
+
+	var zeroVal model.UpdateLoggingSettingsInput
+	return zeroVal, nil
+}
+
 func (ec *executionContext) field_Mutation_updateQBittorrentSettings_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
@@ -2371,6 +2544,57 @@ func (ec *executionContext) field_Query_jackettSearch_argsInput(
 	}
 
 	var zeroVal model.JackettSearchInput
+	return zeroVal, nil
+}
+
+func (ec *executionContext) field_Query_logs_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := ec.field_Query_logs_argsLimit(ctx, rawArgs)
+	if err != nil {
+		return nil, err
+	}
+	args["limit"] = arg0
+	arg1, err := ec.field_Query_logs_argsMinLevel(ctx, rawArgs)
+	if err != nil {
+		return nil, err
+	}
+	args["minLevel"] = arg1
+	return args, nil
+}
+func (ec *executionContext) field_Query_logs_argsLimit(
+	ctx context.Context,
+	rawArgs map[string]any,
+) (*int, error) {
+	if _, ok := rawArgs["limit"]; !ok {
+		var zeroVal *int
+		return zeroVal, nil
+	}
+
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("limit"))
+	if tmp, ok := rawArgs["limit"]; ok {
+		return ec.unmarshalOInt2ᚖint(ctx, tmp)
+	}
+
+	var zeroVal *int
+	return zeroVal, nil
+}
+
+func (ec *executionContext) field_Query_logs_argsMinLevel(
+	ctx context.Context,
+	rawArgs map[string]any,
+) (*model.LogLevel, error) {
+	if _, ok := rawArgs["minLevel"]; !ok {
+		var zeroVal *model.LogLevel
+		return zeroVal, nil
+	}
+
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("minLevel"))
+	if tmp, ok := rawArgs["minLevel"]; ok {
+		return ec.unmarshalOLogLevel2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐLogLevel(ctx, tmp)
+	}
+
+	var zeroVal *model.LogLevel
 	return zeroVal, nil
 }
 
@@ -4958,6 +5182,358 @@ func (ec *executionContext) fieldContext_JackettSettings_apiKeyConfigured(_ cont
 	return fc, nil
 }
 
+func (ec *executionContext) _LogEntry_time(ctx context.Context, field graphql.CollectedField, obj *model.LogEntry) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_LogEntry_time(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Time, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_LogEntry_time(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "LogEntry",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _LogEntry_level(ctx context.Context, field graphql.CollectedField, obj *model.LogEntry) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_LogEntry_level(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Level, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(model.LogLevel)
+	fc.Result = res
+	return ec.marshalNLogLevel2githubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐLogLevel(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_LogEntry_level(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "LogEntry",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type LogLevel does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _LogEntry_message(ctx context.Context, field graphql.CollectedField, obj *model.LogEntry) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_LogEntry_message(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Message, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_LogEntry_message(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "LogEntry",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _LoggingSettings_level(ctx context.Context, field graphql.CollectedField, obj *model.LoggingSettings) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_LoggingSettings_level(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Level, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_LoggingSettings_level(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "LoggingSettings",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _LoggingSettings_filePath(ctx context.Context, field graphql.CollectedField, obj *model.LoggingSettings) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_LoggingSettings_filePath(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.FilePath, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_LoggingSettings_filePath(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "LoggingSettings",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _LoggingSettings_maxEntries(ctx context.Context, field graphql.CollectedField, obj *model.LoggingSettings) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_LoggingSettings_maxEntries(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.MaxEntries, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int)
+	fc.Result = res
+	return ec.marshalNInt2int(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_LoggingSettings_maxEntries(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "LoggingSettings",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _LoggingSettings_maxFileSizeBytes(ctx context.Context, field graphql.CollectedField, obj *model.LoggingSettings) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_LoggingSettings_maxFileSizeBytes(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.MaxFileSizeBytes, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int)
+	fc.Result = res
+	return ec.marshalNInt2int(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_LoggingSettings_maxFileSizeBytes(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "LoggingSettings",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _LoggingSettings_maxFileBackups(ctx context.Context, field graphql.CollectedField, obj *model.LoggingSettings) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_LoggingSettings_maxFileBackups(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.MaxFileBackups, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int)
+	fc.Result = res
+	return ec.marshalNInt2int(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_LoggingSettings_maxFileBackups(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "LoggingSettings",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _Mutation_qbittorrentAdd(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_Mutation_qbittorrentAdd(ctx, field)
 	if err != nil {
@@ -5786,6 +6362,8 @@ func (ec *executionContext) fieldContext_Mutation_updateStashSettings(ctx contex
 				return ec.fieldContext_Settings_tasks(ctx, field)
 			case "following":
 				return ec.fieldContext_Settings_following(ctx, field)
+			case "logging":
+				return ec.fieldContext_Settings_logging(ctx, field)
 			case "system":
 				return ec.fieldContext_Settings_system(ctx, field)
 			}
@@ -5855,6 +6433,8 @@ func (ec *executionContext) fieldContext_Mutation_updateJackettSettings(ctx cont
 				return ec.fieldContext_Settings_tasks(ctx, field)
 			case "following":
 				return ec.fieldContext_Settings_following(ctx, field)
+			case "logging":
+				return ec.fieldContext_Settings_logging(ctx, field)
 			case "system":
 				return ec.fieldContext_Settings_system(ctx, field)
 			}
@@ -5924,6 +6504,8 @@ func (ec *executionContext) fieldContext_Mutation_updateQBittorrentSettings(ctx 
 				return ec.fieldContext_Settings_tasks(ctx, field)
 			case "following":
 				return ec.fieldContext_Settings_following(ctx, field)
+			case "logging":
+				return ec.fieldContext_Settings_logging(ctx, field)
 			case "system":
 				return ec.fieldContext_Settings_system(ctx, field)
 			}
@@ -5993,6 +6575,8 @@ func (ec *executionContext) fieldContext_Mutation_updateFollowingSettings(ctx co
 				return ec.fieldContext_Settings_tasks(ctx, field)
 			case "following":
 				return ec.fieldContext_Settings_following(ctx, field)
+			case "logging":
+				return ec.fieldContext_Settings_logging(ctx, field)
 			case "system":
 				return ec.fieldContext_Settings_system(ctx, field)
 			}
@@ -6007,6 +6591,77 @@ func (ec *executionContext) fieldContext_Mutation_updateFollowingSettings(ctx co
 	}()
 	ctx = graphql.WithFieldContext(ctx, fc)
 	if fc.Args, err = ec.field_Mutation_updateFollowingSettings_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_updateLoggingSettings(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Mutation_updateLoggingSettings(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().UpdateLoggingSettings(rctx, fc.Args["input"].(model.UpdateLoggingSettingsInput))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*model.Settings)
+	fc.Result = res
+	return ec.marshalNSettings2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐSettings(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Mutation_updateLoggingSettings(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "stash":
+				return ec.fieldContext_Settings_stash(ctx, field)
+			case "jackett":
+				return ec.fieldContext_Settings_jackett(ctx, field)
+			case "qbittorrent":
+				return ec.fieldContext_Settings_qbittorrent(ctx, field)
+			case "tasks":
+				return ec.fieldContext_Settings_tasks(ctx, field)
+			case "following":
+				return ec.fieldContext_Settings_following(ctx, field)
+			case "logging":
+				return ec.fieldContext_Settings_logging(ctx, field)
+			case "system":
+				return ec.fieldContext_Settings_system(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type Settings", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_updateLoggingSettings_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return fc, err
 	}
@@ -7171,6 +7826,69 @@ func (ec *executionContext) fieldContext_Query_followingPerformers(_ context.Con
 	return fc, nil
 }
 
+func (ec *executionContext) _Query_logs(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Query_logs(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Query().Logs(rctx, fc.Args["limit"].(*int), fc.Args["minLevel"].(*model.LogLevel))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]*model.LogEntry)
+	fc.Result = res
+	return ec.marshalNLogEntry2ᚕᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐLogEntryᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Query_logs(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "time":
+				return ec.fieldContext_LogEntry_time(ctx, field)
+			case "level":
+				return ec.fieldContext_LogEntry_level(ctx, field)
+			case "message":
+				return ec.fieldContext_LogEntry_message(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type LogEntry", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Query_logs_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _Query_jackettSearch(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_Query_jackettSearch(ctx, field)
 	if err != nil {
@@ -7299,6 +8017,8 @@ func (ec *executionContext) fieldContext_Query_settings(_ context.Context, field
 				return ec.fieldContext_Settings_tasks(ctx, field)
 			case "following":
 				return ec.fieldContext_Settings_following(ctx, field)
+			case "logging":
+				return ec.fieldContext_Settings_logging(ctx, field)
 			case "system":
 				return ec.fieldContext_Settings_system(ctx, field)
 			}
@@ -8113,6 +8833,62 @@ func (ec *executionContext) fieldContext_Settings_following(_ context.Context, f
 				return ec.fieldContext_FollowingSettings_javstashApiKeyConfigured(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type FollowingSettings", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Settings_logging(ctx context.Context, field graphql.CollectedField, obj *model.Settings) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Settings_logging(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Logging, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*model.LoggingSettings)
+	fc.Result = res
+	return ec.marshalNLoggingSettings2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐLoggingSettings(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Settings_logging(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Settings",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "level":
+				return ec.fieldContext_LoggingSettings_level(ctx, field)
+			case "filePath":
+				return ec.fieldContext_LoggingSettings_filePath(ctx, field)
+			case "maxEntries":
+				return ec.fieldContext_LoggingSettings_maxEntries(ctx, field)
+			case "maxFileSizeBytes":
+				return ec.fieldContext_LoggingSettings_maxFileSizeBytes(ctx, field)
+			case "maxFileBackups":
+				return ec.fieldContext_LoggingSettings_maxFileBackups(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type LoggingSettings", field.Name)
 		},
 	}
 	return fc, nil
@@ -12847,6 +13623,61 @@ func (ec *executionContext) unmarshalInputUpdateJackettSettingsInput(ctx context
 	return it, nil
 }
 
+func (ec *executionContext) unmarshalInputUpdateLoggingSettingsInput(ctx context.Context, obj any) (model.UpdateLoggingSettingsInput, error) {
+	var it model.UpdateLoggingSettingsInput
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"level", "filePath", "maxEntries", "maxFileSizeBytes", "maxFileBackups"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "level":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("level"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Level = data
+		case "filePath":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("filePath"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.FilePath = data
+		case "maxEntries":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("maxEntries"))
+			data, err := ec.unmarshalNInt2int(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.MaxEntries = data
+		case "maxFileSizeBytes":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("maxFileSizeBytes"))
+			data, err := ec.unmarshalNInt2int(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.MaxFileSizeBytes = data
+		case "maxFileBackups":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("maxFileBackups"))
+			data, err := ec.unmarshalNInt2int(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.MaxFileBackups = data
+		}
+	}
+
+	return it, nil
+}
+
 func (ec *executionContext) unmarshalInputUpdateQBittorrentSettingsInput(ctx context.Context, obj any) (model.UpdateQBittorrentSettingsInput, error) {
 	var it model.UpdateQBittorrentSettingsInput
 	asMap := map[string]any{}
@@ -13472,6 +14303,114 @@ func (ec *executionContext) _JackettSettings(ctx context.Context, sel ast.Select
 	return out
 }
 
+var logEntryImplementors = []string{"LogEntry"}
+
+func (ec *executionContext) _LogEntry(ctx context.Context, sel ast.SelectionSet, obj *model.LogEntry) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, logEntryImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("LogEntry")
+		case "time":
+			out.Values[i] = ec._LogEntry_time(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "level":
+			out.Values[i] = ec._LogEntry_level(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "message":
+			out.Values[i] = ec._LogEntry_message(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var loggingSettingsImplementors = []string{"LoggingSettings"}
+
+func (ec *executionContext) _LoggingSettings(ctx context.Context, sel ast.SelectionSet, obj *model.LoggingSettings) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, loggingSettingsImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("LoggingSettings")
+		case "level":
+			out.Values[i] = ec._LoggingSettings_level(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "filePath":
+			out.Values[i] = ec._LoggingSettings_filePath(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "maxEntries":
+			out.Values[i] = ec._LoggingSettings_maxEntries(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "maxFileSizeBytes":
+			out.Values[i] = ec._LoggingSettings_maxFileSizeBytes(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "maxFileBackups":
+			out.Values[i] = ec._LoggingSettings_maxFileBackups(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
 var mutationImplementors = []string{"Mutation"}
 
 func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet) graphql.Marshaler {
@@ -13585,6 +14524,13 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 		case "updateFollowingSettings":
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
 				return ec._Mutation_updateFollowingSettings(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "updateLoggingSettings":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_updateLoggingSettings(ctx, field)
 			})
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
@@ -13894,6 +14840,28 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 			}
 
 			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
+		case "logs":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_logs(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			rrm := func(ctx context.Context) graphql.Marshaler {
+				return ec.OperationContext.RootResolverMiddleware(ctx,
+					func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
 		case "jackettSearch":
 			field := field
 
@@ -14106,6 +15074,11 @@ func (ec *executionContext) _Settings(ctx context.Context, sel ast.SelectionSet,
 			}
 		case "following":
 			out.Values[i] = ec._Settings_following(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "logging":
+			out.Values[i] = ec._Settings_logging(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
@@ -15254,6 +16227,80 @@ func (ec *executionContext) marshalNJackettSettings2ᚖgithubᚗcomᚋleothevan2
 	return ec._JackettSettings(ctx, sel, v)
 }
 
+func (ec *executionContext) marshalNLogEntry2ᚕᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐLogEntryᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.LogEntry) graphql.Marshaler {
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalNLogEntry2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐLogEntry(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
+}
+
+func (ec *executionContext) marshalNLogEntry2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐLogEntry(ctx context.Context, sel ast.SelectionSet, v *model.LogEntry) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._LogEntry(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalNLogLevel2githubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐLogLevel(ctx context.Context, v any) (model.LogLevel, error) {
+	var res model.LogLevel
+	err := res.UnmarshalGQL(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNLogLevel2githubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐLogLevel(ctx context.Context, sel ast.SelectionSet, v model.LogLevel) graphql.Marshaler {
+	return v
+}
+
+func (ec *executionContext) marshalNLoggingSettings2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐLoggingSettings(ctx context.Context, sel ast.SelectionSet, v *model.LoggingSettings) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._LoggingSettings(ctx, sel, v)
+}
+
 func (ec *executionContext) unmarshalNLong2int64(ctx context.Context, v any) (int64, error) {
 	res, err := graphql.UnmarshalInt64(v)
 	return res, graphql.ErrorOnPath(ctx, err)
@@ -15567,6 +16614,11 @@ func (ec *executionContext) unmarshalNUpdateFollowingSettingsInput2githubᚗcom�
 
 func (ec *executionContext) unmarshalNUpdateJackettSettingsInput2githubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐUpdateJackettSettingsInput(ctx context.Context, v any) (model.UpdateJackettSettingsInput, error) {
 	res, err := ec.unmarshalInputUpdateJackettSettingsInput(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) unmarshalNUpdateLoggingSettingsInput2githubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐUpdateLoggingSettingsInput(ctx context.Context, v any) (model.UpdateLoggingSettingsInput, error) {
+	res, err := ec.unmarshalInputUpdateLoggingSettingsInput(ctx, v)
 	return res, graphql.ErrorOnPath(ctx, err)
 }
 
@@ -15950,6 +17002,22 @@ func (ec *executionContext) marshalOInt2ᚖint(ctx context.Context, sel ast.Sele
 	_ = ctx
 	res := graphql.MarshalInt(*v)
 	return res
+}
+
+func (ec *executionContext) unmarshalOLogLevel2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐLogLevel(ctx context.Context, v any) (*model.LogLevel, error) {
+	if v == nil {
+		return nil, nil
+	}
+	var res = new(model.LogLevel)
+	err := res.UnmarshalGQL(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalOLogLevel2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐLogLevel(ctx context.Context, sel ast.SelectionSet, v *model.LogLevel) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return v
 }
 
 func (ec *executionContext) marshalOStashJob2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐStashJob(ctx context.Context, sel ast.SelectionSet, v *model.StashJob) graphql.Marshaler {

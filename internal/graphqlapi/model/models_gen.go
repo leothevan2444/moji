@@ -2,6 +2,13 @@
 
 package model
 
+import (
+	"bytes"
+	"fmt"
+	"io"
+	"strconv"
+)
+
 type DashboardStats struct {
 	Total        int `json:"total"`
 	Active       int `json:"active"`
@@ -97,6 +104,20 @@ type JackettSettings struct {
 	APIKeyConfigured bool   `json:"apiKeyConfigured"`
 }
 
+type LogEntry struct {
+	Time    string   `json:"time"`
+	Level   LogLevel `json:"level"`
+	Message string   `json:"message"`
+}
+
+type LoggingSettings struct {
+	Level            string `json:"level"`
+	FilePath         string `json:"filePath"`
+	MaxEntries       int    `json:"maxEntries"`
+	MaxFileSizeBytes int    `json:"maxFileSizeBytes"`
+	MaxFileBackups   int    `json:"maxFileBackups"`
+}
+
 type Mutation struct {
 }
 
@@ -143,6 +164,7 @@ type Settings struct {
 	Qbittorrent *QBittorrentSettings `json:"qbittorrent"`
 	Tasks       *TaskSettings        `json:"tasks"`
 	Following   *FollowingSettings   `json:"following"`
+	Logging     *LoggingSettings     `json:"logging"`
 	System      *SystemSettings      `json:"system"`
 }
 
@@ -245,6 +267,14 @@ type UpdateJackettSettingsInput struct {
 	APIKey *string `json:"apiKey,omitempty"`
 }
 
+type UpdateLoggingSettingsInput struct {
+	Level            string `json:"level"`
+	FilePath         string `json:"filePath"`
+	MaxEntries       int    `json:"maxEntries"`
+	MaxFileSizeBytes int    `json:"maxFileSizeBytes"`
+	MaxFileBackups   int    `json:"maxFileBackups"`
+}
+
 type UpdateQBittorrentSettingsInput struct {
 	URL             string  `json:"url"`
 	Username        string  `json:"username"`
@@ -258,4 +288,63 @@ type UpdateStashSettingsInput struct {
 	URL         string  `json:"url"`
 	APIKey      *string `json:"apiKey,omitempty"`
 	LibraryPath string  `json:"libraryPath"`
+}
+
+type LogLevel string
+
+const (
+	LogLevelDebug   LogLevel = "Debug"
+	LogLevelInfo    LogLevel = "Info"
+	LogLevelWarning LogLevel = "Warning"
+	LogLevelError   LogLevel = "Error"
+)
+
+var AllLogLevel = []LogLevel{
+	LogLevelDebug,
+	LogLevelInfo,
+	LogLevelWarning,
+	LogLevelError,
+}
+
+func (e LogLevel) IsValid() bool {
+	switch e {
+	case LogLevelDebug, LogLevelInfo, LogLevelWarning, LogLevelError:
+		return true
+	}
+	return false
+}
+
+func (e LogLevel) String() string {
+	return string(e)
+}
+
+func (e *LogLevel) UnmarshalGQL(v any) error {
+	str, ok := v.(string)
+	if !ok {
+		return fmt.Errorf("enums must be strings")
+	}
+
+	*e = LogLevel(str)
+	if !e.IsValid() {
+		return fmt.Errorf("%s is not a valid LogLevel", str)
+	}
+	return nil
+}
+
+func (e LogLevel) MarshalGQL(w io.Writer) {
+	fmt.Fprint(w, strconv.Quote(e.String()))
+}
+
+func (e *LogLevel) UnmarshalJSON(b []byte) error {
+	s, err := strconv.Unquote(string(b))
+	if err != nil {
+		return err
+	}
+	return e.UnmarshalGQL(s)
+}
+
+func (e LogLevel) MarshalJSON() ([]byte, error) {
+	var buf bytes.Buffer
+	e.MarshalGQL(&buf)
+	return buf.Bytes(), nil
 }

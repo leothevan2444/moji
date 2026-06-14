@@ -6,6 +6,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/leothevan2444/moji/internal/logging"
 	stashgraphql "github.com/leothevan2444/moji/pkg/stash/graphql"
 )
 
@@ -62,8 +63,9 @@ func (s *Service) MetadataScan(ctx context.Context, req ScanRequest) (string, er
 	if len(paths) == 0 {
 		return "", errors.New("stashsync: at least one scan path is required")
 	}
+	logging.Infof("stashsync: metadata scan requested for %d paths", len(paths))
 
-	return s.client.MetadataScan(ctx, stashgraphql.ScanMetadataInput{
+	jobID, err := s.client.MetadataScan(ctx, stashgraphql.ScanMetadataInput{
 		Paths:                     paths,
 		Rescan:                    req.Rescan,
 		ScanGenerateCovers:        req.ScanGenerateCovers,
@@ -74,6 +76,12 @@ func (s *Service) MetadataScan(ctx context.Context, req ScanRequest) (string, er
 		ScanGenerateThumbnails:    req.ScanGenerateThumbnails,
 		ScanGenerateClipPreviews:  req.ScanGenerateClipPreviews,
 	})
+	if err != nil {
+		logging.Errorf("stashsync: metadata scan request failed for paths %v: %v", paths, err)
+		return "", err
+	}
+	logging.Infof("stashsync: metadata scan started with job %s for paths %v", jobID, paths)
+	return jobID, nil
 }
 
 func (s *Service) FindJob(ctx context.Context, id string) (*Job, error) {
@@ -84,10 +92,14 @@ func (s *Service) FindJob(ctx context.Context, id string) (*Job, error) {
 
 	job, err := s.client.FindJob(ctx, id)
 	if err != nil {
+		logging.Errorf("stashsync: find job %s failed: %v", id, err)
 		return nil, err
 	}
 	if job == nil {
 		return nil, nil
+	}
+	if job.Error != nil && strings.TrimSpace(*job.Error) != "" {
+		logging.Errorf("stashsync: job %s status=%s error=%s", id, job.Status, *job.Error)
 	}
 
 	return &Job{

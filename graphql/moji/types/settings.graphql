@@ -15,6 +15,9 @@ extend type Mutation {
 
   "Update Following settings and persist them to backend config"
   updateFollowingSettings(input: UpdateFollowingSettingsInput!): Settings!
+
+  "Update logging settings and persist them to backend config"
+  updateLoggingSettings(input: UpdateLoggingSettingsInput!): Settings!
 }
 
 type Settings {
@@ -23,6 +26,7 @@ type Settings {
   qbittorrent: QBittorrentSettings!
   tasks: TaskSettings!
   following: FollowingSettings!
+  logging: LoggingSettings!
   system: SystemSettings!
 }
 
@@ -69,6 +73,14 @@ type FollowingSettings {
   javstashApiKeyConfigured: Boolean!
 }
 
+type LoggingSettings {
+  level: String!
+  filePath: String!
+  maxEntries: Int!
+  maxFileSizeBytes: Int!
+  maxFileBackups: Int!
+}
+
 type SystemSettings {
   appVersion: String!
 }
@@ -98,4 +110,12 @@ input UpdateFollowingSettingsInput {
   jsonPath: String!
   pollIntervalSeconds: Int!
   javstashApiKey: String
+}
+
+input UpdateLoggingSettingsInput {
+  level: String!
+  filePath: String!
+  maxEntries: Int!
+  maxFileSizeBytes: Int!
+  maxFileBackups: Int!
 }

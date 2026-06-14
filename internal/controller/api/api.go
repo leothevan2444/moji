@@ -2,7 +2,11 @@ package api
 
 import (
 	"encoding/json"
+	"errors"
+	"io"
 	"net/http"
+	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
 
@@ -10,16 +14,32 @@ import (
 )
 
 type Handler struct {
-	tracker tracker.Tracker
+	tracker     tracker.Tracker
+	logFilePath string
 }
 
-func NewHandler(tr tracker.Tracker) *Handler {
-	return &Handler{tracker: tr}
+type Option func(*Handler)
+
+func WithLogFilePath(path string) Option {
+	return func(h *Handler) {
+		h.logFilePath = strings.TrimSpace(path)
+	}
+}
+
+func NewHandler(tr tracker.Tracker, options ...Option) *Handler {
+	h := &Handler{tracker: tr}
+	for _, option := range options {
+		if option != nil {
+			option(h)
+		}
+	}
+	return h
 }
 
 func (h *Handler) Register(mux *http.ServeMux) {
 	mux.HandleFunc("GET /healthz", h.handleHealthz)
 	mux.HandleFunc("GET /api/tracker/search", h.handleTrackerSearch)
+	mux.HandleFunc("GET /api/logs/current", h.handleCurrentLogFile)
 }
 
 func (h *Handler) handleHealthz(w http.ResponseWriter, _ *http.Request) {
@@ -83,6 +103,36 @@ func (h *Handler) handleTrackerSearch(w http.ResponseWriter, r *http.Request) {
 	}
 
 	writeJSON(w, http.StatusOK, trackerSearchResponse{Results: results})
+}
+
+func (h *Handler) handleCurrentLogFile(w http.ResponseWriter, _ *http.Request) {
+	if h.logFilePath == "" {
+		http.Error(w, "log file is not configured", http.StatusNotFound)
+		return
+	}
+
+	file, err := os.Open(h.logFilePath)
+	if err != nil {
+		if errors.Is(err, os.ErrNotExist) {
+			http.Error(w, "log file does not exist yet", http.StatusNotFound)
+			return
+		}
+		http.Error(w, "failed to open log file", http.StatusInternalServerError)
+		return
+	}
+	defer func() { _ = file.Close() }()
+
+	info, err := file.Stat()
+	if err != nil {
+		http.Error(w, "failed to stat log file", http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
+	w.Header().Set("Content-Disposition", `attachment; filename="`+filepath.Base(h.logFilePath)+`"`)
+	w.Header().Set("Content-Length", strconv.FormatInt(info.Size(), 10))
+	w.WriteHeader(http.StatusOK)
+	_, _ = io.Copy(w, file)
 }
 
 func markDeprecatedRESTDebugEndpoint(w http.ResponseWriter) {

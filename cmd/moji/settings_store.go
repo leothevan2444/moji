@@ -5,6 +5,7 @@ import (
 
 	"github.com/leothevan2444/moji/internal/config"
 	"github.com/leothevan2444/moji/internal/graphqlapi"
+	"github.com/leothevan2444/moji/internal/logging"
 )
 
 type runtimeSettingsEditor struct {
@@ -36,8 +37,10 @@ func (s *runtimeSettingsEditor) UpdateStashSettings(input graphqlapi.UpdateStash
 		strings.TrimSpace(input.LibraryPath),
 	)
 	if err != nil {
+		logging.Errorf("settings: save stash settings failed: %v", err)
 		return nil, err
 	}
+	logging.Infof("settings: stash settings saved for url=%s library_path=%s", cfg.Stash.URL, cfg.Stash.LibraryPath)
 	return buildSettingsSnapshot(cfg, s.version, s.qbittorrentEnabled, s.downloaderEnabled, s.stashEnabled), nil
 }
 
@@ -47,8 +50,10 @@ func (s *runtimeSettingsEditor) UpdateJackettSettings(input graphqlapi.UpdateJac
 		trimOptionalSecret(input.APIKey),
 	)
 	if err != nil {
+		logging.Errorf("settings: save jackett settings failed: %v", err)
 		return nil, err
 	}
+	logging.Infof("settings: jackett settings saved for url=%s", cfg.Jackett.URL)
 	return buildSettingsSnapshot(cfg, s.version, s.qbittorrentEnabled, s.downloaderEnabled, s.stashEnabled), nil
 }
 
@@ -62,8 +67,16 @@ func (s *runtimeSettingsEditor) UpdateQBittorrentSettings(input graphqlapi.Updat
 		strings.TrimSpace(input.Tags),
 	)
 	if err != nil {
+		logging.Errorf("settings: save qBittorrent settings failed: %v", err)
 		return nil, err
 	}
+	logging.Infof(
+		"settings: qBittorrent settings saved for url=%s username=%s save_path=%s category=%s",
+		cfg.QBittorrent.URL,
+		cfg.QBittorrent.Username,
+		cfg.QBittorrent.DefaultSavePath,
+		cfg.QBittorrent.Category,
+	)
 	return buildSettingsSnapshot(cfg, s.version, s.qbittorrentEnabled, s.downloaderEnabled, s.stashEnabled), nil
 }
 
@@ -75,8 +88,48 @@ func (s *runtimeSettingsEditor) UpdateFollowingSettings(input graphqlapi.UpdateF
 		trimOptionalSecret(input.JAVStashAPIKey),
 	)
 	if err != nil {
+		logging.Errorf("settings: save following settings failed: %v", err)
 		return nil, err
 	}
+	logging.Infof(
+		"settings: following settings saved for store=%s json_path=%s poll_interval=%d",
+		cfg.Following.Store,
+		cfg.Following.JSONPath,
+		cfg.Following.PollIntervalSeconds,
+	)
+	return buildSettingsSnapshot(cfg, s.version, s.qbittorrentEnabled, s.downloaderEnabled, s.stashEnabled), nil
+}
+
+func (s *runtimeSettingsEditor) UpdateLoggingSettings(input graphqlapi.UpdateLoggingSettingsInput) (*graphqlapi.SettingsSnapshot, error) {
+	cfg, err := s.store.UpdateLogging(
+		strings.TrimSpace(input.Level),
+		strings.TrimSpace(input.FilePath),
+		input.MaxEntries,
+		input.MaxFileSizeBytes,
+		input.MaxFileBackups,
+	)
+	if err != nil {
+		logging.Errorf("settings: save logging settings failed: %v", err)
+		return nil, err
+	}
+	if _, err := logging.ConfigureDefault(logging.Options{
+		Level:            cfg.EffectiveLogLevel(),
+		FilePath:         cfg.EffectiveLogFilePath(),
+		MaxEntries:       cfg.EffectiveLogMaxEntries(),
+		MaxFileSizeBytes: cfg.EffectiveLogMaxFileSizeBytes(),
+		MaxFileBackups:   cfg.EffectiveLogMaxFileBackups(),
+	}); err != nil {
+		logging.Errorf("settings: hot-reload logger failed: %v", err)
+		return nil, err
+	}
+	logging.Infof(
+		"settings: logging settings saved level=%s file=%s max_entries=%d max_size=%d backups=%d",
+		cfg.EffectiveLogLevel(),
+		cfg.EffectiveLogFilePath(),
+		cfg.EffectiveLogMaxEntries(),
+		cfg.EffectiveLogMaxFileSizeBytes(),
+		cfg.EffectiveLogMaxFileBackups(),
+	)
 	return buildSettingsSnapshot(cfg, s.version, s.qbittorrentEnabled, s.downloaderEnabled, s.stashEnabled), nil
 }
 

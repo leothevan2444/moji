@@ -1,0 +1,17 @@
+extend type Query {
+  "Retrieve recent Moji logs for troubleshooting"
+  logs(limit: Int = 200, minLevel: LogLevel = Info): [LogEntry!]!
+}
+
+enum LogLevel {
+  Debug
+  Info
+  Warning
+  Error
+}
+
+type LogEntry {
+  time: String!
+  level: LogLevel!
+  message: String!
+}

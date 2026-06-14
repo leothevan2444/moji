@@ -7,6 +7,8 @@ import {
   DashboardDocumentDocument,
   FollowPerformerDocument,
   FollowingPerformersDocument,
+  LogLevel,
+  LogsDocumentDocument,
   RefreshFollowingNowDocument,
   RefreshFollowingPerformerDocument,
   SearchDocumentDocument,
@@ -17,6 +19,7 @@ import {
   UnfollowPerformerDocument,
   UpdateFollowingSettingsDocumentDocument,
   UpdateJackettSettingsDocumentDocument,
+  UpdateLoggingSettingsDocumentDocument,
   UpdateQBittorrentSettingsDocumentDocument,
   UpdateStashSettingsDocumentDocument,
   type AddTorrentDocumentMutation,
@@ -27,6 +30,8 @@ import {
   type FollowPerformerMutationVariables,
   type FollowingPerformersQuery,
   type JackettSearchInput,
+  type LogsDocumentQuery,
+  type LogsDocumentQueryVariables,
   type RefreshFollowingNowMutation,
   type RefreshFollowingNowMutationVariables,
   type RefreshFollowingPerformerMutation,
@@ -47,6 +52,8 @@ import {
   type UpdateFollowingSettingsDocumentMutationVariables,
   type UpdateJackettSettingsDocumentMutation,
   type UpdateJackettSettingsDocumentMutationVariables,
+  type UpdateLoggingSettingsDocumentMutation,
+  type UpdateLoggingSettingsDocumentMutationVariables,
   type UpdateQBittorrentSettingsDocumentMutation,
   type UpdateQBittorrentSettingsDocumentMutationVariables,
   type UpdateStashSettingsDocumentMutation,
@@ -101,6 +108,7 @@ const ENABLED_SETTINGS_TABS: ReadonlySet<SettingsTab> = new Set([
   "下载器",
   "任务",
   "订阅",
+  "日志",
   "系统"
 ]);
 
@@ -131,7 +139,16 @@ const EMPTY_FOLLOWING_FORM = {
   javstashApiKey: ""
 };
 
+const EMPTY_LOGGING_FORM = {
+  level: "info",
+  filePath: "",
+  maxEntries: "500",
+  maxFileSizeBytes: String(10 * 1024 * 1024),
+  maxFileBackups: "5"
+};
+
 const FOLLOWING_PAGE_SIZE_OPTIONS = [12, 24, 48, 96] as const;
+const LOG_LEVEL_OPTIONS: LogLevel[] = [LogLevel.Debug, LogLevel.Info, LogLevel.Warning, LogLevel.Error];
 
 function formatBytes(size: number) {
   if (!size) return "0 B";
@@ -151,6 +168,12 @@ function formatDateTime(value?: string | null) {
     hour: "2-digit",
     minute: "2-digit"
   }).format(date);
+}
+
+function formatLogEntries(entries: LogsDocumentQuery["logs"]) {
+  return entries
+    .map((entry) => `${entry.time} [${entry.level}] ${entry.message}`)
+    .join("\n");
 }
 
 function formatRelativeDate(value?: string | null) {
@@ -501,6 +524,9 @@ function App() {
   const [followingSearch, setFollowingSearch] = useState("");
   const [followingPage, setFollowingPage] = useState(1);
   const [followingPageSize, setFollowingPageSize] = useState<number>(24);
+  const [logsLevel, setLogsLevel] = useState<LogLevel>(LogLevel.Info);
+  const [logsActionFeedback, setLogsActionFeedback] = useState<SettingsFeedback>(null);
+  const [downloadingLogFile, setDownloadingLogFile] = useState(false);
   const [followingFeedback, setFollowingFeedback] = useState<SettingsFeedback>(null);
   const [pendingFollowingID, setPendingFollowingID] = useState<string | null>(null);
   const [pendingAddId, setPendingAddId] = useState<string | null>(null);
@@ -508,11 +534,13 @@ function App() {
   const [jackettForm, setJackettForm] = useState(EMPTY_JACKETT_FORM);
   const [qbittorrentForm, setQBittorrentForm] = useState(EMPTY_QBITTORRENT_FORM);
   const [followingForm, setFollowingForm] = useState(EMPTY_FOLLOWING_FORM);
-  const [settingsFeedback, setSettingsFeedback] = useState<Record<"Stash" | "索引器" | "下载器" | "订阅", SettingsFeedback>>({
+  const [loggingForm, setLoggingForm] = useState(EMPTY_LOGGING_FORM);
+  const [settingsFeedback, setSettingsFeedback] = useState<Record<"Stash" | "索引器" | "下载器" | "订阅" | "系统", SettingsFeedback>>({
     Stash: null,
     索引器: null,
     下载器: null,
-    订阅: null
+    订阅: null,
+    系统: null
   });
 
   const deferredTaskSearch = useDeferredValue(taskSearch.trim().toLowerCase());
@@ -559,6 +587,18 @@ function App() {
     requestPolicy: "cache-and-network",
     pause: tab !== "订阅"
   });
+  const [{ data: logsData, fetching: fetchingLogs, error: logsError }, refreshLogs] = useQuery<
+    LogsDocumentQuery,
+    LogsDocumentQueryVariables
+  >({
+    query: LogsDocumentDocument,
+    variables: {
+      limit: 200,
+      minLevel: logsLevel
+    },
+    requestPolicy: "cache-and-network",
+    pause: settingsTab !== "日志" || (drawer !== "settings" && renderedDrawer !== "settings")
+  });
 
   const [, addTorrent] = useMutation<
     AddTorrentDocumentMutation,
@@ -592,6 +632,10 @@ function App() {
     UpdateFollowingSettingsDocumentMutation,
     UpdateFollowingSettingsDocumentMutationVariables
   >(UpdateFollowingSettingsDocumentDocument);
+  const [{ fetching: updatingLogging }, updateLoggingSettings] = useMutation<
+    UpdateLoggingSettingsDocumentMutation,
+    UpdateLoggingSettingsDocumentMutationVariables
+  >(UpdateLoggingSettingsDocumentDocument);
   const [, followPerformer] = useMutation<FollowPerformerMutation, FollowPerformerMutationVariables>(FollowPerformerDocument);
   const [, unfollowPerformer] = useMutation<UnfollowPerformerMutation, UnfollowPerformerMutationVariables>(UnfollowPerformerDocument);
   const [, refreshFollowingPerformer] = useMutation<
@@ -604,6 +648,7 @@ function App() {
   >(RefreshFollowingNowDocument);
 
   const tasks = data?.tasks ?? [];
+  const logs = logsData?.logs ?? [];
   const runtimeSettings = data?.settings ?? null;
   const stashPerformerPage = stashPerformersData?.stashPerformers ?? null;
   const stashPerformers = stashPerformerPage?.items ?? [];
@@ -644,6 +689,13 @@ function App() {
       jsonPath: runtimeSettings.following.jsonPath || "",
       pollIntervalSeconds: String(runtimeSettings.following.pollIntervalSeconds || 3600),
       javstashApiKey: ""
+    });
+    setLoggingForm({
+      level: runtimeSettings.logging.level || "info",
+      filePath: runtimeSettings.logging.filePath || "",
+      maxEntries: String(runtimeSettings.logging.maxEntries || 500),
+      maxFileSizeBytes: String(runtimeSettings.logging.maxFileSizeBytes || 10 * 1024 * 1024),
+      maxFileBackups: String(runtimeSettings.logging.maxFileBackups || 5)
     });
   }, [runtimeSettings]);
 
@@ -894,6 +946,40 @@ function App() {
     await refreshDashboard({ requestPolicy: "network-only" });
   };
 
+  const saveLoggingSettings = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setSettingsFeedback((current) => ({ ...current, 系统: null }));
+
+    const maxEntries = Number.parseInt(loggingForm.maxEntries.trim(), 10);
+    const maxFileSizeBytes = Number.parseInt(loggingForm.maxFileSizeBytes.trim(), 10);
+    const maxFileBackups = Number.parseInt(loggingForm.maxFileBackups.trim(), 10);
+
+    const result = await updateLoggingSettings({
+      input: {
+        level: loggingForm.level.trim() || "info",
+        filePath: loggingForm.filePath.trim(),
+        maxEntries: Number.isNaN(maxEntries) ? 500 : maxEntries,
+        maxFileSizeBytes: Number.isNaN(maxFileSizeBytes) ? 10 * 1024 * 1024 : maxFileSizeBytes,
+        maxFileBackups: Number.isNaN(maxFileBackups) ? 5 : maxFileBackups
+      }
+    });
+
+    if (result.error) {
+      setSettingsFeedback((current) => ({
+        ...current,
+        系统: { tone: "tone-danger", message: describeQueryError(result.error) }
+      }));
+      return;
+    }
+
+    setSettingsFeedback((current) => ({
+      ...current,
+      系统: { tone: "tone-success", message: "日志设置已保存，并已即时重载到当前进程。" }
+    }));
+    await refreshDashboard({ requestPolicy: "network-only" });
+    await refreshLogs({ requestPolicy: "network-only" });
+  };
+
   const reloadFollowing = async () => {
     await Promise.all([
       refreshFollowing({ requestPolicy: "network-only" }),
@@ -964,6 +1050,54 @@ function App() {
       message: "已触发全部订阅对象的更新检查。"
     });
     await reloadFollowing();
+  };
+
+  const handleCopyLogs = async () => {
+    if (!logs.length) {
+      setLogsActionFeedback({ tone: "tone-info", message: "当前列表里还没有可复制的日志。" });
+      return;
+    }
+
+    try {
+      await navigator.clipboard.writeText(formatLogEntries(logs));
+      setLogsActionFeedback({ tone: "tone-success", message: `已复制 ${logs.length} 条日志。` });
+    } catch {
+      setLogsActionFeedback({ tone: "tone-danger", message: "复制失败，请检查浏览器剪贴板权限。" });
+    }
+  };
+
+  const handleDownloadCurrentLogFile = async () => {
+    setLogsActionFeedback(null);
+    setDownloadingLogFile(true);
+
+    try {
+      const response = await fetch("/api/logs/current");
+      if (!response.ok) {
+        const message = (await response.text()) || `下载失败 (${response.status})`;
+        throw new Error(message);
+      }
+
+      const blob = await response.blob();
+      const downloadURL = window.URL.createObjectURL(blob);
+      const disposition = response.headers.get("Content-Disposition") || "";
+      const match = disposition.match(/filename="([^"]+)"/i);
+      const filename = match?.[1] || "moji.log";
+      const anchor = document.createElement("a");
+      anchor.href = downloadURL;
+      anchor.download = filename;
+      document.body.append(anchor);
+      anchor.click();
+      anchor.remove();
+      window.URL.revokeObjectURL(downloadURL);
+      setLogsActionFeedback({ tone: "tone-success", message: `已开始下载 ${filename}。` });
+    } catch (error) {
+      setLogsActionFeedback({
+        tone: "tone-danger",
+        message: error instanceof Error ? error.message : "下载当前日志文件失败。"
+      });
+    } finally {
+      setDownloadingLogFile(false);
+    }
   };
 
   const renderSettingsPanel = () => {
@@ -1237,24 +1371,125 @@ function App() {
             <h3>{settingsTab}</h3>
             <span className={`status-chip ${settingsStatus.tone}`}>{settingsStatus.label}</span>
           </div>
-          <dl className="settings-grid">
-            <div>
-              <dt>版本</dt>
-              <dd>{runtimeSettings.system.appVersion || "dev"}</dd>
+          <form className="settings-form" onSubmit={(event) => void saveLoggingSettings(event)}>
+            <label className="settings-field">
+              <span>日志级别</span>
+              <input
+                value={loggingForm.level}
+                onChange={(event) => setLoggingForm((current) => ({ ...current, level: event.target.value }))}
+                placeholder="info"
+              />
+            </label>
+            <label className="settings-field">
+              <span>日志文件路径</span>
+              <input
+                value={loggingForm.filePath}
+                onChange={(event) => setLoggingForm((current) => ({ ...current, filePath: event.target.value }))}
+                placeholder="moji.log"
+              />
+            </label>
+            <label className="settings-field">
+              <span>内存保留条数</span>
+              <input
+                value={loggingForm.maxEntries}
+                onChange={(event) => setLoggingForm((current) => ({ ...current, maxEntries: event.target.value }))}
+                inputMode="numeric"
+                placeholder="500"
+              />
+            </label>
+            <label className="settings-field">
+              <span>单文件大小上限（字节）</span>
+              <input
+                value={loggingForm.maxFileSizeBytes}
+                onChange={(event) => setLoggingForm((current) => ({ ...current, maxFileSizeBytes: event.target.value }))}
+                inputMode="numeric"
+                placeholder={String(10 * 1024 * 1024)}
+              />
+            </label>
+            <label className="settings-field">
+              <span>滚动备份份数</span>
+              <input
+                value={loggingForm.maxFileBackups}
+                onChange={(event) => setLoggingForm((current) => ({ ...current, maxFileBackups: event.target.value }))}
+                inputMode="numeric"
+                placeholder="5"
+              />
+            </label>
+            <div className="settings-meta">
+              <span>版本: {runtimeSettings.system.appVersion || "dev"}</span>
+              <span>当前日志文件: {runtimeSettings.logging.filePath}</span>
+              <span>当前缓存: {runtimeSettings.logging.maxEntries} 条</span>
             </div>
-            <div>
-              <dt>GraphQL schema</dt>
-              <dd>已按业务域拆分</dd>
+            {settingsFeedback.系统 ? <p className={`settings-feedback ${settingsFeedback.系统.tone}`}>{settingsFeedback.系统.message}</p> : null}
+            <div className="settings-actions">
+              <button type="submit" disabled={updatingLogging}>保存系统设置</button>
             </div>
-            <div>
-              <dt>设置数据</dt>
-              <dd>由后端 runtime snapshot 提供</dd>
+          </form>
+        </article>
+      );
+    }
+
+    if (settingsTab === "日志") {
+      return (
+        <article className="drawer-card">
+          <div className="drawer-card__head">
+            <h3>{settingsTab}</h3>
+            <span className={`status-chip ${settingsStatus.tone}`}>{settingsStatus.label}</span>
+          </div>
+          <div className="toolbar-inline toolbar-inline--logs">
+            <select value={logsLevel} onChange={(event) => setLogsLevel(event.target.value as LogLevel)}>
+              {LOG_LEVEL_OPTIONS.map((level) => (
+                <option key={level} value={level}>
+                  {level}
+                </option>
+              ))}
+            </select>
+            <button type="button" className="ghost-button" onClick={() => void refreshLogs({ requestPolicy: "network-only" })}>
+              {fetchingLogs ? "刷新中..." : "刷新日志"}
+            </button>
+            <button type="button" className="ghost-button" onClick={() => void handleCopyLogs()}>
+              复制当前列表
+            </button>
+            <button type="button" className="ghost-button" onClick={() => void handleDownloadCurrentLogFile()} disabled={downloadingLogFile}>
+              {downloadingLogFile ? "下载中..." : "下载当前日志"}
+            </button>
+          </div>
+          <div className="settings-meta">
+            <span>级别过滤: {logsLevel}</span>
+            <span>已加载: {logs.length}</span>
+            <span>状态: {fetchingLogs ? "同步中" : "已就绪"}</span>
+            <span>文件: {runtimeSettings.logging.filePath}</span>
+          </div>
+          {logsActionFeedback ? <p className={`settings-feedback ${logsActionFeedback.tone}`}>{logsActionFeedback.message}</p> : null}
+          {logsError ? <p className="settings-feedback tone-danger">{describeQueryError(logsError)}</p> : null}
+          {!logs.length && !fetchingLogs ? (
+            <article className="empty-card empty-card--wide">
+              <h3>暂无日志</h3>
+              <p>当前过滤条件下没有最近日志记录。</p>
+            </article>
+          ) : (
+            <div className="log-stream">
+              {logs.map((entry, index) => (
+                <article key={`${entry.time}-${index}`} className="log-entry">
+                  <span className="log-entry__time">{formatDateTime(entry.time)}</span>
+                  <span
+                    className={`status-chip ${
+                      entry.level === LogLevel.Error
+                        ? "tone-danger"
+                        : entry.level === LogLevel.Warning
+                          ? "tone-warn"
+                          : entry.level === LogLevel.Debug
+                            ? "tone-info"
+                            : "tone-neutral"
+                    }`}
+                  >
+                    {entry.level}
+                  </span>
+                  <code className="log-entry__message">{entry.message}</code>
+                </article>
+              ))}
             </div>
-            <div>
-              <dt>说明</dt>
-              <dd>后续可继续补充构建信息和运行环境字段。</dd>
-            </div>
-          </dl>
+          )}
         </article>
       );
     }
@@ -1283,9 +1518,7 @@ function App() {
             <dd>
               {settingsTab === "安全性"
                 ? "这里会放访问控制、CORS 和未来登录策略。"
-                : settingsTab === "日志"
-                  ? "这里会放最近日志和错误过滤器。"
-                  : settingsTab === "工具"
+                : settingsTab === "工具"
                     ? "这里会放重新同步、重新探测和修复动作。"
                     : settingsTab === "更新历史"
                       ? "这里会放版本记录和升级提示。"
@@ -1354,6 +1587,19 @@ function App() {
 
     return () => window.clearTimeout(timer);
   }, [drawer, renderedDrawer]);
+
+  useEffect(() => {
+    const logsTabActive = settingsTab === "日志" && (drawer === "settings" || renderedDrawer === "settings");
+    if (!logsTabActive) {
+      return;
+    }
+
+    const timer = window.setInterval(() => {
+      void refreshLogs({ requestPolicy: "network-only" });
+    }, 5000);
+
+    return () => window.clearInterval(timer);
+  }, [drawer, renderedDrawer, refreshLogs, settingsTab]);
 
   return (
     <div className="app-shell">

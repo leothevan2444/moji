@@ -51,6 +51,13 @@ query DashboardDocument {
       javstashEnabled
       javstashApiKeyConfigured
     }
+    logging {
+      level
+      filePath
+      maxEntries
+      maxFileSizeBytes
+      maxFileBackups
+    }
     system {
       appVersion
     }

@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/leothevan2444/moji/internal/logging"
 	"github.com/leothevan2444/moji/internal/stashsync"
 )
 
@@ -47,6 +48,7 @@ func (s *Service) TriggerStashScans(ctx context.Context, scanner StashScanner) (
 		if err != nil {
 			next.StashScanStatus = StashScanStatusFailed
 			next.StashScanError = err.Error()
+			logging.Errorf("downloader: stash scan trigger failed for task %s: %v", next.ID, err)
 			if firstErr == nil {
 				firstErr = fmt.Errorf("trigger stash scan for task %q: %w", next.ID, err)
 			}
@@ -54,9 +56,11 @@ func (s *Service) TriggerStashScans(ctx context.Context, scanner StashScanner) (
 			next.StashJobID = jobID
 			next.StashScanStatus = StashScanStatusStarted
 			next.StashScanError = ""
+			logging.Infof("downloader: started stash scan for task %s with job %s", next.ID, jobID)
 		}
 
 		if updateErr := s.store.Update(ctx, next); updateErr != nil {
+			logging.Errorf("downloader: persist stash scan state failed for task %s: %v", next.ID, updateErr)
 			if firstErr == nil {
 				firstErr = fmt.Errorf("update task %q: %w", next.ID, updateErr)
 			}
@@ -94,13 +98,16 @@ func (s *Service) TriggerTaskStashScan(ctx context.Context, id string, scanner S
 		next.StashJobID = ""
 		next.StashScanStatus = StashScanStatusFailed
 		next.StashScanError = err.Error()
+		logging.Errorf("downloader: manual stash scan trigger failed for task %s: %v", next.ID, err)
 	} else {
 		next.StashJobID = jobID
 		next.StashScanStatus = StashScanStatusStarted
 		next.StashScanError = ""
+		logging.Infof("downloader: manually started stash scan for task %s with job %s", next.ID, jobID)
 	}
 
 	if updateErr := s.store.Update(ctx, next); updateErr != nil {
+		logging.Errorf("downloader: persist manual stash scan state failed for task %s: %v", next.ID, updateErr)
 		return nil, fmt.Errorf("update task %q: %w", next.ID, updateErr)
 	}
 	if err != nil {

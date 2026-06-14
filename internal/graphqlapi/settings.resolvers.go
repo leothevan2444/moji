@@ -90,6 +90,27 @@ func (r *mutationResolver) UpdateFollowingSettings(ctx context.Context, input mo
 	return settingsSnapshotToModel(snapshot, r.AppVersion), nil
 }
 
+// UpdateLoggingSettings is the resolver for the updateLoggingSettings field.
+func (r *mutationResolver) UpdateLoggingSettings(ctx context.Context, input model.UpdateLoggingSettingsInput) (*model.Settings, error) {
+	_ = ctx
+	if r.SettingsEditor == nil {
+		return nil, errors.New("settings editor is not configured")
+	}
+
+	snapshot, err := r.SettingsEditor.UpdateLoggingSettings(UpdateLoggingSettingsInput{
+		Level:            input.Level,
+		FilePath:         input.FilePath,
+		MaxEntries:       input.MaxEntries,
+		MaxFileSizeBytes: int64(input.MaxFileSizeBytes),
+		MaxFileBackups:   input.MaxFileBackups,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return settingsSnapshotToModel(snapshot, r.AppVersion), nil
+}
+
 // Settings is the resolver for the settings field.
 func (r *queryResolver) Settings(ctx context.Context) (*model.Settings, error) {
 	if r.SettingsEditor != nil {
