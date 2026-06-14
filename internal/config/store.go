@@ -115,15 +115,15 @@ func (s *Store) UpdateQBittorrent(url, username string, password *string, defaul
 	return &clone, nil
 }
 
-func (s *Store) UpdateFollowing(store, jsonPath string, pollIntervalSeconds int, javstashAPIKey *string) (*Config, error) {
+func (s *Store) UpdateSubscription(store, dbPath string, pollIntervalSeconds int, javstashAPIKey *string) (*Config, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	s.cfg.Following.Store = store
-	s.cfg.Following.JSONPath = jsonPath
-	s.cfg.Following.PollIntervalSeconds = pollIntervalSeconds
+	s.cfg.Subscription.Store = store
+	s.cfg.Subscription.DBPath = dbPath
+	s.cfg.Subscription.PollIntervalSeconds = pollIntervalSeconds
 	if javstashAPIKey != nil {
-		s.cfg.Following.JAVStashAPIKey = *javstashAPIKey
+		s.cfg.Subscription.JAVStashAPIKey = *javstashAPIKey
 	}
 
 	if err := s.updateConfigNode(); err != nil {
@@ -173,16 +173,16 @@ func (s *Store) updateConfigNode() error {
 		"tags":              s.cfg.QBittorrent.Tags,
 	})
 	setMapString(top, "tasks", map[string]string{
-		"store":     s.cfg.Tasks.Store,
-		"json_path": s.cfg.Tasks.JSONPath,
+		"store":   s.cfg.Tasks.Store,
+		"db_path": s.cfg.Tasks.DBPath,
 	})
 	setIntScalar(mapValue(top, "tasks"), "progress_sync_interval_seconds", s.cfg.Tasks.ProgressSyncIntervalSeconds)
-	setMapString(top, "following", map[string]string{
-		"store":            s.cfg.Following.Store,
-		"json_path":        s.cfg.Following.JSONPath,
-		"javstash_api_key": s.cfg.Following.JAVStashAPIKey,
+	setMapString(top, "subscription", map[string]string{
+		"store":            s.cfg.Subscription.Store,
+		"db_path":          s.cfg.Subscription.DBPath,
+		"javstash_api_key": s.cfg.Subscription.JAVStashAPIKey,
 	})
-	setIntScalar(mapValue(top, "following"), "poll_interval_seconds", s.cfg.Following.PollIntervalSeconds)
+	setIntScalar(mapValue(top, "subscription"), "poll_interval_seconds", s.cfg.Subscription.PollIntervalSeconds)
 	setMapString(top, "logging", map[string]string{
 		"level":     s.cfg.Logging.Level,
 		"file_path": s.cfg.Logging.FilePath,

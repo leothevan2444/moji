@@ -1,4 +1,4 @@
-package following
+package subscription
 
 import (
 	"context"
@@ -61,7 +61,7 @@ func (f *fakeStashboxClient) QueryScenes(_ context.Context, _ stashboxgraphql.Sc
 	return f.scenes, nil
 }
 
-func TestListStashPerformersMarksCustomFieldFollowers(t *testing.T) {
+func TestListStashPerformersMarksCustomFieldSubscribers(t *testing.T) {
 	service, err := NewService(&fakeStashClient{
 		performers: map[string]*stashgraphql.PerformerFragment{
 			"p1": {
@@ -88,12 +88,12 @@ func TestListStashPerformersMarksCustomFieldFollowers(t *testing.T) {
 	if len(items) != 1 {
 		t.Fatalf("expected 1 performer, got %d", len(items))
 	}
-	if !items[0].Followed {
-		t.Fatalf("expected performer to be followed")
+	if !items[0].Subscribed {
+		t.Fatalf("expected performer to be subscribed")
 	}
 }
 
-func TestFollowAndUnfollowPerformerMutatesCustomFields(t *testing.T) {
+func TestSubscribeAndUnsubscribePerformerMutatesCustomFields(t *testing.T) {
 	stashClient := &fakeStashClient{
 		performers: map[string]*stashgraphql.PerformerFragment{
 			"p1": {ID: "p1", Name: "Kana Momonogi"},
@@ -105,16 +105,16 @@ func TestFollowAndUnfollowPerformerMutatesCustomFields(t *testing.T) {
 		t.Fatalf("NewService failed: %v", err)
 	}
 
-	item, err := service.FollowPerformer(context.Background(), "p1")
+	item, err := service.SubscribePerformer(context.Background(), "p1")
 	if err != nil {
-		t.Fatalf("FollowPerformer failed: %v", err)
+		t.Fatalf("SubscribePerformer failed: %v", err)
 	}
-	if !item.Performer.Followed {
-		t.Fatalf("expected performer to be followed")
+	if !item.Performer.Subscribed {
+		t.Fatalf("expected performer to be subscribed")
 	}
 
-	if err := service.UnfollowPerformer(context.Background(), "p1"); err != nil {
-		t.Fatalf("UnfollowPerformer failed: %v", err)
+	if err := service.UnsubscribePerformer(context.Background(), "p1"); err != nil {
+		t.Fatalf("UnsubscribePerformer failed: %v", err)
 	}
 	if customFieldTruthy(stashClient.performers["p1"].CustomFields, DefaultCustomFieldKey) {
 		t.Fatalf("expected custom field to be removed")
@@ -161,7 +161,7 @@ func TestRefreshPerformerStoresPendingReleasesWithoutDownloader(t *testing.T) {
 		t.Fatalf("NewService failed: %v", err)
 	}
 
-	item, err := service.RefreshPerformer(context.Background(), "p1")
+	item, err := service.RefreshSubscribedPerformer(context.Background(), "p1")
 	if err != nil {
 		t.Fatalf("RefreshPerformer failed: %v", err)
 	}

@@ -1,4 +1,4 @@
-package following
+package subscription
 
 import (
 	"context"
@@ -22,7 +22,7 @@ type jsonStoreFile struct {
 
 func NewJSONStore(path string) (*JSONStore, error) {
 	if path == "" {
-		return nil, errors.New("following: json store path is required")
+		return nil, errors.New("subscription: json store path is required")
 	}
 
 	store := &JSONStore{
@@ -80,7 +80,7 @@ func (s *JSONStore) load() error {
 		if errors.Is(err, os.ErrNotExist) {
 			return nil
 		}
-		return fmt.Errorf("read following store %q: %w", s.path, err)
+		return fmt.Errorf("read subscription store %q: %w", s.path, err)
 	}
 	if len(data) == 0 {
 		return nil
@@ -88,7 +88,7 @@ func (s *JSONStore) load() error {
 
 	var file jsonStoreFile
 	if err := json.Unmarshal(data, &file); err != nil {
-		return fmt.Errorf("parse following store %q: %w", s.path, err)
+		return fmt.Errorf("parse subscription store %q: %w", s.path, err)
 	}
 	for _, state := range file.Performers {
 		if state != nil && state.PerformerID != "" {
@@ -111,33 +111,33 @@ func (s *JSONStore) saveLocked(ctx context.Context) error {
 
 	data, err := json.MarshalIndent(jsonStoreFile{Performers: states}, "", "  ")
 	if err != nil {
-		return fmt.Errorf("encode following store: %w", err)
+		return fmt.Errorf("encode subscription store: %w", err)
 	}
 	data = append(data, '\n')
 
 	dir := filepath.Dir(s.path)
 	if dir != "." {
 		if err := os.MkdirAll(dir, 0o755); err != nil {
-			return fmt.Errorf("create following store dir %q: %w", dir, err)
+			return fmt.Errorf("create subscription store dir %q: %w", dir, err)
 		}
 	}
 
-	tmp, err := os.CreateTemp(dir, ".moji-following-*.json")
+	tmp, err := os.CreateTemp(dir, ".moji-subscription-*.json")
 	if err != nil {
-		return fmt.Errorf("create following store temp file: %w", err)
+		return fmt.Errorf("create subscription store temp file: %w", err)
 	}
 	tmpPath := tmp.Name()
 	defer os.Remove(tmpPath)
 
 	if _, err := tmp.Write(data); err != nil {
 		_ = tmp.Close()
-		return fmt.Errorf("write following store temp file: %w", err)
+		return fmt.Errorf("write subscription store temp file: %w", err)
 	}
 	if err := tmp.Close(); err != nil {
-		return fmt.Errorf("close following store temp file: %w", err)
+		return fmt.Errorf("close subscription store temp file: %w", err)
 	}
 	if err := os.Rename(tmpPath, s.path); err != nil {
-		return fmt.Errorf("replace following store %q: %w", s.path, err)
+		return fmt.Errorf("replace subscription store %q: %w", s.path, err)
 	}
 	return nil
 }

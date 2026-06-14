@@ -671,7 +671,7 @@ input::placeholder {
   grid-template-columns: minmax(220px, 1.3fr) repeat(2, minmax(130px, 180px)) auto auto auto;
 }
 
-.toolbar-inline--following {
+.toolbar-inline--subscription {
   grid-template-columns: minmax(220px, 1.3fr) minmax(120px, 150px) repeat(2, minmax(150px, 180px));
   margin-bottom: 14px;
 }
@@ -1444,7 +1444,7 @@ button.profile-icon:disabled {
 
   .discovery-bar,
   .toolbar-inline,
-  .toolbar-inline--following,
+  .toolbar-inline--subscription,
   .help-layout {
     grid-template-columns: 1fr;
   }

@@ -42,13 +42,13 @@ func (s StashConfig) GraphQLEndpoint() string {
 
 type TaskConfig struct {
 	Store                       string `yaml:"store"`
-	JSONPath                    string `yaml:"json_path"`
+	DBPath                      string `yaml:"db_path"`
 	ProgressSyncIntervalSeconds int    `yaml:"progress_sync_interval_seconds"`
 }
 
-type FollowingConfig struct {
+type SubscriptionConfig struct {
 	Store               string `yaml:"store"`
-	JSONPath            string `yaml:"json_path"`
+	DBPath              string `yaml:"db_path"`
 	PollIntervalSeconds int    `yaml:"poll_interval_seconds"`
 	JAVStashAPIKey      string `yaml:"javstash_api_key"`
 }
@@ -63,12 +63,12 @@ type LoggingConfig struct {
 
 type Config struct {
 	// Jackett is the configuration for the Jackett service
-	Jackett     JackettConfig     `yaml:"jackett"`
-	QBittorrent QBittorrentConfig `yaml:"qbittorrent"`
-	Stash       StashConfig       `yaml:"stash"`
-	Tasks       TaskConfig        `yaml:"tasks"`
-	Following   FollowingConfig   `yaml:"following"`
-	Logging     LoggingConfig     `yaml:"logging"`
+	Jackett      JackettConfig      `yaml:"jackett"`
+	QBittorrent  QBittorrentConfig  `yaml:"qbittorrent"`
+	Stash        StashConfig        `yaml:"stash"`
+	Tasks        TaskConfig         `yaml:"tasks"`
+	Subscription SubscriptionConfig `yaml:"subscription"`
+	Logging      LoggingConfig      `yaml:"logging"`
 
 	path string
 }

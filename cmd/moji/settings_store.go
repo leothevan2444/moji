@@ -80,22 +80,22 @@ func (s *runtimeSettingsEditor) UpdateQBittorrentSettings(input graphqlapi.Updat
 	return buildSettingsSnapshot(cfg, s.version, s.qbittorrentEnabled, s.downloaderEnabled, s.stashEnabled), nil
 }
 
-func (s *runtimeSettingsEditor) UpdateFollowingSettings(input graphqlapi.UpdateFollowingSettingsInput) (*graphqlapi.SettingsSnapshot, error) {
-	cfg, err := s.store.UpdateFollowing(
+func (s *runtimeSettingsEditor) UpdateSubscriptionSettings(input graphqlapi.UpdateSubscriptionSettingsInput) (*graphqlapi.SettingsSnapshot, error) {
+	cfg, err := s.store.UpdateSubscription(
 		strings.TrimSpace(input.Store),
-		strings.TrimSpace(input.JSONPath),
+		strings.TrimSpace(input.DBPath),
 		input.PollIntervalSeconds,
 		trimOptionalSecret(input.JAVStashAPIKey),
 	)
 	if err != nil {
-		logging.Errorf("settings: save following settings failed: %v", err)
+		logging.Errorf("settings: save subscription settings failed: %v", err)
 		return nil, err
 	}
 	logging.Infof(
-		"settings: following settings saved for store=%s json_path=%s poll_interval=%d",
-		cfg.Following.Store,
-		cfg.Following.JSONPath,
-		cfg.Following.PollIntervalSeconds,
+		"settings: subscription settings saved for store=%s db_path=%s poll_interval=%d",
+		cfg.Subscription.Store,
+		cfg.Subscription.DBPath,
+		cfg.Subscription.PollIntervalSeconds,
 	)
 	return buildSettingsSnapshot(cfg, s.version, s.qbittorrentEnabled, s.downloaderEnabled, s.stashEnabled), nil
 }

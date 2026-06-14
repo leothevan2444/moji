@@ -39,13 +39,13 @@ query DashboardDocument {
     }
     tasks {
       store
-      jsonPath
+      dbPath
       progressSyncIntervalSeconds
       progressSyncEnabled
     }
-    following {
+    subscription {
       store
-      jsonPath
+      dbPath
       pollIntervalSeconds
       pollEnabled
       javstashEnabled

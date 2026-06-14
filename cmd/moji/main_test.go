@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 	"time"
@@ -92,8 +93,8 @@ func TestHTTPHandlerServesSettingsSnapshot(t *testing.T) {
 			jackett { configured enabled url apiKeyConfigured }
 			qbittorrent { configured enabled url usernameConfigured passwordConfigured defaultSavePath }
 			stash { configured enabled url apiKeyConfigured libraryPath }
-			tasks { store jsonPath progressSyncIntervalSeconds progressSyncEnabled }
-			following { store jsonPath pollIntervalSeconds pollEnabled javstashEnabled javstashApiKeyConfigured }
+			tasks { store dbPath progressSyncIntervalSeconds progressSyncEnabled }
+			subscription { store dbPath pollIntervalSeconds pollEnabled javstashEnabled javstashApiKeyConfigured }
 			logging { level filePath maxEntries maxFileSizeBytes maxFileBackups }
 			system { appVersion }
 		}
@@ -104,11 +105,11 @@ func TestHTTPHandlerServesSettingsSnapshot(t *testing.T) {
 	if !resp.Data.Settings.Jackett.Configured || !resp.Data.Settings.Jackett.Enabled {
 		t.Fatalf("expected jackett settings to be enabled, got %+v", resp.Data.Settings.Jackett)
 	}
-	if resp.Data.Settings.Tasks.Store != "json" || resp.Data.Settings.Tasks.ProgressSyncIntervalSeconds != 60 {
+	if resp.Data.Settings.Tasks.Store != "sqlite" || resp.Data.Settings.Tasks.ProgressSyncIntervalSeconds != 60 {
 		t.Fatalf("unexpected task settings: %+v", resp.Data.Settings.Tasks)
 	}
-	if resp.Data.Settings.Following.Store != "json" || !resp.Data.Settings.Following.PollEnabled || resp.Data.Settings.Following.JavstashEnabled {
-		t.Fatalf("unexpected following settings: %+v", resp.Data.Settings.Following)
+	if resp.Data.Settings.Subscription.Store != "sqlite" || !resp.Data.Settings.Subscription.PollEnabled || resp.Data.Settings.Subscription.JavstashEnabled {
+		t.Fatalf("unexpected subscription settings: %+v", resp.Data.Settings.Subscription)
 	}
 	if resp.Data.Settings.Logging.Level != "info" || resp.Data.Settings.Logging.MaxEntries != 500 {
 		t.Fatalf("unexpected logging settings: %+v", resp.Data.Settings.Logging)
@@ -176,19 +177,21 @@ func TestConfigureProgressSyncInterval(t *testing.T) {
 
 func TestBuildSettingsSnapshotNormalizesDefaults(t *testing.T) {
 	cfg := testConfig()
+	cfg.Tasks.DBPath = ""
+	cfg.Subscription.DBPath = ""
 
 	snapshot := buildSettingsSnapshot(cfg, "test-version", false, false, false)
 	if snapshot.Jackett.URL != "http://jackett.invalid" || !snapshot.Jackett.APIKeyConfigured {
 		t.Fatalf("unexpected jackett snapshot: %+v", snapshot.Jackett)
 	}
-	if snapshot.Tasks.Store != "json" || snapshot.Tasks.JSONPath != "moji-tasks.json" {
+	if snapshot.Tasks.Store != "sqlite" || snapshot.Tasks.DBPath != "moji.db" {
 		t.Fatalf("unexpected task store snapshot: %+v", snapshot.Tasks)
 	}
 	if snapshot.Tasks.ProgressSyncIntervalSeconds != 60 || snapshot.Tasks.ProgressSyncEnabled {
 		t.Fatalf("unexpected task sync snapshot: %+v", snapshot.Tasks)
 	}
-	if snapshot.Following.Store != "json" || snapshot.Following.JSONPath != "moji-following.json" || snapshot.Following.PollIntervalSeconds != 3600 || snapshot.Following.PollEnabled || snapshot.Following.JAVStashEnabled {
-		t.Fatalf("unexpected following snapshot: %+v", snapshot.Following)
+	if snapshot.Subscription.Store != "sqlite" || snapshot.Subscription.DBPath != "moji.db" || snapshot.Subscription.PollIntervalSeconds != 3600 || snapshot.Subscription.PollEnabled || snapshot.Subscription.JAVStashEnabled {
+		t.Fatalf("unexpected subscription snapshot: %+v", snapshot.Subscription)
 	}
 	if snapshot.Logging.Level != "info" || snapshot.Logging.MaxEntries != 500 || snapshot.Logging.MaxFileBackups != 5 {
 		t.Fatalf("unexpected logging snapshot: %+v", snapshot.Logging)
@@ -257,18 +260,18 @@ type graphQLResponse struct {
 			} `json:"qbittorrent"`
 			Tasks struct {
 				Store                       string `json:"store"`
-				JSONPath                    string `json:"jsonPath"`
+				DBPath                      string `json:"dbPath"`
 				ProgressSyncIntervalSeconds int    `json:"progressSyncIntervalSeconds"`
 				ProgressSyncEnabled         bool   `json:"progressSyncEnabled"`
 			} `json:"tasks"`
-			Following struct {
+			Subscription struct {
 				Store                    string `json:"store"`
-				JSONPath                 string `json:"jsonPath"`
+				DBPath                   string `json:"dbPath"`
 				PollIntervalSeconds      int    `json:"pollIntervalSeconds"`
 				PollEnabled              bool   `json:"pollEnabled"`
 				JavstashEnabled          bool   `json:"javstashEnabled"`
 				JavstashAPIKeyConfigured bool   `json:"javstashApiKeyConfigured"`
-			} `json:"following"`
+			} `json:"subscription"`
 			Logging struct {
 				Level            string `json:"level"`
 				FilePath         string `json:"filePath"`
@@ -311,6 +314,8 @@ func testConfig() *config.Config {
 	cfg.Jackett.URL = "http://jackett.invalid"
 	cfg.Jackett.APIKey = "test-api-key"
 	cfg.Stash.URL = "http://stash.invalid"
+	cfg.Tasks.DBPath = filepath.Join(os.TempDir(), "moji-test.db")
+	cfg.Subscription.DBPath = filepath.Join(os.TempDir(), "moji-test.db")
 	return &cfg
 }
 

@@ -40,36 +40,6 @@ type DownloadMediaInput struct {
 	Paused     *bool    `json:"paused,omitempty"`
 }
 
-type FollowingPerformer struct {
-	Performer             *StashPerformer     `json:"performer"`
-	LastCheckedAt         *string             `json:"lastCheckedAt,omitempty"`
-	LastError             *string             `json:"lastError,omitempty"`
-	PendingReleaseCount   int                 `json:"pendingReleaseCount"`
-	ProcessedReleaseCount int                 `json:"processedReleaseCount"`
-	RecentReleases        []*FollowingRelease `json:"recentReleases"`
-}
-
-type FollowingRelease struct {
-	Key    string  `json:"key"`
-	Source string  `json:"source"`
-	Title  string  `json:"title"`
-	Code   *string `json:"code,omitempty"`
-	Date   *string `json:"date,omitempty"`
-	URL    *string `json:"url,omitempty"`
-	Query  string  `json:"query"`
-	TaskID *string `json:"taskID,omitempty"`
-	SeenAt string  `json:"seenAt"`
-}
-
-type FollowingSettings struct {
-	Store                    string `json:"store"`
-	JSONPath                 string `json:"jsonPath"`
-	PollIntervalSeconds      int    `json:"pollIntervalSeconds"`
-	PollEnabled              bool   `json:"pollEnabled"`
-	JavstashEnabled          bool   `json:"javstashEnabled"`
-	JavstashAPIKeyConfigured bool   `json:"javstashApiKeyConfigured"`
-}
-
 // Basic service health
 type Health struct {
 	Ok      bool   `json:"ok"`
@@ -159,13 +129,13 @@ type Query struct {
 }
 
 type Settings struct {
-	Stash       *StashSettings       `json:"stash"`
-	Jackett     *JackettSettings     `json:"jackett"`
-	Qbittorrent *QBittorrentSettings `json:"qbittorrent"`
-	Tasks       *TaskSettings        `json:"tasks"`
-	Following   *FollowingSettings   `json:"following"`
-	Logging     *LoggingSettings     `json:"logging"`
-	System      *SystemSettings      `json:"system"`
+	Stash        *StashSettings        `json:"stash"`
+	Jackett      *JackettSettings      `json:"jackett"`
+	Qbittorrent  *QBittorrentSettings  `json:"qbittorrent"`
+	Tasks        *TaskSettings         `json:"tasks"`
+	Subscription *SubscriptionSettings `json:"subscription"`
+	Logging      *LoggingSettings      `json:"logging"`
+	System       *SystemSettings       `json:"system"`
 }
 
 type StashJob struct {
@@ -199,7 +169,7 @@ type StashPerformer struct {
 	Favorite   bool     `json:"favorite"`
 	ImagePath  *string  `json:"imagePath,omitempty"`
 	SceneCount int      `json:"sceneCount"`
-	Followed   bool     `json:"followed"`
+	Subscribed bool     `json:"subscribed"`
 }
 
 type StashPerformerConnection struct {
@@ -218,6 +188,36 @@ type StashSettings struct {
 	URL              string `json:"url"`
 	APIKeyConfigured bool   `json:"apiKeyConfigured"`
 	LibraryPath      string `json:"libraryPath"`
+}
+
+type SubscribedPerformer struct {
+	Performer             *StashPerformer        `json:"performer"`
+	LastCheckedAt         *string                `json:"lastCheckedAt,omitempty"`
+	LastError             *string                `json:"lastError,omitempty"`
+	PendingReleaseCount   int                    `json:"pendingReleaseCount"`
+	ProcessedReleaseCount int                    `json:"processedReleaseCount"`
+	RecentReleases        []*SubscriptionRelease `json:"recentReleases"`
+}
+
+type SubscriptionRelease struct {
+	Key    string  `json:"key"`
+	Source string  `json:"source"`
+	Title  string  `json:"title"`
+	Code   *string `json:"code,omitempty"`
+	Date   *string `json:"date,omitempty"`
+	URL    *string `json:"url,omitempty"`
+	Query  string  `json:"query"`
+	TaskID *string `json:"taskID,omitempty"`
+	SeenAt string  `json:"seenAt"`
+}
+
+type SubscriptionSettings struct {
+	Store                    string `json:"store"`
+	DBPath                   string `json:"dbPath"`
+	PollIntervalSeconds      int    `json:"pollIntervalSeconds"`
+	PollEnabled              bool   `json:"pollEnabled"`
+	JavstashEnabled          bool   `json:"javstashEnabled"`
+	JavstashAPIKeyConfigured bool   `json:"javstashApiKeyConfigured"`
 }
 
 type SystemSettings struct {
@@ -250,16 +250,9 @@ type Task struct {
 
 type TaskSettings struct {
 	Store                       string `json:"store"`
-	JSONPath                    string `json:"jsonPath"`
+	DBPath                      string `json:"dbPath"`
 	ProgressSyncIntervalSeconds int    `json:"progressSyncIntervalSeconds"`
 	ProgressSyncEnabled         bool   `json:"progressSyncEnabled"`
-}
-
-type UpdateFollowingSettingsInput struct {
-	Store               string  `json:"store"`
-	JSONPath            string  `json:"jsonPath"`
-	PollIntervalSeconds int     `json:"pollIntervalSeconds"`
-	JavstashAPIKey      *string `json:"javstashApiKey,omitempty"`
 }
 
 type UpdateJackettSettingsInput struct {
@@ -288,6 +281,13 @@ type UpdateStashSettingsInput struct {
 	URL         string  `json:"url"`
 	APIKey      *string `json:"apiKey,omitempty"`
 	LibraryPath string  `json:"libraryPath"`
+}
+
+type UpdateSubscriptionSettingsInput struct {
+	Store               string  `json:"store"`
+	DBPath              string  `json:"dbPath"`
+	PollIntervalSeconds int     `json:"pollIntervalSeconds"`
+	JavstashAPIKey      *string `json:"javstashApiKey,omitempty"`
 }
 
 type LogLevel string

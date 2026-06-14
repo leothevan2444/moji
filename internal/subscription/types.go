@@ -1,8 +1,8 @@
-package following
+package subscription
 
 import "time"
 
-const DefaultCustomFieldKey = "moji_following"
+const DefaultCustomFieldKey = "moji_subscribed"
 
 type Performer struct {
 	ID         string
@@ -11,7 +11,7 @@ type Performer struct {
 	Favorite   bool
 	ImagePath  string
 	SceneCount int
-	Followed   bool
+	Subscribed bool
 }
 
 type Release struct {
@@ -44,7 +44,7 @@ type PerformerState struct {
 	PendingReleases   []RecordedRelease `json:"pending_releases,omitempty"`
 }
 
-type FollowingPerformer struct {
+type SubscribedPerformer struct {
 	Performer             Performer
 	LastCheckedAt         *time.Time
 	LastError             string

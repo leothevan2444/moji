@@ -8,9 +8,9 @@ import (
 	"context"
 
 	"github.com/leothevan2444/moji/internal/downloader"
-	"github.com/leothevan2444/moji/internal/following"
 	"github.com/leothevan2444/moji/internal/logging"
 	"github.com/leothevan2444/moji/internal/stashsync"
+	"github.com/leothevan2444/moji/internal/subscription"
 	"github.com/leothevan2444/moji/internal/tracker"
 	"github.com/leothevan2444/moji/pkg/qbittorrent"
 )
@@ -40,7 +40,7 @@ type SettingsEditor interface {
 	UpdateStashSettings(input UpdateStashSettingsInput) (*SettingsSnapshot, error)
 	UpdateJackettSettings(input UpdateJackettSettingsInput) (*SettingsSnapshot, error)
 	UpdateQBittorrentSettings(input UpdateQBittorrentSettingsInput) (*SettingsSnapshot, error)
-	UpdateFollowingSettings(input UpdateFollowingSettingsInput) (*SettingsSnapshot, error)
+	UpdateSubscriptionSettings(input UpdateSubscriptionSettingsInput) (*SettingsSnapshot, error)
 	UpdateLoggingSettings(input UpdateLoggingSettingsInput) (*SettingsSnapshot, error)
 }
 
@@ -64,9 +64,9 @@ type UpdateQBittorrentSettingsInput struct {
 	Tags            string
 }
 
-type UpdateFollowingSettingsInput struct {
+type UpdateSubscriptionSettingsInput struct {
 	Store               string
-	JSONPath            string
+	DBPath              string
 	PollIntervalSeconds int
 	JAVStashAPIKey      *string
 }
@@ -80,13 +80,13 @@ type UpdateLoggingSettingsInput struct {
 }
 
 type SettingsSnapshot struct {
-	Stash       StashSettingsSnapshot
-	Jackett     JackettSettingsSnapshot
-	QBittorrent QBittorrentSettingsSnapshot
-	Tasks       TaskSettingsSnapshot
-	Following   FollowingSettingsSnapshot
-	Logging     LoggingSettingsSnapshot
-	System      SystemSettingsSnapshot
+	Stash        StashSettingsSnapshot
+	Jackett      JackettSettingsSnapshot
+	QBittorrent  QBittorrentSettingsSnapshot
+	Tasks        TaskSettingsSnapshot
+	Subscription SubscriptionSettingsSnapshot
+	Logging      LoggingSettingsSnapshot
+	System       SystemSettingsSnapshot
 }
 
 type StashSettingsSnapshot struct {
@@ -118,14 +118,14 @@ type QBittorrentSettingsSnapshot struct {
 
 type TaskSettingsSnapshot struct {
 	Store                       string
-	JSONPath                    string
+	DBPath                      string
 	ProgressSyncIntervalSeconds int
 	ProgressSyncEnabled         bool
 }
 
-type FollowingSettingsSnapshot struct {
+type SubscriptionSettingsSnapshot struct {
 	Store                    string
-	JSONPath                 string
+	DBPath                   string
 	PollIntervalSeconds      int
 	PollEnabled              bool
 	JAVStashEnabled          bool
@@ -141,7 +141,7 @@ type LoggingSettingsSnapshot struct {
 }
 
 type StashPerformerPage struct {
-	Items       []following.Performer
+	Items       []subscription.Performer
 	Page        int
 	PageSize    int
 	TotalCount  int
@@ -154,13 +154,13 @@ type SystemSettingsSnapshot struct {
 	AppVersion string
 }
 
-type FollowingService interface {
-	ListStashPerformers(ctx context.Context, search string) ([]following.Performer, error)
-	ListFollowingPerformers(ctx context.Context) ([]following.FollowingPerformer, error)
-	FollowPerformer(ctx context.Context, performerID string) (following.FollowingPerformer, error)
-	UnfollowPerformer(ctx context.Context, performerID string) error
-	RefreshPerformer(ctx context.Context, performerID string) (following.FollowingPerformer, error)
-	RefreshAll(ctx context.Context) ([]following.FollowingPerformer, error)
+type SubscriptionService interface {
+	ListStashPerformers(ctx context.Context, search string) ([]subscription.Performer, error)
+	ListSubscribedPerformers(ctx context.Context) ([]subscription.SubscribedPerformer, error)
+	SubscribePerformer(ctx context.Context, performerID string) (subscription.SubscribedPerformer, error)
+	UnsubscribePerformer(ctx context.Context, performerID string) error
+	RefreshSubscribedPerformer(ctx context.Context, performerID string) (subscription.SubscribedPerformer, error)
+	RefreshAll(ctx context.Context) ([]subscription.SubscribedPerformer, error)
 }
 
 type LogReader interface {
@@ -172,7 +172,7 @@ type Resolver struct {
 	Torrent         TorrentClient
 	Downloader      DownloaderService
 	Stash           StashService
-	Following       FollowingService
+	Subscription    SubscriptionService
 	LogReader       LogReader
 	SettingsEditor  SettingsEditor
 	RuntimeSettings *SettingsSnapshot

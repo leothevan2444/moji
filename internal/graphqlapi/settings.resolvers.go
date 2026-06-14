@@ -70,16 +70,16 @@ func (r *mutationResolver) UpdateQBittorrentSettings(ctx context.Context, input 
 	return settingsSnapshotToModel(snapshot, r.AppVersion), nil
 }
 
-// UpdateFollowingSettings is the resolver for the updateFollowingSettings field.
-func (r *mutationResolver) UpdateFollowingSettings(ctx context.Context, input model.UpdateFollowingSettingsInput) (*model.Settings, error) {
+// UpdateSubscriptionSettings is the resolver for the updateSubscriptionSettings field.
+func (r *mutationResolver) UpdateSubscriptionSettings(ctx context.Context, input model.UpdateSubscriptionSettingsInput) (*model.Settings, error) {
 	_ = ctx
 	if r.SettingsEditor == nil {
 		return nil, errors.New("settings editor is not configured")
 	}
 
-	snapshot, err := r.SettingsEditor.UpdateFollowingSettings(UpdateFollowingSettingsInput{
+	snapshot, err := r.SettingsEditor.UpdateSubscriptionSettings(UpdateSubscriptionSettingsInput{
 		Store:               input.Store,
-		JSONPath:            input.JSONPath,
+		DBPath:              input.DBPath,
 		PollIntervalSeconds: input.PollIntervalSeconds,
 		JAVStashAPIKey:      input.JavstashAPIKey,
 	})

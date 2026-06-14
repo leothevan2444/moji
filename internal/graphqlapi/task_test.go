@@ -11,10 +11,10 @@ import (
 
 	"github.com/99designs/gqlgen/graphql/handler"
 	"github.com/leothevan2444/moji/internal/downloader"
-	"github.com/leothevan2444/moji/internal/following"
 	"github.com/leothevan2444/moji/internal/graphqlapi/generated"
 	"github.com/leothevan2444/moji/internal/logging"
 	"github.com/leothevan2444/moji/internal/stashsync"
+	"github.com/leothevan2444/moji/internal/subscription"
 )
 
 func TestDownloadMediaCreatesTask(t *testing.T) {
@@ -155,17 +155,17 @@ func TestTasksQueryWithoutDownloaderReturnsEmptyList(t *testing.T) {
 
 func TestStashPerformersQueryPaginatesResults(t *testing.T) {
 	resolver := NewResolver(nil, nil, nil, nil, "test-version")
-	resolver.Following = &fakeFollowingService{
-		performers: []following.Performer{
-			{ID: "performer-1", Name: "Alice", Followed: true},
-			{ID: "performer-2", Name: "Beth", Followed: false},
-			{ID: "performer-3", Name: "Clara", Followed: false},
+	resolver.Subscription = &fakeSubscriptionService{
+		performers: []subscription.Performer{
+			{ID: "performer-1", Name: "Alice", Subscribed: true},
+			{ID: "performer-2", Name: "Beth", Subscribed: false},
+			{ID: "performer-3", Name: "Clara", Subscribed: false},
 		},
 	}
 
 	resp := executeGraphQL(t, resolver, `{
 		stashPerformers(page: 2, pageSize: 2) {
-			items { id name followed }
+			items { id name subscribed }
 			page
 			pageSize
 			totalCount
@@ -419,8 +419,8 @@ func TestSettingsQueryReturnsRuntimeSnapshot(t *testing.T) {
 			Tags:               "auto",
 		},
 		Tasks: TaskSettingsSnapshot{
-			Store:                       "json",
-			JSONPath:                    "moji-tasks.json",
+			Store:                       "sqlite",
+			DBPath:                      "moji.db",
 			ProgressSyncIntervalSeconds: 60,
 			ProgressSyncEnabled:         true,
 		},
@@ -441,7 +441,7 @@ func TestSettingsQueryReturnsRuntimeSnapshot(t *testing.T) {
 			stash { configured enabled url apiKeyConfigured libraryPath }
 			jackett { configured enabled url apiKeyConfigured }
 			qbittorrent { configured enabled url username usernameConfigured passwordConfigured defaultSavePath category tags }
-			tasks { store jsonPath progressSyncIntervalSeconds progressSyncEnabled }
+			tasks { store dbPath progressSyncIntervalSeconds progressSyncEnabled }
 			logging { level filePath maxEntries maxFileSizeBytes maxFileBackups }
 			system { appVersion }
 		}
@@ -518,9 +518,9 @@ func TestSettingsQueryUsesSettingsEditorSnapshot(t *testing.T) {
 	}
 	resolver.SettingsEditor = &fakeSettingsEditor{
 		snapshot: &SettingsSnapshot{
-			Following: FollowingSettingsSnapshot{
-				Store:               "json",
-				JSONPath:            "moji-following.json",
+			Subscription: SubscriptionSettingsSnapshot{
+				Store:               "sqlite",
+				DBPath:              "moji.db",
 				PollIntervalSeconds: 3600,
 				PollEnabled:         true,
 				JAVStashEnabled:     true,
@@ -540,12 +540,12 @@ func TestSettingsQueryUsesSettingsEditorSnapshot(t *testing.T) {
 		},
 	}
 
-	resp := executeGraphQL(t, resolver, `{ settings { following { store jsonPath pollIntervalSeconds pollEnabled javstashEnabled } qbittorrent { url username } logging { level filePath maxEntries maxFileBackups } system { appVersion } } }`)
+	resp := executeGraphQL(t, resolver, `{ settings { subscription { store dbPath pollIntervalSeconds pollEnabled javstashEnabled } qbittorrent { url username } logging { level filePath maxEntries maxFileBackups } system { appVersion } } }`)
 	if len(resp.Errors) > 0 {
 		t.Fatalf("expected no errors, got %+v", resp.Errors)
 	}
-	if resp.Data.Settings.Following.Store != "json" || !resp.Data.Settings.Following.PollEnabled {
-		t.Fatalf("unexpected following settings: %+v", resp.Data.Settings.Following)
+	if resp.Data.Settings.Subscription.Store != "sqlite" || !resp.Data.Settings.Subscription.PollEnabled {
+		t.Fatalf("unexpected subscription settings: %+v", resp.Data.Settings.Subscription)
 	}
 	if resp.Data.Settings.Qbittorrent.Username != "editor-user" {
 		t.Fatalf("unexpected qbittorrent settings: %+v", resp.Data.Settings.Qbittorrent)
@@ -597,12 +597,12 @@ func TestUpdateStashSettingsMutation(t *testing.T) {
 	}
 }
 
-func TestUpdateFollowingSettingsMutation(t *testing.T) {
+func TestUpdateSubscriptionSettingsMutation(t *testing.T) {
 	editor := &fakeSettingsEditor{
-		updateFollowingSnapshot: &SettingsSnapshot{
-			Following: FollowingSettingsSnapshot{
-				Store:                    "json",
-				JSONPath:                 "state/following.json",
+		updateSubscriptionSnapshot: &SettingsSnapshot{
+			Subscription: SubscriptionSettingsSnapshot{
+				Store:                    "sqlite",
+				DBPath:                   "state/moji.db",
 				PollIntervalSeconds:      1800,
 				PollEnabled:              true,
 				JAVStashEnabled:          true,
@@ -615,15 +615,15 @@ func TestUpdateFollowingSettingsMutation(t *testing.T) {
 	resolver.SettingsEditor = editor
 
 	resp := executeGraphQL(t, resolver, `mutation {
-		updateFollowingSettings(input: {
-			store: "json"
-			jsonPath: "state/following.json"
+		updateSubscriptionSettings(input: {
+			store: "sqlite"
+			dbPath: "state/moji.db"
 			pollIntervalSeconds: 1800
 			javstashApiKey: "token"
 		}) {
-			following {
+			subscription {
 				store
-				jsonPath
+				dbPath
 				pollIntervalSeconds
 				pollEnabled
 				javstashApiKeyConfigured
@@ -633,17 +633,17 @@ func TestUpdateFollowingSettingsMutation(t *testing.T) {
 	if len(resp.Errors) > 0 {
 		t.Fatalf("expected no errors, got %+v", resp.Errors)
 	}
-	if editor.followingInput.Store != "json" || editor.followingInput.JSONPath != "state/following.json" {
-		t.Fatalf("unexpected following input: %+v", editor.followingInput)
+	if editor.subscriptionInput.Store != "sqlite" || editor.subscriptionInput.DBPath != "state/moji.db" {
+		t.Fatalf("unexpected subscription input: %+v", editor.subscriptionInput)
 	}
-	if editor.followingInput.PollIntervalSeconds != 1800 {
-		t.Fatalf("unexpected following interval: %+v", editor.followingInput)
+	if editor.subscriptionInput.PollIntervalSeconds != 1800 {
+		t.Fatalf("unexpected subscription interval: %+v", editor.subscriptionInput)
 	}
-	if editor.followingInput.JAVStashAPIKey == nil || *editor.followingInput.JAVStashAPIKey != "token" {
-		t.Fatalf("unexpected following api key: %+v", editor.followingInput.JAVStashAPIKey)
+	if editor.subscriptionInput.JAVStashAPIKey == nil || *editor.subscriptionInput.JAVStashAPIKey != "token" {
+		t.Fatalf("unexpected subscription api key: %+v", editor.subscriptionInput.JAVStashAPIKey)
 	}
-	if resp.Data.UpdateFollowingSettings.Following.JSONPath != "state/following.json" || !resp.Data.UpdateFollowingSettings.Following.JavstashAPIKeyConfigured {
-		t.Fatalf("unexpected following response: %+v", resp.Data.UpdateFollowingSettings.Following)
+	if resp.Data.UpdateSubscriptionSettings.Subscription.DBPath != "state/moji.db" || !resp.Data.UpdateSubscriptionSettings.Subscription.JavstashAPIKeyConfigured {
+		t.Fatalf("unexpected subscription response: %+v", resp.Data.UpdateSubscriptionSettings.Subscription)
 	}
 }
 
@@ -832,17 +832,17 @@ type graphQLTaskResponse struct {
 			} `json:"qbittorrent"`
 			Tasks struct {
 				Store                       string `json:"store"`
-				JSONPath                    string `json:"jsonPath"`
+				DBPath                      string `json:"dbPath"`
 				ProgressSyncIntervalSeconds int    `json:"progressSyncIntervalSeconds"`
 				ProgressSyncEnabled         bool   `json:"progressSyncEnabled"`
 			} `json:"tasks"`
-			Following struct {
+			Subscription struct {
 				Store               string `json:"store"`
-				JSONPath            string `json:"jsonPath"`
+				DBPath              string `json:"dbPath"`
 				PollIntervalSeconds int    `json:"pollIntervalSeconds"`
 				PollEnabled         bool   `json:"pollEnabled"`
 				JavstashEnabled     bool   `json:"javstashEnabled"`
-			} `json:"following"`
+			} `json:"subscription"`
 			Logging struct {
 				Level            string `json:"level"`
 				FilePath         string `json:"filePath"`
@@ -856,9 +856,9 @@ type graphQLTaskResponse struct {
 		} `json:"settings"`
 		StashPerformers struct {
 			Items []struct {
-				ID       string `json:"id"`
-				Name     string `json:"name"`
-				Followed bool   `json:"followed"`
+				ID         string `json:"id"`
+				Name       string `json:"name"`
+				Subscribed bool   `json:"subscribed"`
 			} `json:"items"`
 			Page        int  `json:"page"`
 			PageSize    int  `json:"pageSize"`
@@ -886,15 +886,15 @@ type graphQLTaskResponse struct {
 				LibraryPath      string `json:"libraryPath"`
 			} `json:"stash"`
 		} `json:"updateStashSettings"`
-		UpdateFollowingSettings struct {
-			Following struct {
+		UpdateSubscriptionSettings struct {
+			Subscription struct {
 				Store                    string `json:"store"`
-				JSONPath                 string `json:"jsonPath"`
+				DBPath                   string `json:"dbPath"`
 				PollIntervalSeconds      int    `json:"pollIntervalSeconds"`
 				PollEnabled              bool   `json:"pollEnabled"`
 				JavstashAPIKeyConfigured bool   `json:"javstashApiKeyConfigured"`
-			} `json:"following"`
-		} `json:"updateFollowingSettings"`
+			} `json:"subscription"`
+		} `json:"updateSubscriptionSettings"`
 		UpdateLoggingSettings struct {
 			Logging struct {
 				Level            string `json:"level"`
@@ -912,15 +912,15 @@ type graphQLTaskResponse struct {
 }
 
 type fakeSettingsEditor struct {
-	snapshot                  *SettingsSnapshot
-	stashInput                UpdateStashSettingsInput
-	updateStashSnapshot       *SettingsSnapshot
-	qbittorrentInput          UpdateQBittorrentSettingsInput
-	updateQBittorrentSnapshot *SettingsSnapshot
-	followingInput            UpdateFollowingSettingsInput
-	updateFollowingSnapshot   *SettingsSnapshot
-	loggingInput              UpdateLoggingSettingsInput
-	updateLoggingSnapshot     *SettingsSnapshot
+	snapshot                   *SettingsSnapshot
+	stashInput                 UpdateStashSettingsInput
+	updateStashSnapshot        *SettingsSnapshot
+	qbittorrentInput           UpdateQBittorrentSettingsInput
+	updateQBittorrentSnapshot  *SettingsSnapshot
+	subscriptionInput          UpdateSubscriptionSettingsInput
+	updateSubscriptionSnapshot *SettingsSnapshot
+	loggingInput               UpdateLoggingSettingsInput
+	updateLoggingSnapshot      *SettingsSnapshot
 }
 
 func (f *fakeSettingsEditor) Snapshot() *SettingsSnapshot {
@@ -941,9 +941,9 @@ func (f *fakeSettingsEditor) UpdateQBittorrentSettings(input UpdateQBittorrentSe
 	return f.updateQBittorrentSnapshot, nil
 }
 
-func (f *fakeSettingsEditor) UpdateFollowingSettings(input UpdateFollowingSettingsInput) (*SettingsSnapshot, error) {
-	f.followingInput = input
-	return f.updateFollowingSnapshot, nil
+func (f *fakeSettingsEditor) UpdateSubscriptionSettings(input UpdateSubscriptionSettingsInput) (*SettingsSnapshot, error) {
+	f.subscriptionInput = input
+	return f.updateSubscriptionSnapshot, nil
 }
 
 func (f *fakeSettingsEditor) UpdateLoggingSettings(input UpdateLoggingSettingsInput) (*SettingsSnapshot, error) {
@@ -977,8 +977,8 @@ func executeGraphQL(t *testing.T, resolver *Resolver, query string) graphQLTaskR
 
 type fakeStashService struct{}
 
-type fakeFollowingService struct {
-	performers []following.Performer
+type fakeSubscriptionService struct {
+	performers []subscription.Performer
 }
 
 type fakeLogReader struct {
@@ -992,27 +992,27 @@ func (f *fakeLogReader) Entries(limit int, _ string) []logging.Entry {
 	return append([]logging.Entry(nil), f.entries[:limit]...)
 }
 
-func (f *fakeFollowingService) ListStashPerformers(_ context.Context, _ string) ([]following.Performer, error) {
+func (f *fakeSubscriptionService) ListStashPerformers(_ context.Context, _ string) ([]subscription.Performer, error) {
 	return f.performers, nil
 }
 
-func (f *fakeFollowingService) ListFollowingPerformers(context.Context) ([]following.FollowingPerformer, error) {
+func (f *fakeSubscriptionService) ListSubscribedPerformers(context.Context) ([]subscription.SubscribedPerformer, error) {
 	return nil, nil
 }
 
-func (f *fakeFollowingService) FollowPerformer(context.Context, string) (following.FollowingPerformer, error) {
-	return following.FollowingPerformer{}, nil
+func (f *fakeSubscriptionService) SubscribePerformer(context.Context, string) (subscription.SubscribedPerformer, error) {
+	return subscription.SubscribedPerformer{}, nil
 }
 
-func (f *fakeFollowingService) UnfollowPerformer(context.Context, string) error {
+func (f *fakeSubscriptionService) UnsubscribePerformer(context.Context, string) error {
 	return nil
 }
 
-func (f *fakeFollowingService) RefreshPerformer(context.Context, string) (following.FollowingPerformer, error) {
-	return following.FollowingPerformer{}, nil
+func (f *fakeSubscriptionService) RefreshSubscribedPerformer(context.Context, string) (subscription.SubscribedPerformer, error) {
+	return subscription.SubscribedPerformer{}, nil
 }
 
-func (f *fakeFollowingService) RefreshAll(context.Context) ([]following.FollowingPerformer, error) {
+func (f *fakeSubscriptionService) RefreshAll(context.Context) ([]subscription.SubscribedPerformer, error) {
 	return nil, nil
 }
 

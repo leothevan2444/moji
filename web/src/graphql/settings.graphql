@@ -37,11 +37,11 @@ mutation UpdateQBittorrentSettingsDocument($input: UpdateQBittorrentSettingsInpu
   }
 }
 
-mutation UpdateFollowingSettingsDocument($input: UpdateFollowingSettingsInput!) {
-  updateFollowingSettings(input: $input) {
-    following {
+mutation UpdateSubscriptionSettingsDocument($input: UpdateSubscriptionSettingsInput!) {
+  updateSubscriptionSettings(input: $input) {
+    subscription {
       store
-      jsonPath
+      dbPath
       pollIntervalSeconds
       pollEnabled
       javstashEnabled

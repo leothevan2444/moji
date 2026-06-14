@@ -19,11 +19,11 @@ import (
 	"github.com/leothevan2444/moji/internal/config"
 	"github.com/leothevan2444/moji/internal/controller/api"
 	"github.com/leothevan2444/moji/internal/downloader"
-	"github.com/leothevan2444/moji/internal/following"
 	"github.com/leothevan2444/moji/internal/graphqlapi"
 	"github.com/leothevan2444/moji/internal/graphqlapi/generated"
 	"github.com/leothevan2444/moji/internal/logging"
 	"github.com/leothevan2444/moji/internal/stashsync"
+	"github.com/leothevan2444/moji/internal/subscription"
 	"github.com/leothevan2444/moji/internal/tracker"
 	"github.com/leothevan2444/moji/internal/webui"
 	"github.com/leothevan2444/moji/pkg/qbittorrent"
@@ -80,7 +80,7 @@ func main() {
 	}
 
 	// Dependencies
-	mux, downloaderService, stashService, followingService := newHTTPRuntime(cfg, "dev", configStore)
+	mux, downloaderService, stashService, subscriptionService := newHTTPRuntime(cfg, "dev", configStore)
 
 	server := &http.Server{
 		Addr:              *addr,
@@ -101,7 +101,7 @@ func main() {
 	defer stop()
 
 	startTaskSyncWorker(ctx, downloaderService, stashService, configureProgressSyncInterval(cfg))
-	startFollowingWorker(ctx, followingService, configureFollowingPollInterval(cfg))
+	startSubscriptionWorker(ctx, subscriptionService, configureSubscriptionPollInterval(cfg))
 
 	go func() {
 		<-ctx.Done()
@@ -122,7 +122,7 @@ func newHTTPHandler(cfg *config.Config, version string) http.Handler {
 	return handler
 }
 
-func newHTTPRuntime(cfg *config.Config, version string, configStore *config.Store) (http.Handler, graphqlapi.DownloaderService, graphqlapi.StashService, graphqlapi.FollowingService) {
+func newHTTPRuntime(cfg *config.Config, version string, configStore *config.Store) (http.Handler, graphqlapi.DownloaderService, graphqlapi.StashService, graphqlapi.SubscriptionService) {
 	jackettTracker := tracker.NewJackettService(cfg.Jackett.URL, cfg.Jackett.APIKey)
 	logging.Infof("runtime: jackett tracker configured for %s", cfg.Jackett.URL)
 	apiHandler := api.NewHandler(jackettTracker, api.WithLogFilePath(cfg.EffectiveLogFilePath()))
@@ -130,9 +130,9 @@ func newHTTPRuntime(cfg *config.Config, version string, configStore *config.Stor
 	downloaderService := configureDownloader(cfg, jackettTracker, torrentClient)
 	stashClient := configureStashClient(cfg)
 	stashService := configureStashService(cfg, stashClient)
-	followingService := configureFollowing(cfg, stashClient, downloaderService)
+	subscriptionService := configureSubscription(cfg, stashClient, downloaderService)
 	resolver := graphqlapi.NewResolver(jackettTracker, torrentClient, downloaderService, stashService, version)
-	resolver.Following = followingService
+	resolver.Subscription = subscriptionService
 	resolver.LogReader = logging.Default()
 	resolver.RuntimeSettings = buildSettingsSnapshot(cfg, version, torrentClient != nil, downloaderService != nil, stashService != nil)
 	if configStore != nil {
@@ -159,7 +159,7 @@ func newHTTPRuntime(cfg *config.Config, version string, configStore *config.Stor
 		}
 	})
 
-	return router, downloaderService, stashService, followingService
+	return router, downloaderService, stashService, subscriptionService
 }
 
 func configureQBittorrent(cfg *config.Config) graphqlapi.TorrentClient {
@@ -211,12 +211,12 @@ func configureDownloader(cfg *config.Config, tr tracker.Tracker, torrent graphql
 
 func configureTaskStore(cfg *config.Config) (downloader.TaskStore, error) {
 	switch cfg.Tasks.Store {
-	case "", "json":
-		path := cfg.Tasks.JSONPath
+	case "", "sqlite":
+		path := strings.TrimSpace(cfg.Tasks.DBPath)
 		if path == "" {
-			path = "moji-tasks.json"
+			path = "moji.db"
 		}
-		return downloader.NewJSONTaskStore(path)
+		return downloader.NewSQLiteTaskStore(path)
 	case "memory":
 		return downloader.NewMemoryTaskStore(), nil
 	default:
@@ -238,12 +238,12 @@ func configureProgressSyncInterval(cfg *config.Config) time.Duration {
 func buildSettingsSnapshot(cfg *config.Config, version string, qbittorrentEnabled bool, downloaderEnabled bool, stashEnabled bool) *graphqlapi.SettingsSnapshot {
 	tasksStore := cfg.Tasks.Store
 	if tasksStore == "" {
-		tasksStore = "json"
+		tasksStore = "sqlite"
 	}
 
-	jsonPath := cfg.Tasks.JSONPath
-	if jsonPath == "" {
-		jsonPath = "moji-tasks.json"
+	dbPath := cfg.Tasks.DBPath
+	if dbPath == "" {
+		dbPath = "moji.db"
 	}
 
 	progressSyncSeconds := cfg.Tasks.ProgressSyncIntervalSeconds
@@ -255,27 +255,27 @@ func buildSettingsSnapshot(cfg *config.Config, version string, qbittorrentEnable
 		progressSyncSeconds = 0
 	}
 
-	followingStore := cfg.Following.Store
-	if followingStore == "" {
-		followingStore = "json"
+	subscriptionStore := cfg.Subscription.Store
+	if subscriptionStore == "" {
+		subscriptionStore = "sqlite"
 	}
 
-	followingJSONPath := cfg.Following.JSONPath
-	if followingJSONPath == "" {
+	subscriptionDBPath := cfg.Subscription.DBPath
+	if subscriptionDBPath == "" {
 		dir := "."
-		if cfg.Tasks.JSONPath != "" {
-			dir = filepath.Dir(cfg.Tasks.JSONPath)
+		if cfg.Tasks.DBPath != "" {
+			dir = filepath.Dir(cfg.Tasks.DBPath)
 		}
-		followingJSONPath = filepath.Join(dir, "moji-following.json")
+		subscriptionDBPath = filepath.Join(dir, "moji.db")
 	}
 
-	followingPollSeconds := cfg.Following.PollIntervalSeconds
-	followingPollEnabled := followingPollSeconds >= 0
-	if followingPollSeconds == 0 {
-		followingPollSeconds = 3600
+	subscriptionPollSeconds := cfg.Subscription.PollIntervalSeconds
+	subscriptionPollEnabled := subscriptionPollSeconds >= 0
+	if subscriptionPollSeconds == 0 {
+		subscriptionPollSeconds = 3600
 	}
-	if followingPollSeconds < 0 {
-		followingPollSeconds = 0
+	if subscriptionPollSeconds < 0 {
+		subscriptionPollSeconds = 0
 	}
 
 	jackettConfigured := cfg.Jackett.URL != "" && cfg.Jackett.APIKey != ""
@@ -309,17 +309,17 @@ func buildSettingsSnapshot(cfg *config.Config, version string, qbittorrentEnable
 		},
 		Tasks: graphqlapi.TaskSettingsSnapshot{
 			Store:                       tasksStore,
-			JSONPath:                    jsonPath,
+			DBPath:                      dbPath,
 			ProgressSyncIntervalSeconds: progressSyncSeconds,
 			ProgressSyncEnabled:         progressSyncEnabled && downloaderEnabled,
 		},
-		Following: graphqlapi.FollowingSettingsSnapshot{
-			Store:                    followingStore,
-			JSONPath:                 followingJSONPath,
-			PollIntervalSeconds:      followingPollSeconds,
-			PollEnabled:              followingPollEnabled && stashEnabled,
-			JAVStashEnabled:          cfg.Following.JAVStashAPIKey != "",
-			JAVStashAPIKeyConfigured: cfg.Following.JAVStashAPIKey != "",
+		Subscription: graphqlapi.SubscriptionSettingsSnapshot{
+			Store:                    subscriptionStore,
+			DBPath:                   subscriptionDBPath,
+			PollIntervalSeconds:      subscriptionPollSeconds,
+			PollEnabled:              subscriptionPollEnabled && stashEnabled,
+			JAVStashEnabled:          cfg.Subscription.JAVStashAPIKey != "",
+			JAVStashAPIKeyConfigured: cfg.Subscription.JAVStashAPIKey != "",
 		},
 		Logging: graphqlapi.LoggingSettingsSnapshot{
 			Level:            cfg.EffectiveLogLevel(),
@@ -394,54 +394,54 @@ func configureStashService(cfg *config.Config, client *stash.Client) graphqlapi.
 	return service
 }
 
-func configureFollowing(cfg *config.Config, stashClient *stash.Client, downloaderService graphqlapi.DownloaderService) graphqlapi.FollowingService {
+func configureSubscription(cfg *config.Config, stashClient *stash.Client, downloaderService graphqlapi.DownloaderService) graphqlapi.SubscriptionService {
 	if stashClient == nil {
-		logging.Infof("runtime: following service disabled because stash client is not available")
+		logging.Infof("runtime: subscription service disabled because stash client is not available")
 		return nil
 	}
 
-	store, err := configureFollowingStore(cfg)
+	store, err := configureSubscriptionStore(cfg)
 	if err != nil {
-		logging.Fatalf("configure following store: %v", err)
+		logging.Fatalf("configure subscription store: %v", err)
 	}
 
 	var javstashClient *stashbox.Client
-	if strings.TrimSpace(cfg.Following.JAVStashAPIKey) != "" {
-		javstashClient = stashbox.NewClient(cfg.Following.JAVStashAPIKey)
-		logging.Infof("runtime: javstash client enabled for following checks")
+	if strings.TrimSpace(cfg.Subscription.JAVStashAPIKey) != "" {
+		javstashClient = stashbox.NewClient(cfg.Subscription.JAVStashAPIKey)
+		logging.Infof("runtime: javstash client enabled for subscription checks")
 	} else {
-		logging.Infof("runtime: javstash client disabled because following.javstash_api_key is empty")
+		logging.Infof("runtime: javstash client disabled because subscription.javstash_api_key is empty")
 	}
 
-	service, err := following.NewService(stashClient, javstashClient, downloaderService, store)
+	service, err := subscription.NewService(stashClient, javstashClient, downloaderService, store)
 	if err != nil {
-		logging.Fatalf("configure following: %v", err)
+		logging.Fatalf("configure subscription: %v", err)
 	}
-	logging.Infof("runtime: following service initialized")
+	logging.Infof("runtime: subscription service initialized")
 	return service
 }
 
-func configureFollowingStore(cfg *config.Config) (following.Store, error) {
-	switch cfg.Following.Store {
-	case "", "json":
-		path := cfg.Following.JSONPath
+func configureSubscriptionStore(cfg *config.Config) (subscription.Store, error) {
+	switch cfg.Subscription.Store {
+	case "", "sqlite":
+		path := strings.TrimSpace(cfg.Subscription.DBPath)
 		if path == "" {
 			dir := "."
-			if cfg.Tasks.JSONPath != "" {
-				dir = filepath.Dir(cfg.Tasks.JSONPath)
+			if cfg.Tasks.DBPath != "" {
+				dir = filepath.Dir(cfg.Tasks.DBPath)
 			}
-			path = filepath.Join(dir, "moji-following.json")
+			path = filepath.Join(dir, "moji.db")
 		}
-		return following.NewJSONStore(path)
+		return subscription.NewSQLiteStore(path)
 	case "memory":
-		return following.NewMemoryStore(), nil
+		return subscription.NewMemoryStore(), nil
 	default:
-		return nil, fmt.Errorf("unsupported following.store %q", cfg.Following.Store)
+		return nil, fmt.Errorf("unsupported subscription.store %q", cfg.Subscription.Store)
 	}
 }
 
-func configureFollowingPollInterval(cfg *config.Config) time.Duration {
-	seconds := cfg.Following.PollIntervalSeconds
+func configureSubscriptionPollInterval(cfg *config.Config) time.Duration {
+	seconds := cfg.Subscription.PollIntervalSeconds
 	if seconds < 0 {
 		return 0
 	}
@@ -451,16 +451,16 @@ func configureFollowingPollInterval(cfg *config.Config) time.Duration {
 	return time.Duration(seconds) * time.Second
 }
 
-func startFollowingWorker(ctx context.Context, service graphqlapi.FollowingService, interval time.Duration) {
+func startSubscriptionWorker(ctx context.Context, service graphqlapi.SubscriptionService, interval time.Duration) {
 	if service == nil || interval <= 0 {
 		if service == nil {
-			logging.Infof("runtime: following worker not started because following service is unavailable")
+			logging.Infof("runtime: subscription worker not started because subscription service is unavailable")
 		} else {
-			logging.Infof("runtime: following worker disabled by poll interval")
+			logging.Infof("runtime: subscription worker disabled by poll interval")
 		}
 		return
 	}
-	logging.Infof("runtime: starting following worker with interval %s", interval)
+	logging.Infof("runtime: starting subscription worker with interval %s", interval)
 
 	go func() {
 		ticker := time.NewTicker(interval)
@@ -473,7 +473,7 @@ func startFollowingWorker(ctx context.Context, service graphqlapi.FollowingServi
 			case <-ticker.C:
 				syncCtx, cancel := context.WithTimeout(ctx, 2*time.Minute)
 				if _, err := service.RefreshAll(syncCtx); err != nil && !errors.Is(err, context.Canceled) {
-					logging.Errorf("refresh following performers: %v", err)
+					logging.Errorf("refresh subscription performers: %v", err)
 				}
 				cancel()
 			}

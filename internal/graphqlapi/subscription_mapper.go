@@ -3,11 +3,11 @@ package graphqlapi
 import (
 	"time"
 
-	"github.com/leothevan2444/moji/internal/following"
 	"github.com/leothevan2444/moji/internal/graphqlapi/model"
+	"github.com/leothevan2444/moji/internal/subscription"
 )
 
-func stashPerformerToModel(performer following.Performer) *model.StashPerformer {
+func stashPerformerToModel(performer subscription.Performer) *model.StashPerformer {
 	aliases := append([]string(nil), performer.AliasList...)
 	return &model.StashPerformer{
 		ID:         performer.ID,
@@ -16,7 +16,7 @@ func stashPerformerToModel(performer following.Performer) *model.StashPerformer 
 		Favorite:   performer.Favorite,
 		ImagePath:  nilIfEmpty(performer.ImagePath),
 		SceneCount: performer.SceneCount,
-		Followed:   performer.Followed,
+		Subscribed: performer.Subscribed,
 	}
 }
 
@@ -37,13 +37,13 @@ func stashPerformerPageToModel(page StashPerformerPage) *model.StashPerformerCon
 	}
 }
 
-func followingPerformerToModel(item following.FollowingPerformer) *model.FollowingPerformer {
-	releases := make([]*model.FollowingRelease, 0, len(item.RecentReleases))
+func subscriptionPerformerToModel(item subscription.SubscribedPerformer) *model.SubscribedPerformer {
+	releases := make([]*model.SubscriptionRelease, 0, len(item.RecentReleases))
 	for _, release := range item.RecentReleases {
-		releases = append(releases, followingReleaseToModel(release))
+		releases = append(releases, subscriptionReleaseToModel(release))
 	}
 
-	return &model.FollowingPerformer{
+	return &model.SubscribedPerformer{
 		Performer:             stashPerformerToModel(item.Performer),
 		LastCheckedAt:         formatTimePointer(item.LastCheckedAt),
 		LastError:             nilIfEmpty(item.LastError),
@@ -53,8 +53,8 @@ func followingPerformerToModel(item following.FollowingPerformer) *model.Followi
 	}
 }
 
-func followingReleaseToModel(release following.RecordedRelease) *model.FollowingRelease {
-	return &model.FollowingRelease{
+func subscriptionReleaseToModel(release subscription.RecordedRelease) *model.SubscriptionRelease {
+	return &model.SubscriptionRelease{
 		Key:    release.Key,
 		Source: release.Source,
 		Title:  release.Title,

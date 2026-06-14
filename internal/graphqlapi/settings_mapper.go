@@ -5,13 +5,13 @@ import "github.com/leothevan2444/moji/internal/graphqlapi/model"
 func settingsSnapshotToModel(snapshot *SettingsSnapshot, appVersion string) *model.Settings {
 	if snapshot == nil {
 		return &model.Settings{
-			Stash:       &model.StashSettings{},
-			Jackett:     &model.JackettSettings{},
-			Qbittorrent: &model.QBittorrentSettings{},
-			Tasks:       &model.TaskSettings{},
-			Following:   &model.FollowingSettings{},
-			Logging:     &model.LoggingSettings{},
-			System:      &model.SystemSettings{AppVersion: appVersion},
+			Stash:        &model.StashSettings{},
+			Jackett:      &model.JackettSettings{},
+			Qbittorrent:  &model.QBittorrentSettings{},
+			Tasks:        &model.TaskSettings{},
+			Subscription: &model.SubscriptionSettings{},
+			Logging:      &model.LoggingSettings{},
+			System:       &model.SystemSettings{AppVersion: appVersion},
 		}
 	}
 
@@ -42,17 +42,17 @@ func settingsSnapshotToModel(snapshot *SettingsSnapshot, appVersion string) *mod
 		},
 		Tasks: &model.TaskSettings{
 			Store:                       snapshot.Tasks.Store,
-			JSONPath:                    snapshot.Tasks.JSONPath,
+			DBPath:                      snapshot.Tasks.DBPath,
 			ProgressSyncIntervalSeconds: snapshot.Tasks.ProgressSyncIntervalSeconds,
 			ProgressSyncEnabled:         snapshot.Tasks.ProgressSyncEnabled,
 		},
-		Following: &model.FollowingSettings{
-			Store:                    snapshot.Following.Store,
-			JSONPath:                 snapshot.Following.JSONPath,
-			PollIntervalSeconds:      snapshot.Following.PollIntervalSeconds,
-			PollEnabled:              snapshot.Following.PollEnabled,
-			JavstashEnabled:          snapshot.Following.JAVStashEnabled,
-			JavstashAPIKeyConfigured: snapshot.Following.JAVStashAPIKeyConfigured,
+		Subscription: &model.SubscriptionSettings{
+			Store:                    snapshot.Subscription.Store,
+			DBPath:                   snapshot.Subscription.DBPath,
+			PollIntervalSeconds:      snapshot.Subscription.PollIntervalSeconds,
+			PollEnabled:              snapshot.Subscription.PollEnabled,
+			JavstashEnabled:          snapshot.Subscription.JAVStashEnabled,
+			JavstashAPIKeyConfigured: snapshot.Subscription.JAVStashAPIKeyConfigured,
 		},
 		Logging: &model.LoggingSettings{
 			Level:            snapshot.Logging.Level,

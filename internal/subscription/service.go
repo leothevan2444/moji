@@ -1,4 +1,4 @@
-package following
+package subscription
 
 import (
 	"context"
@@ -41,7 +41,7 @@ type Service struct {
 
 func NewService(stash StashClient, stashbox StashboxClient, downloader Downloader, store Store) (*Service, error) {
 	if stash == nil {
-		return nil, errors.New("following: stash client is required")
+		return nil, errors.New("subscription: stash client is required")
 	}
 	if store == nil {
 		store = NewMemoryStore()
@@ -74,31 +74,31 @@ func (s *Service) ListStashPerformers(ctx context.Context, search string) ([]Per
 	}
 
 	sort.Slice(out, func(i, j int) bool {
-		if out[i].Followed != out[j].Followed {
-			return out[i].Followed
+		if out[i].Subscribed != out[j].Subscribed {
+			return out[i].Subscribed
 		}
 		return strings.ToLower(out[i].Name) < strings.ToLower(out[j].Name)
 	})
 	return out, nil
 }
 
-func (s *Service) ListFollowingPerformers(ctx context.Context) ([]FollowingPerformer, error) {
+func (s *Service) ListSubscribedPerformers(ctx context.Context) ([]SubscribedPerformer, error) {
 	performers, err := s.stash.AllPerformers(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	out := make([]FollowingPerformer, 0)
+	out := make([]SubscribedPerformer, 0)
 	for _, performer := range performers {
 		item := performerFromStash(performer, s.customFieldKey)
-		if !item.Followed {
+		if !item.Subscribed {
 			continue
 		}
 		state, err := s.store.Get(ctx, item.ID)
 		if err != nil {
 			return nil, err
 		}
-		out = append(out, buildFollowing(item, state))
+		out = append(out, buildSubscribedPerformer(item, state))
 	}
 
 	sort.Slice(out, func(i, j int) bool {
@@ -112,57 +112,57 @@ func (s *Service) ListFollowingPerformers(ctx context.Context) ([]FollowingPerfo
 	return out, nil
 }
 
-func (s *Service) FollowPerformer(ctx context.Context, performerID string) (FollowingPerformer, error) {
+func (s *Service) SubscribePerformer(ctx context.Context, performerID string) (SubscribedPerformer, error) {
 	performer, err := s.stash.UpdatePerformerCustomFields(ctx, performerID, map[string]any{s.customFieldKey: true}, nil)
 	if err != nil {
-		logging.Errorf("following: follow performer %s failed: %v", performerID, err)
-		return FollowingPerformer{}, err
+		logging.Errorf("subscription: subscribe performer %s failed: %v", performerID, err)
+		return SubscribedPerformer{}, err
 	}
 
 	item := performerFromStash(performer, s.customFieldKey)
 	state, err := s.store.Get(ctx, item.ID)
 	if err != nil {
-		logging.Errorf("following: load state for performer %s after follow failed: %v", item.ID, err)
-		return FollowingPerformer{}, err
+		logging.Errorf("subscription: load state for performer %s after subscribe failed: %v", item.ID, err)
+		return SubscribedPerformer{}, err
 	}
-	logging.Infof("following: followed performer %s (%s)", item.ID, item.Name)
+	logging.Infof("subscription: subscribed performer %s (%s)", item.ID, item.Name)
 
-	return buildFollowing(item, state), nil
+	return buildSubscribedPerformer(item, state), nil
 }
 
-func (s *Service) UnfollowPerformer(ctx context.Context, performerID string) error {
+func (s *Service) UnsubscribePerformer(ctx context.Context, performerID string) error {
 	if _, err := s.stash.UpdatePerformerCustomFields(ctx, performerID, nil, []string{s.customFieldKey}); err != nil {
-		logging.Errorf("following: unfollow performer %s failed: %v", performerID, err)
+		logging.Errorf("subscription: unsubscribe performer %s failed: %v", performerID, err)
 		return err
 	}
 	if err := s.store.Delete(ctx, performerID); err != nil {
-		logging.Errorf("following: delete state for performer %s failed: %v", performerID, err)
+		logging.Errorf("subscription: delete state for performer %s failed: %v", performerID, err)
 		return err
 	}
-	logging.Infof("following: unfollowed performer %s", performerID)
+	logging.Infof("subscription: unsubscribed performer %s", performerID)
 	return nil
 }
 
-func (s *Service) RefreshPerformer(ctx context.Context, performerID string) (FollowingPerformer, error) {
-	logging.Infof("following: refresh started for performer %s", performerID)
+func (s *Service) RefreshSubscribedPerformer(ctx context.Context, performerID string) (SubscribedPerformer, error) {
+	logging.Infof("subscription: refresh started for performer %s", performerID)
 	performer, err := s.stash.FindPerformerByID(ctx, performerID)
 	if err != nil {
-		logging.Errorf("following: load performer %s failed: %v", performerID, err)
-		return FollowingPerformer{}, err
+		logging.Errorf("subscription: load performer %s failed: %v", performerID, err)
+		return SubscribedPerformer{}, err
 	}
 	if performer == nil {
-		return FollowingPerformer{}, fmt.Errorf("following: performer %q not found", performerID)
+		return SubscribedPerformer{}, fmt.Errorf("subscription: performer %q not found", performerID)
 	}
 
 	item := performerFromStash(performer, s.customFieldKey)
-	if !item.Followed {
-		return FollowingPerformer{}, fmt.Errorf("following: performer %q is not followed", performerID)
+	if !item.Subscribed {
+		return SubscribedPerformer{}, fmt.Errorf("subscription: performer %q is not subscribed", performerID)
 	}
 
 	state, err := s.store.Get(ctx, performerID)
 	if err != nil {
-		logging.Errorf("following: load state for performer %s failed: %v", performerID, err)
-		return FollowingPerformer{}, err
+		logging.Errorf("subscription: load state for performer %s failed: %v", performerID, err)
+		return SubscribedPerformer{}, err
 	}
 	if state == nil {
 		state = &PerformerState{PerformerID: performerID}
@@ -176,13 +176,13 @@ func (s *Service) RefreshPerformer(ctx context.Context, performerID string) (Fol
 	if err != nil {
 		state.LastError = err.Error()
 		if putErr := s.store.Put(ctx, state); putErr != nil {
-			logging.Errorf("following: persist error state for performer %s failed: %v", performerID, putErr)
-			return FollowingPerformer{}, putErr
+			logging.Errorf("subscription: persist error state for performer %s failed: %v", performerID, putErr)
+			return SubscribedPerformer{}, putErr
 		}
-		logging.Errorf("following: refresh failed for performer %s (%s): %v", performerID, performer.Name, err)
-		return buildFollowing(item, state), err
+		logging.Errorf("subscription: refresh failed for performer %s (%s): %v", performerID, performer.Name, err)
+		return buildSubscribedPerformer(item, state), err
 	}
-	logging.Infof("following: refresh fetched %d releases for performer %s (%s)", len(releases), performerID, performer.Name)
+	logging.Infof("subscription: refresh fetched %d releases for performer %s (%s)", len(releases), performerID, performer.Name)
 
 	processed := make(map[string]RecordedRelease, len(state.ProcessedReleases))
 	for _, release := range state.ProcessedReleases {
@@ -207,7 +207,7 @@ func (s *Service) RefreshPerformer(ctx context.Context, performerID string) (Fol
 		pending = append(pending, record)
 	}
 	if len(pending) > 0 {
-		logging.Infof("following: detected %d new releases for performer %s (%s)", len(pending), performerID, performer.Name)
+		logging.Infof("subscription: detected %d new releases for performer %s (%s)", len(pending), performerID, performer.Name)
 	}
 
 	if s.downloader != nil {
@@ -215,12 +215,12 @@ func (s *Service) RefreshPerformer(ctx context.Context, performerID string) (Fol
 			task, err := s.downloader.DownloadMediaContext(ctx, downloader.DownloadRequest{Query: pending[i].Query})
 			if err != nil {
 				state.LastError = err.Error()
-				logging.Errorf("following: auto-download failed for performer %s release %q: %v", performerID, pending[i].Query, err)
+				logging.Errorf("subscription: auto-download failed for performer %s release %q: %v", performerID, pending[i].Query, err)
 				continue
 			}
 			if task != nil {
 				pending[i].TaskID = task.ID
-				logging.Infof("following: auto-download created task %s for performer %s release %q", task.ID, performerID, pending[i].Query)
+				logging.Infof("subscription: auto-download created task %s for performer %s release %q", task.ID, performerID, pending[i].Query)
 			}
 			state.ProcessedReleases = append([]RecordedRelease{pending[i]}, state.ProcessedReleases...)
 		}
@@ -228,51 +228,51 @@ func (s *Service) RefreshPerformer(ctx context.Context, performerID string) (Fol
 	} else {
 		state.PendingReleases = pending
 		if len(pending) > 0 {
-			logging.Infof("following: queued %d pending releases for performer %s (%s)", len(pending), performerID, performer.Name)
+			logging.Infof("subscription: queued %d pending releases for performer %s (%s)", len(pending), performerID, performer.Name)
 		}
 	}
 
 	state.ProcessedReleases = trimRecordedReleases(state.ProcessedReleases, 25)
 	state.PendingReleases = trimRecordedReleases(state.PendingReleases, 25)
 	if err := s.store.Put(ctx, state); err != nil {
-		logging.Errorf("following: persist state for performer %s failed: %v", performerID, err)
-		return FollowingPerformer{}, err
+		logging.Errorf("subscription: persist state for performer %s failed: %v", performerID, err)
+		return SubscribedPerformer{}, err
 	}
 	logging.Infof(
-		"following: refresh completed for performer %s (%s), processed=%d pending=%d",
+		"subscription: refresh completed for performer %s (%s), processed=%d pending=%d",
 		performerID,
 		performer.Name,
 		len(state.ProcessedReleases),
 		len(state.PendingReleases),
 	)
 
-	return buildFollowing(item, state), nil
+	return buildSubscribedPerformer(item, state), nil
 }
 
-func (s *Service) RefreshAll(ctx context.Context) ([]FollowingPerformer, error) {
-	items, err := s.ListFollowingPerformers(ctx)
+func (s *Service) RefreshAll(ctx context.Context) ([]SubscribedPerformer, error) {
+	items, err := s.ListSubscribedPerformers(ctx)
 	if err != nil {
-		logging.Errorf("following: list followed performers failed: %v", err)
+		logging.Errorf("subscription: list subscribed performers failed: %v", err)
 		return nil, err
 	}
-	logging.Infof("following: refresh all started for %d performers", len(items))
+	logging.Infof("subscription: refresh all started for %d performers", len(items))
 
-	out := make([]FollowingPerformer, 0, len(items))
+	out := make([]SubscribedPerformer, 0, len(items))
 	for _, item := range items {
-		refreshed, refreshErr := s.RefreshPerformer(ctx, item.Performer.ID)
+		refreshed, refreshErr := s.RefreshSubscribedPerformer(ctx, item.Performer.ID)
 		if refreshErr != nil {
 			out = append(out, refreshed)
 			continue
 		}
 		out = append(out, refreshed)
 	}
-	logging.Infof("following: refresh all completed for %d performers", len(out))
+	logging.Infof("subscription: refresh all completed for %d performers", len(out))
 	return out, nil
 }
 
 func (s *Service) fetchReleases(ctx context.Context, performer *stashgraphql.PerformerFragment) ([]Release, error) {
 	if s.stashbox == nil {
-		return nil, errors.New("following: javstash client is not configured")
+		return nil, errors.New("subscription: javstash client is not configured")
 	}
 
 	target, err := s.resolveStashboxPerformer(ctx, performer)
@@ -280,7 +280,7 @@ func (s *Service) fetchReleases(ctx context.Context, performer *stashgraphql.Per
 		return nil, err
 	}
 	if target == nil {
-		return nil, fmt.Errorf("following: no javstash performer match for %q", performer.Name)
+		return nil, fmt.Errorf("subscription: no javstash performer match for %q", performer.Name)
 	}
 
 	scenes, err := s.stashbox.QueryScenes(ctx, stashboxgraphql.SceneQueryInput{
@@ -373,12 +373,12 @@ func performerFromStash(performer *stashgraphql.PerformerFragment, customFieldKe
 		Favorite:   performer.Favorite,
 		ImagePath:  derefString(performer.ImagePath),
 		SceneCount: performer.SceneCount,
-		Followed:   customFieldTruthy(performer.CustomFields, customFieldKey),
+		Subscribed: customFieldTruthy(performer.CustomFields, customFieldKey),
 	}
 }
 
-func buildFollowing(performer Performer, state *PerformerState) FollowingPerformer {
-	item := FollowingPerformer{
+func buildSubscribedPerformer(performer Performer, state *PerformerState) SubscribedPerformer {
+	item := SubscribedPerformer{
 		Performer: performer,
 	}
 	if state == nil {

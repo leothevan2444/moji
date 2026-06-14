@@ -7,7 +7,7 @@ query StashPerformers($search: String, $page: Int, $pageSize: Int) {
       favorite
       imagePath
       sceneCount
-      followed
+      subscribed
     }
     page
     pageSize
@@ -18,8 +18,8 @@ query StashPerformers($search: String, $page: Int, $pageSize: Int) {
   }
 }
 
-query FollowingPerformers {
-  followingPerformers {
+query SubscribedPerformers {
+  subscribedPerformers {
     performer {
       id
       name
@@ -27,7 +27,7 @@ query FollowingPerformers {
       favorite
       imagePath
       sceneCount
-      followed
+      subscribed
     }
     lastCheckedAt
     lastError
@@ -47,24 +47,24 @@ query FollowingPerformers {
   }
 }
 
-mutation FollowPerformer($stashPerformerID: ID!) {
-  followPerformer(stashPerformerID: $stashPerformerID) {
+mutation SubscribePerformer($stashPerformerID: ID!) {
+  subscribePerformer(stashPerformerID: $stashPerformerID) {
     performer {
       id
-      followed
+      subscribed
     }
   }
 }
 
-mutation UnfollowPerformer($stashPerformerID: ID!) {
-  unfollowPerformer(stashPerformerID: $stashPerformerID)
+mutation UnsubscribePerformer($stashPerformerID: ID!) {
+  unsubscribePerformer(stashPerformerID: $stashPerformerID)
 }
 
-mutation RefreshFollowingPerformer($stashPerformerID: ID!) {
-  refreshFollowingPerformer(stashPerformerID: $stashPerformerID) {
+mutation RefreshSubscribedPerformer($stashPerformerID: ID!) {
+  refreshSubscribedPerformer(stashPerformerID: $stashPerformerID) {
     performer {
       id
-      followed
+      subscribed
     }
     lastCheckedAt
     lastError
@@ -82,8 +82,8 @@ mutation RefreshFollowingPerformer($stashPerformerID: ID!) {
   }
 }
 
-mutation RefreshFollowingNow {
-  refreshFollowingNow {
+mutation RefreshSubscriptionNow {
+  refreshSubscriptionsNow {
     performer {
       id
     }

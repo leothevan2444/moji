@@ -5,19 +5,19 @@ import { faBookmark, faChartColumn, faCircleQuestion, faGear, faHeart } from "@f
 import {
   AddTorrentDocumentDocument,
   DashboardDocumentDocument,
-  FollowPerformerDocument,
-  FollowingPerformersDocument,
+  SubscribePerformerDocument,
+  SubscribedPerformersDocument,
   LogLevel,
   LogsDocumentDocument,
-  RefreshFollowingNowDocument,
-  RefreshFollowingPerformerDocument,
+  RefreshSubscriptionNowDocument,
+  RefreshSubscribedPerformerDocument,
   SearchDocumentDocument,
   StashPerformersDocument,
   SyncTaskProgressDocumentDocument,
   TriggerTaskStashScanDocumentDocument,
   TriggerStashScansDocumentDocument,
-  UnfollowPerformerDocument,
-  UpdateFollowingSettingsDocumentDocument,
+  UnsubscribePerformerDocument,
+  UpdateSubscriptionSettingsDocumentDocument,
   UpdateJackettSettingsDocumentDocument,
   UpdateLoggingSettingsDocumentDocument,
   UpdateQBittorrentSettingsDocumentDocument,
@@ -26,16 +26,16 @@ import {
   type AddTorrentDocumentMutationVariables,
   type DashboardDocumentQuery,
   type DashboardDocumentQueryVariables,
-  type FollowPerformerMutation,
-  type FollowPerformerMutationVariables,
-  type FollowingPerformersQuery,
+  type SubscribePerformerMutation,
+  type SubscribePerformerMutationVariables,
+  type SubscribedPerformersQuery,
   type JackettSearchInput,
   type LogsDocumentQuery,
   type LogsDocumentQueryVariables,
-  type RefreshFollowingNowMutation,
-  type RefreshFollowingNowMutationVariables,
-  type RefreshFollowingPerformerMutation,
-  type RefreshFollowingPerformerMutationVariables,
+  type RefreshSubscriptionNowMutation,
+  type RefreshSubscriptionNowMutationVariables,
+  type RefreshSubscribedPerformerMutation,
+  type RefreshSubscribedPerformerMutationVariables,
   type SearchDocumentQuery,
   type SearchDocumentQueryVariables,
   type StashPerformersQuery,
@@ -46,10 +46,10 @@ import {
   type TriggerTaskStashScanDocumentMutationVariables,
   type TriggerStashScansDocumentMutation,
   type TriggerStashScansDocumentMutationVariables,
-  type UnfollowPerformerMutation,
-  type UnfollowPerformerMutationVariables,
-  type UpdateFollowingSettingsDocumentMutation,
-  type UpdateFollowingSettingsDocumentMutationVariables,
+  type UnsubscribePerformerMutation,
+  type UnsubscribePerformerMutationVariables,
+  type UpdateSubscriptionSettingsDocumentMutation,
+  type UpdateSubscriptionSettingsDocumentMutationVariables,
   type UpdateJackettSettingsDocumentMutation,
   type UpdateJackettSettingsDocumentMutationVariables,
   type UpdateLoggingSettingsDocumentMutation,
@@ -65,7 +65,7 @@ type TabKey = "主页" | "任务" | "订阅" | "发现";
 type DrawerKey = "stats" | "settings" | "help" | "task" | null;
 type DashboardTask = DashboardDocumentQuery["tasks"][number];
 type StashPerformerEntry = StashPerformersQuery["stashPerformers"]["items"][number];
-type FollowingPerformerEntry = FollowingPerformersQuery["followingPerformers"][number];
+type SubscribedPerformerEntry = SubscribedPerformersQuery["subscribedPerformers"][number];
 type RuntimeSettings = NonNullable<DashboardDocumentQuery["settings"]>;
 type ToastTone = "tone-success" | "tone-danger" | "tone-info";
 type ToastPhase = "entering" | "leaving";
@@ -137,9 +137,9 @@ const EMPTY_QBITTORRENT_FORM = {
   tags: ""
 };
 
-const EMPTY_FOLLOWING_FORM = {
-  store: "json",
-  jsonPath: "",
+const EMPTY_SUBSCRIPTION_FORM = {
+  store: "sqlite",
+  dbPath: "",
   pollIntervalSeconds: "3600",
   javstashApiKey: ""
 };
@@ -152,7 +152,7 @@ const EMPTY_LOGGING_FORM = {
   maxFileBackups: "5"
 };
 
-const FOLLOWING_PAGE_SIZE_OPTIONS = [12, 24, 48, 96] as const;
+const SUBSCRIPTION_PAGE_SIZE_OPTIONS = [12, 24, 48, 96] as const;
 const LOG_LEVEL_OPTIONS: LogLevel[] = [LogLevel.Debug, LogLevel.Info, LogLevel.Warning, LogLevel.Error];
 
 function formatBytes(size: number) {
@@ -528,24 +528,24 @@ function App() {
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
   const [jackettQuery, setJackettQuery] = useState("");
   const [submittedJackettQuery, setSubmittedJackettQuery] = useState("");
-  const [followingSearch, setFollowingSearch] = useState("");
-  const [followingPage, setFollowingPage] = useState(1);
-  const [followingPageSize, setFollowingPageSize] = useState<number>(24);
+  const [subscriptionSearch, setSubscriptionSearch] = useState("");
+  const [subscriptionPage, setSubscriptionPage] = useState(1);
+  const [subscriptionPageSize, setSubscriptionPageSize] = useState<number>(24);
   const [logsLevel, setLogsLevel] = useState<LogLevel>(LogLevel.Info);
   const [downloadingLogFile, setDownloadingLogFile] = useState(false);
-  const [pendingFollowingID, setPendingFollowingID] = useState<string | null>(null);
+  const [pendingSubscriptionID, setPendingSubscriptionID] = useState<string | null>(null);
   const [pendingAddId, setPendingAddId] = useState<string | null>(null);
   const [stashForm, setStashForm] = useState(EMPTY_STASH_FORM);
   const [jackettForm, setJackettForm] = useState(EMPTY_JACKETT_FORM);
   const [qbittorrentForm, setQBittorrentForm] = useState(EMPTY_QBITTORRENT_FORM);
-  const [followingForm, setFollowingForm] = useState(EMPTY_FOLLOWING_FORM);
+  const [subscriptionForm, setSubscriptionForm] = useState(EMPTY_SUBSCRIPTION_FORM);
   const [loggingForm, setLoggingForm] = useState(EMPTY_LOGGING_FORM);
   const [toasts, setToasts] = useState<ToastItem[]>([]);
   const toastTimersRef = useRef(new Map<number, { exit: number; remove: number }>());
 
   const deferredTaskSearch = useDeferredValue(taskSearch.trim().toLowerCase());
   const deferredJackettQuery = useDeferredValue(submittedJackettQuery.trim());
-  const deferredFollowingSearch = useDeferredValue(followingSearch.trim());
+  const deferredSubscriptionSearch = useDeferredValue(subscriptionSearch.trim());
 
   const [{ data, fetching, error }, refreshDashboard] = useQuery<
     DashboardDocumentQuery,
@@ -572,18 +572,18 @@ function App() {
     useQuery<StashPerformersQuery, StashPerformersQueryVariables>({
       query: StashPerformersDocument,
       variables: {
-        search: deferredFollowingSearch || null,
-        page: followingPage,
-        pageSize: followingPageSize
+        search: deferredSubscriptionSearch || null,
+        page: subscriptionPage,
+        pageSize: subscriptionPageSize
       },
       requestPolicy: "cache-and-network",
       pause: tab !== "订阅"
     });
-  const [{ data: followingData, fetching: fetchingFollowing, error: followingError }, refreshFollowing] = useQuery<
-    FollowingPerformersQuery,
+  const [{ data: subscriptionData, fetching: fetchingSubscription, error: subscriptionError }, refreshSubscription] = useQuery<
+    SubscribedPerformersQuery,
     Record<string, never>
   >({
-    query: FollowingPerformersDocument,
+    query: SubscribedPerformersDocument,
     requestPolicy: "cache-and-network",
     pause: tab !== "订阅"
   });
@@ -628,41 +628,41 @@ function App() {
     UpdateQBittorrentSettingsDocumentMutation,
     UpdateQBittorrentSettingsDocumentMutationVariables
   >(UpdateQBittorrentSettingsDocumentDocument);
-  const [{ fetching: updatingFollowing }, updateFollowingSettings] = useMutation<
-    UpdateFollowingSettingsDocumentMutation,
-    UpdateFollowingSettingsDocumentMutationVariables
-  >(UpdateFollowingSettingsDocumentDocument);
+  const [{ fetching: updatingSubscription }, updateSubscriptionSettings] = useMutation<
+    UpdateSubscriptionSettingsDocumentMutation,
+    UpdateSubscriptionSettingsDocumentMutationVariables
+  >(UpdateSubscriptionSettingsDocumentDocument);
   const [{ fetching: updatingLogging }, updateLoggingSettings] = useMutation<
     UpdateLoggingSettingsDocumentMutation,
     UpdateLoggingSettingsDocumentMutationVariables
   >(UpdateLoggingSettingsDocumentDocument);
-  const [, followPerformer] = useMutation<FollowPerformerMutation, FollowPerformerMutationVariables>(FollowPerformerDocument);
-  const [, unfollowPerformer] = useMutation<UnfollowPerformerMutation, UnfollowPerformerMutationVariables>(UnfollowPerformerDocument);
-  const [, refreshFollowingPerformer] = useMutation<
-    RefreshFollowingPerformerMutation,
-    RefreshFollowingPerformerMutationVariables
-  >(RefreshFollowingPerformerDocument);
-  const [{ fetching: refreshingFollowingNow }, refreshFollowingNow] = useMutation<
-    RefreshFollowingNowMutation,
-    RefreshFollowingNowMutationVariables
-  >(RefreshFollowingNowDocument);
+  const [, subscribePerformer] = useMutation<SubscribePerformerMutation, SubscribePerformerMutationVariables>(SubscribePerformerDocument);
+  const [, unsubscribePerformer] = useMutation<UnsubscribePerformerMutation, UnsubscribePerformerMutationVariables>(UnsubscribePerformerDocument);
+  const [, refreshSubscribedPerformer] = useMutation<
+    RefreshSubscribedPerformerMutation,
+    RefreshSubscribedPerformerMutationVariables
+  >(RefreshSubscribedPerformerDocument);
+  const [{ fetching: refreshingSubscriptionNow }, refreshSubscriptionsNow] = useMutation<
+    RefreshSubscriptionNowMutation,
+    RefreshSubscriptionNowMutationVariables
+  >(RefreshSubscriptionNowDocument);
 
   const tasks = data?.tasks ?? [];
   const logs = logsData?.logs ?? [];
   const runtimeSettings = data?.settings ?? null;
   const stashPerformerPage = stashPerformersData?.stashPerformers ?? null;
   const stashPerformers = stashPerformerPage?.items ?? [];
-  const followedPerformers = followingData?.followingPerformers ?? [];
+  const subscribedPerformers = subscriptionData?.subscribedPerformers ?? [];
   const activeTask = selectedTaskId ? tasks.find((task) => task.id === selectedTaskId) ?? null : null;
   const activeTaskFailure = activeTask ? taskFailureSummary(activeTask) : null;
 
   useEffect(() => {
-    setFollowingPage(1);
-  }, [deferredFollowingSearch]);
+    setSubscriptionPage(1);
+  }, [deferredSubscriptionSearch]);
 
   useEffect(() => {
-    setFollowingPage(1);
-  }, [followingPageSize]);
+    setSubscriptionPage(1);
+  }, [subscriptionPageSize]);
 
   useEffect(() => {
     if (!runtimeSettings) return;
@@ -684,10 +684,10 @@ function App() {
       category: runtimeSettings.qbittorrent.category || "",
       tags: runtimeSettings.qbittorrent.tags || ""
     });
-    setFollowingForm({
-      store: runtimeSettings.following.store || "json",
-      jsonPath: runtimeSettings.following.jsonPath || "",
-      pollIntervalSeconds: String(runtimeSettings.following.pollIntervalSeconds || 3600),
+    setSubscriptionForm({
+      store: runtimeSettings.subscription.store || "sqlite",
+      dbPath: runtimeSettings.subscription.dbPath || "",
+      pollIntervalSeconds: String(runtimeSettings.subscription.pollIntervalSeconds || 3600),
       javstashApiKey: ""
     });
     setLoggingForm({
@@ -755,9 +755,9 @@ function App() {
       tasks: visibleTasks.filter((task) => taskGroup(task) === group)
     }));
   }, [visibleTasks]);
-  const followedByID = useMemo(() => {
-    return new Map(followedPerformers.map((item) => [item.performer.id, item]));
-  }, [followedPerformers]);
+  const subscribedByID = useMemo(() => {
+    return new Map(subscribedPerformers.map((item) => [item.performer.id, item]));
+  }, [subscribedPerformers]);
 
   const pushToast = (tone: ToastTone, message: string) => {
     const id = Date.now() + Math.floor(Math.random() * 1000);
@@ -815,10 +815,10 @@ function App() {
         },
         {
           name: "订阅",
-          label: runtimeSettings.following.pollEnabled ? "已启用" : "未启用",
-          tone: runtimeSettings.following.pollEnabled ? "tone-success" : "tone-neutral",
-          detail: runtimeSettings.following.javstashEnabled
-            ? `轮询间隔: ${runtimeSettings.following.pollIntervalSeconds} 秒`
+          label: runtimeSettings.subscription.pollEnabled ? "已启用" : "未启用",
+          tone: runtimeSettings.subscription.pollEnabled ? "tone-success" : "tone-neutral",
+          detail: runtimeSettings.subscription.javstashEnabled
+            ? `轮询间隔: ${runtimeSettings.subscription.pollIntervalSeconds} 秒`
             : "缺少 JAVStash API key，暂时只能手动检查"
         }
       ]
@@ -845,8 +845,8 @@ function App() {
     }
     if (settingsTab === "订阅") {
       return {
-        label: runtimeSettings.following.pollEnabled ? "已启用" : "未启用",
-        tone: runtimeSettings.following.pollEnabled ? "tone-success" as const : "tone-neutral" as const
+        label: runtimeSettings.subscription.pollEnabled ? "已启用" : "未启用",
+        tone: runtimeSettings.subscription.pollEnabled ? "tone-success" as const : "tone-neutral" as const
       };
     }
     if (settingsTab === "系统") {
@@ -920,18 +920,18 @@ function App() {
     await refreshDashboard({ requestPolicy: "network-only" });
   };
 
-  const saveFollowingSettings = async (event: FormEvent<HTMLFormElement>) => {
+  const saveSubscriptionSettings = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
-    const pollIntervalSeconds = Number.parseInt(followingForm.pollIntervalSeconds.trim(), 10);
+    const pollIntervalSeconds = Number.parseInt(subscriptionForm.pollIntervalSeconds.trim(), 10);
     const normalizedPollIntervalSeconds = Number.isNaN(pollIntervalSeconds) ? 0 : pollIntervalSeconds;
 
-    const result = await updateFollowingSettings({
+    const result = await updateSubscriptionSettings({
       input: {
-        store: followingForm.store.trim() || "json",
-        jsonPath: followingForm.jsonPath.trim(),
+        store: subscriptionForm.store.trim() || "sqlite",
+        dbPath: subscriptionForm.dbPath.trim(),
         pollIntervalSeconds: normalizedPollIntervalSeconds,
-        javstashApiKey: followingForm.javstashApiKey.trim() || null
+        javstashApiKey: subscriptionForm.javstashApiKey.trim() || null
       }
     });
 
@@ -940,7 +940,7 @@ function App() {
       return;
     }
 
-    setFollowingForm((current) => ({ ...current, javstashApiKey: "" }));
+    setSubscriptionForm((current) => ({ ...current, javstashApiKey: "" }));
     pushToast("tone-success", "订阅设置已保存，轮询与 JAVStash 凭据已同步到后端。");
     await refreshDashboard({ requestPolicy: "network-only" });
   };
@@ -972,55 +972,55 @@ function App() {
     await refreshLogs({ requestPolicy: "network-only" });
   };
 
-  const reloadFollowing = async () => {
+  const reloadSubscription = async () => {
     await Promise.all([
-      refreshFollowing({ requestPolicy: "network-only" }),
+      refreshSubscription({ requestPolicy: "network-only" }),
       refreshStashPerformers({ requestPolicy: "network-only" })
     ]);
   };
 
-  const handleFollowToggle = async (performer: StashPerformerEntry) => {
-    setPendingFollowingID(performer.id);
+  const handleSubscriptionToggle = async (performer: StashPerformerEntry) => {
+    setPendingSubscriptionID(performer.id);
 
-    const result = performer.followed
-      ? await unfollowPerformer({ stashPerformerID: performer.id })
-      : await followPerformer({ stashPerformerID: performer.id });
+    const result = performer.subscribed
+      ? await unsubscribePerformer({ stashPerformerID: performer.id })
+      : await subscribePerformer({ stashPerformerID: performer.id });
 
     if (result.error) {
       pushToast("tone-danger", describeQueryError(result.error));
-      setPendingFollowingID(null);
+      setPendingSubscriptionID(null);
       return;
     }
 
-    pushToast("tone-success", performer.followed ? `已取消订阅 ${performer.name}。` : `已订阅 ${performer.name}，Moji 会通过 custom_fields 记录状态。`);
-    await reloadFollowing();
-    setPendingFollowingID(null);
+    pushToast("tone-success", performer.subscribed ? `已取消订阅 ${performer.name}。` : `已订阅 ${performer.name}，Moji 会通过 custom_fields 记录状态。`);
+    await reloadSubscription();
+    setPendingSubscriptionID(null);
   };
 
-  const handleRefreshPerformer = async (performer: StashPerformerEntry) => {
-    setPendingFollowingID(performer.id);
+  const handleRefreshSubscribedPerformer = async (performer: StashPerformerEntry) => {
+    setPendingSubscriptionID(performer.id);
 
-    const result = await refreshFollowingPerformer({ stashPerformerID: performer.id });
+    const result = await refreshSubscribedPerformer({ stashPerformerID: performer.id });
     if (result.error) {
       pushToast("tone-danger", describeQueryError(result.error));
-      setPendingFollowingID(null);
+      setPendingSubscriptionID(null);
       return;
     }
 
     pushToast("tone-info", `已检查 ${performer.name} 的最新发行信息。`);
-    await reloadFollowing();
-    setPendingFollowingID(null);
+    await reloadSubscription();
+    setPendingSubscriptionID(null);
   };
 
-  const handleRefreshAllFollowing = async () => {
-    const result = await refreshFollowingNow({});
+  const handleRefreshAllSubscription = async () => {
+    const result = await refreshSubscriptionsNow({});
     if (result.error) {
       pushToast("tone-danger", describeQueryError(result.error));
       return;
     }
 
     pushToast("tone-info", "已触发全部订阅对象的更新检查。");
-    await reloadFollowing();
+    await reloadSubscription();
   };
 
   const handleCopyLogs = async () => {
@@ -1249,11 +1249,11 @@ function App() {
           <dl className="settings-grid">
             <div>
               <dt>存储类型</dt>
-              <dd>{runtimeSettings.tasks.store || "json"}</dd>
+              <dd>{runtimeSettings.tasks.store || "sqlite"}</dd>
             </div>
             <div>
-              <dt>JSON 路径</dt>
-              <dd>{runtimeSettings.tasks.jsonPath || "moji-tasks.json"}</dd>
+              <dt>数据库路径</dt>
+              <dd>{runtimeSettings.tasks.dbPath || "moji.db"}</dd>
             </div>
             <div>
               <dt>同步间隔</dt>
@@ -1279,28 +1279,28 @@ function App() {
             <h3>{settingsTab}</h3>
             <span className={`status-chip ${settingsStatus.tone}`}>{settingsStatus.label}</span>
           </div>
-          <form className="settings-form" onSubmit={(event) => void saveFollowingSettings(event)}>
+          <form className="settings-form" onSubmit={(event) => void saveSubscriptionSettings(event)}>
             <label className="settings-field">
               <span>存储类型</span>
               <input
-                value={followingForm.store}
-                onChange={(event) => setFollowingForm((current) => ({ ...current, store: event.target.value }))}
-                placeholder="json"
+                value={subscriptionForm.store}
+                onChange={(event) => setSubscriptionForm((current) => ({ ...current, store: event.target.value }))}
+                placeholder="sqlite"
               />
             </label>
             <label className="settings-field">
-              <span>状态文件路径</span>
+              <span>数据库路径</span>
               <input
-                value={followingForm.jsonPath}
-                onChange={(event) => setFollowingForm((current) => ({ ...current, jsonPath: event.target.value }))}
-                placeholder="moji-following.json"
+                value={subscriptionForm.dbPath}
+                onChange={(event) => setSubscriptionForm((current) => ({ ...current, dbPath: event.target.value }))}
+                placeholder="moji.db"
               />
             </label>
             <label className="settings-field">
               <span>轮询间隔（秒）</span>
               <input
-                value={followingForm.pollIntervalSeconds}
-                onChange={(event) => setFollowingForm((current) => ({ ...current, pollIntervalSeconds: event.target.value }))}
+                value={subscriptionForm.pollIntervalSeconds}
+                onChange={(event) => setSubscriptionForm((current) => ({ ...current, pollIntervalSeconds: event.target.value }))}
                 placeholder="3600"
                 inputMode="numeric"
               />
@@ -1309,18 +1309,18 @@ function App() {
               <span>JAVStash API key</span>
               <input
                 type="password"
-                value={followingForm.javstashApiKey}
-                onChange={(event) => setFollowingForm((current) => ({ ...current, javstashApiKey: event.target.value }))}
-                placeholder={runtimeSettings.following.javstashApiKeyConfigured ? "留空则保留现有 API key" : "输入新的 API key"}
+                value={subscriptionForm.javstashApiKey}
+                onChange={(event) => setSubscriptionForm((current) => ({ ...current, javstashApiKey: event.target.value }))}
+                placeholder={runtimeSettings.subscription.javstashApiKeyConfigured ? "留空则保留现有 API key" : "输入新的 API key"}
               />
             </label>
             <div className="settings-meta">
-              <span>当前存储: {runtimeSettings.following.store || "json"}</span>
-              <span>JAVStash key: {boolState(runtimeSettings.following.javstashApiKeyConfigured)}</span>
-              <span>轮询状态: {runtimeSettings.following.pollEnabled ? "已启用" : "未启用"}</span>
+              <span>当前存储: {runtimeSettings.subscription.store || "sqlite"}</span>
+              <span>JAVStash key: {boolState(runtimeSettings.subscription.javstashApiKeyConfigured)}</span>
+              <span>轮询状态: {runtimeSettings.subscription.pollEnabled ? "已启用" : "未启用"}</span>
             </div>
             <div className="settings-actions">
-              <button type="submit" disabled={updatingFollowing}>保存订阅设置</button>
+              <button type="submit" disabled={updatingSubscription}>保存订阅设置</button>
             </div>
           </form>
         </article>
@@ -1971,37 +1971,37 @@ function App() {
                 </div>
               </div>
 
-              <div className="toolbar-inline toolbar-inline--following">
-                <input placeholder="按名称或别名搜索 Stash performer" value={followingSearch} onChange={(event) => setFollowingSearch(event.target.value)} />
-                <select value={followingPageSize} onChange={(event) => setFollowingPageSize(Number(event.target.value))}>
-                  {FOLLOWING_PAGE_SIZE_OPTIONS.map((size) => (
+              <div className="toolbar-inline toolbar-inline--subscription">
+                <input placeholder="按名称或别名搜索 Stash performer" value={subscriptionSearch} onChange={(event) => setSubscriptionSearch(event.target.value)} />
+                <select value={subscriptionPageSize} onChange={(event) => setSubscriptionPageSize(Number(event.target.value))}>
+                  {SUBSCRIPTION_PAGE_SIZE_OPTIONS.map((size) => (
                     <option key={size} value={size}>
                       每页 {size} 条
                     </option>
                   ))}
                 </select>
-                <button type="button" className="ghost-button" onClick={() => void reloadFollowing()}>
+                <button type="button" className="ghost-button" onClick={() => void reloadSubscription()}>
                   刷新列表
                 </button>
                 <button
                   type="button"
                   className="ghost-button"
-                  disabled={refreshingFollowingNow || followedPerformers.length === 0}
-                  onClick={() => void handleRefreshAllFollowing()}
+                  disabled={refreshingSubscriptionNow || subscribedPerformers.length === 0}
+                  onClick={() => void handleRefreshAllSubscription()}
                 >
-                  {refreshingFollowingNow ? "检查中..." : "检查全部订阅"}
+                  {refreshingSubscriptionNow ? "检查中..." : "检查全部订阅"}
                 </button>
               </div>
 
               <div className="settings-meta">
                 <span>Stash 候选: {stashPerformerPage?.totalCount ?? 0}</span>
                 <span>当前页: {stashPerformerPage?.page ?? 1} / {stashPerformerPage?.totalPages ?? 0}</span>
-                <span>每页: {stashPerformerPage?.pageSize ?? followingPageSize}</span>
-                <span>已订阅: {followedPerformers.length}</span>
-                <span>载入状态: {fetchingStashPerformers || fetchingFollowing ? "同步中" : "已就绪"}</span>
+                <span>每页: {stashPerformerPage?.pageSize ?? subscriptionPageSize}</span>
+                <span>已订阅: {subscribedPerformers.length}</span>
+                <span>载入状态: {fetchingStashPerformers || fetchingSubscription ? "同步中" : "已就绪"}</span>
               </div>
-              {followingError || stashPerformersError ? (
-                <p className="settings-feedback tone-danger">{describeQueryError(followingError || stashPerformersError)}</p>
+              {subscriptionError || stashPerformersError ? (
+                <p className="settings-feedback tone-danger">{describeQueryError(subscriptionError || stashPerformersError)}</p>
               ) : null}
 
               <div className="profile-grid">
@@ -2012,8 +2012,8 @@ function App() {
                   </article>
                 ) : null}
                 {stashPerformers.map((performer, index) => {
-                  const followingEntry = followedByID.get(performer.id) ?? null;
-                  const latestRelease = followingEntry?.recentReleases[0] ?? null;
+                  const subscriptionEntry = subscribedByID.get(performer.id) ?? null;
+                  const latestRelease = subscriptionEntry?.recentReleases[0] ?? null;
                   const imageURL = performerImageURL(performer.imagePath, runtimeSettings?.stash.url);
 
                   return (
@@ -2040,11 +2040,11 @@ function App() {
                           ) : null}
                           <button
                             type="button"
-                            className={`profile-icon profile-icon--follow ${performer.followed ? "is-active" : ""}`}
-                            title={performer.followed ? "取消订阅" : "订阅"}
-                            aria-label={performer.followed ? "取消订阅" : "订阅"}
-                            disabled={pendingFollowingID === performer.id}
-                            onClick={() => void handleFollowToggle(performer)}
+                            className={`profile-icon profile-icon--subscribe ${performer.subscribed ? "is-active" : ""}`}
+                            title={performer.subscribed ? "取消订阅" : "订阅"}
+                            aria-label={performer.subscribed ? "取消订阅" : "订阅"}
+                            disabled={pendingSubscriptionID === performer.id}
+                            onClick={() => void handleSubscriptionToggle(performer)}
                           >
                             <FontAwesomeIcon icon={faBookmark} />
                           </button>
@@ -2057,15 +2057,15 @@ function App() {
                         </div>
                         <div>
                           <dt>检查</dt>
-                          <dd>{formatDateTime(followingEntry?.lastCheckedAt)}</dd>
+                          <dd>{formatDateTime(subscriptionEntry?.lastCheckedAt)}</dd>
                         </div>
                       </dl>
                       <p className="profile-note">
-                        {followingEntry?.lastError
-                          ? `最近错误: ${followingEntry.lastError}`
+                        {subscriptionEntry?.lastError
+                          ? `最近错误: ${subscriptionEntry.lastError}`
                           : latestRelease
                             ? `最近记录: ${latestRelease.code || latestRelease.title} · ${formatRelativeDate(latestRelease.date || latestRelease.seenAt)}`
-                            : performer.followed
+                            : performer.subscribed
                               ? "已订阅，等待首次检查结果。"
                               : "尚未订阅。"}
                       </p>
@@ -2073,8 +2073,8 @@ function App() {
                         <button
                           type="button"
                           className="ghost-button"
-                          disabled={!performer.followed || pendingFollowingID === performer.id}
-                          onClick={() => void handleRefreshPerformer(performer)}
+                          disabled={!performer.subscribed || pendingSubscriptionID === performer.id}
+                          onClick={() => void handleRefreshSubscribedPerformer(performer)}
                         >
                           立即检查
                         </button>
@@ -2090,7 +2090,7 @@ function App() {
                     type="button"
                     className="ghost-button"
                     disabled={!stashPerformerPage.hasPrevPage || fetchingStashPerformers}
-                    onClick={() => setFollowingPage((current) => Math.max(1, current - 1))}
+                    onClick={() => setSubscriptionPage((current) => Math.max(1, current - 1))}
                   >
                     上一页
                   </button>
@@ -2101,7 +2101,7 @@ function App() {
                     type="button"
                     className="ghost-button"
                     disabled={!stashPerformerPage.hasNextPage || fetchingStashPerformers}
-                    onClick={() => setFollowingPage((current) => current + 1)}
+                    onClick={() => setSubscriptionPage((current) => current + 1)}
                   >
                     下一页
                   </button>

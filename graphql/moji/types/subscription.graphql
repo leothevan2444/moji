@@ -1,0 +1,62 @@
+extend type Query {
+  "List Stash performers with current Moji subscription state"
+  stashPerformers(search: String, page: Int = 1, pageSize: Int = 24): StashPerformerConnection!
+
+  "List performers currently subscribed by Moji"
+  subscribedPerformers: [SubscribedPerformer!]!
+}
+
+extend type Mutation {
+  "Mark a Stash performer as subscribed by Moji"
+  subscribePerformer(stashPerformerID: ID!): SubscribedPerformer!
+
+  "Remove Moji subscription mark from a Stash performer"
+  unsubscribePerformer(stashPerformerID: ID!): Boolean!
+
+  "Refresh a subscribed performer against the configured release source"
+  refreshSubscribedPerformer(stashPerformerID: ID!): SubscribedPerformer!
+
+  "Refresh all subscribed performers against the configured release source"
+  refreshSubscriptionsNow: [SubscribedPerformer!]!
+}
+
+type StashPerformer {
+  id: ID!
+  name: String!
+  aliasList: [String!]!
+  favorite: Boolean!
+  imagePath: String
+  sceneCount: Int!
+  subscribed: Boolean!
+}
+
+type StashPerformerConnection {
+  items: [StashPerformer!]!
+  page: Int!
+  pageSize: Int!
+  totalCount: Int!
+  totalPages: Int!
+  hasPrevPage: Boolean!
+  hasNextPage: Boolean!
+}
+
+type SubscribedPerformer {
+  performer: StashPerformer!
+  lastCheckedAt: String
+  lastError: String
+  pendingReleaseCount: Int!
+  processedReleaseCount: Int!
+  recentReleases: [SubscriptionRelease!]!
+}
+
+type SubscriptionRelease {
+  key: ID!
+  source: String!
+  title: String!
+  code: String
+  date: String
+  url: String
+  query: String!
+  taskID: ID
+  seenAt: String!
+}

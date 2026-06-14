@@ -66,36 +66,6 @@ type ComplexityRoot struct {
 		Tracker   func(childComplexity int) int
 	}
 
-	FollowingPerformer struct {
-		LastCheckedAt         func(childComplexity int) int
-		LastError             func(childComplexity int) int
-		PendingReleaseCount   func(childComplexity int) int
-		Performer             func(childComplexity int) int
-		ProcessedReleaseCount func(childComplexity int) int
-		RecentReleases        func(childComplexity int) int
-	}
-
-	FollowingRelease struct {
-		Code   func(childComplexity int) int
-		Date   func(childComplexity int) int
-		Key    func(childComplexity int) int
-		Query  func(childComplexity int) int
-		SeenAt func(childComplexity int) int
-		Source func(childComplexity int) int
-		TaskID func(childComplexity int) int
-		Title  func(childComplexity int) int
-		URL    func(childComplexity int) int
-	}
-
-	FollowingSettings struct {
-		JSONPath                 func(childComplexity int) int
-		JavstashAPIKeyConfigured func(childComplexity int) int
-		JavstashEnabled          func(childComplexity int) int
-		PollEnabled              func(childComplexity int) int
-		PollIntervalSeconds      func(childComplexity int) int
-		Store                    func(childComplexity int) int
-	}
-
 	Health struct {
 		Message func(childComplexity int) int
 		Ok      func(childComplexity int) int
@@ -137,22 +107,22 @@ type ComplexityRoot struct {
 	}
 
 	Mutation struct {
-		AddTorrent                func(childComplexity int, input model.QBittorrentAddInput) int
-		DownloadMedia             func(childComplexity int, input model.DownloadMediaInput) int
-		FollowPerformer           func(childComplexity int, stashPerformerID string) int
-		QbittorrentAdd            func(childComplexity int, input model.QBittorrentAddInput) int
-		RefreshFollowingNow       func(childComplexity int) int
-		RefreshFollowingPerformer func(childComplexity int, stashPerformerID string) int
-		StashMetadataScan         func(childComplexity int, input model.StashMetadataScanInput) int
-		SyncTaskProgress          func(childComplexity int) int
-		TriggerStashScans         func(childComplexity int) int
-		TriggerTaskStashScan      func(childComplexity int, id string) int
-		UnfollowPerformer         func(childComplexity int, stashPerformerID string) int
-		UpdateFollowingSettings   func(childComplexity int, input model.UpdateFollowingSettingsInput) int
-		UpdateJackettSettings     func(childComplexity int, input model.UpdateJackettSettingsInput) int
-		UpdateLoggingSettings     func(childComplexity int, input model.UpdateLoggingSettingsInput) int
-		UpdateQBittorrentSettings func(childComplexity int, input model.UpdateQBittorrentSettingsInput) int
-		UpdateStashSettings       func(childComplexity int, input model.UpdateStashSettingsInput) int
+		AddTorrent                 func(childComplexity int, input model.QBittorrentAddInput) int
+		DownloadMedia              func(childComplexity int, input model.DownloadMediaInput) int
+		QbittorrentAdd             func(childComplexity int, input model.QBittorrentAddInput) int
+		RefreshSubscribedPerformer func(childComplexity int, stashPerformerID string) int
+		RefreshSubscriptionsNow    func(childComplexity int) int
+		StashMetadataScan          func(childComplexity int, input model.StashMetadataScanInput) int
+		SubscribePerformer         func(childComplexity int, stashPerformerID string) int
+		SyncTaskProgress           func(childComplexity int) int
+		TriggerStashScans          func(childComplexity int) int
+		TriggerTaskStashScan       func(childComplexity int, id string) int
+		UnsubscribePerformer       func(childComplexity int, stashPerformerID string) int
+		UpdateJackettSettings      func(childComplexity int, input model.UpdateJackettSettingsInput) int
+		UpdateLoggingSettings      func(childComplexity int, input model.UpdateLoggingSettingsInput) int
+		UpdateQBittorrentSettings  func(childComplexity int, input model.UpdateQBittorrentSettingsInput) int
+		UpdateStashSettings        func(childComplexity int, input model.UpdateStashSettingsInput) int
+		UpdateSubscriptionSettings func(childComplexity int, input model.UpdateSubscriptionSettingsInput) int
 	}
 
 	QBTorrent struct {
@@ -182,28 +152,28 @@ type ComplexityRoot struct {
 	}
 
 	Query struct {
-		DashboardStats      func(childComplexity int) int
-		FollowingPerformers func(childComplexity int) int
-		Health              func(childComplexity int) int
-		JackettSearch       func(childComplexity int, input model.JackettSearchInput) int
-		Logs                func(childComplexity int, limit *int, minLevel *model.LogLevel) int
-		QbittorrentTorrents func(childComplexity int, limit *int) int
-		Settings            func(childComplexity int) int
-		StashJob            func(childComplexity int, id string) int
-		StashPerformers     func(childComplexity int, search *string, page *int, pageSize *int) int
-		Task                func(childComplexity int, id string) int
-		Tasks               func(childComplexity int) int
-		Version             func(childComplexity int) int
+		DashboardStats       func(childComplexity int) int
+		Health               func(childComplexity int) int
+		JackettSearch        func(childComplexity int, input model.JackettSearchInput) int
+		Logs                 func(childComplexity int, limit *int, minLevel *model.LogLevel) int
+		QbittorrentTorrents  func(childComplexity int, limit *int) int
+		Settings             func(childComplexity int) int
+		StashJob             func(childComplexity int, id string) int
+		StashPerformers      func(childComplexity int, search *string, page *int, pageSize *int) int
+		SubscribedPerformers func(childComplexity int) int
+		Task                 func(childComplexity int, id string) int
+		Tasks                func(childComplexity int) int
+		Version              func(childComplexity int) int
 	}
 
 	Settings struct {
-		Following   func(childComplexity int) int
-		Jackett     func(childComplexity int) int
-		Logging     func(childComplexity int) int
-		Qbittorrent func(childComplexity int) int
-		Stash       func(childComplexity int) int
-		System      func(childComplexity int) int
-		Tasks       func(childComplexity int) int
+		Jackett      func(childComplexity int) int
+		Logging      func(childComplexity int) int
+		Qbittorrent  func(childComplexity int) int
+		Stash        func(childComplexity int) int
+		Subscription func(childComplexity int) int
+		System       func(childComplexity int) int
+		Tasks        func(childComplexity int) int
 	}
 
 	StashJob struct {
@@ -221,11 +191,11 @@ type ComplexityRoot struct {
 	StashPerformer struct {
 		AliasList  func(childComplexity int) int
 		Favorite   func(childComplexity int) int
-		Followed   func(childComplexity int) int
 		ID         func(childComplexity int) int
 		ImagePath  func(childComplexity int) int
 		Name       func(childComplexity int) int
 		SceneCount func(childComplexity int) int
+		Subscribed func(childComplexity int) int
 	}
 
 	StashPerformerConnection struct {
@@ -244,6 +214,36 @@ type ComplexityRoot struct {
 		Enabled          func(childComplexity int) int
 		LibraryPath      func(childComplexity int) int
 		URL              func(childComplexity int) int
+	}
+
+	SubscribedPerformer struct {
+		LastCheckedAt         func(childComplexity int) int
+		LastError             func(childComplexity int) int
+		PendingReleaseCount   func(childComplexity int) int
+		Performer             func(childComplexity int) int
+		ProcessedReleaseCount func(childComplexity int) int
+		RecentReleases        func(childComplexity int) int
+	}
+
+	SubscriptionRelease struct {
+		Code   func(childComplexity int) int
+		Date   func(childComplexity int) int
+		Key    func(childComplexity int) int
+		Query  func(childComplexity int) int
+		SeenAt func(childComplexity int) int
+		Source func(childComplexity int) int
+		TaskID func(childComplexity int) int
+		Title  func(childComplexity int) int
+		URL    func(childComplexity int) int
+	}
+
+	SubscriptionSettings struct {
+		DBPath                   func(childComplexity int) int
+		JavstashAPIKeyConfigured func(childComplexity int) int
+		JavstashEnabled          func(childComplexity int) int
+		PollEnabled              func(childComplexity int) int
+		PollIntervalSeconds      func(childComplexity int) int
+		Store                    func(childComplexity int) int
 	}
 
 	SystemSettings struct {
@@ -275,7 +275,7 @@ type ComplexityRoot struct {
 	}
 
 	TaskSettings struct {
-		JSONPath                    func(childComplexity int) int
+		DBPath                      func(childComplexity int) int
 		ProgressSyncEnabled         func(childComplexity int) int
 		ProgressSyncIntervalSeconds func(childComplexity int) int
 		Store                       func(childComplexity int) int
@@ -289,27 +289,27 @@ type MutationResolver interface {
 	SyncTaskProgress(ctx context.Context) ([]*model.Task, error)
 	TriggerTaskStashScan(ctx context.Context, id string) (*model.Task, error)
 	TriggerStashScans(ctx context.Context) ([]*model.Task, error)
-	FollowPerformer(ctx context.Context, stashPerformerID string) (*model.FollowingPerformer, error)
-	UnfollowPerformer(ctx context.Context, stashPerformerID string) (bool, error)
-	RefreshFollowingPerformer(ctx context.Context, stashPerformerID string) (*model.FollowingPerformer, error)
-	RefreshFollowingNow(ctx context.Context) ([]*model.FollowingPerformer, error)
 	UpdateStashSettings(ctx context.Context, input model.UpdateStashSettingsInput) (*model.Settings, error)
 	UpdateJackettSettings(ctx context.Context, input model.UpdateJackettSettingsInput) (*model.Settings, error)
 	UpdateQBittorrentSettings(ctx context.Context, input model.UpdateQBittorrentSettingsInput) (*model.Settings, error)
-	UpdateFollowingSettings(ctx context.Context, input model.UpdateFollowingSettingsInput) (*model.Settings, error)
+	UpdateSubscriptionSettings(ctx context.Context, input model.UpdateSubscriptionSettingsInput) (*model.Settings, error)
 	UpdateLoggingSettings(ctx context.Context, input model.UpdateLoggingSettingsInput) (*model.Settings, error)
 	StashMetadataScan(ctx context.Context, input model.StashMetadataScanInput) (string, error)
+	SubscribePerformer(ctx context.Context, stashPerformerID string) (*model.SubscribedPerformer, error)
+	UnsubscribePerformer(ctx context.Context, stashPerformerID string) (bool, error)
+	RefreshSubscribedPerformer(ctx context.Context, stashPerformerID string) (*model.SubscribedPerformer, error)
+	RefreshSubscriptionsNow(ctx context.Context) ([]*model.SubscribedPerformer, error)
 }
 type QueryResolver interface {
 	Health(ctx context.Context) (*model.Health, error)
 	Version(ctx context.Context) (string, error)
-	StashPerformers(ctx context.Context, search *string, page *int, pageSize *int) (*model.StashPerformerConnection, error)
-	FollowingPerformers(ctx context.Context) ([]*model.FollowingPerformer, error)
 	Logs(ctx context.Context, limit *int, minLevel *model.LogLevel) ([]*model.LogEntry, error)
 	JackettSearch(ctx context.Context, input model.JackettSearchInput) ([]*model.JackettSearchResult, error)
 	Settings(ctx context.Context) (*model.Settings, error)
 	StashJob(ctx context.Context, id string) (*model.StashJob, error)
 	DashboardStats(ctx context.Context) (*model.DashboardStats, error)
+	StashPerformers(ctx context.Context, search *string, page *int, pageSize *int) (*model.StashPerformerConnection, error)
+	SubscribedPerformers(ctx context.Context) ([]*model.SubscribedPerformer, error)
 	QbittorrentTorrents(ctx context.Context, limit *int) ([]*model.QBTorrent, error)
 	Task(ctx context.Context, id string) (*model.Task, error)
 	Tasks(ctx context.Context) ([]*model.Task, error)
@@ -431,153 +431,6 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.DownloadCandidate.Tracker(childComplexity), true
-
-	case "FollowingPerformer.lastCheckedAt":
-		if e.complexity.FollowingPerformer.LastCheckedAt == nil {
-			break
-		}
-
-		return e.complexity.FollowingPerformer.LastCheckedAt(childComplexity), true
-
-	case "FollowingPerformer.lastError":
-		if e.complexity.FollowingPerformer.LastError == nil {
-			break
-		}
-
-		return e.complexity.FollowingPerformer.LastError(childComplexity), true
-
-	case "FollowingPerformer.pendingReleaseCount":
-		if e.complexity.FollowingPerformer.PendingReleaseCount == nil {
-			break
-		}
-
-		return e.complexity.FollowingPerformer.PendingReleaseCount(childComplexity), true
-
-	case "FollowingPerformer.performer":
-		if e.complexity.FollowingPerformer.Performer == nil {
-			break
-		}
-
-		return e.complexity.FollowingPerformer.Performer(childComplexity), true
-
-	case "FollowingPerformer.processedReleaseCount":
-		if e.complexity.FollowingPerformer.ProcessedReleaseCount == nil {
-			break
-		}
-
-		return e.complexity.FollowingPerformer.ProcessedReleaseCount(childComplexity), true
-
-	case "FollowingPerformer.recentReleases":
-		if e.complexity.FollowingPerformer.RecentReleases == nil {
-			break
-		}
-
-		return e.complexity.FollowingPerformer.RecentReleases(childComplexity), true
-
-	case "FollowingRelease.code":
-		if e.complexity.FollowingRelease.Code == nil {
-			break
-		}
-
-		return e.complexity.FollowingRelease.Code(childComplexity), true
-
-	case "FollowingRelease.date":
-		if e.complexity.FollowingRelease.Date == nil {
-			break
-		}
-
-		return e.complexity.FollowingRelease.Date(childComplexity), true
-
-	case "FollowingRelease.key":
-		if e.complexity.FollowingRelease.Key == nil {
-			break
-		}
-
-		return e.complexity.FollowingRelease.Key(childComplexity), true
-
-	case "FollowingRelease.query":
-		if e.complexity.FollowingRelease.Query == nil {
-			break
-		}
-
-		return e.complexity.FollowingRelease.Query(childComplexity), true
-
-	case "FollowingRelease.seenAt":
-		if e.complexity.FollowingRelease.SeenAt == nil {
-			break
-		}
-
-		return e.complexity.FollowingRelease.SeenAt(childComplexity), true
-
-	case "FollowingRelease.source":
-		if e.complexity.FollowingRelease.Source == nil {
-			break
-		}
-
-		return e.complexity.FollowingRelease.Source(childComplexity), true
-
-	case "FollowingRelease.taskID":
-		if e.complexity.FollowingRelease.TaskID == nil {
-			break
-		}
-
-		return e.complexity.FollowingRelease.TaskID(childComplexity), true
-
-	case "FollowingRelease.title":
-		if e.complexity.FollowingRelease.Title == nil {
-			break
-		}
-
-		return e.complexity.FollowingRelease.Title(childComplexity), true
-
-	case "FollowingRelease.url":
-		if e.complexity.FollowingRelease.URL == nil {
-			break
-		}
-
-		return e.complexity.FollowingRelease.URL(childComplexity), true
-
-	case "FollowingSettings.jsonPath":
-		if e.complexity.FollowingSettings.JSONPath == nil {
-			break
-		}
-
-		return e.complexity.FollowingSettings.JSONPath(childComplexity), true
-
-	case "FollowingSettings.javstashApiKeyConfigured":
-		if e.complexity.FollowingSettings.JavstashAPIKeyConfigured == nil {
-			break
-		}
-
-		return e.complexity.FollowingSettings.JavstashAPIKeyConfigured(childComplexity), true
-
-	case "FollowingSettings.javstashEnabled":
-		if e.complexity.FollowingSettings.JavstashEnabled == nil {
-			break
-		}
-
-		return e.complexity.FollowingSettings.JavstashEnabled(childComplexity), true
-
-	case "FollowingSettings.pollEnabled":
-		if e.complexity.FollowingSettings.PollEnabled == nil {
-			break
-		}
-
-		return e.complexity.FollowingSettings.PollEnabled(childComplexity), true
-
-	case "FollowingSettings.pollIntervalSeconds":
-		if e.complexity.FollowingSettings.PollIntervalSeconds == nil {
-			break
-		}
-
-		return e.complexity.FollowingSettings.PollIntervalSeconds(childComplexity), true
-
-	case "FollowingSettings.store":
-		if e.complexity.FollowingSettings.Store == nil {
-			break
-		}
-
-		return e.complexity.FollowingSettings.Store(childComplexity), true
 
 	case "Health.message":
 		if e.complexity.Health.Message == nil {
@@ -778,18 +631,6 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.Mutation.DownloadMedia(childComplexity, args["input"].(model.DownloadMediaInput)), true
 
-	case "Mutation.followPerformer":
-		if e.complexity.Mutation.FollowPerformer == nil {
-			break
-		}
-
-		args, err := ec.field_Mutation_followPerformer_args(ctx, rawArgs)
-		if err != nil {
-			return 0, false
-		}
-
-		return e.complexity.Mutation.FollowPerformer(childComplexity, args["stashPerformerID"].(string)), true
-
 	case "Mutation.qbittorrentAdd":
 		if e.complexity.Mutation.QbittorrentAdd == nil {
 			break
@@ -802,24 +643,24 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.Mutation.QbittorrentAdd(childComplexity, args["input"].(model.QBittorrentAddInput)), true
 
-	case "Mutation.refreshFollowingNow":
-		if e.complexity.Mutation.RefreshFollowingNow == nil {
+	case "Mutation.refreshSubscribedPerformer":
+		if e.complexity.Mutation.RefreshSubscribedPerformer == nil {
 			break
 		}
 
-		return e.complexity.Mutation.RefreshFollowingNow(childComplexity), true
-
-	case "Mutation.refreshFollowingPerformer":
-		if e.complexity.Mutation.RefreshFollowingPerformer == nil {
-			break
-		}
-
-		args, err := ec.field_Mutation_refreshFollowingPerformer_args(ctx, rawArgs)
+		args, err := ec.field_Mutation_refreshSubscribedPerformer_args(ctx, rawArgs)
 		if err != nil {
 			return 0, false
 		}
 
-		return e.complexity.Mutation.RefreshFollowingPerformer(childComplexity, args["stashPerformerID"].(string)), true
+		return e.complexity.Mutation.RefreshSubscribedPerformer(childComplexity, args["stashPerformerID"].(string)), true
+
+	case "Mutation.refreshSubscriptionsNow":
+		if e.complexity.Mutation.RefreshSubscriptionsNow == nil {
+			break
+		}
+
+		return e.complexity.Mutation.RefreshSubscriptionsNow(childComplexity), true
 
 	case "Mutation.stashMetadataScan":
 		if e.complexity.Mutation.StashMetadataScan == nil {
@@ -832,6 +673,18 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.Mutation.StashMetadataScan(childComplexity, args["input"].(model.StashMetadataScanInput)), true
+
+	case "Mutation.subscribePerformer":
+		if e.complexity.Mutation.SubscribePerformer == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_subscribePerformer_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.SubscribePerformer(childComplexity, args["stashPerformerID"].(string)), true
 
 	case "Mutation.syncTaskProgress":
 		if e.complexity.Mutation.SyncTaskProgress == nil {
@@ -859,29 +712,17 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.Mutation.TriggerTaskStashScan(childComplexity, args["id"].(string)), true
 
-	case "Mutation.unfollowPerformer":
-		if e.complexity.Mutation.UnfollowPerformer == nil {
+	case "Mutation.unsubscribePerformer":
+		if e.complexity.Mutation.UnsubscribePerformer == nil {
 			break
 		}
 
-		args, err := ec.field_Mutation_unfollowPerformer_args(ctx, rawArgs)
+		args, err := ec.field_Mutation_unsubscribePerformer_args(ctx, rawArgs)
 		if err != nil {
 			return 0, false
 		}
 
-		return e.complexity.Mutation.UnfollowPerformer(childComplexity, args["stashPerformerID"].(string)), true
-
-	case "Mutation.updateFollowingSettings":
-		if e.complexity.Mutation.UpdateFollowingSettings == nil {
-			break
-		}
-
-		args, err := ec.field_Mutation_updateFollowingSettings_args(ctx, rawArgs)
-		if err != nil {
-			return 0, false
-		}
-
-		return e.complexity.Mutation.UpdateFollowingSettings(childComplexity, args["input"].(model.UpdateFollowingSettingsInput)), true
+		return e.complexity.Mutation.UnsubscribePerformer(childComplexity, args["stashPerformerID"].(string)), true
 
 	case "Mutation.updateJackettSettings":
 		if e.complexity.Mutation.UpdateJackettSettings == nil {
@@ -930,6 +771,18 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.Mutation.UpdateStashSettings(childComplexity, args["input"].(model.UpdateStashSettingsInput)), true
+
+	case "Mutation.updateSubscriptionSettings":
+		if e.complexity.Mutation.UpdateSubscriptionSettings == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_updateSubscriptionSettings_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.UpdateSubscriptionSettings(childComplexity, args["input"].(model.UpdateSubscriptionSettingsInput)), true
 
 	case "QBTorrent.addedOn":
 		if e.complexity.QBTorrent.AddedOn == nil {
@@ -1078,13 +931,6 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.Query.DashboardStats(childComplexity), true
 
-	case "Query.followingPerformers":
-		if e.complexity.Query.FollowingPerformers == nil {
-			break
-		}
-
-		return e.complexity.Query.FollowingPerformers(childComplexity), true
-
 	case "Query.health":
 		if e.complexity.Query.Health == nil {
 			break
@@ -1159,6 +1005,13 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.Query.StashPerformers(childComplexity, args["search"].(*string), args["page"].(*int), args["pageSize"].(*int)), true
 
+	case "Query.subscribedPerformers":
+		if e.complexity.Query.SubscribedPerformers == nil {
+			break
+		}
+
+		return e.complexity.Query.SubscribedPerformers(childComplexity), true
+
 	case "Query.task":
 		if e.complexity.Query.Task == nil {
 			break
@@ -1184,13 +1037,6 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.Query.Version(childComplexity), true
-
-	case "Settings.following":
-		if e.complexity.Settings.Following == nil {
-			break
-		}
-
-		return e.complexity.Settings.Following(childComplexity), true
 
 	case "Settings.jackett":
 		if e.complexity.Settings.Jackett == nil {
@@ -1219,6 +1065,13 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.Settings.Stash(childComplexity), true
+
+	case "Settings.subscription":
+		if e.complexity.Settings.Subscription == nil {
+			break
+		}
+
+		return e.complexity.Settings.Subscription(childComplexity), true
 
 	case "Settings.system":
 		if e.complexity.Settings.System == nil {
@@ -1311,13 +1164,6 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.StashPerformer.Favorite(childComplexity), true
 
-	case "StashPerformer.followed":
-		if e.complexity.StashPerformer.Followed == nil {
-			break
-		}
-
-		return e.complexity.StashPerformer.Followed(childComplexity), true
-
 	case "StashPerformer.id":
 		if e.complexity.StashPerformer.ID == nil {
 			break
@@ -1345,6 +1191,13 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.StashPerformer.SceneCount(childComplexity), true
+
+	case "StashPerformer.subscribed":
+		if e.complexity.StashPerformer.Subscribed == nil {
+			break
+		}
+
+		return e.complexity.StashPerformer.Subscribed(childComplexity), true
 
 	case "StashPerformerConnection.hasNextPage":
 		if e.complexity.StashPerformerConnection.HasNextPage == nil {
@@ -1429,6 +1282,153 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.StashSettings.URL(childComplexity), true
+
+	case "SubscribedPerformer.lastCheckedAt":
+		if e.complexity.SubscribedPerformer.LastCheckedAt == nil {
+			break
+		}
+
+		return e.complexity.SubscribedPerformer.LastCheckedAt(childComplexity), true
+
+	case "SubscribedPerformer.lastError":
+		if e.complexity.SubscribedPerformer.LastError == nil {
+			break
+		}
+
+		return e.complexity.SubscribedPerformer.LastError(childComplexity), true
+
+	case "SubscribedPerformer.pendingReleaseCount":
+		if e.complexity.SubscribedPerformer.PendingReleaseCount == nil {
+			break
+		}
+
+		return e.complexity.SubscribedPerformer.PendingReleaseCount(childComplexity), true
+
+	case "SubscribedPerformer.performer":
+		if e.complexity.SubscribedPerformer.Performer == nil {
+			break
+		}
+
+		return e.complexity.SubscribedPerformer.Performer(childComplexity), true
+
+	case "SubscribedPerformer.processedReleaseCount":
+		if e.complexity.SubscribedPerformer.ProcessedReleaseCount == nil {
+			break
+		}
+
+		return e.complexity.SubscribedPerformer.ProcessedReleaseCount(childComplexity), true
+
+	case "SubscribedPerformer.recentReleases":
+		if e.complexity.SubscribedPerformer.RecentReleases == nil {
+			break
+		}
+
+		return e.complexity.SubscribedPerformer.RecentReleases(childComplexity), true
+
+	case "SubscriptionRelease.code":
+		if e.complexity.SubscriptionRelease.Code == nil {
+			break
+		}
+
+		return e.complexity.SubscriptionRelease.Code(childComplexity), true
+
+	case "SubscriptionRelease.date":
+		if e.complexity.SubscriptionRelease.Date == nil {
+			break
+		}
+
+		return e.complexity.SubscriptionRelease.Date(childComplexity), true
+
+	case "SubscriptionRelease.key":
+		if e.complexity.SubscriptionRelease.Key == nil {
+			break
+		}
+
+		return e.complexity.SubscriptionRelease.Key(childComplexity), true
+
+	case "SubscriptionRelease.query":
+		if e.complexity.SubscriptionRelease.Query == nil {
+			break
+		}
+
+		return e.complexity.SubscriptionRelease.Query(childComplexity), true
+
+	case "SubscriptionRelease.seenAt":
+		if e.complexity.SubscriptionRelease.SeenAt == nil {
+			break
+		}
+
+		return e.complexity.SubscriptionRelease.SeenAt(childComplexity), true
+
+	case "SubscriptionRelease.source":
+		if e.complexity.SubscriptionRelease.Source == nil {
+			break
+		}
+
+		return e.complexity.SubscriptionRelease.Source(childComplexity), true
+
+	case "SubscriptionRelease.taskID":
+		if e.complexity.SubscriptionRelease.TaskID == nil {
+			break
+		}
+
+		return e.complexity.SubscriptionRelease.TaskID(childComplexity), true
+
+	case "SubscriptionRelease.title":
+		if e.complexity.SubscriptionRelease.Title == nil {
+			break
+		}
+
+		return e.complexity.SubscriptionRelease.Title(childComplexity), true
+
+	case "SubscriptionRelease.url":
+		if e.complexity.SubscriptionRelease.URL == nil {
+			break
+		}
+
+		return e.complexity.SubscriptionRelease.URL(childComplexity), true
+
+	case "SubscriptionSettings.dbPath":
+		if e.complexity.SubscriptionSettings.DBPath == nil {
+			break
+		}
+
+		return e.complexity.SubscriptionSettings.DBPath(childComplexity), true
+
+	case "SubscriptionSettings.javstashApiKeyConfigured":
+		if e.complexity.SubscriptionSettings.JavstashAPIKeyConfigured == nil {
+			break
+		}
+
+		return e.complexity.SubscriptionSettings.JavstashAPIKeyConfigured(childComplexity), true
+
+	case "SubscriptionSettings.javstashEnabled":
+		if e.complexity.SubscriptionSettings.JavstashEnabled == nil {
+			break
+		}
+
+		return e.complexity.SubscriptionSettings.JavstashEnabled(childComplexity), true
+
+	case "SubscriptionSettings.pollEnabled":
+		if e.complexity.SubscriptionSettings.PollEnabled == nil {
+			break
+		}
+
+		return e.complexity.SubscriptionSettings.PollEnabled(childComplexity), true
+
+	case "SubscriptionSettings.pollIntervalSeconds":
+		if e.complexity.SubscriptionSettings.PollIntervalSeconds == nil {
+			break
+		}
+
+		return e.complexity.SubscriptionSettings.PollIntervalSeconds(childComplexity), true
+
+	case "SubscriptionSettings.store":
+		if e.complexity.SubscriptionSettings.Store == nil {
+			break
+		}
+
+		return e.complexity.SubscriptionSettings.Store(childComplexity), true
 
 	case "SystemSettings.appVersion":
 		if e.complexity.SystemSettings.AppVersion == nil {
@@ -1584,12 +1584,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.Task.UpdatedAt(childComplexity), true
 
-	case "TaskSettings.jsonPath":
-		if e.complexity.TaskSettings.JSONPath == nil {
+	case "TaskSettings.dbPath":
+		if e.complexity.TaskSettings.DBPath == nil {
 			break
 		}
 
-		return e.complexity.TaskSettings.JSONPath(childComplexity), true
+		return e.complexity.TaskSettings.DBPath(childComplexity), true
 
 	case "TaskSettings.progressSyncEnabled":
 		if e.complexity.TaskSettings.ProgressSyncEnabled == nil {
@@ -1624,11 +1624,11 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 		ec.unmarshalInputJackettSearchInput,
 		ec.unmarshalInputQBittorrentAddInput,
 		ec.unmarshalInputStashMetadataScanInput,
-		ec.unmarshalInputUpdateFollowingSettingsInput,
 		ec.unmarshalInputUpdateJackettSettingsInput,
 		ec.unmarshalInputUpdateLoggingSettingsInput,
 		ec.unmarshalInputUpdateQBittorrentSettingsInput,
 		ec.unmarshalInputUpdateStashSettingsInput,
+		ec.unmarshalInputUpdateSubscriptionSettingsInput,
 	)
 	first := true
 
@@ -1731,69 +1731,6 @@ var sources = []*ast.Source{
   mutation: Mutation
 }
 `, BuiltIn: false},
-	{Name: "../../../graphql/moji/types/following.graphql", Input: `extend type Query {
-  "List Stash performers with current Moji following state"
-  stashPerformers(search: String, page: Int = 1, pageSize: Int = 24): StashPerformerConnection!
-
-  "List performers currently followed by Moji"
-  followingPerformers: [FollowingPerformer!]!
-}
-
-extend type Mutation {
-  "Mark a Stash performer as followed by Moji"
-  followPerformer(stashPerformerID: ID!): FollowingPerformer!
-
-  "Remove Moji following mark from a Stash performer"
-  unfollowPerformer(stashPerformerID: ID!): Boolean!
-
-  "Refresh a followed performer against the configured release source"
-  refreshFollowingPerformer(stashPerformerID: ID!): FollowingPerformer!
-
-  "Refresh all followed performers against the configured release source"
-  refreshFollowingNow: [FollowingPerformer!]!
-}
-
-type StashPerformer {
-  id: ID!
-  name: String!
-  aliasList: [String!]!
-  favorite: Boolean!
-  imagePath: String
-  sceneCount: Int!
-  followed: Boolean!
-}
-
-type StashPerformerConnection {
-  items: [StashPerformer!]!
-  page: Int!
-  pageSize: Int!
-  totalCount: Int!
-  totalPages: Int!
-  hasPrevPage: Boolean!
-  hasNextPage: Boolean!
-}
-
-type FollowingPerformer {
-  performer: StashPerformer!
-  lastCheckedAt: String
-  lastError: String
-  pendingReleaseCount: Int!
-  processedReleaseCount: Int!
-  recentReleases: [FollowingRelease!]!
-}
-
-type FollowingRelease {
-  key: ID!
-  source: String!
-  title: String!
-  code: String
-  date: String
-  url: String
-  query: String!
-  taskID: ID
-  seenAt: String!
-}
-`, BuiltIn: false},
 	{Name: "../../../graphql/moji/types/health.graphql", Input: `"Basic service health"
 type Health {
   ok: Boolean!
@@ -1866,8 +1803,8 @@ extend type Mutation {
   "Update qBittorrent settings and persist them to backend config"
   updateQBittorrentSettings(input: UpdateQBittorrentSettingsInput!): Settings!
 
-  "Update Following settings and persist them to backend config"
-  updateFollowingSettings(input: UpdateFollowingSettingsInput!): Settings!
+  "Update Subscription settings and persist them to backend config"
+  updateSubscriptionSettings(input: UpdateSubscriptionSettingsInput!): Settings!
 
   "Update logging settings and persist them to backend config"
   updateLoggingSettings(input: UpdateLoggingSettingsInput!): Settings!
@@ -1878,7 +1815,7 @@ type Settings {
   jackett: JackettSettings!
   qbittorrent: QBittorrentSettings!
   tasks: TaskSettings!
-  following: FollowingSettings!
+  subscription: SubscriptionSettings!
   logging: LoggingSettings!
   system: SystemSettings!
 }
@@ -1912,14 +1849,14 @@ type QBittorrentSettings {
 
 type TaskSettings {
   store: String!
-  jsonPath: String!
+  dbPath: String!
   progressSyncIntervalSeconds: Int!
   progressSyncEnabled: Boolean!
 }
 
-type FollowingSettings {
+type SubscriptionSettings {
   store: String!
-  jsonPath: String!
+  dbPath: String!
   pollIntervalSeconds: Int!
   pollEnabled: Boolean!
   javstashEnabled: Boolean!
@@ -1958,9 +1895,9 @@ input UpdateQBittorrentSettingsInput {
   tags: String!
 }
 
-input UpdateFollowingSettingsInput {
+input UpdateSubscriptionSettingsInput {
   store: String!
-  jsonPath: String!
+  dbPath: String!
   pollIntervalSeconds: Int!
   javstashApiKey: String
 }
@@ -2019,6 +1956,69 @@ type DashboardStats {
   downloading: Int!
   pendingScans: Int!
   failed: Int!
+}
+`, BuiltIn: false},
+	{Name: "../../../graphql/moji/types/subscription.graphql", Input: `extend type Query {
+  "List Stash performers with current Moji subscription state"
+  stashPerformers(search: String, page: Int = 1, pageSize: Int = 24): StashPerformerConnection!
+
+  "List performers currently subscribed by Moji"
+  subscribedPerformers: [SubscribedPerformer!]!
+}
+
+extend type Mutation {
+  "Mark a Stash performer as subscribed by Moji"
+  subscribePerformer(stashPerformerID: ID!): SubscribedPerformer!
+
+  "Remove Moji subscription mark from a Stash performer"
+  unsubscribePerformer(stashPerformerID: ID!): Boolean!
+
+  "Refresh a subscribed performer against the configured release source"
+  refreshSubscribedPerformer(stashPerformerID: ID!): SubscribedPerformer!
+
+  "Refresh all subscribed performers against the configured release source"
+  refreshSubscriptionsNow: [SubscribedPerformer!]!
+}
+
+type StashPerformer {
+  id: ID!
+  name: String!
+  aliasList: [String!]!
+  favorite: Boolean!
+  imagePath: String
+  sceneCount: Int!
+  subscribed: Boolean!
+}
+
+type StashPerformerConnection {
+  items: [StashPerformer!]!
+  page: Int!
+  pageSize: Int!
+  totalCount: Int!
+  totalPages: Int!
+  hasPrevPage: Boolean!
+  hasNextPage: Boolean!
+}
+
+type SubscribedPerformer {
+  performer: StashPerformer!
+  lastCheckedAt: String
+  lastError: String
+  pendingReleaseCount: Int!
+  processedReleaseCount: Int!
+  recentReleases: [SubscriptionRelease!]!
+}
+
+type SubscriptionRelease {
+  key: ID!
+  source: String!
+  title: String!
+  code: String
+  date: String
+  url: String
+  query: String!
+  taskID: ID
+  seenAt: String!
 }
 `, BuiltIn: false},
 	{Name: "../../../graphql/moji/types/task.graphql", Input: `extend type Query {
@@ -2183,34 +2183,6 @@ func (ec *executionContext) field_Mutation_downloadMedia_argsInput(
 	return zeroVal, nil
 }
 
-func (ec *executionContext) field_Mutation_followPerformer_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
-	var err error
-	args := map[string]any{}
-	arg0, err := ec.field_Mutation_followPerformer_argsStashPerformerID(ctx, rawArgs)
-	if err != nil {
-		return nil, err
-	}
-	args["stashPerformerID"] = arg0
-	return args, nil
-}
-func (ec *executionContext) field_Mutation_followPerformer_argsStashPerformerID(
-	ctx context.Context,
-	rawArgs map[string]any,
-) (string, error) {
-	if _, ok := rawArgs["stashPerformerID"]; !ok {
-		var zeroVal string
-		return zeroVal, nil
-	}
-
-	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("stashPerformerID"))
-	if tmp, ok := rawArgs["stashPerformerID"]; ok {
-		return ec.unmarshalNID2string(ctx, tmp)
-	}
-
-	var zeroVal string
-	return zeroVal, nil
-}
-
 func (ec *executionContext) field_Mutation_qbittorrentAdd_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
@@ -2239,17 +2211,17 @@ func (ec *executionContext) field_Mutation_qbittorrentAdd_argsInput(
 	return zeroVal, nil
 }
 
-func (ec *executionContext) field_Mutation_refreshFollowingPerformer_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+func (ec *executionContext) field_Mutation_refreshSubscribedPerformer_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
-	arg0, err := ec.field_Mutation_refreshFollowingPerformer_argsStashPerformerID(ctx, rawArgs)
+	arg0, err := ec.field_Mutation_refreshSubscribedPerformer_argsStashPerformerID(ctx, rawArgs)
 	if err != nil {
 		return nil, err
 	}
 	args["stashPerformerID"] = arg0
 	return args, nil
 }
-func (ec *executionContext) field_Mutation_refreshFollowingPerformer_argsStashPerformerID(
+func (ec *executionContext) field_Mutation_refreshSubscribedPerformer_argsStashPerformerID(
 	ctx context.Context,
 	rawArgs map[string]any,
 ) (string, error) {
@@ -2295,6 +2267,34 @@ func (ec *executionContext) field_Mutation_stashMetadataScan_argsInput(
 	return zeroVal, nil
 }
 
+func (ec *executionContext) field_Mutation_subscribePerformer_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := ec.field_Mutation_subscribePerformer_argsStashPerformerID(ctx, rawArgs)
+	if err != nil {
+		return nil, err
+	}
+	args["stashPerformerID"] = arg0
+	return args, nil
+}
+func (ec *executionContext) field_Mutation_subscribePerformer_argsStashPerformerID(
+	ctx context.Context,
+	rawArgs map[string]any,
+) (string, error) {
+	if _, ok := rawArgs["stashPerformerID"]; !ok {
+		var zeroVal string
+		return zeroVal, nil
+	}
+
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("stashPerformerID"))
+	if tmp, ok := rawArgs["stashPerformerID"]; ok {
+		return ec.unmarshalNID2string(ctx, tmp)
+	}
+
+	var zeroVal string
+	return zeroVal, nil
+}
+
 func (ec *executionContext) field_Mutation_triggerTaskStashScan_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
@@ -2323,17 +2323,17 @@ func (ec *executionContext) field_Mutation_triggerTaskStashScan_argsID(
 	return zeroVal, nil
 }
 
-func (ec *executionContext) field_Mutation_unfollowPerformer_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+func (ec *executionContext) field_Mutation_unsubscribePerformer_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
-	arg0, err := ec.field_Mutation_unfollowPerformer_argsStashPerformerID(ctx, rawArgs)
+	arg0, err := ec.field_Mutation_unsubscribePerformer_argsStashPerformerID(ctx, rawArgs)
 	if err != nil {
 		return nil, err
 	}
 	args["stashPerformerID"] = arg0
 	return args, nil
 }
-func (ec *executionContext) field_Mutation_unfollowPerformer_argsStashPerformerID(
+func (ec *executionContext) field_Mutation_unsubscribePerformer_argsStashPerformerID(
 	ctx context.Context,
 	rawArgs map[string]any,
 ) (string, error) {
@@ -2348,34 +2348,6 @@ func (ec *executionContext) field_Mutation_unfollowPerformer_argsStashPerformerI
 	}
 
 	var zeroVal string
-	return zeroVal, nil
-}
-
-func (ec *executionContext) field_Mutation_updateFollowingSettings_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
-	var err error
-	args := map[string]any{}
-	arg0, err := ec.field_Mutation_updateFollowingSettings_argsInput(ctx, rawArgs)
-	if err != nil {
-		return nil, err
-	}
-	args["input"] = arg0
-	return args, nil
-}
-func (ec *executionContext) field_Mutation_updateFollowingSettings_argsInput(
-	ctx context.Context,
-	rawArgs map[string]any,
-) (model.UpdateFollowingSettingsInput, error) {
-	if _, ok := rawArgs["input"]; !ok {
-		var zeroVal model.UpdateFollowingSettingsInput
-		return zeroVal, nil
-	}
-
-	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
-	if tmp, ok := rawArgs["input"]; ok {
-		return ec.unmarshalNUpdateFollowingSettingsInput2githubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐUpdateFollowingSettingsInput(ctx, tmp)
-	}
-
-	var zeroVal model.UpdateFollowingSettingsInput
 	return zeroVal, nil
 }
 
@@ -2488,6 +2460,34 @@ func (ec *executionContext) field_Mutation_updateStashSettings_argsInput(
 	}
 
 	var zeroVal model.UpdateStashSettingsInput
+	return zeroVal, nil
+}
+
+func (ec *executionContext) field_Mutation_updateSubscriptionSettings_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := ec.field_Mutation_updateSubscriptionSettings_argsInput(ctx, rawArgs)
+	if err != nil {
+		return nil, err
+	}
+	args["input"] = arg0
+	return args, nil
+}
+func (ec *executionContext) field_Mutation_updateSubscriptionSettings_argsInput(
+	ctx context.Context,
+	rawArgs map[string]any,
+) (model.UpdateSubscriptionSettingsInput, error) {
+	if _, ok := rawArgs["input"]; !ok {
+		var zeroVal model.UpdateSubscriptionSettingsInput
+		return zeroVal, nil
+	}
+
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
+	if tmp, ok := rawArgs["input"]; ok {
+		return ec.unmarshalNUpdateSubscriptionSettingsInput2githubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐUpdateSubscriptionSettingsInput(ctx, tmp)
+	}
+
+	var zeroVal model.UpdateSubscriptionSettingsInput
 	return zeroVal, nil
 }
 
@@ -3487,948 +3487,6 @@ func (ec *executionContext) fieldContext_DownloadCandidate_peers(_ context.Conte
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("field of type Int does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _FollowingPerformer_performer(ctx context.Context, field graphql.CollectedField, obj *model.FollowingPerformer) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_FollowingPerformer_performer(ctx, field)
-	if err != nil {
-		return graphql.Null
-	}
-	ctx = graphql.WithFieldContext(ctx, fc)
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.Performer, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(*model.StashPerformer)
-	fc.Result = res
-	return ec.marshalNStashPerformer2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐStashPerformer(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) fieldContext_FollowingPerformer_performer(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "FollowingPerformer",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			switch field.Name {
-			case "id":
-				return ec.fieldContext_StashPerformer_id(ctx, field)
-			case "name":
-				return ec.fieldContext_StashPerformer_name(ctx, field)
-			case "aliasList":
-				return ec.fieldContext_StashPerformer_aliasList(ctx, field)
-			case "favorite":
-				return ec.fieldContext_StashPerformer_favorite(ctx, field)
-			case "imagePath":
-				return ec.fieldContext_StashPerformer_imagePath(ctx, field)
-			case "sceneCount":
-				return ec.fieldContext_StashPerformer_sceneCount(ctx, field)
-			case "followed":
-				return ec.fieldContext_StashPerformer_followed(ctx, field)
-			}
-			return nil, fmt.Errorf("no field named %q was found under type StashPerformer", field.Name)
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _FollowingPerformer_lastCheckedAt(ctx context.Context, field graphql.CollectedField, obj *model.FollowingPerformer) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_FollowingPerformer_lastCheckedAt(ctx, field)
-	if err != nil {
-		return graphql.Null
-	}
-	ctx = graphql.WithFieldContext(ctx, fc)
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.LastCheckedAt, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		return graphql.Null
-	}
-	res := resTmp.(*string)
-	fc.Result = res
-	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) fieldContext_FollowingPerformer_lastCheckedAt(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "FollowingPerformer",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type String does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _FollowingPerformer_lastError(ctx context.Context, field graphql.CollectedField, obj *model.FollowingPerformer) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_FollowingPerformer_lastError(ctx, field)
-	if err != nil {
-		return graphql.Null
-	}
-	ctx = graphql.WithFieldContext(ctx, fc)
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.LastError, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		return graphql.Null
-	}
-	res := resTmp.(*string)
-	fc.Result = res
-	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) fieldContext_FollowingPerformer_lastError(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "FollowingPerformer",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type String does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _FollowingPerformer_pendingReleaseCount(ctx context.Context, field graphql.CollectedField, obj *model.FollowingPerformer) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_FollowingPerformer_pendingReleaseCount(ctx, field)
-	if err != nil {
-		return graphql.Null
-	}
-	ctx = graphql.WithFieldContext(ctx, fc)
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.PendingReleaseCount, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(int)
-	fc.Result = res
-	return ec.marshalNInt2int(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) fieldContext_FollowingPerformer_pendingReleaseCount(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "FollowingPerformer",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type Int does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _FollowingPerformer_processedReleaseCount(ctx context.Context, field graphql.CollectedField, obj *model.FollowingPerformer) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_FollowingPerformer_processedReleaseCount(ctx, field)
-	if err != nil {
-		return graphql.Null
-	}
-	ctx = graphql.WithFieldContext(ctx, fc)
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.ProcessedReleaseCount, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(int)
-	fc.Result = res
-	return ec.marshalNInt2int(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) fieldContext_FollowingPerformer_processedReleaseCount(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "FollowingPerformer",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type Int does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _FollowingPerformer_recentReleases(ctx context.Context, field graphql.CollectedField, obj *model.FollowingPerformer) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_FollowingPerformer_recentReleases(ctx, field)
-	if err != nil {
-		return graphql.Null
-	}
-	ctx = graphql.WithFieldContext(ctx, fc)
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.RecentReleases, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.([]*model.FollowingRelease)
-	fc.Result = res
-	return ec.marshalNFollowingRelease2ᚕᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐFollowingReleaseᚄ(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) fieldContext_FollowingPerformer_recentReleases(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "FollowingPerformer",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			switch field.Name {
-			case "key":
-				return ec.fieldContext_FollowingRelease_key(ctx, field)
-			case "source":
-				return ec.fieldContext_FollowingRelease_source(ctx, field)
-			case "title":
-				return ec.fieldContext_FollowingRelease_title(ctx, field)
-			case "code":
-				return ec.fieldContext_FollowingRelease_code(ctx, field)
-			case "date":
-				return ec.fieldContext_FollowingRelease_date(ctx, field)
-			case "url":
-				return ec.fieldContext_FollowingRelease_url(ctx, field)
-			case "query":
-				return ec.fieldContext_FollowingRelease_query(ctx, field)
-			case "taskID":
-				return ec.fieldContext_FollowingRelease_taskID(ctx, field)
-			case "seenAt":
-				return ec.fieldContext_FollowingRelease_seenAt(ctx, field)
-			}
-			return nil, fmt.Errorf("no field named %q was found under type FollowingRelease", field.Name)
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _FollowingRelease_key(ctx context.Context, field graphql.CollectedField, obj *model.FollowingRelease) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_FollowingRelease_key(ctx, field)
-	if err != nil {
-		return graphql.Null
-	}
-	ctx = graphql.WithFieldContext(ctx, fc)
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.Key, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(string)
-	fc.Result = res
-	return ec.marshalNID2string(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) fieldContext_FollowingRelease_key(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "FollowingRelease",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type ID does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _FollowingRelease_source(ctx context.Context, field graphql.CollectedField, obj *model.FollowingRelease) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_FollowingRelease_source(ctx, field)
-	if err != nil {
-		return graphql.Null
-	}
-	ctx = graphql.WithFieldContext(ctx, fc)
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.Source, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(string)
-	fc.Result = res
-	return ec.marshalNString2string(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) fieldContext_FollowingRelease_source(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "FollowingRelease",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type String does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _FollowingRelease_title(ctx context.Context, field graphql.CollectedField, obj *model.FollowingRelease) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_FollowingRelease_title(ctx, field)
-	if err != nil {
-		return graphql.Null
-	}
-	ctx = graphql.WithFieldContext(ctx, fc)
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.Title, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(string)
-	fc.Result = res
-	return ec.marshalNString2string(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) fieldContext_FollowingRelease_title(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "FollowingRelease",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type String does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _FollowingRelease_code(ctx context.Context, field graphql.CollectedField, obj *model.FollowingRelease) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_FollowingRelease_code(ctx, field)
-	if err != nil {
-		return graphql.Null
-	}
-	ctx = graphql.WithFieldContext(ctx, fc)
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.Code, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		return graphql.Null
-	}
-	res := resTmp.(*string)
-	fc.Result = res
-	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) fieldContext_FollowingRelease_code(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "FollowingRelease",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type String does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _FollowingRelease_date(ctx context.Context, field graphql.CollectedField, obj *model.FollowingRelease) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_FollowingRelease_date(ctx, field)
-	if err != nil {
-		return graphql.Null
-	}
-	ctx = graphql.WithFieldContext(ctx, fc)
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.Date, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		return graphql.Null
-	}
-	res := resTmp.(*string)
-	fc.Result = res
-	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) fieldContext_FollowingRelease_date(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "FollowingRelease",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type String does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _FollowingRelease_url(ctx context.Context, field graphql.CollectedField, obj *model.FollowingRelease) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_FollowingRelease_url(ctx, field)
-	if err != nil {
-		return graphql.Null
-	}
-	ctx = graphql.WithFieldContext(ctx, fc)
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.URL, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		return graphql.Null
-	}
-	res := resTmp.(*string)
-	fc.Result = res
-	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) fieldContext_FollowingRelease_url(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "FollowingRelease",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type String does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _FollowingRelease_query(ctx context.Context, field graphql.CollectedField, obj *model.FollowingRelease) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_FollowingRelease_query(ctx, field)
-	if err != nil {
-		return graphql.Null
-	}
-	ctx = graphql.WithFieldContext(ctx, fc)
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.Query, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(string)
-	fc.Result = res
-	return ec.marshalNString2string(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) fieldContext_FollowingRelease_query(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "FollowingRelease",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type String does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _FollowingRelease_taskID(ctx context.Context, field graphql.CollectedField, obj *model.FollowingRelease) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_FollowingRelease_taskID(ctx, field)
-	if err != nil {
-		return graphql.Null
-	}
-	ctx = graphql.WithFieldContext(ctx, fc)
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.TaskID, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		return graphql.Null
-	}
-	res := resTmp.(*string)
-	fc.Result = res
-	return ec.marshalOID2ᚖstring(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) fieldContext_FollowingRelease_taskID(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "FollowingRelease",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type ID does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _FollowingRelease_seenAt(ctx context.Context, field graphql.CollectedField, obj *model.FollowingRelease) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_FollowingRelease_seenAt(ctx, field)
-	if err != nil {
-		return graphql.Null
-	}
-	ctx = graphql.WithFieldContext(ctx, fc)
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.SeenAt, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(string)
-	fc.Result = res
-	return ec.marshalNString2string(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) fieldContext_FollowingRelease_seenAt(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "FollowingRelease",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type String does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _FollowingSettings_store(ctx context.Context, field graphql.CollectedField, obj *model.FollowingSettings) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_FollowingSettings_store(ctx, field)
-	if err != nil {
-		return graphql.Null
-	}
-	ctx = graphql.WithFieldContext(ctx, fc)
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.Store, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(string)
-	fc.Result = res
-	return ec.marshalNString2string(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) fieldContext_FollowingSettings_store(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "FollowingSettings",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type String does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _FollowingSettings_jsonPath(ctx context.Context, field graphql.CollectedField, obj *model.FollowingSettings) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_FollowingSettings_jsonPath(ctx, field)
-	if err != nil {
-		return graphql.Null
-	}
-	ctx = graphql.WithFieldContext(ctx, fc)
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.JSONPath, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(string)
-	fc.Result = res
-	return ec.marshalNString2string(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) fieldContext_FollowingSettings_jsonPath(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "FollowingSettings",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type String does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _FollowingSettings_pollIntervalSeconds(ctx context.Context, field graphql.CollectedField, obj *model.FollowingSettings) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_FollowingSettings_pollIntervalSeconds(ctx, field)
-	if err != nil {
-		return graphql.Null
-	}
-	ctx = graphql.WithFieldContext(ctx, fc)
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.PollIntervalSeconds, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(int)
-	fc.Result = res
-	return ec.marshalNInt2int(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) fieldContext_FollowingSettings_pollIntervalSeconds(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "FollowingSettings",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type Int does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _FollowingSettings_pollEnabled(ctx context.Context, field graphql.CollectedField, obj *model.FollowingSettings) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_FollowingSettings_pollEnabled(ctx, field)
-	if err != nil {
-		return graphql.Null
-	}
-	ctx = graphql.WithFieldContext(ctx, fc)
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.PollEnabled, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(bool)
-	fc.Result = res
-	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) fieldContext_FollowingSettings_pollEnabled(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "FollowingSettings",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type Boolean does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _FollowingSettings_javstashEnabled(ctx context.Context, field graphql.CollectedField, obj *model.FollowingSettings) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_FollowingSettings_javstashEnabled(ctx, field)
-	if err != nil {
-		return graphql.Null
-	}
-	ctx = graphql.WithFieldContext(ctx, fc)
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.JavstashEnabled, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(bool)
-	fc.Result = res
-	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) fieldContext_FollowingSettings_javstashEnabled(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "FollowingSettings",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type Boolean does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _FollowingSettings_javstashApiKeyConfigured(ctx context.Context, field graphql.CollectedField, obj *model.FollowingSettings) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_FollowingSettings_javstashApiKeyConfigured(ctx, field)
-	if err != nil {
-		return graphql.Null
-	}
-	ctx = graphql.WithFieldContext(ctx, fc)
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.JavstashAPIKeyConfigured, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(bool)
-	fc.Result = res
-	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) fieldContext_FollowingSettings_javstashApiKeyConfigured(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "FollowingSettings",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type Boolean does not have child fields")
 		},
 	}
 	return fc, nil
@@ -6062,257 +5120,6 @@ func (ec *executionContext) fieldContext_Mutation_triggerStashScans(_ context.Co
 	return fc, nil
 }
 
-func (ec *executionContext) _Mutation_followPerformer(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_Mutation_followPerformer(ctx, field)
-	if err != nil {
-		return graphql.Null
-	}
-	ctx = graphql.WithFieldContext(ctx, fc)
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
-		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Mutation().FollowPerformer(rctx, fc.Args["stashPerformerID"].(string))
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(*model.FollowingPerformer)
-	fc.Result = res
-	return ec.marshalNFollowingPerformer2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐFollowingPerformer(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) fieldContext_Mutation_followPerformer(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "Mutation",
-		Field:      field,
-		IsMethod:   true,
-		IsResolver: true,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			switch field.Name {
-			case "performer":
-				return ec.fieldContext_FollowingPerformer_performer(ctx, field)
-			case "lastCheckedAt":
-				return ec.fieldContext_FollowingPerformer_lastCheckedAt(ctx, field)
-			case "lastError":
-				return ec.fieldContext_FollowingPerformer_lastError(ctx, field)
-			case "pendingReleaseCount":
-				return ec.fieldContext_FollowingPerformer_pendingReleaseCount(ctx, field)
-			case "processedReleaseCount":
-				return ec.fieldContext_FollowingPerformer_processedReleaseCount(ctx, field)
-			case "recentReleases":
-				return ec.fieldContext_FollowingPerformer_recentReleases(ctx, field)
-			}
-			return nil, fmt.Errorf("no field named %q was found under type FollowingPerformer", field.Name)
-		},
-	}
-	defer func() {
-		if r := recover(); r != nil {
-			err = ec.Recover(ctx, r)
-			ec.Error(ctx, err)
-		}
-	}()
-	ctx = graphql.WithFieldContext(ctx, fc)
-	if fc.Args, err = ec.field_Mutation_followPerformer_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
-		ec.Error(ctx, err)
-		return fc, err
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _Mutation_unfollowPerformer(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_Mutation_unfollowPerformer(ctx, field)
-	if err != nil {
-		return graphql.Null
-	}
-	ctx = graphql.WithFieldContext(ctx, fc)
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
-		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Mutation().UnfollowPerformer(rctx, fc.Args["stashPerformerID"].(string))
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(bool)
-	fc.Result = res
-	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) fieldContext_Mutation_unfollowPerformer(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "Mutation",
-		Field:      field,
-		IsMethod:   true,
-		IsResolver: true,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type Boolean does not have child fields")
-		},
-	}
-	defer func() {
-		if r := recover(); r != nil {
-			err = ec.Recover(ctx, r)
-			ec.Error(ctx, err)
-		}
-	}()
-	ctx = graphql.WithFieldContext(ctx, fc)
-	if fc.Args, err = ec.field_Mutation_unfollowPerformer_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
-		ec.Error(ctx, err)
-		return fc, err
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _Mutation_refreshFollowingPerformer(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_Mutation_refreshFollowingPerformer(ctx, field)
-	if err != nil {
-		return graphql.Null
-	}
-	ctx = graphql.WithFieldContext(ctx, fc)
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
-		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Mutation().RefreshFollowingPerformer(rctx, fc.Args["stashPerformerID"].(string))
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(*model.FollowingPerformer)
-	fc.Result = res
-	return ec.marshalNFollowingPerformer2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐFollowingPerformer(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) fieldContext_Mutation_refreshFollowingPerformer(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "Mutation",
-		Field:      field,
-		IsMethod:   true,
-		IsResolver: true,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			switch field.Name {
-			case "performer":
-				return ec.fieldContext_FollowingPerformer_performer(ctx, field)
-			case "lastCheckedAt":
-				return ec.fieldContext_FollowingPerformer_lastCheckedAt(ctx, field)
-			case "lastError":
-				return ec.fieldContext_FollowingPerformer_lastError(ctx, field)
-			case "pendingReleaseCount":
-				return ec.fieldContext_FollowingPerformer_pendingReleaseCount(ctx, field)
-			case "processedReleaseCount":
-				return ec.fieldContext_FollowingPerformer_processedReleaseCount(ctx, field)
-			case "recentReleases":
-				return ec.fieldContext_FollowingPerformer_recentReleases(ctx, field)
-			}
-			return nil, fmt.Errorf("no field named %q was found under type FollowingPerformer", field.Name)
-		},
-	}
-	defer func() {
-		if r := recover(); r != nil {
-			err = ec.Recover(ctx, r)
-			ec.Error(ctx, err)
-		}
-	}()
-	ctx = graphql.WithFieldContext(ctx, fc)
-	if fc.Args, err = ec.field_Mutation_refreshFollowingPerformer_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
-		ec.Error(ctx, err)
-		return fc, err
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _Mutation_refreshFollowingNow(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_Mutation_refreshFollowingNow(ctx, field)
-	if err != nil {
-		return graphql.Null
-	}
-	ctx = graphql.WithFieldContext(ctx, fc)
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
-		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Mutation().RefreshFollowingNow(rctx)
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.([]*model.FollowingPerformer)
-	fc.Result = res
-	return ec.marshalNFollowingPerformer2ᚕᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐFollowingPerformerᚄ(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) fieldContext_Mutation_refreshFollowingNow(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "Mutation",
-		Field:      field,
-		IsMethod:   true,
-		IsResolver: true,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			switch field.Name {
-			case "performer":
-				return ec.fieldContext_FollowingPerformer_performer(ctx, field)
-			case "lastCheckedAt":
-				return ec.fieldContext_FollowingPerformer_lastCheckedAt(ctx, field)
-			case "lastError":
-				return ec.fieldContext_FollowingPerformer_lastError(ctx, field)
-			case "pendingReleaseCount":
-				return ec.fieldContext_FollowingPerformer_pendingReleaseCount(ctx, field)
-			case "processedReleaseCount":
-				return ec.fieldContext_FollowingPerformer_processedReleaseCount(ctx, field)
-			case "recentReleases":
-				return ec.fieldContext_FollowingPerformer_recentReleases(ctx, field)
-			}
-			return nil, fmt.Errorf("no field named %q was found under type FollowingPerformer", field.Name)
-		},
-	}
-	return fc, nil
-}
-
 func (ec *executionContext) _Mutation_updateStashSettings(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_Mutation_updateStashSettings(ctx, field)
 	if err != nil {
@@ -6360,8 +5167,8 @@ func (ec *executionContext) fieldContext_Mutation_updateStashSettings(ctx contex
 				return ec.fieldContext_Settings_qbittorrent(ctx, field)
 			case "tasks":
 				return ec.fieldContext_Settings_tasks(ctx, field)
-			case "following":
-				return ec.fieldContext_Settings_following(ctx, field)
+			case "subscription":
+				return ec.fieldContext_Settings_subscription(ctx, field)
 			case "logging":
 				return ec.fieldContext_Settings_logging(ctx, field)
 			case "system":
@@ -6431,8 +5238,8 @@ func (ec *executionContext) fieldContext_Mutation_updateJackettSettings(ctx cont
 				return ec.fieldContext_Settings_qbittorrent(ctx, field)
 			case "tasks":
 				return ec.fieldContext_Settings_tasks(ctx, field)
-			case "following":
-				return ec.fieldContext_Settings_following(ctx, field)
+			case "subscription":
+				return ec.fieldContext_Settings_subscription(ctx, field)
 			case "logging":
 				return ec.fieldContext_Settings_logging(ctx, field)
 			case "system":
@@ -6502,8 +5309,8 @@ func (ec *executionContext) fieldContext_Mutation_updateQBittorrentSettings(ctx 
 				return ec.fieldContext_Settings_qbittorrent(ctx, field)
 			case "tasks":
 				return ec.fieldContext_Settings_tasks(ctx, field)
-			case "following":
-				return ec.fieldContext_Settings_following(ctx, field)
+			case "subscription":
+				return ec.fieldContext_Settings_subscription(ctx, field)
 			case "logging":
 				return ec.fieldContext_Settings_logging(ctx, field)
 			case "system":
@@ -6526,8 +5333,8 @@ func (ec *executionContext) fieldContext_Mutation_updateQBittorrentSettings(ctx 
 	return fc, nil
 }
 
-func (ec *executionContext) _Mutation_updateFollowingSettings(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_Mutation_updateFollowingSettings(ctx, field)
+func (ec *executionContext) _Mutation_updateSubscriptionSettings(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Mutation_updateSubscriptionSettings(ctx, field)
 	if err != nil {
 		return graphql.Null
 	}
@@ -6540,7 +5347,7 @@ func (ec *executionContext) _Mutation_updateFollowingSettings(ctx context.Contex
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Mutation().UpdateFollowingSettings(rctx, fc.Args["input"].(model.UpdateFollowingSettingsInput))
+		return ec.resolvers.Mutation().UpdateSubscriptionSettings(rctx, fc.Args["input"].(model.UpdateSubscriptionSettingsInput))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -6557,7 +5364,7 @@ func (ec *executionContext) _Mutation_updateFollowingSettings(ctx context.Contex
 	return ec.marshalNSettings2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐSettings(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_Mutation_updateFollowingSettings(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_Mutation_updateSubscriptionSettings(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "Mutation",
 		Field:      field,
@@ -6573,8 +5380,8 @@ func (ec *executionContext) fieldContext_Mutation_updateFollowingSettings(ctx co
 				return ec.fieldContext_Settings_qbittorrent(ctx, field)
 			case "tasks":
 				return ec.fieldContext_Settings_tasks(ctx, field)
-			case "following":
-				return ec.fieldContext_Settings_following(ctx, field)
+			case "subscription":
+				return ec.fieldContext_Settings_subscription(ctx, field)
 			case "logging":
 				return ec.fieldContext_Settings_logging(ctx, field)
 			case "system":
@@ -6590,7 +5397,7 @@ func (ec *executionContext) fieldContext_Mutation_updateFollowingSettings(ctx co
 		}
 	}()
 	ctx = graphql.WithFieldContext(ctx, fc)
-	if fc.Args, err = ec.field_Mutation_updateFollowingSettings_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+	if fc.Args, err = ec.field_Mutation_updateSubscriptionSettings_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return fc, err
 	}
@@ -6644,8 +5451,8 @@ func (ec *executionContext) fieldContext_Mutation_updateLoggingSettings(ctx cont
 				return ec.fieldContext_Settings_qbittorrent(ctx, field)
 			case "tasks":
 				return ec.fieldContext_Settings_tasks(ctx, field)
-			case "following":
-				return ec.fieldContext_Settings_following(ctx, field)
+			case "subscription":
+				return ec.fieldContext_Settings_subscription(ctx, field)
 			case "logging":
 				return ec.fieldContext_Settings_logging(ctx, field)
 			case "system":
@@ -6719,6 +5526,257 @@ func (ec *executionContext) fieldContext_Mutation_stashMetadataScan(ctx context.
 	if fc.Args, err = ec.field_Mutation_stashMetadataScan_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_subscribePerformer(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Mutation_subscribePerformer(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().SubscribePerformer(rctx, fc.Args["stashPerformerID"].(string))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*model.SubscribedPerformer)
+	fc.Result = res
+	return ec.marshalNSubscribedPerformer2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐSubscribedPerformer(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Mutation_subscribePerformer(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "performer":
+				return ec.fieldContext_SubscribedPerformer_performer(ctx, field)
+			case "lastCheckedAt":
+				return ec.fieldContext_SubscribedPerformer_lastCheckedAt(ctx, field)
+			case "lastError":
+				return ec.fieldContext_SubscribedPerformer_lastError(ctx, field)
+			case "pendingReleaseCount":
+				return ec.fieldContext_SubscribedPerformer_pendingReleaseCount(ctx, field)
+			case "processedReleaseCount":
+				return ec.fieldContext_SubscribedPerformer_processedReleaseCount(ctx, field)
+			case "recentReleases":
+				return ec.fieldContext_SubscribedPerformer_recentReleases(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type SubscribedPerformer", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_subscribePerformer_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_unsubscribePerformer(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Mutation_unsubscribePerformer(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().UnsubscribePerformer(rctx, fc.Args["stashPerformerID"].(string))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(bool)
+	fc.Result = res
+	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Mutation_unsubscribePerformer(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_unsubscribePerformer_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_refreshSubscribedPerformer(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Mutation_refreshSubscribedPerformer(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().RefreshSubscribedPerformer(rctx, fc.Args["stashPerformerID"].(string))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*model.SubscribedPerformer)
+	fc.Result = res
+	return ec.marshalNSubscribedPerformer2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐSubscribedPerformer(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Mutation_refreshSubscribedPerformer(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "performer":
+				return ec.fieldContext_SubscribedPerformer_performer(ctx, field)
+			case "lastCheckedAt":
+				return ec.fieldContext_SubscribedPerformer_lastCheckedAt(ctx, field)
+			case "lastError":
+				return ec.fieldContext_SubscribedPerformer_lastError(ctx, field)
+			case "pendingReleaseCount":
+				return ec.fieldContext_SubscribedPerformer_pendingReleaseCount(ctx, field)
+			case "processedReleaseCount":
+				return ec.fieldContext_SubscribedPerformer_processedReleaseCount(ctx, field)
+			case "recentReleases":
+				return ec.fieldContext_SubscribedPerformer_recentReleases(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type SubscribedPerformer", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_refreshSubscribedPerformer_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_refreshSubscriptionsNow(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Mutation_refreshSubscriptionsNow(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().RefreshSubscriptionsNow(rctx)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]*model.SubscribedPerformer)
+	fc.Result = res
+	return ec.marshalNSubscribedPerformer2ᚕᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐSubscribedPerformerᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Mutation_refreshSubscriptionsNow(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "performer":
+				return ec.fieldContext_SubscribedPerformer_performer(ctx, field)
+			case "lastCheckedAt":
+				return ec.fieldContext_SubscribedPerformer_lastCheckedAt(ctx, field)
+			case "lastError":
+				return ec.fieldContext_SubscribedPerformer_lastError(ctx, field)
+			case "pendingReleaseCount":
+				return ec.fieldContext_SubscribedPerformer_pendingReleaseCount(ctx, field)
+			case "processedReleaseCount":
+				return ec.fieldContext_SubscribedPerformer_processedReleaseCount(ctx, field)
+			case "recentReleases":
+				return ec.fieldContext_SubscribedPerformer_recentReleases(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type SubscribedPerformer", field.Name)
+		},
 	}
 	return fc, nil
 }
@@ -7697,135 +6755,6 @@ func (ec *executionContext) fieldContext_Query_version(_ context.Context, field 
 	return fc, nil
 }
 
-func (ec *executionContext) _Query_stashPerformers(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_Query_stashPerformers(ctx, field)
-	if err != nil {
-		return graphql.Null
-	}
-	ctx = graphql.WithFieldContext(ctx, fc)
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
-		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Query().StashPerformers(rctx, fc.Args["search"].(*string), fc.Args["page"].(*int), fc.Args["pageSize"].(*int))
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(*model.StashPerformerConnection)
-	fc.Result = res
-	return ec.marshalNStashPerformerConnection2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐStashPerformerConnection(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) fieldContext_Query_stashPerformers(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "Query",
-		Field:      field,
-		IsMethod:   true,
-		IsResolver: true,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			switch field.Name {
-			case "items":
-				return ec.fieldContext_StashPerformerConnection_items(ctx, field)
-			case "page":
-				return ec.fieldContext_StashPerformerConnection_page(ctx, field)
-			case "pageSize":
-				return ec.fieldContext_StashPerformerConnection_pageSize(ctx, field)
-			case "totalCount":
-				return ec.fieldContext_StashPerformerConnection_totalCount(ctx, field)
-			case "totalPages":
-				return ec.fieldContext_StashPerformerConnection_totalPages(ctx, field)
-			case "hasPrevPage":
-				return ec.fieldContext_StashPerformerConnection_hasPrevPage(ctx, field)
-			case "hasNextPage":
-				return ec.fieldContext_StashPerformerConnection_hasNextPage(ctx, field)
-			}
-			return nil, fmt.Errorf("no field named %q was found under type StashPerformerConnection", field.Name)
-		},
-	}
-	defer func() {
-		if r := recover(); r != nil {
-			err = ec.Recover(ctx, r)
-			ec.Error(ctx, err)
-		}
-	}()
-	ctx = graphql.WithFieldContext(ctx, fc)
-	if fc.Args, err = ec.field_Query_stashPerformers_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
-		ec.Error(ctx, err)
-		return fc, err
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _Query_followingPerformers(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_Query_followingPerformers(ctx, field)
-	if err != nil {
-		return graphql.Null
-	}
-	ctx = graphql.WithFieldContext(ctx, fc)
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
-		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Query().FollowingPerformers(rctx)
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.([]*model.FollowingPerformer)
-	fc.Result = res
-	return ec.marshalNFollowingPerformer2ᚕᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐFollowingPerformerᚄ(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) fieldContext_Query_followingPerformers(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "Query",
-		Field:      field,
-		IsMethod:   true,
-		IsResolver: true,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			switch field.Name {
-			case "performer":
-				return ec.fieldContext_FollowingPerformer_performer(ctx, field)
-			case "lastCheckedAt":
-				return ec.fieldContext_FollowingPerformer_lastCheckedAt(ctx, field)
-			case "lastError":
-				return ec.fieldContext_FollowingPerformer_lastError(ctx, field)
-			case "pendingReleaseCount":
-				return ec.fieldContext_FollowingPerformer_pendingReleaseCount(ctx, field)
-			case "processedReleaseCount":
-				return ec.fieldContext_FollowingPerformer_processedReleaseCount(ctx, field)
-			case "recentReleases":
-				return ec.fieldContext_FollowingPerformer_recentReleases(ctx, field)
-			}
-			return nil, fmt.Errorf("no field named %q was found under type FollowingPerformer", field.Name)
-		},
-	}
-	return fc, nil
-}
-
 func (ec *executionContext) _Query_logs(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_Query_logs(ctx, field)
 	if err != nil {
@@ -8015,8 +6944,8 @@ func (ec *executionContext) fieldContext_Query_settings(_ context.Context, field
 				return ec.fieldContext_Settings_qbittorrent(ctx, field)
 			case "tasks":
 				return ec.fieldContext_Settings_tasks(ctx, field)
-			case "following":
-				return ec.fieldContext_Settings_following(ctx, field)
+			case "subscription":
+				return ec.fieldContext_Settings_subscription(ctx, field)
 			case "logging":
 				return ec.fieldContext_Settings_logging(ctx, field)
 			case "system":
@@ -8153,6 +7082,135 @@ func (ec *executionContext) fieldContext_Query_dashboardStats(_ context.Context,
 				return ec.fieldContext_DashboardStats_failed(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type DashboardStats", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Query_stashPerformers(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Query_stashPerformers(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Query().StashPerformers(rctx, fc.Args["search"].(*string), fc.Args["page"].(*int), fc.Args["pageSize"].(*int))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*model.StashPerformerConnection)
+	fc.Result = res
+	return ec.marshalNStashPerformerConnection2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐStashPerformerConnection(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Query_stashPerformers(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "items":
+				return ec.fieldContext_StashPerformerConnection_items(ctx, field)
+			case "page":
+				return ec.fieldContext_StashPerformerConnection_page(ctx, field)
+			case "pageSize":
+				return ec.fieldContext_StashPerformerConnection_pageSize(ctx, field)
+			case "totalCount":
+				return ec.fieldContext_StashPerformerConnection_totalCount(ctx, field)
+			case "totalPages":
+				return ec.fieldContext_StashPerformerConnection_totalPages(ctx, field)
+			case "hasPrevPage":
+				return ec.fieldContext_StashPerformerConnection_hasPrevPage(ctx, field)
+			case "hasNextPage":
+				return ec.fieldContext_StashPerformerConnection_hasNextPage(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type StashPerformerConnection", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Query_stashPerformers_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Query_subscribedPerformers(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Query_subscribedPerformers(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Query().SubscribedPerformers(rctx)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]*model.SubscribedPerformer)
+	fc.Result = res
+	return ec.marshalNSubscribedPerformer2ᚕᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐSubscribedPerformerᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Query_subscribedPerformers(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "performer":
+				return ec.fieldContext_SubscribedPerformer_performer(ctx, field)
+			case "lastCheckedAt":
+				return ec.fieldContext_SubscribedPerformer_lastCheckedAt(ctx, field)
+			case "lastError":
+				return ec.fieldContext_SubscribedPerformer_lastError(ctx, field)
+			case "pendingReleaseCount":
+				return ec.fieldContext_SubscribedPerformer_pendingReleaseCount(ctx, field)
+			case "processedReleaseCount":
+				return ec.fieldContext_SubscribedPerformer_processedReleaseCount(ctx, field)
+			case "recentReleases":
+				return ec.fieldContext_SubscribedPerformer_recentReleases(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type SubscribedPerformer", field.Name)
 		},
 	}
 	return fc, nil
@@ -8767,8 +7825,8 @@ func (ec *executionContext) fieldContext_Settings_tasks(_ context.Context, field
 			switch field.Name {
 			case "store":
 				return ec.fieldContext_TaskSettings_store(ctx, field)
-			case "jsonPath":
-				return ec.fieldContext_TaskSettings_jsonPath(ctx, field)
+			case "dbPath":
+				return ec.fieldContext_TaskSettings_dbPath(ctx, field)
 			case "progressSyncIntervalSeconds":
 				return ec.fieldContext_TaskSettings_progressSyncIntervalSeconds(ctx, field)
 			case "progressSyncEnabled":
@@ -8780,8 +7838,8 @@ func (ec *executionContext) fieldContext_Settings_tasks(_ context.Context, field
 	return fc, nil
 }
 
-func (ec *executionContext) _Settings_following(ctx context.Context, field graphql.CollectedField, obj *model.Settings) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_Settings_following(ctx, field)
+func (ec *executionContext) _Settings_subscription(ctx context.Context, field graphql.CollectedField, obj *model.Settings) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Settings_subscription(ctx, field)
 	if err != nil {
 		return graphql.Null
 	}
@@ -8794,7 +7852,7 @@ func (ec *executionContext) _Settings_following(ctx context.Context, field graph
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
 		ctx = rctx // use context from middleware stack in children
-		return obj.Following, nil
+		return obj.Subscription, nil
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -8806,12 +7864,12 @@ func (ec *executionContext) _Settings_following(ctx context.Context, field graph
 		}
 		return graphql.Null
 	}
-	res := resTmp.(*model.FollowingSettings)
+	res := resTmp.(*model.SubscriptionSettings)
 	fc.Result = res
-	return ec.marshalNFollowingSettings2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐFollowingSettings(ctx, field.Selections, res)
+	return ec.marshalNSubscriptionSettings2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐSubscriptionSettings(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_Settings_following(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_Settings_subscription(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "Settings",
 		Field:      field,
@@ -8820,19 +7878,19 @@ func (ec *executionContext) fieldContext_Settings_following(_ context.Context, f
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			switch field.Name {
 			case "store":
-				return ec.fieldContext_FollowingSettings_store(ctx, field)
-			case "jsonPath":
-				return ec.fieldContext_FollowingSettings_jsonPath(ctx, field)
+				return ec.fieldContext_SubscriptionSettings_store(ctx, field)
+			case "dbPath":
+				return ec.fieldContext_SubscriptionSettings_dbPath(ctx, field)
 			case "pollIntervalSeconds":
-				return ec.fieldContext_FollowingSettings_pollIntervalSeconds(ctx, field)
+				return ec.fieldContext_SubscriptionSettings_pollIntervalSeconds(ctx, field)
 			case "pollEnabled":
-				return ec.fieldContext_FollowingSettings_pollEnabled(ctx, field)
+				return ec.fieldContext_SubscriptionSettings_pollEnabled(ctx, field)
 			case "javstashEnabled":
-				return ec.fieldContext_FollowingSettings_javstashEnabled(ctx, field)
+				return ec.fieldContext_SubscriptionSettings_javstashEnabled(ctx, field)
 			case "javstashApiKeyConfigured":
-				return ec.fieldContext_FollowingSettings_javstashApiKeyConfigured(ctx, field)
+				return ec.fieldContext_SubscriptionSettings_javstashApiKeyConfigured(ctx, field)
 			}
-			return nil, fmt.Errorf("no field named %q was found under type FollowingSettings", field.Name)
+			return nil, fmt.Errorf("no field named %q was found under type SubscriptionSettings", field.Name)
 		},
 	}
 	return fc, nil
@@ -9584,8 +8642,8 @@ func (ec *executionContext) fieldContext_StashPerformer_sceneCount(_ context.Con
 	return fc, nil
 }
 
-func (ec *executionContext) _StashPerformer_followed(ctx context.Context, field graphql.CollectedField, obj *model.StashPerformer) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_StashPerformer_followed(ctx, field)
+func (ec *executionContext) _StashPerformer_subscribed(ctx context.Context, field graphql.CollectedField, obj *model.StashPerformer) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_StashPerformer_subscribed(ctx, field)
 	if err != nil {
 		return graphql.Null
 	}
@@ -9598,7 +8656,7 @@ func (ec *executionContext) _StashPerformer_followed(ctx context.Context, field 
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
 		ctx = rctx // use context from middleware stack in children
-		return obj.Followed, nil
+		return obj.Subscribed, nil
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -9615,7 +8673,7 @@ func (ec *executionContext) _StashPerformer_followed(ctx context.Context, field 
 	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_StashPerformer_followed(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_StashPerformer_subscribed(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "StashPerformer",
 		Field:      field,
@@ -9679,8 +8737,8 @@ func (ec *executionContext) fieldContext_StashPerformerConnection_items(_ contex
 				return ec.fieldContext_StashPerformer_imagePath(ctx, field)
 			case "sceneCount":
 				return ec.fieldContext_StashPerformer_sceneCount(ctx, field)
-			case "followed":
-				return ec.fieldContext_StashPerformer_followed(ctx, field)
+			case "subscribed":
+				return ec.fieldContext_StashPerformer_subscribed(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type StashPerformer", field.Name)
 		},
@@ -10167,6 +9225,948 @@ func (ec *executionContext) fieldContext_StashSettings_libraryPath(_ context.Con
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _SubscribedPerformer_performer(ctx context.Context, field graphql.CollectedField, obj *model.SubscribedPerformer) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_SubscribedPerformer_performer(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Performer, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*model.StashPerformer)
+	fc.Result = res
+	return ec.marshalNStashPerformer2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐStashPerformer(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_SubscribedPerformer_performer(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "SubscribedPerformer",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_StashPerformer_id(ctx, field)
+			case "name":
+				return ec.fieldContext_StashPerformer_name(ctx, field)
+			case "aliasList":
+				return ec.fieldContext_StashPerformer_aliasList(ctx, field)
+			case "favorite":
+				return ec.fieldContext_StashPerformer_favorite(ctx, field)
+			case "imagePath":
+				return ec.fieldContext_StashPerformer_imagePath(ctx, field)
+			case "sceneCount":
+				return ec.fieldContext_StashPerformer_sceneCount(ctx, field)
+			case "subscribed":
+				return ec.fieldContext_StashPerformer_subscribed(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type StashPerformer", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _SubscribedPerformer_lastCheckedAt(ctx context.Context, field graphql.CollectedField, obj *model.SubscribedPerformer) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_SubscribedPerformer_lastCheckedAt(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.LastCheckedAt, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*string)
+	fc.Result = res
+	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_SubscribedPerformer_lastCheckedAt(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "SubscribedPerformer",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _SubscribedPerformer_lastError(ctx context.Context, field graphql.CollectedField, obj *model.SubscribedPerformer) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_SubscribedPerformer_lastError(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.LastError, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*string)
+	fc.Result = res
+	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_SubscribedPerformer_lastError(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "SubscribedPerformer",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _SubscribedPerformer_pendingReleaseCount(ctx context.Context, field graphql.CollectedField, obj *model.SubscribedPerformer) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_SubscribedPerformer_pendingReleaseCount(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.PendingReleaseCount, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int)
+	fc.Result = res
+	return ec.marshalNInt2int(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_SubscribedPerformer_pendingReleaseCount(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "SubscribedPerformer",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _SubscribedPerformer_processedReleaseCount(ctx context.Context, field graphql.CollectedField, obj *model.SubscribedPerformer) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_SubscribedPerformer_processedReleaseCount(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.ProcessedReleaseCount, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int)
+	fc.Result = res
+	return ec.marshalNInt2int(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_SubscribedPerformer_processedReleaseCount(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "SubscribedPerformer",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _SubscribedPerformer_recentReleases(ctx context.Context, field graphql.CollectedField, obj *model.SubscribedPerformer) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_SubscribedPerformer_recentReleases(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.RecentReleases, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]*model.SubscriptionRelease)
+	fc.Result = res
+	return ec.marshalNSubscriptionRelease2ᚕᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐSubscriptionReleaseᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_SubscribedPerformer_recentReleases(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "SubscribedPerformer",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "key":
+				return ec.fieldContext_SubscriptionRelease_key(ctx, field)
+			case "source":
+				return ec.fieldContext_SubscriptionRelease_source(ctx, field)
+			case "title":
+				return ec.fieldContext_SubscriptionRelease_title(ctx, field)
+			case "code":
+				return ec.fieldContext_SubscriptionRelease_code(ctx, field)
+			case "date":
+				return ec.fieldContext_SubscriptionRelease_date(ctx, field)
+			case "url":
+				return ec.fieldContext_SubscriptionRelease_url(ctx, field)
+			case "query":
+				return ec.fieldContext_SubscriptionRelease_query(ctx, field)
+			case "taskID":
+				return ec.fieldContext_SubscriptionRelease_taskID(ctx, field)
+			case "seenAt":
+				return ec.fieldContext_SubscriptionRelease_seenAt(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type SubscriptionRelease", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _SubscriptionRelease_key(ctx context.Context, field graphql.CollectedField, obj *model.SubscriptionRelease) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_SubscriptionRelease_key(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Key, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNID2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_SubscriptionRelease_key(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "SubscriptionRelease",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type ID does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _SubscriptionRelease_source(ctx context.Context, field graphql.CollectedField, obj *model.SubscriptionRelease) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_SubscriptionRelease_source(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Source, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_SubscriptionRelease_source(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "SubscriptionRelease",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _SubscriptionRelease_title(ctx context.Context, field graphql.CollectedField, obj *model.SubscriptionRelease) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_SubscriptionRelease_title(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Title, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_SubscriptionRelease_title(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "SubscriptionRelease",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _SubscriptionRelease_code(ctx context.Context, field graphql.CollectedField, obj *model.SubscriptionRelease) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_SubscriptionRelease_code(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Code, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*string)
+	fc.Result = res
+	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_SubscriptionRelease_code(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "SubscriptionRelease",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _SubscriptionRelease_date(ctx context.Context, field graphql.CollectedField, obj *model.SubscriptionRelease) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_SubscriptionRelease_date(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Date, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*string)
+	fc.Result = res
+	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_SubscriptionRelease_date(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "SubscriptionRelease",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _SubscriptionRelease_url(ctx context.Context, field graphql.CollectedField, obj *model.SubscriptionRelease) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_SubscriptionRelease_url(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.URL, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*string)
+	fc.Result = res
+	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_SubscriptionRelease_url(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "SubscriptionRelease",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _SubscriptionRelease_query(ctx context.Context, field graphql.CollectedField, obj *model.SubscriptionRelease) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_SubscriptionRelease_query(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Query, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_SubscriptionRelease_query(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "SubscriptionRelease",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _SubscriptionRelease_taskID(ctx context.Context, field graphql.CollectedField, obj *model.SubscriptionRelease) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_SubscriptionRelease_taskID(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.TaskID, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*string)
+	fc.Result = res
+	return ec.marshalOID2ᚖstring(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_SubscriptionRelease_taskID(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "SubscriptionRelease",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type ID does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _SubscriptionRelease_seenAt(ctx context.Context, field graphql.CollectedField, obj *model.SubscriptionRelease) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_SubscriptionRelease_seenAt(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.SeenAt, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_SubscriptionRelease_seenAt(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "SubscriptionRelease",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _SubscriptionSettings_store(ctx context.Context, field graphql.CollectedField, obj *model.SubscriptionSettings) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_SubscriptionSettings_store(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Store, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_SubscriptionSettings_store(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "SubscriptionSettings",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _SubscriptionSettings_dbPath(ctx context.Context, field graphql.CollectedField, obj *model.SubscriptionSettings) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_SubscriptionSettings_dbPath(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.DBPath, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_SubscriptionSettings_dbPath(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "SubscriptionSettings",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _SubscriptionSettings_pollIntervalSeconds(ctx context.Context, field graphql.CollectedField, obj *model.SubscriptionSettings) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_SubscriptionSettings_pollIntervalSeconds(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.PollIntervalSeconds, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int)
+	fc.Result = res
+	return ec.marshalNInt2int(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_SubscriptionSettings_pollIntervalSeconds(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "SubscriptionSettings",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _SubscriptionSettings_pollEnabled(ctx context.Context, field graphql.CollectedField, obj *model.SubscriptionSettings) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_SubscriptionSettings_pollEnabled(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.PollEnabled, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(bool)
+	fc.Result = res
+	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_SubscriptionSettings_pollEnabled(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "SubscriptionSettings",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _SubscriptionSettings_javstashEnabled(ctx context.Context, field graphql.CollectedField, obj *model.SubscriptionSettings) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_SubscriptionSettings_javstashEnabled(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.JavstashEnabled, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(bool)
+	fc.Result = res
+	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_SubscriptionSettings_javstashEnabled(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "SubscriptionSettings",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _SubscriptionSettings_javstashApiKeyConfigured(ctx context.Context, field graphql.CollectedField, obj *model.SubscriptionSettings) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_SubscriptionSettings_javstashApiKeyConfigured(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.JavstashAPIKeyConfigured, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(bool)
+	fc.Result = res
+	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_SubscriptionSettings_javstashApiKeyConfigured(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "SubscriptionSettings",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
 		},
 	}
 	return fc, nil
@@ -11196,8 +11196,8 @@ func (ec *executionContext) fieldContext_TaskSettings_store(_ context.Context, f
 	return fc, nil
 }
 
-func (ec *executionContext) _TaskSettings_jsonPath(ctx context.Context, field graphql.CollectedField, obj *model.TaskSettings) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_TaskSettings_jsonPath(ctx, field)
+func (ec *executionContext) _TaskSettings_dbPath(ctx context.Context, field graphql.CollectedField, obj *model.TaskSettings) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_TaskSettings_dbPath(ctx, field)
 	if err != nil {
 		return graphql.Null
 	}
@@ -11210,7 +11210,7 @@ func (ec *executionContext) _TaskSettings_jsonPath(ctx context.Context, field gr
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
 		ctx = rctx // use context from middleware stack in children
-		return obj.JSONPath, nil
+		return obj.DBPath, nil
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -11227,7 +11227,7 @@ func (ec *executionContext) _TaskSettings_jsonPath(ctx context.Context, field gr
 	return ec.marshalNString2string(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_TaskSettings_jsonPath(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_TaskSettings_dbPath(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "TaskSettings",
 		Field:      field,
@@ -13541,54 +13541,6 @@ func (ec *executionContext) unmarshalInputStashMetadataScanInput(ctx context.Con
 	return it, nil
 }
 
-func (ec *executionContext) unmarshalInputUpdateFollowingSettingsInput(ctx context.Context, obj any) (model.UpdateFollowingSettingsInput, error) {
-	var it model.UpdateFollowingSettingsInput
-	asMap := map[string]any{}
-	for k, v := range obj.(map[string]any) {
-		asMap[k] = v
-	}
-
-	fieldsInOrder := [...]string{"store", "jsonPath", "pollIntervalSeconds", "javstashApiKey"}
-	for _, k := range fieldsInOrder {
-		v, ok := asMap[k]
-		if !ok {
-			continue
-		}
-		switch k {
-		case "store":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("store"))
-			data, err := ec.unmarshalNString2string(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.Store = data
-		case "jsonPath":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("jsonPath"))
-			data, err := ec.unmarshalNString2string(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.JSONPath = data
-		case "pollIntervalSeconds":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("pollIntervalSeconds"))
-			data, err := ec.unmarshalNInt2int(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.PollIntervalSeconds = data
-		case "javstashApiKey":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("javstashApiKey"))
-			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.JavstashAPIKey = data
-		}
-	}
-
-	return it, nil
-}
-
 func (ec *executionContext) unmarshalInputUpdateJackettSettingsInput(ctx context.Context, obj any) (model.UpdateJackettSettingsInput, error) {
 	var it model.UpdateJackettSettingsInput
 	asMap := map[string]any{}
@@ -13781,6 +13733,54 @@ func (ec *executionContext) unmarshalInputUpdateStashSettingsInput(ctx context.C
 	return it, nil
 }
 
+func (ec *executionContext) unmarshalInputUpdateSubscriptionSettingsInput(ctx context.Context, obj any) (model.UpdateSubscriptionSettingsInput, error) {
+	var it model.UpdateSubscriptionSettingsInput
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"store", "dbPath", "pollIntervalSeconds", "javstashApiKey"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "store":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("store"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Store = data
+		case "dbPath":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("dbPath"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.DBPath = data
+		case "pollIntervalSeconds":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("pollIntervalSeconds"))
+			data, err := ec.unmarshalNInt2int(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.PollIntervalSeconds = data
+		case "javstashApiKey":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("javstashApiKey"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.JavstashAPIKey = data
+		}
+	}
+
+	return it, nil
+}
+
 // endregion **************************** input.gotpl *****************************
 
 // region    ************************** interface.gotpl ***************************
@@ -13901,195 +13901,6 @@ func (ec *executionContext) _DownloadCandidate(ctx context.Context, sel ast.Sele
 			}
 		case "peers":
 			out.Values[i] = ec._DownloadCandidate_peers(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
-		default:
-			panic("unknown field " + strconv.Quote(field.Name))
-		}
-	}
-	out.Dispatch(ctx)
-	if out.Invalids > 0 {
-		return graphql.Null
-	}
-
-	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
-
-	for label, dfs := range deferred {
-		ec.processDeferredGroup(graphql.DeferredGroup{
-			Label:    label,
-			Path:     graphql.GetPath(ctx),
-			FieldSet: dfs,
-			Context:  ctx,
-		})
-	}
-
-	return out
-}
-
-var followingPerformerImplementors = []string{"FollowingPerformer"}
-
-func (ec *executionContext) _FollowingPerformer(ctx context.Context, sel ast.SelectionSet, obj *model.FollowingPerformer) graphql.Marshaler {
-	fields := graphql.CollectFields(ec.OperationContext, sel, followingPerformerImplementors)
-
-	out := graphql.NewFieldSet(fields)
-	deferred := make(map[string]*graphql.FieldSet)
-	for i, field := range fields {
-		switch field.Name {
-		case "__typename":
-			out.Values[i] = graphql.MarshalString("FollowingPerformer")
-		case "performer":
-			out.Values[i] = ec._FollowingPerformer_performer(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
-		case "lastCheckedAt":
-			out.Values[i] = ec._FollowingPerformer_lastCheckedAt(ctx, field, obj)
-		case "lastError":
-			out.Values[i] = ec._FollowingPerformer_lastError(ctx, field, obj)
-		case "pendingReleaseCount":
-			out.Values[i] = ec._FollowingPerformer_pendingReleaseCount(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
-		case "processedReleaseCount":
-			out.Values[i] = ec._FollowingPerformer_processedReleaseCount(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
-		case "recentReleases":
-			out.Values[i] = ec._FollowingPerformer_recentReleases(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
-		default:
-			panic("unknown field " + strconv.Quote(field.Name))
-		}
-	}
-	out.Dispatch(ctx)
-	if out.Invalids > 0 {
-		return graphql.Null
-	}
-
-	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
-
-	for label, dfs := range deferred {
-		ec.processDeferredGroup(graphql.DeferredGroup{
-			Label:    label,
-			Path:     graphql.GetPath(ctx),
-			FieldSet: dfs,
-			Context:  ctx,
-		})
-	}
-
-	return out
-}
-
-var followingReleaseImplementors = []string{"FollowingRelease"}
-
-func (ec *executionContext) _FollowingRelease(ctx context.Context, sel ast.SelectionSet, obj *model.FollowingRelease) graphql.Marshaler {
-	fields := graphql.CollectFields(ec.OperationContext, sel, followingReleaseImplementors)
-
-	out := graphql.NewFieldSet(fields)
-	deferred := make(map[string]*graphql.FieldSet)
-	for i, field := range fields {
-		switch field.Name {
-		case "__typename":
-			out.Values[i] = graphql.MarshalString("FollowingRelease")
-		case "key":
-			out.Values[i] = ec._FollowingRelease_key(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
-		case "source":
-			out.Values[i] = ec._FollowingRelease_source(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
-		case "title":
-			out.Values[i] = ec._FollowingRelease_title(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
-		case "code":
-			out.Values[i] = ec._FollowingRelease_code(ctx, field, obj)
-		case "date":
-			out.Values[i] = ec._FollowingRelease_date(ctx, field, obj)
-		case "url":
-			out.Values[i] = ec._FollowingRelease_url(ctx, field, obj)
-		case "query":
-			out.Values[i] = ec._FollowingRelease_query(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
-		case "taskID":
-			out.Values[i] = ec._FollowingRelease_taskID(ctx, field, obj)
-		case "seenAt":
-			out.Values[i] = ec._FollowingRelease_seenAt(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
-		default:
-			panic("unknown field " + strconv.Quote(field.Name))
-		}
-	}
-	out.Dispatch(ctx)
-	if out.Invalids > 0 {
-		return graphql.Null
-	}
-
-	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
-
-	for label, dfs := range deferred {
-		ec.processDeferredGroup(graphql.DeferredGroup{
-			Label:    label,
-			Path:     graphql.GetPath(ctx),
-			FieldSet: dfs,
-			Context:  ctx,
-		})
-	}
-
-	return out
-}
-
-var followingSettingsImplementors = []string{"FollowingSettings"}
-
-func (ec *executionContext) _FollowingSettings(ctx context.Context, sel ast.SelectionSet, obj *model.FollowingSettings) graphql.Marshaler {
-	fields := graphql.CollectFields(ec.OperationContext, sel, followingSettingsImplementors)
-
-	out := graphql.NewFieldSet(fields)
-	deferred := make(map[string]*graphql.FieldSet)
-	for i, field := range fields {
-		switch field.Name {
-		case "__typename":
-			out.Values[i] = graphql.MarshalString("FollowingSettings")
-		case "store":
-			out.Values[i] = ec._FollowingSettings_store(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
-		case "jsonPath":
-			out.Values[i] = ec._FollowingSettings_jsonPath(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
-		case "pollIntervalSeconds":
-			out.Values[i] = ec._FollowingSettings_pollIntervalSeconds(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
-		case "pollEnabled":
-			out.Values[i] = ec._FollowingSettings_pollEnabled(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
-		case "javstashEnabled":
-			out.Values[i] = ec._FollowingSettings_javstashEnabled(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
-		case "javstashApiKeyConfigured":
-			out.Values[i] = ec._FollowingSettings_javstashApiKeyConfigured(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
@@ -14472,34 +14283,6 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
-		case "followPerformer":
-			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
-				return ec._Mutation_followPerformer(ctx, field)
-			})
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
-		case "unfollowPerformer":
-			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
-				return ec._Mutation_unfollowPerformer(ctx, field)
-			})
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
-		case "refreshFollowingPerformer":
-			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
-				return ec._Mutation_refreshFollowingPerformer(ctx, field)
-			})
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
-		case "refreshFollowingNow":
-			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
-				return ec._Mutation_refreshFollowingNow(ctx, field)
-			})
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
 		case "updateStashSettings":
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
 				return ec._Mutation_updateStashSettings(ctx, field)
@@ -14521,9 +14304,9 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
-		case "updateFollowingSettings":
+		case "updateSubscriptionSettings":
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
-				return ec._Mutation_updateFollowingSettings(ctx, field)
+				return ec._Mutation_updateSubscriptionSettings(ctx, field)
 			})
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
@@ -14538,6 +14321,34 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 		case "stashMetadataScan":
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
 				return ec._Mutation_stashMetadataScan(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "subscribePerformer":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_subscribePerformer(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "unsubscribePerformer":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_unsubscribePerformer(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "refreshSubscribedPerformer":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_refreshSubscribedPerformer(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "refreshSubscriptionsNow":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_refreshSubscriptionsNow(ctx, field)
 			})
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
@@ -14796,50 +14607,6 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 			}
 
 			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
-		case "stashPerformers":
-			field := field
-
-			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
-				defer func() {
-					if r := recover(); r != nil {
-						ec.Error(ctx, ec.Recover(ctx, r))
-					}
-				}()
-				res = ec._Query_stashPerformers(ctx, field)
-				if res == graphql.Null {
-					atomic.AddUint32(&fs.Invalids, 1)
-				}
-				return res
-			}
-
-			rrm := func(ctx context.Context) graphql.Marshaler {
-				return ec.OperationContext.RootResolverMiddleware(ctx,
-					func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
-			}
-
-			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
-		case "followingPerformers":
-			field := field
-
-			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
-				defer func() {
-					if r := recover(); r != nil {
-						ec.Error(ctx, ec.Recover(ctx, r))
-					}
-				}()
-				res = ec._Query_followingPerformers(ctx, field)
-				if res == graphql.Null {
-					atomic.AddUint32(&fs.Invalids, 1)
-				}
-				return res
-			}
-
-			rrm := func(ctx context.Context) graphql.Marshaler {
-				return ec.OperationContext.RootResolverMiddleware(ctx,
-					func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
-			}
-
-			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
 		case "logs":
 			field := field
 
@@ -14935,6 +14702,50 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 					}
 				}()
 				res = ec._Query_dashboardStats(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			rrm := func(ctx context.Context) graphql.Marshaler {
+				return ec.OperationContext.RootResolverMiddleware(ctx,
+					func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
+		case "stashPerformers":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_stashPerformers(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			rrm := func(ctx context.Context) graphql.Marshaler {
+				return ec.OperationContext.RootResolverMiddleware(ctx,
+					func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
+		case "subscribedPerformers":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_subscribedPerformers(ctx, field)
 				if res == graphql.Null {
 					atomic.AddUint32(&fs.Invalids, 1)
 				}
@@ -15072,8 +14883,8 @@ func (ec *executionContext) _Settings(ctx context.Context, sel ast.SelectionSet,
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
-		case "following":
-			out.Values[i] = ec._Settings_following(ctx, field, obj)
+		case "subscription":
+			out.Values[i] = ec._Settings_subscription(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
@@ -15212,8 +15023,8 @@ func (ec *executionContext) _StashPerformer(ctx context.Context, sel ast.Selecti
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
-		case "followed":
-			out.Values[i] = ec._StashPerformer_followed(ctx, field, obj)
+		case "subscribed":
+			out.Values[i] = ec._StashPerformer_subscribed(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
@@ -15342,6 +15153,195 @@ func (ec *executionContext) _StashSettings(ctx context.Context, sel ast.Selectio
 			}
 		case "libraryPath":
 			out.Values[i] = ec._StashSettings_libraryPath(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var subscribedPerformerImplementors = []string{"SubscribedPerformer"}
+
+func (ec *executionContext) _SubscribedPerformer(ctx context.Context, sel ast.SelectionSet, obj *model.SubscribedPerformer) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, subscribedPerformerImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("SubscribedPerformer")
+		case "performer":
+			out.Values[i] = ec._SubscribedPerformer_performer(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "lastCheckedAt":
+			out.Values[i] = ec._SubscribedPerformer_lastCheckedAt(ctx, field, obj)
+		case "lastError":
+			out.Values[i] = ec._SubscribedPerformer_lastError(ctx, field, obj)
+		case "pendingReleaseCount":
+			out.Values[i] = ec._SubscribedPerformer_pendingReleaseCount(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "processedReleaseCount":
+			out.Values[i] = ec._SubscribedPerformer_processedReleaseCount(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "recentReleases":
+			out.Values[i] = ec._SubscribedPerformer_recentReleases(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var subscriptionReleaseImplementors = []string{"SubscriptionRelease"}
+
+func (ec *executionContext) _SubscriptionRelease(ctx context.Context, sel ast.SelectionSet, obj *model.SubscriptionRelease) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, subscriptionReleaseImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("SubscriptionRelease")
+		case "key":
+			out.Values[i] = ec._SubscriptionRelease_key(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "source":
+			out.Values[i] = ec._SubscriptionRelease_source(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "title":
+			out.Values[i] = ec._SubscriptionRelease_title(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "code":
+			out.Values[i] = ec._SubscriptionRelease_code(ctx, field, obj)
+		case "date":
+			out.Values[i] = ec._SubscriptionRelease_date(ctx, field, obj)
+		case "url":
+			out.Values[i] = ec._SubscriptionRelease_url(ctx, field, obj)
+		case "query":
+			out.Values[i] = ec._SubscriptionRelease_query(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "taskID":
+			out.Values[i] = ec._SubscriptionRelease_taskID(ctx, field, obj)
+		case "seenAt":
+			out.Values[i] = ec._SubscriptionRelease_seenAt(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var subscriptionSettingsImplementors = []string{"SubscriptionSettings"}
+
+func (ec *executionContext) _SubscriptionSettings(ctx context.Context, sel ast.SelectionSet, obj *model.SubscriptionSettings) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, subscriptionSettingsImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("SubscriptionSettings")
+		case "store":
+			out.Values[i] = ec._SubscriptionSettings_store(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "dbPath":
+			out.Values[i] = ec._SubscriptionSettings_dbPath(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "pollIntervalSeconds":
+			out.Values[i] = ec._SubscriptionSettings_pollIntervalSeconds(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "pollEnabled":
+			out.Values[i] = ec._SubscriptionSettings_pollEnabled(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "javstashEnabled":
+			out.Values[i] = ec._SubscriptionSettings_javstashEnabled(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "javstashApiKeyConfigured":
+			out.Values[i] = ec._SubscriptionSettings_javstashApiKeyConfigured(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
@@ -15556,8 +15556,8 @@ func (ec *executionContext) _TaskSettings(ctx context.Context, sel ast.Selection
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
-		case "jsonPath":
-			out.Values[i] = ec._TaskSettings_jsonPath(ctx, field, obj)
+		case "dbPath":
+			out.Values[i] = ec._TaskSettings_dbPath(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
@@ -15990,128 +15990,6 @@ func (ec *executionContext) marshalNFloat2float64(ctx context.Context, sel ast.S
 	return graphql.WrapContextMarshaler(ctx, res)
 }
 
-func (ec *executionContext) marshalNFollowingPerformer2githubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐFollowingPerformer(ctx context.Context, sel ast.SelectionSet, v model.FollowingPerformer) graphql.Marshaler {
-	return ec._FollowingPerformer(ctx, sel, &v)
-}
-
-func (ec *executionContext) marshalNFollowingPerformer2ᚕᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐFollowingPerformerᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.FollowingPerformer) graphql.Marshaler {
-	ret := make(graphql.Array, len(v))
-	var wg sync.WaitGroup
-	isLen1 := len(v) == 1
-	if !isLen1 {
-		wg.Add(len(v))
-	}
-	for i := range v {
-		i := i
-		fc := &graphql.FieldContext{
-			Index:  &i,
-			Result: &v[i],
-		}
-		ctx := graphql.WithFieldContext(ctx, fc)
-		f := func(i int) {
-			defer func() {
-				if r := recover(); r != nil {
-					ec.Error(ctx, ec.Recover(ctx, r))
-					ret = nil
-				}
-			}()
-			if !isLen1 {
-				defer wg.Done()
-			}
-			ret[i] = ec.marshalNFollowingPerformer2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐFollowingPerformer(ctx, sel, v[i])
-		}
-		if isLen1 {
-			f(i)
-		} else {
-			go f(i)
-		}
-
-	}
-	wg.Wait()
-
-	for _, e := range ret {
-		if e == graphql.Null {
-			return graphql.Null
-		}
-	}
-
-	return ret
-}
-
-func (ec *executionContext) marshalNFollowingPerformer2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐFollowingPerformer(ctx context.Context, sel ast.SelectionSet, v *model.FollowingPerformer) graphql.Marshaler {
-	if v == nil {
-		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
-			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
-		}
-		return graphql.Null
-	}
-	return ec._FollowingPerformer(ctx, sel, v)
-}
-
-func (ec *executionContext) marshalNFollowingRelease2ᚕᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐFollowingReleaseᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.FollowingRelease) graphql.Marshaler {
-	ret := make(graphql.Array, len(v))
-	var wg sync.WaitGroup
-	isLen1 := len(v) == 1
-	if !isLen1 {
-		wg.Add(len(v))
-	}
-	for i := range v {
-		i := i
-		fc := &graphql.FieldContext{
-			Index:  &i,
-			Result: &v[i],
-		}
-		ctx := graphql.WithFieldContext(ctx, fc)
-		f := func(i int) {
-			defer func() {
-				if r := recover(); r != nil {
-					ec.Error(ctx, ec.Recover(ctx, r))
-					ret = nil
-				}
-			}()
-			if !isLen1 {
-				defer wg.Done()
-			}
-			ret[i] = ec.marshalNFollowingRelease2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐFollowingRelease(ctx, sel, v[i])
-		}
-		if isLen1 {
-			f(i)
-		} else {
-			go f(i)
-		}
-
-	}
-	wg.Wait()
-
-	for _, e := range ret {
-		if e == graphql.Null {
-			return graphql.Null
-		}
-	}
-
-	return ret
-}
-
-func (ec *executionContext) marshalNFollowingRelease2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐFollowingRelease(ctx context.Context, sel ast.SelectionSet, v *model.FollowingRelease) graphql.Marshaler {
-	if v == nil {
-		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
-			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
-		}
-		return graphql.Null
-	}
-	return ec._FollowingRelease(ctx, sel, v)
-}
-
-func (ec *executionContext) marshalNFollowingSettings2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐFollowingSettings(ctx context.Context, sel ast.SelectionSet, v *model.FollowingSettings) graphql.Marshaler {
-	if v == nil {
-		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
-			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
-		}
-		return graphql.Null
-	}
-	return ec._FollowingSettings(ctx, sel, v)
-}
-
 func (ec *executionContext) marshalNHealth2githubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐHealth(ctx context.Context, sel ast.SelectionSet, v model.Health) graphql.Marshaler {
 	return ec._Health(ctx, sel, &v)
 }
@@ -16529,6 +16407,128 @@ func (ec *executionContext) marshalNString2ᚕstringᚄ(ctx context.Context, sel
 	return ret
 }
 
+func (ec *executionContext) marshalNSubscribedPerformer2githubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐSubscribedPerformer(ctx context.Context, sel ast.SelectionSet, v model.SubscribedPerformer) graphql.Marshaler {
+	return ec._SubscribedPerformer(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNSubscribedPerformer2ᚕᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐSubscribedPerformerᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.SubscribedPerformer) graphql.Marshaler {
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalNSubscribedPerformer2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐSubscribedPerformer(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
+}
+
+func (ec *executionContext) marshalNSubscribedPerformer2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐSubscribedPerformer(ctx context.Context, sel ast.SelectionSet, v *model.SubscribedPerformer) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._SubscribedPerformer(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNSubscriptionRelease2ᚕᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐSubscriptionReleaseᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.SubscriptionRelease) graphql.Marshaler {
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalNSubscriptionRelease2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐSubscriptionRelease(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
+}
+
+func (ec *executionContext) marshalNSubscriptionRelease2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐSubscriptionRelease(ctx context.Context, sel ast.SelectionSet, v *model.SubscriptionRelease) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._SubscriptionRelease(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNSubscriptionSettings2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐSubscriptionSettings(ctx context.Context, sel ast.SelectionSet, v *model.SubscriptionSettings) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._SubscriptionSettings(ctx, sel, v)
+}
+
 func (ec *executionContext) marshalNSystemSettings2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐSystemSettings(ctx context.Context, sel ast.SelectionSet, v *model.SystemSettings) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
@@ -16607,11 +16607,6 @@ func (ec *executionContext) marshalNTaskSettings2ᚖgithubᚗcomᚋleothevan2444
 	return ec._TaskSettings(ctx, sel, v)
 }
 
-func (ec *executionContext) unmarshalNUpdateFollowingSettingsInput2githubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐUpdateFollowingSettingsInput(ctx context.Context, v any) (model.UpdateFollowingSettingsInput, error) {
-	res, err := ec.unmarshalInputUpdateFollowingSettingsInput(ctx, v)
-	return res, graphql.ErrorOnPath(ctx, err)
-}
-
 func (ec *executionContext) unmarshalNUpdateJackettSettingsInput2githubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐUpdateJackettSettingsInput(ctx context.Context, v any) (model.UpdateJackettSettingsInput, error) {
 	res, err := ec.unmarshalInputUpdateJackettSettingsInput(ctx, v)
 	return res, graphql.ErrorOnPath(ctx, err)
@@ -16629,6 +16624,11 @@ func (ec *executionContext) unmarshalNUpdateQBittorrentSettingsInput2githubᚗco
 
 func (ec *executionContext) unmarshalNUpdateStashSettingsInput2githubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐUpdateStashSettingsInput(ctx context.Context, v any) (model.UpdateStashSettingsInput, error) {
 	res, err := ec.unmarshalInputUpdateStashSettingsInput(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) unmarshalNUpdateSubscriptionSettingsInput2githubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐUpdateSubscriptionSettingsInput(ctx context.Context, v any) (model.UpdateSubscriptionSettingsInput, error) {
+	res, err := ec.unmarshalInputUpdateSubscriptionSettingsInput(ctx, v)
 	return res, graphql.ErrorOnPath(ctx, err)
 }
 
