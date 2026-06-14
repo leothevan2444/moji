@@ -1,4 +1,4 @@
-import { FormEvent, ReactNode, useDeferredValue, useEffect, useMemo, useState } from "react";
+import { FormEvent, ReactNode, useDeferredValue, useEffect, useMemo, useRef, useState } from "react";
 import { useMutation, useQuery } from "urql";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faBookmark, faChartColumn, faCircleQuestion, faGear, faHeart } from "@fortawesome/free-solid-svg-icons";
@@ -67,7 +67,9 @@ type DashboardTask = DashboardDocumentQuery["tasks"][number];
 type StashPerformerEntry = StashPerformersQuery["stashPerformers"]["items"][number];
 type FollowingPerformerEntry = FollowingPerformersQuery["followingPerformers"][number];
 type RuntimeSettings = NonNullable<DashboardDocumentQuery["settings"]>;
-type SettingsFeedback = { tone: "tone-success" | "tone-danger" | "tone-info"; message: string } | null;
+type ToastTone = "tone-success" | "tone-danger" | "tone-info";
+type ToastPhase = "entering" | "leaving";
+type ToastItem = { id: number; tone: ToastTone; message: string; phase: ToastPhase };
 type TaskGroupKey = "需处理" | "运行中" | "待入库" | "已完成";
 type TaskFailureSummary = {
   title: string;
@@ -117,6 +119,9 @@ const EMPTY_STASH_FORM = {
   apiKey: "",
   libraryPath: ""
 };
+
+const TOAST_LIFETIME_MS = 10000;
+const TOAST_EXIT_MS = 480;
 
 const EMPTY_JACKETT_FORM = {
   url: "",
@@ -527,9 +532,7 @@ function App() {
   const [followingPage, setFollowingPage] = useState(1);
   const [followingPageSize, setFollowingPageSize] = useState<number>(24);
   const [logsLevel, setLogsLevel] = useState<LogLevel>(LogLevel.Info);
-  const [logsActionFeedback, setLogsActionFeedback] = useState<SettingsFeedback>(null);
   const [downloadingLogFile, setDownloadingLogFile] = useState(false);
-  const [followingFeedback, setFollowingFeedback] = useState<SettingsFeedback>(null);
   const [pendingFollowingID, setPendingFollowingID] = useState<string | null>(null);
   const [pendingAddId, setPendingAddId] = useState<string | null>(null);
   const [stashForm, setStashForm] = useState(EMPTY_STASH_FORM);
@@ -537,13 +540,8 @@ function App() {
   const [qbittorrentForm, setQBittorrentForm] = useState(EMPTY_QBITTORRENT_FORM);
   const [followingForm, setFollowingForm] = useState(EMPTY_FOLLOWING_FORM);
   const [loggingForm, setLoggingForm] = useState(EMPTY_LOGGING_FORM);
-  const [settingsFeedback, setSettingsFeedback] = useState<Record<"Stash" | "索引器" | "下载器" | "订阅" | "系统", SettingsFeedback>>({
-    Stash: null,
-    索引器: null,
-    下载器: null,
-    订阅: null,
-    系统: null
-  });
+  const [toasts, setToasts] = useState<ToastItem[]>([]);
+  const toastTimersRef = useRef(new Map<number, { exit: number; remove: number }>());
 
   const deferredTaskSearch = useDeferredValue(taskSearch.trim().toLowerCase());
   const deferredJackettQuery = useDeferredValue(submittedJackettQuery.trim());
@@ -761,6 +759,33 @@ function App() {
     return new Map(followedPerformers.map((item) => [item.performer.id, item]));
   }, [followedPerformers]);
 
+  const pushToast = (tone: ToastTone, message: string) => {
+    const id = Date.now() + Math.floor(Math.random() * 1000);
+    setToasts((current) => [...current, { id, tone, message, phase: "entering" }]);
+    const exit = window.setTimeout(() => {
+      setToasts((current) => current.map((item) => (item.id === id ? { ...item, phase: "leaving" } : item)));
+    }, TOAST_LIFETIME_MS - TOAST_EXIT_MS);
+    const remove = window.setTimeout(() => {
+      setToasts((current) => current.filter((item) => item.id !== id));
+      toastTimersRef.current.delete(id);
+    }, TOAST_LIFETIME_MS);
+    toastTimersRef.current.set(id, { exit, remove });
+  };
+
+  const dismissToast = (id: number) => {
+    const timers = toastTimersRef.current.get(id);
+    if (timers) {
+      window.clearTimeout(timers.exit);
+      window.clearTimeout(timers.remove);
+      toastTimersRef.current.delete(id);
+    }
+    setToasts((current) => current.map((item) => (item.id === id ? { ...item, phase: "leaving" } : item)));
+    const remove = window.setTimeout(() => {
+      setToasts((current) => current.filter((item) => item.id !== id));
+    }, TOAST_EXIT_MS);
+    toastTimersRef.current.set(id, { exit: 0, remove });
+  };
+
   const dependencyCards = runtimeSettings
     ? [
         {
@@ -832,7 +857,6 @@ function App() {
 
   const saveStashSettings = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    setSettingsFeedback((current) => ({ ...current, Stash: null }));
 
     const result = await updateStashSettings({
         input: {
@@ -843,24 +867,17 @@ function App() {
     });
 
     if (result.error) {
-      setSettingsFeedback((current) => ({
-        ...current,
-        Stash: { tone: "tone-danger", message: describeQueryError(result.error) }
-      }));
+      pushToast("tone-danger", describeQueryError(result.error));
       return;
     }
 
     setStashForm((current) => ({ ...current, apiKey: "" }));
-    setSettingsFeedback((current) => ({
-      ...current,
-      Stash: { tone: "tone-success", message: "Stash 设置已保存，配置文件与运行时快照已刷新。" }
-    }));
+    pushToast("tone-success", "Stash 设置已保存，配置文件与运行时快照已刷新。");
     await refreshDashboard({ requestPolicy: "network-only" });
   };
 
   const saveJackettSettings = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    setSettingsFeedback((current) => ({ ...current, 索引器: null }));
 
     const result = await updateJackettSettings({
       input: {
@@ -870,24 +887,17 @@ function App() {
     });
 
     if (result.error) {
-      setSettingsFeedback((current) => ({
-        ...current,
-        索引器: { tone: "tone-danger", message: describeQueryError(result.error) }
-      }));
+      pushToast("tone-danger", describeQueryError(result.error));
       return;
     }
 
     setJackettForm((current) => ({ ...current, apiKey: "" }));
-    setSettingsFeedback((current) => ({
-      ...current,
-      索引器: { tone: "tone-success", message: "索引器设置已保存，后端配置已同步。" }
-    }));
+    pushToast("tone-success", "索引器设置已保存，后端配置已同步。");
     await refreshDashboard({ requestPolicy: "network-only" });
   };
 
   const saveQBittorrentSettings = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    setSettingsFeedback((current) => ({ ...current, 下载器: null }));
 
     const result = await updateQBittorrentSettings({
       input: {
@@ -901,24 +911,17 @@ function App() {
     });
 
     if (result.error) {
-      setSettingsFeedback((current) => ({
-        ...current,
-        下载器: { tone: "tone-danger", message: describeQueryError(result.error) }
-      }));
+      pushToast("tone-danger", describeQueryError(result.error));
       return;
     }
 
     setQBittorrentForm((current) => ({ ...current, password: "" }));
-    setSettingsFeedback((current) => ({
-      ...current,
-      下载器: { tone: "tone-success", message: "下载器设置已保存，新的默认值已同步到后端。" }
-    }));
+    pushToast("tone-success", "下载器设置已保存，新的默认值已同步到后端。");
     await refreshDashboard({ requestPolicy: "network-only" });
   };
 
   const saveFollowingSettings = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    setSettingsFeedback((current) => ({ ...current, 订阅: null }));
 
     const pollIntervalSeconds = Number.parseInt(followingForm.pollIntervalSeconds.trim(), 10);
     const normalizedPollIntervalSeconds = Number.isNaN(pollIntervalSeconds) ? 0 : pollIntervalSeconds;
@@ -933,24 +936,17 @@ function App() {
     });
 
     if (result.error) {
-      setSettingsFeedback((current) => ({
-        ...current,
-        订阅: { tone: "tone-danger", message: describeQueryError(result.error) }
-      }));
+      pushToast("tone-danger", describeQueryError(result.error));
       return;
     }
 
     setFollowingForm((current) => ({ ...current, javstashApiKey: "" }));
-    setSettingsFeedback((current) => ({
-      ...current,
-      订阅: { tone: "tone-success", message: "订阅设置已保存，轮询与 JAVStash 凭据已同步到后端。" }
-    }));
+    pushToast("tone-success", "订阅设置已保存，轮询与 JAVStash 凭据已同步到后端。");
     await refreshDashboard({ requestPolicy: "network-only" });
   };
 
   const saveLoggingSettings = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    setSettingsFeedback((current) => ({ ...current, 系统: null }));
 
     const maxEntries = Number.parseInt(loggingForm.maxEntries.trim(), 10);
     const maxFileSizeBytes = Number.parseInt(loggingForm.maxFileSizeBytes.trim(), 10);
@@ -967,17 +963,11 @@ function App() {
     });
 
     if (result.error) {
-      setSettingsFeedback((current) => ({
-        ...current,
-        系统: { tone: "tone-danger", message: describeQueryError(result.error) }
-      }));
+      pushToast("tone-danger", describeQueryError(result.error));
       return;
     }
 
-    setSettingsFeedback((current) => ({
-      ...current,
-      系统: { tone: "tone-success", message: "日志设置已保存，并已即时重载到当前进程。" }
-    }));
+    pushToast("tone-success", "日志设置已保存，并已即时重载到当前进程。");
     await refreshDashboard({ requestPolicy: "network-only" });
     await refreshLogs({ requestPolicy: "network-only" });
   };
@@ -991,85 +981,63 @@ function App() {
 
   const handleFollowToggle = async (performer: StashPerformerEntry) => {
     setPendingFollowingID(performer.id);
-    setFollowingFeedback(null);
 
     const result = performer.followed
       ? await unfollowPerformer({ stashPerformerID: performer.id })
       : await followPerformer({ stashPerformerID: performer.id });
 
     if (result.error) {
-      setFollowingFeedback({
-        tone: "tone-danger",
-        message: describeQueryError(result.error)
-      });
+      pushToast("tone-danger", describeQueryError(result.error));
       setPendingFollowingID(null);
       return;
     }
 
-    setFollowingFeedback({
-      tone: "tone-success",
-      message: performer.followed ? `已取消订阅 ${performer.name}。` : `已订阅 ${performer.name}，Moji 会通过 custom_fields 记录状态。`
-    });
+    pushToast("tone-success", performer.followed ? `已取消订阅 ${performer.name}。` : `已订阅 ${performer.name}，Moji 会通过 custom_fields 记录状态。`);
     await reloadFollowing();
     setPendingFollowingID(null);
   };
 
   const handleRefreshPerformer = async (performer: StashPerformerEntry) => {
     setPendingFollowingID(performer.id);
-    setFollowingFeedback(null);
 
     const result = await refreshFollowingPerformer({ stashPerformerID: performer.id });
     if (result.error) {
-      setFollowingFeedback({
-        tone: "tone-danger",
-        message: describeQueryError(result.error)
-      });
+      pushToast("tone-danger", describeQueryError(result.error));
       setPendingFollowingID(null);
       return;
     }
 
-    setFollowingFeedback({
-      tone: "tone-info",
-      message: `已检查 ${performer.name} 的最新发行信息。`
-    });
+    pushToast("tone-info", `已检查 ${performer.name} 的最新发行信息。`);
     await reloadFollowing();
     setPendingFollowingID(null);
   };
 
   const handleRefreshAllFollowing = async () => {
-    setFollowingFeedback(null);
     const result = await refreshFollowingNow({});
     if (result.error) {
-      setFollowingFeedback({
-        tone: "tone-danger",
-        message: describeQueryError(result.error)
-      });
+      pushToast("tone-danger", describeQueryError(result.error));
       return;
     }
 
-    setFollowingFeedback({
-      tone: "tone-info",
-      message: "已触发全部订阅对象的更新检查。"
-    });
+    pushToast("tone-info", "已触发全部订阅对象的更新检查。");
     await reloadFollowing();
   };
 
   const handleCopyLogs = async () => {
     if (!logs.length) {
-      setLogsActionFeedback({ tone: "tone-info", message: "当前列表里还没有可复制的日志。" });
+      pushToast("tone-info", "当前列表里还没有可复制的日志。");
       return;
     }
 
     try {
       await navigator.clipboard.writeText(formatLogEntries(logs));
-      setLogsActionFeedback({ tone: "tone-success", message: `已复制 ${logs.length} 条日志。` });
+      pushToast("tone-success", `已复制 ${logs.length} 条日志。`);
     } catch {
-      setLogsActionFeedback({ tone: "tone-danger", message: "复制失败，请检查浏览器剪贴板权限。" });
+      pushToast("tone-danger", "复制失败，请检查浏览器剪贴板权限。");
     }
   };
 
   const handleDownloadCurrentLogFile = async () => {
-    setLogsActionFeedback(null);
     setDownloadingLogFile(true);
 
     try {
@@ -1091,12 +1059,9 @@ function App() {
       anchor.click();
       anchor.remove();
       window.URL.revokeObjectURL(downloadURL);
-      setLogsActionFeedback({ tone: "tone-success", message: `已开始下载 ${filename}。` });
+      pushToast("tone-success", `已开始下载 ${filename}。`);
     } catch (error) {
-      setLogsActionFeedback({
-        tone: "tone-danger",
-        message: error instanceof Error ? error.message : "下载当前日志文件失败。"
-      });
+      pushToast("tone-danger", error instanceof Error ? error.message : "下载当前日志文件失败。");
     } finally {
       setDownloadingLogFile(false);
     }
@@ -1160,7 +1125,6 @@ function App() {
             <div className="settings-meta">
               <span>当前 API key: {boolState(runtimeSettings.stash.apiKeyConfigured)}</span>
             </div>
-            {settingsFeedback.Stash ? <p className={`settings-feedback ${settingsFeedback.Stash.tone}`}>{settingsFeedback.Stash.message}</p> : null}
             <div className="settings-actions">
               <button type="submit" disabled={updatingStash}>保存 Stash 设置</button>
             </div>
@@ -1198,7 +1162,6 @@ function App() {
               <span>当前 API key: {boolState(runtimeSettings.jackett.apiKeyConfigured)}</span>
               <span>后续可继续扩展 tracker 分组与默认搜索策略。</span>
             </div>
-            {settingsFeedback.索引器 ? <p className={`settings-feedback ${settingsFeedback.索引器.tone}`}>{settingsFeedback.索引器.message}</p> : null}
             <div className="settings-actions">
               <button type="submit" disabled={updatingJackett}>保存索引器设置</button>
             </div>
@@ -1268,7 +1231,6 @@ function App() {
               <span>当前密码: {boolState(runtimeSettings.qbittorrent.passwordConfigured)}</span>
               <span>用户名会直接回显，密码仍只支持覆盖更新。</span>
             </div>
-            {settingsFeedback.下载器 ? <p className={`settings-feedback ${settingsFeedback.下载器.tone}`}>{settingsFeedback.下载器.message}</p> : null}
             <div className="settings-actions">
               <button type="submit" disabled={updatingQBittorrent}>保存下载器设置</button>
             </div>
@@ -1357,7 +1319,6 @@ function App() {
               <span>JAVStash key: {boolState(runtimeSettings.following.javstashApiKeyConfigured)}</span>
               <span>轮询状态: {runtimeSettings.following.pollEnabled ? "已启用" : "未启用"}</span>
             </div>
-            {settingsFeedback.订阅 ? <p className={`settings-feedback ${settingsFeedback.订阅.tone}`}>{settingsFeedback.订阅.message}</p> : null}
             <div className="settings-actions">
               <button type="submit" disabled={updatingFollowing}>保存订阅设置</button>
             </div>
@@ -1422,7 +1383,6 @@ function App() {
               <span>当前日志文件: {runtimeSettings.logging.filePath}</span>
               <span>当前缓存: {runtimeSettings.logging.maxEntries} 条</span>
             </div>
-            {settingsFeedback.系统 ? <p className={`settings-feedback ${settingsFeedback.系统.tone}`}>{settingsFeedback.系统.message}</p> : null}
             <div className="settings-actions">
               <button type="submit" disabled={updatingLogging}>保存系统设置</button>
             </div>
@@ -1462,7 +1422,6 @@ function App() {
             <span>状态: {fetchingLogs ? "同步中" : "已就绪"}</span>
             <span>文件: {runtimeSettings.logging.filePath}</span>
           </div>
-          {logsActionFeedback ? <p className={`settings-feedback ${logsActionFeedback.tone}`}>{logsActionFeedback.message}</p> : null}
           {logsError ? <p className="settings-feedback tone-danger">{describeQueryError(logsError)}</p> : null}
           {!logs.length && !fetchingLogs ? (
             <article className="empty-card empty-card--wide">
@@ -1602,8 +1561,34 @@ function App() {
     return () => window.clearInterval(timer);
   }, [drawer, renderedDrawer, refreshLogs, settingsTab]);
 
+  useEffect(() => {
+    return () => {
+      for (const timers of toastTimersRef.current.values()) {
+        window.clearTimeout(timers.exit);
+        window.clearTimeout(timers.remove);
+      }
+      toastTimersRef.current.clear();
+    };
+  }, []);
+
   return (
     <div className="app-shell">
+      <div className="toast-stack" aria-live="polite" aria-atomic="false">
+        {toasts.map((toast) => (
+          <div key={toast.id} className={`toast-card ${toast.tone} toast-card--${toast.phase}`} role="status">
+            <div className="toast-card__body">
+              <span className="toast-card__label">
+                {toast.tone === "tone-success" ? "成功" : toast.tone === "tone-danger" ? "错误" : "提示"}
+              </span>
+              <p>{toast.message}</p>
+            </div>
+            <button type="button" className="toast-card__close" onClick={() => dismissToast(toast.id)} aria-label="关闭消息">
+              ×
+            </button>
+            <div className="toast-card__progress" aria-hidden="true" />
+          </div>
+        ))}
+      </div>
       <div className="ambient ambient-a" />
       <div className="ambient ambient-b" />
       <div className="ambient ambient-c" />
@@ -2015,7 +2000,6 @@ function App() {
                 <span>已订阅: {followedPerformers.length}</span>
                 <span>载入状态: {fetchingStashPerformers || fetchingFollowing ? "同步中" : "已就绪"}</span>
               </div>
-              {followingFeedback ? <p className={`settings-feedback ${followingFeedback.tone}`}>{followingFeedback.message}</p> : null}
               {followingError || stashPerformersError ? (
                 <p className="settings-feedback tone-danger">{describeQueryError(followingError || stashPerformersError)}</p>
               ) : null}
