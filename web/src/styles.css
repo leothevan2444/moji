@@ -1082,35 +1082,68 @@ button.profile-icon:disabled {
 }
 
 .log-stream {
-  display: grid;
-  gap: 8px;
+  display: flex;
+  flex-direction: column;
   margin-top: 14px;
   max-height: 52vh;
   overflow: auto;
-}
-
-.log-entry {
-  display: grid;
-  grid-template-columns: 110px 84px minmax(0, 1fr);
-  gap: 10px;
-  align-items: start;
-  padding: 10px 12px;
-  border-radius: 10px;
+  padding: 12px 14px;
+  border-radius: 12px;
   border: 1px solid rgba(15, 23, 42, 0.08);
-  background: rgba(248, 250, 252, 0.76);
+  background: linear-gradient(180deg, rgba(252, 253, 255, 0.98), rgba(245, 248, 252, 0.94));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.8);
 }
 
-.log-entry__time {
+.log-line {
+  display: flex;
+  gap: 10px;
+  align-items: baseline;
   font-size: 12px;
-  color: var(--muted);
-}
-
-.log-entry__message {
+  line-height: 1.45;
+  font-family: "SFMono-Regular", Consolas, monospace;
+  color: #1f2937;
   white-space: pre-wrap;
   word-break: break-word;
+}
+
+.log-line + .log-line {
+  margin-top: 4px;
+}
+
+.log-line__time {
   font-size: 12px;
-  color: var(--text);
-  font-family: "SFMono-Regular", Consolas, monospace;
+  color: #64748b;
+  flex: 0 0 auto;
+}
+
+.log-line__level {
+  flex: 0 0 auto;
+  font-weight: 700;
+}
+
+.log-line__message {
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.log-line--info .log-line__level,
+.log-line--info .log-line__message {
+  color: #1f2937;
+}
+
+.log-line--debug .log-line__level,
+.log-line--debug .log-line__message {
+  color: #0f766e;
+}
+
+.log-line--warn .log-line__level,
+.log-line--warn .log-line__message {
+  color: #b45309;
+}
+
+.log-line--error .log-line__level,
+.log-line--error .log-line__message {
+  color: #b91c1c;
 }
 
 .help-layout {

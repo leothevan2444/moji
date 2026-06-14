@@ -163,10 +163,12 @@ function formatDateTime(value?: string | null) {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return value;
   return new Intl.DateTimeFormat("zh-CN", {
+    year: "numeric",
     month: "short",
     day: "numeric",
     hour: "2-digit",
-    minute: "2-digit"
+    minute: "2-digit",
+    second: "2-digit"
   }).format(date);
 }
 
@@ -1468,25 +1470,24 @@ function App() {
               <p>当前过滤条件下没有最近日志记录。</p>
             </article>
           ) : (
-            <div className="log-stream">
+            <div className="log-stream" role="log" aria-live="polite">
               {logs.map((entry, index) => (
-                <article key={`${entry.time}-${index}`} className="log-entry">
-                  <span className="log-entry__time">{formatDateTime(entry.time)}</span>
-                  <span
-                    className={`status-chip ${
-                      entry.level === LogLevel.Error
-                        ? "tone-danger"
-                        : entry.level === LogLevel.Warning
-                          ? "tone-warn"
-                          : entry.level === LogLevel.Debug
-                            ? "tone-info"
-                            : "tone-neutral"
-                    }`}
-                  >
-                    {entry.level}
-                  </span>
-                  <code className="log-entry__message">{entry.message}</code>
-                </article>
+                <div
+                  key={`${entry.time}-${index}`}
+                  className={`log-line ${
+                    entry.level === LogLevel.Error
+                      ? "log-line--error"
+                      : entry.level === LogLevel.Warning
+                        ? "log-line--warn"
+                        : entry.level === LogLevel.Debug
+                          ? "log-line--debug"
+                          : "log-line--info"
+                  }`}
+                >
+                  <span className="log-line__time">{formatDateTime(entry.time)}</span>
+                  <span className="log-line__level">[{entry.level}]</span>
+                  <span className="log-line__message">{entry.message}</span>
+                </div>
               ))}
             </div>
           )}
