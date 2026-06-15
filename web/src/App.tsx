@@ -1,7 +1,20 @@
 import { FormEvent, ReactNode, useDeferredValue, useEffect, useMemo, useRef, useState } from "react";
 import { useMutation, useQuery } from "urql";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faBookmark, faChartColumn, faCircleQuestion, faGear, faHeart } from "@fortawesome/free-solid-svg-icons";
+import {
+  faBookmark,
+  faChartColumn,
+  faCircleCheck,
+  faCircleQuestion,
+  faClock,
+  faCopy,
+  faDownload,
+  faGear,
+  faHeart,
+  faRotate,
+  faTriangleExclamation,
+  faWandMagicSparkles
+} from "@fortawesome/free-solid-svg-icons";
 import {
   AddTorrentDocumentDocument,
   DashboardDocumentDocument,
@@ -75,6 +88,26 @@ type TaskFailureSummary = {
   title: string;
   detail: string;
   tone: "tone-danger" | "tone-warn" | "tone-info" | "tone-neutral";
+};
+type TaskLifecycleState = "done" | "current" | "error" | "upcoming";
+type TaskLifecycleStep = {
+  key: string;
+  label: string;
+  detail: string;
+  state: TaskLifecycleState;
+  tone: "tone-success" | "tone-danger" | "tone-info" | "tone-warn" | "tone-neutral";
+  time?: string | null;
+};
+type TaskPresentation = {
+  phase: "queued" | "downloading" | "scanPending" | "scanRunning" | "completed" | "failed";
+  label: string;
+  tone: "tone-success" | "tone-danger" | "tone-info" | "tone-warn" | "tone-neutral";
+  summary: string;
+  detail: string;
+  progressPercent: number;
+  progressLabel: string;
+  metaLine: string;
+  lifecycle: TaskLifecycleStep[];
 };
 type SettingsTab =
   | "Stash"
@@ -212,8 +245,23 @@ function isScanPending(task: DashboardTask) {
   return !["completed", "done", "failed", "skipped", "idle"].includes(status);
 }
 
+function isMagnetLink(value?: string | null) {
+  return Boolean(value && /^magnet:\?/i.test(value.trim()));
+}
+
+function taskQueryLabel(task: DashboardTask) {
+  if (isMagnetLink(task.query)) {
+    return "手动磁链任务";
+  }
+  return task.query || task.id;
+}
+
+function isCopyableTaskValue(value?: string | null) {
+  return Boolean(value && value.trim() !== "");
+}
+
 function taskSummary(task: DashboardTask) {
-  return task.torrentName || task.query || task.id;
+  return task.torrentName || taskQueryLabel(task);
 }
 
 function performerInitials(name: string) {
@@ -377,6 +425,143 @@ function taskFailureSummary(task: DashboardTask): TaskFailureSummary {
   };
 }
 
+function taskProgressPercent(task: DashboardTask) {
+  if (isStatus(task, "completed")) return 100;
+  return Math.max(0, Math.min(100, Math.round(task.progress * 100)));
+}
+
+function taskPrimaryState(task: DashboardTask): Pick<TaskPresentation, "phase" | "label" | "tone"> {
+  if (task.stashScanError || task.error || isStatus(task, "failed")) {
+    if (task.stashScanError) {
+      return { phase: "failed", label: "扫描失败", tone: "tone-danger" as const };
+    }
+    if (task.error) {
+      return { phase: "failed", label: "下载失败", tone: "tone-danger" as const };
+    }
+    return { phase: "failed", label: "任务失败", tone: "tone-danger" as const };
+  }
+
+  const scanStatus = normalizeStatus(task.stashScanStatus || "");
+  if (scanStatus === "started") {
+    return { phase: "scanRunning", label: "扫描中", tone: "tone-info" as const };
+  }
+
+  if (isStatus(task, "completed")) {
+    if (scanStatus || task.stashJobId) {
+      return { phase: "scanPending", label: "待扫描", tone: "tone-warn" as const };
+    }
+    return { phase: "completed", label: "已完成", tone: "tone-success" as const };
+  }
+
+  if (task.qbittorrentState || isTaskActive(task)) {
+    return { phase: "downloading", label: "下载中", tone: "tone-info" as const };
+  }
+
+  return { phase: "queued", label: "待下载", tone: "tone-neutral" as const };
+}
+
+function taskMetaLine(task: DashboardTask) {
+  const parts = [taskQueryLabel(task)];
+  if (task.torrentHash) {
+    parts.push(`Hash ${task.torrentHash.slice(0, 8)}`);
+  }
+  if (task.category) {
+    parts.push(task.category);
+  }
+  return parts.filter(Boolean).join(" · ");
+}
+
+function taskLifecycle(task: DashboardTask, failure: TaskFailureSummary): TaskLifecycleStep[] {
+  const primary = taskPrimaryState(task);
+  const progress = taskProgressPercent(task);
+  const hasCompletedDownload = isStatus(task, "completed");
+  const scanStarted = normalizeStatus(task.stashScanStatus || "") === "started";
+  const hasScanFailure = Boolean(task.stashScanError);
+  const hasFailure = Boolean(task.error) || isStatus(task, "failed");
+
+  return [
+    {
+      key: "created",
+      label: "已创建",
+      detail: "Moji 已记录任务并等待后续处理。",
+      state: "done",
+      tone: "tone-success",
+      time: task.createdAt
+    },
+    {
+      key: "download",
+      label: hasCompletedDownload ? "下载完成" : primary.phase === "failed" && hasFailure ? "下载失败" : "下载阶段",
+      detail: hasCompletedDownload
+        ? `内容已落地${task.contentPath ? `：${task.contentPath}` : "。"}`
+        : task.qbittorrentState
+          ? `${task.qbittorrentState} · ${progress}%`
+          : primary.phase === "queued"
+            ? "任务尚未进入下载器。"
+            : failure.detail,
+      state: primary.phase === "failed" && hasFailure ? "error" : hasCompletedDownload || primary.phase === "downloading" ? (hasCompletedDownload ? "done" : "current") : "upcoming",
+      tone: primary.phase === "failed" && hasFailure ? "tone-danger" : primary.phase === "downloading" ? "tone-info" : hasCompletedDownload ? "tone-success" : "tone-neutral",
+      time: hasCompletedDownload ? task.completedAt || task.updatedAt : task.updatedAt
+    },
+    {
+      key: "scan",
+      label: hasScanFailure ? "扫描失败" : scanStarted ? "扫描中" : hasCompletedDownload ? "入库阶段" : "等待扫描",
+      detail: hasScanFailure
+        ? simplifyMessage(task.stashScanError)
+        : scanStarted
+          ? `Stash job ${task.stashJobId || "已创建"} 正在运行。`
+          : hasCompletedDownload
+            ? task.stashJobId || task.stashScanStatus
+              ? "下载已完成，等待 Stash 收口。"
+              : "当前任务无需或尚未触发 Stash 扫描。"
+            : "下载完成后才会进入此阶段。",
+      state: hasScanFailure ? "error" : scanStarted ? "current" : hasCompletedDownload ? "current" : "upcoming",
+      tone: hasScanFailure ? "tone-danger" : scanStarted ? "tone-info" : hasCompletedDownload ? "tone-warn" : "tone-neutral",
+      time: task.updatedAt
+    }
+  ];
+}
+
+function taskPresentation(task: DashboardTask): TaskPresentation {
+  const primary = taskPrimaryState(task);
+  const failure = taskFailureSummary(task);
+  const progress = taskProgressPercent(task);
+
+  let summary = "";
+  let detail = "";
+
+  if (primary.phase === "failed") {
+    summary = failure.title;
+    detail = failure.detail;
+  } else if (primary.phase === "scanRunning") {
+    summary = "已完成下载，正在等待 Stash 收口。";
+    detail = task.stashJobId ? `Stash job ${task.stashJobId} 正在执行。` : "Stash 已接手当前任务。";
+  } else if (primary.phase === "scanPending") {
+    summary = "下载已结束，等待触发或完成 Stash 扫描。";
+    detail = task.stashScanStatus || "当前尚未有扫描结果。";
+  } else if (primary.phase === "completed") {
+    summary = "下载与入库链路已完成。";
+    detail = task.contentPath || "任务已闭环。";
+  } else if (primary.phase === "downloading") {
+    summary = task.qbittorrentState ? `qBittorrent: ${task.qbittorrentState}` : "任务正在等待下载器推进。";
+    detail = `当前进度 ${progress}%`;
+  } else {
+    summary = "任务已创建，等待进入下载器。";
+    detail = "下一次同步后会补齐下载状态。";
+  }
+
+  return {
+    phase: primary.phase,
+    label: primary.label,
+    tone: primary.tone,
+    summary,
+    detail,
+    progressPercent: progress,
+    progressLabel: primary.phase === "completed" ? "已闭环" : `${progress}%`,
+    metaLine: taskMetaLine(task),
+    lifecycle: taskLifecycle(task, failure)
+  };
+}
+
 function describeQueryError(error: unknown) {
   if (!error || typeof error !== "object") return "unknown error";
 
@@ -525,6 +710,12 @@ function App() {
   const [taskSearch, setTaskSearch] = useState("");
   const [taskStatus, setTaskStatus] = useState<"全部" | "运行中" | "完成" | "失败" | "待扫描">("全部");
   const [taskSort, setTaskSort] = useState<"最新" | "更新时间" | "进度">("最新");
+  const [taskGroupOpen, setTaskGroupOpen] = useState<Record<TaskGroupKey, boolean>>({
+    需处理: true,
+    运行中: true,
+    待入库: false,
+    已完成: false
+  });
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
   const [jackettQuery, setJackettQuery] = useState("");
   const [submittedJackettQuery, setSubmittedJackettQuery] = useState("");
@@ -655,6 +846,7 @@ function App() {
   const subscribedPerformers = subscriptionData?.subscribedPerformers ?? [];
   const activeTask = selectedTaskId ? tasks.find((task) => task.id === selectedTaskId) ?? null : null;
   const activeTaskFailure = activeTask ? taskFailureSummary(activeTask) : null;
+  const activeTaskPresentation = activeTask ? taskPresentation(activeTask) : null;
 
   useEffect(() => {
     setSubscriptionPage(1);
@@ -784,6 +976,15 @@ function App() {
       setToasts((current) => current.filter((item) => item.id !== id));
     }, TOAST_EXIT_MS);
     toastTimersRef.current.set(id, { exit: 0, remove });
+  };
+
+  const copyText = async (value: string, successMessage: string) => {
+    try {
+      await navigator.clipboard.writeText(value);
+      pushToast("tone-success", successMessage);
+    } catch {
+      pushToast("tone-danger", "复制失败，请检查浏览器剪贴板权限。");
+    }
   };
 
   const dependencyCards = runtimeSettings
@@ -1490,6 +1691,90 @@ function App() {
     );
   };
 
+  const openTaskDetail = (taskId: string) => {
+    setSelectedTaskId(taskId);
+    setDrawer("task");
+  };
+
+  const renderTaskCard = (task: DashboardTask, compact = false) => {
+    const presentation = taskPresentation(task);
+    const failure = taskFailureSummary(task);
+
+    // 判断是否需要显示进度条（进行中状态）
+    const needsProgress =
+      presentation.phase === "downloading" ||
+      presentation.phase === "scanRunning";
+
+    // 判断是否有真正的错误（排除正常的下载/扫描状态）
+    const hasError = failure.tone === "tone-danger" || failure.tone === "tone-warn";
+
+    return (
+      <article
+        key={task.id}
+        className={`task-card ${presentation.tone} ${compact ? "task-card--compact" : ""}`}
+        onClick={() => openTaskDetail(task.id)}
+        onKeyDown={(event) => {
+          if (event.key === "Enter" || event.key === " ") {
+            event.preventDefault();
+            openTaskDetail(task.id);
+          }
+        }}
+        role="button"
+        tabIndex={0}
+        aria-label={`${taskSummary(task)}，状态：${presentation.label}，点击查看详情`}
+      >
+        <div className="task-card__head">
+          <div>
+            <h3>{taskSummary(task)}</h3>
+            <p>{presentation.metaLine}</p>
+          </div>
+          <span className={`status-chip ${presentation.tone}`}>{presentation.label}</span>
+        </div>
+
+        <div className="task-card__status">
+          {hasError ? (
+            <div className={`task-status-error ${failure.tone}`}>
+              <strong>{failure.title}</strong>
+              <span>{failure.detail}</span>
+            </div>
+          ) : needsProgress ? (
+            <div className="task-status-progress">
+              <div className="task-status-progress__copy">
+                <strong>{presentation.summary}</strong>
+                <span>{presentation.progressLabel}</span>
+              </div>
+              <div className="progress-shell">
+                <div className="progress-fill" style={{ width: `${presentation.progressPercent}%` }} />
+              </div>
+            </div>
+          ) : presentation.phase === "completed" ? (
+            <div className="task-status-completed">
+              {presentation.summary}
+            </div>
+          ) : null}
+        </div>
+
+        <div className="task-card__actions">
+          <span>{formatDateTime(task.updatedAt)}</span>
+          {canTriggerTaskStashScan(task) && (
+            <button
+              type="button"
+              className="ghost-button task-card__action-button"
+              onClick={(event) => {
+                event.stopPropagation();
+                void runTaskScan(task.id);
+              }}
+              disabled={triggeringTaskScan}
+              aria-label={`重扫任务：${taskSummary(task)}`}
+            >
+              {triggeringTaskScan ? "扫描中..." : "重扫"}
+            </button>
+          )}
+        </div>
+      </article>
+    );
+  };
+
   const selectedHelpTopic =
     HELP_TOPICS.find((topic) => topic.id === helpTopicId) ?? HELP_TOPICS[0];
   const visibleDrawer = renderedDrawer ?? drawer;
@@ -1716,39 +2001,7 @@ function App() {
               </div>
 
               <div className="card-grid">
-                {tasks.filter((task) => isStatus(task, "failed") || isScanPending(task)).slice(0, 4).map((task) => (
-                  <article key={task.id} className={`task-card ${statusTone(task.status)}`}>
-                    <div className="task-card__head">
-                      <div>
-                        <h3>{taskSummary(task)}</h3>
-                        <p>{task.query}</p>
-                      </div>
-                      <button
-                        type="button"
-                        className="ghost-button"
-                        onClick={() => {
-                          setSelectedTaskId(task.id);
-                          setDrawer("task");
-                        }}
-                      >
-                        详情
-                      </button>
-                    </div>
-                    <div className="progress-shell" aria-hidden="true">
-                      <div className="progress-fill" style={{ width: `${Math.round(task.progress * 100)}%` }} />
-                    </div>
-                    <dl className="task-meta">
-                      <div>
-                        <dt>下载状态</dt>
-                        <dd>{task.qbittorrentState || "待同步"}</dd>
-                      </div>
-                      <div>
-                        <dt>扫描状态</dt>
-                        <dd>{task.stashScanStatus || "未开始"}</dd>
-                      </div>
-                    </dl>
-                  </article>
-                ))}
+                {tasks.filter((task) => isStatus(task, "failed") || isScanPending(task)).slice(0, 4).map((task) => renderTaskCard(task, true))}
                 {!tasks.some((task) => isStatus(task, "failed") || isScanPending(task)) ? (
                   <article className="empty-card">
                     <h3>暂无待处理项</h3>
@@ -1817,59 +2070,24 @@ function App() {
                       <h3>{item.group}</h3>
                       <p>{item.description}</p>
                     </div>
-                    <span className={`status-chip ${item.tone}`}>{item.tasks.length} 项</span>
+                    <div className="task-group-section__actions">
+                      {item.group === "待入库" ? (
+                        <button type="button" className="ghost-button" onClick={() => void runScan()}>
+                          全部触发扫描
+                        </button>
+                      ) : null}
+                      <span className={`status-chip ${item.tone}`}>{item.tasks.length} 项</span>
+                      <button
+                        type="button"
+                        className="ghost-button"
+                        onClick={() => setTaskGroupOpen((current) => ({ ...current, [item.group]: !current[item.group] }))}
+                      >
+                        {taskGroupOpen[item.group] ? "收起" : "展开"}
+                      </button>
+                    </div>
                   </div>
 
-                  <div className="task-grid">
-                    {item.tasks.map((task) => {
-                      const failure = taskFailureSummary(task);
-                      return (
-                        <article
-                          key={task.id}
-                          className={`task-card ${statusTone(task.status)}`}
-                          onClick={() => {
-                            setSelectedTaskId(task.id);
-                            setDrawer("task");
-                          }}
-                          role="button"
-                          tabIndex={0}
-                        >
-                          <div className="task-card__head">
-                            <div>
-                              <h3>{taskSummary(task)}</h3>
-                              <p>{task.query || "无查询文本"}</p>
-                            </div>
-                            <span className={`status-chip ${statusTone(task.status)}`}>{task.status}</span>
-                          </div>
-                          <div className="progress-shell">
-                            <div className="progress-fill" style={{ width: `${Math.round(task.progress * 100)}%` }} />
-                          </div>
-                          <dl className="task-meta">
-                            <div>
-                              <dt>qBittorrent</dt>
-                              <dd>{task.qbittorrentState || "待同步"}</dd>
-                            </div>
-                            <div>
-                              <dt>Stash</dt>
-                              <dd>{task.stashScanStatus || "未开始"}</dd>
-                            </div>
-                            <div>
-                              <dt>更新时间</dt>
-                              <dd>{formatDateTime(task.updatedAt)}</dd>
-                            </div>
-                            <div>
-                              <dt>完成时间</dt>
-                              <dd>{formatDateTime(task.completedAt)}</dd>
-                            </div>
-                          </dl>
-                          <div className={`task-issue ${failure.tone}`}>
-                            <strong>{failure.title}</strong>
-                            <span>{failure.detail}</span>
-                          </div>
-                        </article>
-                      );
-                    })}
-                  </div>
+                  {taskGroupOpen[item.group] ? <div className="task-grid">{item.tasks.map((task) => renderTaskCard(task))}</div> : null}
                 </section>
               ))}
             </section>
@@ -2228,11 +2446,108 @@ function App() {
                         <div className="drawer-card__head">
                           <div>
                             <h3>{taskSummary(activeTask)}</h3>
-                            <p>{activeTask.query}</p>
+                            <p>{activeTaskPresentation?.metaLine}</p>
                           </div>
-                          <span className={`status-chip ${statusTone(activeTask.status)}`}>{activeTask.status}</span>
+                          <span className={`status-chip ${activeTaskPresentation?.tone ?? "tone-neutral"}`}>{activeTaskPresentation?.label ?? activeTask.status}</span>
+                        </div>
+                        <div className="task-detail-hero">
+                          <div className="task-detail-hero__copy">
+                            <strong>{activeTaskPresentation?.summary}</strong>
+                            <p>{activeTaskPresentation?.detail}</p>
+                          </div>
+                          <span className={`task-detail-hero__metric ${activeTaskPresentation?.tone ?? "tone-neutral"}`}>
+                            {activeTaskPresentation?.progressLabel ?? `${taskProgressPercent(activeTask)}%`}
+                          </span>
+                        </div>
+                        <div className="progress-shell progress-shell--detail">
+                          <div className="progress-fill" style={{ width: `${activeTaskPresentation?.progressPercent ?? taskProgressPercent(activeTask)}%` }} />
                         </div>
                         <dl className="settings-grid">
+                          <div>
+                            <dt>创建时间</dt>
+                            <dd>{formatDateTime(activeTask.createdAt)}</dd>
+                          </div>
+                          <div>
+                            <dt>最近更新</dt>
+                            <dd>{formatDateTime(activeTask.updatedAt)}</dd>
+                          </div>
+                          <div>
+                            <dt>完成时间</dt>
+                            <dd>{formatDateTime(activeTask.completedAt)}</dd>
+                          </div>
+                          <div>
+                            <dt>当前进度</dt>
+                            <dd>{taskProgressPercent(activeTask)}%</dd>
+                          </div>
+                        </dl>
+                      </article>
+
+                      <article className="drawer-card">
+                        <div className="drawer-card__head">
+                          <div>
+                            <h3>生命周期</h3>
+                          </div>
+                        </div>
+                        <div className="task-timeline">
+                          {(activeTaskPresentation?.lifecycle ?? []).map((step) => (
+                            <div key={step.key} className={`task-timeline__item is-${step.state}`}>
+                              <div className={`task-timeline__icon ${step.tone}`}>
+                                <FontAwesomeIcon
+                                  icon={
+                                    step.state === "error"
+                                      ? faTriangleExclamation
+                                      : step.state === "current"
+                                        ? faClock
+                                        : step.state === "done"
+                                          ? faCircleCheck
+                                          : faRotate
+                                  }
+                                />
+                              </div>
+                              <div className="task-timeline__copy">
+                                <div className="task-timeline__head">
+                                  <strong>{step.label}</strong>
+                                  <span>{formatDateTime(step.time)}</span>
+                                </div>
+                                <p>{step.detail}</p>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </article>
+
+                      <article className="drawer-card">
+                        <div className="drawer-card__head">
+                          <div>
+                            <h3>任务数据</h3>
+                          </div>
+                        </div>
+                        <dl className="settings-grid">
+                          <div>
+                            <dt className={isMagnetLink(activeTask.query) ? "task-inline-label" : undefined}>
+                              <span>{isMagnetLink(activeTask.query) ? "磁力链接" : "查询文本"}</span>
+                              {isMagnetLink(activeTask.query) && activeTask.query ? (
+                                <button
+                                  type="button"
+                                  className="task-icon-button"
+                                  onClick={() => void copyText(activeTask.query || "", "磁力链接已复制")}
+                                  aria-label="复制磁力链接"
+                                  title="复制磁力链接"
+                                >
+                                  <FontAwesomeIcon icon={faCopy} />
+                                </button>
+                              ) : null}
+                            </dt>
+                            {isMagnetLink(activeTask.query) && activeTask.query ? (
+                              <dd>
+                                <span className="task-inline-value task-inline-value--truncate" title={activeTask.query}>
+                                  {activeTask.query}
+                                </span>
+                              </dd>
+                            ) : (
+                              <dd title={activeTask.query || undefined}>{activeTask.query || "—"}</dd>
+                            )}
+                          </div>
                           <div>
                             <dt>保存路径</dt>
                             <dd>{activeTask.savePath || "—"}</dd>
@@ -2250,19 +2565,48 @@ function App() {
                             <dd>{activeTask.contentPath || "—"}</dd>
                           </div>
                           <div>
-                            <dt>创建时间</dt>
-                            <dd>{formatDateTime(activeTask.createdAt)}</dd>
+                            {/* <dt>Torrent 名称</dt> */}
+                            <dt className={isCopyableTaskValue(activeTask.torrentName) ? "task-inline-label" : undefined}>
+                              <span>Torrent 名称</span>
+                              {isCopyableTaskValue(activeTask.torrentName) ? (
+                                <button
+                                  type="button"
+                                  className="task-icon-button"
+                                  onClick={() => void copyText(activeTask.torrentName || "", "Torrent 名称已复制")}
+                                  aria-label="复制 Torrent 名称"
+                                  title="复制 Torrent 名称"
+                                >
+                                  <FontAwesomeIcon icon={faCopy} />
+                                </button>
+                              ) : null}
+                            </dt>
+                            <dd>
+                              <span className="task-inline-value task-inline-value--truncate" title={activeTask.torrentName || undefined}>
+                                {activeTask.torrentName || "—"}
+                              </span>
+                            </dd>
                           </div>
                           <div>
-                            <dt>更新时间</dt>
-                            <dd>{formatDateTime(activeTask.updatedAt)}</dd>
+                            <dt className={isCopyableTaskValue(activeTask.torrentHash) ? "task-inline-label" : undefined}>
+                              <span>Torrent Hash</span>
+                              {isCopyableTaskValue(activeTask.torrentHash) ? (
+                                <button
+                                  type="button"
+                                  className="task-icon-button"
+                                  onClick={() => void copyText(activeTask.torrentHash || "", "Torrent Hash 已复制")}
+                                  aria-label="复制 Torrent Hash"
+                                  title="复制 Torrent Hash"
+                                >
+                                  <FontAwesomeIcon icon={faCopy} />
+                                </button>
+                              ) : null}
+                            </dt>
+                            <dd>
+                              <span className="task-inline-value task-inline-value--truncate" title={activeTask.torrentHash || undefined}>
+                                {activeTask.torrentHash || "—"}
+                              </span>
+                            </dd>
                           </div>
-                        </dl>
-                      </article>
-
-                      <article className="drawer-card">
-                        <h3>下载与扫描</h3>
-                        <dl className="settings-grid">
                           <div>
                             <dt>qBittorrent</dt>
                             <dd>{activeTask.qbittorrentState || "待同步"}</dd>
@@ -2286,24 +2630,34 @@ function App() {
                         </div>
                       </article>
 
-                      <div className="inline-actions">
-                        <button type="button" className="ghost-button" onClick={() => void runSync()}>
-                          同步进度
-                        </button>
-                        {canTriggerTaskStashScan(activeTask) ? (
-                          <button
-                            type="button"
-                            className="ghost-button"
-                            onClick={() => void runTaskScan(activeTask.id)}
-                            disabled={triggeringTaskScan}
-                          >
-                            {triggeringTaskScan ? "触发中" : "扫描当前任务"}
+                      <article className="drawer-card">
+                        <div className="drawer-card__head">
+                          <div>
+                            <h3>操作</h3>
+                          </div>
+                        </div>
+                        <div className="task-ops">
+                          <button type="button" className="ghost-button task-ops__button" onClick={() => void runSync()}>
+                            <FontAwesomeIcon icon={faRotate} />
+                            <span>同步全部任务进度</span>
                           </button>
-                        ) : null}
-                        <button type="button" className="ghost-button" onClick={() => void runScan()}>
-                          触发扫描
-                        </button>
-                      </div>
+                          {canTriggerTaskStashScan(activeTask) ? (
+                            <button
+                              type="button"
+                              className="ghost-button task-ops__button"
+                              onClick={() => void runTaskScan(activeTask.id)}
+                              disabled={triggeringTaskScan}
+                            >
+                              <FontAwesomeIcon icon={faWandMagicSparkles} />
+                              <span>{triggeringTaskScan ? "正在触发当前任务扫描" : "触发当前任务扫描"}</span>
+                            </button>
+                          ) : null}
+                          <button type="button" className="ghost-button task-ops__button" onClick={() => void runScan()}>
+                            <FontAwesomeIcon icon={faDownload} />
+                            <span>触发待入库任务扫描</span>
+                          </button>
+                        </div>
+                      </article>
                     </>
                   ) : (
                     <article className="drawer-card">
