@@ -1,0 +1,42 @@
+export const EMPTY_STASH_FORM = {
+  url: "",
+  apiKey: "",
+  libraryPath: ""
+};
+
+export const EMPTY_JACKETT_FORM = {
+  url: "",
+  apiKey: ""
+};
+
+export const EMPTY_QBITTORRENT_FORM = {
+  url: "",
+  username: "",
+  password: "",
+  defaultSavePath: "",
+  category: "",
+  tags: ""
+};
+
+export const EMPTY_SUBSCRIPTION_FORM = {
+  store: "sqlite",
+  dbPath: "",
+  pollIntervalSeconds: "3600",
+  javstashApiKey: ""
+};
+
+export const EMPTY_LOGGING_FORM = {
+  level: "info",
+  filePath: "",
+  maxEntries: "500",
+  maxFileSizeBytes: String(10 * 1024 * 1024),
+  maxFileBackups: "5"
+};
+
+export const TOAST_LIFETIME_MS = 10000;
+export const TOAST_EXIT_MS = 480;
+
+export const SUBSCRIPTION_PAGE_SIZE_OPTIONS = [12, 24, 48, 96] as const;
+
+import { LogLevel } from "../graphql/generated/graphql";
+export const LOG_LEVEL_OPTIONS: LogLevel[] = [LogLevel.Debug, LogLevel.Info, LogLevel.Warning, LogLevel.Error];

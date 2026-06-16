@@ -1,0 +1,55 @@
+import type { OperationContext } from "urql";
+import { SETTINGS_TABS, ENABLED_SETTINGS_TABS } from "../../constants";
+import type { DrawerKey, SettingsTab, ToastTone } from "../../types";
+import { SettingsPanel } from "../settings/SettingsPanel";
+import type { DashboardDocumentQuery } from "../../graphql/generated/graphql";
+
+type RuntimeSettings = NonNullable<DashboardDocumentQuery["settings"]>;
+
+interface SettingsDrawerProps {
+  settingsTab: SettingsTab;
+  onSettingsTabChange: (tab: SettingsTab) => void;
+  runtimeSettings: RuntimeSettings | null;
+  drawer: DrawerKey;
+  renderedDrawer: Exclude<DrawerKey, null> | null;
+  pushToast: (tone: ToastTone, message: string) => void;
+  refreshDashboard: (opts?: Partial<OperationContext>) => void;
+}
+
+export function SettingsDrawer({
+  settingsTab,
+  onSettingsTabChange,
+  runtimeSettings,
+  drawer,
+  renderedDrawer,
+  pushToast,
+  refreshDashboard
+}: SettingsDrawerProps) {
+  return (
+    <div className="drawer-stack">
+      <div className="settings-tabs">
+        {SETTINGS_TABS.map((item) => (
+          <button
+            key={item}
+            type="button"
+            className={`chip ${settingsTab === item ? "is-active" : ""} ${!ENABLED_SETTINGS_TABS.has(item) ? "is-disabled" : ""}`}
+            onClick={() => onSettingsTabChange(item)}
+            disabled={!ENABLED_SETTINGS_TABS.has(item)}
+          >
+            {item}
+          </button>
+        ))}
+      </div>
+
+      <SettingsPanel
+        settingsTab={settingsTab}
+        onSettingsTabChange={onSettingsTabChange}
+        runtimeSettings={runtimeSettings}
+        drawer={drawer}
+        renderedDrawer={renderedDrawer}
+        pushToast={pushToast}
+        refreshDashboard={(opts) => { refreshDashboard(opts as Partial<OperationContext>); }}
+      />
+    </div>
+  );
+}

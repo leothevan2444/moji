@@ -1,715 +1,38 @@
-import { FormEvent, ReactNode, useDeferredValue, useEffect, useMemo, useRef, useState } from "react";
-import { useMutation, useQuery } from "urql";
-import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import {
-  faBookmark,
-  faChartColumn,
-  faCircleCheck,
-  faCircleQuestion,
-  faClock,
-  faCopy,
-  faDownload,
-  faGear,
-  faHeart,
-  faRotate,
-  faTriangleExclamation,
-  faWandMagicSparkles
-} from "@fortawesome/free-solid-svg-icons";
-import {
-  AddTorrentDocumentDocument,
-  DashboardDocumentDocument,
-  SubscribePerformerDocument,
-  SubscribedPerformersDocument,
-  LogLevel,
-  LogsDocumentDocument,
-  RefreshSubscriptionNowDocument,
-  RefreshSubscribedPerformerDocument,
-  SearchDocumentDocument,
-  StashPerformersDocument,
-  SyncTaskProgressDocumentDocument,
-  TriggerTaskStashScanDocumentDocument,
-  TriggerStashScansDocumentDocument,
-  UnsubscribePerformerDocument,
-  UpdateSubscriptionSettingsDocumentDocument,
-  UpdateJackettSettingsDocumentDocument,
-  UpdateLoggingSettingsDocumentDocument,
-  UpdateQBittorrentSettingsDocumentDocument,
-  UpdateStashSettingsDocumentDocument,
-  type AddTorrentDocumentMutation,
-  type AddTorrentDocumentMutationVariables,
-  type DashboardDocumentQuery,
-  type DashboardDocumentQueryVariables,
-  type SubscribePerformerMutation,
-  type SubscribePerformerMutationVariables,
-  type SubscribedPerformersQuery,
-  type JackettSearchInput,
-  type LogsDocumentQuery,
-  type LogsDocumentQueryVariables,
-  type RefreshSubscriptionNowMutation,
-  type RefreshSubscriptionNowMutationVariables,
-  type RefreshSubscribedPerformerMutation,
-  type RefreshSubscribedPerformerMutationVariables,
-  type SearchDocumentQuery,
-  type SearchDocumentQueryVariables,
-  type StashPerformersQuery,
-  type StashPerformersQueryVariables,
-  type SyncTaskProgressDocumentMutation,
-  type SyncTaskProgressDocumentMutationVariables,
-  type TriggerTaskStashScanDocumentMutation,
-  type TriggerTaskStashScanDocumentMutationVariables,
-  type TriggerStashScansDocumentMutation,
-  type TriggerStashScansDocumentMutationVariables,
-  type UnsubscribePerformerMutation,
-  type UnsubscribePerformerMutationVariables,
-  type UpdateSubscriptionSettingsDocumentMutation,
-  type UpdateSubscriptionSettingsDocumentMutationVariables,
-  type UpdateJackettSettingsDocumentMutation,
-  type UpdateJackettSettingsDocumentMutationVariables,
-  type UpdateLoggingSettingsDocumentMutation,
-  type UpdateLoggingSettingsDocumentMutationVariables,
-  type UpdateQBittorrentSettingsDocumentMutation,
-  type UpdateQBittorrentSettingsDocumentMutationVariables,
-  type UpdateStashSettingsDocumentMutation,
-  type UpdateStashSettingsDocumentMutationVariables
-} from "./graphql/generated/graphql";
+import { FormEvent, useDeferredValue, useEffect, useState } from "react";
 import { HELP_TOPICS, type HelpTopicId } from "./help";
-
-type TabKey = "主页" | "任务" | "订阅" | "发现";
-type DrawerKey = "stats" | "settings" | "help" | "task" | null;
-type DashboardTask = DashboardDocumentQuery["tasks"][number];
-type StashPerformerEntry = StashPerformersQuery["stashPerformers"]["items"][number];
-type SubscribedPerformerEntry = SubscribedPerformersQuery["subscribedPerformers"][number];
-type RuntimeSettings = NonNullable<DashboardDocumentQuery["settings"]>;
-type ToastTone = "tone-success" | "tone-danger" | "tone-info";
-type ToastPhase = "entering" | "leaving";
-type ToastItem = { id: number; tone: ToastTone; message: string; phase: ToastPhase };
-type TaskGroupKey = "需处理" | "运行中" | "待入库" | "已完成";
-type TaskFailureSummary = {
-  title: string;
-  detail: string;
-  tone: "tone-danger" | "tone-warn" | "tone-info" | "tone-neutral";
-};
-type TaskLifecycleState = "done" | "current" | "error" | "upcoming";
-type TaskLifecycleStep = {
-  key: string;
-  label: string;
-  detail: string;
-  state: TaskLifecycleState;
-  tone: "tone-success" | "tone-danger" | "tone-info" | "tone-warn" | "tone-neutral";
-  time?: string | null;
-};
-type TaskPresentation = {
-  phase: "queued" | "downloading" | "scanPending" | "scanRunning" | "completed" | "failed";
-  label: string;
-  tone: "tone-success" | "tone-danger" | "tone-info" | "tone-warn" | "tone-neutral";
-  summary: string;
-  detail: string;
-  progressPercent: number;
-  progressLabel: string;
-  metaLine: string;
-  lifecycle: TaskLifecycleStep[];
-};
-type SettingsTab =
-  | "Stash"
-  | "索引器"
-  | "下载器"
-  | "任务"
-  | "订阅"
-  | "安全性"
-  | "系统"
-  | "日志"
-  | "工具"
-  | "更新历史"
-  | "关于";
-
-const NAV_TABS: TabKey[] = ["主页", "任务", "订阅", "发现"];
-const SETTINGS_TABS: SettingsTab[] = [
-  "Stash",
-  "索引器",
-  "下载器",
-  "任务",
-  "订阅",
-  "安全性",
-  "系统",
-  "日志",
-  "工具",
-  "更新历史",
-  "关于"
-];
-
-const ENABLED_SETTINGS_TABS: ReadonlySet<SettingsTab> = new Set([
-  "Stash",
-  "索引器",
-  "下载器",
-  "任务",
-  "订阅",
-  "日志",
-  "系统"
-]);
-
-const EMPTY_STASH_FORM = {
-  url: "",
-  apiKey: "",
-  libraryPath: ""
-};
-
-const TOAST_LIFETIME_MS = 10000;
-const TOAST_EXIT_MS = 480;
-
-const EMPTY_JACKETT_FORM = {
-  url: "",
-  apiKey: ""
-};
-
-const EMPTY_QBITTORRENT_FORM = {
-  url: "",
-  username: "",
-  password: "",
-  defaultSavePath: "",
-  category: "",
-  tags: ""
-};
-
-const EMPTY_SUBSCRIPTION_FORM = {
-  store: "sqlite",
-  dbPath: "",
-  pollIntervalSeconds: "3600",
-  javstashApiKey: ""
-};
-
-const EMPTY_LOGGING_FORM = {
-  level: "info",
-  filePath: "",
-  maxEntries: "500",
-  maxFileSizeBytes: String(10 * 1024 * 1024),
-  maxFileBackups: "5"
-};
-
-const SUBSCRIPTION_PAGE_SIZE_OPTIONS = [12, 24, 48, 96] as const;
-const LOG_LEVEL_OPTIONS: LogLevel[] = [LogLevel.Debug, LogLevel.Info, LogLevel.Warning, LogLevel.Error];
-
-function formatBytes(size: number) {
-  if (!size) return "0 B";
-  const units = ["B", "KB", "MB", "GB", "TB"];
-  const index = Math.min(Math.floor(Math.log(size) / Math.log(1024)), units.length - 1);
-  const value = size / 1024 ** index;
-  return `${value.toFixed(index === 0 ? 0 : 1)} ${units[index]}`;
-}
-
-function formatDateTime(value?: string | null) {
-  if (!value) return "—";
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return value;
-  return new Intl.DateTimeFormat("zh-CN", {
-    year: "numeric",
-    month: "short",
-    day: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-    second: "2-digit"
-  }).format(date);
-}
-
-function formatLogEntries(entries: LogsDocumentQuery["logs"]) {
-  return entries
-    .map((entry) => `${entry.time} [${entry.level}] ${entry.message}`)
-    .join("\n");
-}
-
-function formatRelativeDate(value?: string | null) {
-  if (!value) return "—";
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return value;
-  return new Intl.DateTimeFormat("zh-CN", {
-    month: "short",
-    day: "numeric"
-  }).format(date);
-}
-
-function normalizeStatus(value: string) {
-  return value.trim().toLowerCase();
-}
-
-function isStatus(task: DashboardTask, ...values: string[]) {
-  const status = normalizeStatus(task.status);
-  return values.some((value) => status === value || status.includes(value));
-}
-
-function isTaskActive(task: DashboardTask) {
-  return !isStatus(task, "completed", "failed", "cancelled", "canceled", "paused");
-}
-
-function isScanPending(task: DashboardTask) {
-  const status = task.stashScanStatus.trim().toLowerCase();
-  if (!status) return false;
-  return !["completed", "done", "failed", "skipped", "idle"].includes(status);
-}
-
-function isMagnetLink(value?: string | null) {
-  return Boolean(value && /^magnet:\?/i.test(value.trim()));
-}
-
-function taskQueryLabel(task: DashboardTask) {
-  if (isMagnetLink(task.query)) {
-    return "手动磁链任务";
-  }
-  return task.query || task.id;
-}
-
-function isCopyableTaskValue(value?: string | null) {
-  return Boolean(value && value.trim() !== "");
-}
-
-function taskSummary(task: DashboardTask) {
-  return task.torrentName || taskQueryLabel(task);
-}
-
-function performerInitials(name: string) {
-  return name
-    .trim()
-    .slice(0, 2)
-    .toUpperCase();
-}
-
-function performerImageURL(imagePath?: string | null, stashURL?: string | null) {
-  if (!imagePath) return null;
-  try {
-    if (/^https?:\/\//i.test(imagePath)) {
-      return imagePath;
-    }
-    if (!stashURL) return imagePath;
-    return new URL(imagePath, stashURL.endsWith("/") ? stashURL : `${stashURL}/`).toString();
-  } catch {
-    return imagePath;
-  }
-}
-
-function statusTone(status: string) {
-  const normalized = status.toLowerCase();
-  if (normalized.includes("complete")) return "tone-success";
-  if (normalized.includes("fail")) return "tone-danger";
-  if (normalized.includes("download") || normalized.includes("sync")) return "tone-info";
-  if (normalized.includes("pending") || normalized.includes("wait")) return "tone-warn";
-  return "tone-neutral";
-}
-
-function taskGroup(task: DashboardTask): TaskGroupKey {
-  if (isStatus(task, "failed") || task.stashScanError) return "需处理";
-  if (isTaskActive(task)) return "运行中";
-  if (isScanPending(task)) return "待入库";
-  return "已完成";
-}
-
-function taskGroupTone(group: TaskGroupKey) {
-  if (group === "需处理") return "tone-danger";
-  if (group === "运行中") return "tone-info";
-  if (group === "待入库") return "tone-warn";
-  return "tone-success";
-}
-
-function taskGroupDescription(group: TaskGroupKey) {
-  if (group === "需处理") return "失败、扫描报错或需要人工回看的任务。";
-  if (group === "运行中") return "仍在下载、同步或等待外部状态推进。";
-  if (group === "待入库") return "下载已完成，但 Stash 扫描尚未收口。";
-  return "流程已闭环的任务。";
-}
-
-function canTriggerTaskStashScan(task: DashboardTask) {
-  return task.status.trim().toLowerCase() === "completed" && task.stashScanStatus.trim().toLowerCase() !== "started";
-}
-
-function simplifyMessage(message: string) {
-  return message.replace(/^downloader:\s*/i, "").replace(/^stashsync:\s*/i, "").trim();
-}
-
-function taskFailureSummary(task: DashboardTask): TaskFailureSummary {
-  const stashError = simplifyMessage(task.stashScanError || "");
-  const taskError = simplifyMessage(task.error || "");
-  const status = normalizeStatus(task.status);
-  const scanStatus = normalizeStatus(task.stashScanStatus || "");
-  const qbtState = normalizeStatus(task.qbittorrentState || "");
-
-  if (stashError) {
-    if (stashError.includes("at least one scan path is required")) {
-      return {
-        title: "缺少扫描路径",
-        detail: "任务没有可用于 Stash 扫描的内容路径或保存路径。",
-        tone: "tone-danger"
-      };
-    }
-    if (stashError.includes("not configured")) {
-      return {
-        title: "Stash 未配置",
-        detail: "当前任务需要触发 Stash 扫描，但后端未启用对应连接。",
-        tone: "tone-danger"
-      };
-    }
-    return {
-      title: "Stash 扫描失败",
-      detail: stashError,
-      tone: "tone-danger"
-    };
-  }
-
-  if (taskError) {
-    if (taskError.includes("no downloadable torrent candidate found")) {
-      return {
-        title: "没有可下载候选",
-        detail: "搜索返回了结果，但没有可直接提交的 magnet 或种子链接。",
-        tone: "tone-warn"
-      };
-    }
-    if (taskError.includes("tracker is not configured")) {
-      return {
-        title: "索引器未配置",
-        detail: "当前下载链路无法访问 Jackett 或其他搜索后端。",
-        tone: "tone-danger"
-      };
-    }
-    if (taskError.includes("torrent url is required")) {
-      return {
-        title: "缺少种子地址",
-        detail: "手动添加任务时没有提供有效的磁链或下载地址。",
-        tone: "tone-warn"
-      };
-    }
-    if (taskError.includes("qBittorrent client is required") || taskError.includes("qBittorrent client is not configured")) {
-      return {
-        title: "下载器未启用",
-        detail: "任务无法提交到 qBittorrent，需先补齐下载器配置。",
-        tone: "tone-danger"
-      };
-    }
-    if (taskError.includes("add torrent")) {
-      return {
-        title: "提交下载失败",
-        detail: taskError,
-        tone: "tone-danger"
-      };
-    }
-    return {
-      title: "任务执行失败",
-      detail: taskError,
-      tone: "tone-danger"
-    };
-  }
-
-  if (status.includes("failed")) {
-    return {
-      title: "任务状态失败",
-      detail: task.status || "任务被标记为失败，但没有更多错误上下文。",
-      tone: "tone-danger"
-    };
-  }
-
-  if (scanStatus) {
-    return {
-      title: "等待扫描收口",
-      detail: task.stashScanStatus || "下载已完成，等待 Stash 扫描继续推进。",
-      tone: "tone-warn"
-    };
-  }
-
-  if (qbtState) {
-    return {
-      title: "下载进行中",
-      detail: task.qbittorrentState || "任务仍在等待下载状态变化。",
-      tone: "tone-info"
-    };
-  }
-
-  return {
-    title: "状态正常",
-    detail: "当前任务没有显式错误，等待下一次同步。",
-    tone: "tone-neutral"
-  };
-}
-
-function taskProgressPercent(task: DashboardTask) {
-  if (isStatus(task, "completed")) return 100;
-  return Math.max(0, Math.min(100, Math.round(task.progress * 100)));
-}
-
-function taskPrimaryState(task: DashboardTask): Pick<TaskPresentation, "phase" | "label" | "tone"> {
-  if (task.stashScanError || task.error || isStatus(task, "failed")) {
-    if (task.stashScanError) {
-      return { phase: "failed", label: "扫描失败", tone: "tone-danger" as const };
-    }
-    if (task.error) {
-      return { phase: "failed", label: "下载失败", tone: "tone-danger" as const };
-    }
-    return { phase: "failed", label: "任务失败", tone: "tone-danger" as const };
-  }
-
-  const scanStatus = normalizeStatus(task.stashScanStatus || "");
-  if (scanStatus === "started") {
-    return { phase: "scanRunning", label: "扫描中", tone: "tone-info" as const };
-  }
-
-  if (isStatus(task, "completed")) {
-    if (scanStatus || task.stashJobId) {
-      return { phase: "scanPending", label: "待扫描", tone: "tone-warn" as const };
-    }
-    return { phase: "completed", label: "已完成", tone: "tone-success" as const };
-  }
-
-  if (task.qbittorrentState || isTaskActive(task)) {
-    return { phase: "downloading", label: "下载中", tone: "tone-info" as const };
-  }
-
-  return { phase: "queued", label: "待下载", tone: "tone-neutral" as const };
-}
-
-function taskMetaLine(task: DashboardTask) {
-  const parts = [taskQueryLabel(task)];
-  if (task.torrentHash) {
-    parts.push(`Hash ${task.torrentHash.slice(0, 8)}`);
-  }
-  if (task.category) {
-    parts.push(task.category);
-  }
-  return parts.filter(Boolean).join(" · ");
-}
-
-function taskLifecycle(task: DashboardTask, failure: TaskFailureSummary): TaskLifecycleStep[] {
-  const primary = taskPrimaryState(task);
-  const progress = taskProgressPercent(task);
-  const hasCompletedDownload = isStatus(task, "completed");
-  const scanStarted = normalizeStatus(task.stashScanStatus || "") === "started";
-  const hasScanFailure = Boolean(task.stashScanError);
-  const hasFailure = Boolean(task.error) || isStatus(task, "failed");
-
-  return [
-    {
-      key: "created",
-      label: "已创建",
-      detail: "Moji 已记录任务并等待后续处理。",
-      state: "done",
-      tone: "tone-success",
-      time: task.createdAt
-    },
-    {
-      key: "download",
-      label: hasCompletedDownload ? "下载完成" : primary.phase === "failed" && hasFailure ? "下载失败" : "下载阶段",
-      detail: hasCompletedDownload
-        ? `内容已落地${task.contentPath ? `：${task.contentPath}` : "。"}`
-        : task.qbittorrentState
-          ? `${task.qbittorrentState} · ${progress}%`
-          : primary.phase === "queued"
-            ? "任务尚未进入下载器。"
-            : failure.detail,
-      state: primary.phase === "failed" && hasFailure ? "error" : hasCompletedDownload || primary.phase === "downloading" ? (hasCompletedDownload ? "done" : "current") : "upcoming",
-      tone: primary.phase === "failed" && hasFailure ? "tone-danger" : primary.phase === "downloading" ? "tone-info" : hasCompletedDownload ? "tone-success" : "tone-neutral",
-      time: hasCompletedDownload ? task.completedAt || task.updatedAt : task.updatedAt
-    },
-    {
-      key: "scan",
-      label: hasScanFailure ? "扫描失败" : scanStarted ? "扫描中" : hasCompletedDownload ? "入库阶段" : "等待扫描",
-      detail: hasScanFailure
-        ? simplifyMessage(task.stashScanError)
-        : scanStarted
-          ? `Stash job ${task.stashJobId || "已创建"} 正在运行。`
-          : hasCompletedDownload
-            ? task.stashJobId || task.stashScanStatus
-              ? "下载已完成，等待 Stash 收口。"
-              : "当前任务无需或尚未触发 Stash 扫描。"
-            : "下载完成后才会进入此阶段。",
-      state: hasScanFailure ? "error" : scanStarted ? "current" : hasCompletedDownload ? "current" : "upcoming",
-      tone: hasScanFailure ? "tone-danger" : scanStarted ? "tone-info" : hasCompletedDownload ? "tone-warn" : "tone-neutral",
-      time: task.updatedAt
-    }
-  ];
-}
-
-function taskPresentation(task: DashboardTask): TaskPresentation {
-  const primary = taskPrimaryState(task);
-  const failure = taskFailureSummary(task);
-  const progress = taskProgressPercent(task);
-
-  let summary = "";
-  let detail = "";
-
-  if (primary.phase === "failed") {
-    summary = failure.title;
-    detail = failure.detail;
-  } else if (primary.phase === "scanRunning") {
-    summary = "已完成下载，正在等待 Stash 收口。";
-    detail = task.stashJobId ? `Stash job ${task.stashJobId} 正在执行。` : "Stash 已接手当前任务。";
-  } else if (primary.phase === "scanPending") {
-    summary = "下载已结束，等待触发或完成 Stash 扫描。";
-    detail = task.stashScanStatus || "当前尚未有扫描结果。";
-  } else if (primary.phase === "completed") {
-    summary = "下载与入库链路已完成。";
-    detail = task.contentPath || "任务已闭环。";
-  } else if (primary.phase === "downloading") {
-    summary = task.qbittorrentState ? `qBittorrent: ${task.qbittorrentState}` : "任务正在等待下载器推进。";
-    detail = `当前进度 ${progress}%`;
-  } else {
-    summary = "任务已创建，等待进入下载器。";
-    detail = "下一次同步后会补齐下载状态。";
-  }
-
-  return {
-    phase: primary.phase,
-    label: primary.label,
-    tone: primary.tone,
-    summary,
-    detail,
-    progressPercent: progress,
-    progressLabel: primary.phase === "completed" ? "已闭环" : `${progress}%`,
-    metaLine: taskMetaLine(task),
-    lifecycle: taskLifecycle(task, failure)
-  };
-}
-
-function describeQueryError(error: unknown) {
-  if (!error || typeof error !== "object") return "unknown error";
-
-  const combined = error as {
-    message?: string;
-    graphQLErrors?: Array<{ message?: string }>;
-    networkError?: { message?: string };
-  };
-
-  const pieces = [combined.message];
-  if (combined.networkError?.message) {
-    pieces.push(`network: ${combined.networkError.message}`);
-  }
-  if (combined.graphQLErrors?.length) {
-    pieces.push(
-      `graphql: ${combined.graphQLErrors
-        .map((item) => item.message)
-        .filter(Boolean)
-        .join(" | ")}`
-    );
-  }
-
-  return pieces.filter(Boolean).join(" · ") || "unknown error";
-}
-
-function boolState(value: boolean, positive = "已配置", negative = "未配置") {
-  return value ? positive : negative;
-}
-
-function serviceStatus(configured: boolean, enabled: boolean) {
-  if (enabled) return { label: "已启用", tone: "tone-success" };
-  if (configured) return { label: "待启用", tone: "tone-warn" };
-  return { label: "未配置", tone: "tone-neutral" };
-}
-
-function taskSyncStatus(settings: RuntimeSettings["tasks"]) {
-  return settings.progressSyncEnabled ? "已启用" : "未启用";
-}
-
-function MarkdownBlock({ markdown }: { markdown: string }) {
-  const nodes: ReactNode[] = [];
-  const lines = markdown.replace(/\r\n/g, "\n").split("\n");
-  let paragraph: string[] = [];
-  let listItems: string[] = [];
-  let codeLines: string[] = [];
-  let inCode = false;
-
-  const flushParagraph = () => {
-    if (!paragraph.length) return;
-    nodes.push(
-      <p key={`p-${nodes.length}`}>
-        {paragraph.join(" ").trim()}
-      </p>
-    );
-    paragraph = [];
-  };
-
-  const flushList = () => {
-    if (!listItems.length) return;
-    nodes.push(
-      <ul key={`ul-${nodes.length}`}>
-        {listItems.map((item, index) => (
-          <li key={`${item}-${index}`}>{item}</li>
-        ))}
-      </ul>
-    );
-    listItems = [];
-  };
-
-  const flushCode = () => {
-    if (!codeLines.length) return;
-    nodes.push(
-      <pre key={`pre-${nodes.length}`}>
-        <code>{codeLines.join("\n")}</code>
-      </pre>
-    );
-    codeLines = [];
-  };
-
-  for (const line of lines) {
-    if (line.trim().startsWith("```")) {
-      if (inCode) {
-        flushCode();
-      } else {
-        flushParagraph();
-        flushList();
-      }
-      inCode = !inCode;
-      continue;
-    }
-
-    if (inCode) {
-      codeLines.push(line);
-      continue;
-    }
-
-    if (!line.trim()) {
-      flushParagraph();
-      flushList();
-      continue;
-    }
-
-    if (line.startsWith("# ")) {
-      flushParagraph();
-      flushList();
-      nodes.push(<h2 key={`h2-${nodes.length}`}>{line.slice(2).trim()}</h2>);
-      continue;
-    }
-
-    if (line.startsWith("## ")) {
-      flushParagraph();
-      flushList();
-      nodes.push(<h3 key={`h3-${nodes.length}`}>{line.slice(3).trim()}</h3>);
-      continue;
-    }
-
-    if (/^[-*]\s+/.test(line)) {
-      flushParagraph();
-      listItems.push(line.replace(/^[-*]\s+/, ""));
-      continue;
-    }
-
-    if (/^\d+\.\s+/.test(line)) {
-      flushParagraph();
-      listItems.push(line.replace(/^\d+\.\s+/, ""));
-      continue;
-    }
-
-    paragraph.push(line.trim());
-  }
-
-  flushParagraph();
-  flushList();
-  flushCode();
-
-  return <>{nodes}</>;
-}
+import { describeQueryError } from "./services/queryError";
+import {
+  useDashboard,
+  useDrawerTransition,
+  useJackettSearch,
+  useSubscription,
+  useToast
+} from "./hooks";
+import { taskSummary, type TaskGroupKey } from "./utils";
+import type { DrawerKey, SettingsTab, TabKey } from "./types";
+import { Drawer, Header, ToastStack } from "./components/layout";
+import { HelpDrawer, SettingsDrawer, StatsDrawer, TaskDrawer } from "./components/drawers";
+import {
+  DiscoveryPage,
+  HomePage,
+  SubscriptionPage,
+  TasksPage,
+  type TaskSortKey,
+  type TaskStatusFilter
+} from "./pages";
+import type { SearchDocumentQuery } from "./graphql/generated/graphql";
 
 function App() {
+  // ── UI state ────────────────────────────────────────────────────────
   const [tab, setTab] = useState<TabKey>("主页");
   const [drawer, setDrawer] = useState<DrawerKey>(null);
-  const [renderedDrawer, setRenderedDrawer] = useState<Exclude<DrawerKey, null> | null>(null);
-  const [drawerClosing, setDrawerClosing] = useState(false);
   const [settingsTab, setSettingsTab] = useState<SettingsTab>("Stash");
   const [helpTopicId, setHelpTopicId] = useState<HelpTopicId>(HELP_TOPICS[0].id);
+
+  // Tasks page state
   const [taskSearch, setTaskSearch] = useState("");
-  const [taskStatus, setTaskStatus] = useState<"全部" | "运行中" | "完成" | "失败" | "待扫描">("全部");
-  const [taskSort, setTaskSort] = useState<"最新" | "更新时间" | "进度">("最新");
+  const [taskStatus, setTaskStatus] = useState<TaskStatusFilter>("全部");
+  const [taskSort, setTaskSort] = useState<TaskSortKey>("最新");
   const [taskGroupOpen, setTaskGroupOpen] = useState<Record<TaskGroupKey, boolean>>({
     需处理: true,
     运行中: true,
@@ -717,137 +40,78 @@ function App() {
     已完成: false
   });
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
+
+  // Discovery page state
   const [jackettQuery, setJackettQuery] = useState("");
   const [submittedJackettQuery, setSubmittedJackettQuery] = useState("");
+  const [pendingAddId, setPendingAddId] = useState<string | null>(null);
+
+  // Subscription page state
   const [subscriptionSearch, setSubscriptionSearch] = useState("");
   const [subscriptionPage, setSubscriptionPage] = useState(1);
   const [subscriptionPageSize, setSubscriptionPageSize] = useState<number>(24);
-  const [logsLevel, setLogsLevel] = useState<LogLevel>(LogLevel.Info);
-  const [downloadingLogFile, setDownloadingLogFile] = useState(false);
   const [pendingSubscriptionID, setPendingSubscriptionID] = useState<string | null>(null);
-  const [pendingAddId, setPendingAddId] = useState<string | null>(null);
-  const [stashForm, setStashForm] = useState(EMPTY_STASH_FORM);
-  const [jackettForm, setJackettForm] = useState(EMPTY_JACKETT_FORM);
-  const [qbittorrentForm, setQBittorrentForm] = useState(EMPTY_QBITTORRENT_FORM);
-  const [subscriptionForm, setSubscriptionForm] = useState(EMPTY_SUBSCRIPTION_FORM);
-  const [loggingForm, setLoggingForm] = useState(EMPTY_LOGGING_FORM);
-  const [toasts, setToasts] = useState<ToastItem[]>([]);
-  const toastTimersRef = useRef(new Map<number, { exit: number; remove: number }>());
 
-  const deferredTaskSearch = useDeferredValue(taskSearch.trim().toLowerCase());
+  // ── Data hooks ──────────────────────────────────────────────────────
+  const { toasts, pushToast, dismissToast, copyText } = useToast();
+  const { renderedDrawer, drawerClosing, visibleDrawer } = useDrawerTransition(drawer);
+
   const deferredJackettQuery = useDeferredValue(submittedJackettQuery.trim());
   const deferredSubscriptionSearch = useDeferredValue(subscriptionSearch.trim());
 
-  const [{ data, fetching, error }, refreshDashboard] = useQuery<
-    DashboardDocumentQuery,
-    DashboardDocumentQueryVariables
-  >({
-    query: DashboardDocumentDocument,
-    requestPolicy: "cache-and-network"
+  const {
+    data,
+    error,
+    refreshDashboard,
+    addTorrent,
+    syncTaskProgress,
+    triggerTaskStashScan,
+    triggeringTaskScan,
+    triggerStashScans
+  } = useDashboard();
+
+  const {
+    results: searchResults,
+    fetching: searching,
+    error: searchError
+  } = useJackettSearch(deferredJackettQuery);
+
+  const {
+    stashPerformerPage,
+    stashPerformers,
+    subscribedPerformers,
+    fetchingStashPerformers,
+    fetchingSubscription,
+    stashPerformersError,
+    subscriptionError,
+    refreshingSubscriptionNow,
+    subscribePerformer,
+    unsubscribePerformer,
+    refreshSubscribedPerformer,
+    refreshSubscriptionsNow,
+    reloadSubscription
+  } = useSubscription({
+    enabled: tab === "订阅",
+    search: deferredSubscriptionSearch || null,
+    page: subscriptionPage,
+    pageSize: subscriptionPageSize
   });
 
-  const [{ data: searchData, fetching: searching, error: searchError }] = useQuery<
-    SearchDocumentQuery,
-    SearchDocumentQueryVariables
-  >({
-    query: SearchDocumentDocument,
-    variables: {
-      input: {
-        query: deferredJackettQuery,
-        limit: 18
-      } satisfies JackettSearchInput
-    },
-    pause: deferredJackettQuery.length === 0
-  });
-  const [{ data: stashPerformersData, fetching: fetchingStashPerformers, error: stashPerformersError }, refreshStashPerformers] =
-    useQuery<StashPerformersQuery, StashPerformersQueryVariables>({
-      query: StashPerformersDocument,
-      variables: {
-        search: deferredSubscriptionSearch || null,
-        page: subscriptionPage,
-        pageSize: subscriptionPageSize
-      },
-      requestPolicy: "cache-and-network",
-      pause: tab !== "订阅"
-    });
-  const [{ data: subscriptionData, fetching: fetchingSubscription, error: subscriptionError }, refreshSubscription] = useQuery<
-    SubscribedPerformersQuery,
-    Record<string, never>
-  >({
-    query: SubscribedPerformersDocument,
-    requestPolicy: "cache-and-network",
-    pause: tab !== "订阅"
-  });
-  const [{ data: logsData, fetching: fetchingLogs, error: logsError }, refreshLogs] = useQuery<
-    LogsDocumentQuery,
-    LogsDocumentQueryVariables
-  >({
-    query: LogsDocumentDocument,
-    variables: {
-      limit: 200,
-      minLevel: logsLevel
-    },
-    requestPolicy: "cache-and-network",
-    pause: settingsTab !== "日志" || (drawer !== "settings" && renderedDrawer !== "settings")
-  });
-
-  const [, addTorrent] = useMutation<
-    AddTorrentDocumentMutation,
-    AddTorrentDocumentMutationVariables
-  >(AddTorrentDocumentDocument);
-  const [, syncTaskProgress] = useMutation<
-    SyncTaskProgressDocumentMutation,
-    SyncTaskProgressDocumentMutationVariables
-  >(SyncTaskProgressDocumentDocument);
-  const [{ fetching: triggeringTaskScan }, triggerTaskStashScan] = useMutation<
-    TriggerTaskStashScanDocumentMutation,
-    TriggerTaskStashScanDocumentMutationVariables
-  >(TriggerTaskStashScanDocumentDocument);
-  const [, triggerStashScans] = useMutation<
-    TriggerStashScansDocumentMutation,
-    TriggerStashScansDocumentMutationVariables
-  >(TriggerStashScansDocumentDocument);
-  const [{ fetching: updatingStash }, updateStashSettings] = useMutation<
-    UpdateStashSettingsDocumentMutation,
-    UpdateStashSettingsDocumentMutationVariables
-  >(UpdateStashSettingsDocumentDocument);
-  const [{ fetching: updatingJackett }, updateJackettSettings] = useMutation<
-    UpdateJackettSettingsDocumentMutation,
-    UpdateJackettSettingsDocumentMutationVariables
-  >(UpdateJackettSettingsDocumentDocument);
-  const [{ fetching: updatingQBittorrent }, updateQBittorrentSettings] = useMutation<
-    UpdateQBittorrentSettingsDocumentMutation,
-    UpdateQBittorrentSettingsDocumentMutationVariables
-  >(UpdateQBittorrentSettingsDocumentDocument);
-  const [{ fetching: updatingSubscription }, updateSubscriptionSettings] = useMutation<
-    UpdateSubscriptionSettingsDocumentMutation,
-    UpdateSubscriptionSettingsDocumentMutationVariables
-  >(UpdateSubscriptionSettingsDocumentDocument);
-  const [{ fetching: updatingLogging }, updateLoggingSettings] = useMutation<
-    UpdateLoggingSettingsDocumentMutation,
-    UpdateLoggingSettingsDocumentMutationVariables
-  >(UpdateLoggingSettingsDocumentDocument);
-  const [, subscribePerformer] = useMutation<SubscribePerformerMutation, SubscribePerformerMutationVariables>(SubscribePerformerDocument);
-  const [, unsubscribePerformer] = useMutation<UnsubscribePerformerMutation, UnsubscribePerformerMutationVariables>(UnsubscribePerformerDocument);
-  const [, refreshSubscribedPerformer] = useMutation<
-    RefreshSubscribedPerformerMutation,
-    RefreshSubscribedPerformerMutationVariables
-  >(RefreshSubscribedPerformerDocument);
-  const [{ fetching: refreshingSubscriptionNow }, refreshSubscriptionsNow] = useMutation<
-    RefreshSubscriptionNowMutation,
-    RefreshSubscriptionNowMutationVariables
-  >(RefreshSubscriptionNowDocument);
-
+  // ── Derived state ───────────────────────────────────────────────────
   const tasks = data?.tasks ?? [];
-  const logs = logsData?.logs ?? [];
   const runtimeSettings = data?.settings ?? null;
-  const stashPerformerPage = stashPerformersData?.stashPerformers ?? null;
-  const stashPerformers = stashPerformerPage?.items ?? [];
-  const subscribedPerformers = subscriptionData?.subscribedPerformers ?? [];
   const activeTask = selectedTaskId ? tasks.find((task) => task.id === selectedTaskId) ?? null : null;
-  const activeTaskFailure = activeTask ? taskFailureSummary(activeTask) : null;
-  const activeTaskPresentation = activeTask ? taskPresentation(activeTask) : null;
 
+  const metrics = {
+    active: data?.dashboardStats.active ?? 0,
+    completed: data?.dashboardStats.completed ?? 0,
+    downloading: data?.dashboardStats.downloading ?? 0,
+    pendingScans: data?.dashboardStats.pendingScans ?? 0,
+    failed: data?.dashboardStats.failed ?? 0,
+    total: data?.dashboardStats.total ?? 0
+  };
+
+  // ── Effects ─────────────────────────────────────────────────────────
   useEffect(() => {
     setSubscriptionPage(1);
   }, [deferredSubscriptionSearch]);
@@ -856,331 +120,49 @@ function App() {
     setSubscriptionPage(1);
   }, [subscriptionPageSize]);
 
-  useEffect(() => {
-    if (!runtimeSettings) return;
-
-    setStashForm({
-      url: runtimeSettings.stash.url || "",
-      apiKey: "",
-      libraryPath: runtimeSettings.stash.libraryPath || ""
-    });
-    setJackettForm({
-      url: runtimeSettings.jackett.url || "",
-      apiKey: ""
-    });
-    setQBittorrentForm({
-      url: runtimeSettings.qbittorrent.url || "",
-      username: runtimeSettings.qbittorrent.username || "",
-      password: "",
-      defaultSavePath: runtimeSettings.qbittorrent.defaultSavePath || "",
-      category: runtimeSettings.qbittorrent.category || "",
-      tags: runtimeSettings.qbittorrent.tags || ""
-    });
-    setSubscriptionForm({
-      store: runtimeSettings.subscription.store || "sqlite",
-      dbPath: runtimeSettings.subscription.dbPath || "",
-      pollIntervalSeconds: String(runtimeSettings.subscription.pollIntervalSeconds || 3600),
-      javstashApiKey: ""
-    });
-    setLoggingForm({
-      level: runtimeSettings.logging.level || "info",
-      filePath: runtimeSettings.logging.filePath || "",
-      maxEntries: String(runtimeSettings.logging.maxEntries || 500),
-      maxFileSizeBytes: String(runtimeSettings.logging.maxFileSizeBytes || 10 * 1024 * 1024),
-      maxFileBackups: String(runtimeSettings.logging.maxFileBackups || 5)
-    });
-  }, [runtimeSettings]);
-
-  const visibleTasks = useMemo(() => {
-    const search = deferredTaskSearch;
-    let next = tasks.filter((task) => {
-      if (!search) return true;
-      const haystack = [
-        taskSummary(task),
-        task.status,
-        task.qbittorrentState,
-        task.stashScanStatus,
-        task.torrentHash,
-        task.contentPath,
-        task.query
-      ]
-        .join(" ")
-        .toLowerCase();
-      return haystack.includes(search);
-    });
-
-    if (taskStatus === "运行中") {
-      next = next.filter(isTaskActive);
-    } else if (taskStatus === "完成") {
-      next = next.filter((task) => isStatus(task, "completed"));
-    } else if (taskStatus === "失败") {
-      next = next.filter((task) => isStatus(task, "failed"));
-    } else if (taskStatus === "待扫描") {
-      next = next.filter((task) => isScanPending(task) || isStatus(task, "completed"));
-    }
-
-    const sorters: Record<typeof taskSort, (a: DashboardTask, b: DashboardTask) => number> = {
-      最新: (a, b) => Date.parse(b.createdAt) - Date.parse(a.createdAt),
-      更新时间: (a, b) => Date.parse(b.updatedAt) - Date.parse(a.updatedAt),
-      进度: (a, b) => b.progress - a.progress
-    };
-
-    return [...next].sort(sorters[taskSort]);
-  }, [deferredTaskSearch, taskSort, taskStatus, tasks]);
-
-  const metrics = {
-    active: data?.dashboardStats.active ?? 0,
-    completed: data?.dashboardStats.completed ?? 0,
-    downloading: data?.dashboardStats.downloading ?? 0,
-    pendingScans: data?.dashboardStats.pendingScans ?? 0,
-    failed: data?.dashboardStats.failed ?? 0,
-    total: data?.dashboardStats.total ?? 0,
-    versions: data?.version ?? "unknown"
+  // ── Action handlers ─────────────────────────────────────────────────
+  const openTaskDetail = (taskId: string) => {
+    setSelectedTaskId(taskId);
+    setDrawer("task");
   };
 
-  const taskGroups = useMemo(() => {
-    const order: TaskGroupKey[] = ["需处理", "运行中", "待入库", "已完成"];
-    return order.map((group) => ({
-      group,
-      tone: taskGroupTone(group),
-      description: taskGroupDescription(group),
-      tasks: visibleTasks.filter((task) => taskGroup(task) === group)
-    }));
-  }, [visibleTasks]);
-  const subscribedByID = useMemo(() => {
-    return new Map(subscribedPerformers.map((item) => [item.performer.id, item]));
-  }, [subscribedPerformers]);
-
-  const pushToast = (tone: ToastTone, message: string) => {
-    const id = Date.now() + Math.floor(Math.random() * 1000);
-    setToasts((current) => [...current, { id, tone, message, phase: "entering" }]);
-    const exit = window.setTimeout(() => {
-      setToasts((current) => current.map((item) => (item.id === id ? { ...item, phase: "leaving" } : item)));
-    }, TOAST_LIFETIME_MS - TOAST_EXIT_MS);
-    const remove = window.setTimeout(() => {
-      setToasts((current) => current.filter((item) => item.id !== id));
-      toastTimersRef.current.delete(id);
-    }, TOAST_LIFETIME_MS);
-    toastTimersRef.current.set(id, { exit, remove });
-  };
-
-  const dismissToast = (id: number) => {
-    const timers = toastTimersRef.current.get(id);
-    if (timers) {
-      window.clearTimeout(timers.exit);
-      window.clearTimeout(timers.remove);
-      toastTimersRef.current.delete(id);
-    }
-    setToasts((current) => current.map((item) => (item.id === id ? { ...item, phase: "leaving" } : item)));
-    const remove = window.setTimeout(() => {
-      setToasts((current) => current.filter((item) => item.id !== id));
-    }, TOAST_EXIT_MS);
-    toastTimersRef.current.set(id, { exit: 0, remove });
-  };
-
-  const copyText = async (value: string, successMessage: string) => {
-    try {
-      await navigator.clipboard.writeText(value);
-      pushToast("tone-success", successMessage);
-    } catch {
-      pushToast("tone-danger", "复制失败，请检查浏览器剪贴板权限。");
-    }
-  };
-
-  const dependencyCards = runtimeSettings
-    ? [
-        {
-          name: "Stash",
-          ...serviceStatus(runtimeSettings.stash.configured, runtimeSettings.stash.enabled),
-          detail: runtimeSettings.stash.enabled
-            ? `媒体库路径: ${runtimeSettings.stash.libraryPath || "未设置"}`
-            : runtimeSettings.stash.configured
-              ? "配置已存在，但运行时尚未启用"
-              : "缺少 Stash URL 或库路径"
-        },
-        {
-          name: "Jackett",
-          ...serviceStatus(runtimeSettings.jackett.configured, runtimeSettings.jackett.enabled),
-          detail: runtimeSettings.jackett.enabled
-            ? `索引地址: ${runtimeSettings.jackett.url || "未设置"}`
-            : "缺少 URL 或 API key"
-        },
-        {
-          name: "qBittorrent",
-          ...serviceStatus(runtimeSettings.qbittorrent.configured, runtimeSettings.qbittorrent.enabled),
-          detail: runtimeSettings.qbittorrent.enabled
-            ? `默认保存路径: ${runtimeSettings.qbittorrent.defaultSavePath || "未设置"}`
-            : runtimeSettings.qbittorrent.configured
-              ? "配置完整，但运行时未连接成功"
-              : "缺少 URL、用户名或密码"
-        },
-        {
-          name: "订阅",
-          label: runtimeSettings.subscription.pollEnabled ? "已启用" : "未启用",
-          tone: runtimeSettings.subscription.pollEnabled ? "tone-success" : "tone-neutral",
-          detail: runtimeSettings.subscription.javstashEnabled
-            ? `轮询间隔: ${runtimeSettings.subscription.pollIntervalSeconds} 秒`
-            : "缺少 JAVStash API key，暂时只能手动检查"
-        }
-      ]
-    : [];
-
-  const settingsStatus = (() => {
-    if (!runtimeSettings) {
-      return { label: "载入中", tone: "tone-neutral" as const };
-    }
-    if (settingsTab === "Stash") {
-      return serviceStatus(runtimeSettings.stash.configured, runtimeSettings.stash.enabled);
-    }
-    if (settingsTab === "索引器") {
-      return serviceStatus(runtimeSettings.jackett.configured, runtimeSettings.jackett.enabled);
-    }
-    if (settingsTab === "下载器") {
-      return serviceStatus(runtimeSettings.qbittorrent.configured, runtimeSettings.qbittorrent.enabled);
-    }
-    if (settingsTab === "任务") {
-      return {
-        label: taskSyncStatus(runtimeSettings.tasks),
-        tone: runtimeSettings.tasks.progressSyncEnabled ? "tone-success" as const : "tone-neutral" as const
-      };
-    }
-    if (settingsTab === "订阅") {
-      return {
-        label: runtimeSettings.subscription.pollEnabled ? "已启用" : "未启用",
-        tone: runtimeSettings.subscription.pollEnabled ? "tone-success" as const : "tone-neutral" as const
-      };
-    }
-    if (settingsTab === "系统") {
-      return { label: "已接线", tone: "tone-info" as const };
-    }
-    return { label: "规划中", tone: "tone-neutral" as const };
-  })();
-
-  const saveStashSettings = async (event: FormEvent<HTMLFormElement>) => {
+  const handleSubmitJackettSearch = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    setSubmittedJackettQuery(jackettQuery.trim());
+    setTab("发现");
+  };
 
-    const result = await updateStashSettings({
-        input: {
-        url: stashForm.url.trim(),
-        apiKey: stashForm.apiKey.trim() || null,
-        libraryPath: stashForm.libraryPath.trim()
-      }
-    });
-
-    if (result.error) {
-      pushToast("tone-danger", describeQueryError(result.error));
-      return;
-    }
-
-    setStashForm((current) => ({ ...current, apiKey: "" }));
-    pushToast("tone-success", "Stash 设置已保存，配置文件与运行时快照已刷新。");
+  const runSync = async () => {
+    await syncTaskProgress({});
     await refreshDashboard({ requestPolicy: "network-only" });
   };
 
-  const saveJackettSettings = async (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
+  const runScan = async () => {
+    await triggerStashScans({});
+    await refreshDashboard({ requestPolicy: "network-only" });
+  };
 
-    const result = await updateJackettSettings({
+  const runTaskScan = async (taskId: string) => {
+    await triggerTaskStashScan({ id: taskId });
+    await refreshDashboard({ requestPolicy: "network-only" });
+  };
+
+  const handleAddSearchResult = async (result: SearchDocumentQuery["jackettSearch"][number]) => {
+    setPendingAddId(result.link);
+    const response = await addTorrent({
       input: {
-        url: jackettForm.url.trim(),
-        apiKey: jackettForm.apiKey.trim() || null
+        url: result.magnetUri || result.link
       }
     });
-
-    if (result.error) {
-      pushToast("tone-danger", describeQueryError(result.error));
-      return;
+    if (response.data?.addTorrent?.id) {
+      setSelectedTaskId(response.data.addTorrent.id);
     }
-
-    setJackettForm((current) => ({ ...current, apiKey: "" }));
-    pushToast("tone-success", "索引器设置已保存，后端配置已同步。");
     await refreshDashboard({ requestPolicy: "network-only" });
+    setPendingAddId(null);
+    setDrawer("task");
   };
 
-  const saveQBittorrentSettings = async (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-
-    const result = await updateQBittorrentSettings({
-      input: {
-        url: qbittorrentForm.url.trim(),
-        username: qbittorrentForm.username.trim(),
-        password: qbittorrentForm.password.trim() || null,
-        defaultSavePath: qbittorrentForm.defaultSavePath.trim(),
-        category: qbittorrentForm.category.trim(),
-        tags: qbittorrentForm.tags.trim()
-      }
-    });
-
-    if (result.error) {
-      pushToast("tone-danger", describeQueryError(result.error));
-      return;
-    }
-
-    setQBittorrentForm((current) => ({ ...current, password: "" }));
-    pushToast("tone-success", "下载器设置已保存，新的默认值已同步到后端。");
-    await refreshDashboard({ requestPolicy: "network-only" });
-  };
-
-  const saveSubscriptionSettings = async (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-
-    const pollIntervalSeconds = Number.parseInt(subscriptionForm.pollIntervalSeconds.trim(), 10);
-    const normalizedPollIntervalSeconds = Number.isNaN(pollIntervalSeconds) ? 0 : pollIntervalSeconds;
-
-    const result = await updateSubscriptionSettings({
-      input: {
-        store: subscriptionForm.store.trim() || "sqlite",
-        dbPath: subscriptionForm.dbPath.trim(),
-        pollIntervalSeconds: normalizedPollIntervalSeconds,
-        javstashApiKey: subscriptionForm.javstashApiKey.trim() || null
-      }
-    });
-
-    if (result.error) {
-      pushToast("tone-danger", describeQueryError(result.error));
-      return;
-    }
-
-    setSubscriptionForm((current) => ({ ...current, javstashApiKey: "" }));
-    pushToast("tone-success", "订阅设置已保存，轮询与 JAVStash 凭据已同步到后端。");
-    await refreshDashboard({ requestPolicy: "network-only" });
-  };
-
-  const saveLoggingSettings = async (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-
-    const maxEntries = Number.parseInt(loggingForm.maxEntries.trim(), 10);
-    const maxFileSizeBytes = Number.parseInt(loggingForm.maxFileSizeBytes.trim(), 10);
-    const maxFileBackups = Number.parseInt(loggingForm.maxFileBackups.trim(), 10);
-
-    const result = await updateLoggingSettings({
-      input: {
-        level: loggingForm.level.trim() || "info",
-        filePath: loggingForm.filePath.trim(),
-        maxEntries: Number.isNaN(maxEntries) ? 500 : maxEntries,
-        maxFileSizeBytes: Number.isNaN(maxFileSizeBytes) ? 10 * 1024 * 1024 : maxFileSizeBytes,
-        maxFileBackups: Number.isNaN(maxFileBackups) ? 5 : maxFileBackups
-      }
-    });
-
-    if (result.error) {
-      pushToast("tone-danger", describeQueryError(result.error));
-      return;
-    }
-
-    pushToast("tone-success", "日志设置已保存，并已即时重载到当前进程。");
-    await refreshDashboard({ requestPolicy: "network-only" });
-    await refreshLogs({ requestPolicy: "network-only" });
-  };
-
-  const reloadSubscription = async () => {
-    await Promise.all([
-      refreshSubscription({ requestPolicy: "network-only" }),
-      refreshStashPerformers({ requestPolicy: "network-only" })
-    ]);
-  };
-
-  const handleSubscriptionToggle = async (performer: StashPerformerEntry) => {
+  const handleSubscriptionToggle = async (performer: { id: string; name: string; subscribed: boolean }) => {
     setPendingSubscriptionID(performer.id);
 
     const result = performer.subscribed
@@ -1193,12 +175,17 @@ function App() {
       return;
     }
 
-    pushToast("tone-success", performer.subscribed ? `已取消订阅 ${performer.name}。` : `已订阅 ${performer.name}，Moji 会通过 custom_fields 记录状态。`);
+    pushToast(
+      "tone-success",
+      performer.subscribed
+        ? `已取消订阅 ${performer.name}。`
+        : `已订阅 ${performer.name}，Moji 会通过 custom_fields 记录状态。`
+    );
     await reloadSubscription();
     setPendingSubscriptionID(null);
   };
 
-  const handleRefreshSubscribedPerformer = async (performer: StashPerformerEntry) => {
+  const handleRefreshSubscribedPerformer = async (performer: { id: string; name: string }) => {
     setPendingSubscriptionID(performer.id);
 
     const result = await refreshSubscribedPerformer({ stashPerformerID: performer.id });
@@ -1224,715 +211,34 @@ function App() {
     await reloadSubscription();
   };
 
-  const handleCopyLogs = async () => {
-    if (!logs.length) {
-      pushToast("tone-info", "当前列表里还没有可复制的日志。");
-      return;
-    }
-
-    try {
-      await navigator.clipboard.writeText(formatLogEntries(logs));
-      pushToast("tone-success", `已复制 ${logs.length} 条日志。`);
-    } catch {
-      pushToast("tone-danger", "复制失败，请检查浏览器剪贴板权限。");
-    }
+  const handleToggleGroup = (group: TaskGroupKey) => {
+    setTaskGroupOpen((current) => ({ ...current, [group]: !current[group] }));
   };
 
-  const handleDownloadCurrentLogFile = async () => {
-    setDownloadingLogFile(true);
+  // ── Drawer metadata ─────────────────────────────────────────────────
+  const drawerKicker = (() => {
+    if (visibleDrawer === "stats") return "统计";
+    if (visibleDrawer === "settings") return "设置";
+    if (visibleDrawer === "help") return "帮助";
+    return "任务详情";
+  })();
 
-    try {
-      const response = await fetch("/api/logs/current");
-      if (!response.ok) {
-        const message = (await response.text()) || `下载失败 (${response.status})`;
-        throw new Error(message);
-      }
+  const drawerTitle = (() => {
+    if (visibleDrawer === "stats") return "运行概览";
+    if (visibleDrawer === "settings") return "配置与系统";
+    if (visibleDrawer === "help") return "Markdown 帮助";
+    return activeTask ? taskSummary(activeTask) : "任务详情";
+  })();
 
-      const blob = await response.blob();
-      const downloadURL = window.URL.createObjectURL(blob);
-      const disposition = response.headers.get("Content-Disposition") || "";
-      const match = disposition.match(/filename="([^"]+)"/i);
-      const filename = match?.[1] || "moji.log";
-      const anchor = document.createElement("a");
-      anchor.href = downloadURL;
-      anchor.download = filename;
-      document.body.append(anchor);
-      anchor.click();
-      anchor.remove();
-      window.URL.revokeObjectURL(downloadURL);
-      pushToast("tone-success", `已开始下载 ${filename}。`);
-    } catch (error) {
-      pushToast("tone-danger", error instanceof Error ? error.message : "下载当前日志文件失败。");
-    } finally {
-      setDownloadingLogFile(false);
-    }
-  };
-
-  const renderSettingsPanel = () => {
-    if (!runtimeSettings) {
-      return (
-        <article className="drawer-card">
-          <div className="drawer-card__head">
-            <h3>{settingsTab}</h3>
-            <span className={`status-chip ${settingsStatus.tone}`}>{settingsStatus.label}</span>
-          </div>
-          <dl className="settings-grid">
-            <div>
-              <dt>当前状态</dt>
-              <dd>等待后端返回配置状态</dd>
-            </div>
-            <div>
-              <dt>说明</dt>
-              <dd>设置面板会在 dashboard 查询完成后显示实时状态。</dd>
-            </div>
-          </dl>
-        </article>
-      );
-    }
-
-    if (settingsTab === "Stash") {
-      return (
-        <article className="drawer-card">
-          <div className="drawer-card__head">
-            <h3>{settingsTab}</h3>
-            <span className={`status-chip ${settingsStatus.tone}`}>{settingsStatus.label}</span>
-          </div>
-          <form className="settings-form" onSubmit={(event) => void saveStashSettings(event)}>
-            <label className="settings-field">
-              <span>Stash URL</span>
-              <input
-                value={stashForm.url}
-                onChange={(event) => setStashForm((current) => ({ ...current, url: event.target.value }))}
-                placeholder="http://localhost:9999"
-              />
-            </label>
-            <label className="settings-field">
-              <span>Library path</span>
-              <input
-                value={stashForm.libraryPath}
-                onChange={(event) => setStashForm((current) => ({ ...current, libraryPath: event.target.value }))}
-                placeholder="/data/library"
-              />
-            </label>
-            <label className="settings-field">
-              <span>API key</span>
-              <input
-                type="password"
-                value={stashForm.apiKey}
-                onChange={(event) => setStashForm((current) => ({ ...current, apiKey: event.target.value }))}
-                placeholder={runtimeSettings.stash.apiKeyConfigured ? "留空则保留现有 API key" : "输入新的 API key"}
-              />
-            </label>
-            <div className="settings-meta">
-              <span>当前 API key: {boolState(runtimeSettings.stash.apiKeyConfigured)}</span>
-            </div>
-            <div className="settings-actions">
-              <button type="submit" disabled={updatingStash}>保存 Stash 设置</button>
-            </div>
-          </form>
-        </article>
-      );
-    }
-
-    if (settingsTab === "索引器") {
-      return (
-        <article className="drawer-card">
-          <div className="drawer-card__head">
-            <h3>{settingsTab}</h3>
-            <span className={`status-chip ${settingsStatus.tone}`}>{settingsStatus.label}</span>
-          </div>
-          <form className="settings-form" onSubmit={(event) => void saveJackettSettings(event)}>
-            <label className="settings-field">
-              <span>Jackett URL</span>
-              <input
-                value={jackettForm.url}
-                onChange={(event) => setJackettForm((current) => ({ ...current, url: event.target.value }))}
-                placeholder="http://localhost:9117"
-              />
-            </label>
-            <label className="settings-field">
-              <span>API key</span>
-              <input
-                type="password"
-                value={jackettForm.apiKey}
-                onChange={(event) => setJackettForm((current) => ({ ...current, apiKey: event.target.value }))}
-                placeholder={runtimeSettings.jackett.apiKeyConfigured ? "留空则保留现有 API key" : "输入新的 API key"}
-              />
-            </label>
-            <div className="settings-meta">
-              <span>当前 API key: {boolState(runtimeSettings.jackett.apiKeyConfigured)}</span>
-              <span>后续可继续扩展 tracker 分组与默认搜索策略。</span>
-            </div>
-            <div className="settings-actions">
-              <button type="submit" disabled={updatingJackett}>保存索引器设置</button>
-            </div>
-          </form>
-        </article>
-      );
-    }
-
-    if (settingsTab === "下载器") {
-      return (
-        <article className="drawer-card">
-          <div className="drawer-card__head">
-            <h3>{settingsTab}</h3>
-            <span className={`status-chip ${settingsStatus.tone}`}>{settingsStatus.label}</span>
-          </div>
-          <form className="settings-form" onSubmit={(event) => void saveQBittorrentSettings(event)}>
-            <label className="settings-field">
-              <span>qBittorrent URL</span>
-              <input
-                value={qbittorrentForm.url}
-                onChange={(event) => setQBittorrentForm((current) => ({ ...current, url: event.target.value }))}
-                placeholder="http://localhost:8080"
-              />
-            </label>
-            <label className="settings-field">
-              <span>用户名</span>
-              <input
-                value={qbittorrentForm.username}
-                onChange={(event) => setQBittorrentForm((current) => ({ ...current, username: event.target.value }))}
-                placeholder="admin"
-              />
-            </label>
-            <label className="settings-field">
-              <span>密码</span>
-              <input
-                type="password"
-                value={qbittorrentForm.password}
-                onChange={(event) => setQBittorrentForm((current) => ({ ...current, password: event.target.value }))}
-                placeholder={runtimeSettings.qbittorrent.passwordConfigured ? "留空则保留现有密码" : "输入新的登录密码"}
-              />
-            </label>
-            <label className="settings-field">
-              <span>默认保存路径</span>
-              <input
-                value={qbittorrentForm.defaultSavePath}
-                onChange={(event) => setQBittorrentForm((current) => ({ ...current, defaultSavePath: event.target.value }))}
-                placeholder="/downloads"
-              />
-            </label>
-            <label className="settings-field">
-              <span>默认分类</span>
-              <input
-                value={qbittorrentForm.category}
-                onChange={(event) => setQBittorrentForm((current) => ({ ...current, category: event.target.value }))}
-                placeholder="moji"
-              />
-            </label>
-            <label className="settings-field">
-              <span>默认标签</span>
-              <input
-                value={qbittorrentForm.tags}
-                onChange={(event) => setQBittorrentForm((current) => ({ ...current, tags: event.target.value }))}
-                placeholder="auto"
-              />
-            </label>
-            <div className="settings-meta">
-              <span>当前密码: {boolState(runtimeSettings.qbittorrent.passwordConfigured)}</span>
-              <span>用户名会直接回显，密码仍只支持覆盖更新。</span>
-            </div>
-            <div className="settings-actions">
-              <button type="submit" disabled={updatingQBittorrent}>保存下载器设置</button>
-            </div>
-          </form>
-        </article>
-      );
-    }
-
-    if (settingsTab === "任务") {
-      return (
-        <article className="drawer-card">
-          <div className="drawer-card__head">
-            <h3>{settingsTab}</h3>
-            <span className={`status-chip ${settingsStatus.tone}`}>{settingsStatus.label}</span>
-          </div>
-          <dl className="settings-grid">
-            <div>
-              <dt>存储类型</dt>
-              <dd>{runtimeSettings.tasks.store || "sqlite"}</dd>
-            </div>
-            <div>
-              <dt>数据库路径</dt>
-              <dd>{runtimeSettings.tasks.dbPath || "moji.db"}</dd>
-            </div>
-            <div>
-              <dt>同步间隔</dt>
-              <dd>{runtimeSettings.tasks.progressSyncIntervalSeconds} 秒</dd>
-            </div>
-            <div>
-              <dt>进度同步</dt>
-              <dd>{taskSyncStatus(runtimeSettings.tasks)}</dd>
-            </div>
-            <div>
-              <dt>说明</dt>
-              <dd>当前同步开关由任务配置和下载链路是否启用共同决定。</dd>
-            </div>
-          </dl>
-        </article>
-      );
-    }
-
-    if (settingsTab === "订阅") {
-      return (
-        <article className="drawer-card">
-          <div className="drawer-card__head">
-            <h3>{settingsTab}</h3>
-            <span className={`status-chip ${settingsStatus.tone}`}>{settingsStatus.label}</span>
-          </div>
-          <form className="settings-form" onSubmit={(event) => void saveSubscriptionSettings(event)}>
-            <label className="settings-field">
-              <span>存储类型</span>
-              <input
-                value={subscriptionForm.store}
-                onChange={(event) => setSubscriptionForm((current) => ({ ...current, store: event.target.value }))}
-                placeholder="sqlite"
-              />
-            </label>
-            <label className="settings-field">
-              <span>数据库路径</span>
-              <input
-                value={subscriptionForm.dbPath}
-                onChange={(event) => setSubscriptionForm((current) => ({ ...current, dbPath: event.target.value }))}
-                placeholder="moji.db"
-              />
-            </label>
-            <label className="settings-field">
-              <span>轮询间隔（秒）</span>
-              <input
-                value={subscriptionForm.pollIntervalSeconds}
-                onChange={(event) => setSubscriptionForm((current) => ({ ...current, pollIntervalSeconds: event.target.value }))}
-                placeholder="3600"
-                inputMode="numeric"
-              />
-            </label>
-            <label className="settings-field">
-              <span>JAVStash API key</span>
-              <input
-                type="password"
-                value={subscriptionForm.javstashApiKey}
-                onChange={(event) => setSubscriptionForm((current) => ({ ...current, javstashApiKey: event.target.value }))}
-                placeholder={runtimeSettings.subscription.javstashApiKeyConfigured ? "留空则保留现有 API key" : "输入新的 API key"}
-              />
-            </label>
-            <div className="settings-meta">
-              <span>当前存储: {runtimeSettings.subscription.store || "sqlite"}</span>
-              <span>JAVStash key: {boolState(runtimeSettings.subscription.javstashApiKeyConfigured)}</span>
-              <span>轮询状态: {runtimeSettings.subscription.pollEnabled ? "已启用" : "未启用"}</span>
-            </div>
-            <div className="settings-actions">
-              <button type="submit" disabled={updatingSubscription}>保存订阅设置</button>
-            </div>
-          </form>
-        </article>
-      );
-    }
-
-    if (settingsTab === "系统") {
-      return (
-        <article className="drawer-card">
-          <div className="drawer-card__head">
-            <h3>{settingsTab}</h3>
-            <span className={`status-chip ${settingsStatus.tone}`}>{settingsStatus.label}</span>
-          </div>
-          <form className="settings-form" onSubmit={(event) => void saveLoggingSettings(event)}>
-            <label className="settings-field">
-              <span>日志级别</span>
-              <input
-                value={loggingForm.level}
-                onChange={(event) => setLoggingForm((current) => ({ ...current, level: event.target.value }))}
-                placeholder="info"
-              />
-            </label>
-            <label className="settings-field">
-              <span>日志文件路径</span>
-              <input
-                value={loggingForm.filePath}
-                onChange={(event) => setLoggingForm((current) => ({ ...current, filePath: event.target.value }))}
-                placeholder="moji.log"
-              />
-            </label>
-            <label className="settings-field">
-              <span>内存保留条数</span>
-              <input
-                value={loggingForm.maxEntries}
-                onChange={(event) => setLoggingForm((current) => ({ ...current, maxEntries: event.target.value }))}
-                inputMode="numeric"
-                placeholder="500"
-              />
-            </label>
-            <label className="settings-field">
-              <span>单文件大小上限（字节）</span>
-              <input
-                value={loggingForm.maxFileSizeBytes}
-                onChange={(event) => setLoggingForm((current) => ({ ...current, maxFileSizeBytes: event.target.value }))}
-                inputMode="numeric"
-                placeholder={String(10 * 1024 * 1024)}
-              />
-            </label>
-            <label className="settings-field">
-              <span>滚动备份份数</span>
-              <input
-                value={loggingForm.maxFileBackups}
-                onChange={(event) => setLoggingForm((current) => ({ ...current, maxFileBackups: event.target.value }))}
-                inputMode="numeric"
-                placeholder="5"
-              />
-            </label>
-            <div className="settings-meta">
-              <span>版本: {runtimeSettings.system.appVersion || "dev"}</span>
-              <span>当前日志文件: {runtimeSettings.logging.filePath}</span>
-              <span>当前缓存: {runtimeSettings.logging.maxEntries} 条</span>
-            </div>
-            <div className="settings-actions">
-              <button type="submit" disabled={updatingLogging}>保存系统设置</button>
-            </div>
-          </form>
-        </article>
-      );
-    }
-
-    if (settingsTab === "日志") {
-      return (
-        <article className="drawer-card">
-          <div className="drawer-card__head">
-            <h3>{settingsTab}</h3>
-            <span className={`status-chip ${settingsStatus.tone}`}>{settingsStatus.label}</span>
-          </div>
-          <div className="toolbar-inline toolbar-inline--logs">
-            <select value={logsLevel} onChange={(event) => setLogsLevel(event.target.value as LogLevel)}>
-              {LOG_LEVEL_OPTIONS.map((level) => (
-                <option key={level} value={level}>
-                  {level}
-                </option>
-              ))}
-            </select>
-            <button type="button" className="ghost-button" onClick={() => void refreshLogs({ requestPolicy: "network-only" })}>
-              {fetchingLogs ? "刷新中..." : "刷新日志"}
-            </button>
-            <button type="button" className="ghost-button" onClick={() => void handleCopyLogs()}>
-              复制当前列表
-            </button>
-            <button type="button" className="ghost-button" onClick={() => void handleDownloadCurrentLogFile()} disabled={downloadingLogFile}>
-              {downloadingLogFile ? "下载中..." : "下载当前日志"}
-            </button>
-          </div>
-          <div className="settings-meta">
-            <span>级别过滤: {logsLevel}</span>
-            <span>已加载: {logs.length}</span>
-            <span>状态: {fetchingLogs ? "同步中" : "已就绪"}</span>
-            <span>文件: {runtimeSettings.logging.filePath}</span>
-          </div>
-          {logsError ? <p className="settings-feedback tone-danger">{describeQueryError(logsError)}</p> : null}
-          {!logs.length && !fetchingLogs ? (
-            <article className="empty-card empty-card--wide">
-              <h3>暂无日志</h3>
-              <p>当前过滤条件下没有最近日志记录。</p>
-            </article>
-          ) : (
-            <div className="log-stream" role="log" aria-live="polite">
-              {logs.map((entry, index) => (
-                <div
-                  key={`${entry.time}-${index}`}
-                  className={`log-line ${
-                    entry.level === LogLevel.Error
-                      ? "log-line--error"
-                      : entry.level === LogLevel.Warning
-                        ? "log-line--warn"
-                        : entry.level === LogLevel.Debug
-                          ? "log-line--debug"
-                          : "log-line--info"
-                  }`}
-                >
-                  <span className="log-line__time">{formatDateTime(entry.time)}</span>
-                  <span className="log-line__level">[{entry.level}]</span>
-                  <span className="log-line__message">{entry.message}</span>
-                </div>
-              ))}
-            </div>
-          )}
-        </article>
-      );
-    }
-
-    return (
-      <article className="drawer-card">
-        <div className="drawer-card__head">
-          <h3>{settingsTab}</h3>
-          <span className={`status-chip ${settingsStatus.tone}`}>{settingsStatus.label}</span>
-        </div>
-        <dl className="settings-grid">
-          <div>
-            <dt>当前状态</dt>
-            <dd>该分区尚未接入后端契约</dd>
-          </div>
-          <div>
-            <dt>敏感值</dt>
-            <dd>前端不展示明文</dd>
-          </div>
-          <div>
-            <dt>接入方式</dt>
-            <dd>后续会扩展为真实查询或操作面板</dd>
-          </div>
-          <div>
-            <dt>说明</dt>
-            <dd>
-              {settingsTab === "安全性"
-                ? "这里会放访问控制、CORS 和未来登录策略。"
-                : settingsTab === "工具"
-                    ? "这里会放重新同步、重新探测和修复动作。"
-                    : settingsTab === "更新历史"
-                      ? "这里会放版本记录和升级提示。"
-                      : "这里会放项目定位、许可证和作者信息。"}
-            </dd>
-          </div>
-        </dl>
-      </article>
-    );
-  };
-
-  const openTaskDetail = (taskId: string) => {
-    setSelectedTaskId(taskId);
-    setDrawer("task");
-  };
-
-  const renderTaskCard = (task: DashboardTask, compact = false) => {
-    const presentation = taskPresentation(task);
-    const failure = taskFailureSummary(task);
-
-    // 判断是否需要显示进度条（进行中状态）
-    const needsProgress =
-      presentation.phase === "downloading" ||
-      presentation.phase === "scanRunning";
-
-    // 判断是否有真正的错误（排除正常的下载/扫描状态）
-    const hasError = failure.tone === "tone-danger" || failure.tone === "tone-warn";
-
-    return (
-      <article
-        key={task.id}
-        className={`task-card ${presentation.tone} ${compact ? "task-card--compact" : ""}`}
-        onClick={() => openTaskDetail(task.id)}
-        onKeyDown={(event) => {
-          if (event.key === "Enter" || event.key === " ") {
-            event.preventDefault();
-            openTaskDetail(task.id);
-          }
-        }}
-        role="button"
-        tabIndex={0}
-        aria-label={`${taskSummary(task)}，状态：${presentation.label}，点击查看详情`}
-      >
-        <div className="task-card__head">
-          <div>
-            <h3>{taskSummary(task)}</h3>
-            <p>{presentation.metaLine}</p>
-          </div>
-          <span className={`status-chip ${presentation.tone}`}>{presentation.label}</span>
-        </div>
-
-        <div className="task-card__status">
-          {hasError ? (
-            <div className={`task-status-error ${failure.tone}`}>
-              <strong>{failure.title}</strong>
-              <span>{failure.detail}</span>
-            </div>
-          ) : needsProgress ? (
-            <div className="task-status-progress">
-              <div className="task-status-progress__copy">
-                <strong>{presentation.summary}</strong>
-                <span>{presentation.progressLabel}</span>
-              </div>
-              <div className="progress-shell">
-                <div className="progress-fill" style={{ width: `${presentation.progressPercent}%` }} />
-              </div>
-            </div>
-          ) : presentation.phase === "completed" ? (
-            <div className="task-status-completed">
-              {presentation.summary}
-            </div>
-          ) : null}
-        </div>
-
-        <div className="task-card__actions">
-          <span>{formatDateTime(task.updatedAt)}</span>
-          {canTriggerTaskStashScan(task) && (
-            <button
-              type="button"
-              className="ghost-button task-card__action-button"
-              onClick={(event) => {
-                event.stopPropagation();
-                void runTaskScan(task.id);
-              }}
-              disabled={triggeringTaskScan}
-              aria-label={`重扫任务：${taskSummary(task)}`}
-            >
-              {triggeringTaskScan ? "扫描中..." : "重扫"}
-            </button>
-          )}
-        </div>
-      </article>
-    );
-  };
-
-  const selectedHelpTopic =
-    HELP_TOPICS.find((topic) => topic.id === helpTopicId) ?? HELP_TOPICS[0];
-  const visibleDrawer = renderedDrawer ?? drawer;
-
-  const submitJackettSearch = (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    setSubmittedJackettQuery(jackettQuery.trim());
-    setTab("发现");
-  };
-
-  const runSync = async () => {
-    await syncTaskProgress({});
-    await refreshDashboard({ requestPolicy: "network-only" });
-  };
-
-  const runScan = async () => {
-    await triggerStashScans({});
-    await refreshDashboard({ requestPolicy: "network-only" });
-  };
-
-  const runTaskScan = async (taskId: string) => {
-    await triggerTaskStashScan({ id: taskId });
-    await refreshDashboard({ requestPolicy: "network-only" });
-  };
-
-  const addSearchResult = async (result: SearchDocumentQuery["jackettSearch"][number]) => {
-    setPendingAddId(result.link);
-    const response = await addTorrent({
-      input: {
-        url: result.magnetUri || result.link
-      }
-    });
-    if (response.data?.addTorrent?.id) {
-      setSelectedTaskId(response.data.addTorrent.id);
-    }
-    await refreshDashboard({ requestPolicy: "network-only" });
-    setPendingAddId(null);
-    setDrawer("task");
-  };
-
-  useEffect(() => {
-    if (drawer) {
-      setRenderedDrawer(drawer);
-      setDrawerClosing(false);
-      return;
-    }
-
-    if (!renderedDrawer) return;
-
-    setDrawerClosing(true);
-    const timer = window.setTimeout(() => {
-      setRenderedDrawer(null);
-      setDrawerClosing(false);
-    }, 240);
-
-    return () => window.clearTimeout(timer);
-  }, [drawer, renderedDrawer]);
-
-  useEffect(() => {
-    const logsTabActive = settingsTab === "日志" && (drawer === "settings" || renderedDrawer === "settings");
-    if (!logsTabActive) {
-      return;
-    }
-
-    const timer = window.setInterval(() => {
-      void refreshLogs({ requestPolicy: "network-only" });
-    }, 5000);
-
-    return () => window.clearInterval(timer);
-  }, [drawer, renderedDrawer, refreshLogs, settingsTab]);
-
-  useEffect(() => {
-    return () => {
-      for (const timers of toastTimersRef.current.values()) {
-        window.clearTimeout(timers.exit);
-        window.clearTimeout(timers.remove);
-      }
-      toastTimersRef.current.clear();
-    };
-  }, []);
-
+  // ── Render ──────────────────────────────────────────────────────────
   return (
     <div className="app-shell">
-      <div className="toast-stack" aria-live="polite" aria-atomic="false">
-        {toasts.map((toast) => (
-          <div key={toast.id} className={`toast-card ${toast.tone} toast-card--${toast.phase}`} role="status">
-            <div className="toast-card__body">
-              <span className="toast-card__label">
-                {toast.tone === "tone-success" ? "成功" : toast.tone === "tone-danger" ? "错误" : "提示"}
-              </span>
-              <p>{toast.message}</p>
-            </div>
-            <button type="button" className="toast-card__close" onClick={() => dismissToast(toast.id)} aria-label="关闭消息">
-              ×
-            </button>
-            <div className="toast-card__progress" aria-hidden="true" />
-          </div>
-        ))}
-      </div>
+      <ToastStack toasts={toasts} onDismiss={dismissToast} />
       <div className="ambient ambient-a" />
       <div className="ambient ambient-b" />
       <div className="ambient ambient-c" />
 
-      <header className="masthead">
-        <div className="masthead__brand">
-          <div className="title-row">
-            <h1>Moji</h1>
-          </div>
-        </div>
-        <div className="masthead__actions" aria-label="主导航">
-          <div className="masthead__navgroup">
-            <div className="tab-group">
-              {NAV_TABS.map((item) => (
-                <button
-                  key={item}
-                  type="button"
-                  className={`nav-tab ${tab === item ? "is-active" : ""}`}
-                  onClick={() => setTab(item)}
-                >
-                  {item}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          <div className="masthead__toolgroup">
-            <div className="utility-group">
-              <button
-                type="button"
-                className="utility-button utility-icon-button"
-                onClick={() => setDrawer("stats")}
-                aria-label="统计"
-                title="统计"
-              >
-                <FontAwesomeIcon icon={faChartColumn} aria-hidden="true" />
-              </button>
-              <button
-                type="button"
-                className="utility-button utility-icon-button"
-                onClick={() => setDrawer("settings")}
-                aria-label="设置"
-                title="设置"
-              >
-                <FontAwesomeIcon icon={faGear} aria-hidden="true" />
-              </button>
-              <button
-                type="button"
-                className="utility-button utility-icon-button"
-                onClick={() => setDrawer("help")}
-                aria-label="帮助"
-                title="帮助"
-              >
-                <FontAwesomeIcon icon={faCircleQuestion} aria-hidden="true" />
-              </button>
-            </div>
-          </div>
-        </div>
-      </header>
+      <Header tab={tab} onTabChange={setTab} onOpenDrawer={setDrawer} />
 
       {error ? (
         <section className="surface surface--alert">
@@ -1949,728 +255,130 @@ function App() {
 
       <main className="content">
         {tab === "主页" ? (
-          <>
-            {/* <section className="section-band section-band--hero">
-              <div className="band-head">
-                <div>
-                  <p className="section-kicker">主页</p>
-                  <h2>概览</h2>
-                </div>
-                <p className="band-note">主页只保留依赖、待办和任务入口。</p>
-              </div>
-            </section>
- */}
-            <section className="section-band section-band--hero">
-              <div className="band-head">
-                <div>
-                  <p className="section-kicker">依赖状态</p>
-                  <h2>外部服务</h2>
-                </div>
-              </div>
-
-              <div className="card-grid card-grid--deps">
-                {dependencyCards.map((card) => (
-                  <article key={card.name} className="service-card">
-                    <div className="service-card__head">
-                      <div>
-                        <h3>{card.name}</h3>
-                      </div>
-                      <span className={`status-chip ${card.tone}`}>
-                        {card.label}
-                      </span>
-                    </div>
-                    <p className="service-card__detail">{card.detail}</p>
-                    <div className="service-card__actions">
-                      <span>上次检测: {formatDateTime(data?.tasks[0]?.updatedAt ?? null)}</span>
-                      <button type="button" className="ghost-button" onClick={() => refreshDashboard({ requestPolicy: "network-only" })}>
-                        重试
-                      </button>
-                    </div>
-                  </article>
-                ))}
-              </div>
-            </section>
-
-            <section className="section-band">
-              <div className="band-head">
-                <div>
-                  <p className="section-kicker">待办</p>
-                  <h2>需要人工确认的任务</h2>
-                </div>
-                <p className="band-note">失败项、待扫描项和长时间停滞项都放在这里。</p>
-              </div>
-
-              <div className="card-grid">
-                {tasks.filter((task) => isStatus(task, "failed") || isScanPending(task)).slice(0, 4).map((task) => renderTaskCard(task, true))}
-                {!tasks.some((task) => isStatus(task, "failed") || isScanPending(task)) ? (
-                  <article className="empty-card">
-                    <h3>暂无待处理项</h3>
-                    <p>这里会优先显示失败、待扫和异常任务。</p>
-                  </article>
-                ) : null}
-              </div>
-            </section>
-
-          </>
+          <HomePage
+            tasks={tasks}
+            runtimeSettings={runtimeSettings}
+            lastCheckedAt={data?.tasks[0]?.updatedAt ?? null}
+            triggeringTaskScan={triggeringTaskScan}
+            onRefresh={() => refreshDashboard({ requestPolicy: "network-only" })}
+            onOpenTask={openTaskDetail}
+            onScanTask={(id) => void runTaskScan(id)}
+          />
         ) : null}
 
         {tab === "任务" ? (
-          <>
-            <section className="section-band">
-              <div className="band-head">
-                <div>
-                  <p className="section-kicker">任务</p>
-                  <h2>工作台</h2>
-                </div>
-                <p className="band-note">活跃 {metrics.active} · 完成 {metrics.completed} · 待扫 {metrics.pendingScans} · 失败 {metrics.failed}</p>
-              </div>
-
-              <div className="toolbar-inline">
-                <input
-                  value={taskSearch}
-                  onChange={(event) => setTaskSearch(event.target.value)}
-                  placeholder="搜索任务、番号、tracker、状态"
-                />
-                <select value={taskStatus} onChange={(event) => setTaskStatus(event.target.value as typeof taskStatus)}>
-                  <option value="全部">全部</option>
-                  <option value="运行中">运行中</option>
-                  <option value="完成">完成</option>
-                  <option value="失败">失败</option>
-                  <option value="待扫描">待扫描</option>
-                </select>
-                <select value={taskSort} onChange={(event) => setTaskSort(event.target.value as typeof taskSort)}>
-                  <option value="最新">最新</option>
-                  <option value="更新时间">更新时间</option>
-                  <option value="进度">进度</option>
-                </select>
-                <button type="button" className="ghost-button" onClick={() => void refreshDashboard({ requestPolicy: "network-only" })}>
-                  刷新
-                </button>
-                <button type="button" className="ghost-button" onClick={() => void runSync()}>
-                  同步进度
-                </button>
-                <button type="button" className="ghost-button" onClick={() => void runScan()}>
-                  触发扫描
-                </button>
-              </div>
-
-              {!visibleTasks.length ? (
-                <div className="task-grid">
-                  <article className="empty-card empty-card--wide">
-                    <h3>没有匹配的任务</h3>
-                    <p>换个过滤条件，或者先去发现区创建任务。</p>
-                  </article>
-                </div>
-              ) : null}
-
-              {taskGroups.filter((item) => item.tasks.length > 0).map((item) => (
-                <section key={item.group} className="task-group-section">
-                  <div className="task-group-section__head">
-                    <div>
-                      <h3>{item.group}</h3>
-                      <p>{item.description}</p>
-                    </div>
-                    <div className="task-group-section__actions">
-                      {item.group === "待入库" ? (
-                        <button type="button" className="ghost-button" onClick={() => void runScan()}>
-                          全部触发扫描
-                        </button>
-                      ) : null}
-                      <span className={`status-chip ${item.tone}`}>{item.tasks.length} 项</span>
-                      <button
-                        type="button"
-                        className="ghost-button"
-                        onClick={() => setTaskGroupOpen((current) => ({ ...current, [item.group]: !current[item.group] }))}
-                      >
-                        {taskGroupOpen[item.group] ? "收起" : "展开"}
-                      </button>
-                    </div>
-                  </div>
-
-                  {taskGroupOpen[item.group] ? <div className="task-grid">{item.tasks.map((task) => renderTaskCard(task))}</div> : null}
-                </section>
-              ))}
-            </section>
-          </>
+          <TasksPage
+            tasks={tasks}
+            metrics={{
+              active: metrics.active,
+              completed: metrics.completed,
+              pendingScans: metrics.pendingScans,
+              failed: metrics.failed
+            }}
+            taskSearch={taskSearch}
+            taskStatus={taskStatus}
+            taskSort={taskSort}
+            taskGroupOpen={taskGroupOpen}
+            triggeringTaskScan={triggeringTaskScan}
+            onSearchChange={setTaskSearch}
+            onStatusChange={setTaskStatus}
+            onSortChange={setTaskSort}
+            onToggleGroup={handleToggleGroup}
+            onRefresh={() => void refreshDashboard({ requestPolicy: "network-only" })}
+            onSync={() => void runSync()}
+            onScanAll={() => void runScan()}
+            onOpenTask={openTaskDetail}
+            onScanTask={(id) => void runTaskScan(id)}
+          />
         ) : null}
 
         {tab === "发现" ? (
-          <>
-            <section className="section-band">
-              <div className="band-head">
-                <div>
-                  <p className="section-kicker">发现</p>
-                  <h2>Jackett 搜索</h2>
-                </div>
-                <p className="band-note">搜索候选后直接创建 Moji task。</p>
-              </div>
-
-              <form className="discovery-bar" onSubmit={submitJackettSearch}>
-                <input
-                  value={jackettQuery}
-                  onChange={(event) => setJackettQuery(event.target.value)}
-                  placeholder="输入番号、标题、女优或关键词"
-                />
-                <button type="submit" disabled={searching || jackettQuery.trim() === ""}>
-                  {searching ? "搜索中" : "搜索"}
-                </button>
-              </form>
-
-              {searchError ? <p className="inline-error">{searchError.message}</p> : null}
-
-              <div className="discovery-results">
-                {(searchData?.jackettSearch ?? []).map((result) => (
-                  <article key={`${result.tracker}-${result.link}`} className="candidate-card">
-                    <div className="candidate-card__head">
-                      <div>
-                        <h3>{result.title}</h3>
-                        <p>
-                          {result.tracker} · {formatBytes(Number(result.size) || 0)} · {result.seeders} seeders
-                        </p>
-                      </div>
-                      <span className="status-chip tone-info">{result.categoryDesc || "候选"}</span>
-                    </div>
-                    <div className="candidate-card__foot">
-                      <span>{formatRelativeDate(result.publishDate)}</span>
-                      <div className="inline-actions">
-                        <a href={result.link} target="_blank" rel="noreferrer">
-                          原始链接
-                        </a>
-                        <button type="button" onClick={() => void addSearchResult(result)} disabled={pendingAddId === result.link}>
-                          {pendingAddId === result.link ? "添加中" : "创建任务"}
-                        </button>
-                      </div>
-                    </div>
-                  </article>
-                ))}
-                {deferredJackettQuery && !searching && (searchData?.jackettSearch ?? []).length === 0 ? (
-                  <article className="empty-card empty-card--wide">
-                    <h3>没有候选</h3>
-                    <p>Jackett 没有返回结果，换个关键词再试。</p>
-                  </article>
-                ) : null}
-                {!deferredJackettQuery ? (
-                  <article className="empty-card empty-card--wide">
-                    <h3>先搜索</h3>
-                    <p>输入关键词后会在这里列出候选项。</p>
-                  </article>
-                ) : null}
-              </div>
-            </section>
-
-            <section className="section-band section-band--preview">
-              <div className="band-head">
-                <div>
-                  <p className="section-kicker">推荐</p>
-                  <h2>推荐系统占位区</h2>
-                </div>
-                <p className="band-note">后续可接入推荐、通知和批量操作。</p>
-              </div>
-              <div className="preview-panel">
-                <div>
-                  <h3>推荐系统未启用</h3>
-                  <p>先把健康、任务和扫描闭环跑顺，再把推荐位接进来。</p>
-                </div>
-                <button type="button" className="ghost-button" onClick={() => setDrawer("help")}>
-                  看帮助
-                </button>
-              </div>
-            </section>
-          </>
+          <DiscoveryPage
+            jackettQuery={jackettQuery}
+            searching={searching}
+            searchError={searchError ?? null}
+            searchResults={searchResults}
+            deferredJackettQuery={deferredJackettQuery}
+            pendingAddId={pendingAddId}
+            onQueryChange={setJackettQuery}
+            onSubmit={handleSubmitJackettSearch}
+            onAdd={(result) => void handleAddSearchResult(result)}
+            onOpenHelp={() => setDrawer("help")}
+          />
         ) : null}
 
         {tab === "订阅" ? (
-          <>
-            <section className="section-band">
-              <div className="band-head">
-                <div>
-                  <p className="section-kicker">订阅</p>
-                  <h2>订阅更新</h2>
-                </div>
-              </div>
-
-              <div className="toolbar-inline toolbar-inline--subscription">
-                <input placeholder="按名称或别名搜索 Stash performer" value={subscriptionSearch} onChange={(event) => setSubscriptionSearch(event.target.value)} />
-                <select value={subscriptionPageSize} onChange={(event) => setSubscriptionPageSize(Number(event.target.value))}>
-                  {SUBSCRIPTION_PAGE_SIZE_OPTIONS.map((size) => (
-                    <option key={size} value={size}>
-                      每页 {size} 条
-                    </option>
-                  ))}
-                </select>
-                <button type="button" className="ghost-button" onClick={() => void reloadSubscription()}>
-                  刷新列表
-                </button>
-                <button
-                  type="button"
-                  className="ghost-button"
-                  disabled={refreshingSubscriptionNow || subscribedPerformers.length === 0}
-                  onClick={() => void handleRefreshAllSubscription()}
-                >
-                  {refreshingSubscriptionNow ? "检查中..." : "检查全部订阅"}
-                </button>
-              </div>
-
-              <div className="settings-meta">
-                <span>Stash 候选: {stashPerformerPage?.totalCount ?? 0}</span>
-                <span>当前页: {stashPerformerPage?.page ?? 1} / {stashPerformerPage?.totalPages ?? 0}</span>
-                <span>每页: {stashPerformerPage?.pageSize ?? subscriptionPageSize}</span>
-                <span>已订阅: {subscribedPerformers.length}</span>
-                <span>载入状态: {fetchingStashPerformers || fetchingSubscription ? "同步中" : "已就绪"}</span>
-              </div>
-              {subscriptionError || stashPerformersError ? (
-                <p className="settings-feedback tone-danger">{describeQueryError(subscriptionError || stashPerformersError)}</p>
-              ) : null}
-
-              <div className="profile-grid">
-                {stashPerformers.length === 0 && !fetchingStashPerformers ? (
-                  <article className="empty-card empty-card--wide">
-                    <h3>没有找到匹配的 performer</h3>
-                    <p>可以尝试修改关键词，或先确认 Stash 已正确返回 performer 数据。</p>
-                  </article>
-                ) : null}
-                {stashPerformers.map((performer, index) => {
-                  const subscriptionEntry = subscribedByID.get(performer.id) ?? null;
-                  const latestRelease = subscriptionEntry?.recentReleases[0] ?? null;
-                  const imageURL = performerImageURL(performer.imagePath, runtimeSettings?.stash.url);
-
-                  return (
-                  <article key={performer.id} className="profile-card" style={{ animationDelay: `${index * 80}ms` }}>
-                    {imageURL ? (
-                      <img className="avatar avatar--image" src={imageURL} alt={performer.name} loading="lazy" />
-                    ) : (
-                      <div className="avatar avatar--placeholder">{performerInitials(performer.name)}</div>
-                    )}
-                    <div className="profile-card__body">
-                      <div className="profile-card__head">
-                        <div>
-                          <h3>{performer.name}</h3>
-                        </div>
-                        <div className="profile-card__icons">
-                          {performer.favorite ? (
-                            <span
-                              className="profile-icon profile-icon--favorite is-active"
-                              title="Stash 已收藏"
-                              aria-label="Stash 已收藏"
-                            >
-                              <FontAwesomeIcon icon={faHeart} />
-                            </span>
-                          ) : null}
-                          <button
-                            type="button"
-                            className={`profile-icon profile-icon--subscribe ${performer.subscribed ? "is-active" : ""}`}
-                            title={performer.subscribed ? "取消订阅" : "订阅"}
-                            aria-label={performer.subscribed ? "取消订阅" : "订阅"}
-                            disabled={pendingSubscriptionID === performer.id}
-                            onClick={() => void handleSubscriptionToggle(performer)}
-                          >
-                            <FontAwesomeIcon icon={faBookmark} />
-                          </button>
-                        </div>
-                      </div>
-                      <dl className="profile-facts">
-                        <div>
-                          <dt>作品</dt>
-                          <dd>{performer.sceneCount}</dd>
-                        </div>
-                        <div>
-                          <dt>检查</dt>
-                          <dd>{formatDateTime(subscriptionEntry?.lastCheckedAt)}</dd>
-                        </div>
-                      </dl>
-                      <p className="profile-note">
-                        {subscriptionEntry?.lastError
-                          ? `最近错误: ${subscriptionEntry.lastError}`
-                          : latestRelease
-                            ? `最近记录: ${latestRelease.code || latestRelease.title} · ${formatRelativeDate(latestRelease.date || latestRelease.seenAt)}`
-                            : performer.subscribed
-                              ? "已订阅，等待首次检查结果。"
-                              : "尚未订阅。"}
-                      </p>
-                      <div className="profile-actions">
-                        <button
-                          type="button"
-                          className="ghost-button"
-                          disabled={!performer.subscribed || pendingSubscriptionID === performer.id}
-                          onClick={() => void handleRefreshSubscribedPerformer(performer)}
-                        >
-                          立即检查
-                        </button>
-                      </div>
-                    </div>
-                  </article>
-                )})}
-              </div>
-
-              {stashPerformerPage && stashPerformerPage.totalPages > 1 ? (
-                <div className="pagination-bar">
-                  <button
-                    type="button"
-                    className="ghost-button"
-                    disabled={!stashPerformerPage.hasPrevPage || fetchingStashPerformers}
-                    onClick={() => setSubscriptionPage((current) => Math.max(1, current - 1))}
-                  >
-                    上一页
-                  </button>
-                  <span className="status-chip tone-neutral">
-                    第 {stashPerformerPage.page} / {stashPerformerPage.totalPages} 页
-                  </span>
-                  <button
-                    type="button"
-                    className="ghost-button"
-                    disabled={!stashPerformerPage.hasNextPage || fetchingStashPerformers}
-                    onClick={() => setSubscriptionPage((current) => current + 1)}
-                  >
-                    下一页
-                  </button>
-                </div>
-              ) : null}
-            </section>
-          </>
+          <SubscriptionPage
+            runtimeSettings={runtimeSettings}
+            stashPerformerPage={stashPerformerPage}
+            stashPerformers={stashPerformers}
+            subscribedPerformers={subscribedPerformers}
+            fetchingStashPerformers={fetchingStashPerformers}
+            fetchingSubscription={fetchingSubscription}
+            refreshingSubscriptionNow={refreshingSubscriptionNow}
+            subscriptionSearch={subscriptionSearch}
+            subscriptionPageSize={subscriptionPageSize}
+            pendingSubscriptionID={pendingSubscriptionID}
+            subscriptionError={subscriptionError ?? null}
+            stashPerformersError={stashPerformersError ?? null}
+            onSearchChange={setSubscriptionSearch}
+            onPageSizeChange={setSubscriptionPageSize}
+            onReload={() => void reloadSubscription()}
+            onRefreshAll={() => void handleRefreshAllSubscription()}
+            onToggle={(performer) => void handleSubscriptionToggle(performer)}
+            onRefreshOne={(performer) => void handleRefreshSubscribedPerformer(performer)}
+            onPrevPage={() => setSubscriptionPage((current) => Math.max(1, current - 1))}
+            onNextPage={() => setSubscriptionPage((current) => current + 1)}
+          />
         ) : null}
       </main>
 
       {visibleDrawer ? (
-        <div
-          className={`drawer-scrim ${visibleDrawer === "task" ? "drawer-scrim--task" : "drawer-scrim--modal"} ${drawerClosing ? "is-closing" : ""}`}
-          onClick={() => setDrawer(null)}
+        <Drawer
+          visibleDrawer={visibleDrawer}
+          closing={drawerClosing}
+          kicker={drawerKicker}
+          title={drawerTitle}
+          onClose={() => setDrawer(null)}
         >
-          <aside
-            className={`drawer ${visibleDrawer === "task" ? "drawer--task" : "drawer--modal"} ${drawerClosing ? "is-closing" : ""}`}
-            onClick={(event) => event.stopPropagation()}
-          >
-            <div className="drawer__head">
-              <div>
-                <p className="section-kicker">
-                  {visibleDrawer === "stats" ? "统计" : visibleDrawer === "settings" ? "设置" : visibleDrawer === "help" ? "帮助" : "任务详情"}
-                </p>
-                <h2>
-                  {visibleDrawer === "stats"
-                    ? "运行概览"
-                    : visibleDrawer === "settings"
-                      ? "配置与系统"
-                      : visibleDrawer === "help"
-                        ? "Markdown 帮助"
-                        : activeTask
-                          ? taskSummary(activeTask)
-                          : "任务详情"}
-                </h2>
-              </div>
-              <button type="button" className="ghost-button" onClick={() => setDrawer(null)}>
-                关闭
-              </button>
-            </div>
+          {visibleDrawer === "stats" ? (
+            <StatsDrawer
+              active={metrics.active}
+              completed={metrics.completed}
+              pendingScans={metrics.pendingScans}
+              failed={metrics.failed}
+            />
+          ) : null}
 
-            <div className="drawer-body">
-              {visibleDrawer === "stats" ? (
-                <div className="drawer-stack">
-                  <div className="stat-strip">
-                    <article className="stat-card">
-                      <span>活跃任务</span>
-                      <strong>{metrics.active}</strong>
-                    </article>
-                    <article className="stat-card">
-                      <span>完成任务</span>
-                      <strong>{metrics.completed}</strong>
-                    </article>
-                    <article className="stat-card">
-                      <span>待扫描</span>
-                      <strong>{metrics.pendingScans}</strong>
-                    </article>
-                    <article className="stat-card">
-                      <span>失败</span>
-                      <strong>{metrics.failed}</strong>
-                    </article>
-                  </div>
+          {visibleDrawer === "settings" ? (
+            <SettingsDrawer
+              settingsTab={settingsTab}
+              onSettingsTabChange={setSettingsTab}
+              runtimeSettings={runtimeSettings}
+              drawer={drawer}
+              renderedDrawer={renderedDrawer}
+              pushToast={pushToast}
+              refreshDashboard={refreshDashboard}
+            />
+          ) : null}
 
-                  <article className="drawer-card">
-                    <h3>指标占位</h3>
-                    <p>后续可在这里接入速度、队列、成功率和时段趋势图。</p>
-                    <div className="mini-bars" aria-hidden="true">
-                      <span style={{ height: "35%" }} />
-                      <span style={{ height: "65%" }} />
-                      <span style={{ height: "50%" }} />
-                      <span style={{ height: "80%" }} />
-                      <span style={{ height: "42%" }} />
-                      <span style={{ height: "70%" }} />
-                    </div>
-                  </article>
-                </div>
-              ) : null}
+          {visibleDrawer === "help" ? (
+            <HelpDrawer topicId={helpTopicId} onTopicChange={setHelpTopicId} />
+          ) : null}
 
-              {visibleDrawer === "settings" ? (
-                <div className="drawer-stack">
-                  <div className="settings-tabs">
-                    {SETTINGS_TABS.map((item) => (
-                      <button
-                        key={item}
-                        type="button"
-                        className={`chip ${settingsTab === item ? "is-active" : ""} ${!ENABLED_SETTINGS_TABS.has(item) ? "is-disabled" : ""}`}
-                        onClick={() => setSettingsTab(item)}
-                        disabled={!ENABLED_SETTINGS_TABS.has(item)}
-                      >
-                        {item}
-                      </button>
-                    ))}
-                  </div>
-
-                  {renderSettingsPanel()}
-                </div>
-              ) : null}
-
-              {visibleDrawer === "help" ? (
-                <div className="help-layout">
-                  <div className="help-tabs">
-                    {HELP_TOPICS.map((topic) => (
-                      <button
-                        key={topic.id}
-                        type="button"
-                        className={`help-tab ${helpTopicId === topic.id ? "is-active" : ""}`}
-                        onClick={() => setHelpTopicId(topic.id)}
-                      >
-                        {topic.title}
-                      </button>
-                    ))}
-                  </div>
-                  <article className="drawer-card help-card">
-                    <MarkdownBlock markdown={selectedHelpTopic.markdown} />
-                  </article>
-                </div>
-              ) : null}
-
-              {visibleDrawer === "task" ? (
-                <div className="drawer-stack">
-                  {activeTask ? (
-                    <>
-                      <article className="drawer-card">
-                        <div className="drawer-card__head">
-                          <div>
-                            <h3>{taskSummary(activeTask)}</h3>
-                            <p>{activeTaskPresentation?.metaLine}</p>
-                          </div>
-                          <span className={`status-chip ${activeTaskPresentation?.tone ?? "tone-neutral"}`}>{activeTaskPresentation?.label ?? activeTask.status}</span>
-                        </div>
-                        <div className="task-detail-hero">
-                          <div className="task-detail-hero__copy">
-                            <strong>{activeTaskPresentation?.summary}</strong>
-                            <p>{activeTaskPresentation?.detail}</p>
-                          </div>
-                          <span className={`task-detail-hero__metric ${activeTaskPresentation?.tone ?? "tone-neutral"}`}>
-                            {activeTaskPresentation?.progressLabel ?? `${taskProgressPercent(activeTask)}%`}
-                          </span>
-                        </div>
-                        <div className="progress-shell progress-shell--detail">
-                          <div className="progress-fill" style={{ width: `${activeTaskPresentation?.progressPercent ?? taskProgressPercent(activeTask)}%` }} />
-                        </div>
-                        <dl className="settings-grid">
-                          <div>
-                            <dt>创建时间</dt>
-                            <dd>{formatDateTime(activeTask.createdAt)}</dd>
-                          </div>
-                          <div>
-                            <dt>最近更新</dt>
-                            <dd>{formatDateTime(activeTask.updatedAt)}</dd>
-                          </div>
-                          <div>
-                            <dt>完成时间</dt>
-                            <dd>{formatDateTime(activeTask.completedAt)}</dd>
-                          </div>
-                          <div>
-                            <dt>当前进度</dt>
-                            <dd>{taskProgressPercent(activeTask)}%</dd>
-                          </div>
-                        </dl>
-                      </article>
-
-                      <article className="drawer-card">
-                        <div className="drawer-card__head">
-                          <div>
-                            <h3>生命周期</h3>
-                          </div>
-                        </div>
-                        <div className="task-timeline">
-                          {(activeTaskPresentation?.lifecycle ?? []).map((step) => (
-                            <div key={step.key} className={`task-timeline__item is-${step.state}`}>
-                              <div className={`task-timeline__icon ${step.tone}`}>
-                                <FontAwesomeIcon
-                                  icon={
-                                    step.state === "error"
-                                      ? faTriangleExclamation
-                                      : step.state === "current"
-                                        ? faClock
-                                        : step.state === "done"
-                                          ? faCircleCheck
-                                          : faRotate
-                                  }
-                                />
-                              </div>
-                              <div className="task-timeline__copy">
-                                <div className="task-timeline__head">
-                                  <strong>{step.label}</strong>
-                                  <span>{formatDateTime(step.time)}</span>
-                                </div>
-                                <p>{step.detail}</p>
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      </article>
-
-                      <article className="drawer-card">
-                        <div className="drawer-card__head">
-                          <div>
-                            <h3>任务数据</h3>
-                          </div>
-                        </div>
-                        <dl className="settings-grid">
-                          <div>
-                            <dt className={isMagnetLink(activeTask.query) ? "task-inline-label" : undefined}>
-                              <span>{isMagnetLink(activeTask.query) ? "磁力链接" : "查询文本"}</span>
-                              {isMagnetLink(activeTask.query) && activeTask.query ? (
-                                <button
-                                  type="button"
-                                  className="task-icon-button"
-                                  onClick={() => void copyText(activeTask.query || "", "磁力链接已复制")}
-                                  aria-label="复制磁力链接"
-                                  title="复制磁力链接"
-                                >
-                                  <FontAwesomeIcon icon={faCopy} />
-                                </button>
-                              ) : null}
-                            </dt>
-                            {isMagnetLink(activeTask.query) && activeTask.query ? (
-                              <dd>
-                                <span className="task-inline-value task-inline-value--truncate" title={activeTask.query}>
-                                  {activeTask.query}
-                                </span>
-                              </dd>
-                            ) : (
-                              <dd title={activeTask.query || undefined}>{activeTask.query || "—"}</dd>
-                            )}
-                          </div>
-                          <div>
-                            <dt>保存路径</dt>
-                            <dd>{activeTask.savePath || "—"}</dd>
-                          </div>
-                          <div>
-                            <dt>分类</dt>
-                            <dd>{activeTask.category || "—"}</dd>
-                          </div>
-                          <div>
-                            <dt>标签</dt>
-                            <dd>{activeTask.tags || "—"}</dd>
-                          </div>
-                          <div>
-                            <dt>保存内容</dt>
-                            <dd>{activeTask.contentPath || "—"}</dd>
-                          </div>
-                          <div>
-                            {/* <dt>Torrent 名称</dt> */}
-                            <dt className={isCopyableTaskValue(activeTask.torrentName) ? "task-inline-label" : undefined}>
-                              <span>Torrent 名称</span>
-                              {isCopyableTaskValue(activeTask.torrentName) ? (
-                                <button
-                                  type="button"
-                                  className="task-icon-button"
-                                  onClick={() => void copyText(activeTask.torrentName || "", "Torrent 名称已复制")}
-                                  aria-label="复制 Torrent 名称"
-                                  title="复制 Torrent 名称"
-                                >
-                                  <FontAwesomeIcon icon={faCopy} />
-                                </button>
-                              ) : null}
-                            </dt>
-                            <dd>
-                              <span className="task-inline-value task-inline-value--truncate" title={activeTask.torrentName || undefined}>
-                                {activeTask.torrentName || "—"}
-                              </span>
-                            </dd>
-                          </div>
-                          <div>
-                            <dt className={isCopyableTaskValue(activeTask.torrentHash) ? "task-inline-label" : undefined}>
-                              <span>Torrent Hash</span>
-                              {isCopyableTaskValue(activeTask.torrentHash) ? (
-                                <button
-                                  type="button"
-                                  className="task-icon-button"
-                                  onClick={() => void copyText(activeTask.torrentHash || "", "Torrent Hash 已复制")}
-                                  aria-label="复制 Torrent Hash"
-                                  title="复制 Torrent Hash"
-                                >
-                                  <FontAwesomeIcon icon={faCopy} />
-                                </button>
-                              ) : null}
-                            </dt>
-                            <dd>
-                              <span className="task-inline-value task-inline-value--truncate" title={activeTask.torrentHash || undefined}>
-                                {activeTask.torrentHash || "—"}
-                              </span>
-                            </dd>
-                          </div>
-                          <div>
-                            <dt>qBittorrent</dt>
-                            <dd>{activeTask.qbittorrentState || "待同步"}</dd>
-                          </div>
-                          <div>
-                            <dt>进度</dt>
-                            <dd>{Math.round(activeTask.progress * 100)}%</dd>
-                          </div>
-                          <div>
-                            <dt>Stash job</dt>
-                            <dd>{activeTask.stashJobId || "—"}</dd>
-                          </div>
-                          <div>
-                            <dt>扫描状态</dt>
-                            <dd>{activeTask.stashScanStatus || "未开始"}</dd>
-                          </div>
-                        </dl>
-                        <div className={`task-issue ${activeTaskFailure?.tone ?? "tone-neutral"}`}>
-                          <strong>{activeTaskFailure?.title ?? "状态正常"}</strong>
-                          <span>{activeTaskFailure?.detail ?? "当前任务没有显式错误，等待下一次同步。"}</span>
-                        </div>
-                      </article>
-
-                      <article className="drawer-card">
-                        <div className="drawer-card__head">
-                          <div>
-                            <h3>操作</h3>
-                          </div>
-                        </div>
-                        <div className="task-ops">
-                          <button type="button" className="ghost-button task-ops__button" onClick={() => void runSync()}>
-                            <FontAwesomeIcon icon={faRotate} />
-                            <span>同步全部任务进度</span>
-                          </button>
-                          {canTriggerTaskStashScan(activeTask) ? (
-                            <button
-                              type="button"
-                              className="ghost-button task-ops__button"
-                              onClick={() => void runTaskScan(activeTask.id)}
-                              disabled={triggeringTaskScan}
-                            >
-                              <FontAwesomeIcon icon={faWandMagicSparkles} />
-                              <span>{triggeringTaskScan ? "正在触发当前任务扫描" : "触发当前任务扫描"}</span>
-                            </button>
-                          ) : null}
-                          <button type="button" className="ghost-button task-ops__button" onClick={() => void runScan()}>
-                            <FontAwesomeIcon icon={faDownload} />
-                            <span>触发待入库任务扫描</span>
-                          </button>
-                        </div>
-                      </article>
-                    </>
-                  ) : (
-                    <article className="drawer-card">
-                      <h3>还没有选中任务</h3>
-                      <p>点击任务卡片后，这里会显示详细信息和操作。</p>
-                    </article>
-                  )}
-                </div>
-              ) : null}
-            </div>
-          </aside>
-        </div>
+          {visibleDrawer === "task" ? (
+            <TaskDrawer
+              task={activeTask}
+              triggeringScan={triggeringTaskScan}
+              onCopy={copyText}
+              onSyncAll={() => void runSync()}
+              onScanTask={(id) => void runTaskScan(id)}
+              onScanAll={() => void runScan()}
+            />
+          ) : null}
+        </Drawer>
       ) : null}
+
     </div>
   );
 }

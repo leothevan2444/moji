@@ -7,6 +7,7 @@ moji
 AGENTS.md
 docs/agent_work_plan.md
 docs/ui_design.md
+docs/app-refactoring-plan.md
 moji.log
 moji.log.*
 moji.db*
