@@ -1028,6 +1028,49 @@ dd {
   color: #0f766e;
 }
 
+/* 待处理 / 中间态：与 error 结构一致，颜色随 tone 变化 */
+.task-status-pending {
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: 1px solid rgba(61, 47, 38, 0.12);
+  background: rgba(61, 47, 38, 0.04);
+  font-size: 12px;
+  line-height: 1.4;
+  color: var(--text);
+}
+
+.task-status-pending strong {
+  margin-right: 6px;
+  font-weight: 500;
+}
+
+.task-status-pending span {
+  color: var(--muted);
+}
+
+.task-status-pending.tone-warn {
+  border-color: rgba(176, 107, 31, 0.22);
+  background: rgba(176, 107, 31, 0.08);
+}
+
+.task-status-pending.tone-warn span {
+  color: #a05d18;
+}
+
+.task-status-pending.tone-info {
+  border-color: rgba(71, 85, 105, 0.22);
+  background: rgba(71, 85, 105, 0.08);
+}
+
+.task-status-pending.tone-info span {
+  color: #3b5f89;
+}
+
+.task-status-pending.tone-neutral {
+  border-color: rgba(61, 47, 38, 0.12);
+  background: rgba(61, 47, 38, 0.04);
+}
+
 /* 操作区域 */
 .task-card__actions {
   display: flex;

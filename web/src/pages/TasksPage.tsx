@@ -27,7 +27,7 @@ interface TasksPageProps {
   taskStatus: TaskStatusFilter;
   taskSort: TaskSortKey;
   taskGroupOpen: Record<TaskGroupKey, boolean>;
-  triggeringTaskScan: boolean;
+  pendingTaskScanId: string | null;
   onSearchChange: (value: string) => void;
   onStatusChange: (status: TaskStatusFilter) => void;
   onSortChange: (sort: TaskSortKey) => void;
@@ -46,7 +46,7 @@ export function TasksPage({
   taskStatus,
   taskSort,
   taskGroupOpen,
-  triggeringTaskScan,
+  pendingTaskScanId,
   onSearchChange,
   onStatusChange,
   onSortChange,
@@ -166,7 +166,7 @@ export function TasksPage({
             description={item.description}
             tasks={item.tasks}
             open={taskGroupOpen[item.group]}
-            triggeringScan={triggeringTaskScan}
+            pendingTaskScanId={pendingTaskScanId}
             onToggle={onToggleGroup}
             onOpenTask={onOpenTask}
             onScanTask={onScanTask}

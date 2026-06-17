@@ -40,7 +40,7 @@ export function useDashboard() {
     SyncTaskProgressDocumentMutationVariables
   >(SyncTaskProgressDocumentDocument);
 
-  const [{ fetching: triggeringTaskScan }, triggerTaskStashScan] = useMutation<
+  const [, triggerTaskStashScan] = useMutation<
     TriggerTaskStashScanDocumentMutation,
     TriggerTaskStashScanDocumentMutationVariables
   >(TriggerTaskStashScanDocumentDocument);
@@ -58,7 +58,6 @@ export function useDashboard() {
     addTorrent,
     syncTaskProgress,
     triggerTaskStashScan,
-    triggeringTaskScan,
     triggerStashScans
   };
 }

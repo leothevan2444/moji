@@ -7,7 +7,7 @@ interface TaskGroupSectionProps {
   description: string;
   tasks: DashboardTask[];
   open: boolean;
-  triggeringScan: boolean;
+  pendingTaskScanId: string | null;
   onToggle: (group: TaskGroupKey) => void;
   onOpenTask: (taskId: string) => void;
   onScanTask: (taskId: string) => void;
@@ -20,7 +20,7 @@ export function TaskGroupSection({
   description,
   tasks,
   open,
-  triggeringScan,
+  pendingTaskScanId,
   onToggle,
   onOpenTask,
   onScanTask,
@@ -56,7 +56,7 @@ export function TaskGroupSection({
             <TaskCard
               key={task.id}
               task={task}
-              triggeringScan={triggeringScan}
+              pendingScanId={pendingTaskScanId}
               onOpen={onOpenTask}
               onScan={onScanTask}
             />

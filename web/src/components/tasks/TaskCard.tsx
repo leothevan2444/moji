@@ -1,6 +1,7 @@
 import {
   canTriggerTaskStashScan,
   formatDateTime,
+  taskCardState,
   taskFailureSummary,
   taskPresentation,
   taskSummary,
@@ -10,22 +11,16 @@ import {
 interface TaskCardProps {
   task: DashboardTask;
   compact?: boolean;
-  triggeringScan?: boolean;
+  pendingScanId?: string | null;
   onOpen: (taskId: string) => void;
   onScan?: (taskId: string) => void;
 }
 
-export function TaskCard({ task, compact = false, triggeringScan = false, onOpen, onScan }: TaskCardProps) {
+export function TaskCard({ task, compact = false, pendingScanId = null, onOpen, onScan }: TaskCardProps) {
   const presentation = taskPresentation(task);
   const failure = taskFailureSummary(task);
-
-  // 判断是否需要显示进度条（进行中状态）
-  const needsProgress =
-    presentation.phase === "downloading" ||
-    presentation.phase === "scanRunning";
-
-  // 判断是否有真正的错误（排除正常的下载/扫描状态）
-  const hasError = failure.tone === "tone-danger" || failure.tone === "tone-warn";
+  const state = taskCardState(presentation, failure);
+  const isPendingScan = pendingScanId === task.id;
 
   return (
     <article
@@ -50,12 +45,12 @@ export function TaskCard({ task, compact = false, triggeringScan = false, onOpen
       </div>
 
       <div className="task-card__status">
-        {hasError ? (
+        {state === "error" ? (
           <div className={`task-status-error ${failure.tone}`}>
             <strong>{failure.title}</strong>
             <span>{failure.detail}</span>
           </div>
-        ) : needsProgress ? (
+        ) : state === "progress" ? (
           <div className="task-status-progress">
             <div className="task-status-progress__copy">
               <strong>{presentation.summary}</strong>
@@ -65,11 +60,16 @@ export function TaskCard({ task, compact = false, triggeringScan = false, onOpen
               <div className="progress-fill" style={{ width: `${presentation.progressPercent}%` }} />
             </div>
           </div>
-        ) : presentation.phase === "completed" ? (
+        ) : state === "completed" ? (
           <div className="task-status-completed">
             {presentation.summary}
           </div>
-        ) : null}
+        ) : (
+          <div className={`task-status-pending ${failure.tone}`}>
+            <strong>{failure.title}</strong>
+            <span>{failure.detail}</span>
+          </div>
+        )}
       </div>
 
       <div className="task-card__actions">
@@ -82,10 +82,10 @@ export function TaskCard({ task, compact = false, triggeringScan = false, onOpen
               event.stopPropagation();
               onScan(task.id);
             }}
-            disabled={triggeringScan}
+            disabled={isPendingScan}
             aria-label={`重扫任务：${taskSummary(task)}`}
           >
-            {triggeringScan ? "扫描中..." : "重扫"}
+            {isPendingScan ? "扫描中..." : "重扫"}
           </button>
         ) : null}
       </div>

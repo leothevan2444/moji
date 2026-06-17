@@ -39,6 +39,13 @@ export type TaskPresentation = {
   lifecycle: TaskLifecycleStep[];
 };
 
+/**
+ * Visual state for a task card body. Driving the four exclusive branches
+ * (error / pending / progress / completed) keeps the card render explicit
+ * instead of relying on overlapping ad-hoc booleans.
+ */
+export type TaskCardState = "error" | "pending" | "progress" | "completed";
+
 // ── Simple helpers ──────────────────────────────────────────────────
 
 export function normalizeStatus(value: string) {
@@ -361,4 +368,25 @@ export function taskPresentation(task: DashboardTask): TaskPresentation {
     metaLine: taskMetaLine(task),
     lifecycle: taskLifecycle(task, failure)
   };
+}
+
+/**
+ * Collapse a task into one of four mutually-exclusive card states so the
+ * card body has exactly one branch to render. Order matters: real failures
+ * win over pending/progress, completed wins over pending.
+ */
+export function taskCardState(
+  presentation: Pick<TaskPresentation, "phase">,
+  failure: Pick<TaskFailureSummary, "tone">
+): TaskCardState {
+  if (presentation.phase === "failed" || failure.tone === "tone-danger") {
+    return "error";
+  }
+  if (presentation.phase === "completed") {
+    return "completed";
+  }
+  if (presentation.phase === "downloading" || presentation.phase === "scanRunning") {
+    return "progress";
+  }
+  return "pending";
 }

@@ -20,7 +20,7 @@ import {
 
 interface TaskDetailProps {
   task: DashboardTask;
-  triggeringScan: boolean;
+  pendingScan: boolean;
   onCopy: (value: string, successMessage: string) => void | Promise<void>;
   onSyncAll: () => void;
   onScanTask: (taskId: string) => void;
@@ -29,7 +29,7 @@ interface TaskDetailProps {
 
 export function TaskDetail({
   task,
-  triggeringScan,
+  pendingScan,
   onCopy,
   onSyncAll,
   onScanTask,
@@ -218,10 +218,10 @@ export function TaskDetail({
               type="button"
               className="ghost-button task-ops__button"
               onClick={() => onScanTask(task.id)}
-              disabled={triggeringScan}
+              disabled={pendingScan}
             >
               <FontAwesomeIcon icon={faWandMagicSparkles} />
-              <span>{triggeringScan ? "正在触发当前任务扫描" : "触发当前任务扫描"}</span>
+              <span>{pendingScan ? "正在触发当前任务扫描" : "触发当前任务扫描"}</span>
             </button>
           ) : null}
           <button type="button" className="ghost-button task-ops__button" onClick={onScanAll}>

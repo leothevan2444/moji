@@ -40,6 +40,7 @@ function App() {
     已完成: false
   });
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
+  const [pendingTaskScanId, setPendingTaskScanId] = useState<string | null>(null);
 
   // Discovery page state
   const [jackettQuery, setJackettQuery] = useState("");
@@ -66,7 +67,6 @@ function App() {
     addTorrent,
     syncTaskProgress,
     triggerTaskStashScan,
-    triggeringTaskScan,
     triggerStashScans
   } = useDashboard();
 
@@ -143,8 +143,13 @@ function App() {
   };
 
   const runTaskScan = async (taskId: string) => {
-    await triggerTaskStashScan({ id: taskId });
-    await refreshDashboard({ requestPolicy: "network-only" });
+    setPendingTaskScanId(taskId);
+    try {
+      await triggerTaskStashScan({ id: taskId });
+      await refreshDashboard({ requestPolicy: "network-only" });
+    } finally {
+      setPendingTaskScanId(null);
+    }
   };
 
   const handleAddSearchResult = async (result: SearchDocumentQuery["jackettSearch"][number]) => {
@@ -259,7 +264,7 @@ function App() {
             tasks={tasks}
             runtimeSettings={runtimeSettings}
             lastCheckedAt={data?.tasks[0]?.updatedAt ?? null}
-            triggeringTaskScan={triggeringTaskScan}
+            pendingTaskScanId={pendingTaskScanId}
             onRefresh={() => refreshDashboard({ requestPolicy: "network-only" })}
             onOpenTask={openTaskDetail}
             onScanTask={(id) => void runTaskScan(id)}
@@ -279,7 +284,7 @@ function App() {
             taskStatus={taskStatus}
             taskSort={taskSort}
             taskGroupOpen={taskGroupOpen}
-            triggeringTaskScan={triggeringTaskScan}
+            pendingTaskScanId={pendingTaskScanId}
             onSearchChange={setTaskSearch}
             onStatusChange={setTaskStatus}
             onSortChange={setTaskSort}
@@ -369,7 +374,7 @@ function App() {
           {visibleDrawer === "task" ? (
             <TaskDrawer
               task={activeTask}
-              triggeringScan={triggeringTaskScan}
+              pendingScan={activeTask ? pendingTaskScanId === activeTask.id : false}
               onCopy={copyText}
               onSyncAll={() => void runSync()}
               onScanTask={(id) => void runTaskScan(id)}

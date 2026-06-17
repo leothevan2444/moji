@@ -8,7 +8,7 @@ interface HomePageProps {
   tasks: DashboardTask[];
   runtimeSettings: RuntimeSettings | null;
   lastCheckedAt: string | null | undefined;
-  triggeringTaskScan: boolean;
+  pendingTaskScanId: string | null;
   onRefresh: () => void;
   onOpenTask: (taskId: string) => void;
   onScanTask: (taskId: string) => void;
@@ -18,7 +18,7 @@ export function HomePage({
   tasks,
   runtimeSettings,
   lastCheckedAt,
-  triggeringTaskScan,
+  pendingTaskScanId,
   onRefresh,
   onOpenTask,
   onScanTask
@@ -112,7 +112,7 @@ export function HomePage({
               key={task.id}
               task={task}
               compact
-              triggeringScan={triggeringTaskScan}
+              pendingScanId={pendingTaskScanId}
               onOpen={onOpenTask}
               onScan={onScanTask}
             />

@@ -19,12 +19,14 @@ export {
   taskMetaLine,
   taskLifecycle,
   taskPresentation,
+  taskCardState,
   type DashboardTask,
   type TaskGroupKey,
   type TaskFailureSummary,
   type TaskLifecycleState,
   type TaskLifecycleStep,
-  type TaskPresentation
+  type TaskPresentation,
+  type TaskCardState
 } from "./taskUtils";
 export { performerInitials, performerImageURL } from "./performerUtils";
 export { boolState, serviceStatus, taskSyncStatus } from "./settingsUtils";
