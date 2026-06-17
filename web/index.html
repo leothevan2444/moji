@@ -6,6 +6,23 @@
     <meta name="theme-color" content="#f3f0e8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <title>Moji Web UI</title>
+    <script>
+      // 防 FOUC：在 React 挂载前同步设置 data-theme。
+      // 逻辑与 src/hooks/useTheme.ts 保持一致：只接受 "light" / "dark"，
+      // 其余情况（含 auto / 异常 / 无值）移除属性，让 prefers-color-scheme 媒体查询接管。
+      (function () {
+        try {
+          var k = localStorage.getItem("moji:theme");
+          if (k === "light" || k === "dark") {
+            document.documentElement.setAttribute("data-theme", k);
+          } else {
+            document.documentElement.removeAttribute("data-theme");
+          }
+        } catch (e) {
+          /* localStorage 不可用时静默忽略，回到 auto */
+        }
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>

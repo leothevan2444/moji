@@ -6,6 +6,7 @@ import {
   useDrawerTransition,
   useJackettSearch,
   useSubscription,
+  useTheme,
   useToast
 } from "./hooks";
 import { taskSummary, type TaskGroupKey } from "./utils";
@@ -55,6 +56,7 @@ function App() {
 
   // ── Data hooks ──────────────────────────────────────────────────────
   const { toasts, pushToast, dismissToast, copyText } = useToast();
+  const theme = useTheme();
   const { renderedDrawer, drawerClosing, visibleDrawer } = useDrawerTransition(drawer);
 
   const deferredJackettQuery = useDeferredValue(submittedJackettQuery.trim());
@@ -257,7 +259,7 @@ function App() {
       <div className="ambient ambient-b" />
       <div className="ambient ambient-c" />
 
-      <Header tab={tab} onTabChange={setTab} onOpenDrawer={setDrawer} />
+      <Header tab={tab} onTabChange={setTab} onOpenDrawer={setDrawer} theme={theme} />
 
       {error ? (
         <section className="surface surface--alert">

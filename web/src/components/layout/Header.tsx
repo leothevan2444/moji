@@ -6,14 +6,26 @@ import {
 } from "@fortawesome/free-solid-svg-icons";
 import { NAV_TABS } from "../../constants";
 import type { DrawerKey, TabKey } from "../../types";
+import { ThemeMenu } from "./ThemeMenu";
+import type { ThemePreference } from "../../hooks/useTheme";
+import type { RefObject } from "react";
 
 interface HeaderProps {
   tab: TabKey;
   onTabChange: (tab: TabKey) => void;
   onOpenDrawer: (drawer: Exclude<DrawerKey, null>) => void;
+  theme: {
+    preference: ThemePreference;
+    resolved: "light" | "dark";
+    onSelect: (next: ThemePreference) => void;
+    open: boolean;
+    setOpen: (next: boolean) => void;
+    buttonRef: RefObject<HTMLButtonElement | null>;
+    menuRef: RefObject<HTMLDivElement | null>;
+  };
 }
 
-export function Header({ tab, onTabChange, onOpenDrawer }: HeaderProps) {
+export function Header({ tab, onTabChange, onOpenDrawer, theme }: HeaderProps) {
   return (
     <header className="masthead">
       <div className="masthead__brand">
@@ -66,6 +78,15 @@ export function Header({ tab, onTabChange, onOpenDrawer }: HeaderProps) {
             >
               <FontAwesomeIcon icon={faCircleQuestion} aria-hidden="true" />
             </button>
+            <ThemeMenu
+              preference={theme.preference}
+              resolved={theme.resolved}
+              onSelect={theme.onSelect}
+              open={theme.open}
+              setOpen={theme.setOpen}
+              buttonRef={theme.buttonRef}
+              menuRef={theme.menuRef}
+            />
           </div>
         </div>
       </div>
