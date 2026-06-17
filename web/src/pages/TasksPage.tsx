@@ -84,7 +84,7 @@ export function TasksPage({
     } else if (taskStatus === "失败") {
       next = next.filter((task) => isStatus(task, "failed"));
     } else if (taskStatus === "待扫描") {
-      next = next.filter((task) => isScanPending(task) || isStatus(task, "completed"));
+      next = next.filter(isScanPending);
     }
 
     const sorters: Record<TaskSortKey, (a: DashboardTask, b: DashboardTask) => number> = {

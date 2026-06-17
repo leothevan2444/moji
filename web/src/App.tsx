@@ -153,18 +153,32 @@ function App() {
   };
 
   const handleAddSearchResult = async (result: SearchDocumentQuery["jackettSearch"][number]) => {
+    const taskURL = result.magnetUri || result.link;
     setPendingAddId(result.link);
-    const response = await addTorrent({
-      input: {
-        url: result.magnetUri || result.link
+
+    try {
+      const response = await addTorrent({
+        input: {
+          url: taskURL
+        }
+      });
+
+      if (response.error) {
+        pushToast("tone-danger", describeQueryError(response.error));
+        return;
       }
-    });
-    if (response.data?.addTorrent?.id) {
+
+      if (!response.data?.addTorrent?.id) {
+        pushToast("tone-danger", "任务创建失败，后端没有返回新的任务记录。");
+        return;
+      }
+
       setSelectedTaskId(response.data.addTorrent.id);
+      await refreshDashboard({ requestPolicy: "network-only" });
+      setDrawer("task");
+    } finally {
+      setPendingAddId(null);
     }
-    await refreshDashboard({ requestPolicy: "network-only" });
-    setPendingAddId(null);
-    setDrawer("task");
   };
 
   const handleSubscriptionToggle = async (performer: { id: string; name: string; subscribed: boolean }) => {
