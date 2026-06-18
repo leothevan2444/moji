@@ -102,6 +102,7 @@ func (s *runtimeSettingsEditor) UpdateSubscriptionSettings(input graphqlapi.Upda
 		cfg.Subscription.PollIntervalSeconds,
 		len(cfg.Subscription.StashBoxEndpoints),
 	)
+	applySubscriptionOrder(cfg, s.subscriptionService)
 	return buildSettingsSnapshot(cfg, s.version, s.qbittorrentEnabled, s.downloaderEnabled, s.stashEnabled, s.subscriptionService), nil
 }
 

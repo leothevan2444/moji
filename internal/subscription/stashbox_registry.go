@@ -20,14 +20,18 @@ type StashBoxEndpoint struct {
 // StashboxClientFactory constructs a Stash-Box client bound to a specific
 // endpoint. The default implementation wraps `pkg/stashbox.NewClient`.
 type StashboxClientFactory interface {
-	NewClient(endpoint, apiKey string) StashboxClient
+	NewClient(box stash.StashBoxEndpoint) StashboxClient
 }
 
 // defaultStashboxClientFactory uses the real pkg/stashbox client builder.
 type defaultStashboxClientFactory struct{}
 
-func (defaultStashboxClientFactory) NewClient(endpoint, apiKey string) StashboxClient {
-	return stashboxpkg.NewClient(endpoint, apiKey)
+func (defaultStashboxClientFactory) NewClient(box stash.StashBoxEndpoint) StashboxClient {
+	return stashboxpkg.NewClient(
+		box.Endpoint,
+		box.APIKey,
+		stashboxpkg.MaxRequestsPerMinute(box.MaxRequestsPerMinute),
+	)
 }
 
 // NewDefaultStashboxRegistry returns a registry backed by the real Stash-Box
@@ -42,6 +46,7 @@ func NewDefaultStashboxRegistry() *stashboxRegistry {
 type stashboxRegistry struct {
 	mu      sync.RWMutex
 	clients map[string]StashboxClient
+	specs   map[string]stash.StashBoxEndpoint
 	factory StashboxClientFactory
 	order   []string
 	keys    map[string]StashBoxEndpoint
@@ -50,6 +55,7 @@ type stashboxRegistry struct {
 func newStashboxRegistry(factory StashboxClientFactory) *stashboxRegistry {
 	return &stashboxRegistry{
 		clients: map[string]StashboxClient{},
+		specs:   map[string]stash.StashBoxEndpoint{},
 		factory: factory,
 		keys:    map[string]StashBoxEndpoint{},
 	}
@@ -63,7 +69,19 @@ func (r *stashboxRegistry) Replace(boxes []stash.StashBoxEndpoint) {
 		return
 	}
 
+	r.mu.RLock()
+	existingClients := make(map[string]StashboxClient, len(r.clients))
+	for key, client := range r.clients {
+		existingClients[key] = client
+	}
+	existingSpecs := make(map[string]stash.StashBoxEndpoint, len(r.specs))
+	for key, spec := range r.specs {
+		existingSpecs[key] = spec
+	}
+	r.mu.RUnlock()
+
 	next := make(map[string]StashboxClient, len(boxes))
+	nextSpecs := make(map[string]stash.StashBoxEndpoint, len(boxes))
 	nextKeys := make(map[string]StashBoxEndpoint, len(boxes))
 	order := make([]string, 0, len(boxes))
 	for _, box := range boxes {
@@ -74,13 +92,14 @@ func (r *stashboxRegistry) Replace(boxes []stash.StashBoxEndpoint) {
 		if _, exists := next[key]; exists {
 			continue
 		}
-		// Reuse the existing client if it was already configured for this
-		// endpoint so we don't drop in-flight rate limiters.
-		if existing, ok := r.clients[key]; ok {
+		// Reuse the existing client only when its auth / rate-limit config is
+		// unchanged; otherwise rebuild so runtime refreshes take effect.
+		if existing, ok := existingClients[key]; ok && sameClientConfig(existingSpecs[key], box) {
 			next[key] = existing
 		} else {
-			next[key] = r.factory.NewClient(box.Endpoint, box.APIKey)
+			next[key] = r.factory.NewClient(box)
 		}
+		nextSpecs[key] = box
 		nextKeys[key] = StashBoxEndpoint{
 			Name:             box.Name,
 			Endpoint:         box.Endpoint,
@@ -91,9 +110,16 @@ func (r *stashboxRegistry) Replace(boxes []stash.StashBoxEndpoint) {
 
 	r.mu.Lock()
 	r.clients = next
+	r.specs = nextSpecs
 	r.keys = nextKeys
 	r.order = order
 	r.mu.Unlock()
+}
+
+func sameClientConfig(left, right stash.StashBoxEndpoint) bool {
+	return normalizeStashBoxEndpoint(left.Endpoint) == normalizeStashBoxEndpoint(right.Endpoint) &&
+		left.APIKey == right.APIKey &&
+		left.MaxRequestsPerMinute == right.MaxRequestsPerMinute
 }
 
 // Get returns the client for a normalized endpoint, or false if none is

@@ -74,7 +74,7 @@ type stubFactory struct {
 	client StashboxClient
 }
 
-func (s stubFactory) NewClient(_, _ string) StashboxClient { return s.client }
+func (s stubFactory) NewClient(stash.StashBoxEndpoint) StashboxClient { return s.client }
 
 // perEndpointFactory returns a different fakeStashboxClient for each
 // endpoint. The client assigned to an unknown endpoint panics so tests catch
@@ -83,10 +83,10 @@ type perEndpointFactory struct {
 	clients map[string]StashboxClient
 }
 
-func (f perEndpointFactory) NewClient(endpoint, _ string) StashboxClient {
-	client, ok := f.clients[normalizeStashBoxEndpoint(endpoint)]
+func (f perEndpointFactory) NewClient(box stash.StashBoxEndpoint) StashboxClient {
+	client, ok := f.clients[normalizeStashBoxEndpoint(box.Endpoint)]
 	if !ok {
-		panic("perEndpointFactory: no client registered for " + endpoint)
+		panic("perEndpointFactory: no client registered for " + box.Endpoint)
 	}
 	return client
 }

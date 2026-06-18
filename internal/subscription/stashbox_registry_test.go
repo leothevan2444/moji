@@ -103,7 +103,41 @@ type endpointRecordingFactory struct {
 	record  *[]string
 }
 
-func (f endpointRecordingFactory) NewClient(endpoint, _ string) StashboxClient {
-	*f.record = append(*f.record, endpoint)
-	return f.clients[normalizeStashBoxEndpoint(endpoint)]
+func (f endpointRecordingFactory) NewClient(box stash.StashBoxEndpoint) StashboxClient {
+	*f.record = append(*f.record, box.Endpoint)
+	return f.clients[normalizeStashBoxEndpoint(box.Endpoint)]
+}
+
+func TestRegistryRebuildsClientWhenConfigChanges(t *testing.T) {
+	clientA := &fakeStashboxClient{performer: &stashboxgraphql.PerformerFragment{ID: "a"}}
+	clientB := &fakeStashboxClient{performer: &stashboxgraphql.PerformerFragment{ID: "b"}}
+
+	var built []string
+	factory := endpointRecordingFactory{
+		clients: map[string]StashboxClient{
+			"https://a.example.org/graphql": clientA,
+		},
+		record: &built,
+	}
+
+	registry := newStashboxRegistry(factory)
+	registry.Replace([]stash.StashBoxEndpoint{
+		{Name: "a", Endpoint: "https://a.example.org/graphql", APIKey: "k-a", MaxRequestsPerMinute: 60},
+	})
+	if len(built) != 1 {
+		t.Fatalf("expected first build, got %d", len(built))
+	}
+
+	factory.clients["https://a.example.org/graphql"] = clientB
+	registry.factory = factory
+	registry.Replace([]stash.StashBoxEndpoint{
+		{Name: "a", Endpoint: "https://a.example.org/graphql", APIKey: "k-b", MaxRequestsPerMinute: 60},
+	})
+	if len(built) != 2 {
+		t.Fatalf("expected rebuild after api key change, got %d", len(built))
+	}
+	got, ok := registry.Get("https://a.example.org/graphql")
+	if !ok || got != clientB {
+		t.Fatalf("expected rebuilt client after config change, got ok=%v client=%v", ok, got)
+	}
 }

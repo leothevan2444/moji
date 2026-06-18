@@ -783,7 +783,7 @@ export function SettingsPanel({
           <div className="settings-actions">
             <button
               type="submit"
-              disabled={updatingSubscription || !runtimeSettings.subscription.stashBoxesLoaded || stashBoxes.length === 0}
+              disabled={updatingSubscription || !runtimeSettings.subscription.stashBoxesLoaded}
             >
               保存订阅设置
             </button>
