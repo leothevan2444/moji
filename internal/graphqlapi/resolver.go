@@ -46,19 +46,19 @@ type SettingsEditor interface {
 
 type UpdateStashSettingsInput struct {
 	URL         string
-	APIKey      *string
+	APIKey      string
 	LibraryPath string
 }
 
 type UpdateJackettSettingsInput struct {
 	URL    string
-	APIKey *string
+	APIKey string
 }
 
 type UpdateQBittorrentSettingsInput struct {
 	URL             string
 	Username        string
-	Password        *string
+	Password        string
 	DefaultSavePath string
 	Category        string
 	Tags            string
@@ -94,6 +94,7 @@ type StashSettingsSnapshot struct {
 	Enabled          bool
 	URL              string
 	APIKeyConfigured bool
+	APIKey           string
 	LibraryPath      string
 }
 
@@ -102,6 +103,7 @@ type JackettSettingsSnapshot struct {
 	Enabled          bool
 	URL              string
 	APIKeyConfigured bool
+	APIKey           string
 }
 
 type QBittorrentSettingsSnapshot struct {
@@ -111,6 +113,7 @@ type QBittorrentSettingsSnapshot struct {
 	Username           string
 	UsernameConfigured bool
 	PasswordConfigured bool
+	Password           string
 	DefaultSavePath    string
 	Category           string
 	Tags               string

@@ -44,6 +44,7 @@ func settingsSnapshotToModel(snapshot *SettingsSnapshot, appVersion string) *mod
 			Enabled:          snapshot.Stash.Enabled,
 			URL:              snapshot.Stash.URL,
 			APIKeyConfigured: snapshot.Stash.APIKeyConfigured,
+			APIKey:           snapshot.Stash.APIKey,
 			LibraryPath:      snapshot.Stash.LibraryPath,
 		},
 		Jackett: &model.JackettSettings{
@@ -51,6 +52,7 @@ func settingsSnapshotToModel(snapshot *SettingsSnapshot, appVersion string) *mod
 			Enabled:          snapshot.Jackett.Enabled,
 			URL:              snapshot.Jackett.URL,
 			APIKeyConfigured: snapshot.Jackett.APIKeyConfigured,
+			APIKey:           snapshot.Jackett.APIKey,
 		},
 		Qbittorrent: &model.QBittorrentSettings{
 			Configured:         snapshot.QBittorrent.Configured,
@@ -59,6 +61,7 @@ func settingsSnapshotToModel(snapshot *SettingsSnapshot, appVersion string) *mod
 			Username:           snapshot.QBittorrent.Username,
 			UsernameConfigured: snapshot.QBittorrent.UsernameConfigured,
 			PasswordConfigured: snapshot.QBittorrent.PasswordConfigured,
+			Password:           snapshot.QBittorrent.Password,
 			DefaultSavePath:    snapshot.QBittorrent.DefaultSavePath,
 			Category:           snapshot.QBittorrent.Category,
 			Tags:               snapshot.QBittorrent.Tags,

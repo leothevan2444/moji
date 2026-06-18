@@ -28,12 +28,12 @@ tasks:
 		t.Fatalf("open store: %v", err)
 	}
 
-	cfg, err := store.UpdateQBittorrent("http://localhost:8081", "operator", nil, "/downloads", "moji", "auto")
+	cfg, err := store.UpdateQBittorrent("http://localhost:8081", "operator", "", "/downloads", "moji", "auto")
 	if err != nil {
 		t.Fatalf("update qbittorrent: %v", err)
 	}
-	if cfg.QBittorrent.Password != "secret" {
-		t.Fatalf("expected password preserved, got %q", cfg.QBittorrent.Password)
+	if cfg.QBittorrent.Password != "" {
+		t.Fatalf("expected password cleared by empty input, got %q", cfg.QBittorrent.Password)
 	}
 
 	updated, err := os.ReadFile(path)

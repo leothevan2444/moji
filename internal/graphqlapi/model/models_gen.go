@@ -72,6 +72,8 @@ type JackettSettings struct {
 	Enabled          bool   `json:"enabled"`
 	URL              string `json:"url"`
 	APIKeyConfigured bool   `json:"apiKeyConfigured"`
+	// Currently configured Jackett API key. Returned in plaintext for the settings UI; never logged.
+	APIKey string `json:"apiKey"`
 }
 
 type LogEntry struct {
@@ -120,9 +122,11 @@ type QBittorrentSettings struct {
 	Username           string `json:"username"`
 	UsernameConfigured bool   `json:"usernameConfigured"`
 	PasswordConfigured bool   `json:"passwordConfigured"`
-	DefaultSavePath    string `json:"defaultSavePath"`
-	Category           string `json:"category"`
-	Tags               string `json:"tags"`
+	// Currently configured qBittorrent password. Returned in plaintext for the settings UI; never logged.
+	Password        string `json:"password"`
+	DefaultSavePath string `json:"defaultSavePath"`
+	Category        string `json:"category"`
+	Tags            string `json:"tags"`
 }
 
 type Query struct {
@@ -193,7 +197,9 @@ type StashSettings struct {
 	Enabled          bool   `json:"enabled"`
 	URL              string `json:"url"`
 	APIKeyConfigured bool   `json:"apiKeyConfigured"`
-	LibraryPath      string `json:"libraryPath"`
+	// Currently configured Stash API key. Returned in plaintext for the settings UI; never logged.
+	APIKey      string `json:"apiKey"`
+	LibraryPath string `json:"libraryPath"`
 }
 
 type SubscribedPerformer struct {

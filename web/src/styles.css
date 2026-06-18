@@ -1757,6 +1757,87 @@ button.profile-icon:disabled {
   justify-content: flex-end;
 }
 
+/* ── Secret input with visibility toggle ───────────────────────── */
+
+.secret-input {
+  position: relative;
+  display: flex;
+  align-items: stretch;
+  width: 100%;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--surface);
+  overflow: hidden;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.secret-input:focus-within {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.18);
+}
+
+.secret-input__field {
+  flex: 1 1 auto;
+  min-width: 0;
+  border: none;
+  outline: none;
+  padding: 8px 10px;
+  font-family: var(--font-mono, ui-monospace, "SFMono-Regular", monospace);
+  letter-spacing: 0.02em;
+  background: transparent;
+  color: inherit;
+}
+
+.secret-input__field:focus {
+  outline: none;
+}
+
+.secret-input__toggle {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  border: none;
+  border-left: 1px solid var(--line);
+  background: transparent;
+  color: var(--muted-2);
+  cursor: pointer;
+  transition: color 0.15s ease, background 0.15s ease;
+}
+
+.secret-input__toggle:hover {
+  color: var(--accent);
+  background: rgba(37, 99, 235, 0.10);
+}
+
+.secret-input__toggle:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
+
+.secret-input__toggle[aria-pressed="true"] {
+  color: var(--accent);
+  background: rgba(37, 99, 235, 0.12);
+}
+
+[data-theme="dark"] .secret-input:focus-within {
+  box-shadow: 0 0 0 3px rgba(96, 165, 250, 0.32);
+}
+
+[data-theme="dark"] .secret-input__toggle {
+  border-left-color: rgba(148, 163, 184, 0.18);
+}
+
+[data-theme="dark"] .secret-input__toggle:hover {
+  background: rgba(96, 165, 250, 0.18);
+}
+
+[data-theme="dark"] .secret-input__toggle[aria-pressed="true"] {
+  background: rgba(96, 165, 250, 0.18);
+  color: rgb(147, 197, 253);
+}
+
 /* ── Stash-Box 数据源 ───────────────────────────────────────── */
 
 .stashbox-source {

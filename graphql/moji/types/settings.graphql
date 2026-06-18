@@ -38,6 +38,8 @@ type StashSettings {
   enabled: Boolean!
   url: String!
   apiKeyConfigured: Boolean!
+  "Currently configured Stash API key. Returned in plaintext for the settings UI; never logged."
+  apiKey: String!
   libraryPath: String!
 }
 
@@ -46,6 +48,8 @@ type JackettSettings {
   enabled: Boolean!
   url: String!
   apiKeyConfigured: Boolean!
+  "Currently configured Jackett API key. Returned in plaintext for the settings UI; never logged."
+  apiKey: String!
 }
 
 type QBittorrentSettings {
@@ -55,6 +59,8 @@ type QBittorrentSettings {
   username: String!
   usernameConfigured: Boolean!
   passwordConfigured: Boolean!
+  "Currently configured qBittorrent password. Returned in plaintext for the settings UI; never logged."
+  password: String!
   defaultSavePath: String!
   category: String!
   tags: String!

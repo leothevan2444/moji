@@ -4,6 +4,8 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faArrowDown,
   faArrowUp,
+  faEye,
+  faEyeSlash,
   faGripVertical,
   faRotate
 } from "@fortawesome/free-solid-svg-icons";
@@ -66,6 +68,14 @@ export function SettingsPanel({
   const [downloadingLogFile, setDownloadingLogFile] = useState(false);
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
+  const [visibleSecrets, setVisibleSecrets] = useState<{ stashApiKey: boolean; jackettApiKey: boolean; qbittorrentPassword: boolean }>({
+    stashApiKey: false,
+    jackettApiKey: false,
+    qbittorrentPassword: false
+  });
+  const toggleSecret = (key: "stashApiKey" | "jackettApiKey" | "qbittorrentPassword") => {
+    setVisibleSecrets((current) => ({ ...current, [key]: !current[key] }));
+  };
 
   const [stashForm, setStashForm] = useState(EMPTY_STASH_FORM);
   const [jackettForm, setJackettForm] = useState(EMPTY_JACKETT_FORM);
@@ -126,17 +136,17 @@ export function SettingsPanel({
 
     setStashForm({
       url: runtimeSettings.stash.url || "",
-      apiKey: "",
+      apiKey: runtimeSettings.stash.apiKey ?? "",
       libraryPath: runtimeSettings.stash.libraryPath || ""
     });
     setJackettForm({
       url: runtimeSettings.jackett.url || "",
-      apiKey: ""
+      apiKey: runtimeSettings.jackett.apiKey ?? ""
     });
     setQBittorrentForm({
       url: runtimeSettings.qbittorrent.url || "",
       username: runtimeSettings.qbittorrent.username || "",
-      password: "",
+      password: runtimeSettings.qbittorrent.password ?? "",
       defaultSavePath: runtimeSettings.qbittorrent.defaultSavePath || "",
       category: runtimeSettings.qbittorrent.category || "",
       tags: runtimeSettings.qbittorrent.tags || ""
@@ -209,7 +219,7 @@ export function SettingsPanel({
     const result = await updateStashSettings({
       input: {
         url: stashForm.url.trim(),
-        apiKey: stashForm.apiKey.trim() || null,
+        apiKey: stashForm.apiKey.trim(),
         libraryPath: stashForm.libraryPath.trim()
       }
     });
@@ -217,7 +227,6 @@ export function SettingsPanel({
       pushToast("tone-danger", describeQueryError(result.error));
       return;
     }
-    setStashForm((current) => ({ ...current, apiKey: "" }));
     pushToast("tone-success", "Stash 设置已保存，配置文件与运行时快照已刷新。");
     await refreshDashboard({ requestPolicy: "network-only" });
   };
@@ -227,14 +236,13 @@ export function SettingsPanel({
     const result = await updateJackettSettings({
       input: {
         url: jackettForm.url.trim(),
-        apiKey: jackettForm.apiKey.trim() || null
+        apiKey: jackettForm.apiKey.trim()
       }
     });
     if (result.error) {
       pushToast("tone-danger", describeQueryError(result.error));
       return;
     }
-    setJackettForm((current) => ({ ...current, apiKey: "" }));
     pushToast("tone-success", "索引器设置已保存，后端配置已同步。");
     await refreshDashboard({ requestPolicy: "network-only" });
   };
@@ -245,7 +253,7 @@ export function SettingsPanel({
       input: {
         url: qbittorrentForm.url.trim(),
         username: qbittorrentForm.username.trim(),
-        password: qbittorrentForm.password.trim() || null,
+        password: qbittorrentForm.password.trim(),
         defaultSavePath: qbittorrentForm.defaultSavePath.trim(),
         category: qbittorrentForm.category.trim(),
         tags: qbittorrentForm.tags.trim()
@@ -255,7 +263,6 @@ export function SettingsPanel({
       pushToast("tone-danger", describeQueryError(result.error));
       return;
     }
-    setQBittorrentForm((current) => ({ ...current, password: "" }));
     pushToast("tone-success", "下载器设置已保存，新的默认值已同步到后端。");
     await refreshDashboard({ requestPolicy: "network-only" });
   };
@@ -402,16 +409,28 @@ export function SettingsPanel({
           </label>
           <label className="settings-field">
             <span>API key</span>
-            <input
-              type="password"
-              value={stashForm.apiKey}
-              onChange={(event) => setStashForm((current) => ({ ...current, apiKey: event.target.value }))}
-              placeholder={runtimeSettings.stash.apiKeyConfigured ? "留空则保留现有 API key" : "输入新的 API key"}
-            />
+            <div className="secret-input">
+              <input
+                className="secret-input__field"
+                type={visibleSecrets.stashApiKey ? "text" : "password"}
+                value={stashForm.apiKey}
+                onChange={(event) => setStashForm((current) => ({ ...current, apiKey: event.target.value }))}
+                placeholder="输入新的 API key"
+                autoComplete="off"
+                spellCheck={false}
+              />
+              <button
+                type="button"
+                className="secret-input__toggle"
+                onClick={() => toggleSecret("stashApiKey")}
+                aria-label={visibleSecrets.stashApiKey ? "隐藏 API key" : "显示 API key"}
+                aria-pressed={visibleSecrets.stashApiKey}
+                title={visibleSecrets.stashApiKey ? "隐藏" : "显示"}
+              >
+                <FontAwesomeIcon icon={visibleSecrets.stashApiKey ? faEyeSlash : faEye} aria-hidden="true" />
+              </button>
+            </div>
           </label>
-          <div className="settings-meta">
-            <span>当前 API key: {boolState(runtimeSettings.stash.apiKeyConfigured)}</span>
-          </div>
           <div className="settings-actions">
             <button type="submit" disabled={updatingStash}>保存 Stash 设置</button>
           </div>
@@ -438,15 +457,29 @@ export function SettingsPanel({
           </label>
           <label className="settings-field">
             <span>API key</span>
-            <input
-              type="password"
-              value={jackettForm.apiKey}
-              onChange={(event) => setJackettForm((current) => ({ ...current, apiKey: event.target.value }))}
-              placeholder={runtimeSettings.jackett.apiKeyConfigured ? "留空则保留现有 API key" : "输入新的 API key"}
-            />
+            <div className="secret-input">
+              <input
+                className="secret-input__field"
+                type={visibleSecrets.jackettApiKey ? "text" : "password"}
+                value={jackettForm.apiKey}
+                onChange={(event) => setJackettForm((current) => ({ ...current, apiKey: event.target.value }))}
+                placeholder="输入新的 API key"
+                autoComplete="off"
+                spellCheck={false}
+              />
+              <button
+                type="button"
+                className="secret-input__toggle"
+                onClick={() => toggleSecret("jackettApiKey")}
+                aria-label={visibleSecrets.jackettApiKey ? "隐藏 API key" : "显示 API key"}
+                aria-pressed={visibleSecrets.jackettApiKey}
+                title={visibleSecrets.jackettApiKey ? "隐藏" : "显示"}
+              >
+                <FontAwesomeIcon icon={visibleSecrets.jackettApiKey ? faEyeSlash : faEye} aria-hidden="true" />
+              </button>
+            </div>
           </label>
           <div className="settings-meta">
-            <span>当前 API key: {boolState(runtimeSettings.jackett.apiKeyConfigured)}</span>
             <span>后续可继续扩展 tracker 分组与默认搜索策略。</span>
           </div>
           <div className="settings-actions">
@@ -483,12 +516,27 @@ export function SettingsPanel({
           </label>
           <label className="settings-field">
             <span>密码</span>
-            <input
-              type="password"
-              value={qbittorrentForm.password}
-              onChange={(event) => setQBittorrentForm((current) => ({ ...current, password: event.target.value }))}
-              placeholder={runtimeSettings.qbittorrent.passwordConfigured ? "留空则保留现有密码" : "输入新的登录密码"}
-            />
+            <div className="secret-input">
+              <input
+                className="secret-input__field"
+                type={visibleSecrets.qbittorrentPassword ? "text" : "password"}
+                value={qbittorrentForm.password}
+                onChange={(event) => setQBittorrentForm((current) => ({ ...current, password: event.target.value }))}
+                placeholder="输入新的登录密码"
+                autoComplete="off"
+                spellCheck={false}
+              />
+              <button
+                type="button"
+                className="secret-input__toggle"
+                onClick={() => toggleSecret("qbittorrentPassword")}
+                aria-label={visibleSecrets.qbittorrentPassword ? "隐藏密码" : "显示密码"}
+                aria-pressed={visibleSecrets.qbittorrentPassword}
+                title={visibleSecrets.qbittorrentPassword ? "隐藏" : "显示"}
+              >
+                <FontAwesomeIcon icon={visibleSecrets.qbittorrentPassword ? faEyeSlash : faEye} aria-hidden="true" />
+              </button>
+            </div>
           </label>
           <label className="settings-field">
             <span>默认保存路径</span>
@@ -514,10 +562,6 @@ export function SettingsPanel({
               placeholder="auto"
             />
           </label>
-          <div className="settings-meta">
-            <span>当前密码: {boolState(runtimeSettings.qbittorrent.passwordConfigured)}</span>
-            <span>用户名会直接回显，密码仍只支持覆盖更新。</span>
-          </div>
           <div className="settings-actions">
             <button type="submit" disabled={updatingQBittorrent}>保存下载器设置</button>
           </div>

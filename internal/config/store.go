@@ -62,15 +62,13 @@ func (s *Store) Path() string {
 	return s.path
 }
 
-func (s *Store) UpdateStash(url string, apiKey *string, libraryPath string) (*Config, error) {
+func (s *Store) UpdateStash(url, apiKey, libraryPath string) (*Config, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
 	s.cfg.Stash.URL = trimGraphQLSuffix(url)
 	s.cfg.Stash.LegacyGraphQLURL = ""
-	if apiKey != nil {
-		s.cfg.Stash.APIKey = *apiKey
-	}
+	s.cfg.Stash.APIKey = apiKey
 	s.cfg.Stash.LibraryPath = libraryPath
 
 	if err := s.updateConfigNode(); err != nil {
@@ -80,14 +78,12 @@ func (s *Store) UpdateStash(url string, apiKey *string, libraryPath string) (*Co
 	return &clone, nil
 }
 
-func (s *Store) UpdateJackett(url string, apiKey *string) (*Config, error) {
+func (s *Store) UpdateJackett(url, apiKey string) (*Config, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
 	s.cfg.Jackett.URL = url
-	if apiKey != nil {
-		s.cfg.Jackett.APIKey = *apiKey
-	}
+	s.cfg.Jackett.APIKey = apiKey
 
 	if err := s.updateConfigNode(); err != nil {
 		return nil, err
@@ -96,15 +92,13 @@ func (s *Store) UpdateJackett(url string, apiKey *string) (*Config, error) {
 	return &clone, nil
 }
 
-func (s *Store) UpdateQBittorrent(url, username string, password *string, defaultSavePath, category, tags string) (*Config, error) {
+func (s *Store) UpdateQBittorrent(url, username, password, defaultSavePath, category, tags string) (*Config, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
 	s.cfg.QBittorrent.URL = url
 	s.cfg.QBittorrent.Username = username
-	if password != nil {
-		s.cfg.QBittorrent.Password = *password
-	}
+	s.cfg.QBittorrent.Password = password
 	s.cfg.QBittorrent.DefaultSavePath = defaultSavePath
 	s.cfg.QBittorrent.Category = category
 	s.cfg.QBittorrent.Tags = tags

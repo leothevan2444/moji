@@ -7,6 +7,7 @@ package graphqlapi
 import (
 	"context"
 	"errors"
+	"strings"
 
 	"github.com/leothevan2444/moji/internal/graphqlapi/model"
 )
@@ -20,7 +21,7 @@ func (r *mutationResolver) UpdateStashSettings(ctx context.Context, input model.
 
 	snapshot, err := r.SettingsEditor.UpdateStashSettings(UpdateStashSettingsInput{
 		URL:         input.URL,
-		APIKey:      input.APIKey,
+		APIKey:      strings.TrimSpace(derefString(input.APIKey)),
 		LibraryPath: input.LibraryPath,
 	})
 	if err != nil {
@@ -39,7 +40,7 @@ func (r *mutationResolver) UpdateJackettSettings(ctx context.Context, input mode
 
 	snapshot, err := r.SettingsEditor.UpdateJackettSettings(UpdateJackettSettingsInput{
 		URL:    input.URL,
-		APIKey: input.APIKey,
+		APIKey: strings.TrimSpace(derefString(input.APIKey)),
 	})
 	if err != nil {
 		return nil, err
@@ -58,7 +59,7 @@ func (r *mutationResolver) UpdateQBittorrentSettings(ctx context.Context, input 
 	snapshot, err := r.SettingsEditor.UpdateQBittorrentSettings(UpdateQBittorrentSettingsInput{
 		URL:             input.URL,
 		Username:        input.Username,
-		Password:        input.Password,
+		Password:        strings.TrimSpace(derefString(input.Password)),
 		DefaultSavePath: input.DefaultSavePath,
 		Category:        input.Category,
 		Tags:            input.Tags,
@@ -68,6 +69,13 @@ func (r *mutationResolver) UpdateQBittorrentSettings(ctx context.Context, input 
 	}
 
 	return settingsSnapshotToModel(snapshot, r.AppVersion), nil
+}
+
+func derefString(raw *string) string {
+	if raw == nil {
+		return ""
+	}
+	return *raw
 }
 
 // UpdateSubscriptionSettings is the resolver for the updateSubscriptionSettings field.

@@ -327,6 +327,7 @@ func buildSettingsSnapshot(cfg *config.Config, version string, qbittorrentEnable
 			Enabled:          stashEnabled,
 			URL:              cfg.Stash.URL,
 			APIKeyConfigured: cfg.Stash.APIKey != "",
+			APIKey:           cfg.Stash.APIKey,
 			LibraryPath:      cfg.Stash.LibraryPath,
 		},
 		Jackett: graphqlapi.JackettSettingsSnapshot{
@@ -334,6 +335,7 @@ func buildSettingsSnapshot(cfg *config.Config, version string, qbittorrentEnable
 			Enabled:          jackettConfigured,
 			URL:              cfg.Jackett.URL,
 			APIKeyConfigured: cfg.Jackett.APIKey != "",
+			APIKey:           cfg.Jackett.APIKey,
 		},
 		QBittorrent: graphqlapi.QBittorrentSettingsSnapshot{
 			Configured:         qbittorrentConfigured,
@@ -342,6 +344,7 @@ func buildSettingsSnapshot(cfg *config.Config, version string, qbittorrentEnable
 			Username:           cfg.QBittorrent.Username,
 			UsernameConfigured: cfg.QBittorrent.Username != "",
 			PasswordConfigured: cfg.QBittorrent.Password != "",
+			Password:           cfg.QBittorrent.Password,
 			DefaultSavePath:    cfg.QBittorrent.DefaultSavePath,
 			Category:           cfg.QBittorrent.Category,
 			Tags:               cfg.QBittorrent.Tags,

@@ -590,7 +590,7 @@ func TestUpdateStashSettingsMutation(t *testing.T) {
 	if editor.stashInput.URL != "http://stash.updated" || editor.stashInput.LibraryPath != "/library/updated" {
 		t.Fatalf("unexpected stash input: %+v", editor.stashInput)
 	}
-	if editor.stashInput.APIKey == nil || *editor.stashInput.APIKey != "secret" {
+	if editor.stashInput.APIKey != "secret" {
 		t.Fatalf("unexpected stash api key: %+v", editor.stashInput.APIKey)
 	}
 	if resp.Data.UpdateStashSettings.Stash.URL != "http://stash.updated" {

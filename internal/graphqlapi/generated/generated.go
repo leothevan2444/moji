@@ -86,6 +86,7 @@ type ComplexityRoot struct {
 	}
 
 	JackettSettings struct {
+		APIKey           func(childComplexity int) int
 		APIKeyConfigured func(childComplexity int) int
 		Configured       func(childComplexity int) int
 		Enabled          func(childComplexity int) int
@@ -145,6 +146,7 @@ type ComplexityRoot struct {
 		Configured         func(childComplexity int) int
 		DefaultSavePath    func(childComplexity int) int
 		Enabled            func(childComplexity int) int
+		Password           func(childComplexity int) int
 		PasswordConfigured func(childComplexity int) int
 		Tags               func(childComplexity int) int
 		URL                func(childComplexity int) int
@@ -216,6 +218,7 @@ type ComplexityRoot struct {
 	}
 
 	StashSettings struct {
+		APIKey           func(childComplexity int) int
 		APIKeyConfigured func(childComplexity int) int
 		Configured       func(childComplexity int) int
 		Enabled          func(childComplexity int) int
@@ -532,6 +535,13 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.JackettSearchResult.TrackerID(childComplexity), true
+
+	case "JackettSettings.apiKey":
+		if e.complexity.JackettSettings.APIKey == nil {
+			break
+		}
+
+		return e.complexity.JackettSettings.APIKey(childComplexity), true
 
 	case "JackettSettings.apiKeyConfigured":
 		if e.complexity.JackettSettings.APIKeyConfigured == nil {
@@ -905,6 +915,13 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.QBittorrentSettings.Enabled(childComplexity), true
+
+	case "QBittorrentSettings.password":
+		if e.complexity.QBittorrentSettings.Password == nil {
+			break
+		}
+
+		return e.complexity.QBittorrentSettings.Password(childComplexity), true
 
 	case "QBittorrentSettings.passwordConfigured":
 		if e.complexity.QBittorrentSettings.PasswordConfigured == nil {
@@ -1285,6 +1302,13 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.StashPerformerConnection.TotalPages(childComplexity), true
+
+	case "StashSettings.apiKey":
+		if e.complexity.StashSettings.APIKey == nil {
+			break
+		}
+
+		return e.complexity.StashSettings.APIKey(childComplexity), true
 
 	case "StashSettings.apiKeyConfigured":
 		if e.complexity.StashSettings.APIKeyConfigured == nil {
@@ -1880,6 +1904,8 @@ type StashSettings {
   enabled: Boolean!
   url: String!
   apiKeyConfigured: Boolean!
+  "Currently configured Stash API key. Returned in plaintext for the settings UI; never logged."
+  apiKey: String!
   libraryPath: String!
 }
 
@@ -1888,6 +1914,8 @@ type JackettSettings {
   enabled: Boolean!
   url: String!
   apiKeyConfigured: Boolean!
+  "Currently configured Jackett API key. Returned in plaintext for the settings UI; never logged."
+  apiKey: String!
 }
 
 type QBittorrentSettings {
@@ -1897,6 +1925,8 @@ type QBittorrentSettings {
   username: String!
   usernameConfigured: Boolean!
   passwordConfigured: Boolean!
+  "Currently configured qBittorrent password. Returned in plaintext for the settings UI; never logged."
+  password: String!
   defaultSavePath: String!
   category: String!
   tags: String!
@@ -4308,6 +4338,50 @@ func (ec *executionContext) fieldContext_JackettSettings_apiKeyConfigured(_ cont
 	return fc, nil
 }
 
+func (ec *executionContext) _JackettSettings_apiKey(ctx context.Context, field graphql.CollectedField, obj *model.JackettSettings) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_JackettSettings_apiKey(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.APIKey, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_JackettSettings_apiKey(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "JackettSettings",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _LogEntry_time(ctx context.Context, field graphql.CollectedField, obj *model.LogEntry) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_LogEntry_time(ctx, field)
 	if err != nil {
@@ -6657,6 +6731,50 @@ func (ec *executionContext) fieldContext_QBittorrentSettings_passwordConfigured(
 	return fc, nil
 }
 
+func (ec *executionContext) _QBittorrentSettings_password(ctx context.Context, field graphql.CollectedField, obj *model.QBittorrentSettings) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_QBittorrentSettings_password(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Password, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_QBittorrentSettings_password(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "QBittorrentSettings",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _QBittorrentSettings_defaultSavePath(ctx context.Context, field graphql.CollectedField, obj *model.QBittorrentSettings) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_QBittorrentSettings_defaultSavePath(ctx, field)
 	if err != nil {
@@ -7785,6 +7903,8 @@ func (ec *executionContext) fieldContext_Settings_stash(_ context.Context, field
 				return ec.fieldContext_StashSettings_url(ctx, field)
 			case "apiKeyConfigured":
 				return ec.fieldContext_StashSettings_apiKeyConfigured(ctx, field)
+			case "apiKey":
+				return ec.fieldContext_StashSettings_apiKey(ctx, field)
 			case "libraryPath":
 				return ec.fieldContext_StashSettings_libraryPath(ctx, field)
 			}
@@ -7841,6 +7961,8 @@ func (ec *executionContext) fieldContext_Settings_jackett(_ context.Context, fie
 				return ec.fieldContext_JackettSettings_url(ctx, field)
 			case "apiKeyConfigured":
 				return ec.fieldContext_JackettSettings_apiKeyConfigured(ctx, field)
+			case "apiKey":
+				return ec.fieldContext_JackettSettings_apiKey(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type JackettSettings", field.Name)
 		},
@@ -7899,6 +8021,8 @@ func (ec *executionContext) fieldContext_Settings_qbittorrent(_ context.Context,
 				return ec.fieldContext_QBittorrentSettings_usernameConfigured(ctx, field)
 			case "passwordConfigured":
 				return ec.fieldContext_QBittorrentSettings_passwordConfigured(ctx, field)
+			case "password":
+				return ec.fieldContext_QBittorrentSettings_password(ctx, field)
 			case "defaultSavePath":
 				return ec.fieldContext_QBittorrentSettings_defaultSavePath(ctx, field)
 			case "category":
@@ -8016,7 +8140,7 @@ func (ec *executionContext) fieldContext_Settings_subscription(_ context.Context
 			case "stashBoxes":
 				return ec.fieldContext_SubscriptionSettings_stashBoxes(ctx, field)
 			case "stashBoxEndpoints":
-				return ec.fieldContext_SubscriptionSettings_selectedStashBoxEndpoints(ctx, field)
+				return ec.fieldContext_SubscriptionSettings_stashBoxEndpoints(ctx, field)
 			case "stashBoxesLoaded":
 				return ec.fieldContext_SubscriptionSettings_stashBoxesLoaded(ctx, field)
 			case "stashBoxesLoadError":
@@ -9450,6 +9574,50 @@ func (ec *executionContext) fieldContext_StashSettings_apiKeyConfigured(_ contex
 	return fc, nil
 }
 
+func (ec *executionContext) _StashSettings_apiKey(ctx context.Context, field graphql.CollectedField, obj *model.StashSettings) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_StashSettings_apiKey(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.APIKey, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_StashSettings_apiKey(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "StashSettings",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _StashSettings_libraryPath(ctx context.Context, field graphql.CollectedField, obj *model.StashSettings) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_StashSettings_libraryPath(ctx, field)
 	if err != nil {
@@ -10400,8 +10568,8 @@ func (ec *executionContext) fieldContext_SubscriptionSettings_stashBoxes(_ conte
 	return fc, nil
 }
 
-func (ec *executionContext) _SubscriptionSettings_selectedStashBoxEndpoints(ctx context.Context, field graphql.CollectedField, obj *model.SubscriptionSettings) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_SubscriptionSettings_selectedStashBoxEndpoints(ctx, field)
+func (ec *executionContext) _SubscriptionSettings_stashBoxEndpoints(ctx context.Context, field graphql.CollectedField, obj *model.SubscriptionSettings) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_SubscriptionSettings_stashBoxEndpoints(ctx, field)
 	if err != nil {
 		return graphql.Null
 	}
@@ -10431,7 +10599,7 @@ func (ec *executionContext) _SubscriptionSettings_selectedStashBoxEndpoints(ctx 
 	return ec.marshalNString2ᚕstringᚄ(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_SubscriptionSettings_selectedStashBoxEndpoints(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_SubscriptionSettings_stashBoxEndpoints(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "SubscriptionSettings",
 		Field:      field,
@@ -14448,6 +14616,11 @@ func (ec *executionContext) _JackettSettings(ctx context.Context, sel ast.Select
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
+		case "apiKey":
+			out.Values[i] = ec._JackettSettings_apiKey(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -14867,6 +15040,11 @@ func (ec *executionContext) _QBittorrentSettings(ctx context.Context, sel ast.Se
 			}
 		case "passwordConfigured":
 			out.Values[i] = ec._QBittorrentSettings_passwordConfigured(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "password":
+			out.Values[i] = ec._QBittorrentSettings_password(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
@@ -15564,6 +15742,11 @@ func (ec *executionContext) _StashSettings(ctx context.Context, sel ast.Selectio
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
+		case "apiKey":
+			out.Values[i] = ec._StashSettings_apiKey(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
 		case "libraryPath":
 			out.Values[i] = ec._StashSettings_libraryPath(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
@@ -15754,7 +15937,7 @@ func (ec *executionContext) _SubscriptionSettings(ctx context.Context, sel ast.S
 				out.Invalids++
 			}
 		case "stashBoxEndpoints":
-			out.Values[i] = ec._SubscriptionSettings_selectedStashBoxEndpoints(ctx, field, obj)
+			out.Values[i] = ec._SubscriptionSettings_stashBoxEndpoints(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
