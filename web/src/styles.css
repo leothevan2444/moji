@@ -1810,23 +1810,6 @@ button.profile-icon:disabled {
   animation: stashbox-spin 0.9s linear infinite;
 }
 
-.stashbox-source__count {
-  font-size: 20px;
-  font-weight: 700;
-  font-variant-numeric: tabular-nums;
-  color: var(--accent);
-  display: inline-flex;
-  align-items: baseline;
-  gap: 2px;
-}
-
-.stashbox-source__count small {
-  font-size: 12px;
-  font-weight: 500;
-  color: var(--muted);
-  margin-left: 2px;
-}
-
 .stashbox-source__list {
   list-style: none;
   margin: 0;
@@ -1970,22 +1953,6 @@ button.profile-icon:disabled {
   cursor: grabbing;
 }
 
-.stashbox-card__priority {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 24px;
-  height: 24px;
-  flex: 0 0 auto;
-  border-radius: 50%;
-  background: rgba(37, 99, 235, 0.12);
-  color: var(--accent);
-  font-size: 12px;
-  font-weight: 700;
-  font-variant-numeric: tabular-nums;
-  padding: 0 6px;
-}
-
 .stashbox-card__body {
   display: grid;
   gap: 4px;
@@ -1993,20 +1960,6 @@ button.profile-icon:disabled {
   flex-grow: 1;
   flex-shrink: 1;
   flex-basis: auto;
-}
-
-.stashbox-card__move {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  flex: 0 0 auto;
-}
-
-.ghost-button--icon {
-  padding: 4px 8px;
-  min-width: 28px;
-}
-  flex: 1 1 auto;
 }
 
 .stashbox-card__title-row {
@@ -2093,11 +2046,6 @@ button.profile-icon:disabled {
 
 [data-theme="dark"] .stashbox-card__handle:hover {
   background: rgba(96, 165, 250, 0.16);
-}
-
-[data-theme="dark"] .stashbox-card__priority {
-  background: rgba(96, 165, 250, 0.18);
-  color: rgb(147, 197, 253);
 }
 
 [data-theme="dark"] .stashbox-card:focus-within {

@@ -571,16 +571,16 @@ export function SettingsPanel({
     // recomputed every render and never sent to the backend.
     const order = subscriptionForm.stashBoxEndpoints;
     const byEndpoint = new Map(stashBoxes.map((box) => [box.endpoint, box]));
-    const display: { box: typeof stashBoxes[number] | null; endpoint: string; priority: number }[] = [];
+    const display: { box: typeof stashBoxes[number] | null; endpoint: string }[] = [];
     const used = new Set<string>();
-    order.forEach((endpoint, index) => {
+    order.forEach((endpoint) => {
       const box = byEndpoint.get(endpoint) ?? null;
-      display.push({ box, endpoint, priority: index + 1 });
+      display.push({ box, endpoint });
       used.add(endpoint);
     });
     stashBoxes.forEach((box) => {
       if (used.has(box.endpoint)) return;
-      display.push({ box, endpoint: box.endpoint, priority: display.length + 1 });
+      display.push({ box, endpoint: box.endpoint });
     });
 
     const reorder = (next: string[]) => {
@@ -595,7 +595,6 @@ export function SettingsPanel({
     };
     const moveUp = (index: number) => move(index, index - 1);
     const moveDown = (index: number) => move(index, index + 1);
-    const resetOrder = () => reorder(stashBoxes.map((box) => box.endpoint));
 
     const onDragStart = (event: React.DragEvent<HTMLLIElement>, index: number) => {
       event.dataTransfer.effectAllowed = "move";
@@ -669,19 +668,6 @@ export function SettingsPanel({
                 </p>
               </div>
               <div className="stashbox-source__stats">
-                {loaded && stashBoxes.length > 0 ? (
-                  <>
-                    <span className="stashbox-source__count">{stashBoxes.length}<small> 个端点</small></span>
-                    <button
-                      type="button"
-                      className="ghost-button"
-                      onClick={resetOrder}
-                      title="恢复 Stash 中配置的顺序"
-                    >
-                      重置顺序
-                    </button>
-                  </>
-                ) : null}
                 <button
                   type="button"
                   className="ghost-button stashbox-source__refresh"
@@ -739,9 +725,6 @@ export function SettingsPanel({
                     >
                       <span className="stashbox-card__handle" aria-hidden="true" title="拖动以重新排序">
                         <FontAwesomeIcon icon={faGripVertical} />
-                      </span>
-                      <span className="stashbox-card__priority" aria-label={`优先级 ${item.priority}`}>
-                        {item.priority}
                       </span>
                       <span className="stashbox-card__body">
                         <span className="stashbox-card__title-row">
