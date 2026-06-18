@@ -53,7 +53,7 @@ query DashboardDocument {
         endpoint
         apiKeyConfigured
       }
-      selectedStashBoxEndpoints
+      stashBoxEndpoints
       stashBoxesLoaded
       stashBoxesLoadError
     }

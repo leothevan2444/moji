@@ -47,10 +47,10 @@ type TaskConfig struct {
 }
 
 type SubscriptionConfig struct {
-	Store                     string   `yaml:"store"`
-	DBPath                    string   `yaml:"db_path"`
-	PollIntervalSeconds       int      `yaml:"poll_interval_seconds"`
-	SelectedStashBoxEndpoints []string `yaml:"selected_stash_box_endpoints"`
+	Store               string   `yaml:"store"`
+	DBPath              string   `yaml:"db_path"`
+	PollIntervalSeconds int      `yaml:"poll_interval_seconds"`
+	StashBoxEndpoints   []string `yaml:"selected_stash_box_endpoints"`
 }
 
 type LoggingConfig struct {

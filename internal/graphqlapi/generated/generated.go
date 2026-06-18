@@ -245,14 +245,14 @@ type ComplexityRoot struct {
 	}
 
 	SubscriptionSettings struct {
-		DbPath                    func(childComplexity int) int
-		PollEnabled               func(childComplexity int) int
-		PollIntervalSeconds       func(childComplexity int) int
-		SelectedStashBoxEndpoints func(childComplexity int) int
-		StashBoxes                func(childComplexity int) int
-		StashBoxesLoadError       func(childComplexity int) int
-		StashBoxesLoaded          func(childComplexity int) int
-		Store                     func(childComplexity int) int
+		DbPath              func(childComplexity int) int
+		PollEnabled         func(childComplexity int) int
+		PollIntervalSeconds func(childComplexity int) int
+		StashBoxEndpoints   func(childComplexity int) int
+		StashBoxes          func(childComplexity int) int
+		StashBoxesLoadError func(childComplexity int) int
+		StashBoxesLoaded    func(childComplexity int) int
+		Store               func(childComplexity int) int
 	}
 
 	SystemSettings struct {
@@ -1447,12 +1447,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.SubscriptionSettings.PollIntervalSeconds(childComplexity), true
 
-	case "SubscriptionSettings.selectedStashBoxEndpoints":
-		if e.complexity.SubscriptionSettings.SelectedStashBoxEndpoints == nil {
+	case "SubscriptionSettings.stashBoxEndpoints":
+		if e.complexity.SubscriptionSettings.StashBoxEndpoints == nil {
 			break
 		}
 
-		return e.complexity.SubscriptionSettings.SelectedStashBoxEndpoints(childComplexity), true
+		return e.complexity.SubscriptionSettings.StashBoxEndpoints(childComplexity), true
 
 	case "SubscriptionSettings.stashBoxes":
 		if e.complexity.SubscriptionSettings.StashBoxes == nil {
@@ -1916,8 +1916,8 @@ type SubscriptionSettings {
   pollEnabled: Boolean!
   "Stash Box instances currently configured inside the Stash server."
   stashBoxes: [StashBoxEndpoint!]!
-  "Endpoints the user has selected for subscription lookups. Empty = use every configured Stash Box."
-  selectedStashBoxEndpoints: [String!]!
+  "Endpoint URLs in the user-defined order used for subscription lookups. Endpoints not listed here are still queried, in their Stash order, appended after the listed ones. An empty list means use Stash's order as-is."
+  stashBoxEndpoints: [String!]!
   "Whether the last attempt to load Stash Box endpoints from Stash succeeded."
   stashBoxesLoaded: Boolean!
   "Reason for the most recent Stash Box load failure. Null when stashBoxesLoaded is true."
@@ -1966,8 +1966,8 @@ input UpdateSubscriptionSettingsInput {
   store: String!
   dbPath: String!
   pollIntervalSeconds: Int!
-  "Endpoints selected for subscription lookups. Empty = use every configured Stash Box."
-  selectedStashBoxEndpoints: [String!]!
+  "See SubscriptionSettings.stashBoxEndpoints."
+  stashBoxEndpoints: [String!]!
 }
 
 input UpdateLoggingSettingsInput {
@@ -8015,7 +8015,7 @@ func (ec *executionContext) fieldContext_Settings_subscription(_ context.Context
 				return ec.fieldContext_SubscriptionSettings_pollEnabled(ctx, field)
 			case "stashBoxes":
 				return ec.fieldContext_SubscriptionSettings_stashBoxes(ctx, field)
-			case "selectedStashBoxEndpoints":
+			case "stashBoxEndpoints":
 				return ec.fieldContext_SubscriptionSettings_selectedStashBoxEndpoints(ctx, field)
 			case "stashBoxesLoaded":
 				return ec.fieldContext_SubscriptionSettings_stashBoxesLoaded(ctx, field)
@@ -10414,7 +10414,7 @@ func (ec *executionContext) _SubscriptionSettings_selectedStashBoxEndpoints(ctx 
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
 		ctx = rctx // use context from middleware stack in children
-		return obj.SelectedStashBoxEndpoints, nil
+		return obj.StashBoxEndpoints, nil
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -14097,7 +14097,7 @@ func (ec *executionContext) unmarshalInputUpdateSubscriptionSettingsInput(ctx co
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"store", "dbPath", "pollIntervalSeconds", "selectedStashBoxEndpoints"}
+	fieldsInOrder := [...]string{"store", "dbPath", "pollIntervalSeconds", "stashBoxEndpoints"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -14125,13 +14125,13 @@ func (ec *executionContext) unmarshalInputUpdateSubscriptionSettingsInput(ctx co
 				return it, err
 			}
 			it.PollIntervalSeconds = data
-		case "selectedStashBoxEndpoints":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("selectedStashBoxEndpoints"))
+		case "stashBoxEndpoints":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("stashBoxEndpoints"))
 			data, err := ec.unmarshalNString2ᚕstringᚄ(ctx, v)
 			if err != nil {
 				return it, err
 			}
-			it.SelectedStashBoxEndpoints = data
+			it.StashBoxEndpoints = data
 		}
 	}
 
@@ -15753,7 +15753,7 @@ func (ec *executionContext) _SubscriptionSettings(ctx context.Context, sel ast.S
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
-		case "selectedStashBoxEndpoints":
+		case "stashBoxEndpoints":
 			out.Values[i] = ec._SubscriptionSettings_selectedStashBoxEndpoints(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++

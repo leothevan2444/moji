@@ -130,6 +130,7 @@ func newHTTPRuntime(cfg *config.Config, version string, configStore *config.Stor
 	stashClient := configureStashClient(cfg)
 	stashService := configureStashService(cfg, stashClient)
 	subscriptionService := configureSubscription(cfg, stashClient, downloaderService)
+	applySubscriptionOrder(cfg, subscriptionService)
 	resolver := graphqlapi.NewResolver(jackettTracker, torrentClient, downloaderService, stashService, version)
 	resolver.Subscription = subscriptionService
 	resolver.LogReader = logging.Default()
@@ -234,16 +235,25 @@ func configureProgressSyncInterval(cfg *config.Config) time.Duration {
 	return time.Duration(seconds) * time.Second
 }
 
+func applySubscriptionOrder(cfg *config.Config, service graphqlapi.SubscriptionService) {
+	if service == nil || cfg == nil {
+		return
+	}
+	if concrete, ok := service.(*subscription.Service); ok {
+		concrete.SetEndpointOrder(cfg.Subscription.StashBoxEndpoints)
+	}
+}
+
 func buildSubscriptionSnapshot(cfg *config.Config, subscriptionService graphqlapi.SubscriptionService, store, dbPath string, pollIntervalSeconds int, pollEnabled bool) graphqlapi.SubscriptionSettingsSnapshot {
 	out := graphqlapi.SubscriptionSettingsSnapshot{
-		Store:                     store,
-		DBPath:                    dbPath,
-		PollIntervalSeconds:       pollIntervalSeconds,
-		PollEnabled:               pollEnabled,
-		StashBoxes:                []graphqlapi.StashBoxEndpointSnapshot{},
-		SelectedStashBoxEndpoints: append([]string(nil), cfg.Subscription.SelectedStashBoxEndpoints...),
-		StashBoxesLoaded:          false,
-		StashBoxesLoadError:       "",
+		Store:               store,
+		DBPath:              dbPath,
+		PollIntervalSeconds: pollIntervalSeconds,
+		PollEnabled:         pollEnabled,
+		StashBoxes:          []graphqlapi.StashBoxEndpointSnapshot{},
+		StashBoxEndpoints:   append([]string(nil), cfg.Subscription.StashBoxEndpoints...),
+		StashBoxesLoaded:    false,
+		StashBoxesLoadError: "",
 	}
 	if subscriptionService == nil {
 		return out

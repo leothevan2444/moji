@@ -44,6 +44,9 @@ type Service struct {
 	loadMu       sync.RWMutex
 	loaded       bool
 	loadErrorMsg string
+
+	orderMu       sync.RWMutex
+	endpointOrder []string
 }
 
 func NewService(stash StashClient, stashbox *stashboxRegistry, downloader Downloader, store Store) (*Service, error) {
@@ -368,9 +371,10 @@ func (s *Service) resolveStashboxPerformer(ctx context.Context, performer *stash
 		}, nil
 	}
 
-	// 2. Fall back to name search across every configured endpoint.
+	// 2. Fall back to name search across every configured endpoint, in the
+	//    user-defined priority order (registry order as fallback).
 	normalizedTargets := normalizedTargetNames(performer.Name, performer.AliasList)
-	for _, box := range s.stashbox.Endpoints() {
+	for _, box := range s.orderedEndpoints() {
 		client, ok := s.stashbox.Get(box.Endpoint)
 		if !ok {
 			continue
@@ -440,6 +444,78 @@ func (s *Service) SnapshotState() (endpoints []StashBoxEndpoint, state LoadState
 	state = LoadState{Loaded: s.loaded, ErrorMsg: s.loadErrorMsg}
 	s.loadMu.RUnlock()
 	return s.stashbox.Endpoints(), state
+}
+
+// SetEndpointOrder records the user's preferred Stash-Box lookup order.
+// The order is the priority queue consumed by resolveStashboxPerformer's
+// name-search branch. Endpoints present in the registry but missing from
+// `order` are queried after the listed ones (in registry order). An empty
+// `order` falls back to the registry order entirely.
+func (s *Service) SetEndpointOrder(order []string) {
+	if s == nil {
+		return
+	}
+	cleaned := make([]string, 0, len(order))
+	seen := make(map[string]struct{}, len(order))
+	for _, ep := range order {
+		ep = strings.TrimSpace(ep)
+		if ep == "" {
+			continue
+		}
+		key := normalizeStashBoxEndpoint(ep)
+		if _, dup := seen[key]; dup {
+			continue
+		}
+		seen[key] = struct{}{}
+		cleaned = append(cleaned, key)
+	}
+	s.orderMu.Lock()
+	s.endpointOrder = cleaned
+	s.orderMu.Unlock()
+}
+
+// orderedEndpoints merges the user-defined order with the registry order:
+// endpoints present in the user list come first (in user order), endpoints
+// missing from the user list are appended (in registry order). When the
+// user list is empty the registry order is returned unchanged.
+func (s *Service) orderedEndpoints() []StashBoxEndpoint {
+	if s == nil || s.stashbox == nil {
+		return nil
+	}
+	registry := s.stashbox.Endpoints()
+	s.orderMu.RLock()
+	userOrder := append([]string(nil), s.endpointOrder...)
+	s.orderMu.RUnlock()
+
+	if len(userOrder) == 0 {
+		return registry
+	}
+	byKey := make(map[string]StashBoxEndpoint, len(registry))
+	for _, box := range registry {
+		byKey[normalizeStashBoxEndpoint(box.Endpoint)] = box
+	}
+	out := make([]StashBoxEndpoint, 0, len(registry))
+	seen := make(map[string]struct{}, len(registry))
+	for _, key := range userOrder {
+		box, ok := byKey[key]
+		if !ok {
+			continue
+		}
+		if _, dup := seen[key]; dup {
+			continue
+		}
+		out = append(out, box)
+		seen[key] = struct{}{}
+	}
+	for _, box := range registry {
+		key := normalizeStashBoxEndpoint(box.Endpoint)
+		if _, dup := seen[key]; dup {
+			continue
+		}
+		out = append(out, box)
+		seen[key] = struct{}{}
+	}
+	return out
 }
 
 func normalizedTargetNames(name string, aliases []string) map[string]struct{} {

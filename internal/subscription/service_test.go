@@ -341,3 +341,145 @@ func TestRefreshWithEmptyRegistrySurfacesError(t *testing.T) {
 }
 
 func stringPtr(s string) *string { return &s }
+
+func TestOrderedEndpointsMergesUserAndRegistry(t *testing.T) {
+	endpointA := "https://stashbox-a.example.org/graphql"
+	endpointB := "https://stashbox-b.example.org/graphql"
+	endpointC := "https://stashbox-c.example.org/graphql"
+	endpointD := "https://stashbox-d.example.org/graphql"
+
+	registry := newStashboxRegistry(stubFactory{client: &fakeStashboxClient{}})
+	registry.Replace([]stash.StashBoxEndpoint{
+		{Name: "A", Endpoint: endpointA, APIKey: "k"},
+		{Name: "B", Endpoint: endpointB, APIKey: "k"},
+		{Name: "C", Endpoint: endpointC, APIKey: "k"},
+		{Name: "D", Endpoint: endpointD, APIKey: "k"},
+	})
+
+	service, err := NewService(&fakeStashClient{}, registry, nil, NewMemoryStore())
+	if err != nil {
+		t.Fatalf("NewService failed: %v", err)
+	}
+
+	service.SetEndpointOrder([]string{endpointC, endpointA})
+
+	got := service.orderedEndpoints()
+	want := []string{endpointC, endpointA, endpointB, endpointD}
+	if len(got) != len(want) {
+		t.Fatalf("expected %d endpoints, got %d: %+v", len(want), len(got), got)
+	}
+	for i, ep := range want {
+		if got[i].Endpoint != ep {
+			t.Fatalf("position %d: want %q, got %q", i, ep, got[i].Endpoint)
+		}
+	}
+}
+
+func TestOrderedEndpointsDropsUnknown(t *testing.T) {
+	endpointA := "https://stashbox-a.example.org/graphql"
+	endpointB := "https://stashbox-b.example.org/graphql"
+	endpointC := "https://stashbox-c.example.org/graphql"
+
+	registry := newStashboxRegistry(stubFactory{client: &fakeStashboxClient{}})
+	registry.Replace([]stash.StashBoxEndpoint{
+		{Name: "A", Endpoint: endpointA, APIKey: "k"},
+		{Name: "B", Endpoint: endpointB, APIKey: "k"},
+		{Name: "C", Endpoint: endpointC, APIKey: "k"},
+	})
+
+	service, err := NewService(&fakeStashClient{}, registry, nil, NewMemoryStore())
+	if err != nil {
+		t.Fatalf("NewService failed: %v", err)
+	}
+
+	service.SetEndpointOrder([]string{endpointA, "https://removed.example.org/graphql", endpointB})
+
+	got := service.orderedEndpoints()
+	want := []string{endpointA, endpointB, endpointC}
+	if len(got) != len(want) {
+		t.Fatalf("expected %d endpoints, got %d: %+v", len(want), len(got), got)
+	}
+	for i, ep := range want {
+		if got[i].Endpoint != ep {
+			t.Fatalf("position %d: want %q, got %q", i, ep, got[i].Endpoint)
+		}
+	}
+}
+
+func TestOrderedEndpointsEmptyUserFallsBackToRegistry(t *testing.T) {
+	endpointA := "https://stashbox-a.example.org/graphql"
+	endpointB := "https://stashbox-b.example.org/graphql"
+	endpointC := "https://stashbox-c.example.org/graphql"
+
+	registry := newStashboxRegistry(stubFactory{client: &fakeStashboxClient{}})
+	registry.Replace([]stash.StashBoxEndpoint{
+		{Name: "A", Endpoint: endpointA, APIKey: "k"},
+		{Name: "B", Endpoint: endpointB, APIKey: "k"},
+		{Name: "C", Endpoint: endpointC, APIKey: "k"},
+	})
+
+	service, err := NewService(&fakeStashClient{}, registry, nil, NewMemoryStore())
+	if err != nil {
+		t.Fatalf("NewService failed: %v", err)
+	}
+
+	got := service.orderedEndpoints()
+	if len(got) != 3 {
+		t.Fatalf("expected 3 endpoints, got %d", len(got))
+	}
+	if got[0].Endpoint != endpointA || got[1].Endpoint != endpointB || got[2].Endpoint != endpointC {
+		t.Fatalf("registry order not preserved: %+v", got)
+	}
+}
+
+func TestResolveStashboxPerformerFollowsUserOrder(t *testing.T) {
+	endpointA := "https://stashbox-a.example.org/graphql"
+	endpointB := "https://stashbox-b.example.org/graphql"
+
+	clientA := &fakeStashboxClient{
+		performer: &stashboxgraphql.PerformerFragment{ID: "a-1", Name: "Shared Performer"},
+	}
+	clientB := &fakeStashboxClient{
+		performer: &stashboxgraphql.PerformerFragment{ID: "b-1", Name: "Shared Performer"},
+	}
+
+	registry := newStashboxRegistry(perEndpointFactory{
+		clients: map[string]StashboxClient{
+			normalizeStashBoxEndpoint(endpointA): clientA,
+			normalizeStashBoxEndpoint(endpointB): clientB,
+		},
+	})
+	registry.Replace([]stash.StashBoxEndpoint{
+		{Name: "A", Endpoint: endpointA, APIKey: "k"},
+		{Name: "B", Endpoint: endpointB, APIKey: "k"},
+	})
+
+	stashClient := &fakeStashClient{
+		performers: map[string]*stashgraphql.PerformerFragment{
+			"p1": {
+				ID:           "p1",
+				Name:         "Shared Performer",
+				CustomFields: map[string]any{DefaultCustomFieldKey: true},
+			},
+		},
+	}
+
+	service, err := NewService(stashClient, registry, nil, NewMemoryStore())
+	if err != nil {
+		t.Fatalf("NewService failed: %v", err)
+	}
+
+	// User places B before A — the first hit must be B.
+	service.SetEndpointOrder([]string{endpointB, endpointA})
+
+	target, err := service.resolveStashboxPerformer(context.Background(), stashClient.performers["p1"])
+	if err != nil {
+		t.Fatalf("resolveStashboxPerformer failed: %v", err)
+	}
+	if target == nil {
+		t.Fatalf("expected a target, got nil")
+	}
+	if target.Endpoint != endpointB {
+		t.Fatalf("expected endpoint %q, got %q", endpointB, target.Endpoint)
+	}
+}

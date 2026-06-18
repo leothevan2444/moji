@@ -131,7 +131,7 @@ func (s *Store) UpdateSubscription(store, dbPath string, pollIntervalSeconds int
 		}
 		cleaned = append(cleaned, endpoint)
 	}
-	s.cfg.Subscription.SelectedStashBoxEndpoints = cleaned
+	s.cfg.Subscription.StashBoxEndpoints = cleaned
 
 	if err := s.updateConfigNode(); err != nil {
 		return nil, err
@@ -189,7 +189,7 @@ func (s *Store) updateConfigNode() error {
 		"db_path": s.cfg.Subscription.DBPath,
 	})
 	setIntScalar(mapValue(top, "subscription"), "poll_interval_seconds", s.cfg.Subscription.PollIntervalSeconds)
-	setStringList(mapValue(top, "subscription"), "selected_stash_box_endpoints", s.cfg.Subscription.SelectedStashBoxEndpoints)
+	setStringList(mapValue(top, "subscription"), "selected_stash_box_endpoints", s.cfg.Subscription.StashBoxEndpoints)
 	setMapString(top, "logging", map[string]string{
 		"level":     s.cfg.Logging.Level,
 		"file_path": s.cfg.Logging.FilePath,

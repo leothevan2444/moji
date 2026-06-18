@@ -1,7 +1,12 @@
 import { FormEvent, useEffect, useState } from "react";
 import { useMutation, useQuery } from "urql";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faRotate } from "@fortawesome/free-solid-svg-icons";
+import {
+  faArrowDown,
+  faArrowUp,
+  faGripVertical,
+  faRotate
+} from "@fortawesome/free-solid-svg-icons";
 import {
   LogLevel,
   LogsDocumentDocument,
@@ -59,6 +64,8 @@ export function SettingsPanel({
 }: SettingsPanelProps) {
   const [logsLevel, setLogsLevel] = useState<LogLevel>(LogLevel.Info);
   const [downloadingLogFile, setDownloadingLogFile] = useState(false);
+  const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
+  const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
 
   const [stashForm, setStashForm] = useState(EMPTY_STASH_FORM);
   const [jackettForm, setJackettForm] = useState(EMPTY_JACKETT_FORM);
@@ -138,7 +145,7 @@ export function SettingsPanel({
       store: runtimeSettings.subscription.store || "sqlite",
       dbPath: runtimeSettings.subscription.dbPath || "",
       pollIntervalSeconds: String(runtimeSettings.subscription.pollIntervalSeconds || 3600),
-      selectedStashBoxEndpoints: [...(runtimeSettings.subscription.selectedStashBoxEndpoints ?? [])]
+      stashBoxEndpoints: [...(runtimeSettings.subscription.stashBoxEndpoints ?? [])]
     });
     setLoggingForm({
       level: runtimeSettings.logging.level || "info",
@@ -262,7 +269,7 @@ export function SettingsPanel({
         store: subscriptionForm.store.trim() || "sqlite",
         dbPath: subscriptionForm.dbPath.trim(),
         pollIntervalSeconds: normalizedPollIntervalSeconds,
-        selectedStashBoxEndpoints: subscriptionForm.selectedStashBoxEndpoints
+        stashBoxEndpoints: subscriptionForm.stashBoxEndpoints
       }
     });
     if (result.error) {
@@ -554,28 +561,70 @@ export function SettingsPanel({
 
   if (settingsTab === "订阅") {
     const stashBoxes = runtimeSettings.subscription.stashBoxes ?? [];
-    const selected = subscriptionForm.selectedStashBoxEndpoints;
     const loaded = runtimeSettings.subscription.stashBoxesLoaded;
     const loadError = runtimeSettings.subscription.stashBoxesLoadError;
 
-    const toggleStashBox = (endpoint: string, checked: boolean) => {
-      setSubscriptionForm((current) => {
-        const set = new Set(current.selectedStashBoxEndpoints);
-        if (checked) {
-          set.add(endpoint);
-        } else {
-          set.delete(endpoint);
-        }
-        return { ...current, selectedStashBoxEndpoints: Array.from(set) };
-      });
+    // Build the display list:
+    //   - entries in subscriptionForm.stashBoxEndpoints come first (user order)
+    //   - any Stash-Box not yet listed is appended (in Stash order)
+    // The user's order is preserved across saves; the appended tail is
+    // recomputed every render and never sent to the backend.
+    const order = subscriptionForm.stashBoxEndpoints;
+    const byEndpoint = new Map(stashBoxes.map((box) => [box.endpoint, box]));
+    const display: { box: typeof stashBoxes[number] | null; endpoint: string; priority: number }[] = [];
+    const used = new Set<string>();
+    order.forEach((endpoint, index) => {
+      const box = byEndpoint.get(endpoint) ?? null;
+      display.push({ box, endpoint, priority: index + 1 });
+      used.add(endpoint);
+    });
+    stashBoxes.forEach((box) => {
+      if (used.has(box.endpoint)) return;
+      display.push({ box, endpoint: box.endpoint, priority: display.length + 1 });
+    });
+
+    const reorder = (next: string[]) => {
+      setSubscriptionForm((current) => ({ ...current, stashBoxEndpoints: next }));
     };
-    const setSelection = (endpoints: string[]) => {
-      setSubscriptionForm((current) => ({ ...current, selectedStashBoxEndpoints: endpoints }));
+    const move = (from: number, to: number) => {
+      if (from === to || from < 0 || to < 0 || from >= display.length || to >= display.length) return;
+      const next = display.map((item) => item.endpoint);
+      const [moved] = next.splice(from, 1);
+      next.splice(to, 0, moved);
+      reorder(next);
     };
-    const allEndpoints = stashBoxes.map((box) => box.endpoint);
-    const allSelected = allEndpoints.length > 0 && selected.length === allEndpoints.length;
-    const toggleAll = () => {
-      setSelection(allSelected ? [] : allEndpoints);
+    const moveUp = (index: number) => move(index, index - 1);
+    const moveDown = (index: number) => move(index, index + 1);
+    const resetOrder = () => reorder(stashBoxes.map((box) => box.endpoint));
+
+    const onDragStart = (event: React.DragEvent<HTMLLIElement>, index: number) => {
+      event.dataTransfer.effectAllowed = "move";
+      event.dataTransfer.setData("text/plain", String(index));
+      setDraggedIndex(index);
+    };
+    const onDragOver = (event: React.DragEvent<HTMLLIElement>, index: number) => {
+      event.preventDefault();
+      event.dataTransfer.dropEffect = "move";
+      if (dragOverIndex !== index) {
+        setDragOverIndex(index);
+      }
+    };
+    const onDragLeave = (index: number) => {
+      if (dragOverIndex === index) {
+        setDragOverIndex(null);
+      }
+    };
+    const onDrop = (event: React.DragEvent<HTMLLIElement>, index: number) => {
+      event.preventDefault();
+      const from = Number.parseInt(event.dataTransfer.getData("text/plain"), 10);
+      setDraggedIndex(null);
+      setDragOverIndex(null);
+      if (Number.isNaN(from)) return;
+      move(from, index);
+    };
+    const onDragEnd = () => {
+      setDraggedIndex(null);
+      setDragOverIndex(null);
     };
 
     return (
@@ -616,20 +665,20 @@ export function SettingsPanel({
               <div>
                 <h4>Stash-Box 数据源</h4>
                 <p className="stashbox-source__sub">
-                  在 Stash → 设置 → 元数据提供者 → Stash-box 中配置后会出现在这里。
+                  在 Stash → 设置 → 元数据提供者 → Stash-box 中配置后会出现在这里。所有端点都会参与订阅查询，拖动以调整查询优先级。
                 </p>
               </div>
               <div className="stashbox-source__stats">
                 {loaded && stashBoxes.length > 0 ? (
                   <>
-                    <span className="stashbox-source__count">{selected.length}<small> / {stashBoxes.length}</small></span>
+                    <span className="stashbox-source__count">{stashBoxes.length}<small> 个端点</small></span>
                     <button
                       type="button"
                       className="ghost-button"
-                      onClick={toggleAll}
-                      disabled={allEndpoints.length === 0}
+                      onClick={resetOrder}
+                      title="恢复 Stash 中配置的顺序"
                     >
-                      {allSelected ? "全部取消" : "全部选择"}
+                      重置顺序
                     </button>
                   </>
                 ) : null}
@@ -670,31 +719,67 @@ export function SettingsPanel({
               </div>
             ) : (
               <ul className="stashbox-source__list">
-                {stashBoxes.map((box) => {
-                  const checked = selected.includes(box.endpoint);
+                {display.map((item, index) => {
+                  const classes = ["stashbox-card"];
+                  if (draggedIndex === index) classes.push("is-dragging");
+                  if (dragOverIndex === index) {
+                    classes.push(dragOverIndex < (draggedIndex ?? -1) ? "is-drop-top" : "is-drop-bottom");
+                  }
+                  const box = item.box;
                   return (
-                    <li key={box.endpoint}>
-                      <label className={`stashbox-card${checked ? " is-selected" : ""}`}>
-                        <input
-                          type="checkbox"
-                          className="stashbox-card__checkbox"
-                          checked={checked}
-                          onChange={(event) => toggleStashBox(box.endpoint, event.target.checked)}
-                        />
-                        <span className="stashbox-card__body">
-                          <span className="stashbox-card__title-row">
-                            <strong className="stashbox-card__name">{box.name || "(未命名)"}</strong>
-                            <span
-                              className={`stashbox-card__chip ${
-                                box.apiKeyConfigured ? "stashbox-card__chip--ok" : "stashbox-card__chip--warn"
-                              }`}
-                            >
-                              {box.apiKeyConfigured ? "API key 已配置" : "未配置 API key"}
-                            </span>
+                    <li
+                      key={item.endpoint}
+                      className={classes.join(" ")}
+                      draggable
+                      onDragStart={(event) => onDragStart(event, index)}
+                      onDragOver={(event) => onDragOver(event, index)}
+                      onDragLeave={() => onDragLeave(index)}
+                      onDrop={(event) => onDrop(event, index)}
+                      onDragEnd={onDragEnd}
+                    >
+                      <span className="stashbox-card__handle" aria-hidden="true" title="拖动以重新排序">
+                        <FontAwesomeIcon icon={faGripVertical} />
+                      </span>
+                      <span className="stashbox-card__priority" aria-label={`优先级 ${item.priority}`}>
+                        {item.priority}
+                      </span>
+                      <span className="stashbox-card__body">
+                        <span className="stashbox-card__title-row">
+                          <strong className="stashbox-card__name">
+                            {box?.name || item.endpoint}
+                          </strong>
+                          <span
+                            className={`stashbox-card__chip ${
+                              box?.apiKeyConfigured ? "stashbox-card__chip--ok" : "stashbox-card__chip--warn"
+                            }`}
+                          >
+                            {box?.apiKeyConfigured ? "API key 已配置" : "未配置 API key"}
                           </span>
-                          <code className="stashbox-card__endpoint">{box.endpoint}</code>
                         </span>
-                      </label>
+                        <code className="stashbox-card__endpoint">{item.endpoint}</code>
+                      </span>
+                      <span className="stashbox-card__move">
+                        <button
+                          type="button"
+                          className="ghost-button ghost-button--icon"
+                          onClick={() => moveUp(index)}
+                          disabled={index === 0}
+                          aria-label={`将 ${item.endpoint} 上移`}
+                          title="上移"
+                        >
+                          <FontAwesomeIcon icon={faArrowUp} />
+                        </button>
+                        <button
+                          type="button"
+                          className="ghost-button ghost-button--icon"
+                          onClick={() => moveDown(index)}
+                          disabled={index === display.length - 1}
+                          aria-label={`将 ${item.endpoint} 下移`}
+                          title="下移"
+                        >
+                          <FontAwesomeIcon icon={faArrowDown} />
+                        </button>
+                      </span>
                     </li>
                   );
                 })}
@@ -703,9 +788,7 @@ export function SettingsPanel({
 
             {loaded && stashBoxes.length > 0 ? (
               <footer className="stashbox-source__foot">
-                {selected.length === 0
-                  ? "未勾选任何端点，订阅将使用全部可用 Stash-Box。"
-                  : `已选 ${selected.length} / ${stashBoxes.length} 个端点。`}
+                顶部为最高优先级；subscription service 会按此顺序逐个 Stash-Box 查找 performer。
               </footer>
             ) : null}
           </section>
@@ -717,7 +800,7 @@ export function SettingsPanel({
           <div className="settings-actions">
             <button
               type="submit"
-              disabled={updatingSubscription || !loaded}
+              disabled={updatingSubscription || !runtimeSettings.subscription.stashBoxesLoaded || stashBoxes.length === 0}
             >
               保存订阅设置
             </button>

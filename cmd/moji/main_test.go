@@ -94,7 +94,7 @@ func TestHTTPHandlerServesSettingsSnapshot(t *testing.T) {
 			qbittorrent { configured enabled url usernameConfigured passwordConfigured defaultSavePath }
 			stash { configured enabled url apiKeyConfigured libraryPath }
 			tasks { store dbPath progressSyncIntervalSeconds progressSyncEnabled }
-			subscription { store dbPath pollIntervalSeconds pollEnabled stashBoxes { name endpoint apiKeyConfigured } selectedStashBoxEndpoints stashBoxesLoaded }
+			subscription { store dbPath pollIntervalSeconds pollEnabled stashBoxes { name endpoint apiKeyConfigured } stashBoxEndpoints stashBoxesLoaded }
 			logging { level filePath maxEntries maxFileSizeBytes maxFileBackups }
 			system { appVersion }
 		}
@@ -111,7 +111,7 @@ func TestHTTPHandlerServesSettingsSnapshot(t *testing.T) {
 	if resp.Data.Settings.Subscription.Store != "sqlite" || !resp.Data.Settings.Subscription.PollEnabled {
 		t.Fatalf("unexpected subscription settings: %+v", resp.Data.Settings.Subscription)
 	}
-	if len(resp.Data.Settings.Subscription.StashBoxes) != 0 || len(resp.Data.Settings.Subscription.SelectedStashBoxEndpoints) != 0 {
+	if len(resp.Data.Settings.Subscription.StashBoxes) != 0 || len(resp.Data.Settings.Subscription.StashBoxEndpoints) != 0 {
 		t.Fatalf("expected empty stash box selection in snapshot, got %+v", resp.Data.Settings.Subscription)
 	}
 	if resp.Data.Settings.Logging.Level != "info" || resp.Data.Settings.Logging.MaxEntries != 500 {
@@ -196,7 +196,7 @@ func TestBuildSettingsSnapshotNormalizesDefaults(t *testing.T) {
 	if snapshot.Subscription.Store != "sqlite" || snapshot.Subscription.DBPath != "moji.db" || snapshot.Subscription.PollIntervalSeconds != 3600 || snapshot.Subscription.PollEnabled {
 		t.Fatalf("unexpected subscription snapshot: %+v", snapshot.Subscription)
 	}
-	if len(snapshot.Subscription.StashBoxes) != 0 || len(snapshot.Subscription.SelectedStashBoxEndpoints) != 0 {
+	if len(snapshot.Subscription.StashBoxes) != 0 || len(snapshot.Subscription.StashBoxEndpoints) != 0 {
 		t.Fatalf("expected empty stash box selection in default snapshot, got %+v", snapshot.Subscription)
 	}
 	if snapshot.Logging.Level != "info" || snapshot.Logging.MaxEntries != 500 || snapshot.Logging.MaxFileBackups != 5 {
@@ -271,17 +271,17 @@ type graphQLResponse struct {
 				ProgressSyncEnabled         bool   `json:"progressSyncEnabled"`
 			} `json:"tasks"`
 			Subscription struct {
-				Store                     string `json:"store"`
-				DBPath                    string `json:"dbPath"`
-				PollIntervalSeconds       int    `json:"pollIntervalSeconds"`
-				PollEnabled               bool   `json:"pollEnabled"`
-				StashBoxes                []struct {
+				Store               string `json:"store"`
+				DBPath              string `json:"dbPath"`
+				PollIntervalSeconds int    `json:"pollIntervalSeconds"`
+				PollEnabled         bool   `json:"pollEnabled"`
+				StashBoxes          []struct {
 					Name             string `json:"name"`
 					Endpoint         string `json:"endpoint"`
 					APIKeyConfigured bool   `json:"apiKeyConfigured"`
 				} `json:"stashBoxes"`
-				SelectedStashBoxEndpoints []string `json:"selectedStashBoxEndpoints"`
-				StashBoxesLoaded          bool     `json:"stashBoxesLoaded"`
+				StashBoxEndpoints []string `json:"stashBoxEndpoints"`
+				StashBoxesLoaded  bool     `json:"stashBoxesLoaded"`
 			} `json:"subscription"`
 			Logging struct {
 				Level            string `json:"level"`

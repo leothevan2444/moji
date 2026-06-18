@@ -49,7 +49,7 @@ mutation UpdateSubscriptionSettingsDocument($input: UpdateSubscriptionSettingsIn
         endpoint
         apiKeyConfigured
       }
-      selectedStashBoxEndpoints
+      stashBoxEndpoints
       stashBoxesLoaded
       stashBoxesLoadError
     }
@@ -80,7 +80,7 @@ mutation RefreshSubscriptionStashBoxesDocument {
         endpoint
         apiKeyConfigured
       }
-      selectedStashBoxEndpoints
+      stashBoxEndpoints
       stashBoxesLoaded
       stashBoxesLoadError
     }

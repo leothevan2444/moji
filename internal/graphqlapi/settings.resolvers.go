@@ -78,10 +78,10 @@ func (r *mutationResolver) UpdateSubscriptionSettings(ctx context.Context, input
 	}
 
 	snapshot, err := r.SettingsEditor.UpdateSubscriptionSettings(UpdateSubscriptionSettingsInput{
-		Store:                     input.Store,
-		DBPath:                    input.DbPath,
-		PollIntervalSeconds:       input.PollIntervalSeconds,
-		SelectedStashBoxEndpoints: append([]string(nil), input.SelectedStashBoxEndpoints...),
+		Store:               input.Store,
+		DBPath:              input.DbPath,
+		PollIntervalSeconds: input.PollIntervalSeconds,
+		StashBoxEndpoints:   append([]string(nil), input.StashBoxEndpoints...),
 	})
 	if err != nil {
 		return nil, err

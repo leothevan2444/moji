@@ -65,10 +65,10 @@ type UpdateQBittorrentSettingsInput struct {
 }
 
 type UpdateSubscriptionSettingsInput struct {
-	Store                       string
-	DBPath                      string
-	PollIntervalSeconds         int
-	SelectedStashBoxEndpoints   []string
+	Store               string
+	DBPath              string
+	PollIntervalSeconds int
+	StashBoxEndpoints   []string
 }
 
 type UpdateLoggingSettingsInput struct {
@@ -124,14 +124,14 @@ type TaskSettingsSnapshot struct {
 }
 
 type SubscriptionSettingsSnapshot struct {
-	Store                     string
-	DBPath                    string
-	PollIntervalSeconds       int
-	PollEnabled               bool
-	StashBoxes                []StashBoxEndpointSnapshot
-	SelectedStashBoxEndpoints []string
-	StashBoxesLoaded          bool
-	StashBoxesLoadError       string
+	Store               string
+	DBPath              string
+	PollIntervalSeconds int
+	PollEnabled         bool
+	StashBoxes          []StashBoxEndpointSnapshot
+	StashBoxEndpoints   []string
+	StashBoxesLoaded    bool
+	StashBoxesLoadError string
 }
 
 type StashBoxEndpointSnapshot struct {

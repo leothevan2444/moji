@@ -224,8 +224,8 @@ type SubscriptionSettings struct {
 	PollEnabled         bool   `json:"pollEnabled"`
 	// Stash Box instances currently configured inside the Stash server.
 	StashBoxes []*StashBoxEndpoint `json:"stashBoxes"`
-	// Endpoints the user has selected for subscription lookups. Empty = use every configured Stash Box.
-	SelectedStashBoxEndpoints []string `json:"selectedStashBoxEndpoints"`
+	// Endpoint URLs in the user-defined order used for subscription lookups. Endpoints not listed here are still queried, in their Stash order, appended after the listed ones. An empty list means use Stash's order as-is.
+	StashBoxEndpoints []string `json:"stashBoxEndpoints"`
 	// Whether the last attempt to load Stash Box endpoints from Stash succeeded.
 	StashBoxesLoaded bool `json:"stashBoxesLoaded"`
 	// Reason for the most recent Stash Box load failure. Null when stashBoxesLoaded is true.
@@ -299,8 +299,8 @@ type UpdateSubscriptionSettingsInput struct {
 	Store               string `json:"store"`
 	DbPath              string `json:"dbPath"`
 	PollIntervalSeconds int    `json:"pollIntervalSeconds"`
-	// Endpoints selected for subscription lookups. Empty = use every configured Stash Box.
-	SelectedStashBoxEndpoints []string `json:"selectedStashBoxEndpoints"`
+	// See SubscriptionSettings.stashBoxEndpoints.
+	StashBoxEndpoints []string `json:"stashBoxEndpoints"`
 }
 
 type LogLevel string

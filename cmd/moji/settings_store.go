@@ -9,11 +9,11 @@ import (
 )
 
 type runtimeSettingsEditor struct {
-	store              *config.Store
-	version            string
-	qbittorrentEnabled bool
-	downloaderEnabled  bool
-	stashEnabled       bool
+	store               *config.Store
+	version             string
+	qbittorrentEnabled  bool
+	downloaderEnabled   bool
+	stashEnabled        bool
 	subscriptionService graphqlapi.SubscriptionService
 }
 
@@ -29,7 +29,9 @@ func newRuntimeSettingsEditor(store *config.Store, version string, qbittorrentEn
 }
 
 func (s *runtimeSettingsEditor) Snapshot() *graphqlapi.SettingsSnapshot {
-	return buildSettingsSnapshot(s.store.Config(), s.version, s.qbittorrentEnabled, s.downloaderEnabled, s.stashEnabled, s.subscriptionService)
+	cfg := s.store.Config()
+	applySubscriptionOrder(cfg, s.subscriptionService)
+	return buildSettingsSnapshot(cfg, s.version, s.qbittorrentEnabled, s.downloaderEnabled, s.stashEnabled, s.subscriptionService)
 }
 
 func (s *runtimeSettingsEditor) UpdateStashSettings(input graphqlapi.UpdateStashSettingsInput) (*graphqlapi.SettingsSnapshot, error) {
@@ -87,7 +89,7 @@ func (s *runtimeSettingsEditor) UpdateSubscriptionSettings(input graphqlapi.Upda
 		strings.TrimSpace(input.Store),
 		strings.TrimSpace(input.DBPath),
 		input.PollIntervalSeconds,
-		input.SelectedStashBoxEndpoints,
+		input.StashBoxEndpoints,
 	)
 	if err != nil {
 		logging.Errorf("settings: save subscription settings failed: %v", err)
@@ -98,7 +100,7 @@ func (s *runtimeSettingsEditor) UpdateSubscriptionSettings(input graphqlapi.Upda
 		cfg.Subscription.Store,
 		cfg.Subscription.DBPath,
 		cfg.Subscription.PollIntervalSeconds,
-		len(cfg.Subscription.SelectedStashBoxEndpoints),
+		len(cfg.Subscription.StashBoxEndpoints),
 	)
 	return buildSettingsSnapshot(cfg, s.version, s.qbittorrentEnabled, s.downloaderEnabled, s.stashEnabled, s.subscriptionService), nil
 }

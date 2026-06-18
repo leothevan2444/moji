@@ -1916,14 +1916,13 @@ button.profile-icon:disabled {
 /* Per-card layout */
 .stashbox-card {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   gap: 12px;
-  padding: 12px 14px;
+  padding: 10px 12px;
   border-radius: 12px;
   border: 1px solid var(--line);
   background: var(--surface-strong);
-  cursor: pointer;
-  transition: border-color 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease, background 0.15s ease, opacity 0.15s ease;
 }
 
 .stashbox-card:hover {
@@ -1936,24 +1935,77 @@ button.profile-icon:disabled {
   box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.18);
 }
 
-.stashbox-card.is-selected {
-  border-color: rgba(37, 99, 235, 0.38);
-  background: linear-gradient(180deg, rgba(37, 99, 235, 0.15), rgba(37, 99, 235, 0.06));
+.stashbox-card.is-dragging {
+  opacity: 0.4;
 }
 
-.stashbox-card__checkbox {
-  margin: 3px 0 0;
-  width: 16px;
-  height: 16px;
+.stashbox-card.is-drop-top {
+  border-top: 2px solid var(--accent);
+}
+
+.stashbox-card.is-drop-bottom {
+  border-bottom: 2px solid var(--accent);
+}
+
+.stashbox-card__handle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
   flex: 0 0 auto;
-  accent-color: var(--accent);
-  cursor: pointer;
+  border-radius: 6px;
+  color: var(--muted-2);
+  cursor: grab;
+  touch-action: none;
+  transition: color 0.15s ease, background 0.15s ease;
+}
+
+.stashbox-card__handle:hover {
+  color: var(--accent);
+  background: rgba(37, 99, 235, 0.08);
+}
+
+.stashbox-card__handle:active {
+  cursor: grabbing;
+}
+
+.stashbox-card__priority {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 24px;
+  height: 24px;
+  flex: 0 0 auto;
+  border-radius: 50%;
+  background: rgba(37, 99, 235, 0.12);
+  color: var(--accent);
+  font-size: 12px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  padding: 0 6px;
 }
 
 .stashbox-card__body {
   display: grid;
   gap: 4px;
   min-width: 0;
+  flex-grow: 1;
+  flex-shrink: 1;
+  flex-basis: auto;
+}
+
+.stashbox-card__move {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  flex: 0 0 auto;
+}
+
+.ghost-button--icon {
+  padding: 4px 8px;
+  min-width: 28px;
+}
   flex: 1 1 auto;
 }
 
@@ -2034,9 +2086,18 @@ button.profile-icon:disabled {
   background: rgba(30, 41, 59, 0.7);
 }
 
-[data-theme="dark"] .stashbox-card.is-selected {
-  border-color: rgba(96, 165, 250, 0.42);
-  background: linear-gradient(180deg, rgba(96, 165, 250, 0.16), rgba(96, 165, 250, 0.06));
+[data-theme="dark"] .stashbox-card.is-drop-top,
+[data-theme="dark"] .stashbox-card.is-drop-bottom {
+  border-color: rgba(96, 165, 250, 0.55);
+}
+
+[data-theme="dark"] .stashbox-card__handle:hover {
+  background: rgba(96, 165, 250, 0.16);
+}
+
+[data-theme="dark"] .stashbox-card__priority {
+  background: rgba(96, 165, 250, 0.18);
+  color: rgb(147, 197, 253);
 }
 
 [data-theme="dark"] .stashbox-card:focus-within {

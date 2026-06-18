@@ -74,8 +74,8 @@ type SubscriptionSettings {
   pollEnabled: Boolean!
   "Stash Box instances currently configured inside the Stash server."
   stashBoxes: [StashBoxEndpoint!]!
-  "Endpoints the user has selected for subscription lookups. Empty = use every configured Stash Box."
-  selectedStashBoxEndpoints: [String!]!
+  "Endpoint URLs in the user-defined order used for subscription lookups. Endpoints not listed here are still queried, in their Stash order, appended after the listed ones. An empty list means use Stash's order as-is."
+  stashBoxEndpoints: [String!]!
   "Whether the last attempt to load Stash Box endpoints from Stash succeeded."
   stashBoxesLoaded: Boolean!
   "Reason for the most recent Stash Box load failure. Null when stashBoxesLoaded is true."
@@ -124,8 +124,8 @@ input UpdateSubscriptionSettingsInput {
   store: String!
   dbPath: String!
   pollIntervalSeconds: Int!
-  "Endpoints selected for subscription lookups. Empty = use every configured Stash Box."
-  selectedStashBoxEndpoints: [String!]!
+  "See SubscriptionSettings.stashBoxEndpoints."
+  stashBoxEndpoints: [String!]!
 }
 
 input UpdateLoggingSettingsInput {
