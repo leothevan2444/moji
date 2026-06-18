@@ -183,6 +183,7 @@ func (s *Service) RefreshSubscribedPerformer(ctx context.Context, performerID st
 
 	now := s.now().UTC()
 	state.LastCheckedAt = &now
+	previousLastError := state.LastError
 	state.LastError = ""
 
 	releases, err := s.fetchReleases(ctx, performer)
@@ -197,11 +198,15 @@ func (s *Service) RefreshSubscribedPerformer(ctx context.Context, performerID st
 	}
 	logging.Infof("subscription: refresh fetched %d releases for performer %s (%s)", len(releases), performerID, performer.Name)
 
-	processed := make(map[string]RecordedRelease, len(state.ProcessedReleases))
+	processed := make(map[string]RecordedRelease, len(state.ProcessedReleases)+len(state.PendingReleases))
 	for _, release := range state.ProcessedReleases {
 		processed[release.Key] = release
 	}
+	for _, release := range state.PendingReleases {
+		processed[release.Key] = release
+	}
 
+	existingPending := append([]RecordedRelease(nil), state.PendingReleases...)
 	pending := make([]RecordedRelease, 0)
 	for _, release := range releases {
 		if _, exists := processed[release.Key]; exists {
@@ -224,11 +229,13 @@ func (s *Service) RefreshSubscribedPerformer(ctx context.Context, performerID st
 	}
 
 	if s.downloader != nil {
+		nextPending := append([]RecordedRelease(nil), existingPending...)
 		for i := range pending {
 			task, err := s.downloader.DownloadMediaContext(ctx, downloader.DownloadRequest{Query: pending[i].Query})
 			if err != nil {
 				state.LastError = err.Error()
 				logging.Errorf("subscription: auto-download failed for performer %s release %q: %v", performerID, pending[i].Query, err)
+				nextPending = append(nextPending, pending[i])
 				continue
 			}
 			if task != nil {
@@ -237,12 +244,15 @@ func (s *Service) RefreshSubscribedPerformer(ctx context.Context, performerID st
 			}
 			state.ProcessedReleases = append([]RecordedRelease{pending[i]}, state.ProcessedReleases...)
 		}
-		state.PendingReleases = nil
+		state.PendingReleases = nextPending
 	} else {
-		state.PendingReleases = pending
+		state.PendingReleases = append(existingPending, pending...)
 		if len(pending) > 0 {
 			logging.Infof("subscription: queued %d pending releases for performer %s (%s)", len(pending), performerID, performer.Name)
 		}
+	}
+	if state.LastError == "" && len(state.PendingReleases) > 0 && previousLastError != "" {
+		state.LastError = previousLastError
 	}
 
 	state.ProcessedReleases = trimRecordedReleases(state.ProcessedReleases, 25)

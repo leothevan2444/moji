@@ -2,8 +2,10 @@ package subscription
 
 import (
 	"context"
+	"errors"
 	"testing"
 
+	"github.com/leothevan2444/moji/internal/downloader"
 	"github.com/leothevan2444/moji/pkg/stash"
 	stashgraphql "github.com/leothevan2444/moji/pkg/stash/graphql"
 	stashboxgraphql "github.com/leothevan2444/moji/pkg/stashbox/graphql"
@@ -49,6 +51,13 @@ type fakeStashboxClient struct {
 	scenes    []*stashboxgraphql.SceneFragment
 }
 
+type fakeDownloader struct {
+	tasks   []*downloader.Task
+	err     error
+	calls   int
+	queries []string
+}
+
 func (f *fakeStashboxClient) FindPerformerByID(_ context.Context, id string) (*stashboxgraphql.PerformerFragment, error) {
 	if f.performer != nil && f.performer.ID == id {
 		return f.performer, nil
@@ -65,6 +74,20 @@ func (f *fakeStashboxClient) SearchPerformer(_ context.Context, _ string) ([]*st
 
 func (f *fakeStashboxClient) QueryScenes(_ context.Context, _ stashboxgraphql.SceneQueryInput) ([]*stashboxgraphql.SceneFragment, error) {
 	return f.scenes, nil
+}
+
+func (f *fakeDownloader) DownloadMediaContext(_ context.Context, req downloader.DownloadRequest) (*downloader.Task, error) {
+	f.calls++
+	f.queries = append(f.queries, req.Query)
+	if f.err != nil {
+		return nil, f.err
+	}
+	if len(f.tasks) == 0 {
+		return nil, nil
+	}
+	task := f.tasks[0]
+	f.tasks = f.tasks[1:]
+	return task, nil
 }
 
 // stubFactory is a StashboxClientFactory that always returns the same client
@@ -211,6 +234,111 @@ func TestRefreshPerformerStoresPendingReleasesWithoutDownloader(t *testing.T) {
 	}
 	if got, want := item.RecentReleases[0].Source, "stash-box:"+endpoint; got != want {
 		t.Fatalf("unexpected source %q, want %q", got, want)
+	}
+}
+
+func TestRefreshPerformerDoesNotDuplicatePendingReleasesAcrossPolls(t *testing.T) {
+	endpoint := "https://javstash.example.org/graphql"
+	code := "ABCD-123"
+	title := "New Release"
+
+	stashClient := &fakeStashClient{
+		performers: map[string]*stashgraphql.PerformerFragment{
+			"p1": {
+				ID:           "p1",
+				Name:         "Rara Anzai",
+				CustomFields: map[string]any{DefaultCustomFieldKey: true},
+				StashIds:     []*stashgraphql.StashIDFragment{{Endpoint: endpoint, StashID: "js-1"}},
+			},
+		},
+	}
+	registry := newStashboxRegistry(stubFactory{
+		client: &fakeStashboxClient{
+			performer: &stashboxgraphql.PerformerFragment{ID: "js-1", Name: "Rara Anzai"},
+			scenes: []*stashboxgraphql.SceneFragment{{
+				ID:    "js-scene-1",
+				Title: &title,
+				Code:  &code,
+			}},
+		},
+	})
+	registry.Replace([]stash.StashBoxEndpoint{{Name: "javstash", Endpoint: endpoint, APIKey: "ignored"}})
+
+	service, err := NewService(stashClient, registry, nil, NewMemoryStore())
+	if err != nil {
+		t.Fatalf("NewService failed: %v", err)
+	}
+
+	first, err := service.RefreshSubscribedPerformer(context.Background(), "p1")
+	if err != nil {
+		t.Fatalf("first refresh failed: %v", err)
+	}
+	second, err := service.RefreshSubscribedPerformer(context.Background(), "p1")
+	if err != nil {
+		t.Fatalf("second refresh failed: %v", err)
+	}
+
+	if first.PendingReleaseCount != 1 || second.PendingReleaseCount != 1 {
+		t.Fatalf("expected stable pending count of 1, got first=%d second=%d", first.PendingReleaseCount, second.PendingReleaseCount)
+	}
+	if len(second.RecentReleases) != 1 {
+		t.Fatalf("expected 1 recent release after repeated refresh, got %d", len(second.RecentReleases))
+	}
+	if second.RecentReleases[0].Key != "stashbox:https___javstash.example.org_graphql:js-scene-1" {
+		t.Fatalf("unexpected release key after repeated refresh: %q", second.RecentReleases[0].Key)
+	}
+}
+
+func TestRefreshPerformerKeepsFailedAutoDownloadsPending(t *testing.T) {
+	endpoint := "https://javstash.example.org/graphql"
+	code := "ABCD-123"
+	title := "New Release"
+
+	stashClient := &fakeStashClient{
+		performers: map[string]*stashgraphql.PerformerFragment{
+			"p1": {
+				ID:           "p1",
+				Name:         "Rara Anzai",
+				CustomFields: map[string]any{DefaultCustomFieldKey: true},
+				StashIds:     []*stashgraphql.StashIDFragment{{Endpoint: endpoint, StashID: "js-1"}},
+			},
+		},
+	}
+	registry := newStashboxRegistry(stubFactory{
+		client: &fakeStashboxClient{
+			performer: &stashboxgraphql.PerformerFragment{ID: "js-1", Name: "Rara Anzai"},
+			scenes: []*stashboxgraphql.SceneFragment{{
+				ID:    "js-scene-1",
+				Title: &title,
+				Code:  &code,
+			}},
+		},
+	})
+	registry.Replace([]stash.StashBoxEndpoint{{Name: "javstash", Endpoint: endpoint, APIKey: "ignored"}})
+
+	downloader := &fakeDownloader{err: errors.New("temporary add failure")}
+	service, err := NewService(stashClient, registry, downloader, NewMemoryStore())
+	if err != nil {
+		t.Fatalf("NewService failed: %v", err)
+	}
+
+	first, err := service.RefreshSubscribedPerformer(context.Background(), "p1")
+	if err != nil {
+		t.Fatalf("refresh should return performer state even when auto-download fails: %v", err)
+	}
+	second, err := service.RefreshSubscribedPerformer(context.Background(), "p1")
+	if err != nil {
+		t.Fatalf("second refresh should still return performer state: %v", err)
+	}
+
+	if first.PendingReleaseCount != 1 || second.PendingReleaseCount != 1 {
+		t.Fatalf("expected failed release to remain pending once, got first=%d second=%d", first.PendingReleaseCount, second.PendingReleaseCount)
+	}
+	if downloader.calls != 1 {
+		t.Fatalf("expected downloader to be called once for the new release, got %d", downloader.calls)
+	}
+	if second.LastError == "" {
+		t.Fatalf("expected last error to be preserved after auto-download failure")
 	}
 }
 
