@@ -6,10 +6,12 @@ import (
 	"fmt"
 	"sort"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/leothevan2444/moji/internal/downloader"
 	"github.com/leothevan2444/moji/internal/logging"
+	"github.com/leothevan2444/moji/pkg/stash"
 	stashgraphql "github.com/leothevan2444/moji/pkg/stash/graphql"
 	stashboxgraphql "github.com/leothevan2444/moji/pkg/stashbox/graphql"
 )
@@ -18,6 +20,7 @@ type StashClient interface {
 	AllPerformers(ctx context.Context) ([]*stashgraphql.PerformerFragment, error)
 	FindPerformerByID(ctx context.Context, id string) (*stashgraphql.PerformerFragment, error)
 	UpdatePerformerCustomFields(ctx context.Context, id string, partial map[string]any, remove []string) (*stashgraphql.PerformerFragment, error)
+	GetStashBoxes(ctx context.Context) ([]stash.StashBoxEndpoint, error)
 }
 
 type StashboxClient interface {
@@ -32,19 +35,26 @@ type Downloader interface {
 
 type Service struct {
 	stash          StashClient
-	stashbox       StashboxClient
+	stashbox       *stashboxRegistry
 	downloader     Downloader
 	store          Store
 	customFieldKey string
 	now            func() time.Time
+
+	loadMu       sync.RWMutex
+	loaded       bool
+	loadErrorMsg string
 }
 
-func NewService(stash StashClient, stashbox StashboxClient, downloader Downloader, store Store) (*Service, error) {
+func NewService(stash StashClient, stashbox *stashboxRegistry, downloader Downloader, store Store) (*Service, error) {
 	if stash == nil {
 		return nil, errors.New("subscription: stash client is required")
 	}
 	if store == nil {
 		store = NewMemoryStore()
+	}
+	if stashbox == nil {
+		stashbox = newStashboxRegistry(defaultStashboxClientFactory{})
 	}
 
 	return &Service{
@@ -271,8 +281,8 @@ func (s *Service) RefreshAll(ctx context.Context) ([]SubscribedPerformer, error)
 }
 
 func (s *Service) fetchReleases(ctx context.Context, performer *stashgraphql.PerformerFragment) ([]Release, error) {
-	if s.stashbox == nil {
-		return nil, errors.New("subscription: javstash client is not configured")
+	if s.stashbox == nil || len(s.stashbox.Endpoints()) == 0 {
+		return nil, errors.New("subscription: no stash-box endpoints configured in Stash")
 	}
 
 	target, err := s.resolveStashboxPerformer(ctx, performer)
@@ -280,11 +290,11 @@ func (s *Service) fetchReleases(ctx context.Context, performer *stashgraphql.Per
 		return nil, err
 	}
 	if target == nil {
-		return nil, fmt.Errorf("subscription: no javstash performer match for %q", performer.Name)
+		return nil, fmt.Errorf("subscription: no stash-box performer match for %q", performer.Name)
 	}
 
-	scenes, err := s.stashbox.QueryScenes(ctx, stashboxgraphql.SceneQueryInput{
-		Performers: &stashboxgraphql.MultiIDCriterionInput{Value: []string{target.ID}},
+	scenes, err := target.Client.QueryScenes(ctx, stashboxgraphql.SceneQueryInput{
+		Performers: &stashboxgraphql.MultiIDCriterionInput{Value: []string{target.Performer.ID}},
 		Page:       1,
 		PerPage:    12,
 		Direction:  stashboxgraphql.SortDirectionEnumDesc,
@@ -294,14 +304,16 @@ func (s *Service) fetchReleases(ctx context.Context, performer *stashgraphql.Per
 		return nil, err
 	}
 
+	source := "stash-box:" + target.Endpoint
+	keyPrefix := "stashbox:" + endpointKey(target.Endpoint) + ":"
 	releases := make([]Release, 0, len(scenes))
 	for _, scene := range scenes {
 		if scene == nil {
 			continue
 		}
 		release := Release{
-			Key:    "javstash:" + scene.ID,
-			Source: "javstash",
+			Key:    keyPrefix + scene.ID,
+			Source: source,
 			Title:  stringValue(scene.Title),
 			Code:   stringValue(scene.Code),
 			Date:   stringValue(scene.Date),
@@ -316,49 +328,150 @@ func (s *Service) fetchReleases(ctx context.Context, performer *stashgraphql.Per
 	return releases, nil
 }
 
-func (s *Service) resolveStashboxPerformer(ctx context.Context, performer *stashgraphql.PerformerFragment) (*stashboxgraphql.PerformerFragment, error) {
+// resolvedStashbox pairs a Stash-Box client with the performer fragment it
+// returned and the endpoint that produced the match.
+type resolvedStashbox struct {
+	Client    StashboxClient
+	Performer *stashboxgraphql.PerformerFragment
+	Endpoint  string
+	Name      string
+}
+
+func (s *Service) resolveStashboxPerformer(ctx context.Context, performer *stashgraphql.PerformerFragment) (*resolvedStashbox, error) {
+	if performer == nil {
+		return nil, nil
+	}
+
+	// 1. Prefer an explicit StashID that names a configured endpoint.
 	for _, stashID := range performer.StashIds {
-		if stashID == nil {
+		if stashID == nil || strings.TrimSpace(stashID.StashID) == "" {
 			continue
 		}
-		if strings.Contains(strings.ToLower(stashID.Endpoint), "javstash.org") && strings.TrimSpace(stashID.StashID) != "" {
-			return s.stashbox.FindPerformerByID(ctx, stashID.StashID)
-		}
-	}
-
-	candidates, err := s.stashbox.SearchPerformer(ctx, performer.Name)
-	if err != nil {
-		return nil, err
-	}
-
-	targetNames := make([]string, 0, 1+len(performer.AliasList))
-	targetNames = append(targetNames, performer.Name)
-	targetNames = append(targetNames, performer.AliasList...)
-	normalizedTargets := make(map[string]struct{}, len(targetNames))
-	for _, name := range targetNames {
-		if normalized := normalize(name); normalized != "" {
-			normalizedTargets[normalized] = struct{}{}
-		}
-	}
-
-	for _, candidate := range candidates {
-		if candidate == nil {
+		endpoint := normalizeStashBoxEndpoint(stashID.Endpoint)
+		client, ok := s.stashbox.Get(endpoint)
+		if !ok {
 			continue
 		}
-		if _, ok := normalizedTargets[normalize(candidate.Name)]; ok {
-			return candidate, nil
+		matched, err := client.FindPerformerByID(ctx, stashID.StashID)
+		if err != nil {
+			logging.Warnf("subscription: stash-box lookup failed for endpoint=%s performer=%s: %v", endpoint, stashID.StashID, err)
+			continue
 		}
-		for _, alias := range candidate.Aliases {
-			if _, ok := normalizedTargets[normalize(alias)]; ok {
-				return candidate, nil
+		if matched == nil {
+			continue
+		}
+		return &resolvedStashbox{
+			Client:    client,
+			Performer: matched,
+			Endpoint:  endpoint,
+			Name:      stashID.Endpoint,
+		}, nil
+	}
+
+	// 2. Fall back to name search across every configured endpoint.
+	normalizedTargets := normalizedTargetNames(performer.Name, performer.AliasList)
+	for _, box := range s.stashbox.Endpoints() {
+		client, ok := s.stashbox.Get(box.Endpoint)
+		if !ok {
+			continue
+		}
+		candidates, err := client.SearchPerformer(ctx, performer.Name)
+		if err != nil {
+			logging.Warnf("subscription: stash-box search failed for endpoint=%s name=%s: %v", box.Endpoint, performer.Name, err)
+			continue
+		}
+		for _, candidate := range candidates {
+			if candidate == nil {
+				continue
+			}
+			if nameMatchesCandidate(candidate, normalizedTargets) {
+				return &resolvedStashbox{
+					Client:    client,
+					Performer: candidate,
+					Endpoint:  box.Endpoint,
+					Name:      box.Name,
+				}, nil
 			}
 		}
 	}
 
-	if len(candidates) > 0 {
-		return candidates[0], nil
-	}
 	return nil, nil
+}
+
+// RefreshStashBoxes asks the Stash server for the current Stash-Box list and
+// replaces the registry. Endpoints that the user no longer has selected are
+// still cached so subsequent reads don't rebuild clients; this call is the
+// single source of truth for which endpoints are available.
+func (s *Service) RefreshStashBoxes(ctx context.Context) error {
+	if s == nil || s.stash == nil {
+		return errors.New("subscription: stash client is not configured")
+	}
+	boxes, err := s.stash.GetStashBoxes(ctx)
+	s.loadMu.Lock()
+	if err != nil {
+		s.loadErrorMsg = err.Error()
+	} else {
+		s.loadErrorMsg = ""
+		s.loaded = true
+	}
+	s.loadMu.Unlock()
+	if err != nil {
+		return err
+	}
+	s.stashbox.Replace(boxes)
+	return nil
+}
+
+// SnapshotState returns the Stash-Box endpoints currently cached in the
+// registry together with the outcome of the most recent load attempt.
+type LoadState struct {
+	Loaded   bool
+	ErrorMsg string
+}
+
+// SnapshotState returns the currently configured Stash-Box endpoints and the
+// outcome of the last refresh. Returns nil when the service is not running
+// (e.g. in tests that don't exercise the worker).
+func (s *Service) SnapshotState() (endpoints []StashBoxEndpoint, state LoadState) {
+	if s == nil || s.stashbox == nil {
+		return nil, LoadState{}
+	}
+	s.loadMu.RLock()
+	state = LoadState{Loaded: s.loaded, ErrorMsg: s.loadErrorMsg}
+	s.loadMu.RUnlock()
+	return s.stashbox.Endpoints(), state
+}
+
+func normalizedTargetNames(name string, aliases []string) map[string]struct{} {
+	out := map[string]struct{}{}
+	if n := normalize(name); n != "" {
+		out[n] = struct{}{}
+	}
+	for _, alias := range aliases {
+		if n := normalize(alias); n != "" {
+			out[n] = struct{}{}
+		}
+	}
+	return out
+}
+
+func nameMatchesCandidate(candidate *stashboxgraphql.PerformerFragment, normalizedTargets map[string]struct{}) bool {
+	if candidate == nil {
+		return false
+	}
+	if _, ok := normalizedTargets[normalize(candidate.Name)]; ok {
+		return true
+	}
+	for _, alias := range candidate.Aliases {
+		if _, ok := normalizedTargets[normalize(alias)]; ok {
+			return true
+		}
+	}
+	return false
+}
+
+func endpointKey(endpoint string) string {
+	return strings.ReplaceAll(strings.ReplaceAll(strings.TrimSpace(strings.ToLower(endpoint)), "/", "_"), ":", "_")
 }
 
 func performerFromStash(performer *stashgraphql.PerformerFragment, customFieldKey string) Performer {

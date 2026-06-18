@@ -54,9 +54,9 @@ export function HomePage({
           name: "订阅",
           label: runtimeSettings.subscription.pollEnabled ? "已启用" : "未启用",
           tone: runtimeSettings.subscription.pollEnabled ? "tone-success" : "tone-neutral",
-          detail: runtimeSettings.subscription.javstashEnabled
-            ? `轮询间隔: ${runtimeSettings.subscription.pollIntervalSeconds} 秒`
-            : "缺少 JAVStash API key，暂时只能手动检查"
+          detail: (runtimeSettings.subscription.stashBoxes?.length ?? 0) > 0
+            ? `Stash-Box: ${runtimeSettings.subscription.stashBoxes?.length} 个，已选 ${runtimeSettings.subscription.selectedStashBoxEndpoints?.length ?? 0} 个`
+            : "Stash 中尚未配置任何 Stash-Box"
         }
       ]
     : [];

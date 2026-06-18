@@ -65,10 +65,10 @@ type UpdateQBittorrentSettingsInput struct {
 }
 
 type UpdateSubscriptionSettingsInput struct {
-	Store               string
-	DBPath              string
-	PollIntervalSeconds int
-	JAVStashAPIKey      *string
+	Store                       string
+	DBPath                      string
+	PollIntervalSeconds         int
+	SelectedStashBoxEndpoints   []string
 }
 
 type UpdateLoggingSettingsInput struct {
@@ -124,12 +124,20 @@ type TaskSettingsSnapshot struct {
 }
 
 type SubscriptionSettingsSnapshot struct {
-	Store                    string
-	DBPath                   string
-	PollIntervalSeconds      int
-	PollEnabled              bool
-	JAVStashEnabled          bool
-	JAVStashAPIKeyConfigured bool
+	Store                     string
+	DBPath                    string
+	PollIntervalSeconds       int
+	PollEnabled               bool
+	StashBoxes                []StashBoxEndpointSnapshot
+	SelectedStashBoxEndpoints []string
+	StashBoxesLoaded          bool
+	StashBoxesLoadError       string
+}
+
+type StashBoxEndpointSnapshot struct {
+	Name             string
+	Endpoint         string
+	APIKeyConfigured bool
 }
 
 type LoggingSettingsSnapshot struct {
@@ -161,6 +169,8 @@ type SubscriptionService interface {
 	UnsubscribePerformer(ctx context.Context, performerID string) error
 	RefreshSubscribedPerformer(ctx context.Context, performerID string) (subscription.SubscribedPerformer, error)
 	RefreshAll(ctx context.Context) ([]subscription.SubscribedPerformer, error)
+	RefreshStashBoxes(ctx context.Context) error
+	SnapshotState() (endpoints []subscription.StashBoxEndpoint, state subscription.LoadState)
 }
 
 type LogReader interface {

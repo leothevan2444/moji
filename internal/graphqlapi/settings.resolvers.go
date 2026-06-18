@@ -78,16 +78,33 @@ func (r *mutationResolver) UpdateSubscriptionSettings(ctx context.Context, input
 	}
 
 	snapshot, err := r.SettingsEditor.UpdateSubscriptionSettings(UpdateSubscriptionSettingsInput{
-		Store:               input.Store,
-		DBPath:              input.DBPath,
-		PollIntervalSeconds: input.PollIntervalSeconds,
-		JAVStashAPIKey:      input.JavstashAPIKey,
+		Store:                     input.Store,
+		DBPath:                    input.DbPath,
+		PollIntervalSeconds:       input.PollIntervalSeconds,
+		SelectedStashBoxEndpoints: append([]string(nil), input.SelectedStashBoxEndpoints...),
 	})
 	if err != nil {
 		return nil, err
 	}
 
 	return settingsSnapshotToModel(snapshot, r.AppVersion), nil
+}
+
+// RefreshSubscriptionStashBoxes is the resolver for the
+// refreshSubscriptionStashBoxes field. It re-queries the configured Stash
+// server for the Stash-Box list so the UI can pick up additions/removals
+// without restarting Moji.
+func (r *mutationResolver) RefreshSubscriptionStashBoxes(ctx context.Context) (*model.Settings, error) {
+	if r.Subscription == nil {
+		return nil, errors.New("subscription service is not configured")
+	}
+	if err := r.Subscription.RefreshStashBoxes(ctx); err != nil {
+		return nil, err
+	}
+	if r.SettingsEditor != nil {
+		return settingsSnapshotToModel(r.SettingsEditor.Snapshot(), r.AppVersion), nil
+	}
+	return settingsSnapshotToModel(r.RuntimeSettings, r.AppVersion), nil
 }
 
 // UpdateLoggingSettings is the resolver for the updateLoggingSettings field.

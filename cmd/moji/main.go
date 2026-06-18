@@ -28,7 +28,6 @@ import (
 	"github.com/leothevan2444/moji/internal/webui"
 	"github.com/leothevan2444/moji/pkg/qbittorrent"
 	"github.com/leothevan2444/moji/pkg/stash"
-	"github.com/leothevan2444/moji/pkg/stashbox"
 )
 
 func main() {
@@ -134,9 +133,9 @@ func newHTTPRuntime(cfg *config.Config, version string, configStore *config.Stor
 	resolver := graphqlapi.NewResolver(jackettTracker, torrentClient, downloaderService, stashService, version)
 	resolver.Subscription = subscriptionService
 	resolver.LogReader = logging.Default()
-	resolver.RuntimeSettings = buildSettingsSnapshot(cfg, version, torrentClient != nil, downloaderService != nil, stashService != nil)
+	resolver.RuntimeSettings = buildSettingsSnapshot(cfg, version, torrentClient != nil, downloaderService != nil, stashService != nil, subscriptionService)
 	if configStore != nil {
-		resolver.SettingsEditor = newRuntimeSettingsEditor(configStore, version, torrentClient != nil, downloaderService != nil, stashService != nil)
+		resolver.SettingsEditor = newRuntimeSettingsEditor(configStore, version, torrentClient != nil, downloaderService != nil, stashService != nil, subscriptionService)
 	}
 	graphqlHandler := handler.NewDefaultServer(generated.NewExecutableSchema(generated.Config{Resolvers: resolver}))
 
@@ -235,7 +234,37 @@ func configureProgressSyncInterval(cfg *config.Config) time.Duration {
 	return time.Duration(seconds) * time.Second
 }
 
-func buildSettingsSnapshot(cfg *config.Config, version string, qbittorrentEnabled bool, downloaderEnabled bool, stashEnabled bool) *graphqlapi.SettingsSnapshot {
+func buildSubscriptionSnapshot(cfg *config.Config, subscriptionService graphqlapi.SubscriptionService, store, dbPath string, pollIntervalSeconds int, pollEnabled bool) graphqlapi.SubscriptionSettingsSnapshot {
+	out := graphqlapi.SubscriptionSettingsSnapshot{
+		Store:                     store,
+		DBPath:                    dbPath,
+		PollIntervalSeconds:       pollIntervalSeconds,
+		PollEnabled:               pollEnabled,
+		StashBoxes:                []graphqlapi.StashBoxEndpointSnapshot{},
+		SelectedStashBoxEndpoints: append([]string(nil), cfg.Subscription.SelectedStashBoxEndpoints...),
+		StashBoxesLoaded:          false,
+		StashBoxesLoadError:       "",
+	}
+	if subscriptionService == nil {
+		return out
+	}
+	endpoints, state := subscriptionService.SnapshotState()
+	out.StashBoxesLoaded = state.Loaded
+	out.StashBoxesLoadError = state.ErrorMsg
+	if len(endpoints) == 0 {
+		return out
+	}
+	for _, box := range endpoints {
+		out.StashBoxes = append(out.StashBoxes, graphqlapi.StashBoxEndpointSnapshot{
+			Name:             box.Name,
+			Endpoint:         box.Endpoint,
+			APIKeyConfigured: box.APIKeyConfigured,
+		})
+	}
+	return out
+}
+
+func buildSettingsSnapshot(cfg *config.Config, version string, qbittorrentEnabled bool, downloaderEnabled bool, stashEnabled bool, subscriptionService graphqlapi.SubscriptionService) *graphqlapi.SettingsSnapshot {
 	tasksStore := cfg.Tasks.Store
 	if tasksStore == "" {
 		tasksStore = "sqlite"
@@ -313,14 +342,7 @@ func buildSettingsSnapshot(cfg *config.Config, version string, qbittorrentEnable
 			ProgressSyncIntervalSeconds: progressSyncSeconds,
 			ProgressSyncEnabled:         progressSyncEnabled && downloaderEnabled,
 		},
-		Subscription: graphqlapi.SubscriptionSettingsSnapshot{
-			Store:                    subscriptionStore,
-			DBPath:                   subscriptionDBPath,
-			PollIntervalSeconds:      subscriptionPollSeconds,
-			PollEnabled:              subscriptionPollEnabled && stashEnabled,
-			JAVStashEnabled:          cfg.Subscription.JAVStashAPIKey != "",
-			JAVStashAPIKeyConfigured: cfg.Subscription.JAVStashAPIKey != "",
-		},
+		Subscription: buildSubscriptionSnapshot(cfg, subscriptionService, subscriptionStore, subscriptionDBPath, subscriptionPollSeconds, subscriptionPollEnabled && stashEnabled),
 		Logging: graphqlapi.LoggingSettingsSnapshot{
 			Level:            cfg.EffectiveLogLevel(),
 			FilePath:         cfg.EffectiveLogFilePath(),
@@ -405,19 +427,19 @@ func configureSubscription(cfg *config.Config, stashClient *stash.Client, downlo
 		logging.Fatalf("configure subscription store: %v", err)
 	}
 
-	var javstashClient *stashbox.Client
-	if strings.TrimSpace(cfg.Subscription.JAVStashAPIKey) != "" {
-		javstashClient = stashbox.NewClient(cfg.Subscription.JAVStashAPIKey)
-		logging.Infof("runtime: javstash client enabled for subscription checks")
-	} else {
-		logging.Infof("runtime: javstash client disabled because subscription.javstash_api_key is empty")
-	}
-
-	service, err := subscription.NewService(stashClient, javstashClient, downloaderService, store)
+	registry := subscription.NewDefaultStashboxRegistry()
+	service, err := subscription.NewService(stashClient, registry, downloaderService, store)
 	if err != nil {
 		logging.Fatalf("configure subscription: %v", err)
 	}
-	logging.Infof("runtime: subscription service initialized")
+
+	refreshCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	if err := service.RefreshStashBoxes(refreshCtx); err != nil {
+		logging.Warnf("runtime: failed to refresh stash-box endpoints at startup: %v", err)
+	} else {
+		logging.Infof("runtime: subscription service initialized with %d stash-box endpoint(s) from Stash", len(registry.Endpoints()))
+	}
 	return service
 }
 

@@ -17,6 +17,7 @@ type StashGraphQLClient interface {
 	GetVersion(ctx context.Context, interceptors ...clientv2.RequestInterceptor) (*GetVersion, error)
 	MetadataScan(ctx context.Context, input ScanMetadataInput, interceptors ...clientv2.RequestInterceptor) (*MetadataScan, error)
 	FindJob(ctx context.Context, input FindJobInput, interceptors ...clientv2.RequestInterceptor) (*FindJob, error)
+	Configuration(ctx context.Context, interceptors ...clientv2.RequestInterceptor) (*Configuration, error)
 }
 
 type Client struct {
@@ -168,6 +169,38 @@ func (t *PerformerFragment) GetCustomFields() map[string]any {
 	return t.CustomFields
 }
 
+type StashBoxFragment struct {
+	Endpoint             string "json:\"endpoint\" graphql:\"endpoint\""
+	APIKey               string "json:\"api_key\" graphql:\"api_key\""
+	Name                 string "json:\"name\" graphql:\"name\""
+	MaxRequestsPerMinute int    "json:\"max_requests_per_minute\" graphql:\"max_requests_per_minute\""
+}
+
+func (t *StashBoxFragment) GetEndpoint() string {
+	if t == nil {
+		t = &StashBoxFragment{}
+	}
+	return t.Endpoint
+}
+func (t *StashBoxFragment) GetAPIKey() string {
+	if t == nil {
+		t = &StashBoxFragment{}
+	}
+	return t.APIKey
+}
+func (t *StashBoxFragment) GetName() string {
+	if t == nil {
+		t = &StashBoxFragment{}
+	}
+	return t.Name
+}
+func (t *StashBoxFragment) GetMaxRequestsPerMinute() int {
+	if t == nil {
+		t = &StashBoxFragment{}
+	}
+	return t.MaxRequestsPerMinute
+}
+
 type FindPerformers_FindPerformers struct {
 	Count      int                  "json:\"count\" graphql:\"count\""
 	Performers []*PerformerFragment "json:\"performers\" graphql:\"performers\""
@@ -278,6 +311,28 @@ func (t *FindJob_FindJob) GetSubTasks() []string {
 	return t.SubTasks
 }
 
+type Configuration_Configuration_General struct {
+	StashBoxes []*StashBoxFragment "json:\"stashBoxes\" graphql:\"stashBoxes\""
+}
+
+func (t *Configuration_Configuration_General) GetStashBoxes() []*StashBoxFragment {
+	if t == nil {
+		t = &Configuration_Configuration_General{}
+	}
+	return t.StashBoxes
+}
+
+type Configuration_Configuration struct {
+	General Configuration_Configuration_General "json:\"general\" graphql:\"general\""
+}
+
+func (t *Configuration_Configuration) GetGeneral() *Configuration_Configuration_General {
+	if t == nil {
+		t = &Configuration_Configuration{}
+	}
+	return &t.General
+}
+
 type FindPerformerByID struct {
 	FindPerformer *PerformerFragment "json:\"findPerformer,omitempty\" graphql:\"findPerformer\""
 }
@@ -353,6 +408,17 @@ func (t *FindJob) GetFindJob() *FindJob_FindJob {
 		t = &FindJob{}
 	}
 	return t.FindJob
+}
+
+type Configuration struct {
+	Configuration Configuration_Configuration "json:\"configuration\" graphql:\"configuration\""
+}
+
+func (t *Configuration) GetConfiguration() *Configuration_Configuration {
+	if t == nil {
+		t = &Configuration{}
+	}
+	return &t.Configuration
 }
 
 const FindPerformerByIDDocument = `query FindPerformerByID ($id: ID!) {
@@ -633,6 +699,38 @@ func (c *Client) FindJob(ctx context.Context, input FindJobInput, interceptors .
 	return &res, nil
 }
 
+const ConfigurationDocument = `query Configuration {
+	configuration {
+		general {
+			stashBoxes {
+				... StashBoxFragment
+			}
+		}
+	}
+}
+fragment StashBoxFragment on StashBox {
+	endpoint
+	api_key
+	name
+	max_requests_per_minute
+}
+`
+
+func (c *Client) Configuration(ctx context.Context, interceptors ...clientv2.RequestInterceptor) (*Configuration, error) {
+	vars := map[string]any{}
+
+	var res Configuration
+	if err := c.Client.Post(ctx, "Configuration", ConfigurationDocument, &res, vars, interceptors...); err != nil {
+		if c.Client.ParseDataWhenErrors {
+			return &res, err
+		}
+
+		return nil, err
+	}
+
+	return &res, nil
+}
+
 var DocumentOperationNames = map[string]string{
 	FindPerformerByIDDocument:           "FindPerformerByID",
 	FindPerformersDocument:              "FindPerformers",
@@ -641,4 +739,5 @@ var DocumentOperationNames = map[string]string{
 	GetVersionDocument:                  "GetVersion",
 	MetadataScanDocument:                "MetadataScan",
 	FindJobDocument:                     "FindJob",
+	ConfigurationDocument:               "Configuration",
 }

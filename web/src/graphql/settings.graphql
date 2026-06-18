@@ -44,8 +44,14 @@ mutation UpdateSubscriptionSettingsDocument($input: UpdateSubscriptionSettingsIn
       dbPath
       pollIntervalSeconds
       pollEnabled
-      javstashEnabled
-      javstashApiKeyConfigured
+      stashBoxes {
+        name
+        endpoint
+        apiKeyConfigured
+      }
+      selectedStashBoxEndpoints
+      stashBoxesLoaded
+      stashBoxesLoadError
     }
   }
 }
@@ -58,6 +64,25 @@ mutation UpdateLoggingSettingsDocument($input: UpdateLoggingSettingsInput!) {
       maxEntries
       maxFileSizeBytes
       maxFileBackups
+    }
+  }
+}
+
+mutation RefreshSubscriptionStashBoxesDocument {
+  refreshSubscriptionStashBoxes {
+    subscription {
+      store
+      dbPath
+      pollIntervalSeconds
+      pollEnabled
+      stashBoxes {
+        name
+        endpoint
+        apiKeyConfigured
+      }
+      selectedStashBoxEndpoints
+      stashBoxesLoaded
+      stashBoxesLoadError
     }
   }
 }

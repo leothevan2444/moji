@@ -48,8 +48,14 @@ query DashboardDocument {
       dbPath
       pollIntervalSeconds
       pollEnabled
-      javstashEnabled
-      javstashApiKeyConfigured
+      stashBoxes {
+        name
+        endpoint
+        apiKeyConfigured
+      }
+      selectedStashBoxEndpoints
+      stashBoxesLoaded
+      stashBoxesLoadError
     }
     logging {
       level

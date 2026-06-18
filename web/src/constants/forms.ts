@@ -22,7 +22,7 @@ export const EMPTY_SUBSCRIPTION_FORM = {
   store: "sqlite",
   dbPath: "",
   pollIntervalSeconds: "3600",
-  javstashApiKey: ""
+  selectedStashBoxEndpoints: [] as string[]
 };
 
 export const EMPTY_LOGGING_FORM = {

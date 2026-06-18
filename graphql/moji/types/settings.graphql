@@ -16,6 +16,9 @@ extend type Mutation {
   "Update Subscription settings and persist them to backend config"
   updateSubscriptionSettings(input: UpdateSubscriptionSettingsInput!): Settings!
 
+  "Re-fetch the Stash-Box list from the configured Stash server. The updated list and load status are reflected in the returned Settings snapshot."
+  refreshSubscriptionStashBoxes: Settings!
+
   "Update logging settings and persist them to backend config"
   updateLoggingSettings(input: UpdateLoggingSettingsInput!): Settings!
 }
@@ -69,8 +72,20 @@ type SubscriptionSettings {
   dbPath: String!
   pollIntervalSeconds: Int!
   pollEnabled: Boolean!
-  javstashEnabled: Boolean!
-  javstashApiKeyConfigured: Boolean!
+  "Stash Box instances currently configured inside the Stash server."
+  stashBoxes: [StashBoxEndpoint!]!
+  "Endpoints the user has selected for subscription lookups. Empty = use every configured Stash Box."
+  selectedStashBoxEndpoints: [String!]!
+  "Whether the last attempt to load Stash Box endpoints from Stash succeeded."
+  stashBoxesLoaded: Boolean!
+  "Reason for the most recent Stash Box load failure. Null when stashBoxesLoaded is true."
+  stashBoxesLoadError: String
+}
+
+type StashBoxEndpoint {
+  name: String!
+  endpoint: String!
+  apiKeyConfigured: Boolean!
 }
 
 type LoggingSettings {
@@ -109,7 +124,8 @@ input UpdateSubscriptionSettingsInput {
   store: String!
   dbPath: String!
   pollIntervalSeconds: Int!
-  javstashApiKey: String
+  "Endpoints selected for subscription lookups. Empty = use every configured Stash Box."
+  selectedStashBoxEndpoints: [String!]!
 }
 
 input UpdateLoggingSettingsInput {

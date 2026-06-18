@@ -1,0 +1,109 @@
+package subscription
+
+import (
+	"reflect"
+	"testing"
+
+	"github.com/leothevan2444/moji/pkg/stash"
+	stashboxgraphql "github.com/leothevan2444/moji/pkg/stashbox/graphql"
+)
+
+func TestRegistryReplacesByEndpoint(t *testing.T) {
+	clientA := &fakeStashboxClient{performer: &stashboxgraphql.PerformerFragment{ID: "a"}}
+	clientB := &fakeStashboxClient{performer: &stashboxgraphql.PerformerFragment{ID: "b"}}
+
+	var built []string
+	factory := endpointRecordingFactory{
+		clients: map[string]StashboxClient{
+			"https://a.example.org/graphql": clientA,
+			"https://b.example.org/graphql": clientB,
+		},
+		record: &built,
+	}
+
+	registry := newStashboxRegistry(factory)
+
+	registry.Replace([]stash.StashBoxEndpoint{
+		{Name: "a", Endpoint: "https://a.example.org/graphql", APIKey: "k-a"},
+		{Name: "b", Endpoint: "https://b.example.org/graphql", APIKey: "k-b"},
+	})
+	if len(built) != 2 {
+		t.Fatalf("expected 2 clients built, got %d (%v)", len(built), built)
+	}
+
+	// Re-replacing with the same endpoints should NOT rebuild clients
+	// (rate limiter state must survive).
+	registry.Replace([]stash.StashBoxEndpoint{
+		{Name: "a", Endpoint: "https://a.example.org/graphql", APIKey: "k-a"},
+		{Name: "b", Endpoint: "https://b.example.org/graphql", APIKey: "k-b"},
+	})
+	if len(built) != 2 {
+		t.Fatalf("expected 2 clients built (no rebuild), got %d (%v)", len(built), built)
+	}
+
+	// Dropping an endpoint should remove its client.
+	registry.Replace([]stash.StashBoxEndpoint{
+		{Name: "a", Endpoint: "https://a.example.org/graphql", APIKey: "k-a"},
+	})
+	got, ok := registry.Get("https://b.example.org/graphql")
+	if ok || got != nil {
+		t.Fatalf("expected b to be evicted, got ok=%v client=%v", ok, got)
+	}
+}
+
+func TestRegistryGetMissingEndpoint(t *testing.T) {
+	registry := newStashboxRegistry(stubFactory{client: &fakeStashboxClient{}})
+	registry.Replace([]stash.StashBoxEndpoint{
+		{Name: "a", Endpoint: "https://a.example.org/graphql", APIKey: "k-a"},
+	})
+
+	if got, ok := registry.Get("https://missing.example.org/graphql"); ok || got != nil {
+		t.Fatalf("expected missing endpoint to return ok=false, got ok=%v client=%v", ok, got)
+	}
+
+	// Case + whitespace insensitive
+	got, ok := registry.Get("  HTTPS://A.Example.Org/graphql  ")
+	if !ok || got == nil {
+		t.Fatalf("expected normalized lookup to hit, got ok=%v", ok)
+	}
+}
+
+func TestRegistryEndpointsOrder(t *testing.T) {
+	registry := newStashboxRegistry(stubFactory{client: &fakeStashboxClient{}})
+	registry.Replace([]stash.StashBoxEndpoint{
+		{Name: "a", Endpoint: "https://a.example.org/graphql", APIKey: "k-a"},
+		{Name: "b", Endpoint: "https://b.example.org/graphql", APIKey: ""},
+	})
+
+	got := registry.Endpoints()
+	want := []StashBoxEndpoint{
+		{Name: "a", Endpoint: "https://a.example.org/graphql", APIKeyConfigured: true},
+		{Name: "b", Endpoint: "https://b.example.org/graphql", APIKeyConfigured: false},
+	}
+	if !reflect.DeepEqual(got, want) {
+		t.Fatalf("unexpected endpoints:\n got=%+v\nwant=%+v", got, want)
+	}
+}
+
+func TestRegistryNilSafety(t *testing.T) {
+	var registry *stashboxRegistry
+	registry.Replace(nil)
+	if got := registry.Endpoints(); got != nil {
+		t.Fatalf("expected nil endpoints on nil registry, got %+v", got)
+	}
+	if got, ok := registry.Get("https://x"); ok || got != nil {
+		t.Fatalf("expected nil registry Get to miss, got ok=%v client=%v", ok, got)
+	}
+}
+
+// endpointRecordingFactory returns a prebuilt client and records every
+// endpoint it was asked to build, so tests can assert on construction calls.
+type endpointRecordingFactory struct {
+	clients map[string]StashboxClient
+	record  *[]string
+}
+
+func (f endpointRecordingFactory) NewClient(endpoint, _ string) StashboxClient {
+	*f.record = append(*f.record, endpoint)
+	return f.clients[normalizeStashBoxEndpoint(endpoint)]
+}

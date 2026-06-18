@@ -2,6 +2,7 @@ package stash
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 
 	"github.com/Yamashou/gqlgenc/clientv2"
@@ -80,4 +81,50 @@ func (c *Client) GetVersion(ctx context.Context) (*graphql.GetVersion_Version, e
 	}
 
 	return &resp.Version, nil
+}
+
+// StashBoxEndpoint describes a Stash-Box instance configured in the Stash server.
+type StashBoxEndpoint struct {
+	Name                 string
+	Endpoint             string
+	APIKey               string
+	MaxRequestsPerMinute int
+}
+
+// GetStashBoxes queries the Stash server for the list of configured Stash-Box
+// endpoints. The API key is never logged or returned to callers outside this
+// package.
+func (c *Client) GetStashBoxes(ctx context.Context) ([]StashBoxEndpoint, error) {
+	resp, err := c.graphql.Configuration(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("stash: query configuration: %w", err)
+	}
+
+	cfg := resp.GetConfiguration()
+	if cfg == nil {
+		return nil, nil
+	}
+	general := cfg.GetGeneral()
+	if general == nil {
+		return nil, nil
+	}
+
+	boxes := general.GetStashBoxes()
+	out := make([]StashBoxEndpoint, 0, len(boxes))
+	for _, box := range boxes {
+		if box == nil {
+			continue
+		}
+		endpoint := box.GetEndpoint()
+		if endpoint == "" {
+			continue
+		}
+		out = append(out, StashBoxEndpoint{
+			Name:                 box.GetName(),
+			Endpoint:             endpoint,
+			APIKey:               box.GetAPIKey(),
+			MaxRequestsPerMinute: box.GetMaxRequestsPerMinute(),
+		})
+	}
+	return out, nil
 }

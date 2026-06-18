@@ -1,3 +1,6 @@
+// Package stashbox provides a generic Stash-Box GraphQL client. It is not
+// specific to JAVStash; the endpoint URL is provided by the caller (typically
+// the list of Stash-Box instances configured inside the user's Stash server).
 package stashbox
 
 import (
@@ -13,8 +16,9 @@ import (
 // DefaultMaxRequestsPerMinute is the default maximum number of requests per minute.
 const DefaultMaxRequestsPerMinute = 240
 
-// Client represents the client interface to access the JAVStash instance
+// Client represents the client interface to access a Stash-Box instance.
 type Client struct {
+	endpoint   string
 	graphql    *graphql.Client
 	httpClient *http.Client
 
@@ -52,23 +56,35 @@ func rateLimit(n int) clientv2.RequestInterceptor {
 	}
 }
 
-// NewClient creates a new JAVStash client with the given configuration.
-func NewClient(apiKey string) *Client {
+// NewClient creates a new Stash-Box client bound to the given endpoint. The
+// API key is sent as the `ApiKey` header on every request. Pass an empty
+// `endpoint` to skip constructing a usable client (the caller can still hold
+// onto a placeholder for tests); in practice callers should always supply a
+// real URL.
+func NewClient(endpoint, apiKey string, opts ...ClientOption) *Client {
 	ret := &Client{
+		endpoint:             endpoint,
 		httpClient:           http.DefaultClient,
 		maxRequestsPerMinute: DefaultMaxRequestsPerMinute,
+	}
+	for _, opt := range opts {
+		opt(ret)
 	}
 
 	authHeader := setApiKeyHeader(apiKey)
 	limitRequests := rateLimit(ret.maxRequestsPerMinute)
 
-	graphql := graphql.Client{
-		Client: clientv2.NewClient(ret.httpClient, "https://javstash.org/graphql", nil, authHeader, limitRequests),
+	gql := graphql.Client{
+		Client: clientv2.NewClient(ret.httpClient, endpoint, nil, authHeader, limitRequests),
 	}
-
-	ret.graphql = &graphql
+	ret.graphql = &gql
 
 	return ret
+}
+
+// Endpoint returns the GraphQL endpoint URL the client is bound to.
+func (c *Client) Endpoint() string {
+	return c.endpoint
 }
 
 func (c *Client) Me(ctx context.Context) (*graphql.Me_Me, error) {

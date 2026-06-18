@@ -519,11 +519,12 @@ func TestSettingsQueryUsesSettingsEditorSnapshot(t *testing.T) {
 	resolver.SettingsEditor = &fakeSettingsEditor{
 		snapshot: &SettingsSnapshot{
 			Subscription: SubscriptionSettingsSnapshot{
-				Store:               "sqlite",
-				DBPath:              "moji.db",
-				PollIntervalSeconds: 3600,
-				PollEnabled:         true,
-				JAVStashEnabled:     true,
+				Store:                     "sqlite",
+				DBPath:                    "moji.db",
+				PollIntervalSeconds:       3600,
+				PollEnabled:               true,
+				StashBoxesLoaded:          true,
+				SelectedStashBoxEndpoints: []string{"https://javstash.example.org/graphql"},
 			},
 			QBittorrent: QBittorrentSettingsSnapshot{
 				URL:      "http://qb.invalid",
@@ -540,7 +541,7 @@ func TestSettingsQueryUsesSettingsEditorSnapshot(t *testing.T) {
 		},
 	}
 
-	resp := executeGraphQL(t, resolver, `{ settings { subscription { store dbPath pollIntervalSeconds pollEnabled javstashEnabled } qbittorrent { url username } logging { level filePath maxEntries maxFileBackups } system { appVersion } } }`)
+	resp := executeGraphQL(t, resolver, `{ settings { subscription { store dbPath pollIntervalSeconds pollEnabled stashBoxesLoaded selectedStashBoxEndpoints } qbittorrent { url username } logging { level filePath maxEntries maxFileBackups } system { appVersion } } }`)
 	if len(resp.Errors) > 0 {
 		t.Fatalf("expected no errors, got %+v", resp.Errors)
 	}
@@ -601,12 +602,12 @@ func TestUpdateSubscriptionSettingsMutation(t *testing.T) {
 	editor := &fakeSettingsEditor{
 		updateSubscriptionSnapshot: &SettingsSnapshot{
 			Subscription: SubscriptionSettingsSnapshot{
-				Store:                    "sqlite",
-				DBPath:                   "state/moji.db",
-				PollIntervalSeconds:      1800,
-				PollEnabled:              true,
-				JAVStashEnabled:          true,
-				JAVStashAPIKeyConfigured: true,
+				Store:                     "sqlite",
+				DBPath:                    "state/moji.db",
+				PollIntervalSeconds:       1800,
+				PollEnabled:               true,
+				StashBoxesLoaded:          true,
+				SelectedStashBoxEndpoints: []string{"https://javstash.example.org/graphql"},
 			},
 			System: SystemSettingsSnapshot{AppVersion: "test-version"},
 		},
@@ -619,14 +620,14 @@ func TestUpdateSubscriptionSettingsMutation(t *testing.T) {
 			store: "sqlite"
 			dbPath: "state/moji.db"
 			pollIntervalSeconds: 1800
-			javstashApiKey: "token"
+			selectedStashBoxEndpoints: ["https://javstash.example.org/graphql"]
 		}) {
 			subscription {
 				store
 				dbPath
 				pollIntervalSeconds
 				pollEnabled
-				javstashApiKeyConfigured
+				selectedStashBoxEndpoints
 			}
 		}
 	}`)
@@ -639,10 +640,12 @@ func TestUpdateSubscriptionSettingsMutation(t *testing.T) {
 	if editor.subscriptionInput.PollIntervalSeconds != 1800 {
 		t.Fatalf("unexpected subscription interval: %+v", editor.subscriptionInput)
 	}
-	if editor.subscriptionInput.JAVStashAPIKey == nil || *editor.subscriptionInput.JAVStashAPIKey != "token" {
-		t.Fatalf("unexpected subscription api key: %+v", editor.subscriptionInput.JAVStashAPIKey)
+	if len(editor.subscriptionInput.SelectedStashBoxEndpoints) != 1 ||
+		editor.subscriptionInput.SelectedStashBoxEndpoints[0] != "https://javstash.example.org/graphql" {
+		t.Fatalf("unexpected selected endpoints: %+v", editor.subscriptionInput.SelectedStashBoxEndpoints)
 	}
-	if resp.Data.UpdateSubscriptionSettings.Subscription.DBPath != "state/moji.db" || !resp.Data.UpdateSubscriptionSettings.Subscription.JavstashAPIKeyConfigured {
+	if resp.Data.UpdateSubscriptionSettings.Subscription.DBPath != "state/moji.db" ||
+		len(resp.Data.UpdateSubscriptionSettings.Subscription.SelectedStashBoxEndpoints) != 1 {
 		t.Fatalf("unexpected subscription response: %+v", resp.Data.UpdateSubscriptionSettings.Subscription)
 	}
 }
@@ -837,11 +840,12 @@ type graphQLTaskResponse struct {
 				ProgressSyncEnabled         bool   `json:"progressSyncEnabled"`
 			} `json:"tasks"`
 			Subscription struct {
-				Store               string `json:"store"`
-				DBPath              string `json:"dbPath"`
-				PollIntervalSeconds int    `json:"pollIntervalSeconds"`
-				PollEnabled         bool   `json:"pollEnabled"`
-				JavstashEnabled     bool   `json:"javstashEnabled"`
+				Store                     string   `json:"store"`
+				DBPath                    string   `json:"dbPath"`
+				PollIntervalSeconds       int      `json:"pollIntervalSeconds"`
+				PollEnabled               bool     `json:"pollEnabled"`
+				StashBoxesLoaded          bool     `json:"stashBoxesLoaded"`
+				SelectedStashBoxEndpoints []string `json:"selectedStashBoxEndpoints"`
 			} `json:"subscription"`
 			Logging struct {
 				Level            string `json:"level"`
@@ -888,11 +892,11 @@ type graphQLTaskResponse struct {
 		} `json:"updateStashSettings"`
 		UpdateSubscriptionSettings struct {
 			Subscription struct {
-				Store                    string `json:"store"`
-				DBPath                   string `json:"dbPath"`
-				PollIntervalSeconds      int    `json:"pollIntervalSeconds"`
-				PollEnabled              bool   `json:"pollEnabled"`
-				JavstashAPIKeyConfigured bool   `json:"javstashApiKeyConfigured"`
+				Store                     string   `json:"store"`
+				DBPath                    string   `json:"dbPath"`
+				PollIntervalSeconds       int      `json:"pollIntervalSeconds"`
+				PollEnabled               bool     `json:"pollEnabled"`
+				SelectedStashBoxEndpoints []string `json:"selectedStashBoxEndpoints"`
 			} `json:"subscription"`
 		} `json:"updateSubscriptionSettings"`
 		UpdateLoggingSettings struct {
@@ -1014,6 +1018,14 @@ func (f *fakeSubscriptionService) RefreshSubscribedPerformer(context.Context, st
 
 func (f *fakeSubscriptionService) RefreshAll(context.Context) ([]subscription.SubscribedPerformer, error) {
 	return nil, nil
+}
+
+func (f *fakeSubscriptionService) RefreshStashBoxes(context.Context) error {
+	return nil
+}
+
+func (f *fakeSubscriptionService) SnapshotState() ([]subscription.StashBoxEndpoint, subscription.LoadState) {
+	return nil, subscription.LoadState{}
 }
 
 func (fakeStashService) MetadataScan(context.Context, stashsync.ScanRequest) (string, error) {

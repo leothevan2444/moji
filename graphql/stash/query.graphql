@@ -77,3 +77,20 @@ query FindJob($input: FindJobInput!) {
     subTasks
   }
 }
+
+fragment StashBoxFragment on StashBox {
+  endpoint
+  api_key
+  name
+  max_requests_per_minute
+}
+
+query Configuration {
+  configuration {
+    general {
+      stashBoxes {
+        ...StashBoxFragment
+      }
+    }
+  }
+}

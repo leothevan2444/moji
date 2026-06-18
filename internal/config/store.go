@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"strconv"
+	"strings"
 	"sync"
 
 	"gopkg.in/yaml.v3"
@@ -115,16 +116,22 @@ func (s *Store) UpdateQBittorrent(url, username string, password *string, defaul
 	return &clone, nil
 }
 
-func (s *Store) UpdateSubscription(store, dbPath string, pollIntervalSeconds int, javstashAPIKey *string) (*Config, error) {
+func (s *Store) UpdateSubscription(store, dbPath string, pollIntervalSeconds int, selectedEndpoints []string) (*Config, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
 	s.cfg.Subscription.Store = store
 	s.cfg.Subscription.DBPath = dbPath
 	s.cfg.Subscription.PollIntervalSeconds = pollIntervalSeconds
-	if javstashAPIKey != nil {
-		s.cfg.Subscription.JAVStashAPIKey = *javstashAPIKey
+	cleaned := make([]string, 0, len(selectedEndpoints))
+	for _, endpoint := range selectedEndpoints {
+		endpoint = strings.TrimSpace(endpoint)
+		if endpoint == "" {
+			continue
+		}
+		cleaned = append(cleaned, endpoint)
 	}
+	s.cfg.Subscription.SelectedStashBoxEndpoints = cleaned
 
 	if err := s.updateConfigNode(); err != nil {
 		return nil, err
@@ -178,11 +185,11 @@ func (s *Store) updateConfigNode() error {
 	})
 	setIntScalar(mapValue(top, "tasks"), "progress_sync_interval_seconds", s.cfg.Tasks.ProgressSyncIntervalSeconds)
 	setMapString(top, "subscription", map[string]string{
-		"store":            s.cfg.Subscription.Store,
-		"db_path":          s.cfg.Subscription.DBPath,
-		"javstash_api_key": s.cfg.Subscription.JAVStashAPIKey,
+		"store":   s.cfg.Subscription.Store,
+		"db_path": s.cfg.Subscription.DBPath,
 	})
 	setIntScalar(mapValue(top, "subscription"), "poll_interval_seconds", s.cfg.Subscription.PollIntervalSeconds)
+	setStringList(mapValue(top, "subscription"), "selected_stash_box_endpoints", s.cfg.Subscription.SelectedStashBoxEndpoints)
 	setMapString(top, "logging", map[string]string{
 		"level":     s.cfg.Logging.Level,
 		"file_path": s.cfg.Logging.FilePath,
@@ -229,6 +236,28 @@ func setMapString(parent *yaml.Node, key string, values map[string]string) {
 	ensureMapValue(section)
 	for field, value := range values {
 		setScalar(section, field, value)
+	}
+}
+
+func setStringList(parent *yaml.Node, key string, values []string) {
+	target := mapValue(parent, key)
+	if len(values) == 0 {
+		target.Kind = yaml.SequenceNode
+		target.Tag = "!!seq"
+		target.Style = 0
+		target.Content = nil
+		return
+	}
+	target.Kind = yaml.SequenceNode
+	target.Tag = "!!seq"
+	target.Style = yaml.FlowStyle
+	target.Content = make([]*yaml.Node, 0, len(values))
+	for _, value := range values {
+		target.Content = append(target.Content, &yaml.Node{
+			Kind:  yaml.ScalarNode,
+			Tag:   "!!str",
+			Value: value,
+		})
 	}
 }
 

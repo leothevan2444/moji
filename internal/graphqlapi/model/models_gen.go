@@ -138,6 +138,12 @@ type Settings struct {
 	System       *SystemSettings       `json:"system"`
 }
 
+type StashBoxEndpoint struct {
+	Name             string `json:"name"`
+	Endpoint         string `json:"endpoint"`
+	APIKeyConfigured bool   `json:"apiKeyConfigured"`
+}
+
 type StashJob struct {
 	ID          string   `json:"id"`
 	Status      string   `json:"status"`
@@ -212,12 +218,18 @@ type SubscriptionRelease struct {
 }
 
 type SubscriptionSettings struct {
-	Store                    string `json:"store"`
-	DBPath                   string `json:"dbPath"`
-	PollIntervalSeconds      int    `json:"pollIntervalSeconds"`
-	PollEnabled              bool   `json:"pollEnabled"`
-	JavstashEnabled          bool   `json:"javstashEnabled"`
-	JavstashAPIKeyConfigured bool   `json:"javstashApiKeyConfigured"`
+	Store               string `json:"store"`
+	DbPath              string `json:"dbPath"`
+	PollIntervalSeconds int    `json:"pollIntervalSeconds"`
+	PollEnabled         bool   `json:"pollEnabled"`
+	// Stash Box instances currently configured inside the Stash server.
+	StashBoxes []*StashBoxEndpoint `json:"stashBoxes"`
+	// Endpoints the user has selected for subscription lookups. Empty = use every configured Stash Box.
+	SelectedStashBoxEndpoints []string `json:"selectedStashBoxEndpoints"`
+	// Whether the last attempt to load Stash Box endpoints from Stash succeeded.
+	StashBoxesLoaded bool `json:"stashBoxesLoaded"`
+	// Reason for the most recent Stash Box load failure. Null when stashBoxesLoaded is true.
+	StashBoxesLoadError *string `json:"stashBoxesLoadError,omitempty"`
 }
 
 type SystemSettings struct {
@@ -250,7 +262,7 @@ type Task struct {
 
 type TaskSettings struct {
 	Store                       string `json:"store"`
-	DBPath                      string `json:"dbPath"`
+	DbPath                      string `json:"dbPath"`
 	ProgressSyncIntervalSeconds int    `json:"progressSyncIntervalSeconds"`
 	ProgressSyncEnabled         bool   `json:"progressSyncEnabled"`
 }
@@ -284,10 +296,11 @@ type UpdateStashSettingsInput struct {
 }
 
 type UpdateSubscriptionSettingsInput struct {
-	Store               string  `json:"store"`
-	DBPath              string  `json:"dbPath"`
-	PollIntervalSeconds int     `json:"pollIntervalSeconds"`
-	JavstashAPIKey      *string `json:"javstashApiKey,omitempty"`
+	Store               string `json:"store"`
+	DbPath              string `json:"dbPath"`
+	PollIntervalSeconds int    `json:"pollIntervalSeconds"`
+	// Endpoints selected for subscription lookups. Empty = use every configured Stash Box.
+	SelectedStashBoxEndpoints []string `json:"selectedStashBoxEndpoints"`
 }
 
 type LogLevel string

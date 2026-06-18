@@ -14,20 +14,22 @@ type runtimeSettingsEditor struct {
 	qbittorrentEnabled bool
 	downloaderEnabled  bool
 	stashEnabled       bool
+	subscriptionService graphqlapi.SubscriptionService
 }
 
-func newRuntimeSettingsEditor(store *config.Store, version string, qbittorrentEnabled bool, downloaderEnabled bool, stashEnabled bool) *runtimeSettingsEditor {
+func newRuntimeSettingsEditor(store *config.Store, version string, qbittorrentEnabled bool, downloaderEnabled bool, stashEnabled bool, subscriptionService graphqlapi.SubscriptionService) *runtimeSettingsEditor {
 	return &runtimeSettingsEditor{
-		store:              store,
-		version:            version,
-		qbittorrentEnabled: qbittorrentEnabled,
-		downloaderEnabled:  downloaderEnabled,
-		stashEnabled:       stashEnabled,
+		store:               store,
+		version:             version,
+		qbittorrentEnabled:  qbittorrentEnabled,
+		downloaderEnabled:   downloaderEnabled,
+		stashEnabled:        stashEnabled,
+		subscriptionService: subscriptionService,
 	}
 }
 
 func (s *runtimeSettingsEditor) Snapshot() *graphqlapi.SettingsSnapshot {
-	return buildSettingsSnapshot(s.store.Config(), s.version, s.qbittorrentEnabled, s.downloaderEnabled, s.stashEnabled)
+	return buildSettingsSnapshot(s.store.Config(), s.version, s.qbittorrentEnabled, s.downloaderEnabled, s.stashEnabled, s.subscriptionService)
 }
 
 func (s *runtimeSettingsEditor) UpdateStashSettings(input graphqlapi.UpdateStashSettingsInput) (*graphqlapi.SettingsSnapshot, error) {
@@ -41,7 +43,7 @@ func (s *runtimeSettingsEditor) UpdateStashSettings(input graphqlapi.UpdateStash
 		return nil, err
 	}
 	logging.Infof("settings: stash settings saved for url=%s library_path=%s", cfg.Stash.URL, cfg.Stash.LibraryPath)
-	return buildSettingsSnapshot(cfg, s.version, s.qbittorrentEnabled, s.downloaderEnabled, s.stashEnabled), nil
+	return buildSettingsSnapshot(cfg, s.version, s.qbittorrentEnabled, s.downloaderEnabled, s.stashEnabled, s.subscriptionService), nil
 }
 
 func (s *runtimeSettingsEditor) UpdateJackettSettings(input graphqlapi.UpdateJackettSettingsInput) (*graphqlapi.SettingsSnapshot, error) {
@@ -54,7 +56,7 @@ func (s *runtimeSettingsEditor) UpdateJackettSettings(input graphqlapi.UpdateJac
 		return nil, err
 	}
 	logging.Infof("settings: jackett settings saved for url=%s", cfg.Jackett.URL)
-	return buildSettingsSnapshot(cfg, s.version, s.qbittorrentEnabled, s.downloaderEnabled, s.stashEnabled), nil
+	return buildSettingsSnapshot(cfg, s.version, s.qbittorrentEnabled, s.downloaderEnabled, s.stashEnabled, s.subscriptionService), nil
 }
 
 func (s *runtimeSettingsEditor) UpdateQBittorrentSettings(input graphqlapi.UpdateQBittorrentSettingsInput) (*graphqlapi.SettingsSnapshot, error) {
@@ -77,7 +79,7 @@ func (s *runtimeSettingsEditor) UpdateQBittorrentSettings(input graphqlapi.Updat
 		cfg.QBittorrent.DefaultSavePath,
 		cfg.QBittorrent.Category,
 	)
-	return buildSettingsSnapshot(cfg, s.version, s.qbittorrentEnabled, s.downloaderEnabled, s.stashEnabled), nil
+	return buildSettingsSnapshot(cfg, s.version, s.qbittorrentEnabled, s.downloaderEnabled, s.stashEnabled, s.subscriptionService), nil
 }
 
 func (s *runtimeSettingsEditor) UpdateSubscriptionSettings(input graphqlapi.UpdateSubscriptionSettingsInput) (*graphqlapi.SettingsSnapshot, error) {
@@ -85,19 +87,20 @@ func (s *runtimeSettingsEditor) UpdateSubscriptionSettings(input graphqlapi.Upda
 		strings.TrimSpace(input.Store),
 		strings.TrimSpace(input.DBPath),
 		input.PollIntervalSeconds,
-		trimOptionalSecret(input.JAVStashAPIKey),
+		input.SelectedStashBoxEndpoints,
 	)
 	if err != nil {
 		logging.Errorf("settings: save subscription settings failed: %v", err)
 		return nil, err
 	}
 	logging.Infof(
-		"settings: subscription settings saved for store=%s db_path=%s poll_interval=%d",
+		"settings: subscription settings saved for store=%s db_path=%s poll_interval=%d selected_endpoints=%d",
 		cfg.Subscription.Store,
 		cfg.Subscription.DBPath,
 		cfg.Subscription.PollIntervalSeconds,
+		len(cfg.Subscription.SelectedStashBoxEndpoints),
 	)
-	return buildSettingsSnapshot(cfg, s.version, s.qbittorrentEnabled, s.downloaderEnabled, s.stashEnabled), nil
+	return buildSettingsSnapshot(cfg, s.version, s.qbittorrentEnabled, s.downloaderEnabled, s.stashEnabled, s.subscriptionService), nil
 }
 
 func (s *runtimeSettingsEditor) UpdateLoggingSettings(input graphqlapi.UpdateLoggingSettingsInput) (*graphqlapi.SettingsSnapshot, error) {
@@ -130,7 +133,7 @@ func (s *runtimeSettingsEditor) UpdateLoggingSettings(input graphqlapi.UpdateLog
 		cfg.EffectiveLogMaxFileSizeBytes(),
 		cfg.EffectiveLogMaxFileBackups(),
 	)
-	return buildSettingsSnapshot(cfg, s.version, s.qbittorrentEnabled, s.downloaderEnabled, s.stashEnabled), nil
+	return buildSettingsSnapshot(cfg, s.version, s.qbittorrentEnabled, s.downloaderEnabled, s.stashEnabled, s.subscriptionService), nil
 }
 
 func trimOptionalSecret(raw *string) *string {

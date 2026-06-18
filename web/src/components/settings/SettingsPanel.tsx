@@ -1,8 +1,11 @@
 import { FormEvent, useEffect, useState } from "react";
 import { useMutation, useQuery } from "urql";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { faRotate } from "@fortawesome/free-solid-svg-icons";
 import {
   LogLevel,
   LogsDocumentDocument,
+  RefreshSubscriptionStashBoxesDocumentDocument,
   UpdateSubscriptionSettingsDocumentDocument,
   UpdateJackettSettingsDocumentDocument,
   UpdateLoggingSettingsDocumentDocument,
@@ -11,6 +14,7 @@ import {
   type DashboardDocumentQuery,
   type LogsDocumentQuery,
   type LogsDocumentQueryVariables,
+  type RefreshSubscriptionStashBoxesDocumentMutation,
   type UpdateSubscriptionSettingsDocumentMutation,
   type UpdateSubscriptionSettingsDocumentMutationVariables,
   type UpdateJackettSettingsDocumentMutation,
@@ -99,6 +103,10 @@ export function SettingsPanel({
     UpdateSubscriptionSettingsDocumentMutationVariables
   >(UpdateSubscriptionSettingsDocumentDocument);
 
+  const [{ fetching: refreshingStashBoxes }, refreshStashBoxesMutation] = useMutation<
+    RefreshSubscriptionStashBoxesDocumentMutation
+  >(RefreshSubscriptionStashBoxesDocumentDocument);
+
   const [{ fetching: updatingLogging }, updateLoggingSettings] = useMutation<
     UpdateLoggingSettingsDocumentMutation,
     UpdateLoggingSettingsDocumentMutationVariables
@@ -130,7 +138,7 @@ export function SettingsPanel({
       store: runtimeSettings.subscription.store || "sqlite",
       dbPath: runtimeSettings.subscription.dbPath || "",
       pollIntervalSeconds: String(runtimeSettings.subscription.pollIntervalSeconds || 3600),
-      javstashApiKey: ""
+      selectedStashBoxEndpoints: [...(runtimeSettings.subscription.selectedStashBoxEndpoints ?? [])]
     });
     setLoggingForm({
       level: runtimeSettings.logging.level || "info",
@@ -254,15 +262,37 @@ export function SettingsPanel({
         store: subscriptionForm.store.trim() || "sqlite",
         dbPath: subscriptionForm.dbPath.trim(),
         pollIntervalSeconds: normalizedPollIntervalSeconds,
-        javstashApiKey: subscriptionForm.javstashApiKey.trim() || null
+        selectedStashBoxEndpoints: subscriptionForm.selectedStashBoxEndpoints
       }
     });
     if (result.error) {
       pushToast("tone-danger", describeQueryError(result.error));
       return;
     }
-    setSubscriptionForm((current) => ({ ...current, javstashApiKey: "" }));
-    pushToast("tone-success", "订阅设置已保存，轮询与 JAVStash 凭据已同步到后端。");
+    pushToast("tone-success", "订阅设置已保存，轮询与 Stash-Box 选择已同步到后端。");
+    await refreshDashboard({ requestPolicy: "network-only" });
+  };
+
+  const refreshSubscriptionStashBoxes = async () => {
+    const result = await refreshStashBoxesMutation({});
+    if (result.error) {
+      pushToast("tone-danger", `刷新 Stash-Box 失败：${describeQueryError(result.error)}`);
+      return;
+    }
+    const subscription = result.data?.refreshSubscriptionStashBoxes?.subscription;
+    if (subscription) {
+      const count = subscription.stashBoxes?.length ?? 0;
+      pushToast(
+        subscription.stashBoxesLoaded
+          ? "tone-success"
+          : "tone-danger",
+        subscription.stashBoxesLoaded
+          ? `Stash-Box 已刷新，共 ${count} 个端点。`
+          : `刷新失败：${subscription.stashBoxesLoadError ?? "未知错误"}`
+      );
+    } else {
+      pushToast("tone-success", "Stash-Box 已刷新。");
+    }
     await refreshDashboard({ requestPolicy: "network-only" });
   };
 
@@ -523,6 +553,31 @@ export function SettingsPanel({
   }
 
   if (settingsTab === "订阅") {
+    const stashBoxes = runtimeSettings.subscription.stashBoxes ?? [];
+    const selected = subscriptionForm.selectedStashBoxEndpoints;
+    const loaded = runtimeSettings.subscription.stashBoxesLoaded;
+    const loadError = runtimeSettings.subscription.stashBoxesLoadError;
+
+    const toggleStashBox = (endpoint: string, checked: boolean) => {
+      setSubscriptionForm((current) => {
+        const set = new Set(current.selectedStashBoxEndpoints);
+        if (checked) {
+          set.add(endpoint);
+        } else {
+          set.delete(endpoint);
+        }
+        return { ...current, selectedStashBoxEndpoints: Array.from(set) };
+      });
+    };
+    const setSelection = (endpoints: string[]) => {
+      setSubscriptionForm((current) => ({ ...current, selectedStashBoxEndpoints: endpoints }));
+    };
+    const allEndpoints = stashBoxes.map((box) => box.endpoint);
+    const allSelected = allEndpoints.length > 0 && selected.length === allEndpoints.length;
+    const toggleAll = () => {
+      setSelection(allSelected ? [] : allEndpoints);
+    };
+
     return (
       <article className="drawer-card">
         <div className="drawer-card__head">
@@ -555,22 +610,117 @@ export function SettingsPanel({
               inputMode="numeric"
             />
           </label>
-          <label className="settings-field">
-            <span>JAVStash API key</span>
-            <input
-              type="password"
-              value={subscriptionForm.javstashApiKey}
-              onChange={(event) => setSubscriptionForm((current) => ({ ...current, javstashApiKey: event.target.value }))}
-              placeholder={runtimeSettings.subscription.javstashApiKeyConfigured ? "留空则保留现有 API key" : "输入新的 API key"}
-            />
-          </label>
+
+          <section className="stashbox-source">
+            <header className="stashbox-source__head">
+              <div>
+                <h4>Stash-Box 数据源</h4>
+                <p className="stashbox-source__sub">
+                  在 Stash → 设置 → 元数据提供者 → Stash-box 中配置后会出现在这里。
+                </p>
+              </div>
+              <div className="stashbox-source__stats">
+                {loaded && stashBoxes.length > 0 ? (
+                  <>
+                    <span className="stashbox-source__count">{selected.length}<small> / {stashBoxes.length}</small></span>
+                    <button
+                      type="button"
+                      className="ghost-button"
+                      onClick={toggleAll}
+                      disabled={allEndpoints.length === 0}
+                    >
+                      {allSelected ? "全部取消" : "全部选择"}
+                    </button>
+                  </>
+                ) : null}
+                <button
+                  type="button"
+                  className="ghost-button stashbox-source__refresh"
+                  onClick={() => void refreshSubscriptionStashBoxes()}
+                  disabled={refreshingStashBoxes}
+                  title="从 Stash 重新拉取 Stash-Box 配置"
+                  aria-label="刷新 Stash-Box 列表"
+                >
+                  <FontAwesomeIcon
+                    icon={faRotate}
+                    className={refreshingStashBoxes ? "is-spinning" : undefined}
+                    aria-hidden="true"
+                  />
+                  <span>{refreshingStashBoxes ? "刷新中..." : "刷新"}</span>
+                </button>
+              </div>
+            </header>
+
+            {!loaded ? (
+              <div className="stashbox-source__empty stashbox-source__empty--loading">
+                <div className="stashbox-source__spinner" aria-hidden="true" />
+                <div>
+                  <strong>正在从 Stash 拉取 Stash-Box 端点…</strong>
+                  <p>这一过程由后端在启动时自动完成，请稍候。</p>
+                </div>
+              </div>
+            ) : stashBoxes.length === 0 ? (
+              <div className="stashbox-source__empty stashbox-source__empty--danger">
+                <div className="stashbox-source__icon" aria-hidden="true">!</div>
+                <div>
+                  <strong>Stash 中尚未配置任何 Stash-Box</strong>
+                  <p>请在 Stash → Settings → Stash-Boxes 中至少添加一个端点后，刷新本页。</p>
+                  {loadError ? <p className="stashbox-source__error">拉取失败：{loadError}</p> : null}
+                </div>
+              </div>
+            ) : (
+              <ul className="stashbox-source__list">
+                {stashBoxes.map((box) => {
+                  const checked = selected.includes(box.endpoint);
+                  return (
+                    <li key={box.endpoint}>
+                      <label className={`stashbox-card${checked ? " is-selected" : ""}`}>
+                        <input
+                          type="checkbox"
+                          className="stashbox-card__checkbox"
+                          checked={checked}
+                          onChange={(event) => toggleStashBox(box.endpoint, event.target.checked)}
+                        />
+                        <span className="stashbox-card__body">
+                          <span className="stashbox-card__title-row">
+                            <strong className="stashbox-card__name">{box.name || "(未命名)"}</strong>
+                            <span
+                              className={`stashbox-card__chip ${
+                                box.apiKeyConfigured ? "stashbox-card__chip--ok" : "stashbox-card__chip--warn"
+                              }`}
+                            >
+                              {box.apiKeyConfigured ? "API key 已配置" : "未配置 API key"}
+                            </span>
+                          </span>
+                          <code className="stashbox-card__endpoint">{box.endpoint}</code>
+                        </span>
+                      </label>
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
+
+            {loaded && stashBoxes.length > 0 ? (
+              <footer className="stashbox-source__foot">
+                {selected.length === 0
+                  ? "未勾选任何端点，订阅将使用全部可用 Stash-Box。"
+                  : `已选 ${selected.length} / ${stashBoxes.length} 个端点。`}
+              </footer>
+            ) : null}
+          </section>
+
           <div className="settings-meta">
             <span>当前存储: {runtimeSettings.subscription.store || "sqlite"}</span>
-            <span>JAVStash key: {boolState(runtimeSettings.subscription.javstashApiKeyConfigured)}</span>
             <span>轮询状态: {runtimeSettings.subscription.pollEnabled ? "已启用" : "未启用"}</span>
           </div>
           <div className="settings-actions">
-            <button type="submit" disabled={updatingSubscription}>保存订阅设置</button>
+            <button
+              type="submit"
+              disabled={updatingSubscription || !loaded}
+            >
+              保存订阅设置
+            </button>
           </div>
         </form>
       </article>

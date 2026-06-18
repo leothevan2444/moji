@@ -107,22 +107,23 @@ type ComplexityRoot struct {
 	}
 
 	Mutation struct {
-		AddTorrent                 func(childComplexity int, input model.QBittorrentAddInput) int
-		DownloadMedia              func(childComplexity int, input model.DownloadMediaInput) int
-		QbittorrentAdd             func(childComplexity int, input model.QBittorrentAddInput) int
-		RefreshSubscribedPerformer func(childComplexity int, stashPerformerID string) int
-		RefreshSubscriptionsNow    func(childComplexity int) int
-		StashMetadataScan          func(childComplexity int, input model.StashMetadataScanInput) int
-		SubscribePerformer         func(childComplexity int, stashPerformerID string) int
-		SyncTaskProgress           func(childComplexity int) int
-		TriggerStashScans          func(childComplexity int) int
-		TriggerTaskStashScan       func(childComplexity int, id string) int
-		UnsubscribePerformer       func(childComplexity int, stashPerformerID string) int
-		UpdateJackettSettings      func(childComplexity int, input model.UpdateJackettSettingsInput) int
-		UpdateLoggingSettings      func(childComplexity int, input model.UpdateLoggingSettingsInput) int
-		UpdateQBittorrentSettings  func(childComplexity int, input model.UpdateQBittorrentSettingsInput) int
-		UpdateStashSettings        func(childComplexity int, input model.UpdateStashSettingsInput) int
-		UpdateSubscriptionSettings func(childComplexity int, input model.UpdateSubscriptionSettingsInput) int
+		AddTorrent                    func(childComplexity int, input model.QBittorrentAddInput) int
+		DownloadMedia                 func(childComplexity int, input model.DownloadMediaInput) int
+		QbittorrentAdd                func(childComplexity int, input model.QBittorrentAddInput) int
+		RefreshSubscribedPerformer    func(childComplexity int, stashPerformerID string) int
+		RefreshSubscriptionStashBoxes func(childComplexity int) int
+		RefreshSubscriptionsNow       func(childComplexity int) int
+		StashMetadataScan             func(childComplexity int, input model.StashMetadataScanInput) int
+		SubscribePerformer            func(childComplexity int, stashPerformerID string) int
+		SyncTaskProgress              func(childComplexity int) int
+		TriggerStashScans             func(childComplexity int) int
+		TriggerTaskStashScan          func(childComplexity int, id string) int
+		UnsubscribePerformer          func(childComplexity int, stashPerformerID string) int
+		UpdateJackettSettings         func(childComplexity int, input model.UpdateJackettSettingsInput) int
+		UpdateLoggingSettings         func(childComplexity int, input model.UpdateLoggingSettingsInput) int
+		UpdateQBittorrentSettings     func(childComplexity int, input model.UpdateQBittorrentSettingsInput) int
+		UpdateStashSettings           func(childComplexity int, input model.UpdateStashSettingsInput) int
+		UpdateSubscriptionSettings    func(childComplexity int, input model.UpdateSubscriptionSettingsInput) int
 	}
 
 	QBTorrent struct {
@@ -174,6 +175,12 @@ type ComplexityRoot struct {
 		Subscription func(childComplexity int) int
 		System       func(childComplexity int) int
 		Tasks        func(childComplexity int) int
+	}
+
+	StashBoxEndpoint struct {
+		APIKeyConfigured func(childComplexity int) int
+		Endpoint         func(childComplexity int) int
+		Name             func(childComplexity int) int
 	}
 
 	StashJob struct {
@@ -238,12 +245,14 @@ type ComplexityRoot struct {
 	}
 
 	SubscriptionSettings struct {
-		DBPath                   func(childComplexity int) int
-		JavstashAPIKeyConfigured func(childComplexity int) int
-		JavstashEnabled          func(childComplexity int) int
-		PollEnabled              func(childComplexity int) int
-		PollIntervalSeconds      func(childComplexity int) int
-		Store                    func(childComplexity int) int
+		DbPath                    func(childComplexity int) int
+		PollEnabled               func(childComplexity int) int
+		PollIntervalSeconds       func(childComplexity int) int
+		SelectedStashBoxEndpoints func(childComplexity int) int
+		StashBoxes                func(childComplexity int) int
+		StashBoxesLoadError       func(childComplexity int) int
+		StashBoxesLoaded          func(childComplexity int) int
+		Store                     func(childComplexity int) int
 	}
 
 	SystemSettings struct {
@@ -275,7 +284,7 @@ type ComplexityRoot struct {
 	}
 
 	TaskSettings struct {
-		DBPath                      func(childComplexity int) int
+		DbPath                      func(childComplexity int) int
 		ProgressSyncEnabled         func(childComplexity int) int
 		ProgressSyncIntervalSeconds func(childComplexity int) int
 		Store                       func(childComplexity int) int
@@ -293,6 +302,7 @@ type MutationResolver interface {
 	UpdateJackettSettings(ctx context.Context, input model.UpdateJackettSettingsInput) (*model.Settings, error)
 	UpdateQBittorrentSettings(ctx context.Context, input model.UpdateQBittorrentSettingsInput) (*model.Settings, error)
 	UpdateSubscriptionSettings(ctx context.Context, input model.UpdateSubscriptionSettingsInput) (*model.Settings, error)
+	RefreshSubscriptionStashBoxes(ctx context.Context) (*model.Settings, error)
 	UpdateLoggingSettings(ctx context.Context, input model.UpdateLoggingSettingsInput) (*model.Settings, error)
 	StashMetadataScan(ctx context.Context, input model.StashMetadataScanInput) (string, error)
 	SubscribePerformer(ctx context.Context, stashPerformerID string) (*model.SubscribedPerformer, error)
@@ -654,6 +664,13 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.Mutation.RefreshSubscribedPerformer(childComplexity, args["stashPerformerID"].(string)), true
+
+	case "Mutation.refreshSubscriptionStashBoxes":
+		if e.complexity.Mutation.RefreshSubscriptionStashBoxes == nil {
+			break
+		}
+
+		return e.complexity.Mutation.RefreshSubscriptionStashBoxes(childComplexity), true
 
 	case "Mutation.refreshSubscriptionsNow":
 		if e.complexity.Mutation.RefreshSubscriptionsNow == nil {
@@ -1087,6 +1104,27 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.Settings.Tasks(childComplexity), true
 
+	case "StashBoxEndpoint.apiKeyConfigured":
+		if e.complexity.StashBoxEndpoint.APIKeyConfigured == nil {
+			break
+		}
+
+		return e.complexity.StashBoxEndpoint.APIKeyConfigured(childComplexity), true
+
+	case "StashBoxEndpoint.endpoint":
+		if e.complexity.StashBoxEndpoint.Endpoint == nil {
+			break
+		}
+
+		return e.complexity.StashBoxEndpoint.Endpoint(childComplexity), true
+
+	case "StashBoxEndpoint.name":
+		if e.complexity.StashBoxEndpoint.Name == nil {
+			break
+		}
+
+		return e.complexity.StashBoxEndpoint.Name(childComplexity), true
+
 	case "StashJob.addTime":
 		if e.complexity.StashJob.AddTime == nil {
 			break
@@ -1389,25 +1427,11 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		return e.complexity.SubscriptionRelease.URL(childComplexity), true
 
 	case "SubscriptionSettings.dbPath":
-		if e.complexity.SubscriptionSettings.DBPath == nil {
+		if e.complexity.SubscriptionSettings.DbPath == nil {
 			break
 		}
 
-		return e.complexity.SubscriptionSettings.DBPath(childComplexity), true
-
-	case "SubscriptionSettings.javstashApiKeyConfigured":
-		if e.complexity.SubscriptionSettings.JavstashAPIKeyConfigured == nil {
-			break
-		}
-
-		return e.complexity.SubscriptionSettings.JavstashAPIKeyConfigured(childComplexity), true
-
-	case "SubscriptionSettings.javstashEnabled":
-		if e.complexity.SubscriptionSettings.JavstashEnabled == nil {
-			break
-		}
-
-		return e.complexity.SubscriptionSettings.JavstashEnabled(childComplexity), true
+		return e.complexity.SubscriptionSettings.DbPath(childComplexity), true
 
 	case "SubscriptionSettings.pollEnabled":
 		if e.complexity.SubscriptionSettings.PollEnabled == nil {
@@ -1422,6 +1446,34 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.SubscriptionSettings.PollIntervalSeconds(childComplexity), true
+
+	case "SubscriptionSettings.selectedStashBoxEndpoints":
+		if e.complexity.SubscriptionSettings.SelectedStashBoxEndpoints == nil {
+			break
+		}
+
+		return e.complexity.SubscriptionSettings.SelectedStashBoxEndpoints(childComplexity), true
+
+	case "SubscriptionSettings.stashBoxes":
+		if e.complexity.SubscriptionSettings.StashBoxes == nil {
+			break
+		}
+
+		return e.complexity.SubscriptionSettings.StashBoxes(childComplexity), true
+
+	case "SubscriptionSettings.stashBoxesLoadError":
+		if e.complexity.SubscriptionSettings.StashBoxesLoadError == nil {
+			break
+		}
+
+		return e.complexity.SubscriptionSettings.StashBoxesLoadError(childComplexity), true
+
+	case "SubscriptionSettings.stashBoxesLoaded":
+		if e.complexity.SubscriptionSettings.StashBoxesLoaded == nil {
+			break
+		}
+
+		return e.complexity.SubscriptionSettings.StashBoxesLoaded(childComplexity), true
 
 	case "SubscriptionSettings.store":
 		if e.complexity.SubscriptionSettings.Store == nil {
@@ -1585,11 +1637,11 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		return e.complexity.Task.UpdatedAt(childComplexity), true
 
 	case "TaskSettings.dbPath":
-		if e.complexity.TaskSettings.DBPath == nil {
+		if e.complexity.TaskSettings.DbPath == nil {
 			break
 		}
 
-		return e.complexity.TaskSettings.DBPath(childComplexity), true
+		return e.complexity.TaskSettings.DbPath(childComplexity), true
 
 	case "TaskSettings.progressSyncEnabled":
 		if e.complexity.TaskSettings.ProgressSyncEnabled == nil {
@@ -1806,6 +1858,9 @@ extend type Mutation {
   "Update Subscription settings and persist them to backend config"
   updateSubscriptionSettings(input: UpdateSubscriptionSettingsInput!): Settings!
 
+  "Re-fetch the Stash-Box list from the configured Stash server. The updated list and load status are reflected in the returned Settings snapshot."
+  refreshSubscriptionStashBoxes: Settings!
+
   "Update logging settings and persist them to backend config"
   updateLoggingSettings(input: UpdateLoggingSettingsInput!): Settings!
 }
@@ -1859,8 +1914,20 @@ type SubscriptionSettings {
   dbPath: String!
   pollIntervalSeconds: Int!
   pollEnabled: Boolean!
-  javstashEnabled: Boolean!
-  javstashApiKeyConfigured: Boolean!
+  "Stash Box instances currently configured inside the Stash server."
+  stashBoxes: [StashBoxEndpoint!]!
+  "Endpoints the user has selected for subscription lookups. Empty = use every configured Stash Box."
+  selectedStashBoxEndpoints: [String!]!
+  "Whether the last attempt to load Stash Box endpoints from Stash succeeded."
+  stashBoxesLoaded: Boolean!
+  "Reason for the most recent Stash Box load failure. Null when stashBoxesLoaded is true."
+  stashBoxesLoadError: String
+}
+
+type StashBoxEndpoint {
+  name: String!
+  endpoint: String!
+  apiKeyConfigured: Boolean!
 }
 
 type LoggingSettings {
@@ -1899,7 +1966,8 @@ input UpdateSubscriptionSettingsInput {
   store: String!
   dbPath: String!
   pollIntervalSeconds: Int!
-  javstashApiKey: String
+  "Endpoints selected for subscription lookups. Empty = use every configured Stash Box."
+  selectedStashBoxEndpoints: [String!]!
 }
 
 input UpdateLoggingSettingsInput {
@@ -5404,6 +5472,66 @@ func (ec *executionContext) fieldContext_Mutation_updateSubscriptionSettings(ctx
 	return fc, nil
 }
 
+func (ec *executionContext) _Mutation_refreshSubscriptionStashBoxes(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Mutation_refreshSubscriptionStashBoxes(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().RefreshSubscriptionStashBoxes(rctx)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*model.Settings)
+	fc.Result = res
+	return ec.marshalNSettings2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐSettings(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Mutation_refreshSubscriptionStashBoxes(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "stash":
+				return ec.fieldContext_Settings_stash(ctx, field)
+			case "jackett":
+				return ec.fieldContext_Settings_jackett(ctx, field)
+			case "qbittorrent":
+				return ec.fieldContext_Settings_qbittorrent(ctx, field)
+			case "tasks":
+				return ec.fieldContext_Settings_tasks(ctx, field)
+			case "subscription":
+				return ec.fieldContext_Settings_subscription(ctx, field)
+			case "logging":
+				return ec.fieldContext_Settings_logging(ctx, field)
+			case "system":
+				return ec.fieldContext_Settings_system(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type Settings", field.Name)
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _Mutation_updateLoggingSettings(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_Mutation_updateLoggingSettings(ctx, field)
 	if err != nil {
@@ -7885,10 +8013,14 @@ func (ec *executionContext) fieldContext_Settings_subscription(_ context.Context
 				return ec.fieldContext_SubscriptionSettings_pollIntervalSeconds(ctx, field)
 			case "pollEnabled":
 				return ec.fieldContext_SubscriptionSettings_pollEnabled(ctx, field)
-			case "javstashEnabled":
-				return ec.fieldContext_SubscriptionSettings_javstashEnabled(ctx, field)
-			case "javstashApiKeyConfigured":
-				return ec.fieldContext_SubscriptionSettings_javstashApiKeyConfigured(ctx, field)
+			case "stashBoxes":
+				return ec.fieldContext_SubscriptionSettings_stashBoxes(ctx, field)
+			case "selectedStashBoxEndpoints":
+				return ec.fieldContext_SubscriptionSettings_selectedStashBoxEndpoints(ctx, field)
+			case "stashBoxesLoaded":
+				return ec.fieldContext_SubscriptionSettings_stashBoxesLoaded(ctx, field)
+			case "stashBoxesLoadError":
+				return ec.fieldContext_SubscriptionSettings_stashBoxesLoadError(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type SubscriptionSettings", field.Name)
 		},
@@ -7995,6 +8127,138 @@ func (ec *executionContext) fieldContext_Settings_system(_ context.Context, fiel
 				return ec.fieldContext_SystemSettings_appVersion(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type SystemSettings", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _StashBoxEndpoint_name(ctx context.Context, field graphql.CollectedField, obj *model.StashBoxEndpoint) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_StashBoxEndpoint_name(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Name, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_StashBoxEndpoint_name(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "StashBoxEndpoint",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _StashBoxEndpoint_endpoint(ctx context.Context, field graphql.CollectedField, obj *model.StashBoxEndpoint) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_StashBoxEndpoint_endpoint(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Endpoint, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_StashBoxEndpoint_endpoint(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "StashBoxEndpoint",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _StashBoxEndpoint_apiKeyConfigured(ctx context.Context, field graphql.CollectedField, obj *model.StashBoxEndpoint) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_StashBoxEndpoint_apiKeyConfigured(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.APIKeyConfigured, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(bool)
+	fc.Result = res
+	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_StashBoxEndpoint_apiKeyConfigured(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "StashBoxEndpoint",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
 		},
 	}
 	return fc, nil
@@ -9966,7 +10230,7 @@ func (ec *executionContext) _SubscriptionSettings_dbPath(ctx context.Context, fi
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
 		ctx = rctx // use context from middleware stack in children
-		return obj.DBPath, nil
+		return obj.DbPath, nil
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -10084,8 +10348,8 @@ func (ec *executionContext) fieldContext_SubscriptionSettings_pollEnabled(_ cont
 	return fc, nil
 }
 
-func (ec *executionContext) _SubscriptionSettings_javstashEnabled(ctx context.Context, field graphql.CollectedField, obj *model.SubscriptionSettings) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_SubscriptionSettings_javstashEnabled(ctx, field)
+func (ec *executionContext) _SubscriptionSettings_stashBoxes(ctx context.Context, field graphql.CollectedField, obj *model.SubscriptionSettings) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_SubscriptionSettings_stashBoxes(ctx, field)
 	if err != nil {
 		return graphql.Null
 	}
@@ -10098,7 +10362,103 @@ func (ec *executionContext) _SubscriptionSettings_javstashEnabled(ctx context.Co
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
 		ctx = rctx // use context from middleware stack in children
-		return obj.JavstashEnabled, nil
+		return obj.StashBoxes, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]*model.StashBoxEndpoint)
+	fc.Result = res
+	return ec.marshalNStashBoxEndpoint2ᚕᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐStashBoxEndpointᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_SubscriptionSettings_stashBoxes(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "SubscriptionSettings",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "name":
+				return ec.fieldContext_StashBoxEndpoint_name(ctx, field)
+			case "endpoint":
+				return ec.fieldContext_StashBoxEndpoint_endpoint(ctx, field)
+			case "apiKeyConfigured":
+				return ec.fieldContext_StashBoxEndpoint_apiKeyConfigured(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type StashBoxEndpoint", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _SubscriptionSettings_selectedStashBoxEndpoints(ctx context.Context, field graphql.CollectedField, obj *model.SubscriptionSettings) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_SubscriptionSettings_selectedStashBoxEndpoints(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.SelectedStashBoxEndpoints, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]string)
+	fc.Result = res
+	return ec.marshalNString2ᚕstringᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_SubscriptionSettings_selectedStashBoxEndpoints(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "SubscriptionSettings",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _SubscriptionSettings_stashBoxesLoaded(ctx context.Context, field graphql.CollectedField, obj *model.SubscriptionSettings) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_SubscriptionSettings_stashBoxesLoaded(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.StashBoxesLoaded, nil
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -10115,7 +10475,7 @@ func (ec *executionContext) _SubscriptionSettings_javstashEnabled(ctx context.Co
 	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_SubscriptionSettings_javstashEnabled(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_SubscriptionSettings_stashBoxesLoaded(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "SubscriptionSettings",
 		Field:      field,
@@ -10128,8 +10488,8 @@ func (ec *executionContext) fieldContext_SubscriptionSettings_javstashEnabled(_ 
 	return fc, nil
 }
 
-func (ec *executionContext) _SubscriptionSettings_javstashApiKeyConfigured(ctx context.Context, field graphql.CollectedField, obj *model.SubscriptionSettings) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_SubscriptionSettings_javstashApiKeyConfigured(ctx, field)
+func (ec *executionContext) _SubscriptionSettings_stashBoxesLoadError(ctx context.Context, field graphql.CollectedField, obj *model.SubscriptionSettings) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_SubscriptionSettings_stashBoxesLoadError(ctx, field)
 	if err != nil {
 		return graphql.Null
 	}
@@ -10142,31 +10502,28 @@ func (ec *executionContext) _SubscriptionSettings_javstashApiKeyConfigured(ctx c
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
 		ctx = rctx // use context from middleware stack in children
-		return obj.JavstashAPIKeyConfigured, nil
+		return obj.StashBoxesLoadError, nil
 	})
 	if err != nil {
 		ec.Error(ctx, err)
 		return graphql.Null
 	}
 	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
 		return graphql.Null
 	}
-	res := resTmp.(bool)
+	res := resTmp.(*string)
 	fc.Result = res
-	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
+	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_SubscriptionSettings_javstashApiKeyConfigured(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_SubscriptionSettings_stashBoxesLoadError(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "SubscriptionSettings",
 		Field:      field,
 		IsMethod:   false,
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type Boolean does not have child fields")
+			return nil, errors.New("field of type String does not have child fields")
 		},
 	}
 	return fc, nil
@@ -11210,7 +11567,7 @@ func (ec *executionContext) _TaskSettings_dbPath(ctx context.Context, field grap
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
 		ctx = rctx // use context from middleware stack in children
-		return obj.DBPath, nil
+		return obj.DbPath, nil
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -13740,7 +14097,7 @@ func (ec *executionContext) unmarshalInputUpdateSubscriptionSettingsInput(ctx co
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"store", "dbPath", "pollIntervalSeconds", "javstashApiKey"}
+	fieldsInOrder := [...]string{"store", "dbPath", "pollIntervalSeconds", "selectedStashBoxEndpoints"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -13760,7 +14117,7 @@ func (ec *executionContext) unmarshalInputUpdateSubscriptionSettingsInput(ctx co
 			if err != nil {
 				return it, err
 			}
-			it.DBPath = data
+			it.DbPath = data
 		case "pollIntervalSeconds":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("pollIntervalSeconds"))
 			data, err := ec.unmarshalNInt2int(ctx, v)
@@ -13768,13 +14125,13 @@ func (ec *executionContext) unmarshalInputUpdateSubscriptionSettingsInput(ctx co
 				return it, err
 			}
 			it.PollIntervalSeconds = data
-		case "javstashApiKey":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("javstashApiKey"))
-			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+		case "selectedStashBoxEndpoints":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("selectedStashBoxEndpoints"))
+			data, err := ec.unmarshalNString2ᚕstringᚄ(ctx, v)
 			if err != nil {
 				return it, err
 			}
-			it.JavstashAPIKey = data
+			it.SelectedStashBoxEndpoints = data
 		}
 	}
 
@@ -14307,6 +14664,13 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 		case "updateSubscriptionSettings":
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
 				return ec._Mutation_updateSubscriptionSettings(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "refreshSubscriptionStashBoxes":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_refreshSubscriptionStashBoxes(ctx, field)
 			})
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
@@ -14921,6 +15285,55 @@ func (ec *executionContext) _Settings(ctx context.Context, sel ast.SelectionSet,
 	return out
 }
 
+var stashBoxEndpointImplementors = []string{"StashBoxEndpoint"}
+
+func (ec *executionContext) _StashBoxEndpoint(ctx context.Context, sel ast.SelectionSet, obj *model.StashBoxEndpoint) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, stashBoxEndpointImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("StashBoxEndpoint")
+		case "name":
+			out.Values[i] = ec._StashBoxEndpoint_name(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "endpoint":
+			out.Values[i] = ec._StashBoxEndpoint_endpoint(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "apiKeyConfigured":
+			out.Values[i] = ec._StashBoxEndpoint_apiKeyConfigured(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
 var stashJobImplementors = []string{"StashJob"}
 
 func (ec *executionContext) _StashJob(ctx context.Context, sel ast.SelectionSet, obj *model.StashJob) graphql.Marshaler {
@@ -15335,16 +15748,23 @@ func (ec *executionContext) _SubscriptionSettings(ctx context.Context, sel ast.S
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
-		case "javstashEnabled":
-			out.Values[i] = ec._SubscriptionSettings_javstashEnabled(ctx, field, obj)
+		case "stashBoxes":
+			out.Values[i] = ec._SubscriptionSettings_stashBoxes(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
-		case "javstashApiKeyConfigured":
-			out.Values[i] = ec._SubscriptionSettings_javstashApiKeyConfigured(ctx, field, obj)
+		case "selectedStashBoxEndpoints":
+			out.Values[i] = ec._SubscriptionSettings_selectedStashBoxEndpoints(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
+		case "stashBoxesLoaded":
+			out.Values[i] = ec._SubscriptionSettings_stashBoxesLoaded(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "stashBoxesLoadError":
+			out.Values[i] = ec._SubscriptionSettings_stashBoxesLoadError(ctx, field, obj)
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -16276,6 +16696,60 @@ func (ec *executionContext) marshalNSettings2ᚖgithubᚗcomᚋleothevan2444ᚋm
 		return graphql.Null
 	}
 	return ec._Settings(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNStashBoxEndpoint2ᚕᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐStashBoxEndpointᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.StashBoxEndpoint) graphql.Marshaler {
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalNStashBoxEndpoint2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐStashBoxEndpoint(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
+}
+
+func (ec *executionContext) marshalNStashBoxEndpoint2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐStashBoxEndpoint(ctx context.Context, sel ast.SelectionSet, v *model.StashBoxEndpoint) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._StashBoxEndpoint(ctx, sel, v)
 }
 
 func (ec *executionContext) unmarshalNStashMetadataScanInput2githubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐStashMetadataScanInput(ctx context.Context, v any) (model.StashMetadataScanInput, error) {
