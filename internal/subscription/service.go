@@ -16,6 +16,8 @@ import (
 	stashboxgraphql "github.com/leothevan2444/moji/pkg/stashbox/graphql"
 )
 
+var errNoMatchingStashBoxMapping = errors.New("subscription: no stash_id matched any configured stash-box endpoint")
+
 type StashClient interface {
 	AllPerformers(ctx context.Context) ([]*stashgraphql.PerformerFragment, error)
 	FindPerformerByID(ctx context.Context, id string) (*stashgraphql.PerformerFragment, error)
@@ -194,6 +196,9 @@ func (s *Service) RefreshSubscribedPerformer(ctx context.Context, performerID st
 			return SubscribedPerformer{}, putErr
 		}
 		logging.Errorf("subscription: refresh failed for performer %s (%s): %v", performerID, performer.Name, err)
+		if errors.Is(err, errNoMatchingStashBoxMapping) {
+			return buildSubscribedPerformer(item, state), nil
+		}
 		return buildSubscribedPerformer(item, state), err
 	}
 	logging.Infof("subscription: refresh fetched %d releases for performer %s (%s)", len(releases), performerID, performer.Name)
@@ -355,19 +360,40 @@ func (s *Service) resolveStashboxPerformer(ctx context.Context, performer *stash
 		return nil, nil
 	}
 
-	// 1. Prefer an explicit StashID that names a configured endpoint.
+	// Only use explicit stash_ids. We intentionally do not fall back to name
+	// search because a false-positive performer match is more dangerous than a
+	// visible "no mapping" state.
+	stashIDsByEndpoint := make(map[string]*stashgraphql.StashIDFragment, len(performer.StashIds))
 	for _, stashID := range performer.StashIds {
 		if stashID == nil || strings.TrimSpace(stashID.StashID) == "" {
 			continue
 		}
 		endpoint := normalizeStashBoxEndpoint(stashID.Endpoint)
-		client, ok := s.stashbox.Get(endpoint)
+		if endpoint == "" {
+			continue
+		}
+		if _, exists := stashIDsByEndpoint[endpoint]; exists {
+			continue
+		}
+		stashIDsByEndpoint[endpoint] = stashID
+	}
+
+	var firstLookupErr error
+	for _, box := range s.orderedEndpoints() {
+		stashID, ok := stashIDsByEndpoint[normalizeStashBoxEndpoint(box.Endpoint)]
+		if !ok {
+			continue
+		}
+		client, ok := s.stashbox.Get(box.Endpoint)
 		if !ok {
 			continue
 		}
 		matched, err := client.FindPerformerByID(ctx, stashID.StashID)
 		if err != nil {
-			logging.Warnf("subscription: stash-box lookup failed for endpoint=%s performer=%s: %v", endpoint, stashID.StashID, err)
+			if firstLookupErr == nil {
+				firstLookupErr = err
+			}
+			logging.Warnf("subscription: stash-box lookup failed for endpoint=%s performer=%s: %v", box.Endpoint, stashID.StashID, err)
 			continue
 		}
 		if matched == nil {
@@ -376,40 +402,15 @@ func (s *Service) resolveStashboxPerformer(ctx context.Context, performer *stash
 		return &resolvedStashbox{
 			Client:    client,
 			Performer: matched,
-			Endpoint:  endpoint,
-			Name:      stashID.Endpoint,
+			Endpoint:  normalizeStashBoxEndpoint(box.Endpoint),
+			Name:      box.Name,
 		}, nil
 	}
 
-	// 2. Fall back to name search across every configured endpoint, in the
-	//    user-defined priority order (registry order as fallback).
-	normalizedTargets := normalizedTargetNames(performer.Name, performer.AliasList)
-	for _, box := range s.orderedEndpoints() {
-		client, ok := s.stashbox.Get(box.Endpoint)
-		if !ok {
-			continue
-		}
-		candidates, err := client.SearchPerformer(ctx, performer.Name)
-		if err != nil {
-			logging.Warnf("subscription: stash-box search failed for endpoint=%s name=%s: %v", box.Endpoint, performer.Name, err)
-			continue
-		}
-		for _, candidate := range candidates {
-			if candidate == nil {
-				continue
-			}
-			if nameMatchesCandidate(candidate, normalizedTargets) {
-				return &resolvedStashbox{
-					Client:    client,
-					Performer: candidate,
-					Endpoint:  box.Endpoint,
-					Name:      box.Name,
-				}, nil
-			}
-		}
+	if firstLookupErr != nil {
+		return nil, firstLookupErr
 	}
-
-	return nil, nil
+	return nil, errNoMatchingStashBoxMapping
 }
 
 // RefreshStashBoxes asks the Stash server for the current Stash-Box list and
@@ -526,34 +527,6 @@ func (s *Service) orderedEndpoints() []StashBoxEndpoint {
 		seen[key] = struct{}{}
 	}
 	return out
-}
-
-func normalizedTargetNames(name string, aliases []string) map[string]struct{} {
-	out := map[string]struct{}{}
-	if n := normalize(name); n != "" {
-		out[n] = struct{}{}
-	}
-	for _, alias := range aliases {
-		if n := normalize(alias); n != "" {
-			out[n] = struct{}{}
-		}
-	}
-	return out
-}
-
-func nameMatchesCandidate(candidate *stashboxgraphql.PerformerFragment, normalizedTargets map[string]struct{}) bool {
-	if candidate == nil {
-		return false
-	}
-	if _, ok := normalizedTargets[normalize(candidate.Name)]; ok {
-		return true
-	}
-	for _, alias := range candidate.Aliases {
-		if _, ok := normalizedTargets[normalize(alias)]; ok {
-			return true
-		}
-	}
-	return false
 }
 
 func endpointKey(endpoint string) string {

@@ -588,6 +588,10 @@ func TestResolveStashboxPerformerFollowsUserOrder(t *testing.T) {
 				ID:           "p1",
 				Name:         "Shared Performer",
 				CustomFields: map[string]any{DefaultCustomFieldKey: true},
+				StashIds: []*stashgraphql.StashIDFragment{
+					{Endpoint: endpointA, StashID: "a-1"},
+					{Endpoint: endpointB, StashID: "b-1"},
+				},
 			},
 		},
 	}
@@ -597,7 +601,7 @@ func TestResolveStashboxPerformerFollowsUserOrder(t *testing.T) {
 		t.Fatalf("NewService failed: %v", err)
 	}
 
-	// User places B before A — the first hit must be B.
+	// User places B before A — the first stash_id-backed hit must be B.
 	service.SetEndpointOrder([]string{endpointB, endpointA})
 
 	target, err := service.resolveStashboxPerformer(context.Background(), stashClient.performers["p1"])
@@ -609,5 +613,139 @@ func TestResolveStashboxPerformerFollowsUserOrder(t *testing.T) {
 	}
 	if target.Endpoint != endpointB {
 		t.Fatalf("expected endpoint %q, got %q", endpointB, target.Endpoint)
+	}
+}
+
+func TestResolveStashboxPerformerPrefersHighestPriorityMatchingStashID(t *testing.T) {
+	endpointA := "https://stashbox-a.example.org/graphql"
+	endpointB := "https://stashbox-b.example.org/graphql"
+
+	clientA := &fakeStashboxClient{
+		performer: &stashboxgraphql.PerformerFragment{ID: "a-1", Name: "Shared Performer"},
+	}
+	clientB := &fakeStashboxClient{
+		performer: &stashboxgraphql.PerformerFragment{ID: "b-1", Name: "Shared Performer"},
+	}
+
+	registry := newStashboxRegistry(perEndpointFactory{
+		clients: map[string]StashboxClient{
+			normalizeStashBoxEndpoint(endpointA): clientA,
+			normalizeStashBoxEndpoint(endpointB): clientB,
+		},
+	})
+	registry.Replace([]stash.StashBoxEndpoint{
+		{Name: "A", Endpoint: endpointA, APIKey: "k"},
+		{Name: "B", Endpoint: endpointB, APIKey: "k"},
+	})
+
+	stashClient := &fakeStashClient{
+		performers: map[string]*stashgraphql.PerformerFragment{
+			"p1": {
+				ID:           "p1",
+				Name:         "Shared Performer",
+				CustomFields: map[string]any{DefaultCustomFieldKey: true},
+				StashIds: []*stashgraphql.StashIDFragment{
+					{Endpoint: endpointA, StashID: "a-1"},
+					{Endpoint: endpointB, StashID: "b-1"},
+				},
+			},
+		},
+	}
+
+	service, err := NewService(stashClient, registry, nil, NewMemoryStore())
+	if err != nil {
+		t.Fatalf("NewService failed: %v", err)
+	}
+
+	service.SetEndpointOrder([]string{endpointB, endpointA})
+
+	target, err := service.resolveStashboxPerformer(context.Background(), stashClient.performers["p1"])
+	if err != nil {
+		t.Fatalf("resolveStashboxPerformer failed: %v", err)
+	}
+	if target == nil {
+		t.Fatalf("expected a target, got nil")
+	}
+	if target.Endpoint != endpointB {
+		t.Fatalf("expected endpoint %q, got %q", endpointB, target.Endpoint)
+	}
+}
+
+func TestResolveStashboxPerformerDoesNotFallBackToNameSearch(t *testing.T) {
+	endpointA := "https://stashbox-a.example.org/graphql"
+
+	registry := newStashboxRegistry(perEndpointFactory{
+		clients: map[string]StashboxClient{
+			normalizeStashBoxEndpoint(endpointA): &fakeStashboxClient{
+				performer: &stashboxgraphql.PerformerFragment{ID: "a-1", Name: "Name Match Only"},
+			},
+		},
+	})
+	registry.Replace([]stash.StashBoxEndpoint{
+		{Name: "A", Endpoint: endpointA, APIKey: "k"},
+	})
+
+	stashClient := &fakeStashClient{
+		performers: map[string]*stashgraphql.PerformerFragment{
+			"p1": {
+				ID:           "p1",
+				Name:         "Name Match Only",
+				CustomFields: map[string]any{DefaultCustomFieldKey: true},
+			},
+		},
+	}
+
+	service, err := NewService(stashClient, registry, nil, NewMemoryStore())
+	if err != nil {
+		t.Fatalf("NewService failed: %v", err)
+	}
+
+	target, err := service.resolveStashboxPerformer(context.Background(), stashClient.performers["p1"])
+	if !errors.Is(err, errNoMatchingStashBoxMapping) {
+		t.Fatalf("expected no-mapping sentinel, got %v", err)
+	}
+	if target != nil {
+		t.Fatalf("expected nil target without stash_id fallback, got %+v", target)
+	}
+}
+
+func TestRefreshPerformerWithoutMatchingStashIDReturnsStateNotError(t *testing.T) {
+	endpointA := "https://stashbox-a.example.org/graphql"
+
+	registry := newStashboxRegistry(perEndpointFactory{
+		clients: map[string]StashboxClient{
+			normalizeStashBoxEndpoint(endpointA): &fakeStashboxClient{
+				performer: &stashboxgraphql.PerformerFragment{ID: "a-1", Name: "Name Match Only"},
+			},
+		},
+	})
+	registry.Replace([]stash.StashBoxEndpoint{
+		{Name: "A", Endpoint: endpointA, APIKey: "k"},
+	})
+
+	stashClient := &fakeStashClient{
+		performers: map[string]*stashgraphql.PerformerFragment{
+			"p1": {
+				ID:           "p1",
+				Name:         "Name Match Only",
+				CustomFields: map[string]any{DefaultCustomFieldKey: true},
+			},
+		},
+	}
+
+	service, err := NewService(stashClient, registry, nil, NewMemoryStore())
+	if err != nil {
+		t.Fatalf("NewService failed: %v", err)
+	}
+
+	item, err := service.RefreshSubscribedPerformer(context.Background(), "p1")
+	if err != nil {
+		t.Fatalf("expected no hard error for missing stash_id mapping, got %v", err)
+	}
+	if item.LastError == "" {
+		t.Fatalf("expected last error to explain missing stash-box mapping")
+	}
+	if item.PendingReleaseCount != 0 {
+		t.Fatalf("expected no pending releases, got %d", item.PendingReleaseCount)
 	}
 }
