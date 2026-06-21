@@ -1,7 +1,12 @@
 export const EMPTY_STASH_FORM = {
   url: "",
   apiKey: "",
-  libraryPath: ""
+  mode: "SHARED_STORAGE",
+  libraryPath: "",
+  qbittorrentPathPrefix: "",
+  stashPathPrefix: "",
+  transferAction: "",
+  transferTargetPath: ""
 };
 
 export const EMPTY_JACKETT_FORM = {

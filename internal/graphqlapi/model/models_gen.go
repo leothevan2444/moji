@@ -198,8 +198,13 @@ type StashSettings struct {
 	URL              string `json:"url"`
 	APIKeyConfigured bool   `json:"apiKeyConfigured"`
 	// Currently configured Stash API key. Returned in plaintext for the settings UI; never logged.
-	APIKey      string `json:"apiKey"`
-	LibraryPath string `json:"libraryPath"`
+	APIKey                string `json:"apiKey"`
+	Mode                  string `json:"mode"`
+	LibraryPath           string `json:"libraryPath"`
+	QbittorrentPathPrefix string `json:"qbittorrentPathPrefix"`
+	StashPathPrefix       string `json:"stashPathPrefix"`
+	TransferAction        string `json:"transferAction"`
+	TransferTargetPath    string `json:"transferTargetPath"`
 }
 
 type SubscribedPerformer struct {
@@ -243,27 +248,35 @@ type SystemSettings struct {
 }
 
 type Task struct {
-	ID                 string             `json:"id"`
-	Query              string             `json:"query"`
-	Status             string             `json:"status"`
-	Candidate          *DownloadCandidate `json:"candidate"`
-	TorrentURL         string             `json:"torrentUrl"`
-	SavePath           string             `json:"savePath"`
-	Category           string             `json:"category"`
-	Tags               string             `json:"tags"`
-	TorrentHash        string             `json:"torrentHash"`
-	TorrentName        string             `json:"torrentName"`
-	Progress           float64            `json:"progress"`
-	QbittorrentState   string             `json:"qbittorrentState"`
-	ContentPath        string             `json:"contentPath"`
-	CompletedAt        *string            `json:"completedAt,omitempty"`
-	StashJobID         string             `json:"stashJobId"`
-	StashScanStatus    string             `json:"stashScanStatus"`
-	StashScanError     string             `json:"stashScanError"`
-	StashScanStartedAt *string            `json:"stashScanStartedAt,omitempty"`
-	Error              string             `json:"error"`
-	CreatedAt          string             `json:"createdAt"`
-	UpdatedAt          string             `json:"updatedAt"`
+	ID                  string             `json:"id"`
+	Query               string             `json:"query"`
+	Status              string             `json:"status"`
+	Candidate           *DownloadCandidate `json:"candidate"`
+	TorrentURL          string             `json:"torrentUrl"`
+	SavePath            string             `json:"savePath"`
+	Category            string             `json:"category"`
+	Tags                string             `json:"tags"`
+	TorrentHash         string             `json:"torrentHash"`
+	TorrentName         string             `json:"torrentName"`
+	Progress            float64            `json:"progress"`
+	QbittorrentState    string             `json:"qbittorrentState"`
+	ContentPath         string             `json:"contentPath"`
+	CompletedAt         *string            `json:"completedAt,omitempty"`
+	StashMode           string             `json:"stashMode"`
+	StashSourcePath     string             `json:"stashSourcePath"`
+	StashTransferAction string             `json:"stashTransferAction"`
+	StashTransferPath   string             `json:"stashTransferPath"`
+	StashTransferStatus string             `json:"stashTransferStatus"`
+	StashTransferError  string             `json:"stashTransferError"`
+	StashJobID          string             `json:"stashJobId"`
+	StashScanPath       string             `json:"stashScanPath"`
+	StashScanStatus     string             `json:"stashScanStatus"`
+	StashScanError      string             `json:"stashScanError"`
+	StashScanHint       string             `json:"stashScanHint"`
+	StashScanStartedAt  *string            `json:"stashScanStartedAt,omitempty"`
+	Error               string             `json:"error"`
+	CreatedAt           string             `json:"createdAt"`
+	UpdatedAt           string             `json:"updatedAt"`
 }
 
 type TaskSettings struct {
@@ -296,9 +309,14 @@ type UpdateQBittorrentSettingsInput struct {
 }
 
 type UpdateStashSettingsInput struct {
-	URL         string  `json:"url"`
-	APIKey      *string `json:"apiKey,omitempty"`
-	LibraryPath string  `json:"libraryPath"`
+	URL                   string  `json:"url"`
+	APIKey                *string `json:"apiKey,omitempty"`
+	Mode                  string  `json:"mode"`
+	LibraryPath           string  `json:"libraryPath"`
+	QbittorrentPathPrefix string  `json:"qbittorrentPathPrefix"`
+	StashPathPrefix       string  `json:"stashPathPrefix"`
+	TransferAction        string  `json:"transferAction"`
+	TransferTargetPath    string  `json:"transferTargetPath"`
 }
 
 type UpdateSubscriptionSettingsInput struct {

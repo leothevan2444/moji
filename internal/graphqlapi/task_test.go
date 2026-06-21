@@ -563,11 +563,16 @@ func TestUpdateStashSettingsMutation(t *testing.T) {
 	editor := &fakeSettingsEditor{
 		updateStashSnapshot: &SettingsSnapshot{
 			Stash: StashSettingsSnapshot{
-				Configured:       true,
-				Enabled:          false,
-				URL:              "http://stash.updated",
-				APIKeyConfigured: true,
-				LibraryPath:      "/library/updated",
+				Configured:            true,
+				Enabled:               false,
+				URL:                   "http://stash.updated",
+				APIKeyConfigured:      true,
+				Mode:                  "FILE_TRANSFER",
+				LibraryPath:           "/library/updated",
+				QBittorrentPathPrefix: "/downloads",
+				StashPathPrefix:       "/library",
+				TransferAction:        "COPY",
+				TransferTargetPath:    "/stash-import",
 			},
 			System: SystemSettingsSnapshot{AppVersion: "test-version"},
 		},
@@ -579,9 +584,14 @@ func TestUpdateStashSettingsMutation(t *testing.T) {
 		updateStashSettings(input: {
 			url: "http://stash.updated"
 			apiKey: "secret"
+			mode: "FILE_TRANSFER"
 			libraryPath: "/library/updated"
+			qbittorrentPathPrefix: "/downloads"
+			stashPathPrefix: "/library"
+			transferAction: "COPY"
+			transferTargetPath: "/stash-import"
 		}) {
-			stash { url apiKeyConfigured libraryPath }
+			stash { url apiKeyConfigured mode libraryPath transferAction transferTargetPath }
 		}
 	}`)
 	if len(resp.Errors) > 0 {
@@ -590,8 +600,8 @@ func TestUpdateStashSettingsMutation(t *testing.T) {
 	if editor.stashInput.URL != "http://stash.updated" || editor.stashInput.LibraryPath != "/library/updated" {
 		t.Fatalf("unexpected stash input: %+v", editor.stashInput)
 	}
-	if editor.stashInput.APIKey != "secret" {
-		t.Fatalf("unexpected stash api key: %+v", editor.stashInput.APIKey)
+	if editor.stashInput.APIKey != "secret" || editor.stashInput.Mode != "FILE_TRANSFER" || editor.stashInput.TransferAction != "COPY" || editor.stashInput.TransferTargetPath != "/stash-import" {
+		t.Fatalf("unexpected stash input details: %+v", editor.stashInput)
 	}
 	if resp.Data.UpdateStashSettings.Stash.URL != "http://stash.updated" {
 		t.Fatalf("unexpected stash response: %+v", resp.Data.UpdateStashSettings.Stash)
@@ -1034,6 +1044,10 @@ func (fakeStashService) MetadataScan(context.Context, stashsync.ScanRequest) (st
 
 func (fakeStashService) FindJob(context.Context, string) (*stashsync.Job, error) {
 	return nil, nil
+}
+
+func (fakeStashService) CurrentConfig() stashsync.IntegrationConfig {
+	return stashsync.IntegrationConfig{}
 }
 
 func ptrTime(t time.Time) *time.Time {

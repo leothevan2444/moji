@@ -6,13 +6,17 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"io"
 	"net/url"
+	"os"
+	"path/filepath"
 	"sort"
 	"strings"
 	"sync"
 	"time"
 
 	"github.com/leothevan2444/moji/internal/logging"
+	"github.com/leothevan2444/moji/internal/stashsync"
 	"github.com/leothevan2444/moji/internal/tracker"
 	"github.com/leothevan2444/moji/pkg/jackett"
 	"github.com/leothevan2444/moji/pkg/qbittorrent"
@@ -49,27 +53,35 @@ const (
 )
 
 type Task struct {
-	ID                 string
-	Query              string
-	Status             TaskStatus
-	Candidate          Candidate
-	TorrentURL         string
-	SavePath           string
-	Category           string
-	Tags               string
-	TorrentHash        string
-	TorrentName        string
-	Progress           float64
-	QBittorrentState   string
-	ContentPath        string
-	CompletedAt        *time.Time
-	StashJobID         string
-	StashScanStatus    string
-	StashScanError     string
-	StashScanStartedAt *time.Time
-	Error              string
-	CreatedAt          time.Time
-	UpdatedAt          time.Time
+	ID                  string
+	Query               string
+	Status              TaskStatus
+	Candidate           Candidate
+	TorrentURL          string
+	SavePath            string
+	Category            string
+	Tags                string
+	TorrentHash         string
+	TorrentName         string
+	Progress            float64
+	QBittorrentState    string
+	ContentPath         string
+	CompletedAt         *time.Time
+	StashMode           string
+	StashSourcePath     string
+	StashTransferAction string
+	StashTransferPath   string
+	StashTransferStatus string
+	StashTransferError  string
+	StashJobID          string
+	StashScanPath       string
+	StashScanStatus     string
+	StashScanError      string
+	StashScanHint       string
+	StashScanStartedAt  *time.Time
+	Error               string
+	CreatedAt           time.Time
+	UpdatedAt           time.Time
 }
 
 type Candidate struct {
@@ -106,11 +118,16 @@ type Service struct {
 	tracker tracker.Tracker
 	qbt     TorrentClient
 	store   TaskStore
+	fileOps FileOperator
 	now     func() time.Time
 	newID   func() string
 }
 
 type Option func(*Service)
+
+type FileOperator interface {
+	Transfer(ctx context.Context, sourcePath string, action stashsync.TransferAction, targetPath string) error
+}
 
 func WithClock(now func() time.Time) Option {
 	return func(s *Service) {
@@ -143,6 +160,7 @@ func NewService(tr tracker.Tracker, qbt TorrentClient, store TaskStore, options 
 		tracker: tr,
 		qbt:     qbt,
 		store:   store,
+		fileOps: osFileOperator{},
 		now:     time.Now,
 		newID:   newTaskID,
 	}
@@ -150,6 +168,14 @@ func NewService(tr tracker.Tracker, qbt TorrentClient, store TaskStore, options 
 		option(s)
 	}
 	return s, nil
+}
+
+func WithFileOperator(fileOps FileOperator) Option {
+	return func(s *Service) {
+		if fileOps != nil {
+			s.fileOps = fileOps
+		}
+	}
 }
 
 func (s *Service) DownloadMedia(query string) (*Task, error) {
@@ -610,4 +636,84 @@ func cloneTask(task *Task) *Task {
 	cp.CompletedAt = cloneTime(task.CompletedAt)
 	cp.StashScanStartedAt = cloneTime(task.StashScanStartedAt)
 	return &cp
+}
+
+type osFileOperator struct{}
+
+func (osFileOperator) Transfer(ctx context.Context, sourcePath string, action stashsync.TransferAction, targetPath string) error {
+	if err := ctx.Err(); err != nil {
+		return err
+	}
+	if strings.TrimSpace(sourcePath) == "" {
+		return errors.New("downloader: source path is required for file transfer")
+	}
+	if strings.TrimSpace(targetPath) == "" {
+		return errors.New("downloader: target path is required for file transfer")
+	}
+	if _, err := os.Stat(targetPath); err == nil {
+		return fmt.Errorf("downloader: transfer target already exists: %s", targetPath)
+	} else if !errors.Is(err, os.ErrNotExist) {
+		return fmt.Errorf("downloader: stat transfer target %q: %w", targetPath, err)
+	}
+	if err := os.MkdirAll(filepath.Dir(targetPath), 0o755); err != nil {
+		return fmt.Errorf("downloader: create transfer target dir for %q: %w", targetPath, err)
+	}
+
+	switch action {
+	case stashsync.TransferActionCopy:
+		return copyFile(ctx, sourcePath, targetPath)
+	case stashsync.TransferActionMove:
+		if err := os.Rename(sourcePath, targetPath); err == nil {
+			return nil
+		} else if !isCrossDeviceError(err) {
+			return fmt.Errorf("downloader: move %q -> %q: %w", sourcePath, targetPath, err)
+		}
+		if err := copyFile(ctx, sourcePath, targetPath); err != nil {
+			return err
+		}
+		if err := os.Remove(sourcePath); err != nil {
+			return fmt.Errorf("downloader: remove transferred source %q: %w", sourcePath, err)
+		}
+		return nil
+	default:
+		return fmt.Errorf("downloader: unsupported transfer action %q", action)
+	}
+}
+
+func copyFile(ctx context.Context, sourcePath string, targetPath string) error {
+	source, err := os.Open(sourcePath)
+	if err != nil {
+		return fmt.Errorf("downloader: open transfer source %q: %w", sourcePath, err)
+	}
+	defer source.Close()
+
+	target, err := os.OpenFile(targetPath, os.O_CREATE|os.O_EXCL|os.O_WRONLY, 0o644)
+	if err != nil {
+		return fmt.Errorf("downloader: create transfer target %q: %w", targetPath, err)
+	}
+	defer target.Close()
+
+	if _, err := io.Copy(target, &contextReader{ctx: ctx, reader: source}); err != nil {
+		return fmt.Errorf("downloader: copy %q -> %q: %w", sourcePath, targetPath, err)
+	}
+	if err := target.Close(); err != nil {
+		return fmt.Errorf("downloader: finalize transfer target %q: %w", targetPath, err)
+	}
+	return nil
+}
+
+type contextReader struct {
+	ctx    context.Context
+	reader io.Reader
+}
+
+func (r *contextReader) Read(p []byte) (int, error) {
+	if err := r.ctx.Err(); err != nil {
+		return 0, err
+	}
+	return r.reader.Read(p)
+}
+
+func isCrossDeviceError(err error) bool {
+	return strings.Contains(strings.ToLower(err.Error()), "cross-device link")
 }

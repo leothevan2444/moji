@@ -28,7 +28,7 @@ export type TaskLifecycleStep = {
 };
 
 export type TaskPresentation = {
-  phase: "queued" | "downloading" | "scanPending" | "scanRunning" | "completed" | "failed";
+  phase: "queued" | "downloading" | "transferRunning" | "scanPending" | "scanRunning" | "completed" | "failed";
   label: string;
   tone: "tone-success" | "tone-danger" | "tone-info" | "tone-warn" | "tone-neutral";
   summary: string;
@@ -58,7 +58,9 @@ export function isStatus(task: DashboardTask, ...values: string[]) {
 }
 
 export function isTaskActive(task: DashboardTask) {
-  return !isStatus(task, "completed", "failed", "cancelled", "canceled", "paused");
+  return !isStatus(task, "completed", "failed", "cancelled", "canceled", "paused")
+    || normalizeStatus(task.stashTransferStatus || "") === "started"
+    || normalizeStatus(task.stashScanStatus || "") === "started";
 }
 
 export function isScanPending(task: DashboardTask) {
@@ -121,7 +123,9 @@ export function taskGroupDescription(group: TaskGroupKey) {
 // ── Task actions ────────────────────────────────────────────────────
 
 export function canTriggerTaskStashScan(task: DashboardTask) {
-  return task.status.trim().toLowerCase() === "completed" && task.stashScanStatus.trim().toLowerCase() !== "started";
+  return task.status.trim().toLowerCase() === "completed"
+    && task.stashScanStatus.trim().toLowerCase() !== "started"
+    && task.stashTransferStatus.trim().toLowerCase() !== "started";
 }
 
 // ── Task presentation helpers ───────────────────────────────────────
@@ -131,11 +135,20 @@ function simplifyMessage(message: string) {
 }
 
 export function taskFailureSummary(task: DashboardTask): TaskFailureSummary {
+  const transferError = simplifyMessage(task.stashTransferError || "");
   const stashError = simplifyMessage(task.stashScanError || "");
   const taskError = simplifyMessage(task.error || "");
   const status = normalizeStatus(task.status);
   const scanStatus = normalizeStatus(task.stashScanStatus || "");
   const qbtState = normalizeStatus(task.qbittorrentState || "");
+
+  if (transferError) {
+    return {
+      title: "文件搬运失败",
+      detail: transferError,
+      tone: "tone-danger"
+    };
+  }
 
   if (stashError) {
     if (stashError.includes("at least one scan path is required")) {
@@ -213,7 +226,7 @@ export function taskFailureSummary(task: DashboardTask): TaskFailureSummary {
   if (scanStatus) {
     return {
       title: "等待扫描收口",
-      detail: task.stashScanStatus || "下载已完成，等待 Stash 扫描继续推进。",
+      detail: task.stashScanHint || task.stashScanStatus || "下载已完成，等待 Stash 扫描继续推进。",
       tone: "tone-warn"
     };
   }
@@ -249,6 +262,11 @@ export function taskPrimaryState(task: DashboardTask): Pick<TaskPresentation, "p
     return { phase: "failed", label: "任务失败", tone: "tone-danger" as const };
   }
 
+  const transferStatus = normalizeStatus(task.stashTransferStatus || "");
+  if (transferStatus === "started") {
+    return { phase: "transferRunning", label: "搬运中", tone: "tone-info" as const };
+  }
+
   const scanStatus = normalizeStatus(task.stashScanStatus || "");
   if (scanStatus === "started") {
     return { phase: "scanRunning", label: "扫描中", tone: "tone-info" as const };
@@ -276,6 +294,9 @@ export function taskMetaLine(task: DashboardTask) {
   if (task.category) {
     parts.push(task.category);
   }
+  if (task.stashMode) {
+    parts.push(task.stashMode);
+  }
   return parts.filter(Boolean).join(" · ");
 }
 
@@ -283,6 +304,9 @@ export function taskLifecycle(task: DashboardTask, failure: TaskFailureSummary):
   const primary = taskPrimaryState(task);
   const progress = taskProgressPercent(task);
   const hasCompletedDownload = isStatus(task, "completed");
+  const transferStarted = normalizeStatus(task.stashTransferStatus || "") === "started";
+  const transferCompleted = normalizeStatus(task.stashTransferStatus || "") === "completed";
+  const hasTransferFailure = Boolean(task.stashTransferError);
   const scanStarted = normalizeStatus(task.stashScanStatus || "") === "started";
   const hasScanFailure = Boolean(task.stashScanError);
   const hasFailure = Boolean(task.error) || isStatus(task, "failed");
@@ -312,18 +336,34 @@ export function taskLifecycle(task: DashboardTask, failure: TaskFailureSummary):
     },
     {
       key: "scan",
-      label: hasScanFailure ? "扫描失败" : scanStarted ? "扫描中" : hasCompletedDownload ? "入库阶段" : "等待扫描",
-      detail: hasScanFailure
+      label: hasTransferFailure
+        ? "搬运失败"
+        : transferStarted
+          ? "搬运中"
+          : hasScanFailure
+            ? "扫描失败"
+            : scanStarted
+              ? "扫描中"
+              : hasCompletedDownload
+                ? "入库阶段"
+                : "等待扫描",
+      detail: hasTransferFailure
+        ? simplifyMessage(task.stashTransferError)
+        : transferStarted
+          ? `${task.stashTransferAction || "搬运"} -> ${task.stashTransferPath || "目标路径待定"}`
+          : hasScanFailure
         ? simplifyMessage(task.stashScanError)
         : scanStarted
           ? `Stash job ${task.stashJobId || "已创建"} 正在运行。`
+          : transferCompleted
+            ? `文件已准备完成，扫描路径：${task.stashScanPath || task.stashTransferPath || "—"}`
           : hasCompletedDownload
-            ? task.stashJobId || task.stashScanStatus
+            ? task.stashScanHint || task.stashJobId || task.stashScanStatus
               ? "下载已完成，等待 Stash 收口。"
               : "当前任务无需或尚未触发 Stash 扫描。"
             : "下载完成后才会进入此阶段。",
-      state: hasScanFailure ? "error" : scanStarted ? "current" : hasCompletedDownload ? "current" : "upcoming",
-      tone: hasScanFailure ? "tone-danger" : scanStarted ? "tone-info" : hasCompletedDownload ? "tone-warn" : "tone-neutral",
+      state: hasTransferFailure || hasScanFailure ? "error" : transferStarted || scanStarted ? "current" : hasCompletedDownload ? "current" : "upcoming",
+      tone: hasTransferFailure || hasScanFailure ? "tone-danger" : transferStarted || scanStarted ? "tone-info" : hasCompletedDownload ? "tone-warn" : "tone-neutral",
       time: task.updatedAt
     }
   ];
@@ -340,15 +380,18 @@ export function taskPresentation(task: DashboardTask): TaskPresentation {
   if (primary.phase === "failed") {
     summary = failure.title;
     detail = failure.detail;
+  } else if (primary.phase === "transferRunning") {
+    summary = "下载已完成，Moji 正在准备文件搬运。";
+    detail = task.stashTransferPath ? `${task.stashTransferAction || "搬运"} -> ${task.stashTransferPath}` : "正在准备搬运目标路径。";
   } else if (primary.phase === "scanRunning") {
     summary = "已完成下载，正在等待 Stash 收口。";
     detail = task.stashJobId ? `Stash job ${task.stashJobId} 正在执行。` : "Stash 已接手当前任务。";
   } else if (primary.phase === "scanPending") {
     summary = "下载已结束，等待触发或完成 Stash 扫描。";
-    detail = task.stashScanStatus || "当前尚未有扫描结果。";
+    detail = task.stashScanHint || task.stashScanStatus || "当前尚未有扫描结果。";
   } else if (primary.phase === "completed") {
     summary = "下载与入库链路已完成。";
-    detail = task.contentPath || "任务已闭环。";
+    detail = task.stashScanPath || task.contentPath || "任务已闭环。";
   } else if (primary.phase === "downloading") {
     summary = task.qbittorrentState ? `qBittorrent: ${task.qbittorrentState}` : "任务正在等待下载器推进。";
     detail = `当前进度 ${progress}%`;

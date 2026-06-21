@@ -10,7 +10,7 @@ import (
 )
 
 func TestNewServiceRequiresClient(t *testing.T) {
-	service, err := NewService(nil, []string{"/library"})
+	service, err := NewService(nil, nil)
 	if err == nil {
 		t.Fatal("expected error for nil client")
 	}
@@ -21,7 +21,7 @@ func TestNewServiceRequiresClient(t *testing.T) {
 
 func TestMetadataScanUsesRequestPaths(t *testing.T) {
 	client := &fakeClient{metadataScanID: "job-1"}
-	service, err := NewService(client, []string{"/default"})
+	service, err := NewService(client, nil)
 	if err != nil {
 		t.Fatalf("new service: %v", err)
 	}
@@ -54,7 +54,9 @@ func TestMetadataScanUsesRequestPaths(t *testing.T) {
 
 func TestMetadataScanFallsBackToDefaultPaths(t *testing.T) {
 	client := &fakeClient{metadataScanID: "job-2"}
-	service, err := NewService(client, []string{" ", "/library-a", "", "/library-b"})
+	service, err := NewService(client, func() IntegrationConfig {
+		return IntegrationConfig{LibraryPath: "/library-a"}
+	})
 	if err != nil {
 		t.Fatalf("new service: %v", err)
 	}
@@ -67,7 +69,7 @@ func TestMetadataScanFallsBackToDefaultPaths(t *testing.T) {
 		t.Fatalf("expected job id %q, got %q", "job-2", id)
 	}
 
-	wantPaths := []string{"/library-a", "/library-b"}
+	wantPaths := []string{"/library-a"}
 	if len(client.metadataScanInput.Paths) != len(wantPaths) {
 		t.Fatalf("expected %d paths, got %#v", len(wantPaths), client.metadataScanInput.Paths)
 	}
@@ -95,7 +97,7 @@ func TestMetadataScanRequiresAnyPath(t *testing.T) {
 }
 
 func TestFindJobRequiresID(t *testing.T) {
-	service, err := NewService(&fakeClient{}, []string{"/library"})
+	service, err := NewService(&fakeClient{}, nil)
 	if err != nil {
 		t.Fatalf("new service: %v", err)
 	}
@@ -110,7 +112,7 @@ func TestFindJobRequiresID(t *testing.T) {
 }
 
 func TestFindJobReturnsNilWhenClientReturnsNil(t *testing.T) {
-	service, err := NewService(&fakeClient{}, []string{"/library"})
+	service, err := NewService(&fakeClient{}, nil)
 	if err != nil {
 		t.Fatalf("new service: %v", err)
 	}
@@ -143,7 +145,7 @@ func TestFindJobMapsClientResponse(t *testing.T) {
 			Error:       &errMsg,
 			SubTasks:    []string{"scan", "sprites"},
 		},
-	}, []string{"/library"})
+	}, nil)
 	if err != nil {
 		t.Fatalf("new service: %v", err)
 	}
@@ -170,7 +172,7 @@ func TestFindJobMapsClientResponse(t *testing.T) {
 }
 
 func TestFindJobPropagatesClientError(t *testing.T) {
-	service, err := NewService(&fakeClient{findJobErr: errors.New("boom")}, []string{"/library"})
+	service, err := NewService(&fakeClient{findJobErr: errors.New("boom")}, nil)
 	if err != nil {
 		t.Fatalf("new service: %v", err)
 	}

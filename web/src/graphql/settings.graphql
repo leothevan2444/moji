@@ -5,7 +5,12 @@ mutation UpdateStashSettingsDocument($input: UpdateStashSettingsInput!) {
       enabled
       url
       apiKeyConfigured
+      mode
       libraryPath
+      qbittorrentPathPrefix
+      stashPathPrefix
+      transferAction
+      transferTargetPath
     }
   }
 }

@@ -388,3 +388,7 @@ func (fakeConfiguredStashService) MetadataScan(context.Context, stashsync.ScanRe
 func (fakeConfiguredStashService) FindJob(context.Context, string) (*stashsync.Job, error) {
 	return nil, nil
 }
+
+func (fakeConfiguredStashService) CurrentConfig() stashsync.IntegrationConfig {
+	return stashsync.IntegrationConfig{}
+}

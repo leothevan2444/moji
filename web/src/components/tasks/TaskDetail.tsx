@@ -192,8 +192,40 @@ export function TaskDetail({
             <dd>{task.stashJobId || "—"}</dd>
           </div>
           <div>
+            <dt>集成模式</dt>
+            <dd>{task.stashMode || "—"}</dd>
+          </div>
+          <div>
+            <dt>源路径</dt>
+            <dd>{task.stashSourcePath || "—"}</dd>
+          </div>
+          <div>
+            <dt>搬运动作</dt>
+            <dd>{task.stashTransferAction || "—"}</dd>
+          </div>
+          <div>
+            <dt>搬运目标</dt>
+            <dd>{task.stashTransferPath || "—"}</dd>
+          </div>
+          <div>
+            <dt>搬运状态</dt>
+            <dd>{task.stashTransferStatus || "未开始"}</dd>
+          </div>
+          <div>
+            <dt>搬运错误</dt>
+            <dd>{task.stashTransferError || "—"}</dd>
+          </div>
+          <div>
+            <dt>扫描路径</dt>
+            <dd>{task.stashScanPath || "—"}</dd>
+          </div>
+          <div>
             <dt>扫描状态</dt>
             <dd>{task.stashScanStatus || "未开始"}</dd>
+          </div>
+          <div>
+            <dt>扫描提示</dt>
+            <dd>{task.stashScanHint || "—"}</dd>
           </div>
         </dl>
         <div className={`task-issue ${failure.tone}`}>

@@ -128,7 +128,7 @@ func newHTTPRuntime(cfg *config.Config, version string, configStore *config.Stor
 	torrentClient := configureQBittorrent(cfg)
 	downloaderService := configureDownloader(cfg, jackettTracker, torrentClient)
 	stashClient := configureStashClient(cfg)
-	stashService := configureStashService(cfg, stashClient)
+	stashService := configureStashService(cfg, configStore, stashClient)
 	subscriptionService := configureSubscription(cfg, stashClient, downloaderService)
 	applySubscriptionOrder(cfg, subscriptionService)
 	resolver := graphqlapi.NewResolver(jackettTracker, torrentClient, downloaderService, stashService, version)
@@ -318,17 +318,22 @@ func buildSettingsSnapshot(cfg *config.Config, version string, qbittorrentEnable
 	}
 
 	jackettConfigured := cfg.Jackett.URL != "" && cfg.Jackett.APIKey != ""
-	stashConfigured := cfg.Stash.URL != "" && cfg.Stash.LibraryPath != ""
+	stashConfigured := isStashConfigured(cfg)
 	qbittorrentConfigured := cfg.QBittorrent.URL != "" && cfg.QBittorrent.Username != "" && cfg.QBittorrent.Password != ""
 
 	return &graphqlapi.SettingsSnapshot{
 		Stash: graphqlapi.StashSettingsSnapshot{
-			Configured:       stashConfigured,
-			Enabled:          stashEnabled,
-			URL:              cfg.Stash.URL,
-			APIKeyConfigured: cfg.Stash.APIKey != "",
-			APIKey:           cfg.Stash.APIKey,
-			LibraryPath:      cfg.Stash.LibraryPath,
+			Configured:            stashConfigured,
+			Enabled:               stashEnabled,
+			URL:                   cfg.Stash.URL,
+			APIKeyConfigured:      cfg.Stash.APIKey != "",
+			APIKey:                cfg.Stash.APIKey,
+			Mode:                  effectiveStashMode(cfg),
+			LibraryPath:           cfg.Stash.LibraryPath,
+			QBittorrentPathPrefix: cfg.Stash.QBittorrentPathPrefix,
+			StashPathPrefix:       cfg.Stash.StashPathPrefix,
+			TransferAction:        cfg.Stash.TransferAction,
+			TransferTargetPath:    cfg.Stash.TransferTargetPath,
 		},
 		Jackett: graphqlapi.JackettSettingsSnapshot{
 			Configured:       jackettConfigured,
@@ -414,19 +419,64 @@ func configureStashClient(cfg *config.Config) *stash.Client {
 	return stash.NewClient(graphqlURL, cfg.Stash.APIKey)
 }
 
-func configureStashService(cfg *config.Config, client *stash.Client) graphqlapi.StashService {
+func configureStashService(cfg *config.Config, store *config.Store, client *stash.Client) graphqlapi.StashService {
 	if client == nil {
 		logging.Infof("runtime: stash sync service disabled because stash client is not available")
 		return nil
 	}
 
-	service, err := stashsync.NewService(client, []string{cfg.Stash.LibraryPath})
+	configProvider := func() stashsync.IntegrationConfig {
+		current := cfg
+		if store != nil {
+			current = store.Config()
+		}
+		return stashIntegrationConfig(current)
+	}
+	service, err := stashsync.NewService(client, configProvider)
 	if err != nil {
 		logging.Fatalf("configure Stash: %v", err)
 	}
-	logging.Infof("runtime: stash sync service initialized with library path %s", cfg.Stash.LibraryPath)
+	logging.Infof("runtime: stash sync service initialized with mode=%s", effectiveStashMode(cfg))
 
 	return service
+}
+
+func effectiveStashMode(cfg *config.Config) string {
+	if cfg == nil || strings.TrimSpace(cfg.Stash.Mode) == "" {
+		return string(stashsync.IntegrationModeSharedStorage)
+	}
+	return strings.TrimSpace(cfg.Stash.Mode)
+}
+
+func stashIntegrationConfig(cfg *config.Config) stashsync.IntegrationConfig {
+	if cfg == nil {
+		return stashsync.IntegrationConfig{}
+	}
+	return stashsync.IntegrationConfig{
+		Mode:                  stashsync.IntegrationMode(effectiveStashMode(cfg)),
+		LibraryPath:           cfg.Stash.LibraryPath,
+		QBittorrentPathPrefix: cfg.Stash.QBittorrentPathPrefix,
+		StashPathPrefix:       cfg.Stash.StashPathPrefix,
+		TransferAction:        stashsync.TransferAction(strings.TrimSpace(cfg.Stash.TransferAction)),
+		TransferTargetPath:    cfg.Stash.TransferTargetPath,
+	}
+}
+
+func isStashConfigured(cfg *config.Config) bool {
+	if cfg == nil || strings.TrimSpace(cfg.Stash.URL) == "" {
+		return false
+	}
+	switch stashsync.IntegrationMode(effectiveStashMode(cfg)) {
+	case stashsync.IntegrationModeSharedStorage:
+		return strings.TrimSpace(cfg.Stash.QBittorrentPathPrefix) != "" && strings.TrimSpace(cfg.Stash.StashPathPrefix) != ""
+	case stashsync.IntegrationModeFileTransfer:
+		action := strings.TrimSpace(cfg.Stash.TransferAction)
+		return (action == string(stashsync.TransferActionCopy) || action == string(stashsync.TransferActionMove)) && strings.TrimSpace(cfg.Stash.TransferTargetPath) != ""
+	case stashsync.IntegrationModeLibraryScan:
+		return strings.TrimSpace(cfg.Stash.LibraryPath) != ""
+	default:
+		return false
+	}
 }
 
 func configureSubscription(cfg *config.Config, stashClient *stash.Client, downloaderService graphqlapi.DownloaderService) graphqlapi.SubscriptionService {

@@ -22,9 +22,17 @@ CREATE TABLE IF NOT EXISTS tasks (
   content_path TEXT NOT NULL DEFAULT '',
 
   completed_at TEXT,
+  stash_mode TEXT NOT NULL DEFAULT '',
+  stash_source_path TEXT NOT NULL DEFAULT '',
+  stash_transfer_action TEXT NOT NULL DEFAULT '',
+  stash_transfer_path TEXT NOT NULL DEFAULT '',
+  stash_transfer_status TEXT NOT NULL DEFAULT '' CHECK (stash_transfer_status IN ('', 'started', 'completed', 'failed')),
+  stash_transfer_error TEXT NOT NULL DEFAULT '',
   stash_job_id TEXT NOT NULL DEFAULT '',
+  stash_scan_path TEXT NOT NULL DEFAULT '',
   stash_scan_status TEXT NOT NULL DEFAULT '' CHECK (stash_scan_status IN ('', 'started', 'failed')),
   stash_scan_error TEXT NOT NULL DEFAULT '',
+  stash_scan_hint TEXT NOT NULL DEFAULT '',
   stash_scan_started_at TEXT,
 
   error TEXT NOT NULL DEFAULT '',
@@ -84,7 +92,7 @@ CREATE INDEX IF NOT EXISTS idx_task_events_created_at
   ON task_events (created_at DESC);
 
 INSERT INTO task_store_meta (key, value)
-VALUES ('schema_version', '1')
+VALUES ('schema_version', '2')
 ON CONFLICT(key) DO UPDATE SET value = excluded.value;
 
 CREATE TABLE IF NOT EXISTS subscription_performer_state (

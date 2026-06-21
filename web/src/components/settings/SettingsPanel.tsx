@@ -137,7 +137,12 @@ export function SettingsPanel({
     setStashForm({
       url: runtimeSettings.stash.url || "",
       apiKey: runtimeSettings.stash.apiKey ?? "",
-      libraryPath: runtimeSettings.stash.libraryPath || ""
+      mode: runtimeSettings.stash.mode || "SHARED_STORAGE",
+      libraryPath: runtimeSettings.stash.libraryPath || "",
+      qbittorrentPathPrefix: runtimeSettings.stash.qbittorrentPathPrefix || "",
+      stashPathPrefix: runtimeSettings.stash.stashPathPrefix || "",
+      transferAction: runtimeSettings.stash.transferAction || "",
+      transferTargetPath: runtimeSettings.stash.transferTargetPath || ""
     });
     setJackettForm({
       url: runtimeSettings.jackett.url || "",
@@ -220,7 +225,12 @@ export function SettingsPanel({
       input: {
         url: stashForm.url.trim(),
         apiKey: stashForm.apiKey.trim(),
-        libraryPath: stashForm.libraryPath.trim()
+        mode: stashForm.mode.trim(),
+        libraryPath: stashForm.libraryPath.trim(),
+        qbittorrentPathPrefix: stashForm.qbittorrentPathPrefix.trim(),
+        stashPathPrefix: stashForm.stashPathPrefix.trim(),
+        transferAction: stashForm.transferAction.trim(),
+        transferTargetPath: stashForm.transferTargetPath.trim()
       }
     });
     if (result.error) {
@@ -384,6 +394,31 @@ export function SettingsPanel({
   }
 
   if (settingsTab === "Stash") {
+    const stashModeGuide = (() => {
+      if (stashForm.mode === "SHARED_STORAGE") {
+        return {
+          tone: "tone-info",
+          title: "共享存储 / 路径映射",
+          summary: "适用于 qBittorrent 和 Stash 实际访问同一批文件，只是容器内或主机上的挂载路径不同。",
+          caution: "要求下载路径命中 qBittorrent 路径前缀；映射失败时不会自动退回整库扫描。"
+        };
+      }
+      if (stashForm.mode === "FILE_TRANSFER") {
+        return {
+          tone: "tone-warn",
+          title: "文件搬运",
+          summary: "适用于 Stash 看不到下载器原始路径，但 Moji 本机可以访问源文件和目标目录。",
+          caution: "Moji 会执行复制或移动；目标目录已有同名文件时会直接失败。"
+        };
+      }
+      return {
+        tone: "tone-danger",
+        title: "整库扫描",
+        summary: "适用于先跑通接入，或无法稳定定位单文件时，由 Stash 扫整个库目录。",
+        caution: "最慢，也最难精确知道本次下载最终对应哪个 scene 或 file。"
+      };
+    })();
+
     return (
       <article className="drawer-card">
         <div className="drawer-card__head">
@@ -400,13 +435,81 @@ export function SettingsPanel({
             />
           </label>
           <label className="settings-field">
-            <span>Library path</span>
-            <input
-              value={stashForm.libraryPath}
-              onChange={(event) => setStashForm((current) => ({ ...current, libraryPath: event.target.value }))}
-              placeholder="/data/library"
-            />
+            <span>工作方式</span>
+            <select
+              value={stashForm.mode}
+              onChange={(event) => setStashForm((current) => ({ ...current, mode: event.target.value }))}
+            >
+              <option value="SHARED_STORAGE">共享存储 / 路径映射</option>
+              <option value="FILE_TRANSFER">文件搬运</option>
+              <option value="LIBRARY_SCAN">整库扫描</option>
+            </select>
           </label>
+          <section className={`settings-mode-guide ${stashModeGuide.tone}`}>
+            <div className="settings-mode-guide__head">
+              <strong>{stashModeGuide.title}</strong>
+              <span>{stashModeGuide.summary}</span>
+            </div>
+            <p>{stashModeGuide.caution}</p>
+          </section>
+          {stashForm.mode === "SHARED_STORAGE" ? (
+            <>
+              <label className="settings-field">
+                <span>qBittorrent 路径前缀</span>
+                <input
+                  value={stashForm.qbittorrentPathPrefix}
+                  onChange={(event) => setStashForm((current) => ({ ...current, qbittorrentPathPrefix: event.target.value }))}
+                  placeholder="/downloads"
+                />
+              </label>
+              <label className="settings-field">
+                <span>Stash 路径前缀</span>
+                <input
+                  value={stashForm.stashPathPrefix}
+                  onChange={(event) => setStashForm((current) => ({ ...current, stashPathPrefix: event.target.value }))}
+                  placeholder="/library"
+                />
+              </label>
+              <p className="settings-help">Moji 会把 qBittorrent 可见路径映射为 Stash 可见路径，再对映射后的单文件触发扫描。</p>
+            </>
+          ) : null}
+          {stashForm.mode === "FILE_TRANSFER" ? (
+            <>
+              <label className="settings-field">
+                <span>搬运动作</span>
+                <select
+                  value={stashForm.transferAction}
+                  onChange={(event) => setStashForm((current) => ({ ...current, transferAction: event.target.value }))}
+                >
+                  <option value="">请选择</option>
+                  <option value="COPY">复制</option>
+                  <option value="MOVE">移动</option>
+                </select>
+              </label>
+              <label className="settings-field">
+                <span>搬运目标目录</span>
+                <input
+                  value={stashForm.transferTargetPath}
+                  onChange={(event) => setStashForm((current) => ({ ...current, transferTargetPath: event.target.value }))}
+                  placeholder="/stash-import"
+                />
+              </label>
+              <p className="settings-help">Moji 会在本地文件系统执行复制或移动，成功后再扫描目标文件。同名目标文件会直接失败。</p>
+            </>
+          ) : null}
+          {stashForm.mode === "LIBRARY_SCAN" ? (
+            <>
+              <label className="settings-field">
+                <span>Library path</span>
+                <input
+                  value={stashForm.libraryPath}
+                  onChange={(event) => setStashForm((current) => ({ ...current, libraryPath: event.target.value }))}
+                  placeholder="/data/library"
+                />
+              </label>
+              <p className="settings-help">当前模式会始终扫描整个 Stash 库目录，无法精确锁定单个下载文件，后续关联信息也会更粗粒度。</p>
+            </>
+          ) : null}
           <label className="settings-field">
             <span>API key</span>
             <div className="secret-input">

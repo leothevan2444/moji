@@ -23,6 +23,7 @@ type TorrentClient interface {
 type StashService interface {
 	MetadataScan(ctx context.Context, req stashsync.ScanRequest) (string, error)
 	FindJob(ctx context.Context, id string) (*stashsync.Job, error)
+	CurrentConfig() stashsync.IntegrationConfig
 }
 
 type DownloaderService interface {
@@ -45,9 +46,14 @@ type SettingsEditor interface {
 }
 
 type UpdateStashSettingsInput struct {
-	URL         string
-	APIKey      string
-	LibraryPath string
+	URL                   string
+	APIKey                string
+	Mode                  string
+	LibraryPath           string
+	QBittorrentPathPrefix string
+	StashPathPrefix       string
+	TransferAction        string
+	TransferTargetPath    string
 }
 
 type UpdateJackettSettingsInput struct {
@@ -90,12 +96,17 @@ type SettingsSnapshot struct {
 }
 
 type StashSettingsSnapshot struct {
-	Configured       bool
-	Enabled          bool
-	URL              string
-	APIKeyConfigured bool
-	APIKey           string
-	LibraryPath      string
+	Configured            bool
+	Enabled               bool
+	URL                   string
+	APIKeyConfigured      bool
+	APIKey                string
+	Mode                  string
+	LibraryPath           string
+	QBittorrentPathPrefix string
+	StashPathPrefix       string
+	TransferAction        string
+	TransferTargetPath    string
 }
 
 type JackettSettingsSnapshot struct {

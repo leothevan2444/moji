@@ -40,12 +40,17 @@ func settingsSnapshotToModel(snapshot *SettingsSnapshot, appVersion string) *mod
 
 	return &model.Settings{
 		Stash: &model.StashSettings{
-			Configured:       snapshot.Stash.Configured,
-			Enabled:          snapshot.Stash.Enabled,
-			URL:              snapshot.Stash.URL,
-			APIKeyConfigured: snapshot.Stash.APIKeyConfigured,
-			APIKey:           snapshot.Stash.APIKey,
-			LibraryPath:      snapshot.Stash.LibraryPath,
+			Configured:            snapshot.Stash.Configured,
+			Enabled:               snapshot.Stash.Enabled,
+			URL:                   snapshot.Stash.URL,
+			APIKeyConfigured:      snapshot.Stash.APIKeyConfigured,
+			APIKey:                snapshot.Stash.APIKey,
+			Mode:                  snapshot.Stash.Mode,
+			LibraryPath:           snapshot.Stash.LibraryPath,
+			QbittorrentPathPrefix: snapshot.Stash.QBittorrentPathPrefix,
+			StashPathPrefix:       snapshot.Stash.StashPathPrefix,
+			TransferAction:        snapshot.Stash.TransferAction,
+			TransferTargetPath:    snapshot.Stash.TransferTargetPath,
 		},
 		Jackett: &model.JackettSettings{
 			Configured:       snapshot.Jackett.Configured,

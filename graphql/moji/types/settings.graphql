@@ -40,7 +40,12 @@ type StashSettings {
   apiKeyConfigured: Boolean!
   "Currently configured Stash API key. Returned in plaintext for the settings UI; never logged."
   apiKey: String!
+  mode: String!
   libraryPath: String!
+  qbittorrentPathPrefix: String!
+  stashPathPrefix: String!
+  transferAction: String!
+  transferTargetPath: String!
 }
 
 type JackettSettings {
@@ -109,7 +114,12 @@ type SystemSettings {
 input UpdateStashSettingsInput {
   url: String!
   apiKey: String
+  mode: String!
   libraryPath: String!
+  qbittorrentPathPrefix: String!
+  stashPathPrefix: String!
+  transferAction: String!
+  transferTargetPath: String!
 }
 
 input UpdateJackettSettingsInput {

@@ -20,9 +20,14 @@ func (r *mutationResolver) UpdateStashSettings(ctx context.Context, input model.
 	}
 
 	snapshot, err := r.SettingsEditor.UpdateStashSettings(UpdateStashSettingsInput{
-		URL:         input.URL,
-		APIKey:      strings.TrimSpace(derefString(input.APIKey)),
-		LibraryPath: input.LibraryPath,
+		URL:                   input.URL,
+		APIKey:                strings.TrimSpace(derefString(input.APIKey)),
+		Mode:                  input.Mode,
+		LibraryPath:           input.LibraryPath,
+		QBittorrentPathPrefix: input.QbittorrentPathPrefix,
+		StashPathPrefix:       input.StashPathPrefix,
+		TransferAction:        input.TransferAction,
+		TransferTargetPath:    input.TransferTargetPath,
 	})
 	if err != nil {
 		return nil, err
@@ -69,13 +74,6 @@ func (r *mutationResolver) UpdateQBittorrentSettings(ctx context.Context, input 
 	}
 
 	return settingsSnapshotToModel(snapshot, r.AppVersion), nil
-}
-
-func derefString(raw *string) string {
-	if raw == nil {
-		return ""
-	}
-	return *raw
 }
 
 // UpdateSubscriptionSettings is the resolver for the updateSubscriptionSettings field.

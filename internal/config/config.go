@@ -24,10 +24,15 @@ type QBittorrentConfig struct {
 }
 
 type StashConfig struct {
-	URL              string `yaml:"url"`
-	LegacyGraphQLURL string `yaml:"graphql_url"`
-	APIKey           string `yaml:"api_key"`
-	LibraryPath      string `yaml:"library_path"`
+	URL                   string `yaml:"url"`
+	LegacyGraphQLURL      string `yaml:"graphql_url"`
+	APIKey                string `yaml:"api_key"`
+	Mode                  string `yaml:"mode"`
+	LibraryPath           string `yaml:"library_path"`
+	QBittorrentPathPrefix string `yaml:"qbittorrent_path_prefix"`
+	StashPathPrefix       string `yaml:"stash_path_prefix"`
+	TransferAction        string `yaml:"transfer_action"`
+	TransferTargetPath    string `yaml:"transfer_target_path"`
 }
 
 func (s *StashConfig) normalize() {

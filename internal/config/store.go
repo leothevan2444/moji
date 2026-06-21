@@ -62,14 +62,19 @@ func (s *Store) Path() string {
 	return s.path
 }
 
-func (s *Store) UpdateStash(url, apiKey, libraryPath string) (*Config, error) {
+func (s *Store) UpdateStash(url, apiKey, mode, libraryPath, qbittorrentPathPrefix, stashPathPrefix, transferAction, transferTargetPath string) (*Config, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
 	s.cfg.Stash.URL = trimGraphQLSuffix(url)
 	s.cfg.Stash.LegacyGraphQLURL = ""
 	s.cfg.Stash.APIKey = apiKey
+	s.cfg.Stash.Mode = mode
 	s.cfg.Stash.LibraryPath = libraryPath
+	s.cfg.Stash.QBittorrentPathPrefix = qbittorrentPathPrefix
+	s.cfg.Stash.StashPathPrefix = stashPathPrefix
+	s.cfg.Stash.TransferAction = transferAction
+	s.cfg.Stash.TransferTargetPath = transferTargetPath
 
 	if err := s.updateConfigNode(); err != nil {
 		return nil, err
@@ -160,9 +165,14 @@ func (s *Store) updateConfigNode() error {
 		"api_key": s.cfg.Jackett.APIKey,
 	})
 	setMapString(top, "stash", map[string]string{
-		"url":          s.cfg.Stash.URL,
-		"api_key":      s.cfg.Stash.APIKey,
-		"library_path": s.cfg.Stash.LibraryPath,
+		"url":                     s.cfg.Stash.URL,
+		"api_key":                 s.cfg.Stash.APIKey,
+		"mode":                    s.cfg.Stash.Mode,
+		"library_path":            s.cfg.Stash.LibraryPath,
+		"qbittorrent_path_prefix": s.cfg.Stash.QBittorrentPathPrefix,
+		"stash_path_prefix":       s.cfg.Stash.StashPathPrefix,
+		"transfer_action":         s.cfg.Stash.TransferAction,
+		"transfer_target_path":    s.cfg.Stash.TransferTargetPath,
 	})
 	deleteMapKey(mapValue(top, "stash"), "graphql_url")
 	setMapString(top, "qbittorrent", map[string]string{

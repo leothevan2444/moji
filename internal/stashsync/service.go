@@ -15,6 +15,30 @@ type Client interface {
 	FindJob(ctx context.Context, id string) (*stashgraphql.FindJob_FindJob, error)
 }
 
+type IntegrationMode string
+
+const (
+	IntegrationModeSharedStorage IntegrationMode = "SHARED_STORAGE"
+	IntegrationModeFileTransfer  IntegrationMode = "FILE_TRANSFER"
+	IntegrationModeLibraryScan   IntegrationMode = "LIBRARY_SCAN"
+)
+
+type TransferAction string
+
+const (
+	TransferActionCopy TransferAction = "COPY"
+	TransferActionMove TransferAction = "MOVE"
+)
+
+type IntegrationConfig struct {
+	Mode                  IntegrationMode
+	LibraryPath           string
+	QBittorrentPathPrefix string
+	StashPathPrefix       string
+	TransferAction        TransferAction
+	TransferTargetPath    string
+}
+
 type ScanRequest struct {
 	Paths                     []string
 	Rescan                    *bool
@@ -40,25 +64,26 @@ type Job struct {
 }
 
 type Service struct {
-	client       Client
-	defaultPaths []string
+	client         Client
+	configProvider func() IntegrationConfig
 }
 
-func NewService(client Client, defaultPaths []string) (*Service, error) {
+func NewService(client Client, configProvider func() IntegrationConfig) (*Service, error) {
 	if client == nil {
 		return nil, errors.New("stashsync: client is required")
 	}
 
 	return &Service{
-		client:       client,
-		defaultPaths: cleanPaths(defaultPaths),
+		client:         client,
+		configProvider: configProvider,
 	}, nil
 }
 
 func (s *Service) MetadataScan(ctx context.Context, req ScanRequest) (string, error) {
 	paths := cleanPaths(req.Paths)
 	if len(paths) == 0 {
-		paths = s.defaultPaths
+		cfg := s.CurrentConfig()
+		paths = cleanPaths([]string{cfg.LibraryPath})
 	}
 	if len(paths) == 0 {
 		return "", errors.New("stashsync: at least one scan path is required")
@@ -82,6 +107,18 @@ func (s *Service) MetadataScan(ctx context.Context, req ScanRequest) (string, er
 	}
 	logging.Infof("stashsync: metadata scan started with job %s for paths %v", jobID, paths)
 	return jobID, nil
+}
+
+func (s *Service) CurrentConfig() IntegrationConfig {
+	if s == nil || s.configProvider == nil {
+		return IntegrationConfig{}
+	}
+	cfg := s.configProvider()
+	cfg.LibraryPath = strings.TrimSpace(cfg.LibraryPath)
+	cfg.QBittorrentPathPrefix = strings.TrimSpace(cfg.QBittorrentPathPrefix)
+	cfg.StashPathPrefix = strings.TrimSpace(cfg.StashPathPrefix)
+	cfg.TransferTargetPath = strings.TrimSpace(cfg.TransferTargetPath)
+	return cfg
 }
 
 func (s *Service) FindJob(ctx context.Context, id string) (*Job, error) {

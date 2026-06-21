@@ -38,13 +38,24 @@ func (s *runtimeSettingsEditor) UpdateStashSettings(input graphqlapi.UpdateStash
 	cfg, err := s.store.UpdateStash(
 		strings.TrimSpace(input.URL),
 		strings.TrimSpace(input.APIKey),
+		strings.TrimSpace(input.Mode),
 		strings.TrimSpace(input.LibraryPath),
+		strings.TrimSpace(input.QBittorrentPathPrefix),
+		strings.TrimSpace(input.StashPathPrefix),
+		strings.TrimSpace(input.TransferAction),
+		strings.TrimSpace(input.TransferTargetPath),
 	)
 	if err != nil {
 		logging.Errorf("settings: save stash settings failed: %v", err)
 		return nil, err
 	}
-	logging.Infof("settings: stash settings saved for url=%s library_path=%s", cfg.Stash.URL, cfg.Stash.LibraryPath)
+	logging.Infof(
+		"settings: stash settings saved for url=%s mode=%s library_path=%s transfer_target=%s",
+		cfg.Stash.URL,
+		cfg.Stash.Mode,
+		cfg.Stash.LibraryPath,
+		cfg.Stash.TransferTargetPath,
+	)
 	return buildSettingsSnapshot(cfg, s.version, s.qbittorrentEnabled, s.downloaderEnabled, s.stashEnabled, s.subscriptionService), nil
 }
 

@@ -19,7 +19,12 @@ query DashboardDocument {
       url
       apiKeyConfigured
       apiKey
+      mode
       libraryPath
+      qbittorrentPathPrefix
+      stashPathPrefix
+      transferAction
+      transferTargetPath
     }
     jackett {
       configured
@@ -85,9 +90,17 @@ query DashboardDocument {
     tags
     error
     completedAt
+    stashMode
+    stashSourcePath
+    stashTransferAction
+    stashTransferPath
+    stashTransferStatus
+    stashTransferError
     stashJobId
+    stashScanPath
     stashScanStatus
     stashScanError
+    stashScanHint
     createdAt
     updatedAt
   }
