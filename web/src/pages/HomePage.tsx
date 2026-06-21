@@ -52,14 +52,6 @@ export function HomePage({
             : runtimeStatus.qbittorrent.configured
               ? "配置完整，但运行时未连接成功"
               : "缺少 URL、用户名或密码"
-        },
-        {
-          name: "订阅",
-          label: runtimeStatus.automation.subscriptionPollEnabled ? "已启用" : "未启用",
-          tone: runtimeStatus.automation.subscriptionPollEnabled ? "tone-success" : "tone-neutral",
-          detail: (runtimeStatus.subscription.stashBoxes?.length ?? 0) > 0
-            ? `Stash-Box: ${runtimeStatus.subscription.stashBoxes?.length} 个，已选 ${runtimeSettings.subscription.stashBoxEndpoints?.length ?? 0} 个`
-            : "Stash 中尚未配置任何 Stash-Box"
         }
       ]
     : [];
