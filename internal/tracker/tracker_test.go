@@ -20,7 +20,7 @@ func TestJackett(t *testing.T) {
 		t.Skip("set MOJI_JACKETT_URL and MOJI_JACKETT_API_KEY to run Jackett integration tests")
 	}
 
-	jackett := NewJackettService(jackettURL, jackettAPIKey)
+	jackett := NewJackettService(jackettURL, jackettAPIKey, "")
 
 	results, err := jackett.Search(javID,
 		WithTrackers([]string{"sukebeinyaasi", "onejav", "u3c3"}),

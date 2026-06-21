@@ -10,8 +10,15 @@ import (
 )
 
 type JackettConfig struct {
-	URL    string `yaml:"url"`
-	APIKey string `yaml:"api_key"`
+	URL      string `yaml:"url"`
+	APIKey   string `yaml:"api_key"`
+	// Password is the Jackett dashboard admin password. Optional: when set,
+	// the client logs into /UI/Dashboard on startup to obtain a session
+	// cookie, which is required by endpoints that do not accept the apikey
+	// query parameter (notably GET /api/v2.0/indexers). When empty, those
+	// endpoints will return the dashboard's HTML login page and the home
+	// service card will show Jackett as "运行异常".
+	Password string `yaml:"password,omitempty"`
 }
 
 type QBittorrentConfig struct {

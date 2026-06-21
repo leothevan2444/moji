@@ -8,10 +8,16 @@ type JackettService struct {
 	client *jackett.Client
 }
 
-func NewJackettService(url string, apiKey string) *JackettService {
+func NewJackettService(url string, apiKey string, password string) *JackettService {
 	return &JackettService{
-		client: jackett.NewClient(url, apiKey, ""),
+		client: jackett.NewClient(url, apiKey, password),
 	}
+}
+
+// Client exposes the underlying Jackett client so the stats collector can
+// poll GetIndexers without going through the search path.
+func (s *JackettService) Client() *jackett.Client {
+	return s.client
 }
 
 func (s *JackettService) Search(query string, options ...SearchOption) ([]jackett.SearchResult, error) {
@@ -26,7 +32,9 @@ func (s *JackettService) Search(query string, options ...SearchOption) ([]jacket
 		Trackers:   opts.Trackers,
 	}
 
-	results, err := s.client.Search(req)
+	// Use SearchWithIndexerStatus so the global indexer-status hook (if any)
+	// can observe per-indexer latency and errors for the stats collector.
+	results, _, err := s.client.SearchWithIndexerStatus(req)
 	if err != nil {
 		return nil, err
 	}

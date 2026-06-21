@@ -24,7 +24,9 @@ import (
 	"github.com/leothevan2444/moji/internal/stashsync"
 	"github.com/leothevan2444/moji/internal/subscription"
 	"github.com/leothevan2444/moji/internal/tracker"
+	"github.com/leothevan2444/moji/internal/stats"
 	"github.com/leothevan2444/moji/internal/webui"
+	"github.com/leothevan2444/moji/pkg/jackett"
 	"github.com/leothevan2444/moji/pkg/qbittorrent"
 	"github.com/leothevan2444/moji/pkg/stash"
 )
@@ -78,7 +80,7 @@ func main() {
 	}
 
 	// Dependencies
-	mux, downloaderService, stashService, subscriptionService := newHTTPRuntime(cfg, "dev", configStore)
+	mux, downloaderService, stashService, subscriptionService, statsCollector := newHTTPRuntime(cfg, "dev", configStore)
 
 	server := &http.Server{
 		Addr:              *addr,
@@ -100,6 +102,7 @@ func main() {
 
 	startTaskSyncWorker(ctx, downloaderService, stashService, configureProgressSyncInterval(cfg))
 	startSubscriptionWorker(ctx, subscriptionService, configureSubscriptionPollInterval(cfg))
+	go statsCollector.Run(ctx)
 
 	go func() {
 		<-ctx.Done()
@@ -116,25 +119,37 @@ func main() {
 }
 
 func newHTTPHandler(cfg *config.Config, version string) http.Handler {
-	handler, _, _, _ := newHTTPRuntime(cfg, version, nil)
+	handler, _, _, _, _ := newHTTPRuntime(cfg, version, nil)
 	return handler
 }
 
-func newHTTPRuntime(cfg *config.Config, version string, configStore *config.Store) (http.Handler, graphqlapi.DownloaderService, graphqlapi.StashService, graphqlapi.SubscriptionService) {
-	jackettTracker := tracker.NewJackettService(cfg.Jackett.URL, cfg.Jackett.APIKey)
+func newHTTPRuntime(cfg *config.Config, version string, configStore *config.Store) (http.Handler, graphqlapi.DownloaderService, graphqlapi.StashService, graphqlapi.SubscriptionService, *stats.Collector) {
+	jackettTracker := tracker.NewJackettService(cfg.Jackett.URL, cfg.Jackett.APIKey, cfg.Jackett.Password)
 	logging.Infof("runtime: jackett tracker configured for %s", cfg.Jackett.URL)
+	if cfg.Jackett.Password == "" {
+		logging.Warn("runtime: jackett.password is empty; the home service card will report Jackett as 运行异常 because /api/v2.0/indexers requires a session cookie. Set jackett.password in config.yaml to enable it.")
+	}
 	apiHandler := api.NewHandler(jackettTracker, api.WithLogFilePath(cfg.EffectiveLogFilePath()))
-	torrentClient := configureQBittorrent(cfg)
+	qbittorrentClient, torrentClient := configureQBittorrent(cfg)
 	downloaderService := configureDownloader(cfg, jackettTracker, torrentClient)
 	stashClient := configureStashClient(cfg)
 	stashService := configureStashService(cfg, configStore, stashClient)
 	subscriptionService := configureSubscription(cfg, stashClient, downloaderService)
 	applySubscriptionOrder(cfg, subscriptionService)
+
+	statsCollector := stats.NewCollector(
+		stashClient,
+		jackettClientOf(jackettTracker),
+		qbittorrentClient,
+		downloaderService,
+		logging.Default().Slog(),
+	)
 	resolver := graphqlapi.NewResolver(jackettTracker, torrentClient, downloaderService, stashService, version)
 	resolver.Subscription = subscriptionService
 	resolver.LogReader = logging.Default()
 	resolver.RuntimeSettings = buildSettingsSnapshot(cfg, version, torrentClient != nil)
 	resolver.RuntimeStatus = buildSettingsStatusSnapshot(cfg, version, torrentClient != nil, downloaderService != nil, stashService != nil, subscriptionService)
+	resolver.Stats = statsCollector
 	if configStore != nil {
 		resolver.SettingsEditor = newRuntimeSettingsEditor(configStore, version, torrentClient != nil, downloaderService != nil, stashService != nil, subscriptionService)
 	}
@@ -159,21 +174,21 @@ func newHTTPRuntime(cfg *config.Config, version string, configStore *config.Stor
 		}
 	})
 
-	return router, downloaderService, stashService, subscriptionService
+	return router, downloaderService, stashService, subscriptionService, statsCollector
 }
 
-func configureQBittorrent(cfg *config.Config) graphqlapi.TorrentClient {
+func configureQBittorrent(cfg *config.Config) (*qbittorrent.Client, graphqlapi.TorrentClient) {
 	if cfg.QBittorrent.URL == "" {
 		logging.Infof("runtime: qBittorrent client disabled because qbittorrent.url is empty")
-		return nil
+		return nil, nil
 	}
 	if cfg.QBittorrent.Username == "" {
 		logging.Warn("qBittorrent disabled: qbittorrent.username is required when qbittorrent.url is set")
-		return nil
+		return nil, nil
 	}
 	if cfg.QBittorrent.Password == "" {
 		logging.Warn("qBittorrent disabled: qbittorrent.password is required when qbittorrent.url is set")
-		return nil
+		return nil, nil
 	}
 
 	client := qbittorrent.NewClient(cfg.QBittorrent.URL)
@@ -184,11 +199,22 @@ func configureQBittorrent(cfg *config.Config) graphqlapi.TorrentClient {
 	}
 	logging.Infof("runtime: qBittorrent client connected to %s as %s", cfg.QBittorrent.URL, cfg.QBittorrent.Username)
 
-	return downloader.NewDefaultingTorrentClient(client, downloader.TorrentDefaults{
+	wrapped := downloader.NewDefaultingTorrentClient(client, downloader.TorrentDefaults{
 		SavePath: cfg.QBittorrent.DefaultSavePath,
 		Category: cfg.QBittorrent.Category,
 		Tags:     cfg.QBittorrent.Tags,
 	})
+	return client, wrapped
+}
+
+// jackettClientOf returns the underlying jackett.Client for the stats
+// collector. Returns nil if the tracker is not a JackettService (e.g. tests
+// pass a stub).
+func jackettClientOf(tr tracker.Tracker) *jackett.Client {
+	if j, ok := tr.(*tracker.JackettService); ok {
+		return j.Client()
+	}
+	return nil
 }
 
 func configureDownloader(cfg *config.Config, tr tracker.Tracker, torrent graphqlapi.TorrentClient) graphqlapi.DownloaderService {
