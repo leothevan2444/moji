@@ -18,6 +18,8 @@ qbittorrent:
   password: "secret"
 tasks:
   progress_sync_interval_seconds: 60
+automation:
+  task_progress_sync_interval_seconds: 90
 `
 	if err := os.WriteFile(path, []byte(content), 0o644); err != nil {
 		t.Fatalf("write config: %v", err)
@@ -49,19 +51,19 @@ tasks:
 	if err != nil {
 		t.Fatalf("reload config: %v", err)
 	}
-	if reloaded.Tasks.ProgressSyncIntervalSeconds != 60 {
-		t.Fatalf("expected numeric progress sync interval preserved, got %d", reloaded.Tasks.ProgressSyncIntervalSeconds)
+	if reloaded.Automation.TaskProgressSyncIntervalSeconds != 90 {
+		t.Fatalf("expected automation interval preserved, got %d", reloaded.Automation.TaskProgressSyncIntervalSeconds)
 	}
 	if reloaded.QBittorrent.Username != "operator" {
 		t.Fatalf("expected updated username, got %q", reloaded.QBittorrent.Username)
 	}
 }
 
-func TestLoadFromPathNormalizesLegacyStashGraphQLURL(t *testing.T) {
+func TestLoadFromPathUsesDirectStashURL(t *testing.T) {
 	dir := t.TempDir()
 	path := filepath.Join(dir, "config.yaml")
 	content := `stash:
-  graphql_url: "http://stash.example/graphql"
+  url: "http://stash.example"
   api_key: "secret"
   library_path: "/library"
 `
@@ -72,9 +74,6 @@ func TestLoadFromPathNormalizesLegacyStashGraphQLURL(t *testing.T) {
 	cfg, err := LoadFromPath(path)
 	if err != nil {
 		t.Fatalf("load config: %v", err)
-	}
-	if cfg.Stash.URL != "http://stash.example" {
-		t.Fatalf("expected normalized stash url, got %q", cfg.Stash.URL)
 	}
 	if cfg.Stash.GraphQLEndpoint() != "http://stash.example/graphql" {
 		t.Fatalf("expected derived graphql endpoint, got %q", cfg.Stash.GraphQLEndpoint())

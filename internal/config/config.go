@@ -25,7 +25,6 @@ type QBittorrentConfig struct {
 
 type StashConfig struct {
 	URL                   string `yaml:"url"`
-	LegacyGraphQLURL      string `yaml:"graphql_url"`
 	APIKey                string `yaml:"api_key"`
 	Mode                  string `yaml:"mode"`
 	LibraryPath           string `yaml:"library_path"`
@@ -35,27 +34,19 @@ type StashConfig struct {
 	TransferTargetPath    string `yaml:"transfer_target_path"`
 }
 
-func (s *StashConfig) normalize() {
-	if s.URL == "" && s.LegacyGraphQLURL != "" {
-		s.URL = trimGraphQLSuffix(s.LegacyGraphQLURL)
-	}
-}
+func (s *StashConfig) normalize() {}
 
 func (s StashConfig) GraphQLEndpoint() string {
 	return buildStashGraphQLEndpoint(s.URL)
 }
 
-type TaskConfig struct {
-	Store                       string `yaml:"store"`
-	DBPath                      string `yaml:"db_path"`
-	ProgressSyncIntervalSeconds int    `yaml:"progress_sync_interval_seconds"`
+type AutomationConfig struct {
+	TaskProgressSyncIntervalSeconds int `yaml:"task_progress_sync_interval_seconds"`
+	SubscriptionPollIntervalSeconds int `yaml:"subscription_poll_interval_seconds"`
 }
 
 type SubscriptionConfig struct {
-	Store               string   `yaml:"store"`
-	DBPath              string   `yaml:"db_path"`
-	PollIntervalSeconds int      `yaml:"poll_interval_seconds"`
-	StashBoxEndpoints   []string `yaml:"selected_stash_box_endpoints"`
+	StashBoxEndpoints []string `yaml:"selected_stash_box_endpoints"`
 }
 
 type LoggingConfig struct {
@@ -71,7 +62,7 @@ type Config struct {
 	Jackett      JackettConfig      `yaml:"jackett"`
 	QBittorrent  QBittorrentConfig  `yaml:"qbittorrent"`
 	Stash        StashConfig        `yaml:"stash"`
-	Tasks        TaskConfig         `yaml:"tasks"`
+	Automation   AutomationConfig   `yaml:"automation"`
 	Subscription SubscriptionConfig `yaml:"subscription"`
 	Logging      LoggingConfig      `yaml:"logging"`
 

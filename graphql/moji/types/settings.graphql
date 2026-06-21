@@ -1,6 +1,9 @@
 extend type Query {
-  "Get runtime capability and configuration state for the Settings surface"
+  "Get editable configuration for the Settings surface"
   settings: Settings!
+
+  "Get runtime state for the Settings surface"
+  settingsStatus: SettingsStatus!
 }
 
 extend type Mutation {
@@ -13,24 +16,30 @@ extend type Mutation {
   "Update qBittorrent settings and persist them to backend config"
   updateQBittorrentSettings(input: UpdateQBittorrentSettingsInput!): Settings!
 
+  "Update automation settings and persist them to backend config"
+  updateAutomationSettings(input: UpdateAutomationSettingsInput!): Settings!
+
   "Update Subscription settings and persist them to backend config"
   updateSubscriptionSettings(input: UpdateSubscriptionSettingsInput!): Settings!
 
   "Re-fetch the Stash-Box list from the configured Stash server. The updated list and load status are reflected in the returned Settings snapshot."
   refreshSubscriptionStashBoxes: Settings!
-
-  "Update logging settings and persist them to backend config"
-  updateLoggingSettings(input: UpdateLoggingSettingsInput!): Settings!
 }
 
 type Settings {
   stash: StashSettings!
   jackett: JackettSettings!
   qbittorrent: QBittorrentSettings!
-  tasks: TaskSettings!
+  automation: AutomationSettings!
   subscription: SubscriptionSettings!
-  logging: LoggingSettings!
-  system: SystemSettings!
+}
+
+type SettingsStatus {
+  stash: ServiceStatus!
+  jackett: ServiceStatus!
+  qbittorrent: ServiceStatus!
+  automation: AutomationStatus!
+  subscription: SubscriptionStatus!
 }
 
 type StashSettings {
@@ -71,22 +80,31 @@ type QBittorrentSettings {
   tags: String!
 }
 
-type TaskSettings {
-  store: String!
-  dbPath: String!
-  progressSyncIntervalSeconds: Int!
-  progressSyncEnabled: Boolean!
+type AutomationSettings {
+  taskProgressSyncIntervalSeconds: Int!
+  subscriptionPollIntervalSeconds: Int!
 }
 
 type SubscriptionSettings {
-  store: String!
-  dbPath: String!
-  pollIntervalSeconds: Int!
-  pollEnabled: Boolean!
-  "Stash Box instances currently configured inside the Stash server."
-  stashBoxes: [StashBoxEndpoint!]!
   "Endpoint URLs in the user-defined order used for subscription lookups. Endpoints not listed here are still queried, in their Stash order, appended after the listed ones. An empty list means use Stash's order as-is."
   stashBoxEndpoints: [String!]!
+}
+
+type ServiceStatus {
+  configured: Boolean!
+  enabled: Boolean!
+}
+
+type AutomationStatus {
+  taskProgressSyncIntervalSeconds: Int!
+  taskProgressSyncEnabled: Boolean!
+  subscriptionPollIntervalSeconds: Int!
+  subscriptionPollEnabled: Boolean!
+}
+
+type SubscriptionStatus {
+  "Stash Box instances currently configured inside the Stash server."
+  stashBoxes: [StashBoxEndpoint!]!
   "Whether the last attempt to load Stash Box endpoints from Stash succeeded."
   stashBoxesLoaded: Boolean!
   "Reason for the most recent Stash Box load failure. Null when stashBoxesLoaded is true."
@@ -97,18 +115,6 @@ type StashBoxEndpoint {
   name: String!
   endpoint: String!
   apiKeyConfigured: Boolean!
-}
-
-type LoggingSettings {
-  level: String!
-  filePath: String!
-  maxEntries: Int!
-  maxFileSizeBytes: Int!
-  maxFileBackups: Int!
-}
-
-type SystemSettings {
-  appVersion: String!
 }
 
 input UpdateStashSettingsInput {
@@ -136,18 +142,12 @@ input UpdateQBittorrentSettingsInput {
   tags: String!
 }
 
-input UpdateSubscriptionSettingsInput {
-  store: String!
-  dbPath: String!
-  pollIntervalSeconds: Int!
-  "See SubscriptionSettings.stashBoxEndpoints."
-  stashBoxEndpoints: [String!]!
+input UpdateAutomationSettingsInput {
+  taskProgressSyncIntervalSeconds: Int!
+  subscriptionPollIntervalSeconds: Int!
 }
 
-input UpdateLoggingSettingsInput {
-  level: String!
-  filePath: String!
-  maxEntries: Int!
-  maxFileSizeBytes: Int!
-  maxFileBackups: Int!
+input UpdateSubscriptionSettingsInput {
+  "See SubscriptionSettings.stashBoxEndpoints."
+  stashBoxEndpoints: [String!]!
 }

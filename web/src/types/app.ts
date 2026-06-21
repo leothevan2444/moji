@@ -10,14 +10,8 @@ export type ToastPhase = "entering" | "leaving";
 export type ToastItem = { id: number; tone: ToastTone; message: string; phase: ToastPhase };
 
 export type SettingsTab =
-  | "Stash"
-  | "索引器"
-  | "下载器"
-  | "任务"
-  | "订阅"
-  | "安全性"
-  | "系统"
+  | "连接"
+  | "入库"
+  | "自动化"
   | "日志"
-  | "工具"
-  | "更新历史"
   | "关于";

@@ -3,6 +3,7 @@ package downloader
 import (
 	"context"
 	"errors"
+	"path/filepath"
 	"testing"
 	"time"
 
@@ -246,6 +247,61 @@ func TestTriggerTaskStashScanAllowsRetryAfterFailure(t *testing.T) {
 	}
 	if task.StashScanStatus != StashScanStatusStarted || task.StashScanError != "" {
 		t.Fatalf("expected failed scan to be retried, got %+v", task)
+	}
+}
+
+func TestTriggerStashScansPersistsSQLiteUpdatesWithExtendedStashColumns(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "tasks.db")
+	store, err := NewSQLiteTaskStore(path)
+	if err != nil {
+		t.Fatalf("NewSQLiteTaskStore failed: %v", err)
+	}
+
+	completedAt := time.Unix(200, 0).UTC()
+	if err := store.Create(context.Background(), &Task{
+		ID:          "task-sqlite-update",
+		Status:      TaskStatusCompleted,
+		ContentPath: "/downloads/ABCD-123.mp4",
+		CompletedAt: &completedAt,
+		CreatedAt:   time.Unix(100, 0).UTC(),
+		UpdatedAt:   time.Unix(200, 0).UTC(),
+	}); err != nil {
+		t.Fatalf("Create failed: %v", err)
+	}
+
+	service, err := NewService(
+		fakeTracker{},
+		&fakeTorrentAdder{},
+		store,
+		WithClock(func() time.Time { return time.Unix(300, 0).UTC() }),
+	)
+	if err != nil {
+		t.Fatalf("NewService failed: %v", err)
+	}
+
+	scanner := &fakeStashScanner{
+		jobID: "job-sqlite",
+		config: stashsync.IntegrationConfig{
+			Mode:                  stashsync.IntegrationModeSharedStorage,
+			QBittorrentPathPrefix: "/downloads",
+			StashPathPrefix:       "/library",
+		},
+	}
+
+	tasks, err := service.TriggerStashScans(context.Background(), scanner)
+	if err != nil {
+		t.Fatalf("TriggerStashScans failed: %v", err)
+	}
+	if len(tasks) != 1 {
+		t.Fatalf("expected one updated task, got %d", len(tasks))
+	}
+
+	reloaded, err := store.Find(context.Background(), "task-sqlite-update")
+	if err != nil {
+		t.Fatalf("Find failed: %v", err)
+	}
+	if reloaded.StashJobID != "job-sqlite" || reloaded.StashScanStatus != StashScanStatusStarted {
+		t.Fatalf("unexpected persisted task: %+v", reloaded)
 	}
 }
 

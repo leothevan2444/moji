@@ -27,7 +27,7 @@ function App() {
   // ── UI state ────────────────────────────────────────────────────────
   const [tab, setTab] = useState<TabKey>("主页");
   const [drawer, setDrawer] = useState<DrawerKey>(null);
-  const [settingsTab, setSettingsTab] = useState<SettingsTab>("Stash");
+  const [settingsTab, setSettingsTab] = useState<SettingsTab>("连接");
   const [helpTopicId, setHelpTopicId] = useState<HelpTopicId>(HELP_TOPICS[0].id);
 
   // Tasks page state
@@ -102,6 +102,7 @@ function App() {
   // ── Derived state ───────────────────────────────────────────────────
   const tasks = data?.tasks ?? [];
   const runtimeSettings = data?.settings ?? null;
+  const runtimeStatus = data?.settingsStatus ?? null;
   const activeTask = selectedTaskId ? tasks.find((task) => task.id === selectedTaskId) ?? null : null;
 
   const metrics = {
@@ -279,6 +280,7 @@ function App() {
           <HomePage
             tasks={tasks}
             runtimeSettings={runtimeSettings}
+            runtimeStatus={runtimeStatus}
             lastCheckedAt={data?.tasks[0]?.updatedAt ?? null}
             pendingTaskScanId={pendingTaskScanId}
             onRefresh={() => refreshDashboard({ requestPolicy: "network-only" })}
@@ -376,6 +378,8 @@ function App() {
               settingsTab={settingsTab}
               onSettingsTabChange={setSettingsTab}
               runtimeSettings={runtimeSettings}
+              runtimeStatus={runtimeStatus}
+              appVersion={data?.version ?? ""}
               drawer={drawer}
               renderedDrawer={renderedDrawer}
               pushToast={pushToast}

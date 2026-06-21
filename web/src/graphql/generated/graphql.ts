@@ -17,6 +17,20 @@ export type Scalars = {
   Long: { input: any; output: any; }
 };
 
+export type AutomationSettings = {
+  __typename?: 'AutomationSettings';
+  subscriptionPollIntervalSeconds: Scalars['Int']['output'];
+  taskProgressSyncIntervalSeconds: Scalars['Int']['output'];
+};
+
+export type AutomationStatus = {
+  __typename?: 'AutomationStatus';
+  subscriptionPollEnabled: Scalars['Boolean']['output'];
+  subscriptionPollIntervalSeconds: Scalars['Int']['output'];
+  taskProgressSyncEnabled: Scalars['Boolean']['output'];
+  taskProgressSyncIntervalSeconds: Scalars['Int']['output'];
+};
+
 export type DashboardStats = {
   __typename?: 'DashboardStats';
   active: Scalars['Int']['output'];
@@ -103,15 +117,6 @@ export enum LogLevel {
   Warning = 'Warning'
 }
 
-export type LoggingSettings = {
-  __typename?: 'LoggingSettings';
-  filePath: Scalars['String']['output'];
-  level: Scalars['String']['output'];
-  maxEntries: Scalars['Int']['output'];
-  maxFileBackups: Scalars['Int']['output'];
-  maxFileSizeBytes: Scalars['Int']['output'];
-};
-
 export type Mutation = {
   __typename?: 'Mutation';
   /** Add a torrent URL or magnet and create a persisted Moji task */
@@ -141,10 +146,10 @@ export type Mutation = {
   triggerTaskStashScan: Task;
   /** Remove Moji subscription mark from a Stash performer */
   unsubscribePerformer: Scalars['Boolean']['output'];
+  /** Update automation settings and persist them to backend config */
+  updateAutomationSettings: Settings;
   /** Update Jackett settings and persist them to backend config */
   updateJackettSettings: Settings;
-  /** Update logging settings and persist them to backend config */
-  updateLoggingSettings: Settings;
   /** Update qBittorrent settings and persist them to backend config */
   updateQBittorrentSettings: Settings;
   /** Update Stash settings and persist them to backend config */
@@ -194,13 +199,13 @@ export type MutationUnsubscribePerformerArgs = {
 };
 
 
-export type MutationUpdateJackettSettingsArgs = {
-  input: UpdateJackettSettingsInput;
+export type MutationUpdateAutomationSettingsArgs = {
+  input: UpdateAutomationSettingsInput;
 };
 
 
-export type MutationUpdateLoggingSettingsArgs = {
-  input: UpdateLoggingSettingsInput;
+export type MutationUpdateJackettSettingsArgs = {
+  input: UpdateJackettSettingsInput;
 };
 
 
@@ -267,8 +272,10 @@ export type Query = {
   logs: Array<LogEntry>;
   /** List torrents from qBittorrent */
   qbittorrentTorrents: Array<QbTorrent>;
-  /** Get runtime capability and configuration state for the Settings surface */
+  /** Get editable configuration for the Settings surface */
   settings: Settings;
+  /** Get runtime state for the Settings surface */
+  settingsStatus: SettingsStatus;
   /** Get a Stash background job by id */
   stashJob?: Maybe<StashJob>;
   /** List Stash performers with current Moji subscription state */
@@ -315,15 +322,28 @@ export type QueryTaskArgs = {
   id: Scalars['ID']['input'];
 };
 
+export type ServiceStatus = {
+  __typename?: 'ServiceStatus';
+  configured: Scalars['Boolean']['output'];
+  enabled: Scalars['Boolean']['output'];
+};
+
 export type Settings = {
   __typename?: 'Settings';
+  automation: AutomationSettings;
   jackett: JackettSettings;
-  logging: LoggingSettings;
   qbittorrent: QBittorrentSettings;
   stash: StashSettings;
   subscription: SubscriptionSettings;
-  system: SystemSettings;
-  tasks: TaskSettings;
+};
+
+export type SettingsStatus = {
+  __typename?: 'SettingsStatus';
+  automation: AutomationStatus;
+  jackett: ServiceStatus;
+  qbittorrent: ServiceStatus;
+  stash: ServiceStatus;
+  subscription: SubscriptionStatus;
 };
 
 export type StashBoxEndpoint = {
@@ -421,23 +441,18 @@ export type SubscriptionRelease = {
 
 export type SubscriptionSettings = {
   __typename?: 'SubscriptionSettings';
-  dbPath: Scalars['String']['output'];
-  pollEnabled: Scalars['Boolean']['output'];
-  pollIntervalSeconds: Scalars['Int']['output'];
   /** Endpoint URLs in the user-defined order used for subscription lookups. Endpoints not listed here are still queried, in their Stash order, appended after the listed ones. An empty list means use Stash's order as-is. */
   stashBoxEndpoints: Array<Scalars['String']['output']>;
+};
+
+export type SubscriptionStatus = {
+  __typename?: 'SubscriptionStatus';
   /** Stash Box instances currently configured inside the Stash server. */
   stashBoxes: Array<StashBoxEndpoint>;
   /** Reason for the most recent Stash Box load failure. Null when stashBoxesLoaded is true. */
   stashBoxesLoadError?: Maybe<Scalars['String']['output']>;
   /** Whether the last attempt to load Stash Box endpoints from Stash succeeded. */
   stashBoxesLoaded: Scalars['Boolean']['output'];
-  store: Scalars['String']['output'];
-};
-
-export type SystemSettings = {
-  __typename?: 'SystemSettings';
-  appVersion: Scalars['String']['output'];
 };
 
 export type Task = {
@@ -473,25 +488,14 @@ export type Task = {
   updatedAt: Scalars['String']['output'];
 };
 
-export type TaskSettings = {
-  __typename?: 'TaskSettings';
-  dbPath: Scalars['String']['output'];
-  progressSyncEnabled: Scalars['Boolean']['output'];
-  progressSyncIntervalSeconds: Scalars['Int']['output'];
-  store: Scalars['String']['output'];
+export type UpdateAutomationSettingsInput = {
+  subscriptionPollIntervalSeconds: Scalars['Int']['input'];
+  taskProgressSyncIntervalSeconds: Scalars['Int']['input'];
 };
 
 export type UpdateJackettSettingsInput = {
   apiKey?: InputMaybe<Scalars['String']['input']>;
   url: Scalars['String']['input'];
-};
-
-export type UpdateLoggingSettingsInput = {
-  filePath: Scalars['String']['input'];
-  level: Scalars['String']['input'];
-  maxEntries: Scalars['Int']['input'];
-  maxFileBackups: Scalars['Int']['input'];
-  maxFileSizeBytes: Scalars['Int']['input'];
 };
 
 export type UpdateQBittorrentSettingsInput = {
@@ -515,17 +519,14 @@ export type UpdateStashSettingsInput = {
 };
 
 export type UpdateSubscriptionSettingsInput = {
-  dbPath: Scalars['String']['input'];
-  pollIntervalSeconds: Scalars['Int']['input'];
   /** See SubscriptionSettings.stashBoxEndpoints. */
   stashBoxEndpoints: Array<Scalars['String']['input']>;
-  store: Scalars['String']['input'];
 };
 
 export type DashboardDocumentQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type DashboardDocumentQuery = { __typename?: 'Query', version: string, health: { __typename?: 'Health', ok: boolean, message: string }, dashboardStats: { __typename?: 'DashboardStats', total: number, active: number, completed: number, downloading: number, pendingScans: number, failed: number }, settings: { __typename?: 'Settings', stash: { __typename?: 'StashSettings', configured: boolean, enabled: boolean, url: string, apiKeyConfigured: boolean, apiKey: string, mode: string, libraryPath: string, qbittorrentPathPrefix: string, stashPathPrefix: string, transferAction: string, transferTargetPath: string }, jackett: { __typename?: 'JackettSettings', configured: boolean, enabled: boolean, url: string, apiKeyConfigured: boolean, apiKey: string }, qbittorrent: { __typename?: 'QBittorrentSettings', configured: boolean, enabled: boolean, url: string, username: string, usernameConfigured: boolean, passwordConfigured: boolean, password: string, defaultSavePath: string, category: string, tags: string }, tasks: { __typename?: 'TaskSettings', store: string, dbPath: string, progressSyncIntervalSeconds: number, progressSyncEnabled: boolean }, subscription: { __typename?: 'SubscriptionSettings', store: string, dbPath: string, pollIntervalSeconds: number, pollEnabled: boolean, stashBoxEndpoints: Array<string>, stashBoxesLoaded: boolean, stashBoxesLoadError?: string | null, stashBoxes: Array<{ __typename?: 'StashBoxEndpoint', name: string, endpoint: string, apiKeyConfigured: boolean }> }, logging: { __typename?: 'LoggingSettings', level: string, filePath: string, maxEntries: number, maxFileSizeBytes: number, maxFileBackups: number }, system: { __typename?: 'SystemSettings', appVersion: string } }, tasks: Array<{ __typename?: 'Task', id: string, query: string, status: string, torrentName: string, progress: number, qbittorrentState: string, contentPath: string, torrentHash: string, savePath: string, category: string, tags: string, error: string, completedAt?: string | null, stashMode: string, stashSourcePath: string, stashTransferAction: string, stashTransferPath: string, stashTransferStatus: string, stashTransferError: string, stashJobId: string, stashScanPath: string, stashScanStatus: string, stashScanError: string, stashScanHint: string, createdAt: string, updatedAt: string }> };
+export type DashboardDocumentQuery = { __typename?: 'Query', version: string, health: { __typename?: 'Health', ok: boolean, message: string }, dashboardStats: { __typename?: 'DashboardStats', total: number, active: number, completed: number, downloading: number, pendingScans: number, failed: number }, settings: { __typename?: 'Settings', stash: { __typename?: 'StashSettings', configured: boolean, enabled: boolean, url: string, apiKeyConfigured: boolean, apiKey: string, mode: string, libraryPath: string, qbittorrentPathPrefix: string, stashPathPrefix: string, transferAction: string, transferTargetPath: string }, jackett: { __typename?: 'JackettSettings', configured: boolean, enabled: boolean, url: string, apiKeyConfigured: boolean, apiKey: string }, qbittorrent: { __typename?: 'QBittorrentSettings', configured: boolean, enabled: boolean, url: string, username: string, usernameConfigured: boolean, passwordConfigured: boolean, password: string, defaultSavePath: string, category: string, tags: string }, automation: { __typename?: 'AutomationSettings', taskProgressSyncIntervalSeconds: number, subscriptionPollIntervalSeconds: number }, subscription: { __typename?: 'SubscriptionSettings', stashBoxEndpoints: Array<string> } }, settingsStatus: { __typename?: 'SettingsStatus', stash: { __typename?: 'ServiceStatus', configured: boolean, enabled: boolean }, jackett: { __typename?: 'ServiceStatus', configured: boolean, enabled: boolean }, qbittorrent: { __typename?: 'ServiceStatus', configured: boolean, enabled: boolean }, automation: { __typename?: 'AutomationStatus', taskProgressSyncIntervalSeconds: number, taskProgressSyncEnabled: boolean, subscriptionPollIntervalSeconds: number, subscriptionPollEnabled: boolean }, subscription: { __typename?: 'SubscriptionStatus', stashBoxesLoaded: boolean, stashBoxesLoadError?: string | null, stashBoxes: Array<{ __typename?: 'StashBoxEndpoint', name: string, endpoint: string, apiKeyConfigured: boolean }> } }, tasks: Array<{ __typename?: 'Task', id: string, query: string, status: string, torrentName: string, progress: number, qbittorrentState: string, contentPath: string, torrentHash: string, savePath: string, category: string, tags: string, error: string, completedAt?: string | null, stashMode: string, stashSourcePath: string, stashTransferAction: string, stashTransferPath: string, stashTransferStatus: string, stashTransferError: string, stashJobId: string, stashScanPath: string, stashScanStatus: string, stashScanError: string, stashScanHint: string, createdAt: string, updatedAt: string }> };
 
 export type SearchDocumentQueryVariables = Exact<{
   input: JackettSearchInput;
@@ -555,24 +556,24 @@ export type UpdateQBittorrentSettingsDocumentMutationVariables = Exact<{
 
 export type UpdateQBittorrentSettingsDocumentMutation = { __typename?: 'Mutation', updateQBittorrentSettings: { __typename?: 'Settings', qbittorrent: { __typename?: 'QBittorrentSettings', configured: boolean, enabled: boolean, url: string, username: string, usernameConfigured: boolean, passwordConfigured: boolean, defaultSavePath: string, category: string, tags: string } } };
 
+export type UpdateAutomationSettingsDocumentMutationVariables = Exact<{
+  input: UpdateAutomationSettingsInput;
+}>;
+
+
+export type UpdateAutomationSettingsDocumentMutation = { __typename?: 'Mutation', updateAutomationSettings: { __typename?: 'Settings', automation: { __typename?: 'AutomationSettings', taskProgressSyncIntervalSeconds: number, subscriptionPollIntervalSeconds: number } } };
+
 export type UpdateSubscriptionSettingsDocumentMutationVariables = Exact<{
   input: UpdateSubscriptionSettingsInput;
 }>;
 
 
-export type UpdateSubscriptionSettingsDocumentMutation = { __typename?: 'Mutation', updateSubscriptionSettings: { __typename?: 'Settings', subscription: { __typename?: 'SubscriptionSettings', store: string, dbPath: string, pollIntervalSeconds: number, pollEnabled: boolean, stashBoxEndpoints: Array<string>, stashBoxesLoaded: boolean, stashBoxesLoadError?: string | null, stashBoxes: Array<{ __typename?: 'StashBoxEndpoint', name: string, endpoint: string, apiKeyConfigured: boolean }> } } };
-
-export type UpdateLoggingSettingsDocumentMutationVariables = Exact<{
-  input: UpdateLoggingSettingsInput;
-}>;
-
-
-export type UpdateLoggingSettingsDocumentMutation = { __typename?: 'Mutation', updateLoggingSettings: { __typename?: 'Settings', logging: { __typename?: 'LoggingSettings', level: string, filePath: string, maxEntries: number, maxFileSizeBytes: number, maxFileBackups: number } } };
+export type UpdateSubscriptionSettingsDocumentMutation = { __typename?: 'Mutation', updateSubscriptionSettings: { __typename?: 'Settings', subscription: { __typename?: 'SubscriptionSettings', stashBoxEndpoints: Array<string> } } };
 
 export type RefreshSubscriptionStashBoxesDocumentMutationVariables = Exact<{ [key: string]: never; }>;
 
 
-export type RefreshSubscriptionStashBoxesDocumentMutation = { __typename?: 'Mutation', refreshSubscriptionStashBoxes: { __typename?: 'Settings', subscription: { __typename?: 'SubscriptionSettings', store: string, dbPath: string, pollIntervalSeconds: number, pollEnabled: boolean, stashBoxEndpoints: Array<string>, stashBoxesLoaded: boolean, stashBoxesLoadError?: string | null, stashBoxes: Array<{ __typename?: 'StashBoxEndpoint', name: string, endpoint: string, apiKeyConfigured: boolean }> } } };
+export type RefreshSubscriptionStashBoxesDocumentMutation = { __typename?: 'Mutation', refreshSubscriptionStashBoxes: { __typename?: 'Settings', subscription: { __typename?: 'SubscriptionSettings', stashBoxEndpoints: Array<string> } } };
 
 export type LogsDocumentQueryVariables = Exact<{
   limit?: InputMaybe<Scalars['Int']['input']>;
@@ -647,14 +648,14 @@ export type TriggerTaskStashScanDocumentMutationVariables = Exact<{
 export type TriggerTaskStashScanDocumentMutation = { __typename?: 'Mutation', triggerTaskStashScan: { __typename?: 'Task', id: string, stashMode: string, stashTransferStatus: string, stashTransferError: string, stashJobId: string, stashScanPath: string, stashScanStatus: string, stashScanError: string, stashScanHint: string, updatedAt: string } };
 
 
-export const DashboardDocumentDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"DashboardDocument"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"health"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"ok"}},{"kind":"Field","name":{"kind":"Name","value":"message"}}]}},{"kind":"Field","name":{"kind":"Name","value":"version"}},{"kind":"Field","name":{"kind":"Name","value":"dashboardStats"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"total"}},{"kind":"Field","name":{"kind":"Name","value":"active"}},{"kind":"Field","name":{"kind":"Name","value":"completed"}},{"kind":"Field","name":{"kind":"Name","value":"downloading"}},{"kind":"Field","name":{"kind":"Name","value":"pendingScans"}},{"kind":"Field","name":{"kind":"Name","value":"failed"}}]}},{"kind":"Field","name":{"kind":"Name","value":"settings"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"stash"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"configured"}},{"kind":"Field","name":{"kind":"Name","value":"enabled"}},{"kind":"Field","name":{"kind":"Name","value":"url"}},{"kind":"Field","name":{"kind":"Name","value":"apiKeyConfigured"}},{"kind":"Field","name":{"kind":"Name","value":"apiKey"}},{"kind":"Field","name":{"kind":"Name","value":"mode"}},{"kind":"Field","name":{"kind":"Name","value":"libraryPath"}},{"kind":"Field","name":{"kind":"Name","value":"qbittorrentPathPrefix"}},{"kind":"Field","name":{"kind":"Name","value":"stashPathPrefix"}},{"kind":"Field","name":{"kind":"Name","value":"transferAction"}},{"kind":"Field","name":{"kind":"Name","value":"transferTargetPath"}}]}},{"kind":"Field","name":{"kind":"Name","value":"jackett"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"configured"}},{"kind":"Field","name":{"kind":"Name","value":"enabled"}},{"kind":"Field","name":{"kind":"Name","value":"url"}},{"kind":"Field","name":{"kind":"Name","value":"apiKeyConfigured"}},{"kind":"Field","name":{"kind":"Name","value":"apiKey"}}]}},{"kind":"Field","name":{"kind":"Name","value":"qbittorrent"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"configured"}},{"kind":"Field","name":{"kind":"Name","value":"enabled"}},{"kind":"Field","name":{"kind":"Name","value":"url"}},{"kind":"Field","name":{"kind":"Name","value":"username"}},{"kind":"Field","name":{"kind":"Name","value":"usernameConfigured"}},{"kind":"Field","name":{"kind":"Name","value":"passwordConfigured"}},{"kind":"Field","name":{"kind":"Name","value":"password"}},{"kind":"Field","name":{"kind":"Name","value":"defaultSavePath"}},{"kind":"Field","name":{"kind":"Name","value":"category"}},{"kind":"Field","name":{"kind":"Name","value":"tags"}}]}},{"kind":"Field","name":{"kind":"Name","value":"tasks"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"store"}},{"kind":"Field","name":{"kind":"Name","value":"dbPath"}},{"kind":"Field","name":{"kind":"Name","value":"progressSyncIntervalSeconds"}},{"kind":"Field","name":{"kind":"Name","value":"progressSyncEnabled"}}]}},{"kind":"Field","name":{"kind":"Name","value":"subscription"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"store"}},{"kind":"Field","name":{"kind":"Name","value":"dbPath"}},{"kind":"Field","name":{"kind":"Name","value":"pollIntervalSeconds"}},{"kind":"Field","name":{"kind":"Name","value":"pollEnabled"}},{"kind":"Field","name":{"kind":"Name","value":"stashBoxes"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"name"}},{"kind":"Field","name":{"kind":"Name","value":"endpoint"}},{"kind":"Field","name":{"kind":"Name","value":"apiKeyConfigured"}}]}},{"kind":"Field","name":{"kind":"Name","value":"stashBoxEndpoints"}},{"kind":"Field","name":{"kind":"Name","value":"stashBoxesLoaded"}},{"kind":"Field","name":{"kind":"Name","value":"stashBoxesLoadError"}}]}},{"kind":"Field","name":{"kind":"Name","value":"logging"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"level"}},{"kind":"Field","name":{"kind":"Name","value":"filePath"}},{"kind":"Field","name":{"kind":"Name","value":"maxEntries"}},{"kind":"Field","name":{"kind":"Name","value":"maxFileSizeBytes"}},{"kind":"Field","name":{"kind":"Name","value":"maxFileBackups"}}]}},{"kind":"Field","name":{"kind":"Name","value":"system"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"appVersion"}}]}}]}},{"kind":"Field","name":{"kind":"Name","value":"tasks"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"query"}},{"kind":"Field","name":{"kind":"Name","value":"status"}},{"kind":"Field","name":{"kind":"Name","value":"torrentName"}},{"kind":"Field","name":{"kind":"Name","value":"progress"}},{"kind":"Field","name":{"kind":"Name","value":"qbittorrentState"}},{"kind":"Field","name":{"kind":"Name","value":"contentPath"}},{"kind":"Field","name":{"kind":"Name","value":"torrentHash"}},{"kind":"Field","name":{"kind":"Name","value":"savePath"}},{"kind":"Field","name":{"kind":"Name","value":"category"}},{"kind":"Field","name":{"kind":"Name","value":"tags"}},{"kind":"Field","name":{"kind":"Name","value":"error"}},{"kind":"Field","name":{"kind":"Name","value":"completedAt"}},{"kind":"Field","name":{"kind":"Name","value":"stashMode"}},{"kind":"Field","name":{"kind":"Name","value":"stashSourcePath"}},{"kind":"Field","name":{"kind":"Name","value":"stashTransferAction"}},{"kind":"Field","name":{"kind":"Name","value":"stashTransferPath"}},{"kind":"Field","name":{"kind":"Name","value":"stashTransferStatus"}},{"kind":"Field","name":{"kind":"Name","value":"stashTransferError"}},{"kind":"Field","name":{"kind":"Name","value":"stashJobId"}},{"kind":"Field","name":{"kind":"Name","value":"stashScanPath"}},{"kind":"Field","name":{"kind":"Name","value":"stashScanStatus"}},{"kind":"Field","name":{"kind":"Name","value":"stashScanError"}},{"kind":"Field","name":{"kind":"Name","value":"stashScanHint"}},{"kind":"Field","name":{"kind":"Name","value":"createdAt"}},{"kind":"Field","name":{"kind":"Name","value":"updatedAt"}}]}}]}}]} as unknown as DocumentNode<DashboardDocumentQuery, DashboardDocumentQueryVariables>;
+export const DashboardDocumentDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"DashboardDocument"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"health"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"ok"}},{"kind":"Field","name":{"kind":"Name","value":"message"}}]}},{"kind":"Field","name":{"kind":"Name","value":"version"}},{"kind":"Field","name":{"kind":"Name","value":"dashboardStats"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"total"}},{"kind":"Field","name":{"kind":"Name","value":"active"}},{"kind":"Field","name":{"kind":"Name","value":"completed"}},{"kind":"Field","name":{"kind":"Name","value":"downloading"}},{"kind":"Field","name":{"kind":"Name","value":"pendingScans"}},{"kind":"Field","name":{"kind":"Name","value":"failed"}}]}},{"kind":"Field","name":{"kind":"Name","value":"settings"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"stash"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"configured"}},{"kind":"Field","name":{"kind":"Name","value":"enabled"}},{"kind":"Field","name":{"kind":"Name","value":"url"}},{"kind":"Field","name":{"kind":"Name","value":"apiKeyConfigured"}},{"kind":"Field","name":{"kind":"Name","value":"apiKey"}},{"kind":"Field","name":{"kind":"Name","value":"mode"}},{"kind":"Field","name":{"kind":"Name","value":"libraryPath"}},{"kind":"Field","name":{"kind":"Name","value":"qbittorrentPathPrefix"}},{"kind":"Field","name":{"kind":"Name","value":"stashPathPrefix"}},{"kind":"Field","name":{"kind":"Name","value":"transferAction"}},{"kind":"Field","name":{"kind":"Name","value":"transferTargetPath"}}]}},{"kind":"Field","name":{"kind":"Name","value":"jackett"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"configured"}},{"kind":"Field","name":{"kind":"Name","value":"enabled"}},{"kind":"Field","name":{"kind":"Name","value":"url"}},{"kind":"Field","name":{"kind":"Name","value":"apiKeyConfigured"}},{"kind":"Field","name":{"kind":"Name","value":"apiKey"}}]}},{"kind":"Field","name":{"kind":"Name","value":"qbittorrent"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"configured"}},{"kind":"Field","name":{"kind":"Name","value":"enabled"}},{"kind":"Field","name":{"kind":"Name","value":"url"}},{"kind":"Field","name":{"kind":"Name","value":"username"}},{"kind":"Field","name":{"kind":"Name","value":"usernameConfigured"}},{"kind":"Field","name":{"kind":"Name","value":"passwordConfigured"}},{"kind":"Field","name":{"kind":"Name","value":"password"}},{"kind":"Field","name":{"kind":"Name","value":"defaultSavePath"}},{"kind":"Field","name":{"kind":"Name","value":"category"}},{"kind":"Field","name":{"kind":"Name","value":"tags"}}]}},{"kind":"Field","name":{"kind":"Name","value":"automation"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"taskProgressSyncIntervalSeconds"}},{"kind":"Field","name":{"kind":"Name","value":"subscriptionPollIntervalSeconds"}}]}},{"kind":"Field","name":{"kind":"Name","value":"subscription"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"stashBoxEndpoints"}}]}}]}},{"kind":"Field","name":{"kind":"Name","value":"settingsStatus"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"stash"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"configured"}},{"kind":"Field","name":{"kind":"Name","value":"enabled"}}]}},{"kind":"Field","name":{"kind":"Name","value":"jackett"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"configured"}},{"kind":"Field","name":{"kind":"Name","value":"enabled"}}]}},{"kind":"Field","name":{"kind":"Name","value":"qbittorrent"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"configured"}},{"kind":"Field","name":{"kind":"Name","value":"enabled"}}]}},{"kind":"Field","name":{"kind":"Name","value":"automation"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"taskProgressSyncIntervalSeconds"}},{"kind":"Field","name":{"kind":"Name","value":"taskProgressSyncEnabled"}},{"kind":"Field","name":{"kind":"Name","value":"subscriptionPollIntervalSeconds"}},{"kind":"Field","name":{"kind":"Name","value":"subscriptionPollEnabled"}}]}},{"kind":"Field","name":{"kind":"Name","value":"subscription"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"stashBoxes"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"name"}},{"kind":"Field","name":{"kind":"Name","value":"endpoint"}},{"kind":"Field","name":{"kind":"Name","value":"apiKeyConfigured"}}]}},{"kind":"Field","name":{"kind":"Name","value":"stashBoxesLoaded"}},{"kind":"Field","name":{"kind":"Name","value":"stashBoxesLoadError"}}]}}]}},{"kind":"Field","name":{"kind":"Name","value":"tasks"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"query"}},{"kind":"Field","name":{"kind":"Name","value":"status"}},{"kind":"Field","name":{"kind":"Name","value":"torrentName"}},{"kind":"Field","name":{"kind":"Name","value":"progress"}},{"kind":"Field","name":{"kind":"Name","value":"qbittorrentState"}},{"kind":"Field","name":{"kind":"Name","value":"contentPath"}},{"kind":"Field","name":{"kind":"Name","value":"torrentHash"}},{"kind":"Field","name":{"kind":"Name","value":"savePath"}},{"kind":"Field","name":{"kind":"Name","value":"category"}},{"kind":"Field","name":{"kind":"Name","value":"tags"}},{"kind":"Field","name":{"kind":"Name","value":"error"}},{"kind":"Field","name":{"kind":"Name","value":"completedAt"}},{"kind":"Field","name":{"kind":"Name","value":"stashMode"}},{"kind":"Field","name":{"kind":"Name","value":"stashSourcePath"}},{"kind":"Field","name":{"kind":"Name","value":"stashTransferAction"}},{"kind":"Field","name":{"kind":"Name","value":"stashTransferPath"}},{"kind":"Field","name":{"kind":"Name","value":"stashTransferStatus"}},{"kind":"Field","name":{"kind":"Name","value":"stashTransferError"}},{"kind":"Field","name":{"kind":"Name","value":"stashJobId"}},{"kind":"Field","name":{"kind":"Name","value":"stashScanPath"}},{"kind":"Field","name":{"kind":"Name","value":"stashScanStatus"}},{"kind":"Field","name":{"kind":"Name","value":"stashScanError"}},{"kind":"Field","name":{"kind":"Name","value":"stashScanHint"}},{"kind":"Field","name":{"kind":"Name","value":"createdAt"}},{"kind":"Field","name":{"kind":"Name","value":"updatedAt"}}]}}]}}]} as unknown as DocumentNode<DashboardDocumentQuery, DashboardDocumentQueryVariables>;
 export const SearchDocumentDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"SearchDocument"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"input"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"JackettSearchInput"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"jackettSearch"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"input"},"value":{"kind":"Variable","name":{"kind":"Name","value":"input"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"title"}},{"kind":"Field","name":{"kind":"Name","value":"size"}},{"kind":"Field","name":{"kind":"Name","value":"seeders"}},{"kind":"Field","name":{"kind":"Name","value":"peers"}},{"kind":"Field","name":{"kind":"Name","value":"tracker"}},{"kind":"Field","name":{"kind":"Name","value":"categoryDesc"}},{"kind":"Field","name":{"kind":"Name","value":"publishDate"}},{"kind":"Field","name":{"kind":"Name","value":"link"}},{"kind":"Field","name":{"kind":"Name","value":"magnetUri"}}]}}]}}]} as unknown as DocumentNode<SearchDocumentQuery, SearchDocumentQueryVariables>;
 export const UpdateStashSettingsDocumentDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"mutation","name":{"kind":"Name","value":"UpdateStashSettingsDocument"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"input"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"UpdateStashSettingsInput"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"updateStashSettings"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"input"},"value":{"kind":"Variable","name":{"kind":"Name","value":"input"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"stash"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"configured"}},{"kind":"Field","name":{"kind":"Name","value":"enabled"}},{"kind":"Field","name":{"kind":"Name","value":"url"}},{"kind":"Field","name":{"kind":"Name","value":"apiKeyConfigured"}},{"kind":"Field","name":{"kind":"Name","value":"mode"}},{"kind":"Field","name":{"kind":"Name","value":"libraryPath"}},{"kind":"Field","name":{"kind":"Name","value":"qbittorrentPathPrefix"}},{"kind":"Field","name":{"kind":"Name","value":"stashPathPrefix"}},{"kind":"Field","name":{"kind":"Name","value":"transferAction"}},{"kind":"Field","name":{"kind":"Name","value":"transferTargetPath"}}]}}]}}]}}]} as unknown as DocumentNode<UpdateStashSettingsDocumentMutation, UpdateStashSettingsDocumentMutationVariables>;
 export const UpdateJackettSettingsDocumentDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"mutation","name":{"kind":"Name","value":"UpdateJackettSettingsDocument"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"input"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"UpdateJackettSettingsInput"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"updateJackettSettings"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"input"},"value":{"kind":"Variable","name":{"kind":"Name","value":"input"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"jackett"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"configured"}},{"kind":"Field","name":{"kind":"Name","value":"enabled"}},{"kind":"Field","name":{"kind":"Name","value":"url"}},{"kind":"Field","name":{"kind":"Name","value":"apiKeyConfigured"}}]}}]}}]}}]} as unknown as DocumentNode<UpdateJackettSettingsDocumentMutation, UpdateJackettSettingsDocumentMutationVariables>;
 export const UpdateQBittorrentSettingsDocumentDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"mutation","name":{"kind":"Name","value":"UpdateQBittorrentSettingsDocument"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"input"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"UpdateQBittorrentSettingsInput"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"updateQBittorrentSettings"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"input"},"value":{"kind":"Variable","name":{"kind":"Name","value":"input"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"qbittorrent"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"configured"}},{"kind":"Field","name":{"kind":"Name","value":"enabled"}},{"kind":"Field","name":{"kind":"Name","value":"url"}},{"kind":"Field","name":{"kind":"Name","value":"username"}},{"kind":"Field","name":{"kind":"Name","value":"usernameConfigured"}},{"kind":"Field","name":{"kind":"Name","value":"passwordConfigured"}},{"kind":"Field","name":{"kind":"Name","value":"defaultSavePath"}},{"kind":"Field","name":{"kind":"Name","value":"category"}},{"kind":"Field","name":{"kind":"Name","value":"tags"}}]}}]}}]}}]} as unknown as DocumentNode<UpdateQBittorrentSettingsDocumentMutation, UpdateQBittorrentSettingsDocumentMutationVariables>;
-export const UpdateSubscriptionSettingsDocumentDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"mutation","name":{"kind":"Name","value":"UpdateSubscriptionSettingsDocument"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"input"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"UpdateSubscriptionSettingsInput"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"updateSubscriptionSettings"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"input"},"value":{"kind":"Variable","name":{"kind":"Name","value":"input"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"subscription"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"store"}},{"kind":"Field","name":{"kind":"Name","value":"dbPath"}},{"kind":"Field","name":{"kind":"Name","value":"pollIntervalSeconds"}},{"kind":"Field","name":{"kind":"Name","value":"pollEnabled"}},{"kind":"Field","name":{"kind":"Name","value":"stashBoxes"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"name"}},{"kind":"Field","name":{"kind":"Name","value":"endpoint"}},{"kind":"Field","name":{"kind":"Name","value":"apiKeyConfigured"}}]}},{"kind":"Field","name":{"kind":"Name","value":"stashBoxEndpoints"}},{"kind":"Field","name":{"kind":"Name","value":"stashBoxesLoaded"}},{"kind":"Field","name":{"kind":"Name","value":"stashBoxesLoadError"}}]}}]}}]}}]} as unknown as DocumentNode<UpdateSubscriptionSettingsDocumentMutation, UpdateSubscriptionSettingsDocumentMutationVariables>;
-export const UpdateLoggingSettingsDocumentDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"mutation","name":{"kind":"Name","value":"UpdateLoggingSettingsDocument"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"input"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"UpdateLoggingSettingsInput"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"updateLoggingSettings"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"input"},"value":{"kind":"Variable","name":{"kind":"Name","value":"input"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"logging"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"level"}},{"kind":"Field","name":{"kind":"Name","value":"filePath"}},{"kind":"Field","name":{"kind":"Name","value":"maxEntries"}},{"kind":"Field","name":{"kind":"Name","value":"maxFileSizeBytes"}},{"kind":"Field","name":{"kind":"Name","value":"maxFileBackups"}}]}}]}}]}}]} as unknown as DocumentNode<UpdateLoggingSettingsDocumentMutation, UpdateLoggingSettingsDocumentMutationVariables>;
-export const RefreshSubscriptionStashBoxesDocumentDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"mutation","name":{"kind":"Name","value":"RefreshSubscriptionStashBoxesDocument"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"refreshSubscriptionStashBoxes"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"subscription"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"store"}},{"kind":"Field","name":{"kind":"Name","value":"dbPath"}},{"kind":"Field","name":{"kind":"Name","value":"pollIntervalSeconds"}},{"kind":"Field","name":{"kind":"Name","value":"pollEnabled"}},{"kind":"Field","name":{"kind":"Name","value":"stashBoxes"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"name"}},{"kind":"Field","name":{"kind":"Name","value":"endpoint"}},{"kind":"Field","name":{"kind":"Name","value":"apiKeyConfigured"}}]}},{"kind":"Field","name":{"kind":"Name","value":"stashBoxEndpoints"}},{"kind":"Field","name":{"kind":"Name","value":"stashBoxesLoaded"}},{"kind":"Field","name":{"kind":"Name","value":"stashBoxesLoadError"}}]}}]}}]}}]} as unknown as DocumentNode<RefreshSubscriptionStashBoxesDocumentMutation, RefreshSubscriptionStashBoxesDocumentMutationVariables>;
+export const UpdateAutomationSettingsDocumentDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"mutation","name":{"kind":"Name","value":"UpdateAutomationSettingsDocument"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"input"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"UpdateAutomationSettingsInput"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"updateAutomationSettings"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"input"},"value":{"kind":"Variable","name":{"kind":"Name","value":"input"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"automation"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"taskProgressSyncIntervalSeconds"}},{"kind":"Field","name":{"kind":"Name","value":"subscriptionPollIntervalSeconds"}}]}}]}}]}}]} as unknown as DocumentNode<UpdateAutomationSettingsDocumentMutation, UpdateAutomationSettingsDocumentMutationVariables>;
+export const UpdateSubscriptionSettingsDocumentDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"mutation","name":{"kind":"Name","value":"UpdateSubscriptionSettingsDocument"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"input"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"UpdateSubscriptionSettingsInput"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"updateSubscriptionSettings"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"input"},"value":{"kind":"Variable","name":{"kind":"Name","value":"input"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"subscription"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"stashBoxEndpoints"}}]}}]}}]}}]} as unknown as DocumentNode<UpdateSubscriptionSettingsDocumentMutation, UpdateSubscriptionSettingsDocumentMutationVariables>;
+export const RefreshSubscriptionStashBoxesDocumentDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"mutation","name":{"kind":"Name","value":"RefreshSubscriptionStashBoxesDocument"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"refreshSubscriptionStashBoxes"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"subscription"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"stashBoxEndpoints"}}]}}]}}]}}]} as unknown as DocumentNode<RefreshSubscriptionStashBoxesDocumentMutation, RefreshSubscriptionStashBoxesDocumentMutationVariables>;
 export const LogsDocumentDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"LogsDocument"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"limit"}},"type":{"kind":"NamedType","name":{"kind":"Name","value":"Int"}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"minLevel"}},"type":{"kind":"NamedType","name":{"kind":"Name","value":"LogLevel"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"logs"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"limit"},"value":{"kind":"Variable","name":{"kind":"Name","value":"limit"}}},{"kind":"Argument","name":{"kind":"Name","value":"minLevel"},"value":{"kind":"Variable","name":{"kind":"Name","value":"minLevel"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"time"}},{"kind":"Field","name":{"kind":"Name","value":"level"}},{"kind":"Field","name":{"kind":"Name","value":"message"}}]}}]}}]} as unknown as DocumentNode<LogsDocumentQuery, LogsDocumentQueryVariables>;
 export const StashPerformersDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"StashPerformers"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"search"}},"type":{"kind":"NamedType","name":{"kind":"Name","value":"String"}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"page"}},"type":{"kind":"NamedType","name":{"kind":"Name","value":"Int"}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"pageSize"}},"type":{"kind":"NamedType","name":{"kind":"Name","value":"Int"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"stashPerformers"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"search"},"value":{"kind":"Variable","name":{"kind":"Name","value":"search"}}},{"kind":"Argument","name":{"kind":"Name","value":"page"},"value":{"kind":"Variable","name":{"kind":"Name","value":"page"}}},{"kind":"Argument","name":{"kind":"Name","value":"pageSize"},"value":{"kind":"Variable","name":{"kind":"Name","value":"pageSize"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"items"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"name"}},{"kind":"Field","name":{"kind":"Name","value":"aliasList"}},{"kind":"Field","name":{"kind":"Name","value":"favorite"}},{"kind":"Field","name":{"kind":"Name","value":"imagePath"}},{"kind":"Field","name":{"kind":"Name","value":"sceneCount"}},{"kind":"Field","name":{"kind":"Name","value":"subscribed"}}]}},{"kind":"Field","name":{"kind":"Name","value":"page"}},{"kind":"Field","name":{"kind":"Name","value":"pageSize"}},{"kind":"Field","name":{"kind":"Name","value":"totalCount"}},{"kind":"Field","name":{"kind":"Name","value":"totalPages"}},{"kind":"Field","name":{"kind":"Name","value":"hasPrevPage"}},{"kind":"Field","name":{"kind":"Name","value":"hasNextPage"}}]}}]}}]} as unknown as DocumentNode<StashPerformersQuery, StashPerformersQueryVariables>;
 export const SubscribedPerformersDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"SubscribedPerformers"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"subscribedPerformers"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"performer"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"name"}},{"kind":"Field","name":{"kind":"Name","value":"aliasList"}},{"kind":"Field","name":{"kind":"Name","value":"favorite"}},{"kind":"Field","name":{"kind":"Name","value":"imagePath"}},{"kind":"Field","name":{"kind":"Name","value":"sceneCount"}},{"kind":"Field","name":{"kind":"Name","value":"subscribed"}}]}},{"kind":"Field","name":{"kind":"Name","value":"lastCheckedAt"}},{"kind":"Field","name":{"kind":"Name","value":"lastError"}},{"kind":"Field","name":{"kind":"Name","value":"pendingReleaseCount"}},{"kind":"Field","name":{"kind":"Name","value":"processedReleaseCount"}},{"kind":"Field","name":{"kind":"Name","value":"recentReleases"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"key"}},{"kind":"Field","name":{"kind":"Name","value":"source"}},{"kind":"Field","name":{"kind":"Name","value":"title"}},{"kind":"Field","name":{"kind":"Name","value":"code"}},{"kind":"Field","name":{"kind":"Name","value":"date"}},{"kind":"Field","name":{"kind":"Name","value":"url"}},{"kind":"Field","name":{"kind":"Name","value":"query"}},{"kind":"Field","name":{"kind":"Name","value":"taskID"}},{"kind":"Field","name":{"kind":"Name","value":"seenAt"}}]}}]}}]}}]} as unknown as DocumentNode<SubscribedPerformersQuery, SubscribedPerformersQueryVariables>;

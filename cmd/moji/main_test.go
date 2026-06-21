@@ -7,7 +7,6 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"os"
-	"path/filepath"
 	"strings"
 	"testing"
 	"time"
@@ -89,14 +88,17 @@ func TestHTTPHandlerServesSettingsSnapshot(t *testing.T) {
 	handler := newHTTPHandler(testConfig(), "test-version")
 
 	resp := postGraphQL(t, handler, `{
+		version
 		settings {
 			jackett { configured enabled url apiKeyConfigured }
 			qbittorrent { configured enabled url usernameConfigured passwordConfigured defaultSavePath }
 			stash { configured enabled url apiKeyConfigured libraryPath }
-			tasks { store dbPath progressSyncIntervalSeconds progressSyncEnabled }
-			subscription { store dbPath pollIntervalSeconds pollEnabled stashBoxes { name endpoint apiKeyConfigured } stashBoxEndpoints stashBoxesLoaded }
-			logging { level filePath maxEntries maxFileSizeBytes maxFileBackups }
-			system { appVersion }
+			automation { taskProgressSyncIntervalSeconds subscriptionPollIntervalSeconds }
+			subscription { stashBoxEndpoints }
+		}
+		settingsStatus {
+			automation { taskProgressSyncEnabled subscriptionPollEnabled }
+			subscription { stashBoxes { name endpoint apiKeyConfigured } stashBoxesLoaded }
 		}
 	}`)
 	if len(resp.Errors) > 0 {
@@ -105,20 +107,17 @@ func TestHTTPHandlerServesSettingsSnapshot(t *testing.T) {
 	if !resp.Data.Settings.Jackett.Configured || !resp.Data.Settings.Jackett.Enabled {
 		t.Fatalf("expected jackett settings to be enabled, got %+v", resp.Data.Settings.Jackett)
 	}
-	if resp.Data.Settings.Tasks.Store != "sqlite" || resp.Data.Settings.Tasks.ProgressSyncIntervalSeconds != 60 {
-		t.Fatalf("unexpected task settings: %+v", resp.Data.Settings.Tasks)
+	if resp.Data.Settings.Automation.TaskProgressSyncIntervalSeconds != 60 {
+		t.Fatalf("unexpected automation settings: %+v", resp.Data.Settings.Automation)
 	}
-	if resp.Data.Settings.Subscription.Store != "sqlite" || !resp.Data.Settings.Subscription.PollEnabled {
-		t.Fatalf("unexpected subscription settings: %+v", resp.Data.Settings.Subscription)
+	if !resp.Data.SettingsStatus.Automation.SubscriptionPollEnabled {
+		t.Fatalf("unexpected automation status: %+v", resp.Data.SettingsStatus.Automation)
 	}
-	if len(resp.Data.Settings.Subscription.StashBoxes) != 0 || len(resp.Data.Settings.Subscription.StashBoxEndpoints) != 0 {
+	if len(resp.Data.SettingsStatus.Subscription.StashBoxes) != 0 || len(resp.Data.Settings.Subscription.StashBoxEndpoints) != 0 {
 		t.Fatalf("expected empty stash box selection in snapshot, got %+v", resp.Data.Settings.Subscription)
 	}
-	if resp.Data.Settings.Logging.Level != "info" || resp.Data.Settings.Logging.MaxEntries != 500 {
-		t.Fatalf("unexpected logging settings: %+v", resp.Data.Settings.Logging)
-	}
-	if resp.Data.Settings.System.AppVersion != "test-version" {
-		t.Fatalf("expected app version %q, got %q", "test-version", resp.Data.Settings.System.AppVersion)
+	if resp.Data.Version != "test-version" {
+		t.Fatalf("expected app version %q, got %q", "test-version", resp.Data.Version)
 	}
 }
 
@@ -167,12 +166,12 @@ func TestConfigureProgressSyncInterval(t *testing.T) {
 		t.Fatalf("expected default interval %s, got %s", time.Minute, got)
 	}
 
-	cfg.Tasks.ProgressSyncIntervalSeconds = 5
+	cfg.Automation.TaskProgressSyncIntervalSeconds = 5
 	if got := configureProgressSyncInterval(cfg); got != 5*time.Second {
 		t.Fatalf("expected configured interval %s, got %s", 5*time.Second, got)
 	}
 
-	cfg.Tasks.ProgressSyncIntervalSeconds = -1
+	cfg.Automation.TaskProgressSyncIntervalSeconds = -1
 	if got := configureProgressSyncInterval(cfg); got != 0 {
 		t.Fatalf("expected disabled interval, got %s", got)
 	}
@@ -180,27 +179,15 @@ func TestConfigureProgressSyncInterval(t *testing.T) {
 
 func TestBuildSettingsSnapshotNormalizesDefaults(t *testing.T) {
 	cfg := testConfig()
-	cfg.Tasks.DBPath = ""
-	cfg.Subscription.DBPath = ""
-
-	snapshot := buildSettingsSnapshot(cfg, "test-version", false, false, false, nil)
+	snapshot := buildSettingsSnapshot(cfg, "test-version", false)
 	if snapshot.Jackett.URL != "http://jackett.invalid" || !snapshot.Jackett.APIKeyConfigured {
 		t.Fatalf("unexpected jackett snapshot: %+v", snapshot.Jackett)
 	}
-	if snapshot.Tasks.Store != "sqlite" || snapshot.Tasks.DBPath != "moji.db" {
-		t.Fatalf("unexpected task store snapshot: %+v", snapshot.Tasks)
+	if snapshot.Automation.TaskProgressSyncIntervalSeconds != 60 || snapshot.Automation.SubscriptionPollIntervalSeconds != 3600 {
+		t.Fatalf("unexpected automation snapshot: %+v", snapshot.Automation)
 	}
-	if snapshot.Tasks.ProgressSyncIntervalSeconds != 60 || snapshot.Tasks.ProgressSyncEnabled {
-		t.Fatalf("unexpected task sync snapshot: %+v", snapshot.Tasks)
-	}
-	if snapshot.Subscription.Store != "sqlite" || snapshot.Subscription.DBPath != "moji.db" || snapshot.Subscription.PollIntervalSeconds != 3600 || snapshot.Subscription.PollEnabled {
-		t.Fatalf("unexpected subscription snapshot: %+v", snapshot.Subscription)
-	}
-	if len(snapshot.Subscription.StashBoxes) != 0 || len(snapshot.Subscription.StashBoxEndpoints) != 0 {
+	if len(snapshot.Subscription.StashBoxEndpoints) != 0 {
 		t.Fatalf("expected empty stash box selection in default snapshot, got %+v", snapshot.Subscription)
-	}
-	if snapshot.Logging.Level != "info" || snapshot.Logging.MaxEntries != 500 || snapshot.Logging.MaxFileBackups != 5 {
-		t.Fatalf("unexpected logging snapshot: %+v", snapshot.Logging)
 	}
 }
 
@@ -264,36 +251,28 @@ type graphQLResponse struct {
 				PasswordConfigured bool   `json:"passwordConfigured"`
 				DefaultSavePath    string `json:"defaultSavePath"`
 			} `json:"qbittorrent"`
-			Tasks struct {
-				Store                       string `json:"store"`
-				DBPath                      string `json:"dbPath"`
-				ProgressSyncIntervalSeconds int    `json:"progressSyncIntervalSeconds"`
-				ProgressSyncEnabled         bool   `json:"progressSyncEnabled"`
-			} `json:"tasks"`
 			Subscription struct {
-				Store               string `json:"store"`
-				DBPath              string `json:"dbPath"`
-				PollIntervalSeconds int    `json:"pollIntervalSeconds"`
-				PollEnabled         bool   `json:"pollEnabled"`
-				StashBoxes          []struct {
+				StashBoxEndpoints []string `json:"stashBoxEndpoints"`
+			} `json:"subscription"`
+			Automation struct {
+				TaskProgressSyncIntervalSeconds int `json:"taskProgressSyncIntervalSeconds"`
+				SubscriptionPollIntervalSeconds int `json:"subscriptionPollIntervalSeconds"`
+			} `json:"automation"`
+		} `json:"settings"`
+		SettingsStatus struct {
+			Automation struct {
+				TaskProgressSyncEnabled bool `json:"taskProgressSyncEnabled"`
+				SubscriptionPollEnabled bool `json:"subscriptionPollEnabled"`
+			} `json:"automation"`
+			Subscription struct {
+				StashBoxes []struct {
 					Name             string `json:"name"`
 					Endpoint         string `json:"endpoint"`
 					APIKeyConfigured bool   `json:"apiKeyConfigured"`
 				} `json:"stashBoxes"`
-				StashBoxEndpoints []string `json:"stashBoxEndpoints"`
-				StashBoxesLoaded  bool     `json:"stashBoxesLoaded"`
+				StashBoxesLoaded bool `json:"stashBoxesLoaded"`
 			} `json:"subscription"`
-			Logging struct {
-				Level            string `json:"level"`
-				FilePath         string `json:"filePath"`
-				MaxEntries       int    `json:"maxEntries"`
-				MaxFileSizeBytes int    `json:"maxFileSizeBytes"`
-				MaxFileBackups   int    `json:"maxFileBackups"`
-			} `json:"logging"`
-			System struct {
-				AppVersion string `json:"appVersion"`
-			} `json:"system"`
-		} `json:"settings"`
+		} `json:"settingsStatus"`
 	} `json:"data"`
 	Errors []struct {
 		Message string `json:"message"`
@@ -325,8 +304,7 @@ func testConfig() *config.Config {
 	cfg.Jackett.URL = "http://jackett.invalid"
 	cfg.Jackett.APIKey = "test-api-key"
 	cfg.Stash.URL = "http://stash.invalid"
-	cfg.Tasks.DBPath = filepath.Join(os.TempDir(), "moji-test.db")
-	cfg.Subscription.DBPath = filepath.Join(os.TempDir(), "moji-test.db")
+	cfg.Automation.SubscriptionPollIntervalSeconds = 3600
 	return &cfg
 }
 

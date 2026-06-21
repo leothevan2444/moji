@@ -45,35 +45,41 @@ query DashboardDocument {
       category
       tags
     }
-    tasks {
-      store
-      dbPath
-      progressSyncIntervalSeconds
-      progressSyncEnabled
+    automation {
+      taskProgressSyncIntervalSeconds
+      subscriptionPollIntervalSeconds
     }
     subscription {
-      store
-      dbPath
-      pollIntervalSeconds
-      pollEnabled
+      stashBoxEndpoints
+    }
+  }
+  settingsStatus {
+    stash {
+      configured
+      enabled
+    }
+    jackett {
+      configured
+      enabled
+    }
+    qbittorrent {
+      configured
+      enabled
+    }
+    automation {
+      taskProgressSyncIntervalSeconds
+      taskProgressSyncEnabled
+      subscriptionPollIntervalSeconds
+      subscriptionPollEnabled
+    }
+    subscription {
       stashBoxes {
         name
         endpoint
         apiKeyConfigured
       }
-      stashBoxEndpoints
       stashBoxesLoaded
       stashBoxesLoadError
-    }
-    logging {
-      level
-      filePath
-      maxEntries
-      maxFileSizeBytes
-      maxFileBackups
-    }
-    system {
-      appVersion
     }
   }
   tasks {

@@ -9,6 +9,18 @@ import (
 	"strconv"
 )
 
+type AutomationSettings struct {
+	TaskProgressSyncIntervalSeconds int `json:"taskProgressSyncIntervalSeconds"`
+	SubscriptionPollIntervalSeconds int `json:"subscriptionPollIntervalSeconds"`
+}
+
+type AutomationStatus struct {
+	TaskProgressSyncIntervalSeconds int  `json:"taskProgressSyncIntervalSeconds"`
+	TaskProgressSyncEnabled         bool `json:"taskProgressSyncEnabled"`
+	SubscriptionPollIntervalSeconds int  `json:"subscriptionPollIntervalSeconds"`
+	SubscriptionPollEnabled         bool `json:"subscriptionPollEnabled"`
+}
+
 type DashboardStats struct {
 	Total        int `json:"total"`
 	Active       int `json:"active"`
@@ -82,14 +94,6 @@ type LogEntry struct {
 	Message string   `json:"message"`
 }
 
-type LoggingSettings struct {
-	Level            string `json:"level"`
-	FilePath         string `json:"filePath"`
-	MaxEntries       int    `json:"maxEntries"`
-	MaxFileSizeBytes int    `json:"maxFileSizeBytes"`
-	MaxFileBackups   int    `json:"maxFileBackups"`
-}
-
 type Mutation struct {
 }
 
@@ -132,14 +136,25 @@ type QBittorrentSettings struct {
 type Query struct {
 }
 
+type ServiceStatus struct {
+	Configured bool `json:"configured"`
+	Enabled    bool `json:"enabled"`
+}
+
 type Settings struct {
 	Stash        *StashSettings        `json:"stash"`
 	Jackett      *JackettSettings      `json:"jackett"`
 	Qbittorrent  *QBittorrentSettings  `json:"qbittorrent"`
-	Tasks        *TaskSettings         `json:"tasks"`
+	Automation   *AutomationSettings   `json:"automation"`
 	Subscription *SubscriptionSettings `json:"subscription"`
-	Logging      *LoggingSettings      `json:"logging"`
-	System       *SystemSettings       `json:"system"`
+}
+
+type SettingsStatus struct {
+	Stash        *ServiceStatus      `json:"stash"`
+	Jackett      *ServiceStatus      `json:"jackett"`
+	Qbittorrent  *ServiceStatus      `json:"qbittorrent"`
+	Automation   *AutomationStatus   `json:"automation"`
+	Subscription *SubscriptionStatus `json:"subscription"`
 }
 
 type StashBoxEndpoint struct {
@@ -229,22 +244,17 @@ type SubscriptionRelease struct {
 }
 
 type SubscriptionSettings struct {
-	Store               string `json:"store"`
-	DbPath              string `json:"dbPath"`
-	PollIntervalSeconds int    `json:"pollIntervalSeconds"`
-	PollEnabled         bool   `json:"pollEnabled"`
-	// Stash Box instances currently configured inside the Stash server.
-	StashBoxes []*StashBoxEndpoint `json:"stashBoxes"`
 	// Endpoint URLs in the user-defined order used for subscription lookups. Endpoints not listed here are still queried, in their Stash order, appended after the listed ones. An empty list means use Stash's order as-is.
 	StashBoxEndpoints []string `json:"stashBoxEndpoints"`
+}
+
+type SubscriptionStatus struct {
+	// Stash Box instances currently configured inside the Stash server.
+	StashBoxes []*StashBoxEndpoint `json:"stashBoxes"`
 	// Whether the last attempt to load Stash Box endpoints from Stash succeeded.
 	StashBoxesLoaded bool `json:"stashBoxesLoaded"`
 	// Reason for the most recent Stash Box load failure. Null when stashBoxesLoaded is true.
 	StashBoxesLoadError *string `json:"stashBoxesLoadError,omitempty"`
-}
-
-type SystemSettings struct {
-	AppVersion string `json:"appVersion"`
 }
 
 type Task struct {
@@ -279,24 +289,14 @@ type Task struct {
 	UpdatedAt           string             `json:"updatedAt"`
 }
 
-type TaskSettings struct {
-	Store                       string `json:"store"`
-	DbPath                      string `json:"dbPath"`
-	ProgressSyncIntervalSeconds int    `json:"progressSyncIntervalSeconds"`
-	ProgressSyncEnabled         bool   `json:"progressSyncEnabled"`
+type UpdateAutomationSettingsInput struct {
+	TaskProgressSyncIntervalSeconds int `json:"taskProgressSyncIntervalSeconds"`
+	SubscriptionPollIntervalSeconds int `json:"subscriptionPollIntervalSeconds"`
 }
 
 type UpdateJackettSettingsInput struct {
 	URL    string  `json:"url"`
 	APIKey *string `json:"apiKey,omitempty"`
-}
-
-type UpdateLoggingSettingsInput struct {
-	Level            string `json:"level"`
-	FilePath         string `json:"filePath"`
-	MaxEntries       int    `json:"maxEntries"`
-	MaxFileSizeBytes int    `json:"maxFileSizeBytes"`
-	MaxFileBackups   int    `json:"maxFileBackups"`
 }
 
 type UpdateQBittorrentSettingsInput struct {
@@ -320,9 +320,6 @@ type UpdateStashSettingsInput struct {
 }
 
 type UpdateSubscriptionSettingsInput struct {
-	Store               string `json:"store"`
-	DbPath              string `json:"dbPath"`
-	PollIntervalSeconds int    `json:"pollIntervalSeconds"`
 	// See SubscriptionSettings.stashBoxEndpoints.
 	StashBoxEndpoints []string `json:"stashBoxEndpoints"`
 }

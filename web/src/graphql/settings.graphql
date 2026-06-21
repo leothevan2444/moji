@@ -42,33 +42,19 @@ mutation UpdateQBittorrentSettingsDocument($input: UpdateQBittorrentSettingsInpu
   }
 }
 
-mutation UpdateSubscriptionSettingsDocument($input: UpdateSubscriptionSettingsInput!) {
-  updateSubscriptionSettings(input: $input) {
-    subscription {
-      store
-      dbPath
-      pollIntervalSeconds
-      pollEnabled
-      stashBoxes {
-        name
-        endpoint
-        apiKeyConfigured
-      }
-      stashBoxEndpoints
-      stashBoxesLoaded
-      stashBoxesLoadError
+mutation UpdateAutomationSettingsDocument($input: UpdateAutomationSettingsInput!) {
+  updateAutomationSettings(input: $input) {
+    automation {
+      taskProgressSyncIntervalSeconds
+      subscriptionPollIntervalSeconds
     }
   }
 }
 
-mutation UpdateLoggingSettingsDocument($input: UpdateLoggingSettingsInput!) {
-  updateLoggingSettings(input: $input) {
-    logging {
-      level
-      filePath
-      maxEntries
-      maxFileSizeBytes
-      maxFileBackups
+mutation UpdateSubscriptionSettingsDocument($input: UpdateSubscriptionSettingsInput!) {
+  updateSubscriptionSettings(input: $input) {
+    subscription {
+      stashBoxEndpoints
     }
   }
 }
@@ -76,18 +62,7 @@ mutation UpdateLoggingSettingsDocument($input: UpdateLoggingSettingsInput!) {
 mutation RefreshSubscriptionStashBoxesDocument {
   refreshSubscriptionStashBoxes {
     subscription {
-      store
-      dbPath
-      pollIntervalSeconds
-      pollEnabled
-      stashBoxes {
-        name
-        endpoint
-        apiKeyConfigured
-      }
       stashBoxEndpoints
-      stashBoxesLoaded
-      stashBoxesLoadError
     }
   }
 }

@@ -76,6 +76,24 @@ func (r *mutationResolver) UpdateQBittorrentSettings(ctx context.Context, input 
 	return settingsSnapshotToModel(snapshot, r.AppVersion), nil
 }
 
+// UpdateAutomationSettings is the resolver for the updateAutomationSettings field.
+func (r *mutationResolver) UpdateAutomationSettings(ctx context.Context, input model.UpdateAutomationSettingsInput) (*model.Settings, error) {
+	_ = ctx
+	if r.SettingsEditor == nil {
+		return nil, errors.New("settings editor is not configured")
+	}
+
+	snapshot, err := r.SettingsEditor.UpdateAutomationSettings(UpdateAutomationSettingsInput{
+		TaskProgressSyncIntervalSeconds: input.TaskProgressSyncIntervalSeconds,
+		SubscriptionPollIntervalSeconds: input.SubscriptionPollIntervalSeconds,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return settingsSnapshotToModel(snapshot, r.AppVersion), nil
+}
+
 // UpdateSubscriptionSettings is the resolver for the updateSubscriptionSettings field.
 func (r *mutationResolver) UpdateSubscriptionSettings(ctx context.Context, input model.UpdateSubscriptionSettingsInput) (*model.Settings, error) {
 	_ = ctx
@@ -84,10 +102,7 @@ func (r *mutationResolver) UpdateSubscriptionSettings(ctx context.Context, input
 	}
 
 	snapshot, err := r.SettingsEditor.UpdateSubscriptionSettings(UpdateSubscriptionSettingsInput{
-		Store:               input.Store,
-		DBPath:              input.DbPath,
-		PollIntervalSeconds: input.PollIntervalSeconds,
-		StashBoxEndpoints:   append([]string(nil), input.StashBoxEndpoints...),
+		StashBoxEndpoints: append([]string(nil), input.StashBoxEndpoints...),
 	})
 	if err != nil {
 		return nil, err
@@ -113,27 +128,6 @@ func (r *mutationResolver) RefreshSubscriptionStashBoxes(ctx context.Context) (*
 	return settingsSnapshotToModel(r.RuntimeSettings, r.AppVersion), nil
 }
 
-// UpdateLoggingSettings is the resolver for the updateLoggingSettings field.
-func (r *mutationResolver) UpdateLoggingSettings(ctx context.Context, input model.UpdateLoggingSettingsInput) (*model.Settings, error) {
-	_ = ctx
-	if r.SettingsEditor == nil {
-		return nil, errors.New("settings editor is not configured")
-	}
-
-	snapshot, err := r.SettingsEditor.UpdateLoggingSettings(UpdateLoggingSettingsInput{
-		Level:            input.Level,
-		FilePath:         input.FilePath,
-		MaxEntries:       input.MaxEntries,
-		MaxFileSizeBytes: int64(input.MaxFileSizeBytes),
-		MaxFileBackups:   input.MaxFileBackups,
-	})
-	if err != nil {
-		return nil, err
-	}
-
-	return settingsSnapshotToModel(snapshot, r.AppVersion), nil
-}
-
 // Settings is the resolver for the settings field.
 func (r *queryResolver) Settings(ctx context.Context) (*model.Settings, error) {
 	if r.SettingsEditor != nil {
@@ -141,4 +135,13 @@ func (r *queryResolver) Settings(ctx context.Context) (*model.Settings, error) {
 	}
 
 	return settingsSnapshotToModel(r.RuntimeSettings, r.AppVersion), nil
+}
+
+// SettingsStatus is the resolver for the settingsStatus field.
+func (r *queryResolver) SettingsStatus(ctx context.Context) (*model.SettingsStatus, error) {
+	if r.SettingsEditor != nil {
+		return settingsStatusSnapshotToModel(r.SettingsEditor.StatusSnapshot()), nil
+	}
+
+	return settingsStatusSnapshotToModel(r.RuntimeStatus), nil
 }

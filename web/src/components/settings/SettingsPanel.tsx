@@ -13,42 +13,47 @@ import {
   LogLevel,
   LogsDocumentDocument,
   RefreshSubscriptionStashBoxesDocumentDocument,
-  UpdateSubscriptionSettingsDocumentDocument,
+  UpdateAutomationSettingsDocumentDocument,
   UpdateJackettSettingsDocumentDocument,
-  UpdateLoggingSettingsDocumentDocument,
   UpdateQBittorrentSettingsDocumentDocument,
   UpdateStashSettingsDocumentDocument,
+  UpdateSubscriptionSettingsDocumentDocument,
   type DashboardDocumentQuery,
   type LogsDocumentQuery,
   type LogsDocumentQueryVariables,
   type RefreshSubscriptionStashBoxesDocumentMutation,
-  type UpdateSubscriptionSettingsDocumentMutation,
-  type UpdateSubscriptionSettingsDocumentMutationVariables,
+  type UpdateAutomationSettingsDocumentMutation,
+  type UpdateAutomationSettingsDocumentMutationVariables,
   type UpdateJackettSettingsDocumentMutation,
   type UpdateJackettSettingsDocumentMutationVariables,
-  type UpdateLoggingSettingsDocumentMutation,
-  type UpdateLoggingSettingsDocumentMutationVariables,
   type UpdateQBittorrentSettingsDocumentMutation,
   type UpdateQBittorrentSettingsDocumentMutationVariables,
   type UpdateStashSettingsDocumentMutation,
-  type UpdateStashSettingsDocumentMutationVariables
+  type UpdateStashSettingsDocumentMutationVariables,
+  type UpdateSubscriptionSettingsDocumentMutation,
+  type UpdateSubscriptionSettingsDocumentMutationVariables
 } from "../../graphql/generated/graphql";
 import type { SettingsTab, ToastTone } from "../../types";
 import {
-  EMPTY_STASH_FORM, EMPTY_JACKETT_FORM, EMPTY_QBITTORRENT_FORM,
-  EMPTY_SUBSCRIPTION_FORM, EMPTY_LOGGING_FORM,
+  EMPTY_AUTOMATION_FORM,
+  EMPTY_JACKETT_FORM,
+  EMPTY_QBITTORRENT_FORM,
+  EMPTY_STASH_FORM,
+  EMPTY_SUBSCRIPTION_FORM,
   LOG_LEVEL_OPTIONS
 } from "../../constants";
-import { boolState, serviceStatus, taskSyncStatus } from "../../utils";
+import { serviceStatus } from "../../utils";
 import { describeQueryError } from "../../services/queryError";
 import { formatDateTime, formatLogEntries } from "../../utils";
 
 type RuntimeSettings = NonNullable<DashboardDocumentQuery["settings"]>;
+type RuntimeSettingsStatus = NonNullable<DashboardDocumentQuery["settingsStatus"]>;
 
 interface SettingsPanelProps {
   settingsTab: SettingsTab;
-  onSettingsTabChange: (tab: SettingsTab) => void;
   runtimeSettings: RuntimeSettings | null;
+  runtimeStatus: RuntimeSettingsStatus | null;
+  appVersion: string;
   drawer: string | null;
   renderedDrawer: string | null;
   pushToast: (tone: ToastTone, message: string) => void;
@@ -57,8 +62,9 @@ interface SettingsPanelProps {
 
 export function SettingsPanel({
   settingsTab,
-  onSettingsTabChange,
   runtimeSettings,
+  runtimeStatus,
+  appVersion,
   drawer,
   renderedDrawer,
   pushToast,
@@ -73,17 +79,15 @@ export function SettingsPanel({
     jackettApiKey: false,
     qbittorrentPassword: false
   });
-  const toggleSecret = (key: "stashApiKey" | "jackettApiKey" | "qbittorrentPassword") => {
-    setVisibleSecrets((current) => ({ ...current, [key]: !current[key] }));
-  };
-
   const [stashForm, setStashForm] = useState(EMPTY_STASH_FORM);
   const [jackettForm, setJackettForm] = useState(EMPTY_JACKETT_FORM);
   const [qbittorrentForm, setQBittorrentForm] = useState(EMPTY_QBITTORRENT_FORM);
+  const [automationForm, setAutomationForm] = useState(EMPTY_AUTOMATION_FORM);
   const [subscriptionForm, setSubscriptionForm] = useState(EMPTY_SUBSCRIPTION_FORM);
-  const [loggingForm, setLoggingForm] = useState(EMPTY_LOGGING_FORM);
 
-  // ── Queries ──────────────────────────────────────────────────────
+  const toggleSecret = (key: "stashApiKey" | "jackettApiKey" | "qbittorrentPassword") => {
+    setVisibleSecrets((current) => ({ ...current, [key]: !current[key] }));
+  };
 
   const [{ data: logsData, fetching: fetchingLogs, error: logsError }, refreshLogs] = useQuery<
     LogsDocumentQuery,
@@ -95,41 +99,31 @@ export function SettingsPanel({
     },
     pause: settingsTab !== "日志" || (drawer !== "settings" && renderedDrawer !== "settings")
   });
-
   const logs = logsData?.logs ?? [];
-
-  // ── Mutations ────────────────────────────────────────────────────
 
   const [{ fetching: updatingStash }, updateStashSettings] = useMutation<
     UpdateStashSettingsDocumentMutation,
     UpdateStashSettingsDocumentMutationVariables
   >(UpdateStashSettingsDocumentDocument);
-
   const [{ fetching: updatingJackett }, updateJackettSettings] = useMutation<
     UpdateJackettSettingsDocumentMutation,
     UpdateJackettSettingsDocumentMutationVariables
   >(UpdateJackettSettingsDocumentDocument);
-
   const [{ fetching: updatingQBittorrent }, updateQBittorrentSettings] = useMutation<
     UpdateQBittorrentSettingsDocumentMutation,
     UpdateQBittorrentSettingsDocumentMutationVariables
   >(UpdateQBittorrentSettingsDocumentDocument);
-
+  const [{ fetching: updatingAutomation }, updateAutomationSettings] = useMutation<
+    UpdateAutomationSettingsDocumentMutation,
+    UpdateAutomationSettingsDocumentMutationVariables
+  >(UpdateAutomationSettingsDocumentDocument);
   const [{ fetching: updatingSubscription }, updateSubscriptionSettings] = useMutation<
     UpdateSubscriptionSettingsDocumentMutation,
     UpdateSubscriptionSettingsDocumentMutationVariables
   >(UpdateSubscriptionSettingsDocumentDocument);
-
   const [{ fetching: refreshingStashBoxes }, refreshStashBoxesMutation] = useMutation<
     RefreshSubscriptionStashBoxesDocumentMutation
   >(RefreshSubscriptionStashBoxesDocumentDocument);
-
-  const [{ fetching: updatingLogging }, updateLoggingSettings] = useMutation<
-    UpdateLoggingSettingsDocumentMutation,
-    UpdateLoggingSettingsDocumentMutationVariables
-  >(UpdateLoggingSettingsDocumentDocument);
-
-  // ── Sync forms from runtime settings ─────────────────────────────
 
   useEffect(() => {
     if (!runtimeSettings) return;
@@ -156,59 +150,18 @@ export function SettingsPanel({
       category: runtimeSettings.qbittorrent.category || "",
       tags: runtimeSettings.qbittorrent.tags || ""
     });
-    setSubscriptionForm({
-      store: runtimeSettings.subscription.store || "sqlite",
-      dbPath: runtimeSettings.subscription.dbPath || "",
-      pollIntervalSeconds: String(runtimeSettings.subscription.pollIntervalSeconds || 3600),
-      stashBoxEndpoints: [...(runtimeSettings.subscription.stashBoxEndpoints ?? [])]
+    setAutomationForm({
+      taskProgressSyncIntervalSeconds: String(runtimeSettings.automation.taskProgressSyncIntervalSeconds || 60),
+      subscriptionPollIntervalSeconds: String(runtimeSettings.automation.subscriptionPollIntervalSeconds || 3600)
     });
-    setLoggingForm({
-      level: runtimeSettings.logging.level || "info",
-      filePath: runtimeSettings.logging.filePath || "",
-      maxEntries: String(runtimeSettings.logging.maxEntries || 500),
-      maxFileSizeBytes: String(runtimeSettings.logging.maxFileSizeBytes || 10 * 1024 * 1024),
-      maxFileBackups: String(runtimeSettings.logging.maxFileBackups || 5)
+    setSubscriptionForm({
+      stashBoxEndpoints: [...(runtimeSettings.subscription.stashBoxEndpoints ?? [])]
     });
   }, [runtimeSettings]);
 
-  // ── Settings status ──────────────────────────────────────────────
-
-  const settingsStatus = (() => {
-    if (!runtimeSettings) return { label: "加载中", tone: "tone-neutral" as const };
-    if (settingsTab === "Stash") {
-      return serviceStatus(runtimeSettings.stash.configured, runtimeSettings.stash.enabled);
-    }
-    if (settingsTab === "索引器") {
-      return serviceStatus(runtimeSettings.jackett.configured, runtimeSettings.jackett.enabled);
-    }
-    if (settingsTab === "下载器") {
-      return serviceStatus(runtimeSettings.qbittorrent.configured, runtimeSettings.qbittorrent.enabled);
-    }
-    if (settingsTab === "任务") {
-      return {
-        label: taskSyncStatus(runtimeSettings.tasks),
-        tone: runtimeSettings.tasks.progressSyncEnabled ? "tone-success" as const : "tone-neutral" as const
-      };
-    }
-    if (settingsTab === "订阅") {
-      return {
-        label: runtimeSettings.subscription.pollEnabled ? "已启用" : "未启用",
-        tone: runtimeSettings.subscription.pollEnabled ? "tone-success" as const : "tone-neutral" as const
-      };
-    }
-    if (settingsTab === "系统") {
-      return { label: "已接线", tone: "tone-info" as const };
-    }
-    return { label: "规划中", tone: "tone-neutral" as const };
-  })();
-
-  // ── Auto-refresh logs ────────────────────────────────────────────
-
   useEffect(() => {
     const logsTabActive = settingsTab === "日志" && (drawer === "settings" || renderedDrawer === "settings");
-    if (!logsTabActive) {
-      return;
-    }
+    if (!logsTabActive) return;
 
     const timer = window.setInterval(() => {
       void refreshLogs({ requestPolicy: "network-only" });
@@ -216,8 +169,6 @@ export function SettingsPanel({
 
     return () => window.clearInterval(timer);
   }, [drawer, renderedDrawer, refreshLogs, settingsTab]);
-
-  // ── Save handlers ────────────────────────────────────────────────
 
   const saveStashSettings = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -237,7 +188,7 @@ export function SettingsPanel({
       pushToast("tone-danger", describeQueryError(result.error));
       return;
     }
-    pushToast("tone-success", "Stash 设置已保存，配置文件与运行时快照已刷新。");
+    pushToast("tone-success", "Stash 设置已保存。");
     await refreshDashboard({ requestPolicy: "network-only" });
   };
 
@@ -253,7 +204,7 @@ export function SettingsPanel({
       pushToast("tone-danger", describeQueryError(result.error));
       return;
     }
-    pushToast("tone-success", "索引器设置已保存，后端配置已同步。");
+    pushToast("tone-success", "Jackett 设置已保存。");
     await refreshDashboard({ requestPolicy: "network-only" });
   };
 
@@ -273,19 +224,32 @@ export function SettingsPanel({
       pushToast("tone-danger", describeQueryError(result.error));
       return;
     }
-    pushToast("tone-success", "下载器设置已保存，新的默认值已同步到后端。");
+    pushToast("tone-success", "qBittorrent 设置已保存。");
+    await refreshDashboard({ requestPolicy: "network-only" });
+  };
+
+  const saveAutomationSettings = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const taskProgressSyncIntervalSeconds = Number.parseInt(automationForm.taskProgressSyncIntervalSeconds.trim(), 10);
+    const subscriptionPollIntervalSeconds = Number.parseInt(automationForm.subscriptionPollIntervalSeconds.trim(), 10);
+    const result = await updateAutomationSettings({
+      input: {
+        taskProgressSyncIntervalSeconds: Number.isNaN(taskProgressSyncIntervalSeconds) ? 60 : taskProgressSyncIntervalSeconds,
+        subscriptionPollIntervalSeconds: Number.isNaN(subscriptionPollIntervalSeconds) ? 3600 : subscriptionPollIntervalSeconds
+      }
+    });
+    if (result.error) {
+      pushToast("tone-danger", describeQueryError(result.error));
+      return;
+    }
+    pushToast("tone-success", "自动化设置已保存。");
     await refreshDashboard({ requestPolicy: "network-only" });
   };
 
   const saveSubscriptionSettings = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    const pollIntervalSeconds = Number.parseInt(subscriptionForm.pollIntervalSeconds.trim(), 10);
-    const normalizedPollIntervalSeconds = Number.isNaN(pollIntervalSeconds) ? 0 : pollIntervalSeconds;
     const result = await updateSubscriptionSettings({
       input: {
-        store: subscriptionForm.store.trim() || "sqlite",
-        dbPath: subscriptionForm.dbPath.trim(),
-        pollIntervalSeconds: normalizedPollIntervalSeconds,
         stashBoxEndpoints: subscriptionForm.stashBoxEndpoints
       }
     });
@@ -293,7 +257,7 @@ export function SettingsPanel({
       pushToast("tone-danger", describeQueryError(result.error));
       return;
     }
-    pushToast("tone-success", "订阅设置已保存，轮询与 Stash-Box 选择已同步到后端。");
+    pushToast("tone-success", "Stash-Box 优先级已保存。");
     await refreshDashboard({ requestPolicy: "network-only" });
   };
 
@@ -303,64 +267,24 @@ export function SettingsPanel({
       pushToast("tone-danger", `刷新 Stash-Box 失败：${describeQueryError(result.error)}`);
       return;
     }
-    const subscription = result.data?.refreshSubscriptionStashBoxes?.subscription;
-    if (subscription) {
-      const count = subscription.stashBoxes?.length ?? 0;
-      pushToast(
-        subscription.stashBoxesLoaded
-          ? "tone-success"
-          : "tone-danger",
-        subscription.stashBoxesLoaded
-          ? `Stash-Box 已刷新，共 ${count} 个端点。`
-          : `刷新失败：${subscription.stashBoxesLoadError ?? "未知错误"}`
-      );
-    } else {
-      pushToast("tone-success", "Stash-Box 已刷新。");
-    }
+    pushToast("tone-success", "Stash-Box 列表已刷新。");
     await refreshDashboard({ requestPolicy: "network-only" });
   };
-
-  const saveLoggingSettings = async (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    const maxEntries = Number.parseInt(loggingForm.maxEntries.trim(), 10);
-    const maxFileSizeBytes = Number.parseInt(loggingForm.maxFileSizeBytes.trim(), 10);
-    const maxFileBackups = Number.parseInt(loggingForm.maxFileBackups.trim(), 10);
-    const result = await updateLoggingSettings({
-      input: {
-        level: loggingForm.level.trim() || "info",
-        filePath: loggingForm.filePath.trim(),
-        maxEntries: Number.isNaN(maxEntries) ? 500 : maxEntries,
-        maxFileSizeBytes: Number.isNaN(maxFileSizeBytes) ? 10 * 1024 * 1024 : maxFileSizeBytes,
-        maxFileBackups: Number.isNaN(maxFileBackups) ? 5 : maxFileBackups
-      }
-    });
-    if (result.error) {
-      pushToast("tone-danger", describeQueryError(result.error));
-      return;
-    }
-    pushToast("tone-success", "日志设置已保存，并已即时重载到当前进程。");
-    await refreshDashboard({ requestPolicy: "network-only" });
-    await refreshLogs({ requestPolicy: "network-only" });
-  };
-
-  // ── Log actions ──────────────────────────────────────────────────
 
   const handleCopyLogs = async () => {
     await navigator.clipboard.writeText(formatLogEntries(logs));
   };
 
   const handleDownloadCurrentLogFile = async () => {
-    if (!runtimeSettings) return;
     setDownloadingLogFile(true);
     try {
-      const filePath = runtimeSettings.logging.filePath;
-      const response = await fetch(`/api/logs/file?path=${encodeURIComponent(filePath)}`);
+      const response = await fetch("/api/logs/current");
       if (!response.ok) throw new Error(`下载失败：HTTP ${response.status}`);
       const blob = await response.blob();
       const url = URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.href = url;
-      link.download = filePath.split("/").pop() || "moji.log";
+      link.download = "moji.log";
       link.click();
       URL.revokeObjectURL(url);
     } catch (error) {
@@ -370,62 +294,38 @@ export function SettingsPanel({
     }
   };
 
-  // ── Render ───────────────────────────────────────────────────────
-
-  if (!runtimeSettings) {
+  if (!runtimeSettings || !runtimeStatus) {
     return (
       <article className="drawer-card">
         <div className="drawer-card__head">
           <h3>{settingsTab}</h3>
-          <span className={`status-chip ${settingsStatus.tone}`}>{settingsStatus.label}</span>
         </div>
         <dl className="settings-grid">
           <div>
             <dt>当前状态</dt>
-            <dd>等待后端返回配置状态</dd>
-          </div>
-          <div>
-            <dt>说明</dt>
-            <dd>设置面板会在 dashboard 查询完成后显示实时状态。</dd>
+            <dd>等待后端返回设置数据</dd>
           </div>
         </dl>
       </article>
     );
   }
 
-  if (settingsTab === "Stash") {
-    const stashModeGuide = (() => {
-      if (stashForm.mode === "SHARED_STORAGE") {
-        return {
-          tone: "tone-info",
-          title: "共享存储 / 路径映射",
-          summary: "适用于 qBittorrent 和 Stash 实际访问同一批文件，只是容器内或主机上的挂载路径不同。",
-          caution: "要求下载路径命中 qBittorrent 路径前缀；映射失败时不会自动退回整库扫描。"
-        };
-      }
-      if (stashForm.mode === "FILE_TRANSFER") {
-        return {
-          tone: "tone-warn",
-          title: "文件搬运",
-          summary: "适用于 Stash 看不到下载器原始路径，但 Moji 本机可以访问源文件和目标目录。",
-          caution: "Moji 会执行复制或移动；目标目录已有同名文件时会直接失败。"
-        };
-      }
-      return {
-        tone: "tone-danger",
-        title: "整库扫描",
-        summary: "适用于先跑通接入，或无法稳定定位单文件时，由 Stash 扫整个库目录。",
-        caution: "最慢，也最难精确知道本次下载最终对应哪个 scene 或 file。"
-      };
-    })();
+  if (settingsTab === "连接") {
+    const stashStatus = serviceStatus(runtimeStatus.stash.configured, runtimeStatus.stash.enabled);
+    const jackettStatus = serviceStatus(runtimeStatus.jackett.configured, runtimeStatus.jackett.enabled);
+    const qbittorrentStatus = serviceStatus(runtimeStatus.qbittorrent.configured, runtimeStatus.qbittorrent.enabled);
 
     return (
       <article className="drawer-card">
         <div className="drawer-card__head">
-          <h3>{settingsTab}</h3>
-          <span className={`status-chip ${settingsStatus.tone}`}>{settingsStatus.label}</span>
+          <h3>连接</h3>
         </div>
+
         <form className="settings-form" onSubmit={(event) => void saveStashSettings(event)}>
+          <div className="settings-meta">
+            <span>Stash</span>
+            <span className={`status-chip ${stashStatus.tone}`}>{stashStatus.label}</span>
+          </div>
           <label className="settings-field">
             <span>Stash URL</span>
             <input
@@ -435,82 +335,6 @@ export function SettingsPanel({
             />
           </label>
           <label className="settings-field">
-            <span>工作方式</span>
-            <select
-              value={stashForm.mode}
-              onChange={(event) => setStashForm((current) => ({ ...current, mode: event.target.value }))}
-            >
-              <option value="SHARED_STORAGE">共享存储 / 路径映射</option>
-              <option value="FILE_TRANSFER">文件搬运</option>
-              <option value="LIBRARY_SCAN">整库扫描</option>
-            </select>
-          </label>
-          <section className={`settings-mode-guide ${stashModeGuide.tone}`}>
-            <div className="settings-mode-guide__head">
-              <strong>{stashModeGuide.title}</strong>
-              <span>{stashModeGuide.summary}</span>
-            </div>
-            <p>{stashModeGuide.caution}</p>
-          </section>
-          {stashForm.mode === "SHARED_STORAGE" ? (
-            <>
-              <label className="settings-field">
-                <span>qBittorrent 路径前缀</span>
-                <input
-                  value={stashForm.qbittorrentPathPrefix}
-                  onChange={(event) => setStashForm((current) => ({ ...current, qbittorrentPathPrefix: event.target.value }))}
-                  placeholder="/downloads"
-                />
-              </label>
-              <label className="settings-field">
-                <span>Stash 路径前缀</span>
-                <input
-                  value={stashForm.stashPathPrefix}
-                  onChange={(event) => setStashForm((current) => ({ ...current, stashPathPrefix: event.target.value }))}
-                  placeholder="/library"
-                />
-              </label>
-              <p className="settings-help">Moji 会把 qBittorrent 可见路径映射为 Stash 可见路径，再对映射后的单文件触发扫描。</p>
-            </>
-          ) : null}
-          {stashForm.mode === "FILE_TRANSFER" ? (
-            <>
-              <label className="settings-field">
-                <span>搬运动作</span>
-                <select
-                  value={stashForm.transferAction}
-                  onChange={(event) => setStashForm((current) => ({ ...current, transferAction: event.target.value }))}
-                >
-                  <option value="">请选择</option>
-                  <option value="COPY">复制</option>
-                  <option value="MOVE">移动</option>
-                </select>
-              </label>
-              <label className="settings-field">
-                <span>搬运目标目录</span>
-                <input
-                  value={stashForm.transferTargetPath}
-                  onChange={(event) => setStashForm((current) => ({ ...current, transferTargetPath: event.target.value }))}
-                  placeholder="/stash-import"
-                />
-              </label>
-              <p className="settings-help">Moji 会在本地文件系统执行复制或移动，成功后再扫描目标文件。同名目标文件会直接失败。</p>
-            </>
-          ) : null}
-          {stashForm.mode === "LIBRARY_SCAN" ? (
-            <>
-              <label className="settings-field">
-                <span>Library path</span>
-                <input
-                  value={stashForm.libraryPath}
-                  onChange={(event) => setStashForm((current) => ({ ...current, libraryPath: event.target.value }))}
-                  placeholder="/data/library"
-                />
-              </label>
-              <p className="settings-help">当前模式会始终扫描整个 Stash 库目录，无法精确锁定单个下载文件，后续关联信息也会更粗粒度。</p>
-            </>
-          ) : null}
-          <label className="settings-field">
             <span>API key</span>
             <div className="secret-input">
               <input
@@ -518,38 +342,24 @@ export function SettingsPanel({
                 type={visibleSecrets.stashApiKey ? "text" : "password"}
                 value={stashForm.apiKey}
                 onChange={(event) => setStashForm((current) => ({ ...current, apiKey: event.target.value }))}
-                placeholder="输入新的 API key"
                 autoComplete="off"
                 spellCheck={false}
               />
-              <button
-                type="button"
-                className="secret-input__toggle"
-                onClick={() => toggleSecret("stashApiKey")}
-                aria-label={visibleSecrets.stashApiKey ? "隐藏 API key" : "显示 API key"}
-                aria-pressed={visibleSecrets.stashApiKey}
-                title={visibleSecrets.stashApiKey ? "隐藏" : "显示"}
-              >
+              <button type="button" className="secret-input__toggle" onClick={() => toggleSecret("stashApiKey")}>
                 <FontAwesomeIcon icon={visibleSecrets.stashApiKey ? faEyeSlash : faEye} aria-hidden="true" />
               </button>
             </div>
           </label>
           <div className="settings-actions">
-            <button type="submit" disabled={updatingStash}>保存 Stash 设置</button>
+            <button type="submit" disabled={updatingStash}>保存 Stash 连接</button>
           </div>
         </form>
-      </article>
-    );
-  }
 
-  if (settingsTab === "索引器") {
-    return (
-      <article className="drawer-card">
-        <div className="drawer-card__head">
-          <h3>{settingsTab}</h3>
-          <span className={`status-chip ${settingsStatus.tone}`}>{settingsStatus.label}</span>
-        </div>
         <form className="settings-form" onSubmit={(event) => void saveJackettSettings(event)}>
+          <div className="settings-meta">
+            <span>Jackett</span>
+            <span className={`status-chip ${jackettStatus.tone}`}>{jackettStatus.label}</span>
+          </div>
           <label className="settings-field">
             <span>Jackett URL</span>
             <input
@@ -566,41 +376,24 @@ export function SettingsPanel({
                 type={visibleSecrets.jackettApiKey ? "text" : "password"}
                 value={jackettForm.apiKey}
                 onChange={(event) => setJackettForm((current) => ({ ...current, apiKey: event.target.value }))}
-                placeholder="输入新的 API key"
                 autoComplete="off"
                 spellCheck={false}
               />
-              <button
-                type="button"
-                className="secret-input__toggle"
-                onClick={() => toggleSecret("jackettApiKey")}
-                aria-label={visibleSecrets.jackettApiKey ? "隐藏 API key" : "显示 API key"}
-                aria-pressed={visibleSecrets.jackettApiKey}
-                title={visibleSecrets.jackettApiKey ? "隐藏" : "显示"}
-              >
+              <button type="button" className="secret-input__toggle" onClick={() => toggleSecret("jackettApiKey")}>
                 <FontAwesomeIcon icon={visibleSecrets.jackettApiKey ? faEyeSlash : faEye} aria-hidden="true" />
               </button>
             </div>
           </label>
-          <div className="settings-meta">
-            <span>后续可继续扩展 tracker 分组与默认搜索策略。</span>
-          </div>
           <div className="settings-actions">
-            <button type="submit" disabled={updatingJackett}>保存索引器设置</button>
+            <button type="submit" disabled={updatingJackett}>保存 Jackett 连接</button>
           </div>
         </form>
-      </article>
-    );
-  }
 
-  if (settingsTab === "下载器") {
-    return (
-      <article className="drawer-card">
-        <div className="drawer-card__head">
-          <h3>{settingsTab}</h3>
-          <span className={`status-chip ${settingsStatus.tone}`}>{settingsStatus.label}</span>
-        </div>
         <form className="settings-form" onSubmit={(event) => void saveQBittorrentSettings(event)}>
+          <div className="settings-meta">
+            <span>qBittorrent</span>
+            <span className={`status-chip ${qbittorrentStatus.tone}`}>{qbittorrentStatus.label}</span>
+          </div>
           <label className="settings-field">
             <span>qBittorrent URL</span>
             <input
@@ -625,18 +418,10 @@ export function SettingsPanel({
                 type={visibleSecrets.qbittorrentPassword ? "text" : "password"}
                 value={qbittorrentForm.password}
                 onChange={(event) => setQBittorrentForm((current) => ({ ...current, password: event.target.value }))}
-                placeholder="输入新的登录密码"
                 autoComplete="off"
                 spellCheck={false}
               />
-              <button
-                type="button"
-                className="secret-input__toggle"
-                onClick={() => toggleSecret("qbittorrentPassword")}
-                aria-label={visibleSecrets.qbittorrentPassword ? "隐藏密码" : "显示密码"}
-                aria-pressed={visibleSecrets.qbittorrentPassword}
-                title={visibleSecrets.qbittorrentPassword ? "隐藏" : "显示"}
-              >
+              <button type="button" className="secret-input__toggle" onClick={() => toggleSecret("qbittorrentPassword")}>
                 <FontAwesomeIcon icon={visibleSecrets.qbittorrentPassword ? faEyeSlash : faEye} aria-hidden="true" />
               </button>
             </div>
@@ -666,68 +451,144 @@ export function SettingsPanel({
             />
           </label>
           <div className="settings-actions">
-            <button type="submit" disabled={updatingQBittorrent}>保存下载器设置</button>
+            <button type="submit" disabled={updatingQBittorrent}>保存 qBittorrent 连接</button>
           </div>
         </form>
       </article>
     );
   }
 
-  if (settingsTab === "任务") {
+  if (settingsTab === "入库") {
+    const stashModeGuide = (() => {
+      if (stashForm.mode === "SHARED_STORAGE") {
+        return {
+          tone: "tone-info",
+          title: "共享存储 / 路径映射",
+          summary: "适用于 qBittorrent 和 Stash 共用同一批文件，只是挂载路径不同。",
+          caution: "要求下载路径命中 qBittorrent 路径前缀；映射失败时不会自动退回整库扫描。"
+        };
+      }
+      if (stashForm.mode === "FILE_TRANSFER") {
+        return {
+          tone: "tone-warn",
+          title: "文件搬运",
+          summary: "由 Moji 在本地文件系统执行复制或移动，成功后再扫描目标文件。",
+          caution: "目标目录已有同名文件时会直接失败，不覆盖也不自动重命名。"
+        };
+      }
+      return {
+        tone: "tone-danger",
+        title: "整库扫描",
+        summary: "始终扫描整个库目录，适合先跑通接入或无法稳定定位单文件时使用。",
+        caution: "无法精确锁定本次下载文件，扫描范围也最大。"
+      };
+    })();
+
     return (
       <article className="drawer-card">
         <div className="drawer-card__head">
-          <h3>{settingsTab}</h3>
-          <span className={`status-chip ${settingsStatus.tone}`}>{settingsStatus.label}</span>
+          <h3>入库</h3>
         </div>
-        <dl className="settings-grid">
-          <div>
-            <dt>存储类型</dt>
-            <dd>{runtimeSettings.tasks.store || "sqlite"}</dd>
+        <form className="settings-form" onSubmit={(event) => void saveStashSettings(event)}>
+          <label className="settings-field">
+            <span>工作方式</span>
+            <select
+              value={stashForm.mode}
+              onChange={(event) => setStashForm((current) => ({ ...current, mode: event.target.value }))}
+            >
+              <option value="SHARED_STORAGE">共享存储 / 路径映射</option>
+              <option value="FILE_TRANSFER">文件搬运</option>
+              <option value="LIBRARY_SCAN">整库扫描</option>
+            </select>
+          </label>
+          <section className={`settings-mode-guide ${stashModeGuide.tone}`}>
+            <div className="settings-mode-guide__head">
+              <strong>{stashModeGuide.title}</strong>
+              <span>{stashModeGuide.summary}</span>
+            </div>
+            <p>{stashModeGuide.caution}</p>
+          </section>
+
+          {stashForm.mode === "SHARED_STORAGE" ? (
+            <>
+              <label className="settings-field">
+                <span>qBittorrent 路径前缀</span>
+                <input
+                  value={stashForm.qbittorrentPathPrefix}
+                  onChange={(event) => setStashForm((current) => ({ ...current, qbittorrentPathPrefix: event.target.value }))}
+                  placeholder="/downloads"
+                />
+              </label>
+              <label className="settings-field">
+                <span>Stash 路径前缀</span>
+                <input
+                  value={stashForm.stashPathPrefix}
+                  onChange={(event) => setStashForm((current) => ({ ...current, stashPathPrefix: event.target.value }))}
+                  placeholder="/library"
+                />
+              </label>
+            </>
+          ) : null}
+
+          {stashForm.mode === "FILE_TRANSFER" ? (
+            <>
+              <label className="settings-field">
+                <span>搬运动作</span>
+                <select
+                  value={stashForm.transferAction}
+                  onChange={(event) => setStashForm((current) => ({ ...current, transferAction: event.target.value }))}
+                >
+                  <option value="">请选择</option>
+                  <option value="COPY">复制</option>
+                  <option value="MOVE">移动</option>
+                </select>
+              </label>
+              <label className="settings-field">
+                <span>搬运目标目录</span>
+                <input
+                  value={stashForm.transferTargetPath}
+                  onChange={(event) => setStashForm((current) => ({ ...current, transferTargetPath: event.target.value }))}
+                  placeholder="/stash-import"
+                />
+              </label>
+            </>
+          ) : null}
+
+          {stashForm.mode === "LIBRARY_SCAN" ? (
+            <label className="settings-field">
+              <span>Library Path</span>
+              <input
+                value={stashForm.libraryPath}
+                onChange={(event) => setStashForm((current) => ({ ...current, libraryPath: event.target.value }))}
+                placeholder="/data/library"
+              />
+            </label>
+          ) : null}
+
+          <div className="settings-actions">
+            <button type="submit" disabled={updatingStash}>保存入库策略</button>
           </div>
-          <div>
-            <dt>数据库路径</dt>
-            <dd>{runtimeSettings.tasks.dbPath || "moji.db"}</dd>
-          </div>
-          <div>
-            <dt>同步间隔</dt>
-            <dd>{runtimeSettings.tasks.progressSyncIntervalSeconds} 秒</dd>
-          </div>
-          <div>
-            <dt>进度同步</dt>
-            <dd>{taskSyncStatus(runtimeSettings.tasks)}</dd>
-          </div>
-          <div>
-            <dt>说明</dt>
-            <dd>当前同步开关由任务配置和下载链路是否启用共同决定。</dd>
-          </div>
-        </dl>
+        </form>
       </article>
     );
   }
 
-  if (settingsTab === "订阅") {
-    const stashBoxes = runtimeSettings.subscription.stashBoxes ?? [];
-    const loaded = runtimeSettings.subscription.stashBoxesLoaded;
-    const loadError = runtimeSettings.subscription.stashBoxesLoadError;
-
-    // Build the display list:
-    //   - entries in subscriptionForm.stashBoxEndpoints come first (user order)
-    //   - any Stash-Box not yet listed is appended (in Stash order)
-    // The user's order is preserved across saves; the appended tail is
-    // recomputed every render and never sent to the backend.
+  if (settingsTab === "自动化") {
+    const stashBoxes = runtimeStatus.subscription.stashBoxes ?? [];
+    const loaded = runtimeStatus.subscription.stashBoxesLoaded;
+    const loadError = runtimeStatus.subscription.stashBoxesLoadError;
     const order = subscriptionForm.stashBoxEndpoints;
     const byEndpoint = new Map(stashBoxes.map((box) => [box.endpoint, box]));
-    const display: { box: typeof stashBoxes[number] | null; endpoint: string }[] = [];
+    const display: { endpoint: string; box: typeof stashBoxes[number] | null }[] = [];
     const used = new Set<string>();
+
     order.forEach((endpoint) => {
-      const box = byEndpoint.get(endpoint) ?? null;
-      display.push({ box, endpoint });
+      display.push({ endpoint, box: byEndpoint.get(endpoint) ?? null });
       used.add(endpoint);
     });
     stashBoxes.forEach((box) => {
       if (used.has(box.endpoint)) return;
-      display.push({ box, endpoint: box.endpoint });
+      display.push({ endpoint: box.endpoint, box });
     });
 
     const reorder = (next: string[]) => {
@@ -740,96 +601,59 @@ export function SettingsPanel({
       next.splice(to, 0, moved);
       reorder(next);
     };
-    const moveUp = (index: number) => move(index, index - 1);
-    const moveDown = (index: number) => move(index, index + 1);
-
-    const onDragStart = (event: React.DragEvent<HTMLLIElement>, index: number) => {
-      event.dataTransfer.effectAllowed = "move";
-      event.dataTransfer.setData("text/plain", String(index));
-      setDraggedIndex(index);
-    };
-    const onDragOver = (event: React.DragEvent<HTMLLIElement>, index: number) => {
-      event.preventDefault();
-      event.dataTransfer.dropEffect = "move";
-      if (dragOverIndex !== index) {
-        setDragOverIndex(index);
-      }
-    };
-    const onDragLeave = (index: number) => {
-      if (dragOverIndex === index) {
-        setDragOverIndex(null);
-      }
-    };
-    const onDrop = (event: React.DragEvent<HTMLLIElement>, index: number) => {
-      event.preventDefault();
-      const from = Number.parseInt(event.dataTransfer.getData("text/plain"), 10);
-      setDraggedIndex(null);
-      setDragOverIndex(null);
-      if (Number.isNaN(from)) return;
-      move(from, index);
-    };
-    const onDragEnd = () => {
-      setDraggedIndex(null);
-      setDragOverIndex(null);
-    };
 
     return (
       <article className="drawer-card">
         <div className="drawer-card__head">
-          <h3>{settingsTab}</h3>
-          <span className={`status-chip ${settingsStatus.tone}`}>{settingsStatus.label}</span>
+          <h3>自动化</h3>
         </div>
-        <form className="settings-form" onSubmit={(event) => void saveSubscriptionSettings(event)}>
-          <label className="settings-field">
-            <span>存储类型</span>
-            <input
-              value={subscriptionForm.store}
-              onChange={(event) => setSubscriptionForm((current) => ({ ...current, store: event.target.value }))}
-              placeholder="sqlite"
-            />
-          </label>
-          <label className="settings-field">
-            <span>数据库路径</span>
-            <input
-              value={subscriptionForm.dbPath}
-              onChange={(event) => setSubscriptionForm((current) => ({ ...current, dbPath: event.target.value }))}
-              placeholder="moji.db"
-            />
-          </label>
-          <label className="settings-field">
-            <span>轮询间隔（秒）</span>
-            <input
-              value={subscriptionForm.pollIntervalSeconds}
-              onChange={(event) => setSubscriptionForm((current) => ({ ...current, pollIntervalSeconds: event.target.value }))}
-              placeholder="3600"
-              inputMode="numeric"
-            />
-          </label>
 
+        <form className="settings-form" onSubmit={(event) => void saveAutomationSettings(event)}>
+          <label className="settings-field">
+            <span>任务进度同步间隔（秒）</span>
+            <input
+              value={automationForm.taskProgressSyncIntervalSeconds}
+              onChange={(event) => setAutomationForm((current) => ({ ...current, taskProgressSyncIntervalSeconds: event.target.value }))}
+              placeholder="60"
+            />
+          </label>
+          <label className="settings-field">
+            <span>订阅轮询间隔（秒）</span>
+            <input
+              value={automationForm.subscriptionPollIntervalSeconds}
+              onChange={(event) => setAutomationForm((current) => ({ ...current, subscriptionPollIntervalSeconds: event.target.value }))}
+              placeholder="3600"
+            />
+          </label>
+          <div className="settings-meta">
+            <span>任务同步: {runtimeStatus.automation.taskProgressSyncEnabled ? "已启用" : "未启用"}</span>
+            <span>订阅轮询: {runtimeStatus.automation.subscriptionPollEnabled ? "已启用" : "未启用"}</span>
+          </div>
+          <div className="settings-actions">
+            <button type="submit" disabled={updatingAutomation}>保存自动化设置</button>
+          </div>
+        </form>
+
+        <form className="settings-form" onSubmit={(event) => void saveSubscriptionSettings(event)}>
           <section className="stashbox-source">
             <header className="stashbox-source__head">
               <div>
-                <h4>Stash-Box 数据源</h4>
+                <h4>Stash-Box 数据源优先级</h4>
                 <p className="stashbox-source__sub">
-                  在 Stash → 设置 → 元数据提供者 → Stash-box 中配置后会出现在这里。所有端点都会参与订阅查询，拖动以调整查询优先级。
+                  在 Stash 中配置的 Stash-Box 会出现在这里。所有端点都会参与订阅查询，拖动卡片即可调整优先级。
                 </p>
               </div>
               <div className="stashbox-source__stats">
                 <button
                   type="button"
                   className="ghost-button stashbox-source__refresh"
-                  onClick={() => void refreshSubscriptionStashBoxes()}
                   disabled={refreshingStashBoxes}
-                  title="从 Stash 重新拉取 Stash-Box 配置"
-                  aria-label="刷新 Stash-Box 列表"
+                  onClick={() => void refreshSubscriptionStashBoxes()}
                 >
-                  <FontAwesomeIcon
-                    icon={faRotate}
-                    className={refreshingStashBoxes ? "is-spinning" : undefined}
-                    aria-hidden="true"
-                  />
+                  <FontAwesomeIcon icon={faRotate} className={refreshingStashBoxes ? "is-spinning" : undefined} />
                   <span>{refreshingStashBoxes ? "刷新中..." : "刷新"}</span>
                 </button>
+                <button type="submit" disabled={updatingSubscription}>保存优先级</button>
               </div>
             </header>
 
@@ -841,12 +665,12 @@ export function SettingsPanel({
                   <p>这一过程由后端在启动时自动完成，请稍候。</p>
                 </div>
               </div>
-            ) : stashBoxes.length === 0 ? (
+            ) : display.length === 0 ? (
               <div className="stashbox-source__empty stashbox-source__empty--danger">
                 <div className="stashbox-source__icon" aria-hidden="true">!</div>
                 <div>
                   <strong>Stash 中尚未配置任何 Stash-Box</strong>
-                  <p>请在 Stash → Settings → Stash-Boxes 中至少添加一个端点后，刷新本页。</p>
+                  <p>请先在 Stash 中添加至少一个端点，再回到这里刷新列表。</p>
                   {loadError ? <p className="stashbox-source__error">拉取失败：{loadError}</p> : null}
                 </div>
               </div>
@@ -858,32 +682,49 @@ export function SettingsPanel({
                   if (dragOverIndex === index) {
                     classes.push(dragOverIndex < (draggedIndex ?? -1) ? "is-drop-top" : "is-drop-bottom");
                   }
-                  const box = item.box;
+
                   return (
                     <li
                       key={item.endpoint}
                       className={classes.join(" ")}
                       draggable
-                      onDragStart={(event) => onDragStart(event, index)}
-                      onDragOver={(event) => onDragOver(event, index)}
-                      onDragLeave={() => onDragLeave(index)}
-                      onDrop={(event) => onDrop(event, index)}
-                      onDragEnd={onDragEnd}
+                      onDragStart={(event) => {
+                        event.dataTransfer.effectAllowed = "move";
+                        event.dataTransfer.setData("text/plain", String(index));
+                        setDraggedIndex(index);
+                      }}
+                      onDragOver={(event) => {
+                        event.preventDefault();
+                        event.dataTransfer.dropEffect = "move";
+                        setDragOverIndex(index);
+                      }}
+                      onDragLeave={() => {
+                        if (dragOverIndex === index) setDragOverIndex(null);
+                      }}
+                      onDrop={(event) => {
+                        event.preventDefault();
+                        const from = Number.parseInt(event.dataTransfer.getData("text/plain"), 10);
+                        move(Number.isNaN(from) ? draggedIndex ?? -1 : from, index);
+                        setDraggedIndex(null);
+                        setDragOverIndex(null);
+                      }}
+                      onDragEnd={() => {
+                        setDraggedIndex(null);
+                        setDragOverIndex(null);
+                      }}
                     >
                       <span className="stashbox-card__handle" aria-hidden="true" title="拖动以重新排序">
                         <FontAwesomeIcon icon={faGripVertical} />
                       </span>
                       <span className="stashbox-card__body">
                         <span className="stashbox-card__title-row">
-                          <strong className="stashbox-card__name">
-                            {box?.name || item.endpoint}
-                          </strong>
+                          <strong className="stashbox-card__name">{item.box?.name || item.endpoint}</strong>
                           <span
                             className={`stashbox-card__chip ${
-                              box?.apiKeyConfigured ? "stashbox-card__chip--ok" : "stashbox-card__chip--warn"
+                              item.box?.apiKeyConfigured ? "stashbox-card__chip--ok" : "stashbox-card__chip--warn"
                             }`}
                           >
-                            {box?.apiKeyConfigured ? "API key 已配置" : "未配置 API key"}
+                            {item.box?.apiKeyConfigured ? "API key 已配置" : "未配置 API key"}
                           </span>
                         </span>
                         <code className="stashbox-card__endpoint">{item.endpoint}</code>
@@ -892,20 +733,18 @@ export function SettingsPanel({
                         <button
                           type="button"
                           className="ghost-button ghost-button--icon"
-                          onClick={() => moveUp(index)}
                           disabled={index === 0}
-                          aria-label={`将 ${item.endpoint} 上移`}
-                          title="上移"
+                          onClick={() => move(index, index - 1)}
+                          aria-label="上移"
                         >
                           <FontAwesomeIcon icon={faArrowUp} />
                         </button>
                         <button
                           type="button"
                           className="ghost-button ghost-button--icon"
-                          onClick={() => moveDown(index)}
                           disabled={index === display.length - 1}
-                          aria-label={`将 ${item.endpoint} 下移`}
-                          title="下移"
+                          onClick={() => move(index, index + 1)}
+                          aria-label="下移"
                         >
                           <FontAwesomeIcon icon={faArrowDown} />
                         </button>
@@ -915,90 +754,7 @@ export function SettingsPanel({
                 })}
               </ul>
             )}
-
-            {loaded && stashBoxes.length > 0 ? (
-              <footer className="stashbox-source__foot">
-                顶部为最高优先级；subscription service 会按此顺序逐个 Stash-Box 查找 performer。
-              </footer>
-            ) : null}
           </section>
-
-          <div className="settings-meta">
-            <span>当前存储: {runtimeSettings.subscription.store || "sqlite"}</span>
-            <span>轮询状态: {runtimeSettings.subscription.pollEnabled ? "已启用" : "未启用"}</span>
-          </div>
-          <div className="settings-actions">
-            <button
-              type="submit"
-              disabled={updatingSubscription || !runtimeSettings.subscription.stashBoxesLoaded}
-            >
-              保存订阅设置
-            </button>
-          </div>
-        </form>
-      </article>
-    );
-  }
-
-  if (settingsTab === "系统") {
-    return (
-      <article className="drawer-card">
-        <div className="drawer-card__head">
-          <h3>{settingsTab}</h3>
-          <span className={`status-chip ${settingsStatus.tone}`}>{settingsStatus.label}</span>
-        </div>
-        <form className="settings-form" onSubmit={(event) => void saveLoggingSettings(event)}>
-          <label className="settings-field">
-            <span>日志级别</span>
-            <input
-              value={loggingForm.level}
-              onChange={(event) => setLoggingForm((current) => ({ ...current, level: event.target.value }))}
-              placeholder="info"
-            />
-          </label>
-          <label className="settings-field">
-            <span>日志文件路径</span>
-            <input
-              value={loggingForm.filePath}
-              onChange={(event) => setLoggingForm((current) => ({ ...current, filePath: event.target.value }))}
-              placeholder="moji.log"
-            />
-          </label>
-          <label className="settings-field">
-            <span>内存保留条数</span>
-            <input
-              value={loggingForm.maxEntries}
-              onChange={(event) => setLoggingForm((current) => ({ ...current, maxEntries: event.target.value }))}
-              inputMode="numeric"
-              placeholder="500"
-            />
-          </label>
-          <label className="settings-field">
-            <span>单文件大小上限（字节）</span>
-            <input
-              value={loggingForm.maxFileSizeBytes}
-              onChange={(event) => setLoggingForm((current) => ({ ...current, maxFileSizeBytes: event.target.value }))}
-              inputMode="numeric"
-              placeholder={String(10 * 1024 * 1024)}
-            />
-          </label>
-          <label className="settings-field">
-            <span>滚动备份份数</span>
-            <input
-              value={loggingForm.maxFileBackups}
-              onChange={(event) => setLoggingForm((current) => ({ ...current, maxFileBackups: event.target.value }))}
-              inputMode="numeric"
-              placeholder="5"
-            />
-          </label>
-          <div className="settings-meta">
-            <span>版本: {runtimeSettings.system.appVersion || "dev"}</span>
-            <span>当前日志文件: {runtimeSettings.logging.filePath}</span>
-            <span>当前缓存: {runtimeSettings.logging.maxEntries} 条</span>
-          </div>
-          <div className="settings-actions">
-            <button type="submit" disabled={updatingLogging}>保存系统设置</button>
-          </div>
         </form>
       </article>
     );
@@ -1008,8 +764,7 @@ export function SettingsPanel({
     return (
       <article className="drawer-card">
         <div className="drawer-card__head">
-          <h3>{settingsTab}</h3>
-          <span className={`status-chip ${settingsStatus.tone}`}>{settingsStatus.label}</span>
+          <h3>日志</h3>
         </div>
         <div className="toolbar-inline toolbar-inline--logs">
           <select value={logsLevel} onChange={(event) => setLogsLevel(event.target.value as LogLevel)}>
@@ -1020,12 +775,12 @@ export function SettingsPanel({
             ))}
           </select>
           <button type="button" className="ghost-button" onClick={() => void refreshLogs({ requestPolicy: "network-only" })}>
-            {fetchingLogs ? "刷新中..." : "刷新日志"}
+            <FontAwesomeIcon icon={faRotate} /> {fetchingLogs ? "刷新中..." : "刷新日志"}
           </button>
           <button type="button" className="ghost-button" onClick={() => void handleCopyLogs()}>
             复制当前列表
           </button>
-          <button type="button" className="ghost-button" onClick={() => void handleDownloadCurrentLogFile()} disabled={downloadingLogFile}>
+          <button type="button" className="ghost-button" disabled={downloadingLogFile} onClick={() => void handleDownloadCurrentLogFile()}>
             {downloadingLogFile ? "下载中..." : "下载当前日志"}
           </button>
         </div>
@@ -1033,7 +788,7 @@ export function SettingsPanel({
           <span>级别过滤: {logsLevel}</span>
           <span>已加载: {logs.length}</span>
           <span>状态: {fetchingLogs ? "同步中" : "已就绪"}</span>
-          <span>文件: {runtimeSettings.logging.filePath}</span>
+          <span>来源: 当前日志文件</span>
         </div>
         {logsError ? <p className="settings-feedback tone-danger">{describeQueryError(logsError)}</p> : null}
         {!logs.length && !fetchingLogs ? (
@@ -1070,33 +825,12 @@ export function SettingsPanel({
   return (
     <article className="drawer-card">
       <div className="drawer-card__head">
-        <h3>{settingsTab}</h3>
-        <span className={`status-chip ${settingsStatus.tone}`}>{settingsStatus.label}</span>
+        <h3>关于</h3>
       </div>
       <dl className="settings-grid">
         <div>
-          <dt>当前状态</dt>
-          <dd>该分区尚未接入后端契约</dd>
-        </div>
-        <div>
-          <dt>敏感值</dt>
-          <dd>前端不展示明文</dd>
-        </div>
-        <div>
-          <dt>接入方式</dt>
-          <dd>后续会扩展为真实查询或操作面板</dd>
-        </div>
-        <div>
-          <dt>说明</dt>
-          <dd>
-            {settingsTab === "安全性"
-              ? "这里会放访问控制、CORS 和未来登录策略。"
-              : settingsTab === "工具"
-                  ? "这里会放重新同步、重新探测和修复动作。"
-                  : settingsTab === "更新历史"
-                    ? "这里会放版本记录和升级提示。"
-                    : "这里会放项目定位、许可证和作者信息。"}
-          </dd>
+          <dt>版本</dt>
+          <dd>{appVersion || "dev"}</dd>
         </div>
       </dl>
     </article>

@@ -31,10 +31,8 @@ func settingsSnapshotToModel(snapshot *SettingsSnapshot, appVersion string) *mod
 			Stash:        &model.StashSettings{},
 			Jackett:      &model.JackettSettings{},
 			Qbittorrent:  &model.QBittorrentSettings{},
-			Tasks:        &model.TaskSettings{},
+			Automation:   &model.AutomationSettings{},
 			Subscription: &model.SubscriptionSettings{},
-			Logging:      &model.LoggingSettings{},
-			System:       &model.SystemSettings{AppVersion: appVersion},
 		}
 	}
 
@@ -71,31 +69,50 @@ func settingsSnapshotToModel(snapshot *SettingsSnapshot, appVersion string) *mod
 			Category:           snapshot.QBittorrent.Category,
 			Tags:               snapshot.QBittorrent.Tags,
 		},
-		Tasks: &model.TaskSettings{
-			Store:                       snapshot.Tasks.Store,
-			DbPath:                      snapshot.Tasks.DBPath,
-			ProgressSyncIntervalSeconds: snapshot.Tasks.ProgressSyncIntervalSeconds,
-			ProgressSyncEnabled:         snapshot.Tasks.ProgressSyncEnabled,
+		Automation: &model.AutomationSettings{
+			TaskProgressSyncIntervalSeconds: snapshot.Automation.TaskProgressSyncIntervalSeconds,
+			SubscriptionPollIntervalSeconds: snapshot.Automation.SubscriptionPollIntervalSeconds,
 		},
 		Subscription: &model.SubscriptionSettings{
-			Store:               snapshot.Subscription.Store,
-			DbPath:              snapshot.Subscription.DBPath,
-			PollIntervalSeconds: snapshot.Subscription.PollIntervalSeconds,
-			PollEnabled:         snapshot.Subscription.PollEnabled,
+			StashBoxEndpoints: append([]string(nil), snapshot.Subscription.StashBoxEndpoints...),
+		},
+	}
+}
+
+func settingsStatusSnapshotToModel(snapshot *SettingsStatusSnapshot) *model.SettingsStatus {
+	if snapshot == nil {
+		return &model.SettingsStatus{
+			Stash:        &model.ServiceStatus{},
+			Jackett:      &model.ServiceStatus{},
+			Qbittorrent:  &model.ServiceStatus{},
+			Automation:   &model.AutomationStatus{},
+			Subscription: &model.SubscriptionStatus{},
+		}
+	}
+
+	return &model.SettingsStatus{
+		Stash: &model.ServiceStatus{
+			Configured: snapshot.Stash.Configured,
+			Enabled:    snapshot.Stash.Enabled,
+		},
+		Jackett: &model.ServiceStatus{
+			Configured: snapshot.Jackett.Configured,
+			Enabled:    snapshot.Jackett.Enabled,
+		},
+		Qbittorrent: &model.ServiceStatus{
+			Configured: snapshot.QBittorrent.Configured,
+			Enabled:    snapshot.QBittorrent.Enabled,
+		},
+		Automation: &model.AutomationStatus{
+			TaskProgressSyncIntervalSeconds: snapshot.Automation.TaskProgressSyncIntervalSeconds,
+			TaskProgressSyncEnabled:         snapshot.Automation.TaskProgressSyncEnabled,
+			SubscriptionPollIntervalSeconds: snapshot.Automation.SubscriptionPollIntervalSeconds,
+			SubscriptionPollEnabled:         snapshot.Automation.SubscriptionPollEnabled,
+		},
+		Subscription: &model.SubscriptionStatus{
 			StashBoxes:          subscriptionStashBoxesToModel(snapshot.Subscription.StashBoxes),
-			StashBoxEndpoints:   append([]string(nil), snapshot.Subscription.StashBoxEndpoints...),
 			StashBoxesLoaded:    snapshot.Subscription.StashBoxesLoaded,
 			StashBoxesLoadError: subscriptionLoadErrorPtr(snapshot.Subscription.StashBoxesLoadError),
-		},
-		Logging: &model.LoggingSettings{
-			Level:            snapshot.Logging.Level,
-			FilePath:         snapshot.Logging.FilePath,
-			MaxEntries:       snapshot.Logging.MaxEntries,
-			MaxFileSizeBytes: int(snapshot.Logging.MaxFileSizeBytes),
-			MaxFileBackups:   snapshot.Logging.MaxFileBackups,
-		},
-		System: &model.SystemSettings{
-			AppVersion: snapshot.System.AppVersion,
 		},
 	}
 }

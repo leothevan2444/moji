@@ -1,6 +1,5 @@
 import type { DashboardDocumentQuery } from "../graphql/generated/graphql";
-
-type RuntimeSettings = NonNullable<DashboardDocumentQuery["settings"]>;
+type RuntimeSettingsStatus = NonNullable<DashboardDocumentQuery["settingsStatus"]>;
 
 export function boolState(value: boolean, positive = "已配置", negative = "未配置") {
   return value ? positive : negative;
@@ -12,6 +11,6 @@ export function serviceStatus(configured: boolean, enabled: boolean) {
   return { label: "未配置", tone: "tone-neutral" };
 }
 
-export function taskSyncStatus(settings: RuntimeSettings["tasks"]) {
-  return settings.progressSyncEnabled ? "已启用" : "未启用";
+export function taskSyncStatus(settings: RuntimeSettingsStatus["automation"]) {
+  return settings.taskProgressSyncEnabled ? "已启用" : "未启用";
 }

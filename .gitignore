@@ -14,3 +14,4 @@ moji.db*
 web/node_modules/
 web/dist/
 web/*.tsbuildinfo
+.log

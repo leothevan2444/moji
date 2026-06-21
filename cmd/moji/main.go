@@ -9,7 +9,6 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
-	"path/filepath"
 	"strings"
 	"syscall"
 	"time"
@@ -134,7 +133,8 @@ func newHTTPRuntime(cfg *config.Config, version string, configStore *config.Stor
 	resolver := graphqlapi.NewResolver(jackettTracker, torrentClient, downloaderService, stashService, version)
 	resolver.Subscription = subscriptionService
 	resolver.LogReader = logging.Default()
-	resolver.RuntimeSettings = buildSettingsSnapshot(cfg, version, torrentClient != nil, downloaderService != nil, stashService != nil, subscriptionService)
+	resolver.RuntimeSettings = buildSettingsSnapshot(cfg, version, torrentClient != nil)
+	resolver.RuntimeStatus = buildSettingsStatusSnapshot(cfg, version, torrentClient != nil, downloaderService != nil, stashService != nil, subscriptionService)
 	if configStore != nil {
 		resolver.SettingsEditor = newRuntimeSettingsEditor(configStore, version, torrentClient != nil, downloaderService != nil, stashService != nil, subscriptionService)
 	}
@@ -210,22 +210,11 @@ func configureDownloader(cfg *config.Config, tr tracker.Tracker, torrent graphql
 }
 
 func configureTaskStore(cfg *config.Config) (downloader.TaskStore, error) {
-	switch cfg.Tasks.Store {
-	case "", "sqlite":
-		path := strings.TrimSpace(cfg.Tasks.DBPath)
-		if path == "" {
-			path = "moji.db"
-		}
-		return downloader.NewSQLiteTaskStore(path)
-	case "memory":
-		return downloader.NewMemoryTaskStore(), nil
-	default:
-		return nil, fmt.Errorf("unsupported tasks.store %q", cfg.Tasks.Store)
-	}
+	return downloader.NewSQLiteTaskStore(runtimeDatabasePath())
 }
 
 func configureProgressSyncInterval(cfg *config.Config) time.Duration {
-	seconds := cfg.Tasks.ProgressSyncIntervalSeconds
+	seconds := cfg.Automation.TaskProgressSyncIntervalSeconds
 	if seconds < 0 {
 		return 0
 	}
@@ -244,79 +233,8 @@ func applySubscriptionOrder(cfg *config.Config, service graphqlapi.SubscriptionS
 	}
 }
 
-func buildSubscriptionSnapshot(cfg *config.Config, subscriptionService graphqlapi.SubscriptionService, store, dbPath string, pollIntervalSeconds int, pollEnabled bool) graphqlapi.SubscriptionSettingsSnapshot {
-	out := graphqlapi.SubscriptionSettingsSnapshot{
-		Store:               store,
-		DBPath:              dbPath,
-		PollIntervalSeconds: pollIntervalSeconds,
-		PollEnabled:         pollEnabled,
-		StashBoxes:          []graphqlapi.StashBoxEndpointSnapshot{},
-		StashBoxEndpoints:   append([]string(nil), cfg.Subscription.StashBoxEndpoints...),
-		StashBoxesLoaded:    false,
-		StashBoxesLoadError: "",
-	}
-	if subscriptionService == nil {
-		return out
-	}
-	endpoints, state := subscriptionService.SnapshotState()
-	out.StashBoxesLoaded = state.Loaded
-	out.StashBoxesLoadError = state.ErrorMsg
-	if len(endpoints) == 0 {
-		return out
-	}
-	for _, box := range endpoints {
-		out.StashBoxes = append(out.StashBoxes, graphqlapi.StashBoxEndpointSnapshot{
-			Name:             box.Name,
-			Endpoint:         box.Endpoint,
-			APIKeyConfigured: box.APIKeyConfigured,
-		})
-	}
-	return out
-}
-
-func buildSettingsSnapshot(cfg *config.Config, version string, qbittorrentEnabled bool, downloaderEnabled bool, stashEnabled bool, subscriptionService graphqlapi.SubscriptionService) *graphqlapi.SettingsSnapshot {
-	tasksStore := cfg.Tasks.Store
-	if tasksStore == "" {
-		tasksStore = "sqlite"
-	}
-
-	dbPath := cfg.Tasks.DBPath
-	if dbPath == "" {
-		dbPath = "moji.db"
-	}
-
-	progressSyncSeconds := cfg.Tasks.ProgressSyncIntervalSeconds
-	progressSyncEnabled := progressSyncSeconds >= 0
-	if progressSyncSeconds == 0 {
-		progressSyncSeconds = 60
-	}
-	if progressSyncSeconds < 0 {
-		progressSyncSeconds = 0
-	}
-
-	subscriptionStore := cfg.Subscription.Store
-	if subscriptionStore == "" {
-		subscriptionStore = "sqlite"
-	}
-
-	subscriptionDBPath := cfg.Subscription.DBPath
-	if subscriptionDBPath == "" {
-		dir := "."
-		if cfg.Tasks.DBPath != "" {
-			dir = filepath.Dir(cfg.Tasks.DBPath)
-		}
-		subscriptionDBPath = filepath.Join(dir, "moji.db")
-	}
-
-	subscriptionPollSeconds := cfg.Subscription.PollIntervalSeconds
-	subscriptionPollEnabled := subscriptionPollSeconds >= 0
-	if subscriptionPollSeconds == 0 {
-		subscriptionPollSeconds = 3600
-	}
-	if subscriptionPollSeconds < 0 {
-		subscriptionPollSeconds = 0
-	}
-
+func buildSettingsSnapshot(cfg *config.Config, version string, qbittorrentEnabled bool) *graphqlapi.SettingsSnapshot {
+	_ = version
 	jackettConfigured := cfg.Jackett.URL != "" && cfg.Jackett.APIKey != ""
 	stashConfigured := isStashConfigured(cfg)
 	qbittorrentConfigured := cfg.QBittorrent.URL != "" && cfg.QBittorrent.Username != "" && cfg.QBittorrent.Password != ""
@@ -324,7 +242,7 @@ func buildSettingsSnapshot(cfg *config.Config, version string, qbittorrentEnable
 	return &graphqlapi.SettingsSnapshot{
 		Stash: graphqlapi.StashSettingsSnapshot{
 			Configured:            stashConfigured,
-			Enabled:               stashEnabled,
+			Enabled:               stashConfigured,
 			URL:                   cfg.Stash.URL,
 			APIKeyConfigured:      cfg.Stash.APIKey != "",
 			APIKey:                cfg.Stash.APIKey,
@@ -354,23 +272,59 @@ func buildSettingsSnapshot(cfg *config.Config, version string, qbittorrentEnable
 			Category:           cfg.QBittorrent.Category,
 			Tags:               cfg.QBittorrent.Tags,
 		},
-		Tasks: graphqlapi.TaskSettingsSnapshot{
-			Store:                       tasksStore,
-			DBPath:                      dbPath,
-			ProgressSyncIntervalSeconds: progressSyncSeconds,
-			ProgressSyncEnabled:         progressSyncEnabled && downloaderEnabled,
+		Automation: graphqlapi.AutomationSettingsSnapshot{
+			TaskProgressSyncIntervalSeconds: effectiveTaskProgressSyncIntervalSeconds(cfg),
+			SubscriptionPollIntervalSeconds: effectiveSubscriptionPollIntervalSeconds(cfg),
 		},
-		Subscription: buildSubscriptionSnapshot(cfg, subscriptionService, subscriptionStore, subscriptionDBPath, subscriptionPollSeconds, subscriptionPollEnabled && stashEnabled),
-		Logging: graphqlapi.LoggingSettingsSnapshot{
-			Level:            cfg.EffectiveLogLevel(),
-			FilePath:         cfg.EffectiveLogFilePath(),
-			MaxEntries:       cfg.EffectiveLogMaxEntries(),
-			MaxFileSizeBytes: cfg.EffectiveLogMaxFileSizeBytes(),
-			MaxFileBackups:   cfg.EffectiveLogMaxFileBackups(),
+		Subscription: graphqlapi.SubscriptionSettingsSnapshot{
+			StashBoxEndpoints: append([]string(nil), cfg.Subscription.StashBoxEndpoints...),
 		},
-		System: graphqlapi.SystemSettingsSnapshot{
-			AppVersion: version,
+	}
+}
+
+func buildSettingsStatusSnapshot(cfg *config.Config, version string, qbittorrentEnabled bool, downloaderEnabled bool, stashEnabled bool, subscriptionService graphqlapi.SubscriptionService) *graphqlapi.SettingsStatusSnapshot {
+	jackettConfigured := cfg.Jackett.URL != "" && cfg.Jackett.APIKey != ""
+	stashConfigured := isStashConfigured(cfg)
+	qbittorrentConfigured := cfg.QBittorrent.URL != "" && cfg.QBittorrent.Username != "" && cfg.QBittorrent.Password != ""
+
+	subscriptionStatus := graphqlapi.SubscriptionStatusSnapshot{
+		StashBoxes:          []graphqlapi.StashBoxEndpointSnapshot{},
+		StashBoxesLoaded:    false,
+		StashBoxesLoadError: "",
+	}
+	if subscriptionService != nil {
+		endpoints, state := subscriptionService.SnapshotState()
+		subscriptionStatus.StashBoxesLoaded = state.Loaded
+		subscriptionStatus.StashBoxesLoadError = state.ErrorMsg
+		for _, box := range endpoints {
+			subscriptionStatus.StashBoxes = append(subscriptionStatus.StashBoxes, graphqlapi.StashBoxEndpointSnapshot{
+				Name:             box.Name,
+				Endpoint:         box.Endpoint,
+				APIKeyConfigured: box.APIKeyConfigured,
+			})
+		}
+	}
+
+	return &graphqlapi.SettingsStatusSnapshot{
+		Stash: graphqlapi.ServiceStatusSnapshot{
+			Configured: stashConfigured,
+			Enabled:    stashEnabled,
 		},
+		Jackett: graphqlapi.ServiceStatusSnapshot{
+			Configured: jackettConfigured,
+			Enabled:    jackettConfigured,
+		},
+		QBittorrent: graphqlapi.ServiceStatusSnapshot{
+			Configured: qbittorrentConfigured,
+			Enabled:    qbittorrentEnabled,
+		},
+		Automation: graphqlapi.AutomationStatusSnapshot{
+			TaskProgressSyncIntervalSeconds: effectiveTaskProgressSyncIntervalSeconds(cfg),
+			TaskProgressSyncEnabled:         cfg.Automation.TaskProgressSyncIntervalSeconds >= 0 && downloaderEnabled,
+			SubscriptionPollIntervalSeconds: effectiveSubscriptionPollIntervalSeconds(cfg),
+			SubscriptionPollEnabled:         cfg.Automation.SubscriptionPollIntervalSeconds >= 0 && stashEnabled,
+		},
+		Subscription: subscriptionStatus,
 	}
 }
 
@@ -507,26 +461,12 @@ func configureSubscription(cfg *config.Config, stashClient *stash.Client, downlo
 }
 
 func configureSubscriptionStore(cfg *config.Config) (subscription.Store, error) {
-	switch cfg.Subscription.Store {
-	case "", "sqlite":
-		path := strings.TrimSpace(cfg.Subscription.DBPath)
-		if path == "" {
-			dir := "."
-			if cfg.Tasks.DBPath != "" {
-				dir = filepath.Dir(cfg.Tasks.DBPath)
-			}
-			path = filepath.Join(dir, "moji.db")
-		}
-		return subscription.NewSQLiteStore(path)
-	case "memory":
-		return subscription.NewMemoryStore(), nil
-	default:
-		return nil, fmt.Errorf("unsupported subscription.store %q", cfg.Subscription.Store)
-	}
+	_ = cfg
+	return subscription.NewSQLiteStore(runtimeDatabasePath())
 }
 
 func configureSubscriptionPollInterval(cfg *config.Config) time.Duration {
-	seconds := cfg.Subscription.PollIntervalSeconds
+	seconds := cfg.Automation.SubscriptionPollIntervalSeconds
 	if seconds < 0 {
 		return 0
 	}
@@ -564,4 +504,30 @@ func startSubscriptionWorker(ctx context.Context, service graphqlapi.Subscriptio
 			}
 		}
 	}()
+}
+
+func runtimeDatabasePath() string {
+	return "moji.db"
+}
+
+func effectiveTaskProgressSyncIntervalSeconds(cfg *config.Config) int {
+	seconds := cfg.Automation.TaskProgressSyncIntervalSeconds
+	if seconds < 0 {
+		return 0
+	}
+	if seconds == 0 {
+		return 60
+	}
+	return seconds
+}
+
+func effectiveSubscriptionPollIntervalSeconds(cfg *config.Config) int {
+	seconds := cfg.Automation.SubscriptionPollIntervalSeconds
+	if seconds < 0 {
+		return 0
+	}
+	if seconds == 0 {
+		return 3600
+	}
+	return seconds
 }

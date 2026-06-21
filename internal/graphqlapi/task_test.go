@@ -418,21 +418,17 @@ func TestSettingsQueryReturnsRuntimeSnapshot(t *testing.T) {
 			Category:           "moji",
 			Tags:               "auto",
 		},
-		Tasks: TaskSettingsSnapshot{
-			Store:                       "sqlite",
-			DBPath:                      "moji.db",
-			ProgressSyncIntervalSeconds: 60,
-			ProgressSyncEnabled:         true,
+		Automation: AutomationSettingsSnapshot{
+			TaskProgressSyncIntervalSeconds: 60,
+			SubscriptionPollIntervalSeconds: 1800,
 		},
-		Logging: LoggingSettingsSnapshot{
-			Level:            "debug",
-			FilePath:         "runtime/moji.log",
-			MaxEntries:       300,
-			MaxFileSizeBytes: 2048,
-			MaxFileBackups:   4,
-		},
-		System: SystemSettingsSnapshot{
-			AppVersion: "test-version",
+	}
+	resolver.RuntimeStatus = &SettingsStatusSnapshot{
+		Automation: AutomationStatusSnapshot{
+			TaskProgressSyncIntervalSeconds: 60,
+			TaskProgressSyncEnabled:         true,
+			SubscriptionPollIntervalSeconds: 1800,
+			SubscriptionPollEnabled:         true,
 		},
 	}
 
@@ -441,9 +437,10 @@ func TestSettingsQueryReturnsRuntimeSnapshot(t *testing.T) {
 			stash { configured enabled url apiKeyConfigured libraryPath }
 			jackett { configured enabled url apiKeyConfigured }
 			qbittorrent { configured enabled url username usernameConfigured passwordConfigured defaultSavePath category tags }
-			tasks { store dbPath progressSyncIntervalSeconds progressSyncEnabled }
-			logging { level filePath maxEntries maxFileSizeBytes maxFileBackups }
-			system { appVersion }
+			automation { taskProgressSyncIntervalSeconds subscriptionPollIntervalSeconds }
+		}
+		settingsStatus {
+			automation { taskProgressSyncEnabled }
 		}
 	}`)
 	if len(resp.Errors) > 0 {
@@ -458,26 +455,11 @@ func TestSettingsQueryReturnsRuntimeSnapshot(t *testing.T) {
 	if resp.Data.Settings.Qbittorrent.Username != "operator" {
 		t.Fatalf("unexpected qbittorrent username: %+v", resp.Data.Settings.Qbittorrent)
 	}
-	if resp.Data.Settings.Tasks.ProgressSyncIntervalSeconds != 60 || !resp.Data.Settings.Tasks.ProgressSyncEnabled {
-		t.Fatalf("unexpected task settings: %+v", resp.Data.Settings.Tasks)
+	if resp.Data.Settings.Automation.TaskProgressSyncIntervalSeconds != 60 {
+		t.Fatalf("unexpected automation settings: %+v", resp.Data.Settings.Automation)
 	}
-	if resp.Data.Settings.Logging.Level != "debug" || resp.Data.Settings.Logging.MaxFileBackups != 4 {
-		t.Fatalf("unexpected logging settings: %+v", resp.Data.Settings.Logging)
-	}
-	if resp.Data.Settings.System.AppVersion != "test-version" {
-		t.Fatalf("unexpected system settings: %+v", resp.Data.Settings.System)
-	}
-}
-
-func TestSettingsQueryFallsBackToAppVersion(t *testing.T) {
-	resolver := NewResolver(nil, nil, nil, nil, "fallback-version")
-
-	resp := executeGraphQL(t, resolver, `{ settings { system { appVersion } } }`)
-	if len(resp.Errors) > 0 {
-		t.Fatalf("expected no errors, got %+v", resp.Errors)
-	}
-	if resp.Data.Settings.System.AppVersion != "fallback-version" {
-		t.Fatalf("unexpected app version: %+v", resp.Data.Settings.System)
+	if !resp.Data.SettingsStatus.Automation.TaskProgressSyncEnabled {
+		t.Fatalf("unexpected automation status: %+v", resp.Data.SettingsStatus.Automation)
 	}
 }
 
@@ -513,49 +495,40 @@ func TestDashboardStatsQueryAggregatesTasks(t *testing.T) {
 
 func TestSettingsQueryUsesSettingsEditorSnapshot(t *testing.T) {
 	resolver := NewResolver(nil, nil, nil, nil, "test-version")
-	resolver.RuntimeSettings = &SettingsSnapshot{
-		System: SystemSettingsSnapshot{AppVersion: "stale-version"},
-	}
 	resolver.SettingsEditor = &fakeSettingsEditor{
 		snapshot: &SettingsSnapshot{
+			Automation: AutomationSettingsSnapshot{
+				TaskProgressSyncIntervalSeconds: 60,
+				SubscriptionPollIntervalSeconds: 3600,
+			},
 			Subscription: SubscriptionSettingsSnapshot{
-				Store:               "sqlite",
-				DBPath:              "moji.db",
-				PollIntervalSeconds: 3600,
-				PollEnabled:         true,
-				StashBoxesLoaded:    true,
-				StashBoxEndpoints:   []string{"https://javstash.example.org/graphql"},
+				StashBoxEndpoints: []string{"https://javstash.example.org/graphql"},
 			},
 			QBittorrent: QBittorrentSettingsSnapshot{
 				URL:      "http://qb.invalid",
 				Username: "editor-user",
 			},
-			Logging: LoggingSettingsSnapshot{
-				Level:            "warn",
-				FilePath:         "custom/moji.log",
-				MaxEntries:       200,
-				MaxFileSizeBytes: 4096,
-				MaxFileBackups:   3,
+		},
+		statusSnapshot: &SettingsStatusSnapshot{
+			Automation: AutomationStatusSnapshot{
+				SubscriptionPollIntervalSeconds: 3600,
+				SubscriptionPollEnabled:         true,
 			},
-			System: SystemSettingsSnapshot{AppVersion: "editor-version"},
 		},
 	}
 
-	resp := executeGraphQL(t, resolver, `{ settings { subscription { store dbPath pollIntervalSeconds pollEnabled stashBoxesLoaded stashBoxEndpoints } qbittorrent { url username } logging { level filePath maxEntries maxFileBackups } system { appVersion } } }`)
+	resp := executeGraphQL(t, resolver, `{ settings { subscription { stashBoxEndpoints } qbittorrent { url username } automation { subscriptionPollIntervalSeconds } } settingsStatus { automation { subscriptionPollIntervalSeconds subscriptionPollEnabled } } }`)
 	if len(resp.Errors) > 0 {
 		t.Fatalf("expected no errors, got %+v", resp.Errors)
 	}
-	if resp.Data.Settings.Subscription.Store != "sqlite" || !resp.Data.Settings.Subscription.PollEnabled {
+	if len(resp.Data.Settings.Subscription.StashBoxEndpoints) != 1 {
 		t.Fatalf("unexpected subscription settings: %+v", resp.Data.Settings.Subscription)
 	}
 	if resp.Data.Settings.Qbittorrent.Username != "editor-user" {
 		t.Fatalf("unexpected qbittorrent settings: %+v", resp.Data.Settings.Qbittorrent)
 	}
-	if resp.Data.Settings.Logging.Level != "warn" || resp.Data.Settings.Logging.MaxEntries != 200 {
-		t.Fatalf("unexpected logging settings: %+v", resp.Data.Settings.Logging)
-	}
-	if resp.Data.Settings.System.AppVersion != "editor-version" {
-		t.Fatalf("unexpected system settings: %+v", resp.Data.Settings.System)
+	if !resp.Data.SettingsStatus.Automation.SubscriptionPollEnabled || resp.Data.SettingsStatus.Automation.SubscriptionPollIntervalSeconds != 3600 {
+		t.Fatalf("unexpected automation status: %+v", resp.Data.SettingsStatus.Automation)
 	}
 }
 
@@ -574,7 +547,6 @@ func TestUpdateStashSettingsMutation(t *testing.T) {
 				TransferAction:        "COPY",
 				TransferTargetPath:    "/stash-import",
 			},
-			System: SystemSettingsSnapshot{AppVersion: "test-version"},
 		},
 	}
 	resolver := NewResolver(nil, nil, nil, nil, "test-version")
@@ -612,14 +584,8 @@ func TestUpdateSubscriptionSettingsMutation(t *testing.T) {
 	editor := &fakeSettingsEditor{
 		updateSubscriptionSnapshot: &SettingsSnapshot{
 			Subscription: SubscriptionSettingsSnapshot{
-				Store:               "sqlite",
-				DBPath:              "state/moji.db",
-				PollIntervalSeconds: 1800,
-				PollEnabled:         true,
-				StashBoxesLoaded:    true,
-				StashBoxEndpoints:   []string{"https://javstash.example.org/graphql"},
+				StashBoxEndpoints: []string{"https://javstash.example.org/graphql"},
 			},
-			System: SystemSettingsSnapshot{AppVersion: "test-version"},
 		},
 	}
 	resolver := NewResolver(nil, nil, nil, nil, "test-version")
@@ -627,16 +593,9 @@ func TestUpdateSubscriptionSettingsMutation(t *testing.T) {
 
 	resp := executeGraphQL(t, resolver, `mutation {
 		updateSubscriptionSettings(input: {
-			store: "sqlite"
-			dbPath: "state/moji.db"
-			pollIntervalSeconds: 1800
 			stashBoxEndpoints: ["https://javstash.example.org/graphql"]
 		}) {
 			subscription {
-				store
-				dbPath
-				pollIntervalSeconds
-				pollEnabled
 				stashBoxEndpoints
 			}
 		}
@@ -644,66 +603,12 @@ func TestUpdateSubscriptionSettingsMutation(t *testing.T) {
 	if len(resp.Errors) > 0 {
 		t.Fatalf("expected no errors, got %+v", resp.Errors)
 	}
-	if editor.subscriptionInput.Store != "sqlite" || editor.subscriptionInput.DBPath != "state/moji.db" {
-		t.Fatalf("unexpected subscription input: %+v", editor.subscriptionInput)
-	}
-	if editor.subscriptionInput.PollIntervalSeconds != 1800 {
-		t.Fatalf("unexpected subscription interval: %+v", editor.subscriptionInput)
-	}
 	if len(editor.subscriptionInput.StashBoxEndpoints) != 1 ||
 		editor.subscriptionInput.StashBoxEndpoints[0] != "https://javstash.example.org/graphql" {
 		t.Fatalf("unexpected selected endpoints: %+v", editor.subscriptionInput.StashBoxEndpoints)
 	}
-	if resp.Data.UpdateSubscriptionSettings.Subscription.DBPath != "state/moji.db" ||
-		len(resp.Data.UpdateSubscriptionSettings.Subscription.StashBoxEndpoints) != 1 {
+	if len(resp.Data.UpdateSubscriptionSettings.Subscription.StashBoxEndpoints) != 1 {
 		t.Fatalf("unexpected subscription response: %+v", resp.Data.UpdateSubscriptionSettings.Subscription)
-	}
-}
-
-func TestUpdateLoggingSettingsMutation(t *testing.T) {
-	editor := &fakeSettingsEditor{
-		updateLoggingSnapshot: &SettingsSnapshot{
-			Logging: LoggingSettingsSnapshot{
-				Level:            "debug",
-				FilePath:         "logs/custom.log",
-				MaxEntries:       250,
-				MaxFileSizeBytes: 8192,
-				MaxFileBackups:   6,
-			},
-			System: SystemSettingsSnapshot{AppVersion: "test-version"},
-		},
-	}
-	resolver := NewResolver(nil, nil, nil, nil, "test-version")
-	resolver.SettingsEditor = editor
-
-	resp := executeGraphQL(t, resolver, `mutation {
-		updateLoggingSettings(input: {
-			level: "debug"
-			filePath: "logs/custom.log"
-			maxEntries: 250
-			maxFileSizeBytes: 8192
-			maxFileBackups: 6
-		}) {
-			logging {
-				level
-				filePath
-				maxEntries
-				maxFileSizeBytes
-				maxFileBackups
-			}
-		}
-	}`)
-	if len(resp.Errors) > 0 {
-		t.Fatalf("expected no errors, got %+v", resp.Errors)
-	}
-	if editor.loggingInput.Level != "debug" || editor.loggingInput.FilePath != "logs/custom.log" {
-		t.Fatalf("unexpected logging input: %+v", editor.loggingInput)
-	}
-	if editor.loggingInput.MaxEntries != 250 || editor.loggingInput.MaxFileSizeBytes != 8192 || editor.loggingInput.MaxFileBackups != 6 {
-		t.Fatalf("unexpected logging limits: %+v", editor.loggingInput)
-	}
-	if resp.Data.UpdateLoggingSettings.Logging.Level != "debug" || resp.Data.UpdateLoggingSettings.Logging.MaxEntries != 250 {
-		t.Fatalf("unexpected logging response: %+v", resp.Data.UpdateLoggingSettings.Logging)
 	}
 }
 
@@ -843,31 +748,21 @@ type graphQLTaskResponse struct {
 				Category           string `json:"category"`
 				Tags               string `json:"tags"`
 			} `json:"qbittorrent"`
-			Tasks struct {
-				Store                       string `json:"store"`
-				DBPath                      string `json:"dbPath"`
-				ProgressSyncIntervalSeconds int    `json:"progressSyncIntervalSeconds"`
-				ProgressSyncEnabled         bool   `json:"progressSyncEnabled"`
-			} `json:"tasks"`
 			Subscription struct {
-				Store               string   `json:"store"`
-				DBPath              string   `json:"dbPath"`
-				PollIntervalSeconds int      `json:"pollIntervalSeconds"`
-				PollEnabled         bool     `json:"pollEnabled"`
-				StashBoxesLoaded    bool     `json:"stashBoxesLoaded"`
-				StashBoxEndpoints   []string `json:"stashBoxEndpoints"`
+				StashBoxEndpoints []string `json:"stashBoxEndpoints"`
 			} `json:"subscription"`
-			Logging struct {
-				Level            string `json:"level"`
-				FilePath         string `json:"filePath"`
-				MaxEntries       int    `json:"maxEntries"`
-				MaxFileSizeBytes int    `json:"maxFileSizeBytes"`
-				MaxFileBackups   int    `json:"maxFileBackups"`
-			} `json:"logging"`
-			System struct {
-				AppVersion string `json:"appVersion"`
-			} `json:"system"`
+			Automation struct {
+				TaskProgressSyncIntervalSeconds int `json:"taskProgressSyncIntervalSeconds"`
+				SubscriptionPollIntervalSeconds int `json:"subscriptionPollIntervalSeconds"`
+			} `json:"automation"`
 		} `json:"settings"`
+		SettingsStatus struct {
+			Automation struct {
+				TaskProgressSyncEnabled         bool `json:"taskProgressSyncEnabled"`
+				SubscriptionPollIntervalSeconds int  `json:"subscriptionPollIntervalSeconds"`
+				SubscriptionPollEnabled         bool `json:"subscriptionPollEnabled"`
+			} `json:"automation"`
+		} `json:"settingsStatus"`
 		StashPerformers struct {
 			Items []struct {
 				ID         string `json:"id"`
@@ -902,22 +797,9 @@ type graphQLTaskResponse struct {
 		} `json:"updateStashSettings"`
 		UpdateSubscriptionSettings struct {
 			Subscription struct {
-				Store               string   `json:"store"`
-				DBPath              string   `json:"dbPath"`
-				PollIntervalSeconds int      `json:"pollIntervalSeconds"`
-				PollEnabled         bool     `json:"pollEnabled"`
-				StashBoxEndpoints   []string `json:"stashBoxEndpoints"`
+				StashBoxEndpoints []string `json:"stashBoxEndpoints"`
 			} `json:"subscription"`
 		} `json:"updateSubscriptionSettings"`
-		UpdateLoggingSettings struct {
-			Logging struct {
-				Level            string `json:"level"`
-				FilePath         string `json:"filePath"`
-				MaxEntries       int    `json:"maxEntries"`
-				MaxFileSizeBytes int    `json:"maxFileSizeBytes"`
-				MaxFileBackups   int    `json:"maxFileBackups"`
-			} `json:"logging"`
-		} `json:"updateLoggingSettings"`
 		QbittorrentAdd bool `json:"qbittorrentAdd"`
 	} `json:"data"`
 	Errors []struct {
@@ -927,18 +809,23 @@ type graphQLTaskResponse struct {
 
 type fakeSettingsEditor struct {
 	snapshot                   *SettingsSnapshot
+	statusSnapshot             *SettingsStatusSnapshot
 	stashInput                 UpdateStashSettingsInput
 	updateStashSnapshot        *SettingsSnapshot
 	qbittorrentInput           UpdateQBittorrentSettingsInput
 	updateQBittorrentSnapshot  *SettingsSnapshot
+	automationInput            UpdateAutomationSettingsInput
+	updateAutomationSnapshot   *SettingsSnapshot
 	subscriptionInput          UpdateSubscriptionSettingsInput
 	updateSubscriptionSnapshot *SettingsSnapshot
-	loggingInput               UpdateLoggingSettingsInput
-	updateLoggingSnapshot      *SettingsSnapshot
 }
 
 func (f *fakeSettingsEditor) Snapshot() *SettingsSnapshot {
 	return f.snapshot
+}
+
+func (f *fakeSettingsEditor) StatusSnapshot() *SettingsStatusSnapshot {
+	return f.statusSnapshot
 }
 
 func (f *fakeSettingsEditor) UpdateStashSettings(input UpdateStashSettingsInput) (*SettingsSnapshot, error) {
@@ -955,14 +842,14 @@ func (f *fakeSettingsEditor) UpdateQBittorrentSettings(input UpdateQBittorrentSe
 	return f.updateQBittorrentSnapshot, nil
 }
 
+func (f *fakeSettingsEditor) UpdateAutomationSettings(input UpdateAutomationSettingsInput) (*SettingsSnapshot, error) {
+	f.automationInput = input
+	return f.updateAutomationSnapshot, nil
+}
+
 func (f *fakeSettingsEditor) UpdateSubscriptionSettings(input UpdateSubscriptionSettingsInput) (*SettingsSnapshot, error) {
 	f.subscriptionInput = input
 	return f.updateSubscriptionSnapshot, nil
-}
-
-func (f *fakeSettingsEditor) UpdateLoggingSettings(input UpdateLoggingSettingsInput) (*SettingsSnapshot, error) {
-	f.loggingInput = input
-	return f.updateLoggingSnapshot, nil
 }
 
 func executeGraphQL(t *testing.T, resolver *Resolver, query string) graphQLTaskResponse {

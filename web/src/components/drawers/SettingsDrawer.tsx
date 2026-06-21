@@ -5,11 +5,14 @@ import { SettingsPanel } from "../settings/SettingsPanel";
 import type { DashboardDocumentQuery } from "../../graphql/generated/graphql";
 
 type RuntimeSettings = NonNullable<DashboardDocumentQuery["settings"]>;
+type RuntimeSettingsStatus = NonNullable<DashboardDocumentQuery["settingsStatus"]>;
 
 interface SettingsDrawerProps {
   settingsTab: SettingsTab;
   onSettingsTabChange: (tab: SettingsTab) => void;
   runtimeSettings: RuntimeSettings | null;
+  runtimeStatus: RuntimeSettingsStatus | null;
+  appVersion: string;
   drawer: DrawerKey;
   renderedDrawer: Exclude<DrawerKey, null> | null;
   pushToast: (tone: ToastTone, message: string) => void;
@@ -20,6 +23,8 @@ export function SettingsDrawer({
   settingsTab,
   onSettingsTabChange,
   runtimeSettings,
+  runtimeStatus,
+  appVersion,
   drawer,
   renderedDrawer,
   pushToast,
@@ -43,8 +48,9 @@ export function SettingsDrawer({
 
       <SettingsPanel
         settingsTab={settingsTab}
-        onSettingsTabChange={onSettingsTabChange}
         runtimeSettings={runtimeSettings}
+        runtimeStatus={runtimeStatus}
+        appVersion={appVersion}
         drawer={drawer}
         renderedDrawer={renderedDrawer}
         pushToast={pushToast}

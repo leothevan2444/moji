@@ -2084,6 +2084,18 @@ button.profile-icon:disabled {
   flex-basis: auto;
 }
 
+.stashbox-card__move {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  flex: 0 0 auto;
+}
+
+.ghost-button--icon {
+  padding: 4px 8px;
+  min-width: 28px;
+}
+
 .stashbox-card__title-row {
   display: flex;
   align-items: center;

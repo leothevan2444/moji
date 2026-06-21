@@ -38,11 +38,12 @@ type DownloaderService interface {
 
 type SettingsEditor interface {
 	Snapshot() *SettingsSnapshot
+	StatusSnapshot() *SettingsStatusSnapshot
 	UpdateStashSettings(input UpdateStashSettingsInput) (*SettingsSnapshot, error)
 	UpdateJackettSettings(input UpdateJackettSettingsInput) (*SettingsSnapshot, error)
 	UpdateQBittorrentSettings(input UpdateQBittorrentSettingsInput) (*SettingsSnapshot, error)
+	UpdateAutomationSettings(input UpdateAutomationSettingsInput) (*SettingsSnapshot, error)
 	UpdateSubscriptionSettings(input UpdateSubscriptionSettingsInput) (*SettingsSnapshot, error)
-	UpdateLoggingSettings(input UpdateLoggingSettingsInput) (*SettingsSnapshot, error)
 }
 
 type UpdateStashSettingsInput struct {
@@ -71,28 +72,20 @@ type UpdateQBittorrentSettingsInput struct {
 }
 
 type UpdateSubscriptionSettingsInput struct {
-	Store               string
-	DBPath              string
-	PollIntervalSeconds int
-	StashBoxEndpoints   []string
+	StashBoxEndpoints []string
 }
 
-type UpdateLoggingSettingsInput struct {
-	Level            string
-	FilePath         string
-	MaxEntries       int
-	MaxFileSizeBytes int64
-	MaxFileBackups   int
+type UpdateAutomationSettingsInput struct {
+	TaskProgressSyncIntervalSeconds int
+	SubscriptionPollIntervalSeconds int
 }
 
 type SettingsSnapshot struct {
 	Stash        StashSettingsSnapshot
 	Jackett      JackettSettingsSnapshot
 	QBittorrent  QBittorrentSettingsSnapshot
-	Tasks        TaskSettingsSnapshot
+	Automation   AutomationSettingsSnapshot
 	Subscription SubscriptionSettingsSnapshot
-	Logging      LoggingSettingsSnapshot
-	System       SystemSettingsSnapshot
 }
 
 type StashSettingsSnapshot struct {
@@ -130,22 +123,13 @@ type QBittorrentSettingsSnapshot struct {
 	Tags               string
 }
 
-type TaskSettingsSnapshot struct {
-	Store                       string
-	DBPath                      string
-	ProgressSyncIntervalSeconds int
-	ProgressSyncEnabled         bool
+type AutomationSettingsSnapshot struct {
+	TaskProgressSyncIntervalSeconds int
+	SubscriptionPollIntervalSeconds int
 }
 
 type SubscriptionSettingsSnapshot struct {
-	Store               string
-	DBPath              string
-	PollIntervalSeconds int
-	PollEnabled         bool
-	StashBoxes          []StashBoxEndpointSnapshot
-	StashBoxEndpoints   []string
-	StashBoxesLoaded    bool
-	StashBoxesLoadError string
+	StashBoxEndpoints []string
 }
 
 type StashBoxEndpointSnapshot struct {
@@ -154,12 +138,30 @@ type StashBoxEndpointSnapshot struct {
 	APIKeyConfigured bool
 }
 
-type LoggingSettingsSnapshot struct {
-	Level            string
-	FilePath         string
-	MaxEntries       int
-	MaxFileSizeBytes int64
-	MaxFileBackups   int
+type SettingsStatusSnapshot struct {
+	Stash        ServiceStatusSnapshot
+	Jackett      ServiceStatusSnapshot
+	QBittorrent  ServiceStatusSnapshot
+	Automation   AutomationStatusSnapshot
+	Subscription SubscriptionStatusSnapshot
+}
+
+type ServiceStatusSnapshot struct {
+	Configured bool
+	Enabled    bool
+}
+
+type AutomationStatusSnapshot struct {
+	TaskProgressSyncIntervalSeconds int
+	TaskProgressSyncEnabled         bool
+	SubscriptionPollIntervalSeconds int
+	SubscriptionPollEnabled         bool
+}
+
+type SubscriptionStatusSnapshot struct {
+	StashBoxes          []StashBoxEndpointSnapshot
+	StashBoxesLoaded    bool
+	StashBoxesLoadError string
 }
 
 type StashPerformerPage struct {
@@ -170,10 +172,6 @@ type StashPerformerPage struct {
 	TotalPages  int
 	HasPrevPage bool
 	HasNextPage bool
-}
-
-type SystemSettingsSnapshot struct {
-	AppVersion string
 }
 
 type SubscriptionService interface {
@@ -200,6 +198,7 @@ type Resolver struct {
 	LogReader       LogReader
 	SettingsEditor  SettingsEditor
 	RuntimeSettings *SettingsSnapshot
+	RuntimeStatus   *SettingsStatusSnapshot
 	AppVersion      string
 }
 

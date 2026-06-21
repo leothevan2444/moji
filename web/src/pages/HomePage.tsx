@@ -3,10 +3,12 @@ import { formatDateTime, isScanPending, isStatus, serviceStatus, type DashboardT
 import type { DashboardDocumentQuery } from "../graphql/generated/graphql";
 
 type RuntimeSettings = NonNullable<DashboardDocumentQuery["settings"]>;
+type RuntimeSettingsStatus = NonNullable<DashboardDocumentQuery["settingsStatus"]>;
 
 interface HomePageProps {
   tasks: DashboardTask[];
   runtimeSettings: RuntimeSettings | null;
+  runtimeStatus: RuntimeSettingsStatus | null;
   lastCheckedAt: string | null | undefined;
   pendingTaskScanId: string | null;
   onRefresh: () => void;
@@ -17,45 +19,46 @@ interface HomePageProps {
 export function HomePage({
   tasks,
   runtimeSettings,
+  runtimeStatus,
   lastCheckedAt,
   pendingTaskScanId,
   onRefresh,
   onOpenTask,
   onScanTask
 }: HomePageProps) {
-  const dependencyCards = runtimeSettings
+  const dependencyCards = runtimeSettings && runtimeStatus
     ? [
         {
           name: "Stash",
-          ...serviceStatus(runtimeSettings.stash.configured, runtimeSettings.stash.enabled),
-          detail: runtimeSettings.stash.enabled
-            ? `媒体库路径: ${runtimeSettings.stash.libraryPath || "未设置"}`
-            : runtimeSettings.stash.configured
+          ...serviceStatus(runtimeStatus.stash.configured, runtimeStatus.stash.enabled),
+          detail: runtimeStatus.stash.enabled
+            ? `入库模式: ${runtimeSettings.stash.mode}`
+            : runtimeStatus.stash.configured
               ? "配置已存在，但运行时尚未启用"
-              : "缺少 Stash URL 或库路径"
+              : "缺少 Stash URL 或入库策略"
         },
         {
           name: "Jackett",
-          ...serviceStatus(runtimeSettings.jackett.configured, runtimeSettings.jackett.enabled),
-          detail: runtimeSettings.jackett.enabled
+          ...serviceStatus(runtimeStatus.jackett.configured, runtimeStatus.jackett.enabled),
+          detail: runtimeStatus.jackett.enabled
             ? `索引地址: ${runtimeSettings.jackett.url || "未设置"}`
             : "缺少 URL 或 API key"
         },
         {
           name: "qBittorrent",
-          ...serviceStatus(runtimeSettings.qbittorrent.configured, runtimeSettings.qbittorrent.enabled),
-          detail: runtimeSettings.qbittorrent.enabled
+          ...serviceStatus(runtimeStatus.qbittorrent.configured, runtimeStatus.qbittorrent.enabled),
+          detail: runtimeStatus.qbittorrent.enabled
             ? `默认保存路径: ${runtimeSettings.qbittorrent.defaultSavePath || "未设置"}`
-            : runtimeSettings.qbittorrent.configured
+            : runtimeStatus.qbittorrent.configured
               ? "配置完整，但运行时未连接成功"
               : "缺少 URL、用户名或密码"
         },
         {
           name: "订阅",
-          label: runtimeSettings.subscription.pollEnabled ? "已启用" : "未启用",
-          tone: runtimeSettings.subscription.pollEnabled ? "tone-success" : "tone-neutral",
-          detail: (runtimeSettings.subscription.stashBoxes?.length ?? 0) > 0
-            ? `Stash-Box: ${runtimeSettings.subscription.stashBoxes?.length} 个，已选 ${runtimeSettings.subscription.stashBoxEndpoints?.length ?? 0} 个`
+          label: runtimeStatus.automation.subscriptionPollEnabled ? "已启用" : "未启用",
+          tone: runtimeStatus.automation.subscriptionPollEnabled ? "tone-success" : "tone-neutral",
+          detail: (runtimeStatus.subscription.stashBoxes?.length ?? 0) > 0
+            ? `Stash-Box: ${runtimeStatus.subscription.stashBoxes?.length} 个，已选 ${runtimeSettings.subscription.stashBoxEndpoints?.length ?? 0} 个`
             : "Stash 中尚未配置任何 Stash-Box"
         }
       ]

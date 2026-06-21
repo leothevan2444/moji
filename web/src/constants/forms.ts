@@ -24,18 +24,12 @@ export const EMPTY_QBITTORRENT_FORM = {
 };
 
 export const EMPTY_SUBSCRIPTION_FORM = {
-  store: "sqlite",
-  dbPath: "",
-  pollIntervalSeconds: "3600",
   stashBoxEndpoints: [] as string[]
 };
 
-export const EMPTY_LOGGING_FORM = {
-  level: "info",
-  filePath: "",
-  maxEntries: "500",
-  maxFileSizeBytes: String(10 * 1024 * 1024),
-  maxFileBackups: "5"
+export const EMPTY_AUTOMATION_FORM = {
+  taskProgressSyncIntervalSeconds: "60",
+  subscriptionPollIntervalSeconds: "3600"
 };
 
 export const TOAST_LIFETIME_MS = 10000;

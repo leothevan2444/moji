@@ -67,7 +67,6 @@ func (s *Store) UpdateStash(url, apiKey, mode, libraryPath, qbittorrentPathPrefi
 	defer s.mu.Unlock()
 
 	s.cfg.Stash.URL = trimGraphQLSuffix(url)
-	s.cfg.Stash.LegacyGraphQLURL = ""
 	s.cfg.Stash.APIKey = apiKey
 	s.cfg.Stash.Mode = mode
 	s.cfg.Stash.LibraryPath = libraryPath
@@ -115,13 +114,24 @@ func (s *Store) UpdateQBittorrent(url, username, password, defaultSavePath, cate
 	return &clone, nil
 }
 
-func (s *Store) UpdateSubscription(store, dbPath string, pollIntervalSeconds int, selectedEndpoints []string) (*Config, error) {
+func (s *Store) UpdateAutomation(taskProgressSyncIntervalSeconds, subscriptionPollIntervalSeconds int) (*Config, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	s.cfg.Subscription.Store = store
-	s.cfg.Subscription.DBPath = dbPath
-	s.cfg.Subscription.PollIntervalSeconds = pollIntervalSeconds
+	s.cfg.Automation.TaskProgressSyncIntervalSeconds = taskProgressSyncIntervalSeconds
+	s.cfg.Automation.SubscriptionPollIntervalSeconds = subscriptionPollIntervalSeconds
+
+	if err := s.updateConfigNode(); err != nil {
+		return nil, err
+	}
+	clone := *s.cfg
+	return &clone, nil
+}
+
+func (s *Store) UpdateSubscription(selectedEndpoints []string) (*Config, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
 	cleaned := make([]string, 0, len(selectedEndpoints))
 	for _, endpoint := range selectedEndpoints {
 		endpoint = strings.TrimSpace(endpoint)
@@ -131,23 +141,6 @@ func (s *Store) UpdateSubscription(store, dbPath string, pollIntervalSeconds int
 		cleaned = append(cleaned, endpoint)
 	}
 	s.cfg.Subscription.StashBoxEndpoints = cleaned
-
-	if err := s.updateConfigNode(); err != nil {
-		return nil, err
-	}
-	clone := *s.cfg
-	return &clone, nil
-}
-
-func (s *Store) UpdateLogging(level, filePath string, maxEntries int, maxFileSizeBytes int64, maxFileBackups int) (*Config, error) {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-
-	s.cfg.Logging.Level = level
-	s.cfg.Logging.FilePath = filePath
-	s.cfg.Logging.MaxEntries = maxEntries
-	s.cfg.Logging.MaxFileSizeBytes = maxFileSizeBytes
-	s.cfg.Logging.MaxFileBackups = maxFileBackups
 
 	if err := s.updateConfigNode(); err != nil {
 		return nil, err
@@ -174,7 +167,6 @@ func (s *Store) updateConfigNode() error {
 		"transfer_action":         s.cfg.Stash.TransferAction,
 		"transfer_target_path":    s.cfg.Stash.TransferTargetPath,
 	})
-	deleteMapKey(mapValue(top, "stash"), "graphql_url")
 	setMapString(top, "qbittorrent", map[string]string{
 		"url":               s.cfg.QBittorrent.URL,
 		"username":          s.cfg.QBittorrent.Username,
@@ -183,24 +175,14 @@ func (s *Store) updateConfigNode() error {
 		"category":          s.cfg.QBittorrent.Category,
 		"tags":              s.cfg.QBittorrent.Tags,
 	})
-	setMapString(top, "tasks", map[string]string{
-		"store":   s.cfg.Tasks.Store,
-		"db_path": s.cfg.Tasks.DBPath,
-	})
-	setIntScalar(mapValue(top, "tasks"), "progress_sync_interval_seconds", s.cfg.Tasks.ProgressSyncIntervalSeconds)
-	setMapString(top, "subscription", map[string]string{
-		"store":   s.cfg.Subscription.Store,
-		"db_path": s.cfg.Subscription.DBPath,
-	})
-	setIntScalar(mapValue(top, "subscription"), "poll_interval_seconds", s.cfg.Subscription.PollIntervalSeconds)
+	setIntScalar(mapValue(top, "automation"), "task_progress_sync_interval_seconds", s.cfg.Automation.TaskProgressSyncIntervalSeconds)
+	setIntScalar(mapValue(top, "automation"), "subscription_poll_interval_seconds", s.cfg.Automation.SubscriptionPollIntervalSeconds)
 	setStringList(mapValue(top, "subscription"), "selected_stash_box_endpoints", s.cfg.Subscription.StashBoxEndpoints)
-	setMapString(top, "logging", map[string]string{
-		"level":     s.cfg.Logging.Level,
-		"file_path": s.cfg.Logging.FilePath,
-	})
-	setIntScalar(mapValue(top, "logging"), "max_entries", s.cfg.Logging.MaxEntries)
-	setInt64Scalar(mapValue(top, "logging"), "max_file_size_bytes", s.cfg.Logging.MaxFileSizeBytes)
-	setIntScalar(mapValue(top, "logging"), "max_file_backups", s.cfg.Logging.MaxFileBackups)
+	deleteMapKey(top, "tasks")
+	deleteMapKey(top, "logging")
+	if stash := existingMapValue(top, "stash"); stash != nil {
+		deleteMapKey(stash, "graphql_url")
+	}
 
 	data, err := yaml.Marshal(&s.root)
 	if err != nil {
@@ -244,6 +226,7 @@ func setMapString(parent *yaml.Node, key string, values map[string]string) {
 }
 
 func setStringList(parent *yaml.Node, key string, values []string) {
+	ensureMapValue(parent)
 	target := mapValue(parent, key)
 	if len(values) == 0 {
 		target.Kind = yaml.SequenceNode
@@ -266,6 +249,7 @@ func setStringList(parent *yaml.Node, key string, values []string) {
 }
 
 func setScalar(parent *yaml.Node, key, value string) {
+	ensureMapValue(parent)
 	target := mapValue(parent, key)
 	target.Kind = yaml.ScalarNode
 	target.Tag = "!!str"
@@ -274,6 +258,7 @@ func setScalar(parent *yaml.Node, key, value string) {
 }
 
 func setIntScalar(parent *yaml.Node, key string, value int) {
+	ensureMapValue(parent)
 	target := mapValue(parent, key)
 	target.Kind = yaml.ScalarNode
 	target.Tag = "!!int"
@@ -282,6 +267,7 @@ func setIntScalar(parent *yaml.Node, key string, value int) {
 }
 
 func setInt64Scalar(parent *yaml.Node, key string, value int64) {
+	ensureMapValue(parent)
 	target := mapValue(parent, key)
 	target.Kind = yaml.ScalarNode
 	target.Tag = "!!int"
@@ -290,16 +276,22 @@ func setInt64Scalar(parent *yaml.Node, key string, value int64) {
 }
 
 func mapValue(parent *yaml.Node, key string) *yaml.Node {
+	if existing := existingMapValue(parent, key); existing != nil {
+		return existing
+	}
+	keyNode := &yaml.Node{Kind: yaml.ScalarNode, Tag: "!!str", Value: key}
+	valueNode := &yaml.Node{}
+	parent.Content = append(parent.Content, keyNode, valueNode)
+	return valueNode
+}
+
+func existingMapValue(parent *yaml.Node, key string) *yaml.Node {
 	for i := 0; i+1 < len(parent.Content); i += 2 {
 		if parent.Content[i].Value == key {
 			return parent.Content[i+1]
 		}
 	}
-
-	keyNode := &yaml.Node{Kind: yaml.ScalarNode, Tag: "!!str", Value: key}
-	valueNode := &yaml.Node{}
-	parent.Content = append(parent.Content, keyNode, valueNode)
-	return valueNode
+	return nil
 }
 
 func deleteMapKey(parent *yaml.Node, key string) {

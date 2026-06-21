@@ -46,6 +46,18 @@ type DirectiveRoot struct {
 }
 
 type ComplexityRoot struct {
+	AutomationSettings struct {
+		SubscriptionPollIntervalSeconds func(childComplexity int) int
+		TaskProgressSyncIntervalSeconds func(childComplexity int) int
+	}
+
+	AutomationStatus struct {
+		SubscriptionPollEnabled         func(childComplexity int) int
+		SubscriptionPollIntervalSeconds func(childComplexity int) int
+		TaskProgressSyncEnabled         func(childComplexity int) int
+		TaskProgressSyncIntervalSeconds func(childComplexity int) int
+	}
+
 	DashboardStats struct {
 		Active       func(childComplexity int) int
 		Completed    func(childComplexity int) int
@@ -99,14 +111,6 @@ type ComplexityRoot struct {
 		Time    func(childComplexity int) int
 	}
 
-	LoggingSettings struct {
-		FilePath         func(childComplexity int) int
-		Level            func(childComplexity int) int
-		MaxEntries       func(childComplexity int) int
-		MaxFileBackups   func(childComplexity int) int
-		MaxFileSizeBytes func(childComplexity int) int
-	}
-
 	Mutation struct {
 		AddTorrent                    func(childComplexity int, input model.QBittorrentAddInput) int
 		DownloadMedia                 func(childComplexity int, input model.DownloadMediaInput) int
@@ -120,8 +124,8 @@ type ComplexityRoot struct {
 		TriggerStashScans             func(childComplexity int) int
 		TriggerTaskStashScan          func(childComplexity int, id string) int
 		UnsubscribePerformer          func(childComplexity int, stashPerformerID string) int
+		UpdateAutomationSettings      func(childComplexity int, input model.UpdateAutomationSettingsInput) int
 		UpdateJackettSettings         func(childComplexity int, input model.UpdateJackettSettingsInput) int
-		UpdateLoggingSettings         func(childComplexity int, input model.UpdateLoggingSettingsInput) int
 		UpdateQBittorrentSettings     func(childComplexity int, input model.UpdateQBittorrentSettingsInput) int
 		UpdateStashSettings           func(childComplexity int, input model.UpdateStashSettingsInput) int
 		UpdateSubscriptionSettings    func(childComplexity int, input model.UpdateSubscriptionSettingsInput) int
@@ -161,6 +165,7 @@ type ComplexityRoot struct {
 		Logs                 func(childComplexity int, limit *int, minLevel *model.LogLevel) int
 		QbittorrentTorrents  func(childComplexity int, limit *int) int
 		Settings             func(childComplexity int) int
+		SettingsStatus       func(childComplexity int) int
 		StashJob             func(childComplexity int, id string) int
 		StashPerformers      func(childComplexity int, search *string, page *int, pageSize *int) int
 		SubscribedPerformers func(childComplexity int) int
@@ -169,14 +174,25 @@ type ComplexityRoot struct {
 		Version              func(childComplexity int) int
 	}
 
+	ServiceStatus struct {
+		Configured func(childComplexity int) int
+		Enabled    func(childComplexity int) int
+	}
+
 	Settings struct {
+		Automation   func(childComplexity int) int
 		Jackett      func(childComplexity int) int
-		Logging      func(childComplexity int) int
 		Qbittorrent  func(childComplexity int) int
 		Stash        func(childComplexity int) int
 		Subscription func(childComplexity int) int
-		System       func(childComplexity int) int
-		Tasks        func(childComplexity int) int
+	}
+
+	SettingsStatus struct {
+		Automation   func(childComplexity int) int
+		Jackett      func(childComplexity int) int
+		Qbittorrent  func(childComplexity int) int
+		Stash        func(childComplexity int) int
+		Subscription func(childComplexity int) int
 	}
 
 	StashBoxEndpoint struct {
@@ -253,18 +269,13 @@ type ComplexityRoot struct {
 	}
 
 	SubscriptionSettings struct {
-		DbPath              func(childComplexity int) int
-		PollEnabled         func(childComplexity int) int
-		PollIntervalSeconds func(childComplexity int) int
-		StashBoxEndpoints   func(childComplexity int) int
+		StashBoxEndpoints func(childComplexity int) int
+	}
+
+	SubscriptionStatus struct {
 		StashBoxes          func(childComplexity int) int
 		StashBoxesLoadError func(childComplexity int) int
 		StashBoxesLoaded    func(childComplexity int) int
-		Store               func(childComplexity int) int
-	}
-
-	SystemSettings struct {
-		AppVersion func(childComplexity int) int
 	}
 
 	Task struct {
@@ -298,13 +309,6 @@ type ComplexityRoot struct {
 		TorrentURL          func(childComplexity int) int
 		UpdatedAt           func(childComplexity int) int
 	}
-
-	TaskSettings struct {
-		DbPath                      func(childComplexity int) int
-		ProgressSyncEnabled         func(childComplexity int) int
-		ProgressSyncIntervalSeconds func(childComplexity int) int
-		Store                       func(childComplexity int) int
-	}
 }
 
 type MutationResolver interface {
@@ -317,9 +321,9 @@ type MutationResolver interface {
 	UpdateStashSettings(ctx context.Context, input model.UpdateStashSettingsInput) (*model.Settings, error)
 	UpdateJackettSettings(ctx context.Context, input model.UpdateJackettSettingsInput) (*model.Settings, error)
 	UpdateQBittorrentSettings(ctx context.Context, input model.UpdateQBittorrentSettingsInput) (*model.Settings, error)
+	UpdateAutomationSettings(ctx context.Context, input model.UpdateAutomationSettingsInput) (*model.Settings, error)
 	UpdateSubscriptionSettings(ctx context.Context, input model.UpdateSubscriptionSettingsInput) (*model.Settings, error)
 	RefreshSubscriptionStashBoxes(ctx context.Context) (*model.Settings, error)
-	UpdateLoggingSettings(ctx context.Context, input model.UpdateLoggingSettingsInput) (*model.Settings, error)
 	StashMetadataScan(ctx context.Context, input model.StashMetadataScanInput) (string, error)
 	SubscribePerformer(ctx context.Context, stashPerformerID string) (*model.SubscribedPerformer, error)
 	UnsubscribePerformer(ctx context.Context, stashPerformerID string) (bool, error)
@@ -332,6 +336,7 @@ type QueryResolver interface {
 	Logs(ctx context.Context, limit *int, minLevel *model.LogLevel) ([]*model.LogEntry, error)
 	JackettSearch(ctx context.Context, input model.JackettSearchInput) ([]*model.JackettSearchResult, error)
 	Settings(ctx context.Context) (*model.Settings, error)
+	SettingsStatus(ctx context.Context) (*model.SettingsStatus, error)
 	StashJob(ctx context.Context, id string) (*model.StashJob, error)
 	DashboardStats(ctx context.Context) (*model.DashboardStats, error)
 	StashPerformers(ctx context.Context, search *string, page *int, pageSize *int) (*model.StashPerformerConnection, error)
@@ -359,6 +364,48 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 	ec := executionContext{nil, e, 0, 0, nil}
 	_ = ec
 	switch typeName + "." + field {
+
+	case "AutomationSettings.subscriptionPollIntervalSeconds":
+		if e.complexity.AutomationSettings.SubscriptionPollIntervalSeconds == nil {
+			break
+		}
+
+		return e.complexity.AutomationSettings.SubscriptionPollIntervalSeconds(childComplexity), true
+
+	case "AutomationSettings.taskProgressSyncIntervalSeconds":
+		if e.complexity.AutomationSettings.TaskProgressSyncIntervalSeconds == nil {
+			break
+		}
+
+		return e.complexity.AutomationSettings.TaskProgressSyncIntervalSeconds(childComplexity), true
+
+	case "AutomationStatus.subscriptionPollEnabled":
+		if e.complexity.AutomationStatus.SubscriptionPollEnabled == nil {
+			break
+		}
+
+		return e.complexity.AutomationStatus.SubscriptionPollEnabled(childComplexity), true
+
+	case "AutomationStatus.subscriptionPollIntervalSeconds":
+		if e.complexity.AutomationStatus.SubscriptionPollIntervalSeconds == nil {
+			break
+		}
+
+		return e.complexity.AutomationStatus.SubscriptionPollIntervalSeconds(childComplexity), true
+
+	case "AutomationStatus.taskProgressSyncEnabled":
+		if e.complexity.AutomationStatus.TaskProgressSyncEnabled == nil {
+			break
+		}
+
+		return e.complexity.AutomationStatus.TaskProgressSyncEnabled(childComplexity), true
+
+	case "AutomationStatus.taskProgressSyncIntervalSeconds":
+		if e.complexity.AutomationStatus.TaskProgressSyncIntervalSeconds == nil {
+			break
+		}
+
+		return e.complexity.AutomationStatus.TaskProgressSyncIntervalSeconds(childComplexity), true
 
 	case "DashboardStats.active":
 		if e.complexity.DashboardStats.Active == nil {
@@ -605,41 +652,6 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.LogEntry.Time(childComplexity), true
 
-	case "LoggingSettings.filePath":
-		if e.complexity.LoggingSettings.FilePath == nil {
-			break
-		}
-
-		return e.complexity.LoggingSettings.FilePath(childComplexity), true
-
-	case "LoggingSettings.level":
-		if e.complexity.LoggingSettings.Level == nil {
-			break
-		}
-
-		return e.complexity.LoggingSettings.Level(childComplexity), true
-
-	case "LoggingSettings.maxEntries":
-		if e.complexity.LoggingSettings.MaxEntries == nil {
-			break
-		}
-
-		return e.complexity.LoggingSettings.MaxEntries(childComplexity), true
-
-	case "LoggingSettings.maxFileBackups":
-		if e.complexity.LoggingSettings.MaxFileBackups == nil {
-			break
-		}
-
-		return e.complexity.LoggingSettings.MaxFileBackups(childComplexity), true
-
-	case "LoggingSettings.maxFileSizeBytes":
-		if e.complexity.LoggingSettings.MaxFileSizeBytes == nil {
-			break
-		}
-
-		return e.complexity.LoggingSettings.MaxFileSizeBytes(childComplexity), true
-
 	case "Mutation.addTorrent":
 		if e.complexity.Mutation.AddTorrent == nil {
 			break
@@ -764,6 +776,18 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.Mutation.UnsubscribePerformer(childComplexity, args["stashPerformerID"].(string)), true
 
+	case "Mutation.updateAutomationSettings":
+		if e.complexity.Mutation.UpdateAutomationSettings == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_updateAutomationSettings_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.UpdateAutomationSettings(childComplexity, args["input"].(model.UpdateAutomationSettingsInput)), true
+
 	case "Mutation.updateJackettSettings":
 		if e.complexity.Mutation.UpdateJackettSettings == nil {
 			break
@@ -775,18 +799,6 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.Mutation.UpdateJackettSettings(childComplexity, args["input"].(model.UpdateJackettSettingsInput)), true
-
-	case "Mutation.updateLoggingSettings":
-		if e.complexity.Mutation.UpdateLoggingSettings == nil {
-			break
-		}
-
-		args, err := ec.field_Mutation_updateLoggingSettings_args(ctx, rawArgs)
-		if err != nil {
-			return 0, false
-		}
-
-		return e.complexity.Mutation.UpdateLoggingSettings(childComplexity, args["input"].(model.UpdateLoggingSettingsInput)), true
 
 	case "Mutation.updateQBittorrentSettings":
 		if e.complexity.Mutation.UpdateQBittorrentSettings == nil {
@@ -1028,6 +1040,13 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.Query.Settings(childComplexity), true
 
+	case "Query.settingsStatus":
+		if e.complexity.Query.SettingsStatus == nil {
+			break
+		}
+
+		return e.complexity.Query.SettingsStatus(childComplexity), true
+
 	case "Query.stashJob":
 		if e.complexity.Query.StashJob == nil {
 			break
@@ -1085,19 +1104,33 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.Query.Version(childComplexity), true
 
+	case "ServiceStatus.configured":
+		if e.complexity.ServiceStatus.Configured == nil {
+			break
+		}
+
+		return e.complexity.ServiceStatus.Configured(childComplexity), true
+
+	case "ServiceStatus.enabled":
+		if e.complexity.ServiceStatus.Enabled == nil {
+			break
+		}
+
+		return e.complexity.ServiceStatus.Enabled(childComplexity), true
+
+	case "Settings.automation":
+		if e.complexity.Settings.Automation == nil {
+			break
+		}
+
+		return e.complexity.Settings.Automation(childComplexity), true
+
 	case "Settings.jackett":
 		if e.complexity.Settings.Jackett == nil {
 			break
 		}
 
 		return e.complexity.Settings.Jackett(childComplexity), true
-
-	case "Settings.logging":
-		if e.complexity.Settings.Logging == nil {
-			break
-		}
-
-		return e.complexity.Settings.Logging(childComplexity), true
 
 	case "Settings.qbittorrent":
 		if e.complexity.Settings.Qbittorrent == nil {
@@ -1120,19 +1153,40 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.Settings.Subscription(childComplexity), true
 
-	case "Settings.system":
-		if e.complexity.Settings.System == nil {
+	case "SettingsStatus.automation":
+		if e.complexity.SettingsStatus.Automation == nil {
 			break
 		}
 
-		return e.complexity.Settings.System(childComplexity), true
+		return e.complexity.SettingsStatus.Automation(childComplexity), true
 
-	case "Settings.tasks":
-		if e.complexity.Settings.Tasks == nil {
+	case "SettingsStatus.jackett":
+		if e.complexity.SettingsStatus.Jackett == nil {
 			break
 		}
 
-		return e.complexity.Settings.Tasks(childComplexity), true
+		return e.complexity.SettingsStatus.Jackett(childComplexity), true
+
+	case "SettingsStatus.qbittorrent":
+		if e.complexity.SettingsStatus.Qbittorrent == nil {
+			break
+		}
+
+		return e.complexity.SettingsStatus.Qbittorrent(childComplexity), true
+
+	case "SettingsStatus.stash":
+		if e.complexity.SettingsStatus.Stash == nil {
+			break
+		}
+
+		return e.complexity.SettingsStatus.Stash(childComplexity), true
+
+	case "SettingsStatus.subscription":
+		if e.complexity.SettingsStatus.Subscription == nil {
+			break
+		}
+
+		return e.complexity.SettingsStatus.Subscription(childComplexity), true
 
 	case "StashBoxEndpoint.apiKeyConfigured":
 		if e.complexity.StashBoxEndpoint.APIKeyConfigured == nil {
@@ -1498,27 +1552,6 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.SubscriptionRelease.URL(childComplexity), true
 
-	case "SubscriptionSettings.dbPath":
-		if e.complexity.SubscriptionSettings.DbPath == nil {
-			break
-		}
-
-		return e.complexity.SubscriptionSettings.DbPath(childComplexity), true
-
-	case "SubscriptionSettings.pollEnabled":
-		if e.complexity.SubscriptionSettings.PollEnabled == nil {
-			break
-		}
-
-		return e.complexity.SubscriptionSettings.PollEnabled(childComplexity), true
-
-	case "SubscriptionSettings.pollIntervalSeconds":
-		if e.complexity.SubscriptionSettings.PollIntervalSeconds == nil {
-			break
-		}
-
-		return e.complexity.SubscriptionSettings.PollIntervalSeconds(childComplexity), true
-
 	case "SubscriptionSettings.stashBoxEndpoints":
 		if e.complexity.SubscriptionSettings.StashBoxEndpoints == nil {
 			break
@@ -1526,40 +1559,26 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.SubscriptionSettings.StashBoxEndpoints(childComplexity), true
 
-	case "SubscriptionSettings.stashBoxes":
-		if e.complexity.SubscriptionSettings.StashBoxes == nil {
+	case "SubscriptionStatus.stashBoxes":
+		if e.complexity.SubscriptionStatus.StashBoxes == nil {
 			break
 		}
 
-		return e.complexity.SubscriptionSettings.StashBoxes(childComplexity), true
+		return e.complexity.SubscriptionStatus.StashBoxes(childComplexity), true
 
-	case "SubscriptionSettings.stashBoxesLoadError":
-		if e.complexity.SubscriptionSettings.StashBoxesLoadError == nil {
+	case "SubscriptionStatus.stashBoxesLoadError":
+		if e.complexity.SubscriptionStatus.StashBoxesLoadError == nil {
 			break
 		}
 
-		return e.complexity.SubscriptionSettings.StashBoxesLoadError(childComplexity), true
+		return e.complexity.SubscriptionStatus.StashBoxesLoadError(childComplexity), true
 
-	case "SubscriptionSettings.stashBoxesLoaded":
-		if e.complexity.SubscriptionSettings.StashBoxesLoaded == nil {
+	case "SubscriptionStatus.stashBoxesLoaded":
+		if e.complexity.SubscriptionStatus.StashBoxesLoaded == nil {
 			break
 		}
 
-		return e.complexity.SubscriptionSettings.StashBoxesLoaded(childComplexity), true
-
-	case "SubscriptionSettings.store":
-		if e.complexity.SubscriptionSettings.Store == nil {
-			break
-		}
-
-		return e.complexity.SubscriptionSettings.Store(childComplexity), true
-
-	case "SystemSettings.appVersion":
-		if e.complexity.SystemSettings.AppVersion == nil {
-			break
-		}
-
-		return e.complexity.SystemSettings.AppVersion(childComplexity), true
+		return e.complexity.SubscriptionStatus.StashBoxesLoaded(childComplexity), true
 
 	case "Task.candidate":
 		if e.complexity.Task.Candidate == nil {
@@ -1764,34 +1783,6 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.Task.UpdatedAt(childComplexity), true
 
-	case "TaskSettings.dbPath":
-		if e.complexity.TaskSettings.DbPath == nil {
-			break
-		}
-
-		return e.complexity.TaskSettings.DbPath(childComplexity), true
-
-	case "TaskSettings.progressSyncEnabled":
-		if e.complexity.TaskSettings.ProgressSyncEnabled == nil {
-			break
-		}
-
-		return e.complexity.TaskSettings.ProgressSyncEnabled(childComplexity), true
-
-	case "TaskSettings.progressSyncIntervalSeconds":
-		if e.complexity.TaskSettings.ProgressSyncIntervalSeconds == nil {
-			break
-		}
-
-		return e.complexity.TaskSettings.ProgressSyncIntervalSeconds(childComplexity), true
-
-	case "TaskSettings.store":
-		if e.complexity.TaskSettings.Store == nil {
-			break
-		}
-
-		return e.complexity.TaskSettings.Store(childComplexity), true
-
 	}
 	return 0, false
 }
@@ -1804,8 +1795,8 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 		ec.unmarshalInputJackettSearchInput,
 		ec.unmarshalInputQBittorrentAddInput,
 		ec.unmarshalInputStashMetadataScanInput,
+		ec.unmarshalInputUpdateAutomationSettingsInput,
 		ec.unmarshalInputUpdateJackettSettingsInput,
-		ec.unmarshalInputUpdateLoggingSettingsInput,
 		ec.unmarshalInputUpdateQBittorrentSettingsInput,
 		ec.unmarshalInputUpdateStashSettingsInput,
 		ec.unmarshalInputUpdateSubscriptionSettingsInput,
@@ -1969,8 +1960,11 @@ type JackettSearchResult {
 }
 `, BuiltIn: false},
 	{Name: "../../../graphql/moji/types/settings.graphql", Input: `extend type Query {
-  "Get runtime capability and configuration state for the Settings surface"
+  "Get editable configuration for the Settings surface"
   settings: Settings!
+
+  "Get runtime state for the Settings surface"
+  settingsStatus: SettingsStatus!
 }
 
 extend type Mutation {
@@ -1983,24 +1977,30 @@ extend type Mutation {
   "Update qBittorrent settings and persist them to backend config"
   updateQBittorrentSettings(input: UpdateQBittorrentSettingsInput!): Settings!
 
+  "Update automation settings and persist them to backend config"
+  updateAutomationSettings(input: UpdateAutomationSettingsInput!): Settings!
+
   "Update Subscription settings and persist them to backend config"
   updateSubscriptionSettings(input: UpdateSubscriptionSettingsInput!): Settings!
 
   "Re-fetch the Stash-Box list from the configured Stash server. The updated list and load status are reflected in the returned Settings snapshot."
   refreshSubscriptionStashBoxes: Settings!
-
-  "Update logging settings and persist them to backend config"
-  updateLoggingSettings(input: UpdateLoggingSettingsInput!): Settings!
 }
 
 type Settings {
   stash: StashSettings!
   jackett: JackettSettings!
   qbittorrent: QBittorrentSettings!
-  tasks: TaskSettings!
+  automation: AutomationSettings!
   subscription: SubscriptionSettings!
-  logging: LoggingSettings!
-  system: SystemSettings!
+}
+
+type SettingsStatus {
+  stash: ServiceStatus!
+  jackett: ServiceStatus!
+  qbittorrent: ServiceStatus!
+  automation: AutomationStatus!
+  subscription: SubscriptionStatus!
 }
 
 type StashSettings {
@@ -2041,22 +2041,31 @@ type QBittorrentSettings {
   tags: String!
 }
 
-type TaskSettings {
-  store: String!
-  dbPath: String!
-  progressSyncIntervalSeconds: Int!
-  progressSyncEnabled: Boolean!
+type AutomationSettings {
+  taskProgressSyncIntervalSeconds: Int!
+  subscriptionPollIntervalSeconds: Int!
 }
 
 type SubscriptionSettings {
-  store: String!
-  dbPath: String!
-  pollIntervalSeconds: Int!
-  pollEnabled: Boolean!
-  "Stash Box instances currently configured inside the Stash server."
-  stashBoxes: [StashBoxEndpoint!]!
   "Endpoint URLs in the user-defined order used for subscription lookups. Endpoints not listed here are still queried, in their Stash order, appended after the listed ones. An empty list means use Stash's order as-is."
   stashBoxEndpoints: [String!]!
+}
+
+type ServiceStatus {
+  configured: Boolean!
+  enabled: Boolean!
+}
+
+type AutomationStatus {
+  taskProgressSyncIntervalSeconds: Int!
+  taskProgressSyncEnabled: Boolean!
+  subscriptionPollIntervalSeconds: Int!
+  subscriptionPollEnabled: Boolean!
+}
+
+type SubscriptionStatus {
+  "Stash Box instances currently configured inside the Stash server."
+  stashBoxes: [StashBoxEndpoint!]!
   "Whether the last attempt to load Stash Box endpoints from Stash succeeded."
   stashBoxesLoaded: Boolean!
   "Reason for the most recent Stash Box load failure. Null when stashBoxesLoaded is true."
@@ -2067,18 +2076,6 @@ type StashBoxEndpoint {
   name: String!
   endpoint: String!
   apiKeyConfigured: Boolean!
-}
-
-type LoggingSettings {
-  level: String!
-  filePath: String!
-  maxEntries: Int!
-  maxFileSizeBytes: Int!
-  maxFileBackups: Int!
-}
-
-type SystemSettings {
-  appVersion: String!
 }
 
 input UpdateStashSettingsInput {
@@ -2106,20 +2103,14 @@ input UpdateQBittorrentSettingsInput {
   tags: String!
 }
 
-input UpdateSubscriptionSettingsInput {
-  store: String!
-  dbPath: String!
-  pollIntervalSeconds: Int!
-  "See SubscriptionSettings.stashBoxEndpoints."
-  stashBoxEndpoints: [String!]!
+input UpdateAutomationSettingsInput {
+  taskProgressSyncIntervalSeconds: Int!
+  subscriptionPollIntervalSeconds: Int!
 }
 
-input UpdateLoggingSettingsInput {
-  level: String!
-  filePath: String!
-  maxEntries: Int!
-  maxFileSizeBytes: Int!
-  maxFileBackups: Int!
+input UpdateSubscriptionSettingsInput {
+  "See SubscriptionSettings.stashBoxEndpoints."
+  stashBoxEndpoints: [String!]!
 }
 `, BuiltIn: false},
 	{Name: "../../../graphql/moji/types/stash.graphql", Input: `extend type Query {
@@ -2571,6 +2562,34 @@ func (ec *executionContext) field_Mutation_unsubscribePerformer_argsStashPerform
 	return zeroVal, nil
 }
 
+func (ec *executionContext) field_Mutation_updateAutomationSettings_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := ec.field_Mutation_updateAutomationSettings_argsInput(ctx, rawArgs)
+	if err != nil {
+		return nil, err
+	}
+	args["input"] = arg0
+	return args, nil
+}
+func (ec *executionContext) field_Mutation_updateAutomationSettings_argsInput(
+	ctx context.Context,
+	rawArgs map[string]any,
+) (model.UpdateAutomationSettingsInput, error) {
+	if _, ok := rawArgs["input"]; !ok {
+		var zeroVal model.UpdateAutomationSettingsInput
+		return zeroVal, nil
+	}
+
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
+	if tmp, ok := rawArgs["input"]; ok {
+		return ec.unmarshalNUpdateAutomationSettingsInput2githubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐUpdateAutomationSettingsInput(ctx, tmp)
+	}
+
+	var zeroVal model.UpdateAutomationSettingsInput
+	return zeroVal, nil
+}
+
 func (ec *executionContext) field_Mutation_updateJackettSettings_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
@@ -2596,34 +2615,6 @@ func (ec *executionContext) field_Mutation_updateJackettSettings_argsInput(
 	}
 
 	var zeroVal model.UpdateJackettSettingsInput
-	return zeroVal, nil
-}
-
-func (ec *executionContext) field_Mutation_updateLoggingSettings_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
-	var err error
-	args := map[string]any{}
-	arg0, err := ec.field_Mutation_updateLoggingSettings_argsInput(ctx, rawArgs)
-	if err != nil {
-		return nil, err
-	}
-	args["input"] = arg0
-	return args, nil
-}
-func (ec *executionContext) field_Mutation_updateLoggingSettings_argsInput(
-	ctx context.Context,
-	rawArgs map[string]any,
-) (model.UpdateLoggingSettingsInput, error) {
-	if _, ok := rawArgs["input"]; !ok {
-		var zeroVal model.UpdateLoggingSettingsInput
-		return zeroVal, nil
-	}
-
-	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
-	if tmp, ok := rawArgs["input"]; ok {
-		return ec.unmarshalNUpdateLoggingSettingsInput2githubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐUpdateLoggingSettingsInput(ctx, tmp)
-	}
-
-	var zeroVal model.UpdateLoggingSettingsInput
 	return zeroVal, nil
 }
 
@@ -3095,6 +3086,270 @@ func (ec *executionContext) field___Type_fields_argsIncludeDeprecated(
 // endregion ************************** directives.gotpl **************************
 
 // region    **************************** field.gotpl *****************************
+
+func (ec *executionContext) _AutomationSettings_taskProgressSyncIntervalSeconds(ctx context.Context, field graphql.CollectedField, obj *model.AutomationSettings) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_AutomationSettings_taskProgressSyncIntervalSeconds(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.TaskProgressSyncIntervalSeconds, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int)
+	fc.Result = res
+	return ec.marshalNInt2int(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_AutomationSettings_taskProgressSyncIntervalSeconds(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AutomationSettings",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AutomationSettings_subscriptionPollIntervalSeconds(ctx context.Context, field graphql.CollectedField, obj *model.AutomationSettings) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_AutomationSettings_subscriptionPollIntervalSeconds(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.SubscriptionPollIntervalSeconds, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int)
+	fc.Result = res
+	return ec.marshalNInt2int(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_AutomationSettings_subscriptionPollIntervalSeconds(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AutomationSettings",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AutomationStatus_taskProgressSyncIntervalSeconds(ctx context.Context, field graphql.CollectedField, obj *model.AutomationStatus) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_AutomationStatus_taskProgressSyncIntervalSeconds(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.TaskProgressSyncIntervalSeconds, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int)
+	fc.Result = res
+	return ec.marshalNInt2int(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_AutomationStatus_taskProgressSyncIntervalSeconds(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AutomationStatus",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AutomationStatus_taskProgressSyncEnabled(ctx context.Context, field graphql.CollectedField, obj *model.AutomationStatus) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_AutomationStatus_taskProgressSyncEnabled(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.TaskProgressSyncEnabled, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(bool)
+	fc.Result = res
+	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_AutomationStatus_taskProgressSyncEnabled(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AutomationStatus",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AutomationStatus_subscriptionPollIntervalSeconds(ctx context.Context, field graphql.CollectedField, obj *model.AutomationStatus) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_AutomationStatus_subscriptionPollIntervalSeconds(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.SubscriptionPollIntervalSeconds, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int)
+	fc.Result = res
+	return ec.marshalNInt2int(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_AutomationStatus_subscriptionPollIntervalSeconds(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AutomationStatus",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AutomationStatus_subscriptionPollEnabled(ctx context.Context, field graphql.CollectedField, obj *model.AutomationStatus) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_AutomationStatus_subscriptionPollEnabled(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.SubscriptionPollEnabled, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(bool)
+	fc.Result = res
+	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_AutomationStatus_subscriptionPollEnabled(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AutomationStatus",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	return fc, nil
+}
 
 func (ec *executionContext) _DashboardStats_total(ctx context.Context, field graphql.CollectedField, obj *model.DashboardStats) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_DashboardStats_total(ctx, field)
@@ -4636,226 +4891,6 @@ func (ec *executionContext) fieldContext_LogEntry_message(_ context.Context, fie
 	return fc, nil
 }
 
-func (ec *executionContext) _LoggingSettings_level(ctx context.Context, field graphql.CollectedField, obj *model.LoggingSettings) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_LoggingSettings_level(ctx, field)
-	if err != nil {
-		return graphql.Null
-	}
-	ctx = graphql.WithFieldContext(ctx, fc)
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.Level, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(string)
-	fc.Result = res
-	return ec.marshalNString2string(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) fieldContext_LoggingSettings_level(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "LoggingSettings",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type String does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _LoggingSettings_filePath(ctx context.Context, field graphql.CollectedField, obj *model.LoggingSettings) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_LoggingSettings_filePath(ctx, field)
-	if err != nil {
-		return graphql.Null
-	}
-	ctx = graphql.WithFieldContext(ctx, fc)
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.FilePath, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(string)
-	fc.Result = res
-	return ec.marshalNString2string(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) fieldContext_LoggingSettings_filePath(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "LoggingSettings",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type String does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _LoggingSettings_maxEntries(ctx context.Context, field graphql.CollectedField, obj *model.LoggingSettings) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_LoggingSettings_maxEntries(ctx, field)
-	if err != nil {
-		return graphql.Null
-	}
-	ctx = graphql.WithFieldContext(ctx, fc)
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.MaxEntries, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(int)
-	fc.Result = res
-	return ec.marshalNInt2int(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) fieldContext_LoggingSettings_maxEntries(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "LoggingSettings",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type Int does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _LoggingSettings_maxFileSizeBytes(ctx context.Context, field graphql.CollectedField, obj *model.LoggingSettings) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_LoggingSettings_maxFileSizeBytes(ctx, field)
-	if err != nil {
-		return graphql.Null
-	}
-	ctx = graphql.WithFieldContext(ctx, fc)
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.MaxFileSizeBytes, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(int)
-	fc.Result = res
-	return ec.marshalNInt2int(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) fieldContext_LoggingSettings_maxFileSizeBytes(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "LoggingSettings",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type Int does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _LoggingSettings_maxFileBackups(ctx context.Context, field graphql.CollectedField, obj *model.LoggingSettings) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_LoggingSettings_maxFileBackups(ctx, field)
-	if err != nil {
-		return graphql.Null
-	}
-	ctx = graphql.WithFieldContext(ctx, fc)
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.MaxFileBackups, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(int)
-	fc.Result = res
-	return ec.marshalNInt2int(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) fieldContext_LoggingSettings_maxFileBackups(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "LoggingSettings",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type Int does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
 func (ec *executionContext) _Mutation_qbittorrentAdd(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_Mutation_qbittorrentAdd(ctx, field)
 	if err != nil {
@@ -5509,14 +5544,10 @@ func (ec *executionContext) fieldContext_Mutation_updateStashSettings(ctx contex
 				return ec.fieldContext_Settings_jackett(ctx, field)
 			case "qbittorrent":
 				return ec.fieldContext_Settings_qbittorrent(ctx, field)
-			case "tasks":
-				return ec.fieldContext_Settings_tasks(ctx, field)
+			case "automation":
+				return ec.fieldContext_Settings_automation(ctx, field)
 			case "subscription":
 				return ec.fieldContext_Settings_subscription(ctx, field)
-			case "logging":
-				return ec.fieldContext_Settings_logging(ctx, field)
-			case "system":
-				return ec.fieldContext_Settings_system(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Settings", field.Name)
 		},
@@ -5580,14 +5611,10 @@ func (ec *executionContext) fieldContext_Mutation_updateJackettSettings(ctx cont
 				return ec.fieldContext_Settings_jackett(ctx, field)
 			case "qbittorrent":
 				return ec.fieldContext_Settings_qbittorrent(ctx, field)
-			case "tasks":
-				return ec.fieldContext_Settings_tasks(ctx, field)
+			case "automation":
+				return ec.fieldContext_Settings_automation(ctx, field)
 			case "subscription":
 				return ec.fieldContext_Settings_subscription(ctx, field)
-			case "logging":
-				return ec.fieldContext_Settings_logging(ctx, field)
-			case "system":
-				return ec.fieldContext_Settings_system(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Settings", field.Name)
 		},
@@ -5651,14 +5678,10 @@ func (ec *executionContext) fieldContext_Mutation_updateQBittorrentSettings(ctx 
 				return ec.fieldContext_Settings_jackett(ctx, field)
 			case "qbittorrent":
 				return ec.fieldContext_Settings_qbittorrent(ctx, field)
-			case "tasks":
-				return ec.fieldContext_Settings_tasks(ctx, field)
+			case "automation":
+				return ec.fieldContext_Settings_automation(ctx, field)
 			case "subscription":
 				return ec.fieldContext_Settings_subscription(ctx, field)
-			case "logging":
-				return ec.fieldContext_Settings_logging(ctx, field)
-			case "system":
-				return ec.fieldContext_Settings_system(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Settings", field.Name)
 		},
@@ -5671,6 +5694,73 @@ func (ec *executionContext) fieldContext_Mutation_updateQBittorrentSettings(ctx 
 	}()
 	ctx = graphql.WithFieldContext(ctx, fc)
 	if fc.Args, err = ec.field_Mutation_updateQBittorrentSettings_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_updateAutomationSettings(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Mutation_updateAutomationSettings(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().UpdateAutomationSettings(rctx, fc.Args["input"].(model.UpdateAutomationSettingsInput))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*model.Settings)
+	fc.Result = res
+	return ec.marshalNSettings2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐSettings(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Mutation_updateAutomationSettings(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "stash":
+				return ec.fieldContext_Settings_stash(ctx, field)
+			case "jackett":
+				return ec.fieldContext_Settings_jackett(ctx, field)
+			case "qbittorrent":
+				return ec.fieldContext_Settings_qbittorrent(ctx, field)
+			case "automation":
+				return ec.fieldContext_Settings_automation(ctx, field)
+			case "subscription":
+				return ec.fieldContext_Settings_subscription(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type Settings", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_updateAutomationSettings_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return fc, err
 	}
@@ -5722,14 +5812,10 @@ func (ec *executionContext) fieldContext_Mutation_updateSubscriptionSettings(ctx
 				return ec.fieldContext_Settings_jackett(ctx, field)
 			case "qbittorrent":
 				return ec.fieldContext_Settings_qbittorrent(ctx, field)
-			case "tasks":
-				return ec.fieldContext_Settings_tasks(ctx, field)
+			case "automation":
+				return ec.fieldContext_Settings_automation(ctx, field)
 			case "subscription":
 				return ec.fieldContext_Settings_subscription(ctx, field)
-			case "logging":
-				return ec.fieldContext_Settings_logging(ctx, field)
-			case "system":
-				return ec.fieldContext_Settings_system(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Settings", field.Name)
 		},
@@ -5793,88 +5879,13 @@ func (ec *executionContext) fieldContext_Mutation_refreshSubscriptionStashBoxes(
 				return ec.fieldContext_Settings_jackett(ctx, field)
 			case "qbittorrent":
 				return ec.fieldContext_Settings_qbittorrent(ctx, field)
-			case "tasks":
-				return ec.fieldContext_Settings_tasks(ctx, field)
+			case "automation":
+				return ec.fieldContext_Settings_automation(ctx, field)
 			case "subscription":
 				return ec.fieldContext_Settings_subscription(ctx, field)
-			case "logging":
-				return ec.fieldContext_Settings_logging(ctx, field)
-			case "system":
-				return ec.fieldContext_Settings_system(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Settings", field.Name)
 		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _Mutation_updateLoggingSettings(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_Mutation_updateLoggingSettings(ctx, field)
-	if err != nil {
-		return graphql.Null
-	}
-	ctx = graphql.WithFieldContext(ctx, fc)
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
-		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Mutation().UpdateLoggingSettings(rctx, fc.Args["input"].(model.UpdateLoggingSettingsInput))
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(*model.Settings)
-	fc.Result = res
-	return ec.marshalNSettings2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐSettings(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) fieldContext_Mutation_updateLoggingSettings(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "Mutation",
-		Field:      field,
-		IsMethod:   true,
-		IsResolver: true,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			switch field.Name {
-			case "stash":
-				return ec.fieldContext_Settings_stash(ctx, field)
-			case "jackett":
-				return ec.fieldContext_Settings_jackett(ctx, field)
-			case "qbittorrent":
-				return ec.fieldContext_Settings_qbittorrent(ctx, field)
-			case "tasks":
-				return ec.fieldContext_Settings_tasks(ctx, field)
-			case "subscription":
-				return ec.fieldContext_Settings_subscription(ctx, field)
-			case "logging":
-				return ec.fieldContext_Settings_logging(ctx, field)
-			case "system":
-				return ec.fieldContext_Settings_system(ctx, field)
-			}
-			return nil, fmt.Errorf("no field named %q was found under type Settings", field.Name)
-		},
-	}
-	defer func() {
-		if r := recover(); r != nil {
-			err = ec.Recover(ctx, r)
-			ec.Error(ctx, err)
-		}
-	}()
-	ctx = graphql.WithFieldContext(ctx, fc)
-	if fc.Args, err = ec.field_Mutation_updateLoggingSettings_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
-		ec.Error(ctx, err)
-		return fc, err
 	}
 	return fc, nil
 }
@@ -7390,16 +7401,68 @@ func (ec *executionContext) fieldContext_Query_settings(_ context.Context, field
 				return ec.fieldContext_Settings_jackett(ctx, field)
 			case "qbittorrent":
 				return ec.fieldContext_Settings_qbittorrent(ctx, field)
-			case "tasks":
-				return ec.fieldContext_Settings_tasks(ctx, field)
+			case "automation":
+				return ec.fieldContext_Settings_automation(ctx, field)
 			case "subscription":
 				return ec.fieldContext_Settings_subscription(ctx, field)
-			case "logging":
-				return ec.fieldContext_Settings_logging(ctx, field)
-			case "system":
-				return ec.fieldContext_Settings_system(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Settings", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Query_settingsStatus(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Query_settingsStatus(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Query().SettingsStatus(rctx)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*model.SettingsStatus)
+	fc.Result = res
+	return ec.marshalNSettingsStatus2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐSettingsStatus(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Query_settingsStatus(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "stash":
+				return ec.fieldContext_SettingsStatus_stash(ctx, field)
+			case "jackett":
+				return ec.fieldContext_SettingsStatus_jackett(ctx, field)
+			case "qbittorrent":
+				return ec.fieldContext_SettingsStatus_qbittorrent(ctx, field)
+			case "automation":
+				return ec.fieldContext_SettingsStatus_automation(ctx, field)
+			case "subscription":
+				return ec.fieldContext_SettingsStatus_subscription(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type SettingsStatus", field.Name)
 		},
 	}
 	return fc, nil
@@ -8090,6 +8153,94 @@ func (ec *executionContext) fieldContext_Query___schema(_ context.Context, field
 	return fc, nil
 }
 
+func (ec *executionContext) _ServiceStatus_configured(ctx context.Context, field graphql.CollectedField, obj *model.ServiceStatus) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_ServiceStatus_configured(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Configured, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(bool)
+	fc.Result = res
+	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_ServiceStatus_configured(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ServiceStatus",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ServiceStatus_enabled(ctx context.Context, field graphql.CollectedField, obj *model.ServiceStatus) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_ServiceStatus_enabled(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Enabled, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(bool)
+	fc.Result = res
+	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_ServiceStatus_enabled(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ServiceStatus",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _Settings_stash(ctx context.Context, field graphql.CollectedField, obj *model.Settings) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_Settings_stash(ctx, field)
 	if err != nil {
@@ -8280,8 +8431,8 @@ func (ec *executionContext) fieldContext_Settings_qbittorrent(_ context.Context,
 	return fc, nil
 }
 
-func (ec *executionContext) _Settings_tasks(ctx context.Context, field graphql.CollectedField, obj *model.Settings) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_Settings_tasks(ctx, field)
+func (ec *executionContext) _Settings_automation(ctx context.Context, field graphql.CollectedField, obj *model.Settings) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Settings_automation(ctx, field)
 	if err != nil {
 		return graphql.Null
 	}
@@ -8294,7 +8445,7 @@ func (ec *executionContext) _Settings_tasks(ctx context.Context, field graphql.C
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
 		ctx = rctx // use context from middleware stack in children
-		return obj.Tasks, nil
+		return obj.Automation, nil
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -8306,12 +8457,12 @@ func (ec *executionContext) _Settings_tasks(ctx context.Context, field graphql.C
 		}
 		return graphql.Null
 	}
-	res := resTmp.(*model.TaskSettings)
+	res := resTmp.(*model.AutomationSettings)
 	fc.Result = res
-	return ec.marshalNTaskSettings2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐTaskSettings(ctx, field.Selections, res)
+	return ec.marshalNAutomationSettings2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐAutomationSettings(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_Settings_tasks(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_Settings_automation(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "Settings",
 		Field:      field,
@@ -8319,16 +8470,12 @@ func (ec *executionContext) fieldContext_Settings_tasks(_ context.Context, field
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			switch field.Name {
-			case "store":
-				return ec.fieldContext_TaskSettings_store(ctx, field)
-			case "dbPath":
-				return ec.fieldContext_TaskSettings_dbPath(ctx, field)
-			case "progressSyncIntervalSeconds":
-				return ec.fieldContext_TaskSettings_progressSyncIntervalSeconds(ctx, field)
-			case "progressSyncEnabled":
-				return ec.fieldContext_TaskSettings_progressSyncEnabled(ctx, field)
+			case "taskProgressSyncIntervalSeconds":
+				return ec.fieldContext_AutomationSettings_taskProgressSyncIntervalSeconds(ctx, field)
+			case "subscriptionPollIntervalSeconds":
+				return ec.fieldContext_AutomationSettings_subscriptionPollIntervalSeconds(ctx, field)
 			}
-			return nil, fmt.Errorf("no field named %q was found under type TaskSettings", field.Name)
+			return nil, fmt.Errorf("no field named %q was found under type AutomationSettings", field.Name)
 		},
 	}
 	return fc, nil
@@ -8373,22 +8520,8 @@ func (ec *executionContext) fieldContext_Settings_subscription(_ context.Context
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			switch field.Name {
-			case "store":
-				return ec.fieldContext_SubscriptionSettings_store(ctx, field)
-			case "dbPath":
-				return ec.fieldContext_SubscriptionSettings_dbPath(ctx, field)
-			case "pollIntervalSeconds":
-				return ec.fieldContext_SubscriptionSettings_pollIntervalSeconds(ctx, field)
-			case "pollEnabled":
-				return ec.fieldContext_SubscriptionSettings_pollEnabled(ctx, field)
-			case "stashBoxes":
-				return ec.fieldContext_SubscriptionSettings_stashBoxes(ctx, field)
 			case "stashBoxEndpoints":
 				return ec.fieldContext_SubscriptionSettings_stashBoxEndpoints(ctx, field)
-			case "stashBoxesLoaded":
-				return ec.fieldContext_SubscriptionSettings_stashBoxesLoaded(ctx, field)
-			case "stashBoxesLoadError":
-				return ec.fieldContext_SubscriptionSettings_stashBoxesLoadError(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type SubscriptionSettings", field.Name)
 		},
@@ -8396,8 +8529,8 @@ func (ec *executionContext) fieldContext_Settings_subscription(_ context.Context
 	return fc, nil
 }
 
-func (ec *executionContext) _Settings_logging(ctx context.Context, field graphql.CollectedField, obj *model.Settings) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_Settings_logging(ctx, field)
+func (ec *executionContext) _SettingsStatus_stash(ctx context.Context, field graphql.CollectedField, obj *model.SettingsStatus) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_SettingsStatus_stash(ctx, field)
 	if err != nil {
 		return graphql.Null
 	}
@@ -8410,7 +8543,7 @@ func (ec *executionContext) _Settings_logging(ctx context.Context, field graphql
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
 		ctx = rctx // use context from middleware stack in children
-		return obj.Logging, nil
+		return obj.Stash, nil
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -8422,38 +8555,32 @@ func (ec *executionContext) _Settings_logging(ctx context.Context, field graphql
 		}
 		return graphql.Null
 	}
-	res := resTmp.(*model.LoggingSettings)
+	res := resTmp.(*model.ServiceStatus)
 	fc.Result = res
-	return ec.marshalNLoggingSettings2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐLoggingSettings(ctx, field.Selections, res)
+	return ec.marshalNServiceStatus2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐServiceStatus(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_Settings_logging(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_SettingsStatus_stash(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
-		Object:     "Settings",
+		Object:     "SettingsStatus",
 		Field:      field,
 		IsMethod:   false,
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			switch field.Name {
-			case "level":
-				return ec.fieldContext_LoggingSettings_level(ctx, field)
-			case "filePath":
-				return ec.fieldContext_LoggingSettings_filePath(ctx, field)
-			case "maxEntries":
-				return ec.fieldContext_LoggingSettings_maxEntries(ctx, field)
-			case "maxFileSizeBytes":
-				return ec.fieldContext_LoggingSettings_maxFileSizeBytes(ctx, field)
-			case "maxFileBackups":
-				return ec.fieldContext_LoggingSettings_maxFileBackups(ctx, field)
+			case "configured":
+				return ec.fieldContext_ServiceStatus_configured(ctx, field)
+			case "enabled":
+				return ec.fieldContext_ServiceStatus_enabled(ctx, field)
 			}
-			return nil, fmt.Errorf("no field named %q was found under type LoggingSettings", field.Name)
+			return nil, fmt.Errorf("no field named %q was found under type ServiceStatus", field.Name)
 		},
 	}
 	return fc, nil
 }
 
-func (ec *executionContext) _Settings_system(ctx context.Context, field graphql.CollectedField, obj *model.Settings) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_Settings_system(ctx, field)
+func (ec *executionContext) _SettingsStatus_jackett(ctx context.Context, field graphql.CollectedField, obj *model.SettingsStatus) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_SettingsStatus_jackett(ctx, field)
 	if err != nil {
 		return graphql.Null
 	}
@@ -8466,7 +8593,7 @@ func (ec *executionContext) _Settings_system(ctx context.Context, field graphql.
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
 		ctx = rctx // use context from middleware stack in children
-		return obj.System, nil
+		return obj.Jackett, nil
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -8478,23 +8605,181 @@ func (ec *executionContext) _Settings_system(ctx context.Context, field graphql.
 		}
 		return graphql.Null
 	}
-	res := resTmp.(*model.SystemSettings)
+	res := resTmp.(*model.ServiceStatus)
 	fc.Result = res
-	return ec.marshalNSystemSettings2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐSystemSettings(ctx, field.Selections, res)
+	return ec.marshalNServiceStatus2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐServiceStatus(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_Settings_system(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_SettingsStatus_jackett(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
-		Object:     "Settings",
+		Object:     "SettingsStatus",
 		Field:      field,
 		IsMethod:   false,
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			switch field.Name {
-			case "appVersion":
-				return ec.fieldContext_SystemSettings_appVersion(ctx, field)
+			case "configured":
+				return ec.fieldContext_ServiceStatus_configured(ctx, field)
+			case "enabled":
+				return ec.fieldContext_ServiceStatus_enabled(ctx, field)
 			}
-			return nil, fmt.Errorf("no field named %q was found under type SystemSettings", field.Name)
+			return nil, fmt.Errorf("no field named %q was found under type ServiceStatus", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _SettingsStatus_qbittorrent(ctx context.Context, field graphql.CollectedField, obj *model.SettingsStatus) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_SettingsStatus_qbittorrent(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Qbittorrent, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*model.ServiceStatus)
+	fc.Result = res
+	return ec.marshalNServiceStatus2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐServiceStatus(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_SettingsStatus_qbittorrent(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "SettingsStatus",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "configured":
+				return ec.fieldContext_ServiceStatus_configured(ctx, field)
+			case "enabled":
+				return ec.fieldContext_ServiceStatus_enabled(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type ServiceStatus", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _SettingsStatus_automation(ctx context.Context, field graphql.CollectedField, obj *model.SettingsStatus) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_SettingsStatus_automation(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Automation, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*model.AutomationStatus)
+	fc.Result = res
+	return ec.marshalNAutomationStatus2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐAutomationStatus(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_SettingsStatus_automation(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "SettingsStatus",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "taskProgressSyncIntervalSeconds":
+				return ec.fieldContext_AutomationStatus_taskProgressSyncIntervalSeconds(ctx, field)
+			case "taskProgressSyncEnabled":
+				return ec.fieldContext_AutomationStatus_taskProgressSyncEnabled(ctx, field)
+			case "subscriptionPollIntervalSeconds":
+				return ec.fieldContext_AutomationStatus_subscriptionPollIntervalSeconds(ctx, field)
+			case "subscriptionPollEnabled":
+				return ec.fieldContext_AutomationStatus_subscriptionPollEnabled(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type AutomationStatus", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _SettingsStatus_subscription(ctx context.Context, field graphql.CollectedField, obj *model.SettingsStatus) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_SettingsStatus_subscription(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Subscription, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*model.SubscriptionStatus)
+	fc.Result = res
+	return ec.marshalNSubscriptionStatus2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐSubscriptionStatus(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_SettingsStatus_subscription(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "SettingsStatus",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "stashBoxes":
+				return ec.fieldContext_SubscriptionStatus_stashBoxes(ctx, field)
+			case "stashBoxesLoaded":
+				return ec.fieldContext_SubscriptionStatus_stashBoxesLoaded(ctx, field)
+			case "stashBoxesLoadError":
+				return ec.fieldContext_SubscriptionStatus_stashBoxesLoadError(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type SubscriptionStatus", field.Name)
 		},
 	}
 	return fc, nil
@@ -10804,234 +11089,6 @@ func (ec *executionContext) fieldContext_SubscriptionRelease_seenAt(_ context.Co
 	return fc, nil
 }
 
-func (ec *executionContext) _SubscriptionSettings_store(ctx context.Context, field graphql.CollectedField, obj *model.SubscriptionSettings) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_SubscriptionSettings_store(ctx, field)
-	if err != nil {
-		return graphql.Null
-	}
-	ctx = graphql.WithFieldContext(ctx, fc)
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.Store, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(string)
-	fc.Result = res
-	return ec.marshalNString2string(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) fieldContext_SubscriptionSettings_store(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "SubscriptionSettings",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type String does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _SubscriptionSettings_dbPath(ctx context.Context, field graphql.CollectedField, obj *model.SubscriptionSettings) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_SubscriptionSettings_dbPath(ctx, field)
-	if err != nil {
-		return graphql.Null
-	}
-	ctx = graphql.WithFieldContext(ctx, fc)
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.DbPath, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(string)
-	fc.Result = res
-	return ec.marshalNString2string(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) fieldContext_SubscriptionSettings_dbPath(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "SubscriptionSettings",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type String does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _SubscriptionSettings_pollIntervalSeconds(ctx context.Context, field graphql.CollectedField, obj *model.SubscriptionSettings) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_SubscriptionSettings_pollIntervalSeconds(ctx, field)
-	if err != nil {
-		return graphql.Null
-	}
-	ctx = graphql.WithFieldContext(ctx, fc)
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.PollIntervalSeconds, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(int)
-	fc.Result = res
-	return ec.marshalNInt2int(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) fieldContext_SubscriptionSettings_pollIntervalSeconds(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "SubscriptionSettings",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type Int does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _SubscriptionSettings_pollEnabled(ctx context.Context, field graphql.CollectedField, obj *model.SubscriptionSettings) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_SubscriptionSettings_pollEnabled(ctx, field)
-	if err != nil {
-		return graphql.Null
-	}
-	ctx = graphql.WithFieldContext(ctx, fc)
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.PollEnabled, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(bool)
-	fc.Result = res
-	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) fieldContext_SubscriptionSettings_pollEnabled(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "SubscriptionSettings",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type Boolean does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _SubscriptionSettings_stashBoxes(ctx context.Context, field graphql.CollectedField, obj *model.SubscriptionSettings) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_SubscriptionSettings_stashBoxes(ctx, field)
-	if err != nil {
-		return graphql.Null
-	}
-	ctx = graphql.WithFieldContext(ctx, fc)
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.StashBoxes, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.([]*model.StashBoxEndpoint)
-	fc.Result = res
-	return ec.marshalNStashBoxEndpoint2ᚕᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐStashBoxEndpointᚄ(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) fieldContext_SubscriptionSettings_stashBoxes(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "SubscriptionSettings",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			switch field.Name {
-			case "name":
-				return ec.fieldContext_StashBoxEndpoint_name(ctx, field)
-			case "endpoint":
-				return ec.fieldContext_StashBoxEndpoint_endpoint(ctx, field)
-			case "apiKeyConfigured":
-				return ec.fieldContext_StashBoxEndpoint_apiKeyConfigured(ctx, field)
-			}
-			return nil, fmt.Errorf("no field named %q was found under type StashBoxEndpoint", field.Name)
-		},
-	}
-	return fc, nil
-}
-
 func (ec *executionContext) _SubscriptionSettings_stashBoxEndpoints(ctx context.Context, field graphql.CollectedField, obj *model.SubscriptionSettings) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_SubscriptionSettings_stashBoxEndpoints(ctx, field)
 	if err != nil {
@@ -11076,8 +11133,60 @@ func (ec *executionContext) fieldContext_SubscriptionSettings_stashBoxEndpoints(
 	return fc, nil
 }
 
-func (ec *executionContext) _SubscriptionSettings_stashBoxesLoaded(ctx context.Context, field graphql.CollectedField, obj *model.SubscriptionSettings) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_SubscriptionSettings_stashBoxesLoaded(ctx, field)
+func (ec *executionContext) _SubscriptionStatus_stashBoxes(ctx context.Context, field graphql.CollectedField, obj *model.SubscriptionStatus) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_SubscriptionStatus_stashBoxes(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.StashBoxes, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]*model.StashBoxEndpoint)
+	fc.Result = res
+	return ec.marshalNStashBoxEndpoint2ᚕᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐStashBoxEndpointᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_SubscriptionStatus_stashBoxes(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "SubscriptionStatus",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "name":
+				return ec.fieldContext_StashBoxEndpoint_name(ctx, field)
+			case "endpoint":
+				return ec.fieldContext_StashBoxEndpoint_endpoint(ctx, field)
+			case "apiKeyConfigured":
+				return ec.fieldContext_StashBoxEndpoint_apiKeyConfigured(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type StashBoxEndpoint", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _SubscriptionStatus_stashBoxesLoaded(ctx context.Context, field graphql.CollectedField, obj *model.SubscriptionStatus) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_SubscriptionStatus_stashBoxesLoaded(ctx, field)
 	if err != nil {
 		return graphql.Null
 	}
@@ -11107,9 +11216,9 @@ func (ec *executionContext) _SubscriptionSettings_stashBoxesLoaded(ctx context.C
 	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_SubscriptionSettings_stashBoxesLoaded(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_SubscriptionStatus_stashBoxesLoaded(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
-		Object:     "SubscriptionSettings",
+		Object:     "SubscriptionStatus",
 		Field:      field,
 		IsMethod:   false,
 		IsResolver: false,
@@ -11120,8 +11229,8 @@ func (ec *executionContext) fieldContext_SubscriptionSettings_stashBoxesLoaded(_
 	return fc, nil
 }
 
-func (ec *executionContext) _SubscriptionSettings_stashBoxesLoadError(ctx context.Context, field graphql.CollectedField, obj *model.SubscriptionSettings) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_SubscriptionSettings_stashBoxesLoadError(ctx, field)
+func (ec *executionContext) _SubscriptionStatus_stashBoxesLoadError(ctx context.Context, field graphql.CollectedField, obj *model.SubscriptionStatus) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_SubscriptionStatus_stashBoxesLoadError(ctx, field)
 	if err != nil {
 		return graphql.Null
 	}
@@ -11148,53 +11257,9 @@ func (ec *executionContext) _SubscriptionSettings_stashBoxesLoadError(ctx contex
 	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_SubscriptionSettings_stashBoxesLoadError(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_SubscriptionStatus_stashBoxesLoadError(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
-		Object:     "SubscriptionSettings",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type String does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _SystemSettings_appVersion(ctx context.Context, field graphql.CollectedField, obj *model.SystemSettings) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_SystemSettings_appVersion(ctx, field)
-	if err != nil {
-		return graphql.Null
-	}
-	ctx = graphql.WithFieldContext(ctx, fc)
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.AppVersion, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(string)
-	fc.Result = res
-	return ec.marshalNString2string(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) fieldContext_SystemSettings_appVersion(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "SystemSettings",
+		Object:     "SubscriptionStatus",
 		Field:      field,
 		IsMethod:   false,
 		IsResolver: false,
@@ -12488,182 +12553,6 @@ func (ec *executionContext) fieldContext_Task_updatedAt(_ context.Context, field
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("field of type String does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _TaskSettings_store(ctx context.Context, field graphql.CollectedField, obj *model.TaskSettings) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_TaskSettings_store(ctx, field)
-	if err != nil {
-		return graphql.Null
-	}
-	ctx = graphql.WithFieldContext(ctx, fc)
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.Store, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(string)
-	fc.Result = res
-	return ec.marshalNString2string(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) fieldContext_TaskSettings_store(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "TaskSettings",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type String does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _TaskSettings_dbPath(ctx context.Context, field graphql.CollectedField, obj *model.TaskSettings) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_TaskSettings_dbPath(ctx, field)
-	if err != nil {
-		return graphql.Null
-	}
-	ctx = graphql.WithFieldContext(ctx, fc)
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.DbPath, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(string)
-	fc.Result = res
-	return ec.marshalNString2string(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) fieldContext_TaskSettings_dbPath(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "TaskSettings",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type String does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _TaskSettings_progressSyncIntervalSeconds(ctx context.Context, field graphql.CollectedField, obj *model.TaskSettings) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_TaskSettings_progressSyncIntervalSeconds(ctx, field)
-	if err != nil {
-		return graphql.Null
-	}
-	ctx = graphql.WithFieldContext(ctx, fc)
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.ProgressSyncIntervalSeconds, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(int)
-	fc.Result = res
-	return ec.marshalNInt2int(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) fieldContext_TaskSettings_progressSyncIntervalSeconds(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "TaskSettings",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type Int does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _TaskSettings_progressSyncEnabled(ctx context.Context, field graphql.CollectedField, obj *model.TaskSettings) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_TaskSettings_progressSyncEnabled(ctx, field)
-	if err != nil {
-		return graphql.Null
-	}
-	ctx = graphql.WithFieldContext(ctx, fc)
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.ProgressSyncEnabled, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(bool)
-	fc.Result = res
-	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) fieldContext_TaskSettings_progressSyncEnabled(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "TaskSettings",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type Boolean does not have child fields")
 		},
 	}
 	return fc, nil
@@ -14882,6 +14771,40 @@ func (ec *executionContext) unmarshalInputStashMetadataScanInput(ctx context.Con
 	return it, nil
 }
 
+func (ec *executionContext) unmarshalInputUpdateAutomationSettingsInput(ctx context.Context, obj any) (model.UpdateAutomationSettingsInput, error) {
+	var it model.UpdateAutomationSettingsInput
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"taskProgressSyncIntervalSeconds", "subscriptionPollIntervalSeconds"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "taskProgressSyncIntervalSeconds":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("taskProgressSyncIntervalSeconds"))
+			data, err := ec.unmarshalNInt2int(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.TaskProgressSyncIntervalSeconds = data
+		case "subscriptionPollIntervalSeconds":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("subscriptionPollIntervalSeconds"))
+			data, err := ec.unmarshalNInt2int(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.SubscriptionPollIntervalSeconds = data
+		}
+	}
+
+	return it, nil
+}
+
 func (ec *executionContext) unmarshalInputUpdateJackettSettingsInput(ctx context.Context, obj any) (model.UpdateJackettSettingsInput, error) {
 	var it model.UpdateJackettSettingsInput
 	asMap := map[string]any{}
@@ -14910,61 +14833,6 @@ func (ec *executionContext) unmarshalInputUpdateJackettSettingsInput(ctx context
 				return it, err
 			}
 			it.APIKey = data
-		}
-	}
-
-	return it, nil
-}
-
-func (ec *executionContext) unmarshalInputUpdateLoggingSettingsInput(ctx context.Context, obj any) (model.UpdateLoggingSettingsInput, error) {
-	var it model.UpdateLoggingSettingsInput
-	asMap := map[string]any{}
-	for k, v := range obj.(map[string]any) {
-		asMap[k] = v
-	}
-
-	fieldsInOrder := [...]string{"level", "filePath", "maxEntries", "maxFileSizeBytes", "maxFileBackups"}
-	for _, k := range fieldsInOrder {
-		v, ok := asMap[k]
-		if !ok {
-			continue
-		}
-		switch k {
-		case "level":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("level"))
-			data, err := ec.unmarshalNString2string(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.Level = data
-		case "filePath":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("filePath"))
-			data, err := ec.unmarshalNString2string(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.FilePath = data
-		case "maxEntries":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("maxEntries"))
-			data, err := ec.unmarshalNInt2int(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.MaxEntries = data
-		case "maxFileSizeBytes":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("maxFileSizeBytes"))
-			data, err := ec.unmarshalNInt2int(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.MaxFileSizeBytes = data
-		case "maxFileBackups":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("maxFileBackups"))
-			data, err := ec.unmarshalNInt2int(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.MaxFileBackups = data
 		}
 	}
 
@@ -15116,34 +14984,13 @@ func (ec *executionContext) unmarshalInputUpdateSubscriptionSettingsInput(ctx co
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"store", "dbPath", "pollIntervalSeconds", "stashBoxEndpoints"}
+	fieldsInOrder := [...]string{"stashBoxEndpoints"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
 			continue
 		}
 		switch k {
-		case "store":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("store"))
-			data, err := ec.unmarshalNString2string(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.Store = data
-		case "dbPath":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("dbPath"))
-			data, err := ec.unmarshalNString2string(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.DbPath = data
-		case "pollIntervalSeconds":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("pollIntervalSeconds"))
-			data, err := ec.unmarshalNInt2int(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.PollIntervalSeconds = data
 		case "stashBoxEndpoints":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("stashBoxEndpoints"))
 			data, err := ec.unmarshalNString2ᚕstringᚄ(ctx, v)
@@ -15164,6 +15011,104 @@ func (ec *executionContext) unmarshalInputUpdateSubscriptionSettingsInput(ctx co
 // endregion ************************** interface.gotpl ***************************
 
 // region    **************************** object.gotpl ****************************
+
+var automationSettingsImplementors = []string{"AutomationSettings"}
+
+func (ec *executionContext) _AutomationSettings(ctx context.Context, sel ast.SelectionSet, obj *model.AutomationSettings) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, automationSettingsImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("AutomationSettings")
+		case "taskProgressSyncIntervalSeconds":
+			out.Values[i] = ec._AutomationSettings_taskProgressSyncIntervalSeconds(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "subscriptionPollIntervalSeconds":
+			out.Values[i] = ec._AutomationSettings_subscriptionPollIntervalSeconds(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var automationStatusImplementors = []string{"AutomationStatus"}
+
+func (ec *executionContext) _AutomationStatus(ctx context.Context, sel ast.SelectionSet, obj *model.AutomationStatus) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, automationStatusImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("AutomationStatus")
+		case "taskProgressSyncIntervalSeconds":
+			out.Values[i] = ec._AutomationStatus_taskProgressSyncIntervalSeconds(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "taskProgressSyncEnabled":
+			out.Values[i] = ec._AutomationStatus_taskProgressSyncEnabled(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "subscriptionPollIntervalSeconds":
+			out.Values[i] = ec._AutomationStatus_subscriptionPollIntervalSeconds(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "subscriptionPollEnabled":
+			out.Values[i] = ec._AutomationStatus_subscriptionPollEnabled(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
 
 var dashboardStatsImplementors = []string{"DashboardStats"}
 
@@ -15544,65 +15489,6 @@ func (ec *executionContext) _LogEntry(ctx context.Context, sel ast.SelectionSet,
 	return out
 }
 
-var loggingSettingsImplementors = []string{"LoggingSettings"}
-
-func (ec *executionContext) _LoggingSettings(ctx context.Context, sel ast.SelectionSet, obj *model.LoggingSettings) graphql.Marshaler {
-	fields := graphql.CollectFields(ec.OperationContext, sel, loggingSettingsImplementors)
-
-	out := graphql.NewFieldSet(fields)
-	deferred := make(map[string]*graphql.FieldSet)
-	for i, field := range fields {
-		switch field.Name {
-		case "__typename":
-			out.Values[i] = graphql.MarshalString("LoggingSettings")
-		case "level":
-			out.Values[i] = ec._LoggingSettings_level(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
-		case "filePath":
-			out.Values[i] = ec._LoggingSettings_filePath(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
-		case "maxEntries":
-			out.Values[i] = ec._LoggingSettings_maxEntries(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
-		case "maxFileSizeBytes":
-			out.Values[i] = ec._LoggingSettings_maxFileSizeBytes(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
-		case "maxFileBackups":
-			out.Values[i] = ec._LoggingSettings_maxFileBackups(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
-		default:
-			panic("unknown field " + strconv.Quote(field.Name))
-		}
-	}
-	out.Dispatch(ctx)
-	if out.Invalids > 0 {
-		return graphql.Null
-	}
-
-	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
-
-	for label, dfs := range deferred {
-		ec.processDeferredGroup(graphql.DeferredGroup{
-			Label:    label,
-			Path:     graphql.GetPath(ctx),
-			FieldSet: dfs,
-			Context:  ctx,
-		})
-	}
-
-	return out
-}
-
 var mutationImplementors = []string{"Mutation"}
 
 func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet) graphql.Marshaler {
@@ -15685,6 +15571,13 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
+		case "updateAutomationSettings":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_updateAutomationSettings(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
 		case "updateSubscriptionSettings":
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
 				return ec._Mutation_updateSubscriptionSettings(ctx, field)
@@ -15695,13 +15588,6 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 		case "refreshSubscriptionStashBoxes":
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
 				return ec._Mutation_refreshSubscriptionStashBoxes(ctx, field)
-			})
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
-		case "updateLoggingSettings":
-			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
-				return ec._Mutation_updateLoggingSettings(ctx, field)
 			})
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
@@ -16066,6 +15952,28 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 			}
 
 			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
+		case "settingsStatus":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_settingsStatus(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			rrm := func(ctx context.Context) graphql.Marshaler {
+				return ec.OperationContext.RootResolverMiddleware(ctx,
+					func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
 		case "stashJob":
 			field := field
 
@@ -16245,6 +16153,50 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 	return out
 }
 
+var serviceStatusImplementors = []string{"ServiceStatus"}
+
+func (ec *executionContext) _ServiceStatus(ctx context.Context, sel ast.SelectionSet, obj *model.ServiceStatus) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, serviceStatusImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("ServiceStatus")
+		case "configured":
+			out.Values[i] = ec._ServiceStatus_configured(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "enabled":
+			out.Values[i] = ec._ServiceStatus_enabled(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
 var settingsImplementors = []string{"Settings"}
 
 func (ec *executionContext) _Settings(ctx context.Context, sel ast.SelectionSet, obj *model.Settings) graphql.Marshaler {
@@ -16271,8 +16223,8 @@ func (ec *executionContext) _Settings(ctx context.Context, sel ast.SelectionSet,
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
-		case "tasks":
-			out.Values[i] = ec._Settings_tasks(ctx, field, obj)
+		case "automation":
+			out.Values[i] = ec._Settings_automation(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
@@ -16281,13 +16233,62 @@ func (ec *executionContext) _Settings(ctx context.Context, sel ast.SelectionSet,
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
-		case "logging":
-			out.Values[i] = ec._Settings_logging(ctx, field, obj)
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var settingsStatusImplementors = []string{"SettingsStatus"}
+
+func (ec *executionContext) _SettingsStatus(ctx context.Context, sel ast.SelectionSet, obj *model.SettingsStatus) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, settingsStatusImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("SettingsStatus")
+		case "stash":
+			out.Values[i] = ec._SettingsStatus_stash(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
-		case "system":
-			out.Values[i] = ec._Settings_system(ctx, field, obj)
+		case "jackett":
+			out.Values[i] = ec._SettingsStatus_jackett(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "qbittorrent":
+			out.Values[i] = ec._SettingsStatus_qbittorrent(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "automation":
+			out.Values[i] = ec._SettingsStatus_automation(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "subscription":
+			out.Values[i] = ec._SettingsStatus_subscription(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
@@ -16787,43 +16788,11 @@ func (ec *executionContext) _SubscriptionSettings(ctx context.Context, sel ast.S
 		switch field.Name {
 		case "__typename":
 			out.Values[i] = graphql.MarshalString("SubscriptionSettings")
-		case "store":
-			out.Values[i] = ec._SubscriptionSettings_store(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
-		case "dbPath":
-			out.Values[i] = ec._SubscriptionSettings_dbPath(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
-		case "pollIntervalSeconds":
-			out.Values[i] = ec._SubscriptionSettings_pollIntervalSeconds(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
-		case "pollEnabled":
-			out.Values[i] = ec._SubscriptionSettings_pollEnabled(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
-		case "stashBoxes":
-			out.Values[i] = ec._SubscriptionSettings_stashBoxes(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
 		case "stashBoxEndpoints":
 			out.Values[i] = ec._SubscriptionSettings_stashBoxEndpoints(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
-		case "stashBoxesLoaded":
-			out.Values[i] = ec._SubscriptionSettings_stashBoxesLoaded(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
-		case "stashBoxesLoadError":
-			out.Values[i] = ec._SubscriptionSettings_stashBoxesLoadError(ctx, field, obj)
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -16847,22 +16816,29 @@ func (ec *executionContext) _SubscriptionSettings(ctx context.Context, sel ast.S
 	return out
 }
 
-var systemSettingsImplementors = []string{"SystemSettings"}
+var subscriptionStatusImplementors = []string{"SubscriptionStatus"}
 
-func (ec *executionContext) _SystemSettings(ctx context.Context, sel ast.SelectionSet, obj *model.SystemSettings) graphql.Marshaler {
-	fields := graphql.CollectFields(ec.OperationContext, sel, systemSettingsImplementors)
+func (ec *executionContext) _SubscriptionStatus(ctx context.Context, sel ast.SelectionSet, obj *model.SubscriptionStatus) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, subscriptionStatusImplementors)
 
 	out := graphql.NewFieldSet(fields)
 	deferred := make(map[string]*graphql.FieldSet)
 	for i, field := range fields {
 		switch field.Name {
 		case "__typename":
-			out.Values[i] = graphql.MarshalString("SystemSettings")
-		case "appVersion":
-			out.Values[i] = ec._SystemSettings_appVersion(ctx, field, obj)
+			out.Values[i] = graphql.MarshalString("SubscriptionStatus")
+		case "stashBoxes":
+			out.Values[i] = ec._SubscriptionStatus_stashBoxes(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
+		case "stashBoxesLoaded":
+			out.Values[i] = ec._SubscriptionStatus_stashBoxesLoaded(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "stashBoxesLoadError":
+			out.Values[i] = ec._SubscriptionStatus_stashBoxesLoadError(ctx, field, obj)
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -17033,60 +17009,6 @@ func (ec *executionContext) _Task(ctx context.Context, sel ast.SelectionSet, obj
 			}
 		case "updatedAt":
 			out.Values[i] = ec._Task_updatedAt(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
-		default:
-			panic("unknown field " + strconv.Quote(field.Name))
-		}
-	}
-	out.Dispatch(ctx)
-	if out.Invalids > 0 {
-		return graphql.Null
-	}
-
-	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
-
-	for label, dfs := range deferred {
-		ec.processDeferredGroup(graphql.DeferredGroup{
-			Label:    label,
-			Path:     graphql.GetPath(ctx),
-			FieldSet: dfs,
-			Context:  ctx,
-		})
-	}
-
-	return out
-}
-
-var taskSettingsImplementors = []string{"TaskSettings"}
-
-func (ec *executionContext) _TaskSettings(ctx context.Context, sel ast.SelectionSet, obj *model.TaskSettings) graphql.Marshaler {
-	fields := graphql.CollectFields(ec.OperationContext, sel, taskSettingsImplementors)
-
-	out := graphql.NewFieldSet(fields)
-	deferred := make(map[string]*graphql.FieldSet)
-	for i, field := range fields {
-		switch field.Name {
-		case "__typename":
-			out.Values[i] = graphql.MarshalString("TaskSettings")
-		case "store":
-			out.Values[i] = ec._TaskSettings_store(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
-		case "dbPath":
-			out.Values[i] = ec._TaskSettings_dbPath(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
-		case "progressSyncIntervalSeconds":
-			out.Values[i] = ec._TaskSettings_progressSyncIntervalSeconds(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
-		case "progressSyncEnabled":
-			out.Values[i] = ec._TaskSettings_progressSyncEnabled(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
@@ -17448,6 +17370,26 @@ func (ec *executionContext) ___Type(ctx context.Context, sel ast.SelectionSet, o
 
 // region    ***************************** type.gotpl *****************************
 
+func (ec *executionContext) marshalNAutomationSettings2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐAutomationSettings(ctx context.Context, sel ast.SelectionSet, v *model.AutomationSettings) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._AutomationSettings(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNAutomationStatus2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐAutomationStatus(ctx context.Context, sel ast.SelectionSet, v *model.AutomationStatus) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._AutomationStatus(ctx, sel, v)
+}
+
 func (ec *executionContext) unmarshalNBoolean2bool(ctx context.Context, v any) (bool, error) {
 	res, err := graphql.UnmarshalBoolean(v)
 	return res, graphql.ErrorOnPath(ctx, err)
@@ -17688,16 +17630,6 @@ func (ec *executionContext) marshalNLogLevel2githubᚗcomᚋleothevan2444ᚋmoji
 	return v
 }
 
-func (ec *executionContext) marshalNLoggingSettings2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐLoggingSettings(ctx context.Context, sel ast.SelectionSet, v *model.LoggingSettings) graphql.Marshaler {
-	if v == nil {
-		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
-			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
-		}
-		return graphql.Null
-	}
-	return ec._LoggingSettings(ctx, sel, v)
-}
-
 func (ec *executionContext) unmarshalNLong2int64(ctx context.Context, v any) (int64, error) {
 	res, err := graphql.UnmarshalInt64(v)
 	return res, graphql.ErrorOnPath(ctx, err)
@@ -17783,6 +17715,16 @@ func (ec *executionContext) marshalNQBittorrentSettings2ᚖgithubᚗcomᚋleothe
 	return ec._QBittorrentSettings(ctx, sel, v)
 }
 
+func (ec *executionContext) marshalNServiceStatus2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐServiceStatus(ctx context.Context, sel ast.SelectionSet, v *model.ServiceStatus) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._ServiceStatus(ctx, sel, v)
+}
+
 func (ec *executionContext) marshalNSettings2githubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐSettings(ctx context.Context, sel ast.SelectionSet, v model.Settings) graphql.Marshaler {
 	return ec._Settings(ctx, sel, &v)
 }
@@ -17795,6 +17737,20 @@ func (ec *executionContext) marshalNSettings2ᚖgithubᚗcomᚋleothevan2444ᚋm
 		return graphql.Null
 	}
 	return ec._Settings(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNSettingsStatus2githubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐSettingsStatus(ctx context.Context, sel ast.SelectionSet, v model.SettingsStatus) graphql.Marshaler {
+	return ec._SettingsStatus(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNSettingsStatus2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐSettingsStatus(ctx context.Context, sel ast.SelectionSet, v *model.SettingsStatus) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._SettingsStatus(ctx, sel, v)
 }
 
 func (ec *executionContext) marshalNStashBoxEndpoint2ᚕᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐStashBoxEndpointᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.StashBoxEndpoint) graphql.Marshaler {
@@ -18102,14 +18058,14 @@ func (ec *executionContext) marshalNSubscriptionSettings2ᚖgithubᚗcomᚋleoth
 	return ec._SubscriptionSettings(ctx, sel, v)
 }
 
-func (ec *executionContext) marshalNSystemSettings2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐSystemSettings(ctx context.Context, sel ast.SelectionSet, v *model.SystemSettings) graphql.Marshaler {
+func (ec *executionContext) marshalNSubscriptionStatus2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐSubscriptionStatus(ctx context.Context, sel ast.SelectionSet, v *model.SubscriptionStatus) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
 			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
 		}
 		return graphql.Null
 	}
-	return ec._SystemSettings(ctx, sel, v)
+	return ec._SubscriptionStatus(ctx, sel, v)
 }
 
 func (ec *executionContext) marshalNTask2githubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐTask(ctx context.Context, sel ast.SelectionSet, v model.Task) graphql.Marshaler {
@@ -18170,23 +18126,13 @@ func (ec *executionContext) marshalNTask2ᚖgithubᚗcomᚋleothevan2444ᚋmoji�
 	return ec._Task(ctx, sel, v)
 }
 
-func (ec *executionContext) marshalNTaskSettings2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐTaskSettings(ctx context.Context, sel ast.SelectionSet, v *model.TaskSettings) graphql.Marshaler {
-	if v == nil {
-		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
-			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
-		}
-		return graphql.Null
-	}
-	return ec._TaskSettings(ctx, sel, v)
+func (ec *executionContext) unmarshalNUpdateAutomationSettingsInput2githubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐUpdateAutomationSettingsInput(ctx context.Context, v any) (model.UpdateAutomationSettingsInput, error) {
+	res, err := ec.unmarshalInputUpdateAutomationSettingsInput(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
 }
 
 func (ec *executionContext) unmarshalNUpdateJackettSettingsInput2githubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐUpdateJackettSettingsInput(ctx context.Context, v any) (model.UpdateJackettSettingsInput, error) {
 	res, err := ec.unmarshalInputUpdateJackettSettingsInput(ctx, v)
-	return res, graphql.ErrorOnPath(ctx, err)
-}
-
-func (ec *executionContext) unmarshalNUpdateLoggingSettingsInput2githubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐUpdateLoggingSettingsInput(ctx context.Context, v any) (model.UpdateLoggingSettingsInput, error) {
-	res, err := ec.unmarshalInputUpdateLoggingSettingsInput(ctx, v)
 	return res, graphql.ErrorOnPath(ctx, err)
 }
 

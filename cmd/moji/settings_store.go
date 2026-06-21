@@ -31,7 +31,13 @@ func newRuntimeSettingsEditor(store *config.Store, version string, qbittorrentEn
 func (s *runtimeSettingsEditor) Snapshot() *graphqlapi.SettingsSnapshot {
 	cfg := s.store.Config()
 	applySubscriptionOrder(cfg, s.subscriptionService)
-	return buildSettingsSnapshot(cfg, s.version, s.qbittorrentEnabled, s.downloaderEnabled, s.stashEnabled, s.subscriptionService)
+	return buildSettingsSnapshot(cfg, s.version, s.qbittorrentEnabled)
+}
+
+func (s *runtimeSettingsEditor) StatusSnapshot() *graphqlapi.SettingsStatusSnapshot {
+	cfg := s.store.Config()
+	applySubscriptionOrder(cfg, s.subscriptionService)
+	return buildSettingsStatusSnapshot(cfg, s.version, s.qbittorrentEnabled, s.downloaderEnabled, s.stashEnabled, s.subscriptionService)
 }
 
 func (s *runtimeSettingsEditor) UpdateStashSettings(input graphqlapi.UpdateStashSettingsInput) (*graphqlapi.SettingsSnapshot, error) {
@@ -56,7 +62,7 @@ func (s *runtimeSettingsEditor) UpdateStashSettings(input graphqlapi.UpdateStash
 		cfg.Stash.LibraryPath,
 		cfg.Stash.TransferTargetPath,
 	)
-	return buildSettingsSnapshot(cfg, s.version, s.qbittorrentEnabled, s.downloaderEnabled, s.stashEnabled, s.subscriptionService), nil
+	return buildSettingsSnapshot(cfg, s.version, s.qbittorrentEnabled), nil
 }
 
 func (s *runtimeSettingsEditor) UpdateJackettSettings(input graphqlapi.UpdateJackettSettingsInput) (*graphqlapi.SettingsSnapshot, error) {
@@ -69,7 +75,7 @@ func (s *runtimeSettingsEditor) UpdateJackettSettings(input graphqlapi.UpdateJac
 		return nil, err
 	}
 	logging.Infof("settings: jackett settings saved for url=%s", cfg.Jackett.URL)
-	return buildSettingsSnapshot(cfg, s.version, s.qbittorrentEnabled, s.downloaderEnabled, s.stashEnabled, s.subscriptionService), nil
+	return buildSettingsSnapshot(cfg, s.version, s.qbittorrentEnabled), nil
 }
 
 func (s *runtimeSettingsEditor) UpdateQBittorrentSettings(input graphqlapi.UpdateQBittorrentSettingsInput) (*graphqlapi.SettingsSnapshot, error) {
@@ -92,60 +98,36 @@ func (s *runtimeSettingsEditor) UpdateQBittorrentSettings(input graphqlapi.Updat
 		cfg.QBittorrent.DefaultSavePath,
 		cfg.QBittorrent.Category,
 	)
-	return buildSettingsSnapshot(cfg, s.version, s.qbittorrentEnabled, s.downloaderEnabled, s.stashEnabled, s.subscriptionService), nil
+	return buildSettingsSnapshot(cfg, s.version, s.qbittorrentEnabled), nil
+}
+
+func (s *runtimeSettingsEditor) UpdateAutomationSettings(input graphqlapi.UpdateAutomationSettingsInput) (*graphqlapi.SettingsSnapshot, error) {
+	cfg, err := s.store.UpdateAutomation(
+		input.TaskProgressSyncIntervalSeconds,
+		input.SubscriptionPollIntervalSeconds,
+	)
+	if err != nil {
+		logging.Errorf("settings: save automation settings failed: %v", err)
+		return nil, err
+	}
+	logging.Infof(
+		"settings: automation settings saved task_sync_interval=%d subscription_poll_interval=%d",
+		cfg.Automation.TaskProgressSyncIntervalSeconds,
+		cfg.Automation.SubscriptionPollIntervalSeconds,
+	)
+	return buildSettingsSnapshot(cfg, s.version, s.qbittorrentEnabled), nil
 }
 
 func (s *runtimeSettingsEditor) UpdateSubscriptionSettings(input graphqlapi.UpdateSubscriptionSettingsInput) (*graphqlapi.SettingsSnapshot, error) {
-	cfg, err := s.store.UpdateSubscription(
-		strings.TrimSpace(input.Store),
-		strings.TrimSpace(input.DBPath),
-		input.PollIntervalSeconds,
-		input.StashBoxEndpoints,
-	)
+	cfg, err := s.store.UpdateSubscription(input.StashBoxEndpoints)
 	if err != nil {
 		logging.Errorf("settings: save subscription settings failed: %v", err)
 		return nil, err
 	}
 	logging.Infof(
-		"settings: subscription settings saved for store=%s db_path=%s poll_interval=%d selected_endpoints=%d",
-		cfg.Subscription.Store,
-		cfg.Subscription.DBPath,
-		cfg.Subscription.PollIntervalSeconds,
+		"settings: subscription settings saved selected_endpoints=%d",
 		len(cfg.Subscription.StashBoxEndpoints),
 	)
 	applySubscriptionOrder(cfg, s.subscriptionService)
-	return buildSettingsSnapshot(cfg, s.version, s.qbittorrentEnabled, s.downloaderEnabled, s.stashEnabled, s.subscriptionService), nil
-}
-
-func (s *runtimeSettingsEditor) UpdateLoggingSettings(input graphqlapi.UpdateLoggingSettingsInput) (*graphqlapi.SettingsSnapshot, error) {
-	cfg, err := s.store.UpdateLogging(
-		strings.TrimSpace(input.Level),
-		strings.TrimSpace(input.FilePath),
-		input.MaxEntries,
-		input.MaxFileSizeBytes,
-		input.MaxFileBackups,
-	)
-	if err != nil {
-		logging.Errorf("settings: save logging settings failed: %v", err)
-		return nil, err
-	}
-	if _, err := logging.ConfigureDefault(logging.Options{
-		Level:            cfg.EffectiveLogLevel(),
-		FilePath:         cfg.EffectiveLogFilePath(),
-		MaxEntries:       cfg.EffectiveLogMaxEntries(),
-		MaxFileSizeBytes: cfg.EffectiveLogMaxFileSizeBytes(),
-		MaxFileBackups:   cfg.EffectiveLogMaxFileBackups(),
-	}); err != nil {
-		logging.Errorf("settings: hot-reload logger failed: %v", err)
-		return nil, err
-	}
-	logging.Infof(
-		"settings: logging settings saved level=%s file=%s max_entries=%d max_size=%d backups=%d",
-		cfg.EffectiveLogLevel(),
-		cfg.EffectiveLogFilePath(),
-		cfg.EffectiveLogMaxEntries(),
-		cfg.EffectiveLogMaxFileSizeBytes(),
-		cfg.EffectiveLogMaxFileBackups(),
-	)
-	return buildSettingsSnapshot(cfg, s.version, s.qbittorrentEnabled, s.downloaderEnabled, s.stashEnabled, s.subscriptionService), nil
+	return buildSettingsSnapshot(cfg, s.version, s.qbittorrentEnabled), nil
 }
