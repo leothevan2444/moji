@@ -147,11 +147,11 @@ func newHTTPRuntime(cfg *config.Config, version string, configStore *config.Stor
 	resolver := graphqlapi.NewResolver(jackettTracker, torrentClient, downloaderService, stashService, version)
 	resolver.Subscription = subscriptionService
 	resolver.LogReader = logging.Default()
-	resolver.RuntimeSettings = buildSettingsSnapshot(cfg, version, torrentClient != nil)
-	resolver.RuntimeStatus = buildSettingsStatusSnapshot(cfg, version, torrentClient != nil, downloaderService != nil, stashService != nil, subscriptionService)
+	resolver.RuntimeSettings = buildSettingsSnapshot(cfg, version)
+	resolver.RuntimeStatus = buildSettingsStatusSnapshot(cfg, version, downloaderService != nil, stashService != nil, subscriptionService)
 	resolver.Stats = statsCollector
 	if configStore != nil {
-		resolver.SettingsEditor = newRuntimeSettingsEditor(configStore, version, torrentClient != nil, downloaderService != nil, stashService != nil, subscriptionService)
+		resolver.SettingsEditor = newRuntimeSettingsEditor(configStore, version, downloaderService != nil, stashService != nil, subscriptionService)
 	}
 	graphqlHandler := handler.NewDefaultServer(generated.NewExecutableSchema(generated.Config{Resolvers: resolver}))
 
@@ -259,16 +259,15 @@ func applySubscriptionOrder(cfg *config.Config, service graphqlapi.SubscriptionS
 	}
 }
 
-func buildSettingsSnapshot(cfg *config.Config, version string, qbittorrentEnabled bool) *graphqlapi.SettingsSnapshot {
+func buildSettingsSnapshot(cfg *config.Config, version string) *graphqlapi.SettingsSnapshot {
 	_ = version
 	jackettConfigured := cfg.Jackett.URL != "" && cfg.Jackett.APIKey != ""
-	stashReachable := isStashReachable(cfg)
+	stashConfigured := isStashConfigured(cfg)
 	qbittorrentConfigured := cfg.QBittorrent.URL != "" && cfg.QBittorrent.Username != "" && cfg.QBittorrent.Password != ""
 
 	return &graphqlapi.SettingsSnapshot{
 		Stash: graphqlapi.StashSettingsSnapshot{
-			Configured:       stashReachable,
-			Enabled:          stashReachable,
+			Configured:       stashConfigured,
 			URL:              cfg.Stash.URL,
 			APIKeyConfigured: cfg.Stash.APIKey != "",
 			APIKey:           cfg.Stash.APIKey,
@@ -289,7 +288,6 @@ func buildSettingsSnapshot(cfg *config.Config, version string, qbittorrentEnable
 		},
 		Jackett: graphqlapi.JackettSettingsSnapshot{
 			Configured:         jackettConfigured,
-			Enabled:            jackettConfigured,
 			URL:                cfg.Jackett.URL,
 			APIKeyConfigured:   cfg.Jackett.APIKey != "",
 			APIKey:             cfg.Jackett.APIKey,
@@ -298,7 +296,6 @@ func buildSettingsSnapshot(cfg *config.Config, version string, qbittorrentEnable
 		},
 		QBittorrent: graphqlapi.QBittorrentSettingsSnapshot{
 			Configured:         qbittorrentConfigured,
-			Enabled:            qbittorrentEnabled,
 			URL:                cfg.QBittorrent.URL,
 			Username:           cfg.QBittorrent.Username,
 			UsernameConfigured: cfg.QBittorrent.Username != "",
@@ -318,9 +315,10 @@ func buildSettingsSnapshot(cfg *config.Config, version string, qbittorrentEnable
 	}
 }
 
-func buildSettingsStatusSnapshot(cfg *config.Config, version string, qbittorrentEnabled bool, downloaderEnabled bool, stashEnabled bool, subscriptionService graphqlapi.SubscriptionService) *graphqlapi.SettingsStatusSnapshot {
+func buildSettingsStatusSnapshot(cfg *config.Config, version string, downloaderEnabled bool, stashEnabled bool, subscriptionService graphqlapi.SubscriptionService) *graphqlapi.SettingsStatusSnapshot {
+	_ = version
 	jackettConfigured := cfg.Jackett.URL != "" && cfg.Jackett.APIKey != ""
-	stashReachable := isStashReachable(cfg)
+	stashConfigured := isStashConfigured(cfg)
 	ingestConfigured := isIngestConfigured(cfg)
 	qbittorrentConfigured := cfg.QBittorrent.URL != "" && cfg.QBittorrent.Username != "" && cfg.QBittorrent.Password != ""
 
@@ -344,19 +342,19 @@ func buildSettingsStatusSnapshot(cfg *config.Config, version string, qbittorrent
 
 	return &graphqlapi.SettingsStatusSnapshot{
 		Stash: graphqlapi.ServiceStatusSnapshot{
-			Configured: stashReachable,
-			Enabled:    stashEnabled,
+			Configured: stashConfigured,
+			Ready:      stashConfigured,
 		},
 		Ingest: graphqlapi.IngestStatusSnapshot{
 			Configured: ingestConfigured,
 		},
 		Jackett: graphqlapi.ServiceStatusSnapshot{
 			Configured: jackettConfigured,
-			Enabled:    jackettConfigured,
+			Ready:      jackettConfigured,
 		},
 		QBittorrent: graphqlapi.ServiceStatusSnapshot{
 			Configured: qbittorrentConfigured,
-			Enabled:    qbittorrentEnabled,
+			Ready:      qbittorrentConfigured,
 		},
 		Automation: graphqlapi.AutomationStatusSnapshot{
 			TaskProgressSyncIntervalSeconds: effectiveTaskProgressSyncIntervalSeconds(cfg),
@@ -456,14 +454,14 @@ func stashIntegrationConfig(cfg *config.Config) stashsync.IntegrationConfig {
 	}
 }
 
-// isStashReachable reports whether the Stash server itself can be reached
-// (URL + API key configured). Used by the Stash card chip and the
-// SettingsStatus.Stash.Configured signal.
-func isStashReachable(cfg *config.Config) bool {
+// isStashConfigured reports whether the Stash server has the minimum
+// connection fields required by Moji. Stash can be deployed without an API
+// key, so URL alone is enough to treat the service as configured.
+func isStashConfigured(cfg *config.Config) bool {
 	if cfg == nil {
 		return false
 	}
-	return strings.TrimSpace(cfg.Stash.URL) != "" && strings.TrimSpace(cfg.Stash.APIKey) != ""
+	return strings.TrimSpace(cfg.Stash.URL) != ""
 }
 
 // isIngestConfigured reports whether the ingest pipeline is fully wired

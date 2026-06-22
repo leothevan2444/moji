@@ -396,7 +396,6 @@ func TestSettingsQueryReturnsRuntimeSnapshot(t *testing.T) {
 	resolver.RuntimeSettings = &SettingsSnapshot{
 		Stash: StashSettingsSnapshot{
 			Configured:       true,
-			Enabled:          true,
 			URL:              "http://stash.invalid",
 			APIKeyConfigured: true,
 		},
@@ -407,13 +406,11 @@ func TestSettingsQueryReturnsRuntimeSnapshot(t *testing.T) {
 		},
 		Jackett: JackettSettingsSnapshot{
 			Configured:       true,
-			Enabled:          true,
 			URL:              "http://jackett.invalid",
 			APIKeyConfigured: true,
 		},
 		QBittorrent: QBittorrentSettingsSnapshot{
 			Configured:         false,
-			Enabled:            false,
 			URL:                "http://qbittorrent.invalid",
 			Username:           "operator",
 			UsernameConfigured: true,
@@ -438,10 +435,10 @@ func TestSettingsQueryReturnsRuntimeSnapshot(t *testing.T) {
 
 	resp := executeGraphQL(t, resolver, `{
 		settings {
-			stash { configured enabled url apiKeyConfigured }
+			stash { configured url apiKeyConfigured }
 			ingest { libraryScan { libraryPath } }
-			jackett { configured enabled url apiKeyConfigured }
-			qbittorrent { configured enabled url username usernameConfigured passwordConfigured defaultSavePath category tags }
+			jackett { configured url apiKeyConfigured }
+			qbittorrent { configured url username usernameConfigured passwordConfigured defaultSavePath category tags }
 			automation { taskProgressSyncIntervalSeconds subscriptionPollIntervalSeconds }
 		}
 		settingsStatus {
@@ -545,7 +542,6 @@ func TestUpdateStashSettingsMutation(t *testing.T) {
 		updateStashSnapshot: &SettingsSnapshot{
 			Stash: StashSettingsSnapshot{
 				Configured:       true,
-				Enabled:          false,
 				URL:              "http://stash.updated",
 				APIKeyConfigured: true,
 			},
@@ -773,7 +769,6 @@ type graphQLTaskResponse struct {
 		Settings struct {
 			Stash struct {
 				Configured       bool   `json:"configured"`
-				Enabled          bool   `json:"enabled"`
 				URL              string `json:"url"`
 				APIKeyConfigured bool   `json:"apiKeyConfigured"`
 			} `json:"stash"`
@@ -793,13 +788,11 @@ type graphQLTaskResponse struct {
 			} `json:"ingest"`
 			Jackett struct {
 				Configured       bool   `json:"configured"`
-				Enabled          bool   `json:"enabled"`
 				URL              string `json:"url"`
 				APIKeyConfigured bool   `json:"apiKeyConfigured"`
 			} `json:"jackett"`
 			Qbittorrent struct {
 				Configured         bool   `json:"configured"`
-				Enabled            bool   `json:"enabled"`
 				URL                string `json:"url"`
 				Username           string `json:"username"`
 				UsernameConfigured bool   `json:"usernameConfigured"`

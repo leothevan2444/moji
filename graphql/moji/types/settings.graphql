@@ -75,8 +75,8 @@ type StashStats {
   "Most recent error message from any Stash-side refresh. Null = OK."
   lastError: String
 
-  "ISO 8601 timestamp of the most recent successful refresh."
-  okAt: String!
+  "ISO 8601 timestamp of the most recent successful refresh. Null until the first probe completes successfully."
+  okAt: String
 }
 
 type JackettStats {
@@ -98,8 +98,8 @@ type JackettStats {
   "Most recent error message from any Jackett-side refresh. Null = OK."
   lastError: String
 
-  "ISO 8601 timestamp of the most recent successful refresh."
-  okAt: String!
+  "ISO 8601 timestamp of the most recent successful refresh. Null until the first probe completes successfully."
+  okAt: String
 }
 
 type QBittorrentStats {
@@ -121,13 +121,12 @@ type QBittorrentStats {
   "Most recent error message from any qBittorrent-side refresh. Null = OK."
   lastError: String
 
-  "ISO 8601 timestamp of the most recent successful refresh."
-  okAt: String!
+  "ISO 8601 timestamp of the most recent successful refresh. Null until the first probe completes successfully."
+  okAt: String
 }
 
 type StashSettings {
   configured: Boolean!
-  enabled: Boolean!
   url: String!
   apiKeyConfigured: Boolean!
   "Currently configured Stash API key. Returned in plaintext for the settings UI; never logged."
@@ -157,7 +156,6 @@ type LibraryScanIngestSettings {
 
 type JackettSettings {
   configured: Boolean!
-  enabled: Boolean!
   url: String!
   apiKeyConfigured: Boolean!
   "Currently configured Jackett API key. Returned in plaintext for the settings UI; never logged."
@@ -169,7 +167,6 @@ type JackettSettings {
 
 type QBittorrentSettings {
   configured: Boolean!
-  enabled: Boolean!
   url: String!
   username: String!
   usernameConfigured: Boolean!
@@ -192,8 +189,11 @@ type SubscriptionSettings {
 }
 
 type ServiceStatus {
+  "True iff the minimum connection fields are present, so the backend can attempt to talk to the upstream service."
   configured: Boolean!
-  enabled: Boolean!
+
+  "True iff the upstream service is configured AND a recent probe succeeded. A probe result older than ~4 minutes, or a failed probe, returns false. The proximate cause of a non-ready state lives on the corresponding *Stats.lastError."
+  ready: Boolean!
 }
 
 type AutomationStatus {

@@ -49,7 +49,6 @@ func settingsSnapshotToModel(snapshot *SettingsSnapshot, appVersion string) *mod
 	return &model.Settings{
 		Stash: &model.StashSettings{
 			Configured:       snapshot.Stash.Configured,
-			Enabled:          snapshot.Stash.Enabled,
 			URL:              snapshot.Stash.URL,
 			APIKeyConfigured: snapshot.Stash.APIKeyConfigured,
 			APIKey:           snapshot.Stash.APIKey,
@@ -70,7 +69,6 @@ func settingsSnapshotToModel(snapshot *SettingsSnapshot, appVersion string) *mod
 		},
 		Jackett: &model.JackettSettings{
 			Configured:         snapshot.Jackett.Configured,
-			Enabled:            snapshot.Jackett.Enabled,
 			URL:                snapshot.Jackett.URL,
 			APIKeyConfigured:   snapshot.Jackett.APIKeyConfigured,
 			APIKey:             snapshot.Jackett.APIKey,
@@ -79,7 +77,6 @@ func settingsSnapshotToModel(snapshot *SettingsSnapshot, appVersion string) *mod
 		},
 		Qbittorrent: &model.QBittorrentSettings{
 			Configured:         snapshot.QBittorrent.Configured,
-			Enabled:            snapshot.QBittorrent.Enabled,
 			URL:                snapshot.QBittorrent.URL,
 			Username:           snapshot.QBittorrent.Username,
 			UsernameConfigured: snapshot.QBittorrent.UsernameConfigured,
@@ -117,15 +114,15 @@ func settingsStatusSnapshotToModel(snapshot *SettingsStatusSnapshot) *model.Sett
 	return &model.SettingsStatus{
 		Stash: &model.ServiceStatus{
 			Configured: snapshot.Stash.Configured,
-			Enabled:    snapshot.Stash.Enabled,
+			Ready:      snapshot.Stash.Ready,
 		},
 		Jackett: &model.ServiceStatus{
 			Configured: snapshot.Jackett.Configured,
-			Enabled:    snapshot.Jackett.Enabled,
+			Ready:      snapshot.Jackett.Ready,
 		},
 		Qbittorrent: &model.ServiceStatus{
 			Configured: snapshot.QBittorrent.Configured,
-			Enabled:    snapshot.QBittorrent.Enabled,
+			Ready:      snapshot.QBittorrent.Ready,
 		},
 		Automation: &model.AutomationStatus{
 			TaskProgressSyncIntervalSeconds: snapshot.Automation.TaskProgressSyncIntervalSeconds,
@@ -151,21 +148,35 @@ func settingsStatusSnapshotToModel(snapshot *SettingsStatusSnapshot) *model.Sett
 // optional runtime-stats snapshot from the stats collector. When stats is nil
 // (collector not wired, e.g. in tests), the stats fields are returned as
 // zero-value placeholders so the GraphQL response remains valid.
+//
+// The per-service Ready field is recomputed in the stats branch by folding
+// the config-only snapshot signal together with the most recent probe
+// result. When stats is nil, Ready reflects the config-only signal.
 func SettingsStatusWithStats(snapshot *SettingsStatusSnapshot, stats *stats.Snapshot) *model.SettingsStatus {
 	out := settingsStatusSnapshotToModel(snapshot)
 	if stats == nil {
 		return out
 	}
-	out.StashStats = stashStatsToModel(stats.Stash)
-	out.JackettStats = jackettStatsToModel(stats.Jackett)
-	out.QbittorrentStats = qBittorrentStatsToModel(stats.QBitt)
+	now := time.Now()
+	stashStats := stashStatsToModel(stats.Stash)
+	jackettStats := jackettStatsToModel(stats.Jackett)
+	qbittStats := qBittorrentStatsToModel(stats.QBitt)
+	out.StashStats = stashStats
+	out.JackettStats = jackettStats
+	out.QbittorrentStats = qbittStats
+	out.Stash.Ready = EvaluateServiceReadiness(
+		snapshot.Stash.Ready, stats.Stash.OKAt, stats.Stash.LastError, now)
+	out.Jackett.Ready = EvaluateServiceReadiness(
+		snapshot.Jackett.Ready, stats.Jackett.OKAt, stats.Jackett.LastError, now)
+	out.Qbittorrent.Ready = EvaluateServiceReadiness(
+		snapshot.QBittorrent.Ready, stats.QBitt.OKAt, stats.QBitt.LastError, now)
 	return out
 }
 
 func emptyStashStatsModel() *model.StashStats {
 	return &model.StashStats{
 		PendingMojiScanCount: 0,
-		OkAt:                 time.Time{}.UTC().Format(time.RFC3339),
+		OkAt:                 nil,
 	}
 }
 
@@ -174,7 +185,7 @@ func emptyJackettStatsModel() *model.JackettStats {
 		IndexerCount:           0,
 		ConfiguredIndexerCount: 0,
 		LastIndexerLatencyMs:   0,
-		OkAt:                   time.Time{}.UTC().Format(time.RFC3339),
+		OkAt:                   nil,
 	}
 }
 
@@ -184,14 +195,16 @@ func emptyQBittorrentStatsModel() *model.QBittorrentStats {
 		UploadSpeed:        0,
 		ActiveTorrentCount: 0,
 		ConnectionStatus:   "unknown",
-		OkAt:               time.Time{}.UTC().Format(time.RFC3339),
+		OkAt:               nil,
 	}
 }
 
 func stashStatsToModel(s stats.StashStats) *model.StashStats {
 	out := &model.StashStats{
 		PendingMojiScanCount: s.PendingMojiScanCount,
-		OkAt:                 s.OKAt.UTC().Format(time.RFC3339),
+	}
+	if okAt := formatOKAt(s.OKAt); okAt != nil {
+		out.OkAt = okAt
 	}
 	if s.Version != "" {
 		v := s.Version
@@ -213,7 +226,9 @@ func jackettStatsToModel(s stats.JackettStats) *model.JackettStats {
 		IndexerCount:           s.IndexerCount,
 		ConfiguredIndexerCount: s.ConfiguredIndexerCount,
 		LastIndexerLatencyMs:   s.LastIndexerLatencyMs,
-		OkAt:                   s.OKAt.UTC().Format(time.RFC3339),
+	}
+	if okAt := formatOKAt(s.OKAt); okAt != nil {
+		out.OkAt = okAt
 	}
 	if s.LastIndexerError != "" {
 		e := s.LastIndexerError
@@ -241,11 +256,24 @@ func qBittorrentStatsToModel(s stats.QBittorrentStats) *model.QBittorrentStats {
 		ActiveTorrentCount:   s.ActiveTorrentCount,
 		ConnectionStatus:     conn,
 		AltSpeedLimitEnabled: s.AltSpeedLimitEnabled,
-		OkAt:                 s.OKAt.UTC().Format(time.RFC3339),
+	}
+	if okAt := formatOKAt(s.OKAt); okAt != nil {
+		out.OkAt = okAt
 	}
 	if s.LastError != "" {
 		e := s.LastError
 		out.LastError = &e
 	}
 	return out
+}
+
+// formatOKAt returns an RFC3339 string for non-zero times, nil for the
+// zero value. Used by every *Stats mapper so the GraphQL response can
+// distinguish "never probed" from "probed N minutes ago".
+func formatOKAt(t time.Time) *string {
+	if t.IsZero() {
+		return nil
+	}
+	s := t.UTC().Format(time.RFC3339)
+	return &s
 }

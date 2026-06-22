@@ -13,6 +13,7 @@ import (
 
 	"github.com/leothevan2444/moji/internal/config"
 	"github.com/leothevan2444/moji/internal/downloader"
+	"github.com/leothevan2444/moji/internal/graphqlapi"
 	"github.com/leothevan2444/moji/internal/stashsync"
 )
 
@@ -90,14 +91,17 @@ func TestHTTPHandlerServesSettingsSnapshot(t *testing.T) {
 	resp := postGraphQL(t, handler, `{
 		version
 		settings {
-			jackett { configured enabled url apiKeyConfigured }
-			qbittorrent { configured enabled url usernameConfigured passwordConfigured defaultSavePath }
-			stash { configured enabled url apiKeyConfigured }
+			jackett { configured url apiKeyConfigured }
+			qbittorrent { configured url usernameConfigured passwordConfigured defaultSavePath }
+			stash { configured url apiKeyConfigured }
 			ingest { libraryScan { libraryPath } }
 			automation { taskProgressSyncIntervalSeconds subscriptionPollIntervalSeconds }
 			subscription { stashBoxEndpoints }
 		}
 		settingsStatus {
+			stash { configured ready }
+			jackett { configured ready }
+			qbittorrent { configured ready }
 			automation { taskProgressSyncEnabled subscriptionPollEnabled }
 			subscription { stashBoxes { name endpoint apiKeyConfigured } stashBoxesLoaded }
 		}
@@ -105,8 +109,11 @@ func TestHTTPHandlerServesSettingsSnapshot(t *testing.T) {
 	if len(resp.Errors) > 0 {
 		t.Fatalf("expected no GraphQL errors, got %+v", resp.Errors)
 	}
-	if !resp.Data.Settings.Jackett.Configured || !resp.Data.Settings.Jackett.Enabled {
-		t.Fatalf("expected jackett settings to be enabled, got %+v", resp.Data.Settings.Jackett)
+	if !resp.Data.Settings.Jackett.Configured {
+		t.Fatalf("expected jackett settings to be configured, got %+v", resp.Data.Settings.Jackett)
+	}
+	if !resp.Data.SettingsStatus.Stash.Configured || resp.Data.SettingsStatus.Stash.Ready {
+		t.Fatalf("expected stash status to be configured but awaiting probe, got %+v", resp.Data.SettingsStatus.Stash)
 	}
 	if resp.Data.Settings.Automation.TaskProgressSyncIntervalSeconds != 60 {
 		t.Fatalf("unexpected automation settings: %+v", resp.Data.Settings.Automation)
@@ -161,7 +168,7 @@ func TestMissingStashConfigDisablesStashResolvers(t *testing.T) {
 	}
 }
 
-func TestStashReachable(t *testing.T) {
+func TestStashConfigured(t *testing.T) {
 	cases := []struct {
 		name string
 		url  string
@@ -169,18 +176,18 @@ func TestStashReachable(t *testing.T) {
 		want bool
 	}{
 		{"empty url", "", "key", false},
-		{"empty key", "http://stash", "", false},
+		{"empty key", "http://stash", "", true},
 		{"both empty", "", "", false},
 		{"both set", "http://stash", "key", true},
-		{"whitespace only", "   ", "   ", false},
+		{"whitespace url", "   ", "key", false},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			cfg := testConfig()
 			cfg.Stash.URL = tc.url
 			cfg.Stash.APIKey = tc.key
-			if got := isStashReachable(cfg); got != tc.want {
-				t.Fatalf("isStashReachable(%q,%q) = %v, want %v", tc.url, tc.key, got, tc.want)
+			if got := isStashConfigured(cfg); got != tc.want {
+				t.Fatalf("isStashConfigured(%q,%q) = %v, want %v", tc.url, tc.key, got, tc.want)
 			}
 		})
 	}
@@ -286,6 +293,39 @@ func TestIngestConfigured(t *testing.T) {
 	})
 }
 
+func TestServiceReadiness(t *testing.T) {
+	now := time.Date(2026, 6, 22, 12, 0, 0, 0, time.UTC)
+	within := now.Add(-30 * time.Second)        // 30s before now — inside 240s window
+	stale := now.Add(-5 * time.Minute)           // 5min before now — outside 240s window
+	fresh := now                                 // exactly now
+	cases := []struct {
+		name        string
+		configured  bool
+		okAt        time.Time
+		lastError   string
+		now         time.Time
+		want        bool
+	}{
+		{"unconfigured, recent probe", false, within, "", now, false},
+		{"unconfigured, never probed", false, time.Time{}, "", now, false},
+		{"configured, never probed", true, time.Time{}, "", now, false},
+		{"configured, fresh probe, no error", true, within, "", now, true},
+		{"configured, exact-now probe", true, fresh, "", now, true},
+		{"configured, stale probe", true, stale, "", now, false},
+		{"configured, fresh probe, last error set", true, within, "connection refused", now, false},
+		{"configured, fresh probe, whitespace error", true, within, "   ", now, true},
+		{"configured, zero okAt with lastError", true, time.Time{}, "boom", now, false},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			if got := graphqlapi.EvaluateServiceReadiness(tc.configured, tc.okAt, tc.lastError, tc.now); got != tc.want {
+				t.Fatalf("EvaluateServiceReadiness(%v, %v, %q, %v) = %v, want %v",
+					tc.configured, tc.okAt, tc.lastError, tc.now, got, tc.want)
+			}
+		})
+	}
+}
+
 func TestConfigureProgressSyncInterval(t *testing.T) {
 	cfg := testConfig()
 	if got := configureProgressSyncInterval(cfg); got != time.Minute {
@@ -305,7 +345,7 @@ func TestConfigureProgressSyncInterval(t *testing.T) {
 
 func TestBuildSettingsSnapshotNormalizesDefaults(t *testing.T) {
 	cfg := testConfig()
-	snapshot := buildSettingsSnapshot(cfg, "test-version", false)
+	snapshot := buildSettingsSnapshot(cfg, "test-version")
 	if snapshot.Jackett.URL != "http://jackett.invalid" || !snapshot.Jackett.APIKeyConfigured {
 		t.Fatalf("unexpected jackett snapshot: %+v", snapshot.Jackett)
 	}
@@ -358,7 +398,6 @@ type graphQLResponse struct {
 		Settings struct {
 			Stash struct {
 				Configured       bool   `json:"configured"`
-				Enabled          bool   `json:"enabled"`
 				URL              string `json:"url"`
 				APIKeyConfigured bool   `json:"apiKeyConfigured"`
 			} `json:"stash"`
@@ -369,13 +408,11 @@ type graphQLResponse struct {
 			} `json:"ingest"`
 			Jackett struct {
 				Configured       bool   `json:"configured"`
-				Enabled          bool   `json:"enabled"`
 				URL              string `json:"url"`
 				APIKeyConfigured bool   `json:"apiKeyConfigured"`
 			} `json:"jackett"`
 			Qbittorrent struct {
 				Configured         bool   `json:"configured"`
-				Enabled            bool   `json:"enabled"`
 				URL                string `json:"url"`
 				UsernameConfigured bool   `json:"usernameConfigured"`
 				PasswordConfigured bool   `json:"passwordConfigured"`
@@ -390,6 +427,18 @@ type graphQLResponse struct {
 			} `json:"automation"`
 		} `json:"settings"`
 		SettingsStatus struct {
+			Stash struct {
+				Configured bool `json:"configured"`
+				Ready      bool `json:"ready"`
+			} `json:"stash"`
+			Jackett struct {
+				Configured bool `json:"configured"`
+				Ready      bool `json:"ready"`
+			} `json:"jackett"`
+			Qbittorrent struct {
+				Configured bool `json:"configured"`
+				Ready      bool `json:"ready"`
+			} `json:"qbittorrent"`
 			Automation struct {
 				TaskProgressSyncEnabled bool `json:"taskProgressSyncEnabled"`
 				SubscriptionPollEnabled bool `json:"subscriptionPollEnabled"`

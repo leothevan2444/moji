@@ -95,7 +95,6 @@ type SettingsSnapshot struct {
 
 type StashSettingsSnapshot struct {
 	Configured       bool
-	Enabled          bool
 	URL              string
 	APIKeyConfigured bool
 	APIKey           string
@@ -124,7 +123,6 @@ type LibraryScanIngestSettingsSnapshot struct {
 
 type JackettSettingsSnapshot struct {
 	Configured         bool
-	Enabled            bool
 	URL                string
 	APIKeyConfigured   bool
 	APIKey             string
@@ -134,7 +132,6 @@ type JackettSettingsSnapshot struct {
 
 type QBittorrentSettingsSnapshot struct {
 	Configured         bool
-	Enabled            bool
 	URL                string
 	Username           string
 	UsernameConfigured bool
@@ -175,7 +172,7 @@ type IngestStatusSnapshot struct {
 
 type ServiceStatusSnapshot struct {
 	Configured bool
-	Enabled    bool
+	Ready      bool
 }
 
 type AutomationStatusSnapshot struct {

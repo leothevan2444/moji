@@ -15,7 +15,7 @@ type RuntimeStatus = NonNullable<DashboardDocumentQuery["settingsStatus"]>;
 interface ServiceCardProps {
   service: "stash" | "jackett" | "qbittorrent";
   title: string;
-  status: { configured: boolean; enabled: boolean };
+  status: { configured: boolean; ready: boolean };
   config: Array<{ key: string; value: string }>;
   blockers?: string[];
   diagnostics?: string;
@@ -37,7 +37,7 @@ interface ServiceCardProps {
 }
 
 function toneFor(
-  status: { configured: boolean; enabled: boolean },
+  status: { configured: boolean; ready: boolean },
   okAt: string | null,
   lastError: string | null,
   now: number
@@ -45,20 +45,22 @@ function toneFor(
   if (!status.configured) {
     return { tone: "tone-neutral", label: "未配置" };
   }
-  if (!status.enabled) {
-    return { tone: "tone-warn", label: "已配置未启用" };
+  if (status.ready) {
+    if (okAt) {
+      const thenMs = new Date(okAt).getTime();
+      if (!Number.isNaN(thenMs) && now - thenMs > 5 * 60 * 1000) {
+        return { tone: "tone-warn", label: "数据陈旧" };
+      }
+    }
+    return { tone: "tone-success", label: "已启用" };
   }
   if (lastError) {
     return { tone: "tone-danger", label: "运行异常" };
   }
-  if (okAt) {
-    const thenMs = new Date(okAt).getTime();
-    if (!Number.isNaN(thenMs) && now - thenMs > 5 * 60 * 1000) {
-      // 5 min stale → downgrade visual confidence
-      return { tone: "tone-warn", label: "数据陈旧" };
-    }
+  if (!okAt) {
+    return { tone: "tone-warn", label: "待检测" };
   }
-  return { tone: "tone-success", label: "已启用" };
+  return { tone: "tone-warn", label: "数据陈旧" };
 }
 
 export function ServiceCard({

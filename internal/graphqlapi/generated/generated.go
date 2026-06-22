@@ -117,7 +117,6 @@ type ComplexityRoot struct {
 		APIKey             func(childComplexity int) int
 		APIKeyConfigured   func(childComplexity int) int
 		Configured         func(childComplexity int) int
-		Enabled            func(childComplexity int) int
 		Password           func(childComplexity int) int
 		PasswordConfigured func(childComplexity int) int
 		URL                func(childComplexity int) int
@@ -182,7 +181,6 @@ type ComplexityRoot struct {
 		Category           func(childComplexity int) int
 		Configured         func(childComplexity int) int
 		DefaultSavePath    func(childComplexity int) int
-		Enabled            func(childComplexity int) int
 		Password           func(childComplexity int) int
 		PasswordConfigured func(childComplexity int) int
 		Tags               func(childComplexity int) int
@@ -219,7 +217,7 @@ type ComplexityRoot struct {
 
 	ServiceStatus struct {
 		Configured func(childComplexity int) int
-		Enabled    func(childComplexity int) int
+		Ready      func(childComplexity int) int
 	}
 
 	Settings struct {
@@ -290,7 +288,6 @@ type ComplexityRoot struct {
 		APIKey           func(childComplexity int) int
 		APIKeyConfigured func(childComplexity int) int
 		Configured       func(childComplexity int) int
-		Enabled          func(childComplexity int) int
 		URL              func(childComplexity int) int
 	}
 
@@ -722,13 +719,6 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.JackettSettings.Configured(childComplexity), true
 
-	case "JackettSettings.enabled":
-		if e.complexity.JackettSettings.Enabled == nil {
-			break
-		}
-
-		return e.complexity.JackettSettings.Enabled(childComplexity), true
-
 	case "JackettSettings.password":
 		if e.complexity.JackettSettings.Password == nil {
 			break
@@ -1121,13 +1111,6 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.QBittorrentSettings.DefaultSavePath(childComplexity), true
 
-	case "QBittorrentSettings.enabled":
-		if e.complexity.QBittorrentSettings.Enabled == nil {
-			break
-		}
-
-		return e.complexity.QBittorrentSettings.Enabled(childComplexity), true
-
 	case "QBittorrentSettings.password":
 		if e.complexity.QBittorrentSettings.Password == nil {
 			break
@@ -1347,12 +1330,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.ServiceStatus.Configured(childComplexity), true
 
-	case "ServiceStatus.enabled":
-		if e.complexity.ServiceStatus.Enabled == nil {
+	case "ServiceStatus.ready":
+		if e.complexity.ServiceStatus.Ready == nil {
 			break
 		}
 
-		return e.complexity.ServiceStatus.Enabled(childComplexity), true
+		return e.complexity.ServiceStatus.Ready(childComplexity), true
 
 	case "Settings.automation":
 		if e.complexity.Settings.Automation == nil {
@@ -1675,13 +1658,6 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.StashSettings.Configured(childComplexity), true
-
-	case "StashSettings.enabled":
-		if e.complexity.StashSettings.Enabled == nil {
-			break
-		}
-
-		return e.complexity.StashSettings.Enabled(childComplexity), true
 
 	case "StashSettings.url":
 		if e.complexity.StashSettings.URL == nil {
@@ -2318,8 +2294,8 @@ type StashStats {
   "Most recent error message from any Stash-side refresh. Null = OK."
   lastError: String
 
-  "ISO 8601 timestamp of the most recent successful refresh."
-  okAt: String!
+  "ISO 8601 timestamp of the most recent successful refresh. Null until the first probe completes successfully."
+  okAt: String
 }
 
 type JackettStats {
@@ -2341,8 +2317,8 @@ type JackettStats {
   "Most recent error message from any Jackett-side refresh. Null = OK."
   lastError: String
 
-  "ISO 8601 timestamp of the most recent successful refresh."
-  okAt: String!
+  "ISO 8601 timestamp of the most recent successful refresh. Null until the first probe completes successfully."
+  okAt: String
 }
 
 type QBittorrentStats {
@@ -2364,13 +2340,12 @@ type QBittorrentStats {
   "Most recent error message from any qBittorrent-side refresh. Null = OK."
   lastError: String
 
-  "ISO 8601 timestamp of the most recent successful refresh."
-  okAt: String!
+  "ISO 8601 timestamp of the most recent successful refresh. Null until the first probe completes successfully."
+  okAt: String
 }
 
 type StashSettings {
   configured: Boolean!
-  enabled: Boolean!
   url: String!
   apiKeyConfigured: Boolean!
   "Currently configured Stash API key. Returned in plaintext for the settings UI; never logged."
@@ -2400,7 +2375,6 @@ type LibraryScanIngestSettings {
 
 type JackettSettings {
   configured: Boolean!
-  enabled: Boolean!
   url: String!
   apiKeyConfigured: Boolean!
   "Currently configured Jackett API key. Returned in plaintext for the settings UI; never logged."
@@ -2412,7 +2386,6 @@ type JackettSettings {
 
 type QBittorrentSettings {
   configured: Boolean!
-  enabled: Boolean!
   url: String!
   username: String!
   usernameConfigured: Boolean!
@@ -2435,8 +2408,11 @@ type SubscriptionSettings {
 }
 
 type ServiceStatus {
+  "True iff the minimum connection fields are present, so the backend can attempt to talk to the upstream service."
   configured: Boolean!
-  enabled: Boolean!
+
+  "True iff the upstream service is configured AND a recent probe succeeded. A probe result older than ~4 minutes, or a failed probe, returns false. The proximate cause of a non-ready state lives on the corresponding *Stats.lastError."
+  ready: Boolean!
 }
 
 type AutomationStatus {
@@ -5335,50 +5311,6 @@ func (ec *executionContext) fieldContext_JackettSettings_configured(_ context.Co
 	return fc, nil
 }
 
-func (ec *executionContext) _JackettSettings_enabled(ctx context.Context, field graphql.CollectedField, obj *model.JackettSettings) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_JackettSettings_enabled(ctx, field)
-	if err != nil {
-		return graphql.Null
-	}
-	ctx = graphql.WithFieldContext(ctx, fc)
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.Enabled, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(bool)
-	fc.Result = res
-	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) fieldContext_JackettSettings_enabled(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "JackettSettings",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type Boolean does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
 func (ec *executionContext) _JackettSettings_url(ctx context.Context, field graphql.CollectedField, obj *model.JackettSettings) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_JackettSettings_url(ctx, field)
 	if err != nil {
@@ -5875,14 +5807,11 @@ func (ec *executionContext) _JackettStats_okAt(ctx context.Context, field graphq
 		return graphql.Null
 	}
 	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
 		return graphql.Null
 	}
-	res := resTmp.(string)
+	res := resTmp.(*string)
 	fc.Result = res
-	return ec.marshalNString2string(ctx, field.Selections, res)
+	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_JackettStats_okAt(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -7988,50 +7917,6 @@ func (ec *executionContext) fieldContext_QBittorrentSettings_configured(_ contex
 	return fc, nil
 }
 
-func (ec *executionContext) _QBittorrentSettings_enabled(ctx context.Context, field graphql.CollectedField, obj *model.QBittorrentSettings) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_QBittorrentSettings_enabled(ctx, field)
-	if err != nil {
-		return graphql.Null
-	}
-	ctx = graphql.WithFieldContext(ctx, fc)
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.Enabled, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(bool)
-	fc.Result = res
-	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) fieldContext_QBittorrentSettings_enabled(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "QBittorrentSettings",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type Boolean does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
 func (ec *executionContext) _QBittorrentSettings_url(ctx context.Context, field graphql.CollectedField, obj *model.QBittorrentSettings) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_QBittorrentSettings_url(ctx, field)
 	if err != nil {
@@ -8666,14 +8551,11 @@ func (ec *executionContext) _QBittorrentStats_okAt(ctx context.Context, field gr
 		return graphql.Null
 	}
 	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
 		return graphql.Null
 	}
-	res := resTmp.(string)
+	res := resTmp.(*string)
 	fc.Result = res
-	return ec.marshalNString2string(ctx, field.Selections, res)
+	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_QBittorrentStats_okAt(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -9776,8 +9658,8 @@ func (ec *executionContext) fieldContext_ServiceStatus_configured(_ context.Cont
 	return fc, nil
 }
 
-func (ec *executionContext) _ServiceStatus_enabled(ctx context.Context, field graphql.CollectedField, obj *model.ServiceStatus) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_ServiceStatus_enabled(ctx, field)
+func (ec *executionContext) _ServiceStatus_ready(ctx context.Context, field graphql.CollectedField, obj *model.ServiceStatus) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_ServiceStatus_ready(ctx, field)
 	if err != nil {
 		return graphql.Null
 	}
@@ -9790,7 +9672,7 @@ func (ec *executionContext) _ServiceStatus_enabled(ctx context.Context, field gr
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
 		ctx = rctx // use context from middleware stack in children
-		return obj.Enabled, nil
+		return obj.Ready, nil
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -9807,7 +9689,7 @@ func (ec *executionContext) _ServiceStatus_enabled(ctx context.Context, field gr
 	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_ServiceStatus_enabled(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_ServiceStatus_ready(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "ServiceStatus",
 		Field:      field,
@@ -9861,8 +9743,6 @@ func (ec *executionContext) fieldContext_Settings_stash(_ context.Context, field
 			switch field.Name {
 			case "configured":
 				return ec.fieldContext_StashSettings_configured(ctx, field)
-			case "enabled":
-				return ec.fieldContext_StashSettings_enabled(ctx, field)
 			case "url":
 				return ec.fieldContext_StashSettings_url(ctx, field)
 			case "apiKeyConfigured":
@@ -9971,8 +9851,6 @@ func (ec *executionContext) fieldContext_Settings_jackett(_ context.Context, fie
 			switch field.Name {
 			case "configured":
 				return ec.fieldContext_JackettSettings_configured(ctx, field)
-			case "enabled":
-				return ec.fieldContext_JackettSettings_enabled(ctx, field)
 			case "url":
 				return ec.fieldContext_JackettSettings_url(ctx, field)
 			case "apiKeyConfigured":
@@ -10031,8 +9909,6 @@ func (ec *executionContext) fieldContext_Settings_qbittorrent(_ context.Context,
 			switch field.Name {
 			case "configured":
 				return ec.fieldContext_QBittorrentSettings_configured(ctx, field)
-			case "enabled":
-				return ec.fieldContext_QBittorrentSettings_enabled(ctx, field)
 			case "url":
 				return ec.fieldContext_QBittorrentSettings_url(ctx, field)
 			case "username":
@@ -10195,8 +10071,8 @@ func (ec *executionContext) fieldContext_SettingsStatus_stash(_ context.Context,
 			switch field.Name {
 			case "configured":
 				return ec.fieldContext_ServiceStatus_configured(ctx, field)
-			case "enabled":
-				return ec.fieldContext_ServiceStatus_enabled(ctx, field)
+			case "ready":
+				return ec.fieldContext_ServiceStatus_ready(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type ServiceStatus", field.Name)
 		},
@@ -10245,8 +10121,8 @@ func (ec *executionContext) fieldContext_SettingsStatus_jackett(_ context.Contex
 			switch field.Name {
 			case "configured":
 				return ec.fieldContext_ServiceStatus_configured(ctx, field)
-			case "enabled":
-				return ec.fieldContext_ServiceStatus_enabled(ctx, field)
+			case "ready":
+				return ec.fieldContext_ServiceStatus_ready(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type ServiceStatus", field.Name)
 		},
@@ -10295,8 +10171,8 @@ func (ec *executionContext) fieldContext_SettingsStatus_qbittorrent(_ context.Co
 			switch field.Name {
 			case "configured":
 				return ec.fieldContext_ServiceStatus_configured(ctx, field)
-			case "enabled":
-				return ec.fieldContext_ServiceStatus_enabled(ctx, field)
+			case "ready":
+				return ec.fieldContext_ServiceStatus_ready(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type ServiceStatus", field.Name)
 		},
@@ -11908,50 +11784,6 @@ func (ec *executionContext) fieldContext_StashSettings_configured(_ context.Cont
 	return fc, nil
 }
 
-func (ec *executionContext) _StashSettings_enabled(ctx context.Context, field graphql.CollectedField, obj *model.StashSettings) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_StashSettings_enabled(ctx, field)
-	if err != nil {
-		return graphql.Null
-	}
-	ctx = graphql.WithFieldContext(ctx, fc)
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.Enabled, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(bool)
-	fc.Result = res
-	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) fieldContext_StashSettings_enabled(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "StashSettings",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type Boolean does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
 func (ec *executionContext) _StashSettings_url(ctx context.Context, field graphql.CollectedField, obj *model.StashSettings) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_StashSettings_url(ctx, field)
 	if err != nil {
@@ -12272,14 +12104,11 @@ func (ec *executionContext) _StashStats_okAt(ctx context.Context, field graphql.
 		return graphql.Null
 	}
 	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
 		return graphql.Null
 	}
-	res := resTmp.(string)
+	res := resTmp.(*string)
 	fc.Result = res
-	return ec.marshalNString2string(ctx, field.Selections, res)
+	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_StashStats_okAt(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -17526,11 +17355,6 @@ func (ec *executionContext) _JackettSettings(ctx context.Context, sel ast.Select
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
-		case "enabled":
-			out.Values[i] = ec._JackettSettings_enabled(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
 		case "url":
 			out.Values[i] = ec._JackettSettings_url(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
@@ -17613,9 +17437,6 @@ func (ec *executionContext) _JackettStats(ctx context.Context, sel ast.Selection
 			out.Values[i] = ec._JackettStats_lastError(ctx, field, obj)
 		case "okAt":
 			out.Values[i] = ec._JackettStats_okAt(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -18000,11 +17821,6 @@ func (ec *executionContext) _QBittorrentSettings(ctx context.Context, sel ast.Se
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
-		case "enabled":
-			out.Values[i] = ec._QBittorrentSettings_enabled(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
 		case "url":
 			out.Values[i] = ec._QBittorrentSettings_url(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
@@ -18108,9 +17924,6 @@ func (ec *executionContext) _QBittorrentStats(ctx context.Context, sel ast.Selec
 			out.Values[i] = ec._QBittorrentStats_lastError(ctx, field, obj)
 		case "okAt":
 			out.Values[i] = ec._QBittorrentStats_okAt(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -18480,8 +18293,8 @@ func (ec *executionContext) _ServiceStatus(ctx context.Context, sel ast.Selectio
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
-		case "enabled":
-			out.Values[i] = ec._ServiceStatus_enabled(ctx, field, obj)
+		case "ready":
+			out.Values[i] = ec._ServiceStatus_ready(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
@@ -18959,11 +18772,6 @@ func (ec *executionContext) _StashSettings(ctx context.Context, sel ast.Selectio
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
-		case "enabled":
-			out.Values[i] = ec._StashSettings_enabled(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
 		case "url":
 			out.Values[i] = ec._StashSettings_url(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
@@ -19026,9 +18834,6 @@ func (ec *executionContext) _StashStats(ctx context.Context, sel ast.SelectionSe
 			out.Values[i] = ec._StashStats_lastError(ctx, field, obj)
 		case "okAt":
 			out.Values[i] = ec._StashStats_okAt(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}

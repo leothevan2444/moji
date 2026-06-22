@@ -2,7 +2,6 @@ mutation UpdateStashSettingsDocument($input: UpdateStashSettingsInput!) {
   updateStashSettings(input: $input) {
     stash {
       configured
-      enabled
       url
       apiKeyConfigured
     }
@@ -32,7 +31,6 @@ mutation UpdateJackettSettingsDocument($input: UpdateJackettSettingsInput!) {
   updateJackettSettings(input: $input) {
     jackett {
       configured
-      enabled
       url
       apiKeyConfigured
     }
@@ -43,7 +41,6 @@ mutation UpdateQBittorrentSettingsDocument($input: UpdateQBittorrentSettingsInpu
   updateQBittorrentSettings(input: $input) {
     qbittorrent {
       configured
-      enabled
       url
       username
       usernameConfigured

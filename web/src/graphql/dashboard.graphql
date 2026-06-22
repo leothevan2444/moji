@@ -15,7 +15,6 @@ query DashboardDocument {
   settings {
     stash {
       configured
-      enabled
       url
       apiKeyConfigured
       apiKey
@@ -36,7 +35,6 @@ query DashboardDocument {
     }
     jackett {
       configured
-      enabled
       url
       apiKeyConfigured
       apiKey
@@ -45,7 +43,6 @@ query DashboardDocument {
     }
     qbittorrent {
       configured
-      enabled
       url
       username
       usernameConfigured
@@ -66,15 +63,15 @@ query DashboardDocument {
   settingsStatus {
     stash {
       configured
-      enabled
+      ready
     }
     jackett {
       configured
-      enabled
+      ready
     }
     qbittorrent {
       configured
-      enabled
+      ready
     }
     automation {
       taskProgressSyncIntervalSeconds

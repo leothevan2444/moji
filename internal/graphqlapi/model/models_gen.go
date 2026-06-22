@@ -103,7 +103,6 @@ type JackettSearchResult struct {
 
 type JackettSettings struct {
 	Configured       bool   `json:"configured"`
-	Enabled          bool   `json:"enabled"`
 	URL              string `json:"url"`
 	APIKeyConfigured bool   `json:"apiKeyConfigured"`
 	// Currently configured Jackett API key. Returned in plaintext for the settings UI; never logged.
@@ -126,8 +125,8 @@ type JackettStats struct {
 	LastIndexerSearchAt *string `json:"lastIndexerSearchAt,omitempty"`
 	// Most recent error message from any Jackett-side refresh. Null = OK.
 	LastError *string `json:"lastError,omitempty"`
-	// ISO 8601 timestamp of the most recent successful refresh.
-	OkAt string `json:"okAt"`
+	// ISO 8601 timestamp of the most recent successful refresh. Null until the first probe completes successfully.
+	OkAt *string `json:"okAt,omitempty"`
 }
 
 type LibraryScanIngestSettings struct {
@@ -171,7 +170,6 @@ type QBittorrentAddInput struct {
 
 type QBittorrentSettings struct {
 	Configured         bool   `json:"configured"`
-	Enabled            bool   `json:"enabled"`
 	URL                string `json:"url"`
 	Username           string `json:"username"`
 	UsernameConfigured bool   `json:"usernameConfigured"`
@@ -196,16 +194,18 @@ type QBittorrentStats struct {
 	AltSpeedLimitEnabled bool `json:"altSpeedLimitEnabled"`
 	// Most recent error message from any qBittorrent-side refresh. Null = OK.
 	LastError *string `json:"lastError,omitempty"`
-	// ISO 8601 timestamp of the most recent successful refresh.
-	OkAt string `json:"okAt"`
+	// ISO 8601 timestamp of the most recent successful refresh. Null until the first probe completes successfully.
+	OkAt *string `json:"okAt,omitempty"`
 }
 
 type Query struct {
 }
 
 type ServiceStatus struct {
+	// True iff the minimum connection fields are present, so the backend can attempt to talk to the upstream service.
 	Configured bool `json:"configured"`
-	Enabled    bool `json:"enabled"`
+	// True iff the upstream service is configured AND a recent probe succeeded. A probe result older than ~4 minutes, or a failed probe, returns false. The proximate cause of a non-ready state lives on the corresponding *Stats.lastError.
+	Ready bool `json:"ready"`
 }
 
 type Settings struct {
@@ -294,7 +294,6 @@ type StashPerformerConnection struct {
 
 type StashSettings struct {
 	Configured       bool   `json:"configured"`
-	Enabled          bool   `json:"enabled"`
 	URL              string `json:"url"`
 	APIKeyConfigured bool   `json:"apiKeyConfigured"`
 	// Currently configured Stash API key. Returned in plaintext for the settings UI; never logged.
@@ -311,8 +310,8 @@ type StashStats struct {
 	PendingMojiScanCount int `json:"pendingMojiScanCount"`
 	// Most recent error message from any Stash-side refresh. Null = OK.
 	LastError *string `json:"lastError,omitempty"`
-	// ISO 8601 timestamp of the most recent successful refresh.
-	OkAt string `json:"okAt"`
+	// ISO 8601 timestamp of the most recent successful refresh. Null until the first probe completes successfully.
+	OkAt *string `json:"okAt,omitempty"`
 }
 
 type SubscribedPerformer struct {

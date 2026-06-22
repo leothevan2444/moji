@@ -354,9 +354,24 @@ export function SettingsPanel({
   }
 
   if (settingsTab === "连接") {
-    const stashStatus = serviceStatus(runtimeStatus.stash.configured, runtimeStatus.stash.enabled);
-    const jackettStatus = serviceStatus(runtimeStatus.jackett.configured, runtimeStatus.jackett.enabled);
-    const qbittorrentStatus = serviceStatus(runtimeStatus.qbittorrent.configured, runtimeStatus.qbittorrent.enabled);
+    const stashStatus = serviceStatus(
+      runtimeStatus.stash.configured,
+      runtimeStatus.stash.ready,
+      runtimeStatus.stashStats?.lastError ?? null,
+      runtimeStatus.stashStats?.okAt ?? null
+    );
+    const jackettStatus = serviceStatus(
+      runtimeStatus.jackett.configured,
+      runtimeStatus.jackett.ready,
+      runtimeStatus.jackettStats?.lastError ?? null,
+      runtimeStatus.jackettStats?.okAt ?? null
+    );
+    const qbittorrentStatus = serviceStatus(
+      runtimeStatus.qbittorrent.configured,
+      runtimeStatus.qbittorrent.ready,
+      runtimeStatus.qbittorrentStats?.lastError ?? null,
+      runtimeStatus.qbittorrentStats?.okAt ?? null
+    );
 
     return (
       <article className="drawer-card">

@@ -79,18 +79,18 @@ export function HomePage({
                 okAt={runtimeStatus.stashStats?.okAt ?? null}
                 lastError={runtimeStatus.stashStats?.lastError ?? null}
                 diagnostics={
-                  !runtimeStatus.stash.configured
-                    ? "Stash 必须先配置，否则入库与订阅流程无法展开。"
-                    : !runtimeStatus.stash.enabled
-                      ? "已填写连接信息，但运行时尚未启用。"
+                  runtimeStatus.stash.configured && !runtimeStatus.stash.ready && runtimeStatus.stashStats?.lastError
+                    ? "已配置但最近未联通，请检查 Stash 服务状态。"
+                    : !runtimeStatus.stash.configured
+                      ? "Stash 必须先配置，否则入库与订阅流程无法展开。"
+                      : !runtimeStatus.stash.ready
+                        ? "Stash 已配置，等待首次探测或最近状态已过期。"
                       : undefined
                 }
                 cta={
                   !runtimeStatus.stash.configured
                     ? { kind: "open-settings", label: "去配置", tab: "连接" }
-                    : !runtimeStatus.stash.enabled
-                      ? { kind: "open-settings", label: "去启用", tab: "连接" }
-                      : null
+                    : null
                 }
                 onOpenSettings={onOpenSettings}
               />
@@ -116,18 +116,18 @@ export function HomePage({
                     : undefined
                 }
                 diagnostics={
-                  !runtimeStatus.jackett.configured
-                    ? "Jackett 必须先配置，否则任务搜索与订阅没有上游数据。"
-                    : !runtimeStatus.jackett.enabled
-                      ? "已填写连接信息，但运行时尚未启用。"
+                  runtimeStatus.jackett.configured && !runtimeStatus.jackett.ready && runtimeStatus.jackettStats?.lastError
+                    ? "已配置但最近未联通，请检查 Jackett 服务状态。"
+                    : !runtimeStatus.jackett.configured
+                      ? "Jackett 必须先配置，否则任务搜索与订阅没有上游数据。"
+                      : !runtimeStatus.jackett.ready
+                        ? "Jackett 已配置，等待首次探测或最近状态已过期。"
                       : undefined
                 }
                 cta={
                   !runtimeStatus.jackett.configured
                     ? { kind: "open-settings", label: "去配置", tab: "连接" }
-                    : !runtimeStatus.jackett.enabled
-                      ? { kind: "open-settings", label: "去启用", tab: "连接" }
-                      : null
+                    : null
                 }
                 onOpenSettings={onOpenSettings}
               />
@@ -149,18 +149,20 @@ export function HomePage({
                     : undefined
                 }
                 diagnostics={
-                  !runtimeStatus.qbittorrent.configured
-                    ? "qBittorrent 必须先配置，否则下载与落地流程无法展开。"
-                    : !runtimeStatus.qbittorrent.enabled
-                      ? "已填写连接信息，但运行时尚未连接。"
+                  runtimeStatus.qbittorrent.configured &&
+                  !runtimeStatus.qbittorrent.ready &&
+                  runtimeStatus.qbittorrentStats?.lastError
+                    ? "已配置但最近未联通，请检查 qBittorrent 服务状态。"
+                    : !runtimeStatus.qbittorrent.configured
+                      ? "qBittorrent 必须先配置，否则下载与落地流程无法展开。"
+                      : !runtimeStatus.qbittorrent.ready
+                        ? "qBittorrent 已配置，等待首次探测或最近状态已过期。"
                       : undefined
                 }
                 cta={
                   !runtimeStatus.qbittorrent.configured
                     ? { kind: "open-settings", label: "去配置", tab: "连接" }
-                    : !runtimeStatus.qbittorrent.enabled
-                      ? { kind: "open-settings", label: "去启用", tab: "连接" }
-                      : null
+                    : null
                 }
                 onOpenSettings={onOpenSettings}
               />
