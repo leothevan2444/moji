@@ -34,6 +34,7 @@ func settingsSnapshotToModel(snapshot *SettingsSnapshot, appVersion string) *mod
 	if snapshot == nil {
 		return &model.Settings{
 			Stash:        &model.StashSettings{},
+			Ingest:       &model.IngestSettings{},
 			Jackett:      &model.JackettSettings{},
 			Qbittorrent:  &model.QBittorrentSettings{},
 			Automation:   &model.AutomationSettings{},
@@ -43,17 +44,19 @@ func settingsSnapshotToModel(snapshot *SettingsSnapshot, appVersion string) *mod
 
 	return &model.Settings{
 		Stash: &model.StashSettings{
-			Configured:            snapshot.Stash.Configured,
-			Enabled:               snapshot.Stash.Enabled,
-			URL:                   snapshot.Stash.URL,
-			APIKeyConfigured:      snapshot.Stash.APIKeyConfigured,
-			APIKey:                snapshot.Stash.APIKey,
-			Mode:                  snapshot.Stash.Mode,
-			LibraryPath:           snapshot.Stash.LibraryPath,
-			QbittorrentPathPrefix: snapshot.Stash.QBittorrentPathPrefix,
-			StashPathPrefix:       snapshot.Stash.StashPathPrefix,
-			TransferAction:        snapshot.Stash.TransferAction,
-			TransferTargetPath:    snapshot.Stash.TransferTargetPath,
+			Configured:       snapshot.Stash.Configured,
+			Enabled:          snapshot.Stash.Enabled,
+			URL:              snapshot.Stash.URL,
+			APIKeyConfigured: snapshot.Stash.APIKeyConfigured,
+			APIKey:           snapshot.Stash.APIKey,
+		},
+		Ingest: &model.IngestSettings{
+			Mode:                  snapshot.Ingest.Mode,
+			LibraryPath:           snapshot.Ingest.LibraryPath,
+			QbittorrentPathPrefix: snapshot.Ingest.QBittorrentPathPrefix,
+			StashPathPrefix:       snapshot.Ingest.StashPathPrefix,
+			TransferAction:        snapshot.Ingest.TransferAction,
+			TransferTargetPath:    snapshot.Ingest.TransferTargetPath,
 		},
 		Jackett: &model.JackettSettings{
 			Configured:         snapshot.Jackett.Configured,
@@ -89,13 +92,13 @@ func settingsSnapshotToModel(snapshot *SettingsSnapshot, appVersion string) *mod
 func settingsStatusSnapshotToModel(snapshot *SettingsStatusSnapshot) *model.SettingsStatus {
 	if snapshot == nil {
 		return &model.SettingsStatus{
-			Stash:        &model.ServiceStatus{},
-			Jackett:      &model.ServiceStatus{},
-			Qbittorrent:  &model.ServiceStatus{},
-			Automation:   &model.AutomationStatus{},
-			Subscription: &model.SubscriptionStatus{},
-			StashStats:     emptyStashStatsModel(),
-			JackettStats:   emptyJackettStatsModel(),
+			Stash:            &model.ServiceStatus{},
+			Jackett:          &model.ServiceStatus{},
+			Qbittorrent:      &model.ServiceStatus{},
+			Automation:       &model.AutomationStatus{},
+			Subscription:     &model.SubscriptionStatus{},
+			StashStats:       emptyStashStatsModel(),
+			JackettStats:     emptyJackettStatsModel(),
 			QbittorrentStats: emptyQBittorrentStatsModel(),
 		}
 	}
@@ -124,8 +127,8 @@ func settingsStatusSnapshotToModel(snapshot *SettingsStatusSnapshot) *model.Sett
 			StashBoxesLoaded:    snapshot.Subscription.StashBoxesLoaded,
 			StashBoxesLoadError: subscriptionLoadErrorPtr(snapshot.Subscription.StashBoxesLoadError),
 		},
-		StashStats:     emptyStashStatsModel(),
-		JackettStats:   emptyJackettStatsModel(),
+		StashStats:       emptyStashStatsModel(),
+		JackettStats:     emptyJackettStatsModel(),
 		QbittorrentStats: emptyQBittorrentStatsModel(),
 	}
 }

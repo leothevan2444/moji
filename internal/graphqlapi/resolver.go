@@ -41,6 +41,7 @@ type SettingsEditor interface {
 	Snapshot() *SettingsSnapshot
 	StatusSnapshot() *SettingsStatusSnapshot
 	UpdateStashSettings(input UpdateStashSettingsInput) (*SettingsSnapshot, error)
+	UpdateIngestSettings(input UpdateIngestSettingsInput) (*SettingsSnapshot, error)
 	UpdateJackettSettings(input UpdateJackettSettingsInput) (*SettingsSnapshot, error)
 	UpdateQBittorrentSettings(input UpdateQBittorrentSettingsInput) (*SettingsSnapshot, error)
 	UpdateAutomationSettings(input UpdateAutomationSettingsInput) (*SettingsSnapshot, error)
@@ -48,8 +49,11 @@ type SettingsEditor interface {
 }
 
 type UpdateStashSettingsInput struct {
-	URL                   string
-	APIKey                string
+	URL    string
+	APIKey string
+}
+
+type UpdateIngestSettingsInput struct {
 	Mode                  string
 	LibraryPath           string
 	QBittorrentPathPrefix string
@@ -84,6 +88,7 @@ type UpdateAutomationSettingsInput struct {
 
 type SettingsSnapshot struct {
 	Stash        StashSettingsSnapshot
+	Ingest       IngestSettingsSnapshot
 	Jackett      JackettSettingsSnapshot
 	QBittorrent  QBittorrentSettingsSnapshot
 	Automation   AutomationSettingsSnapshot
@@ -91,11 +96,14 @@ type SettingsSnapshot struct {
 }
 
 type StashSettingsSnapshot struct {
-	Configured            bool
-	Enabled               bool
-	URL                   string
-	APIKeyConfigured      bool
-	APIKey                string
+	Configured       bool
+	Enabled          bool
+	URL              string
+	APIKeyConfigured bool
+	APIKey           string
+}
+
+type IngestSettingsSnapshot struct {
 	Mode                  string
 	LibraryPath           string
 	QBittorrentPathPrefix string

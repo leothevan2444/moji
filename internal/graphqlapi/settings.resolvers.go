@@ -21,8 +21,24 @@ func (r *mutationResolver) UpdateStashSettings(ctx context.Context, input model.
 	}
 
 	snapshot, err := r.SettingsEditor.UpdateStashSettings(UpdateStashSettingsInput{
-		URL:                   input.URL,
-		APIKey:                strings.TrimSpace(derefString(input.APIKey)),
+		URL:    input.URL,
+		APIKey: strings.TrimSpace(derefString(input.APIKey)),
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return settingsSnapshotToModel(snapshot, r.AppVersion), nil
+}
+
+// UpdateIngestSettings is the resolver for the updateIngestSettings field.
+func (r *mutationResolver) UpdateIngestSettings(ctx context.Context, input model.UpdateIngestSettingsInput) (*model.Settings, error) {
+	_ = ctx
+	if r.SettingsEditor == nil {
+		return nil, errors.New("settings editor is not configured")
+	}
+
+	snapshot, err := r.SettingsEditor.UpdateIngestSettings(UpdateIngestSettingsInput{
 		Mode:                  input.Mode,
 		LibraryPath:           input.LibraryPath,
 		QBittorrentPathPrefix: input.QbittorrentPathPrefix,

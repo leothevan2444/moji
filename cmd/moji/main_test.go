@@ -92,7 +92,8 @@ func TestHTTPHandlerServesSettingsSnapshot(t *testing.T) {
 		settings {
 			jackett { configured enabled url apiKeyConfigured }
 			qbittorrent { configured enabled url usernameConfigured passwordConfigured defaultSavePath }
-			stash { configured enabled url apiKeyConfigured libraryPath }
+			stash { configured enabled url apiKeyConfigured }
+			ingest { libraryPath }
 			automation { taskProgressSyncIntervalSeconds subscriptionPollIntervalSeconds }
 			subscription { stashBoxEndpoints }
 		}
@@ -235,8 +236,10 @@ type graphQLResponse struct {
 				Enabled          bool   `json:"enabled"`
 				URL              string `json:"url"`
 				APIKeyConfigured bool   `json:"apiKeyConfigured"`
-				LibraryPath      string `json:"libraryPath"`
 			} `json:"stash"`
+			Ingest struct {
+				LibraryPath string `json:"libraryPath"`
+			} `json:"ingest"`
 			Jackett struct {
 				Configured       bool   `json:"configured"`
 				Enabled          bool   `json:"enabled"`
@@ -304,6 +307,8 @@ func testConfig() *config.Config {
 	cfg.Jackett.URL = "http://jackett.invalid"
 	cfg.Jackett.APIKey = "test-api-key"
 	cfg.Stash.URL = "http://stash.invalid"
+	cfg.Ingest.Mode = "LIBRARY_SCAN"
+	cfg.Ingest.LibraryPath = "/library"
 	cfg.Automation.SubscriptionPollIntervalSeconds = 3600
 	return &cfg
 }

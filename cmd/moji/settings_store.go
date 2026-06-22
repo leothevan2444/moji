@@ -44,6 +44,17 @@ func (s *runtimeSettingsEditor) UpdateStashSettings(input graphqlapi.UpdateStash
 	cfg, err := s.store.UpdateStash(
 		strings.TrimSpace(input.URL),
 		strings.TrimSpace(input.APIKey),
+	)
+	if err != nil {
+		logging.Errorf("settings: save stash settings failed: %v", err)
+		return nil, err
+	}
+	logging.Infof("settings: stash settings saved for url=%s", cfg.Stash.URL)
+	return buildSettingsSnapshot(cfg, s.version, s.qbittorrentEnabled), nil
+}
+
+func (s *runtimeSettingsEditor) UpdateIngestSettings(input graphqlapi.UpdateIngestSettingsInput) (*graphqlapi.SettingsSnapshot, error) {
+	cfg, err := s.store.UpdateIngest(
 		strings.TrimSpace(input.Mode),
 		strings.TrimSpace(input.LibraryPath),
 		strings.TrimSpace(input.QBittorrentPathPrefix),
@@ -52,15 +63,14 @@ func (s *runtimeSettingsEditor) UpdateStashSettings(input graphqlapi.UpdateStash
 		strings.TrimSpace(input.TransferTargetPath),
 	)
 	if err != nil {
-		logging.Errorf("settings: save stash settings failed: %v", err)
+		logging.Errorf("settings: save ingest settings failed: %v", err)
 		return nil, err
 	}
 	logging.Infof(
-		"settings: stash settings saved for url=%s mode=%s library_path=%s transfer_target=%s",
-		cfg.Stash.URL,
-		cfg.Stash.Mode,
-		cfg.Stash.LibraryPath,
-		cfg.Stash.TransferTargetPath,
+		"settings: ingest settings saved mode=%s library_path=%s transfer_target=%s",
+		cfg.Ingest.Mode,
+		cfg.Ingest.LibraryPath,
+		cfg.Ingest.TransferTargetPath,
 	)
 	return buildSettingsSnapshot(cfg, s.version, s.qbittorrentEnabled), nil
 }

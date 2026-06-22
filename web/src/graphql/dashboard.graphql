@@ -19,6 +19,8 @@ query DashboardDocument {
       url
       apiKeyConfigured
       apiKey
+    }
+    ingest {
       mode
       libraryPath
       qbittorrentPathPrefix

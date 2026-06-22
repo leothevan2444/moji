@@ -62,18 +62,30 @@ func (s *Store) Path() string {
 	return s.path
 }
 
-func (s *Store) UpdateStash(url, apiKey, mode, libraryPath, qbittorrentPathPrefix, stashPathPrefix, transferAction, transferTargetPath string) (*Config, error) {
+func (s *Store) UpdateStash(url, apiKey string) (*Config, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
 	s.cfg.Stash.URL = trimGraphQLSuffix(url)
 	s.cfg.Stash.APIKey = apiKey
-	s.cfg.Stash.Mode = mode
-	s.cfg.Stash.LibraryPath = libraryPath
-	s.cfg.Stash.QBittorrentPathPrefix = qbittorrentPathPrefix
-	s.cfg.Stash.StashPathPrefix = stashPathPrefix
-	s.cfg.Stash.TransferAction = transferAction
-	s.cfg.Stash.TransferTargetPath = transferTargetPath
+
+	if err := s.updateConfigNode(); err != nil {
+		return nil, err
+	}
+	clone := *s.cfg
+	return &clone, nil
+}
+
+func (s *Store) UpdateIngest(mode, libraryPath, qbittorrentPathPrefix, stashPathPrefix, transferAction, transferTargetPath string) (*Config, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	s.cfg.Ingest.Mode = mode
+	s.cfg.Ingest.LibraryPath = libraryPath
+	s.cfg.Ingest.QBittorrentPathPrefix = qbittorrentPathPrefix
+	s.cfg.Ingest.StashPathPrefix = stashPathPrefix
+	s.cfg.Ingest.TransferAction = transferAction
+	s.cfg.Ingest.TransferTargetPath = transferTargetPath
 
 	if err := s.updateConfigNode(); err != nil {
 		return nil, err
@@ -160,14 +172,16 @@ func (s *Store) updateConfigNode() error {
 		"password": s.cfg.Jackett.Password,
 	})
 	setMapString(top, "stash", map[string]string{
-		"url":                     s.cfg.Stash.URL,
-		"api_key":                 s.cfg.Stash.APIKey,
-		"mode":                    s.cfg.Stash.Mode,
-		"library_path":            s.cfg.Stash.LibraryPath,
-		"qbittorrent_path_prefix": s.cfg.Stash.QBittorrentPathPrefix,
-		"stash_path_prefix":       s.cfg.Stash.StashPathPrefix,
-		"transfer_action":         s.cfg.Stash.TransferAction,
-		"transfer_target_path":    s.cfg.Stash.TransferTargetPath,
+		"url":     s.cfg.Stash.URL,
+		"api_key": s.cfg.Stash.APIKey,
+	})
+	setMapString(top, "ingest", map[string]string{
+		"mode":                    s.cfg.Ingest.Mode,
+		"library_path":            s.cfg.Ingest.LibraryPath,
+		"qbittorrent_path_prefix": s.cfg.Ingest.QBittorrentPathPrefix,
+		"stash_path_prefix":       s.cfg.Ingest.StashPathPrefix,
+		"transfer_action":         s.cfg.Ingest.TransferAction,
+		"transfer_target_path":    s.cfg.Ingest.TransferTargetPath,
 	})
 	setMapString(top, "qbittorrent", map[string]string{
 		"url":               s.cfg.QBittorrent.URL,
@@ -184,6 +198,12 @@ func (s *Store) updateConfigNode() error {
 	deleteMapKey(top, "logging")
 	if stash := existingMapValue(top, "stash"); stash != nil {
 		deleteMapKey(stash, "graphql_url")
+		deleteMapKey(stash, "mode")
+		deleteMapKey(stash, "library_path")
+		deleteMapKey(stash, "qbittorrent_path_prefix")
+		deleteMapKey(stash, "stash_path_prefix")
+		deleteMapKey(stash, "transfer_action")
+		deleteMapKey(stash, "transfer_target_path")
 	}
 
 	data, err := yaml.Marshal(&s.root)

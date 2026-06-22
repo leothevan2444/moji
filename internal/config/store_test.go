@@ -65,6 +65,7 @@ func TestLoadFromPathUsesDirectStashURL(t *testing.T) {
 	content := `stash:
   url: "http://stash.example"
   api_key: "secret"
+ingest:
   library_path: "/library"
 `
 	if err := os.WriteFile(path, []byte(content), 0o644); err != nil {

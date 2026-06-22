@@ -10,6 +10,9 @@ extend type Mutation {
   "Update Stash settings and persist them to backend config"
   updateStashSettings(input: UpdateStashSettingsInput!): Settings!
 
+  "Update ingest settings and persist them to backend config"
+  updateIngestSettings(input: UpdateIngestSettingsInput!): Settings!
+
   "Update Jackett settings and persist them to backend config"
   updateJackettSettings(input: UpdateJackettSettingsInput!): Settings!
 
@@ -28,6 +31,7 @@ extend type Mutation {
 
 type Settings {
   stash: StashSettings!
+  ingest: IngestSettings!
   jackett: JackettSettings!
   qbittorrent: QBittorrentSettings!
   automation: AutomationSettings!
@@ -122,6 +126,9 @@ type StashSettings {
   apiKeyConfigured: Boolean!
   "Currently configured Stash API key. Returned in plaintext for the settings UI; never logged."
   apiKey: String!
+}
+
+type IngestSettings {
   mode: String!
   libraryPath: String!
   qbittorrentPathPrefix: String!
@@ -196,6 +203,9 @@ type StashBoxEndpoint {
 input UpdateStashSettingsInput {
   url: String!
   apiKey: String
+}
+
+input UpdateIngestSettingsInput {
   mode: String!
   libraryPath: String!
   qbittorrentPathPrefix: String!

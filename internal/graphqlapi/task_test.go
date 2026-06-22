@@ -399,7 +399,9 @@ func TestSettingsQueryReturnsRuntimeSnapshot(t *testing.T) {
 			Enabled:          true,
 			URL:              "http://stash.invalid",
 			APIKeyConfigured: true,
-			LibraryPath:      "/data/library",
+		},
+		Ingest: IngestSettingsSnapshot{
+			LibraryPath: "/data/library",
 		},
 		Jackett: JackettSettingsSnapshot{
 			Configured:       true,
@@ -434,7 +436,8 @@ func TestSettingsQueryReturnsRuntimeSnapshot(t *testing.T) {
 
 	resp := executeGraphQL(t, resolver, `{
 		settings {
-			stash { configured enabled url apiKeyConfigured libraryPath }
+			stash { configured enabled url apiKeyConfigured }
+			ingest { libraryPath }
 			jackett { configured enabled url apiKeyConfigured }
 			qbittorrent { configured enabled url username usernameConfigured passwordConfigured defaultSavePath category tags }
 			automation { taskProgressSyncIntervalSeconds subscriptionPollIntervalSeconds }
@@ -448,6 +451,9 @@ func TestSettingsQueryReturnsRuntimeSnapshot(t *testing.T) {
 	}
 	if !resp.Data.Settings.Stash.Configured || resp.Data.Settings.Stash.URL != "http://stash.invalid" {
 		t.Fatalf("unexpected stash settings: %+v", resp.Data.Settings.Stash)
+	}
+	if resp.Data.Settings.Ingest.LibraryPath != "/data/library" {
+		t.Fatalf("unexpected ingest settings: %+v", resp.Data.Settings.Ingest)
 	}
 	if resp.Data.Settings.Qbittorrent.PasswordConfigured {
 		t.Fatalf("expected passwordConfigured false, got %+v", resp.Data.Settings.Qbittorrent)
@@ -536,10 +542,42 @@ func TestUpdateStashSettingsMutation(t *testing.T) {
 	editor := &fakeSettingsEditor{
 		updateStashSnapshot: &SettingsSnapshot{
 			Stash: StashSettingsSnapshot{
-				Configured:            true,
-				Enabled:               false,
-				URL:                   "http://stash.updated",
-				APIKeyConfigured:      true,
+				Configured:       true,
+				Enabled:          false,
+				URL:              "http://stash.updated",
+				APIKeyConfigured: true,
+			},
+		},
+	}
+	resolver := NewResolver(nil, nil, nil, nil, "test-version")
+	resolver.SettingsEditor = editor
+
+	resp := executeGraphQL(t, resolver, `mutation {
+		updateStashSettings(input: {
+			url: "http://stash.updated"
+			apiKey: "secret"
+		}) {
+			stash { url apiKeyConfigured }
+		}
+	}`)
+	if len(resp.Errors) > 0 {
+		t.Fatalf("expected no errors, got %+v", resp.Errors)
+	}
+	if editor.stashInput.URL != "http://stash.updated" {
+		t.Fatalf("unexpected stash input: %+v", editor.stashInput)
+	}
+	if editor.stashInput.APIKey != "secret" {
+		t.Fatalf("unexpected stash input details: %+v", editor.stashInput)
+	}
+	if resp.Data.UpdateStashSettings.Stash.URL != "http://stash.updated" {
+		t.Fatalf("unexpected stash response: %+v", resp.Data.UpdateStashSettings.Stash)
+	}
+}
+
+func TestUpdateIngestSettingsMutation(t *testing.T) {
+	editor := &fakeSettingsEditor{
+		updateIngestSnapshot: &SettingsSnapshot{
+			Ingest: IngestSettingsSnapshot{
 				Mode:                  "FILE_TRANSFER",
 				LibraryPath:           "/library/updated",
 				QBittorrentPathPrefix: "/downloads",
@@ -553,9 +591,7 @@ func TestUpdateStashSettingsMutation(t *testing.T) {
 	resolver.SettingsEditor = editor
 
 	resp := executeGraphQL(t, resolver, `mutation {
-		updateStashSettings(input: {
-			url: "http://stash.updated"
-			apiKey: "secret"
+		updateIngestSettings(input: {
 			mode: "FILE_TRANSFER"
 			libraryPath: "/library/updated"
 			qbittorrentPathPrefix: "/downloads"
@@ -563,20 +599,17 @@ func TestUpdateStashSettingsMutation(t *testing.T) {
 			transferAction: "COPY"
 			transferTargetPath: "/stash-import"
 		}) {
-			stash { url apiKeyConfigured mode libraryPath transferAction transferTargetPath }
+			ingest { mode libraryPath transferAction transferTargetPath }
 		}
 	}`)
 	if len(resp.Errors) > 0 {
 		t.Fatalf("expected no errors, got %+v", resp.Errors)
 	}
-	if editor.stashInput.URL != "http://stash.updated" || editor.stashInput.LibraryPath != "/library/updated" {
-		t.Fatalf("unexpected stash input: %+v", editor.stashInput)
+	if editor.ingestInput.Mode != "FILE_TRANSFER" || editor.ingestInput.TransferTargetPath != "/stash-import" {
+		t.Fatalf("unexpected ingest input: %+v", editor.ingestInput)
 	}
-	if editor.stashInput.APIKey != "secret" || editor.stashInput.Mode != "FILE_TRANSFER" || editor.stashInput.TransferAction != "COPY" || editor.stashInput.TransferTargetPath != "/stash-import" {
-		t.Fatalf("unexpected stash input details: %+v", editor.stashInput)
-	}
-	if resp.Data.UpdateStashSettings.Stash.URL != "http://stash.updated" {
-		t.Fatalf("unexpected stash response: %+v", resp.Data.UpdateStashSettings.Stash)
+	if resp.Data.UpdateIngestSettings.Ingest.Mode != "FILE_TRANSFER" {
+		t.Fatalf("unexpected ingest response: %+v", resp.Data.UpdateIngestSettings.Ingest)
 	}
 }
 
@@ -729,8 +762,15 @@ type graphQLTaskResponse struct {
 				Enabled          bool   `json:"enabled"`
 				URL              string `json:"url"`
 				APIKeyConfigured bool   `json:"apiKeyConfigured"`
-				LibraryPath      string `json:"libraryPath"`
 			} `json:"stash"`
+			Ingest struct {
+				Mode                  string `json:"mode"`
+				LibraryPath           string `json:"libraryPath"`
+				QBittorrentPathPrefix string `json:"qbittorrentPathPrefix"`
+				StashPathPrefix       string `json:"stashPathPrefix"`
+				TransferAction        string `json:"transferAction"`
+				TransferTargetPath    string `json:"transferTargetPath"`
+			} `json:"ingest"`
 			Jackett struct {
 				Configured       bool   `json:"configured"`
 				Enabled          bool   `json:"enabled"`
@@ -792,9 +832,16 @@ type graphQLTaskResponse struct {
 			Stash struct {
 				URL              string `json:"url"`
 				APIKeyConfigured bool   `json:"apiKeyConfigured"`
-				LibraryPath      string `json:"libraryPath"`
 			} `json:"stash"`
 		} `json:"updateStashSettings"`
+		UpdateIngestSettings struct {
+			Ingest struct {
+				Mode               string `json:"mode"`
+				LibraryPath        string `json:"libraryPath"`
+				TransferAction     string `json:"transferAction"`
+				TransferTargetPath string `json:"transferTargetPath"`
+			} `json:"ingest"`
+		} `json:"updateIngestSettings"`
 		UpdateSubscriptionSettings struct {
 			Subscription struct {
 				StashBoxEndpoints []string `json:"stashBoxEndpoints"`
@@ -812,6 +859,8 @@ type fakeSettingsEditor struct {
 	statusSnapshot             *SettingsStatusSnapshot
 	stashInput                 UpdateStashSettingsInput
 	updateStashSnapshot        *SettingsSnapshot
+	ingestInput                UpdateIngestSettingsInput
+	updateIngestSnapshot       *SettingsSnapshot
 	qbittorrentInput           UpdateQBittorrentSettingsInput
 	updateQBittorrentSnapshot  *SettingsSnapshot
 	automationInput            UpdateAutomationSettingsInput
@@ -831,6 +880,11 @@ func (f *fakeSettingsEditor) StatusSnapshot() *SettingsStatusSnapshot {
 func (f *fakeSettingsEditor) UpdateStashSettings(input UpdateStashSettingsInput) (*SettingsSnapshot, error) {
 	f.stashInput = input
 	return f.updateStashSnapshot, nil
+}
+
+func (f *fakeSettingsEditor) UpdateIngestSettings(input UpdateIngestSettingsInput) (*SettingsSnapshot, error) {
+	f.ingestInput = input
+	return f.updateIngestSnapshot, nil
 }
 
 func (f *fakeSettingsEditor) UpdateJackettSettings(UpdateJackettSettingsInput) (*SettingsSnapshot, error) {

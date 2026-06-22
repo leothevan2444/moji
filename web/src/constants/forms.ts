@@ -1,6 +1,9 @@
 export const EMPTY_STASH_FORM = {
   url: "",
-  apiKey: "",
+  apiKey: ""
+};
+
+export const EMPTY_INGEST_FORM = {
   mode: "SHARED_STORAGE",
   libraryPath: "",
   qbittorrentPathPrefix: "",

@@ -26,6 +26,7 @@ generate-moji-graphql:
 	else \
 		$(GO_RUN) github.com/99designs/gqlgen generate --config graphql/moji/gqlgen.yml; \
 	fi
+	npm --prefix web run codegen
 
 # Generates SQL files
 .PHONY: generate-sql

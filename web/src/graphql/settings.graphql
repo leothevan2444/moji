@@ -5,6 +5,13 @@ mutation UpdateStashSettingsDocument($input: UpdateStashSettingsInput!) {
       enabled
       url
       apiKeyConfigured
+    }
+  }
+}
+
+mutation UpdateIngestSettingsDocument($input: UpdateIngestSettingsInput!) {
+  updateIngestSettings(input: $input) {
+    ingest {
       mode
       libraryPath
       qbittorrentPathPrefix

@@ -58,6 +58,15 @@ type Health struct {
 	Message string `json:"message"`
 }
 
+type IngestSettings struct {
+	Mode                  string `json:"mode"`
+	LibraryPath           string `json:"libraryPath"`
+	QbittorrentPathPrefix string `json:"qbittorrentPathPrefix"`
+	StashPathPrefix       string `json:"stashPathPrefix"`
+	TransferAction        string `json:"transferAction"`
+	TransferTargetPath    string `json:"transferTargetPath"`
+}
+
 type JackettSearchInput struct {
 	Query      string   `json:"query"`
 	Trackers   []string `json:"trackers,omitempty"`
@@ -180,6 +189,7 @@ type ServiceStatus struct {
 
 type Settings struct {
 	Stash        *StashSettings        `json:"stash"`
+	Ingest       *IngestSettings       `json:"ingest"`
 	Jackett      *JackettSettings      `json:"jackett"`
 	Qbittorrent  *QBittorrentSettings  `json:"qbittorrent"`
 	Automation   *AutomationSettings   `json:"automation"`
@@ -256,13 +266,7 @@ type StashSettings struct {
 	URL              string `json:"url"`
 	APIKeyConfigured bool   `json:"apiKeyConfigured"`
 	// Currently configured Stash API key. Returned in plaintext for the settings UI; never logged.
-	APIKey                string `json:"apiKey"`
-	Mode                  string `json:"mode"`
-	LibraryPath           string `json:"libraryPath"`
-	QbittorrentPathPrefix string `json:"qbittorrentPathPrefix"`
-	StashPathPrefix       string `json:"stashPathPrefix"`
-	TransferAction        string `json:"transferAction"`
-	TransferTargetPath    string `json:"transferTargetPath"`
+	APIKey string `json:"apiKey"`
 }
 
 // Per-service runtime stats. okAt is the timestamp of the most recent successful refresh; lastError is the message from the most recent failed refresh (if any). When lastError is non-null, other numeric fields still reflect the last known-good snapshot.
@@ -351,6 +355,15 @@ type UpdateAutomationSettingsInput struct {
 	SubscriptionPollIntervalSeconds int `json:"subscriptionPollIntervalSeconds"`
 }
 
+type UpdateIngestSettingsInput struct {
+	Mode                  string `json:"mode"`
+	LibraryPath           string `json:"libraryPath"`
+	QbittorrentPathPrefix string `json:"qbittorrentPathPrefix"`
+	StashPathPrefix       string `json:"stashPathPrefix"`
+	TransferAction        string `json:"transferAction"`
+	TransferTargetPath    string `json:"transferTargetPath"`
+}
+
 type UpdateJackettSettingsInput struct {
 	URL    string  `json:"url"`
 	APIKey *string `json:"apiKey,omitempty"`
@@ -368,14 +381,8 @@ type UpdateQBittorrentSettingsInput struct {
 }
 
 type UpdateStashSettingsInput struct {
-	URL                   string  `json:"url"`
-	APIKey                *string `json:"apiKey,omitempty"`
-	Mode                  string  `json:"mode"`
-	LibraryPath           string  `json:"libraryPath"`
-	QbittorrentPathPrefix string  `json:"qbittorrentPathPrefix"`
-	StashPathPrefix       string  `json:"stashPathPrefix"`
-	TransferAction        string  `json:"transferAction"`
-	TransferTargetPath    string  `json:"transferTargetPath"`
+	URL    string  `json:"url"`
+	APIKey *string `json:"apiKey,omitempty"`
 }
 
 type UpdateSubscriptionSettingsInput struct {

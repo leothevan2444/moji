@@ -25,14 +25,8 @@ type QBittorrentConfig struct {
 }
 
 type StashConfig struct {
-	URL                   string `yaml:"url"`
-	APIKey                string `yaml:"api_key"`
-	Mode                  string `yaml:"mode"`
-	LibraryPath           string `yaml:"library_path"`
-	QBittorrentPathPrefix string `yaml:"qbittorrent_path_prefix"`
-	StashPathPrefix       string `yaml:"stash_path_prefix"`
-	TransferAction        string `yaml:"transfer_action"`
-	TransferTargetPath    string `yaml:"transfer_target_path"`
+	URL    string `yaml:"url"`
+	APIKey string `yaml:"api_key"`
 }
 
 func (s *StashConfig) normalize() {}
@@ -44,6 +38,15 @@ func (s StashConfig) GraphQLEndpoint() string {
 type AutomationConfig struct {
 	TaskProgressSyncIntervalSeconds int `yaml:"task_progress_sync_interval_seconds"`
 	SubscriptionPollIntervalSeconds int `yaml:"subscription_poll_interval_seconds"`
+}
+
+type IngestConfig struct {
+	Mode                  string `yaml:"mode"`
+	LibraryPath           string `yaml:"library_path"`
+	QBittorrentPathPrefix string `yaml:"qbittorrent_path_prefix"`
+	StashPathPrefix       string `yaml:"stash_path_prefix"`
+	TransferAction        string `yaml:"transfer_action"`
+	TransferTargetPath    string `yaml:"transfer_target_path"`
 }
 
 type SubscriptionConfig struct {
@@ -63,6 +66,7 @@ type Config struct {
 	Jackett      JackettConfig      `yaml:"jackett"`
 	QBittorrent  QBittorrentConfig  `yaml:"qbittorrent"`
 	Stash        StashConfig        `yaml:"stash"`
+	Ingest       IngestConfig       `yaml:"ingest"`
 	Automation   AutomationConfig   `yaml:"automation"`
 	Subscription SubscriptionConfig `yaml:"subscription"`
 	Logging      LoggingConfig      `yaml:"logging"`
