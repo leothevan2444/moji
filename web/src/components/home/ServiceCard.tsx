@@ -201,17 +201,9 @@ function renderStats(
 }
 
 export function buildStashConfig(runtime: RuntimeSettings): Array<{ key: string; value: string }> {
-  const s = runtime.stash;
-  const i = runtime.ingest;
-  const libraryPath =
-    i.mode === "LIBRARY_SCAN"
-      ? i.libraryScan.libraryPath
-      : "";
-  return [
-    { key: "URL", value: s.url },
-    { key: "模式", value: i.mode },
-    { key: "库路径", value: libraryPath }
-  ];
+  // Ingest mode / paths live on the new IngestCard; Stash card only shows
+  // connection-relevant fields (URL + API key) here.
+  return [{ key: "URL", value: runtime.stash.url }];
 }
 
 export function buildJackettConfig(runtime: RuntimeSettings): Array<{ key: string; value: string }> {
@@ -226,17 +218,4 @@ export function buildQBittorrentConfig(runtime: RuntimeSettings): Array<{ key: s
     { key: "用户", value: q.username },
     { key: "保存路径", value: q.defaultSavePath }
   ];
-}
-
-export function blockersFor(
-  service: "stash" | "jackett" | "qbittorrent"
-): string[] {
-  switch (service) {
-    case "jackett":
-      return ["任务搜索无索引源", "订阅扫描无上游数据"];
-    case "qbittorrent":
-      return ["任务无法启动下载", "下载完成后无客户端落地"];
-    case "stash":
-      return ["任务完成后无法入库", "订阅扫描无目标库", "Stash-Box 元数据无法获取"];
-  }
 }

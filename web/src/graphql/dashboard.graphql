@@ -91,6 +91,9 @@ query DashboardDocument {
       stashBoxesLoaded
       stashBoxesLoadError
     }
+    ingest {
+      configured
+    }
     stashStats {
       version
       sceneCount

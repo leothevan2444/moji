@@ -75,6 +75,11 @@ type IngestSettings struct {
 	LibraryScan   *LibraryScanIngestSettings   `json:"libraryScan"`
 }
 
+type IngestStatus struct {
+	// Whether the ingest pipeline is fully wired for the selected mode. Becomes true only when the mode-specific fields are all filled in; reaches false as soon as any required field is cleared.
+	Configured bool `json:"configured"`
+}
+
 type JackettSearchInput struct {
 	Query      string   `json:"query"`
 	Trackers   []string `json:"trackers,omitempty"`
@@ -218,6 +223,7 @@ type SettingsStatus struct {
 	Qbittorrent  *ServiceStatus      `json:"qbittorrent"`
 	Automation   *AutomationStatus   `json:"automation"`
 	Subscription *SubscriptionStatus `json:"subscription"`
+	Ingest       *IngestStatus       `json:"ingest"`
 	// Runtime stats for the Stash server. Refreshed by the stats collector.
 	StashStats *StashStats `json:"stashStats"`
 	// Runtime stats for the Jackett indexer aggregator. Refreshed by the stats collector.

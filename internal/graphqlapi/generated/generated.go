@@ -95,6 +95,10 @@ type ComplexityRoot struct {
 		SharedStorage func(childComplexity int) int
 	}
 
+	IngestStatus struct {
+		Configured func(childComplexity int) int
+	}
+
 	JackettSearchResult struct {
 		CategoryDesc func(childComplexity int) int
 		Details      func(childComplexity int) int
@@ -229,6 +233,7 @@ type ComplexityRoot struct {
 
 	SettingsStatus struct {
 		Automation       func(childComplexity int) int
+		Ingest           func(childComplexity int) int
 		Jackett          func(childComplexity int) int
 		JackettStats     func(childComplexity int) int
 		Qbittorrent      func(childComplexity int) int
@@ -611,6 +616,13 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.IngestSettings.SharedStorage(childComplexity), true
+
+	case "IngestStatus.configured":
+		if e.complexity.IngestStatus.Configured == nil {
+			break
+		}
+
+		return e.complexity.IngestStatus.Configured(childComplexity), true
 
 	case "JackettSearchResult.categoryDesc":
 		if e.complexity.JackettSearchResult.CategoryDesc == nil {
@@ -1390,6 +1402,13 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.SettingsStatus.Automation(childComplexity), true
+
+	case "SettingsStatus.ingest":
+		if e.complexity.SettingsStatus.Ingest == nil {
+			break
+		}
+
+		return e.complexity.SettingsStatus.Ingest(childComplexity), true
 
 	case "SettingsStatus.jackett":
 		if e.complexity.SettingsStatus.Jackett == nil {
@@ -2268,6 +2287,7 @@ type SettingsStatus {
   qbittorrent: ServiceStatus!
   automation: AutomationStatus!
   subscription: SubscriptionStatus!
+  ingest: IngestStatus!
 
   "Runtime stats for the Stash server. Refreshed by the stats collector."
   stashStats: StashStats!
@@ -2277,6 +2297,11 @@ type SettingsStatus {
 
   "Runtime stats for the qBittorrent download client. Refreshed by the stats collector."
   qbittorrentStats: QBittorrentStats!
+}
+
+type IngestStatus {
+  "Whether the ingest pipeline is fully wired for the selected mode. Becomes true only when the mode-specific fields are all filled in; reaches false as soon as any required field is cleared."
+  configured: Boolean!
 }
 
 "Per-service runtime stats. okAt is the timestamp of the most recent successful refresh; lastError is the message from the most recent failed refresh (if any). When lastError is non-null, other numeric fields still reflect the last known-good snapshot."
@@ -4733,6 +4758,50 @@ func (ec *executionContext) fieldContext_IngestSettings_libraryScan(_ context.Co
 				return ec.fieldContext_LibraryScanIngestSettings_libraryPath(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type LibraryScanIngestSettings", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _IngestStatus_configured(ctx context.Context, field graphql.CollectedField, obj *model.IngestStatus) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_IngestStatus_configured(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Configured, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(bool)
+	fc.Result = res
+	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_IngestStatus_configured(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "IngestStatus",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
 		},
 	}
 	return fc, nil
@@ -8963,6 +9032,8 @@ func (ec *executionContext) fieldContext_Query_settingsStatus(_ context.Context,
 				return ec.fieldContext_SettingsStatus_automation(ctx, field)
 			case "subscription":
 				return ec.fieldContext_SettingsStatus_subscription(ctx, field)
+			case "ingest":
+				return ec.fieldContext_SettingsStatus_ingest(ctx, field)
 			case "stashStats":
 				return ec.fieldContext_SettingsStatus_stashStats(ctx, field)
 			case "jackettStats":
@@ -10334,6 +10405,54 @@ func (ec *executionContext) fieldContext_SettingsStatus_subscription(_ context.C
 				return ec.fieldContext_SubscriptionStatus_stashBoxesLoadError(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type SubscriptionStatus", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _SettingsStatus_ingest(ctx context.Context, field graphql.CollectedField, obj *model.SettingsStatus) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_SettingsStatus_ingest(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Ingest, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*model.IngestStatus)
+	fc.Result = res
+	return ec.marshalNIngestStatus2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐIngestStatus(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_SettingsStatus_ingest(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "SettingsStatus",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "configured":
+				return ec.fieldContext_IngestStatus_configured(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type IngestStatus", field.Name)
 		},
 	}
 	return fc, nil
@@ -17263,6 +17382,45 @@ func (ec *executionContext) _IngestSettings(ctx context.Context, sel ast.Selecti
 	return out
 }
 
+var ingestStatusImplementors = []string{"IngestStatus"}
+
+func (ec *executionContext) _IngestStatus(ctx context.Context, sel ast.SelectionSet, obj *model.IngestStatus) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, ingestStatusImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("IngestStatus")
+		case "configured":
+			out.Values[i] = ec._IngestStatus_configured(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
 var jackettSearchResultImplementors = []string{"JackettSearchResult"}
 
 func (ec *executionContext) _JackettSearchResult(ctx context.Context, sel ast.SelectionSet, obj *model.JackettSearchResult) graphql.Marshaler {
@@ -18447,6 +18605,11 @@ func (ec *executionContext) _SettingsStatus(ctx context.Context, sel ast.Selecti
 			}
 		case "subscription":
 			out.Values[i] = ec._SettingsStatus_subscription(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "ingest":
+			out.Values[i] = ec._SettingsStatus_ingest(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
@@ -19741,6 +19904,16 @@ func (ec *executionContext) marshalNIngestSettings2ᚖgithubᚗcomᚋleothevan24
 		return graphql.Null
 	}
 	return ec._IngestSettings(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNIngestStatus2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐIngestStatus(ctx context.Context, sel ast.SelectionSet, v *model.IngestStatus) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._IngestStatus(ctx, sel, v)
 }
 
 func (ec *executionContext) unmarshalNInt2int(ctx context.Context, v any) (int, error) {

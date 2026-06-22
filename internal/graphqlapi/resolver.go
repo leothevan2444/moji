@@ -166,6 +166,11 @@ type SettingsStatusSnapshot struct {
 	QBittorrent  ServiceStatusSnapshot
 	Automation   AutomationStatusSnapshot
 	Subscription SubscriptionStatusSnapshot
+	Ingest       IngestStatusSnapshot
+}
+
+type IngestStatusSnapshot struct {
+	Configured bool
 }
 
 type ServiceStatusSnapshot struct {

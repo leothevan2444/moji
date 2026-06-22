@@ -262,13 +262,13 @@ func applySubscriptionOrder(cfg *config.Config, service graphqlapi.SubscriptionS
 func buildSettingsSnapshot(cfg *config.Config, version string, qbittorrentEnabled bool) *graphqlapi.SettingsSnapshot {
 	_ = version
 	jackettConfigured := cfg.Jackett.URL != "" && cfg.Jackett.APIKey != ""
-	stashConfigured := isStashConfigured(cfg)
+	stashReachable := isStashReachable(cfg)
 	qbittorrentConfigured := cfg.QBittorrent.URL != "" && cfg.QBittorrent.Username != "" && cfg.QBittorrent.Password != ""
 
 	return &graphqlapi.SettingsSnapshot{
 		Stash: graphqlapi.StashSettingsSnapshot{
-			Configured:       stashConfigured,
-			Enabled:          stashConfigured,
+			Configured:       stashReachable,
+			Enabled:          stashReachable,
 			URL:              cfg.Stash.URL,
 			APIKeyConfigured: cfg.Stash.APIKey != "",
 			APIKey:           cfg.Stash.APIKey,
@@ -320,7 +320,8 @@ func buildSettingsSnapshot(cfg *config.Config, version string, qbittorrentEnable
 
 func buildSettingsStatusSnapshot(cfg *config.Config, version string, qbittorrentEnabled bool, downloaderEnabled bool, stashEnabled bool, subscriptionService graphqlapi.SubscriptionService) *graphqlapi.SettingsStatusSnapshot {
 	jackettConfigured := cfg.Jackett.URL != "" && cfg.Jackett.APIKey != ""
-	stashConfigured := isStashConfigured(cfg)
+	stashReachable := isStashReachable(cfg)
+	ingestConfigured := isIngestConfigured(cfg)
 	qbittorrentConfigured := cfg.QBittorrent.URL != "" && cfg.QBittorrent.Username != "" && cfg.QBittorrent.Password != ""
 
 	subscriptionStatus := graphqlapi.SubscriptionStatusSnapshot{
@@ -343,8 +344,11 @@ func buildSettingsStatusSnapshot(cfg *config.Config, version string, qbittorrent
 
 	return &graphqlapi.SettingsStatusSnapshot{
 		Stash: graphqlapi.ServiceStatusSnapshot{
-			Configured: stashConfigured,
+			Configured: stashReachable,
 			Enabled:    stashEnabled,
+		},
+		Ingest: graphqlapi.IngestStatusSnapshot{
+			Configured: ingestConfigured,
 		},
 		Jackett: graphqlapi.ServiceStatusSnapshot{
 			Configured: jackettConfigured,
@@ -452,16 +456,31 @@ func stashIntegrationConfig(cfg *config.Config) stashsync.IntegrationConfig {
 	}
 }
 
-func isStashConfigured(cfg *config.Config) bool {
-	if cfg == nil || strings.TrimSpace(cfg.Stash.URL) == "" {
+// isStashReachable reports whether the Stash server itself can be reached
+// (URL + API key configured). Used by the Stash card chip and the
+// SettingsStatus.Stash.Configured signal.
+func isStashReachable(cfg *config.Config) bool {
+	if cfg == nil {
+		return false
+	}
+	return strings.TrimSpace(cfg.Stash.URL) != "" && strings.TrimSpace(cfg.Stash.APIKey) != ""
+}
+
+// isIngestConfigured reports whether the ingest pipeline is fully wired
+// for whichever mode is selected. Used by the new Ingest card chip and the
+// SettingsStatus.Ingest.Configured signal.
+func isIngestConfigured(cfg *config.Config) bool {
+	if cfg == nil {
 		return false
 	}
 	switch stashsync.IntegrationMode(effectiveStashMode(cfg)) {
 	case stashsync.IntegrationModeSharedStorage:
-		return strings.TrimSpace(cfg.Ingest.SharedStorage.QBittorrentPathPrefix) != "" && strings.TrimSpace(cfg.Ingest.SharedStorage.StashPathPrefix) != ""
+		return strings.TrimSpace(cfg.Ingest.SharedStorage.QBittorrentPathPrefix) != "" &&
+			strings.TrimSpace(cfg.Ingest.SharedStorage.StashPathPrefix) != ""
 	case stashsync.IntegrationModeFileTransfer:
 		action := strings.TrimSpace(cfg.Ingest.FileTransfer.Action)
-		return (action == string(stashsync.TransferActionCopy) || action == string(stashsync.TransferActionMove)) && strings.TrimSpace(cfg.Ingest.FileTransfer.TargetPath) != ""
+		return (action == string(stashsync.TransferActionCopy) || action == string(stashsync.TransferActionMove)) &&
+			strings.TrimSpace(cfg.Ingest.FileTransfer.TargetPath) != ""
 	case stashsync.IntegrationModeLibraryScan:
 		return strings.TrimSpace(cfg.Ingest.LibraryScan.LibraryPath) != ""
 	default:

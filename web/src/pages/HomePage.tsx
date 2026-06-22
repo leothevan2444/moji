@@ -1,14 +1,31 @@
 import { TaskCard } from "../components/tasks";
 import {
+  IngestCard,
   ServiceCard,
   buildJackettConfig,
-  buildQBittorrentConfig,
-  buildStashConfig,
-  blockersFor
+  buildQBittorrentConfig
 } from "../components/home";
 import { isScanPending, isStatus, type DashboardTask } from "../utils";
 import { useDashboardRefresh } from "../hooks";
 import type { SettingsTab } from "../types";
+
+// Stash 卡片的 KV 列表——只显示 URL（与服务可达性直接相关）。
+// ingest 模式/路径由新的 IngestCard 承载，避免数据源分散。
+function buildStashConfig(runtime: NonNullable<DashboardDocumentQuery["settings"]>) {
+  return [{ key: "URL", value: runtime.stash.url }];
+}
+
+// Jackett 与 qBittorrent 的 blocker 与 ingest 无关，保留在 HomePage。
+function blockersFor(
+  service: "jackett" | "qbittorrent"
+): string[] {
+  switch (service) {
+    case "jackett":
+      return ["任务搜索无索引源", "订阅扫描无上游数据"];
+    case "qbittorrent":
+      return ["任务无法启动下载", "下载完成后无客户端落地"];
+  }
+}
 import type { DashboardDocumentQuery } from "../graphql/generated/graphql";
 
 type RuntimeSettings = NonNullable<DashboardDocumentQuery["settings"]>;
@@ -61,11 +78,6 @@ export function HomePage({
                 stats={runtimeStatus.stashStats}
                 okAt={runtimeStatus.stashStats?.okAt ?? null}
                 lastError={runtimeStatus.stashStats?.lastError ?? null}
-                blockers={
-                  !runtimeStatus.stash.configured
-                    ? blockersFor("stash")
-                    : undefined
-                }
                 diagnostics={
                   !runtimeStatus.stash.configured
                     ? "Stash 必须先配置，否则入库与订阅流程无法展开。"
@@ -75,9 +87,9 @@ export function HomePage({
                 }
                 cta={
                   !runtimeStatus.stash.configured
-                    ? { kind: "open-settings", label: "去配置", tab: "入库" }
+                    ? { kind: "open-settings", label: "去配置", tab: "连接" }
                     : !runtimeStatus.stash.enabled
-                      ? { kind: "open-settings", label: "去启用", tab: "入库" }
+                      ? { kind: "open-settings", label: "去启用", tab: "连接" }
                       : null
                 }
                 onOpenSettings={onOpenSettings}
@@ -155,6 +167,20 @@ export function HomePage({
             </>
           ) : null}
         </div>
+      </section>
+
+      <section className="section-band">
+        <div className="band-head">
+          <div>
+            <p className="section-kicker">入库策略</p>
+            <h2>入库</h2>
+          </div>
+        </div>
+        <IngestCard
+          ingest={runtimeSettings?.ingest ?? null}
+          ingestStatus={runtimeStatus?.ingest ?? null}
+          onOpenSettings={onOpenSettings}
+        />
       </section>
 
       <section className="section-band">

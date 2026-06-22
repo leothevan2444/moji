@@ -2671,3 +2671,56 @@ button.profile-icon:disabled {
   align-items: center;
   gap: 6px;
 }
+
+/* ── IngestCard (主页入库 section) ─────────────────────────────────── */
+.ingest-card {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  /* 自适应高度 — 内容根据 mode 与字段数量变化，无固定值 */
+}
+
+.ingest-card__mode-guide {
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: rgba(61, 47, 38, 0.04);
+  border-left: 3px solid var(--accent);
+  font-size: 12px;
+}
+
+[data-theme="dark"] .ingest-card__mode-guide {
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.ingest-card__mode-guide.tone-info {
+  border-left-color: #3b5f89;
+}
+
+.ingest-card__mode-guide.tone-warn {
+  border-left-color: #a05d18;
+}
+
+.ingest-card__mode-guide.tone-danger {
+  border-left-color: #c2412f;
+}
+
+.ingest-card__mode-guide.tone-neutral {
+  border-left-color: var(--muted);
+}
+
+.ingest-card__mode-guide__title {
+  display: block;
+  font-weight: 600;
+  margin-bottom: 4px;
+  color: var(--text);
+}
+
+.ingest-card__mode-guide__summary {
+  color: var(--muted);
+}
+
+.ingest-card__mode-guide__caution {
+  color: var(--muted);
+  margin: 4px 0 0;
+  font-style: italic;
+}

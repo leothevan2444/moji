@@ -161,6 +161,131 @@ func TestMissingStashConfigDisablesStashResolvers(t *testing.T) {
 	}
 }
 
+func TestStashReachable(t *testing.T) {
+	cases := []struct {
+		name string
+		url  string
+		key  string
+		want bool
+	}{
+		{"empty url", "", "key", false},
+		{"empty key", "http://stash", "", false},
+		{"both empty", "", "", false},
+		{"both set", "http://stash", "key", true},
+		{"whitespace only", "   ", "   ", false},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			cfg := testConfig()
+			cfg.Stash.URL = tc.url
+			cfg.Stash.APIKey = tc.key
+			if got := isStashReachable(cfg); got != tc.want {
+				t.Fatalf("isStashReachable(%q,%q) = %v, want %v", tc.url, tc.key, got, tc.want)
+			}
+		})
+	}
+}
+
+func TestIngestConfigured(t *testing.T) {
+	t.Run("nil config", func(t *testing.T) {
+		if isIngestConfigured(nil) {
+			t.Fatal("isIngestConfigured(nil) = true, want false")
+		}
+	})
+
+	t.Run("SHARED_STORAGE mode", func(t *testing.T) {
+		cases := []struct {
+			name        string
+			qbPrefix    string
+			stashPrefix string
+			want        bool
+		}{
+			{"both empty", "", "", false},
+			{"only qb set", "/downloads", "", false},
+			{"only stash set", "", "/library", false},
+			{"both set", "/downloads", "/library", true},
+			{"whitespace only", "   ", "   ", false},
+		}
+		for _, tc := range cases {
+			t.Run(tc.name, func(t *testing.T) {
+				cfg := testConfig()
+				cfg.Ingest.Mode = "SHARED_STORAGE"
+				cfg.Ingest.SharedStorage.QBittorrentPathPrefix = tc.qbPrefix
+				cfg.Ingest.SharedStorage.StashPathPrefix = tc.stashPrefix
+				if got := isIngestConfigured(cfg); got != tc.want {
+					t.Fatalf("isIngestConfigured(SHARED_STORAGE) = %v, want %v", got, tc.want)
+				}
+			})
+		}
+	})
+
+	t.Run("FILE_TRANSFER mode", func(t *testing.T) {
+		cases := []struct {
+			name       string
+			action     string
+			targetPath string
+			want       bool
+		}{
+			{"empty action", "", "/stash-import", false},
+			{"empty target", "COPY", "", false},
+			{"copy complete", "COPY", "/stash-import", true},
+			{"move complete", "MOVE", "/stash-import", true},
+			{"unsupported action", "GARBAGE", "/stash-import", false},
+		}
+		for _, tc := range cases {
+			t.Run(tc.name, func(t *testing.T) {
+				cfg := testConfig()
+				cfg.Ingest.Mode = "FILE_TRANSFER"
+				cfg.Ingest.FileTransfer.Action = tc.action
+				cfg.Ingest.FileTransfer.TargetPath = tc.targetPath
+				if got := isIngestConfigured(cfg); got != tc.want {
+					t.Fatalf("isIngestConfigured(FILE_TRANSFER) = %v, want %v", got, tc.want)
+				}
+			})
+		}
+	})
+
+	t.Run("LIBRARY_SCAN mode", func(t *testing.T) {
+		cases := []struct {
+			name        string
+			libraryPath string
+			want        bool
+		}{
+			{"empty", "", false},
+			{"set", "/library", true},
+			{"whitespace", "   ", false},
+		}
+		for _, tc := range cases {
+			t.Run(tc.name, func(t *testing.T) {
+				cfg := testConfig()
+				cfg.Ingest.Mode = "LIBRARY_SCAN"
+				cfg.Ingest.LibraryScan.LibraryPath = tc.libraryPath
+				if got := isIngestConfigured(cfg); got != tc.want {
+					t.Fatalf("isIngestConfigured(LIBRARY_SCAN) = %v, want %v", got, tc.want)
+				}
+			})
+		}
+	})
+
+	t.Run("default mode falls back to SHARED_STORAGE", func(t *testing.T) {
+		cfg := testConfig()
+		cfg.Ingest.Mode = ""
+		cfg.Ingest.SharedStorage.QBittorrentPathPrefix = "/downloads"
+		cfg.Ingest.SharedStorage.StashPathPrefix = "/library"
+		if !isIngestConfigured(cfg) {
+			t.Fatal("isIngestConfigured with empty mode should fall back to SHARED_STORAGE")
+		}
+	})
+
+	t.Run("unknown mode returns false", func(t *testing.T) {
+		cfg := testConfig()
+		cfg.Ingest.Mode = "GARBAGE_MODE"
+		if isIngestConfigured(cfg) {
+			t.Fatal("isIngestConfigured should return false for unknown mode")
+		}
+	})
+}
+
 func TestConfigureProgressSyncInterval(t *testing.T) {
 	cfg := testConfig()
 	if got := configureProgressSyncInterval(cfg); got != time.Minute {

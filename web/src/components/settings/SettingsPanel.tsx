@@ -46,7 +46,7 @@ import {
   EMPTY_SUBSCRIPTION_FORM,
   LOG_LEVEL_OPTIONS
 } from "../../constants";
-import { serviceStatus } from "../../utils";
+import { serviceStatus, ingestModeGuide } from "../../utils";
 import { describeQueryError } from "../../services/queryError";
 import { formatDateTime, formatLogEntries } from "../../utils";
 
@@ -521,30 +521,7 @@ export function SettingsPanel({
   }
 
   if (settingsTab === "入库") {
-    const stashModeGuide = (() => {
-      if (ingestForm.mode === "SHARED_STORAGE") {
-        return {
-          tone: "tone-info",
-          title: "共享存储 / 路径映射",
-          summary: "适用于 qBittorrent 和 Stash 共用同一批文件，只是挂载路径不同。",
-          caution: "要求下载路径命中 qBittorrent 路径前缀；映射失败时不会自动退回整库扫描。"
-        };
-      }
-      if (ingestForm.mode === "FILE_TRANSFER") {
-        return {
-          tone: "tone-warn",
-          title: "文件搬运",
-          summary: "由 Moji 在本地文件系统执行复制或移动，成功后再扫描目标文件。",
-          caution: "目标目录已有同名文件时会直接失败，不覆盖也不自动重命名。"
-        };
-      }
-      return {
-        tone: "tone-danger",
-        title: "整库扫描",
-        summary: "始终扫描整个库目录，适合先跑通接入或无法稳定定位单文件时使用。",
-        caution: "无法精确锁定本次下载文件，扫描范围也最大。"
-      };
-    })();
+    const stashModeGuide = ingestModeGuide(ingestForm.mode);
 
     return (
       <article className="drawer-card">

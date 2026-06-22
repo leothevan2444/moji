@@ -107,6 +107,7 @@ func settingsStatusSnapshotToModel(snapshot *SettingsStatusSnapshot) *model.Sett
 			Qbittorrent:      &model.ServiceStatus{},
 			Automation:       &model.AutomationStatus{},
 			Subscription:     &model.SubscriptionStatus{},
+			Ingest:           &model.IngestStatus{},
 			StashStats:       emptyStashStatsModel(),
 			JackettStats:     emptyJackettStatsModel(),
 			QbittorrentStats: emptyQBittorrentStatsModel(),
@@ -136,6 +137,9 @@ func settingsStatusSnapshotToModel(snapshot *SettingsStatusSnapshot) *model.Sett
 			StashBoxes:          subscriptionStashBoxesToModel(snapshot.Subscription.StashBoxes),
 			StashBoxesLoaded:    snapshot.Subscription.StashBoxesLoaded,
 			StashBoxesLoadError: subscriptionLoadErrorPtr(snapshot.Subscription.StashBoxesLoadError),
+		},
+		Ingest: &model.IngestStatus{
+			Configured: snapshot.Ingest.Configured,
 		},
 		StashStats:       emptyStashStatsModel(),
 		JackettStats:     emptyJackettStatsModel(),

@@ -44,6 +44,7 @@ type SettingsStatus {
   qbittorrent: ServiceStatus!
   automation: AutomationStatus!
   subscription: SubscriptionStatus!
+  ingest: IngestStatus!
 
   "Runtime stats for the Stash server. Refreshed by the stats collector."
   stashStats: StashStats!
@@ -53,6 +54,11 @@ type SettingsStatus {
 
   "Runtime stats for the qBittorrent download client. Refreshed by the stats collector."
   qbittorrentStats: QBittorrentStats!
+}
+
+type IngestStatus {
+  "Whether the ingest pipeline is fully wired for the selected mode. Becomes true only when the mode-specific fields are all filled in; reaches false as soon as any required field is cleared."
+  configured: Boolean!
 }
 
 "Per-service runtime stats. okAt is the timestamp of the most recent successful refresh; lastError is the message from the most recent failed refresh (if any). When lastError is non-null, other numeric fields still reflect the last known-good snapshot."
