@@ -144,11 +144,17 @@ export function SettingsPanel({
     });
     setIngestForm({
       mode: runtimeSettings.ingest.mode || "SHARED_STORAGE",
-      libraryPath: runtimeSettings.ingest.libraryPath || "",
-      qbittorrentPathPrefix: runtimeSettings.ingest.qbittorrentPathPrefix || "",
-      stashPathPrefix: runtimeSettings.ingest.stashPathPrefix || "",
-      transferAction: runtimeSettings.ingest.transferAction || "",
-      transferTargetPath: runtimeSettings.ingest.transferTargetPath || ""
+      sharedStorage: {
+        qbittorrentPathPrefix: runtimeSettings.ingest.sharedStorage.qbittorrentPathPrefix || "",
+        stashPathPrefix: runtimeSettings.ingest.sharedStorage.stashPathPrefix || ""
+      },
+      fileTransfer: {
+        action: runtimeSettings.ingest.fileTransfer.action || "",
+        targetPath: runtimeSettings.ingest.fileTransfer.targetPath || ""
+      },
+      libraryScan: {
+        libraryPath: runtimeSettings.ingest.libraryScan.libraryPath || ""
+      }
     });
     setJackettForm({
       url: runtimeSettings.jackett.url || "",
@@ -204,11 +210,17 @@ export function SettingsPanel({
     const result = await updateIngestSettings({
       input: {
         mode: ingestForm.mode.trim(),
-        libraryPath: ingestForm.libraryPath.trim(),
-        qbittorrentPathPrefix: ingestForm.qbittorrentPathPrefix.trim(),
-        stashPathPrefix: ingestForm.stashPathPrefix.trim(),
-        transferAction: ingestForm.transferAction.trim(),
-        transferTargetPath: ingestForm.transferTargetPath.trim()
+        sharedStorage: {
+          qbittorrentPathPrefix: ingestForm.sharedStorage.qbittorrentPathPrefix.trim(),
+          stashPathPrefix: ingestForm.sharedStorage.stashPathPrefix.trim()
+        },
+        fileTransfer: {
+          action: ingestForm.fileTransfer.action.trim(),
+          targetPath: ingestForm.fileTransfer.targetPath.trim()
+        },
+        libraryScan: {
+          libraryPath: ingestForm.libraryScan.libraryPath.trim()
+        }
       }
     });
     if (result.error) {
@@ -562,18 +574,24 @@ export function SettingsPanel({
           {ingestForm.mode === "SHARED_STORAGE" ? (
             <>
               <label className="settings-field">
-                <span>qBittorrent 路径前缀</span>
+                  <span>qBittorrent 路径前缀</span>
                 <input
-                  value={ingestForm.qbittorrentPathPrefix}
-                  onChange={(event) => setIngestForm((current) => ({ ...current, qbittorrentPathPrefix: event.target.value }))}
+                  value={ingestForm.sharedStorage.qbittorrentPathPrefix}
+                  onChange={(event) => setIngestForm((current) => ({
+                    ...current,
+                    sharedStorage: { ...current.sharedStorage, qbittorrentPathPrefix: event.target.value }
+                  }))}
                   placeholder="/downloads"
                 />
               </label>
               <label className="settings-field">
                 <span>Stash 路径前缀</span>
                 <input
-                  value={ingestForm.stashPathPrefix}
-                  onChange={(event) => setIngestForm((current) => ({ ...current, stashPathPrefix: event.target.value }))}
+                  value={ingestForm.sharedStorage.stashPathPrefix}
+                  onChange={(event) => setIngestForm((current) => ({
+                    ...current,
+                    sharedStorage: { ...current.sharedStorage, stashPathPrefix: event.target.value }
+                  }))}
                   placeholder="/library"
                 />
               </label>
@@ -585,8 +603,11 @@ export function SettingsPanel({
               <label className="settings-field">
                 <span>搬运动作</span>
                 <select
-                  value={ingestForm.transferAction}
-                  onChange={(event) => setIngestForm((current) => ({ ...current, transferAction: event.target.value }))}
+                  value={ingestForm.fileTransfer.action}
+                  onChange={(event) => setIngestForm((current) => ({
+                    ...current,
+                    fileTransfer: { ...current.fileTransfer, action: event.target.value }
+                  }))}
                 >
                   <option value="">请选择</option>
                   <option value="COPY">复制</option>
@@ -596,8 +617,11 @@ export function SettingsPanel({
               <label className="settings-field">
                 <span>搬运目标目录</span>
                 <input
-                  value={ingestForm.transferTargetPath}
-                  onChange={(event) => setIngestForm((current) => ({ ...current, transferTargetPath: event.target.value }))}
+                  value={ingestForm.fileTransfer.targetPath}
+                  onChange={(event) => setIngestForm((current) => ({
+                    ...current,
+                    fileTransfer: { ...current.fileTransfer, targetPath: event.target.value }
+                  }))}
                   placeholder="/stash-import"
                 />
               </label>
@@ -608,8 +632,11 @@ export function SettingsPanel({
             <label className="settings-field">
               <span>Library Path</span>
               <input
-                value={ingestForm.libraryPath}
-                onChange={(event) => setIngestForm((current) => ({ ...current, libraryPath: event.target.value }))}
+                value={ingestForm.libraryScan.libraryPath}
+                onChange={(event) => setIngestForm((current) => ({
+                  ...current,
+                  libraryScan: { ...current.libraryScan, libraryPath: event.target.value }
+                }))}
                 placeholder="/data/library"
               />
             </label>

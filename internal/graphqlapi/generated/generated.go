@@ -78,18 +78,21 @@ type ComplexityRoot struct {
 		Tracker   func(childComplexity int) int
 	}
 
+	FileTransferIngestSettings struct {
+		Action     func(childComplexity int) int
+		TargetPath func(childComplexity int) int
+	}
+
 	Health struct {
 		Message func(childComplexity int) int
 		Ok      func(childComplexity int) int
 	}
 
 	IngestSettings struct {
-		LibraryPath           func(childComplexity int) int
-		Mode                  func(childComplexity int) int
-		QbittorrentPathPrefix func(childComplexity int) int
-		StashPathPrefix       func(childComplexity int) int
-		TransferAction        func(childComplexity int) int
-		TransferTargetPath    func(childComplexity int) int
+		FileTransfer  func(childComplexity int) int
+		LibraryScan   func(childComplexity int) int
+		Mode          func(childComplexity int) int
+		SharedStorage func(childComplexity int) int
 	}
 
 	JackettSearchResult struct {
@@ -124,6 +127,10 @@ type ComplexityRoot struct {
 		LastIndexerLatencyMs   func(childComplexity int) int
 		LastIndexerSearchAt    func(childComplexity int) int
 		OkAt                   func(childComplexity int) int
+	}
+
+	LibraryScanIngestSettings struct {
+		LibraryPath func(childComplexity int) int
 	}
 
 	LogEntry struct {
@@ -229,6 +236,11 @@ type ComplexityRoot struct {
 		Stash            func(childComplexity int) int
 		StashStats       func(childComplexity int) int
 		Subscription     func(childComplexity int) int
+	}
+
+	SharedStorageIngestSettings struct {
+		QbittorrentPathPrefix func(childComplexity int) int
+		StashPathPrefix       func(childComplexity int) int
 	}
 
 	StashBoxEndpoint struct {
@@ -544,6 +556,20 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.DownloadCandidate.Tracker(childComplexity), true
 
+	case "FileTransferIngestSettings.action":
+		if e.complexity.FileTransferIngestSettings.Action == nil {
+			break
+		}
+
+		return e.complexity.FileTransferIngestSettings.Action(childComplexity), true
+
+	case "FileTransferIngestSettings.targetPath":
+		if e.complexity.FileTransferIngestSettings.TargetPath == nil {
+			break
+		}
+
+		return e.complexity.FileTransferIngestSettings.TargetPath(childComplexity), true
+
 	case "Health.message":
 		if e.complexity.Health.Message == nil {
 			break
@@ -558,12 +584,19 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.Health.Ok(childComplexity), true
 
-	case "IngestSettings.libraryPath":
-		if e.complexity.IngestSettings.LibraryPath == nil {
+	case "IngestSettings.fileTransfer":
+		if e.complexity.IngestSettings.FileTransfer == nil {
 			break
 		}
 
-		return e.complexity.IngestSettings.LibraryPath(childComplexity), true
+		return e.complexity.IngestSettings.FileTransfer(childComplexity), true
+
+	case "IngestSettings.libraryScan":
+		if e.complexity.IngestSettings.LibraryScan == nil {
+			break
+		}
+
+		return e.complexity.IngestSettings.LibraryScan(childComplexity), true
 
 	case "IngestSettings.mode":
 		if e.complexity.IngestSettings.Mode == nil {
@@ -572,33 +605,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.IngestSettings.Mode(childComplexity), true
 
-	case "IngestSettings.qbittorrentPathPrefix":
-		if e.complexity.IngestSettings.QbittorrentPathPrefix == nil {
+	case "IngestSettings.sharedStorage":
+		if e.complexity.IngestSettings.SharedStorage == nil {
 			break
 		}
 
-		return e.complexity.IngestSettings.QbittorrentPathPrefix(childComplexity), true
-
-	case "IngestSettings.stashPathPrefix":
-		if e.complexity.IngestSettings.StashPathPrefix == nil {
-			break
-		}
-
-		return e.complexity.IngestSettings.StashPathPrefix(childComplexity), true
-
-	case "IngestSettings.transferAction":
-		if e.complexity.IngestSettings.TransferAction == nil {
-			break
-		}
-
-		return e.complexity.IngestSettings.TransferAction(childComplexity), true
-
-	case "IngestSettings.transferTargetPath":
-		if e.complexity.IngestSettings.TransferTargetPath == nil {
-			break
-		}
-
-		return e.complexity.IngestSettings.TransferTargetPath(childComplexity), true
+		return e.complexity.IngestSettings.SharedStorage(childComplexity), true
 
 	case "JackettSearchResult.categoryDesc":
 		if e.complexity.JackettSearchResult.CategoryDesc == nil {
@@ -774,6 +786,13 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.JackettStats.OkAt(childComplexity), true
+
+	case "LibraryScanIngestSettings.libraryPath":
+		if e.complexity.LibraryScanIngestSettings.LibraryPath == nil {
+			break
+		}
+
+		return e.complexity.LibraryScanIngestSettings.LibraryPath(childComplexity), true
 
 	case "LogEntry.level":
 		if e.complexity.LogEntry.Level == nil {
@@ -1421,6 +1440,20 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.SettingsStatus.Subscription(childComplexity), true
 
+	case "SharedStorageIngestSettings.qbittorrentPathPrefix":
+		if e.complexity.SharedStorageIngestSettings.QbittorrentPathPrefix == nil {
+			break
+		}
+
+		return e.complexity.SharedStorageIngestSettings.QbittorrentPathPrefix(childComplexity), true
+
+	case "SharedStorageIngestSettings.stashPathPrefix":
+		if e.complexity.SharedStorageIngestSettings.StashPathPrefix == nil {
+			break
+		}
+
+		return e.complexity.SharedStorageIngestSettings.StashPathPrefix(childComplexity), true
+
 	case "StashBoxEndpoint.apiKeyConfigured":
 		if e.complexity.StashBoxEndpoint.APIKeyConfigured == nil {
 			break
@@ -2018,8 +2051,11 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 	ec := executionContext{opCtx, e, 0, 0, make(chan graphql.DeferredResult)}
 	inputUnmarshalMap := graphql.BuildUnmarshalerMap(
 		ec.unmarshalInputDownloadMediaInput,
+		ec.unmarshalInputFileTransferIngestSettingsInput,
 		ec.unmarshalInputJackettSearchInput,
+		ec.unmarshalInputLibraryScanIngestSettingsInput,
 		ec.unmarshalInputQBittorrentAddInput,
+		ec.unmarshalInputSharedStorageIngestSettingsInput,
 		ec.unmarshalInputStashMetadataScanInput,
 		ec.unmarshalInputUpdateAutomationSettingsInput,
 		ec.unmarshalInputUpdateIngestSettingsInput,
@@ -2318,11 +2354,23 @@ type StashSettings {
 
 type IngestSettings {
   mode: String!
-  libraryPath: String!
+  sharedStorage: SharedStorageIngestSettings!
+  fileTransfer: FileTransferIngestSettings!
+  libraryScan: LibraryScanIngestSettings!
+}
+
+type SharedStorageIngestSettings {
   qbittorrentPathPrefix: String!
   stashPathPrefix: String!
-  transferAction: String!
-  transferTargetPath: String!
+}
+
+type FileTransferIngestSettings {
+  action: String!
+  targetPath: String!
+}
+
+type LibraryScanIngestSettings {
+  libraryPath: String!
 }
 
 type JackettSettings {
@@ -2395,11 +2443,23 @@ input UpdateStashSettingsInput {
 
 input UpdateIngestSettingsInput {
   mode: String!
-  libraryPath: String!
+  sharedStorage: SharedStorageIngestSettingsInput!
+  fileTransfer: FileTransferIngestSettingsInput!
+  libraryScan: LibraryScanIngestSettingsInput!
+}
+
+input SharedStorageIngestSettingsInput {
   qbittorrentPathPrefix: String!
   stashPathPrefix: String!
-  transferAction: String!
-  transferTargetPath: String!
+}
+
+input FileTransferIngestSettingsInput {
+  action: String!
+  targetPath: String!
+}
+
+input LibraryScanIngestSettingsInput {
+  libraryPath: String!
 }
 
 input UpdateJackettSettingsInput {
@@ -4310,6 +4370,94 @@ func (ec *executionContext) fieldContext_DownloadCandidate_peers(_ context.Conte
 	return fc, nil
 }
 
+func (ec *executionContext) _FileTransferIngestSettings_action(ctx context.Context, field graphql.CollectedField, obj *model.FileTransferIngestSettings) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_FileTransferIngestSettings_action(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Action, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_FileTransferIngestSettings_action(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "FileTransferIngestSettings",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _FileTransferIngestSettings_targetPath(ctx context.Context, field graphql.CollectedField, obj *model.FileTransferIngestSettings) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_FileTransferIngestSettings_targetPath(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.TargetPath, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_FileTransferIngestSettings_targetPath(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "FileTransferIngestSettings",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _Health_ok(ctx context.Context, field graphql.CollectedField, obj *model.Health) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_Health_ok(ctx, field)
 	if err != nil {
@@ -4442,8 +4590,8 @@ func (ec *executionContext) fieldContext_IngestSettings_mode(_ context.Context, 
 	return fc, nil
 }
 
-func (ec *executionContext) _IngestSettings_libraryPath(ctx context.Context, field graphql.CollectedField, obj *model.IngestSettings) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_IngestSettings_libraryPath(ctx, field)
+func (ec *executionContext) _IngestSettings_sharedStorage(ctx context.Context, field graphql.CollectedField, obj *model.IngestSettings) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_IngestSettings_sharedStorage(ctx, field)
 	if err != nil {
 		return graphql.Null
 	}
@@ -4456,7 +4604,7 @@ func (ec *executionContext) _IngestSettings_libraryPath(ctx context.Context, fie
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
 		ctx = rctx // use context from middleware stack in children
-		return obj.LibraryPath, nil
+		return obj.SharedStorage, nil
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -4468,26 +4616,32 @@ func (ec *executionContext) _IngestSettings_libraryPath(ctx context.Context, fie
 		}
 		return graphql.Null
 	}
-	res := resTmp.(string)
+	res := resTmp.(*model.SharedStorageIngestSettings)
 	fc.Result = res
-	return ec.marshalNString2string(ctx, field.Selections, res)
+	return ec.marshalNSharedStorageIngestSettings2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐSharedStorageIngestSettings(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_IngestSettings_libraryPath(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_IngestSettings_sharedStorage(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "IngestSettings",
 		Field:      field,
 		IsMethod:   false,
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type String does not have child fields")
+			switch field.Name {
+			case "qbittorrentPathPrefix":
+				return ec.fieldContext_SharedStorageIngestSettings_qbittorrentPathPrefix(ctx, field)
+			case "stashPathPrefix":
+				return ec.fieldContext_SharedStorageIngestSettings_stashPathPrefix(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type SharedStorageIngestSettings", field.Name)
 		},
 	}
 	return fc, nil
 }
 
-func (ec *executionContext) _IngestSettings_qbittorrentPathPrefix(ctx context.Context, field graphql.CollectedField, obj *model.IngestSettings) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_IngestSettings_qbittorrentPathPrefix(ctx, field)
+func (ec *executionContext) _IngestSettings_fileTransfer(ctx context.Context, field graphql.CollectedField, obj *model.IngestSettings) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_IngestSettings_fileTransfer(ctx, field)
 	if err != nil {
 		return graphql.Null
 	}
@@ -4500,7 +4654,7 @@ func (ec *executionContext) _IngestSettings_qbittorrentPathPrefix(ctx context.Co
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
 		ctx = rctx // use context from middleware stack in children
-		return obj.QbittorrentPathPrefix, nil
+		return obj.FileTransfer, nil
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -4512,26 +4666,32 @@ func (ec *executionContext) _IngestSettings_qbittorrentPathPrefix(ctx context.Co
 		}
 		return graphql.Null
 	}
-	res := resTmp.(string)
+	res := resTmp.(*model.FileTransferIngestSettings)
 	fc.Result = res
-	return ec.marshalNString2string(ctx, field.Selections, res)
+	return ec.marshalNFileTransferIngestSettings2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐFileTransferIngestSettings(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_IngestSettings_qbittorrentPathPrefix(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_IngestSettings_fileTransfer(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "IngestSettings",
 		Field:      field,
 		IsMethod:   false,
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type String does not have child fields")
+			switch field.Name {
+			case "action":
+				return ec.fieldContext_FileTransferIngestSettings_action(ctx, field)
+			case "targetPath":
+				return ec.fieldContext_FileTransferIngestSettings_targetPath(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type FileTransferIngestSettings", field.Name)
 		},
 	}
 	return fc, nil
 }
 
-func (ec *executionContext) _IngestSettings_stashPathPrefix(ctx context.Context, field graphql.CollectedField, obj *model.IngestSettings) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_IngestSettings_stashPathPrefix(ctx, field)
+func (ec *executionContext) _IngestSettings_libraryScan(ctx context.Context, field graphql.CollectedField, obj *model.IngestSettings) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_IngestSettings_libraryScan(ctx, field)
 	if err != nil {
 		return graphql.Null
 	}
@@ -4544,7 +4704,7 @@ func (ec *executionContext) _IngestSettings_stashPathPrefix(ctx context.Context,
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
 		ctx = rctx // use context from middleware stack in children
-		return obj.StashPathPrefix, nil
+		return obj.LibraryScan, nil
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -4556,107 +4716,23 @@ func (ec *executionContext) _IngestSettings_stashPathPrefix(ctx context.Context,
 		}
 		return graphql.Null
 	}
-	res := resTmp.(string)
+	res := resTmp.(*model.LibraryScanIngestSettings)
 	fc.Result = res
-	return ec.marshalNString2string(ctx, field.Selections, res)
+	return ec.marshalNLibraryScanIngestSettings2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐLibraryScanIngestSettings(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_IngestSettings_stashPathPrefix(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_IngestSettings_libraryScan(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "IngestSettings",
 		Field:      field,
 		IsMethod:   false,
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type String does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _IngestSettings_transferAction(ctx context.Context, field graphql.CollectedField, obj *model.IngestSettings) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_IngestSettings_transferAction(ctx, field)
-	if err != nil {
-		return graphql.Null
-	}
-	ctx = graphql.WithFieldContext(ctx, fc)
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.TransferAction, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(string)
-	fc.Result = res
-	return ec.marshalNString2string(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) fieldContext_IngestSettings_transferAction(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "IngestSettings",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type String does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _IngestSettings_transferTargetPath(ctx context.Context, field graphql.CollectedField, obj *model.IngestSettings) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_IngestSettings_transferTargetPath(ctx, field)
-	if err != nil {
-		return graphql.Null
-	}
-	ctx = graphql.WithFieldContext(ctx, fc)
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.TransferTargetPath, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(string)
-	fc.Result = res
-	return ec.marshalNString2string(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) fieldContext_IngestSettings_transferTargetPath(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "IngestSettings",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type String does not have child fields")
+			switch field.Name {
+			case "libraryPath":
+				return ec.fieldContext_LibraryScanIngestSettings_libraryPath(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type LibraryScanIngestSettings", field.Name)
 		},
 	}
 	return fc, nil
@@ -5743,6 +5819,50 @@ func (ec *executionContext) _JackettStats_okAt(ctx context.Context, field graphq
 func (ec *executionContext) fieldContext_JackettStats_okAt(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "JackettStats",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _LibraryScanIngestSettings_libraryPath(ctx context.Context, field graphql.CollectedField, obj *model.LibraryScanIngestSettings) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_LibraryScanIngestSettings_libraryPath(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.LibraryPath, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_LibraryScanIngestSettings_libraryPath(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "LibraryScanIngestSettings",
 		Field:      field,
 		IsMethod:   false,
 		IsResolver: false,
@@ -9726,16 +9846,12 @@ func (ec *executionContext) fieldContext_Settings_ingest(_ context.Context, fiel
 			switch field.Name {
 			case "mode":
 				return ec.fieldContext_IngestSettings_mode(ctx, field)
-			case "libraryPath":
-				return ec.fieldContext_IngestSettings_libraryPath(ctx, field)
-			case "qbittorrentPathPrefix":
-				return ec.fieldContext_IngestSettings_qbittorrentPathPrefix(ctx, field)
-			case "stashPathPrefix":
-				return ec.fieldContext_IngestSettings_stashPathPrefix(ctx, field)
-			case "transferAction":
-				return ec.fieldContext_IngestSettings_transferAction(ctx, field)
-			case "transferTargetPath":
-				return ec.fieldContext_IngestSettings_transferTargetPath(ctx, field)
+			case "sharedStorage":
+				return ec.fieldContext_IngestSettings_sharedStorage(ctx, field)
+			case "fileTransfer":
+				return ec.fieldContext_IngestSettings_fileTransfer(ctx, field)
+			case "libraryScan":
+				return ec.fieldContext_IngestSettings_libraryScan(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type IngestSettings", field.Name)
 		},
@@ -10394,6 +10510,94 @@ func (ec *executionContext) fieldContext_SettingsStatus_qbittorrentStats(_ conte
 				return ec.fieldContext_QBittorrentStats_okAt(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type QBittorrentStats", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _SharedStorageIngestSettings_qbittorrentPathPrefix(ctx context.Context, field graphql.CollectedField, obj *model.SharedStorageIngestSettings) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_SharedStorageIngestSettings_qbittorrentPathPrefix(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.QbittorrentPathPrefix, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_SharedStorageIngestSettings_qbittorrentPathPrefix(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "SharedStorageIngestSettings",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _SharedStorageIngestSettings_stashPathPrefix(ctx context.Context, field graphql.CollectedField, obj *model.SharedStorageIngestSettings) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_SharedStorageIngestSettings_stashPathPrefix(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.StashPathPrefix, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_SharedStorageIngestSettings_stashPathPrefix(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "SharedStorageIngestSettings",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
 		},
 	}
 	return fc, nil
@@ -16146,6 +16350,40 @@ func (ec *executionContext) unmarshalInputDownloadMediaInput(ctx context.Context
 	return it, nil
 }
 
+func (ec *executionContext) unmarshalInputFileTransferIngestSettingsInput(ctx context.Context, obj any) (model.FileTransferIngestSettingsInput, error) {
+	var it model.FileTransferIngestSettingsInput
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"action", "targetPath"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "action":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("action"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Action = data
+		case "targetPath":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("targetPath"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.TargetPath = data
+		}
+	}
+
+	return it, nil
+}
+
 func (ec *executionContext) unmarshalInputJackettSearchInput(ctx context.Context, obj any) (model.JackettSearchInput, error) {
 	var it model.JackettSearchInput
 	asMap := map[string]any{}
@@ -16188,6 +16426,33 @@ func (ec *executionContext) unmarshalInputJackettSearchInput(ctx context.Context
 				return it, err
 			}
 			it.Limit = data
+		}
+	}
+
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputLibraryScanIngestSettingsInput(ctx context.Context, obj any) (model.LibraryScanIngestSettingsInput, error) {
+	var it model.LibraryScanIngestSettingsInput
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"libraryPath"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "libraryPath":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("libraryPath"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.LibraryPath = data
 		}
 	}
 
@@ -16243,6 +16508,40 @@ func (ec *executionContext) unmarshalInputQBittorrentAddInput(ctx context.Contex
 				return it, err
 			}
 			it.Paused = data
+		}
+	}
+
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputSharedStorageIngestSettingsInput(ctx context.Context, obj any) (model.SharedStorageIngestSettingsInput, error) {
+	var it model.SharedStorageIngestSettingsInput
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"qbittorrentPathPrefix", "stashPathPrefix"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "qbittorrentPathPrefix":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("qbittorrentPathPrefix"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.QbittorrentPathPrefix = data
+		case "stashPathPrefix":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("stashPathPrefix"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.StashPathPrefix = data
 		}
 	}
 
@@ -16373,7 +16672,7 @@ func (ec *executionContext) unmarshalInputUpdateIngestSettingsInput(ctx context.
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"mode", "libraryPath", "qbittorrentPathPrefix", "stashPathPrefix", "transferAction", "transferTargetPath"}
+	fieldsInOrder := [...]string{"mode", "sharedStorage", "fileTransfer", "libraryScan"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -16387,41 +16686,27 @@ func (ec *executionContext) unmarshalInputUpdateIngestSettingsInput(ctx context.
 				return it, err
 			}
 			it.Mode = data
-		case "libraryPath":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("libraryPath"))
-			data, err := ec.unmarshalNString2string(ctx, v)
+		case "sharedStorage":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("sharedStorage"))
+			data, err := ec.unmarshalNSharedStorageIngestSettingsInput2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐSharedStorageIngestSettingsInput(ctx, v)
 			if err != nil {
 				return it, err
 			}
-			it.LibraryPath = data
-		case "qbittorrentPathPrefix":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("qbittorrentPathPrefix"))
-			data, err := ec.unmarshalNString2string(ctx, v)
+			it.SharedStorage = data
+		case "fileTransfer":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("fileTransfer"))
+			data, err := ec.unmarshalNFileTransferIngestSettingsInput2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐFileTransferIngestSettingsInput(ctx, v)
 			if err != nil {
 				return it, err
 			}
-			it.QbittorrentPathPrefix = data
-		case "stashPathPrefix":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("stashPathPrefix"))
-			data, err := ec.unmarshalNString2string(ctx, v)
+			it.FileTransfer = data
+		case "libraryScan":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("libraryScan"))
+			data, err := ec.unmarshalNLibraryScanIngestSettingsInput2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐLibraryScanIngestSettingsInput(ctx, v)
 			if err != nil {
 				return it, err
 			}
-			it.StashPathPrefix = data
-		case "transferAction":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("transferAction"))
-			data, err := ec.unmarshalNString2string(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.TransferAction = data
-		case "transferTargetPath":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("transferTargetPath"))
-			data, err := ec.unmarshalNString2string(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.TransferTargetPath = data
+			it.LibraryScan = data
 		}
 	}
 
@@ -16836,6 +17121,50 @@ func (ec *executionContext) _DownloadCandidate(ctx context.Context, sel ast.Sele
 	return out
 }
 
+var fileTransferIngestSettingsImplementors = []string{"FileTransferIngestSettings"}
+
+func (ec *executionContext) _FileTransferIngestSettings(ctx context.Context, sel ast.SelectionSet, obj *model.FileTransferIngestSettings) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, fileTransferIngestSettingsImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("FileTransferIngestSettings")
+		case "action":
+			out.Values[i] = ec._FileTransferIngestSettings_action(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "targetPath":
+			out.Values[i] = ec._FileTransferIngestSettings_targetPath(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
 var healthImplementors = []string{"Health"}
 
 func (ec *executionContext) _Health(ctx context.Context, sel ast.SelectionSet, obj *model.Health) graphql.Marshaler {
@@ -16896,28 +17225,18 @@ func (ec *executionContext) _IngestSettings(ctx context.Context, sel ast.Selecti
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
-		case "libraryPath":
-			out.Values[i] = ec._IngestSettings_libraryPath(ctx, field, obj)
+		case "sharedStorage":
+			out.Values[i] = ec._IngestSettings_sharedStorage(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
-		case "qbittorrentPathPrefix":
-			out.Values[i] = ec._IngestSettings_qbittorrentPathPrefix(ctx, field, obj)
+		case "fileTransfer":
+			out.Values[i] = ec._IngestSettings_fileTransfer(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
-		case "stashPathPrefix":
-			out.Values[i] = ec._IngestSettings_stashPathPrefix(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
-		case "transferAction":
-			out.Values[i] = ec._IngestSettings_transferAction(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
-		case "transferTargetPath":
-			out.Values[i] = ec._IngestSettings_transferTargetPath(ctx, field, obj)
+		case "libraryScan":
+			out.Values[i] = ec._IngestSettings_libraryScan(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
@@ -17136,6 +17455,45 @@ func (ec *executionContext) _JackettStats(ctx context.Context, sel ast.Selection
 			out.Values[i] = ec._JackettStats_lastError(ctx, field, obj)
 		case "okAt":
 			out.Values[i] = ec._JackettStats_okAt(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var libraryScanIngestSettingsImplementors = []string{"LibraryScanIngestSettings"}
+
+func (ec *executionContext) _LibraryScanIngestSettings(ctx context.Context, sel ast.SelectionSet, obj *model.LibraryScanIngestSettings) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, libraryScanIngestSettingsImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("LibraryScanIngestSettings")
+		case "libraryPath":
+			out.Values[i] = ec._LibraryScanIngestSettings_libraryPath(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
@@ -18104,6 +18462,50 @@ func (ec *executionContext) _SettingsStatus(ctx context.Context, sel ast.Selecti
 			}
 		case "qbittorrentStats":
 			out.Values[i] = ec._SettingsStatus_qbittorrentStats(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var sharedStorageIngestSettingsImplementors = []string{"SharedStorageIngestSettings"}
+
+func (ec *executionContext) _SharedStorageIngestSettings(ctx context.Context, sel ast.SelectionSet, obj *model.SharedStorageIngestSettings) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, sharedStorageIngestSettingsImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("SharedStorageIngestSettings")
+		case "qbittorrentPathPrefix":
+			out.Values[i] = ec._SharedStorageIngestSettings_qbittorrentPathPrefix(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "stashPathPrefix":
+			out.Values[i] = ec._SharedStorageIngestSettings_stashPathPrefix(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
@@ -19270,6 +19672,21 @@ func (ec *executionContext) unmarshalNDownloadMediaInput2githubᚗcomᚋleotheva
 	return res, graphql.ErrorOnPath(ctx, err)
 }
 
+func (ec *executionContext) marshalNFileTransferIngestSettings2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐFileTransferIngestSettings(ctx context.Context, sel ast.SelectionSet, v *model.FileTransferIngestSettings) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._FileTransferIngestSettings(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalNFileTransferIngestSettingsInput2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐFileTransferIngestSettingsInput(ctx context.Context, v any) (*model.FileTransferIngestSettingsInput, error) {
+	res, err := ec.unmarshalInputFileTransferIngestSettingsInput(ctx, v)
+	return &res, graphql.ErrorOnPath(ctx, err)
+}
+
 func (ec *executionContext) unmarshalNFloat2float64(ctx context.Context, v any) (float64, error) {
 	res, err := graphql.UnmarshalFloatContext(ctx, v)
 	return res, graphql.ErrorOnPath(ctx, err)
@@ -19419,6 +19836,21 @@ func (ec *executionContext) marshalNJackettStats2ᚖgithubᚗcomᚋleothevan2444
 		return graphql.Null
 	}
 	return ec._JackettStats(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNLibraryScanIngestSettings2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐLibraryScanIngestSettings(ctx context.Context, sel ast.SelectionSet, v *model.LibraryScanIngestSettings) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._LibraryScanIngestSettings(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalNLibraryScanIngestSettingsInput2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐLibraryScanIngestSettingsInput(ctx context.Context, v any) (*model.LibraryScanIngestSettingsInput, error) {
+	res, err := ec.unmarshalInputLibraryScanIngestSettingsInput(ctx, v)
+	return &res, graphql.ErrorOnPath(ctx, err)
 }
 
 func (ec *executionContext) marshalNLogEntry2ᚕᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐLogEntryᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.LogEntry) graphql.Marshaler {
@@ -19616,6 +20048,21 @@ func (ec *executionContext) marshalNSettingsStatus2ᚖgithubᚗcomᚋleothevan24
 		return graphql.Null
 	}
 	return ec._SettingsStatus(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNSharedStorageIngestSettings2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐSharedStorageIngestSettings(ctx context.Context, sel ast.SelectionSet, v *model.SharedStorageIngestSettings) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._SharedStorageIngestSettings(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalNSharedStorageIngestSettingsInput2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐSharedStorageIngestSettingsInput(ctx context.Context, v any) (*model.SharedStorageIngestSettingsInput, error) {
+	res, err := ec.unmarshalInputSharedStorageIngestSettingsInput(ctx, v)
+	return &res, graphql.ErrorOnPath(ctx, err)
 }
 
 func (ec *executionContext) marshalNStashBoxEndpoint2ᚕᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐStashBoxEndpointᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.StashBoxEndpoint) graphql.Marshaler {

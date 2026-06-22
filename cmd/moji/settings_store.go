@@ -56,11 +56,17 @@ func (s *runtimeSettingsEditor) UpdateStashSettings(input graphqlapi.UpdateStash
 func (s *runtimeSettingsEditor) UpdateIngestSettings(input graphqlapi.UpdateIngestSettingsInput) (*graphqlapi.SettingsSnapshot, error) {
 	cfg, err := s.store.UpdateIngest(
 		strings.TrimSpace(input.Mode),
-		strings.TrimSpace(input.LibraryPath),
-		strings.TrimSpace(input.QBittorrentPathPrefix),
-		strings.TrimSpace(input.StashPathPrefix),
-		strings.TrimSpace(input.TransferAction),
-		strings.TrimSpace(input.TransferTargetPath),
+		config.SharedStorageIngestConfig{
+			QBittorrentPathPrefix: strings.TrimSpace(input.SharedStorage.QBittorrentPathPrefix),
+			StashPathPrefix:       strings.TrimSpace(input.SharedStorage.StashPathPrefix),
+		},
+		config.FileTransferIngestConfig{
+			Action:     strings.TrimSpace(input.FileTransfer.Action),
+			TargetPath: strings.TrimSpace(input.FileTransfer.TargetPath),
+		},
+		config.LibraryScanIngestConfig{
+			LibraryPath: strings.TrimSpace(input.LibraryScan.LibraryPath),
+		},
 	)
 	if err != nil {
 		logging.Errorf("settings: save ingest settings failed: %v", err)
@@ -69,8 +75,8 @@ func (s *runtimeSettingsEditor) UpdateIngestSettings(input graphqlapi.UpdateInge
 	logging.Infof(
 		"settings: ingest settings saved mode=%s library_path=%s transfer_target=%s",
 		cfg.Ingest.Mode,
-		cfg.Ingest.LibraryPath,
-		cfg.Ingest.TransferTargetPath,
+		cfg.Ingest.LibraryScan.LibraryPath,
+		cfg.Ingest.FileTransfer.TargetPath,
 	)
 	return buildSettingsSnapshot(cfg, s.version, s.qbittorrentEnabled), nil
 }

@@ -5,11 +5,17 @@ export const EMPTY_STASH_FORM = {
 
 export const EMPTY_INGEST_FORM = {
   mode: "SHARED_STORAGE",
-  libraryPath: "",
-  qbittorrentPathPrefix: "",
-  stashPathPrefix: "",
-  transferAction: "",
-  transferTargetPath: ""
+  sharedStorage: {
+    qbittorrentPathPrefix: "",
+    stashPathPrefix: ""
+  },
+  fileTransfer: {
+    action: "",
+    targetPath: ""
+  },
+  libraryScan: {
+    libraryPath: ""
+  }
 };
 
 export const EMPTY_JACKETT_FORM = {

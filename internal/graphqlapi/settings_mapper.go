@@ -33,8 +33,12 @@ func subscriptionLoadErrorPtr(message string) *string {
 func settingsSnapshotToModel(snapshot *SettingsSnapshot, appVersion string) *model.Settings {
 	if snapshot == nil {
 		return &model.Settings{
-			Stash:        &model.StashSettings{},
-			Ingest:       &model.IngestSettings{},
+			Stash: &model.StashSettings{},
+			Ingest: &model.IngestSettings{
+				SharedStorage: &model.SharedStorageIngestSettings{},
+				FileTransfer:  &model.FileTransferIngestSettings{},
+				LibraryScan:   &model.LibraryScanIngestSettings{},
+			},
 			Jackett:      &model.JackettSettings{},
 			Qbittorrent:  &model.QBittorrentSettings{},
 			Automation:   &model.AutomationSettings{},
@@ -51,12 +55,18 @@ func settingsSnapshotToModel(snapshot *SettingsSnapshot, appVersion string) *mod
 			APIKey:           snapshot.Stash.APIKey,
 		},
 		Ingest: &model.IngestSettings{
-			Mode:                  snapshot.Ingest.Mode,
-			LibraryPath:           snapshot.Ingest.LibraryPath,
-			QbittorrentPathPrefix: snapshot.Ingest.QBittorrentPathPrefix,
-			StashPathPrefix:       snapshot.Ingest.StashPathPrefix,
-			TransferAction:        snapshot.Ingest.TransferAction,
-			TransferTargetPath:    snapshot.Ingest.TransferTargetPath,
+			Mode: snapshot.Ingest.Mode,
+			SharedStorage: &model.SharedStorageIngestSettings{
+				QbittorrentPathPrefix: snapshot.Ingest.SharedStorage.QBittorrentPathPrefix,
+				StashPathPrefix:       snapshot.Ingest.SharedStorage.StashPathPrefix,
+			},
+			FileTransfer: &model.FileTransferIngestSettings{
+				Action:     snapshot.Ingest.FileTransfer.Action,
+				TargetPath: snapshot.Ingest.FileTransfer.TargetPath,
+			},
+			LibraryScan: &model.LibraryScanIngestSettings{
+				LibraryPath: snapshot.Ingest.LibraryScan.LibraryPath,
+			},
 		},
 		Jackett: &model.JackettSettings{
 			Configured:         snapshot.Jackett.Configured,

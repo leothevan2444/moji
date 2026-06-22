@@ -54,12 +54,10 @@ type UpdateStashSettingsInput struct {
 }
 
 type UpdateIngestSettingsInput struct {
-	Mode                  string
-	LibraryPath           string
-	QBittorrentPathPrefix string
-	StashPathPrefix       string
-	TransferAction        string
-	TransferTargetPath    string
+	Mode          string
+	SharedStorage SharedStorageIngestSettingsSnapshot
+	FileTransfer  FileTransferIngestSettingsSnapshot
+	LibraryScan   LibraryScanIngestSettingsSnapshot
 }
 
 type UpdateJackettSettingsInput struct {
@@ -104,12 +102,24 @@ type StashSettingsSnapshot struct {
 }
 
 type IngestSettingsSnapshot struct {
-	Mode                  string
-	LibraryPath           string
+	Mode          string
+	SharedStorage SharedStorageIngestSettingsSnapshot
+	FileTransfer  FileTransferIngestSettingsSnapshot
+	LibraryScan   LibraryScanIngestSettingsSnapshot
+}
+
+type SharedStorageIngestSettingsSnapshot struct {
 	QBittorrentPathPrefix string
 	StashPathPrefix       string
-	TransferAction        string
-	TransferTargetPath    string
+}
+
+type FileTransferIngestSettingsSnapshot struct {
+	Action     string
+	TargetPath string
+}
+
+type LibraryScanIngestSettingsSnapshot struct {
+	LibraryPath string
 }
 
 type JackettSettingsSnapshot struct {

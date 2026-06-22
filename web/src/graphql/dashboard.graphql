@@ -22,11 +22,17 @@ query DashboardDocument {
     }
     ingest {
       mode
-      libraryPath
-      qbittorrentPathPrefix
-      stashPathPrefix
-      transferAction
-      transferTargetPath
+      sharedStorage {
+        qbittorrentPathPrefix
+        stashPathPrefix
+      }
+      fileTransfer {
+        action
+        targetPath
+      }
+      libraryScan {
+        libraryPath
+      }
     }
     jackett {
       configured

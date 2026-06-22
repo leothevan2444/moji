@@ -203,10 +203,14 @@ function renderStats(
 export function buildStashConfig(runtime: RuntimeSettings): Array<{ key: string; value: string }> {
   const s = runtime.stash;
   const i = runtime.ingest;
+  const libraryPath =
+    i.mode === "LIBRARY_SCAN"
+      ? i.libraryScan.libraryPath
+      : "";
   return [
     { key: "URL", value: s.url },
     { key: "模式", value: i.mode },
-    { key: "库路径", value: i.libraryPath }
+    { key: "库路径", value: libraryPath }
   ];
 }
 

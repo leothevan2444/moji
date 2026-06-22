@@ -401,7 +401,9 @@ func TestSettingsQueryReturnsRuntimeSnapshot(t *testing.T) {
 			APIKeyConfigured: true,
 		},
 		Ingest: IngestSettingsSnapshot{
-			LibraryPath: "/data/library",
+			LibraryScan: LibraryScanIngestSettingsSnapshot{
+				LibraryPath: "/data/library",
+			},
 		},
 		Jackett: JackettSettingsSnapshot{
 			Configured:       true,
@@ -437,7 +439,7 @@ func TestSettingsQueryReturnsRuntimeSnapshot(t *testing.T) {
 	resp := executeGraphQL(t, resolver, `{
 		settings {
 			stash { configured enabled url apiKeyConfigured }
-			ingest { libraryPath }
+			ingest { libraryScan { libraryPath } }
 			jackett { configured enabled url apiKeyConfigured }
 			qbittorrent { configured enabled url username usernameConfigured passwordConfigured defaultSavePath category tags }
 			automation { taskProgressSyncIntervalSeconds subscriptionPollIntervalSeconds }
@@ -452,7 +454,7 @@ func TestSettingsQueryReturnsRuntimeSnapshot(t *testing.T) {
 	if !resp.Data.Settings.Stash.Configured || resp.Data.Settings.Stash.URL != "http://stash.invalid" {
 		t.Fatalf("unexpected stash settings: %+v", resp.Data.Settings.Stash)
 	}
-	if resp.Data.Settings.Ingest.LibraryPath != "/data/library" {
+	if resp.Data.Settings.Ingest.LibraryScan.LibraryPath != "/data/library" {
 		t.Fatalf("unexpected ingest settings: %+v", resp.Data.Settings.Ingest)
 	}
 	if resp.Data.Settings.Qbittorrent.PasswordConfigured {
@@ -578,12 +580,18 @@ func TestUpdateIngestSettingsMutation(t *testing.T) {
 	editor := &fakeSettingsEditor{
 		updateIngestSnapshot: &SettingsSnapshot{
 			Ingest: IngestSettingsSnapshot{
-				Mode:                  "FILE_TRANSFER",
-				LibraryPath:           "/library/updated",
-				QBittorrentPathPrefix: "/downloads",
-				StashPathPrefix:       "/library",
-				TransferAction:        "COPY",
-				TransferTargetPath:    "/stash-import",
+				Mode: "FILE_TRANSFER",
+				SharedStorage: SharedStorageIngestSettingsSnapshot{
+					QBittorrentPathPrefix: "/downloads",
+					StashPathPrefix:       "/library",
+				},
+				FileTransfer: FileTransferIngestSettingsSnapshot{
+					Action:     "COPY",
+					TargetPath: "/stash-import",
+				},
+				LibraryScan: LibraryScanIngestSettingsSnapshot{
+					LibraryPath: "/library/updated",
+				},
 			},
 		},
 	}
@@ -593,19 +601,25 @@ func TestUpdateIngestSettingsMutation(t *testing.T) {
 	resp := executeGraphQL(t, resolver, `mutation {
 		updateIngestSettings(input: {
 			mode: "FILE_TRANSFER"
-			libraryPath: "/library/updated"
-			qbittorrentPathPrefix: "/downloads"
-			stashPathPrefix: "/library"
-			transferAction: "COPY"
-			transferTargetPath: "/stash-import"
+			sharedStorage: {
+				qbittorrentPathPrefix: "/downloads"
+				stashPathPrefix: "/library"
+			}
+			fileTransfer: {
+				action: "COPY"
+				targetPath: "/stash-import"
+			}
+			libraryScan: {
+				libraryPath: "/library/updated"
+			}
 		}) {
-			ingest { mode libraryPath transferAction transferTargetPath }
+			ingest { mode fileTransfer { action targetPath } libraryScan { libraryPath } }
 		}
 	}`)
 	if len(resp.Errors) > 0 {
 		t.Fatalf("expected no errors, got %+v", resp.Errors)
 	}
-	if editor.ingestInput.Mode != "FILE_TRANSFER" || editor.ingestInput.TransferTargetPath != "/stash-import" {
+	if editor.ingestInput.Mode != "FILE_TRANSFER" || editor.ingestInput.FileTransfer.TargetPath != "/stash-import" {
 		t.Fatalf("unexpected ingest input: %+v", editor.ingestInput)
 	}
 	if resp.Data.UpdateIngestSettings.Ingest.Mode != "FILE_TRANSFER" {
@@ -764,12 +778,18 @@ type graphQLTaskResponse struct {
 				APIKeyConfigured bool   `json:"apiKeyConfigured"`
 			} `json:"stash"`
 			Ingest struct {
-				Mode                  string `json:"mode"`
-				LibraryPath           string `json:"libraryPath"`
-				QBittorrentPathPrefix string `json:"qbittorrentPathPrefix"`
-				StashPathPrefix       string `json:"stashPathPrefix"`
-				TransferAction        string `json:"transferAction"`
-				TransferTargetPath    string `json:"transferTargetPath"`
+				Mode          string `json:"mode"`
+				SharedStorage struct {
+					QBittorrentPathPrefix string `json:"qbittorrentPathPrefix"`
+					StashPathPrefix       string `json:"stashPathPrefix"`
+				} `json:"sharedStorage"`
+				FileTransfer struct {
+					Action     string `json:"action"`
+					TargetPath string `json:"targetPath"`
+				} `json:"fileTransfer"`
+				LibraryScan struct {
+					LibraryPath string `json:"libraryPath"`
+				} `json:"libraryScan"`
 			} `json:"ingest"`
 			Jackett struct {
 				Configured       bool   `json:"configured"`
@@ -836,10 +856,14 @@ type graphQLTaskResponse struct {
 		} `json:"updateStashSettings"`
 		UpdateIngestSettings struct {
 			Ingest struct {
-				Mode               string `json:"mode"`
-				LibraryPath        string `json:"libraryPath"`
-				TransferAction     string `json:"transferAction"`
-				TransferTargetPath string `json:"transferTargetPath"`
+				Mode         string `json:"mode"`
+				FileTransfer struct {
+					Action     string `json:"action"`
+					TargetPath string `json:"targetPath"`
+				} `json:"fileTransfer"`
+				LibraryScan struct {
+					LibraryPath string `json:"libraryPath"`
+				} `json:"libraryScan"`
 			} `json:"ingest"`
 		} `json:"updateIngestSettings"`
 		UpdateSubscriptionSettings struct {

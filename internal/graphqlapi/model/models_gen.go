@@ -52,6 +52,16 @@ type DownloadMediaInput struct {
 	Paused     *bool    `json:"paused,omitempty"`
 }
 
+type FileTransferIngestSettings struct {
+	Action     string `json:"action"`
+	TargetPath string `json:"targetPath"`
+}
+
+type FileTransferIngestSettingsInput struct {
+	Action     string `json:"action"`
+	TargetPath string `json:"targetPath"`
+}
+
 // Basic service health
 type Health struct {
 	Ok      bool   `json:"ok"`
@@ -59,12 +69,10 @@ type Health struct {
 }
 
 type IngestSettings struct {
-	Mode                  string `json:"mode"`
-	LibraryPath           string `json:"libraryPath"`
-	QbittorrentPathPrefix string `json:"qbittorrentPathPrefix"`
-	StashPathPrefix       string `json:"stashPathPrefix"`
-	TransferAction        string `json:"transferAction"`
-	TransferTargetPath    string `json:"transferTargetPath"`
+	Mode          string                       `json:"mode"`
+	SharedStorage *SharedStorageIngestSettings `json:"sharedStorage"`
+	FileTransfer  *FileTransferIngestSettings  `json:"fileTransfer"`
+	LibraryScan   *LibraryScanIngestSettings   `json:"libraryScan"`
 }
 
 type JackettSearchInput struct {
@@ -115,6 +123,14 @@ type JackettStats struct {
 	LastError *string `json:"lastError,omitempty"`
 	// ISO 8601 timestamp of the most recent successful refresh.
 	OkAt string `json:"okAt"`
+}
+
+type LibraryScanIngestSettings struct {
+	LibraryPath string `json:"libraryPath"`
+}
+
+type LibraryScanIngestSettingsInput struct {
+	LibraryPath string `json:"libraryPath"`
 }
 
 type LogEntry struct {
@@ -208,6 +224,16 @@ type SettingsStatus struct {
 	JackettStats *JackettStats `json:"jackettStats"`
 	// Runtime stats for the qBittorrent download client. Refreshed by the stats collector.
 	QbittorrentStats *QBittorrentStats `json:"qbittorrentStats"`
+}
+
+type SharedStorageIngestSettings struct {
+	QbittorrentPathPrefix string `json:"qbittorrentPathPrefix"`
+	StashPathPrefix       string `json:"stashPathPrefix"`
+}
+
+type SharedStorageIngestSettingsInput struct {
+	QbittorrentPathPrefix string `json:"qbittorrentPathPrefix"`
+	StashPathPrefix       string `json:"stashPathPrefix"`
 }
 
 type StashBoxEndpoint struct {
@@ -356,12 +382,10 @@ type UpdateAutomationSettingsInput struct {
 }
 
 type UpdateIngestSettingsInput struct {
-	Mode                  string `json:"mode"`
-	LibraryPath           string `json:"libraryPath"`
-	QbittorrentPathPrefix string `json:"qbittorrentPathPrefix"`
-	StashPathPrefix       string `json:"stashPathPrefix"`
-	TransferAction        string `json:"transferAction"`
-	TransferTargetPath    string `json:"transferTargetPath"`
+	Mode          string                            `json:"mode"`
+	SharedStorage *SharedStorageIngestSettingsInput `json:"sharedStorage"`
+	FileTransfer  *FileTransferIngestSettingsInput  `json:"fileTransfer"`
+	LibraryScan   *LibraryScanIngestSettingsInput   `json:"libraryScan"`
 }
 
 type UpdateJackettSettingsInput struct {

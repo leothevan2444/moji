@@ -274,12 +274,18 @@ func buildSettingsSnapshot(cfg *config.Config, version string, qbittorrentEnable
 			APIKey:           cfg.Stash.APIKey,
 		},
 		Ingest: graphqlapi.IngestSettingsSnapshot{
-			Mode:                  effectiveStashMode(cfg),
-			LibraryPath:           cfg.Ingest.LibraryPath,
-			QBittorrentPathPrefix: cfg.Ingest.QBittorrentPathPrefix,
-			StashPathPrefix:       cfg.Ingest.StashPathPrefix,
-			TransferAction:        cfg.Ingest.TransferAction,
-			TransferTargetPath:    cfg.Ingest.TransferTargetPath,
+			Mode: effectiveStashMode(cfg),
+			SharedStorage: graphqlapi.SharedStorageIngestSettingsSnapshot{
+				QBittorrentPathPrefix: cfg.Ingest.SharedStorage.QBittorrentPathPrefix,
+				StashPathPrefix:       cfg.Ingest.SharedStorage.StashPathPrefix,
+			},
+			FileTransfer: graphqlapi.FileTransferIngestSettingsSnapshot{
+				Action:     cfg.Ingest.FileTransfer.Action,
+				TargetPath: cfg.Ingest.FileTransfer.TargetPath,
+			},
+			LibraryScan: graphqlapi.LibraryScanIngestSettingsSnapshot{
+				LibraryPath: cfg.Ingest.LibraryScan.LibraryPath,
+			},
 		},
 		Jackett: graphqlapi.JackettSettingsSnapshot{
 			Configured:         jackettConfigured,
@@ -438,11 +444,11 @@ func stashIntegrationConfig(cfg *config.Config) stashsync.IntegrationConfig {
 	}
 	return stashsync.IntegrationConfig{
 		Mode:                  stashsync.IntegrationMode(effectiveStashMode(cfg)),
-		LibraryPath:           cfg.Ingest.LibraryPath,
-		QBittorrentPathPrefix: cfg.Ingest.QBittorrentPathPrefix,
-		StashPathPrefix:       cfg.Ingest.StashPathPrefix,
-		TransferAction:        stashsync.TransferAction(strings.TrimSpace(cfg.Ingest.TransferAction)),
-		TransferTargetPath:    cfg.Ingest.TransferTargetPath,
+		LibraryPath:           cfg.Ingest.LibraryScan.LibraryPath,
+		QBittorrentPathPrefix: cfg.Ingest.SharedStorage.QBittorrentPathPrefix,
+		StashPathPrefix:       cfg.Ingest.SharedStorage.StashPathPrefix,
+		TransferAction:        stashsync.TransferAction(strings.TrimSpace(cfg.Ingest.FileTransfer.Action)),
+		TransferTargetPath:    cfg.Ingest.FileTransfer.TargetPath,
 	}
 }
 
@@ -452,12 +458,12 @@ func isStashConfigured(cfg *config.Config) bool {
 	}
 	switch stashsync.IntegrationMode(effectiveStashMode(cfg)) {
 	case stashsync.IntegrationModeSharedStorage:
-		return strings.TrimSpace(cfg.Ingest.QBittorrentPathPrefix) != "" && strings.TrimSpace(cfg.Ingest.StashPathPrefix) != ""
+		return strings.TrimSpace(cfg.Ingest.SharedStorage.QBittorrentPathPrefix) != "" && strings.TrimSpace(cfg.Ingest.SharedStorage.StashPathPrefix) != ""
 	case stashsync.IntegrationModeFileTransfer:
-		action := strings.TrimSpace(cfg.Ingest.TransferAction)
-		return (action == string(stashsync.TransferActionCopy) || action == string(stashsync.TransferActionMove)) && strings.TrimSpace(cfg.Ingest.TransferTargetPath) != ""
+		action := strings.TrimSpace(cfg.Ingest.FileTransfer.Action)
+		return (action == string(stashsync.TransferActionCopy) || action == string(stashsync.TransferActionMove)) && strings.TrimSpace(cfg.Ingest.FileTransfer.TargetPath) != ""
 	case stashsync.IntegrationModeLibraryScan:
-		return strings.TrimSpace(cfg.Ingest.LibraryPath) != ""
+		return strings.TrimSpace(cfg.Ingest.LibraryScan.LibraryPath) != ""
 	default:
 		return false
 	}

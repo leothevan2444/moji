@@ -130,11 +130,23 @@ type StashSettings {
 
 type IngestSettings {
   mode: String!
-  libraryPath: String!
+  sharedStorage: SharedStorageIngestSettings!
+  fileTransfer: FileTransferIngestSettings!
+  libraryScan: LibraryScanIngestSettings!
+}
+
+type SharedStorageIngestSettings {
   qbittorrentPathPrefix: String!
   stashPathPrefix: String!
-  transferAction: String!
-  transferTargetPath: String!
+}
+
+type FileTransferIngestSettings {
+  action: String!
+  targetPath: String!
+}
+
+type LibraryScanIngestSettings {
+  libraryPath: String!
 }
 
 type JackettSettings {
@@ -207,11 +219,23 @@ input UpdateStashSettingsInput {
 
 input UpdateIngestSettingsInput {
   mode: String!
-  libraryPath: String!
+  sharedStorage: SharedStorageIngestSettingsInput!
+  fileTransfer: FileTransferIngestSettingsInput!
+  libraryScan: LibraryScanIngestSettingsInput!
+}
+
+input SharedStorageIngestSettingsInput {
   qbittorrentPathPrefix: String!
   stashPathPrefix: String!
-  transferAction: String!
-  transferTargetPath: String!
+}
+
+input FileTransferIngestSettingsInput {
+  action: String!
+  targetPath: String!
+}
+
+input LibraryScanIngestSettingsInput {
+  libraryPath: String!
 }
 
 input UpdateJackettSettingsInput {
