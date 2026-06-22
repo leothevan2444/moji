@@ -32,6 +32,8 @@ query DashboardDocument {
       url
       apiKeyConfigured
       apiKey
+      passwordConfigured
+      password
     }
     qbittorrent {
       configured
@@ -80,6 +82,31 @@ query DashboardDocument {
       }
       stashBoxesLoaded
       stashBoxesLoadError
+    }
+    stashStats {
+      version
+      sceneCount
+      pendingMojiScanCount
+      lastError
+      okAt
+    }
+    jackettStats {
+      indexerCount
+      configuredIndexerCount
+      lastIndexerLatencyMs
+      lastIndexerError
+      lastIndexerSearchAt
+      lastError
+      okAt
+    }
+    qbittorrentStats {
+      downloadSpeed
+      uploadSpeed
+      activeTorrentCount
+      connectionStatus
+      altSpeedLimitEnabled
+      lastError
+      okAt
     }
   }
   tasks {

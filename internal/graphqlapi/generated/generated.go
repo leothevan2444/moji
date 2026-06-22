@@ -98,11 +98,23 @@ type ComplexityRoot struct {
 	}
 
 	JackettSettings struct {
-		APIKey           func(childComplexity int) int
-		APIKeyConfigured func(childComplexity int) int
-		Configured       func(childComplexity int) int
-		Enabled          func(childComplexity int) int
-		URL              func(childComplexity int) int
+		APIKey             func(childComplexity int) int
+		APIKeyConfigured   func(childComplexity int) int
+		Configured         func(childComplexity int) int
+		Enabled            func(childComplexity int) int
+		Password           func(childComplexity int) int
+		PasswordConfigured func(childComplexity int) int
+		URL                func(childComplexity int) int
+	}
+
+	JackettStats struct {
+		ConfiguredIndexerCount func(childComplexity int) int
+		IndexerCount           func(childComplexity int) int
+		LastError              func(childComplexity int) int
+		LastIndexerError       func(childComplexity int) int
+		LastIndexerLatencyMs   func(childComplexity int) int
+		LastIndexerSearchAt    func(childComplexity int) int
+		OkAt                   func(childComplexity int) int
 	}
 
 	LogEntry struct {
@@ -158,6 +170,16 @@ type ComplexityRoot struct {
 		UsernameConfigured func(childComplexity int) int
 	}
 
+	QBittorrentStats struct {
+		ActiveTorrentCount   func(childComplexity int) int
+		AltSpeedLimitEnabled func(childComplexity int) int
+		ConnectionStatus     func(childComplexity int) int
+		DownloadSpeed        func(childComplexity int) int
+		LastError            func(childComplexity int) int
+		OkAt                 func(childComplexity int) int
+		UploadSpeed          func(childComplexity int) int
+	}
+
 	Query struct {
 		DashboardStats       func(childComplexity int) int
 		Health               func(childComplexity int) int
@@ -188,11 +210,14 @@ type ComplexityRoot struct {
 	}
 
 	SettingsStatus struct {
-		Automation   func(childComplexity int) int
-		Jackett      func(childComplexity int) int
-		Qbittorrent  func(childComplexity int) int
-		Stash        func(childComplexity int) int
-		Subscription func(childComplexity int) int
+		Automation       func(childComplexity int) int
+		Jackett          func(childComplexity int) int
+		JackettStats     func(childComplexity int) int
+		Qbittorrent      func(childComplexity int) int
+		QbittorrentStats func(childComplexity int) int
+		Stash            func(childComplexity int) int
+		StashStats       func(childComplexity int) int
+		Subscription     func(childComplexity int) int
 	}
 
 	StashBoxEndpoint struct {
@@ -245,6 +270,14 @@ type ComplexityRoot struct {
 		TransferAction        func(childComplexity int) int
 		TransferTargetPath    func(childComplexity int) int
 		URL                   func(childComplexity int) int
+	}
+
+	StashStats struct {
+		LastError            func(childComplexity int) int
+		OkAt                 func(childComplexity int) int
+		PendingMojiScanCount func(childComplexity int) int
+		SceneCount           func(childComplexity int) int
+		Version              func(childComplexity int) int
 	}
 
 	SubscribedPerformer struct {
@@ -624,12 +657,75 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.JackettSettings.Enabled(childComplexity), true
 
+	case "JackettSettings.password":
+		if e.complexity.JackettSettings.Password == nil {
+			break
+		}
+
+		return e.complexity.JackettSettings.Password(childComplexity), true
+
+	case "JackettSettings.passwordConfigured":
+		if e.complexity.JackettSettings.PasswordConfigured == nil {
+			break
+		}
+
+		return e.complexity.JackettSettings.PasswordConfigured(childComplexity), true
+
 	case "JackettSettings.url":
 		if e.complexity.JackettSettings.URL == nil {
 			break
 		}
 
 		return e.complexity.JackettSettings.URL(childComplexity), true
+
+	case "JackettStats.configuredIndexerCount":
+		if e.complexity.JackettStats.ConfiguredIndexerCount == nil {
+			break
+		}
+
+		return e.complexity.JackettStats.ConfiguredIndexerCount(childComplexity), true
+
+	case "JackettStats.indexerCount":
+		if e.complexity.JackettStats.IndexerCount == nil {
+			break
+		}
+
+		return e.complexity.JackettStats.IndexerCount(childComplexity), true
+
+	case "JackettStats.lastError":
+		if e.complexity.JackettStats.LastError == nil {
+			break
+		}
+
+		return e.complexity.JackettStats.LastError(childComplexity), true
+
+	case "JackettStats.lastIndexerError":
+		if e.complexity.JackettStats.LastIndexerError == nil {
+			break
+		}
+
+		return e.complexity.JackettStats.LastIndexerError(childComplexity), true
+
+	case "JackettStats.lastIndexerLatencyMs":
+		if e.complexity.JackettStats.LastIndexerLatencyMs == nil {
+			break
+		}
+
+		return e.complexity.JackettStats.LastIndexerLatencyMs(childComplexity), true
+
+	case "JackettStats.lastIndexerSearchAt":
+		if e.complexity.JackettStats.LastIndexerSearchAt == nil {
+			break
+		}
+
+		return e.complexity.JackettStats.LastIndexerSearchAt(childComplexity), true
+
+	case "JackettStats.okAt":
+		if e.complexity.JackettStats.OkAt == nil {
+			break
+		}
+
+		return e.complexity.JackettStats.OkAt(childComplexity), true
 
 	case "LogEntry.level":
 		if e.complexity.LogEntry.Level == nil {
@@ -983,6 +1079,55 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.QBittorrentSettings.UsernameConfigured(childComplexity), true
 
+	case "QBittorrentStats.activeTorrentCount":
+		if e.complexity.QBittorrentStats.ActiveTorrentCount == nil {
+			break
+		}
+
+		return e.complexity.QBittorrentStats.ActiveTorrentCount(childComplexity), true
+
+	case "QBittorrentStats.altSpeedLimitEnabled":
+		if e.complexity.QBittorrentStats.AltSpeedLimitEnabled == nil {
+			break
+		}
+
+		return e.complexity.QBittorrentStats.AltSpeedLimitEnabled(childComplexity), true
+
+	case "QBittorrentStats.connectionStatus":
+		if e.complexity.QBittorrentStats.ConnectionStatus == nil {
+			break
+		}
+
+		return e.complexity.QBittorrentStats.ConnectionStatus(childComplexity), true
+
+	case "QBittorrentStats.downloadSpeed":
+		if e.complexity.QBittorrentStats.DownloadSpeed == nil {
+			break
+		}
+
+		return e.complexity.QBittorrentStats.DownloadSpeed(childComplexity), true
+
+	case "QBittorrentStats.lastError":
+		if e.complexity.QBittorrentStats.LastError == nil {
+			break
+		}
+
+		return e.complexity.QBittorrentStats.LastError(childComplexity), true
+
+	case "QBittorrentStats.okAt":
+		if e.complexity.QBittorrentStats.OkAt == nil {
+			break
+		}
+
+		return e.complexity.QBittorrentStats.OkAt(childComplexity), true
+
+	case "QBittorrentStats.uploadSpeed":
+		if e.complexity.QBittorrentStats.UploadSpeed == nil {
+			break
+		}
+
+		return e.complexity.QBittorrentStats.UploadSpeed(childComplexity), true
+
 	case "Query.dashboardStats":
 		if e.complexity.Query.DashboardStats == nil {
 			break
@@ -1167,6 +1312,13 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.SettingsStatus.Jackett(childComplexity), true
 
+	case "SettingsStatus.jackettStats":
+		if e.complexity.SettingsStatus.JackettStats == nil {
+			break
+		}
+
+		return e.complexity.SettingsStatus.JackettStats(childComplexity), true
+
 	case "SettingsStatus.qbittorrent":
 		if e.complexity.SettingsStatus.Qbittorrent == nil {
 			break
@@ -1174,12 +1326,26 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.SettingsStatus.Qbittorrent(childComplexity), true
 
+	case "SettingsStatus.qbittorrentStats":
+		if e.complexity.SettingsStatus.QbittorrentStats == nil {
+			break
+		}
+
+		return e.complexity.SettingsStatus.QbittorrentStats(childComplexity), true
+
 	case "SettingsStatus.stash":
 		if e.complexity.SettingsStatus.Stash == nil {
 			break
 		}
 
 		return e.complexity.SettingsStatus.Stash(childComplexity), true
+
+	case "SettingsStatus.stashStats":
+		if e.complexity.SettingsStatus.StashStats == nil {
+			break
+		}
+
+		return e.complexity.SettingsStatus.StashStats(childComplexity), true
 
 	case "SettingsStatus.subscription":
 		if e.complexity.SettingsStatus.Subscription == nil {
@@ -1446,6 +1612,41 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.StashSettings.URL(childComplexity), true
+
+	case "StashStats.lastError":
+		if e.complexity.StashStats.LastError == nil {
+			break
+		}
+
+		return e.complexity.StashStats.LastError(childComplexity), true
+
+	case "StashStats.okAt":
+		if e.complexity.StashStats.OkAt == nil {
+			break
+		}
+
+		return e.complexity.StashStats.OkAt(childComplexity), true
+
+	case "StashStats.pendingMojiScanCount":
+		if e.complexity.StashStats.PendingMojiScanCount == nil {
+			break
+		}
+
+		return e.complexity.StashStats.PendingMojiScanCount(childComplexity), true
+
+	case "StashStats.sceneCount":
+		if e.complexity.StashStats.SceneCount == nil {
+			break
+		}
+
+		return e.complexity.StashStats.SceneCount(childComplexity), true
+
+	case "StashStats.version":
+		if e.complexity.StashStats.Version == nil {
+			break
+		}
+
+		return e.complexity.StashStats.Version(childComplexity), true
 
 	case "SubscribedPerformer.lastCheckedAt":
 		if e.complexity.SubscribedPerformer.LastCheckedAt == nil {
@@ -2001,6 +2202,79 @@ type SettingsStatus {
   qbittorrent: ServiceStatus!
   automation: AutomationStatus!
   subscription: SubscriptionStatus!
+
+  "Runtime stats for the Stash server. Refreshed by the stats collector."
+  stashStats: StashStats!
+
+  "Runtime stats for the Jackett indexer aggregator. Refreshed by the stats collector."
+  jackettStats: JackettStats!
+
+  "Runtime stats for the qBittorrent download client. Refreshed by the stats collector."
+  qbittorrentStats: QBittorrentStats!
+}
+
+"Per-service runtime stats. okAt is the timestamp of the most recent successful refresh; lastError is the message from the most recent failed refresh (if any). When lastError is non-null, other numeric fields still reflect the last known-good snapshot."
+type StashStats {
+  "Stash server version string, e.g. 0.27.2. Null if not yet fetched."
+  version: String
+
+  "Total scenes in the Stash library. Null if not yet fetched or query failed."
+  sceneCount: Int
+
+  "Number of Moji-owned tasks currently in RUNNING or READY stash-scan state."
+  pendingMojiScanCount: Int!
+
+  "Most recent error message from any Stash-side refresh. Null = OK."
+  lastError: String
+
+  "ISO 8601 timestamp of the most recent successful refresh."
+  okAt: String!
+}
+
+type JackettStats {
+  "Total indexers reported by Jackett (configured + unconfigured)."
+  indexerCount: Int!
+
+  "Subset of indexerCount that are marked as configured in Jackett."
+  configuredIndexerCount: Int!
+
+  "Worst indexer latency (ms) from the most recent /all/results search. 0 if no search has happened."
+  lastIndexerLatencyMs: Int!
+
+  "First non-empty Error field from the most recent search, if any."
+  lastIndexerError: String
+
+  "Timestamp of the most recent /all/results search. Null if no search has happened yet."
+  lastIndexerSearchAt: String
+
+  "Most recent error message from any Jackett-side refresh. Null = OK."
+  lastError: String
+
+  "ISO 8601 timestamp of the most recent successful refresh."
+  okAt: String!
+}
+
+type QBittorrentStats {
+  "Global download rate in bytes/sec."
+  downloadSpeed: Int!
+
+  "Global upload rate in bytes/sec."
+  uploadSpeed: Int!
+
+  "Count of torrents matching qBittorrent filter \"active\"."
+  activeTorrentCount: Int!
+
+  "qBittorrent connection status: connected | firewalled | disconnected."
+  connectionStatus: String!
+
+  "Whether qBittorrent's alternative speed limits are enabled."
+  altSpeedLimitEnabled: Boolean!
+
+  "Most recent error message from any qBittorrent-side refresh. Null = OK."
+  lastError: String
+
+  "ISO 8601 timestamp of the most recent successful refresh."
+  okAt: String!
 }
 
 type StashSettings {
@@ -2025,6 +2299,9 @@ type JackettSettings {
   apiKeyConfigured: Boolean!
   "Currently configured Jackett API key. Returned in plaintext for the settings UI; never logged."
   apiKey: String!
+  passwordConfigured: Boolean!
+  "Currently configured Jackett dashboard password. Returned in plaintext for the settings UI; never logged."
+  password: String!
 }
 
 type QBittorrentSettings {
@@ -2092,6 +2369,8 @@ input UpdateStashSettingsInput {
 input UpdateJackettSettingsInput {
   url: String!
   apiKey: String
+  "Jackett dashboard password. Always sent by the UI and overwrites the stored value; pass an empty string to clear it."
+  password: String!
 }
 
 input UpdateQBittorrentSettingsInput {
@@ -4759,6 +5038,393 @@ func (ec *executionContext) fieldContext_JackettSettings_apiKey(_ context.Contex
 	return fc, nil
 }
 
+func (ec *executionContext) _JackettSettings_passwordConfigured(ctx context.Context, field graphql.CollectedField, obj *model.JackettSettings) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_JackettSettings_passwordConfigured(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.PasswordConfigured, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(bool)
+	fc.Result = res
+	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_JackettSettings_passwordConfigured(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "JackettSettings",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _JackettSettings_password(ctx context.Context, field graphql.CollectedField, obj *model.JackettSettings) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_JackettSettings_password(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Password, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_JackettSettings_password(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "JackettSettings",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _JackettStats_indexerCount(ctx context.Context, field graphql.CollectedField, obj *model.JackettStats) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_JackettStats_indexerCount(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.IndexerCount, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int)
+	fc.Result = res
+	return ec.marshalNInt2int(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_JackettStats_indexerCount(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "JackettStats",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _JackettStats_configuredIndexerCount(ctx context.Context, field graphql.CollectedField, obj *model.JackettStats) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_JackettStats_configuredIndexerCount(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.ConfiguredIndexerCount, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int)
+	fc.Result = res
+	return ec.marshalNInt2int(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_JackettStats_configuredIndexerCount(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "JackettStats",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _JackettStats_lastIndexerLatencyMs(ctx context.Context, field graphql.CollectedField, obj *model.JackettStats) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_JackettStats_lastIndexerLatencyMs(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.LastIndexerLatencyMs, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int)
+	fc.Result = res
+	return ec.marshalNInt2int(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_JackettStats_lastIndexerLatencyMs(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "JackettStats",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _JackettStats_lastIndexerError(ctx context.Context, field graphql.CollectedField, obj *model.JackettStats) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_JackettStats_lastIndexerError(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.LastIndexerError, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*string)
+	fc.Result = res
+	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_JackettStats_lastIndexerError(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "JackettStats",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _JackettStats_lastIndexerSearchAt(ctx context.Context, field graphql.CollectedField, obj *model.JackettStats) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_JackettStats_lastIndexerSearchAt(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.LastIndexerSearchAt, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*string)
+	fc.Result = res
+	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_JackettStats_lastIndexerSearchAt(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "JackettStats",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _JackettStats_lastError(ctx context.Context, field graphql.CollectedField, obj *model.JackettStats) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_JackettStats_lastError(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.LastError, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*string)
+	fc.Result = res
+	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_JackettStats_lastError(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "JackettStats",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _JackettStats_okAt(ctx context.Context, field graphql.CollectedField, obj *model.JackettStats) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_JackettStats_okAt(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.OkAt, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_JackettStats_okAt(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "JackettStats",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _LogEntry_time(ctx context.Context, field graphql.CollectedField, obj *model.LogEntry) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_LogEntry_time(ctx, field)
 	if err != nil {
@@ -7120,6 +7786,311 @@ func (ec *executionContext) fieldContext_QBittorrentSettings_tags(_ context.Cont
 	return fc, nil
 }
 
+func (ec *executionContext) _QBittorrentStats_downloadSpeed(ctx context.Context, field graphql.CollectedField, obj *model.QBittorrentStats) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_QBittorrentStats_downloadSpeed(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.DownloadSpeed, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int)
+	fc.Result = res
+	return ec.marshalNInt2int(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_QBittorrentStats_downloadSpeed(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "QBittorrentStats",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _QBittorrentStats_uploadSpeed(ctx context.Context, field graphql.CollectedField, obj *model.QBittorrentStats) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_QBittorrentStats_uploadSpeed(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.UploadSpeed, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int)
+	fc.Result = res
+	return ec.marshalNInt2int(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_QBittorrentStats_uploadSpeed(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "QBittorrentStats",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _QBittorrentStats_activeTorrentCount(ctx context.Context, field graphql.CollectedField, obj *model.QBittorrentStats) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_QBittorrentStats_activeTorrentCount(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.ActiveTorrentCount, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int)
+	fc.Result = res
+	return ec.marshalNInt2int(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_QBittorrentStats_activeTorrentCount(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "QBittorrentStats",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _QBittorrentStats_connectionStatus(ctx context.Context, field graphql.CollectedField, obj *model.QBittorrentStats) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_QBittorrentStats_connectionStatus(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.ConnectionStatus, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_QBittorrentStats_connectionStatus(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "QBittorrentStats",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _QBittorrentStats_altSpeedLimitEnabled(ctx context.Context, field graphql.CollectedField, obj *model.QBittorrentStats) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_QBittorrentStats_altSpeedLimitEnabled(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.AltSpeedLimitEnabled, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(bool)
+	fc.Result = res
+	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_QBittorrentStats_altSpeedLimitEnabled(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "QBittorrentStats",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _QBittorrentStats_lastError(ctx context.Context, field graphql.CollectedField, obj *model.QBittorrentStats) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_QBittorrentStats_lastError(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.LastError, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*string)
+	fc.Result = res
+	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_QBittorrentStats_lastError(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "QBittorrentStats",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _QBittorrentStats_okAt(ctx context.Context, field graphql.CollectedField, obj *model.QBittorrentStats) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_QBittorrentStats_okAt(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.OkAt, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_QBittorrentStats_okAt(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "QBittorrentStats",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _Query_health(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_Query_health(ctx, field)
 	if err != nil {
@@ -7461,6 +8432,12 @@ func (ec *executionContext) fieldContext_Query_settingsStatus(_ context.Context,
 				return ec.fieldContext_SettingsStatus_automation(ctx, field)
 			case "subscription":
 				return ec.fieldContext_SettingsStatus_subscription(ctx, field)
+			case "stashStats":
+				return ec.fieldContext_SettingsStatus_stashStats(ctx, field)
+			case "jackettStats":
+				return ec.fieldContext_SettingsStatus_jackettStats(ctx, field)
+			case "qbittorrentStats":
+				return ec.fieldContext_SettingsStatus_qbittorrentStats(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type SettingsStatus", field.Name)
 		},
@@ -8358,6 +9335,10 @@ func (ec *executionContext) fieldContext_Settings_jackett(_ context.Context, fie
 				return ec.fieldContext_JackettSettings_apiKeyConfigured(ctx, field)
 			case "apiKey":
 				return ec.fieldContext_JackettSettings_apiKey(ctx, field)
+			case "passwordConfigured":
+				return ec.fieldContext_JackettSettings_passwordConfigured(ctx, field)
+			case "password":
+				return ec.fieldContext_JackettSettings_password(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type JackettSettings", field.Name)
 		},
@@ -8780,6 +9761,182 @@ func (ec *executionContext) fieldContext_SettingsStatus_subscription(_ context.C
 				return ec.fieldContext_SubscriptionStatus_stashBoxesLoadError(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type SubscriptionStatus", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _SettingsStatus_stashStats(ctx context.Context, field graphql.CollectedField, obj *model.SettingsStatus) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_SettingsStatus_stashStats(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.StashStats, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*model.StashStats)
+	fc.Result = res
+	return ec.marshalNStashStats2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐStashStats(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_SettingsStatus_stashStats(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "SettingsStatus",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "version":
+				return ec.fieldContext_StashStats_version(ctx, field)
+			case "sceneCount":
+				return ec.fieldContext_StashStats_sceneCount(ctx, field)
+			case "pendingMojiScanCount":
+				return ec.fieldContext_StashStats_pendingMojiScanCount(ctx, field)
+			case "lastError":
+				return ec.fieldContext_StashStats_lastError(ctx, field)
+			case "okAt":
+				return ec.fieldContext_StashStats_okAt(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type StashStats", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _SettingsStatus_jackettStats(ctx context.Context, field graphql.CollectedField, obj *model.SettingsStatus) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_SettingsStatus_jackettStats(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.JackettStats, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*model.JackettStats)
+	fc.Result = res
+	return ec.marshalNJackettStats2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐJackettStats(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_SettingsStatus_jackettStats(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "SettingsStatus",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "indexerCount":
+				return ec.fieldContext_JackettStats_indexerCount(ctx, field)
+			case "configuredIndexerCount":
+				return ec.fieldContext_JackettStats_configuredIndexerCount(ctx, field)
+			case "lastIndexerLatencyMs":
+				return ec.fieldContext_JackettStats_lastIndexerLatencyMs(ctx, field)
+			case "lastIndexerError":
+				return ec.fieldContext_JackettStats_lastIndexerError(ctx, field)
+			case "lastIndexerSearchAt":
+				return ec.fieldContext_JackettStats_lastIndexerSearchAt(ctx, field)
+			case "lastError":
+				return ec.fieldContext_JackettStats_lastError(ctx, field)
+			case "okAt":
+				return ec.fieldContext_JackettStats_okAt(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type JackettStats", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _SettingsStatus_qbittorrentStats(ctx context.Context, field graphql.CollectedField, obj *model.SettingsStatus) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_SettingsStatus_qbittorrentStats(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.QbittorrentStats, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*model.QBittorrentStats)
+	fc.Result = res
+	return ec.marshalNQBittorrentStats2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐQBittorrentStats(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_SettingsStatus_qbittorrentStats(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "SettingsStatus",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "downloadSpeed":
+				return ec.fieldContext_QBittorrentStats_downloadSpeed(ctx, field)
+			case "uploadSpeed":
+				return ec.fieldContext_QBittorrentStats_uploadSpeed(ctx, field)
+			case "activeTorrentCount":
+				return ec.fieldContext_QBittorrentStats_activeTorrentCount(ctx, field)
+			case "connectionStatus":
+				return ec.fieldContext_QBittorrentStats_connectionStatus(ctx, field)
+			case "altSpeedLimitEnabled":
+				return ec.fieldContext_QBittorrentStats_altSpeedLimitEnabled(ctx, field)
+			case "lastError":
+				return ec.fieldContext_QBittorrentStats_lastError(ctx, field)
+			case "okAt":
+				return ec.fieldContext_QBittorrentStats_okAt(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type QBittorrentStats", field.Name)
 		},
 	}
 	return fc, nil
@@ -10401,6 +11558,217 @@ func (ec *executionContext) _StashSettings_transferTargetPath(ctx context.Contex
 func (ec *executionContext) fieldContext_StashSettings_transferTargetPath(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "StashSettings",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _StashStats_version(ctx context.Context, field graphql.CollectedField, obj *model.StashStats) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_StashStats_version(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Version, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*string)
+	fc.Result = res
+	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_StashStats_version(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "StashStats",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _StashStats_sceneCount(ctx context.Context, field graphql.CollectedField, obj *model.StashStats) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_StashStats_sceneCount(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.SceneCount, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*int)
+	fc.Result = res
+	return ec.marshalOInt2ᚖint(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_StashStats_sceneCount(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "StashStats",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _StashStats_pendingMojiScanCount(ctx context.Context, field graphql.CollectedField, obj *model.StashStats) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_StashStats_pendingMojiScanCount(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.PendingMojiScanCount, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int)
+	fc.Result = res
+	return ec.marshalNInt2int(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_StashStats_pendingMojiScanCount(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "StashStats",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _StashStats_lastError(ctx context.Context, field graphql.CollectedField, obj *model.StashStats) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_StashStats_lastError(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.LastError, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*string)
+	fc.Result = res
+	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_StashStats_lastError(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "StashStats",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _StashStats_okAt(ctx context.Context, field graphql.CollectedField, obj *model.StashStats) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_StashStats_okAt(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.OkAt, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_StashStats_okAt(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "StashStats",
 		Field:      field,
 		IsMethod:   false,
 		IsResolver: false,
@@ -14812,7 +16180,7 @@ func (ec *executionContext) unmarshalInputUpdateJackettSettingsInput(ctx context
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"url", "apiKey"}
+	fieldsInOrder := [...]string{"url", "apiKey", "password"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -14833,6 +16201,13 @@ func (ec *executionContext) unmarshalInputUpdateJackettSettingsInput(ctx context
 				return it, err
 			}
 			it.APIKey = data
+		case "password":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("password"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Password = data
 		}
 	}
 
@@ -15417,6 +16792,76 @@ func (ec *executionContext) _JackettSettings(ctx context.Context, sel ast.Select
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
+		case "passwordConfigured":
+			out.Values[i] = ec._JackettSettings_passwordConfigured(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "password":
+			out.Values[i] = ec._JackettSettings_password(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var jackettStatsImplementors = []string{"JackettStats"}
+
+func (ec *executionContext) _JackettStats(ctx context.Context, sel ast.SelectionSet, obj *model.JackettStats) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, jackettStatsImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("JackettStats")
+		case "indexerCount":
+			out.Values[i] = ec._JackettStats_indexerCount(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "configuredIndexerCount":
+			out.Values[i] = ec._JackettStats_configuredIndexerCount(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "lastIndexerLatencyMs":
+			out.Values[i] = ec._JackettStats_lastIndexerLatencyMs(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "lastIndexerError":
+			out.Values[i] = ec._JackettStats_lastIndexerError(ctx, field, obj)
+		case "lastIndexerSearchAt":
+			out.Values[i] = ec._JackettStats_lastIndexerSearchAt(ctx, field, obj)
+		case "lastError":
+			out.Values[i] = ec._JackettStats_lastError(ctx, field, obj)
+		case "okAt":
+			out.Values[i] = ec._JackettStats_okAt(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -15797,6 +17242,72 @@ func (ec *executionContext) _QBittorrentSettings(ctx context.Context, sel ast.Se
 			}
 		case "tags":
 			out.Values[i] = ec._QBittorrentSettings_tags(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var qBittorrentStatsImplementors = []string{"QBittorrentStats"}
+
+func (ec *executionContext) _QBittorrentStats(ctx context.Context, sel ast.SelectionSet, obj *model.QBittorrentStats) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, qBittorrentStatsImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("QBittorrentStats")
+		case "downloadSpeed":
+			out.Values[i] = ec._QBittorrentStats_downloadSpeed(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "uploadSpeed":
+			out.Values[i] = ec._QBittorrentStats_uploadSpeed(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "activeTorrentCount":
+			out.Values[i] = ec._QBittorrentStats_activeTorrentCount(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "connectionStatus":
+			out.Values[i] = ec._QBittorrentStats_connectionStatus(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "altSpeedLimitEnabled":
+			out.Values[i] = ec._QBittorrentStats_altSpeedLimitEnabled(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "lastError":
+			out.Values[i] = ec._QBittorrentStats_lastError(ctx, field, obj)
+		case "okAt":
+			out.Values[i] = ec._QBittorrentStats_okAt(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
@@ -16292,6 +17803,21 @@ func (ec *executionContext) _SettingsStatus(ctx context.Context, sel ast.Selecti
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
+		case "stashStats":
+			out.Values[i] = ec._SettingsStatus_stashStats(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "jackettStats":
+			out.Values[i] = ec._SettingsStatus_jackettStats(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "qbittorrentStats":
+			out.Values[i] = ec._SettingsStatus_qbittorrentStats(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -16626,6 +18152,56 @@ func (ec *executionContext) _StashSettings(ctx context.Context, sel ast.Selectio
 			}
 		case "transferTargetPath":
 			out.Values[i] = ec._StashSettings_transferTargetPath(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var stashStatsImplementors = []string{"StashStats"}
+
+func (ec *executionContext) _StashStats(ctx context.Context, sel ast.SelectionSet, obj *model.StashStats) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, stashStatsImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("StashStats")
+		case "version":
+			out.Values[i] = ec._StashStats_version(ctx, field, obj)
+		case "sceneCount":
+			out.Values[i] = ec._StashStats_sceneCount(ctx, field, obj)
+		case "pendingMojiScanCount":
+			out.Values[i] = ec._StashStats_pendingMojiScanCount(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "lastError":
+			out.Values[i] = ec._StashStats_lastError(ctx, field, obj)
+		case "okAt":
+			out.Values[i] = ec._StashStats_okAt(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
@@ -17566,6 +19142,16 @@ func (ec *executionContext) marshalNJackettSettings2ᚖgithubᚗcomᚋleothevan2
 	return ec._JackettSettings(ctx, sel, v)
 }
 
+func (ec *executionContext) marshalNJackettStats2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐJackettStats(ctx context.Context, sel ast.SelectionSet, v *model.JackettStats) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._JackettStats(ctx, sel, v)
+}
+
 func (ec *executionContext) marshalNLogEntry2ᚕᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐLogEntryᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.LogEntry) graphql.Marshaler {
 	ret := make(graphql.Array, len(v))
 	var wg sync.WaitGroup
@@ -17713,6 +19299,16 @@ func (ec *executionContext) marshalNQBittorrentSettings2ᚖgithubᚗcomᚋleothe
 		return graphql.Null
 	}
 	return ec._QBittorrentSettings(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNQBittorrentStats2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐQBittorrentStats(ctx context.Context, sel ast.SelectionSet, v *model.QBittorrentStats) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._QBittorrentStats(ctx, sel, v)
 }
 
 func (ec *executionContext) marshalNServiceStatus2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐServiceStatus(ctx context.Context, sel ast.SelectionSet, v *model.ServiceStatus) graphql.Marshaler {
@@ -17888,6 +19484,16 @@ func (ec *executionContext) marshalNStashSettings2ᚖgithubᚗcomᚋleothevan244
 		return graphql.Null
 	}
 	return ec._StashSettings(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNStashStats2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐStashStats(ctx context.Context, sel ast.SelectionSet, v *model.StashStats) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._StashStats(ctx, sel, v)
 }
 
 func (ec *executionContext) unmarshalNString2string(ctx context.Context, v any) (string, error) {

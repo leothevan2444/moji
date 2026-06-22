@@ -85,7 +85,27 @@ type JackettSettings struct {
 	URL              string `json:"url"`
 	APIKeyConfigured bool   `json:"apiKeyConfigured"`
 	// Currently configured Jackett API key. Returned in plaintext for the settings UI; never logged.
-	APIKey string `json:"apiKey"`
+	APIKey             string `json:"apiKey"`
+	PasswordConfigured bool   `json:"passwordConfigured"`
+	// Currently configured Jackett dashboard password. Returned in plaintext for the settings UI; never logged.
+	Password string `json:"password"`
+}
+
+type JackettStats struct {
+	// Total indexers reported by Jackett (configured + unconfigured).
+	IndexerCount int `json:"indexerCount"`
+	// Subset of indexerCount that are marked as configured in Jackett.
+	ConfiguredIndexerCount int `json:"configuredIndexerCount"`
+	// Worst indexer latency (ms) from the most recent /all/results search. 0 if no search has happened.
+	LastIndexerLatencyMs int `json:"lastIndexerLatencyMs"`
+	// First non-empty Error field from the most recent search, if any.
+	LastIndexerError *string `json:"lastIndexerError,omitempty"`
+	// Timestamp of the most recent /all/results search. Null if no search has happened yet.
+	LastIndexerSearchAt *string `json:"lastIndexerSearchAt,omitempty"`
+	// Most recent error message from any Jackett-side refresh. Null = OK.
+	LastError *string `json:"lastError,omitempty"`
+	// ISO 8601 timestamp of the most recent successful refresh.
+	OkAt string `json:"okAt"`
 }
 
 type LogEntry struct {
@@ -133,6 +153,23 @@ type QBittorrentSettings struct {
 	Tags            string `json:"tags"`
 }
 
+type QBittorrentStats struct {
+	// Global download rate in bytes/sec.
+	DownloadSpeed int `json:"downloadSpeed"`
+	// Global upload rate in bytes/sec.
+	UploadSpeed int `json:"uploadSpeed"`
+	// Count of torrents matching qBittorrent filter "active".
+	ActiveTorrentCount int `json:"activeTorrentCount"`
+	// qBittorrent connection status: connected | firewalled | disconnected.
+	ConnectionStatus string `json:"connectionStatus"`
+	// Whether qBittorrent's alternative speed limits are enabled.
+	AltSpeedLimitEnabled bool `json:"altSpeedLimitEnabled"`
+	// Most recent error message from any qBittorrent-side refresh. Null = OK.
+	LastError *string `json:"lastError,omitempty"`
+	// ISO 8601 timestamp of the most recent successful refresh.
+	OkAt string `json:"okAt"`
+}
+
 type Query struct {
 }
 
@@ -155,6 +192,12 @@ type SettingsStatus struct {
 	Qbittorrent  *ServiceStatus      `json:"qbittorrent"`
 	Automation   *AutomationStatus   `json:"automation"`
 	Subscription *SubscriptionStatus `json:"subscription"`
+	// Runtime stats for the Stash server. Refreshed by the stats collector.
+	StashStats *StashStats `json:"stashStats"`
+	// Runtime stats for the Jackett indexer aggregator. Refreshed by the stats collector.
+	JackettStats *JackettStats `json:"jackettStats"`
+	// Runtime stats for the qBittorrent download client. Refreshed by the stats collector.
+	QbittorrentStats *QBittorrentStats `json:"qbittorrentStats"`
 }
 
 type StashBoxEndpoint struct {
@@ -220,6 +263,20 @@ type StashSettings struct {
 	StashPathPrefix       string `json:"stashPathPrefix"`
 	TransferAction        string `json:"transferAction"`
 	TransferTargetPath    string `json:"transferTargetPath"`
+}
+
+// Per-service runtime stats. okAt is the timestamp of the most recent successful refresh; lastError is the message from the most recent failed refresh (if any). When lastError is non-null, other numeric fields still reflect the last known-good snapshot.
+type StashStats struct {
+	// Stash server version string, e.g. 0.27.2. Null if not yet fetched.
+	Version *string `json:"version,omitempty"`
+	// Total scenes in the Stash library. Null if not yet fetched or query failed.
+	SceneCount *int `json:"sceneCount,omitempty"`
+	// Number of Moji-owned tasks currently in RUNNING or READY stash-scan state.
+	PendingMojiScanCount int `json:"pendingMojiScanCount"`
+	// Most recent error message from any Stash-side refresh. Null = OK.
+	LastError *string `json:"lastError,omitempty"`
+	// ISO 8601 timestamp of the most recent successful refresh.
+	OkAt string `json:"okAt"`
 }
 
 type SubscribedPerformer struct {
@@ -297,6 +354,8 @@ type UpdateAutomationSettingsInput struct {
 type UpdateJackettSettingsInput struct {
 	URL    string  `json:"url"`
 	APIKey *string `json:"apiKey,omitempty"`
+	// Jackett dashboard password. Always sent by the UI and overwrites the stored value; pass an empty string to clear it.
+	Password string `json:"password"`
 }
 
 type UpdateQBittorrentSettingsInput struct {

@@ -94,3 +94,9 @@ query Configuration {
     }
   }
 }
+
+query FindSceneCount {
+  findScenes(filter: { per_page: 0 }) {
+    count
+  }
+}

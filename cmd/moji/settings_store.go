@@ -69,6 +69,7 @@ func (s *runtimeSettingsEditor) UpdateJackettSettings(input graphqlapi.UpdateJac
 	cfg, err := s.store.UpdateJackett(
 		strings.TrimSpace(input.URL),
 		strings.TrimSpace(input.APIKey),
+		strings.TrimSpace(input.Password),
 	)
 	if err != nil {
 		logging.Errorf("settings: save jackett settings failed: %v", err)

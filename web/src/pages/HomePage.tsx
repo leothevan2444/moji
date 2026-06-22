@@ -1,60 +1,41 @@
 import { TaskCard } from "../components/tasks";
-import { formatDateTime, isScanPending, isStatus, serviceStatus, type DashboardTask } from "../utils";
+import {
+  ServiceCard,
+  buildJackettConfig,
+  buildQBittorrentConfig,
+  buildStashConfig,
+  blockersFor
+} from "../components/home";
+import { isScanPending, isStatus, type DashboardTask } from "../utils";
+import { useDashboardRefresh } from "../hooks";
+import type { SettingsTab } from "../types";
 import type { DashboardDocumentQuery } from "../graphql/generated/graphql";
 
 type RuntimeSettings = NonNullable<DashboardDocumentQuery["settings"]>;
-type RuntimeSettingsStatus = NonNullable<DashboardDocumentQuery["settingsStatus"]>;
+type RuntimeStatus = NonNullable<DashboardDocumentQuery["settingsStatus"]>;
 
 interface HomePageProps {
   tasks: DashboardTask[];
   runtimeSettings: RuntimeSettings | null;
-  runtimeStatus: RuntimeSettingsStatus | null;
-  lastCheckedAt: string | null | undefined;
+  runtimeStatus: RuntimeStatus | null;
   pendingTaskScanId: string | null;
   onRefresh: () => void;
   onOpenTask: (taskId: string) => void;
   onScanTask: (taskId: string) => void;
+  onOpenSettings: (tab: SettingsTab) => void;
 }
 
 export function HomePage({
   tasks,
   runtimeSettings,
   runtimeStatus,
-  lastCheckedAt,
   pendingTaskScanId,
   onRefresh,
   onOpenTask,
-  onScanTask
+  onScanTask,
+  onOpenSettings
 }: HomePageProps) {
-  const dependencyCards = runtimeSettings && runtimeStatus
-    ? [
-        {
-          name: "Stash",
-          ...serviceStatus(runtimeStatus.stash.configured, runtimeStatus.stash.enabled),
-          detail: runtimeStatus.stash.enabled
-            ? `入库模式: ${runtimeSettings.stash.mode}`
-            : runtimeStatus.stash.configured
-              ? "配置已存在，但运行时尚未启用"
-              : "缺少 Stash URL 或入库策略"
-        },
-        {
-          name: "Jackett",
-          ...serviceStatus(runtimeStatus.jackett.configured, runtimeStatus.jackett.enabled),
-          detail: runtimeStatus.jackett.enabled
-            ? `索引地址: ${runtimeSettings.jackett.url || "未设置"}`
-            : "缺少 URL 或 API key"
-        },
-        {
-          name: "qBittorrent",
-          ...serviceStatus(runtimeStatus.qbittorrent.configured, runtimeStatus.qbittorrent.enabled),
-          detail: runtimeStatus.qbittorrent.enabled
-            ? `默认保存路径: ${runtimeSettings.qbittorrent.defaultSavePath || "未设置"}`
-            : runtimeStatus.qbittorrent.configured
-              ? "配置完整，但运行时未连接成功"
-              : "缺少 URL、用户名或密码"
-        }
-      ]
-    : [];
+  useDashboardRefresh(onRefresh, 30000);
 
   const todoTasks = tasks.filter((task) => isStatus(task, "failed") || isScanPending(task)).slice(0, 4);
   const hasTodos = tasks.some((task) => isStatus(task, "failed") || isScanPending(task));
@@ -70,25 +51,109 @@ export function HomePage({
         </div>
 
         <div className="card-grid card-grid--deps">
-          {dependencyCards.map((card) => (
-            <article key={card.name} className="service-card">
-              <div className="service-card__head">
-                <div>
-                  <h3>{card.name}</h3>
-                </div>
-                <span className={`status-chip ${card.tone}`}>
-                  {card.label}
-                </span>
-              </div>
-              <p className="service-card__detail">{card.detail}</p>
-              <div className="service-card__actions">
-                <span>上次检测: {formatDateTime(lastCheckedAt ?? null)}</span>
-                <button type="button" className="ghost-button" onClick={onRefresh}>
-                  重试
-                </button>
-              </div>
-            </article>
-          ))}
+          {runtimeSettings && runtimeStatus ? (
+            <>
+              <ServiceCard
+                service="stash"
+                title="Stash"
+                status={runtimeStatus.stash}
+                config={buildStashConfig(runtimeSettings)}
+                stats={runtimeStatus.stashStats}
+                okAt={runtimeStatus.stashStats?.okAt ?? null}
+                lastError={runtimeStatus.stashStats?.lastError ?? null}
+                blockers={
+                  !runtimeStatus.stash.configured
+                    ? blockersFor("stash")
+                    : undefined
+                }
+                diagnostics={
+                  !runtimeStatus.stash.configured
+                    ? "Stash 必须先配置，否则入库与订阅流程无法展开。"
+                    : !runtimeStatus.stash.enabled
+                      ? "已填写连接信息，但运行时尚未启用。"
+                      : undefined
+                }
+                cta={
+                  !runtimeStatus.stash.configured
+                    ? { kind: "open-settings", label: "去配置", tab: "入库" }
+                    : !runtimeStatus.stash.enabled
+                      ? { kind: "open-settings", label: "去启用", tab: "入库" }
+                      : null
+                }
+                onOpenSettings={onOpenSettings}
+              />
+              <ServiceCard
+                service="jackett"
+                title="Jackett"
+                status={runtimeStatus.jackett}
+                config={buildJackettConfig(runtimeSettings)}
+                stats={{
+                  ...(runtimeStatus.jackettStats ?? {
+                    indexerCount: 0,
+                    configuredIndexerCount: 0,
+                    lastIndexerLatencyMs: 0,
+                    okAt: new Date(0).toISOString()
+                  }),
+                  hasIndexerSearch: true
+                }}
+                okAt={runtimeStatus.jackettStats?.okAt ?? null}
+                lastError={runtimeStatus.jackettStats?.lastError ?? null}
+                blockers={
+                  !runtimeStatus.jackett.configured
+                    ? blockersFor("jackett")
+                    : undefined
+                }
+                diagnostics={
+                  !runtimeStatus.jackett.configured
+                    ? "Jackett 必须先配置，否则任务搜索与订阅没有上游数据。"
+                    : !runtimeStatus.jackett.enabled
+                      ? "已填写连接信息，但运行时尚未启用。"
+                      : undefined
+                }
+                cta={
+                  !runtimeStatus.jackett.configured
+                    ? { kind: "open-settings", label: "去配置", tab: "连接" }
+                    : !runtimeStatus.jackett.enabled
+                      ? { kind: "open-settings", label: "去启用", tab: "连接" }
+                      : null
+                }
+                onOpenSettings={onOpenSettings}
+              />
+              <ServiceCard
+                service="qbittorrent"
+                title="qBittorrent"
+                status={runtimeStatus.qbittorrent}
+                config={buildQBittorrentConfig(runtimeSettings)}
+                stats={
+                  runtimeStatus.qbittorrentStats
+                    ? { ...runtimeStatus.qbittorrentStats, hasIndexerSearch: false as const }
+                    : null
+                }
+                okAt={runtimeStatus.qbittorrentStats?.okAt ?? null}
+                lastError={runtimeStatus.qbittorrentStats?.lastError ?? null}
+                blockers={
+                  !runtimeStatus.qbittorrent.configured
+                    ? blockersFor("qbittorrent")
+                    : undefined
+                }
+                diagnostics={
+                  !runtimeStatus.qbittorrent.configured
+                    ? "qBittorrent 必须先配置，否则下载与落地流程无法展开。"
+                    : !runtimeStatus.qbittorrent.enabled
+                      ? "已填写连接信息，但运行时尚未连接。"
+                      : undefined
+                }
+                cta={
+                  !runtimeStatus.qbittorrent.configured
+                    ? { kind: "open-settings", label: "去配置", tab: "连接" }
+                    : !runtimeStatus.qbittorrent.enabled
+                      ? { kind: "open-settings", label: "去启用", tab: "连接" }
+                      : null
+                }
+                onOpenSettings={onOpenSettings}
+              />
+            </>
+          ) : null}
         </div>
       </section>
 

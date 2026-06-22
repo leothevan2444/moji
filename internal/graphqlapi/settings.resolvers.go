@@ -10,6 +10,7 @@ import (
 	"strings"
 
 	"github.com/leothevan2444/moji/internal/graphqlapi/model"
+	"github.com/leothevan2444/moji/internal/stats"
 )
 
 // UpdateStashSettings is the resolver for the updateStashSettings field.
@@ -44,8 +45,9 @@ func (r *mutationResolver) UpdateJackettSettings(ctx context.Context, input mode
 	}
 
 	snapshot, err := r.SettingsEditor.UpdateJackettSettings(UpdateJackettSettingsInput{
-		URL:    input.URL,
-		APIKey: strings.TrimSpace(derefString(input.APIKey)),
+		URL:      input.URL,
+		APIKey:   strings.TrimSpace(derefString(input.APIKey)),
+		Password: strings.TrimSpace(input.Password),
 	})
 	if err != nil {
 		return nil, err
@@ -139,9 +141,18 @@ func (r *queryResolver) Settings(ctx context.Context) (*model.Settings, error) {
 
 // SettingsStatus is the resolver for the settingsStatus field.
 func (r *queryResolver) SettingsStatus(ctx context.Context) (*model.SettingsStatus, error) {
+	var snap *SettingsStatusSnapshot
 	if r.SettingsEditor != nil {
-		return settingsStatusSnapshotToModel(r.SettingsEditor.StatusSnapshot()), nil
+		snap = r.SettingsEditor.StatusSnapshot()
+	} else {
+		snap = r.RuntimeStatus
 	}
 
-	return settingsStatusSnapshotToModel(r.RuntimeStatus), nil
+	var statsSnap *stats.Snapshot
+	if r.Stats != nil {
+		s := r.Stats.SnapshotView()
+		statsSnap = &s
+	}
+
+	return SettingsStatusWithStats(snap, statsSnap), nil
 }

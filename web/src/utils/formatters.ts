@@ -8,6 +8,15 @@ export function formatBytes(size: number) {
   return `${value.toFixed(index === 0 ? 0 : 1)} ${units[index]}`;
 }
 
+/**
+ * Format a transfer rate in bytes/second as a human-readable string with a
+ * trailing `/s`. Negative or NaN inputs collapse to "0 B/s".
+ */
+export function formatBytesRate(bytesPerSec: number) {
+  if (!Number.isFinite(bytesPerSec) || bytesPerSec <= 0) return "0 B/s";
+  return `${formatBytes(bytesPerSec)}/s`;
+}
+
 export function formatDateTime(value?: string | null) {
   if (!value) return "—";
   const date = new Date(value);
@@ -36,4 +45,26 @@ export function formatRelativeDate(value?: string | null) {
     month: "short",
     day: "numeric"
   }).format(date);
+}
+
+/**
+ * Format an ISO timestamp as a short relative string (e.g. "刚刚", "5s 前",
+ * "2m 前", "1h 前", "3d 前"). Returns null when the input is missing or
+ * unparseable so callers can decide how to render the absence.
+ */
+export function formatRelative(iso?: string | null): string | null {
+  if (!iso) return null;
+  const then = new Date(iso).getTime();
+  if (Number.isNaN(then)) return null;
+  const diffMs = Date.now() - then;
+  if (diffMs < 0) return "刚刚";
+  const sec = Math.floor(diffMs / 1000);
+  if (sec < 10) return "刚刚";
+  if (sec < 60) return `${sec}s 前`;
+  const min = Math.floor(sec / 60);
+  if (min < 60) return `${min}m 前`;
+  const hr = Math.floor(min / 60);
+  if (hr < 24) return `${hr}h 前`;
+  const day = Math.floor(hr / 24);
+  return `${day}d 前`;
 }

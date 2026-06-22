@@ -1,6 +1,11 @@
 package graphqlapi
 
-import "github.com/leothevan2444/moji/internal/graphqlapi/model"
+import (
+	"time"
+
+	"github.com/leothevan2444/moji/internal/graphqlapi/model"
+	"github.com/leothevan2444/moji/internal/stats"
+)
 
 func subscriptionStashBoxesToModel(items []StashBoxEndpointSnapshot) []*model.StashBoxEndpoint {
 	if len(items) == 0 {
@@ -51,11 +56,13 @@ func settingsSnapshotToModel(snapshot *SettingsSnapshot, appVersion string) *mod
 			TransferTargetPath:    snapshot.Stash.TransferTargetPath,
 		},
 		Jackett: &model.JackettSettings{
-			Configured:       snapshot.Jackett.Configured,
-			Enabled:          snapshot.Jackett.Enabled,
-			URL:              snapshot.Jackett.URL,
-			APIKeyConfigured: snapshot.Jackett.APIKeyConfigured,
-			APIKey:           snapshot.Jackett.APIKey,
+			Configured:         snapshot.Jackett.Configured,
+			Enabled:            snapshot.Jackett.Enabled,
+			URL:                snapshot.Jackett.URL,
+			APIKeyConfigured:   snapshot.Jackett.APIKeyConfigured,
+			APIKey:             snapshot.Jackett.APIKey,
+			PasswordConfigured: snapshot.Jackett.PasswordConfigured,
+			Password:           snapshot.Jackett.Password,
 		},
 		Qbittorrent: &model.QBittorrentSettings{
 			Configured:         snapshot.QBittorrent.Configured,
@@ -87,6 +94,9 @@ func settingsStatusSnapshotToModel(snapshot *SettingsStatusSnapshot) *model.Sett
 			Qbittorrent:  &model.ServiceStatus{},
 			Automation:   &model.AutomationStatus{},
 			Subscription: &model.SubscriptionStatus{},
+			StashStats:     emptyStashStatsModel(),
+			JackettStats:   emptyJackettStatsModel(),
+			QbittorrentStats: emptyQBittorrentStatsModel(),
 		}
 	}
 
@@ -114,5 +124,111 @@ func settingsStatusSnapshotToModel(snapshot *SettingsStatusSnapshot) *model.Sett
 			StashBoxesLoaded:    snapshot.Subscription.StashBoxesLoaded,
 			StashBoxesLoadError: subscriptionLoadErrorPtr(snapshot.Subscription.StashBoxesLoadError),
 		},
+		StashStats:     emptyStashStatsModel(),
+		JackettStats:   emptyJackettStatsModel(),
+		QbittorrentStats: emptyQBittorrentStatsModel(),
 	}
+}
+
+// SettingsStatusWithStats is settingsStatusSnapshotToModel combined with the
+// optional runtime-stats snapshot from the stats collector. When stats is nil
+// (collector not wired, e.g. in tests), the stats fields are returned as
+// zero-value placeholders so the GraphQL response remains valid.
+func SettingsStatusWithStats(snapshot *SettingsStatusSnapshot, stats *stats.Snapshot) *model.SettingsStatus {
+	out := settingsStatusSnapshotToModel(snapshot)
+	if stats == nil {
+		return out
+	}
+	out.StashStats = stashStatsToModel(stats.Stash)
+	out.JackettStats = jackettStatsToModel(stats.Jackett)
+	out.QbittorrentStats = qBittorrentStatsToModel(stats.QBitt)
+	return out
+}
+
+func emptyStashStatsModel() *model.StashStats {
+	return &model.StashStats{
+		PendingMojiScanCount: 0,
+		OkAt:                 time.Time{}.UTC().Format(time.RFC3339),
+	}
+}
+
+func emptyJackettStatsModel() *model.JackettStats {
+	return &model.JackettStats{
+		IndexerCount:           0,
+		ConfiguredIndexerCount: 0,
+		LastIndexerLatencyMs:   0,
+		OkAt:                   time.Time{}.UTC().Format(time.RFC3339),
+	}
+}
+
+func emptyQBittorrentStatsModel() *model.QBittorrentStats {
+	return &model.QBittorrentStats{
+		DownloadSpeed:      0,
+		UploadSpeed:        0,
+		ActiveTorrentCount: 0,
+		ConnectionStatus:   "unknown",
+		OkAt:               time.Time{}.UTC().Format(time.RFC3339),
+	}
+}
+
+func stashStatsToModel(s stats.StashStats) *model.StashStats {
+	out := &model.StashStats{
+		PendingMojiScanCount: s.PendingMojiScanCount,
+		OkAt:                 s.OKAt.UTC().Format(time.RFC3339),
+	}
+	if s.Version != "" {
+		v := s.Version
+		out.Version = &v
+	}
+	if s.SceneCount != nil {
+		n := *s.SceneCount
+		out.SceneCount = &n
+	}
+	if s.LastError != "" {
+		e := s.LastError
+		out.LastError = &e
+	}
+	return out
+}
+
+func jackettStatsToModel(s stats.JackettStats) *model.JackettStats {
+	out := &model.JackettStats{
+		IndexerCount:           s.IndexerCount,
+		ConfiguredIndexerCount: s.ConfiguredIndexerCount,
+		LastIndexerLatencyMs:   s.LastIndexerLatencyMs,
+		OkAt:                   s.OKAt.UTC().Format(time.RFC3339),
+	}
+	if s.LastIndexerError != "" {
+		e := s.LastIndexerError
+		out.LastIndexerError = &e
+	}
+	if s.LastIndexerSearchAt != nil {
+		t := s.LastIndexerSearchAt.UTC().Format(time.RFC3339)
+		out.LastIndexerSearchAt = &t
+	}
+	if s.LastError != "" {
+		e := s.LastError
+		out.LastError = &e
+	}
+	return out
+}
+
+func qBittorrentStatsToModel(s stats.QBittorrentStats) *model.QBittorrentStats {
+	conn := s.ConnectionStatus
+	if conn == "" {
+		conn = "unknown"
+	}
+	out := &model.QBittorrentStats{
+		DownloadSpeed:        int(s.DownloadSpeed),
+		UploadSpeed:          int(s.UploadSpeed),
+		ActiveTorrentCount:   s.ActiveTorrentCount,
+		ConnectionStatus:     conn,
+		AltSpeedLimitEnabled: s.AltSpeedLimitEnabled,
+		OkAt:                 s.OKAt.UTC().Format(time.RFC3339),
+	}
+	if s.LastError != "" {
+		e := s.LastError
+		out.LastError = &e
+	}
+	return out
 }

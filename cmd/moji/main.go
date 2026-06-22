@@ -22,9 +22,9 @@ import (
 	"github.com/leothevan2444/moji/internal/graphqlapi/generated"
 	"github.com/leothevan2444/moji/internal/logging"
 	"github.com/leothevan2444/moji/internal/stashsync"
+	"github.com/leothevan2444/moji/internal/stats"
 	"github.com/leothevan2444/moji/internal/subscription"
 	"github.com/leothevan2444/moji/internal/tracker"
-	"github.com/leothevan2444/moji/internal/stats"
 	"github.com/leothevan2444/moji/internal/webui"
 	"github.com/leothevan2444/moji/pkg/jackett"
 	"github.com/leothevan2444/moji/pkg/qbittorrent"
@@ -280,11 +280,13 @@ func buildSettingsSnapshot(cfg *config.Config, version string, qbittorrentEnable
 			TransferTargetPath:    cfg.Stash.TransferTargetPath,
 		},
 		Jackett: graphqlapi.JackettSettingsSnapshot{
-			Configured:       jackettConfigured,
-			Enabled:          jackettConfigured,
-			URL:              cfg.Jackett.URL,
-			APIKeyConfigured: cfg.Jackett.APIKey != "",
-			APIKey:           cfg.Jackett.APIKey,
+			Configured:         jackettConfigured,
+			Enabled:            jackettConfigured,
+			URL:                cfg.Jackett.URL,
+			APIKeyConfigured:   cfg.Jackett.APIKey != "",
+			APIKey:             cfg.Jackett.APIKey,
+			PasswordConfigured: cfg.Jackett.Password != "",
+			Password:           cfg.Jackett.Password,
 		},
 		QBittorrent: graphqlapi.QBittorrentSettingsSnapshot{
 			Configured:         qbittorrentConfigured,

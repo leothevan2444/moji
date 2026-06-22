@@ -10,6 +10,7 @@ import (
 	"github.com/leothevan2444/moji/internal/downloader"
 	"github.com/leothevan2444/moji/internal/logging"
 	"github.com/leothevan2444/moji/internal/stashsync"
+	"github.com/leothevan2444/moji/internal/stats"
 	"github.com/leothevan2444/moji/internal/subscription"
 	"github.com/leothevan2444/moji/internal/tracker"
 	"github.com/leothevan2444/moji/pkg/qbittorrent"
@@ -58,8 +59,9 @@ type UpdateStashSettingsInput struct {
 }
 
 type UpdateJackettSettingsInput struct {
-	URL    string
-	APIKey string
+	URL      string
+	APIKey   string
+	Password string
 }
 
 type UpdateQBittorrentSettingsInput struct {
@@ -103,11 +105,13 @@ type StashSettingsSnapshot struct {
 }
 
 type JackettSettingsSnapshot struct {
-	Configured       bool
-	Enabled          bool
-	URL              string
-	APIKeyConfigured bool
-	APIKey           string
+	Configured         bool
+	Enabled            bool
+	URL                string
+	APIKeyConfigured   bool
+	APIKey             string
+	PasswordConfigured bool
+	Password           string
 }
 
 type QBittorrentSettingsSnapshot struct {
@@ -174,6 +178,10 @@ type StashPerformerPage struct {
 	HasNextPage bool
 }
 
+type StatsProvider interface {
+	SnapshotView() stats.Snapshot
+}
+
 type SubscriptionService interface {
 	ListStashPerformers(ctx context.Context, search string) ([]subscription.Performer, error)
 	ListSubscribedPerformers(ctx context.Context) ([]subscription.SubscribedPerformer, error)
@@ -199,6 +207,7 @@ type Resolver struct {
 	SettingsEditor  SettingsEditor
 	RuntimeSettings *SettingsSnapshot
 	RuntimeStatus   *SettingsStatusSnapshot
+	Stats           StatsProvider
 	AppVersion      string
 }
 

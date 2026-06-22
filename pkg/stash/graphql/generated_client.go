@@ -18,6 +18,7 @@ type StashGraphQLClient interface {
 	MetadataScan(ctx context.Context, input ScanMetadataInput, interceptors ...clientv2.RequestInterceptor) (*MetadataScan, error)
 	FindJob(ctx context.Context, input FindJobInput, interceptors ...clientv2.RequestInterceptor) (*FindJob, error)
 	Configuration(ctx context.Context, interceptors ...clientv2.RequestInterceptor) (*Configuration, error)
+	FindSceneCount(ctx context.Context, interceptors ...clientv2.RequestInterceptor) (*FindSceneCount, error)
 }
 
 type Client struct {
@@ -333,6 +334,17 @@ func (t *Configuration_Configuration) GetGeneral() *Configuration_Configuration_
 	return &t.General
 }
 
+type FindSceneCount_FindScenes struct {
+	Count int "json:\"count\" graphql:\"count\""
+}
+
+func (t *FindSceneCount_FindScenes) GetCount() int {
+	if t == nil {
+		t = &FindSceneCount_FindScenes{}
+	}
+	return t.Count
+}
+
 type FindPerformerByID struct {
 	FindPerformer *PerformerFragment "json:\"findPerformer,omitempty\" graphql:\"findPerformer\""
 }
@@ -419,6 +431,17 @@ func (t *Configuration) GetConfiguration() *Configuration_Configuration {
 		t = &Configuration{}
 	}
 	return &t.Configuration
+}
+
+type FindSceneCount struct {
+	FindScenes FindSceneCount_FindScenes "json:\"findScenes\" graphql:\"findScenes\""
+}
+
+func (t *FindSceneCount) GetFindScenes() *FindSceneCount_FindScenes {
+	if t == nil {
+		t = &FindSceneCount{}
+	}
+	return &t.FindScenes
 }
 
 const FindPerformerByIDDocument = `query FindPerformerByID ($id: ID!) {
@@ -731,6 +754,28 @@ func (c *Client) Configuration(ctx context.Context, interceptors ...clientv2.Req
 	return &res, nil
 }
 
+const FindSceneCountDocument = `query FindSceneCount {
+	findScenes(filter: {per_page:0}) {
+		count
+	}
+}
+`
+
+func (c *Client) FindSceneCount(ctx context.Context, interceptors ...clientv2.RequestInterceptor) (*FindSceneCount, error) {
+	vars := map[string]any{}
+
+	var res FindSceneCount
+	if err := c.Client.Post(ctx, "FindSceneCount", FindSceneCountDocument, &res, vars, interceptors...); err != nil {
+		if c.Client.ParseDataWhenErrors {
+			return &res, err
+		}
+
+		return nil, err
+	}
+
+	return &res, nil
+}
+
 var DocumentOperationNames = map[string]string{
 	FindPerformerByIDDocument:           "FindPerformerByID",
 	FindPerformersDocument:              "FindPerformers",
@@ -740,4 +785,5 @@ var DocumentOperationNames = map[string]string{
 	MetadataScanDocument:                "MetadataScan",
 	FindJobDocument:                     "FindJob",
 	ConfigurationDocument:               "Configuration",
+	FindSceneCountDocument:              "FindSceneCount",
 }

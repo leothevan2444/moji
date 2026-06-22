@@ -9,7 +9,46 @@ import (
 	"net/http/cookiejar"
 	"net/url"
 	"strings"
+	"sync"
 )
+
+// IndexerStatus captures the per-indexer response Jackett returns alongside a
+// search. We expose this so the stats collector can surface indexer latency
+// and per-indexer errors without re-issuing a search request.
+type IndexerStatus struct {
+	ID          string
+	Name        string
+	Status      int
+	Results     int
+	Error       string
+	ElapsedTime int // milliseconds
+}
+
+// IndexerStatusHook is an optional global callback fired once per Search call.
+// The stats collector registers this during startup; production code that does
+// not care about indexer telemetry leaves it nil.
+var (
+	indexerStatusMu sync.RWMutex
+	indexerStatusFn func(statuses []IndexerStatus, query string)
+)
+
+// SetIndexerStatusHook installs (or clears with nil) the global callback fired
+// by SearchWithIndexerStatus. Only one hook is supported; the most recent call
+// wins.
+func SetIndexerStatusHook(fn func(statuses []IndexerStatus, query string)) {
+	indexerStatusMu.Lock()
+	defer indexerStatusMu.Unlock()
+	indexerStatusFn = fn
+}
+
+func fireIndexerStatusHook(statuses []IndexerStatus, query string) {
+	indexerStatusMu.RLock()
+	fn := indexerStatusFn
+	indexerStatusMu.RUnlock()
+	if fn != nil {
+		fn(statuses, query)
+	}
+}
 
 type Client struct {
 	baseURL  string
@@ -125,10 +164,36 @@ type SearchResult struct {
 	Gain                 float64  `json:"Gain"`
 }
 
+// SearchResultEnvelope is the parsed shape of a Jackett search response.
+// Returning the raw Indexers array alongside the Results lets callers expose
+// per-indexer latency and errors to the stats collector without a second HTTP
+// call.
+type SearchResultEnvelope struct {
+	Results  []SearchResult
+	Indexers []IndexerStatus
+}
+
 func (c *Client) Search(req SearchRequest) ([]SearchResult, error) {
+	results, _, err := c.searchInternal(req)
+	return results, err
+}
+
+// SearchWithIndexerStatus behaves like Search but also returns the
+// per-indexer status slice (latency + per-indexer error). It also fires the
+// global indexer-status hook if one is registered, so the stats collector can
+// surface indexer telemetry even when callers only care about Results.
+func (c *Client) SearchWithIndexerStatus(req SearchRequest) ([]SearchResult, []IndexerStatus, error) {
+	results, indexers, err := c.searchInternal(req)
+	if err == nil {
+		fireIndexerStatusHook(indexers, req.Query)
+	}
+	return results, indexers, err
+}
+
+func (c *Client) searchInternal(req SearchRequest) ([]SearchResult, []IndexerStatus, error) {
 	u, err := url.Parse(fmt.Sprintf("%s/api/v2.0/indexers/all/results", c.baseURL))
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	q := u.Query()
@@ -151,13 +216,13 @@ func (c *Client) Search(req SearchRequest) ([]SearchResult, error) {
 
 	resp, err := c.httpClient.Get(u.String())
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
 		body, _ := io.ReadAll(resp.Body)
-		return nil, fmt.Errorf("jackett API error: %s, body: %s", resp.Status, string(body))
+		return nil, nil, fmt.Errorf("jackett API error: %s, body: %s", resp.Status, string(body))
 	}
 
 	var searchResults struct {
@@ -172,9 +237,21 @@ func (c *Client) Search(req SearchRequest) ([]SearchResult, error) {
 		} `json:"Indexers"`
 	}
 	if err := json.NewDecoder(resp.Body).Decode(&searchResults); err != nil {
-		return nil, fmt.Errorf("failed to decode JSON response: %w", err)
+		return nil, nil, fmt.Errorf("failed to decode JSON response: %w", err)
 	}
-	return searchResults.Results, nil
+
+	indexers := make([]IndexerStatus, len(searchResults.Indexers))
+	for i, in := range searchResults.Indexers {
+		indexers[i] = IndexerStatus{
+			ID:          in.ID,
+			Name:        in.Name,
+			Status:      in.Status,
+			Results:     in.Results,
+			Error:       in.Error,
+			ElapsedTime: in.ElapsedTime,
+		}
+	}
+	return searchResults.Results, indexers, nil
 }
 
 type Indexer struct {

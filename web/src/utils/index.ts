@@ -1,4 +1,4 @@
-export { formatBytes, formatDateTime, formatLogEntries, formatRelativeDate } from "./formatters";
+export { formatBytes, formatBytesRate, formatDateTime, formatLogEntries, formatRelative, formatRelativeDate } from "./formatters";
 export {
   normalizeStatus,
   isStatus,

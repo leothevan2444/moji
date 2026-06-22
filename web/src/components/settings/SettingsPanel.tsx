@@ -74,9 +74,10 @@ export function SettingsPanel({
   const [downloadingLogFile, setDownloadingLogFile] = useState(false);
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
-  const [visibleSecrets, setVisibleSecrets] = useState<{ stashApiKey: boolean; jackettApiKey: boolean; qbittorrentPassword: boolean }>({
+  const [visibleSecrets, setVisibleSecrets] = useState<{ stashApiKey: boolean; jackettApiKey: boolean; jackettPassword: boolean; qbittorrentPassword: boolean }>({
     stashApiKey: false,
     jackettApiKey: false,
+    jackettPassword: false,
     qbittorrentPassword: false
   });
   const [stashForm, setStashForm] = useState(EMPTY_STASH_FORM);
@@ -85,7 +86,7 @@ export function SettingsPanel({
   const [automationForm, setAutomationForm] = useState(EMPTY_AUTOMATION_FORM);
   const [subscriptionForm, setSubscriptionForm] = useState(EMPTY_SUBSCRIPTION_FORM);
 
-  const toggleSecret = (key: "stashApiKey" | "jackettApiKey" | "qbittorrentPassword") => {
+  const toggleSecret = (key: "stashApiKey" | "jackettApiKey" | "jackettPassword" | "qbittorrentPassword") => {
     setVisibleSecrets((current) => ({ ...current, [key]: !current[key] }));
   };
 
@@ -140,7 +141,8 @@ export function SettingsPanel({
     });
     setJackettForm({
       url: runtimeSettings.jackett.url || "",
-      apiKey: runtimeSettings.jackett.apiKey ?? ""
+      apiKey: runtimeSettings.jackett.apiKey ?? "",
+      password: runtimeSettings.jackett.password ?? ""
     });
     setQBittorrentForm({
       url: runtimeSettings.qbittorrent.url || "",
@@ -197,7 +199,8 @@ export function SettingsPanel({
     const result = await updateJackettSettings({
       input: {
         url: jackettForm.url.trim(),
-        apiKey: jackettForm.apiKey.trim()
+        apiKey: jackettForm.apiKey.trim(),
+        password: jackettForm.password.trim()
       }
     });
     if (result.error) {
@@ -205,6 +208,9 @@ export function SettingsPanel({
       return;
     }
     pushToast("tone-success", "Jackett 设置已保存。");
+    // Mirror qBittorrent's pattern: clear the password field after a
+    // successful save so the plaintext doesn't linger in component state.
+    setJackettForm((current) => ({ ...current, password: "" }));
     await refreshDashboard({ requestPolicy: "network-only" });
   };
 
@@ -381,6 +387,25 @@ export function SettingsPanel({
               />
               <button type="button" className="secret-input__toggle" onClick={() => toggleSecret("jackettApiKey")}>
                 <FontAwesomeIcon icon={visibleSecrets.jackettApiKey ? faEyeSlash : faEye} aria-hidden="true" />
+              </button>
+            </div>
+          </label>
+          <label className="settings-field">
+            <span>
+              Dashboard 密码
+            </span>
+            <div className="secret-input">
+              <input
+                className="secret-input__field"
+                type={visibleSecrets.jackettPassword ? "text" : "password"}
+                value={jackettForm.password}
+                onChange={(event) => setJackettForm((current) => ({ ...current, password: event.target.value }))}
+                placeholder="Jackett 管理界面登录密码"
+                autoComplete="off"
+                spellCheck={false}
+              />
+              <button type="button" className="secret-input__toggle" onClick={() => toggleSecret("jackettPassword")}>
+                <FontAwesomeIcon icon={visibleSecrets.jackettPassword ? faEyeSlash : faEye} aria-hidden="true" />
               </button>
             </div>
           </label>

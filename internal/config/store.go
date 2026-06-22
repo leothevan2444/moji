@@ -82,12 +82,13 @@ func (s *Store) UpdateStash(url, apiKey, mode, libraryPath, qbittorrentPathPrefi
 	return &clone, nil
 }
 
-func (s *Store) UpdateJackett(url, apiKey string) (*Config, error) {
+func (s *Store) UpdateJackett(url, apiKey, password string) (*Config, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
 	s.cfg.Jackett.URL = url
 	s.cfg.Jackett.APIKey = apiKey
+	s.cfg.Jackett.Password = password
 
 	if err := s.updateConfigNode(); err != nil {
 		return nil, err
@@ -154,8 +155,9 @@ func (s *Store) updateConfigNode() error {
 	top := ensureMapValue(doc)
 
 	setMapString(top, "jackett", map[string]string{
-		"url":     s.cfg.Jackett.URL,
-		"api_key": s.cfg.Jackett.APIKey,
+		"url":      s.cfg.Jackett.URL,
+		"api_key":  s.cfg.Jackett.APIKey,
+		"password": s.cfg.Jackett.Password,
 	})
 	setMapString(top, "stash", map[string]string{
 		"url":                     s.cfg.Stash.URL,

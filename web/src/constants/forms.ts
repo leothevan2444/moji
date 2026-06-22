@@ -11,7 +11,8 @@ export const EMPTY_STASH_FORM = {
 
 export const EMPTY_JACKETT_FORM = {
   url: "",
-  apiKey: ""
+  apiKey: "",
+  password: ""
 };
 
 export const EMPTY_QBITTORRENT_FORM = {

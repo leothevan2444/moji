@@ -40,6 +40,79 @@ type SettingsStatus {
   qbittorrent: ServiceStatus!
   automation: AutomationStatus!
   subscription: SubscriptionStatus!
+
+  "Runtime stats for the Stash server. Refreshed by the stats collector."
+  stashStats: StashStats!
+
+  "Runtime stats for the Jackett indexer aggregator. Refreshed by the stats collector."
+  jackettStats: JackettStats!
+
+  "Runtime stats for the qBittorrent download client. Refreshed by the stats collector."
+  qbittorrentStats: QBittorrentStats!
+}
+
+"Per-service runtime stats. okAt is the timestamp of the most recent successful refresh; lastError is the message from the most recent failed refresh (if any). When lastError is non-null, other numeric fields still reflect the last known-good snapshot."
+type StashStats {
+  "Stash server version string, e.g. 0.27.2. Null if not yet fetched."
+  version: String
+
+  "Total scenes in the Stash library. Null if not yet fetched or query failed."
+  sceneCount: Int
+
+  "Number of Moji-owned tasks currently in RUNNING or READY stash-scan state."
+  pendingMojiScanCount: Int!
+
+  "Most recent error message from any Stash-side refresh. Null = OK."
+  lastError: String
+
+  "ISO 8601 timestamp of the most recent successful refresh."
+  okAt: String!
+}
+
+type JackettStats {
+  "Total indexers reported by Jackett (configured + unconfigured)."
+  indexerCount: Int!
+
+  "Subset of indexerCount that are marked as configured in Jackett."
+  configuredIndexerCount: Int!
+
+  "Worst indexer latency (ms) from the most recent /all/results search. 0 if no search has happened."
+  lastIndexerLatencyMs: Int!
+
+  "First non-empty Error field from the most recent search, if any."
+  lastIndexerError: String
+
+  "Timestamp of the most recent /all/results search. Null if no search has happened yet."
+  lastIndexerSearchAt: String
+
+  "Most recent error message from any Jackett-side refresh. Null = OK."
+  lastError: String
+
+  "ISO 8601 timestamp of the most recent successful refresh."
+  okAt: String!
+}
+
+type QBittorrentStats {
+  "Global download rate in bytes/sec."
+  downloadSpeed: Int!
+
+  "Global upload rate in bytes/sec."
+  uploadSpeed: Int!
+
+  "Count of torrents matching qBittorrent filter \"active\"."
+  activeTorrentCount: Int!
+
+  "qBittorrent connection status: connected | firewalled | disconnected."
+  connectionStatus: String!
+
+  "Whether qBittorrent's alternative speed limits are enabled."
+  altSpeedLimitEnabled: Boolean!
+
+  "Most recent error message from any qBittorrent-side refresh. Null = OK."
+  lastError: String
+
+  "ISO 8601 timestamp of the most recent successful refresh."
+  okAt: String!
 }
 
 type StashSettings {
@@ -64,6 +137,9 @@ type JackettSettings {
   apiKeyConfigured: Boolean!
   "Currently configured Jackett API key. Returned in plaintext for the settings UI; never logged."
   apiKey: String!
+  passwordConfigured: Boolean!
+  "Currently configured Jackett dashboard password. Returned in plaintext for the settings UI; never logged."
+  password: String!
 }
 
 type QBittorrentSettings {
@@ -131,6 +207,8 @@ input UpdateStashSettingsInput {
 input UpdateJackettSettingsInput {
   url: String!
   apiKey: String
+  "Jackett dashboard password. Always sent by the UI and overwrites the stored value; pass an empty string to clear it."
+  password: String!
 }
 
 input UpdateQBittorrentSettingsInput {

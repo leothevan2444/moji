@@ -1,4 +1,4 @@
-import { FormEvent, useDeferredValue, useEffect, useState } from "react";
+import { FormEvent, useCallback, useDeferredValue, useEffect, useState } from "react";
 import { HELP_TOPICS, type HelpTopicId } from "./help";
 import { describeQueryError } from "./services/queryError";
 import {
@@ -28,6 +28,10 @@ function App() {
   const [tab, setTab] = useState<TabKey>("主页");
   const [drawer, setDrawer] = useState<DrawerKey>(null);
   const [settingsTab, setSettingsTab] = useState<SettingsTab>("连接");
+  const openSettings = useCallback((tab: SettingsTab) => {
+    setSettingsTab(tab);
+    setDrawer("settings");
+  }, []);
   const [helpTopicId, setHelpTopicId] = useState<HelpTopicId>(HELP_TOPICS[0].id);
 
   // Tasks page state
@@ -281,11 +285,11 @@ function App() {
             tasks={tasks}
             runtimeSettings={runtimeSettings}
             runtimeStatus={runtimeStatus}
-            lastCheckedAt={data?.tasks[0]?.updatedAt ?? null}
             pendingTaskScanId={pendingTaskScanId}
             onRefresh={() => refreshDashboard({ requestPolicy: "network-only" })}
             onOpenTask={openTaskDetail}
             onScanTask={(id) => void runTaskScan(id)}
+            onOpenSettings={openSettings}
           />
         ) : null}
 

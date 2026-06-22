@@ -83,6 +83,20 @@ func (c *Client) GetVersion(ctx context.Context) (*graphql.GetVersion_Version, e
 	return &resp.Version, nil
 }
 
+// GetSceneCount returns the total number of scenes in the Stash library.
+// It is used by the stats collector for the home-page service card.
+func (c *Client) GetSceneCount(ctx context.Context) (int, error) {
+	resp, err := c.graphql.FindSceneCount(ctx)
+	if err != nil {
+		return 0, err
+	}
+	inner := resp.GetFindScenes()
+	if inner == nil {
+		return 0, nil
+	}
+	return inner.GetCount(), nil
+}
+
 // StashBoxEndpoint describes a Stash-Box instance configured in the Stash server.
 type StashBoxEndpoint struct {
 	Name                 string

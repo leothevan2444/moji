@@ -1,5 +1,6 @@
 :root {
   --font-stack: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, "JetBrains Mono", Menlo, Consolas, monospace;
   font-family: var(--font-stack);
   font-synthesis: none;
   text-rendering: optimizeLegibility;
@@ -2534,4 +2535,139 @@ button.profile-icon:disabled {
   .theme-menu__panel {
     right: -6px;
   }
+}
+
+/* ── ServiceCard (主页外部服务) ───────────────────────────────────── */
+.service-card--detailed {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  height: 350px;
+  overflow: auto;
+}
+
+.service-card__meta {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 4px 12px;
+  margin: 0;
+  padding: 0;
+  font-size: 12px;
+}
+
+.service-card__meta-row {
+  display: contents;
+}
+
+.service-card__meta dt {
+  color: var(--muted);
+  font-weight: 500;
+}
+
+.service-card__meta dd {
+  margin: 0;
+  font-family: var(--font-mono);
+  word-break: break-all;
+  color: var(--text);
+}
+
+.service-card__stats {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 12px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: rgba(61, 47, 38, 0.04);
+}
+
+[data-theme="dark"] .service-card__stats {
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.service-card__stats strong {
+  color: var(--accent);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.service-card__diagnostics {
+  margin: 0;
+  font-size: 12px;
+  color: var(--muted);
+  line-height: 1.5;
+}
+
+.service-card__error {
+  margin: 0;
+  font-size: 12px;
+  color: var(--muted);
+  font-style: italic;
+}
+
+.service-card__error-inline {
+  font-size: 11px;
+  color: var(--muted);
+}
+
+.service-card__blockers {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 12px;
+}
+
+.service-card__blockers li {
+  color: var(--muted);
+}
+
+.service-card__blockers li::before {
+  content: "✗ ";
+  color: var(--muted);
+  font-weight: 700;
+  margin-right: 6px;
+}
+
+.service-card__foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: auto;
+  padding-top: 8px;
+  border-top: 1px solid var(--line);
+  flex-wrap: wrap;
+}
+
+.service-card__refresh {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  color: var(--muted-2);
+  font-variant-numeric: tabular-nums;
+}
+
+.service-card__refresh-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--accent);
+}
+
+.service-card__refresh-dot.is-stale {
+  background: var(--muted-2);
+}
+
+.service-card__cta {
+  display: inline-flex;
+}
+
+.service-card__cta button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
 }
