@@ -178,17 +178,6 @@ export function SettingsPanel({
     });
   }, [runtimeSettings]);
 
-  useEffect(() => {
-    const logsTabActive = settingsTab === "日志" && (drawer === "settings" || renderedDrawer === "settings");
-    if (!logsTabActive) return;
-
-    const timer = window.setInterval(() => {
-      void refreshLogs({ requestPolicy: "network-only" });
-    }, 5000);
-
-    return () => window.clearInterval(timer);
-  }, [drawer, renderedDrawer, refreshLogs, settingsTab]);
-
   const saveStashSettings = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const result = await updateStashSettings({

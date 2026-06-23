@@ -286,7 +286,6 @@ function App() {
             runtimeSettings={runtimeSettings}
             runtimeStatus={runtimeStatus}
             pendingTaskScanId={pendingTaskScanId}
-            onRefresh={() => refreshDashboard({ requestPolicy: "network-only" })}
             onOpenTask={openTaskDetail}
             onScanTask={(id) => void runTaskScan(id)}
             onOpenSettings={openSettings}

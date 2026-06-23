@@ -5,4 +5,3 @@ export { useSubscription } from "./useSubscription";
 export { useDrawerTransition } from "./useDrawerTransition";
 export { useTheme, type ThemePreference } from "./useTheme";
 export { useClickOutside } from "./useClickOutside";
-export { useDashboardRefresh } from "./useDashboardRefresh";

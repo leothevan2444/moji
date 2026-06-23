@@ -6,7 +6,6 @@ import {
   buildQBittorrentConfig
 } from "../components/home";
 import { isScanPending, isStatus, type DashboardTask } from "../utils";
-import { useDashboardRefresh } from "../hooks";
 import type { SettingsTab } from "../types";
 
 // Stash 卡片的 KV 列表——只显示 URL（与服务可达性直接相关）。
@@ -36,7 +35,6 @@ interface HomePageProps {
   runtimeSettings: RuntimeSettings | null;
   runtimeStatus: RuntimeStatus | null;
   pendingTaskScanId: string | null;
-  onRefresh: () => void;
   onOpenTask: (taskId: string) => void;
   onScanTask: (taskId: string) => void;
   onOpenSettings: (tab: SettingsTab) => void;
@@ -47,13 +45,10 @@ export function HomePage({
   runtimeSettings,
   runtimeStatus,
   pendingTaskScanId,
-  onRefresh,
   onOpenTask,
   onScanTask,
   onOpenSettings
 }: HomePageProps) {
-  useDashboardRefresh(onRefresh, 30000);
-
   const todoTasks = tasks.filter((task) => isStatus(task, "failed") || isScanPending(task)).slice(0, 4);
   const hasTodos = tasks.some((task) => isStatus(task, "failed") || isScanPending(task));
 
