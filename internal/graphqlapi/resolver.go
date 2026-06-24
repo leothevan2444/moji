@@ -200,6 +200,8 @@ type StatsProvider interface {
 
 type SubscriptionService interface {
 	ListStashPerformers(ctx context.Context, search string) ([]subscription.Performer, error)
+	GetPerformerDetail(ctx context.Context, performerID string) (subscription.PerformerDetail, error)
+	ListPerformerScenes(ctx context.Context, performerID string, query subscription.PerformerSceneQuery) (subscription.PerformerScenePage, error)
 	ListSubscribedPerformers(ctx context.Context) ([]subscription.SubscribedPerformer, error)
 	SubscribePerformer(ctx context.Context, performerID string) (subscription.SubscribedPerformer, error)
 	UnsubscribePerformer(ctx context.Context, performerID string) error

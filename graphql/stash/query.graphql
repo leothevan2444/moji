@@ -14,6 +14,7 @@ fragment PerformerFragment on Performer {
   country
   eye_color
   height_cm
+  urls
   alias_list
   favorite
   image_path
@@ -23,6 +24,28 @@ fragment PerformerFragment on Performer {
   }
   rating100
   custom_fields
+}
+
+fragment StudioNameFragment on Studio {
+  id
+  name
+}
+
+fragment SceneFragment on Scene {
+  id
+  title
+  code
+  date
+  urls
+  studio {
+    ...StudioNameFragment
+  }
+  paths {
+    screenshot
+  }
+  stash_ids {
+    ...StashIdFragment
+  }
 }
 
 query FindPerformerByID($id: ID!) {
@@ -43,6 +66,15 @@ query FindPerformers($performer_filter: PerformerFilterType, $filter: FindFilter
 query allPerformers {
   allPerformers {
     ...PerformerFragment
+  }
+}
+
+query FindScenes($scene_filter: SceneFilterType, $filter: FindFilterType) {
+  findScenes(scene_filter: $scene_filter, filter: $filter) {
+    count
+    scenes {
+      ...SceneFragment
+    }
   }
 }
 

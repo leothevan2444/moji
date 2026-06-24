@@ -13,6 +13,7 @@ import (
 
 type fakeStashClient struct {
 	performers map[string]*stashgraphql.PerformerFragment
+	scenes     []*stashgraphql.SceneFragment
 	boxes      []stash.StashBoxEndpoint
 }
 
@@ -26,6 +27,32 @@ func (f *fakeStashClient) AllPerformers(_ context.Context) ([]*stashgraphql.Perf
 
 func (f *fakeStashClient) FindPerformerByID(_ context.Context, id string) (*stashgraphql.PerformerFragment, error) {
 	return f.performers[id], nil
+}
+
+func (f *fakeStashClient) FindScenes(_ context.Context, sceneFilter *stashgraphql.SceneFilterType, _ *stashgraphql.FindFilterType) ([]*stashgraphql.SceneFragment, error) {
+	if sceneFilter != nil && sceneFilter.StashIDEndpoint != nil && sceneFilter.StashIDEndpoint.StashID != nil {
+		out := make([]*stashgraphql.SceneFragment, 0)
+		for _, scene := range f.scenes {
+			if scene == nil {
+				continue
+			}
+			for _, stashID := range scene.StashIds {
+				if stashID == nil {
+					continue
+				}
+				endpoint := ""
+				if sceneFilter.StashIDEndpoint.Endpoint != nil {
+					endpoint = *sceneFilter.StashIDEndpoint.Endpoint
+				}
+				if stashID.StashID == *sceneFilter.StashIDEndpoint.StashID && normalizeStashBoxEndpoint(stashID.Endpoint) == normalizeStashBoxEndpoint(endpoint) {
+					out = append(out, scene)
+					break
+				}
+			}
+		}
+		return out, nil
+	}
+	return append([]*stashgraphql.SceneFragment(nil), f.scenes...), nil
 }
 
 func (f *fakeStashClient) UpdatePerformerCustomFields(_ context.Context, id string, partial map[string]any, remove []string) (*stashgraphql.PerformerFragment, error) {
@@ -747,5 +774,98 @@ func TestRefreshPerformerWithoutMatchingStashIDReturnsStateNotError(t *testing.T
 	}
 	if item.PendingReleaseCount != 0 {
 		t.Fatalf("expected no pending releases, got %d", item.PendingReleaseCount)
+	}
+}
+
+func TestListPerformerScenesDeduplicatesMatchedStashBoxScenes(t *testing.T) {
+	endpoint := "https://stashbox.example.org/graphql"
+	title := "Matched Title"
+	code := "ABP-123"
+	date := "2026-06-01"
+	studio := "Studio A"
+	stashURL := "https://stash.example.org/scenes/scene-1"
+	screenshot := "https://stash.example.org/screenshot.jpg"
+	boxURL := "https://stashbox.example.org/scenes/box-1"
+
+	stashClient := &fakeStashClient{
+		performers: map[string]*stashgraphql.PerformerFragment{
+			"p1": {
+				ID:           "p1",
+				Name:         "Actor",
+				CustomFields: map[string]any{DefaultCustomFieldKey: true},
+				StashIds: []*stashgraphql.StashIDFragment{
+					{Endpoint: endpoint, StashID: "box-performer-1"},
+				},
+			},
+		},
+		scenes: []*stashgraphql.SceneFragment{
+			{
+				ID:    "scene-1",
+				Title: &title,
+				Code:  &code,
+				Date:  &date,
+				Urls:  []string{stashURL},
+				Studio: &stashgraphql.StudioNameFragment{
+					ID:   "studio-1",
+					Name: studio,
+				},
+				Paths: stashgraphql.SceneFragment_Paths{Screenshot: &screenshot},
+				StashIds: []*stashgraphql.StashIDFragment{
+					{Endpoint: endpoint, StashID: "box-scene-1"},
+				},
+			},
+		},
+	}
+
+	registry := newStashboxRegistry(stubFactory{
+		client: &fakeStashboxClient{
+			performer: &stashboxgraphql.PerformerFragment{ID: "box-performer-1", Name: "Actor"},
+			scenes: []*stashboxgraphql.SceneFragment{
+				{
+					ID:    "box-scene-1",
+					Title: &title,
+					Code:  &code,
+					Date:  &date,
+					Urls:  []*stashboxgraphql.URLFragment{{URL: boxURL}},
+					Studio: &stashboxgraphql.StudioFragment{
+						ID:   "studio-1",
+						Name: studio,
+					},
+				},
+			},
+		},
+	})
+	registry.Replace([]stash.StashBoxEndpoint{{Name: "Preferred", Endpoint: endpoint, APIKey: "ignored"}})
+
+	service, err := NewService(stashClient, registry, nil, NewMemoryStore())
+	if err != nil {
+		t.Fatalf("NewService failed: %v", err)
+	}
+
+	page, err := service.ListPerformerScenes(context.Background(), "p1", PerformerSceneQuery{})
+	if err != nil {
+		t.Fatalf("ListPerformerScenes failed: %v", err)
+	}
+	if page.StashSceneCount != 1 || page.StashBoxCount != 1 || page.DedupedCount != 1 {
+		t.Fatalf("unexpected counts: %+v", page)
+	}
+	if len(page.Items) != 1 {
+		t.Fatalf("expected 1 deduped item, got %d", len(page.Items))
+	}
+	item := page.Items[0]
+	if !item.HasStashSource || !item.HasStashBoxSource {
+		t.Fatalf("expected merged source flags, got %+v", item)
+	}
+	if item.MatchedStashSceneID != "scene-1" {
+		t.Fatalf("expected matched stash scene id scene-1, got %q", item.MatchedStashSceneID)
+	}
+	if item.URL != stashURL {
+		t.Fatalf("expected stash url precedence, got %q", item.URL)
+	}
+	if item.ImageURL != screenshot {
+		t.Fatalf("expected stash screenshot precedence, got %q", item.ImageURL)
+	}
+	if len(item.SourceLabels) != 2 || item.SourceLabels[0] != "Stash" || item.SourceLabels[1] != "StashBox" {
+		t.Fatalf("unexpected source labels: %+v", item.SourceLabels)
 	}
 }

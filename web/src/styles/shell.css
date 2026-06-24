@@ -679,6 +679,90 @@
   line-height: 1.55;
 }
 
+.performer-detail-card {
+  --performer-detail-card-height: 228px;
+  --performer-detail-card-padding: 18px;
+  --performer-detail-avatar-height: calc(var(--performer-detail-card-height) - var(--performer-detail-card-padding) * 2);
+  --performer-detail-avatar-width: calc(var(--performer-detail-avatar-height) * 3 / 4);
+  height: var(--performer-detail-card-height);
+  padding: var(--performer-detail-card-padding);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: linear-gradient(180deg, var(--surface-strong), var(--surface));
+  box-shadow: var(--shadow-soft);
+  overflow: hidden;
+}
+
+.performer-detail-card__icons {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 0 0 auto;
+  align-self: flex-start;
+}
+
+.performer-detail-card .task-detail-hero {
+  min-height: 0;
+  margin-top: 0;
+  min-height: var(--performer-detail-avatar-height);
+}
+
+.performer-detail-hero__main {
+  display: flex;
+  align-items: stretch;
+  gap: 16px;
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: 0;
+}
+
+.performer-detail-hero__avatar {
+  width: var(--performer-detail-avatar-width);
+  height: var(--performer-detail-avatar-height);
+  flex: 0 0 var(--performer-detail-avatar-width);
+  border-radius: 12px;
+  align-self: stretch;
+}
+
+.performer-detail-hero__copy {
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.performer-detail-hero__name {
+  font-size: 24px !important;
+  line-height: 1.2;
+  overflow-wrap: anywhere;
+}
+
+.performer-detail-hero__meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.performer-detail-hero__section {
+  display: grid;
+  gap: 4px;
+  margin-top: 10px;
+}
+
+.performer-detail-hero__label {
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: var(--muted-2);
+}
+
+.performer-detail-hero__copy p {
+  margin: 0;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
 .task-detail-hero__metric {
   display: inline-flex;
   align-items: center;
@@ -782,4 +866,3 @@ dd {
   color: var(--accent);
   transform: none;
 }
-

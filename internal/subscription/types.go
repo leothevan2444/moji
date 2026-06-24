@@ -14,6 +14,99 @@ type Performer struct {
 	Subscribed bool
 }
 
+type MatchedStashBox struct {
+	Name          string
+	Endpoint      string
+	PerformerID   string
+	PerformerName string
+}
+
+type StashSceneID struct {
+	Endpoint string
+	StashID  string
+}
+
+type SceneSource string
+
+const (
+	SceneSourceStash    SceneSource = "STASH"
+	SceneSourceStashBox SceneSource = "STASHBOX"
+)
+
+type SceneSourceFilter string
+
+const (
+	SceneSourceFilterAll      SceneSourceFilter = "ALL"
+	SceneSourceFilterStash    SceneSourceFilter = "STASH"
+	SceneSourceFilterStashBox SceneSourceFilter = "STASHBOX"
+)
+
+type LibraryFilter string
+
+const (
+	LibraryFilterAll        LibraryFilter = "ALL"
+	LibraryFilterInLibrary  LibraryFilter = "IN_LIBRARY"
+	LibraryFilterNotInLibrary LibraryFilter = "NOT_IN_LIBRARY"
+)
+
+type PerformerScene struct {
+	Key                string
+	PrimarySource      SceneSource
+	SourceSceneID      string
+	Title              string
+	Code               string
+	Date               string
+	StudioName         string
+	ImageURL           string
+	URL                string
+	InLibrary          bool
+	MatchedStashSceneID string
+	HasStashSource     bool
+	HasStashBoxSource  bool
+	StashBoxSceneID    string
+	StashBoxEndpoint   string
+	SourceLabels       []string
+	StashIDs           []StashSceneID
+}
+
+type PerformerSceneQuery struct {
+	Search    string
+	Source    SceneSourceFilter
+	InLibrary LibraryFilter
+	Page      int
+	PageSize  int
+}
+
+type PerformerScenePage struct {
+	Items           []PerformerScene
+	Page            int
+	PageSize        int
+	TotalCount      int
+	TotalPages      int
+	HasPrevPage     bool
+	HasNextPage     bool
+	StashSceneCount int
+	StashBoxCount   int
+	DedupedCount    int
+}
+
+type PerformerDetail struct {
+	Performer         Performer
+	Disambiguation    string
+	Birthdate         string
+	Ethnicity         string
+	Country           string
+	EyeColor          string
+	HeightCm          *int
+	Rating100         *int
+	URLs              []string
+	MatchedStashBox   *MatchedStashBox
+	TotalSceneCount   int
+	StashSceneCount   int
+	StashBoxSceneCount int
+	DedupedSceneCount int
+}
+
 type Release struct {
 	Key    string
 	Source string

@@ -37,6 +37,85 @@ func stashPerformerPageToModel(page StashPerformerPage) *model.StashPerformerCon
 	}
 }
 
+func stashPerformerDetailToModel(detail subscription.PerformerDetail) *model.StashPerformerDetail {
+	return &model.StashPerformerDetail{
+		Performer:          stashPerformerToModel(detail.Performer),
+		Disambiguation:     nilIfEmpty(detail.Disambiguation),
+		Birthdate:          nilIfEmpty(detail.Birthdate),
+		Ethnicity:          nilIfEmpty(detail.Ethnicity),
+		Country:            nilIfEmpty(detail.Country),
+		EyeColor:           nilIfEmpty(detail.EyeColor),
+		HeightCm:           detail.HeightCm,
+		Rating100:          detail.Rating100,
+		Urls:               append([]string(nil), detail.URLs...),
+		MatchedStashBox:    matchedStashBoxToModel(detail.MatchedStashBox),
+		TotalSceneCount:    detail.TotalSceneCount,
+		StashSceneCount:    detail.StashSceneCount,
+		StashBoxSceneCount: detail.StashBoxSceneCount,
+		DedupedSceneCount:  detail.DedupedSceneCount,
+	}
+}
+
+func matchedStashBoxToModel(item *subscription.MatchedStashBox) *model.MatchedStashBox {
+	if item == nil {
+		return nil
+	}
+	return &model.MatchedStashBox{
+		Name:          item.Name,
+		Endpoint:      item.Endpoint,
+		PerformerID:   item.PerformerID,
+		PerformerName: item.PerformerName,
+	}
+}
+
+func performerScenePageToModel(page subscription.PerformerScenePage) *model.StashPerformerSceneConnection {
+	items := make([]*model.StashPerformerScene, 0, len(page.Items))
+	for _, item := range page.Items {
+		items = append(items, performerSceneToModel(item))
+	}
+	return &model.StashPerformerSceneConnection{
+		Items:           items,
+		Page:            page.Page,
+		PageSize:        page.PageSize,
+		TotalCount:      page.TotalCount,
+		TotalPages:      page.TotalPages,
+		HasPrevPage:     page.HasPrevPage,
+		HasNextPage:     page.HasNextPage,
+		StashSceneCount: page.StashSceneCount,
+		StashBoxCount:   page.StashBoxCount,
+		DedupedCount:    page.DedupedCount,
+	}
+}
+
+func performerSceneToModel(item subscription.PerformerScene) *model.StashPerformerScene {
+	stashIDs := make([]*model.StashSceneID, 0, len(item.StashIDs))
+	for _, stashID := range item.StashIDs {
+		stashIDs = append(stashIDs, &model.StashSceneID{
+			Endpoint: stashID.Endpoint,
+			StashID:  stashID.StashID,
+		})
+	}
+	return &model.StashPerformerScene{
+		Key:                item.Key,
+		PrimarySource:      model.SceneSource(item.PrimarySource),
+		SourceSceneID:      item.SourceSceneID,
+		Title:              nilIfEmpty(item.Title),
+		Code:               nilIfEmpty(item.Code),
+		Date:               nilIfEmpty(item.Date),
+		StudioName:         nilIfEmpty(item.StudioName),
+		ImageURL:           nilIfEmpty(item.ImageURL),
+		URL:                nilIfEmpty(item.URL),
+		InLibrary:          item.InLibrary,
+		MatchedStashSceneID: nilIfEmpty(item.MatchedStashSceneID),
+		HasStashSource:     item.HasStashSource,
+		HasStashBoxSource:  item.HasStashBoxSource,
+		StashBoxSceneID:    nilIfEmpty(item.StashBoxSceneID),
+		StashBoxEndpoint:   nilIfEmpty(item.StashBoxEndpoint),
+		SourceLabels:       append([]string(nil), item.SourceLabels...),
+		StashIds:           stashIDs,
+	}
+}
+
 func subscriptionPerformerToModel(item subscription.SubscribedPerformer) *model.SubscribedPerformer {
 	releases := make([]*model.SubscriptionRelease, 0, len(item.RecentReleases))
 	for _, release := range item.RecentReleases {

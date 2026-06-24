@@ -7,10 +7,10 @@ package graphqlapi
 import (
 	"context"
 	"errors"
-	"fmt"
 	"math"
 
 	"github.com/leothevan2444/moji/internal/graphqlapi/model"
+	"github.com/leothevan2444/moji/internal/subscription"
 )
 
 // SubscribePerformer is the resolver for the subscribePerformer field.
@@ -53,7 +53,19 @@ func (r *mutationResolver) RefreshSubscribedPerformer(ctx context.Context, stash
 
 // RefreshSubscriptionsNow is the resolver for the refreshSubscriptionsNow field.
 func (r *mutationResolver) RefreshSubscriptionsNow(ctx context.Context) ([]*model.SubscribedPerformer, error) {
-	panic(fmt.Errorf("not implemented: RefreshSubscriptionsNow - refreshSubscriptionsNow"))
+	if r.Subscription == nil {
+		return []*model.SubscribedPerformer{}, nil
+	}
+
+	items, err := r.Subscription.RefreshAll(ctx)
+	if err != nil {
+		return nil, err
+	}
+	out := make([]*model.SubscribedPerformer, 0, len(items))
+	for _, item := range items {
+		out = append(out, subscriptionPerformerToModel(item))
+	}
+	return out, nil
 }
 
 // StashPerformers is the resolver for the stashPerformers field.
@@ -116,6 +128,47 @@ func (r *queryResolver) StashPerformers(ctx context.Context, search *string, pag
 		HasPrevPage: currentPage > 1 && totalPages > 0,
 		HasNextPage: currentPage < totalPages,
 	}), nil
+}
+
+// StashPerformerDetail is the resolver for the stashPerformerDetail field.
+func (r *queryResolver) StashPerformerDetail(ctx context.Context, id string) (*model.StashPerformerDetail, error) {
+	if r.Subscription == nil {
+		return nil, errors.New("subscription service is not configured")
+	}
+
+	item, err := r.Subscription.GetPerformerDetail(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+	return stashPerformerDetailToModel(item), nil
+}
+
+// StashPerformerScenes is the resolver for the stashPerformerScenes field.
+func (r *queryResolver) StashPerformerScenes(ctx context.Context, id string, input model.StashPerformerScenesInput) (*model.StashPerformerSceneConnection, error) {
+	if r.Subscription == nil {
+		return performerScenePageToModel(subscription.PerformerScenePage{
+			Page:     normalizePage(input.Page),
+			PageSize: normalizePageSize(input.PageSize),
+		}), nil
+	}
+
+	query := subscription.PerformerSceneQuery{
+		Search:   derefString(input.Search),
+		Page:     normalizePage(input.Page),
+		PageSize: normalizePageSize(input.PageSize),
+	}
+	if input.Source != nil {
+		query.Source = subscription.SceneSourceFilter(*input.Source)
+	}
+	if input.InLibrary != nil {
+		query.InLibrary = subscription.LibraryFilter(*input.InLibrary)
+	}
+
+	page, err := r.Subscription.ListPerformerScenes(ctx, id, query)
+	if err != nil {
+		return nil, err
+	}
+	return performerScenePageToModel(page), nil
 }
 
 // SubscribedPerformers is the resolver for the subscribedPerformers field.

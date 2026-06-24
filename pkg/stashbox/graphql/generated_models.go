@@ -154,7 +154,7 @@ type Edit struct {
 	Options  *PerformerEditOptions `json:"options,omitempty"`
 	Comments []*EditComment        `json:"comments"`
 	Votes    []*EditVote           `json:"votes"`
-	//  = Accepted - Rejected
+	// = Accepted - Rejected
 	VoteCount int `json:"vote_count"`
 	// Is the edit considered destructive.
 	Destructive bool           `json:"destructive"`
@@ -1262,9 +1262,9 @@ type User struct {
 	// Should not be visible to other users
 	APIKey                    *string            `json:"api_key,omitempty"`
 	NotificationSubscriptions []NotificationEnum `json:"notification_subscriptions"`
-	//  Vote counts by type
+	// Vote counts by type
 	VoteCount *UserVoteCount `json:"vote_count"`
-	//  Edit counts by status
+	// Edit counts by status
 	EditCount *UserEditCount `json:"edit_count"`
 	// Calls to the API from this user over a configurable time period
 	APICalls          int          `json:"api_calls"`

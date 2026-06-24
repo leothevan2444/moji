@@ -7,8 +7,8 @@ client:
 models:
   Date:
     model: github.com/99designs/gqlgen/graphql.String
-endpoint:
-  url: https://javstash.org/graphql
+schema:
+- "./graphql/stashbox/schema/0.6.16-h.graphql"
 query:
 - "./graphql/stashbox/*.graphql"
 generate:

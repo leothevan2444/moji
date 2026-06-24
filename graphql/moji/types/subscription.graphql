@@ -2,6 +2,12 @@ extend type Query {
   "List Stash performers with current Moji subscription state"
   stashPerformers(search: String, page: Int = 1, pageSize: Int = 24): StashPerformerConnection!
 
+  "Fetch Stash performer detail with Moji / StashBox context"
+  stashPerformerDetail(id: ID!): StashPerformerDetail!
+
+  "List deduplicated performer scenes from Stash and the preferred StashBox"
+  stashPerformerScenes(id: ID!, input: StashPerformerScenesInput!): StashPerformerSceneConnection!
+
   "List performers currently subscribed by Moji"
   subscribedPerformers: [SubscribedPerformer!]!
 }
@@ -30,6 +36,30 @@ type StashPerformer {
   subscribed: Boolean!
 }
 
+type StashPerformerDetail {
+  performer: StashPerformer!
+  disambiguation: String
+  birthdate: String
+  ethnicity: String
+  country: String
+  eyeColor: String
+  heightCm: Int
+  rating100: Int
+  urls: [String!]!
+  matchedStashBox: MatchedStashBox
+  totalSceneCount: Int!
+  stashSceneCount: Int!
+  stashBoxSceneCount: Int!
+  dedupedSceneCount: Int!
+}
+
+type MatchedStashBox {
+  name: String!
+  endpoint: String!
+  performerId: ID!
+  performerName: String!
+}
+
 type StashPerformerConnection {
   items: [StashPerformer!]!
   page: Int!
@@ -38,6 +68,69 @@ type StashPerformerConnection {
   totalPages: Int!
   hasPrevPage: Boolean!
   hasNextPage: Boolean!
+}
+
+input StashPerformerScenesInput {
+  search: String
+  source: SceneSourceFilter = ALL
+  inLibrary: LibraryFilter = ALL
+  page: Int = 1
+  pageSize: Int = 24
+}
+
+enum SceneSourceFilter {
+  ALL
+  STASH
+  STASHBOX
+}
+
+enum LibraryFilter {
+  ALL
+  IN_LIBRARY
+  NOT_IN_LIBRARY
+}
+
+enum SceneSource {
+  STASH
+  STASHBOX
+}
+
+type StashPerformerSceneConnection {
+  items: [StashPerformerScene!]!
+  page: Int!
+  pageSize: Int!
+  totalCount: Int!
+  totalPages: Int!
+  hasPrevPage: Boolean!
+  hasNextPage: Boolean!
+  stashSceneCount: Int!
+  stashBoxCount: Int!
+  dedupedCount: Int!
+}
+
+type StashPerformerScene {
+  key: ID!
+  primarySource: SceneSource!
+  sourceSceneId: ID!
+  title: String
+  code: String
+  date: String
+  studioName: String
+  imageUrl: String
+  url: String
+  inLibrary: Boolean!
+  matchedStashSceneId: ID
+  hasStashSource: Boolean!
+  hasStashBoxSource: Boolean!
+  stashBoxSceneId: ID
+  stashBoxEndpoint: String
+  sourceLabels: [String!]!
+  stashIds: [StashSceneID!]!
+}
+
+type StashSceneID {
+  endpoint: String!
+  stashId: String!
 }
 
 type SubscribedPerformer {

@@ -21,6 +21,7 @@ var errNoMatchingStashBoxMapping = errors.New("subscription: no stash_id matched
 type StashClient interface {
 	AllPerformers(ctx context.Context) ([]*stashgraphql.PerformerFragment, error)
 	FindPerformerByID(ctx context.Context, id string) (*stashgraphql.PerformerFragment, error)
+	FindScenes(ctx context.Context, sceneFilter *stashgraphql.SceneFilterType, filter *stashgraphql.FindFilterType) ([]*stashgraphql.SceneFragment, error)
 	UpdatePerformerCustomFields(ctx context.Context, id string, partial map[string]any, remove []string) (*stashgraphql.PerformerFragment, error)
 	GetStashBoxes(ctx context.Context) ([]stash.StashBoxEndpoint, error)
 }
@@ -312,7 +313,10 @@ func (s *Service) fetchReleases(ctx context.Context, performer *stashgraphql.Per
 	}
 
 	scenes, err := target.Client.QueryScenes(ctx, stashboxgraphql.SceneQueryInput{
-		Performers: &stashboxgraphql.MultiIDCriterionInput{Value: []string{target.Performer.ID}},
+		Performers: &stashboxgraphql.MultiIDCriterionInput{
+			Value:    []string{target.Performer.ID},
+			Modifier: stashboxgraphql.CriterionModifierIncludes,
+		},
 		Page:       1,
 		PerPage:    12,
 		Direction:  stashboxgraphql.SortDirectionEnumDesc,

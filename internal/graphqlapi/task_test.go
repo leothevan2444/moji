@@ -933,7 +933,9 @@ func executeGraphQL(t *testing.T, resolver *Resolver, query string) graphQLTaskR
 type fakeStashService struct{}
 
 type fakeSubscriptionService struct {
-	performers []subscription.Performer
+	performers    []subscription.Performer
+	detail        subscription.PerformerDetail
+	performerPage subscription.PerformerScenePage
 }
 
 type fakeLogReader struct {
@@ -953,6 +955,14 @@ func (f *fakeSubscriptionService) ListStashPerformers(_ context.Context, _ strin
 
 func (f *fakeSubscriptionService) ListSubscribedPerformers(context.Context) ([]subscription.SubscribedPerformer, error) {
 	return nil, nil
+}
+
+func (f *fakeSubscriptionService) GetPerformerDetail(context.Context, string) (subscription.PerformerDetail, error) {
+	return f.detail, nil
+}
+
+func (f *fakeSubscriptionService) ListPerformerScenes(context.Context, string, subscription.PerformerSceneQuery) (subscription.PerformerScenePage, error) {
+	return f.performerPage, nil
 }
 
 func (f *fakeSubscriptionService) SubscribePerformer(context.Context, string) (subscription.SubscribedPerformer, error) {

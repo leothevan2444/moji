@@ -18,6 +18,74 @@ query StashPerformers($search: String, $page: Int, $pageSize: Int) {
   }
 }
 
+query StashPerformerDetail($id: ID!) {
+  stashPerformerDetail(id: $id) {
+    performer {
+      id
+      name
+      aliasList
+      favorite
+      imagePath
+      sceneCount
+      subscribed
+    }
+    disambiguation
+    birthdate
+    ethnicity
+    country
+    eyeColor
+    heightCm
+    rating100
+    urls
+    matchedStashBox {
+      name
+      endpoint
+      performerId
+      performerName
+    }
+    totalSceneCount
+    stashSceneCount
+    stashBoxSceneCount
+    dedupedSceneCount
+  }
+}
+
+query StashPerformerScenes($id: ID!, $input: StashPerformerScenesInput!) {
+  stashPerformerScenes(id: $id, input: $input) {
+    items {
+      key
+      primarySource
+      sourceSceneId
+      title
+      code
+      date
+      studioName
+      imageUrl
+      url
+      inLibrary
+      matchedStashSceneId
+      hasStashSource
+      hasStashBoxSource
+      stashBoxSceneId
+      stashBoxEndpoint
+      sourceLabels
+      stashIds {
+        endpoint
+        stashId
+      }
+    }
+    page
+    pageSize
+    totalCount
+    totalPages
+    hasPrevPage
+    hasNextPage
+    stashSceneCount
+    stashBoxCount
+    dedupedCount
+  }
+}
+
 query SubscribedPerformers {
   subscribedPerformers {
     performer {

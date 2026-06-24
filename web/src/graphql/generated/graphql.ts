@@ -136,6 +136,12 @@ export type JackettStats = {
   okAt?: Maybe<Scalars['String']['output']>;
 };
 
+export enum LibraryFilter {
+  All = 'ALL',
+  InLibrary = 'IN_LIBRARY',
+  NotInLibrary = 'NOT_IN_LIBRARY'
+}
+
 export type LogEntry = {
   __typename?: 'LogEntry';
   level: LogLevel;
@@ -149,6 +155,14 @@ export enum LogLevel {
   Info = 'Info',
   Warning = 'Warning'
 }
+
+export type MatchedStashBox = {
+  __typename?: 'MatchedStashBox';
+  endpoint: Scalars['String']['output'];
+  name: Scalars['String']['output'];
+  performerId: Scalars['ID']['output'];
+  performerName: Scalars['String']['output'];
+};
 
 export type Mutation = {
   __typename?: 'Mutation';
@@ -335,6 +349,10 @@ export type Query = {
   settingsStatus: SettingsStatus;
   /** Get a Stash background job by id */
   stashJob?: Maybe<StashJob>;
+  /** Fetch Stash performer detail with Moji / StashBox context */
+  stashPerformerDetail: StashPerformerDetail;
+  /** List deduplicated performer scenes from Stash and the preferred StashBox */
+  stashPerformerScenes: StashPerformerSceneConnection;
   /** List Stash performers with current Moji subscription state */
   stashPerformers: StashPerformerConnection;
   /** List performers currently subscribed by Moji */
@@ -368,6 +386,17 @@ export type QueryStashJobArgs = {
 };
 
 
+export type QueryStashPerformerDetailArgs = {
+  id: Scalars['ID']['input'];
+};
+
+
+export type QueryStashPerformerScenesArgs = {
+  id: Scalars['ID']['input'];
+  input: StashPerformerScenesInput;
+};
+
+
 export type QueryStashPerformersArgs = {
   page?: InputMaybe<Scalars['Int']['input']>;
   pageSize?: InputMaybe<Scalars['Int']['input']>;
@@ -378,6 +407,17 @@ export type QueryStashPerformersArgs = {
 export type QueryTaskArgs = {
   id: Scalars['ID']['input'];
 };
+
+export enum SceneSource {
+  Stash = 'STASH',
+  Stashbox = 'STASHBOX'
+}
+
+export enum SceneSourceFilter {
+  All = 'ALL',
+  Stash = 'STASH',
+  Stashbox = 'STASHBOX'
+}
 
 export type ServiceStatus = {
   __typename?: 'ServiceStatus';
@@ -472,6 +512,73 @@ export type StashPerformerConnection = {
   pageSize: Scalars['Int']['output'];
   totalCount: Scalars['Int']['output'];
   totalPages: Scalars['Int']['output'];
+};
+
+export type StashPerformerDetail = {
+  __typename?: 'StashPerformerDetail';
+  birthdate?: Maybe<Scalars['String']['output']>;
+  country?: Maybe<Scalars['String']['output']>;
+  dedupedSceneCount: Scalars['Int']['output'];
+  disambiguation?: Maybe<Scalars['String']['output']>;
+  ethnicity?: Maybe<Scalars['String']['output']>;
+  eyeColor?: Maybe<Scalars['String']['output']>;
+  heightCm?: Maybe<Scalars['Int']['output']>;
+  matchedStashBox?: Maybe<MatchedStashBox>;
+  performer: StashPerformer;
+  rating100?: Maybe<Scalars['Int']['output']>;
+  stashBoxSceneCount: Scalars['Int']['output'];
+  stashSceneCount: Scalars['Int']['output'];
+  totalSceneCount: Scalars['Int']['output'];
+  urls: Array<Scalars['String']['output']>;
+};
+
+export type StashPerformerScene = {
+  __typename?: 'StashPerformerScene';
+  code?: Maybe<Scalars['String']['output']>;
+  date?: Maybe<Scalars['String']['output']>;
+  hasStashBoxSource: Scalars['Boolean']['output'];
+  hasStashSource: Scalars['Boolean']['output'];
+  imageUrl?: Maybe<Scalars['String']['output']>;
+  inLibrary: Scalars['Boolean']['output'];
+  key: Scalars['ID']['output'];
+  matchedStashSceneId?: Maybe<Scalars['ID']['output']>;
+  primarySource: SceneSource;
+  sourceLabels: Array<Scalars['String']['output']>;
+  sourceSceneId: Scalars['ID']['output'];
+  stashBoxEndpoint?: Maybe<Scalars['String']['output']>;
+  stashBoxSceneId?: Maybe<Scalars['ID']['output']>;
+  stashIds: Array<StashSceneId>;
+  studioName?: Maybe<Scalars['String']['output']>;
+  title?: Maybe<Scalars['String']['output']>;
+  url?: Maybe<Scalars['String']['output']>;
+};
+
+export type StashPerformerSceneConnection = {
+  __typename?: 'StashPerformerSceneConnection';
+  dedupedCount: Scalars['Int']['output'];
+  hasNextPage: Scalars['Boolean']['output'];
+  hasPrevPage: Scalars['Boolean']['output'];
+  items: Array<StashPerformerScene>;
+  page: Scalars['Int']['output'];
+  pageSize: Scalars['Int']['output'];
+  stashBoxCount: Scalars['Int']['output'];
+  stashSceneCount: Scalars['Int']['output'];
+  totalCount: Scalars['Int']['output'];
+  totalPages: Scalars['Int']['output'];
+};
+
+export type StashPerformerScenesInput = {
+  inLibrary?: InputMaybe<LibraryFilter>;
+  page?: InputMaybe<Scalars['Int']['input']>;
+  pageSize?: InputMaybe<Scalars['Int']['input']>;
+  search?: InputMaybe<Scalars['String']['input']>;
+  source?: InputMaybe<SceneSourceFilter>;
+};
+
+export type StashSceneId = {
+  __typename?: 'StashSceneID';
+  endpoint: Scalars['String']['output'];
+  stashId: Scalars['String']['output'];
 };
 
 export type StashSettings = {
@@ -696,6 +803,21 @@ export type StashPerformersQueryVariables = Exact<{
 
 export type StashPerformersQuery = { __typename?: 'Query', stashPerformers: { __typename?: 'StashPerformerConnection', page: number, pageSize: number, totalCount: number, totalPages: number, hasPrevPage: boolean, hasNextPage: boolean, items: Array<{ __typename?: 'StashPerformer', id: string, name: string, aliasList: Array<string>, favorite: boolean, imagePath?: string | null, sceneCount: number, subscribed: boolean }> } };
 
+export type StashPerformerDetailQueryVariables = Exact<{
+  id: Scalars['ID']['input'];
+}>;
+
+
+export type StashPerformerDetailQuery = { __typename?: 'Query', stashPerformerDetail: { __typename?: 'StashPerformerDetail', disambiguation?: string | null, birthdate?: string | null, ethnicity?: string | null, country?: string | null, eyeColor?: string | null, heightCm?: number | null, rating100?: number | null, urls: Array<string>, totalSceneCount: number, stashSceneCount: number, stashBoxSceneCount: number, dedupedSceneCount: number, performer: { __typename?: 'StashPerformer', id: string, name: string, aliasList: Array<string>, favorite: boolean, imagePath?: string | null, sceneCount: number, subscribed: boolean }, matchedStashBox?: { __typename?: 'MatchedStashBox', name: string, endpoint: string, performerId: string, performerName: string } | null } };
+
+export type StashPerformerScenesQueryVariables = Exact<{
+  id: Scalars['ID']['input'];
+  input: StashPerformerScenesInput;
+}>;
+
+
+export type StashPerformerScenesQuery = { __typename?: 'Query', stashPerformerScenes: { __typename?: 'StashPerformerSceneConnection', page: number, pageSize: number, totalCount: number, totalPages: number, hasPrevPage: boolean, hasNextPage: boolean, stashSceneCount: number, stashBoxCount: number, dedupedCount: number, items: Array<{ __typename?: 'StashPerformerScene', key: string, primarySource: SceneSource, sourceSceneId: string, title?: string | null, code?: string | null, date?: string | null, studioName?: string | null, imageUrl?: string | null, url?: string | null, inLibrary: boolean, matchedStashSceneId?: string | null, hasStashSource: boolean, hasStashBoxSource: boolean, stashBoxSceneId?: string | null, stashBoxEndpoint?: string | null, sourceLabels: Array<string>, stashIds: Array<{ __typename?: 'StashSceneID', endpoint: string, stashId: string }> }> } };
+
 export type SubscribedPerformersQueryVariables = Exact<{ [key: string]: never; }>;
 
 
@@ -763,6 +885,8 @@ export const UpdateSubscriptionSettingsDocumentDocument = {"kind":"Document","de
 export const RefreshSubscriptionStashBoxesDocumentDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"mutation","name":{"kind":"Name","value":"RefreshSubscriptionStashBoxesDocument"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"refreshSubscriptionStashBoxes"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"subscription"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"stashBoxEndpoints"}}]}}]}}]}}]} as unknown as DocumentNode<RefreshSubscriptionStashBoxesDocumentMutation, RefreshSubscriptionStashBoxesDocumentMutationVariables>;
 export const LogsDocumentDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"LogsDocument"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"limit"}},"type":{"kind":"NamedType","name":{"kind":"Name","value":"Int"}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"minLevel"}},"type":{"kind":"NamedType","name":{"kind":"Name","value":"LogLevel"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"logs"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"limit"},"value":{"kind":"Variable","name":{"kind":"Name","value":"limit"}}},{"kind":"Argument","name":{"kind":"Name","value":"minLevel"},"value":{"kind":"Variable","name":{"kind":"Name","value":"minLevel"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"time"}},{"kind":"Field","name":{"kind":"Name","value":"level"}},{"kind":"Field","name":{"kind":"Name","value":"message"}}]}}]}}]} as unknown as DocumentNode<LogsDocumentQuery, LogsDocumentQueryVariables>;
 export const StashPerformersDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"StashPerformers"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"search"}},"type":{"kind":"NamedType","name":{"kind":"Name","value":"String"}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"page"}},"type":{"kind":"NamedType","name":{"kind":"Name","value":"Int"}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"pageSize"}},"type":{"kind":"NamedType","name":{"kind":"Name","value":"Int"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"stashPerformers"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"search"},"value":{"kind":"Variable","name":{"kind":"Name","value":"search"}}},{"kind":"Argument","name":{"kind":"Name","value":"page"},"value":{"kind":"Variable","name":{"kind":"Name","value":"page"}}},{"kind":"Argument","name":{"kind":"Name","value":"pageSize"},"value":{"kind":"Variable","name":{"kind":"Name","value":"pageSize"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"items"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"name"}},{"kind":"Field","name":{"kind":"Name","value":"aliasList"}},{"kind":"Field","name":{"kind":"Name","value":"favorite"}},{"kind":"Field","name":{"kind":"Name","value":"imagePath"}},{"kind":"Field","name":{"kind":"Name","value":"sceneCount"}},{"kind":"Field","name":{"kind":"Name","value":"subscribed"}}]}},{"kind":"Field","name":{"kind":"Name","value":"page"}},{"kind":"Field","name":{"kind":"Name","value":"pageSize"}},{"kind":"Field","name":{"kind":"Name","value":"totalCount"}},{"kind":"Field","name":{"kind":"Name","value":"totalPages"}},{"kind":"Field","name":{"kind":"Name","value":"hasPrevPage"}},{"kind":"Field","name":{"kind":"Name","value":"hasNextPage"}}]}}]}}]} as unknown as DocumentNode<StashPerformersQuery, StashPerformersQueryVariables>;
+export const StashPerformerDetailDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"StashPerformerDetail"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"id"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"ID"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"stashPerformerDetail"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"id"},"value":{"kind":"Variable","name":{"kind":"Name","value":"id"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"performer"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"name"}},{"kind":"Field","name":{"kind":"Name","value":"aliasList"}},{"kind":"Field","name":{"kind":"Name","value":"favorite"}},{"kind":"Field","name":{"kind":"Name","value":"imagePath"}},{"kind":"Field","name":{"kind":"Name","value":"sceneCount"}},{"kind":"Field","name":{"kind":"Name","value":"subscribed"}}]}},{"kind":"Field","name":{"kind":"Name","value":"disambiguation"}},{"kind":"Field","name":{"kind":"Name","value":"birthdate"}},{"kind":"Field","name":{"kind":"Name","value":"ethnicity"}},{"kind":"Field","name":{"kind":"Name","value":"country"}},{"kind":"Field","name":{"kind":"Name","value":"eyeColor"}},{"kind":"Field","name":{"kind":"Name","value":"heightCm"}},{"kind":"Field","name":{"kind":"Name","value":"rating100"}},{"kind":"Field","name":{"kind":"Name","value":"urls"}},{"kind":"Field","name":{"kind":"Name","value":"matchedStashBox"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"name"}},{"kind":"Field","name":{"kind":"Name","value":"endpoint"}},{"kind":"Field","name":{"kind":"Name","value":"performerId"}},{"kind":"Field","name":{"kind":"Name","value":"performerName"}}]}},{"kind":"Field","name":{"kind":"Name","value":"totalSceneCount"}},{"kind":"Field","name":{"kind":"Name","value":"stashSceneCount"}},{"kind":"Field","name":{"kind":"Name","value":"stashBoxSceneCount"}},{"kind":"Field","name":{"kind":"Name","value":"dedupedSceneCount"}}]}}]}}]} as unknown as DocumentNode<StashPerformerDetailQuery, StashPerformerDetailQueryVariables>;
+export const StashPerformerScenesDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"StashPerformerScenes"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"id"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"ID"}}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"input"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"StashPerformerScenesInput"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"stashPerformerScenes"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"id"},"value":{"kind":"Variable","name":{"kind":"Name","value":"id"}}},{"kind":"Argument","name":{"kind":"Name","value":"input"},"value":{"kind":"Variable","name":{"kind":"Name","value":"input"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"items"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"key"}},{"kind":"Field","name":{"kind":"Name","value":"primarySource"}},{"kind":"Field","name":{"kind":"Name","value":"sourceSceneId"}},{"kind":"Field","name":{"kind":"Name","value":"title"}},{"kind":"Field","name":{"kind":"Name","value":"code"}},{"kind":"Field","name":{"kind":"Name","value":"date"}},{"kind":"Field","name":{"kind":"Name","value":"studioName"}},{"kind":"Field","name":{"kind":"Name","value":"imageUrl"}},{"kind":"Field","name":{"kind":"Name","value":"url"}},{"kind":"Field","name":{"kind":"Name","value":"inLibrary"}},{"kind":"Field","name":{"kind":"Name","value":"matchedStashSceneId"}},{"kind":"Field","name":{"kind":"Name","value":"hasStashSource"}},{"kind":"Field","name":{"kind":"Name","value":"hasStashBoxSource"}},{"kind":"Field","name":{"kind":"Name","value":"stashBoxSceneId"}},{"kind":"Field","name":{"kind":"Name","value":"stashBoxEndpoint"}},{"kind":"Field","name":{"kind":"Name","value":"sourceLabels"}},{"kind":"Field","name":{"kind":"Name","value":"stashIds"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"endpoint"}},{"kind":"Field","name":{"kind":"Name","value":"stashId"}}]}}]}},{"kind":"Field","name":{"kind":"Name","value":"page"}},{"kind":"Field","name":{"kind":"Name","value":"pageSize"}},{"kind":"Field","name":{"kind":"Name","value":"totalCount"}},{"kind":"Field","name":{"kind":"Name","value":"totalPages"}},{"kind":"Field","name":{"kind":"Name","value":"hasPrevPage"}},{"kind":"Field","name":{"kind":"Name","value":"hasNextPage"}},{"kind":"Field","name":{"kind":"Name","value":"stashSceneCount"}},{"kind":"Field","name":{"kind":"Name","value":"stashBoxCount"}},{"kind":"Field","name":{"kind":"Name","value":"dedupedCount"}}]}}]}}]} as unknown as DocumentNode<StashPerformerScenesQuery, StashPerformerScenesQueryVariables>;
 export const SubscribedPerformersDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"SubscribedPerformers"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"subscribedPerformers"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"performer"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"name"}},{"kind":"Field","name":{"kind":"Name","value":"aliasList"}},{"kind":"Field","name":{"kind":"Name","value":"favorite"}},{"kind":"Field","name":{"kind":"Name","value":"imagePath"}},{"kind":"Field","name":{"kind":"Name","value":"sceneCount"}},{"kind":"Field","name":{"kind":"Name","value":"subscribed"}}]}},{"kind":"Field","name":{"kind":"Name","value":"lastCheckedAt"}},{"kind":"Field","name":{"kind":"Name","value":"lastError"}},{"kind":"Field","name":{"kind":"Name","value":"pendingReleaseCount"}},{"kind":"Field","name":{"kind":"Name","value":"processedReleaseCount"}},{"kind":"Field","name":{"kind":"Name","value":"recentReleases"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"key"}},{"kind":"Field","name":{"kind":"Name","value":"source"}},{"kind":"Field","name":{"kind":"Name","value":"title"}},{"kind":"Field","name":{"kind":"Name","value":"code"}},{"kind":"Field","name":{"kind":"Name","value":"date"}},{"kind":"Field","name":{"kind":"Name","value":"url"}},{"kind":"Field","name":{"kind":"Name","value":"query"}},{"kind":"Field","name":{"kind":"Name","value":"taskID"}},{"kind":"Field","name":{"kind":"Name","value":"seenAt"}}]}}]}}]}}]} as unknown as DocumentNode<SubscribedPerformersQuery, SubscribedPerformersQueryVariables>;
 export const SubscribePerformerDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"mutation","name":{"kind":"Name","value":"SubscribePerformer"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"stashPerformerID"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"ID"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"subscribePerformer"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"stashPerformerID"},"value":{"kind":"Variable","name":{"kind":"Name","value":"stashPerformerID"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"performer"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"subscribed"}}]}}]}}]}}]} as unknown as DocumentNode<SubscribePerformerMutation, SubscribePerformerMutationVariables>;
 export const UnsubscribePerformerDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"mutation","name":{"kind":"Name","value":"UnsubscribePerformer"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"stashPerformerID"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"ID"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"unsubscribePerformer"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"stashPerformerID"},"value":{"kind":"Variable","name":{"kind":"Name","value":"stashPerformerID"}}}]}]}}]} as unknown as DocumentNode<UnsubscribePerformerMutation, UnsubscribePerformerMutationVariables>;

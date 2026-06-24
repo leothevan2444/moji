@@ -21,7 +21,7 @@ import {
   type TaskSortKey,
   type TaskStatusFilter
 } from "./pages";
-import type { SearchDocumentQuery } from "./graphql/generated/graphql";
+import { LibraryFilter, SceneSourceFilter, type SearchDocumentQuery } from "./graphql/generated/graphql";
 
 function App() {
   // ── UI state ────────────────────────────────────────────────────────
@@ -57,6 +57,13 @@ function App() {
   const [subscriptionPage, setSubscriptionPage] = useState(1);
   const [subscriptionPageSize, setSubscriptionPageSize] = useState<number>(24);
   const [pendingSubscriptionID, setPendingSubscriptionID] = useState<string | null>(null);
+  const [selectedPerformerId, setSelectedPerformerId] = useState<string | null>(null);
+  const [performerSceneSearch, setPerformerSceneSearch] = useState("");
+  const [performerSceneSourceFilter, setPerformerSceneSourceFilter] = useState<SceneSourceFilter>(SceneSourceFilter.All);
+  const [performerSceneLibraryFilter, setPerformerSceneLibraryFilter] = useState<LibraryFilter>(LibraryFilter.All);
+  const [performerScenePageIndex, setPerformerScenePageIndex] = useState(1);
+  const [performerScenePageSize, setPerformerScenePageSize] = useState<number>(24);
+  const [selectedSceneKeys, setSelectedSceneKeys] = useState<string[]>([]);
 
   // ── Data hooks ──────────────────────────────────────────────────────
   const { toasts, pushToast, dismissToast, copyText } = useToast();
@@ -65,6 +72,7 @@ function App() {
 
   const deferredJackettQuery = useDeferredValue(submittedJackettQuery.trim());
   const deferredSubscriptionSearch = useDeferredValue(subscriptionSearch.trim());
+  const deferredPerformerSceneSearch = useDeferredValue(performerSceneSearch.trim());
 
   const {
     data,
@@ -85,10 +93,17 @@ function App() {
   const {
     stashPerformerPage,
     stashPerformers,
+    performerDetail,
+    performerScenePage: performerSceneResultPage,
+    performerScenes,
     subscribedPerformers,
     fetchingStashPerformers,
+    fetchingPerformerDetail,
+    fetchingPerformerScenes,
     fetchingSubscription,
     stashPerformersError,
+    performerDetailError,
+    performerScenesError,
     subscriptionError,
     refreshingSubscriptionNow,
     subscribePerformer,
@@ -100,7 +115,13 @@ function App() {
     enabled: tab === "演员",
     search: deferredSubscriptionSearch || null,
     page: subscriptionPage,
-    pageSize: subscriptionPageSize
+    pageSize: subscriptionPageSize,
+    performerId: selectedPerformerId,
+    performerSceneSearch: deferredPerformerSceneSearch || null,
+    performerSceneSource: performerSceneSourceFilter,
+    performerSceneLibrary: performerSceneLibraryFilter,
+    performerScenePage: performerScenePageIndex,
+    performerScenePageSize
   });
 
   // ── Derived state ───────────────────────────────────────────────────
@@ -126,6 +147,14 @@ function App() {
   useEffect(() => {
     setSubscriptionPage(1);
   }, [subscriptionPageSize]);
+
+  useEffect(() => {
+    setPerformerScenePageIndex(1);
+  }, [deferredPerformerSceneSearch, performerSceneSourceFilter, performerSceneLibraryFilter, performerScenePageSize, selectedPerformerId]);
+
+  useEffect(() => {
+    setSelectedSceneKeys([]);
+  }, [selectedPerformerId]);
 
   // ── Action handlers ─────────────────────────────────────────────────
   const openTaskDetail = (taskId: string) => {
@@ -237,6 +266,34 @@ function App() {
     await reloadSubscription();
   };
 
+  const handleOpenPerformer = (performerId: string) => {
+    setSelectedPerformerId(performerId);
+  };
+
+  const handleBackToPerformers = () => {
+    setSelectedPerformerId(null);
+    setPerformerSceneSearch("");
+    setPerformerSceneSourceFilter(SceneSourceFilter.All);
+    setPerformerSceneLibraryFilter(LibraryFilter.All);
+    setPerformerScenePageIndex(1);
+    setPerformerScenePageSize(24);
+    setSelectedSceneKeys([]);
+  };
+
+  const handleToggleSceneSelection = (key: string) => {
+    setSelectedSceneKeys((current) =>
+      current.includes(key) ? current.filter((item) => item !== key) : [...current, key]
+    );
+  };
+
+  const handleSelectCurrentScenePage = (keys: string[]) => {
+    setSelectedSceneKeys((current) => Array.from(new Set([...current, ...keys])));
+  };
+
+  const handleClearSceneSelection = () => {
+    setSelectedSceneKeys([]);
+  };
+
   const handleToggleGroup = (group: TaskGroupKey) => {
     setTaskGroupOpen((current) => ({ ...current, [group]: !current[group] }));
   };
@@ -341,12 +398,25 @@ function App() {
             subscribedPerformers={subscribedPerformers}
             fetchingStashPerformers={fetchingStashPerformers}
             fetchingSubscription={fetchingSubscription}
+            performerDetail={performerDetail}
+            performerScenePage={performerSceneResultPage}
+            performerScenes={performerScenes}
+            fetchingPerformerDetail={fetchingPerformerDetail}
+            fetchingPerformerScenes={fetchingPerformerScenes}
             refreshingSubscriptionNow={refreshingSubscriptionNow}
             subscriptionSearch={subscriptionSearch}
             subscriptionPageSize={subscriptionPageSize}
+            selectedPerformerId={selectedPerformerId}
+            performerSceneSearch={performerSceneSearch}
+            performerSceneSourceFilter={performerSceneSourceFilter}
+            performerSceneLibraryFilter={performerSceneLibraryFilter}
+            performerScenePageSize={performerScenePageSize}
+            selectedSceneKeys={selectedSceneKeys}
             pendingSubscriptionID={pendingSubscriptionID}
             subscriptionError={subscriptionError ?? null}
             stashPerformersError={stashPerformersError ?? null}
+            performerDetailError={performerDetailError ?? null}
+            performerScenesError={performerScenesError ?? null}
             onSearchChange={setSubscriptionSearch}
             onPageSizeChange={setSubscriptionPageSize}
             onReload={() => void reloadSubscription()}
@@ -355,6 +425,17 @@ function App() {
             onRefreshOne={(performer) => void handleRefreshSubscribedPerformer(performer)}
             onPrevPage={() => setSubscriptionPage((current) => Math.max(1, current - 1))}
             onNextPage={() => setSubscriptionPage((current) => current + 1)}
+            onOpenPerformer={handleOpenPerformer}
+            onBackToList={handleBackToPerformers}
+            onPerformerSceneSearchChange={setPerformerSceneSearch}
+            onPerformerSceneSourceChange={setPerformerSceneSourceFilter}
+            onPerformerSceneLibraryChange={setPerformerSceneLibraryFilter}
+            onPerformerScenePageSizeChange={setPerformerScenePageSize}
+            onPrevPerformerScenePage={() => setPerformerScenePageIndex((current) => Math.max(1, current - 1))}
+            onNextPerformerScenePage={() => setPerformerScenePageIndex((current) => current + 1)}
+            onToggleSceneSelection={handleToggleSceneSelection}
+            onSelectCurrentScenePage={handleSelectCurrentScenePage}
+            onClearSceneSelection={handleClearSceneSelection}
           />
         ) : null}
       </main>

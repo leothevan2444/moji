@@ -13,6 +13,7 @@ type StashGraphQLClient interface {
 	FindPerformerByID(ctx context.Context, id string, interceptors ...clientv2.RequestInterceptor) (*FindPerformerByID, error)
 	FindPerformers(ctx context.Context, performerFilter *PerformerFilterType, filter *FindFilterType, performerIds []int, ids []string, interceptors ...clientv2.RequestInterceptor) (*FindPerformers, error)
 	AllPerformers(ctx context.Context, interceptors ...clientv2.RequestInterceptor) (*AllPerformers, error)
+	FindScenes(ctx context.Context, sceneFilter *SceneFilterType, filter *FindFilterType, interceptors ...clientv2.RequestInterceptor) (*FindScenes, error)
 	UpdatePerformerCustomFields(ctx context.Context, input PerformerUpdateInput, interceptors ...clientv2.RequestInterceptor) (*UpdatePerformerCustomFields, error)
 	GetVersion(ctx context.Context, interceptors ...clientv2.RequestInterceptor) (*GetVersion, error)
 	MetadataScan(ctx context.Context, input ScanMetadataInput, interceptors ...clientv2.RequestInterceptor) (*MetadataScan, error)
@@ -64,6 +65,7 @@ type PerformerFragment struct {
 	Country        *string            "json:\"country,omitempty\" graphql:\"country\""
 	EyeColor       *string            "json:\"eye_color,omitempty\" graphql:\"eye_color\""
 	HeightCm       *int               "json:\"height_cm,omitempty\" graphql:\"height_cm\""
+	Urls           []string           "json:\"urls,omitempty\" graphql:\"urls\""
 	AliasList      []string           "json:\"alias_list\" graphql:\"alias_list\""
 	Favorite       bool               "json:\"favorite\" graphql:\"favorite\""
 	ImagePath      *string            "json:\"image_path,omitempty\" graphql:\"image_path\""
@@ -127,6 +129,12 @@ func (t *PerformerFragment) GetHeightCm() *int {
 	}
 	return t.HeightCm
 }
+func (t *PerformerFragment) GetUrls() []string {
+	if t == nil {
+		t = &PerformerFragment{}
+	}
+	return t.Urls
+}
 func (t *PerformerFragment) GetAliasList() []string {
 	if t == nil {
 		t = &PerformerFragment{}
@@ -170,6 +178,84 @@ func (t *PerformerFragment) GetCustomFields() map[string]any {
 	return t.CustomFields
 }
 
+type StudioNameFragment struct {
+	ID   string "json:\"id\" graphql:\"id\""
+	Name string "json:\"name\" graphql:\"name\""
+}
+
+func (t *StudioNameFragment) GetID() string {
+	if t == nil {
+		t = &StudioNameFragment{}
+	}
+	return t.ID
+}
+func (t *StudioNameFragment) GetName() string {
+	if t == nil {
+		t = &StudioNameFragment{}
+	}
+	return t.Name
+}
+
+type SceneFragment struct {
+	ID       string              "json:\"id\" graphql:\"id\""
+	Title    *string             "json:\"title,omitempty\" graphql:\"title\""
+	Code     *string             "json:\"code,omitempty\" graphql:\"code\""
+	Date     *string             "json:\"date,omitempty\" graphql:\"date\""
+	Urls     []string            "json:\"urls\" graphql:\"urls\""
+	Studio   *StudioNameFragment "json:\"studio,omitempty\" graphql:\"studio\""
+	Paths    SceneFragment_Paths "json:\"paths\" graphql:\"paths\""
+	StashIds []*StashIDFragment  "json:\"stash_ids\" graphql:\"stash_ids\""
+}
+
+func (t *SceneFragment) GetID() string {
+	if t == nil {
+		t = &SceneFragment{}
+	}
+	return t.ID
+}
+func (t *SceneFragment) GetTitle() *string {
+	if t == nil {
+		t = &SceneFragment{}
+	}
+	return t.Title
+}
+func (t *SceneFragment) GetCode() *string {
+	if t == nil {
+		t = &SceneFragment{}
+	}
+	return t.Code
+}
+func (t *SceneFragment) GetDate() *string {
+	if t == nil {
+		t = &SceneFragment{}
+	}
+	return t.Date
+}
+func (t *SceneFragment) GetUrls() []string {
+	if t == nil {
+		t = &SceneFragment{}
+	}
+	return t.Urls
+}
+func (t *SceneFragment) GetStudio() *StudioNameFragment {
+	if t == nil {
+		t = &SceneFragment{}
+	}
+	return t.Studio
+}
+func (t *SceneFragment) GetPaths() *SceneFragment_Paths {
+	if t == nil {
+		t = &SceneFragment{}
+	}
+	return &t.Paths
+}
+func (t *SceneFragment) GetStashIds() []*StashIDFragment {
+	if t == nil {
+		t = &SceneFragment{}
+	}
+	return t.StashIds
+}
+
 type StashBoxFragment struct {
 	Endpoint             string "json:\"endpoint\" graphql:\"endpoint\""
 	APIKey               string "json:\"api_key\" graphql:\"api_key\""
@@ -202,6 +288,17 @@ func (t *StashBoxFragment) GetMaxRequestsPerMinute() int {
 	return t.MaxRequestsPerMinute
 }
 
+type SceneFragment_Paths struct {
+	Screenshot *string "json:\"screenshot,omitempty\" graphql:\"screenshot\""
+}
+
+func (t *SceneFragment_Paths) GetScreenshot() *string {
+	if t == nil {
+		t = &SceneFragment_Paths{}
+	}
+	return t.Screenshot
+}
+
 type FindPerformers_FindPerformers struct {
 	Count      int                  "json:\"count\" graphql:\"count\""
 	Performers []*PerformerFragment "json:\"performers\" graphql:\"performers\""
@@ -218,6 +315,35 @@ func (t *FindPerformers_FindPerformers) GetPerformers() []*PerformerFragment {
 		t = &FindPerformers_FindPerformers{}
 	}
 	return t.Performers
+}
+
+type FindScenes_FindScenes_Scenes_SceneFragment_Paths struct {
+	Screenshot *string "json:\"screenshot,omitempty\" graphql:\"screenshot\""
+}
+
+func (t *FindScenes_FindScenes_Scenes_SceneFragment_Paths) GetScreenshot() *string {
+	if t == nil {
+		t = &FindScenes_FindScenes_Scenes_SceneFragment_Paths{}
+	}
+	return t.Screenshot
+}
+
+type FindScenes_FindScenes struct {
+	Count  int              "json:\"count\" graphql:\"count\""
+	Scenes []*SceneFragment "json:\"scenes\" graphql:\"scenes\""
+}
+
+func (t *FindScenes_FindScenes) GetCount() int {
+	if t == nil {
+		t = &FindScenes_FindScenes{}
+	}
+	return t.Count
+}
+func (t *FindScenes_FindScenes) GetScenes() []*SceneFragment {
+	if t == nil {
+		t = &FindScenes_FindScenes{}
+	}
+	return t.Scenes
 }
 
 type GetVersion_Version struct {
@@ -312,16 +438,20 @@ func (t *FindJob_FindJob) GetSubTasks() []string {
 	return t.SubTasks
 }
 
-type Configuration_Configuration_General struct {
-	Stashes    []*StashConfig      "json:\"stashes\" graphql:\"stashes\""
-	StashBoxes []*StashBoxFragment "json:\"stashBoxes\" graphql:\"stashBoxes\""
+type Configuration_Configuration_General_Stashes struct {
+	Path string "json:\"path\" graphql:\"path\""
 }
 
-func (t *Configuration_Configuration_General) GetStashes() []*StashConfig {
+func (t *Configuration_Configuration_General_Stashes) GetPath() string {
 	if t == nil {
-		t = &Configuration_Configuration_General{}
+		t = &Configuration_Configuration_General_Stashes{}
 	}
-	return t.Stashes
+	return t.Path
+}
+
+type Configuration_Configuration_General struct {
+	StashBoxes []*StashBoxFragment                            "json:\"stashBoxes\" graphql:\"stashBoxes\""
+	Stashes    []*Configuration_Configuration_General_Stashes "json:\"stashes\" graphql:\"stashes\""
 }
 
 func (t *Configuration_Configuration_General) GetStashBoxes() []*StashBoxFragment {
@@ -329,6 +459,12 @@ func (t *Configuration_Configuration_General) GetStashBoxes() []*StashBoxFragmen
 		t = &Configuration_Configuration_General{}
 	}
 	return t.StashBoxes
+}
+func (t *Configuration_Configuration_General) GetStashes() []*Configuration_Configuration_General_Stashes {
+	if t == nil {
+		t = &Configuration_Configuration_General{}
+	}
+	return t.Stashes
 }
 
 type Configuration_Configuration struct {
@@ -384,6 +520,17 @@ func (t *AllPerformers) GetAllPerformers() []*PerformerFragment {
 		t = &AllPerformers{}
 	}
 	return t.AllPerformers
+}
+
+type FindScenes struct {
+	FindScenes FindScenes_FindScenes "json:\"findScenes\" graphql:\"findScenes\""
+}
+
+func (t *FindScenes) GetFindScenes() *FindScenes_FindScenes {
+	if t == nil {
+		t = &FindScenes{}
+	}
+	return &t.FindScenes
 }
 
 type UpdatePerformerCustomFields struct {
@@ -467,6 +614,7 @@ fragment PerformerFragment on Performer {
 	country
 	eye_color
 	height_cm
+	urls
 	alias_list
 	favorite
 	image_path
@@ -519,6 +667,7 @@ fragment PerformerFragment on Performer {
 	country
 	eye_color
 	height_cm
+	urls
 	alias_list
 	favorite
 	image_path
@@ -571,6 +720,7 @@ fragment PerformerFragment on Performer {
 	country
 	eye_color
 	height_cm
+	urls
 	alias_list
 	favorite
 	image_path
@@ -603,6 +753,59 @@ func (c *Client) AllPerformers(ctx context.Context, interceptors ...clientv2.Req
 	return &res, nil
 }
 
+const FindScenesDocument = `query FindScenes ($scene_filter: SceneFilterType, $filter: FindFilterType) {
+	findScenes(scene_filter: $scene_filter, filter: $filter) {
+		count
+		scenes {
+			... SceneFragment
+		}
+	}
+}
+fragment SceneFragment on Scene {
+	id
+	title
+	code
+	date
+	urls
+	studio {
+		... StudioNameFragment
+	}
+	paths {
+		screenshot
+	}
+	stash_ids {
+		... StashIdFragment
+	}
+}
+fragment StudioNameFragment on Studio {
+	id
+	name
+}
+fragment StashIdFragment on StashID {
+	endpoint
+	stash_id
+	updated_at
+}
+`
+
+func (c *Client) FindScenes(ctx context.Context, sceneFilter *SceneFilterType, filter *FindFilterType, interceptors ...clientv2.RequestInterceptor) (*FindScenes, error) {
+	vars := map[string]any{
+		"scene_filter": sceneFilter,
+		"filter":       filter,
+	}
+
+	var res FindScenes
+	if err := c.Client.Post(ctx, "FindScenes", FindScenesDocument, &res, vars, interceptors...); err != nil {
+		if c.Client.ParseDataWhenErrors {
+			return &res, err
+		}
+
+		return nil, err
+	}
+
+	return &res, nil
+}
+
 const UpdatePerformerCustomFieldsDocument = `mutation UpdatePerformerCustomFields ($input: PerformerUpdateInput!) {
 	performerUpdate(input: $input) {
 		... PerformerFragment
@@ -618,6 +821,7 @@ fragment PerformerFragment on Performer {
 	country
 	eye_color
 	height_cm
+	urls
 	alias_list
 	favorite
 	image_path
@@ -791,6 +995,7 @@ var DocumentOperationNames = map[string]string{
 	FindPerformerByIDDocument:           "FindPerformerByID",
 	FindPerformersDocument:              "FindPerformers",
 	AllPerformersDocument:               "allPerformers",
+	FindScenesDocument:                  "FindScenes",
 	UpdatePerformerCustomFieldsDocument: "UpdatePerformerCustomFields",
 	GetVersionDocument:                  "GetVersion",
 	MetadataScanDocument:                "MetadataScan",

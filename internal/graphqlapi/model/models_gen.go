@@ -124,6 +124,13 @@ type LogEntry struct {
 	Message string   `json:"message"`
 }
 
+type MatchedStashBox struct {
+	Name          string `json:"name"`
+	Endpoint      string `json:"endpoint"`
+	PerformerID   string `json:"performerId"`
+	PerformerName string `json:"performerName"`
+}
+
 type Mutation struct {
 }
 
@@ -269,6 +276,69 @@ type StashPerformerConnection struct {
 	HasNextPage bool              `json:"hasNextPage"`
 }
 
+type StashPerformerDetail struct {
+	Performer          *StashPerformer  `json:"performer"`
+	Disambiguation     *string          `json:"disambiguation,omitempty"`
+	Birthdate          *string          `json:"birthdate,omitempty"`
+	Ethnicity          *string          `json:"ethnicity,omitempty"`
+	Country            *string          `json:"country,omitempty"`
+	EyeColor           *string          `json:"eyeColor,omitempty"`
+	HeightCm           *int             `json:"heightCm,omitempty"`
+	Rating100          *int             `json:"rating100,omitempty"`
+	Urls               []string         `json:"urls"`
+	MatchedStashBox    *MatchedStashBox `json:"matchedStashBox,omitempty"`
+	TotalSceneCount    int              `json:"totalSceneCount"`
+	StashSceneCount    int              `json:"stashSceneCount"`
+	StashBoxSceneCount int              `json:"stashBoxSceneCount"`
+	DedupedSceneCount  int              `json:"dedupedSceneCount"`
+}
+
+type StashPerformerScene struct {
+	Key                 string          `json:"key"`
+	PrimarySource       SceneSource     `json:"primarySource"`
+	SourceSceneID       string          `json:"sourceSceneId"`
+	Title               *string         `json:"title,omitempty"`
+	Code                *string         `json:"code,omitempty"`
+	Date                *string         `json:"date,omitempty"`
+	StudioName          *string         `json:"studioName,omitempty"`
+	ImageURL            *string         `json:"imageUrl,omitempty"`
+	URL                 *string         `json:"url,omitempty"`
+	InLibrary           bool            `json:"inLibrary"`
+	MatchedStashSceneID *string         `json:"matchedStashSceneId,omitempty"`
+	HasStashSource      bool            `json:"hasStashSource"`
+	HasStashBoxSource   bool            `json:"hasStashBoxSource"`
+	StashBoxSceneID     *string         `json:"stashBoxSceneId,omitempty"`
+	StashBoxEndpoint    *string         `json:"stashBoxEndpoint,omitempty"`
+	SourceLabels        []string        `json:"sourceLabels"`
+	StashIds            []*StashSceneID `json:"stashIds"`
+}
+
+type StashPerformerSceneConnection struct {
+	Items           []*StashPerformerScene `json:"items"`
+	Page            int                    `json:"page"`
+	PageSize        int                    `json:"pageSize"`
+	TotalCount      int                    `json:"totalCount"`
+	TotalPages      int                    `json:"totalPages"`
+	HasPrevPage     bool                   `json:"hasPrevPage"`
+	HasNextPage     bool                   `json:"hasNextPage"`
+	StashSceneCount int                    `json:"stashSceneCount"`
+	StashBoxCount   int                    `json:"stashBoxCount"`
+	DedupedCount    int                    `json:"dedupedCount"`
+}
+
+type StashPerformerScenesInput struct {
+	Search    *string            `json:"search,omitempty"`
+	Source    *SceneSourceFilter `json:"source,omitempty"`
+	InLibrary *LibraryFilter     `json:"inLibrary,omitempty"`
+	Page      *int               `json:"page,omitempty"`
+	PageSize  *int               `json:"pageSize,omitempty"`
+}
+
+type StashSceneID struct {
+	Endpoint string `json:"endpoint"`
+	StashID  string `json:"stashId"`
+}
+
 type StashSettings struct {
 	Configured       bool   `json:"configured"`
 	URL              string `json:"url"`
@@ -407,6 +477,63 @@ type UpdateSubscriptionSettingsInput struct {
 	StashBoxEndpoints []string `json:"stashBoxEndpoints"`
 }
 
+type LibraryFilter string
+
+const (
+	LibraryFilterAll          LibraryFilter = "ALL"
+	LibraryFilterInLibrary    LibraryFilter = "IN_LIBRARY"
+	LibraryFilterNotInLibrary LibraryFilter = "NOT_IN_LIBRARY"
+)
+
+var AllLibraryFilter = []LibraryFilter{
+	LibraryFilterAll,
+	LibraryFilterInLibrary,
+	LibraryFilterNotInLibrary,
+}
+
+func (e LibraryFilter) IsValid() bool {
+	switch e {
+	case LibraryFilterAll, LibraryFilterInLibrary, LibraryFilterNotInLibrary:
+		return true
+	}
+	return false
+}
+
+func (e LibraryFilter) String() string {
+	return string(e)
+}
+
+func (e *LibraryFilter) UnmarshalGQL(v any) error {
+	str, ok := v.(string)
+	if !ok {
+		return fmt.Errorf("enums must be strings")
+	}
+
+	*e = LibraryFilter(str)
+	if !e.IsValid() {
+		return fmt.Errorf("%s is not a valid LibraryFilter", str)
+	}
+	return nil
+}
+
+func (e LibraryFilter) MarshalGQL(w io.Writer) {
+	fmt.Fprint(w, strconv.Quote(e.String()))
+}
+
+func (e *LibraryFilter) UnmarshalJSON(b []byte) error {
+	s, err := strconv.Unquote(string(b))
+	if err != nil {
+		return err
+	}
+	return e.UnmarshalGQL(s)
+}
+
+func (e LibraryFilter) MarshalJSON() ([]byte, error) {
+	var buf bytes.Buffer
+	e.MarshalGQL(&buf)
+	return buf.Bytes(), nil
+}
+
 type LogLevel string
 
 const (
@@ -461,6 +588,118 @@ func (e *LogLevel) UnmarshalJSON(b []byte) error {
 }
 
 func (e LogLevel) MarshalJSON() ([]byte, error) {
+	var buf bytes.Buffer
+	e.MarshalGQL(&buf)
+	return buf.Bytes(), nil
+}
+
+type SceneSource string
+
+const (
+	SceneSourceStash    SceneSource = "STASH"
+	SceneSourceStashbox SceneSource = "STASHBOX"
+)
+
+var AllSceneSource = []SceneSource{
+	SceneSourceStash,
+	SceneSourceStashbox,
+}
+
+func (e SceneSource) IsValid() bool {
+	switch e {
+	case SceneSourceStash, SceneSourceStashbox:
+		return true
+	}
+	return false
+}
+
+func (e SceneSource) String() string {
+	return string(e)
+}
+
+func (e *SceneSource) UnmarshalGQL(v any) error {
+	str, ok := v.(string)
+	if !ok {
+		return fmt.Errorf("enums must be strings")
+	}
+
+	*e = SceneSource(str)
+	if !e.IsValid() {
+		return fmt.Errorf("%s is not a valid SceneSource", str)
+	}
+	return nil
+}
+
+func (e SceneSource) MarshalGQL(w io.Writer) {
+	fmt.Fprint(w, strconv.Quote(e.String()))
+}
+
+func (e *SceneSource) UnmarshalJSON(b []byte) error {
+	s, err := strconv.Unquote(string(b))
+	if err != nil {
+		return err
+	}
+	return e.UnmarshalGQL(s)
+}
+
+func (e SceneSource) MarshalJSON() ([]byte, error) {
+	var buf bytes.Buffer
+	e.MarshalGQL(&buf)
+	return buf.Bytes(), nil
+}
+
+type SceneSourceFilter string
+
+const (
+	SceneSourceFilterAll      SceneSourceFilter = "ALL"
+	SceneSourceFilterStash    SceneSourceFilter = "STASH"
+	SceneSourceFilterStashbox SceneSourceFilter = "STASHBOX"
+)
+
+var AllSceneSourceFilter = []SceneSourceFilter{
+	SceneSourceFilterAll,
+	SceneSourceFilterStash,
+	SceneSourceFilterStashbox,
+}
+
+func (e SceneSourceFilter) IsValid() bool {
+	switch e {
+	case SceneSourceFilterAll, SceneSourceFilterStash, SceneSourceFilterStashbox:
+		return true
+	}
+	return false
+}
+
+func (e SceneSourceFilter) String() string {
+	return string(e)
+}
+
+func (e *SceneSourceFilter) UnmarshalGQL(v any) error {
+	str, ok := v.(string)
+	if !ok {
+		return fmt.Errorf("enums must be strings")
+	}
+
+	*e = SceneSourceFilter(str)
+	if !e.IsValid() {
+		return fmt.Errorf("%s is not a valid SceneSourceFilter", str)
+	}
+	return nil
+}
+
+func (e SceneSourceFilter) MarshalGQL(w io.Writer) {
+	fmt.Fprint(w, strconv.Quote(e.String()))
+}
+
+func (e *SceneSourceFilter) UnmarshalJSON(b []byte) error {
+	s, err := strconv.Unquote(string(b))
+	if err != nil {
+		return err
+	}
+	return e.UnmarshalGQL(s)
+}
+
+func (e SceneSourceFilter) MarshalJSON() ([]byte, error) {
 	var buf bytes.Buffer
 	e.MarshalGQL(&buf)
 	return buf.Bytes(), nil
