@@ -13,6 +13,40 @@ import (
 	"github.com/leothevan2444/moji/internal/tracker"
 )
 
+// QueueDiscoveredScene is the resolver for the queueDiscoveredScene field.
+func (r *mutationResolver) QueueDiscoveredScene(ctx context.Context, input model.QueueDiscoveredSceneInput) (*model.Task, error) {
+	if r.Subscription == nil {
+		return nil, errors.New("subscription service is not configured")
+	}
+	task, err := r.Subscription.QueueDiscoveredScene(ctx, input.SceneID, input.StashBoxEndpoint)
+	if task != nil {
+		return taskToModel(task), err
+	}
+	return nil, err
+}
+
+// DiscoverScenes is the resolver for the discoverScenes field.
+func (r *queryResolver) DiscoverScenes(ctx context.Context, input model.DiscoverScenesInput) (*model.DiscoverSceneConnection, error) {
+	if r.Subscription == nil {
+		return nil, errors.New("subscription service is not configured")
+	}
+
+	query := strings.TrimSpace(input.Query)
+	if query == "" {
+		return nil, errors.New("query is required")
+	}
+	limit := 24
+	if input.Limit != nil {
+		limit = *input.Limit
+	}
+
+	page, err := r.Subscription.SearchPreferredStashBoxScenes(ctx, query, limit)
+	if err != nil {
+		return nil, err
+	}
+	return discoveredScenePageToModel(page), nil
+}
+
 // JackettSearch is the resolver for the jackettSearch field.
 func (r *queryResolver) JackettSearch(ctx context.Context, input model.JackettSearchInput) ([]*model.JackettSearchResult, error) {
 	if r.Tracker == nil {

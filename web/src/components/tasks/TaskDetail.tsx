@@ -14,6 +14,7 @@ import {
   taskFailureSummary,
   taskPresentation,
   taskProgressPercent,
+  taskSourceLabel,
   taskSummary,
   type DashboardTask
 } from "../../utils";
@@ -46,7 +47,10 @@ export function TaskDetail({
             <h3>{taskSummary(task)}</h3>
             <p>{presentation.metaLine}</p>
           </div>
-          <span className={`status-chip ${presentation.tone}`}>{presentation.label}</span>
+          <div className="profile-card__icons">
+            <span className="status-chip tone-neutral">{taskSourceLabel(task.source)}</span>
+            <span className={`status-chip ${presentation.tone}`}>{presentation.label}</span>
+          </div>
         </div>
         <div className="task-detail-hero">
           <div className="task-detail-hero__copy">
@@ -120,6 +124,10 @@ export function TaskDetail({
             ) : (
               <dd title={task.query || undefined}>{task.query || "—"}</dd>
             )}
+          </div>
+          <div>
+            <dt>任务来源</dt>
+            <dd>{taskSourceLabel(task.source)}</dd>
           </div>
           <div>
             <dt>保存路径</dt>

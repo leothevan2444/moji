@@ -65,6 +65,9 @@ func TestDownloadMediaContextAddsBestTorrent(t *testing.T) {
 	if task.Status != TaskStatusAdded {
 		t.Fatalf("expected task status %q, got %q", TaskStatusAdded, task.Status)
 	}
+	if task.Source != TaskSourceManual {
+		t.Fatalf("expected task source %q, got %q", TaskSourceManual, task.Source)
+	}
 	if task.Candidate.Title != "best" {
 		t.Fatalf("expected best candidate, got %q", task.Candidate.Title)
 	}
@@ -136,6 +139,9 @@ func TestAddTorrentContextCreatesPersistedTask(t *testing.T) {
 
 	if task.ID != "task-manual" || task.Status != TaskStatusAdded {
 		t.Fatalf("unexpected task: %+v", task)
+	}
+	if task.Source != TaskSourceManual {
+		t.Fatalf("expected task source %q, got %q", TaskSourceManual, task.Source)
 	}
 	if task.TorrentURL != "magnet:?xt=urn:btih:manual" || task.Candidate.MagnetURI != task.TorrentURL {
 		t.Fatalf("unexpected torrent candidate: %+v", task.Candidate)

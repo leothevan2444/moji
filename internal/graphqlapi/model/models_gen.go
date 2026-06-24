@@ -30,6 +30,34 @@ type DashboardStats struct {
 	Failed       int `json:"failed"`
 }
 
+type DiscoverSceneConnection struct {
+	Items         []*DiscoveredScene `json:"items"`
+	UsedStashBox  *MatchedStashBox   `json:"usedStashBox,omitempty"`
+	FallbackCount int                `json:"fallbackCount"`
+	SearchedQuery string             `json:"searchedQuery"`
+}
+
+type DiscoverScenesInput struct {
+	Query string `json:"query"`
+	Limit *int   `json:"limit,omitempty"`
+}
+
+type DiscoveredScene struct {
+	Key              string   `json:"key"`
+	SceneID          string   `json:"sceneId"`
+	StashBoxEndpoint string   `json:"stashBoxEndpoint"`
+	StashBoxName     string   `json:"stashBoxName"`
+	Title            string   `json:"title"`
+	DurationSeconds  *int     `json:"durationSeconds,omitempty"`
+	Code             *string  `json:"code,omitempty"`
+	Date             *string  `json:"date,omitempty"`
+	StudioName       *string  `json:"studioName,omitempty"`
+	ImageURL         *string  `json:"imageUrl,omitempty"`
+	URL              *string  `json:"url,omitempty"`
+	PerformerNames   []string `json:"performerNames"`
+	DerivedQuery     string   `json:"derivedQuery"`
+}
+
 type DownloadCandidate struct {
 	Title     string `json:"title"`
 	Tracker   string `json:"tracker"`
@@ -187,6 +215,11 @@ type QBittorrentStats struct {
 }
 
 type Query struct {
+}
+
+type QueueDiscoveredSceneInput struct {
+	SceneID          string `json:"sceneId"`
+	StashBoxEndpoint string `json:"stashBoxEndpoint"`
 }
 
 type ServiceStatus struct {
@@ -398,6 +431,7 @@ type SubscriptionStatus struct {
 
 type Task struct {
 	ID                  string             `json:"id"`
+	Source              TaskSource         `json:"source"`
 	Query               string             `json:"query"`
 	Status              string             `json:"status"`
 	Candidate           *DownloadCandidate `json:"candidate"`
@@ -700,6 +734,63 @@ func (e *SceneSourceFilter) UnmarshalJSON(b []byte) error {
 }
 
 func (e SceneSourceFilter) MarshalJSON() ([]byte, error) {
+	var buf bytes.Buffer
+	e.MarshalGQL(&buf)
+	return buf.Bytes(), nil
+}
+
+type TaskSource string
+
+const (
+	TaskSourceManual       TaskSource = "MANUAL"
+	TaskSourceSearch       TaskSource = "SEARCH"
+	TaskSourceSubscription TaskSource = "SUBSCRIPTION"
+)
+
+var AllTaskSource = []TaskSource{
+	TaskSourceManual,
+	TaskSourceSearch,
+	TaskSourceSubscription,
+}
+
+func (e TaskSource) IsValid() bool {
+	switch e {
+	case TaskSourceManual, TaskSourceSearch, TaskSourceSubscription:
+		return true
+	}
+	return false
+}
+
+func (e TaskSource) String() string {
+	return string(e)
+}
+
+func (e *TaskSource) UnmarshalGQL(v any) error {
+	str, ok := v.(string)
+	if !ok {
+		return fmt.Errorf("enums must be strings")
+	}
+
+	*e = TaskSource(str)
+	if !e.IsValid() {
+		return fmt.Errorf("%s is not a valid TaskSource", str)
+	}
+	return nil
+}
+
+func (e TaskSource) MarshalGQL(w io.Writer) {
+	fmt.Fprint(w, strconv.Quote(e.String()))
+}
+
+func (e *TaskSource) UnmarshalJSON(b []byte) error {
+	s, err := strconv.Unquote(string(b))
+	if err != nil {
+		return err
+	}
+	return e.UnmarshalGQL(s)
+}
+
+func (e TaskSource) MarshalJSON() ([]byte, error) {
 	var buf bytes.Buffer
 	e.MarshalGQL(&buf)
 	return buf.Bytes(), nil

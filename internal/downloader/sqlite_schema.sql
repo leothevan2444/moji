@@ -7,6 +7,7 @@ CREATE TABLE IF NOT EXISTS task_store_meta (
 
 CREATE TABLE IF NOT EXISTS tasks (
   id TEXT PRIMARY KEY,
+  source TEXT NOT NULL DEFAULT 'MANUAL' CHECK (source IN ('MANUAL', 'SEARCH', 'SUBSCRIPTION')),
   query TEXT NOT NULL,
   status TEXT NOT NULL CHECK (status IN ('pending', 'added', 'downloading', 'completed', 'failed')),
 

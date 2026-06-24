@@ -10,7 +10,7 @@ import {
  * Hook wrapping the Jackett search query. Pauses automatically when the
  * deferred query is empty.
  */
-export function useJackettSearch(deferredQuery: string) {
+export function useJackettSearch(deferredQuery: string, enabled = true) {
   const [{ data, fetching, error }] = useQuery<
     SearchDocumentQuery,
     SearchDocumentQueryVariables
@@ -22,7 +22,7 @@ export function useJackettSearch(deferredQuery: string) {
         limit: 18
       } satisfies JackettSearchInput
     },
-    pause: deferredQuery.length === 0
+    pause: !enabled || deferredQuery.length === 0
   });
 
   return {

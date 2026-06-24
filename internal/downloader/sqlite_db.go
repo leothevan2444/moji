@@ -75,6 +75,7 @@ type sqliteColumnMigration struct {
 
 func migrateSQLiteDatabase(db *sql.DB) error {
 	taskMigrations := []sqliteColumnMigration{
+		{name: "source", definition: "TEXT NOT NULL DEFAULT 'MANUAL' CHECK (source IN ('MANUAL', 'SEARCH', 'SUBSCRIPTION'))"},
 		{name: "stash_mode", definition: "TEXT NOT NULL DEFAULT ''"},
 		{name: "stash_source_path", definition: "TEXT NOT NULL DEFAULT ''"},
 		{name: "stash_transfer_action", definition: "TEXT NOT NULL DEFAULT ''"},

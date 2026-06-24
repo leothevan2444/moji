@@ -338,6 +338,81 @@
   gap: 8px;
 }
 
+.candidate-card--discovery {
+  --candidate-card-height: 196px;
+  --candidate-card-padding: 16px;
+  --candidate-poster-height: calc(var(--candidate-card-height) - var(--candidate-card-padding) * 2);
+  --candidate-poster-width: calc(var(--candidate-poster-height) * 25 / 19);
+  flex-direction: row;
+  align-items: stretch;
+  height: var(--candidate-card-height);
+  padding: var(--candidate-card-padding);
+  gap: 14px;
+  overflow: hidden;
+}
+
+.candidate-card__poster {
+  overflow: hidden;
+  border-radius: 10px;
+  background: rgba(148, 163, 184, 0.12);
+  aspect-ratio: 16 / 9;
+  box-shadow: inset 0 0 0 1px var(--inset-dark);
+}
+
+.candidate-card__poster img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+  image-rendering: auto;
+  backface-visibility: hidden;
+  transform: translateZ(0);
+}
+
+.candidate-card__poster--discovery {
+  width: var(--candidate-poster-width);
+  height: var(--candidate-poster-height);
+  flex: 0 0 var(--candidate-poster-width);
+  aspect-ratio: auto;
+}
+
+.candidate-card__content {
+  min-width: 0;
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.candidate-card__title-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.candidate-card__title-row h3 {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.candidate-card__meta-chip {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  min-height: 24px;
+  padding: 0 8px;
+  border-radius: 999px;
+  border: 1px solid rgba(100, 116, 139, 0.16);
+  background: rgba(148, 163, 184, 0.12);
+  color: var(--muted-2);
+  font-size: 11px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
 .candidate-card__foot a {
   text-decoration: none;
   color: var(--accent-3);

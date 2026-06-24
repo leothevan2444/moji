@@ -119,6 +119,7 @@ func (s *SQLiteTaskStore) List(ctx context.Context) ([]*Task, error) {
 const taskSelectSQL = `
 SELECT
   id,
+  source,
   query,
   status,
   torrent_url,
@@ -157,19 +158,24 @@ SELECT
 FROM tasks`
 
 func upsertTaskRow(ctx context.Context, tx *sql.Tx, task *Task, isUpdate bool) error {
+	source := task.Source
+	if source == "" {
+		source = TaskSourceManual
+	}
 	query := `
 INSERT INTO tasks (
-  id, query, status, torrent_url, save_path, category, tags,
+  id, source, query, status, torrent_url, save_path, category, tags,
   torrent_hash, torrent_name, progress, qbittorrent_state, content_path,
   completed_at, stash_mode, stash_source_path, stash_transfer_action, stash_transfer_path,
   stash_transfer_status, stash_transfer_error, stash_job_id, stash_scan_path, stash_scan_status,
   stash_scan_error, stash_scan_hint, stash_scan_started_at, error,
   candidate_title, candidate_tracker, candidate_info_hash, candidate_link, candidate_magnet_uri,
   candidate_size, candidate_seeders, candidate_peers, created_at, updated_at
-) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
 	if isUpdate {
 		query += `
 ON CONFLICT(id) DO UPDATE SET
+  source = excluded.source,
   query = excluded.query,
   status = excluded.status,
   torrent_url = excluded.torrent_url,
@@ -208,6 +214,7 @@ ON CONFLICT(id) DO UPDATE SET
 
 	if _, err := tx.ExecContext(ctx, query,
 		task.ID,
+		string(source),
 		task.Query,
 		string(task.Status),
 		task.TorrentURL,
@@ -278,6 +285,7 @@ type taskScanner interface {
 func scanTask(scanner taskScanner) (*Task, error) {
 	var (
 		task              Task
+		source            string
 		status            string
 		completedAtRaw    sql.NullString
 		stashStartedAtRaw sql.NullString
@@ -287,6 +295,7 @@ func scanTask(scanner taskScanner) (*Task, error) {
 
 	if err := scanner.Scan(
 		&task.ID,
+		&source,
 		&task.Query,
 		&status,
 		&task.TorrentURL,
@@ -326,6 +335,10 @@ func scanTask(scanner taskScanner) (*Task, error) {
 		return nil, err
 	}
 
+	task.Source = TaskSource(source)
+	if task.Source == "" {
+		task.Source = TaskSourceManual
+	}
 	task.Status = TaskStatus(status)
 
 	var err error

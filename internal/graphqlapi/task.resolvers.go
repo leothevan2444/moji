@@ -29,6 +29,7 @@ func (r *mutationResolver) AddTorrent(ctx context.Context, input model.QBittorre
 	}
 
 	req := downloader.AddTorrentRequest{
+		Source: downloader.TaskSourceManual,
 		URL:    input.URL,
 		Paused: input.Paused,
 	}
@@ -56,6 +57,7 @@ func (r *mutationResolver) DownloadMedia(ctx context.Context, input model.Downlo
 	}
 
 	req := downloader.DownloadRequest{
+		Source:     downloader.TaskSourceManual,
 		Query:      input.Query,
 		Trackers:   input.Trackers,
 		Categories: input.Categories,

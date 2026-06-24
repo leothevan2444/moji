@@ -28,7 +28,9 @@ type StashClient interface {
 
 type StashboxClient interface {
 	FindPerformerByID(ctx context.Context, id string) (*stashboxgraphql.PerformerFragment, error)
+	FindSceneByID(ctx context.Context, id string) (*stashboxgraphql.SceneFragment, error)
 	SearchPerformer(ctx context.Context, term string) ([]*stashboxgraphql.PerformerFragment, error)
+	SearchScene(ctx context.Context, term string) ([]*stashboxgraphql.SceneFragment, error)
 	QueryScenes(ctx context.Context, input stashboxgraphql.SceneQueryInput) ([]*stashboxgraphql.SceneFragment, error)
 }
 
@@ -237,7 +239,10 @@ func (s *Service) RefreshSubscribedPerformer(ctx context.Context, performerID st
 	if s.downloader != nil {
 		nextPending := append([]RecordedRelease(nil), existingPending...)
 		for i := range pending {
-			task, err := s.downloader.DownloadMediaContext(ctx, downloader.DownloadRequest{Query: pending[i].Query})
+			task, err := s.downloader.DownloadMediaContext(ctx, downloader.DownloadRequest{
+				Source: downloader.TaskSourceSubscription,
+				Query:  pending[i].Query,
+			})
 			if err != nil {
 				state.LastError = err.Error()
 				logging.Errorf("subscription: auto-download failed for performer %s release %q: %v", performerID, pending[i].Query, err)

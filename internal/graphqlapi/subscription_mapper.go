@@ -68,6 +68,37 @@ func matchedStashBoxToModel(item *subscription.MatchedStashBox) *model.MatchedSt
 	}
 }
 
+func discoveredScenePageToModel(page subscription.DiscoverScenePage) *model.DiscoverSceneConnection {
+	items := make([]*model.DiscoveredScene, 0, len(page.Items))
+	for _, item := range page.Items {
+		items = append(items, discoveredSceneToModel(item))
+	}
+	return &model.DiscoverSceneConnection{
+		Items:         items,
+		UsedStashBox:  matchedStashBoxToModel(page.UsedStashBox),
+		FallbackCount: page.FallbackCount,
+		SearchedQuery: page.SearchedQuery,
+	}
+}
+
+func discoveredSceneToModel(item subscription.DiscoveredScene) *model.DiscoveredScene {
+	return &model.DiscoveredScene{
+		Key:              item.Key,
+		SceneID:          item.SceneID,
+		StashBoxEndpoint: item.StashBoxEndpoint,
+		StashBoxName:     item.StashBoxName,
+		Title:            item.Title,
+		DurationSeconds:  item.DurationSeconds,
+		Code:             nilIfEmpty(item.Code),
+		Date:             nilIfEmpty(item.Date),
+		StudioName:       nilIfEmpty(item.StudioName),
+		ImageURL:         nilIfEmpty(item.ImageURL),
+		URL:              nilIfEmpty(item.URL),
+		PerformerNames:   append([]string(nil), item.PerformerNames...),
+		DerivedQuery:     item.DerivedQuery,
+	}
+}
+
 func performerScenePageToModel(page subscription.PerformerScenePage) *model.StashPerformerSceneConnection {
 	items := make([]*model.StashPerformerScene, 0, len(page.Items))
 	for _, item := range page.Items {

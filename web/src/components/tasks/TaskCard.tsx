@@ -4,6 +4,7 @@ import {
   taskCardState,
   taskFailureSummary,
   taskPresentation,
+  taskSourceLabel,
   taskSummary,
   type DashboardTask
 } from "../../utils";
@@ -41,7 +42,10 @@ export function TaskCard({ task, compact = false, pendingScanId = null, onOpen, 
           <h3>{taskSummary(task)}</h3>
           <p>{presentation.metaLine}</p>
         </div>
-        <span className={`status-chip ${presentation.tone}`}>{presentation.label}</span>
+        <div className="profile-card__icons">
+          <span className="status-chip tone-neutral">{taskSourceLabel(task.source)}</span>
+          <span className={`status-chip ${presentation.tone}`}>{presentation.label}</span>
+        </div>
       </div>
 
       <div className="task-card__status">

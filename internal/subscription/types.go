@@ -21,6 +21,29 @@ type MatchedStashBox struct {
 	PerformerName string
 }
 
+type DiscoveredScene struct {
+	Key              string
+	SceneID          string
+	StashBoxEndpoint string
+	StashBoxName     string
+	Title            string
+	DurationSeconds  *int
+	Code             string
+	Date             string
+	StudioName       string
+	ImageURL         string
+	URL              string
+	PerformerNames   []string
+	DerivedQuery     string
+}
+
+type DiscoverScenePage struct {
+	Items         []DiscoveredScene
+	UsedStashBox  *MatchedStashBox
+	FallbackCount int
+	SearchedQuery string
+}
+
 type StashSceneID struct {
 	Endpoint string
 	StashID  string

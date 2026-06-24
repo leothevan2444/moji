@@ -118,6 +118,7 @@ query DashboardDocument {
   }
   tasks {
     id
+    source
     query
     status
     torrentName

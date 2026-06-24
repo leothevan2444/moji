@@ -3,6 +3,7 @@ import { HELP_TOPICS, type HelpTopicId } from "./help";
 import { describeQueryError } from "./services/queryError";
 import {
   useDashboard,
+  useDiscoverScenes,
   useDrawerTransition,
   useJackettSearch,
   useSubscription,
@@ -12,7 +13,7 @@ import {
 import { taskSummary, type TaskGroupKey } from "./utils";
 import type { DrawerKey, SettingsTab, TabKey } from "./types";
 import { Drawer, Header, ToastStack } from "./components/layout";
-import { HelpDrawer, SettingsDrawer, StatsDrawer, TaskDrawer } from "./components/drawers";
+import { DiscoveryDrawer, HelpDrawer, SettingsDrawer, StatsDrawer, TaskDrawer } from "./components/drawers";
 import {
   DiscoveryPage,
   HomePage,
@@ -21,7 +22,12 @@ import {
   type TaskSortKey,
   type TaskStatusFilter
 } from "./pages";
-import { LibraryFilter, SceneSourceFilter, type SearchDocumentQuery } from "./graphql/generated/graphql";
+import {
+  LibraryFilter,
+  SceneSourceFilter,
+  type DiscoverScenesDocumentQuery,
+  type SearchDocumentQuery
+} from "./graphql/generated/graphql";
 
 function App() {
   // ── UI state ────────────────────────────────────────────────────────
@@ -48,8 +54,9 @@ function App() {
   const [pendingTaskScanId, setPendingTaskScanId] = useState<string | null>(null);
 
   // Discovery page state
-  const [jackettQuery, setJackettQuery] = useState("");
-  const [submittedJackettQuery, setSubmittedJackettQuery] = useState("");
+  const [discoveryQuery, setDiscoveryQuery] = useState("");
+  const [submittedDiscoveryQuery, setSubmittedDiscoveryQuery] = useState("");
+  const [discoveryMode, setDiscoveryMode] = useState<"stashbox" | "jackett">("stashbox");
   const [pendingAddId, setPendingAddId] = useState<string | null>(null);
 
   // Subscription page state
@@ -70,7 +77,7 @@ function App() {
   const theme = useTheme();
   const { renderedDrawer, drawerClosing, visibleDrawer } = useDrawerTransition(drawer);
 
-  const deferredJackettQuery = useDeferredValue(submittedJackettQuery.trim());
+  const deferredDiscoveryQuery = useDeferredValue(submittedDiscoveryQuery.trim());
   const deferredSubscriptionSearch = useDeferredValue(subscriptionSearch.trim());
   const deferredPerformerSceneSearch = useDeferredValue(performerSceneSearch.trim());
 
@@ -85,10 +92,18 @@ function App() {
   } = useDashboard();
 
   const {
+    result: discoverResult,
+    results: discoveredScenes,
+    fetching: searchingDiscoverScenes,
+    error: discoverScenesError,
+    queueDiscoveredScene
+  } = useDiscoverScenes(deferredDiscoveryQuery, drawer === "discovery" && discoveryMode === "stashbox");
+
+  const {
     results: searchResults,
-    fetching: searching,
+    fetching: searchingJackett,
     error: searchError
-  } = useJackettSearch(deferredJackettQuery);
+  } = useJackettSearch(deferredDiscoveryQuery, drawer === "discovery" && discoveryMode === "jackett");
 
   const {
     stashPerformerPage,
@@ -162,9 +177,18 @@ function App() {
     setDrawer("task");
   };
 
-  const handleSubmitJackettSearch = (event: FormEvent<HTMLFormElement>) => {
+  const handleSubmitDiscoverSearch = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    setSubmittedJackettQuery(jackettQuery.trim());
+    setDiscoveryMode("stashbox");
+    setSubmittedDiscoveryQuery(discoveryQuery.trim());
+    setDrawer("discovery");
+    setTab("发现");
+  };
+
+  const handleOpenJackettFallback = () => {
+    setDiscoveryMode("jackett");
+    setSubmittedDiscoveryQuery(discoveryQuery.trim());
+    setDrawer("discovery");
     setTab("发现");
   };
 
@@ -210,6 +234,38 @@ function App() {
       }
 
       setSelectedTaskId(response.data.addTorrent.id);
+      await refreshDashboard({ requestPolicy: "network-only" });
+      setDrawer("task");
+    } finally {
+      setPendingAddId(null);
+    }
+  };
+
+  const handleQueueDiscoveredScene = async (
+    result: DiscoverScenesDocumentQuery["discoverScenes"]["items"][number]
+  ) => {
+    setPendingAddId(result.key);
+
+    try {
+      const response = await queueDiscoveredScene({
+        input: {
+          sceneId: result.sceneId,
+          stashBoxEndpoint: result.stashBoxEndpoint
+        }
+      });
+
+      if (response.error) {
+        pushToast("tone-danger", describeQueryError(response.error));
+        return;
+      }
+
+      if (!response.data?.queueDiscoveredScene?.id) {
+        pushToast("tone-danger", "任务创建失败，后端没有返回新的任务记录。");
+        return;
+      }
+
+      pushToast("tone-success", `已将 ${result.title} 加入任务队列。`);
+      setSelectedTaskId(response.data.queueDiscoveredScene.id);
       await refreshDashboard({ requestPolicy: "network-only" });
       setDrawer("task");
     } finally {
@@ -303,6 +359,7 @@ function App() {
     if (visibleDrawer === "stats") return "统计";
     if (visibleDrawer === "settings") return "设置";
     if (visibleDrawer === "help") return "帮助";
+    if (visibleDrawer === "discovery") return discoveryMode === "stashbox" ? "搜索结果" : "备用搜索";
     return "任务详情";
   })();
 
@@ -310,6 +367,7 @@ function App() {
     if (visibleDrawer === "stats") return "运行概览";
     if (visibleDrawer === "settings") return "配置与系统";
     if (visibleDrawer === "help") return "Markdown 帮助";
+    if (visibleDrawer === "discovery") return discoveryMode === "stashbox" ? "StashBox 搜索结果" : "Jackett 备用搜索";
     return activeTask ? taskSummary(activeTask) : "任务详情";
   })();
 
@@ -377,15 +435,12 @@ function App() {
 
         {tab === "发现" ? (
           <DiscoveryPage
-            jackettQuery={jackettQuery}
-            searching={searching}
-            searchError={searchError ?? null}
-            searchResults={searchResults}
-            deferredJackettQuery={deferredJackettQuery}
-            pendingAddId={pendingAddId}
-            onQueryChange={setJackettQuery}
-            onSubmit={handleSubmitJackettSearch}
-            onAdd={(result) => void handleAddSearchResult(result)}
+            query={discoveryQuery}
+            searchingPrimary={searchingDiscoverScenes}
+            searchingFallback={searchingJackett}
+            onQueryChange={setDiscoveryQuery}
+            onSubmitPrimary={handleSubmitDiscoverSearch}
+            onSubmitFallback={handleOpenJackettFallback}
             onOpenHelp={() => setDrawer("help")}
           />
         ) : null}
@@ -483,6 +538,21 @@ function App() {
               onSyncAll={() => void runSync()}
               onScanTask={(id) => void runTaskScan(id)}
               onScanAll={() => void runScan()}
+            />
+          ) : null}
+
+          {visibleDrawer === "discovery" ? (
+            <DiscoveryDrawer
+              mode={discoveryMode}
+              query={deferredDiscoveryQuery}
+              searching={discoveryMode === "stashbox" ? searchingDiscoverScenes : searchingJackett}
+              error={(discoveryMode === "stashbox" ? discoverScenesError : searchError) ?? null}
+              pendingAddId={pendingAddId}
+              discoverResult={discoverResult}
+              discoverItems={discoveredScenes}
+              jackettItems={searchResults}
+              onQueueDiscovered={(result) => void handleQueueDiscoveredScene(result)}
+              onAddJackett={(result) => void handleAddSearchResult(result)}
             />
           ) : null}
         </Drawer>

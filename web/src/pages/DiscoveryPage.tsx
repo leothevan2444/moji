@@ -1,34 +1,22 @@
 import { FormEvent } from "react";
-import { formatBytes, formatRelativeDate } from "../utils";
-import type {
-  SearchDocumentQuery
-} from "../graphql/generated/graphql";
-
-type JackettResult = SearchDocumentQuery["jackettSearch"][number];
 
 interface DiscoveryPageProps {
-  jackettQuery: string;
-  searching: boolean;
-  searchError: Error | null;
-  searchResults: JackettResult[];
-  deferredJackettQuery: string;
-  pendingAddId: string | null;
+  query: string;
+  searchingPrimary: boolean;
+  searchingFallback: boolean;
   onQueryChange: (value: string) => void;
-  onSubmit: (event: FormEvent<HTMLFormElement>) => void;
-  onAdd: (result: JackettResult) => void;
+  onSubmitPrimary: (event: FormEvent<HTMLFormElement>) => void;
+  onSubmitFallback: () => void;
   onOpenHelp: () => void;
 }
 
 export function DiscoveryPage({
-  jackettQuery,
-  searching,
-  searchError,
-  searchResults,
-  deferredJackettQuery,
-  pendingAddId,
+  query,
+  searchingPrimary,
+  searchingFallback,
   onQueryChange,
-  onSubmit,
-  onAdd,
+  onSubmitPrimary,
+  onSubmitFallback,
   onOpenHelp
 }: DiscoveryPageProps) {
   return (
@@ -37,62 +25,29 @@ export function DiscoveryPage({
         <div className="band-head">
           <div>
             <p className="section-kicker">发现</p>
-            <h2>Jackett 搜索</h2>
+            <h2>搜索</h2>
           </div>
-          <p className="band-note">搜索候选后直接创建 Moji task。</p>
+          <p className="band-note">先查首选 StashBox 元数据，再送入 Moji 任务闭环。</p>
         </div>
 
-        <form className="discovery-bar" onSubmit={onSubmit}>
+        <form className="discovery-bar" onSubmit={onSubmitPrimary}>
           <input
-            value={jackettQuery}
+            value={query}
             onChange={(event) => onQueryChange(event.target.value)}
-            placeholder="输入番号、标题、女优或关键词"
+            placeholder="输入番号、标题、演员或关键词"
           />
-          <button type="submit" disabled={searching || jackettQuery.trim() === ""}>
-            {searching ? "搜索中" : "搜索"}
+          <button type="submit" disabled={searchingPrimary || query.trim() === ""}>
+            {searchingPrimary ? "搜索中" : "搜索"}
+          </button>
+          <button
+            type="button"
+            className="ghost-button"
+            onClick={onSubmitFallback}
+            disabled={searchingFallback || query.trim() === ""}
+          >
+            {searchingFallback ? "搜索中" : "备用 Jackett 搜索"}
           </button>
         </form>
-
-        {searchError ? <p className="inline-error">{searchError.message}</p> : null}
-
-        <div className="discovery-results">
-          {searchResults.map((result) => (
-            <article key={`${result.tracker}-${result.link}`} className="candidate-card">
-              <div className="candidate-card__head">
-                <div>
-                  <h3>{result.title}</h3>
-                  <p>
-                    {result.tracker} · {formatBytes(Number(result.size) || 0)} · {result.seeders} seeders
-                  </p>
-                </div>
-                <span className="status-chip tone-info">{result.categoryDesc || "候选"}</span>
-              </div>
-              <div className="candidate-card__foot">
-                <span>{formatRelativeDate(result.publishDate)}</span>
-                <div className="inline-actions">
-                  <a href={result.link} target="_blank" rel="noreferrer">
-                    原始链接
-                  </a>
-                  <button type="button" onClick={() => onAdd(result)} disabled={pendingAddId === result.link}>
-                    {pendingAddId === result.link ? "添加中" : "创建任务"}
-                  </button>
-                </div>
-              </div>
-            </article>
-          ))}
-          {deferredJackettQuery && !searching && searchResults.length === 0 ? (
-            <article className="empty-card empty-card--wide">
-              <h3>没有候选</h3>
-              <p>Jackett 没有返回结果，换个关键词再试。</p>
-            </article>
-          ) : null}
-          {!deferredJackettQuery ? (
-            <article className="empty-card empty-card--wide">
-              <h3>先搜索</h3>
-              <p>输入关键词后会在这里列出候选项。</p>
-            </article>
-          ) : null}
-        </div>
       </section>
 
       <section className="section-band section-band--preview">

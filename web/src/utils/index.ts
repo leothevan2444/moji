@@ -1,4 +1,12 @@
-export { formatBytes, formatBytesRate, formatDateTime, formatLogEntries, formatRelative, formatRelativeDate } from "./formatters";
+export {
+  formatBytes,
+  formatBytesRate,
+  formatDateTime,
+  formatDurationSeconds,
+  formatLogEntries,
+  formatRelative,
+  formatRelativeDate
+} from "./formatters";
 export {
   deliveryModeGuide,
   deliveryModeLabel,
@@ -15,6 +23,7 @@ export {
   taskQueryLabel,
   isCopyableTaskValue,
   taskSummary,
+  taskSourceLabel,
   statusTone,
   taskGroup,
   taskGroupTone,

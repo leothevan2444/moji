@@ -1,3 +1,31 @@
+query DiscoverScenesDocument($input: DiscoverScenesInput!) {
+  discoverScenes(input: $input) {
+    items {
+      key
+      sceneId
+      stashBoxEndpoint
+      stashBoxName
+      title
+      durationSeconds
+      code
+      date
+      studioName
+      imageUrl
+      url
+      performerNames
+      derivedQuery
+    }
+    usedStashBox {
+      name
+      endpoint
+      performerId
+      performerName
+    }
+    fallbackCount
+    searchedQuery
+  }
+}
+
 query SearchDocument($input: JackettSearchInput!) {
   jackettSearch(input: $input) {
     title
@@ -9,5 +37,19 @@ query SearchDocument($input: JackettSearchInput!) {
     publishDate
     link
     magnetUri
+  }
+}
+
+mutation QueueDiscoveredSceneDocument($input: QueueDiscoveredSceneInput!) {
+  queueDiscoveredScene(input: $input) {
+    id
+    source
+    status
+    query
+    torrentName
+    progress
+    stashMode
+    stashScanStatus
+    createdAt
   }
 }

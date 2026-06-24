@@ -46,9 +46,14 @@ func taskToModel(task *downloader.Task) *model.Task {
 	if task == nil {
 		return nil
 	}
+	source := task.Source
+	if source == "" {
+		source = downloader.TaskSourceManual
+	}
 
 	return &model.Task{
 		ID:                  task.ID,
+		Source:              model.TaskSource(source),
 		Query:               task.Query,
 		Status:              string(task.Status),
 		Candidate:           candidateToModel(task.Candidate),

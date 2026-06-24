@@ -52,8 +52,17 @@ const (
 	TaskStatusFailed      TaskStatus = "failed"
 )
 
+type TaskSource string
+
+const (
+	TaskSourceManual       TaskSource = "MANUAL"
+	TaskSourceSearch       TaskSource = "SEARCH"
+	TaskSourceSubscription TaskSource = "SUBSCRIPTION"
+)
+
 type Task struct {
 	ID                  string
+	Source              TaskSource
 	Query               string
 	Status              TaskStatus
 	Candidate           Candidate
@@ -96,6 +105,7 @@ type Candidate struct {
 }
 
 type DownloadRequest struct {
+	Source     TaskSource
 	Query      string
 	Trackers   []string
 	Categories []int
@@ -107,6 +117,7 @@ type DownloadRequest struct {
 }
 
 type AddTorrentRequest struct {
+	Source   TaskSource
 	URL      string
 	SavePath string
 	Category string
@@ -273,8 +284,13 @@ func (s *Service) DownloadMediaContext(ctx context.Context, req DownloadRequest)
 	candidate := candidateFromSearchResult(result)
 	torrentURL := preferredTorrentURL(result)
 	now := s.now().UTC()
+	source := req.Source
+	if source == "" {
+		source = TaskSourceManual
+	}
 	task := &Task{
 		ID:         s.newID(),
+		Source:     source,
 		Query:      query,
 		Status:     TaskStatusPending,
 		Candidate:  candidate,
@@ -291,7 +307,8 @@ func (s *Service) DownloadMediaContext(ctx context.Context, req DownloadRequest)
 		return nil, fmt.Errorf("create task: %w", err)
 	}
 	logging.Infof(
-		"downloader: created task %s for query %q using tracker=%s title=%q",
+		"downloader: created %s task %s for query %q using tracker=%s title=%q",
+		strings.ToLower(string(source)),
 		task.ID,
 		query,
 		candidate.Tracker,
@@ -329,7 +346,7 @@ func (s *Service) DownloadMediaContext(ctx context.Context, req DownloadRequest)
 		logging.Errorf("downloader: persist added task %s failed: %v", task.ID, err)
 		return task, fmt.Errorf("update task: %w", err)
 	}
-	logging.Infof("downloader: task %s added to qBittorrent for query %q", task.ID, query)
+	logging.Infof("downloader: %s task %s added to qBittorrent for query %q", strings.ToLower(string(source)), task.ID, query)
 
 	return task, nil
 }
@@ -341,8 +358,13 @@ func (s *Service) AddTorrentContext(ctx context.Context, req AddTorrentRequest) 
 	}
 
 	now := s.now().UTC()
+	source := req.Source
+	if source == "" {
+		source = TaskSourceManual
+	}
 	task := &Task{
 		ID:         s.newID(),
+		Source:     source,
 		Query:      torrentURL,
 		Status:     TaskStatusPending,
 		Candidate:  candidateFromTorrentURL(torrentURL),
@@ -358,7 +380,7 @@ func (s *Service) AddTorrentContext(ctx context.Context, req AddTorrentRequest) 
 		logging.Errorf("downloader: create manual task failed for url %q: %v", torrentURL, err)
 		return nil, fmt.Errorf("create task: %w", err)
 	}
-	logging.Infof("downloader: created manual task %s for url %q", task.ID, torrentURL)
+	logging.Infof("downloader: created %s task %s for url %q", strings.ToLower(string(source)), task.ID, torrentURL)
 
 	addOptions := qbittorrent.AddTorrentOptions{
 		URLs: []string{torrentURL},
@@ -391,7 +413,7 @@ func (s *Service) AddTorrentContext(ctx context.Context, req AddTorrentRequest) 
 		logging.Errorf("downloader: persist manual task %s failed: %v", task.ID, err)
 		return task, fmt.Errorf("update task: %w", err)
 	}
-	logging.Infof("downloader: manual task %s added to qBittorrent", task.ID)
+	logging.Infof("downloader: %s task %s added to qBittorrent", strings.ToLower(string(source)), task.ID)
 
 	return task, nil
 }

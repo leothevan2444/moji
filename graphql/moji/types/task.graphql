@@ -62,8 +62,15 @@ input DownloadMediaInput {
   paused: Boolean
 }
 
+enum TaskSource {
+  MANUAL
+  SEARCH
+  SUBSCRIPTION
+}
+
 type Task {
   id: ID!
+  source: TaskSource!
   query: String!
   status: String!
   candidate: DownloadCandidate!

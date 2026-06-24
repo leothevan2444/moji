@@ -1,6 +1,47 @@
 extend type Query {
-  "Search torrents via Jackett"
+  "Search scene metadata from preferred StashBox sources"
+  discoverScenes(input: DiscoverScenesInput!): DiscoverSceneConnection!
+
+  "Search torrents via Jackett as a fallback-only power-user tool"
   jackettSearch(input: JackettSearchInput!): [JackettSearchResult!]!
+}
+
+extend type Mutation {
+  "Queue a discovered StashBox scene into the standard download workflow"
+  queueDiscoveredScene(input: QueueDiscoveredSceneInput!): Task!
+}
+
+input DiscoverScenesInput {
+  query: String!
+  limit: Int = 24
+}
+
+type DiscoverSceneConnection {
+  items: [DiscoveredScene!]!
+  usedStashBox: MatchedStashBox
+  fallbackCount: Int!
+  searchedQuery: String!
+}
+
+type DiscoveredScene {
+  key: ID!
+  sceneId: ID!
+  stashBoxEndpoint: String!
+  stashBoxName: String!
+  title: String!
+  durationSeconds: Int
+  code: String
+  date: String
+  studioName: String
+  imageUrl: String
+  url: String
+  performerNames: [String!]!
+  derivedQuery: String!
+}
+
+input QueueDiscoveredSceneInput {
+  sceneId: ID!
+  stashBoxEndpoint: String!
 }
 
 input JackettSearchInput {

@@ -47,6 +47,19 @@ export function formatRelativeDate(value?: string | null) {
   }).format(date);
 }
 
+export function formatDurationSeconds(value?: number | null) {
+  if (!value || value <= 0) return "";
+  const total = Math.floor(value);
+  const hours = Math.floor(total / 3600);
+  const minutes = Math.floor((total % 3600) / 60);
+  const seconds = total % 60;
+
+  if (hours > 0) {
+    return `${hours}:${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
+  }
+  return `${minutes}:${String(seconds).padStart(2, "0")}`;
+}
+
 /**
  * Format an ISO timestamp as a short relative string (e.g. "刚刚", "5s 前",
  * "2m 前", "1h 前", "3d 前"). Returns null when the input is missing or

@@ -55,6 +55,9 @@ func TestDownloadMediaCreatesTask(t *testing.T) {
 	if downloader.downloadRequest.Query != "ABCD-123" || downloader.downloadRequest.Limit != 1 {
 		t.Fatalf("unexpected download request: %+v", downloader.downloadRequest)
 	}
+	if string(downloader.downloadRequest.Source) != "MANUAL" {
+		t.Fatalf("expected manual task source, got %+v", downloader.downloadRequest)
+	}
 }
 
 func TestAddTorrentCreatesTask(t *testing.T) {
@@ -90,6 +93,9 @@ func TestAddTorrentCreatesTask(t *testing.T) {
 	}
 	if downloader.addRequest.URL != "magnet:?xt=urn:btih:manual" || downloader.addRequest.Category != "moji" {
 		t.Fatalf("unexpected add torrent request: %+v", downloader.addRequest)
+	}
+	if string(downloader.addRequest.Source) != "MANUAL" {
+		t.Fatalf("expected manual task source, got %+v", downloader.addRequest)
 	}
 }
 
@@ -934,8 +940,10 @@ type fakeStashService struct{}
 
 type fakeSubscriptionService struct {
 	performers    []subscription.Performer
+	discovered    subscription.DiscoverScenePage
 	detail        subscription.PerformerDetail
 	performerPage subscription.PerformerScenePage
+	queueTask     *downloader.Task
 }
 
 type fakeLogReader struct {
@@ -951,6 +959,14 @@ func (f *fakeLogReader) Entries(limit int, _ string) []logging.Entry {
 
 func (f *fakeSubscriptionService) ListStashPerformers(_ context.Context, _ string) ([]subscription.Performer, error) {
 	return f.performers, nil
+}
+
+func (f *fakeSubscriptionService) SearchPreferredStashBoxScenes(context.Context, string, int) (subscription.DiscoverScenePage, error) {
+	return f.discovered, nil
+}
+
+func (f *fakeSubscriptionService) QueueDiscoveredScene(context.Context, string, string) (*downloader.Task, error) {
+	return f.queueTask, nil
 }
 
 func (f *fakeSubscriptionService) ListSubscribedPerformers(context.Context) ([]subscription.SubscribedPerformer, error) {

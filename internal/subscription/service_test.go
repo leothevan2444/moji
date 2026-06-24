@@ -74,8 +74,10 @@ func (f *fakeStashClient) GetStashBoxes(_ context.Context) ([]stash.StashBoxEndp
 }
 
 type fakeStashboxClient struct {
-	performer *stashboxgraphql.PerformerFragment
-	scenes    []*stashboxgraphql.SceneFragment
+	performer    *stashboxgraphql.PerformerFragment
+	scenes       []*stashboxgraphql.SceneFragment
+	searchErr    error
+	findSceneErr error
 }
 
 type fakeDownloader struct {
@@ -83,11 +85,24 @@ type fakeDownloader struct {
 	err     error
 	calls   int
 	queries []string
+	sources []downloader.TaskSource
 }
 
 func (f *fakeStashboxClient) FindPerformerByID(_ context.Context, id string) (*stashboxgraphql.PerformerFragment, error) {
 	if f.performer != nil && f.performer.ID == id {
 		return f.performer, nil
+	}
+	return nil, nil
+}
+
+func (f *fakeStashboxClient) FindSceneByID(_ context.Context, id string) (*stashboxgraphql.SceneFragment, error) {
+	if f.findSceneErr != nil {
+		return nil, f.findSceneErr
+	}
+	for _, scene := range f.scenes {
+		if scene != nil && scene.ID == id {
+			return scene, nil
+		}
 	}
 	return nil, nil
 }
@@ -99,6 +114,13 @@ func (f *fakeStashboxClient) SearchPerformer(_ context.Context, _ string) ([]*st
 	return []*stashboxgraphql.PerformerFragment{f.performer}, nil
 }
 
+func (f *fakeStashboxClient) SearchScene(_ context.Context, _ string) ([]*stashboxgraphql.SceneFragment, error) {
+	if f.searchErr != nil {
+		return nil, f.searchErr
+	}
+	return append([]*stashboxgraphql.SceneFragment(nil), f.scenes...), nil
+}
+
 func (f *fakeStashboxClient) QueryScenes(_ context.Context, _ stashboxgraphql.SceneQueryInput) ([]*stashboxgraphql.SceneFragment, error) {
 	return f.scenes, nil
 }
@@ -106,6 +128,7 @@ func (f *fakeStashboxClient) QueryScenes(_ context.Context, _ stashboxgraphql.Sc
 func (f *fakeDownloader) DownloadMediaContext(_ context.Context, req downloader.DownloadRequest) (*downloader.Task, error) {
 	f.calls++
 	f.queries = append(f.queries, req.Query)
+	f.sources = append(f.sources, req.Source)
 	if f.err != nil {
 		return nil, f.err
 	}
@@ -867,5 +890,77 @@ func TestListPerformerScenesDeduplicatesMatchedStashBoxScenes(t *testing.T) {
 	}
 	if len(item.SourceLabels) != 2 || item.SourceLabels[0] != "Stash" || item.SourceLabels[1] != "StashBox" {
 		t.Fatalf("unexpected source labels: %+v", item.SourceLabels)
+	}
+}
+
+func TestSearchPreferredStashBoxScenesFallsBackByConfiguredOrder(t *testing.T) {
+	firstEndpoint := "https://first.example/graphql"
+	secondEndpoint := "https://second.example/graphql"
+	code := "ABCD-123"
+	title := "Fallback Hit"
+
+	registry := newStashboxRegistry(perEndpointFactory{
+		clients: map[string]StashboxClient{
+			normalizeStashBoxEndpoint(firstEndpoint):  &fakeStashboxClient{scenes: nil},
+			normalizeStashBoxEndpoint(secondEndpoint): &fakeStashboxClient{scenes: []*stashboxgraphql.SceneFragment{{ID: "scene-2", Title: &title, Code: &code}}},
+		},
+	})
+	registry.Replace([]stash.StashBoxEndpoint{
+		{Name: "First", Endpoint: firstEndpoint, APIKey: "ignored"},
+		{Name: "Second", Endpoint: secondEndpoint, APIKey: "ignored"},
+	})
+
+	service, err := NewService(&fakeStashClient{performers: map[string]*stashgraphql.PerformerFragment{}}, registry, nil, NewMemoryStore())
+	if err != nil {
+		t.Fatalf("NewService failed: %v", err)
+	}
+	service.endpointOrder = []string{normalizeStashBoxEndpoint(firstEndpoint), normalizeStashBoxEndpoint(secondEndpoint)}
+
+	page, err := service.SearchPreferredStashBoxScenes(context.Background(), "ABCD", 24)
+	if err != nil {
+		t.Fatalf("SearchPreferredStashBoxScenes failed: %v", err)
+	}
+	if page.UsedStashBox == nil || page.UsedStashBox.Endpoint != secondEndpoint {
+		t.Fatalf("expected second endpoint to be used, got %+v", page.UsedStashBox)
+	}
+	if page.FallbackCount != 1 {
+		t.Fatalf("expected fallback count 1, got %d", page.FallbackCount)
+	}
+	if len(page.Items) != 1 || page.Items[0].DerivedQuery != code {
+		t.Fatalf("unexpected discovery page: %+v", page)
+	}
+}
+
+func TestQueueDiscoveredSceneUsesSearchTaskSource(t *testing.T) {
+	endpoint := "https://box.example/graphql"
+	code := "ABCD-123"
+	sceneID := "scene-1"
+	downloaderTask := &downloader.Task{ID: "task-1", Source: downloader.TaskSourceSearch}
+
+	registry := newStashboxRegistry(stubFactory{
+		client: &fakeStashboxClient{
+			scenes: []*stashboxgraphql.SceneFragment{{ID: sceneID, Code: &code}},
+		},
+	})
+	registry.Replace([]stash.StashBoxEndpoint{{Name: "Preferred", Endpoint: endpoint, APIKey: "ignored"}})
+
+	fakeDL := &fakeDownloader{tasks: []*downloader.Task{downloaderTask}}
+	service, err := NewService(&fakeStashClient{performers: map[string]*stashgraphql.PerformerFragment{}}, registry, fakeDL, NewMemoryStore())
+	if err != nil {
+		t.Fatalf("NewService failed: %v", err)
+	}
+
+	task, err := service.QueueDiscoveredScene(context.Background(), sceneID, endpoint)
+	if err != nil {
+		t.Fatalf("QueueDiscoveredScene failed: %v", err)
+	}
+	if task == nil || task.ID != "task-1" {
+		t.Fatalf("unexpected queued task: %+v", task)
+	}
+	if len(fakeDL.queries) != 1 || fakeDL.queries[0] != code {
+		t.Fatalf("unexpected downloader queries: %+v", fakeDL.queries)
+	}
+	if len(fakeDL.sources) != 1 || fakeDL.sources[0] != downloader.TaskSourceSearch {
+		t.Fatalf("unexpected downloader sources: %+v", fakeDL.sources)
 	}
 }

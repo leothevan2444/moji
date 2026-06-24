@@ -67,6 +67,29 @@ type ComplexityRoot struct {
 		Total        func(childComplexity int) int
 	}
 
+	DiscoverSceneConnection struct {
+		FallbackCount func(childComplexity int) int
+		Items         func(childComplexity int) int
+		SearchedQuery func(childComplexity int) int
+		UsedStashBox  func(childComplexity int) int
+	}
+
+	DiscoveredScene struct {
+		Code             func(childComplexity int) int
+		Date             func(childComplexity int) int
+		DerivedQuery     func(childComplexity int) int
+		DurationSeconds  func(childComplexity int) int
+		ImageURL         func(childComplexity int) int
+		Key              func(childComplexity int) int
+		PerformerNames   func(childComplexity int) int
+		SceneID          func(childComplexity int) int
+		StashBoxEndpoint func(childComplexity int) int
+		StashBoxName     func(childComplexity int) int
+		StudioName       func(childComplexity int) int
+		Title            func(childComplexity int) int
+		URL              func(childComplexity int) int
+	}
+
 	DownloadCandidate struct {
 		InfoHash  func(childComplexity int) int
 		Link      func(childComplexity int) int
@@ -143,6 +166,7 @@ type ComplexityRoot struct {
 		AddTorrent                    func(childComplexity int, input model.QBittorrentAddInput) int
 		DownloadMedia                 func(childComplexity int, input model.DownloadMediaInput) int
 		QbittorrentAdd                func(childComplexity int, input model.QBittorrentAddInput) int
+		QueueDiscoveredScene          func(childComplexity int, input model.QueueDiscoveredSceneInput) int
 		RefreshSubscribedPerformer    func(childComplexity int, stashPerformerID string) int
 		RefreshSubscriptionStashBoxes func(childComplexity int) int
 		RefreshSubscriptionsNow       func(childComplexity int) int
@@ -198,6 +222,7 @@ type ComplexityRoot struct {
 
 	Query struct {
 		DashboardStats       func(childComplexity int) int
+		DiscoverScenes       func(childComplexity int, input model.DiscoverScenesInput) int
 		Health               func(childComplexity int) int
 		JackettSearch        func(childComplexity int, input model.JackettSearchInput) int
 		Logs                 func(childComplexity int, limit *int, minLevel *model.LogLevel) int
@@ -397,6 +422,7 @@ type ComplexityRoot struct {
 		QbittorrentState    func(childComplexity int) int
 		Query               func(childComplexity int) int
 		SavePath            func(childComplexity int) int
+		Source              func(childComplexity int) int
 		StashJobID          func(childComplexity int) int
 		StashMode           func(childComplexity int) int
 		StashScanError      func(childComplexity int) int
@@ -431,6 +457,7 @@ type MutationResolver interface {
 	SyncTaskProgress(ctx context.Context) ([]*model.Task, error)
 	TriggerTaskStashScan(ctx context.Context, id string) (*model.Task, error)
 	TriggerStashScans(ctx context.Context) ([]*model.Task, error)
+	QueueDiscoveredScene(ctx context.Context, input model.QueueDiscoveredSceneInput) (*model.Task, error)
 	UpdateStashSettings(ctx context.Context, input model.UpdateStashSettingsInput) (*model.Settings, error)
 	UpdateIngestSettings(ctx context.Context, input model.UpdateIngestSettingsInput) (*model.Settings, error)
 	UpdateJackettSettings(ctx context.Context, input model.UpdateJackettSettingsInput) (*model.Settings, error)
@@ -448,6 +475,7 @@ type QueryResolver interface {
 	Health(ctx context.Context) (*model.Health, error)
 	Version(ctx context.Context) (string, error)
 	Logs(ctx context.Context, limit *int, minLevel *model.LogLevel) ([]*model.LogEntry, error)
+	DiscoverScenes(ctx context.Context, input model.DiscoverScenesInput) (*model.DiscoverSceneConnection, error)
 	JackettSearch(ctx context.Context, input model.JackettSearchInput) ([]*model.JackettSearchResult, error)
 	Settings(ctx context.Context) (*model.Settings, error)
 	SettingsStatus(ctx context.Context) (*model.SettingsStatus, error)
@@ -564,6 +592,125 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.DashboardStats.Total(childComplexity), true
+
+	case "DiscoverSceneConnection.fallbackCount":
+		if e.complexity.DiscoverSceneConnection.FallbackCount == nil {
+			break
+		}
+
+		return e.complexity.DiscoverSceneConnection.FallbackCount(childComplexity), true
+
+	case "DiscoverSceneConnection.items":
+		if e.complexity.DiscoverSceneConnection.Items == nil {
+			break
+		}
+
+		return e.complexity.DiscoverSceneConnection.Items(childComplexity), true
+
+	case "DiscoverSceneConnection.searchedQuery":
+		if e.complexity.DiscoverSceneConnection.SearchedQuery == nil {
+			break
+		}
+
+		return e.complexity.DiscoverSceneConnection.SearchedQuery(childComplexity), true
+
+	case "DiscoverSceneConnection.usedStashBox":
+		if e.complexity.DiscoverSceneConnection.UsedStashBox == nil {
+			break
+		}
+
+		return e.complexity.DiscoverSceneConnection.UsedStashBox(childComplexity), true
+
+	case "DiscoveredScene.code":
+		if e.complexity.DiscoveredScene.Code == nil {
+			break
+		}
+
+		return e.complexity.DiscoveredScene.Code(childComplexity), true
+
+	case "DiscoveredScene.date":
+		if e.complexity.DiscoveredScene.Date == nil {
+			break
+		}
+
+		return e.complexity.DiscoveredScene.Date(childComplexity), true
+
+	case "DiscoveredScene.derivedQuery":
+		if e.complexity.DiscoveredScene.DerivedQuery == nil {
+			break
+		}
+
+		return e.complexity.DiscoveredScene.DerivedQuery(childComplexity), true
+
+	case "DiscoveredScene.durationSeconds":
+		if e.complexity.DiscoveredScene.DurationSeconds == nil {
+			break
+		}
+
+		return e.complexity.DiscoveredScene.DurationSeconds(childComplexity), true
+
+	case "DiscoveredScene.imageUrl":
+		if e.complexity.DiscoveredScene.ImageURL == nil {
+			break
+		}
+
+		return e.complexity.DiscoveredScene.ImageURL(childComplexity), true
+
+	case "DiscoveredScene.key":
+		if e.complexity.DiscoveredScene.Key == nil {
+			break
+		}
+
+		return e.complexity.DiscoveredScene.Key(childComplexity), true
+
+	case "DiscoveredScene.performerNames":
+		if e.complexity.DiscoveredScene.PerformerNames == nil {
+			break
+		}
+
+		return e.complexity.DiscoveredScene.PerformerNames(childComplexity), true
+
+	case "DiscoveredScene.sceneId":
+		if e.complexity.DiscoveredScene.SceneID == nil {
+			break
+		}
+
+		return e.complexity.DiscoveredScene.SceneID(childComplexity), true
+
+	case "DiscoveredScene.stashBoxEndpoint":
+		if e.complexity.DiscoveredScene.StashBoxEndpoint == nil {
+			break
+		}
+
+		return e.complexity.DiscoveredScene.StashBoxEndpoint(childComplexity), true
+
+	case "DiscoveredScene.stashBoxName":
+		if e.complexity.DiscoveredScene.StashBoxName == nil {
+			break
+		}
+
+		return e.complexity.DiscoveredScene.StashBoxName(childComplexity), true
+
+	case "DiscoveredScene.studioName":
+		if e.complexity.DiscoveredScene.StudioName == nil {
+			break
+		}
+
+		return e.complexity.DiscoveredScene.StudioName(childComplexity), true
+
+	case "DiscoveredScene.title":
+		if e.complexity.DiscoveredScene.Title == nil {
+			break
+		}
+
+		return e.complexity.DiscoveredScene.Title(childComplexity), true
+
+	case "DiscoveredScene.url":
+		if e.complexity.DiscoveredScene.URL == nil {
+			break
+		}
+
+		return e.complexity.DiscoveredScene.URL(childComplexity), true
 
 	case "DownloadCandidate.infoHash":
 		if e.complexity.DownloadCandidate.InfoHash == nil {
@@ -915,6 +1062,18 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.Mutation.QbittorrentAdd(childComplexity, args["input"].(model.QBittorrentAddInput)), true
+
+	case "Mutation.queueDiscoveredScene":
+		if e.complexity.Mutation.QueueDiscoveredScene == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_queueDiscoveredScene_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.QueueDiscoveredScene(childComplexity, args["input"].(model.QueueDiscoveredSceneInput)), true
 
 	case "Mutation.refreshSubscribedPerformer":
 		if e.complexity.Mutation.RefreshSubscribedPerformer == nil {
@@ -1271,6 +1430,18 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.Query.DashboardStats(childComplexity), true
+
+	case "Query.discoverScenes":
+		if e.complexity.Query.DiscoverScenes == nil {
+			break
+		}
+
+		args, err := ec.field_Query_discoverScenes_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Query.DiscoverScenes(childComplexity, args["input"].(model.DiscoverScenesInput)), true
 
 	case "Query.health":
 		if e.complexity.Query.Health == nil {
@@ -2306,6 +2477,13 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.Task.SavePath(childComplexity), true
 
+	case "Task.source":
+		if e.complexity.Task.Source == nil {
+			break
+		}
+
+		return e.complexity.Task.Source(childComplexity), true
+
 	case "Task.stashJobId":
 		if e.complexity.Task.StashJobID == nil {
 			break
@@ -2461,9 +2639,11 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 	opCtx := graphql.GetOperationContext(ctx)
 	ec := executionContext{opCtx, e, 0, 0, make(chan graphql.DeferredResult)}
 	inputUnmarshalMap := graphql.BuildUnmarshalerMap(
+		ec.unmarshalInputDiscoverScenesInput,
 		ec.unmarshalInputDownloadMediaInput,
 		ec.unmarshalInputJackettSearchInput,
 		ec.unmarshalInputQBittorrentAddInput,
+		ec.unmarshalInputQueueDiscoveredSceneInput,
 		ec.unmarshalInputStashMetadataScanInput,
 		ec.unmarshalInputStashPerformerScenesInput,
 		ec.unmarshalInputTransferIngestSettingsInput,
@@ -2607,8 +2787,49 @@ type LogEntry {
 	{Name: "../../../graphql/moji/types/scalars.graphql", Input: `scalar Long
 `, BuiltIn: false},
 	{Name: "../../../graphql/moji/types/search.graphql", Input: `extend type Query {
-  "Search torrents via Jackett"
+  "Search scene metadata from preferred StashBox sources"
+  discoverScenes(input: DiscoverScenesInput!): DiscoverSceneConnection!
+
+  "Search torrents via Jackett as a fallback-only power-user tool"
   jackettSearch(input: JackettSearchInput!): [JackettSearchResult!]!
+}
+
+extend type Mutation {
+  "Queue a discovered StashBox scene into the standard download workflow"
+  queueDiscoveredScene(input: QueueDiscoveredSceneInput!): Task!
+}
+
+input DiscoverScenesInput {
+  query: String!
+  limit: Int = 24
+}
+
+type DiscoverSceneConnection {
+  items: [DiscoveredScene!]!
+  usedStashBox: MatchedStashBox
+  fallbackCount: Int!
+  searchedQuery: String!
+}
+
+type DiscoveredScene {
+  key: ID!
+  sceneId: ID!
+  stashBoxEndpoint: String!
+  stashBoxName: String!
+  title: String!
+  durationSeconds: Int
+  code: String
+  date: String
+  studioName: String
+  imageUrl: String
+  url: String
+  performerNames: [String!]!
+  derivedQuery: String!
+}
+
+input QueueDiscoveredSceneInput {
+  sceneId: ID!
+  stashBoxEndpoint: String!
 }
 
 input JackettSearchInput {
@@ -3160,8 +3381,15 @@ input DownloadMediaInput {
   paused: Boolean
 }
 
+enum TaskSource {
+  MANUAL
+  SEARCH
+  SUBSCRIPTION
+}
+
 type Task {
   id: ID!
+  source: TaskSource!
   query: String!
   status: String!
   candidate: DownloadCandidate!
@@ -3291,6 +3519,34 @@ func (ec *executionContext) field_Mutation_qbittorrentAdd_argsInput(
 	}
 
 	var zeroVal model.QBittorrentAddInput
+	return zeroVal, nil
+}
+
+func (ec *executionContext) field_Mutation_queueDiscoveredScene_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := ec.field_Mutation_queueDiscoveredScene_argsInput(ctx, rawArgs)
+	if err != nil {
+		return nil, err
+	}
+	args["input"] = arg0
+	return args, nil
+}
+func (ec *executionContext) field_Mutation_queueDiscoveredScene_argsInput(
+	ctx context.Context,
+	rawArgs map[string]any,
+) (model.QueueDiscoveredSceneInput, error) {
+	if _, ok := rawArgs["input"]; !ok {
+		var zeroVal model.QueueDiscoveredSceneInput
+		return zeroVal, nil
+	}
+
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
+	if tmp, ok := rawArgs["input"]; ok {
+		return ec.unmarshalNQueueDiscoveredSceneInput2githubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐQueueDiscoveredSceneInput(ctx, tmp)
+	}
+
+	var zeroVal model.QueueDiscoveredSceneInput
 	return zeroVal, nil
 }
 
@@ -3627,6 +3883,34 @@ func (ec *executionContext) field_Query___type_argsName(
 	}
 
 	var zeroVal string
+	return zeroVal, nil
+}
+
+func (ec *executionContext) field_Query_discoverScenes_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := ec.field_Query_discoverScenes_argsInput(ctx, rawArgs)
+	if err != nil {
+		return nil, err
+	}
+	args["input"] = arg0
+	return args, nil
+}
+func (ec *executionContext) field_Query_discoverScenes_argsInput(
+	ctx context.Context,
+	rawArgs map[string]any,
+) (model.DiscoverScenesInput, error) {
+	if _, ok := rawArgs["input"]; !ok {
+		var zeroVal model.DiscoverScenesInput
+		return zeroVal, nil
+	}
+
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
+	if tmp, ok := rawArgs["input"]; ok {
+		return ec.unmarshalNDiscoverScenesInput2githubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐDiscoverScenesInput(ctx, tmp)
+	}
+
+	var zeroVal model.DiscoverScenesInput
 	return zeroVal, nil
 }
 
@@ -4589,6 +4873,771 @@ func (ec *executionContext) fieldContext_DashboardStats_failed(_ context.Context
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _DiscoverSceneConnection_items(ctx context.Context, field graphql.CollectedField, obj *model.DiscoverSceneConnection) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_DiscoverSceneConnection_items(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Items, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]*model.DiscoveredScene)
+	fc.Result = res
+	return ec.marshalNDiscoveredScene2ᚕᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐDiscoveredSceneᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_DiscoverSceneConnection_items(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "DiscoverSceneConnection",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "key":
+				return ec.fieldContext_DiscoveredScene_key(ctx, field)
+			case "sceneId":
+				return ec.fieldContext_DiscoveredScene_sceneId(ctx, field)
+			case "stashBoxEndpoint":
+				return ec.fieldContext_DiscoveredScene_stashBoxEndpoint(ctx, field)
+			case "stashBoxName":
+				return ec.fieldContext_DiscoveredScene_stashBoxName(ctx, field)
+			case "title":
+				return ec.fieldContext_DiscoveredScene_title(ctx, field)
+			case "durationSeconds":
+				return ec.fieldContext_DiscoveredScene_durationSeconds(ctx, field)
+			case "code":
+				return ec.fieldContext_DiscoveredScene_code(ctx, field)
+			case "date":
+				return ec.fieldContext_DiscoveredScene_date(ctx, field)
+			case "studioName":
+				return ec.fieldContext_DiscoveredScene_studioName(ctx, field)
+			case "imageUrl":
+				return ec.fieldContext_DiscoveredScene_imageUrl(ctx, field)
+			case "url":
+				return ec.fieldContext_DiscoveredScene_url(ctx, field)
+			case "performerNames":
+				return ec.fieldContext_DiscoveredScene_performerNames(ctx, field)
+			case "derivedQuery":
+				return ec.fieldContext_DiscoveredScene_derivedQuery(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type DiscoveredScene", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _DiscoverSceneConnection_usedStashBox(ctx context.Context, field graphql.CollectedField, obj *model.DiscoverSceneConnection) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_DiscoverSceneConnection_usedStashBox(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.UsedStashBox, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*model.MatchedStashBox)
+	fc.Result = res
+	return ec.marshalOMatchedStashBox2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐMatchedStashBox(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_DiscoverSceneConnection_usedStashBox(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "DiscoverSceneConnection",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "name":
+				return ec.fieldContext_MatchedStashBox_name(ctx, field)
+			case "endpoint":
+				return ec.fieldContext_MatchedStashBox_endpoint(ctx, field)
+			case "performerId":
+				return ec.fieldContext_MatchedStashBox_performerId(ctx, field)
+			case "performerName":
+				return ec.fieldContext_MatchedStashBox_performerName(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type MatchedStashBox", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _DiscoverSceneConnection_fallbackCount(ctx context.Context, field graphql.CollectedField, obj *model.DiscoverSceneConnection) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_DiscoverSceneConnection_fallbackCount(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.FallbackCount, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int)
+	fc.Result = res
+	return ec.marshalNInt2int(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_DiscoverSceneConnection_fallbackCount(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "DiscoverSceneConnection",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _DiscoverSceneConnection_searchedQuery(ctx context.Context, field graphql.CollectedField, obj *model.DiscoverSceneConnection) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_DiscoverSceneConnection_searchedQuery(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.SearchedQuery, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_DiscoverSceneConnection_searchedQuery(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "DiscoverSceneConnection",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _DiscoveredScene_key(ctx context.Context, field graphql.CollectedField, obj *model.DiscoveredScene) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_DiscoveredScene_key(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Key, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNID2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_DiscoveredScene_key(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "DiscoveredScene",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type ID does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _DiscoveredScene_sceneId(ctx context.Context, field graphql.CollectedField, obj *model.DiscoveredScene) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_DiscoveredScene_sceneId(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.SceneID, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNID2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_DiscoveredScene_sceneId(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "DiscoveredScene",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type ID does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _DiscoveredScene_stashBoxEndpoint(ctx context.Context, field graphql.CollectedField, obj *model.DiscoveredScene) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_DiscoveredScene_stashBoxEndpoint(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.StashBoxEndpoint, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_DiscoveredScene_stashBoxEndpoint(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "DiscoveredScene",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _DiscoveredScene_stashBoxName(ctx context.Context, field graphql.CollectedField, obj *model.DiscoveredScene) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_DiscoveredScene_stashBoxName(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.StashBoxName, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_DiscoveredScene_stashBoxName(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "DiscoveredScene",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _DiscoveredScene_title(ctx context.Context, field graphql.CollectedField, obj *model.DiscoveredScene) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_DiscoveredScene_title(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Title, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_DiscoveredScene_title(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "DiscoveredScene",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _DiscoveredScene_durationSeconds(ctx context.Context, field graphql.CollectedField, obj *model.DiscoveredScene) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_DiscoveredScene_durationSeconds(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.DurationSeconds, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*int)
+	fc.Result = res
+	return ec.marshalOInt2ᚖint(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_DiscoveredScene_durationSeconds(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "DiscoveredScene",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _DiscoveredScene_code(ctx context.Context, field graphql.CollectedField, obj *model.DiscoveredScene) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_DiscoveredScene_code(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Code, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*string)
+	fc.Result = res
+	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_DiscoveredScene_code(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "DiscoveredScene",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _DiscoveredScene_date(ctx context.Context, field graphql.CollectedField, obj *model.DiscoveredScene) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_DiscoveredScene_date(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Date, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*string)
+	fc.Result = res
+	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_DiscoveredScene_date(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "DiscoveredScene",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _DiscoveredScene_studioName(ctx context.Context, field graphql.CollectedField, obj *model.DiscoveredScene) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_DiscoveredScene_studioName(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.StudioName, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*string)
+	fc.Result = res
+	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_DiscoveredScene_studioName(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "DiscoveredScene",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _DiscoveredScene_imageUrl(ctx context.Context, field graphql.CollectedField, obj *model.DiscoveredScene) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_DiscoveredScene_imageUrl(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.ImageURL, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*string)
+	fc.Result = res
+	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_DiscoveredScene_imageUrl(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "DiscoveredScene",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _DiscoveredScene_url(ctx context.Context, field graphql.CollectedField, obj *model.DiscoveredScene) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_DiscoveredScene_url(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.URL, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*string)
+	fc.Result = res
+	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_DiscoveredScene_url(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "DiscoveredScene",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _DiscoveredScene_performerNames(ctx context.Context, field graphql.CollectedField, obj *model.DiscoveredScene) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_DiscoveredScene_performerNames(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.PerformerNames, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]string)
+	fc.Result = res
+	return ec.marshalNString2ᚕstringᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_DiscoveredScene_performerNames(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "DiscoveredScene",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _DiscoveredScene_derivedQuery(ctx context.Context, field graphql.CollectedField, obj *model.DiscoveredScene) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_DiscoveredScene_derivedQuery(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.DerivedQuery, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_DiscoveredScene_derivedQuery(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "DiscoveredScene",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
 		},
 	}
 	return fc, nil
@@ -6666,6 +7715,8 @@ func (ec *executionContext) fieldContext_Mutation_addTorrent(ctx context.Context
 			switch field.Name {
 			case "id":
 				return ec.fieldContext_Task_id(ctx, field)
+			case "source":
+				return ec.fieldContext_Task_source(ctx, field)
 			case "query":
 				return ec.fieldContext_Task_query(ctx, field)
 			case "status":
@@ -6781,6 +7832,8 @@ func (ec *executionContext) fieldContext_Mutation_downloadMedia(ctx context.Cont
 			switch field.Name {
 			case "id":
 				return ec.fieldContext_Task_id(ctx, field)
+			case "source":
+				return ec.fieldContext_Task_source(ctx, field)
 			case "query":
 				return ec.fieldContext_Task_query(ctx, field)
 			case "status":
@@ -6896,6 +7949,8 @@ func (ec *executionContext) fieldContext_Mutation_syncTaskProgress(_ context.Con
 			switch field.Name {
 			case "id":
 				return ec.fieldContext_Task_id(ctx, field)
+			case "source":
+				return ec.fieldContext_Task_source(ctx, field)
 			case "query":
 				return ec.fieldContext_Task_query(ctx, field)
 			case "status":
@@ -7000,6 +8055,8 @@ func (ec *executionContext) fieldContext_Mutation_triggerTaskStashScan(ctx conte
 			switch field.Name {
 			case "id":
 				return ec.fieldContext_Task_id(ctx, field)
+			case "source":
+				return ec.fieldContext_Task_source(ctx, field)
 			case "query":
 				return ec.fieldContext_Task_query(ctx, field)
 			case "status":
@@ -7115,6 +8172,8 @@ func (ec *executionContext) fieldContext_Mutation_triggerStashScans(_ context.Co
 			switch field.Name {
 			case "id":
 				return ec.fieldContext_Task_id(ctx, field)
+			case "source":
+				return ec.fieldContext_Task_source(ctx, field)
 			case "query":
 				return ec.fieldContext_Task_query(ctx, field)
 			case "status":
@@ -7174,6 +8233,123 @@ func (ec *executionContext) fieldContext_Mutation_triggerStashScans(_ context.Co
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Task", field.Name)
 		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_queueDiscoveredScene(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Mutation_queueDiscoveredScene(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().QueueDiscoveredScene(rctx, fc.Args["input"].(model.QueueDiscoveredSceneInput))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*model.Task)
+	fc.Result = res
+	return ec.marshalNTask2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐTask(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Mutation_queueDiscoveredScene(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_Task_id(ctx, field)
+			case "source":
+				return ec.fieldContext_Task_source(ctx, field)
+			case "query":
+				return ec.fieldContext_Task_query(ctx, field)
+			case "status":
+				return ec.fieldContext_Task_status(ctx, field)
+			case "candidate":
+				return ec.fieldContext_Task_candidate(ctx, field)
+			case "torrentUrl":
+				return ec.fieldContext_Task_torrentUrl(ctx, field)
+			case "savePath":
+				return ec.fieldContext_Task_savePath(ctx, field)
+			case "category":
+				return ec.fieldContext_Task_category(ctx, field)
+			case "tags":
+				return ec.fieldContext_Task_tags(ctx, field)
+			case "torrentHash":
+				return ec.fieldContext_Task_torrentHash(ctx, field)
+			case "torrentName":
+				return ec.fieldContext_Task_torrentName(ctx, field)
+			case "progress":
+				return ec.fieldContext_Task_progress(ctx, field)
+			case "qbittorrentState":
+				return ec.fieldContext_Task_qbittorrentState(ctx, field)
+			case "contentPath":
+				return ec.fieldContext_Task_contentPath(ctx, field)
+			case "completedAt":
+				return ec.fieldContext_Task_completedAt(ctx, field)
+			case "stashMode":
+				return ec.fieldContext_Task_stashMode(ctx, field)
+			case "stashSourcePath":
+				return ec.fieldContext_Task_stashSourcePath(ctx, field)
+			case "stashTransferAction":
+				return ec.fieldContext_Task_stashTransferAction(ctx, field)
+			case "stashTransferPath":
+				return ec.fieldContext_Task_stashTransferPath(ctx, field)
+			case "stashTransferStatus":
+				return ec.fieldContext_Task_stashTransferStatus(ctx, field)
+			case "stashTransferError":
+				return ec.fieldContext_Task_stashTransferError(ctx, field)
+			case "stashJobId":
+				return ec.fieldContext_Task_stashJobId(ctx, field)
+			case "stashScanPath":
+				return ec.fieldContext_Task_stashScanPath(ctx, field)
+			case "stashScanStatus":
+				return ec.fieldContext_Task_stashScanStatus(ctx, field)
+			case "stashScanError":
+				return ec.fieldContext_Task_stashScanError(ctx, field)
+			case "stashScanHint":
+				return ec.fieldContext_Task_stashScanHint(ctx, field)
+			case "stashScanStartedAt":
+				return ec.fieldContext_Task_stashScanStartedAt(ctx, field)
+			case "error":
+				return ec.fieldContext_Task_error(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_Task_createdAt(ctx, field)
+			case "updatedAt":
+				return ec.fieldContext_Task_updatedAt(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type Task", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_queueDiscoveredScene_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
 	}
 	return fc, nil
 }
@@ -9295,6 +10471,71 @@ func (ec *executionContext) fieldContext_Query_logs(ctx context.Context, field g
 	return fc, nil
 }
 
+func (ec *executionContext) _Query_discoverScenes(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Query_discoverScenes(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Query().DiscoverScenes(rctx, fc.Args["input"].(model.DiscoverScenesInput))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*model.DiscoverSceneConnection)
+	fc.Result = res
+	return ec.marshalNDiscoverSceneConnection2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐDiscoverSceneConnection(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Query_discoverScenes(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "items":
+				return ec.fieldContext_DiscoverSceneConnection_items(ctx, field)
+			case "usedStashBox":
+				return ec.fieldContext_DiscoverSceneConnection_usedStashBox(ctx, field)
+			case "fallbackCount":
+				return ec.fieldContext_DiscoverSceneConnection_fallbackCount(ctx, field)
+			case "searchedQuery":
+				return ec.fieldContext_DiscoverSceneConnection_searchedQuery(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type DiscoverSceneConnection", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Query_discoverScenes_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _Query_jackettSearch(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_Query_jackettSearch(ctx, field)
 	if err != nil {
@@ -10038,6 +11279,8 @@ func (ec *executionContext) fieldContext_Query_task(ctx context.Context, field g
 			switch field.Name {
 			case "id":
 				return ec.fieldContext_Task_id(ctx, field)
+			case "source":
+				return ec.fieldContext_Task_source(ctx, field)
 			case "query":
 				return ec.fieldContext_Task_query(ctx, field)
 			case "status":
@@ -10153,6 +11396,8 @@ func (ec *executionContext) fieldContext_Query_tasks(_ context.Context, field gr
 			switch field.Name {
 			case "id":
 				return ec.fieldContext_Task_id(ctx, field)
+			case "source":
+				return ec.fieldContext_Task_source(ctx, field)
 			case "query":
 				return ec.fieldContext_Task_query(ctx, field)
 			case "status":
@@ -15712,6 +16957,50 @@ func (ec *executionContext) fieldContext_Task_id(_ context.Context, field graphq
 	return fc, nil
 }
 
+func (ec *executionContext) _Task_source(ctx context.Context, field graphql.CollectedField, obj *model.Task) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Task_source(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Source, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(model.TaskSource)
+	fc.Result = res
+	return ec.marshalNTaskSource2githubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐTaskSource(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Task_source(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Task",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type TaskSource does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _Task_query(ctx context.Context, field graphql.CollectedField, obj *model.Task) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_Task_query(ctx, field)
 	if err != nil {
@@ -19039,6 +20328,44 @@ func (ec *executionContext) fieldContext___Type_isOneOf(_ context.Context, field
 
 // region    **************************** input.gotpl *****************************
 
+func (ec *executionContext) unmarshalInputDiscoverScenesInput(ctx context.Context, obj any) (model.DiscoverScenesInput, error) {
+	var it model.DiscoverScenesInput
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	if _, present := asMap["limit"]; !present {
+		asMap["limit"] = 24
+	}
+
+	fieldsInOrder := [...]string{"query", "limit"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "query":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("query"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Query = data
+		case "limit":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("limit"))
+			data, err := ec.unmarshalOInt2ᚖint(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Limit = data
+		}
+	}
+
+	return it, nil
+}
+
 func (ec *executionContext) unmarshalInputDownloadMediaInput(ctx context.Context, obj any) (model.DownloadMediaInput, error) {
 	var it model.DownloadMediaInput
 	asMap := map[string]any{}
@@ -19212,6 +20539,40 @@ func (ec *executionContext) unmarshalInputQBittorrentAddInput(ctx context.Contex
 				return it, err
 			}
 			it.Paused = data
+		}
+	}
+
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputQueueDiscoveredSceneInput(ctx context.Context, obj any) (model.QueueDiscoveredSceneInput, error) {
+	var it model.QueueDiscoveredSceneInput
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"sceneId", "stashBoxEndpoint"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "sceneId":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("sceneId"))
+			data, err := ec.unmarshalNID2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.SceneID = data
+		case "stashBoxEndpoint":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("stashBoxEndpoint"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.StashBoxEndpoint = data
 		}
 	}
 
@@ -19819,6 +21180,138 @@ func (ec *executionContext) _DashboardStats(ctx context.Context, sel ast.Selecti
 	return out
 }
 
+var discoverSceneConnectionImplementors = []string{"DiscoverSceneConnection"}
+
+func (ec *executionContext) _DiscoverSceneConnection(ctx context.Context, sel ast.SelectionSet, obj *model.DiscoverSceneConnection) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, discoverSceneConnectionImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("DiscoverSceneConnection")
+		case "items":
+			out.Values[i] = ec._DiscoverSceneConnection_items(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "usedStashBox":
+			out.Values[i] = ec._DiscoverSceneConnection_usedStashBox(ctx, field, obj)
+		case "fallbackCount":
+			out.Values[i] = ec._DiscoverSceneConnection_fallbackCount(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "searchedQuery":
+			out.Values[i] = ec._DiscoverSceneConnection_searchedQuery(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var discoveredSceneImplementors = []string{"DiscoveredScene"}
+
+func (ec *executionContext) _DiscoveredScene(ctx context.Context, sel ast.SelectionSet, obj *model.DiscoveredScene) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, discoveredSceneImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("DiscoveredScene")
+		case "key":
+			out.Values[i] = ec._DiscoveredScene_key(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "sceneId":
+			out.Values[i] = ec._DiscoveredScene_sceneId(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "stashBoxEndpoint":
+			out.Values[i] = ec._DiscoveredScene_stashBoxEndpoint(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "stashBoxName":
+			out.Values[i] = ec._DiscoveredScene_stashBoxName(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "title":
+			out.Values[i] = ec._DiscoveredScene_title(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "durationSeconds":
+			out.Values[i] = ec._DiscoveredScene_durationSeconds(ctx, field, obj)
+		case "code":
+			out.Values[i] = ec._DiscoveredScene_code(ctx, field, obj)
+		case "date":
+			out.Values[i] = ec._DiscoveredScene_date(ctx, field, obj)
+		case "studioName":
+			out.Values[i] = ec._DiscoveredScene_studioName(ctx, field, obj)
+		case "imageUrl":
+			out.Values[i] = ec._DiscoveredScene_imageUrl(ctx, field, obj)
+		case "url":
+			out.Values[i] = ec._DiscoveredScene_url(ctx, field, obj)
+		case "performerNames":
+			out.Values[i] = ec._DiscoveredScene_performerNames(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "derivedQuery":
+			out.Values[i] = ec._DiscoveredScene_derivedQuery(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
 var downloadCandidateImplementors = []string{"DownloadCandidate"}
 
 func (ec *executionContext) _DownloadCandidate(ctx context.Context, sel ast.SelectionSet, obj *model.DownloadCandidate) graphql.Marshaler {
@@ -20399,6 +21892,13 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
+		case "queueDiscoveredScene":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_queueDiscoveredScene(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
 		case "updateStashSettings":
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
 				return ec._Mutation_updateStashSettings(ctx, field)
@@ -20810,6 +22310,28 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 					}
 				}()
 				res = ec._Query_logs(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			rrm := func(ctx context.Context) graphql.Marshaler {
+				return ec.OperationContext.RootResolverMiddleware(ctx,
+					func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
+		case "discoverScenes":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_discoverScenes(ctx, field)
 				if res == graphql.Null {
 					atomic.AddUint32(&fs.Invalids, 1)
 				}
@@ -22219,6 +23741,11 @@ func (ec *executionContext) _Task(ctx context.Context, sel ast.SelectionSet, obj
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
+		case "source":
+			out.Values[i] = ec._Task_source(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
 		case "query":
 			out.Values[i] = ec._Task_query(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
@@ -22810,6 +24337,79 @@ func (ec *executionContext) marshalNDashboardStats2ᚖgithubᚗcomᚋleothevan24
 	return ec._DashboardStats(ctx, sel, v)
 }
 
+func (ec *executionContext) marshalNDiscoverSceneConnection2githubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐDiscoverSceneConnection(ctx context.Context, sel ast.SelectionSet, v model.DiscoverSceneConnection) graphql.Marshaler {
+	return ec._DiscoverSceneConnection(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNDiscoverSceneConnection2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐDiscoverSceneConnection(ctx context.Context, sel ast.SelectionSet, v *model.DiscoverSceneConnection) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._DiscoverSceneConnection(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalNDiscoverScenesInput2githubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐDiscoverScenesInput(ctx context.Context, v any) (model.DiscoverScenesInput, error) {
+	res, err := ec.unmarshalInputDiscoverScenesInput(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNDiscoveredScene2ᚕᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐDiscoveredSceneᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.DiscoveredScene) graphql.Marshaler {
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalNDiscoveredScene2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐDiscoveredScene(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
+}
+
+func (ec *executionContext) marshalNDiscoveredScene2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐDiscoveredScene(ctx context.Context, sel ast.SelectionSet, v *model.DiscoveredScene) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._DiscoveredScene(ctx, sel, v)
+}
+
 func (ec *executionContext) marshalNDownloadCandidate2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐDownloadCandidate(ctx context.Context, sel ast.SelectionSet, v *model.DownloadCandidate) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
@@ -23143,6 +24743,11 @@ func (ec *executionContext) marshalNQBittorrentStats2ᚖgithubᚗcomᚋleothevan
 		return graphql.Null
 	}
 	return ec._QBittorrentStats(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalNQueueDiscoveredSceneInput2githubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐQueueDiscoveredSceneInput(ctx context.Context, v any) (model.QueueDiscoveredSceneInput, error) {
+	res, err := ec.unmarshalInputQueueDiscoveredSceneInput(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
 }
 
 func (ec *executionContext) unmarshalNSceneSource2githubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐSceneSource(ctx context.Context, v any) (model.SceneSource, error) {
@@ -23769,6 +25374,16 @@ func (ec *executionContext) marshalNTask2ᚖgithubᚗcomᚋleothevan2444ᚋmoji�
 		return graphql.Null
 	}
 	return ec._Task(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalNTaskSource2githubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐTaskSource(ctx context.Context, v any) (model.TaskSource, error) {
+	var res model.TaskSource
+	err := res.UnmarshalGQL(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNTaskSource2githubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐTaskSource(ctx context.Context, sel ast.SelectionSet, v model.TaskSource) graphql.Marshaler {
+	return v
 }
 
 func (ec *executionContext) marshalNTransferIngestSettings2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐTransferIngestSettings(ctx context.Context, sel ast.SelectionSet, v *model.TransferIngestSettings) graphql.Marshaler {

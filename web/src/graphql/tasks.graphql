@@ -1,6 +1,7 @@
 mutation AddTorrentDocument($input: QBittorrentAddInput!) {
   addTorrent(input: $input) {
     id
+    source
     status
     query
     torrentName
@@ -14,6 +15,7 @@ mutation AddTorrentDocument($input: QBittorrentAddInput!) {
 mutation SyncTaskProgressDocument {
   syncTaskProgress {
     id
+    source
     status
     progress
     qbittorrentState
@@ -24,6 +26,7 @@ mutation SyncTaskProgressDocument {
 mutation TriggerStashScansDocument {
   triggerStashScans {
     id
+    source
     stashMode
     stashTransferStatus
     stashTransferError
@@ -39,6 +42,7 @@ mutation TriggerStashScansDocument {
 mutation TriggerTaskStashScanDocument($id: ID!) {
   triggerTaskStashScan(id: $id) {
     id
+    source
     stashMode
     stashTransferStatus
     stashTransferError

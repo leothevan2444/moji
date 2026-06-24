@@ -89,6 +89,13 @@ export function taskSummary(task: DashboardTask) {
   return task.torrentName || taskQueryLabel(task);
 }
 
+export function taskSourceLabel(source: string) {
+  const normalized = source.trim().toUpperCase();
+  if (normalized === "SEARCH") return "搜索";
+  if (normalized === "SUBSCRIPTION") return "订阅";
+  return "手动";
+}
+
 export function statusTone(status: string) {
   const normalized = status.toLowerCase();
   if (normalized.includes("complete")) return "tone-success";
@@ -288,7 +295,7 @@ export function taskPrimaryState(task: DashboardTask): Pick<TaskPresentation, "p
 }
 
 export function taskMetaLine(task: DashboardTask) {
-  const parts = [taskQueryLabel(task)];
+  const parts = [taskQueryLabel(task), `来源 ${taskSourceLabel(task.source)}`];
   if (task.torrentHash) {
     parts.push(`Hash ${task.torrentHash.slice(0, 8)}`);
   }
