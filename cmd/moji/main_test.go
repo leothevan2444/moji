@@ -95,7 +95,7 @@ func TestHTTPHandlerServesSettingsSnapshot(t *testing.T) {
 			qbittorrent { configured url usernameConfigured passwordConfigured defaultSavePath }
 			stash { configured url apiKeyConfigured }
 			ingest { deliveryMode stashLibraryPath transfer { action mojiSourceRoot mojiTargetRoot } }
-			automation { taskProgressSyncIntervalSeconds subscriptionPollIntervalSeconds }
+			automation { taskProgressSyncIntervalSeconds subscriptionPollIntervalHours }
 			subscription { stashBoxEndpoints }
 		}
 		settingsStatus {
@@ -329,7 +329,7 @@ func TestBuildSettingsSnapshotNormalizesDefaults(t *testing.T) {
 	if snapshot.Jackett.URL != "http://jackett.invalid" || !snapshot.Jackett.APIKeyConfigured {
 		t.Fatalf("unexpected jackett snapshot: %+v", snapshot.Jackett)
 	}
-	if snapshot.Automation.TaskProgressSyncIntervalSeconds != 60 || snapshot.Automation.SubscriptionPollIntervalSeconds != 3600 {
+	if snapshot.Automation.TaskProgressSyncIntervalSeconds != 60 || snapshot.Automation.SubscriptionPollIntervalHours != 1 {
 		t.Fatalf("unexpected automation snapshot: %+v", snapshot.Automation)
 	}
 	if len(snapshot.Subscription.StashBoxEndpoints) != 0 {
@@ -401,7 +401,7 @@ type graphQLResponse struct {
 			} `json:"subscription"`
 			Automation struct {
 				TaskProgressSyncIntervalSeconds int `json:"taskProgressSyncIntervalSeconds"`
-				SubscriptionPollIntervalSeconds int `json:"subscriptionPollIntervalSeconds"`
+				SubscriptionPollIntervalHours   int `json:"subscriptionPollIntervalHours"`
 			} `json:"automation"`
 		} `json:"settings"`
 		SettingsStatus struct {
@@ -463,7 +463,7 @@ func testConfig() *config.Config {
 	cfg.Stash.URL = "http://stash.invalid"
 	cfg.Ingest.DeliveryMode = "PATH_MAP"
 	cfg.Ingest.StashLibraryPath = "/library"
-	cfg.Automation.SubscriptionPollIntervalSeconds = 3600
+	cfg.Automation.SubscriptionPollIntervalHours = 1
 	return &cfg
 }
 

@@ -34,7 +34,7 @@ export const EMPTY_SUBSCRIPTION_FORM = {
 
 export const EMPTY_AUTOMATION_FORM = {
   taskProgressSyncIntervalSeconds: "60",
-  subscriptionPollIntervalSeconds: "3600"
+  subscriptionPollIntervalHours: "1"
 };
 
 export const TOAST_LIFETIME_MS = 10000;

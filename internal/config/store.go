@@ -128,12 +128,12 @@ func (s *Store) UpdateQBittorrent(url, username, password, defaultSavePath, cate
 	return &clone, nil
 }
 
-func (s *Store) UpdateAutomation(taskProgressSyncIntervalSeconds, subscriptionPollIntervalSeconds int) (*Config, error) {
+func (s *Store) UpdateAutomation(taskProgressSyncIntervalSeconds, subscriptionPollIntervalHours int) (*Config, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
 	s.cfg.Automation.TaskProgressSyncIntervalSeconds = taskProgressSyncIntervalSeconds
-	s.cfg.Automation.SubscriptionPollIntervalSeconds = subscriptionPollIntervalSeconds
+	s.cfg.Automation.SubscriptionPollIntervalHours = subscriptionPollIntervalHours
 
 	if err := s.updateConfigNode(); err != nil {
 		return nil, err
@@ -194,7 +194,7 @@ func (s *Store) updateConfigNode() error {
 		"tags":              s.cfg.QBittorrent.Tags,
 	})
 	setIntScalar(mapValue(top, "automation"), "task_progress_sync_interval_seconds", s.cfg.Automation.TaskProgressSyncIntervalSeconds)
-	setIntScalar(mapValue(top, "automation"), "subscription_poll_interval_seconds", s.cfg.Automation.SubscriptionPollIntervalSeconds)
+	setIntScalar(mapValue(top, "automation"), "subscription_poll_interval_hours", s.cfg.Automation.SubscriptionPollIntervalHours)
 	setStringList(mapValue(top, "subscription"), "selected_stash_box_endpoints", s.cfg.Subscription.StashBoxEndpoints)
 	deleteMapKey(top, "tasks")
 	deleteMapKey(top, "logging")

@@ -177,7 +177,7 @@ type QBittorrentSettings {
 
 type AutomationSettings {
   taskProgressSyncIntervalSeconds: Int!
-  subscriptionPollIntervalSeconds: Int!
+  subscriptionPollIntervalHours: Int!
 }
 
 type SubscriptionSettings {
@@ -196,7 +196,7 @@ type ServiceStatus {
 type AutomationStatus {
   taskProgressSyncIntervalSeconds: Int!
   taskProgressSyncEnabled: Boolean!
-  subscriptionPollIntervalSeconds: Int!
+  subscriptionPollIntervalHours: Int!
   subscriptionPollEnabled: Boolean!
 }
 
@@ -250,7 +250,7 @@ input UpdateQBittorrentSettingsInput {
 
 input UpdateAutomationSettingsInput {
   taskProgressSyncIntervalSeconds: Int!
-  subscriptionPollIntervalSeconds: Int!
+  subscriptionPollIntervalHours: Int!
 }
 
 input UpdateSubscriptionSettingsInput {

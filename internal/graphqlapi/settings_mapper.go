@@ -92,7 +92,7 @@ func settingsSnapshotToModel(snapshot *SettingsSnapshot, appVersion string) *mod
 		},
 		Automation: &model.AutomationSettings{
 			TaskProgressSyncIntervalSeconds: snapshot.Automation.TaskProgressSyncIntervalSeconds,
-			SubscriptionPollIntervalSeconds: snapshot.Automation.SubscriptionPollIntervalSeconds,
+			SubscriptionPollIntervalHours:   snapshot.Automation.SubscriptionPollIntervalHours,
 		},
 		Subscription: &model.SubscriptionSettings{
 			StashBoxEndpoints: append([]string(nil), snapshot.Subscription.StashBoxEndpoints...),
@@ -132,7 +132,7 @@ func settingsStatusSnapshotToModel(snapshot *SettingsStatusSnapshot) *model.Sett
 		Automation: &model.AutomationStatus{
 			TaskProgressSyncIntervalSeconds: snapshot.Automation.TaskProgressSyncIntervalSeconds,
 			TaskProgressSyncEnabled:         snapshot.Automation.TaskProgressSyncEnabled,
-			SubscriptionPollIntervalSeconds: snapshot.Automation.SubscriptionPollIntervalSeconds,
+			SubscriptionPollIntervalHours:   snapshot.Automation.SubscriptionPollIntervalHours,
 			SubscriptionPollEnabled:         snapshot.Automation.SubscriptionPollEnabled,
 		},
 		Subscription: &model.SubscriptionStatus{

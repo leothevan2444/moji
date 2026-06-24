@@ -80,7 +80,7 @@ type UpdateSubscriptionSettingsInput struct {
 
 type UpdateAutomationSettingsInput struct {
 	TaskProgressSyncIntervalSeconds int
-	SubscriptionPollIntervalSeconds int
+	SubscriptionPollIntervalHours   int
 }
 
 type SettingsSnapshot struct {
@@ -134,7 +134,7 @@ type QBittorrentSettingsSnapshot struct {
 
 type AutomationSettingsSnapshot struct {
 	TaskProgressSyncIntervalSeconds int
-	SubscriptionPollIntervalSeconds int
+	SubscriptionPollIntervalHours   int
 }
 
 type SubscriptionSettingsSnapshot struct {
@@ -174,7 +174,7 @@ type ServiceStatusSnapshot struct {
 type AutomationStatusSnapshot struct {
 	TaskProgressSyncIntervalSeconds int
 	TaskProgressSyncEnabled         bool
-	SubscriptionPollIntervalSeconds int
+	SubscriptionPollIntervalHours   int
 	SubscriptionPollEnabled         bool
 }
 

@@ -49,7 +49,7 @@ query DashboardDocument {
     }
     automation {
       taskProgressSyncIntervalSeconds
-      subscriptionPollIntervalSeconds
+      subscriptionPollIntervalHours
     }
     subscription {
       stashBoxEndpoints
@@ -71,7 +71,7 @@ query DashboardDocument {
     automation {
       taskProgressSyncIntervalSeconds
       taskProgressSyncEnabled
-      subscriptionPollIntervalSeconds
+      subscriptionPollIntervalHours
       subscriptionPollEnabled
     }
     subscription {

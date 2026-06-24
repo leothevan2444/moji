@@ -117,16 +117,16 @@ func (s *runtimeSettingsEditor) UpdateQBittorrentSettings(input graphqlapi.Updat
 func (s *runtimeSettingsEditor) UpdateAutomationSettings(input graphqlapi.UpdateAutomationSettingsInput) (*graphqlapi.SettingsSnapshot, error) {
 	cfg, err := s.store.UpdateAutomation(
 		input.TaskProgressSyncIntervalSeconds,
-		input.SubscriptionPollIntervalSeconds,
+		input.SubscriptionPollIntervalHours,
 	)
 	if err != nil {
 		logging.Errorf("settings: save automation settings failed: %v", err)
 		return nil, err
 	}
 	logging.Infof(
-		"settings: automation settings saved task_sync_interval=%d subscription_poll_interval=%d",
+		"settings: automation settings saved task_sync_interval=%d subscription_poll_interval_hours=%d",
 		cfg.Automation.TaskProgressSyncIntervalSeconds,
-		cfg.Automation.SubscriptionPollIntervalSeconds,
+		cfg.Automation.SubscriptionPollIntervalHours,
 	)
 	return buildSettingsSnapshot(cfg, s.version), nil
 }

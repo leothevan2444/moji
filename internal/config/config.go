@@ -37,7 +37,7 @@ func (s StashConfig) GraphQLEndpoint() string {
 
 type AutomationConfig struct {
 	TaskProgressSyncIntervalSeconds int `yaml:"task_progress_sync_interval_seconds"`
-	SubscriptionPollIntervalSeconds int `yaml:"subscription_poll_interval_seconds"`
+	SubscriptionPollIntervalHours   int `yaml:"subscription_poll_interval_hours"`
 }
 
 type IngestConfig struct {

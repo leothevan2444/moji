@@ -11,13 +11,13 @@ import (
 
 type AutomationSettings struct {
 	TaskProgressSyncIntervalSeconds int `json:"taskProgressSyncIntervalSeconds"`
-	SubscriptionPollIntervalSeconds int `json:"subscriptionPollIntervalSeconds"`
+	SubscriptionPollIntervalHours   int `json:"subscriptionPollIntervalHours"`
 }
 
 type AutomationStatus struct {
 	TaskProgressSyncIntervalSeconds int  `json:"taskProgressSyncIntervalSeconds"`
 	TaskProgressSyncEnabled         bool `json:"taskProgressSyncEnabled"`
-	SubscriptionPollIntervalSeconds int  `json:"subscriptionPollIntervalSeconds"`
+	SubscriptionPollIntervalHours   int  `json:"subscriptionPollIntervalHours"`
 	SubscriptionPollEnabled         bool `json:"subscriptionPollEnabled"`
 }
 
@@ -372,7 +372,7 @@ type TransferIngestSettingsInput struct {
 
 type UpdateAutomationSettingsInput struct {
 	TaskProgressSyncIntervalSeconds int `json:"taskProgressSyncIntervalSeconds"`
-	SubscriptionPollIntervalSeconds int `json:"subscriptionPollIntervalSeconds"`
+	SubscriptionPollIntervalHours   int `json:"subscriptionPollIntervalHours"`
 }
 
 type UpdateIngestSettingsInput struct {

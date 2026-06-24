@@ -51,7 +51,7 @@ mutation UpdateAutomationSettingsDocument($input: UpdateAutomationSettingsInput!
   updateAutomationSettings(input: $input) {
     automation {
       taskProgressSyncIntervalSeconds
-      subscriptionPollIntervalSeconds
+      subscriptionPollIntervalHours
     }
   }
 }

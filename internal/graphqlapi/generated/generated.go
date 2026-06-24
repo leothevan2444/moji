@@ -47,13 +47,13 @@ type DirectiveRoot struct {
 
 type ComplexityRoot struct {
 	AutomationSettings struct {
-		SubscriptionPollIntervalSeconds func(childComplexity int) int
+		SubscriptionPollIntervalHours   func(childComplexity int) int
 		TaskProgressSyncIntervalSeconds func(childComplexity int) int
 	}
 
 	AutomationStatus struct {
 		SubscriptionPollEnabled         func(childComplexity int) int
-		SubscriptionPollIntervalSeconds func(childComplexity int) int
+		SubscriptionPollIntervalHours   func(childComplexity int) int
 		TaskProgressSyncEnabled         func(childComplexity int) int
 		TaskProgressSyncIntervalSeconds func(childComplexity int) int
 	}
@@ -415,12 +415,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 	_ = ec
 	switch typeName + "." + field {
 
-	case "AutomationSettings.subscriptionPollIntervalSeconds":
-		if e.complexity.AutomationSettings.SubscriptionPollIntervalSeconds == nil {
+	case "AutomationSettings.subscriptionPollIntervalHours":
+		if e.complexity.AutomationSettings.SubscriptionPollIntervalHours == nil {
 			break
 		}
 
-		return e.complexity.AutomationSettings.SubscriptionPollIntervalSeconds(childComplexity), true
+		return e.complexity.AutomationSettings.SubscriptionPollIntervalHours(childComplexity), true
 
 	case "AutomationSettings.taskProgressSyncIntervalSeconds":
 		if e.complexity.AutomationSettings.TaskProgressSyncIntervalSeconds == nil {
@@ -436,12 +436,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.AutomationStatus.SubscriptionPollEnabled(childComplexity), true
 
-	case "AutomationStatus.subscriptionPollIntervalSeconds":
-		if e.complexity.AutomationStatus.SubscriptionPollIntervalSeconds == nil {
+	case "AutomationStatus.subscriptionPollIntervalHours":
+		if e.complexity.AutomationStatus.SubscriptionPollIntervalHours == nil {
 			break
 		}
 
-		return e.complexity.AutomationStatus.SubscriptionPollIntervalSeconds(childComplexity), true
+		return e.complexity.AutomationStatus.SubscriptionPollIntervalHours(childComplexity), true
 
 	case "AutomationStatus.taskProgressSyncEnabled":
 		if e.complexity.AutomationStatus.TaskProgressSyncEnabled == nil {
@@ -2391,7 +2391,7 @@ type QBittorrentSettings {
 
 type AutomationSettings {
   taskProgressSyncIntervalSeconds: Int!
-  subscriptionPollIntervalSeconds: Int!
+  subscriptionPollIntervalHours: Int!
 }
 
 type SubscriptionSettings {
@@ -2410,7 +2410,7 @@ type ServiceStatus {
 type AutomationStatus {
   taskProgressSyncIntervalSeconds: Int!
   taskProgressSyncEnabled: Boolean!
-  subscriptionPollIntervalSeconds: Int!
+  subscriptionPollIntervalHours: Int!
   subscriptionPollEnabled: Boolean!
 }
 
@@ -2464,7 +2464,7 @@ input UpdateQBittorrentSettingsInput {
 
 input UpdateAutomationSettingsInput {
   taskProgressSyncIntervalSeconds: Int!
-  subscriptionPollIntervalSeconds: Int!
+  subscriptionPollIntervalHours: Int!
 }
 
 input UpdateSubscriptionSettingsInput {
@@ -3518,8 +3518,8 @@ func (ec *executionContext) fieldContext_AutomationSettings_taskProgressSyncInte
 	return fc, nil
 }
 
-func (ec *executionContext) _AutomationSettings_subscriptionPollIntervalSeconds(ctx context.Context, field graphql.CollectedField, obj *model.AutomationSettings) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_AutomationSettings_subscriptionPollIntervalSeconds(ctx, field)
+func (ec *executionContext) _AutomationSettings_subscriptionPollIntervalHours(ctx context.Context, field graphql.CollectedField, obj *model.AutomationSettings) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_AutomationSettings_subscriptionPollIntervalHours(ctx, field)
 	if err != nil {
 		return graphql.Null
 	}
@@ -3532,7 +3532,7 @@ func (ec *executionContext) _AutomationSettings_subscriptionPollIntervalSeconds(
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
 		ctx = rctx // use context from middleware stack in children
-		return obj.SubscriptionPollIntervalSeconds, nil
+		return obj.SubscriptionPollIntervalHours, nil
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -3549,7 +3549,7 @@ func (ec *executionContext) _AutomationSettings_subscriptionPollIntervalSeconds(
 	return ec.marshalNInt2int(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_AutomationSettings_subscriptionPollIntervalSeconds(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_AutomationSettings_subscriptionPollIntervalHours(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "AutomationSettings",
 		Field:      field,
@@ -3650,8 +3650,8 @@ func (ec *executionContext) fieldContext_AutomationStatus_taskProgressSyncEnable
 	return fc, nil
 }
 
-func (ec *executionContext) _AutomationStatus_subscriptionPollIntervalSeconds(ctx context.Context, field graphql.CollectedField, obj *model.AutomationStatus) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_AutomationStatus_subscriptionPollIntervalSeconds(ctx, field)
+func (ec *executionContext) _AutomationStatus_subscriptionPollIntervalHours(ctx context.Context, field graphql.CollectedField, obj *model.AutomationStatus) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_AutomationStatus_subscriptionPollIntervalHours(ctx, field)
 	if err != nil {
 		return graphql.Null
 	}
@@ -3664,7 +3664,7 @@ func (ec *executionContext) _AutomationStatus_subscriptionPollIntervalSeconds(ct
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
 		ctx = rctx // use context from middleware stack in children
-		return obj.SubscriptionPollIntervalSeconds, nil
+		return obj.SubscriptionPollIntervalHours, nil
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -3681,7 +3681,7 @@ func (ec *executionContext) _AutomationStatus_subscriptionPollIntervalSeconds(ct
 	return ec.marshalNInt2int(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_AutomationStatus_subscriptionPollIntervalSeconds(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_AutomationStatus_subscriptionPollIntervalHours(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "AutomationStatus",
 		Field:      field,
@@ -9774,8 +9774,8 @@ func (ec *executionContext) fieldContext_Settings_automation(_ context.Context, 
 			switch field.Name {
 			case "taskProgressSyncIntervalSeconds":
 				return ec.fieldContext_AutomationSettings_taskProgressSyncIntervalSeconds(ctx, field)
-			case "subscriptionPollIntervalSeconds":
-				return ec.fieldContext_AutomationSettings_subscriptionPollIntervalSeconds(ctx, field)
+			case "subscriptionPollIntervalHours":
+				return ec.fieldContext_AutomationSettings_subscriptionPollIntervalHours(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type AutomationSettings", field.Name)
 		},
@@ -10024,8 +10024,8 @@ func (ec *executionContext) fieldContext_SettingsStatus_automation(_ context.Con
 				return ec.fieldContext_AutomationStatus_taskProgressSyncIntervalSeconds(ctx, field)
 			case "taskProgressSyncEnabled":
 				return ec.fieldContext_AutomationStatus_taskProgressSyncEnabled(ctx, field)
-			case "subscriptionPollIntervalSeconds":
-				return ec.fieldContext_AutomationStatus_subscriptionPollIntervalSeconds(ctx, field)
+			case "subscriptionPollIntervalHours":
+				return ec.fieldContext_AutomationStatus_subscriptionPollIntervalHours(ctx, field)
 			case "subscriptionPollEnabled":
 				return ec.fieldContext_AutomationStatus_subscriptionPollEnabled(ctx, field)
 			}
@@ -16510,7 +16510,7 @@ func (ec *executionContext) unmarshalInputUpdateAutomationSettingsInput(ctx cont
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"taskProgressSyncIntervalSeconds", "subscriptionPollIntervalSeconds"}
+	fieldsInOrder := [...]string{"taskProgressSyncIntervalSeconds", "subscriptionPollIntervalHours"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -16524,13 +16524,13 @@ func (ec *executionContext) unmarshalInputUpdateAutomationSettingsInput(ctx cont
 				return it, err
 			}
 			it.TaskProgressSyncIntervalSeconds = data
-		case "subscriptionPollIntervalSeconds":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("subscriptionPollIntervalSeconds"))
+		case "subscriptionPollIntervalHours":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("subscriptionPollIntervalHours"))
 			data, err := ec.unmarshalNInt2int(ctx, v)
 			if err != nil {
 				return it, err
 			}
-			it.SubscriptionPollIntervalSeconds = data
+			it.SubscriptionPollIntervalHours = data
 		}
 	}
 
@@ -16766,8 +16766,8 @@ func (ec *executionContext) _AutomationSettings(ctx context.Context, sel ast.Sel
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
-		case "subscriptionPollIntervalSeconds":
-			out.Values[i] = ec._AutomationSettings_subscriptionPollIntervalSeconds(ctx, field, obj)
+		case "subscriptionPollIntervalHours":
+			out.Values[i] = ec._AutomationSettings_subscriptionPollIntervalHours(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
@@ -16815,8 +16815,8 @@ func (ec *executionContext) _AutomationStatus(ctx context.Context, sel ast.Selec
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
-		case "subscriptionPollIntervalSeconds":
-			out.Values[i] = ec._AutomationStatus_subscriptionPollIntervalSeconds(ctx, field, obj)
+		case "subscriptionPollIntervalHours":
+			out.Values[i] = ec._AutomationStatus_subscriptionPollIntervalHours(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}

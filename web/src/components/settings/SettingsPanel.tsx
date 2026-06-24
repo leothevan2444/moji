@@ -188,7 +188,7 @@ export function SettingsPanel({
     });
     setAutomationForm({
       taskProgressSyncIntervalSeconds: String(runtimeSettings.automation.taskProgressSyncIntervalSeconds || 60),
-      subscriptionPollIntervalSeconds: String(runtimeSettings.automation.subscriptionPollIntervalSeconds || 3600)
+      subscriptionPollIntervalHours: String(runtimeSettings.automation.subscriptionPollIntervalHours || 1)
     });
     setSubscriptionForm({
       stashBoxEndpoints: [...(runtimeSettings.subscription.stashBoxEndpoints ?? [])]
@@ -275,11 +275,11 @@ export function SettingsPanel({
   const saveAutomationSettings = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const taskProgressSyncIntervalSeconds = Number.parseInt(automationForm.taskProgressSyncIntervalSeconds.trim(), 10);
-    const subscriptionPollIntervalSeconds = Number.parseInt(automationForm.subscriptionPollIntervalSeconds.trim(), 10);
+    const subscriptionPollIntervalHours = Number.parseInt(automationForm.subscriptionPollIntervalHours.trim(), 10);
     const result = await updateAutomationSettings({
       input: {
         taskProgressSyncIntervalSeconds: Number.isNaN(taskProgressSyncIntervalSeconds) ? 60 : taskProgressSyncIntervalSeconds,
-        subscriptionPollIntervalSeconds: Number.isNaN(subscriptionPollIntervalSeconds) ? 3600 : subscriptionPollIntervalSeconds
+        subscriptionPollIntervalHours: Number.isNaN(subscriptionPollIntervalHours) ? 1 : subscriptionPollIntervalHours
       }
     });
     if (result.error) {
@@ -683,11 +683,11 @@ export function SettingsPanel({
             />
           </label>
           <label className="settings-field">
-            <span>订阅轮询间隔（秒）</span>
+            <span>订阅轮询间隔（小时）</span>
             <input
-              value={automationForm.subscriptionPollIntervalSeconds}
-              onChange={(event) => setAutomationForm((current) => ({ ...current, subscriptionPollIntervalSeconds: event.target.value }))}
-              placeholder="3600"
+              value={automationForm.subscriptionPollIntervalHours}
+              onChange={(event) => setAutomationForm((current) => ({ ...current, subscriptionPollIntervalHours: event.target.value }))}
+              placeholder="1"
             />
           </label>
           <div className="settings-meta">

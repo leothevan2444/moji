@@ -302,7 +302,7 @@ func buildSettingsSnapshot(cfg *config.Config, version string) *graphqlapi.Setti
 		},
 		Automation: graphqlapi.AutomationSettingsSnapshot{
 			TaskProgressSyncIntervalSeconds: effectiveTaskProgressSyncIntervalSeconds(cfg),
-			SubscriptionPollIntervalSeconds: effectiveSubscriptionPollIntervalSeconds(cfg),
+			SubscriptionPollIntervalHours:   effectiveSubscriptionPollIntervalHours(cfg),
 		},
 		Subscription: graphqlapi.SubscriptionSettingsSnapshot{
 			StashBoxEndpoints: append([]string(nil), cfg.Subscription.StashBoxEndpoints...),
@@ -356,8 +356,8 @@ func buildSettingsStatusSnapshot(cfg *config.Config, version string, downloaderE
 		Automation: graphqlapi.AutomationStatusSnapshot{
 			TaskProgressSyncIntervalSeconds: effectiveTaskProgressSyncIntervalSeconds(cfg),
 			TaskProgressSyncEnabled:         cfg.Automation.TaskProgressSyncIntervalSeconds >= 0 && downloaderEnabled,
-			SubscriptionPollIntervalSeconds: effectiveSubscriptionPollIntervalSeconds(cfg),
-			SubscriptionPollEnabled:         cfg.Automation.SubscriptionPollIntervalSeconds >= 0 && stashEnabled,
+			SubscriptionPollIntervalHours:   effectiveSubscriptionPollIntervalHours(cfg),
+			SubscriptionPollEnabled:         cfg.Automation.SubscriptionPollIntervalHours >= 0 && stashEnabled,
 		},
 		Subscription:            subscriptionStatus,
 		StashLibraries:          stashLibraries,
@@ -544,14 +544,14 @@ func configureSubscriptionStore(cfg *config.Config) (subscription.Store, error) 
 }
 
 func configureSubscriptionPollInterval(cfg *config.Config) time.Duration {
-	seconds := cfg.Automation.SubscriptionPollIntervalSeconds
-	if seconds < 0 {
+	hours := cfg.Automation.SubscriptionPollIntervalHours
+	if hours < 0 {
 		return 0
 	}
-	if seconds == 0 {
-		seconds = 3600
+	if hours == 0 {
+		hours = 1
 	}
-	return time.Duration(seconds) * time.Second
+	return time.Duration(hours) * time.Hour
 }
 
 func startSubscriptionWorker(ctx context.Context, service graphqlapi.SubscriptionService, interval time.Duration) {
@@ -599,13 +599,13 @@ func effectiveTaskProgressSyncIntervalSeconds(cfg *config.Config) int {
 	return seconds
 }
 
-func effectiveSubscriptionPollIntervalSeconds(cfg *config.Config) int {
-	seconds := cfg.Automation.SubscriptionPollIntervalSeconds
-	if seconds < 0 {
+func effectiveSubscriptionPollIntervalHours(cfg *config.Config) int {
+	hours := cfg.Automation.SubscriptionPollIntervalHours
+	if hours < 0 {
 		return 0
 	}
-	if seconds == 0 {
-		return 3600
+	if hours == 0 {
+		return 1
 	}
-	return seconds
+	return hours
 }

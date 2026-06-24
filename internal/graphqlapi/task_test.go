@@ -420,14 +420,14 @@ func TestSettingsQueryReturnsRuntimeSnapshot(t *testing.T) {
 		},
 		Automation: AutomationSettingsSnapshot{
 			TaskProgressSyncIntervalSeconds: 60,
-			SubscriptionPollIntervalSeconds: 1800,
+			SubscriptionPollIntervalHours:   6,
 		},
 	}
 	resolver.RuntimeStatus = &SettingsStatusSnapshot{
 		Automation: AutomationStatusSnapshot{
 			TaskProgressSyncIntervalSeconds: 60,
 			TaskProgressSyncEnabled:         true,
-			SubscriptionPollIntervalSeconds: 1800,
+			SubscriptionPollIntervalHours:   6,
 			SubscriptionPollEnabled:         true,
 		},
 	}
@@ -438,7 +438,7 @@ func TestSettingsQueryReturnsRuntimeSnapshot(t *testing.T) {
 			ingest { deliveryMode stashLibraryPath }
 			jackett { configured url apiKeyConfigured }
 			qbittorrent { configured url username usernameConfigured passwordConfigured defaultSavePath category tags }
-			automation { taskProgressSyncIntervalSeconds subscriptionPollIntervalSeconds }
+			automation { taskProgressSyncIntervalSeconds subscriptionPollIntervalHours }
 		}
 		settingsStatus {
 			automation { taskProgressSyncEnabled }
@@ -503,7 +503,7 @@ func TestSettingsQueryUsesSettingsEditorSnapshot(t *testing.T) {
 		snapshot: &SettingsSnapshot{
 			Automation: AutomationSettingsSnapshot{
 				TaskProgressSyncIntervalSeconds: 60,
-				SubscriptionPollIntervalSeconds: 3600,
+				SubscriptionPollIntervalHours:   1,
 			},
 			Subscription: SubscriptionSettingsSnapshot{
 				StashBoxEndpoints: []string{"https://javstash.example.org/graphql"},
@@ -515,13 +515,13 @@ func TestSettingsQueryUsesSettingsEditorSnapshot(t *testing.T) {
 		},
 		statusSnapshot: &SettingsStatusSnapshot{
 			Automation: AutomationStatusSnapshot{
-				SubscriptionPollIntervalSeconds: 3600,
-				SubscriptionPollEnabled:         true,
+				SubscriptionPollIntervalHours: 1,
+				SubscriptionPollEnabled:       true,
 			},
 		},
 	}
 
-	resp := executeGraphQL(t, resolver, `{ settings { subscription { stashBoxEndpoints } qbittorrent { url username } automation { subscriptionPollIntervalSeconds } } settingsStatus { automation { subscriptionPollIntervalSeconds subscriptionPollEnabled } } }`)
+	resp := executeGraphQL(t, resolver, `{ settings { subscription { stashBoxEndpoints } qbittorrent { url username } automation { subscriptionPollIntervalHours } } settingsStatus { automation { subscriptionPollIntervalHours subscriptionPollEnabled } } }`)
 	if len(resp.Errors) > 0 {
 		t.Fatalf("expected no errors, got %+v", resp.Errors)
 	}
@@ -531,7 +531,7 @@ func TestSettingsQueryUsesSettingsEditorSnapshot(t *testing.T) {
 	if resp.Data.Settings.Qbittorrent.Username != "editor-user" {
 		t.Fatalf("unexpected qbittorrent settings: %+v", resp.Data.Settings.Qbittorrent)
 	}
-	if !resp.Data.SettingsStatus.Automation.SubscriptionPollEnabled || resp.Data.SettingsStatus.Automation.SubscriptionPollIntervalSeconds != 3600 {
+	if !resp.Data.SettingsStatus.Automation.SubscriptionPollEnabled || resp.Data.SettingsStatus.Automation.SubscriptionPollIntervalHours != 1 {
 		t.Fatalf("unexpected automation status: %+v", resp.Data.SettingsStatus.Automation)
 	}
 }
@@ -790,14 +790,14 @@ type graphQLTaskResponse struct {
 			} `json:"subscription"`
 			Automation struct {
 				TaskProgressSyncIntervalSeconds int `json:"taskProgressSyncIntervalSeconds"`
-				SubscriptionPollIntervalSeconds int `json:"subscriptionPollIntervalSeconds"`
+				SubscriptionPollIntervalHours   int `json:"subscriptionPollIntervalHours"`
 			} `json:"automation"`
 		} `json:"settings"`
 		SettingsStatus struct {
 			Automation struct {
-				TaskProgressSyncEnabled         bool `json:"taskProgressSyncEnabled"`
-				SubscriptionPollIntervalSeconds int  `json:"subscriptionPollIntervalSeconds"`
-				SubscriptionPollEnabled         bool `json:"subscriptionPollEnabled"`
+				TaskProgressSyncEnabled       bool `json:"taskProgressSyncEnabled"`
+				SubscriptionPollIntervalHours int  `json:"subscriptionPollIntervalHours"`
+				SubscriptionPollEnabled       bool `json:"subscriptionPollEnabled"`
 			} `json:"automation"`
 		} `json:"settingsStatus"`
 		StashPerformers struct {
