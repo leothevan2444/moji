@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 	"strings"
+	"sync"
 
 	"github.com/Yamashou/gqlgenc/clientv2"
 	"github.com/leothevan2444/moji/pkg/stash/graphql"
@@ -15,12 +16,31 @@ import (
 // DefaultMaxRequestsPerMinute is the default maximum number of requests per minute.
 const DefaultMaxRequestsPerMinute = 240
 
+// Config captures the runtime Stash connection fields. Mirroring
+// config.Config.Stash as a typed struct lets callers hand a provider to
+// NewClient instead of capturing values at startup.
+type Config struct {
+	URL    string
+	APIKey string
+}
+
+// ConfigProvider supplies the latest Stash Config at the moment of each
+// GraphQL request. Reading the config lazily means Web UI edits to
+// stash.url / api_key take effect on the next call without restarting Moji.
+type ConfigProvider func() Config
+
 // Client represents the client interface to access the Stash server instance
 type Client struct {
+	configProvider ConfigProvider
+
+	// mu guards graphql + httpClient. The pair is rebuilt only when the
+	// provider's identity (URL or API key) changes.
+	mu         sync.RWMutex
 	graphql    *graphql.Client
 	httpClient *http.Client
 
 	maxRequestsPerMinute int
+	lastConfig          Config
 }
 
 type ClientOption func(*Client)
@@ -54,29 +74,69 @@ func rateLimit(n int) clientv2.RequestInterceptor {
 	}
 }
 
-// NewClient creates a new Stash client with the given configuration.
-func NewClient(url string, apiKey string) *Client {
+// NewClient creates a new Stash client backed by a config provider. The
+// provider is consulted on every GraphQL call so Web UI edits take effect
+// without restarting the process.
+func NewClient(configProvider ConfigProvider) *Client {
 	ret := &Client{
-		httpClient: &http.Client{
-			Transport: &http.Transport{Proxy: nil},
-		},
+		configProvider:       configProvider,
 		maxRequestsPerMinute: DefaultMaxRequestsPerMinute,
 	}
-
-	authHeader := setApiKeyHeader(apiKey)
-	limitRequests := rateLimit(ret.maxRequestsPerMinute)
-
-	graphql := graphql.Client{
-		Client: clientv2.NewClient(ret.httpClient, url, nil, authHeader, limitRequests),
+	if configProvider != nil {
+		cfg := configProvider()
+		ret.lastConfig = cfg
+		ret.rebuildLocked(cfg)
+	} else {
+		ret.httpClient = &http.Client{
+			Transport: &http.Transport{Proxy: nil},
+		}
 	}
-
-	ret.graphql = &graphql
-
 	return ret
 }
 
+// resolve returns the graphql client matching the latest provider config,
+// rebuilding it only when URL or APIKey change. Safe for concurrent use.
+func (c *Client) resolve() *graphql.Client {
+	if c.configProvider == nil {
+		c.mu.RLock()
+		defer c.mu.RUnlock()
+		return c.graphql
+	}
+	cfg := c.configProvider()
+	c.mu.RLock()
+	if cfg == c.lastConfig && c.graphql != nil {
+		g := c.graphql
+		c.mu.RUnlock()
+		return g
+	}
+	c.mu.RUnlock()
+
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	if cfg == c.lastConfig && c.graphql != nil {
+		return c.graphql
+	}
+	c.lastConfig = cfg
+	c.rebuildLocked(cfg)
+	return c.graphql
+}
+
+// rebuildLocked rebuilds the http and graphql clients for cfg. Caller must
+// hold c.mu for writing.
+func (c *Client) rebuildLocked(cfg Config) {
+	c.httpClient = &http.Client{
+		Transport: &http.Transport{Proxy: nil},
+	}
+	authHeader := setApiKeyHeader(cfg.APIKey)
+	limitRequests := rateLimit(c.maxRequestsPerMinute)
+	gql := graphql.Client{
+		Client: clientv2.NewClient(c.httpClient, cfg.URL, nil, authHeader, limitRequests),
+	}
+	c.graphql = &gql
+}
+
 func (c *Client) GetVersion(ctx context.Context) (*graphql.GetVersion_Version, error) {
-	resp, err := c.graphql.GetVersion(ctx)
+	resp, err := c.resolve().GetVersion(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -87,7 +147,7 @@ func (c *Client) GetVersion(ctx context.Context) (*graphql.GetVersion_Version, e
 // GetSceneCount returns the total number of scenes in the Stash library.
 // It is used by the stats collector for the home-page service card.
 func (c *Client) GetSceneCount(ctx context.Context) (int, error) {
-	resp, err := c.graphql.FindSceneCount(ctx)
+	resp, err := c.resolve().FindSceneCount(ctx)
 	if err != nil {
 		return 0, err
 	}
@@ -114,7 +174,7 @@ type StashLibrary struct {
 // endpoints. The API key is never logged or returned to callers outside this
 // package.
 func (c *Client) GetStashBoxes(ctx context.Context) ([]StashBoxEndpoint, error) {
-	resp, err := c.graphql.Configuration(ctx)
+	resp, err := c.resolve().Configuration(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("stash: query configuration: %w", err)
 	}
@@ -149,7 +209,7 @@ func (c *Client) GetStashBoxes(ctx context.Context) ([]StashBoxEndpoint, error) 
 }
 
 func (c *Client) GetStashLibraries(ctx context.Context) ([]StashLibrary, error) {
-	resp, err := c.graphql.Configuration(ctx)
+	resp, err := c.resolve().Configuration(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("stash: query configuration: %w", err)
 	}

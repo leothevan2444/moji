@@ -17,7 +17,7 @@ func requireStashClient(t *testing.T) *Client {
 		t.Skip("set MOJI_STASH_GRAPHQL_URL to run Stash integration tests")
 	}
 
-	return NewClient(host, os.Getenv("MOJI_STASH_API_KEY"))
+	return NewClient(func() Config { return Config{URL: host, APIKey: os.Getenv("MOJI_STASH_API_KEY")} })
 }
 
 func TestClient(t *testing.T) {

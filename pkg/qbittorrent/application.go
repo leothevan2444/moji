@@ -12,12 +12,13 @@ import (
 // All Application API methods are under "app", e.g.: /api/v2/app/methodName.
 
 func (c *Client) GetApplicationVersion(ctx context.Context) (string, error) {
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, c.baseURL+"/api/v2/app/version", nil)
+baseURL, httpClient := c.resolve()
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, baseURL+"/api/v2/app/version", nil)
 	if err != nil {
 		return "", err
 	}
 
-	resp, err := c.httpClient.Do(req)
+	resp, err := httpClient.Do(req)
 	if err != nil {
 		return "", err
 	}
@@ -33,12 +34,13 @@ func (c *Client) GetApplicationVersion(ctx context.Context) (string, error) {
 }
 
 func (c *Client) GetAPIVersion(ctx context.Context) (string, error) {
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, c.baseURL+"/api/v2/app/webapiVersion", nil)
+baseURL, httpClient := c.resolve()
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, baseURL+"/api/v2/app/webapiVersion", nil)
 	if err != nil {
 		return "", err
 	}
 
-	resp, err := c.httpClient.Do(req)
+	resp, err := httpClient.Do(req)
 	if err != nil {
 		return "", err
 	}
@@ -62,12 +64,13 @@ type ApplicationBuildInfo struct {
 }
 
 func (c *Client) GetBuildInfo(ctx context.Context) (*ApplicationBuildInfo, error) {
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, c.baseURL+"/api/v2/app/buildInfo", nil)
+baseURL, httpClient := c.resolve()
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, baseURL+"/api/v2/app/buildInfo", nil)
 	if err != nil {
 		return nil, err
 	}
 
-	resp, err := c.httpClient.Do(req)
+	resp, err := httpClient.Do(req)
 	if err != nil {
 		return nil, err
 	}
@@ -325,12 +328,13 @@ type ApplicationPreferences struct {
 }
 
 func (c *Client) GetApplicationPreferences(ctx context.Context) (*ApplicationPreferences, error) {
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, c.baseURL+"/api/v2/app/preferences", nil)
+baseURL, httpClient := c.resolve()
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, baseURL+"/api/v2/app/preferences", nil)
 	if err != nil {
 		return nil, err
 	}
 
-	resp, err := c.httpClient.Do(req)
+	resp, err := httpClient.Do(req)
 	if err != nil {
 		return nil, err
 	}
@@ -351,6 +355,7 @@ func (c *Client) GetApplicationPreferences(ctx context.Context) (*ApplicationPre
 }
 
 func (c *Client) SetApplicationPreferences(ctx context.Context, prefs *ApplicationPreferences) error {
+baseURL, httpClient := c.resolve()
 	data, err := json.Marshal(prefs)
 	if err != nil {
 		return err
@@ -359,7 +364,7 @@ func (c *Client) SetApplicationPreferences(ctx context.Context, prefs *Applicati
 	req, err := http.NewRequestWithContext(
 		ctx,
 		http.MethodPost,
-		c.baseURL+"/api/v2/app/setPreferences",
+		baseURL+"/api/v2/app/setPreferences",
 		strings.NewReader(string(data)),
 	)
 	if err != nil {
@@ -367,7 +372,7 @@ func (c *Client) SetApplicationPreferences(ctx context.Context, prefs *Applicati
 	}
 	req.Header.Set("Content-Type", "application/json")
 
-	resp, err := c.httpClient.Do(req)
+	resp, err := httpClient.Do(req)
 	if err != nil {
 		return err
 	}
@@ -383,12 +388,13 @@ func (c *Client) SetApplicationPreferences(ctx context.Context, prefs *Applicati
 }
 
 func (c *Client) GetDefaultSavePath(ctx context.Context) (string, error) {
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, c.baseURL+"/api/v2/app/defaultSavePath", nil)
+baseURL, httpClient := c.resolve()
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, baseURL+"/api/v2/app/defaultSavePath", nil)
 	if err != nil {
 		return "", err
 	}
 
-	resp, err := c.httpClient.Do(req)
+	resp, err := httpClient.Do(req)
 	if err != nil {
 		return "", err
 	}
@@ -412,12 +418,13 @@ type Cookie struct {
 }
 
 func (c *Client) GetCookies(ctx context.Context) ([]Cookie, error) {
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, c.baseURL+"/api/v2/app/cookies", nil)
+baseURL, httpClient := c.resolve()
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, baseURL+"/api/v2/app/cookies", nil)
 	if err != nil {
 		return nil, err
 	}
 
-	resp, err := c.httpClient.Do(req)
+	resp, err := httpClient.Do(req)
 	if err != nil {
 		return nil, err
 	}
@@ -438,18 +445,19 @@ func (c *Client) GetCookies(ctx context.Context) ([]Cookie, error) {
 }
 
 func (c *Client) SetCookies(ctx context.Context, cookies []Cookie) error {
+baseURL, httpClient := c.resolve()
 	data, err := json.Marshal(cookies)
 	if err != nil {
 		return err
 	}
 
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, c.baseURL+"/api/v2/app/setCookies", strings.NewReader(string(data)))
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, baseURL+"/api/v2/app/setCookies", strings.NewReader(string(data)))
 	if err != nil {
 		return err
 	}
 	req.Header.Set("Content-Type", "application/json")
 
-	resp, err := c.httpClient.Do(req)
+	resp, err := httpClient.Do(req)
 	if err != nil {
 		return err
 	}

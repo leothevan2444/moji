@@ -26,12 +26,13 @@ type GlobalTransferInfo struct {
 }
 
 func (c *Client) GetGlobalTransferInfo(ctx context.Context) (*GlobalTransferInfo, error) {
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, c.baseURL+"/api/v2/transfer/info", nil)
+baseURL, httpClient := c.resolve()
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, baseURL+"/api/v2/transfer/info", nil)
 	if err != nil {
 		return nil, err
 	}
 
-	resp, err := c.httpClient.Do(req)
+	resp, err := httpClient.Do(req)
 	if err != nil {
 		return nil, err
 	}
@@ -46,12 +47,13 @@ func (c *Client) GetGlobalTransferInfo(ctx context.Context) (*GlobalTransferInfo
 }
 
 func (c *Client) GetAlternativeSpeedLimitsState(ctx context.Context) (bool, error) {
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, c.baseURL+"/api/v2/transfer/speedLimitsMode", nil)
+baseURL, httpClient := c.resolve()
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, baseURL+"/api/v2/transfer/speedLimitsMode", nil)
 	if err != nil {
 		return false, err
 	}
 
-	resp, err := c.httpClient.Do(req)
+	resp, err := httpClient.Do(req)
 	if err != nil {
 		return false, err
 	}
@@ -67,12 +69,13 @@ func (c *Client) GetAlternativeSpeedLimitsState(ctx context.Context) (bool, erro
 }
 
 func (c *Client) ToggleAlternativeSpeedLimits(ctx context.Context) error {
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, c.baseURL+"/api/v2/transfer/toggleSpeedLimitsMode", nil)
+baseURL, httpClient := c.resolve()
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, baseURL+"/api/v2/transfer/toggleSpeedLimitsMode", nil)
 	if err != nil {
 		return err
 	}
 
-	resp, err := c.httpClient.Do(req)
+	resp, err := httpClient.Do(req)
 	if err != nil {
 		return err
 	}
@@ -83,12 +86,13 @@ func (c *Client) ToggleAlternativeSpeedLimits(ctx context.Context) error {
 
 // The response is the value of current global download speed limit in bytes/second; this value will be zero if no limit is applied.
 func (c *Client) GetGlobalDownloadLimit(ctx context.Context) (int64, error) {
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, c.baseURL+"/api/v2/transfer/downloadLimit", nil)
+baseURL, httpClient := c.resolve()
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, baseURL+"/api/v2/transfer/downloadLimit", nil)
 	if err != nil {
 		return 0, err
 	}
 
-	resp, err := c.httpClient.Do(req)
+	resp, err := httpClient.Do(req)
 	if err != nil {
 		return 0, err
 	}
@@ -104,13 +108,14 @@ func (c *Client) GetGlobalDownloadLimit(ctx context.Context) (int64, error) {
 
 // Set the global download speed limit in bytes/second
 func (c *Client) SetGlobalDownloadLimit(ctx context.Context, limit int) error {
+baseURL, httpClient := c.resolve()
 	params := url.Values{}
 	params.Set("limit", strconv.Itoa(limit))
 
 	req, err := http.NewRequestWithContext(
 		ctx,
 		http.MethodPost,
-		c.baseURL+"/api/v2/transfer/setDownloadLimit",
+		baseURL+"/api/v2/transfer/setDownloadLimit",
 		strings.NewReader(params.Encode()),
 	)
 	if err != nil {
@@ -118,7 +123,7 @@ func (c *Client) SetGlobalDownloadLimit(ctx context.Context, limit int) error {
 	}
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 
-	resp, err := c.httpClient.Do(req)
+	resp, err := httpClient.Do(req)
 	if err != nil {
 		return err
 	}
@@ -129,12 +134,13 @@ func (c *Client) SetGlobalDownloadLimit(ctx context.Context, limit int) error {
 
 // The response is the value of current global upload speed limit in bytes/second; this value will be zero if no limit is applied.
 func (c *Client) GetGlobalUploadLimit(ctx context.Context) (int64, error) {
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, c.baseURL+"/api/v2/transfer/uploadLimit", nil)
+baseURL, httpClient := c.resolve()
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, baseURL+"/api/v2/transfer/uploadLimit", nil)
 	if err != nil {
 		return 0, err
 	}
 
-	resp, err := c.httpClient.Do(req)
+	resp, err := httpClient.Do(req)
 	if err != nil {
 		return 0, err
 	}
@@ -150,13 +156,14 @@ func (c *Client) GetGlobalUploadLimit(ctx context.Context) (int64, error) {
 
 // Set the global upload speed limit in bytes/second
 func (c *Client) SetGlobalUploadLimit(ctx context.Context, limit int) error {
+baseURL, httpClient := c.resolve()
 	params := url.Values{}
 	params.Set("limit", strconv.Itoa(limit))
 
 	req, err := http.NewRequestWithContext(
 		ctx,
 		http.MethodPost,
-		c.baseURL+"/api/v2/transfer/setUploadLimit",
+		baseURL+"/api/v2/transfer/setUploadLimit",
 		strings.NewReader(params.Encode()),
 	)
 	if err != nil {
@@ -164,7 +171,7 @@ func (c *Client) SetGlobalUploadLimit(ctx context.Context, limit int) error {
 	}
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 
-	resp, err := c.httpClient.Do(req)
+	resp, err := httpClient.Do(req)
 	if err != nil {
 		return err
 	}
@@ -174,13 +181,14 @@ func (c *Client) SetGlobalUploadLimit(ctx context.Context, limit int) error {
 }
 
 func (c *Client) BanPeers(ctx context.Context, peers []string) error {
+baseURL, httpClient := c.resolve()
 	params := url.Values{}
 	params.Set("peers", strings.Join(peers, "|"))
 
 	req, err := http.NewRequestWithContext(
 		ctx,
 		http.MethodPost,
-		c.baseURL+"/api/v2/transfer/banPeers",
+		baseURL+"/api/v2/transfer/banPeers",
 		strings.NewReader(params.Encode()),
 	)
 	if err != nil {
@@ -188,7 +196,7 @@ func (c *Client) BanPeers(ctx context.Context, peers []string) error {
 	}
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 
-	resp, err := c.httpClient.Do(req)
+	resp, err := httpClient.Do(req)
 	if err != nil {
 		return err
 	}

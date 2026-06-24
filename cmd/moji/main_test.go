@@ -342,7 +342,7 @@ func TestStartProgressSyncWorker(t *testing.T) {
 	defer cancel()
 
 	service := &fakeProgressSyncService{called: make(chan struct{}, 1)}
-	startTaskSyncWorker(ctx, service, nil, time.Millisecond)
+	startTaskSyncWorker(ctx, service, nil, func() time.Duration { return time.Millisecond })
 
 	select {
 	case <-service.called:
@@ -359,7 +359,7 @@ func TestStartTaskSyncWorkerTriggersStashScans(t *testing.T) {
 		called:      make(chan struct{}, 1),
 		stashCalled: make(chan struct{}, 1),
 	}
-	startTaskSyncWorker(ctx, service, &fakeConfiguredStashService{}, time.Millisecond)
+	startTaskSyncWorker(ctx, service, &fakeConfiguredStashService{}, func() time.Duration { return time.Millisecond })
 
 	select {
 	case <-service.stashCalled:

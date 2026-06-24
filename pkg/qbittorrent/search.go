@@ -13,6 +13,7 @@ import (
 // All Search API methods are under "search", e.g.: /api/v2/search/methodName.
 
 func (c *Client) StartSearch(ctx context.Context, pattern, plugins, category string) (int, error) {
+baseURL, httpClient := c.resolve()
 	params := url.Values{}
 	params.Set("pattern", pattern)
 	params.Set("plugins", plugins)
@@ -21,7 +22,7 @@ func (c *Client) StartSearch(ctx context.Context, pattern, plugins, category str
 	req, err := http.NewRequestWithContext(
 		ctx,
 		http.MethodPost,
-		c.baseURL+"/api/v2/search/start",
+		baseURL+"/api/v2/search/start",
 		strings.NewReader(params.Encode()),
 	)
 	if err != nil {
@@ -29,7 +30,7 @@ func (c *Client) StartSearch(ctx context.Context, pattern, plugins, category str
 	}
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 
-	resp, err := c.httpClient.Do(req)
+	resp, err := httpClient.Do(req)
 	if err != nil {
 		return 0, err
 	}
@@ -50,13 +51,14 @@ func (c *Client) StartSearch(ctx context.Context, pattern, plugins, category str
 }
 
 func (c *Client) StopSearch(ctx context.Context, searchID int) error {
+baseURL, httpClient := c.resolve()
 	params := url.Values{}
 	params.Set("id", strconv.Itoa(searchID))
 
 	req, err := http.NewRequestWithContext(
 		ctx,
 		http.MethodPost,
-		c.baseURL+"/api/v2/search/stop",
+		baseURL+"/api/v2/search/stop",
 		strings.NewReader(params.Encode()),
 	)
 	if err != nil {
@@ -64,7 +66,7 @@ func (c *Client) StopSearch(ctx context.Context, searchID int) error {
 	}
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 
-	resp, err := c.httpClient.Do(req)
+	resp, err := httpClient.Do(req)
 	if err != nil {
 		return err
 	}
@@ -80,6 +82,7 @@ type SearchStatus struct {
 }
 
 func (c *Client) GetSearchStatus(ctx context.Context, searchID *int) ([]SearchStatus, error) {
+baseURL, httpClient := c.resolve()
 	params := url.Values{}
 	if searchID != nil {
 		params.Set("id", strconv.Itoa(*searchID))
@@ -88,14 +91,14 @@ func (c *Client) GetSearchStatus(ctx context.Context, searchID *int) ([]SearchSt
 	req, err := http.NewRequestWithContext(
 		ctx,
 		http.MethodGet,
-		c.baseURL+"/api/v2/search/status?"+params.Encode(),
+		baseURL+"/api/v2/search/status?"+params.Encode(),
 		nil,
 	)
 	if err != nil {
 		return nil, err
 	}
 
-	resp, err := c.httpClient.Do(req)
+	resp, err := httpClient.Do(req)
 	if err != nil {
 		return nil, err
 	}
@@ -120,20 +123,21 @@ type SearchResult struct {
 }
 
 func (c *Client) GetSearchResults(ctx context.Context, searchID int) (string, []SearchResult, error) {
+baseURL, httpClient := c.resolve()
 	params := url.Values{}
 	params.Set("id", strconv.Itoa(searchID))
 
 	req, err := http.NewRequestWithContext(
 		ctx,
 		http.MethodGet,
-		c.baseURL+"/api/v2/search/results?"+params.Encode(),
+		baseURL+"/api/v2/search/results?"+params.Encode(),
 		nil,
 	)
 	if err != nil {
 		return "", nil, err
 	}
 
-	resp, err := c.httpClient.Do(req)
+	resp, err := httpClient.Do(req)
 	if err != nil {
 		return "", nil, err
 	}
@@ -158,13 +162,14 @@ func (c *Client) GetSearchResults(ctx context.Context, searchID int) (string, []
 }
 
 func (c *Client) DeleteSearch(ctx context.Context, searchID int) error {
+baseURL, httpClient := c.resolve()
 	params := url.Values{}
 	params.Set("id", strconv.Itoa(searchID))
 
 	req, err := http.NewRequestWithContext(
 		ctx,
 		http.MethodPost,
-		c.baseURL+"/api/v2/search/delete",
+		baseURL+"/api/v2/search/delete",
 		strings.NewReader(params.Encode()),
 	)
 	if err != nil {
@@ -172,7 +177,7 @@ func (c *Client) DeleteSearch(ctx context.Context, searchID int) error {
 	}
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 
-	resp, err := c.httpClient.Do(req)
+	resp, err := httpClient.Do(req)
 	if err != nil {
 		return err
 	}
@@ -196,17 +201,18 @@ type SearchPlugin struct {
 }
 
 func (c *Client) GetSearchPlugins(ctx context.Context) ([]SearchPlugin, error) {
+baseURL, httpClient := c.resolve()
 	req, err := http.NewRequestWithContext(
 		ctx,
 		http.MethodGet,
-		c.baseURL+"/api/v2/search/plugins",
+		baseURL+"/api/v2/search/plugins",
 		nil,
 	)
 	if err != nil {
 		return nil, err
 	}
 
-	resp, err := c.httpClient.Do(req)
+	resp, err := httpClient.Do(req)
 	if err != nil {
 		return nil, err
 	}
@@ -221,13 +227,14 @@ func (c *Client) GetSearchPlugins(ctx context.Context) ([]SearchPlugin, error) {
 }
 
 func (c *Client) InstallSearchPlugin(ctx context.Context, sources []string) error {
+baseURL, httpClient := c.resolve()
 	params := url.Values{}
 	params.Set("sources", strings.Join(sources, "|"))
 
 	req, err := http.NewRequestWithContext(
 		ctx,
 		http.MethodPost,
-		c.baseURL+"/api/v2/search/installPlugin",
+		baseURL+"/api/v2/search/installPlugin",
 		strings.NewReader(params.Encode()),
 	)
 	if err != nil {
@@ -235,7 +242,7 @@ func (c *Client) InstallSearchPlugin(ctx context.Context, sources []string) erro
 	}
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 
-	resp, err := c.httpClient.Do(req)
+	resp, err := httpClient.Do(req)
 	if err != nil {
 		return err
 	}
@@ -245,13 +252,14 @@ func (c *Client) InstallSearchPlugin(ctx context.Context, sources []string) erro
 }
 
 func (c *Client) UninstallSearchPlugin(ctx context.Context, pluginNames []string) error {
+baseURL, httpClient := c.resolve()
 	params := url.Values{}
 	params.Set("names", strings.Join(pluginNames, "|"))
 
 	req, err := http.NewRequestWithContext(
 		ctx,
 		http.MethodPost,
-		c.baseURL+"/api/v2/search/uninstallPlugin?",
+		baseURL+"/api/v2/search/uninstallPlugin?",
 		strings.NewReader(params.Encode()),
 	)
 	if err != nil {
@@ -259,7 +267,7 @@ func (c *Client) UninstallSearchPlugin(ctx context.Context, pluginNames []string
 	}
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 
-	resp, err := c.httpClient.Do(req)
+	resp, err := httpClient.Do(req)
 	if err != nil {
 		return err
 	}
@@ -269,6 +277,7 @@ func (c *Client) UninstallSearchPlugin(ctx context.Context, pluginNames []string
 }
 
 func (c *Client) ToggleSearchPlugin(ctx context.Context, pluginNames []string, enable bool) error {
+baseURL, httpClient := c.resolve()
 	params := url.Values{}
 	params.Set("names", strings.Join(pluginNames, "|"))
 	params.Set("enable", strconv.FormatBool(enable))
@@ -276,7 +285,7 @@ func (c *Client) ToggleSearchPlugin(ctx context.Context, pluginNames []string, e
 	req, err := http.NewRequestWithContext(
 		ctx,
 		http.MethodPost,
-		c.baseURL+"/api/v2/search/enablePlugin",
+		baseURL+"/api/v2/search/enablePlugin",
 		strings.NewReader(params.Encode()),
 	)
 	if err != nil {
@@ -284,7 +293,7 @@ func (c *Client) ToggleSearchPlugin(ctx context.Context, pluginNames []string, e
 	}
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 
-	resp, err := c.httpClient.Do(req)
+	resp, err := httpClient.Do(req)
 	if err != nil {
 		return err
 	}
@@ -294,10 +303,11 @@ func (c *Client) ToggleSearchPlugin(ctx context.Context, pluginNames []string, e
 }
 
 func (c *Client) UpdateSearchPlugins(ctx context.Context) error {
+baseURL, httpClient := c.resolve()
 	req, err := http.NewRequestWithContext(
 		ctx,
 		http.MethodPost,
-		c.baseURL+"/api/v2/search/updatePlugins",
+		baseURL+"/api/v2/search/updatePlugins",
 		nil,
 	)
 	if err != nil {
@@ -305,7 +315,7 @@ func (c *Client) UpdateSearchPlugins(ctx context.Context) error {
 	}
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 
-	resp, err := c.httpClient.Do(req)
+	resp, err := httpClient.Do(req)
 	if err != nil {
 		return err
 	}

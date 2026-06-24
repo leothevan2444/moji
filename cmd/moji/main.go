@@ -100,8 +100,8 @@ func main() {
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
 
-	startTaskSyncWorker(ctx, downloaderService, stashService, configureProgressSyncInterval(cfg))
-	startSubscriptionWorker(ctx, subscriptionService, configureSubscriptionPollInterval(cfg))
+	startTaskSyncWorker(ctx, downloaderService, stashService, configureProgressSyncIntervalProvider(configStore, cfg))
+	startSubscriptionWorker(ctx, subscriptionService, configureSubscriptionPollIntervalProvider(configStore, cfg))
 	go statsCollector.Run(ctx)
 
 	go func() {
@@ -124,17 +124,20 @@ func newHTTPHandler(cfg *config.Config, version string) http.Handler {
 }
 
 func newHTTPRuntime(cfg *config.Config, version string, configStore *config.Store) (http.Handler, graphqlapi.DownloaderService, graphqlapi.StashService, graphqlapi.SubscriptionService, *stats.Collector) {
-	jackettTracker := tracker.NewJackettService(cfg.Jackett.URL, cfg.Jackett.APIKey, cfg.Jackett.Password)
-	logging.Infof("runtime: jackett tracker configured for %s", cfg.Jackett.URL)
-	if cfg.Jackett.Password == "" {
-		logging.Warn("runtime: jackett.password is empty; the home service card will report Jackett as 运行异常 because /api/v2.0/indexers requires a session cookie. Set jackett.password in config.yaml to enable it.")
+	jackettTracker := tracker.NewJackettService(configureJackettConfigProvider(configStore, cfg))
+	{
+		current := storeJackett(cfg, configStore)
+		logging.Infof("runtime: jackett tracker configured for %s", current.URL)
+		if current.Password == "" {
+			logging.Warn("runtime: jackett.password is empty; the home service card will report Jackett as 运行异常 because /api/v2.0/indexers requires a session cookie. Set jackett.password in config.yaml to enable it.")
+		}
 	}
 	apiHandler := api.NewHandler(jackettTracker, api.WithLogFilePath(cfg.EffectiveLogFilePath()))
-	qbittorrentClient, torrentClient := configureQBittorrent(cfg)
+	qbittorrentClient, torrentClient := configureQBittorrent(cfg, configStore)
 	downloaderService := configureDownloader(cfg, jackettTracker, torrentClient)
-	stashClient := configureStashClient(cfg)
+	stashClient := configureStashClient(cfg, configStore)
 	stashService := configureStashService(cfg, configStore, stashClient)
-	subscriptionService := configureSubscription(cfg, stashClient, downloaderService)
+	subscriptionService := configureSubscription(cfg, configStore, stashClient, downloaderService)
 	applySubscriptionOrder(cfg, subscriptionService)
 
 	statsCollector := stats.NewCollector(
@@ -177,7 +180,30 @@ func newHTTPRuntime(cfg *config.Config, version string, configStore *config.Stor
 	return router, downloaderService, stashService, subscriptionService, statsCollector
 }
 
-func configureQBittorrent(cfg *config.Config) (*qbittorrent.Client, graphqlapi.TorrentClient) {
+// configureJackettConfigProvider returns the latest JackettConfig on every
+// invocation so Web UI edits to jackett.url / api_key / password take
+// effect on the next search/indexer refresh without restarting Moji.
+func configureJackettConfigProvider(store *config.Store, cfg *config.Config) tracker.JackettConfigProvider {
+	return func() tracker.JackettConfig {
+		current := storeJackett(cfg, store)
+		return tracker.JackettConfig{
+			URL:      current.URL,
+			APIKey:   current.APIKey,
+			Password: current.Password,
+		}
+	}
+}
+
+// storeJackett returns the latest Jackett config block. When a Store is
+// available it always reflects the most recent Web UI write.
+func storeJackett(cfg *config.Config, store *config.Store) *config.JackettConfig {
+	if store != nil {
+		return &store.Config().Jackett
+	}
+	return &cfg.Jackett
+}
+
+func configureQBittorrent(cfg *config.Config, store *config.Store) (*qbittorrent.Client, graphqlapi.TorrentClient) {
 	if cfg.QBittorrent.URL == "" {
 		logging.Infof("runtime: qBittorrent client disabled because qbittorrent.url is empty")
 		return nil, nil
@@ -191,7 +217,7 @@ func configureQBittorrent(cfg *config.Config) (*qbittorrent.Client, graphqlapi.T
 		return nil, nil
 	}
 
-	client := qbittorrent.NewClient(cfg.QBittorrent.URL)
+	client := qbittorrent.NewClient(configureQBittorrentConfigProvider(store, cfg))
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 	if err := client.Login(ctx, cfg.QBittorrent.Username, cfg.QBittorrent.Password); err != nil {
@@ -199,12 +225,26 @@ func configureQBittorrent(cfg *config.Config) (*qbittorrent.Client, graphqlapi.T
 	}
 	logging.Infof("runtime: qBittorrent client connected to %s as %s", cfg.QBittorrent.URL, cfg.QBittorrent.Username)
 
-	wrapped := downloader.NewDefaultingTorrentClient(client, downloader.TorrentDefaults{
-		SavePath: cfg.QBittorrent.DefaultSavePath,
-		Category: cfg.QBittorrent.Category,
-		Tags:     cfg.QBittorrent.Tags,
-	})
+	defaultsProvider := func() downloader.TorrentDefaults {
+		current := storeQBittorrent(cfg, store)
+		return downloader.TorrentDefaults{
+			SavePath: current.DefaultSavePath,
+			Category: current.Category,
+			Tags:     current.Tags,
+		}
+	}
+	wrapped := downloader.NewDefaultingTorrentClient(client, defaultsProvider)
 	return client, wrapped
+}
+
+// storeQBittorrent returns the latest qBittorrent config block. When a Store
+// is available it always reflects the most recent Web UI write, so callers
+// using it inside a provider see live edits without a restart.
+func storeQBittorrent(cfg *config.Config, store *config.Store) *config.QBittorrentConfig {
+	if store != nil {
+		return &store.Config().QBittorrent
+	}
+	return &cfg.QBittorrent
 }
 
 // jackettClientOf returns the underlying jackett.Client for the stats
@@ -248,6 +288,30 @@ func configureProgressSyncInterval(cfg *config.Config) time.Duration {
 		seconds = 60
 	}
 	return time.Duration(seconds) * time.Second
+}
+
+// configureProgressSyncIntervalProvider returns the current task sync
+// interval, honoring the latest Web UI edit each time it is called. A return
+// value <= 0 disables the worker.
+func configureProgressSyncIntervalProvider(store *config.Store, cfg *config.Config) func() time.Duration {
+	return func() time.Duration {
+		return configureProgressSyncInterval(storeAutomation(cfg, store))
+	}
+}
+
+// configureQBittorrentConfigProvider returns the latest qBittorrent config
+// block, honoring Web UI edits each time it is called. Used by the
+// qbittorrent.Client to lazily rebuild its http client and base URL when the
+// URL or credentials change.
+func configureQBittorrentConfigProvider(store *config.Store, cfg *config.Config) qbittorrent.ConfigProvider {
+	return func() qbittorrent.Config {
+		current := storeQBittorrent(cfg, store)
+		return qbittorrent.Config{
+			URL:      current.URL,
+			Username: current.Username,
+			Password: current.Password,
+		}
+	}
 }
 
 func applySubscriptionOrder(cfg *config.Config, service graphqlapi.SubscriptionService) {
@@ -389,8 +453,8 @@ func loadStashLibraries(stashConfigured bool, stashClient *stash.Client) ([]grap
 	return out, ""
 }
 
-func startTaskSyncWorker(ctx context.Context, service graphqlapi.DownloaderService, stash graphqlapi.StashService, interval time.Duration) {
-	if service == nil || interval <= 0 {
+func startTaskSyncWorker(ctx context.Context, service graphqlapi.DownloaderService, stash graphqlapi.StashService, intervalProvider func() time.Duration) {
+	if service == nil || intervalProvider == nil || intervalProvider() <= 0 {
 		if service == nil {
 			logging.Infof("runtime: task sync worker not started because downloader service is unavailable")
 		} else {
@@ -398,10 +462,12 @@ func startTaskSyncWorker(ctx context.Context, service graphqlapi.DownloaderServi
 		}
 		return
 	}
-	logging.Infof("runtime: starting task sync worker with interval %s", interval)
+	initial := intervalProvider()
+	logging.Infof("runtime: starting task sync worker with interval %s", initial)
 
 	go func() {
-		ticker := time.NewTicker(interval)
+		current := initial
+		ticker := time.NewTicker(current)
 		defer ticker.Stop()
 
 		for {
@@ -419,19 +485,56 @@ func startTaskSyncWorker(ctx context.Context, service graphqlapi.DownloaderServi
 					}
 				}
 				cancel()
+
+				// Re-check the interval after each tick so Web UI edits to
+				// automation.taskProgressSyncIntervalSeconds take effect on the
+				// next iteration without restarting the process.
+				next := intervalProvider()
+				if next <= 0 {
+					logging.Infof("runtime: task sync worker stopping because sync interval became non-positive")
+					return
+				}
+				if next != current {
+					ticker.Reset(next)
+					current = next
+					logging.Infof("runtime: task sync worker interval changed to %s", current)
+				}
 			}
 		}
 	}()
 }
 
-func configureStashClient(cfg *config.Config) *stash.Client {
-	graphqlURL := cfg.Stash.GraphQLEndpoint()
+func configureStashClient(cfg *config.Config, store *config.Store) *stash.Client {
+	current := storeStash(cfg, store)
+	graphqlURL := current.GraphQLEndpoint()
 	if graphqlURL == "" {
 		logging.Infof("runtime: stash client disabled because stash.url is empty")
 		return nil
 	}
 	logging.Infof("runtime: stash client configured for %s", graphqlURL)
-	return stash.NewClient(graphqlURL, cfg.Stash.APIKey)
+	return stash.NewClient(configureStashConfigProvider(store, cfg))
+}
+
+// configureStashConfigProvider returns the latest Stash config block on
+// every invocation so Web UI edits to stash.url / api_key take effect on
+// the next GraphQL call without restarting Moji.
+func configureStashConfigProvider(store *config.Store, cfg *config.Config) stash.ConfigProvider {
+	return func() stash.Config {
+		current := storeStash(cfg, store)
+		return stash.Config{
+			URL:    current.GraphQLEndpoint(),
+			APIKey: current.APIKey,
+		}
+	}
+}
+
+// storeStash returns the latest Stash config block. When a Store is
+// available it always reflects the most recent Web UI write.
+func storeStash(cfg *config.Config, store *config.Store) *config.StashConfig {
+	if store != nil {
+		return &store.Config().Stash
+	}
+	return &cfg.Stash
 }
 
 func configureStashService(cfg *config.Config, store *config.Store, client *stash.Client) graphqlapi.StashService {
@@ -511,7 +614,7 @@ func isIngestConfigured(cfg *config.Config) bool {
 	}
 }
 
-func configureSubscription(cfg *config.Config, stashClient *stash.Client, downloaderService graphqlapi.DownloaderService) graphqlapi.SubscriptionService {
+func configureSubscription(cfg *config.Config, configStore *config.Store, stashClient *stash.Client, downloaderService graphqlapi.DownloaderService) graphqlapi.SubscriptionService {
 	if stashClient == nil {
 		logging.Infof("runtime: subscription service disabled because stash client is not available")
 		return nil
@@ -554,8 +657,26 @@ func configureSubscriptionPollInterval(cfg *config.Config) time.Duration {
 	return time.Duration(hours) * time.Hour
 }
 
-func startSubscriptionWorker(ctx context.Context, service graphqlapi.SubscriptionService, interval time.Duration) {
-	if service == nil || interval <= 0 {
+// configureSubscriptionPollIntervalProvider returns the current subscription
+// poll interval, honoring the latest Web UI edit each time it is called.
+// A return value <= 0 disables the worker.
+func configureSubscriptionPollIntervalProvider(store *config.Store, cfg *config.Config) func() time.Duration {
+	return func() time.Duration {
+		return configureSubscriptionPollInterval(storeAutomation(cfg, store))
+	}
+}
+
+// storeAutomation returns the latest automation config block, falling back to
+// the startup snapshot when no Store is wired up.
+func storeAutomation(cfg *config.Config, store *config.Store) *config.Config {
+	if store != nil {
+		return store.Config()
+	}
+	return cfg
+}
+
+func startSubscriptionWorker(ctx context.Context, service graphqlapi.SubscriptionService, intervalProvider func() time.Duration) {
+	if service == nil || intervalProvider == nil || intervalProvider() <= 0 {
 		if service == nil {
 			logging.Infof("runtime: subscription worker not started because subscription service is unavailable")
 		} else {
@@ -563,10 +684,12 @@ func startSubscriptionWorker(ctx context.Context, service graphqlapi.Subscriptio
 		}
 		return
 	}
-	logging.Infof("runtime: starting subscription worker with interval %s", interval)
+	initial := intervalProvider()
+	logging.Infof("runtime: starting subscription worker with interval %s", initial)
 
 	go func() {
-		ticker := time.NewTicker(interval)
+		current := initial
+		ticker := time.NewTicker(current)
 		defer ticker.Stop()
 
 		for {
@@ -579,6 +702,20 @@ func startSubscriptionWorker(ctx context.Context, service graphqlapi.Subscriptio
 					logging.Errorf("refresh subscription performers: %v", err)
 				}
 				cancel()
+
+				// Re-check the interval after each tick so Web UI edits to
+				// automation.subscriptionPollIntervalHours take effect on the
+				// next iteration without restarting the process.
+				next := intervalProvider()
+				if next <= 0 {
+					logging.Infof("runtime: subscription worker stopping because poll interval became non-positive")
+					return
+				}
+				if next != current {
+					ticker.Reset(next)
+					current = next
+					logging.Infof("runtime: subscription worker interval changed to %s", current)
+				}
 			}
 		}
 	}()

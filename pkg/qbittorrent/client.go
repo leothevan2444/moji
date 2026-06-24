@@ -11,49 +11,115 @@ import (
 	"net/url"
 	"strconv"
 	"strings"
+	"sync"
 )
 
-type Client struct {
-	baseURL    string
-	httpClient *http.Client
+type Config struct {
+	URL      string
+	Username string
+	Password string
 }
 
-func NewClient(baseURL string) *Client {
+// ConfigProvider supplies the latest qBittorrent connection settings at the
+// moment of each operation. Reading them lazily means Web UI edits to
+// qbittorrent.url / username / password take effect on the next request
+// without restarting Moji.
+type ConfigProvider func() Config
+
+type Client struct {
+	configProvider ConfigProvider
+
+	// mu guards baseURL + httpClient. The pair is rebuilt only when the
+	// provider's identity changes (different URL or credentials), so the
+	// qBittorrent session cookie survives config reads that return the same
+	// values.
+	mu         sync.RWMutex
+	baseURL    string
+	httpClient *http.Client
+
+	// lastConfig captures the config identity that produced the cached
+	// httpClient. Compared with the latest provider output on every call so
+	// a Web UI edit immediately swaps the underlying transport.
+	lastConfig Config
+}
+
+func NewClient(configProvider ConfigProvider) *Client {
+	c := &Client{configProvider: configProvider}
+	if configProvider != nil {
+		cfg := configProvider()
+		c.lastConfig = cfg
+		c.baseURL = cfg.URL
+	}
+	c.httpClient = c.buildHTTPClient()
+	return c
+}
+
+// buildHTTPClient allocates a fresh http.Client with its own cookie jar.
+// Each rebuild after a URL/credential change discards the previous session
+// cookie, forcing a fresh login on the next call.
+func (c *Client) buildHTTPClient() *http.Client {
 	jar, err := cookiejar.New(nil)
 	if err != nil {
 		panic(fmt.Sprintf("failed to create cookie jar: %v", err))
 	}
-	client := &Client{
-		baseURL: baseURL,
-		httpClient: &http.Client{
-			Jar:       jar,
-			Transport: &http.Transport{Proxy: nil},
-		},
+	return &http.Client{
+		Jar:       jar,
+		Transport: &http.Transport{Proxy: nil},
 	}
+}
 
-	return client
+// resolve returns the current baseURL and httpClient, rebuilding the
+// underlying transport when the provider's identity has changed. Hot-path
+// callers stay on the read lock when nothing has changed.
+func (c *Client) resolve() (string, *http.Client) {
+	if c.configProvider == nil {
+		c.mu.RLock()
+		defer c.mu.RUnlock()
+		return c.baseURL, c.httpClient
+	}
+	cfg := c.configProvider()
+	c.mu.RLock()
+	if cfg == c.lastConfig {
+		baseURL, httpClient := c.baseURL, c.httpClient
+		c.mu.RUnlock()
+		return baseURL, httpClient
+	}
+	c.mu.RUnlock()
+
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	// Re-check under the write lock to avoid double rebuilds from racing
+	// goroutines.
+	if cfg == c.lastConfig {
+		return c.baseURL, c.httpClient
+	}
+	c.lastConfig = cfg
+	c.baseURL = cfg.URL
+	c.httpClient = c.buildHTTPClient()
+	return c.baseURL, c.httpClient
 }
 
 // All Authentication API methods are under "auth", e.g.: /api/v2/auth/methodName.
 // qBittorrent uses cookie-based authentication.
 
 func (c *Client) Login(ctx context.Context, username, password string) error {
+	baseURL, httpClient := c.resolve()
 	params := url.Values{}
 	params.Set("username", username)
 	params.Set("password", password)
 
 	req, err := http.NewRequestWithContext(ctx,
 		http.MethodPost,
-		c.baseURL+"/api/v2/auth/login",
+		baseURL+"/api/v2/auth/login",
 		strings.NewReader(params.Encode()),
 	)
 	if err != nil {
 		return fmt.Errorf("failed to create login request: %v", err)
 	}
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-	req.Header.Set("Referer", c.baseURL)
+	req.Header.Set("Referer", baseURL)
 
-	resp, err := c.httpClient.Do(req)
+	resp, err := httpClient.Do(req)
 	if err != nil {
 		return fmt.Errorf("failed to send login request: %v", err)
 	}
@@ -67,16 +133,17 @@ func (c *Client) Login(ctx context.Context, username, password string) error {
 }
 
 func (c *Client) Logout(ctx context.Context) error {
+	baseURL, httpClient := c.resolve()
 	req, err := http.NewRequestWithContext(ctx,
 		http.MethodPost,
-		c.baseURL+"/api/v2/auth/logout",
+		baseURL+"/api/v2/auth/logout",
 		nil,
 	)
 	if err != nil {
 		return fmt.Errorf("failed to create logout request: %v", err)
 	}
 
-	resp, err := c.httpClient.Do(req)
+	resp, err := httpClient.Do(req)
 	if err != nil {
 		return fmt.Errorf("failed to send logout request: %v", err)
 	}
@@ -111,6 +178,7 @@ type LogEntry struct {
 }
 
 func (c *Client) GetLog(ctx context.Context, types LogType, lastKnownID *LastKnownID) ([]LogEntry, error) {
+	baseURL, httpClient := c.resolve()
 	params := url.Values{}
 	if types&LogTypeNormal != 0 {
 		params.Set("normal", "true")
@@ -130,14 +198,14 @@ func (c *Client) GetLog(ctx context.Context, types LogType, lastKnownID *LastKno
 
 	req, err := http.NewRequestWithContext(ctx,
 		http.MethodGet,
-		c.baseURL+"/api/v2/log/main?"+params.Encode(),
+		baseURL+"/api/v2/log/main?"+params.Encode(),
 		nil,
 	)
 	if err != nil {
 		return nil, err
 	}
 
-	resp, err := c.httpClient.Do(req)
+	resp, err := httpClient.Do(req)
 	if err != nil {
 		return nil, err
 	}
@@ -164,6 +232,7 @@ type PeerLogEntry struct {
 }
 
 func (c *Client) GetPeerLog(ctx context.Context, lastKnownID *LastKnownID) ([]PeerLogEntry, error) {
+	baseURL, httpClient := c.resolve()
 	params := url.Values{}
 	if lastKnownID != nil {
 		params.Set("last_known_id", strconv.Itoa(int(*lastKnownID)))
@@ -171,14 +240,14 @@ func (c *Client) GetPeerLog(ctx context.Context, lastKnownID *LastKnownID) ([]Pe
 
 	req, err := http.NewRequestWithContext(ctx,
 		http.MethodGet,
-		c.baseURL+"/api/v2/log/peers?"+params.Encode(),
+		baseURL+"/api/v2/log/peers?"+params.Encode(),
 		nil,
 	)
 	if err != nil {
 		return nil, err
 	}
 
-	resp, err := c.httpClient.Do(req)
+	resp, err := httpClient.Do(req)
 	if err != nil {
 		return nil, err
 	}
@@ -213,6 +282,7 @@ type MainData struct {
 }
 
 func (c *Client) GetMainData(ctx context.Context, rid *SyncRID) (*MainData, error) {
+	baseURL, httpClient := c.resolve()
 	params := url.Values{}
 	if rid != nil {
 		params.Set("rid", strconv.Itoa(int(*rid)))
@@ -221,14 +291,14 @@ func (c *Client) GetMainData(ctx context.Context, rid *SyncRID) (*MainData, erro
 	req, err := http.NewRequestWithContext(
 		ctx,
 		http.MethodGet,
-		c.baseURL+"/api/v2/sync/maindata?"+params.Encode(),
+		baseURL+"/api/v2/sync/maindata?"+params.Encode(),
 		nil,
 	)
 	if err != nil {
 		return nil, err
 	}
 
-	resp, err := c.httpClient.Do(req)
+	resp, err := httpClient.Do(req)
 	if err != nil {
 		return nil, err
 	}

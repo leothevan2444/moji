@@ -21,7 +21,7 @@ func TestMain(m *testing.M) {
 		os.Exit(m.Run())
 	}
 
-	client = NewClient(host)
+	client = NewClient(func() Config { return Config{URL: host, Username: username, Password: password} })
 	err := client.Login(context.Background(), username, password)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "failed to login to qBittorrent: %v\n", err)

@@ -145,19 +145,20 @@ func buildTorrentListParams(opts *TorrentListOptions) url.Values {
 }
 
 func (c *Client) GetTorrentList(ctx context.Context, options *TorrentListOptions) ([]Torrent, error) {
+baseURL, httpClient := c.resolve()
 	params := buildTorrentListParams(options)
 
 	req, err := http.NewRequestWithContext(
 		ctx,
 		http.MethodGet,
-		c.baseURL+"/api/v2/torrents/info?"+params.Encode(),
+		baseURL+"/api/v2/torrents/info?"+params.Encode(),
 		nil,
 	)
 	if err != nil {
 		return nil, err
 	}
 
-	resp, err := c.httpClient.Do(req)
+	resp, err := httpClient.Do(req)
 	if err != nil {
 		return nil, err
 	}
@@ -209,20 +210,21 @@ type TorrentGenericProperties struct {
 }
 
 func (c *Client) GetTorrentGenericProperties(ctx context.Context, hash string) (*TorrentGenericProperties, error) {
+baseURL, httpClient := c.resolve()
 	params := url.Values{}
 	params.Set("hash", hash)
 
 	req, err := http.NewRequestWithContext(
 		ctx,
 		http.MethodGet,
-		c.baseURL+"/api/v2/torrents/properties?"+params.Encode(),
+		baseURL+"/api/v2/torrents/properties?"+params.Encode(),
 		nil,
 	)
 	if err != nil {
 		return nil, err
 	}
 
-	resp, err := c.httpClient.Do(req)
+	resp, err := httpClient.Do(req)
 	if err != nil {
 		return nil, err
 	}
@@ -258,20 +260,21 @@ type TorrentTracker struct {
 }
 
 func (c *Client) GetTorrentTrackers(ctx context.Context, hash string) ([]TorrentTracker, error) {
+baseURL, httpClient := c.resolve()
 	params := url.Values{}
 	params.Set("hash", hash)
 
 	req, err := http.NewRequestWithContext(
 		ctx,
 		http.MethodGet,
-		c.baseURL+"/api/v2/torrents/trackers?"+params.Encode(),
+		baseURL+"/api/v2/torrents/trackers?"+params.Encode(),
 		nil,
 	)
 	if err != nil {
 		return nil, err
 	}
 
-	resp, err := c.httpClient.Do(req)
+	resp, err := httpClient.Do(req)
 	if err != nil {
 		return nil, err
 	}
@@ -286,20 +289,21 @@ func (c *Client) GetTorrentTrackers(ctx context.Context, hash string) ([]Torrent
 }
 
 func (c *Client) GetTorrentWebSeeds(ctx context.Context, hash string) ([]string, error) {
+baseURL, httpClient := c.resolve()
 	params := url.Values{}
 	params.Set("hash", hash)
 
 	req, err := http.NewRequestWithContext(
 		ctx,
 		http.MethodGet,
-		c.baseURL+"/api/v2/torrents/webseeds?"+params.Encode(),
+		baseURL+"/api/v2/torrents/webseeds?"+params.Encode(),
 		nil,
 	)
 	if err != nil {
 		return nil, err
 	}
 
-	resp, err := c.httpClient.Do(req)
+	resp, err := httpClient.Do(req)
 	if err != nil {
 		return nil, err
 	}
@@ -334,6 +338,7 @@ type TorrentContentFile struct {
 }
 
 func (c *Client) GetTorrentContents(ctx context.Context, hash string, indexes []string) ([]TorrentContentFile, error) {
+baseURL, httpClient := c.resolve()
 	params := url.Values{}
 	params.Set("hash", hash)
 	if len(indexes) > 0 {
@@ -343,14 +348,14 @@ func (c *Client) GetTorrentContents(ctx context.Context, hash string, indexes []
 	req, err := http.NewRequestWithContext(
 		ctx,
 		http.MethodGet,
-		c.baseURL+"/api/v2/torrents/files?"+params.Encode(),
+		baseURL+"/api/v2/torrents/files?"+params.Encode(),
 		nil,
 	)
 	if err != nil {
 		return nil, err
 	}
 
-	resp, err := c.httpClient.Do(req)
+	resp, err := httpClient.Do(req)
 	if err != nil {
 		return nil, err
 	}
@@ -373,20 +378,21 @@ const (
 )
 
 func (c *Client) GetTorrentPiecesStates(ctx context.Context, hash string) ([]int, error) {
+baseURL, httpClient := c.resolve()
 	params := url.Values{}
 	params.Set("hash", hash)
 
 	req, err := http.NewRequestWithContext(
 		ctx,
 		http.MethodGet,
-		c.baseURL+"/api/v2/torrents/pieceStates?"+params.Encode(),
+		baseURL+"/api/v2/torrents/pieceStates?"+params.Encode(),
 		nil,
 	)
 	if err != nil {
 		return nil, err
 	}
 
-	resp, err := c.httpClient.Do(req)
+	resp, err := httpClient.Do(req)
 	if err != nil {
 		return nil, err
 	}
@@ -401,20 +407,21 @@ func (c *Client) GetTorrentPiecesStates(ctx context.Context, hash string) ([]int
 }
 
 func (c *Client) GetTorrentPiecesHashes(ctx context.Context, hash string) ([]string, error) {
+baseURL, httpClient := c.resolve()
 	params := url.Values{}
 	params.Set("hash", hash)
 
 	req, err := http.NewRequestWithContext(
 		ctx,
 		http.MethodGet,
-		c.baseURL+"/api/v2/torrents/pieceHashes?"+params.Encode(),
+		baseURL+"/api/v2/torrents/pieceHashes?"+params.Encode(),
 		nil,
 	)
 	if err != nil {
 		return nil, err
 	}
 
-	resp, err := c.httpClient.Do(req)
+	resp, err := httpClient.Do(req)
 	if err != nil {
 		return nil, err
 	}
@@ -429,13 +436,14 @@ func (c *Client) GetTorrentPiecesHashes(ctx context.Context, hash string) ([]str
 }
 
 func (c *Client) PauseTorrents(ctx context.Context, hashes []string) error {
+baseURL, httpClient := c.resolve()
 	params := url.Values{}
 	params.Set("hashes", strings.Join(hashes, "|"))
 
 	req, err := http.NewRequestWithContext(
 		ctx,
 		http.MethodPost,
-		c.baseURL+"/api/v2/torrents/stop",
+		baseURL+"/api/v2/torrents/stop",
 		strings.NewReader(params.Encode()),
 	)
 	if err != nil {
@@ -443,7 +451,7 @@ func (c *Client) PauseTorrents(ctx context.Context, hashes []string) error {
 	}
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 
-	resp, err := c.httpClient.Do(req)
+	resp, err := httpClient.Do(req)
 	if err != nil {
 		return err
 	}
@@ -453,13 +461,14 @@ func (c *Client) PauseTorrents(ctx context.Context, hashes []string) error {
 }
 
 func (c *Client) ResumeTorrents(ctx context.Context, hashes []string) error {
+baseURL, httpClient := c.resolve()
 	params := url.Values{}
 	params.Set("hashes", strings.Join(hashes, "|"))
 
 	req, err := http.NewRequestWithContext(
 		ctx,
 		http.MethodPost,
-		c.baseURL+"/api/v2/torrents/start",
+		baseURL+"/api/v2/torrents/start",
 		strings.NewReader(params.Encode()),
 	)
 	if err != nil {
@@ -467,7 +476,7 @@ func (c *Client) ResumeTorrents(ctx context.Context, hashes []string) error {
 	}
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 
-	resp, err := c.httpClient.Do(req)
+	resp, err := httpClient.Do(req)
 	if err != nil {
 		return err
 	}
@@ -477,6 +486,7 @@ func (c *Client) ResumeTorrents(ctx context.Context, hashes []string) error {
 }
 
 func (c *Client) DeleteTorrents(ctx context.Context, hashes []string, deleteFiles bool) error {
+baseURL, httpClient := c.resolve()
 	params := url.Values{}
 	params.Set("hashes", strings.Join(hashes, "|"))
 	if deleteFiles {
@@ -488,7 +498,7 @@ func (c *Client) DeleteTorrents(ctx context.Context, hashes []string, deleteFile
 	req, err := http.NewRequestWithContext(
 		ctx,
 		http.MethodPost,
-		c.baseURL+"/api/v2/torrents/delete",
+		baseURL+"/api/v2/torrents/delete",
 		strings.NewReader(params.Encode()),
 	)
 	if err != nil {
@@ -496,7 +506,7 @@ func (c *Client) DeleteTorrents(ctx context.Context, hashes []string, deleteFile
 	}
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 
-	resp, err := c.httpClient.Do(req)
+	resp, err := httpClient.Do(req)
 	if err != nil {
 		return err
 	}
@@ -506,13 +516,14 @@ func (c *Client) DeleteTorrents(ctx context.Context, hashes []string, deleteFile
 }
 
 func (c *Client) RecheckTorrents(ctx context.Context, hashes []string) error {
+baseURL, httpClient := c.resolve()
 	params := url.Values{}
 	params.Set("hashes", strings.Join(hashes, "|"))
 
 	req, err := http.NewRequestWithContext(
 		ctx,
 		http.MethodPost,
-		c.baseURL+"/api/v2/torrents/recheck",
+		baseURL+"/api/v2/torrents/recheck",
 		strings.NewReader(params.Encode()),
 	)
 	if err != nil {
@@ -520,7 +531,7 @@ func (c *Client) RecheckTorrents(ctx context.Context, hashes []string) error {
 	}
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 
-	resp, err := c.httpClient.Do(req)
+	resp, err := httpClient.Do(req)
 	if err != nil {
 		return err
 	}
@@ -530,13 +541,14 @@ func (c *Client) RecheckTorrents(ctx context.Context, hashes []string) error {
 }
 
 func (c *Client) ReannounceTorrents(ctx context.Context, hashes []string) error {
+baseURL, httpClient := c.resolve()
 	params := url.Values{}
 	params.Set("hashes", strings.Join(hashes, "|"))
 
 	req, err := http.NewRequestWithContext(
 		ctx,
 		http.MethodPost,
-		c.baseURL+"/api/v2/torrents/reannounce",
+		baseURL+"/api/v2/torrents/reannounce",
 		strings.NewReader(params.Encode()),
 	)
 	if err != nil {
@@ -544,7 +556,7 @@ func (c *Client) ReannounceTorrents(ctx context.Context, hashes []string) error 
 	}
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 
-	resp, err := c.httpClient.Do(req)
+	resp, err := httpClient.Do(req)
 	if err != nil {
 		return err
 	}
@@ -578,6 +590,7 @@ type AddTorrentOptions struct {
 }
 
 func (c *Client) AddNewTorrent(ctx context.Context, opts AddTorrentOptions) error {
+baseURL, httpClient := c.resolve()
 	body := &bytes.Buffer{}
 	writer := multipart.NewWriter(body)
 
@@ -638,7 +651,7 @@ func (c *Client) AddNewTorrent(ctx context.Context, opts AddTorrentOptions) erro
 	req, err := http.NewRequestWithContext(
 		ctx,
 		http.MethodPost,
-		c.baseURL+"/api/v2/torrents/add",
+		baseURL+"/api/v2/torrents/add",
 		body,
 	)
 	if err != nil {
@@ -647,7 +660,7 @@ func (c *Client) AddNewTorrent(ctx context.Context, opts AddTorrentOptions) erro
 
 	req.Header.Set("Content-Type", writer.FormDataContentType())
 
-	resp, err := c.httpClient.Do(req)
+	resp, err := httpClient.Do(req)
 	if err != nil {
 		return err
 	}
@@ -661,6 +674,7 @@ func (c *Client) AddNewTorrent(ctx context.Context, opts AddTorrentOptions) erro
 }
 
 func (c *Client) AddTrackers(ctx context.Context, hash string, urls []string) error {
+baseURL, httpClient := c.resolve()
 	params := url.Values{}
 	params.Set("hash", hash)
 	params.Set("urls", strings.Join(urls, "\n"))
@@ -668,7 +682,7 @@ func (c *Client) AddTrackers(ctx context.Context, hash string, urls []string) er
 	req, err := http.NewRequestWithContext(
 		ctx,
 		http.MethodPost,
-		c.baseURL+"/api/v2/torrents/addTrackers",
+		baseURL+"/api/v2/torrents/addTrackers",
 		strings.NewReader(params.Encode()),
 	)
 	if err != nil {
@@ -676,7 +690,7 @@ func (c *Client) AddTrackers(ctx context.Context, hash string, urls []string) er
 	}
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 
-	resp, err := c.httpClient.Do(req)
+	resp, err := httpClient.Do(req)
 	if err != nil {
 		return err
 	}
@@ -686,6 +700,7 @@ func (c *Client) AddTrackers(ctx context.Context, hash string, urls []string) er
 }
 
 func (c *Client) EditTrackers(ctx context.Context, hash string, oldURL string, newURL string) error {
+baseURL, httpClient := c.resolve()
 	params := url.Values{}
 	params.Set("hash", hash)
 	params.Set("oldUrl", oldURL)
@@ -694,7 +709,7 @@ func (c *Client) EditTrackers(ctx context.Context, hash string, oldURL string, n
 	req, err := http.NewRequestWithContext(
 		ctx,
 		http.MethodPost,
-		c.baseURL+"/api/v2/torrents/editTracker",
+		baseURL+"/api/v2/torrents/editTracker",
 		strings.NewReader(params.Encode()),
 	)
 	if err != nil {
@@ -702,7 +717,7 @@ func (c *Client) EditTrackers(ctx context.Context, hash string, oldURL string, n
 	}
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 
-	resp, err := c.httpClient.Do(req)
+	resp, err := httpClient.Do(req)
 	if err != nil {
 		return err
 	}
@@ -712,6 +727,7 @@ func (c *Client) EditTrackers(ctx context.Context, hash string, oldURL string, n
 }
 
 func (c *Client) RemoveTrackers(ctx context.Context, hash string, urls []string) error {
+baseURL, httpClient := c.resolve()
 	params := url.Values{}
 	params.Set("hash", hash)
 	params.Set("urls", strings.Join(urls, "|"))
@@ -719,7 +735,7 @@ func (c *Client) RemoveTrackers(ctx context.Context, hash string, urls []string)
 	req, err := http.NewRequestWithContext(
 		ctx,
 		http.MethodPost,
-		c.baseURL+"/api/v2/torrents/removeTrackers",
+		baseURL+"/api/v2/torrents/removeTrackers",
 		strings.NewReader(params.Encode()),
 	)
 	if err != nil {
@@ -727,7 +743,7 @@ func (c *Client) RemoveTrackers(ctx context.Context, hash string, urls []string)
 	}
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 
-	resp, err := c.httpClient.Do(req)
+	resp, err := httpClient.Do(req)
 	if err != nil {
 		return err
 	}
@@ -737,6 +753,7 @@ func (c *Client) RemoveTrackers(ctx context.Context, hash string, urls []string)
 }
 
 func (c *Client) AddPeers(ctx context.Context, hash string, peers []string) error {
+baseURL, httpClient := c.resolve()
 	params := url.Values{}
 	params.Set("hash", hash)
 	params.Set("peers", strings.Join(peers, "|"))
@@ -744,7 +761,7 @@ func (c *Client) AddPeers(ctx context.Context, hash string, peers []string) erro
 	req, err := http.NewRequestWithContext(
 		ctx,
 		http.MethodPost,
-		c.baseURL+"/api/v2/torrents/addPeers",
+		baseURL+"/api/v2/torrents/addPeers",
 		strings.NewReader(params.Encode()),
 	)
 	if err != nil {
@@ -752,7 +769,7 @@ func (c *Client) AddPeers(ctx context.Context, hash string, peers []string) erro
 	}
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 
-	resp, err := c.httpClient.Do(req)
+	resp, err := httpClient.Do(req)
 	if err != nil {
 		return err
 	}
@@ -762,13 +779,14 @@ func (c *Client) AddPeers(ctx context.Context, hash string, peers []string) erro
 }
 
 func (c *Client) IncreaseTorrentPriority(ctx context.Context, hash string) error {
+baseURL, httpClient := c.resolve()
 	params := url.Values{}
 	params.Set("hash", hash)
 
 	req, err := http.NewRequestWithContext(
 		ctx,
 		http.MethodPost,
-		c.baseURL+"/api/v2/torrents/increasePrio",
+		baseURL+"/api/v2/torrents/increasePrio",
 		strings.NewReader(params.Encode()),
 	)
 	if err != nil {
@@ -776,7 +794,7 @@ func (c *Client) IncreaseTorrentPriority(ctx context.Context, hash string) error
 	}
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 
-	resp, err := c.httpClient.Do(req)
+	resp, err := httpClient.Do(req)
 	if err != nil {
 		return err
 	}
@@ -786,13 +804,14 @@ func (c *Client) IncreaseTorrentPriority(ctx context.Context, hash string) error
 }
 
 func (c *Client) DecreaseTorrentPriority(ctx context.Context, hash string) error {
+baseURL, httpClient := c.resolve()
 	params := url.Values{}
 	params.Set("hash", hash)
 
 	req, err := http.NewRequestWithContext(
 		ctx,
 		http.MethodPost,
-		c.baseURL+"/api/v2/torrents/decreasePrio",
+		baseURL+"/api/v2/torrents/decreasePrio",
 		strings.NewReader(params.Encode()),
 	)
 	if err != nil {
@@ -800,7 +819,7 @@ func (c *Client) DecreaseTorrentPriority(ctx context.Context, hash string) error
 	}
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 
-	resp, err := c.httpClient.Do(req)
+	resp, err := httpClient.Do(req)
 	if err != nil {
 		return err
 	}
@@ -810,13 +829,14 @@ func (c *Client) DecreaseTorrentPriority(ctx context.Context, hash string) error
 }
 
 func (c *Client) MaximalTorrentPriority(ctx context.Context, hash string) error {
+baseURL, httpClient := c.resolve()
 	params := url.Values{}
 	params.Set("hash", hash)
 
 	req, err := http.NewRequestWithContext(
 		ctx,
 		http.MethodPost,
-		c.baseURL+"/api/v2/torrents/topPrio",
+		baseURL+"/api/v2/torrents/topPrio",
 		strings.NewReader(params.Encode()),
 	)
 	if err != nil {
@@ -824,7 +844,7 @@ func (c *Client) MaximalTorrentPriority(ctx context.Context, hash string) error 
 	}
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 
-	resp, err := c.httpClient.Do(req)
+	resp, err := httpClient.Do(req)
 	if err != nil {
 		return err
 	}
@@ -834,13 +854,14 @@ func (c *Client) MaximalTorrentPriority(ctx context.Context, hash string) error 
 }
 
 func (c *Client) MinimalTorrentPriority(ctx context.Context, hash string) error {
+baseURL, httpClient := c.resolve()
 	params := url.Values{}
 	params.Set("hash", hash)
 
 	req, err := http.NewRequestWithContext(
 		ctx,
 		http.MethodPost,
-		c.baseURL+"/api/v2/torrents/bottomPrio",
+		baseURL+"/api/v2/torrents/bottomPrio",
 		strings.NewReader(params.Encode()),
 	)
 	if err != nil {
@@ -848,7 +869,7 @@ func (c *Client) MinimalTorrentPriority(ctx context.Context, hash string) error 
 	}
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 
-	resp, err := c.httpClient.Do(req)
+	resp, err := httpClient.Do(req)
 	if err != nil {
 		return err
 	}
@@ -858,6 +879,7 @@ func (c *Client) MinimalTorrentPriority(ctx context.Context, hash string) error 
 }
 
 func (c *Client) SetTorrentFilePriority(ctx context.Context, hash string, fileIndexs []int, priority TorrentFilePriority) error {
+baseURL, httpClient := c.resolve()
 	params := url.Values{}
 	params.Set("hash", hash)
 	strIndexes := make([]string, 0, len(fileIndexs))
@@ -870,7 +892,7 @@ func (c *Client) SetTorrentFilePriority(ctx context.Context, hash string, fileIn
 	req, err := http.NewRequestWithContext(
 		ctx,
 		http.MethodPost,
-		c.baseURL+"/api/v2/torrents/filePrio",
+		baseURL+"/api/v2/torrents/filePrio",
 		strings.NewReader(params.Encode()),
 	)
 	if err != nil {
@@ -878,7 +900,7 @@ func (c *Client) SetTorrentFilePriority(ctx context.Context, hash string, fileIn
 	}
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 
-	resp, err := c.httpClient.Do(req)
+	resp, err := httpClient.Do(req)
 	if err != nil {
 		return err
 	}
@@ -890,20 +912,21 @@ func (c *Client) SetTorrentFilePriority(ctx context.Context, hash string, fileIn
 type TorrentDownloadLimit map[string]int64 // key: torrent hash | value: Download limit (bytes/s). zero if unlimited.
 
 func (c *Client) GetTorrentDownloadLimit(ctx context.Context, hashes []string) (*TorrentDownloadLimit, error) {
+baseURL, httpClient := c.resolve()
 	params := url.Values{}
 	params.Set("hashes", strings.Join(hashes, "|"))
 
 	req, err := http.NewRequestWithContext(
 		ctx,
 		http.MethodGet,
-		c.baseURL+"/api/v2/torrents/downloadLimit?"+params.Encode(),
+		baseURL+"/api/v2/torrents/downloadLimit?"+params.Encode(),
 		nil,
 	)
 	if err != nil {
 		return nil, err
 	}
 
-	resp, err := c.httpClient.Do(req)
+	resp, err := httpClient.Do(req)
 	if err != nil {
 		return nil, err
 	}
@@ -918,6 +941,7 @@ func (c *Client) GetTorrentDownloadLimit(ctx context.Context, hashes []string) (
 }
 
 func (c *Client) SetTorrentDownloadLimit(ctx context.Context, hashes []string, limit int64) error {
+baseURL, httpClient := c.resolve()
 	params := url.Values{}
 	params.Set("hashes", strings.Join(hashes, "|"))
 	params.Set("limit", strconv.FormatInt(limit, 10))
@@ -925,7 +949,7 @@ func (c *Client) SetTorrentDownloadLimit(ctx context.Context, hashes []string, l
 	req, err := http.NewRequestWithContext(
 		ctx,
 		http.MethodPost,
-		c.baseURL+"/api/v2/torrents/setDownloadLimit",
+		baseURL+"/api/v2/torrents/setDownloadLimit",
 		strings.NewReader(params.Encode()),
 	)
 	if err != nil {
@@ -933,7 +957,7 @@ func (c *Client) SetTorrentDownloadLimit(ctx context.Context, hashes []string, l
 	}
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 
-	resp, err := c.httpClient.Do(req)
+	resp, err := httpClient.Do(req)
 	if err != nil {
 		return err
 	}
@@ -949,6 +973,7 @@ type TorrentShareLimit struct {
 }
 
 func (c *Client) SetTorrentShareLimits(ctx context.Context, hashes []string, limit TorrentShareLimit) error {
+baseURL, httpClient := c.resolve()
 	params := url.Values{}
 	params.Set("hashes", strings.Join(hashes, "|"))
 	params.Set("ratioLimit", strconv.FormatFloat(limit.ratio, 'f', -1, 64))
@@ -958,7 +983,7 @@ func (c *Client) SetTorrentShareLimits(ctx context.Context, hashes []string, lim
 	req, err := http.NewRequestWithContext(
 		ctx,
 		http.MethodPost,
-		c.baseURL+"/api/v2/torrents/setShareLimits",
+		baseURL+"/api/v2/torrents/setShareLimits",
 		strings.NewReader(params.Encode()),
 	)
 	if err != nil {
@@ -966,7 +991,7 @@ func (c *Client) SetTorrentShareLimits(ctx context.Context, hashes []string, lim
 	}
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 
-	resp, err := c.httpClient.Do(req)
+	resp, err := httpClient.Do(req)
 	if err != nil {
 		return err
 	}
@@ -978,20 +1003,21 @@ func (c *Client) SetTorrentShareLimits(ctx context.Context, hashes []string, lim
 type TorrentUploadLimit map[string]int64 // key: torrent hash | value: Upload limit (bytes/s). zero if unlimited.
 
 func (c *Client) GetTorrentUploadLimit(ctx context.Context, hashes []string) (*TorrentUploadLimit, error) {
+baseURL, httpClient := c.resolve()
 	params := url.Values{}
 	params.Set("hashes", strings.Join(hashes, "|"))
 
 	req, err := http.NewRequestWithContext(
 		ctx,
 		http.MethodGet,
-		c.baseURL+"/api/v2/torrents/uploadLimit?"+params.Encode(),
+		baseURL+"/api/v2/torrents/uploadLimit?"+params.Encode(),
 		nil,
 	)
 	if err != nil {
 		return nil, err
 	}
 
-	resp, err := c.httpClient.Do(req)
+	resp, err := httpClient.Do(req)
 	if err != nil {
 		return nil, err
 	}
@@ -1006,6 +1032,7 @@ func (c *Client) GetTorrentUploadLimit(ctx context.Context, hashes []string) (*T
 }
 
 func (c *Client) SetTorrentUploadLimit(ctx context.Context, hashes []string, limit int64) error {
+baseURL, httpClient := c.resolve()
 	params := url.Values{}
 	params.Set("hashes", strings.Join(hashes, "|"))
 	params.Set("limit", strconv.FormatInt(limit, 10))
@@ -1013,7 +1040,7 @@ func (c *Client) SetTorrentUploadLimit(ctx context.Context, hashes []string, lim
 	req, err := http.NewRequestWithContext(
 		ctx,
 		http.MethodPost,
-		c.baseURL+"/api/v2/torrents/setUploadLimit",
+		baseURL+"/api/v2/torrents/setUploadLimit",
 		strings.NewReader(params.Encode()),
 	)
 	if err != nil {
@@ -1021,7 +1048,7 @@ func (c *Client) SetTorrentUploadLimit(ctx context.Context, hashes []string, lim
 	}
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 
-	resp, err := c.httpClient.Do(req)
+	resp, err := httpClient.Do(req)
 	if err != nil {
 		return err
 	}
@@ -1031,6 +1058,7 @@ func (c *Client) SetTorrentUploadLimit(ctx context.Context, hashes []string, lim
 }
 
 func (c *Client) SetTorrentLocation(ctx context.Context, hashes []string, location string) error {
+baseURL, httpClient := c.resolve()
 	params := url.Values{}
 	params.Set("hashes", strings.Join(hashes, "|"))
 	params.Set("location", location)
@@ -1038,7 +1066,7 @@ func (c *Client) SetTorrentLocation(ctx context.Context, hashes []string, locati
 	req, err := http.NewRequestWithContext(
 		ctx,
 		http.MethodPost,
-		c.baseURL+"/api/v2/torrents/setLocation",
+		baseURL+"/api/v2/torrents/setLocation",
 		strings.NewReader(params.Encode()),
 	)
 	if err != nil {
@@ -1046,7 +1074,7 @@ func (c *Client) SetTorrentLocation(ctx context.Context, hashes []string, locati
 	}
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 
-	resp, err := c.httpClient.Do(req)
+	resp, err := httpClient.Do(req)
 	if err != nil {
 		return err
 	}
@@ -1056,6 +1084,7 @@ func (c *Client) SetTorrentLocation(ctx context.Context, hashes []string, locati
 }
 
 func (c *Client) SetTorrentName(ctx context.Context, hash string, newName string) error {
+baseURL, httpClient := c.resolve()
 	params := url.Values{}
 	params.Set("hash", hash)
 	params.Set("name", newName)
@@ -1063,7 +1092,7 @@ func (c *Client) SetTorrentName(ctx context.Context, hash string, newName string
 	req, err := http.NewRequestWithContext(
 		ctx,
 		http.MethodPost,
-		c.baseURL+"/api/v2/torrents/rename",
+		baseURL+"/api/v2/torrents/rename",
 		strings.NewReader(params.Encode()),
 	)
 	if err != nil {
@@ -1071,7 +1100,7 @@ func (c *Client) SetTorrentName(ctx context.Context, hash string, newName string
 	}
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 
-	resp, err := c.httpClient.Do(req)
+	resp, err := httpClient.Do(req)
 	if err != nil {
 		return err
 	}
@@ -1081,6 +1110,7 @@ func (c *Client) SetTorrentName(ctx context.Context, hash string, newName string
 }
 
 func (c *Client) SetTorrentCategory(ctx context.Context, hashes []string, categoryName string) error {
+baseURL, httpClient := c.resolve()
 	params := url.Values{}
 	params.Set("hashes", strings.Join(hashes, "|"))
 	params.Set("category", categoryName)
@@ -1088,7 +1118,7 @@ func (c *Client) SetTorrentCategory(ctx context.Context, hashes []string, catego
 	req, err := http.NewRequestWithContext(
 		ctx,
 		http.MethodPost,
-		c.baseURL+"/api/v2/torrents/setCategory",
+		baseURL+"/api/v2/torrents/setCategory",
 		strings.NewReader(params.Encode()),
 	)
 	if err != nil {
@@ -1096,7 +1126,7 @@ func (c *Client) SetTorrentCategory(ctx context.Context, hashes []string, catego
 	}
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 
-	resp, err := c.httpClient.Do(req)
+	resp, err := httpClient.Do(req)
 	if err != nil {
 		return err
 	}
@@ -1111,17 +1141,18 @@ type Category struct {
 }
 
 func (c *Client) GetAllCategories(ctx context.Context) (map[string]Category, error) {
+baseURL, httpClient := c.resolve()
 	req, err := http.NewRequestWithContext(
 		ctx,
 		http.MethodGet,
-		c.baseURL+"/api/v2/torrents/categories",
+		baseURL+"/api/v2/torrents/categories",
 		nil,
 	)
 	if err != nil {
 		return nil, err
 	}
 
-	resp, err := c.httpClient.Do(req)
+	resp, err := httpClient.Do(req)
 	if err != nil {
 		return nil, err
 	}
@@ -1136,6 +1167,7 @@ func (c *Client) GetAllCategories(ctx context.Context) (map[string]Category, err
 }
 
 func (c *Client) AddNewCategory(ctx context.Context, category Category) error {
+baseURL, httpClient := c.resolve()
 	params := url.Values{}
 	params.Set("category", category.Name)
 	params.Set("savePath", category.SavePath)
@@ -1143,7 +1175,7 @@ func (c *Client) AddNewCategory(ctx context.Context, category Category) error {
 	req, err := http.NewRequestWithContext(
 		ctx,
 		http.MethodPost,
-		c.baseURL+"/api/v2/torrents/addCategory",
+		baseURL+"/api/v2/torrents/addCategory",
 		strings.NewReader(params.Encode()),
 	)
 	if err != nil {
@@ -1151,7 +1183,7 @@ func (c *Client) AddNewCategory(ctx context.Context, category Category) error {
 	}
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 
-	resp, err := c.httpClient.Do(req)
+	resp, err := httpClient.Do(req)
 	if err != nil {
 		return err
 	}
@@ -1161,6 +1193,7 @@ func (c *Client) AddNewCategory(ctx context.Context, category Category) error {
 }
 
 func (c *Client) EditCategory(ctx context.Context, category Category) error {
+baseURL, httpClient := c.resolve()
 	params := url.Values{}
 	params.Set("category", category.Name)
 	params.Set("savePath", category.SavePath)
@@ -1168,7 +1201,7 @@ func (c *Client) EditCategory(ctx context.Context, category Category) error {
 	req, err := http.NewRequestWithContext(
 		ctx,
 		http.MethodPost,
-		c.baseURL+"/api/v2/torrents/editCategory",
+		baseURL+"/api/v2/torrents/editCategory",
 		strings.NewReader(params.Encode()),
 	)
 	if err != nil {
@@ -1176,7 +1209,7 @@ func (c *Client) EditCategory(ctx context.Context, category Category) error {
 	}
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 
-	resp, err := c.httpClient.Do(req)
+	resp, err := httpClient.Do(req)
 	if err != nil {
 		return err
 	}
@@ -1186,13 +1219,14 @@ func (c *Client) EditCategory(ctx context.Context, category Category) error {
 }
 
 func (c *Client) RemoveCategory(ctx context.Context, categoryName string) error {
+baseURL, httpClient := c.resolve()
 	params := url.Values{}
 	params.Set("category", categoryName)
 
 	req, err := http.NewRequestWithContext(
 		ctx,
 		http.MethodPost,
-		c.baseURL+"/api/v2/torrents/removeCategory",
+		baseURL+"/api/v2/torrents/removeCategory",
 		strings.NewReader(params.Encode()),
 	)
 	if err != nil {
@@ -1200,7 +1234,7 @@ func (c *Client) RemoveCategory(ctx context.Context, categoryName string) error 
 	}
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 
-	resp, err := c.httpClient.Do(req)
+	resp, err := httpClient.Do(req)
 	if err != nil {
 		return err
 	}
@@ -1210,6 +1244,7 @@ func (c *Client) RemoveCategory(ctx context.Context, categoryName string) error 
 }
 
 func (c *Client) AddTorrentTags(ctx context.Context, hashes []string, tags []string) error {
+baseURL, httpClient := c.resolve()
 	params := url.Values{}
 	params.Set("hashes", strings.Join(hashes, "|"))
 	params.Set("tags", strings.Join(tags, ","))
@@ -1217,7 +1252,7 @@ func (c *Client) AddTorrentTags(ctx context.Context, hashes []string, tags []str
 	req, err := http.NewRequestWithContext(
 		ctx,
 		http.MethodPost,
-		c.baseURL+"/api/v2/torrents/addTags",
+		baseURL+"/api/v2/torrents/addTags",
 		strings.NewReader(params.Encode()),
 	)
 	if err != nil {
@@ -1225,7 +1260,7 @@ func (c *Client) AddTorrentTags(ctx context.Context, hashes []string, tags []str
 	}
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 
-	resp, err := c.httpClient.Do(req)
+	resp, err := httpClient.Do(req)
 	if err != nil {
 		return err
 	}
@@ -1235,6 +1270,7 @@ func (c *Client) AddTorrentTags(ctx context.Context, hashes []string, tags []str
 }
 
 func (c *Client) RemoveTorrentTags(ctx context.Context, hashes []string, tags []string) error {
+baseURL, httpClient := c.resolve()
 	params := url.Values{}
 	params.Set("hashes", strings.Join(hashes, "|"))
 	params.Set("tags", strings.Join(tags, ","))
@@ -1242,7 +1278,7 @@ func (c *Client) RemoveTorrentTags(ctx context.Context, hashes []string, tags []
 	req, err := http.NewRequestWithContext(
 		ctx,
 		http.MethodPost,
-		c.baseURL+"/api/v2/torrents/removeTags?",
+		baseURL+"/api/v2/torrents/removeTags?",
 		strings.NewReader(params.Encode()),
 	)
 	if err != nil {
@@ -1250,7 +1286,7 @@ func (c *Client) RemoveTorrentTags(ctx context.Context, hashes []string, tags []
 	}
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 
-	resp, err := c.httpClient.Do(req)
+	resp, err := httpClient.Do(req)
 	if err != nil {
 		return err
 	}
@@ -1262,17 +1298,18 @@ func (c *Client) RemoveTorrentTags(ctx context.Context, hashes []string, tags []
 type TorrentTag string
 
 func (c *Client) GetAllTags(ctx context.Context) ([]TorrentTag, error) {
+baseURL, httpClient := c.resolve()
 	req, err := http.NewRequestWithContext(
 		ctx,
 		http.MethodGet,
-		c.baseURL+"/api/v2/torrents/tags",
+		baseURL+"/api/v2/torrents/tags",
 		nil,
 	)
 	if err != nil {
 		return nil, err
 	}
 
-	resp, err := c.httpClient.Do(req)
+	resp, err := httpClient.Do(req)
 	if err != nil {
 		return nil, err
 	}
@@ -1287,6 +1324,7 @@ func (c *Client) GetAllTags(ctx context.Context) ([]TorrentTag, error) {
 }
 
 func (c *Client) CreateTag(ctx context.Context, tags []TorrentTag) error {
+baseURL, httpClient := c.resolve()
 	params := url.Values{}
 	params.Set("tags", strings.Join(func() []string {
 		strs := make([]string, 0, len(tags))
@@ -1299,7 +1337,7 @@ func (c *Client) CreateTag(ctx context.Context, tags []TorrentTag) error {
 	req, err := http.NewRequestWithContext(
 		ctx,
 		http.MethodPost,
-		c.baseURL+"/api/v2/torrents/createTags",
+		baseURL+"/api/v2/torrents/createTags",
 		strings.NewReader(params.Encode()),
 	)
 	if err != nil {
@@ -1307,7 +1345,7 @@ func (c *Client) CreateTag(ctx context.Context, tags []TorrentTag) error {
 	}
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 
-	resp, err := c.httpClient.Do(req)
+	resp, err := httpClient.Do(req)
 	if err != nil {
 		return err
 	}
@@ -1317,6 +1355,7 @@ func (c *Client) CreateTag(ctx context.Context, tags []TorrentTag) error {
 }
 
 func (c *Client) DeleteTags(ctx context.Context, tags []TorrentTag) error {
+baseURL, httpClient := c.resolve()
 	params := url.Values{}
 	params.Set("tags", strings.Join(func() []string {
 		strs := make([]string, 0, len(tags))
@@ -1329,7 +1368,7 @@ func (c *Client) DeleteTags(ctx context.Context, tags []TorrentTag) error {
 	req, err := http.NewRequestWithContext(
 		ctx,
 		http.MethodPost,
-		c.baseURL+"/api/v2/torrents/deleteTags?",
+		baseURL+"/api/v2/torrents/deleteTags?",
 		strings.NewReader(params.Encode()),
 	)
 	if err != nil {
@@ -1337,7 +1376,7 @@ func (c *Client) DeleteTags(ctx context.Context, tags []TorrentTag) error {
 	}
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 
-	resp, err := c.httpClient.Do(req)
+	resp, err := httpClient.Do(req)
 	if err != nil {
 		return err
 	}
@@ -1347,6 +1386,7 @@ func (c *Client) DeleteTags(ctx context.Context, tags []TorrentTag) error {
 }
 
 func (c *Client) SetAutomaticTorrentManagement(ctx context.Context, hashes []string, enable bool) error {
+baseURL, httpClient := c.resolve()
 	params := url.Values{}
 	params.Set("hashes", strings.Join(hashes, "|"))
 	params.Set("enable", strconv.FormatBool(enable))
@@ -1354,7 +1394,7 @@ func (c *Client) SetAutomaticTorrentManagement(ctx context.Context, hashes []str
 	req, err := http.NewRequestWithContext(
 		ctx,
 		http.MethodPost,
-		c.baseURL+"/api/v2/torrents/setAutoManagement",
+		baseURL+"/api/v2/torrents/setAutoManagement",
 		strings.NewReader(params.Encode()),
 	)
 	if err != nil {
@@ -1362,7 +1402,7 @@ func (c *Client) SetAutomaticTorrentManagement(ctx context.Context, hashes []str
 	}
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 
-	resp, err := c.httpClient.Do(req)
+	resp, err := httpClient.Do(req)
 	if err != nil {
 		return err
 	}
@@ -1372,13 +1412,14 @@ func (c *Client) SetAutomaticTorrentManagement(ctx context.Context, hashes []str
 }
 
 func (c *Client) ToggleSequentialDownload(ctx context.Context, hashes []string) error {
+baseURL, httpClient := c.resolve()
 	params := url.Values{}
 	params.Set("hashes", strings.Join(hashes, "|"))
 
 	req, err := http.NewRequestWithContext(
 		ctx,
 		http.MethodPost,
-		c.baseURL+"/api/v2/torrents/toggleSequentialDownload",
+		baseURL+"/api/v2/torrents/toggleSequentialDownload",
 		strings.NewReader(params.Encode()),
 	)
 	if err != nil {
@@ -1386,7 +1427,7 @@ func (c *Client) ToggleSequentialDownload(ctx context.Context, hashes []string) 
 	}
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 
-	resp, err := c.httpClient.Do(req)
+	resp, err := httpClient.Do(req)
 	if err != nil {
 		return err
 	}
@@ -1396,13 +1437,14 @@ func (c *Client) ToggleSequentialDownload(ctx context.Context, hashes []string) 
 }
 
 func (c *Client) SetFirstLastPiecePriority(ctx context.Context, hashes []string) error {
+baseURL, httpClient := c.resolve()
 	params := url.Values{}
 	params.Set("hashes", strings.Join(hashes, "|"))
 
 	req, err := http.NewRequestWithContext(
 		ctx,
 		http.MethodPost,
-		c.baseURL+"/api/v2/torrents/toggleFirstLastPiecePrio",
+		baseURL+"/api/v2/torrents/toggleFirstLastPiecePrio",
 		strings.NewReader(params.Encode()),
 	)
 	if err != nil {
@@ -1410,7 +1452,7 @@ func (c *Client) SetFirstLastPiecePriority(ctx context.Context, hashes []string)
 	}
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 
-	resp, err := c.httpClient.Do(req)
+	resp, err := httpClient.Do(req)
 	if err != nil {
 		return err
 	}
@@ -1420,6 +1462,7 @@ func (c *Client) SetFirstLastPiecePriority(ctx context.Context, hashes []string)
 }
 
 func (c *Client) SetForceStart(ctx context.Context, hashes []string, enable bool) error {
+baseURL, httpClient := c.resolve()
 	params := url.Values{}
 	params.Set("hashes", strings.Join(hashes, "|"))
 	params.Set("value", strconv.FormatBool(enable))
@@ -1427,7 +1470,7 @@ func (c *Client) SetForceStart(ctx context.Context, hashes []string, enable bool
 	req, err := http.NewRequestWithContext(
 		ctx,
 		http.MethodPost,
-		c.baseURL+"/api/v2/torrents/setForceStart",
+		baseURL+"/api/v2/torrents/setForceStart",
 		strings.NewReader(params.Encode()),
 	)
 	if err != nil {
@@ -1435,7 +1478,7 @@ func (c *Client) SetForceStart(ctx context.Context, hashes []string, enable bool
 	}
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 
-	resp, err := c.httpClient.Do(req)
+	resp, err := httpClient.Do(req)
 	if err != nil {
 		return err
 	}
@@ -1445,6 +1488,7 @@ func (c *Client) SetForceStart(ctx context.Context, hashes []string, enable bool
 }
 
 func (c *Client) SetSuperSeeding(ctx context.Context, hashes []string, enable bool) error {
+baseURL, httpClient := c.resolve()
 	params := url.Values{}
 	params.Set("hashes", strings.Join(hashes, "|"))
 	params.Set("value", strconv.FormatBool(enable))
@@ -1452,7 +1496,7 @@ func (c *Client) SetSuperSeeding(ctx context.Context, hashes []string, enable bo
 	req, err := http.NewRequestWithContext(
 		ctx,
 		http.MethodPost,
-		c.baseURL+"/api/v2/torrents/setSuperSeeding",
+		baseURL+"/api/v2/torrents/setSuperSeeding",
 		strings.NewReader(params.Encode()),
 	)
 	if err != nil {
@@ -1460,7 +1504,7 @@ func (c *Client) SetSuperSeeding(ctx context.Context, hashes []string, enable bo
 	}
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 
-	resp, err := c.httpClient.Do(req)
+	resp, err := httpClient.Do(req)
 	if err != nil {
 		return err
 	}
@@ -1470,6 +1514,7 @@ func (c *Client) SetSuperSeeding(ctx context.Context, hashes []string, enable bo
 }
 
 func (c *Client) RenameTorrentFile(ctx context.Context, hash string, oldPath string, newPath string) error {
+baseURL, httpClient := c.resolve()
 	params := url.Values{}
 	params.Set("hash", hash)
 	params.Set("oldPath", oldPath)
@@ -1478,7 +1523,7 @@ func (c *Client) RenameTorrentFile(ctx context.Context, hash string, oldPath str
 	req, err := http.NewRequestWithContext(
 		ctx,
 		http.MethodPost,
-		c.baseURL+"/api/v2/torrents/renameFile",
+		baseURL+"/api/v2/torrents/renameFile",
 		strings.NewReader(params.Encode()),
 	)
 	if err != nil {
@@ -1486,7 +1531,7 @@ func (c *Client) RenameTorrentFile(ctx context.Context, hash string, oldPath str
 	}
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 
-	resp, err := c.httpClient.Do(req)
+	resp, err := httpClient.Do(req)
 	if err != nil {
 		return err
 	}
@@ -1496,6 +1541,7 @@ func (c *Client) RenameTorrentFile(ctx context.Context, hash string, oldPath str
 }
 
 func (c *Client) RenameFolder(ctx context.Context, hash string, oldPath string, newPath string) error {
+baseURL, httpClient := c.resolve()
 	params := url.Values{}
 	params.Set("hash", hash)
 	params.Set("oldPath", oldPath)
@@ -1504,7 +1550,7 @@ func (c *Client) RenameFolder(ctx context.Context, hash string, oldPath string, 
 	req, err := http.NewRequestWithContext(
 		ctx,
 		http.MethodPost,
-		c.baseURL+"/api/v2/torrents/renameFolder",
+		baseURL+"/api/v2/torrents/renameFolder",
 		strings.NewReader(params.Encode()),
 	)
 	if err != nil {
@@ -1512,7 +1558,7 @@ func (c *Client) RenameFolder(ctx context.Context, hash string, oldPath string, 
 	}
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 
-	resp, err := c.httpClient.Do(req)
+	resp, err := httpClient.Do(req)
 	if err != nil {
 		return err
 	}

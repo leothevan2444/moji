@@ -12,15 +12,21 @@ type TorrentDefaults struct {
 	Tags     string
 }
 
+// DefaultsProvider supplies the latest qBittorrent defaults at the moment of
+// each AddNewTorrent call. Returning the values lazily (instead of capturing
+// them at construction time) lets Web UI edits take effect on the next
+// download without restarting the service.
+type DefaultsProvider func() TorrentDefaults
+
 type DefaultingTorrentClient struct {
-	client   TorrentClient
-	defaults TorrentDefaults
+	client          TorrentClient
+	defaultsProvider DefaultsProvider
 }
 
-func NewDefaultingTorrentClient(client TorrentClient, defaults TorrentDefaults) *DefaultingTorrentClient {
+func NewDefaultingTorrentClient(client TorrentClient, defaultsProvider DefaultsProvider) *DefaultingTorrentClient {
 	return &DefaultingTorrentClient{
-		client:   client,
-		defaults: defaults,
+		client:          client,
+		defaultsProvider: defaultsProvider,
 	}
 }
 
@@ -29,14 +35,20 @@ func (c *DefaultingTorrentClient) GetTorrentList(ctx context.Context, options *q
 }
 
 func (c *DefaultingTorrentClient) AddNewTorrent(ctx context.Context, opts qbittorrent.AddTorrentOptions) error {
-	if opts.SavePath == nil && c.defaults.SavePath != "" {
-		opts.SavePath = &c.defaults.SavePath
-	}
-	if opts.Category == nil && c.defaults.Category != "" {
-		opts.Category = &c.defaults.Category
-	}
-	if opts.Tags == nil && c.defaults.Tags != "" {
-		opts.Tags = &c.defaults.Tags
+	if c.defaultsProvider != nil {
+		defaults := c.defaultsProvider()
+		if opts.SavePath == nil && defaults.SavePath != "" {
+			savePath := defaults.SavePath
+			opts.SavePath = &savePath
+		}
+		if opts.Category == nil && defaults.Category != "" {
+			category := defaults.Category
+			opts.Category = &category
+		}
+		if opts.Tags == nil && defaults.Tags != "" {
+			tags := defaults.Tags
+			opts.Tags = &tags
+		}
 	}
 
 	return c.client.AddNewTorrent(ctx, opts)
