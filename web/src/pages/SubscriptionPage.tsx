@@ -73,14 +73,14 @@ export function SubscriptionPage({
     <section className="section-band">
       <div className="band-head">
         <div>
-          <p className="section-kicker">订阅</p>
-          <h2>订阅更新</h2>
+          <p className="section-kicker">演员</p>
+          <h2>演员更新</h2>
         </div>
       </div>
 
       <div className="toolbar-inline toolbar-inline--subscription">
         <input
-          placeholder="按名称或别名搜索 Stash performer"
+          placeholder="按名称或别名搜索 Stash 演员"
           value={subscriptionSearch}
           onChange={(event) => onSearchChange(event.target.value)}
         />
@@ -100,7 +100,7 @@ export function SubscriptionPage({
           disabled={refreshingSubscriptionNow || subscribedPerformers.length === 0}
           onClick={onRefreshAll}
         >
-          {refreshingSubscriptionNow ? "检查中..." : "检查全部订阅"}
+          {refreshingSubscriptionNow ? "检查中..." : "检查全部演员"}
         </button>
       </div>
 
@@ -118,8 +118,8 @@ export function SubscriptionPage({
       <div className="profile-grid">
         {stashPerformers.length === 0 && !fetchingStashPerformers ? (
           <article className="empty-card empty-card--wide">
-            <h3>没有找到匹配的 performer</h3>
-            <p>可以尝试修改关键词，或先确认 Stash 已正确返回 performer 数据。</p>
+            <h3>没有找到匹配的演员</h3>
+            <p>可以尝试修改关键词，或先确认 Stash 已正确返回演员数据。</p>
           </article>
         ) : null}
         {stashPerformers.map((performer, index) => {

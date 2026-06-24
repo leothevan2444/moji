@@ -97,7 +97,7 @@ function App() {
     refreshSubscriptionsNow,
     reloadSubscription
   } = useSubscription({
-    enabled: tab === "订阅",
+    enabled: tab === "演员",
     search: deferredSubscriptionSearch || null,
     page: subscriptionPage,
     pageSize: subscriptionPageSize
@@ -233,7 +233,7 @@ function App() {
       return;
     }
 
-    pushToast("tone-info", "已触发全部订阅对象的更新检查。");
+    pushToast("tone-info", "已触发全部演员的更新检查。");
     await reloadSubscription();
   };
 
@@ -333,7 +333,7 @@ function App() {
           />
         ) : null}
 
-        {tab === "订阅" ? (
+        {tab === "演员" ? (
           <SubscriptionPage
             runtimeSettings={runtimeSettings}
             stashPerformerPage={stashPerformerPage}

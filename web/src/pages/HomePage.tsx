@@ -20,7 +20,7 @@ function blockersFor(
 ): string[] {
   switch (service) {
     case "jackett":
-      return ["任务搜索无索引源", "订阅扫描无上游数据"];
+      return ["任务搜索无索引源", "演员更新无上游数据"];
     case "qbittorrent":
       return ["任务无法启动下载", "下载完成后无客户端落地"];
   }
@@ -77,7 +77,7 @@ export function HomePage({
                   runtimeStatus.stash.configured && !runtimeStatus.stash.ready && runtimeStatus.stashStats?.lastError
                     ? "已配置但最近未联通，请检查 Stash 服务状态。"
                     : !runtimeStatus.stash.configured
-                      ? "Stash 必须先配置，否则入库与订阅流程无法展开。"
+                      ? "Stash 必须先配置，否则入库与演员更新流程无法展开。"
                       : !runtimeStatus.stash.ready
                         ? "Stash 已配置，等待首次探测或最近状态已过期。"
                       : undefined
@@ -114,7 +114,7 @@ export function HomePage({
                   runtimeStatus.jackett.configured && !runtimeStatus.jackett.ready && runtimeStatus.jackettStats?.lastError
                     ? "已配置但最近未联通，请检查 Jackett 服务状态。"
                     : !runtimeStatus.jackett.configured
-                      ? "Jackett 必须先配置，否则任务搜索与订阅没有上游数据。"
+                      ? "Jackett 必须先配置，否则任务搜索与演员更新没有上游数据。"
                       : !runtimeStatus.jackett.ready
                         ? "Jackett 已配置，等待首次探测或最近状态已过期。"
                       : undefined
