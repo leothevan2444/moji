@@ -1731,6 +1731,56 @@ button.profile-icon:disabled {
   color: var(--muted);
 }
 
+.settings-field__label {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  width: fit-content;
+}
+
+.settings-info {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--muted-2);
+  cursor: help;
+  outline: none;
+}
+
+.settings-info svg {
+  font-size: 13px;
+}
+
+.settings-info__tooltip {
+  position: absolute;
+  z-index: 10;
+  left: calc(100% + 10px);
+  top: 50%;
+  width: min(320px, 60vw);
+  padding: 10px 12px;
+  border: 1px solid var(--line-strong);
+  border-radius: 10px;
+  background: var(--surface-strong);
+  box-shadow: var(--shadow-soft);
+  color: var(--text);
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1.55;
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(-50%) translateX(-4px);
+  transition:
+    opacity 140ms ease,
+    transform 140ms ease;
+}
+
+.settings-info:hover .settings-info__tooltip,
+.settings-info:focus-visible .settings-info__tooltip {
+  opacity: 1;
+  transform: translateY(-50%) translateX(0);
+}
+
 .settings-meta {
   display: flex;
   flex-wrap: wrap;
@@ -1797,6 +1847,20 @@ button.profile-icon:disabled {
 .settings-actions {
   display: flex;
   justify-content: flex-end;
+}
+
+@media (max-width: 720px) {
+  .settings-info__tooltip {
+    left: 0;
+    top: calc(100% + 8px);
+    width: min(280px, calc(100vw - 72px));
+    transform: translateY(-4px);
+  }
+
+  .settings-info:hover .settings-info__tooltip,
+  .settings-info:focus-visible .settings-info__tooltip {
+    transform: translateY(0);
+  }
 }
 
 /* ── Secret input with visibility toggle ───────────────────────── */

@@ -52,34 +52,6 @@ func TestMetadataScanUsesRequestPaths(t *testing.T) {
 	}
 }
 
-func TestMetadataScanFallsBackToDefaultPaths(t *testing.T) {
-	client := &fakeClient{metadataScanID: "job-2"}
-	service, err := NewService(client, func() IntegrationConfig {
-		return IntegrationConfig{LibraryPath: "/library-a"}
-	})
-	if err != nil {
-		t.Fatalf("new service: %v", err)
-	}
-
-	id, err := service.MetadataScan(context.Background(), ScanRequest{})
-	if err != nil {
-		t.Fatalf("metadata scan: %v", err)
-	}
-	if id != "job-2" {
-		t.Fatalf("expected job id %q, got %q", "job-2", id)
-	}
-
-	wantPaths := []string{"/library-a"}
-	if len(client.metadataScanInput.Paths) != len(wantPaths) {
-		t.Fatalf("expected %d paths, got %#v", len(wantPaths), client.metadataScanInput.Paths)
-	}
-	for i := range wantPaths {
-		if client.metadataScanInput.Paths[i] != wantPaths[i] {
-			t.Fatalf("unexpected paths: %#v", client.metadataScanInput.Paths)
-		}
-	}
-}
-
 func TestMetadataScanRequiresAnyPath(t *testing.T) {
 	client := &fakeClient{}
 	service, err := NewService(client, nil)

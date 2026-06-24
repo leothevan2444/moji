@@ -15,28 +15,31 @@ type Client interface {
 	FindJob(ctx context.Context, id string) (*stashgraphql.FindJob_FindJob, error)
 }
 
-type IntegrationMode string
+type DeliveryMode string
 
 const (
-	IntegrationModeSharedStorage IntegrationMode = "SHARED_STORAGE"
-	IntegrationModeFileTransfer  IntegrationMode = "FILE_TRANSFER"
-	IntegrationModeLibraryScan   IntegrationMode = "LIBRARY_SCAN"
+	DeliveryModePathMap  DeliveryMode = "PATH_MAP"
+	DeliveryModeTransfer DeliveryMode = "TRANSFER"
 )
 
 type TransferAction string
 
 const (
-	TransferActionCopy TransferAction = "COPY"
-	TransferActionMove TransferAction = "MOVE"
+	TransferActionCopy    TransferAction = "COPY"
+	TransferActionMove    TransferAction = "MOVE"
+	TransferActionSymlink TransferAction = "SYMLINK"
 )
 
 type IntegrationConfig struct {
-	Mode                  IntegrationMode
-	LibraryPath           string
-	QBittorrentPathPrefix string
-	StashPathPrefix       string
-	TransferAction        TransferAction
-	TransferTargetPath    string
+	DeliveryMode     DeliveryMode
+	StashLibraryPath string
+	Transfer         TransferConfig
+}
+
+type TransferConfig struct {
+	Action         TransferAction
+	MojiSourceRoot string
+	MojiTargetRoot string
 }
 
 type ScanRequest struct {
@@ -82,10 +85,6 @@ func NewService(client Client, configProvider func() IntegrationConfig) (*Servic
 func (s *Service) MetadataScan(ctx context.Context, req ScanRequest) (string, error) {
 	paths := cleanPaths(req.Paths)
 	if len(paths) == 0 {
-		cfg := s.CurrentConfig()
-		paths = cleanPaths([]string{cfg.LibraryPath})
-	}
-	if len(paths) == 0 {
 		return "", errors.New("stashsync: at least one scan path is required")
 	}
 	logging.Infof("stashsync: metadata scan requested for %d paths", len(paths))
@@ -114,10 +113,9 @@ func (s *Service) CurrentConfig() IntegrationConfig {
 		return IntegrationConfig{}
 	}
 	cfg := s.configProvider()
-	cfg.LibraryPath = strings.TrimSpace(cfg.LibraryPath)
-	cfg.QBittorrentPathPrefix = strings.TrimSpace(cfg.QBittorrentPathPrefix)
-	cfg.StashPathPrefix = strings.TrimSpace(cfg.StashPathPrefix)
-	cfg.TransferTargetPath = strings.TrimSpace(cfg.TransferTargetPath)
+	cfg.StashLibraryPath = strings.TrimSpace(cfg.StashLibraryPath)
+	cfg.Transfer.MojiSourceRoot = strings.TrimSpace(cfg.Transfer.MojiSourceRoot)
+	cfg.Transfer.MojiTargetRoot = strings.TrimSpace(cfg.Transfer.MojiTargetRoot)
 	return cfg
 }
 

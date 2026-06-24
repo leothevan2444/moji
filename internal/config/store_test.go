@@ -66,8 +66,10 @@ func TestLoadFromPathUsesDirectStashURL(t *testing.T) {
   url: "http://stash.example"
   api_key: "secret"
 ingest:
-  library_scan:
-    library_path: "/library"
+  delivery_mode: "PATH_MAP"
+  path_map:
+    qbittorrent_path_prefix: "/downloads"
+    stash_path_prefix: "/library"
 `
 	if err := os.WriteFile(path, []byte(content), 0o644); err != nil {
 		t.Fatalf("write config: %v", err)

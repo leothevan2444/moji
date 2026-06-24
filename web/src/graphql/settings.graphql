@@ -11,17 +11,12 @@ mutation UpdateStashSettingsDocument($input: UpdateStashSettingsInput!) {
 mutation UpdateIngestSettingsDocument($input: UpdateIngestSettingsInput!) {
   updateIngestSettings(input: $input) {
     ingest {
-      mode
-      sharedStorage {
-        qbittorrentPathPrefix
-        stashPathPrefix
-      }
-      fileTransfer {
+      deliveryMode
+      stashLibraryPath
+      transfer {
         action
-        targetPath
-      }
-      libraryScan {
-        libraryPath
+        mojiSourceRoot
+        mojiTargetRoot
       }
     }
   }

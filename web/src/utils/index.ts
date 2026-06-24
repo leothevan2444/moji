@@ -1,5 +1,11 @@
 export { formatBytes, formatBytesRate, formatDateTime, formatLogEntries, formatRelative, formatRelativeDate } from "./formatters";
-export { ingestModeGuide, INGEST_BLOCKERS, type IngestModeGuide } from "./ingestUtils";
+export {
+  deliveryModeGuide,
+  deliveryModeLabel,
+  transferActionLabel,
+  INGEST_BLOCKERS,
+  type IngestModeGuide
+} from "./ingestUtils";
 export {
   normalizeStatus,
   isStatus,

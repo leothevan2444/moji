@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"strings"
 
 	"github.com/Yamashou/gqlgenc/clientv2"
 	"github.com/leothevan2444/moji/pkg/stash/graphql"
@@ -105,6 +106,10 @@ type StashBoxEndpoint struct {
 	MaxRequestsPerMinute int
 }
 
+type StashLibrary struct {
+	Path string
+}
+
 // GetStashBoxes queries the Stash server for the list of configured Stash-Box
 // endpoints. The API key is never logged or returned to callers outside this
 // package.
@@ -139,6 +144,32 @@ func (c *Client) GetStashBoxes(ctx context.Context) ([]StashBoxEndpoint, error) 
 			APIKey:               box.GetAPIKey(),
 			MaxRequestsPerMinute: box.GetMaxRequestsPerMinute(),
 		})
+	}
+	return out, nil
+}
+
+func (c *Client) GetStashLibraries(ctx context.Context) ([]StashLibrary, error) {
+	resp, err := c.graphql.Configuration(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("stash: query configuration: %w", err)
+	}
+
+	cfg := resp.GetConfiguration()
+	if cfg == nil {
+		return nil, nil
+	}
+	general := cfg.GetGeneral()
+	if general == nil {
+		return nil, nil
+	}
+
+	stashes := general.GetStashes()
+	out := make([]StashLibrary, 0, len(stashes))
+	for _, stashConfig := range stashes {
+		if stashConfig == nil || strings.TrimSpace(stashConfig.Path) == "" {
+			continue
+		}
+		out = append(out, StashLibrary{Path: stashConfig.Path})
 	}
 	return out, nil
 }

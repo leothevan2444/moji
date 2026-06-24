@@ -192,7 +192,7 @@ export function TaskDetail({
             <dd>{task.stashJobId || "—"}</dd>
           </div>
           <div>
-            <dt>集成模式</dt>
+            <dt>入库方式</dt>
             <dd>{task.stashMode || "—"}</dd>
           </div>
           <div>
@@ -200,19 +200,19 @@ export function TaskDetail({
             <dd>{task.stashSourcePath || "—"}</dd>
           </div>
           <div>
-            <dt>搬运动作</dt>
+            <dt>交付动作</dt>
             <dd>{task.stashTransferAction || "—"}</dd>
           </div>
           <div>
-            <dt>搬运目标</dt>
+            <dt>交付目标</dt>
             <dd>{task.stashTransferPath || "—"}</dd>
           </div>
           <div>
-            <dt>搬运状态</dt>
+            <dt>交付状态</dt>
             <dd>{task.stashTransferStatus || "未开始"}</dd>
           </div>
           <div>
-            <dt>搬运错误</dt>
+            <dt>交付错误</dt>
             <dd>{task.stashTransferError || "—"}</dd>
           </div>
           <div>

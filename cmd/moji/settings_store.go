@@ -6,6 +6,7 @@ import (
 	"github.com/leothevan2444/moji/internal/config"
 	"github.com/leothevan2444/moji/internal/graphqlapi"
 	"github.com/leothevan2444/moji/internal/logging"
+	"github.com/leothevan2444/moji/pkg/stash"
 )
 
 type runtimeSettingsEditor struct {
@@ -13,15 +14,17 @@ type runtimeSettingsEditor struct {
 	version             string
 	downloaderEnabled   bool
 	stashEnabled        bool
+	stashClient         *stash.Client
 	subscriptionService graphqlapi.SubscriptionService
 }
 
-func newRuntimeSettingsEditor(store *config.Store, version string, downloaderEnabled bool, stashEnabled bool, subscriptionService graphqlapi.SubscriptionService) *runtimeSettingsEditor {
+func newRuntimeSettingsEditor(store *config.Store, version string, downloaderEnabled bool, stashEnabled bool, stashClient *stash.Client, subscriptionService graphqlapi.SubscriptionService) *runtimeSettingsEditor {
 	return &runtimeSettingsEditor{
 		store:               store,
 		version:             version,
 		downloaderEnabled:   downloaderEnabled,
 		stashEnabled:        stashEnabled,
+		stashClient:         stashClient,
 		subscriptionService: subscriptionService,
 	}
 }
@@ -35,7 +38,7 @@ func (s *runtimeSettingsEditor) Snapshot() *graphqlapi.SettingsSnapshot {
 func (s *runtimeSettingsEditor) StatusSnapshot() *graphqlapi.SettingsStatusSnapshot {
 	cfg := s.store.Config()
 	applySubscriptionOrder(cfg, s.subscriptionService)
-	return buildSettingsStatusSnapshot(cfg, s.version, s.downloaderEnabled, s.stashEnabled, s.subscriptionService)
+	return buildSettingsStatusSnapshot(cfg, s.version, s.downloaderEnabled, s.stashEnabled, s.stashClient, s.subscriptionService)
 }
 
 func (s *runtimeSettingsEditor) UpdateStashSettings(input graphqlapi.UpdateStashSettingsInput) (*graphqlapi.SettingsSnapshot, error) {
@@ -53,17 +56,12 @@ func (s *runtimeSettingsEditor) UpdateStashSettings(input graphqlapi.UpdateStash
 
 func (s *runtimeSettingsEditor) UpdateIngestSettings(input graphqlapi.UpdateIngestSettingsInput) (*graphqlapi.SettingsSnapshot, error) {
 	cfg, err := s.store.UpdateIngest(
-		strings.TrimSpace(input.Mode),
-		config.SharedStorageIngestConfig{
-			QBittorrentPathPrefix: strings.TrimSpace(input.SharedStorage.QBittorrentPathPrefix),
-			StashPathPrefix:       strings.TrimSpace(input.SharedStorage.StashPathPrefix),
-		},
-		config.FileTransferIngestConfig{
-			Action:     strings.TrimSpace(input.FileTransfer.Action),
-			TargetPath: strings.TrimSpace(input.FileTransfer.TargetPath),
-		},
-		config.LibraryScanIngestConfig{
-			LibraryPath: strings.TrimSpace(input.LibraryScan.LibraryPath),
+		strings.TrimSpace(input.DeliveryMode),
+		strings.TrimSpace(input.StashLibraryPath),
+		config.TransferIngestConfig{
+			Action:         strings.TrimSpace(input.Transfer.Action),
+			MojiSourceRoot: strings.TrimSpace(input.Transfer.MojiSourceRoot),
+			MojiTargetRoot: strings.TrimSpace(input.Transfer.MojiTargetRoot),
 		},
 	)
 	if err != nil {
@@ -71,10 +69,10 @@ func (s *runtimeSettingsEditor) UpdateIngestSettings(input graphqlapi.UpdateInge
 		return nil, err
 	}
 	logging.Infof(
-		"settings: ingest settings saved mode=%s library_path=%s transfer_target=%s",
-		cfg.Ingest.Mode,
-		cfg.Ingest.LibraryScan.LibraryPath,
-		cfg.Ingest.FileTransfer.TargetPath,
+		"settings: ingest settings saved delivery_mode=%s stash_library=%s moji_target_root=%s",
+		cfg.Ingest.DeliveryMode,
+		cfg.Ingest.StashLibraryPath,
+		cfg.Ingest.Transfer.MojiTargetRoot,
 	)
 	return buildSettingsSnapshot(cfg, s.version), nil
 }

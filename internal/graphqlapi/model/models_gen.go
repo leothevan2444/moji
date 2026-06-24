@@ -52,16 +52,6 @@ type DownloadMediaInput struct {
 	Paused     *bool    `json:"paused,omitempty"`
 }
 
-type FileTransferIngestSettings struct {
-	Action     string `json:"action"`
-	TargetPath string `json:"targetPath"`
-}
-
-type FileTransferIngestSettingsInput struct {
-	Action     string `json:"action"`
-	TargetPath string `json:"targetPath"`
-}
-
 // Basic service health
 type Health struct {
 	Ok      bool   `json:"ok"`
@@ -69,10 +59,9 @@ type Health struct {
 }
 
 type IngestSettings struct {
-	Mode          string                       `json:"mode"`
-	SharedStorage *SharedStorageIngestSettings `json:"sharedStorage"`
-	FileTransfer  *FileTransferIngestSettings  `json:"fileTransfer"`
-	LibraryScan   *LibraryScanIngestSettings   `json:"libraryScan"`
+	DeliveryMode     string                  `json:"deliveryMode"`
+	StashLibraryPath string                  `json:"stashLibraryPath"`
+	Transfer         *TransferIngestSettings `json:"transfer"`
 }
 
 type IngestStatus struct {
@@ -127,14 +116,6 @@ type JackettStats struct {
 	LastError *string `json:"lastError,omitempty"`
 	// ISO 8601 timestamp of the most recent successful refresh. Null until the first probe completes successfully.
 	OkAt *string `json:"okAt,omitempty"`
-}
-
-type LibraryScanIngestSettings struct {
-	LibraryPath string `json:"libraryPath"`
-}
-
-type LibraryScanIngestSettingsInput struct {
-	LibraryPath string `json:"libraryPath"`
 }
 
 type LogEntry struct {
@@ -218,28 +199,20 @@ type Settings struct {
 }
 
 type SettingsStatus struct {
-	Stash        *ServiceStatus      `json:"stash"`
-	Jackett      *ServiceStatus      `json:"jackett"`
-	Qbittorrent  *ServiceStatus      `json:"qbittorrent"`
-	Automation   *AutomationStatus   `json:"automation"`
-	Subscription *SubscriptionStatus `json:"subscription"`
-	Ingest       *IngestStatus       `json:"ingest"`
+	Stash                   *ServiceStatus      `json:"stash"`
+	Jackett                 *ServiceStatus      `json:"jackett"`
+	Qbittorrent             *ServiceStatus      `json:"qbittorrent"`
+	Automation              *AutomationStatus   `json:"automation"`
+	Subscription            *SubscriptionStatus `json:"subscription"`
+	Ingest                  *IngestStatus       `json:"ingest"`
+	StashLibraries          []*StashLibrary     `json:"stashLibraries"`
+	StashLibrariesLoadError *string             `json:"stashLibrariesLoadError,omitempty"`
 	// Runtime stats for the Stash server. Refreshed by the stats collector.
 	StashStats *StashStats `json:"stashStats"`
 	// Runtime stats for the Jackett indexer aggregator. Refreshed by the stats collector.
 	JackettStats *JackettStats `json:"jackettStats"`
 	// Runtime stats for the qBittorrent download client. Refreshed by the stats collector.
 	QbittorrentStats *QBittorrentStats `json:"qbittorrentStats"`
-}
-
-type SharedStorageIngestSettings struct {
-	QbittorrentPathPrefix string `json:"qbittorrentPathPrefix"`
-	StashPathPrefix       string `json:"stashPathPrefix"`
-}
-
-type SharedStorageIngestSettingsInput struct {
-	QbittorrentPathPrefix string `json:"qbittorrentPathPrefix"`
-	StashPathPrefix       string `json:"stashPathPrefix"`
 }
 
 type StashBoxEndpoint struct {
@@ -258,6 +231,10 @@ type StashJob struct {
 	AddTime     string   `json:"addTime"`
 	Error       *string  `json:"error,omitempty"`
 	SubTasks    []string `json:"subTasks,omitempty"`
+}
+
+type StashLibrary struct {
+	Path string `json:"path"`
 }
 
 type StashMetadataScanInput struct {
@@ -381,16 +358,27 @@ type Task struct {
 	UpdatedAt           string             `json:"updatedAt"`
 }
 
+type TransferIngestSettings struct {
+	Action         string `json:"action"`
+	MojiSourceRoot string `json:"mojiSourceRoot"`
+	MojiTargetRoot string `json:"mojiTargetRoot"`
+}
+
+type TransferIngestSettingsInput struct {
+	Action         string `json:"action"`
+	MojiSourceRoot string `json:"mojiSourceRoot"`
+	MojiTargetRoot string `json:"mojiTargetRoot"`
+}
+
 type UpdateAutomationSettingsInput struct {
 	TaskProgressSyncIntervalSeconds int `json:"taskProgressSyncIntervalSeconds"`
 	SubscriptionPollIntervalSeconds int `json:"subscriptionPollIntervalSeconds"`
 }
 
 type UpdateIngestSettingsInput struct {
-	Mode          string                            `json:"mode"`
-	SharedStorage *SharedStorageIngestSettingsInput `json:"sharedStorage"`
-	FileTransfer  *FileTransferIngestSettingsInput  `json:"fileTransfer"`
-	LibraryScan   *LibraryScanIngestSettingsInput   `json:"libraryScan"`
+	DeliveryMode     string                       `json:"deliveryMode"`
+	StashLibraryPath string                       `json:"stashLibraryPath"`
+	Transfer         *TransferIngestSettingsInput `json:"transfer"`
 }
 
 type UpdateJackettSettingsInput struct {

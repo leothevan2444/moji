@@ -4,17 +4,12 @@ export const EMPTY_STASH_FORM = {
 };
 
 export const EMPTY_INGEST_FORM = {
-  mode: "SHARED_STORAGE",
-  sharedStorage: {
-    qbittorrentPathPrefix: "",
-    stashPathPrefix: ""
-  },
-  fileTransfer: {
+  deliveryMode: "PATH_MAP",
+  stashLibraryPath: "",
+  transfer: {
     action: "",
-    targetPath: ""
-  },
-  libraryScan: {
-    libraryPath: ""
+    mojiSourceRoot: "",
+    mojiTargetRoot: ""
   }
 };
 

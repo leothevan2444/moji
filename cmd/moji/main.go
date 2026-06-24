@@ -148,10 +148,10 @@ func newHTTPRuntime(cfg *config.Config, version string, configStore *config.Stor
 	resolver.Subscription = subscriptionService
 	resolver.LogReader = logging.Default()
 	resolver.RuntimeSettings = buildSettingsSnapshot(cfg, version)
-	resolver.RuntimeStatus = buildSettingsStatusSnapshot(cfg, version, downloaderService != nil, stashService != nil, subscriptionService)
+	resolver.RuntimeStatus = buildSettingsStatusSnapshot(cfg, version, downloaderService != nil, stashService != nil, stashClient, subscriptionService)
 	resolver.Stats = statsCollector
 	if configStore != nil {
-		resolver.SettingsEditor = newRuntimeSettingsEditor(configStore, version, downloaderService != nil, stashService != nil, subscriptionService)
+		resolver.SettingsEditor = newRuntimeSettingsEditor(configStore, version, downloaderService != nil, stashService != nil, stashClient, subscriptionService)
 	}
 	graphqlHandler := handler.NewDefaultServer(generated.NewExecutableSchema(generated.Config{Resolvers: resolver}))
 
@@ -273,17 +273,12 @@ func buildSettingsSnapshot(cfg *config.Config, version string) *graphqlapi.Setti
 			APIKey:           cfg.Stash.APIKey,
 		},
 		Ingest: graphqlapi.IngestSettingsSnapshot{
-			Mode: effectiveStashMode(cfg),
-			SharedStorage: graphqlapi.SharedStorageIngestSettingsSnapshot{
-				QBittorrentPathPrefix: cfg.Ingest.SharedStorage.QBittorrentPathPrefix,
-				StashPathPrefix:       cfg.Ingest.SharedStorage.StashPathPrefix,
-			},
-			FileTransfer: graphqlapi.FileTransferIngestSettingsSnapshot{
-				Action:     cfg.Ingest.FileTransfer.Action,
-				TargetPath: cfg.Ingest.FileTransfer.TargetPath,
-			},
-			LibraryScan: graphqlapi.LibraryScanIngestSettingsSnapshot{
-				LibraryPath: cfg.Ingest.LibraryScan.LibraryPath,
+			DeliveryMode:     effectiveDeliveryMode(cfg),
+			StashLibraryPath: cfg.Ingest.StashLibraryPath,
+			Transfer: graphqlapi.TransferIngestSettingsSnapshot{
+				Action:         cfg.Ingest.Transfer.Action,
+				MojiSourceRoot: cfg.Ingest.Transfer.MojiSourceRoot,
+				MojiTargetRoot: cfg.Ingest.Transfer.MojiTargetRoot,
 			},
 		},
 		Jackett: graphqlapi.JackettSettingsSnapshot{
@@ -315,7 +310,7 @@ func buildSettingsSnapshot(cfg *config.Config, version string) *graphqlapi.Setti
 	}
 }
 
-func buildSettingsStatusSnapshot(cfg *config.Config, version string, downloaderEnabled bool, stashEnabled bool, subscriptionService graphqlapi.SubscriptionService) *graphqlapi.SettingsStatusSnapshot {
+func buildSettingsStatusSnapshot(cfg *config.Config, version string, downloaderEnabled bool, stashEnabled bool, stashClient *stash.Client, subscriptionService graphqlapi.SubscriptionService) *graphqlapi.SettingsStatusSnapshot {
 	_ = version
 	jackettConfigured := cfg.Jackett.URL != "" && cfg.Jackett.APIKey != ""
 	stashConfigured := isStashConfigured(cfg)
@@ -340,6 +335,8 @@ func buildSettingsStatusSnapshot(cfg *config.Config, version string, downloaderE
 		}
 	}
 
+	stashLibraries, stashLibrariesLoadError := loadStashLibraries(stashConfigured, stashClient)
+
 	return &graphqlapi.SettingsStatusSnapshot{
 		Stash: graphqlapi.ServiceStatusSnapshot{
 			Configured: stashConfigured,
@@ -362,8 +359,34 @@ func buildSettingsStatusSnapshot(cfg *config.Config, version string, downloaderE
 			SubscriptionPollIntervalSeconds: effectiveSubscriptionPollIntervalSeconds(cfg),
 			SubscriptionPollEnabled:         cfg.Automation.SubscriptionPollIntervalSeconds >= 0 && stashEnabled,
 		},
-		Subscription: subscriptionStatus,
+		Subscription:            subscriptionStatus,
+		StashLibraries:          stashLibraries,
+		StashLibrariesLoadError: stashLibrariesLoadError,
 	}
+}
+
+func loadStashLibraries(stashConfigured bool, stashClient *stash.Client) ([]graphqlapi.StashLibrarySnapshot, string) {
+	if !stashConfigured || stashClient == nil {
+		return []graphqlapi.StashLibrarySnapshot{}, ""
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	libraries, err := stashClient.GetStashLibraries(ctx)
+	if err != nil {
+		logging.Warnf("runtime: failed to load stash libraries: %v", err)
+		return []graphqlapi.StashLibrarySnapshot{}, err.Error()
+	}
+
+	out := make([]graphqlapi.StashLibrarySnapshot, 0, len(libraries))
+	for _, library := range libraries {
+		path := strings.TrimSpace(library.Path)
+		if path == "" {
+			continue
+		}
+		out = append(out, graphqlapi.StashLibrarySnapshot{Path: path})
+	}
+	return out, ""
 }
 
 func startTaskSyncWorker(ctx context.Context, service graphqlapi.DownloaderService, stash graphqlapi.StashService, interval time.Duration) {
@@ -428,16 +451,16 @@ func configureStashService(cfg *config.Config, store *config.Store, client *stas
 	if err != nil {
 		logging.Fatalf("configure Stash: %v", err)
 	}
-	logging.Infof("runtime: stash sync service initialized with mode=%s", effectiveStashMode(cfg))
+	logging.Infof("runtime: stash sync service initialized with delivery_mode=%s", effectiveDeliveryMode(cfg))
 
 	return service
 }
 
-func effectiveStashMode(cfg *config.Config) string {
-	if cfg == nil || strings.TrimSpace(cfg.Ingest.Mode) == "" {
-		return string(stashsync.IntegrationModeSharedStorage)
+func effectiveDeliveryMode(cfg *config.Config) string {
+	if cfg == nil || strings.TrimSpace(cfg.Ingest.DeliveryMode) == "" {
+		return string(stashsync.DeliveryModePathMap)
 	}
-	return strings.TrimSpace(cfg.Ingest.Mode)
+	return strings.TrimSpace(cfg.Ingest.DeliveryMode)
 }
 
 func stashIntegrationConfig(cfg *config.Config) stashsync.IntegrationConfig {
@@ -445,12 +468,13 @@ func stashIntegrationConfig(cfg *config.Config) stashsync.IntegrationConfig {
 		return stashsync.IntegrationConfig{}
 	}
 	return stashsync.IntegrationConfig{
-		Mode:                  stashsync.IntegrationMode(effectiveStashMode(cfg)),
-		LibraryPath:           cfg.Ingest.LibraryScan.LibraryPath,
-		QBittorrentPathPrefix: cfg.Ingest.SharedStorage.QBittorrentPathPrefix,
-		StashPathPrefix:       cfg.Ingest.SharedStorage.StashPathPrefix,
-		TransferAction:        stashsync.TransferAction(strings.TrimSpace(cfg.Ingest.FileTransfer.Action)),
-		TransferTargetPath:    cfg.Ingest.FileTransfer.TargetPath,
+		DeliveryMode:     stashsync.DeliveryMode(effectiveDeliveryMode(cfg)),
+		StashLibraryPath: strings.TrimSpace(cfg.Ingest.StashLibraryPath),
+		Transfer: stashsync.TransferConfig{
+			Action:         stashsync.TransferAction(strings.TrimSpace(cfg.Ingest.Transfer.Action)),
+			MojiSourceRoot: strings.TrimSpace(cfg.Ingest.Transfer.MojiSourceRoot),
+			MojiTargetRoot: strings.TrimSpace(cfg.Ingest.Transfer.MojiTargetRoot),
+		},
 	}
 }
 
@@ -471,16 +495,17 @@ func isIngestConfigured(cfg *config.Config) bool {
 	if cfg == nil {
 		return false
 	}
-	switch stashsync.IntegrationMode(effectiveStashMode(cfg)) {
-	case stashsync.IntegrationModeSharedStorage:
-		return strings.TrimSpace(cfg.Ingest.SharedStorage.QBittorrentPathPrefix) != "" &&
-			strings.TrimSpace(cfg.Ingest.SharedStorage.StashPathPrefix) != ""
-	case stashsync.IntegrationModeFileTransfer:
-		action := strings.TrimSpace(cfg.Ingest.FileTransfer.Action)
-		return (action == string(stashsync.TransferActionCopy) || action == string(stashsync.TransferActionMove)) &&
-			strings.TrimSpace(cfg.Ingest.FileTransfer.TargetPath) != ""
-	case stashsync.IntegrationModeLibraryScan:
-		return strings.TrimSpace(cfg.Ingest.LibraryScan.LibraryPath) != ""
+	switch stashsync.DeliveryMode(effectiveDeliveryMode(cfg)) {
+	case stashsync.DeliveryModePathMap:
+		return strings.TrimSpace(cfg.Ingest.StashLibraryPath) != ""
+	case stashsync.DeliveryModeTransfer:
+		action := strings.TrimSpace(cfg.Ingest.Transfer.Action)
+		if strings.TrimSpace(cfg.Ingest.StashLibraryPath) == "" {
+			return false
+		}
+		return (action == string(stashsync.TransferActionCopy) || action == string(stashsync.TransferActionMove) || action == string(stashsync.TransferActionSymlink)) &&
+			strings.TrimSpace(cfg.Ingest.Transfer.MojiSourceRoot) != "" &&
+			strings.TrimSpace(cfg.Ingest.Transfer.MojiTargetRoot) != ""
 	default:
 		return false
 	}

@@ -54,10 +54,9 @@ type UpdateStashSettingsInput struct {
 }
 
 type UpdateIngestSettingsInput struct {
-	Mode          string
-	SharedStorage SharedStorageIngestSettingsSnapshot
-	FileTransfer  FileTransferIngestSettingsSnapshot
-	LibraryScan   LibraryScanIngestSettingsSnapshot
+	DeliveryMode     string
+	StashLibraryPath string
+	Transfer         TransferIngestSettingsSnapshot
 }
 
 type UpdateJackettSettingsInput struct {
@@ -101,24 +100,15 @@ type StashSettingsSnapshot struct {
 }
 
 type IngestSettingsSnapshot struct {
-	Mode          string
-	SharedStorage SharedStorageIngestSettingsSnapshot
-	FileTransfer  FileTransferIngestSettingsSnapshot
-	LibraryScan   LibraryScanIngestSettingsSnapshot
+	DeliveryMode     string
+	StashLibraryPath string
+	Transfer         TransferIngestSettingsSnapshot
 }
 
-type SharedStorageIngestSettingsSnapshot struct {
-	QBittorrentPathPrefix string
-	StashPathPrefix       string
-}
-
-type FileTransferIngestSettingsSnapshot struct {
-	Action     string
-	TargetPath string
-}
-
-type LibraryScanIngestSettingsSnapshot struct {
-	LibraryPath string
+type TransferIngestSettingsSnapshot struct {
+	Action         string
+	MojiSourceRoot string
+	MojiTargetRoot string
 }
 
 type JackettSettingsSnapshot struct {
@@ -151,6 +141,10 @@ type SubscriptionSettingsSnapshot struct {
 	StashBoxEndpoints []string
 }
 
+type StashLibrarySnapshot struct {
+	Path string
+}
+
 type StashBoxEndpointSnapshot struct {
 	Name             string
 	Endpoint         string
@@ -158,12 +152,14 @@ type StashBoxEndpointSnapshot struct {
 }
 
 type SettingsStatusSnapshot struct {
-	Stash        ServiceStatusSnapshot
-	Jackett      ServiceStatusSnapshot
-	QBittorrent  ServiceStatusSnapshot
-	Automation   AutomationStatusSnapshot
-	Subscription SubscriptionStatusSnapshot
-	Ingest       IngestStatusSnapshot
+	Stash                   ServiceStatusSnapshot
+	Jackett                 ServiceStatusSnapshot
+	QBittorrent             ServiceStatusSnapshot
+	Automation              AutomationStatusSnapshot
+	Subscription            SubscriptionStatusSnapshot
+	Ingest                  IngestStatusSnapshot
+	StashLibraries          []StashLibrarySnapshot
+	StashLibrariesLoadError string
 }
 
 type IngestStatusSnapshot struct {

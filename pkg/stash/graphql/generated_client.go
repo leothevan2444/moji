@@ -313,7 +313,15 @@ func (t *FindJob_FindJob) GetSubTasks() []string {
 }
 
 type Configuration_Configuration_General struct {
+	Stashes    []*StashConfig      "json:\"stashes\" graphql:\"stashes\""
 	StashBoxes []*StashBoxFragment "json:\"stashBoxes\" graphql:\"stashBoxes\""
+}
+
+func (t *Configuration_Configuration_General) GetStashes() []*StashConfig {
+	if t == nil {
+		t = &Configuration_Configuration_General{}
+	}
+	return t.Stashes
 }
 
 func (t *Configuration_Configuration_General) GetStashBoxes() []*StashBoxFragment {
@@ -725,6 +733,9 @@ func (c *Client) FindJob(ctx context.Context, input FindJobInput, interceptors .
 const ConfigurationDocument = `query Configuration {
 	configuration {
 		general {
+			stashes {
+				path
+			}
 			stashBoxes {
 				... StashBoxFragment
 			}

@@ -30,14 +30,23 @@ func subscriptionLoadErrorPtr(message string) *string {
 	return &copy
 }
 
+func stashLibrariesToModel(items []StashLibrarySnapshot) []*model.StashLibrary {
+	if len(items) == 0 {
+		return []*model.StashLibrary{}
+	}
+	out := make([]*model.StashLibrary, 0, len(items))
+	for _, item := range items {
+		out = append(out, &model.StashLibrary{Path: item.Path})
+	}
+	return out
+}
+
 func settingsSnapshotToModel(snapshot *SettingsSnapshot, appVersion string) *model.Settings {
 	if snapshot == nil {
 		return &model.Settings{
 			Stash: &model.StashSettings{},
 			Ingest: &model.IngestSettings{
-				SharedStorage: &model.SharedStorageIngestSettings{},
-				FileTransfer:  &model.FileTransferIngestSettings{},
-				LibraryScan:   &model.LibraryScanIngestSettings{},
+				Transfer: &model.TransferIngestSettings{},
 			},
 			Jackett:      &model.JackettSettings{},
 			Qbittorrent:  &model.QBittorrentSettings{},
@@ -54,17 +63,12 @@ func settingsSnapshotToModel(snapshot *SettingsSnapshot, appVersion string) *mod
 			APIKey:           snapshot.Stash.APIKey,
 		},
 		Ingest: &model.IngestSettings{
-			Mode: snapshot.Ingest.Mode,
-			SharedStorage: &model.SharedStorageIngestSettings{
-				QbittorrentPathPrefix: snapshot.Ingest.SharedStorage.QBittorrentPathPrefix,
-				StashPathPrefix:       snapshot.Ingest.SharedStorage.StashPathPrefix,
-			},
-			FileTransfer: &model.FileTransferIngestSettings{
-				Action:     snapshot.Ingest.FileTransfer.Action,
-				TargetPath: snapshot.Ingest.FileTransfer.TargetPath,
-			},
-			LibraryScan: &model.LibraryScanIngestSettings{
-				LibraryPath: snapshot.Ingest.LibraryScan.LibraryPath,
+			DeliveryMode:     snapshot.Ingest.DeliveryMode,
+			StashLibraryPath: snapshot.Ingest.StashLibraryPath,
+			Transfer: &model.TransferIngestSettings{
+				Action:         snapshot.Ingest.Transfer.Action,
+				MojiSourceRoot: snapshot.Ingest.Transfer.MojiSourceRoot,
+				MojiTargetRoot: snapshot.Ingest.Transfer.MojiTargetRoot,
 			},
 		},
 		Jackett: &model.JackettSettings{
@@ -105,6 +109,7 @@ func settingsStatusSnapshotToModel(snapshot *SettingsStatusSnapshot) *model.Sett
 			Automation:       &model.AutomationStatus{},
 			Subscription:     &model.SubscriptionStatus{},
 			Ingest:           &model.IngestStatus{},
+			StashLibraries:   []*model.StashLibrary{},
 			StashStats:       emptyStashStatsModel(),
 			JackettStats:     emptyJackettStatsModel(),
 			QbittorrentStats: emptyQBittorrentStatsModel(),
@@ -138,9 +143,11 @@ func settingsStatusSnapshotToModel(snapshot *SettingsStatusSnapshot) *model.Sett
 		Ingest: &model.IngestStatus{
 			Configured: snapshot.Ingest.Configured,
 		},
-		StashStats:       emptyStashStatsModel(),
-		JackettStats:     emptyJackettStatsModel(),
-		QbittorrentStats: emptyQBittorrentStatsModel(),
+		StashLibraries:          stashLibrariesToModel(snapshot.StashLibraries),
+		StashLibrariesLoadError: subscriptionLoadErrorPtr(snapshot.StashLibrariesLoadError),
+		StashStats:              emptyStashStatsModel(),
+		JackettStats:            emptyJackettStatsModel(),
+		QbittorrentStats:        emptyQBittorrentStatsModel(),
 	}
 }
 

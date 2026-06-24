@@ -3,6 +3,7 @@
  */
 
 import type { DashboardDocumentQuery } from "../graphql/generated/graphql";
+import { deliveryModeLabel, transferActionLabel } from "./ingestUtils";
 
 // ── Re-usable type aliases ──────────────────────────────────────────
 
@@ -295,7 +296,7 @@ export function taskMetaLine(task: DashboardTask) {
     parts.push(task.category);
   }
   if (task.stashMode) {
-    parts.push(task.stashMode);
+    parts.push(deliveryModeLabel(task.stashMode));
   }
   return parts.filter(Boolean).join(" · ");
 }
@@ -350,7 +351,7 @@ export function taskLifecycle(task: DashboardTask, failure: TaskFailureSummary):
       detail: hasTransferFailure
         ? simplifyMessage(task.stashTransferError)
         : transferStarted
-          ? `${task.stashTransferAction || "搬运"} -> ${task.stashTransferPath || "目标路径待定"}`
+          ? `${transferActionLabel(task.stashTransferAction) || "交付"} -> ${task.stashTransferPath || "目标路径待定"}`
           : hasScanFailure
         ? simplifyMessage(task.stashScanError)
         : scanStarted
@@ -382,7 +383,7 @@ export function taskPresentation(task: DashboardTask): TaskPresentation {
     detail = failure.detail;
   } else if (primary.phase === "transferRunning") {
     summary = "下载已完成，Moji 正在准备文件搬运。";
-    detail = task.stashTransferPath ? `${task.stashTransferAction || "搬运"} -> ${task.stashTransferPath}` : "正在准备搬运目标路径。";
+    detail = task.stashTransferPath ? `${transferActionLabel(task.stashTransferAction) || "交付"} -> ${task.stashTransferPath}` : "正在准备交付目标路径。";
   } else if (primary.phase === "scanRunning") {
     summary = "已完成下载，正在等待 Stash 收口。";
     detail = task.stashJobId ? `Stash job ${task.stashJobId} 正在执行。` : "Stash 已接手当前任务。";

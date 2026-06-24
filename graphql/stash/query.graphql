@@ -88,6 +88,9 @@ fragment StashBoxFragment on StashBox {
 query Configuration {
   configuration {
     general {
+      stashes {
+        path
+      }
       stashBoxes {
         ...StashBoxFragment
       }

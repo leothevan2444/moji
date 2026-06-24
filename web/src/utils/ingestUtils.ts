@@ -14,28 +14,21 @@ export interface IngestModeGuide {
   caution: string;
 }
 
-export function ingestModeGuide(mode: string): IngestModeGuide {
+export function deliveryModeGuide(mode: string): IngestModeGuide {
   switch (mode) {
-    case "SHARED_STORAGE":
+    case "PATH_MAP":
       return {
-        title: "共享存储 / 路径映射",
+        title: "路径映射",
         tone: "tone-info",
-        summary: "适用于 qBittorrent 和 Stash 共用同一批文件，只是挂载路径不同。",
-        caution: "要求下载路径命中 qBittorrent 路径前缀；映射失败时不会自动退回整库扫描。"
+        summary: "适用于 qBittorrent 和 Stash 共享底层存储；Moji 会基于任务实际保存路径自动换算到所选 Stash 媒体库。",
+        caution: "要求任务能拿到真实保存目录与内容路径；换算失败时不会自动退回其他模式。"
       };
-    case "FILE_TRANSFER":
+    case "TRANSFER":
       return {
-        title: "文件搬运",
+        title: "文件交付",
         tone: "tone-warn",
-        summary: "由 Moji 在本地文件系统执行复制或移动，成功后再扫描目标文件。",
-        caution: "目标目录已有同名文件时会直接失败，不覆盖也不自动重命名。"
-      };
-    case "LIBRARY_SCAN":
-      return {
-        title: "整库扫描",
-        tone: "tone-danger",
-        summary: "始终扫描整个库目录，适合先跑通接入或无法稳定定位单文件时使用。",
-        caution: "无法精确锁定本次下载文件，扫描范围也最大。"
+        summary: "由 Moji 读取下载区文件并交付到媒体库挂载目录，再换算为 Stash 媒体库路径触发扫描。",
+        caution: "Moji 需要同时访问下载区和媒体库；目标已有同名文件或目录时会直接失败。"
       };
     default:
       return {
@@ -44,6 +37,30 @@ export function ingestModeGuide(mode: string): IngestModeGuide {
         summary: "请选择入库策略后再继续。",
         caution: ""
       };
+  }
+}
+
+export function deliveryModeLabel(mode: string) {
+  switch (mode) {
+    case "PATH_MAP":
+      return "路径映射";
+    case "TRANSFER":
+      return "文件交付";
+    default:
+      return mode || "未选择";
+  }
+}
+
+export function transferActionLabel(action: string) {
+  switch (action) {
+    case "COPY":
+      return "复制";
+    case "MOVE":
+      return "移动";
+    case "SYMLINK":
+      return "符号链接";
+    default:
+      return action || "—";
   }
 }
 

@@ -20,17 +20,12 @@ query DashboardDocument {
       apiKey
     }
     ingest {
-      mode
-      sharedStorage {
-        qbittorrentPathPrefix
-        stashPathPrefix
-      }
-      fileTransfer {
+      deliveryMode
+      stashLibraryPath
+      transfer {
         action
-        targetPath
-      }
-      libraryScan {
-        libraryPath
+        mojiSourceRoot
+        mojiTargetRoot
       }
     }
     jackett {
@@ -88,6 +83,10 @@ query DashboardDocument {
       stashBoxesLoaded
       stashBoxesLoadError
     }
+    stashLibraries {
+      path
+    }
+    stashLibrariesLoadError
     ingest {
       configured
     }

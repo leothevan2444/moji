@@ -45,6 +45,8 @@ type SettingsStatus {
   automation: AutomationStatus!
   subscription: SubscriptionStatus!
   ingest: IngestStatus!
+  stashLibraries: [StashLibrary!]!
+  stashLibrariesLoadError: String
 
   "Runtime stats for the Stash server. Refreshed by the stats collector."
   stashStats: StashStats!
@@ -134,24 +136,19 @@ type StashSettings {
 }
 
 type IngestSettings {
-  mode: String!
-  sharedStorage: SharedStorageIngestSettings!
-  fileTransfer: FileTransferIngestSettings!
-  libraryScan: LibraryScanIngestSettings!
+  deliveryMode: String!
+  stashLibraryPath: String!
+  transfer: TransferIngestSettings!
 }
 
-type SharedStorageIngestSettings {
-  qbittorrentPathPrefix: String!
-  stashPathPrefix: String!
-}
-
-type FileTransferIngestSettings {
+type TransferIngestSettings {
   action: String!
-  targetPath: String!
+  mojiSourceRoot: String!
+  mojiTargetRoot: String!
 }
 
-type LibraryScanIngestSettings {
-  libraryPath: String!
+type StashLibrary {
+  path: String!
 }
 
 type JackettSettings {
@@ -224,24 +221,15 @@ input UpdateStashSettingsInput {
 }
 
 input UpdateIngestSettingsInput {
-  mode: String!
-  sharedStorage: SharedStorageIngestSettingsInput!
-  fileTransfer: FileTransferIngestSettingsInput!
-  libraryScan: LibraryScanIngestSettingsInput!
+  deliveryMode: String!
+  stashLibraryPath: String!
+  transfer: TransferIngestSettingsInput!
 }
 
-input SharedStorageIngestSettingsInput {
-  qbittorrentPathPrefix: String!
-  stashPathPrefix: String!
-}
-
-input FileTransferIngestSettingsInput {
+input TransferIngestSettingsInput {
   action: String!
-  targetPath: String!
-}
-
-input LibraryScanIngestSettingsInput {
-  libraryPath: String!
+  mojiSourceRoot: String!
+  mojiTargetRoot: String!
 }
 
 input UpdateJackettSettingsInput {

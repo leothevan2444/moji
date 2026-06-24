@@ -94,7 +94,7 @@ func TestHTTPHandlerServesSettingsSnapshot(t *testing.T) {
 			jackett { configured url apiKeyConfigured }
 			qbittorrent { configured url usernameConfigured passwordConfigured defaultSavePath }
 			stash { configured url apiKeyConfigured }
-			ingest { libraryScan { libraryPath } }
+			ingest { deliveryMode stashLibraryPath transfer { action mojiSourceRoot mojiTargetRoot } }
 			automation { taskProgressSyncIntervalSeconds subscriptionPollIntervalSeconds }
 			subscription { stashBoxEndpoints }
 		}
@@ -200,93 +200,73 @@ func TestIngestConfigured(t *testing.T) {
 		}
 	})
 
-	t.Run("SHARED_STORAGE mode", func(t *testing.T) {
+	t.Run("PATH_MAP mode", func(t *testing.T) {
 		cases := []struct {
-			name        string
-			qbPrefix    string
-			stashPrefix string
-			want        bool
-		}{
-			{"both empty", "", "", false},
-			{"only qb set", "/downloads", "", false},
-			{"only stash set", "", "/library", false},
-			{"both set", "/downloads", "/library", true},
-			{"whitespace only", "   ", "   ", false},
-		}
-		for _, tc := range cases {
-			t.Run(tc.name, func(t *testing.T) {
-				cfg := testConfig()
-				cfg.Ingest.Mode = "SHARED_STORAGE"
-				cfg.Ingest.SharedStorage.QBittorrentPathPrefix = tc.qbPrefix
-				cfg.Ingest.SharedStorage.StashPathPrefix = tc.stashPrefix
-				if got := isIngestConfigured(cfg); got != tc.want {
-					t.Fatalf("isIngestConfigured(SHARED_STORAGE) = %v, want %v", got, tc.want)
-				}
-			})
-		}
-	})
-
-	t.Run("FILE_TRANSFER mode", func(t *testing.T) {
-		cases := []struct {
-			name       string
-			action     string
-			targetPath string
-			want       bool
-		}{
-			{"empty action", "", "/stash-import", false},
-			{"empty target", "COPY", "", false},
-			{"copy complete", "COPY", "/stash-import", true},
-			{"move complete", "MOVE", "/stash-import", true},
-			{"unsupported action", "GARBAGE", "/stash-import", false},
-		}
-		for _, tc := range cases {
-			t.Run(tc.name, func(t *testing.T) {
-				cfg := testConfig()
-				cfg.Ingest.Mode = "FILE_TRANSFER"
-				cfg.Ingest.FileTransfer.Action = tc.action
-				cfg.Ingest.FileTransfer.TargetPath = tc.targetPath
-				if got := isIngestConfigured(cfg); got != tc.want {
-					t.Fatalf("isIngestConfigured(FILE_TRANSFER) = %v, want %v", got, tc.want)
-				}
-			})
-		}
-	})
-
-	t.Run("LIBRARY_SCAN mode", func(t *testing.T) {
-		cases := []struct {
-			name        string
-			libraryPath string
-			want        bool
+			name             string
+			stashLibraryPath string
+			want             bool
 		}{
 			{"empty", "", false},
 			{"set", "/library", true},
-			{"whitespace", "   ", false},
+			{"whitespace only", "   ", false},
 		}
 		for _, tc := range cases {
 			t.Run(tc.name, func(t *testing.T) {
 				cfg := testConfig()
-				cfg.Ingest.Mode = "LIBRARY_SCAN"
-				cfg.Ingest.LibraryScan.LibraryPath = tc.libraryPath
+				cfg.Ingest.DeliveryMode = "PATH_MAP"
+				cfg.Ingest.StashLibraryPath = tc.stashLibraryPath
 				if got := isIngestConfigured(cfg); got != tc.want {
-					t.Fatalf("isIngestConfigured(LIBRARY_SCAN) = %v, want %v", got, tc.want)
+					t.Fatalf("isIngestConfigured(PATH_MAP) = %v, want %v", got, tc.want)
 				}
 			})
 		}
 	})
 
-	t.Run("default mode falls back to SHARED_STORAGE", func(t *testing.T) {
+	t.Run("TRANSFER mode", func(t *testing.T) {
+		cases := []struct {
+			name         string
+			action       string
+			sourceRoot   string
+			targetRoot   string
+			stashLibrary string
+			want         bool
+		}{
+			{"empty action", "", "/downloads", "/mnt/library", "/library", false},
+			{"empty source", "COPY", "", "/mnt/library", "/library", false},
+			{"empty target", "COPY", "/downloads", "", "/library", false},
+			{"empty stash library", "COPY", "/downloads", "/mnt/library", "", false},
+			{"copy complete", "COPY", "/downloads", "/mnt/library", "/library", true},
+			{"move complete", "MOVE", "/downloads", "/mnt/library", "/library", true},
+			{"symlink complete", "SYMLINK", "/downloads", "/mnt/library", "/library", true},
+			{"unsupported action", "GARBAGE", "/downloads", "/mnt/library", "/library", false},
+		}
+		for _, tc := range cases {
+			t.Run(tc.name, func(t *testing.T) {
+				cfg := testConfig()
+				cfg.Ingest.DeliveryMode = "TRANSFER"
+				cfg.Ingest.Transfer.Action = tc.action
+				cfg.Ingest.Transfer.MojiSourceRoot = tc.sourceRoot
+				cfg.Ingest.Transfer.MojiTargetRoot = tc.targetRoot
+				cfg.Ingest.StashLibraryPath = tc.stashLibrary
+				if got := isIngestConfigured(cfg); got != tc.want {
+					t.Fatalf("isIngestConfigured(TRANSFER) = %v, want %v", got, tc.want)
+				}
+			})
+		}
+	})
+
+	t.Run("default delivery mode falls back to PATH_MAP", func(t *testing.T) {
 		cfg := testConfig()
-		cfg.Ingest.Mode = ""
-		cfg.Ingest.SharedStorage.QBittorrentPathPrefix = "/downloads"
-		cfg.Ingest.SharedStorage.StashPathPrefix = "/library"
+		cfg.Ingest.DeliveryMode = ""
+		cfg.Ingest.StashLibraryPath = "/library"
 		if !isIngestConfigured(cfg) {
-			t.Fatal("isIngestConfigured with empty mode should fall back to SHARED_STORAGE")
+			t.Fatal("isIngestConfigured with empty delivery mode should fall back to PATH_MAP")
 		}
 	})
 
 	t.Run("unknown mode returns false", func(t *testing.T) {
 		cfg := testConfig()
-		cfg.Ingest.Mode = "GARBAGE_MODE"
+		cfg.Ingest.DeliveryMode = "GARBAGE_MODE"
 		if isIngestConfigured(cfg) {
 			t.Fatal("isIngestConfigured should return false for unknown mode")
 		}
@@ -295,16 +275,16 @@ func TestIngestConfigured(t *testing.T) {
 
 func TestServiceReadiness(t *testing.T) {
 	now := time.Date(2026, 6, 22, 12, 0, 0, 0, time.UTC)
-	within := now.Add(-30 * time.Second)        // 30s before now — inside 240s window
-	stale := now.Add(-5 * time.Minute)           // 5min before now — outside 240s window
-	fresh := now                                 // exactly now
+	within := now.Add(-30 * time.Second) // 30s before now — inside 240s window
+	stale := now.Add(-5 * time.Minute)   // 5min before now — outside 240s window
+	fresh := now                         // exactly now
 	cases := []struct {
-		name        string
-		configured  bool
-		okAt        time.Time
-		lastError   string
-		now         time.Time
-		want        bool
+		name       string
+		configured bool
+		okAt       time.Time
+		lastError  string
+		now        time.Time
+		want       bool
 	}{
 		{"unconfigured, recent probe", false, within, "", now, false},
 		{"unconfigured, never probed", false, time.Time{}, "", now, false},
@@ -402,9 +382,7 @@ type graphQLResponse struct {
 				APIKeyConfigured bool   `json:"apiKeyConfigured"`
 			} `json:"stash"`
 			Ingest struct {
-				LibraryScan struct {
-					LibraryPath string `json:"libraryPath"`
-				} `json:"libraryScan"`
+				DeliveryMode string `json:"deliveryMode"`
 			} `json:"ingest"`
 			Jackett struct {
 				Configured       bool   `json:"configured"`
@@ -483,8 +461,8 @@ func testConfig() *config.Config {
 	cfg.Jackett.URL = "http://jackett.invalid"
 	cfg.Jackett.APIKey = "test-api-key"
 	cfg.Stash.URL = "http://stash.invalid"
-	cfg.Ingest.Mode = "LIBRARY_SCAN"
-	cfg.Ingest.LibraryScan.LibraryPath = "/library"
+	cfg.Ingest.DeliveryMode = "PATH_MAP"
+	cfg.Ingest.StashLibraryPath = "/library"
 	cfg.Automation.SubscriptionPollIntervalSeconds = 3600
 	return &cfg
 }

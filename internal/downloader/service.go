@@ -502,6 +502,7 @@ func applyTorrentProgress(task *Task, torrent qbittorrent.Torrent, now time.Time
 	task.Progress = torrent.Progress
 	task.QBittorrentState = string(torrent.State)
 	task.ContentPath = torrent.ContentPath
+	task.SavePath = torrent.SavePath
 	task.UpdatedAt = now
 
 	if torrent.Progress >= 1 || torrent.CompletionOn > 0 || isCompletedTorrentState(torrent.State) {
@@ -658,15 +659,31 @@ func (osFileOperator) Transfer(ctx context.Context, sourcePath string, action st
 	if err := os.MkdirAll(filepath.Dir(targetPath), 0o755); err != nil {
 		return fmt.Errorf("downloader: create transfer target dir for %q: %w", targetPath, err)
 	}
+	sourceInfo, err := os.Stat(sourcePath)
+	if err != nil {
+		return fmt.Errorf("downloader: stat transfer source %q: %w", sourcePath, err)
+	}
 
 	switch action {
 	case stashsync.TransferActionCopy:
+		if sourceInfo.IsDir() {
+			return copyDir(ctx, sourcePath, targetPath)
+		}
 		return copyFile(ctx, sourcePath, targetPath)
 	case stashsync.TransferActionMove:
 		if err := os.Rename(sourcePath, targetPath); err == nil {
 			return nil
 		} else if !isCrossDeviceError(err) {
 			return fmt.Errorf("downloader: move %q -> %q: %w", sourcePath, targetPath, err)
+		}
+		if sourceInfo.IsDir() {
+			if err := copyDir(ctx, sourcePath, targetPath); err != nil {
+				return err
+			}
+			if err := os.RemoveAll(sourcePath); err != nil {
+				return fmt.Errorf("downloader: remove transferred source %q: %w", sourcePath, err)
+			}
+			return nil
 		}
 		if err := copyFile(ctx, sourcePath, targetPath); err != nil {
 			return err
@@ -675,9 +692,46 @@ func (osFileOperator) Transfer(ctx context.Context, sourcePath string, action st
 			return fmt.Errorf("downloader: remove transferred source %q: %w", sourcePath, err)
 		}
 		return nil
+	case stashsync.TransferActionSymlink:
+		if err := os.Symlink(sourcePath, targetPath); err != nil {
+			return fmt.Errorf("downloader: symlink %q -> %q: %w", targetPath, sourcePath, err)
+		}
+		return nil
 	default:
 		return fmt.Errorf("downloader: unsupported transfer action %q", action)
 	}
+}
+
+func copyDir(ctx context.Context, sourcePath string, targetPath string) error {
+	if err := os.MkdirAll(targetPath, 0o755); err != nil {
+		return fmt.Errorf("downloader: create transfer target dir %q: %w", targetPath, err)
+	}
+	return filepath.Walk(sourcePath, func(current string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+		if err := ctx.Err(); err != nil {
+			return err
+		}
+		relative, err := filepath.Rel(sourcePath, current)
+		if err != nil {
+			return err
+		}
+		if relative == "." {
+			return nil
+		}
+		destination := filepath.Join(targetPath, relative)
+		if info.IsDir() {
+			if err := os.MkdirAll(destination, info.Mode()); err != nil {
+				return fmt.Errorf("downloader: create transfer target dir %q: %w", destination, err)
+			}
+			return nil
+		}
+		if err := os.MkdirAll(filepath.Dir(destination), 0o755); err != nil {
+			return fmt.Errorf("downloader: create transfer target dir for %q: %w", destination, err)
+		}
+		return copyFile(ctx, current, destination)
+	})
 }
 
 func copyFile(ctx context.Context, sourcePath string, targetPath string) error {

@@ -1,6 +1,6 @@
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faArrowUpRightFromSquare } from "@fortawesome/free-solid-svg-icons";
-import { INGEST_BLOCKERS, ingestModeGuide } from "../../utils";
+import { INGEST_BLOCKERS, deliveryModeGuide, deliveryModeLabel, transferActionLabel } from "../../utils";
 import type { SettingsTab } from "../../types";
 import type { DashboardDocumentQuery } from "../../graphql/generated/graphql";
 
@@ -15,43 +15,36 @@ interface IngestCardProps {
 }
 
 function ingestConfigRows(ingest: IngestSettings): Array<{ key: string; value: string }> {
-  switch (ingest.mode) {
-    case "SHARED_STORAGE":
+  switch (ingest.deliveryMode) {
+    case "PATH_MAP":
       return [
-        { key: "工作方式", value: "共享存储 / 路径映射" },
-        { key: "qBittorrent 路径前缀", value: ingest.sharedStorage.qbittorrentPathPrefix || "—" },
-        { key: "Stash 路径前缀", value: ingest.sharedStorage.stashPathPrefix || "—" }
+        { key: "入库方式", value: deliveryModeLabel(ingest.deliveryMode) },
+        { key: "目标媒体库", value: ingest.stashLibraryPath || "—" }
       ];
-    case "FILE_TRANSFER":
+    case "TRANSFER":
       return [
-        { key: "工作方式", value: "文件搬运" },
-        { key: "搬运动作", value: ingest.fileTransfer.action || "—" },
-        { key: "目标目录", value: ingest.fileTransfer.targetPath || "—" }
-      ];
-    case "LIBRARY_SCAN":
-      return [
-        { key: "工作方式", value: "整库扫描" },
-        { key: "Library Path", value: ingest.libraryScan.libraryPath || "—" }
+        { key: "入库方式", value: deliveryModeLabel(ingest.deliveryMode) },
+        { key: "目标媒体库", value: ingest.stashLibraryPath || "—" },
+        { key: "交付动作", value: transferActionLabel(ingest.transfer.action) },
+        { key: "Moji 下载区", value: ingest.transfer.mojiSourceRoot || "—" },
+        { key: "Moji 媒体库", value: ingest.transfer.mojiTargetRoot || "—" }
       ];
     default:
-      return [{ key: "工作方式", value: "未选择" }];
+      return [{ key: "入库方式", value: "未选择" }];
   }
 }
 
 function missingFields(ingest: IngestSettings): string[] {
-  switch (ingest.mode) {
-    case "SHARED_STORAGE":
+  switch (ingest.deliveryMode) {
+    case "PATH_MAP":
+      return [!ingest.stashLibraryPath && "目标媒体库"].filter(Boolean) as string[];
+    case "TRANSFER":
       return [
-        !ingest.sharedStorage.qbittorrentPathPrefix && "qBittorrent 路径前缀",
-        !ingest.sharedStorage.stashPathPrefix && "Stash 路径前缀"
+        !ingest.stashLibraryPath && "目标媒体库",
+        !ingest.transfer.action && "交付动作",
+        !ingest.transfer.mojiSourceRoot && "Moji 下载区",
+        !ingest.transfer.mojiTargetRoot && "Moji 媒体库"
       ].filter(Boolean) as string[];
-    case "FILE_TRANSFER":
-      return [
-        !ingest.fileTransfer.action && "搬运动作",
-        !ingest.fileTransfer.targetPath && "目标目录"
-      ].filter(Boolean) as string[];
-    case "LIBRARY_SCAN":
-      return [!ingest.libraryScan.libraryPath && "Library Path"].filter(Boolean) as string[];
     default:
       return [];
   }
@@ -59,9 +52,9 @@ function missingFields(ingest: IngestSettings): string[] {
 
 export function IngestCard({ ingest, ingestStatus, onOpenSettings }: IngestCardProps) {
   const configured = ingestStatus?.configured ?? false;
-  const mode = ingest?.mode ?? "";
+  const mode = ingest?.deliveryMode ?? "";
   const hasMode = Boolean(mode);
-  const guide = ingestModeGuide(mode);
+  const guide = deliveryModeGuide(mode);
 
   // 三状态分支：
   // 1. 未配置：mode 未选或 ingest=null
@@ -134,7 +127,7 @@ export function IngestCard({ ingest, ingestStatus, onOpenSettings }: IngestCardP
       <div className="service-card__foot">
         <div className="service-card__refresh" aria-live="polite">
           <span className={`service-card__refresh-dot ${tone === "tone-success" ? "" : "is-stale"}`} />
-          <span>工作方式: {ingest?.mode || "未选择"}</span>
+          <span>入库方式: {deliveryModeLabel(ingest?.deliveryMode || "")}</span>
         </div>
         {ctaLabel ? (
           <div className="service-card__cta">

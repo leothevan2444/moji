@@ -77,18 +77,16 @@ func (s *Store) UpdateStash(url, apiKey string) (*Config, error) {
 }
 
 func (s *Store) UpdateIngest(
-	mode string,
-	sharedStorage SharedStorageIngestConfig,
-	fileTransfer FileTransferIngestConfig,
-	libraryScan LibraryScanIngestConfig,
+	deliveryMode string,
+	stashLibraryPath string,
+	transfer TransferIngestConfig,
 ) (*Config, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	s.cfg.Ingest.Mode = mode
-	s.cfg.Ingest.SharedStorage = sharedStorage
-	s.cfg.Ingest.FileTransfer = fileTransfer
-	s.cfg.Ingest.LibraryScan = libraryScan
+	s.cfg.Ingest.DeliveryMode = deliveryMode
+	s.cfg.Ingest.StashLibraryPath = stashLibraryPath
+	s.cfg.Ingest.Transfer = transfer
 
 	if err := s.updateConfigNode(); err != nil {
 		return nil, err
@@ -179,18 +177,13 @@ func (s *Store) updateConfigNode() error {
 		"api_key": s.cfg.Stash.APIKey,
 	})
 	setMapString(top, "ingest", map[string]string{
-		"mode": s.cfg.Ingest.Mode,
+		"delivery_mode":      s.cfg.Ingest.DeliveryMode,
+		"stash_library_path": s.cfg.Ingest.StashLibraryPath,
 	})
-	setMapString(mapValue(top, "ingest"), "shared_storage", map[string]string{
-		"qbittorrent_path_prefix": s.cfg.Ingest.SharedStorage.QBittorrentPathPrefix,
-		"stash_path_prefix":       s.cfg.Ingest.SharedStorage.StashPathPrefix,
-	})
-	setMapString(mapValue(top, "ingest"), "file_transfer", map[string]string{
-		"action":      s.cfg.Ingest.FileTransfer.Action,
-		"target_path": s.cfg.Ingest.FileTransfer.TargetPath,
-	})
-	setMapString(mapValue(top, "ingest"), "library_scan", map[string]string{
-		"library_path": s.cfg.Ingest.LibraryScan.LibraryPath,
+	setMapString(mapValue(top, "ingest"), "transfer", map[string]string{
+		"action":           s.cfg.Ingest.Transfer.Action,
+		"moji_source_root": s.cfg.Ingest.Transfer.MojiSourceRoot,
+		"moji_target_root": s.cfg.Ingest.Transfer.MojiTargetRoot,
 	})
 	setMapString(top, "qbittorrent", map[string]string{
 		"url":               s.cfg.QBittorrent.URL,
@@ -215,11 +208,19 @@ func (s *Store) updateConfigNode() error {
 		deleteMapKey(stash, "transfer_target_path")
 	}
 	if ingest := existingMapValue(top, "ingest"); ingest != nil {
+		deleteMapKey(ingest, "mode")
+		deleteMapKey(ingest, "shared_storage")
+		deleteMapKey(ingest, "file_transfer")
+		deleteMapKey(ingest, "library_scan")
+		deleteMapKey(ingest, "scan_scope")
+		deleteMapKey(ingest, "path_map")
 		deleteMapKey(ingest, "library_path")
+		deleteMapKey(ingest, "library")
 		deleteMapKey(ingest, "qbittorrent_path_prefix")
 		deleteMapKey(ingest, "stash_path_prefix")
 		deleteMapKey(ingest, "transfer_action")
 		deleteMapKey(ingest, "transfer_target_path")
+		deleteMapKey(ingest, "target_path")
 	}
 
 	data, err := yaml.Marshal(&s.root)

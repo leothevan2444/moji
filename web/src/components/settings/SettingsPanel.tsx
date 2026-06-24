@@ -4,6 +4,7 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faArrowDown,
   faArrowUp,
+  faCircleInfo,
   faEye,
   faEyeSlash,
   faGripVertical,
@@ -46,7 +47,7 @@ import {
   EMPTY_SUBSCRIPTION_FORM,
   LOG_LEVEL_OPTIONS
 } from "../../constants";
-import { serviceStatus, ingestModeGuide } from "../../utils";
+import { serviceStatus } from "../../utils";
 import { describeQueryError } from "../../services/queryError";
 import { formatDateTime, formatLogEntries } from "../../utils";
 
@@ -62,6 +63,27 @@ interface SettingsPanelProps {
   renderedDrawer: string | null;
   pushToast: (tone: ToastTone, message: string) => void;
   refreshDashboard: (opts?: Record<string, unknown>) => unknown;
+}
+
+interface FieldLabelProps {
+  text: string;
+  info?: string;
+}
+
+function FieldLabel({ text, info }: FieldLabelProps) {
+  return (
+    <span className="settings-field__label">
+      <span>{text}</span>
+      {info ? (
+        <span className="settings-info" tabIndex={0} aria-label={info}>
+          <FontAwesomeIcon icon={faCircleInfo} aria-hidden="true" />
+          <span className="settings-info__tooltip" role="tooltip">
+            {info}
+          </span>
+        </span>
+      ) : null}
+    </span>
+  );
 }
 
 export function SettingsPanel({
@@ -143,17 +165,12 @@ export function SettingsPanel({
       apiKey: runtimeSettings.stash.apiKey ?? ""
     });
     setIngestForm({
-      mode: runtimeSettings.ingest.mode || "SHARED_STORAGE",
-      sharedStorage: {
-        qbittorrentPathPrefix: runtimeSettings.ingest.sharedStorage.qbittorrentPathPrefix || "",
-        stashPathPrefix: runtimeSettings.ingest.sharedStorage.stashPathPrefix || ""
-      },
-      fileTransfer: {
-        action: runtimeSettings.ingest.fileTransfer.action || "",
-        targetPath: runtimeSettings.ingest.fileTransfer.targetPath || ""
-      },
-      libraryScan: {
-        libraryPath: runtimeSettings.ingest.libraryScan.libraryPath || ""
+      deliveryMode: runtimeSettings.ingest.deliveryMode || "PATH_MAP",
+      stashLibraryPath: runtimeSettings.ingest.stashLibraryPath || "",
+      transfer: {
+        action: runtimeSettings.ingest.transfer.action || "",
+        mojiSourceRoot: runtimeSettings.ingest.transfer.mojiSourceRoot || "",
+        mojiTargetRoot: runtimeSettings.ingest.transfer.mojiTargetRoot || ""
       }
     });
     setJackettForm({
@@ -198,17 +215,12 @@ export function SettingsPanel({
     event.preventDefault();
     const result = await updateIngestSettings({
       input: {
-        mode: ingestForm.mode.trim(),
-        sharedStorage: {
-          qbittorrentPathPrefix: ingestForm.sharedStorage.qbittorrentPathPrefix.trim(),
-          stashPathPrefix: ingestForm.sharedStorage.stashPathPrefix.trim()
-        },
-        fileTransfer: {
-          action: ingestForm.fileTransfer.action.trim(),
-          targetPath: ingestForm.fileTransfer.targetPath.trim()
-        },
-        libraryScan: {
-          libraryPath: ingestForm.libraryScan.libraryPath.trim()
+        deliveryMode: ingestForm.deliveryMode.trim(),
+        stashLibraryPath: ingestForm.stashLibraryPath.trim(),
+        transfer: {
+          action: ingestForm.transfer.action.trim(),
+          mojiSourceRoot: ingestForm.transfer.mojiSourceRoot.trim(),
+          mojiTargetRoot: ingestForm.transfer.mojiTargetRoot.trim()
         }
       }
     });
@@ -525,7 +537,15 @@ export function SettingsPanel({
   }
 
   if (settingsTab === "入库") {
-    const stashModeGuide = ingestModeGuide(ingestForm.mode);
+    const stashLibraries = runtimeStatus.stashLibraries ?? [];
+    const stashLibrariesLoadError = runtimeStatus.stashLibrariesLoadError ?? null;
+    const deliveryModeInfo = ingestForm.deliveryMode === "PATH_MAP"
+      ? "适用于 qBittorrent 和 Stash 共享同一份底层存储，但容器挂载路径可以不同。Moji 不搬运文件，只会根据任务保存目录和内容路径自动换算出 Stash 侧扫描路径。"
+      : "适用于下载区和媒体库分离的场景。Moji 需要同时访问下载区和媒体库目录，先执行文件交付，再把相对路径换算到所选 Stash 媒体库下触发扫描。";
+    const stashLibraryInfo = "这里选择的是 Stash 已配置的媒体库根路径。无论使用 PATH_MAP 还是 TRANSFER，Moji 最终都会把相对路径拼到这个库路径下，并通知 Stash 扫描。";
+    const transferActionInfo = "COPY 会保留下载区原文件，MOVE 会把文件迁移进媒体库，SYMLINK 会在媒体库里创建指向源文件的符号链接。目标已存在同名文件或链接时会直接失败。";
+    const mojiSourceRootInfo = "填写 Moji 自己能访问到的下载区根目录。源文件必须位于这个目录之下，Moji 会以它为基准保留相对目录层级。";
+    const mojiTargetRootInfo = "填写 Moji 自己能写入的媒体库根目录。Moji 会把源文件相对下载区的层级结构复制、移动或链接到这里，再映射到上面选择的 Stash 媒体库路径。";
 
     return (
       <article className="drawer-card">
@@ -534,97 +554,84 @@ export function SettingsPanel({
         </div>
         <form className="settings-form" onSubmit={(event) => void saveIngestSettings(event)}>
           <label className="settings-field">
-            <span>工作方式</span>
+            <FieldLabel text="入库方式" info={deliveryModeInfo} />
             <select
-              value={ingestForm.mode}
-              onChange={(event) => setIngestForm((current) => ({ ...current, mode: event.target.value }))}
+              value={ingestForm.deliveryMode}
+              onChange={(event) => setIngestForm((current) => ({
+                ...current,
+                deliveryMode: event.target.value
+              }))}
             >
-              <option value="SHARED_STORAGE">共享存储 / 路径映射</option>
-              <option value="FILE_TRANSFER">文件搬运</option>
-              <option value="LIBRARY_SCAN">整库扫描</option>
+              <option value="PATH_MAP">路径映射</option>
+              <option value="TRANSFER">文件交付</option>
             </select>
           </label>
-          <section className={`settings-mode-guide ${stashModeGuide.tone}`}>
-            <div className="settings-mode-guide__head">
-              <strong>{stashModeGuide.title}</strong>
-              <span>{stashModeGuide.summary}</span>
-            </div>
-            <p>{stashModeGuide.caution}</p>
-          </section>
+          <label className="settings-field">
+            <FieldLabel text="目标媒体库" info={stashLibraryInfo} />
+            <select
+              value={ingestForm.stashLibraryPath}
+              onChange={(event) => setIngestForm((current) => ({
+                ...current,
+                stashLibraryPath: event.target.value
+              }))}
+            >
+              <option value="">请选择 Stash 媒体库</option>
+              {stashLibraries.map((library) => (
+                <option key={library.path} value={library.path}>
+                  {library.path}
+                </option>
+              ))}
+            </select>
+          </label>
+          {stashLibrariesLoadError ? (
+            <p className="service-card__error" role="alert">
+              {stashLibrariesLoadError}
+            </p>
+          ) : null}
 
-          {ingestForm.mode === "SHARED_STORAGE" ? (
+          {ingestForm.deliveryMode === "TRANSFER" ? (
             <>
               <label className="settings-field">
-                  <span>qBittorrent 路径前缀</span>
-                <input
-                  value={ingestForm.sharedStorage.qbittorrentPathPrefix}
+                <FieldLabel text="交付动作" info={transferActionInfo} />
+                <select
+                  value={ingestForm.transfer.action}
                   onChange={(event) => setIngestForm((current) => ({
                     ...current,
-                    sharedStorage: { ...current.sharedStorage, qbittorrentPathPrefix: event.target.value }
+                    transfer: { ...current.transfer, action: event.target.value }
+                  }))}
+                >
+                  <option value="COPY">复制</option>
+                  <option value="MOVE">移动</option>
+                  <option value="SYMLINK">符号链接</option>
+                </select>
+              </label>
+              <label className="settings-field">
+                <FieldLabel text="Moji 下载区目录" info={mojiSourceRootInfo} />
+                <input
+                  value={ingestForm.transfer.mojiSourceRoot}
+                  onChange={(event) => setIngestForm((current) => ({
+                    ...current,
+                    transfer: { ...current.transfer, mojiSourceRoot: event.target.value }
                   }))}
                   placeholder="/downloads"
                 />
               </label>
               <label className="settings-field">
-                <span>Stash 路径前缀</span>
+                <FieldLabel text="Moji 媒体库目录" info={mojiTargetRootInfo} />
                 <input
-                  value={ingestForm.sharedStorage.stashPathPrefix}
+                  value={ingestForm.transfer.mojiTargetRoot}
                   onChange={(event) => setIngestForm((current) => ({
                     ...current,
-                    sharedStorage: { ...current.sharedStorage, stashPathPrefix: event.target.value }
+                    transfer: { ...current.transfer, mojiTargetRoot: event.target.value }
                   }))}
-                  placeholder="/library"
+                  placeholder="/mnt/media-library"
                 />
               </label>
             </>
-          ) : null}
-
-          {ingestForm.mode === "FILE_TRANSFER" ? (
-            <>
-              <label className="settings-field">
-                <span>搬运动作</span>
-                <select
-                  value={ingestForm.fileTransfer.action}
-                  onChange={(event) => setIngestForm((current) => ({
-                    ...current,
-                    fileTransfer: { ...current.fileTransfer, action: event.target.value }
-                  }))}
-                >
-                  <option value="">请选择</option>
-                  <option value="COPY">复制</option>
-                  <option value="MOVE">移动</option>
-                </select>
-              </label>
-              <label className="settings-field">
-                <span>搬运目标目录</span>
-                <input
-                  value={ingestForm.fileTransfer.targetPath}
-                  onChange={(event) => setIngestForm((current) => ({
-                    ...current,
-                    fileTransfer: { ...current.fileTransfer, targetPath: event.target.value }
-                  }))}
-                  placeholder="/stash-import"
-                />
-              </label>
-            </>
-          ) : null}
-
-          {ingestForm.mode === "LIBRARY_SCAN" ? (
-            <label className="settings-field">
-              <span>Library Path</span>
-              <input
-                value={ingestForm.libraryScan.libraryPath}
-                onChange={(event) => setIngestForm((current) => ({
-                  ...current,
-                  libraryScan: { ...current.libraryScan, libraryPath: event.target.value }
-                }))}
-                placeholder="/data/library"
-              />
-            </label>
           ) : null}
 
           <div className="settings-actions">
-            <button type="submit" disabled={updatingIngest}>保存入库策略</button>
+            <button type="submit" disabled={updatingIngest}>保存入库设置</button>
           </div>
         </form>
       </article>

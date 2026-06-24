@@ -41,24 +41,15 @@ type AutomationConfig struct {
 }
 
 type IngestConfig struct {
-	Mode          string                    `yaml:"mode"`
-	SharedStorage SharedStorageIngestConfig `yaml:"shared_storage"`
-	FileTransfer  FileTransferIngestConfig  `yaml:"file_transfer"`
-	LibraryScan   LibraryScanIngestConfig   `yaml:"library_scan"`
+	DeliveryMode     string               `yaml:"delivery_mode"`
+	StashLibraryPath string               `yaml:"stash_library_path"`
+	Transfer         TransferIngestConfig `yaml:"transfer"`
 }
 
-type SharedStorageIngestConfig struct {
-	QBittorrentPathPrefix string `yaml:"qbittorrent_path_prefix"`
-	StashPathPrefix       string `yaml:"stash_path_prefix"`
-}
-
-type FileTransferIngestConfig struct {
-	Action     string `yaml:"action"`
-	TargetPath string `yaml:"target_path"`
-}
-
-type LibraryScanIngestConfig struct {
-	LibraryPath string `yaml:"library_path"`
+type TransferIngestConfig struct {
+	Action         string `yaml:"action"`
+	MojiSourceRoot string `yaml:"moji_source_root"`
+	MojiTargetRoot string `yaml:"moji_target_root"`
 }
 
 type SubscriptionConfig struct {

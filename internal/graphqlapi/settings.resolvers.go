@@ -39,17 +39,12 @@ func (r *mutationResolver) UpdateIngestSettings(ctx context.Context, input model
 	}
 
 	snapshot, err := r.SettingsEditor.UpdateIngestSettings(UpdateIngestSettingsInput{
-		Mode: input.Mode,
-		SharedStorage: SharedStorageIngestSettingsSnapshot{
-			QBittorrentPathPrefix: input.SharedStorage.QbittorrentPathPrefix,
-			StashPathPrefix:       input.SharedStorage.StashPathPrefix,
-		},
-		FileTransfer: FileTransferIngestSettingsSnapshot{
-			Action:     input.FileTransfer.Action,
-			TargetPath: input.FileTransfer.TargetPath,
-		},
-		LibraryScan: LibraryScanIngestSettingsSnapshot{
-			LibraryPath: input.LibraryScan.LibraryPath,
+		DeliveryMode:     input.DeliveryMode,
+		StashLibraryPath: input.StashLibraryPath,
+		Transfer: TransferIngestSettingsSnapshot{
+			Action:         input.Transfer.Action,
+			MojiSourceRoot: input.Transfer.MojiSourceRoot,
+			MojiTargetRoot: input.Transfer.MojiTargetRoot,
 		},
 	})
 	if err != nil {
