@@ -1,0 +1,220 @@
+:root {
+  --font-stack: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, "JetBrains Mono", Menlo, Consolas, monospace;
+  font-family: var(--font-stack);
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+}
+
+/* 显式浅色：用户或脚本主动设置 data-theme="light" */
+[data-theme="light"] {
+  color-scheme: light;
+  --bg: #f5f7fa;
+  --bg-2: #eef2f6;
+  --surface: rgba(255, 255, 255, 0.94);
+  --surface-strong: #ffffff;
+  --line: rgba(15, 23, 42, 0.12);
+  --line-strong: rgba(15, 23, 42, 0.2);
+  --text: #162033;
+  --muted: #5f6b7a;
+  --muted-2: #7a8797;
+  --accent: #2563eb;
+  --accent-2: #0f766e;
+  --accent-3: #475569;
+  --shadow: 0 14px 32px rgba(15, 23, 42, 0.08);
+  --shadow-soft: 0 8px 18px rgba(15, 23, 42, 0.05);
+  --button-bg: #e2e8f0;
+  --button-bg-hover: #cbd5e1;
+  --inset-light: rgba(255, 255, 255, 0.8);
+  --inset-dark: rgba(15, 23, 42, 0.06);
+  --scrim: rgba(15, 23, 42, 0.28);
+}
+
+/* 显式深色：用户或脚本主动设置 data-theme="dark" */
+[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #0b1220;
+  --bg-2: #111a2e;
+  --surface: rgba(22, 32, 51, 0.85);
+  --surface-strong: #162033;
+  --line: rgba(148, 163, 184, 0.18);
+  --line-strong: rgba(148, 163, 184, 0.32);
+  --text: #e6ecf5;
+  --muted: #93a1b5;
+  --muted-2: #6b7a90;
+  --accent: #60a5fa;
+  --accent-2: #14b8a6;
+  --accent-3: #94a3b8;
+  --shadow: 0 14px 32px rgba(0, 0, 0, 0.5);
+  --shadow-soft: 0 8px 18px rgba(0, 0, 0, 0.3);
+  --button-bg: #1f2a44;
+  --button-bg-hover: #2a3654;
+  --inset-light: rgba(255, 255, 255, 0.06);
+  --inset-dark: rgba(0, 0, 0, 0.3);
+  --scrim: rgba(0, 0, 0, 0.55);
+}
+
+/* 暗色下覆写：原本硬编码的深前景（#7f1d1d、#0f766e、#a05d18、#3b5f89、
+   #a33d2a、#1f2937）在深底上对比度不足，需要换成亮色。 */
+[data-theme="dark"] .toast-card__label.tone-success,
+[data-theme="dark"] .task-status-pending.tone-info,
+[data-theme="dark"] .status-pill__value--success,
+[data-theme="dark"] .log-line--success,
+[data-theme="dark"] .toast-card__progress--success {
+  color: #5eead4;
+}
+[data-theme="dark"] .toast-card__label.tone-info,
+[data-theme="dark"] .task-status-pending.tone-info span,
+[data-theme="dark"] .status-pill__value--info,
+[data-theme="dark"] .log-line--info,
+[data-theme="dark"] .toast-card__progress--info {
+  color: #93c5fd;
+}
+[data-theme="dark"] .toast-card__label.tone-warn,
+[data-theme="dark"] .task-status-pending.tone-warn span,
+[data-theme="dark"] .status-pill__value--warn,
+[data-theme="dark"] .log-line--warn,
+[data-theme="dark"] .toast-card__progress--warn {
+  color: #fdba74;
+}
+[data-theme="dark"] .toast-card__label.tone-danger,
+[data-theme="dark"] .task-status-error span,
+[data-theme="dark"] .status-pill__value--danger,
+[data-theme="dark"] .log-line--danger,
+[data-theme="dark"] .toast-card__progress--danger,
+[data-theme="dark"] .task-status-error.tone-danger,
+[data-theme="dark"] .task-status-error.tone-warn,
+[data-theme="dark"] .inline-error,
+[data-theme="dark"] .task-error {
+  color: #fca5a5;
+}
+[data-theme="dark"] .log-line {
+  color: #cbd5e1;
+}
+/* 自动模式下系统暗色：同样需要把上述前景色变亮。 */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .toast-card__label.tone-success,
+  :root:not([data-theme="light"]) .status-pill__value--success,
+  :root:not([data-theme="light"]) .log-line--success,
+  :root:not([data-theme="light"]) .toast-card__progress--success {
+    color: #5eead4;
+  }
+  :root:not([data-theme="light"]) .toast-card__label.tone-info,
+  :root:not([data-theme="light"]) .task-status-pending.tone-info span,
+  :root:not([data-theme="light"]) .status-pill__value--info,
+  :root:not([data-theme="light"]) .log-line--info,
+  :root:not([data-theme="light"]) .toast-card__progress--info {
+    color: #93c5fd;
+  }
+  :root:not([data-theme="light"]) .toast-card__label.tone-warn,
+  :root:not([data-theme="light"]) .task-status-pending.tone-warn span,
+  :root:not([data-theme="light"]) .status-pill__value--warn,
+  :root:not([data-theme="light"]) .log-line--warn,
+  :root:not([data-theme="light"]) .toast-card__progress--warn {
+    color: #fdba74;
+  }
+  :root:not([data-theme="light"]) .toast-card__label.tone-danger,
+  :root:not([data-theme="light"]) .task-status-error span,
+  :root:not([data-theme="light"]) .status-pill__value--danger,
+  :root:not([data-theme="light"]) .log-line--danger,
+  :root:not([data-theme="light"]) .toast-card__progress--danger,
+  :root:not([data-theme="light"]) .task-status-error.tone-danger,
+  :root:not([data-theme="light"]) .task-status-error.tone-warn,
+  :root:not([data-theme="light"]) .inline-error,
+  :root:not([data-theme="light"]) .task-error {
+    color: #fca5a5;
+  }
+  :root:not([data-theme="light"]) .log-line {
+    color: #cbd5e1;
+  }
+}
+
+/* 自动模式：未显式设置 data-theme 时跟随系统偏好。
+   显式 data-theme="light" 通过 :not 选择器排除，避免系统暗色时覆盖用户选择。 */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --bg: #0b1220;
+    --bg-2: #111a2e;
+    --surface: rgba(22, 32, 51, 0.85);
+    --surface-strong: #162033;
+    --line: rgba(148, 163, 184, 0.18);
+    --line-strong: rgba(148, 163, 184, 0.32);
+    --text: #e6ecf5;
+    --muted: #93a1b5;
+    --muted-2: #6b7a90;
+    --accent: #60a5fa;
+    --accent-2: #14b8a6;
+    --accent-3: #94a3b8;
+    --shadow: 0 14px 32px rgba(0, 0, 0, 0.5);
+    --shadow-soft: 0 8px 18px rgba(0, 0, 0, 0.3);
+    --button-bg: #1f2a44;
+    --button-bg-hover: #2a3654;
+    --inset-light: rgba(255, 255, 255, 0.06);
+    --inset-dark: rgba(0, 0, 0, 0.3);
+  }
+}
+
+/* 兜底：浏览器既无 data-theme 又不支持媒体查询的极端情况下，
+   给一个浅色默认，使变量不会成为 undefined。 */
+:root:not([data-theme]) {
+  color-scheme: light;
+  --bg: #f5f7fa;
+  --bg-2: #eef2f6;
+  --surface: rgba(255, 255, 255, 0.94);
+  --surface-strong: #ffffff;
+  --line: rgba(15, 23, 42, 0.12);
+  --line-strong: rgba(15, 23, 42, 0.2);
+  --text: #162033;
+  --muted: #5f6b7a;
+  --muted-2: #7a8797;
+  --accent: #2563eb;
+  --accent-2: #0f766e;
+  --accent-3: #475569;
+  --shadow: 0 14px 32px rgba(15, 23, 42, 0.08);
+  --shadow-soft: 0 8px 18px rgba(15, 23, 42, 0.05);
+  --button-bg: #e2e8f0;
+  --button-bg-hover: #cbd5e1;
+  --inset-light: rgba(255, 255, 255, 0.8);
+  --inset-dark: rgba(15, 23, 42, 0.06);
+  --scrim: rgba(15, 23, 42, 0.28);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  min-width: 320px;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  color: var(--text);
+  background: linear-gradient(180deg, var(--bg) 0%, var(--bg-2) 100%);
+}
+
+button,
+input,
+select {
+  font: inherit;
+}
+
+a {
+  color: inherit;
+}
+
+button,
+input,
+select {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  transition:
+    transform 160ms ease,
+    border-color 160ms ease,
+    background-color 160ms ease,
+    box-shadow 160ms ease,
+    color 160ms ease;
+}
+

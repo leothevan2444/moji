@@ -1,0 +1,40 @@
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+.task-card:focus-visible {
+  outline: 2px solid rgba(37, 99, 235, 0.45);
+  outline-offset: 2px;
+}
+
+button {
+  min-height: 38px;
+  padding: 0 14px;
+  background: var(--button-bg);
+  color: var(--text);
+  cursor: pointer;
+  box-shadow: none;
+}
+
+button:hover {
+  transform: translateY(-1px);
+}
+
+button:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+  transform: none;
+}
+
+input,
+select {
+  min-height: 38px;
+  min-width: 0;
+  padding: 0 12px;
+  background: var(--surface);
+  color: var(--text);
+}
+
+input::placeholder {
+  color: var(--muted-2);
+}
+
