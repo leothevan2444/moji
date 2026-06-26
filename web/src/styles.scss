@@ -1,11 +1,19 @@
+// Sass entry stylesheet. Order matters:
+// 1. `@use` the SCSS partials first (each is self-contained: tokens, mixins,
+//    placeholders are loaded internally with `as *`, so this root file does
+//    not need to forward them).
+// 2. `@import` the plain `theme.css` last — Sass does not support `@use` for
+//    CSS files, so this is the only legacy import left.
+
+@use "./styles/base.scss";
+@use "./styles/shell.scss";
+@use "./styles/tasks.scss";
+@use "./styles/settings.scss";
+@use "./styles/responsive.scss";
+@use "./styles/feature-panels.scss";
+@use "./styles/segmented-tab.scss";
+@use "./styles/skeleton.scss";
+@use "./styles/filter-panel.scss";
+@use "./styles/discovery-toolbar.scss";
+
 @import "./styles/theme.css";
-@import "./styles/base.scss";
-@import "./styles/shell.scss";
-@import "./styles/tasks.scss";
-@import "./styles/settings.scss";
-@import "./styles/responsive.scss";
-@import "./styles/feature-panels.scss";
-@import "./styles/segmented-tab.scss";
-@import "./styles/skeleton.scss";
-@import "./styles/filter-panel.scss";
-@import "./styles/discovery-toolbar.scss";
