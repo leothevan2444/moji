@@ -57,7 +57,6 @@ export function HomePage({
       <section className="section-band section-band--hero">
         <div className="band-head">
           <div>
-            <p className="section-kicker">依赖状态</p>
             <h2>外部服务</h2>
           </div>
         </div>
@@ -169,8 +168,7 @@ export function HomePage({
       <section className="section-band">
         <div className="band-head">
           <div>
-            <p className="section-kicker">入库策略</p>
-            <h2>入库</h2>
+            <h2>入库策略</h2>
           </div>
         </div>
         <IngestCard
@@ -183,8 +181,7 @@ export function HomePage({
       <section className="section-band">
         <div className="band-head">
           <div>
-            <p className="section-kicker">待办</p>
-            <h2>需要人工确认的任务</h2>
+            <h2>待办任务</h2>
           </div>
           <p className="band-note">失败项、待扫描项和长时间停滞项都放在这里。</p>
         </div>

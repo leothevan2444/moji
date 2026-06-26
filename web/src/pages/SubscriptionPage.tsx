@@ -127,7 +127,6 @@ export function SubscriptionPage({
       <section className="section-band">
         <div className="band-head">
           <div>
-            <p className="section-kicker">演员</p>
             <h2>演员详情</h2>
           </div>
           <button type="button" className="ghost-button" onClick={onBackToList}>
@@ -344,8 +343,7 @@ export function SubscriptionPage({
     <section className="section-band">
       <div className="band-head">
         <div>
-          <p className="section-kicker">演员</p>
-          <h2>演员更新</h2>
+          <h2>演员列表</h2>
         </div>
       </div>
 

@@ -460,14 +460,6 @@ function App() {
   };
 
   // ── Drawer metadata ─────────────────────────────────────────────────
-  const drawerKicker = (() => {
-    if (visibleDrawer === "stats") return "统计";
-    if (visibleDrawer === "settings") return "设置";
-    if (visibleDrawer === "help") return "帮助";
-    if (visibleDrawer === "discovery") return discoveryMode === "stashbox" ? "搜索结果" : "备用搜索";
-    return "任务详情";
-  })();
-
   const drawerTitle = (() => {
     if (visibleDrawer === "stats") return "运行概览";
     if (visibleDrawer === "settings") return "配置与系统";
@@ -489,7 +481,6 @@ function App() {
       {error ? (
         <section className="surface surface--alert">
           <div>
-            <p className="section-kicker">运行异常</p>
             <h2>{data ? "GraphQL 返回错误" : "GraphQL 当前不可用"}</h2>
             <p>{describeQueryError(error)}</p>
           </div>
@@ -626,7 +617,6 @@ function App() {
         <Drawer
           visibleDrawer={visibleDrawer}
           closing={drawerClosing}
-          kicker={drawerKicker}
           title={drawerTitle}
           onClose={() => setDrawer(null)}
         >

@@ -108,7 +108,6 @@ export function TasksPage({
     <section className="section-band">
       <div className="band-head">
         <div>
-          <p className="section-kicker">任务</p>
           <h2>工作台</h2>
         </div>
         <p className="band-note">

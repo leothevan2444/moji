@@ -60,7 +60,6 @@ export function DiscoveryPage({
       <section className="section-band">
         <div className="band-head">
           <div>
-            <p className="section-kicker">发现</p>
             <h2>搜索</h2>
           </div>
           <p className="band-note">先查首选 StashBox 元数据，再送入 Moji 任务闭环。</p>
@@ -126,7 +125,6 @@ export function DiscoveryPage({
       <section className="section-band section-band--preview">
         <div className="band-head">
           <div>
-            <p className="section-kicker">推荐</p>
             <h2>推荐系统占位区</h2>
           </div>
           <p className="band-note">后续可接入推荐、通知和批量操作。</p>
