@@ -4,6 +4,9 @@ extend type Query {
 
   "Search torrents via Jackett as a fallback-only power-user tool"
   jackettSearch(input: JackettSearchInput!): [JackettSearchResult!]!
+
+  "List the indexers Jackett currently exposes. Returns [] when Jackett is not configured."
+  jackettIndexers: [JackettIndexer!]!
 }
 
 extend type Mutation {
@@ -11,9 +14,25 @@ extend type Mutation {
   queueDiscoveredScene(input: QueueDiscoveredSceneInput!): Task!
 }
 
+enum DiscoverSortBy {
+  RELEVANCE
+  DATE_DESC
+  DATE_ASC
+  DURATION_DESC
+  TITLE_ASC
+}
+
 input DiscoverScenesInput {
   query: String!
-  limit: Int = 24
+  limit: Int = 50
+  sortBy: DiscoverSortBy = RELEVANCE
+}
+
+type JackettIndexer {
+  id: String!
+  name: String!
+  "Mirrors Jackett's Configured flag — indexers not yet configured are hidden by Jackett's UI."
+  enabled: Boolean!
 }
 
 type DiscoverSceneConnection {
@@ -44,11 +63,19 @@ input QueueDiscoveredSceneInput {
   stashBoxEndpoint: String!
 }
 
+enum JackettSortBy {
+  RELEVANCE
+  SEEDERS_DESC
+  SIZE_DESC
+  DATE_DESC
+}
+
 input JackettSearchInput {
   query: String!
   trackers: [String!]
   categories: [Int!]
   limit: Int
+  sortBy: JackettSortBy = RELEVANCE
 }
 
 type JackettSearchResult {

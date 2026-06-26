@@ -47,6 +47,25 @@ export function formatRelativeDate(value?: string | null) {
   }).format(date);
 }
 
+/**
+ * 把 Jackett/Tracker 返回的 publishDate 规范成 yyyy-mm-dd。Tracker 返回的
+ * 日期格式各异（ISO、带时间、本地化字符串等），这里统一抽取前 10 位作为
+ * 日期。空字符串返回 "—" 让调用方有占位渲染。
+ */
+export function formatPublishDate(value?: string | null) {
+  if (!value) return "—";
+  // 优先尝试 Date 解析，对 ISO 时间戳和本地化字符串都更稳。
+  const parsed = new Date(value);
+  if (!Number.isNaN(parsed.getTime())) {
+    const year = parsed.getFullYear();
+    const month = String(parsed.getMonth() + 1).padStart(2, "0");
+    const day = String(parsed.getDate()).padStart(2, "0");
+    return `${year}-${month}-${day}`;
+  }
+  // 解析失败时回退到字符串前 10 位（如 "2025-01-08 12:34" → "2025-01-08"）。
+  return value.slice(0, 10);
+}
+
 export function formatDurationSeconds(value?: number | null) {
   if (!value || value <= 0) return "";
   const total = Math.floor(value);

@@ -1,6 +1,7 @@
 package graphqlapi
 
 import (
+	"sort"
 	"time"
 
 	"github.com/leothevan2444/moji/internal/downloader"
@@ -23,6 +24,47 @@ func jackettSearchResultToModel(result jackett.SearchResult) *model.JackettSearc
 		Details:      result.Details,
 		Link:         result.Link,
 		MagnetURI:    result.MagnetURI,
+	}
+}
+
+func jackettIndexerToModel(indexer jackett.Indexer) *model.JackettIndexer {
+	return &model.JackettIndexer{
+		ID:      indexer.ID,
+		Name:    indexer.Name,
+		Enabled: indexer.Configured,
+	}
+}
+
+// sortJackettResults sorts in place. RELEVANCE preserves Jackett's native order.
+func sortJackettResults(results []*model.JackettSearchResult, sortBy *model.JackettSortBy) {
+	if sortBy == nil {
+		return
+	}
+	switch *sortBy {
+	case model.JackettSortByRelevance:
+		return
+	case model.JackettSortBySeedersDesc:
+		sort.SliceStable(results, func(i, j int) bool {
+			return results[i].Seeders > results[j].Seeders
+		})
+	case model.JackettSortBySizeDesc:
+		sort.SliceStable(results, func(i, j int) bool {
+			return results[i].Size > results[j].Size
+		})
+	case model.JackettSortByDateDesc:
+		sort.SliceStable(results, func(i, j int) bool {
+			a, b := results[i].PublishDate, results[j].PublishDate
+			if a == b {
+				return false
+			}
+			if a == "" {
+				return false
+			}
+			if b == "" {
+				return true
+			}
+			return a > b
+		})
 	}
 }
 

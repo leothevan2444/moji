@@ -338,8 +338,21 @@
   gap: 8px;
 }
 
-.candidate-card--discovery {
+.candidate-card--stashbox {
   --candidate-card-height: 196px;
+  --candidate-card-padding: 16px;
+  --candidate-poster-height: calc(var(--candidate-card-height) - var(--candidate-card-padding) * 2);
+  --candidate-poster-width: calc(var(--candidate-poster-height) * 25 / 19);
+  flex-direction: row;
+  align-items: stretch;
+  height: var(--candidate-card-height);
+  padding: var(--candidate-card-padding);
+  gap: 14px;
+  overflow: hidden;
+}
+
+.candidate-card--jackett {
+  --candidate-card-height: 132px;
   --candidate-card-padding: 16px;
   --candidate-poster-height: calc(var(--candidate-card-height) - var(--candidate-card-padding) * 2);
   --candidate-poster-width: calc(var(--candidate-poster-height) * 25 / 19);
@@ -384,33 +397,64 @@
   flex-direction: column;
   justify-content: space-between;
   gap: 10px;
+  position: relative
 }
 
 .candidate-card__title-row {
   display: flex;
   align-items: flex-start;
-  justify-content: space-between;
   gap: 10px;
 }
 
 .candidate-card__title-row h3 {
   flex: 1 1 auto;
   min-width: 0;
+  /* 标题作为 inline 容器：文字与 chip 共享文本流，chip 跟随末尾换行 */
+  font-size: inherit;
+  line-height: inherit;
+}
+
+.candidate-card__title-text {
+  display: inline;
+}
+
+/* 时长 chip：float 让它漂到标题段末，标题换行时 chip 跟到最后一行尾部 */
+.candidate-card__title-row .candidate-card__meta-chip {
+  float: right;
+  margin: 0 0 4px 8px;
+  vertical-align: baseline;
+}
+
+/* 来源 chip 仍在右侧上方 */
+.candidate-card__title-row > .status-chip {
+  flex: 0 0 auto;
 }
 
 .candidate-card__meta-chip {
   flex: 0 0 auto;
   display: inline-flex;
   align-items: center;
-  min-height: 24px;
-  padding: 0 8px;
-  border-radius: 999px;
-  border: 1px solid rgba(100, 116, 139, 0.16);
-  background: rgba(148, 163, 184, 0.12);
+  min-height: 26px;
+  padding: 0 7px;
   color: var(--muted-2);
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 700;
   white-space: nowrap;
+  line-height: 1;
+}
+
+.candidate-card__foot > span {
+  align-self: flex-end;
+  color: var(--muted-2);
+  font-size: 16px;
+  font-variant-numeric: tabular-nums;
+}
+
+.candidate-card__foot {
+  position: absolute;
+  left: 0px;
+  right: 0px;
+  bottom: 0px;
 }
 
 .candidate-card__foot a {
@@ -420,6 +464,53 @@
 
 .candidate-card__foot a:hover {
   text-decoration: underline;
+}
+
+/* 元数据三行（番号 / 片商 / 演员）：每行独立、单行截断、绝不溢出卡片边界。 */
+.candidate-card__meta {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
+}
+
+.candidate-card__meta-line {
+  font-size: 16px;
+  line-height: 1.4;
+  color: var(--muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+}
+
+/* Icon-only 链接按钮：用于卡片底部的"原始链接 / 磁力链接"等动作。 */
+.icon-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--surface);
+  color: var(--accent-3);
+  text-decoration: none;
+  transition: background-color 0.16s ease, border-color 0.16s ease, color 0.16s ease;
+}
+
+.icon-button:hover {
+  background: rgba(37, 99, 235, 0.10);
+  border-color: rgba(37, 99, 235, 0.36);
+  color: var(--accent);
+  text-decoration: none;
+}
+
+.icon-button svg {
+  width: 14px;
+  height: 14px;
 }
 
 .status-chip {

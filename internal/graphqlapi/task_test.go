@@ -961,7 +961,7 @@ func (f *fakeSubscriptionService) ListStashPerformers(_ context.Context, _ strin
 	return f.performers, nil
 }
 
-func (f *fakeSubscriptionService) SearchPreferredStashBoxScenes(context.Context, string, int) (subscription.DiscoverScenePage, error) {
+func (f *fakeSubscriptionService) SearchPreferredStashBoxScenes(context.Context, string, int, subscription.DiscoverSort) (subscription.DiscoverScenePage, error) {
 	return f.discovered, nil
 }
 

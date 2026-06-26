@@ -916,7 +916,7 @@ func TestSearchPreferredStashBoxScenesFallsBackByConfiguredOrder(t *testing.T) {
 	}
 	service.endpointOrder = []string{normalizeStashBoxEndpoint(firstEndpoint), normalizeStashBoxEndpoint(secondEndpoint)}
 
-	page, err := service.SearchPreferredStashBoxScenes(context.Background(), "ABCD", 24)
+	page, err := service.SearchPreferredStashBoxScenes(context.Background(), "ABCD", 24, DiscoverSortRelevance)
 	if err != nil {
 		t.Fatalf("SearchPreferredStashBoxScenes failed: %v", err)
 	}

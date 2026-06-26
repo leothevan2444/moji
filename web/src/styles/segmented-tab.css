@@ -1,0 +1,69 @@
+/* SegmentedTab — 单选分段控件，用于在少量互斥选项之间切换（如搜索模式）。
+   与 .nav-tab 共享视觉 token：激活态蓝渐变，未激活态 surface 背景。
+   sm 变体刻意弱化（无外框背景），让 input 保留视觉中心地位。 */
+
+.segmented-tab {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface);
+  gap: 0;
+}
+
+.segmented-tab[data-size="sm"] {
+  padding: 0;
+  border: none;
+  background: transparent;
+  gap: 2px;
+}
+
+.segmented-tab__btn {
+  appearance: none;
+  border: none;
+  background: transparent;
+  color: var(--muted);
+  font-weight: 600;
+  font-size: 13px;
+  padding: 0 14px;
+  height: 30px;
+  border-radius: 9px;
+  cursor: pointer;
+  transition: background-color 0.16s ease, color 0.16s ease;
+  white-space: nowrap;
+}
+
+.segmented-tab__btn:hover {
+  color: var(--text);
+}
+
+.segmented-tab__btn.is-active {
+  background: linear-gradient(180deg, rgba(37, 99, 235, 0.18), rgba(37, 99, 235, 0.06));
+  color: var(--accent);
+  box-shadow: inset 0 0 0 1px rgba(37, 99, 235, 0.28);
+}
+
+.segmented-tab[data-size="sm"] .segmented-tab__btn {
+  height: 32px;
+  padding: 0 12px;
+  font-size: 12px;
+  border-radius: 8px;
+  color: var(--muted-2);
+  font-weight: 600;
+}
+
+.segmented-tab[data-size="sm"] .segmented-tab__btn.is-active {
+  color: var(--accent);
+}
+
+.segmented-tab[data-size="md"] .segmented-tab__btn {
+  height: 34px;
+  padding: 0 14px;
+  font-size: 13px;
+}
+
+[data-theme="dark"] .segmented-tab__btn.is-active {
+  background: linear-gradient(180deg, rgba(96, 165, 250, 0.22), rgba(96, 165, 250, 0.08));
+  box-shadow: inset 0 0 0 1px rgba(96, 165, 250, 0.32);
+}

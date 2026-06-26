@@ -85,6 +85,17 @@ func (s *JackettService) Client() *jackett.Client {
 	return s.currentClient()
 }
 
+// ListIndexers surfaces the configured Jackett indexers for the GraphQL
+// resolver. Returns an empty slice when Jackett is not configured so the
+// frontend can render an "未连接" hint instead of an error.
+func (s *JackettService) ListIndexers() ([]jackett.Indexer, error) {
+	client := s.currentClient()
+	if client == nil {
+		return []jackett.Indexer{}, nil
+	}
+	return client.GetIndexers()
+}
+
 func (s *JackettService) Search(query string, options ...SearchOption) ([]jackett.SearchResult, error) {
 	opts := &SearchOptions{}
 	for _, opt := range options {

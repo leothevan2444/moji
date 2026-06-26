@@ -5,3 +5,7 @@
 @import "./styles/settings.css";
 @import "./styles/responsive.css";
 @import "./styles/feature-panels.css";
+@import "./styles/segmented-tab.css";
+@import "./styles/skeleton.css";
+@import "./styles/filter-panel.css";
+@import "./styles/discovery-toolbar.css";

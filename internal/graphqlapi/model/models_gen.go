@@ -38,8 +38,9 @@ type DiscoverSceneConnection struct {
 }
 
 type DiscoverScenesInput struct {
-	Query string `json:"query"`
-	Limit *int   `json:"limit,omitempty"`
+	Query  string          `json:"query"`
+	Limit  *int            `json:"limit,omitempty"`
+	SortBy *DiscoverSortBy `json:"sortBy,omitempty"`
 }
 
 type DiscoveredScene struct {
@@ -97,11 +98,19 @@ type IngestStatus struct {
 	Configured bool `json:"configured"`
 }
 
+type JackettIndexer struct {
+	ID   string `json:"id"`
+	Name string `json:"name"`
+	// Mirrors Jackett's Configured flag — indexers not yet configured are hidden by Jackett's UI.
+	Enabled bool `json:"enabled"`
+}
+
 type JackettSearchInput struct {
-	Query      string   `json:"query"`
-	Trackers   []string `json:"trackers,omitempty"`
-	Categories []int    `json:"categories,omitempty"`
-	Limit      *int     `json:"limit,omitempty"`
+	Query      string         `json:"query"`
+	Trackers   []string       `json:"trackers,omitempty"`
+	Categories []int          `json:"categories,omitempty"`
+	Limit      *int           `json:"limit,omitempty"`
+	SortBy     *JackettSortBy `json:"sortBy,omitempty"`
 }
 
 type JackettSearchResult struct {
@@ -509,6 +518,126 @@ type UpdateStashSettingsInput struct {
 type UpdateSubscriptionSettingsInput struct {
 	// See SubscriptionSettings.stashBoxEndpoints.
 	StashBoxEndpoints []string `json:"stashBoxEndpoints"`
+}
+
+type DiscoverSortBy string
+
+const (
+	DiscoverSortByRelevance    DiscoverSortBy = "RELEVANCE"
+	DiscoverSortByDateDesc     DiscoverSortBy = "DATE_DESC"
+	DiscoverSortByDateAsc      DiscoverSortBy = "DATE_ASC"
+	DiscoverSortByDurationDesc DiscoverSortBy = "DURATION_DESC"
+	DiscoverSortByTitleAsc     DiscoverSortBy = "TITLE_ASC"
+)
+
+var AllDiscoverSortBy = []DiscoverSortBy{
+	DiscoverSortByRelevance,
+	DiscoverSortByDateDesc,
+	DiscoverSortByDateAsc,
+	DiscoverSortByDurationDesc,
+	DiscoverSortByTitleAsc,
+}
+
+func (e DiscoverSortBy) IsValid() bool {
+	switch e {
+	case DiscoverSortByRelevance, DiscoverSortByDateDesc, DiscoverSortByDateAsc, DiscoverSortByDurationDesc, DiscoverSortByTitleAsc:
+		return true
+	}
+	return false
+}
+
+func (e DiscoverSortBy) String() string {
+	return string(e)
+}
+
+func (e *DiscoverSortBy) UnmarshalGQL(v any) error {
+	str, ok := v.(string)
+	if !ok {
+		return fmt.Errorf("enums must be strings")
+	}
+
+	*e = DiscoverSortBy(str)
+	if !e.IsValid() {
+		return fmt.Errorf("%s is not a valid DiscoverSortBy", str)
+	}
+	return nil
+}
+
+func (e DiscoverSortBy) MarshalGQL(w io.Writer) {
+	fmt.Fprint(w, strconv.Quote(e.String()))
+}
+
+func (e *DiscoverSortBy) UnmarshalJSON(b []byte) error {
+	s, err := strconv.Unquote(string(b))
+	if err != nil {
+		return err
+	}
+	return e.UnmarshalGQL(s)
+}
+
+func (e DiscoverSortBy) MarshalJSON() ([]byte, error) {
+	var buf bytes.Buffer
+	e.MarshalGQL(&buf)
+	return buf.Bytes(), nil
+}
+
+type JackettSortBy string
+
+const (
+	JackettSortByRelevance   JackettSortBy = "RELEVANCE"
+	JackettSortBySeedersDesc JackettSortBy = "SEEDERS_DESC"
+	JackettSortBySizeDesc    JackettSortBy = "SIZE_DESC"
+	JackettSortByDateDesc    JackettSortBy = "DATE_DESC"
+)
+
+var AllJackettSortBy = []JackettSortBy{
+	JackettSortByRelevance,
+	JackettSortBySeedersDesc,
+	JackettSortBySizeDesc,
+	JackettSortByDateDesc,
+}
+
+func (e JackettSortBy) IsValid() bool {
+	switch e {
+	case JackettSortByRelevance, JackettSortBySeedersDesc, JackettSortBySizeDesc, JackettSortByDateDesc:
+		return true
+	}
+	return false
+}
+
+func (e JackettSortBy) String() string {
+	return string(e)
+}
+
+func (e *JackettSortBy) UnmarshalGQL(v any) error {
+	str, ok := v.(string)
+	if !ok {
+		return fmt.Errorf("enums must be strings")
+	}
+
+	*e = JackettSortBy(str)
+	if !e.IsValid() {
+		return fmt.Errorf("%s is not a valid JackettSortBy", str)
+	}
+	return nil
+}
+
+func (e JackettSortBy) MarshalGQL(w io.Writer) {
+	fmt.Fprint(w, strconv.Quote(e.String()))
+}
+
+func (e *JackettSortBy) UnmarshalJSON(b []byte) error {
+	s, err := strconv.Unquote(string(b))
+	if err != nil {
+		return err
+	}
+	return e.UnmarshalGQL(s)
+}
+
+func (e JackettSortBy) MarshalJSON() ([]byte, error) {
+	var buf bytes.Buffer
+	e.MarshalGQL(&buf)
+	return buf.Bytes(), nil
 }
 
 type LibraryFilter string

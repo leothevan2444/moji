@@ -116,6 +116,12 @@ type ComplexityRoot struct {
 		Configured func(childComplexity int) int
 	}
 
+	JackettIndexer struct {
+		Enabled func(childComplexity int) int
+		ID      func(childComplexity int) int
+		Name    func(childComplexity int) int
+	}
+
 	JackettSearchResult struct {
 		CategoryDesc func(childComplexity int) int
 		Details      func(childComplexity int) int
@@ -224,6 +230,7 @@ type ComplexityRoot struct {
 		DashboardStats       func(childComplexity int) int
 		DiscoverScenes       func(childComplexity int, input model.DiscoverScenesInput) int
 		Health               func(childComplexity int) int
+		JackettIndexers      func(childComplexity int) int
 		JackettSearch        func(childComplexity int, input model.JackettSearchInput) int
 		Logs                 func(childComplexity int, limit *int, minLevel *model.LogLevel) int
 		QbittorrentTorrents  func(childComplexity int, limit *int) int
@@ -477,6 +484,7 @@ type QueryResolver interface {
 	Logs(ctx context.Context, limit *int, minLevel *model.LogLevel) ([]*model.LogEntry, error)
 	DiscoverScenes(ctx context.Context, input model.DiscoverScenesInput) (*model.DiscoverSceneConnection, error)
 	JackettSearch(ctx context.Context, input model.JackettSearchInput) ([]*model.JackettSearchResult, error)
+	JackettIndexers(ctx context.Context) ([]*model.JackettIndexer, error)
 	Settings(ctx context.Context) (*model.Settings, error)
 	SettingsStatus(ctx context.Context) (*model.SettingsStatus, error)
 	StashJob(ctx context.Context, id string) (*model.StashJob, error)
@@ -809,6 +817,27 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.IngestStatus.Configured(childComplexity), true
+
+	case "JackettIndexer.enabled":
+		if e.complexity.JackettIndexer.Enabled == nil {
+			break
+		}
+
+		return e.complexity.JackettIndexer.Enabled(childComplexity), true
+
+	case "JackettIndexer.id":
+		if e.complexity.JackettIndexer.ID == nil {
+			break
+		}
+
+		return e.complexity.JackettIndexer.ID(childComplexity), true
+
+	case "JackettIndexer.name":
+		if e.complexity.JackettIndexer.Name == nil {
+			break
+		}
+
+		return e.complexity.JackettIndexer.Name(childComplexity), true
 
 	case "JackettSearchResult.categoryDesc":
 		if e.complexity.JackettSearchResult.CategoryDesc == nil {
@@ -1449,6 +1478,13 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.Query.Health(childComplexity), true
+
+	case "Query.jackettIndexers":
+		if e.complexity.Query.JackettIndexers == nil {
+			break
+		}
+
+		return e.complexity.Query.JackettIndexers(childComplexity), true
 
 	case "Query.jackettSearch":
 		if e.complexity.Query.JackettSearch == nil {
@@ -2792,6 +2828,9 @@ type LogEntry {
 
   "Search torrents via Jackett as a fallback-only power-user tool"
   jackettSearch(input: JackettSearchInput!): [JackettSearchResult!]!
+
+  "List the indexers Jackett currently exposes. Returns [] when Jackett is not configured."
+  jackettIndexers: [JackettIndexer!]!
 }
 
 extend type Mutation {
@@ -2799,9 +2838,25 @@ extend type Mutation {
   queueDiscoveredScene(input: QueueDiscoveredSceneInput!): Task!
 }
 
+enum DiscoverSortBy {
+  RELEVANCE
+  DATE_DESC
+  DATE_ASC
+  DURATION_DESC
+  TITLE_ASC
+}
+
 input DiscoverScenesInput {
   query: String!
-  limit: Int = 24
+  limit: Int = 50
+  sortBy: DiscoverSortBy = RELEVANCE
+}
+
+type JackettIndexer {
+  id: String!
+  name: String!
+  "Mirrors Jackett's Configured flag — indexers not yet configured are hidden by Jackett's UI."
+  enabled: Boolean!
 }
 
 type DiscoverSceneConnection {
@@ -2832,11 +2887,19 @@ input QueueDiscoveredSceneInput {
   stashBoxEndpoint: String!
 }
 
+enum JackettSortBy {
+  RELEVANCE
+  SEEDERS_DESC
+  SIZE_DESC
+  DATE_DESC
+}
+
 input JackettSearchInput {
   query: String!
   trackers: [String!]
   categories: [Int!]
   limit: Int
+  sortBy: JackettSortBy = RELEVANCE
 }
 
 type JackettSearchResult {
@@ -6257,6 +6320,138 @@ func (ec *executionContext) _IngestStatus_configured(ctx context.Context, field 
 func (ec *executionContext) fieldContext_IngestStatus_configured(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "IngestStatus",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _JackettIndexer_id(ctx context.Context, field graphql.CollectedField, obj *model.JackettIndexer) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_JackettIndexer_id(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.ID, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_JackettIndexer_id(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "JackettIndexer",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _JackettIndexer_name(ctx context.Context, field graphql.CollectedField, obj *model.JackettIndexer) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_JackettIndexer_name(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Name, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_JackettIndexer_name(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "JackettIndexer",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _JackettIndexer_enabled(ctx context.Context, field graphql.CollectedField, obj *model.JackettIndexer) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_JackettIndexer_enabled(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Enabled, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(bool)
+	fc.Result = res
+	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_JackettIndexer_enabled(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "JackettIndexer",
 		Field:      field,
 		IsMethod:   false,
 		IsResolver: false,
@@ -10611,6 +10806,58 @@ func (ec *executionContext) fieldContext_Query_jackettSearch(ctx context.Context
 	if fc.Args, err = ec.field_Query_jackettSearch_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Query_jackettIndexers(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Query_jackettIndexers(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Query().JackettIndexers(rctx)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]*model.JackettIndexer)
+	fc.Result = res
+	return ec.marshalNJackettIndexer2ᚕᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐJackettIndexerᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Query_jackettIndexers(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_JackettIndexer_id(ctx, field)
+			case "name":
+				return ec.fieldContext_JackettIndexer_name(ctx, field)
+			case "enabled":
+				return ec.fieldContext_JackettIndexer_enabled(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type JackettIndexer", field.Name)
+		},
 	}
 	return fc, nil
 }
@@ -20336,10 +20583,13 @@ func (ec *executionContext) unmarshalInputDiscoverScenesInput(ctx context.Contex
 	}
 
 	if _, present := asMap["limit"]; !present {
-		asMap["limit"] = 24
+		asMap["limit"] = 50
+	}
+	if _, present := asMap["sortBy"]; !present {
+		asMap["sortBy"] = "RELEVANCE"
 	}
 
-	fieldsInOrder := [...]string{"query", "limit"}
+	fieldsInOrder := [...]string{"query", "limit", "sortBy"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -20360,6 +20610,13 @@ func (ec *executionContext) unmarshalInputDiscoverScenesInput(ctx context.Contex
 				return it, err
 			}
 			it.Limit = data
+		case "sortBy":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("sortBy"))
+			data, err := ec.unmarshalODiscoverSortBy2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐDiscoverSortBy(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.SortBy = data
 		}
 	}
 
@@ -20449,7 +20706,11 @@ func (ec *executionContext) unmarshalInputJackettSearchInput(ctx context.Context
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"query", "trackers", "categories", "limit"}
+	if _, present := asMap["sortBy"]; !present {
+		asMap["sortBy"] = "RELEVANCE"
+	}
+
+	fieldsInOrder := [...]string{"query", "trackers", "categories", "limit", "sortBy"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -20484,6 +20745,13 @@ func (ec *executionContext) unmarshalInputJackettSearchInput(ctx context.Context
 				return it, err
 			}
 			it.Limit = data
+		case "sortBy":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("sortBy"))
+			data, err := ec.unmarshalOJackettSortBy2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐJackettSortBy(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.SortBy = data
 		}
 	}
 
@@ -21518,6 +21786,55 @@ func (ec *executionContext) _IngestStatus(ctx context.Context, sel ast.Selection
 	return out
 }
 
+var jackettIndexerImplementors = []string{"JackettIndexer"}
+
+func (ec *executionContext) _JackettIndexer(ctx context.Context, sel ast.SelectionSet, obj *model.JackettIndexer) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, jackettIndexerImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("JackettIndexer")
+		case "id":
+			out.Values[i] = ec._JackettIndexer_id(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "name":
+			out.Values[i] = ec._JackettIndexer_name(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "enabled":
+			out.Values[i] = ec._JackettIndexer_enabled(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
 var jackettSearchResultImplementors = []string{"JackettSearchResult"}
 
 func (ec *executionContext) _JackettSearchResult(ctx context.Context, sel ast.SelectionSet, obj *model.JackettSearchResult) graphql.Marshaler {
@@ -22354,6 +22671,28 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 					}
 				}()
 				res = ec._Query_jackettSearch(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			rrm := func(ctx context.Context) graphql.Marshaler {
+				return ec.OperationContext.RootResolverMiddleware(ctx,
+					func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
+		case "jackettIndexers":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_jackettIndexers(ctx, field)
 				if res == graphql.Null {
 					atomic.AddUint32(&fs.Invalids, 1)
 				}
@@ -24507,6 +24846,60 @@ func (ec *executionContext) marshalNInt2int(ctx context.Context, sel ast.Selecti
 	return res
 }
 
+func (ec *executionContext) marshalNJackettIndexer2ᚕᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐJackettIndexerᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.JackettIndexer) graphql.Marshaler {
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalNJackettIndexer2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐJackettIndexer(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
+}
+
+func (ec *executionContext) marshalNJackettIndexer2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐJackettIndexer(ctx context.Context, sel ast.SelectionSet, v *model.JackettIndexer) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._JackettIndexer(ctx, sel, v)
+}
+
 func (ec *executionContext) unmarshalNJackettSearchInput2githubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐJackettSearchInput(ctx context.Context, v any) (model.JackettSearchInput, error) {
 	res, err := ec.unmarshalInputJackettSearchInput(ctx, v)
 	return res, graphql.ErrorOnPath(ctx, err)
@@ -25714,6 +26107,22 @@ func (ec *executionContext) marshalOBoolean2ᚖbool(ctx context.Context, sel ast
 	return res
 }
 
+func (ec *executionContext) unmarshalODiscoverSortBy2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐDiscoverSortBy(ctx context.Context, v any) (*model.DiscoverSortBy, error) {
+	if v == nil {
+		return nil, nil
+	}
+	var res = new(model.DiscoverSortBy)
+	err := res.UnmarshalGQL(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalODiscoverSortBy2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐDiscoverSortBy(ctx context.Context, sel ast.SelectionSet, v *model.DiscoverSortBy) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return v
+}
+
 func (ec *executionContext) unmarshalOFloat2ᚖfloat64(ctx context.Context, v any) (*float64, error) {
 	if v == nil {
 		return nil, nil
@@ -25801,6 +26210,22 @@ func (ec *executionContext) marshalOInt2ᚖint(ctx context.Context, sel ast.Sele
 	_ = ctx
 	res := graphql.MarshalInt(*v)
 	return res
+}
+
+func (ec *executionContext) unmarshalOJackettSortBy2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐJackettSortBy(ctx context.Context, v any) (*model.JackettSortBy, error) {
+	if v == nil {
+		return nil, nil
+	}
+	var res = new(model.JackettSortBy)
+	err := res.UnmarshalGQL(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalOJackettSortBy2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐJackettSortBy(ctx context.Context, sel ast.SelectionSet, v *model.JackettSortBy) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return v
 }
 
 func (ec *executionContext) unmarshalOLibraryFilter2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐLibraryFilter(ctx context.Context, v any) (*model.LibraryFilter, error) {

@@ -4,6 +4,7 @@ export {
   formatDateTime,
   formatDurationSeconds,
   formatLogEntries,
+  formatPublishDate,
   formatRelative,
   formatRelativeDate
 } from "./formatters";

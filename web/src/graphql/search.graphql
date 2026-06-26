@@ -40,6 +40,14 @@ query SearchDocument($input: JackettSearchInput!) {
   }
 }
 
+query JackettIndexersDocument {
+  jackettIndexers {
+    id
+    name
+    enabled
+  }
+}
+
 mutation QueueDiscoveredSceneDocument($input: QueueDiscoveredSceneInput!) {
   queueDiscoveredScene(input: $input) {
     id

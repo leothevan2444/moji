@@ -10,6 +10,7 @@ import (
 	"strings"
 
 	"github.com/leothevan2444/moji/internal/graphqlapi/model"
+	"github.com/leothevan2444/moji/internal/subscription"
 	"github.com/leothevan2444/moji/internal/tracker"
 )
 
@@ -35,12 +36,13 @@ func (r *queryResolver) DiscoverScenes(ctx context.Context, input model.Discover
 	if query == "" {
 		return nil, errors.New("query is required")
 	}
-	limit := 24
+	limit := 50
 	if input.Limit != nil {
 		limit = *input.Limit
 	}
+	sortBy := mapDiscoverSortBy(input.SortBy)
 
-	page, err := r.Subscription.SearchPreferredStashBoxScenes(ctx, query, limit)
+	page, err := r.Subscription.SearchPreferredStashBoxScenes(ctx, query, limit, sortBy)
 	if err != nil {
 		return nil, err
 	}
@@ -75,5 +77,50 @@ func (r *queryResolver) JackettSearch(ctx context.Context, input model.JackettSe
 	for _, result := range results {
 		out = append(out, jackettSearchResultToModel(result))
 	}
+	sortJackettResults(out, input.SortBy)
 	return out, nil
+}
+
+// JackettIndexers is the resolver for the jackettIndexers field. Returns an
+// empty list when the active tracker is not a Jackett service or when Jackett
+// itself is not configured — the frontend treats that as "未连接".
+func (r *queryResolver) JackettIndexers(ctx context.Context) ([]*model.JackettIndexer, error) {
+	if r.Tracker == nil {
+		return []*model.JackettIndexer{}, nil
+	}
+	lister, ok := r.Tracker.(tracker.IndexerLister)
+	if !ok {
+		return []*model.JackettIndexer{}, nil
+	}
+	indexers, err := lister.ListIndexers()
+	if err != nil {
+		return []*model.JackettIndexer{}, nil
+	}
+	out := make([]*model.JackettIndexer, 0, len(indexers))
+	for _, indexer := range indexers {
+		out = append(out, jackettIndexerToModel(indexer))
+	}
+	return out, nil
+}
+
+// mapDiscoverSortBy translates the GraphQL enum into the subscription-domain
+// enum so resolver code doesn't depend on gqlgen-generated types directly.
+func mapDiscoverSortBy(value *model.DiscoverSortBy) subscription.DiscoverSort {
+	if value == nil {
+		return subscription.DiscoverSortRelevance
+	}
+	switch *value {
+	case model.DiscoverSortByRelevance:
+		return subscription.DiscoverSortRelevance
+	case model.DiscoverSortByDateDesc:
+		return subscription.DiscoverSortDateDesc
+	case model.DiscoverSortByDateAsc:
+		return subscription.DiscoverSortDateAsc
+	case model.DiscoverSortByDurationDesc:
+		return subscription.DiscoverSortDurationDesc
+	case model.DiscoverSortByTitleAsc:
+		return subscription.DiscoverSortTitleAsc
+	default:
+		return subscription.DiscoverSortRelevance
+	}
 }

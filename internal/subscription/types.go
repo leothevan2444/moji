@@ -56,6 +56,19 @@ const (
 	SceneSourceStashBox SceneSource = "STASHBOX"
 )
 
+// DiscoverSort orders discovered scenes returned from a StashBox search.
+// RELEVANCE preserves StashBox's native ordering — the search backend
+// already weighs relevance, so we don't reshuffle on the client.
+type DiscoverSort string
+
+const (
+	DiscoverSortRelevance   DiscoverSort = "RELEVANCE"
+	DiscoverSortDateDesc    DiscoverSort = "DATE_DESC"
+	DiscoverSortDateAsc     DiscoverSort = "DATE_ASC"
+	DiscoverSortDurationDesc DiscoverSort = "DURATION_DESC"
+	DiscoverSortTitleAsc    DiscoverSort = "TITLE_ASC"
+)
+
 type SceneSourceFilter string
 
 const (

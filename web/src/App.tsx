@@ -1,11 +1,14 @@
-import { FormEvent, useCallback, useDeferredValue, useEffect, useState } from "react";
+import { FormEvent, useCallback, useDeferredValue, useEffect, useMemo, useState } from "react";
 import { HELP_TOPICS, type HelpTopicId } from "./help";
 import { describeQueryError } from "./services/queryError";
 import {
   useDashboard,
   useDiscoverScenes,
   useDrawerTransition,
+  useGlobalSlashShortcut,
+  useJackettIndexers,
   useJackettSearch,
+  useSearchHistory,
   useSubscription,
   useTheme,
   useToast
@@ -14,6 +17,8 @@ import { taskSummary, type TaskGroupKey } from "./utils";
 import type { DrawerKey, SettingsTab, TabKey } from "./types";
 import { Drawer, Header, ToastStack } from "./components/layout";
 import { DiscoveryDrawer, HelpDrawer, SettingsDrawer, StatsDrawer, TaskDrawer } from "./components/drawers";
+import { JackettFilterPanel } from "./components/drawers/JackettFilterPanel";
+import { SortAndPagination } from "./components/drawers/SortAndPagination";
 import {
   DiscoveryPage,
   HomePage,
@@ -23,10 +28,18 @@ import {
   type TaskStatusFilter
 } from "./pages";
 import {
+  DISCOVERY_PAGE_SIZE,
+  DISCOVER_SORT_OPTIONS,
+  JACKETT_SORT_OPTIONS,
+  type DiscoveryMode
+} from "./constants";
+import {
   LibraryFilter,
   SceneSourceFilter,
   type DiscoverScenesDocumentQuery,
-  type SearchDocumentQuery
+  type SearchDocumentQuery,
+  DiscoverSortBy,
+  JackettSortBy
 } from "./graphql/generated/graphql";
 
 function App() {
@@ -56,8 +69,16 @@ function App() {
   // Discovery page state
   const [discoveryQuery, setDiscoveryQuery] = useState("");
   const [submittedDiscoveryQuery, setSubmittedDiscoveryQuery] = useState("");
-  const [discoveryMode, setDiscoveryMode] = useState<"stashbox" | "jackett">("stashbox");
+  const [discoveryMode, setDiscoveryMode] = useState<DiscoveryMode>("stashbox");
+  const [discoveryStashboxSort, setDiscoveryStashboxSort] = useState<DiscoverSortBy>(DiscoverSortBy.Relevance);
+  const [discoveryJackettSort, setDiscoveryJackettSort] = useState<JackettSortBy>(JackettSortBy.Relevance);
+  const [discoveryPage, setDiscoveryPage] = useState(1);
+  const [selectedTrackerIDs, setSelectedTrackerIDs] = useState<string[]>([]);
+  const [discoveryInputFocused, setDiscoveryInputFocused] = useState(false);
+  const [historyVisible, setHistoryVisible] = useState(false);
   const [pendingAddId, setPendingAddId] = useState<string | null>(null);
+
+  const searchHistory = useSearchHistory();
 
   // Subscription page state
   const [subscriptionSearch, setSubscriptionSearch] = useState("");
@@ -91,19 +112,33 @@ function App() {
     triggerStashScans
   } = useDashboard();
 
+  const discoveryDrawerOpen = drawer === "discovery";
+
   const {
     result: discoverResult,
     results: discoveredScenes,
     fetching: searchingDiscoverScenes,
     error: discoverScenesError,
     queueDiscoveredScene
-  } = useDiscoverScenes(deferredDiscoveryQuery, drawer === "discovery" && discoveryMode === "stashbox");
+  } = useDiscoverScenes(deferredDiscoveryQuery, {
+    enabled: discoveryDrawerOpen && discoveryMode === "stashbox",
+    sortBy: discoveryStashboxSort
+  });
 
   const {
     results: searchResults,
     fetching: searchingJackett,
     error: searchError
-  } = useJackettSearch(deferredDiscoveryQuery, drawer === "discovery" && discoveryMode === "jackett");
+  } = useJackettSearch(deferredDiscoveryQuery, {
+    enabled: discoveryDrawerOpen && discoveryMode === "jackett",
+    trackers: selectedTrackerIDs,
+    sortBy: discoveryJackettSort
+  });
+
+  // Jackett 索引器列表：仅在 Jackett 模式下拉取，避免无谓请求。
+  const { indexers: jackettIndexers, fetching: fetchingIndexers } = useJackettIndexers(
+    discoveryDrawerOpen && discoveryMode === "jackett"
+  );
 
   const {
     stashPerformerPage,
@@ -154,6 +189,26 @@ function App() {
     total: data?.dashboardStats.total ?? 0
   };
 
+  // 当前模式下可见的总条数 + 当前页切片结果。前端按 pageSize 切片，单页请求固定返回 50 条。
+  const visibleResults = useMemo(() => {
+    return discoveryMode === "stashbox" ? discoveredScenes : searchResults;
+  }, [discoveryMode, discoveredScenes, searchResults]);
+
+  const totalPages = Math.max(1, Math.ceil(visibleResults.length / DISCOVERY_PAGE_SIZE));
+
+  // 切片分别保存为 narrow 类型，避免把 union 数组传给两个不同的 prop。
+  const stashboxPagedResults = useMemo(() => {
+    if (discoveryMode !== "stashbox") return [] as DiscoverScenesDocumentQuery["discoverScenes"]["items"];
+    const start = (discoveryPage - 1) * DISCOVERY_PAGE_SIZE;
+    return discoveredScenes.slice(start, start + DISCOVERY_PAGE_SIZE);
+  }, [discoveryMode, discoveredScenes, discoveryPage]);
+
+  const jackettPagedResults = useMemo(() => {
+    if (discoveryMode !== "jackett") return [] as SearchDocumentQuery["jackettSearch"];
+    const start = (discoveryPage - 1) * DISCOVERY_PAGE_SIZE;
+    return searchResults.slice(start, start + DISCOVERY_PAGE_SIZE);
+  }, [discoveryMode, searchResults, discoveryPage]);
+
   // ── Effects ─────────────────────────────────────────────────────────
   useEffect(() => {
     setSubscriptionPage(1);
@@ -171,6 +226,11 @@ function App() {
     setSelectedSceneKeys([]);
   }, [selectedPerformerId]);
 
+  // 切 mode / 切 sort / 切 tracker 时回到第 1 页，结果来自同一份缓存不需要重发请求。
+  useEffect(() => {
+    setDiscoveryPage(1);
+  }, [discoveryMode, discoveryStashboxSort, discoveryJackettSort, selectedTrackerIDs]);
+
   // ── Action handlers ─────────────────────────────────────────────────
   const openTaskDetail = (taskId: string) => {
     setSelectedTaskId(taskId);
@@ -179,17 +239,63 @@ function App() {
 
   const handleSubmitDiscoverSearch = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    setDiscoveryMode("stashbox");
-    setSubmittedDiscoveryQuery(discoveryQuery.trim());
+    const trimmed = discoveryQuery.trim();
+    if (trimmed === "") return;
+    searchHistory.push(trimmed);
+    setSubmittedDiscoveryQuery(trimmed);
+    setHistoryVisible(false);
     setDrawer("discovery");
     setTab("发现");
   };
 
-  const handleOpenJackettFallback = () => {
-    setDiscoveryMode("jackett");
-    setSubmittedDiscoveryQuery(discoveryQuery.trim());
+  const handlePickHistory = (entry: string) => {
+    setDiscoveryQuery(entry);
+    setSubmittedDiscoveryQuery(entry);
+    setHistoryVisible(false);
     setDrawer("discovery");
     setTab("发现");
+  };
+
+  const handleRemoveHistory = (entry: string) => {
+    searchHistory.remove(entry);
+  };
+
+  const handleClearHistory = () => {
+    searchHistory.clear();
+  };
+
+  const handleToggleTracker = (id: string) => {
+    setSelectedTrackerIDs((current) =>
+      current.includes(id) ? current.filter((entry) => entry !== id) : [...current, id]
+    );
+  };
+
+  const handleClearTrackers = () => {
+    setSelectedTrackerIDs([]);
+  };
+
+  const handleSwitchMode = (next: DiscoveryMode) => {
+    setDiscoveryMode(next);
+  };
+
+  const handleChangeStashboxSort = (next: DiscoverSortBy) => {
+    setDiscoveryStashboxSort(next);
+  };
+
+  const handleChangeJackettSort = (next: JackettSortBy) => {
+    setDiscoveryJackettSort(next);
+  };
+
+  const handlePrevPage = () => {
+    setDiscoveryPage((current) => Math.max(1, current - 1));
+  };
+
+  const handleNextPage = () => {
+    setDiscoveryPage((current) => Math.min(totalPages, current + 1));
+  };
+
+  const handleSwitchToJackettFromEmpty = () => {
+    setDiscoveryMode("jackett");
   };
 
   const runSync = async () => {
@@ -436,11 +542,33 @@ function App() {
         {tab === "发现" ? (
           <DiscoveryPage
             query={discoveryQuery}
-            searchingPrimary={searchingDiscoverScenes}
-            searchingFallback={searchingJackett}
-            onQueryChange={setDiscoveryQuery}
-            onSubmitPrimary={handleSubmitDiscoverSearch}
-            onSubmitFallback={handleOpenJackettFallback}
+            searching={discoveryMode === "stashbox" ? searchingDiscoverScenes : searchingJackett}
+            inputFocused={discoveryInputFocused}
+            mode={discoveryMode}
+            history={searchHistory.history}
+            historyVisible={historyVisible}
+            onQueryChange={(value) => {
+              setDiscoveryQuery(value);
+              if (value.trim() === "") {
+                setHistoryVisible(discoveryInputFocused);
+              } else {
+                setHistoryVisible(false);
+              }
+            }}
+            onInputFocus={() => {
+              setDiscoveryInputFocused(true);
+              setHistoryVisible(discoveryQuery.trim() === "");
+            }}
+            onInputBlur={() => {
+              setDiscoveryInputFocused(false);
+              setHistoryVisible(false);
+            }}
+            onSubmit={handleSubmitDiscoverSearch}
+            onModeChange={handleSwitchMode}
+            onPickHistory={handlePickHistory}
+            onRemoveHistory={handleRemoveHistory}
+            onClearHistory={handleClearHistory}
+            onDismissHistory={() => setHistoryVisible(false)}
             onOpenHelp={() => setDrawer("help")}
           />
         ) : null}
@@ -542,18 +670,71 @@ function App() {
           ) : null}
 
           {visibleDrawer === "discovery" ? (
-            <DiscoveryDrawer
-              mode={discoveryMode}
-              query={deferredDiscoveryQuery}
-              searching={discoveryMode === "stashbox" ? searchingDiscoverScenes : searchingJackett}
-              error={(discoveryMode === "stashbox" ? discoverScenesError : searchError) ?? null}
-              pendingAddId={pendingAddId}
-              discoverResult={discoverResult}
-              discoverItems={discoveredScenes}
-              jackettItems={searchResults}
-              onQueueDiscovered={(result) => void handleQueueDiscoveredScene(result)}
-              onAddJackett={(result) => void handleAddSearchResult(result)}
-            />
+            <div className="drawer-stack">
+              <article className="drawer-card">
+                <div className="drawer-card__head">
+                  <div>
+                    <h3>{deferredDiscoveryQuery || "未提供搜索词"}</h3>
+                    <p>
+                      {discoveryMode === "stashbox"
+                        ? discoverResult?.usedStashBox
+                          ? `来源 ${discoverResult.usedStashBox.name} · 回退 ${discoverResult.fallbackCount} 次`
+                          : "按 StashBox 优先顺序搜索"
+                        : "备用 Jackett 搜索结果"}
+                    </p>
+                  </div>
+                  {discoveryMode === "stashbox" && discoverResult?.usedStashBox ? (
+                    <span className="status-chip tone-info">{discoverResult.usedStashBox.name}</span>
+                  ) : null}
+                  {discoveryMode === "jackett" && selectedTrackerIDs.length > 0 ? (
+                    <span className="status-chip tone-info">已应用 {selectedTrackerIDs.length} 个过滤</span>
+                  ) : null}
+                </div>
+
+                {discoveryMode === "jackett" && (
+                  <JackettFilterPanel
+                    indexers={jackettIndexers}
+                    fetching={fetchingIndexers}
+                    enabledIds={selectedTrackerIDs}
+                    onToggle={handleToggleTracker}
+                    onClear={handleClearTrackers}
+                  />
+                )}
+
+                <SortAndPagination
+                  sortValue={discoveryMode === "stashbox" ? discoveryStashboxSort : discoveryJackettSort}
+                  sortOptions={discoveryMode === "stashbox" ? DISCOVER_SORT_OPTIONS : JACKETT_SORT_OPTIONS}
+                  onSortChange={(value) =>
+                    discoveryMode === "stashbox"
+                      ? handleChangeStashboxSort(value as DiscoverSortBy)
+                      : handleChangeJackettSort(value as JackettSortBy)
+                  }
+                  page={discoveryPage}
+                  totalPages={totalPages}
+                  total={visibleResults.length}
+                  onPrevPage={handlePrevPage}
+                  onNextPage={handleNextPage}
+                />
+
+                <DiscoveryDrawer
+                  mode={discoveryMode}
+                  query={deferredDiscoveryQuery}
+                  searching={discoveryMode === "stashbox" ? searchingDiscoverScenes : searchingJackett}
+                  error={(discoveryMode === "stashbox" ? discoverScenesError : searchError) ?? null}
+                  pendingAddId={pendingAddId}
+                  discoverResult={discoverResult}
+                  discoverItems={stashboxPagedResults}
+                  jackettItems={jackettPagedResults}
+                  hasAnyResults={visibleResults.length > 0}
+                  usedStashBoxName={discoverResult?.usedStashBox?.name ?? null}
+                  onQueueDiscovered={(result) => void handleQueueDiscoveredScene(result)}
+                  onAddJackett={(result) => void handleAddSearchResult(result)}
+                  onTryJackett={handleSwitchToJackettFromEmpty}
+                  onClearTrackers={handleClearTrackers}
+                  hasActiveTrackers={selectedTrackerIDs.length > 0}
+                />
+              </article>
+            </div>
           ) : null}
         </Drawer>
       ) : null}

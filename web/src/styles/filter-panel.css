@@ -1,0 +1,97 @@
+/* 过滤面板：基于原生 <details> 的折叠容器，复用 .chip 行做多选。
+   默认收起，点击 summary 后展开；summary 显示"已选 N 个"状态。 */
+
+.filter-panel {
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface);
+  padding: 0;
+}
+
+.filter-panel > summary {
+  list-style: none;
+  cursor: pointer;
+  padding: 10px 14px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 13px;
+  color: var(--text);
+  user-select: none;
+}
+
+.filter-panel > summary::-webkit-details-marker {
+  display: none;
+}
+
+.filter-panel > summary::after {
+  content: "▾";
+  font-size: 11px;
+  color: var(--muted-2);
+  transition: transform 0.18s ease;
+}
+
+.filter-panel[open] > summary::after {
+  transform: rotate(180deg);
+}
+
+.filter-panel__count {
+  margin-left: auto;
+  font-size: 12px;
+  color: var(--muted-2);
+}
+
+.filter-panel__body {
+  padding: 0 14px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.filter-panel__hint {
+  font-size: 12px;
+  color: var(--muted-2);
+  line-height: 1.5;
+}
+
+.filter-panel__chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.filter-panel__chip {
+  appearance: none;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--text);
+  font-size: 12px;
+  font-weight: 600;
+  padding: 6px 12px;
+  cursor: pointer;
+  transition: background-color 0.16s ease, border-color 0.16s ease;
+}
+
+.filter-panel__chip:hover {
+  border-color: rgba(37, 99, 235, 0.38);
+}
+
+.filter-panel__chip.is-active {
+  border-color: rgba(37, 99, 235, 0.42);
+  background: linear-gradient(180deg, rgba(37, 99, 235, 0.16), rgba(37, 99, 235, 0.05));
+  color: var(--accent);
+}
+
+.filter-panel__chip.is-disabled {
+  border-color: var(--line);
+  background: rgba(226, 232, 240, 0.48);
+  color: var(--muted-2);
+  cursor: not-allowed;
+}
+
+[data-theme="dark"] .filter-panel__chip.is-active {
+  background: linear-gradient(180deg, rgba(96, 165, 250, 0.22), rgba(96, 165, 250, 0.06));
+  border-color: rgba(96, 165, 250, 0.36);
+}

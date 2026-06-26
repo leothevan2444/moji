@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"sort"
 	"strings"
 
 	"github.com/leothevan2444/moji/internal/downloader"
@@ -11,7 +12,7 @@ import (
 	stashboxgraphql "github.com/leothevan2444/moji/pkg/stashbox/graphql"
 )
 
-func (s *Service) SearchPreferredStashBoxScenes(ctx context.Context, query string, limit int) (DiscoverScenePage, error) {
+func (s *Service) SearchPreferredStashBoxScenes(ctx context.Context, query string, limit int, sortBy DiscoverSort) (DiscoverScenePage, error) {
 	query = strings.TrimSpace(query)
 	if query == "" {
 		return DiscoverScenePage{}, errors.New("subscription: query is required")
@@ -20,7 +21,10 @@ func (s *Service) SearchPreferredStashBoxScenes(ctx context.Context, query strin
 		return DiscoverScenePage{}, errors.New("subscription: no stash-box endpoints configured in Stash")
 	}
 	if limit <= 0 {
-		limit = 24
+		limit = 50
+	}
+	if sortBy == "" {
+		sortBy = DiscoverSortRelevance
 	}
 
 	var (
@@ -48,12 +52,16 @@ func (s *Service) SearchPreferredStashBoxScenes(ctx context.Context, query strin
 			FallbackCount: idx,
 			SearchedQuery: query,
 		}
-		for _, scene := range items[:min(limit, len(items))] {
+		for _, scene := range items {
 			if scene == nil {
 				continue
 			}
 			page.Items = append(page.Items, discoveredSceneFromStashBox(scene, box))
+			if len(page.Items) >= limit {
+				break
+			}
 		}
+		sortDiscoveredScenes(page.Items, sortBy)
 		return page, nil
 	}
 
@@ -132,6 +140,60 @@ func stashBoxStudioName(scene *stashboxgraphql.SceneFragment) string {
 		return ""
 	}
 	return strings.TrimSpace(scene.Studio.Name)
+}
+
+// sortDiscoveredScenes sorts in place. RELEVANCE leaves the slice untouched —
+// StashBox's native ordering is the relevance order. Empty values always sort
+// to the end regardless of direction so the most informative results stay on top.
+func sortDiscoveredScenes(items []DiscoveredScene, sortBy DiscoverSort) {
+	switch sortBy {
+	case DiscoverSortRelevance:
+		return
+	case DiscoverSortDateDesc:
+		sort.SliceStable(items, func(i, j int) bool {
+			return compareDateDesc(items[i].Date, items[j].Date)
+		})
+	case DiscoverSortDateAsc:
+		sort.SliceStable(items, func(i, j int) bool {
+			return compareDateDesc(items[j].Date, items[i].Date)
+		})
+	case DiscoverSortDurationDesc:
+		sort.SliceStable(items, func(i, j int) bool {
+			return compareDurationDesc(items[i].DurationSeconds, items[j].DurationSeconds)
+		})
+	case DiscoverSortTitleAsc:
+		sort.SliceStable(items, func(i, j int) bool {
+			return strings.ToLower(items[i].Title) < strings.ToLower(items[j].Title)
+		})
+	}
+}
+
+// compareDateDesc returns true when a should come before b. Empty dates sort last.
+func compareDateDesc(a, b string) bool {
+	if a == b {
+		return false
+	}
+	if a == "" {
+		return false
+	}
+	if b == "" {
+		return true
+	}
+	return a > b
+}
+
+// compareDurationDesc returns true when a should come before b. Nil durations sort last.
+func compareDurationDesc(a, b *int) bool {
+	if a == b {
+		return false
+	}
+	if a == nil {
+		return false
+	}
+	if b == nil {
+		return true
+	}
+	return *a > *b
 }
 
 func min(left, right int) int {
