@@ -25,7 +25,6 @@ export {
   isCopyableTaskValue,
   taskSummary,
   taskSourceLabel,
-  statusTone,
   taskGroup,
   taskGroupTone,
   taskGroupDescription,
@@ -46,4 +45,4 @@ export {
   type TaskCardState
 } from "./taskUtils";
 export { performerInitials, performerImageURL } from "./performerUtils";
-export { boolState, serviceStatus, taskSyncStatus } from "./settingsUtils";
+export { boolState, serviceStatus } from "./settingsUtils";

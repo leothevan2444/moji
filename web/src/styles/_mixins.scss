@@ -1,0 +1,24 @@
+@use "tokens" as *;
+
+// Shared "card surface" used by metric-card, service-card, task-card, etc.
+@mixin card-base {
+  border: 1px solid var(--line);
+  border-radius: $radius-2xl;
+  background: linear-gradient(180deg, var(--surface-strong), var(--surface));
+  backdrop-filter: blur(10px);
+  box-shadow: var(--shadow-soft);
+}
+
+// Active-state gradient overlay (used by tabs, chips, nav-tab).
+@mixin active-gradient($opacity-strong: 0.18, $opacity-weak: 0.06) {
+  background: linear-gradient(
+    180deg,
+    rgba(37, 99, 235, $opacity-strong),
+    rgba(37, 99, 235, $opacity-weak)
+  );
+}
+
+// Focus ring matching the global accent.
+@mixin focus-ring($color: rgba(37, 99, 235, 0.18)) {
+  box-shadow: 0 0 0 3px $color;
+}

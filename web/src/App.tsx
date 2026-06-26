@@ -23,10 +23,9 @@ import {
   DiscoveryPage,
   HomePage,
   SubscriptionPage,
-  TasksPage,
-  type TaskSortKey,
-  type TaskStatusFilter
+  TasksPage
 } from "./pages";
+import type { TaskSortKey, TaskStatusFilter } from "./types";
 import {
   DISCOVERY_PAGE_SIZE,
   DISCOVER_SORT_OPTIONS,

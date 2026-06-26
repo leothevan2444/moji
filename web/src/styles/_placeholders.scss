@@ -1,0 +1,17 @@
+@use "tokens" as *;
+
+// Common head row used by card heads (task-card__head, service-card__head, etc.)
+%head-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: $space-3;
+}
+
+// Pill-style status chip base.
+%pill-base {
+  display: inline-flex;
+  align-items: center;
+  border-radius: $radius-full;
+  font-weight: 600;
+}

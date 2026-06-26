@@ -1,3 +1,6 @@
+@use "tokens" as *;
+@use "mixins" as *;
+
 /* SegmentedTab — 单选分段控件，用于在少量互斥选项之间切换（如搜索模式）。
    与 .nav-tab 共享视觉 token：激活态蓝渐变，未激活态 surface 背景。
    sm 变体刻意弱化（无外框背景），让 input 保留视觉中心地位。 */
@@ -7,7 +10,7 @@
   align-items: center;
   padding: 3px;
   border: 1px solid var(--line);
-  border-radius: 12px;
+  border-radius: $radius-xl;
   background: var(--surface);
   gap: 0;
 }
@@ -28,9 +31,9 @@
   font-size: 13px;
   padding: 0 14px;
   height: 30px;
-  border-radius: 9px;
+  border-radius: $radius-lg;
   cursor: pointer;
-  transition: background-color 0.16s ease, color 0.16s ease;
+  transition: background-color $transition-base, color $transition-base;
   white-space: nowrap;
 }
 
@@ -39,7 +42,7 @@
 }
 
 .segmented-tab__btn.is-active {
-  background: linear-gradient(180deg, rgba(37, 99, 235, 0.18), rgba(37, 99, 235, 0.06));
+  @include active-gradient;
   color: var(--accent);
   box-shadow: inset 0 0 0 1px rgba(37, 99, 235, 0.28);
 }
@@ -48,7 +51,7 @@
   height: 32px;
   padding: 0 12px;
   font-size: 12px;
-  border-radius: 8px;
+  border-radius: $radius-md;
   color: var(--muted-2);
   font-weight: 600;
 }

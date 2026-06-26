@@ -1,5 +1,5 @@
 import type { OperationContext } from "urql";
-import { SETTINGS_TABS, ENABLED_SETTINGS_TABS } from "../../constants";
+import { SETTINGS_TABS } from "../../constants";
 import type { DrawerKey, SettingsTab, ToastTone } from "../../types";
 import { SettingsPanel } from "../settings/SettingsPanel";
 import type { DashboardDocumentQuery } from "../../graphql/generated/graphql";
@@ -37,9 +37,8 @@ export function SettingsDrawer({
           <button
             key={item}
             type="button"
-            className={`chip ${settingsTab === item ? "is-active" : ""} ${!ENABLED_SETTINGS_TABS.has(item) ? "is-disabled" : ""}`}
+            className={`chip ${settingsTab === item ? "is-active" : ""}`}
             onClick={() => onSettingsTabChange(item)}
-            disabled={!ENABLED_SETTINGS_TABS.has(item)}
           >
             {item}
           </button>

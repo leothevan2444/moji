@@ -96,15 +96,6 @@ export function taskSourceLabel(source: string) {
   return "手动";
 }
 
-export function statusTone(status: string) {
-  const normalized = status.toLowerCase();
-  if (normalized.includes("complete")) return "tone-success";
-  if (normalized.includes("fail")) return "tone-danger";
-  if (normalized.includes("download") || normalized.includes("sync")) return "tone-info";
-  if (normalized.includes("pending") || normalized.includes("wait")) return "tone-warn";
-  return "tone-neutral";
-}
-
 // ── Task grouping ───────────────────────────────────────────────────
 
 export function taskGroup(task: DashboardTask): TaskGroupKey {
@@ -150,78 +141,14 @@ export function taskFailureSummary(task: DashboardTask): TaskFailureSummary {
   const scanStatus = normalizeStatus(task.stashScanStatus || "");
   const qbtState = normalizeStatus(task.qbittorrentState || "");
 
-  if (transferError) {
-    return {
-      title: "文件搬运失败",
-      detail: transferError,
-      tone: "tone-danger"
-    };
-  }
+  const transferFailure = describeTransferFailure(transferError);
+  if (transferFailure) return transferFailure;
 
-  if (stashError) {
-    if (stashError.includes("at least one scan path is required")) {
-      return {
-        title: "缺少扫描路径",
-        detail: "任务没有可用于 Stash 扫描的内容路径或保存路径。",
-        tone: "tone-danger"
-      };
-    }
-    if (stashError.includes("not configured")) {
-      return {
-        title: "Stash 未配置",
-        detail: "当前任务需要触发 Stash 扫描，但后端未启用对应连接。",
-        tone: "tone-danger"
-      };
-    }
-    return {
-      title: "Stash 扫描失败",
-      detail: stashError,
-      tone: "tone-danger"
-    };
-  }
+  const scanFailure = describeScanFailure(stashError);
+  if (scanFailure) return scanFailure;
 
-  if (taskError) {
-    if (taskError.includes("no downloadable torrent candidate found")) {
-      return {
-        title: "没有可下载候选",
-        detail: "搜索返回了结果，但没有可直接提交的 magnet 或种子链接。",
-        tone: "tone-warn"
-      };
-    }
-    if (taskError.includes("tracker is not configured")) {
-      return {
-        title: "索引器未配置",
-        detail: "当前下载链路无法访问 Jackett 或其他搜索后端。",
-        tone: "tone-danger"
-      };
-    }
-    if (taskError.includes("torrent url is required")) {
-      return {
-        title: "缺少种子地址",
-        detail: "手动添加任务时没有提供有效的磁链或下载地址。",
-        tone: "tone-warn"
-      };
-    }
-    if (taskError.includes("qBittorrent client is required") || taskError.includes("qBittorrent client is not configured")) {
-      return {
-        title: "下载器未启用",
-        detail: "任务无法提交到 qBittorrent，需先补齐下载器配置。",
-        tone: "tone-danger"
-      };
-    }
-    if (taskError.includes("add torrent")) {
-      return {
-        title: "提交下载失败",
-        detail: taskError,
-        tone: "tone-danger"
-      };
-    }
-    return {
-      title: "任务执行失败",
-      detail: taskError,
-      tone: "tone-danger"
-    };
-  }
+  const taskFailure = describeTaskFailure(taskError);
+  if (taskFailure) return taskFailure;
 
   if (status.includes("failed")) {
     return {
@@ -251,6 +178,82 @@ export function taskFailureSummary(task: DashboardTask): TaskFailureSummary {
     title: "状态正常",
     detail: "当前任务没有显式错误，等待下一次同步。",
     tone: "tone-neutral"
+  };
+}
+
+function describeTransferFailure(transferError: string): TaskFailureSummary | null {
+  if (!transferError) return null;
+  return {
+    title: "文件搬运失败",
+    detail: transferError,
+    tone: "tone-danger"
+  };
+}
+
+function describeScanFailure(stashError: string): TaskFailureSummary | null {
+  if (!stashError) return null;
+  if (stashError.includes("at least one scan path is required")) {
+    return {
+      title: "缺少扫描路径",
+      detail: "任务没有可用于 Stash 扫描的内容路径或保存路径。",
+      tone: "tone-danger"
+    };
+  }
+  if (stashError.includes("not configured")) {
+    return {
+      title: "Stash 未配置",
+      detail: "当前任务需要触发 Stash 扫描，但后端未启用对应连接。",
+      tone: "tone-danger"
+    };
+  }
+  return {
+    title: "Stash 扫描失败",
+    detail: stashError,
+    tone: "tone-danger"
+  };
+}
+
+function describeTaskFailure(taskError: string): TaskFailureSummary | null {
+  if (!taskError) return null;
+  if (taskError.includes("no downloadable torrent candidate found")) {
+    return {
+      title: "没有可下载候选",
+      detail: "搜索返回了结果，但没有可直接提交的 magnet 或种子链接。",
+      tone: "tone-warn"
+    };
+  }
+  if (taskError.includes("tracker is not configured")) {
+    return {
+      title: "索引器未配置",
+      detail: "当前下载链路无法访问 Jackett 或其他搜索后端。",
+      tone: "tone-danger"
+    };
+  }
+  if (taskError.includes("torrent url is required")) {
+    return {
+      title: "缺少种子地址",
+      detail: "手动添加任务时没有提供有效的磁链或下载地址。",
+      tone: "tone-warn"
+    };
+  }
+  if (taskError.includes("qBittorrent client is required") || taskError.includes("qBittorrent client is not configured")) {
+    return {
+      title: "下载器未启用",
+      detail: "任务无法提交到 qBittorrent，需先补齐下载器配置。",
+      tone: "tone-danger"
+    };
+  }
+  if (taskError.includes("add torrent")) {
+    return {
+      title: "提交下载失败",
+      detail: taskError,
+      tone: "tone-danger"
+    };
+  }
+  return {
+    title: "任务执行失败",
+    detail: taskError,
+    tone: "tone-danger"
   };
 }
 

@@ -1,4 +1,4 @@
-export { NAV_TABS, SETTINGS_TABS, ENABLED_SETTINGS_TABS } from "./navigation";
+export { NAV_TABS, SETTINGS_TABS } from "./navigation";
 export {
   EMPTY_STASH_FORM,
   EMPTY_INGEST_FORM,

@@ -1,9 +1,12 @@
+@use "tokens" as *;
+@use "mixins" as *;
+
 /* 过滤面板：基于原生 <details> 的折叠容器，复用 .chip 行做多选。
    默认收起，点击 summary 后展开；summary 显示"已选 N 个"状态。 */
 
 .filter-panel {
   border: 1px solid var(--line);
-  border-radius: 12px;
+  border-radius: $radius-xl;
   background: var(--surface);
   padding: 0;
 }
@@ -15,7 +18,7 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
+  gap: $space-3;
   font-size: 13px;
   color: var(--text);
   user-select: none;
@@ -58,20 +61,20 @@
 .filter-panel__chips {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
+  gap: $space-2;
 }
 
 .filter-panel__chip {
   appearance: none;
   border: 1px solid var(--line);
-  border-radius: 999px;
+  border-radius: $radius-full;
   background: var(--surface);
   color: var(--text);
   font-size: 12px;
   font-weight: 600;
   padding: 6px 12px;
   cursor: pointer;
-  transition: background-color 0.16s ease, border-color 0.16s ease;
+  transition: background-color $transition-base, border-color $transition-base;
 }
 
 .filter-panel__chip:hover {
@@ -80,7 +83,7 @@
 
 .filter-panel__chip.is-active {
   border-color: rgba(37, 99, 235, 0.42);
-  background: linear-gradient(180deg, rgba(37, 99, 235, 0.16), rgba(37, 99, 235, 0.05));
+  @include active-gradient(0.16, 0.05);
   color: var(--accent);
 }
 

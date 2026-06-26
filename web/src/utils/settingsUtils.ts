@@ -1,5 +1,4 @@
 import type { DashboardDocumentQuery } from "../graphql/generated/graphql";
-type RuntimeSettingsStatus = NonNullable<DashboardDocumentQuery["settingsStatus"]>;
 
 export function boolState(value: boolean, positive = "已配置", negative = "未配置") {
   return value ? positive : negative;
@@ -25,8 +24,4 @@ export function serviceStatus(
   if (lastError) return { label: "运行异常", tone: "tone-danger" as const };
   if (!okAt) return { label: "待检测", tone: "tone-warn" as const };
   return { label: "数据陈旧", tone: "tone-warn" as const };
-}
-
-export function taskSyncStatus(settings: RuntimeSettingsStatus["automation"]) {
-  return settings.taskProgressSyncEnabled ? "已启用" : "未启用";
 }

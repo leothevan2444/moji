@@ -1,3 +1,7 @@
+@use "tokens" as *;
+@use "mixins" as *;
+@use "placeholders" as *;
+
 .app-shell {
   position: relative;
   width: min(1520px, 100%);
@@ -9,7 +13,7 @@
   position: fixed;
   top: 18px;
   right: 18px;
-  z-index: 40;
+  z-index: $z-drawer-scrim;
   display: flex;
   flex-direction: column;
   align-items: stretch;
@@ -24,10 +28,10 @@
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  gap: 12px;
-  padding: 12px 14px;
+  gap: $space-3;
+  padding: $space-3 14px;
   border: 1px solid var(--line);
-  border-radius: 12px;
+  border-radius: $radius-xl;
   background: var(--surface-strong);
   box-shadow: var(--shadow);
   pointer-events: auto;
@@ -60,7 +64,7 @@
 
 .toast-card__label {
   display: inline-block;
-  margin-bottom: 4px;
+  margin-bottom: $space-1;
   font-size: 11px;
   font-weight: 800;
   letter-spacing: 0.06em;
@@ -92,7 +96,7 @@
   width: 28px;
   padding: 0;
   border: none;
-  border-radius: 999px;
+  border-radius: $radius-full;
   background: rgba(226, 232, 240, 0.6);
   color: var(--muted);
   font-size: 18px;
@@ -129,7 +133,6 @@
   from {
     transform: scaleX(1);
   }
-
   to {
     transform: scaleX(0);
   }
@@ -140,7 +143,6 @@
     opacity: 0;
     transform: translate3d(16px, -8px, 0) scale(0.97);
   }
-
   to {
     opacity: 1;
     transform: translate3d(0, 0, 0) scale(1);
@@ -153,7 +155,6 @@
     filter: blur(0);
     transform: translate3d(0, 0, 0) scale(1);
   }
-
   to {
     opacity: 0;
     filter: blur(6px);
@@ -201,7 +202,7 @@
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  gap: 12px;
+  gap: $space-3;
   padding: 4px 2px 8px;
 }
 
@@ -236,7 +237,7 @@
 
 .eyebrow,
 .section-kicker {
-  margin: 0 0 4px;
+  margin: 0 0 $space-1;
   color: var(--accent);
   letter-spacing: 0.14em;
   text-transform: uppercase;
@@ -247,7 +248,7 @@
 .title-row {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: $space-3;
   flex-wrap: wrap;
 }
 
@@ -276,7 +277,7 @@
 .help-tabs {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
+  gap: $space-2;
 }
 
 .tab-group {
@@ -309,7 +310,7 @@
 .chip.is-active,
 .help-tab.is-active {
   border-color: rgba(37, 99, 235, 0.38);
-  background: linear-gradient(180deg, rgba(37, 99, 235, 0.15), rgba(37, 99, 235, 0.06));
+  @include active-gradient(0.15, 0.06);
   color: var(--accent);
 }
 
@@ -327,7 +328,7 @@
 .utility-button {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
+  gap: $space-2;
   min-height: 30px;
   padding: 0 10px;
   background: var(--surface);
@@ -342,7 +343,7 @@
   width: 34px;
   min-width: 34px;
   padding: 0;
-  border-radius: 8px;
+  border-radius: $radius-md;
   opacity: 0.78;
 }
 
@@ -352,15 +353,15 @@
 }
 
 .surface {
-  margin-top: 16px;
-  padding: 16px 18px;
+  margin-top: $space-4;
+  padding: $space-4 18px;
   border: 1px solid var(--line);
-  border-radius: 10px;
+  border-radius: $radius-lg;
   background: var(--surface);
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 16px;
+  gap: $space-4;
   box-shadow: var(--shadow-soft);
 }
 
@@ -401,7 +402,7 @@
   align-items: end;
   justify-content: space-between;
   gap: 18px;
-  margin-bottom: 16px;
+  margin-bottom: $space-4;
 }
 
 .band-head h2 {
@@ -422,7 +423,7 @@
 .profile-grid,
 .discovery-results {
   display: grid;
-  gap: 12px;
+  gap: $space-3;
 }
 
 .metric-grid {
@@ -446,8 +447,7 @@
   grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
-.metric-card,
-.service-card,
+// Shared card surface — applies to all "card-like" containers.
 .metric-card,
 .service-card,
 .task-card,
@@ -457,11 +457,7 @@
 .drawer-card,
 .stat-card,
 .preview-panel {
-  border: 1px solid var(--line);
-  border-radius: 14px;
-  background: linear-gradient(180deg, var(--surface-strong), var(--surface));
-  backdrop-filter: blur(10px);
-  box-shadow: var(--shadow-soft);
+  @include card-base;
 }
 
 .metric-card,
@@ -472,7 +468,7 @@
 .profile-card,
 .drawer-card,
 .stat-card {
-  padding: 16px;
+  padding: $space-4;
 }
 
 .metric-card {
@@ -502,7 +498,7 @@
 }
 
 .metric-card p {
-  margin: 12px 0 0;
+  margin: $space-3 0 0;
   line-height: 1.5;
   color: var(--muted);
 }
@@ -512,10 +508,7 @@
 .candidate-card__head,
 .profile-card__head,
 .drawer-card__head {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 12px;
+  @extend %head-row;
 }
 
 .service-card h3,
@@ -536,7 +529,7 @@
 .empty-card p,
 .candidate-card p,
 .preview-panel p {
-  margin: 12px 0 0;
+  margin: $space-3 0 0;
   line-height: 1.6;
 }
 
@@ -573,10 +566,10 @@
   grid-template-columns: auto 1fr auto;
   align-items: stretch;
   border: 1px solid var(--line);
-  border-radius: 14px;
+  border-radius: $radius-2xl;
   background: linear-gradient(180deg, var(--surface-strong), var(--surface));
   overflow: hidden;
-  transition: border-color 0.16s ease, box-shadow 0.16s ease;
+  transition: border-color $transition-base, box-shadow $transition-base;
   min-height: 46px;
 }
 
@@ -588,7 +581,7 @@
 .discovery-shell__prefix {
   display: flex;
   align-items: center;
-  padding: 4px 4px 4px 8px;
+  padding: $space-1 $space-1 $space-1 $space-2;
   border-right: 1px solid var(--line);
   background: var(--surface);
 }
@@ -603,7 +596,7 @@
 
 .discovery-shell__prefix .segmented-tab__btn {
   height: 30px;
-  padding: 0 12px;
+  padding: 0 $space-3;
   border-radius: 7px;
 }
 
@@ -644,7 +637,7 @@
   background: linear-gradient(180deg, rgba(37, 99, 235, 0.12), rgba(37, 99, 235, 0.04));
   color: var(--accent);
   cursor: pointer;
-  transition: background-color 0.16s ease, color 0.16s ease, padding 0.18s ease;
+  transition: background-color $transition-base, color $transition-base, padding 0.18s ease;
   overflow: hidden;
   white-space: nowrap;
   border-radius: 0;
@@ -666,7 +659,7 @@
   opacity: 0;
   font-size: 13px;
   font-weight: 600;
-  transition: max-width 0.18s ease, opacity 0.16s ease;
+  transition: max-width 0.18s ease, opacity $transition-base;
 }
 
 .discovery-shell__submit:hover:not(:disabled) .discovery-shell__submit-label,
@@ -714,10 +707,7 @@
 }
 
 .task-group-section {
-  border: 1px solid var(--line);
-  border-radius: 14px;
-  background: linear-gradient(180deg, var(--surface-strong), var(--surface));
-  box-shadow: var(--shadow-soft);
+  @include card-base;
 }
 
 .task-group-section h3 {
@@ -726,7 +716,7 @@
 }
 
 .task-group-section p {
-  margin: 8px 0 0;
+  margin: $space-2 0 0;
   color: var(--muted);
   line-height: 1.5;
 }
@@ -735,7 +725,7 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
+  gap: $space-3;
 }
 
 .task-group-section__actions {
@@ -747,7 +737,7 @@
 }
 
 .task-group-section {
-  padding: 16px;
+  padding: $space-4;
   margin-top: 14px;
 }
 
@@ -756,9 +746,9 @@
 }
 
 .task-issue {
-  margin: 4px 0 0;
-  padding: 6px 8px;
-  border-radius: 8px;
+  margin: $space-1 0 0;
+  padding: 6px $space-2;
+  border-radius: $radius-md;
   border: 1px solid rgba(61, 47, 38, 0.08);
   background: rgba(248, 250, 252, 0.72);
   font-size: 11px;
@@ -830,7 +820,7 @@
 .performer-detail-hero__main {
   display: flex;
   align-items: stretch;
-  gap: 16px;
+  gap: $space-4;
   flex: 1 1 auto;
   min-width: 0;
   min-height: 0;
@@ -840,7 +830,7 @@
   width: var(--performer-detail-avatar-width);
   height: var(--performer-detail-avatar-height);
   flex: 0 0 var(--performer-detail-avatar-width);
-  border-radius: 12px;
+  border-radius: $radius-xl;
   align-self: stretch;
 }
 
@@ -859,13 +849,13 @@
 .performer-detail-hero__meta {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
+  gap: $space-2;
   margin-top: 10px;
 }
 
 .performer-detail-hero__section {
   display: grid;
-  gap: 4px;
+  gap: $space-1;
   margin-top: 10px;
 }
 
@@ -889,8 +879,8 @@
   justify-content: center;
   min-width: 84px;
   min-height: 40px;
-  padding: 0 12px;
-  border-radius: 12px;
+  padding: 0 $space-3;
+  border-radius: $radius-xl;
   border: 1px solid currentColor;
   font-size: 15px;
   font-weight: 800;
@@ -899,7 +889,7 @@
 .progress-shell {
   height: 6px;
   margin-top: 14px;
-  border-radius: 999px;
+  border-radius: $radius-full;
   background: rgba(59, 47, 38, 0.08);
   overflow: hidden;
 }
@@ -923,7 +913,7 @@
 .settings-grid {
   display: grid;
   gap: 10px;
-  margin: 12px 0 0;
+  margin: $space-3 0 0;
 }
 
 .task-meta {
@@ -944,7 +934,7 @@ dt {
 }
 
 dd {
-  margin: 4px 0 0;
+  margin: $space-1 0 0;
   overflow-wrap: anywhere;
 }
 
@@ -957,7 +947,7 @@ dd {
   display: flex;
   align-items: center;
   justify-content: flex-start;
-  gap: 8px;
+  gap: $space-2;
   min-width: 0;
 }
 
@@ -994,21 +984,21 @@ dd {
   left: 0;
   right: 0;
   z-index: 30;
-  padding: 8px;
+  padding: $space-2;
   border: 1px solid var(--line);
-  border-radius: 12px;
+  border-radius: $radius-xl;
   background: linear-gradient(180deg, var(--surface-strong), var(--surface));
   box-shadow: var(--shadow-soft);
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: $space-1;
 }
 
 .search-history__head {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 4px 6px;
+  padding: $space-1 6px;
   font-size: 12px;
   color: var(--muted-2);
 }
@@ -1035,8 +1025,8 @@ dd {
 .search-history__item {
   display: flex;
   align-items: center;
-  gap: 4px;
-  border-radius: 8px;
+  gap: $space-1;
+  border-radius: $radius-md;
 }
 
 .search-history__item:hover {
@@ -1051,9 +1041,9 @@ dd {
   text-align: left;
   font-size: 13px;
   color: var(--text);
-  padding: 8px 10px;
+  padding: $space-2 10px;
   cursor: pointer;
-  border-radius: 8px;
+  border-radius: $radius-md;
 }
 
 .search-history__remove {
@@ -1063,9 +1053,9 @@ dd {
   color: var(--muted-2);
   font-size: 16px;
   line-height: 1;
-  padding: 4px 8px;
+  padding: $space-1 $space-2;
   cursor: pointer;
-  border-radius: 6px;
+  border-radius: $radius-sm;
 }
 
 .search-history__remove:hover {

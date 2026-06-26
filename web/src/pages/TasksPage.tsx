@@ -11,9 +11,7 @@ import {
   type TaskGroupKey
 } from "../utils";
 import { useDeferredValue, useMemo } from "react";
-
-type TaskStatusFilter = "全部" | "运行中" | "完成" | "失败" | "待扫描";
-type TaskSortKey = "最新" | "更新时间" | "进度";
+import type { TaskSortKey, TaskStatusFilter } from "../types";
 
 interface TasksPageProps {
   tasks: DashboardTask[];

@@ -3,7 +3,7 @@ import { createRoot } from "react-dom/client";
 import { Provider } from "urql";
 import { App } from "./App";
 import { client } from "./graphql/client";
-import "./styles.css";
+import "./styles.scss";
 
 createRoot(document.getElementById("root") as HTMLElement).render(
   <StrictMode>
