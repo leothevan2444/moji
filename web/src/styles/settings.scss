@@ -41,7 +41,7 @@
 
 .settings-info__tooltip {
   position: absolute;
-  z-index: 10;
+  z-index: $z-tooltip;
   left: calc(100% + 10px);
   top: 50%;
   width: min(320px, 60vw);
@@ -161,7 +161,7 @@
   border-radius: $radius-lg;
   background: var(--surface);
   overflow: hidden;
-  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  transition: border-color $transition-base, box-shadow $transition-base;
 }
 
 .secret-input:focus-within {
@@ -196,7 +196,7 @@
   background: transparent;
   color: var(--muted-2);
   cursor: pointer;
-  transition: color 0.15s ease, background 0.15s ease;
+  transition: color $transition-base, background $transition-base;
 }
 
 .secret-input__toggle:hover {
@@ -379,7 +379,7 @@
   border-radius: $radius-xl;
   border: 1px solid var(--line);
   background: var(--surface-strong);
-  transition: border-color 0.15s ease, box-shadow 0.15s ease, background 0.15s ease, opacity 0.15s ease;
+  transition: border-color $transition-base, box-shadow $transition-base, background $transition-base, opacity $transition-base;
 }
 
 .stashbox-card:hover {
@@ -415,7 +415,7 @@
   color: var(--muted-2);
   cursor: grab;
   touch-action: none;
-  transition: color 0.15s ease, background 0.15s ease;
+  transition: color $transition-base, background $transition-base;
 }
 
 .stashbox-card__handle:hover {
@@ -612,59 +612,61 @@
   color: #b91c1c;
 }
 
-.help-layout {
+.help__layout {
   display: grid;
   grid-template-columns: 180px minmax(0, 1fr);
   gap: 14px;
 }
 
-.help-tabs {
+.help__tabs {
   align-content: start;
 }
 
-.help-tab {
+.help__tab {
   justify-content: flex-start;
   width: 100%;
   text-align: left;
 }
 
-.help-card h2,
-.help-card h3 {
-  font-family: inherit;
-}
+.help__card {
+  h2,
+  h3 {
+    font-family: inherit;
+  }
 
-.help-card h2 {
-  margin-top: 0;
-  font-size: 24px;
-}
+  h2 {
+    margin-top: 0;
+    font-size: 24px;
+  }
 
-.help-card h3 {
-  margin-top: 18px;
-  font-size: 18px;
-}
+  h3 {
+    margin-top: 18px;
+    font-size: 18px;
+  }
 
-.help-card p,
-.help-card li {
-  color: var(--text);
-  line-height: 1.6;
-}
+  p,
+  li {
+    color: var(--text);
+    line-height: 1.6;
+  }
 
-.help-card ul {
-  margin: 10px 0 0;
-  padding-left: 18px;
-}
+  ul {
+    margin: 10px 0 0;
+    padding-left: 18px;
+  }
 
-.help-card pre {
-  padding: 14px;
-  overflow: auto;
-  border-radius: $radius-md;
-  border: 1px solid var(--line);
-  background: rgba(40, 31, 23, 0.94);
-  color: #f7efe7;
-}
+  pre {
+    padding: 14px;
+    overflow: auto;
+    border-radius: $radius-md;
+    border: 1px solid var(--line);
+    background: rgba(40, 31, 23, 0.94);
+    color: #f7efe7;
+  }
 
-.help-card code {
-  font-family: "SFMono-Regular", Consolas, monospace;
+  code {
+    font-family: "SFMono-Regular", Consolas, monospace;
+  }
 }
 
 @keyframes slideIn {

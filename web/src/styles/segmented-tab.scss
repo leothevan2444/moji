@@ -13,57 +13,53 @@
   border-radius: $radius-xl;
   background: var(--surface);
   gap: 0;
-}
 
-.segmented-tab[data-size="sm"] {
-  padding: 0;
-  border: none;
-  background: transparent;
-  gap: 2px;
-}
+  &[data-size="sm"] {
+    padding: 0;
+    border: none;
+    background: transparent;
+    gap: 2px;
 
-.segmented-tab__btn {
-  appearance: none;
-  border: none;
-  background: transparent;
-  color: var(--muted);
-  font-weight: 600;
-  font-size: 13px;
-  padding: 0 14px;
-  height: 30px;
-  border-radius: $radius-lg;
-  cursor: pointer;
-  transition: background-color $transition-base, color $transition-base;
-  white-space: nowrap;
-}
+    .segmented-tab__btn {
+      height: 32px;
+      padding: 0 $space-3;
+      font-size: 12px;
+      border-radius: $radius-md;
+      color: var(--muted-2);
+      font-weight: 600;
 
-.segmented-tab__btn:hover {
-  color: var(--text);
-}
+      &.is-active { color: var(--accent); }
+    }
+  }
 
-.segmented-tab__btn.is-active {
-  @include active-gradient;
-  color: var(--accent);
-  box-shadow: inset 0 0 0 1px rgba(37, 99, 235, 0.28);
-}
+  &[data-size="md"] .segmented-tab__btn {
+    height: 34px;
+    padding: 0 14px;
+    font-size: 13px;
+  }
 
-.segmented-tab[data-size="sm"] .segmented-tab__btn {
-  height: 32px;
-  padding: 0 12px;
-  font-size: 12px;
-  border-radius: $radius-md;
-  color: var(--muted-2);
-  font-weight: 600;
-}
+  &__btn {
+    appearance: none;
+    border: none;
+    background: transparent;
+    color: var(--muted);
+    font-weight: 600;
+    font-size: 13px;
+    padding: 0 14px;
+    height: 30px;
+    border-radius: $radius-lg;
+    cursor: pointer;
+    transition: background-color $transition-base, color $transition-base;
+    white-space: nowrap;
 
-.segmented-tab[data-size="sm"] .segmented-tab__btn.is-active {
-  color: var(--accent);
-}
+    &:hover { color: var(--text); }
 
-.segmented-tab[data-size="md"] .segmented-tab__btn {
-  height: 34px;
-  padding: 0 14px;
-  font-size: 13px;
+    &.is-active {
+      @include active-gradient;
+      color: var(--accent);
+      box-shadow: inset 0 0 0 1px rgba(37, 99, 235, 0.28);
+    }
+  }
 }
 
 [data-theme="dark"] .segmented-tab__btn.is-active {

@@ -10,20 +10,20 @@ export function HelpDrawer({ topicId, onTopicChange }: HelpDrawerProps) {
   const selectedTopic = HELP_TOPICS.find((topic) => topic.id === topicId) ?? HELP_TOPICS[0];
 
   return (
-    <div className="help-layout">
-      <div className="help-tabs">
+    <div className="help__layout">
+      <div className="help__tabs">
         {HELP_TOPICS.map((topic) => (
           <button
             key={topic.id}
             type="button"
-            className={`help-tab ${topicId === topic.id ? "is-active" : ""}`}
+            className={`help__tab ${topicId === topic.id ? "is-active" : ""}`}
             onClick={() => onTopicChange(topic.id)}
           >
             {topic.title}
           </button>
         ))}
       </div>
-      <article className="drawer-card help-card">
+      <article className="drawer-card help__card">
         <MarkdownBlock markdown={selectedTopic.markdown} />
       </article>
     </div>

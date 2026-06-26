@@ -22,3 +22,11 @@
 @mixin focus-ring($color: rgba(37, 99, 235, 0.18)) {
   box-shadow: 0 0 0 3px $color;
 }
+
+// Semantic-tone color triple (border / background / text) used by `.tone-*`
+// utility classes that drive status chips, alerts, and similar surfaces.
+@mixin tone-variant($border, $bg, $color) {
+  border-color: $border;
+  background: $bg;
+  color: $color;
+}

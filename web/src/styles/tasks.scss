@@ -34,7 +34,7 @@
   top: 0;
   bottom: 0;
   width: 4px;
-  border-radius: 8px 0 0 8px;
+  border-radius: $radius-md 0 0 $radius-md;
   background: linear-gradient(180deg, var(--accent-3), var(--accent-2));
   opacity: 0.9;
 }
@@ -62,29 +62,29 @@
   justify-content: space-between;
   gap: 10px;
   padding-left: 6px;
-}
 
-.task-card__head h3 {
-  margin: 0 0 $space-1;
-  font-size: 14px;
-  line-height: 1.35;
-  font-weight: 600;
-  display: -webkit-box;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 2;
-  overflow: hidden;
-}
+  h3 {
+    margin: 0 0 $space-1;
+    font-size: 14px;
+    line-height: 1.35;
+    font-weight: 600;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    overflow: hidden;
+  }
 
-.task-card__head p {
-  margin: 0;
-  font-size: 12px;
-  line-height: 1.4;
-  color: var(--muted);
-  display: -webkit-box;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 1;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  p {
+    margin: 0;
+    font-size: 12px;
+    line-height: 1.4;
+    color: var(--muted);
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
 }
 
 /* 状态区域 - 统一的进度/错误/完成状态 */
@@ -528,33 +528,23 @@
 }
 
 .tone-success {
-  border-color: rgba(15, 118, 110, 0.24);
-  background: rgba(15, 118, 110, 0.12);
-  color: #0f766e;
+  @include tone-variant(rgba(15, 118, 110, 0.24), rgba(15, 118, 110, 0.12), #0f766e);
 }
 
 .tone-danger {
-  border-color: rgba(194, 65, 47, 0.22);
-  background: rgba(194, 65, 47, 0.12);
-  color: #c2412f;
+  @include tone-variant(rgba(194, 65, 47, 0.22), rgba(194, 65, 47, 0.12), #c2412f);
 }
 
 .tone-info {
-  border-color: rgba(71, 85, 105, 0.24);
-  background: rgba(71, 85, 105, 0.12);
-  color: #3b5f89;
+  @include tone-variant(rgba(71, 85, 105, 0.24), rgba(71, 85, 105, 0.12), #3b5f89);
 }
 
 .tone-warn {
-  border-color: rgba(176, 107, 31, 0.24);
-  background: rgba(176, 107, 31, 0.12);
-  color: #a05d18;
+  @include tone-variant(rgba(176, 107, 31, 0.24), rgba(176, 107, 31, 0.12), #a05d18);
 }
 
 .tone-neutral {
-  border-color: rgba(61, 47, 38, 0.16);
-  background: rgba(61, 47, 38, 0.06);
-  color: var(--muted);
+  @include tone-variant(rgba(61, 47, 38, 0.16), rgba(61, 47, 38, 0.06), var(--muted));
 }
 
 .ghost-button {
@@ -729,7 +719,7 @@ button.profile-icon:disabled {
 .drawer-scrim {
   position: fixed;
   inset: 0;
-  z-index: 20;
+  z-index: $z-scrim;
   background: var(--scrim);
   backdrop-filter: blur(6px);
   display: flex;

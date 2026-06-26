@@ -21,6 +21,9 @@ $radius-full: 999px;
 $transition-base: 0.16s ease;
 
 // Z-index layers
+$z-tooltip: 10;
+$z-scrim: 20;
+$z-search-history: 30;
 $z-drawer-scrim: 40;
 $z-drawer: 50;
 $z-toast: 60;
