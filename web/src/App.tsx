@@ -464,7 +464,7 @@ function App() {
     if (visibleDrawer === "stats") return "运行概览";
     if (visibleDrawer === "settings") return "配置与系统";
     if (visibleDrawer === "help") return "Markdown 帮助";
-    if (visibleDrawer === "discovery") return discoveryMode === "stashbox" ? "StashBox 搜索结果" : "Jackett 备用搜索";
+    if (visibleDrawer === "discovery") return discoveryMode === "stashbox" ? "StashBox 搜索结果" : "Jackett 搜索结果";
     return activeTask ? taskSummary(activeTask) : "任务详情";
   })();
 
@@ -663,14 +663,7 @@ function App() {
               <article className="drawer-card">
                 <div className="drawer-card__head">
                   <div>
-                    <h3>{deferredDiscoveryQuery || "未提供搜索词"}</h3>
-                    <p>
-                      {discoveryMode === "stashbox"
-                        ? discoverResult?.usedStashBox
-                          ? `来源 ${discoverResult.usedStashBox.name} · 回退 ${discoverResult.fallbackCount} 次`
-                          : "按 StashBox 优先顺序搜索"
-                        : "备用 Jackett 搜索结果"}
-                    </p>
+                    <h3>{deferredDiscoveryQuery ? `搜索词：${deferredDiscoveryQuery}` : "未提供搜索词"}</h3>
                   </div>
                   {discoveryMode === "stashbox" && discoverResult?.usedStashBox ? (
                     <span className="status-chip tone-info">{discoverResult.usedStashBox.name}</span>

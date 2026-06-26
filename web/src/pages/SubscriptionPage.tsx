@@ -345,6 +345,9 @@ export function SubscriptionPage({
         <div>
           <h2>演员列表</h2>
         </div>
+        <p className="band-note">
+          演员数 {stashPerformerPage?.totalCount ?? 0} · 已订阅 {subscribedPerformers.length}{fetchingStashPerformers || fetchingSubscription ? " · 加载中" : ""}
+        </p>
       </div>
 
       <div className="toolbar-inline toolbar-inline--subscription">
@@ -373,13 +376,21 @@ export function SubscriptionPage({
         </button>
       </div>
 
-      <div className="settings-meta">
-        <span>Stash 候选: {stashPerformerPage?.totalCount ?? 0}</span>
-        <span>当前页: {stashPerformerPage?.page ?? 1} / {stashPerformerPage?.totalPages ?? 0}</span>
-        <span>每页: {stashPerformerPage?.pageSize ?? subscriptionPageSize}</span>
-        <span>已订阅: {subscribedPerformers.length}</span>
-        <span>载入状态: {fetchingStashPerformers || fetchingSubscription ? "同步中" : "已就绪"}</span>
-      </div>
+      {stashPerformerPage && stashPerformerPage.totalPages > 1 ? (
+        <div className="pagination-bar">
+          <button type="button" className="ghost-button" disabled={!stashPerformerPage.hasPrevPage || fetchingStashPerformers} onClick={onPrevPage}>
+            上一页
+          </button>
+          <span className="status-chip tone-neutral">
+            第 {stashPerformerPage.page} / {stashPerformerPage.totalPages} 页
+          </span>
+          <button type="button" className="ghost-button" disabled={!stashPerformerPage.hasNextPage || fetchingStashPerformers} onClick={onNextPage}>
+            下一页
+          </button>
+        </div>
+      ) : null}
+
+
       {subscriptionError || stashPerformersError ? (
         <p className="settings-feedback tone-danger">{describeQueryError(subscriptionError || stashPerformersError)}</p>
       ) : null}

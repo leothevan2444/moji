@@ -62,7 +62,6 @@ export function DiscoveryPage({
           <div>
             <h2>搜索</h2>
           </div>
-          <p className="band-note">先查首选 StashBox 元数据，再送入 Moji 任务闭环。</p>
         </div>
 
         <form className="discovery-shell" onSubmit={onSubmit}>
