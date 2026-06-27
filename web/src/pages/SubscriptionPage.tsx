@@ -226,7 +226,7 @@ export function SubscriptionPage({
               </div>
             </article>
 
-            <div className="toolbar-inline toolbar-inline--subscription" style={{ gridTemplateColumns: "minmax(220px,1.3fr) repeat(4,minmax(120px,160px)) auto auto" }}>
+            <div className="toolbar-inline toolbar-inline--subscription">
               <input
                 placeholder="搜索影片标题、番号、片商"
                 value={performerSceneSearch}

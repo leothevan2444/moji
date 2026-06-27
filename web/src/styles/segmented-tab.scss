@@ -1,68 +1,76 @@
 @use "tokens" as *;
 @use "mixins" as *;
 
-/* SegmentedTab — 单选分段控件，用于在少量互斥选项之间切换（如搜索模式）。
-   与 .nav-tab 共享视觉 token：激活态蓝渐变，未激活态 surface 背景。
-   sm 变体刻意弱化（无外框背景），让 input 保留视觉中心地位。 */
-
 .segmented-tab {
   display: inline-flex;
   align-items: center;
-  padding: 3px;
+  gap: 0;
   border: 1px solid var(--line);
   border-radius: $radius-xl;
   background: var(--surface);
-  gap: 0;
+  padding: 3px;
 
   &[data-size="sm"] {
-    padding: 0;
+    gap: 2px;
     border: none;
     background: transparent;
-    gap: 2px;
+    padding: 0;
 
     .segmented-tab__btn {
       height: 32px;
-      padding: 0 $space-3;
-      font-size: 12px;
       border-radius: $radius-md;
+      padding: 0 $space-3;
       color: var(--muted-2);
+      font-size: 12px;
       font-weight: 600;
 
-      &.is-active { color: var(--accent); }
+      &.is-active {
+        color: var(--accent);
+      }
     }
   }
 
-  &[data-size="md"] .segmented-tab__btn {
-    height: 34px;
-    padding: 0 14px;
-    font-size: 13px;
+  &[data-size="md"] {
+    .segmented-tab__btn {
+      height: 34px;
+      padding: 0 14px;
+      font-size: 13px;
+    }
   }
 
   &__btn {
     appearance: none;
-    border: none;
-    background: transparent;
-    color: var(--muted);
-    font-weight: 600;
-    font-size: 13px;
-    padding: 0 14px;
     height: 30px;
+    border: none;
     border-radius: $radius-lg;
+    background: transparent;
+    padding: 0 14px;
+    color: var(--muted);
     cursor: pointer;
-    transition: background-color $transition-base, color $transition-base;
     white-space: nowrap;
+    font-size: 13px;
+    font-weight: 600;
+    transition: background-color $transition-base, color $transition-base;
 
-    &:hover { color: var(--text); }
+    &:hover {
+      color: var(--text);
+    }
 
     &.is-active {
-      @include active-gradient;
-      color: var(--accent);
       box-shadow: inset 0 0 0 1px rgba(37, 99, 235, 0.28);
+      color: var(--accent);
+      @include active-gradient;
     }
   }
 }
 
-[data-theme="dark"] .segmented-tab__btn.is-active {
-  background: linear-gradient(180deg, rgba(96, 165, 250, 0.22), rgba(96, 165, 250, 0.08));
-  box-shadow: inset 0 0 0 1px rgba(96, 165, 250, 0.32);
+[data-theme="dark"] {
+  .segmented-tab {
+    &__btn {
+      &.is-active {
+        @include active-gradient-dark;
+        box-shadow: inset 0 0 0 1px rgba(96, 165, 250, 0.32);
+      }
+    }
+  }
 }

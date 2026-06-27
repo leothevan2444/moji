@@ -79,15 +79,7 @@ export function JackettFilterPanel({
             {selectedCount > 0 && (
               <button
                 type="button"
-                className="filter-panel__hint"
-                style={{
-                  background: "transparent",
-                  border: "none",
-                  padding: 0,
-                  cursor: "pointer",
-                  textAlign: "left",
-                  color: "var(--accent)"
-                }}
+                className="filter-panel__clear"
                 onClick={onClear}
               >
                 清空筛选

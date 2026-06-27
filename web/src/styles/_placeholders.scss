@@ -15,3 +15,28 @@
   border-radius: $radius-full;
   font-weight: 600;
 }
+
+// Shared action row used in card/drawer footers.
+%action-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+// Shared icon-only button reset.
+%icon-button-reset {
+  min-width: auto;
+  min-height: auto;
+  padding: 0;
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+// Shared stacked block for vertical sections.
+%stack-panel {
+  display: grid;
+  gap: $space-2;
+}

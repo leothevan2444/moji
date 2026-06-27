@@ -17,6 +17,10 @@
 
   .toolbar-inline {
     grid-template-columns: minmax(200px, 1fr) repeat(2, minmax(130px, 160px)) auto auto auto;
+
+    &--subscription {
+      grid-template-columns: minmax(220px, 1.3fr) repeat(4, minmax(120px, 160px)) auto auto;
+    }
   }
 
   .stat-strip {
@@ -54,10 +58,9 @@
     max-width: none;
   }
 
-  .discovery-bar,
   .toolbar-inline,
   .toolbar-inline--subscription,
-  .help-layout {
+  .help__layout {
     grid-template-columns: 1fr;
   }
 
@@ -66,8 +69,8 @@
   }
 
   .drawer {
-    border-radius: 0;
     width: 100%;
+    border-radius: 0;
   }
 }
 
