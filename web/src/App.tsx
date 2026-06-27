@@ -16,7 +16,7 @@ import {
 import { taskSummary, type TaskGroupKey } from "./utils";
 import type { DrawerKey, SettingsTab, TabKey } from "./types";
 import { Drawer, Header, ToastStack } from "./components/layout";
-import { DiscoveryDrawer, HelpDrawer, SettingsDrawer, StatsDrawer, TaskDrawer } from "./components/drawers";
+import { ConfirmDeleteDrawer, DiscoveryDrawer, HelpDrawer, SettingsDrawer, StatsDrawer, TaskDrawer } from "./components/drawers";
 import { JackettFilterPanel } from "./components/drawers/JackettFilterPanel";
 import { SortAndPagination } from "./components/drawers/SortAndPagination";
 import {
@@ -38,7 +38,8 @@ import {
   type DiscoverScenesDocumentQuery,
   type SearchDocumentQuery,
   DiscoverSortBy,
-  JackettSortBy
+  JackettSortBy,
+  TaskDeletePolicy
 } from "./graphql/generated/graphql";
 
 function App() {
@@ -65,6 +66,7 @@ function App() {
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
   const [pendingTaskScanId, setPendingTaskScanId] = useState<string | null>(null);
   const [pendingTaskDeleteId, setPendingTaskDeleteId] = useState<string | null>(null);
+  const [confirmDeleteTaskId, setConfirmDeleteTaskId] = useState<string | null>(null);
 
   // Discovery page state
   const [discoveryQuery, setDiscoveryQuery] = useState("");
@@ -180,6 +182,8 @@ function App() {
   const runtimeSettings = data?.settings ?? null;
   const runtimeStatus = data?.settingsStatus ?? null;
   const activeTask = selectedTaskId ? tasks.find((task) => task.id === selectedTaskId) ?? null : null;
+  const confirmDeleteTask = confirmDeleteTaskId ? tasks.find((task) => task.id === confirmDeleteTaskId) ?? null : null;
+  const deletePolicy = runtimeSettings?.system.taskDeletePolicy ?? TaskDeletePolicy.KeepOnly;
 
   const metrics = {
     active: data?.dashboardStats.active ?? 0,
@@ -340,11 +344,16 @@ function App() {
         setDrawer(null);
       }
 
+      setConfirmDeleteTaskId(null);
       pushToast("tone-success", `已删除任务：${task ? taskSummary(task) : taskId}。`);
       await refreshDashboard({ requestPolicy: "network-only" });
     } finally {
       setPendingTaskDeleteId(null);
     }
+  };
+
+  const requestDeleteTask = (taskId: string) => {
+    setConfirmDeleteTaskId(taskId);
   };
 
   const handleAddSearchResult = async (result: SearchDocumentQuery["jackettSearch"][number]) => {
@@ -557,7 +566,7 @@ function App() {
             onScanAll={() => void runScan()}
             onOpenTask={openTaskDetail}
             onScanTask={(id) => void runTaskScan(id)}
-            onDeleteTask={(id) => void runDeleteTask(id)}
+            onDeleteTask={requestDeleteTask}
           />
         ) : null}
 
@@ -688,7 +697,7 @@ function App() {
               onSyncAll={() => void runSync()}
               onScanTask={(id) => void runTaskScan(id)}
               onScanAll={() => void runScan()}
-              onDeleteTask={(id) => void runDeleteTask(id)}
+              onDeleteTask={requestDeleteTask}
             />
           ) : null}
 
@@ -752,6 +761,26 @@ function App() {
               </article>
             </div>
           ) : null}
+        </Drawer>
+      ) : null}
+
+      {confirmDeleteTaskId ? (
+        <Drawer
+          visibleDrawer="confirm"
+          closing={false}
+          title="删除确认"
+          onClose={() => {
+            if (!pendingTaskDeleteId) {
+              setConfirmDeleteTaskId(null);
+            }
+          }}
+        >
+          <ConfirmDeleteDrawer
+            taskLabel={confirmDeleteTask ? taskSummary(confirmDeleteTask) : confirmDeleteTaskId}
+            destructive={deletePolicy === TaskDeletePolicy.RemoveTorrentAndFiles}
+            pending={pendingTaskDeleteId === confirmDeleteTaskId}
+            onConfirm={() => void runDeleteTask(confirmDeleteTaskId)}
+          />
         </Drawer>
       ) : null}
 

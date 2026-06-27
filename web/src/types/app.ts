@@ -3,7 +3,7 @@
  */
 
 export type TabKey = "主页" | "任务" | "演员" | "发现";
-export type DrawerKey = "stats" | "settings" | "help" | "task" | "discovery" | null;
+export type DrawerKey = "stats" | "settings" | "help" | "task" | "discovery" | "confirm" | null;
 
 export type ToastTone = "tone-success" | "tone-danger" | "tone-info";
 export type ToastPhase = "entering" | "leaving";
