@@ -36,6 +36,7 @@ func OpenStore(path string) (*Store, error) {
 		return nil, fmt.Errorf("parse config %q: %w", path, err)
 	}
 	cfg.Stash.normalize()
+	cfg.System.TaskDeletePolicy = cfg.System.EffectiveTaskDeletePolicy()
 	cfg.path = path
 
 	var root yaml.Node
@@ -142,6 +143,19 @@ func (s *Store) UpdateAutomation(taskProgressSyncIntervalSeconds, subscriptionPo
 	return &clone, nil
 }
 
+func (s *Store) UpdateSystem(taskDeletePolicy TaskDeletePolicy) (*Config, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	s.cfg.System.TaskDeletePolicy = NormalizeTaskDeletePolicy(string(taskDeletePolicy))
+
+	if err := s.updateConfigNode(); err != nil {
+		return nil, err
+	}
+	clone := *s.cfg
+	return &clone, nil
+}
+
 func (s *Store) UpdateSubscription(selectedEndpoints []string) (*Config, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -195,6 +209,7 @@ func (s *Store) updateConfigNode() error {
 	})
 	setIntScalar(mapValue(top, "automation"), "task_progress_sync_interval_seconds", s.cfg.Automation.TaskProgressSyncIntervalSeconds)
 	setIntScalar(mapValue(top, "automation"), "subscription_poll_interval_hours", s.cfg.Automation.SubscriptionPollIntervalHours)
+	setScalar(mapValue(top, "system"), "task_delete_policy", string(s.cfg.System.EffectiveTaskDeletePolicy()))
 	setStringList(mapValue(top, "subscription"), "selected_stash_box_endpoints", s.cfg.Subscription.StashBoxEndpoints)
 	deleteMapKey(top, "tasks")
 	deleteMapKey(top, "logging")

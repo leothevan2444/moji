@@ -457,6 +457,9 @@ func TestSettingsQueryReturnsRuntimeSnapshot(t *testing.T) {
 			TaskProgressSyncIntervalSeconds: 60,
 			SubscriptionPollIntervalHours:   6,
 		},
+		System: SystemSettingsSnapshot{
+			TaskDeletePolicy: "KEEP_ONLY",
+		},
 	}
 	resolver.RuntimeStatus = &SettingsStatusSnapshot{
 		Automation: AutomationStatusSnapshot{
@@ -474,6 +477,7 @@ func TestSettingsQueryReturnsRuntimeSnapshot(t *testing.T) {
 			jackett { configured url apiKeyConfigured }
 			qbittorrent { configured url username usernameConfigured passwordConfigured defaultSavePath category tags }
 			automation { taskProgressSyncIntervalSeconds subscriptionPollIntervalHours }
+			system { taskDeletePolicy }
 		}
 		settingsStatus {
 			automation { taskProgressSyncEnabled }
@@ -496,6 +500,9 @@ func TestSettingsQueryReturnsRuntimeSnapshot(t *testing.T) {
 	}
 	if resp.Data.Settings.Automation.TaskProgressSyncIntervalSeconds != 60 {
 		t.Fatalf("unexpected automation settings: %+v", resp.Data.Settings.Automation)
+	}
+	if resp.Data.Settings.System.TaskDeletePolicy != "KEEP_ONLY" {
+		t.Fatalf("unexpected system settings: %+v", resp.Data.Settings.System)
 	}
 	if !resp.Data.SettingsStatus.Automation.TaskProgressSyncEnabled {
 		t.Fatalf("unexpected automation status: %+v", resp.Data.SettingsStatus.Automation)
@@ -547,6 +554,9 @@ func TestSettingsQueryUsesSettingsEditorSnapshot(t *testing.T) {
 				URL:      "http://qb.invalid",
 				Username: "editor-user",
 			},
+			System: SystemSettingsSnapshot{
+				TaskDeletePolicy: "REMOVE_TORRENT",
+			},
 		},
 		statusSnapshot: &SettingsStatusSnapshot{
 			Automation: AutomationStatusSnapshot{
@@ -556,7 +566,7 @@ func TestSettingsQueryUsesSettingsEditorSnapshot(t *testing.T) {
 		},
 	}
 
-	resp := executeGraphQL(t, resolver, `{ settings { subscription { stashBoxEndpoints } qbittorrent { url username } automation { subscriptionPollIntervalHours } } settingsStatus { automation { subscriptionPollIntervalHours subscriptionPollEnabled } } }`)
+	resp := executeGraphQL(t, resolver, `{ settings { subscription { stashBoxEndpoints } qbittorrent { url username } automation { subscriptionPollIntervalHours } system { taskDeletePolicy } } settingsStatus { automation { subscriptionPollIntervalHours subscriptionPollEnabled } } }`)
 	if len(resp.Errors) > 0 {
 		t.Fatalf("expected no errors, got %+v", resp.Errors)
 	}
@@ -565,6 +575,9 @@ func TestSettingsQueryUsesSettingsEditorSnapshot(t *testing.T) {
 	}
 	if resp.Data.Settings.Qbittorrent.Username != "editor-user" {
 		t.Fatalf("unexpected qbittorrent settings: %+v", resp.Data.Settings.Qbittorrent)
+	}
+	if resp.Data.Settings.System.TaskDeletePolicy != "REMOVE_TORRENT" {
+		t.Fatalf("unexpected system settings: %+v", resp.Data.Settings.System)
 	}
 	if !resp.Data.SettingsStatus.Automation.SubscriptionPollEnabled || resp.Data.SettingsStatus.Automation.SubscriptionPollIntervalHours != 1 {
 		t.Fatalf("unexpected automation status: %+v", resp.Data.SettingsStatus.Automation)
@@ -676,6 +689,37 @@ func TestUpdateSubscriptionSettingsMutation(t *testing.T) {
 	}
 	if len(resp.Data.UpdateSubscriptionSettings.Subscription.StashBoxEndpoints) != 1 {
 		t.Fatalf("unexpected subscription response: %+v", resp.Data.UpdateSubscriptionSettings.Subscription)
+	}
+}
+
+func TestUpdateSystemSettingsMutation(t *testing.T) {
+	editor := &fakeSettingsEditor{
+		updateSystemSnapshot: &SettingsSnapshot{
+			System: SystemSettingsSnapshot{
+				TaskDeletePolicy: "REMOVE_TORRENT_AND_FILES",
+			},
+		},
+	}
+	resolver := NewResolver(nil, nil, nil, nil, "test-version")
+	resolver.SettingsEditor = editor
+
+	resp := executeGraphQL(t, resolver, `mutation {
+		updateSystemSettings(input: {
+			taskDeletePolicy: REMOVE_TORRENT_AND_FILES
+		}) {
+			system {
+				taskDeletePolicy
+			}
+		}
+	}`)
+	if len(resp.Errors) > 0 {
+		t.Fatalf("expected no errors, got %+v", resp.Errors)
+	}
+	if editor.systemInput.TaskDeletePolicy != "REMOVE_TORRENT_AND_FILES" {
+		t.Fatalf("unexpected system input: %+v", editor.systemInput)
+	}
+	if resp.Data.UpdateSystemSettings.System.TaskDeletePolicy != "REMOVE_TORRENT_AND_FILES" {
+		t.Fatalf("unexpected system response: %+v", resp.Data.UpdateSystemSettings.System)
 	}
 }
 
@@ -838,6 +882,9 @@ type graphQLTaskResponse struct {
 				TaskProgressSyncIntervalSeconds int `json:"taskProgressSyncIntervalSeconds"`
 				SubscriptionPollIntervalHours   int `json:"subscriptionPollIntervalHours"`
 			} `json:"automation"`
+			System struct {
+				TaskDeletePolicy string `json:"taskDeletePolicy"`
+			} `json:"system"`
 		} `json:"settings"`
 		SettingsStatus struct {
 			Automation struct {
@@ -893,6 +940,11 @@ type graphQLTaskResponse struct {
 				StashBoxEndpoints []string `json:"stashBoxEndpoints"`
 			} `json:"subscription"`
 		} `json:"updateSubscriptionSettings"`
+		UpdateSystemSettings struct {
+			System struct {
+				TaskDeletePolicy string `json:"taskDeletePolicy"`
+			} `json:"system"`
+		} `json:"updateSystemSettings"`
 		QbittorrentAdd bool `json:"qbittorrentAdd"`
 	} `json:"data"`
 	Errors []struct {
@@ -911,6 +963,8 @@ type fakeSettingsEditor struct {
 	updateQBittorrentSnapshot  *SettingsSnapshot
 	automationInput            UpdateAutomationSettingsInput
 	updateAutomationSnapshot   *SettingsSnapshot
+	systemInput                UpdateSystemSettingsInput
+	updateSystemSnapshot       *SettingsSnapshot
 	subscriptionInput          UpdateSubscriptionSettingsInput
 	updateSubscriptionSnapshot *SettingsSnapshot
 }
@@ -945,6 +999,11 @@ func (f *fakeSettingsEditor) UpdateQBittorrentSettings(input UpdateQBittorrentSe
 func (f *fakeSettingsEditor) UpdateAutomationSettings(input UpdateAutomationSettingsInput) (*SettingsSnapshot, error) {
 	f.automationInput = input
 	return f.updateAutomationSnapshot, nil
+}
+
+func (f *fakeSettingsEditor) UpdateSystemSettings(input UpdateSystemSettingsInput) (*SettingsSnapshot, error) {
+	f.systemInput = input
+	return f.updateSystemSnapshot, nil
 }
 
 func (f *fakeSettingsEditor) UpdateSubscriptionSettings(input UpdateSubscriptionSettingsInput) (*SettingsSnapshot, error) {

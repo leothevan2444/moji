@@ -15,6 +15,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/leothevan2444/moji/internal/config"
 	"github.com/leothevan2444/moji/internal/logging"
 	"github.com/leothevan2444/moji/internal/stashsync"
 	"github.com/leothevan2444/moji/internal/tracker"
@@ -136,6 +137,7 @@ type Service struct {
 	qbt     TorrentClient
 	store   TaskStore
 	fileOps FileOperator
+	taskDeletePolicy func() config.TaskDeletePolicy
 	now     func() time.Time
 	newID   func() string
 }
@@ -178,6 +180,9 @@ func NewService(tr tracker.Tracker, qbt TorrentClient, store TaskStore, options 
 		qbt:     qbt,
 		store:   store,
 		fileOps: osFileOperator{},
+		taskDeletePolicy: func() config.TaskDeletePolicy {
+			return config.TaskDeletePolicyKeepOnly
+		},
 		now:     time.Now,
 		newID:   newTaskID,
 	}
@@ -191,6 +196,14 @@ func WithFileOperator(fileOps FileOperator) Option {
 	return func(s *Service) {
 		if fileOps != nil {
 			s.fileOps = fileOps
+		}
+	}
+}
+
+func WithTaskDeletePolicyProvider(provider func() config.TaskDeletePolicy) Option {
+	return func(s *Service) {
+		if provider != nil {
+			s.taskDeletePolicy = provider
 		}
 	}
 }
@@ -222,9 +235,15 @@ func (s *Service) DeleteTask(ctx context.Context, id string) (*Task, error) {
 		return nil, err
 	}
 
-	if hash := strings.TrimSpace(task.TorrentHash); hash != "" {
-		if err := s.qbt.DeleteTorrents(ctx, []string{hash}, false); err != nil {
-			return nil, fmt.Errorf("delete qBittorrent torrent %q: %w", hash, err)
+	policy := config.TaskDeletePolicyKeepOnly
+	if s.taskDeletePolicy != nil {
+		policy = config.NormalizeTaskDeletePolicy(string(s.taskDeletePolicy()))
+	}
+
+	if hash := strings.TrimSpace(task.TorrentHash); hash != "" && policy != config.TaskDeletePolicyKeepOnly {
+		deleteFiles := policy == config.TaskDeletePolicyRemoveTorrentAndFiles
+		if err := s.qbt.DeleteTorrents(ctx, []string{hash}, deleteFiles); err != nil {
+			return nil, fmt.Errorf("delete qBittorrent torrent %q with policy %s: %w", hash, policy, err)
 		}
 	}
 

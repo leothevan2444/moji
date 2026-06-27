@@ -83,3 +83,37 @@ ingest:
 		t.Fatalf("expected derived graphql endpoint, got %q", cfg.Stash.GraphQLEndpoint())
 	}
 }
+
+func TestStoreUpdateSystemPersistsTaskDeletePolicy(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "config.yaml")
+	content := `system:
+  task_delete_policy: "KEEP_ONLY"
+subscription:
+  selected_stash_box_endpoints: []
+`
+	if err := os.WriteFile(path, []byte(content), 0o644); err != nil {
+		t.Fatalf("write config: %v", err)
+	}
+
+	store, err := OpenStore(path)
+	if err != nil {
+		t.Fatalf("open store: %v", err)
+	}
+
+	cfg, err := store.UpdateSystem(TaskDeletePolicyRemoveTorrentAndFiles)
+	if err != nil {
+		t.Fatalf("update system: %v", err)
+	}
+	if cfg.System.EffectiveTaskDeletePolicy() != TaskDeletePolicyRemoveTorrentAndFiles {
+		t.Fatalf("unexpected system config: %+v", cfg.System)
+	}
+
+	reloaded, err := LoadFromPath(path)
+	if err != nil {
+		t.Fatalf("reload config: %v", err)
+	}
+	if reloaded.System.EffectiveTaskDeletePolicy() != TaskDeletePolicyRemoveTorrentAndFiles {
+		t.Fatalf("expected persisted task delete policy, got %q", reloaded.System.EffectiveTaskDeletePolicy())
+	}
+}

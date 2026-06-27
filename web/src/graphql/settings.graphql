@@ -56,6 +56,14 @@ mutation UpdateAutomationSettingsDocument($input: UpdateAutomationSettingsInput!
   }
 }
 
+mutation UpdateSystemSettingsDocument($input: UpdateSystemSettingsInput!) {
+  updateSystemSettings(input: $input) {
+    system {
+      taskDeletePolicy
+    }
+  }
+}
+
 mutation UpdateSubscriptionSettingsDocument($input: UpdateSubscriptionSettingsInput!) {
   updateSubscriptionSettings(input: $input) {
     subscription {

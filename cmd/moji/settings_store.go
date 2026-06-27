@@ -131,6 +131,17 @@ func (s *runtimeSettingsEditor) UpdateAutomationSettings(input graphqlapi.Update
 	return buildSettingsSnapshot(cfg, s.version), nil
 }
 
+func (s *runtimeSettingsEditor) UpdateSystemSettings(input graphqlapi.UpdateSystemSettingsInput) (*graphqlapi.SettingsSnapshot, error) {
+	policy := config.NormalizeTaskDeletePolicy(input.TaskDeletePolicy)
+	cfg, err := s.store.UpdateSystem(policy)
+	if err != nil {
+		logging.Errorf("settings: save system settings failed: %v", err)
+		return nil, err
+	}
+	logging.Infof("settings: system settings saved task_delete_policy=%s", cfg.System.EffectiveTaskDeletePolicy())
+	return buildSettingsSnapshot(cfg, s.version), nil
+}
+
 func (s *runtimeSettingsEditor) UpdateSubscriptionSettings(input graphqlapi.UpdateSubscriptionSettingsInput) (*graphqlapi.SettingsSnapshot, error) {
 	cfg, err := s.store.UpdateSubscription(input.StashBoxEndpoints)
 	if err != nil {

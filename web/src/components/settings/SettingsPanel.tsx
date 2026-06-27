@@ -20,6 +20,7 @@ import {
   UpdateQBittorrentSettingsDocumentDocument,
   UpdateStashSettingsDocumentDocument,
   UpdateSubscriptionSettingsDocumentDocument,
+  UpdateSystemSettingsDocumentDocument,
   type DashboardDocumentQuery,
   type LogsDocumentQuery,
   type LogsDocumentQueryVariables,
@@ -35,7 +36,10 @@ import {
   type UpdateStashSettingsDocumentMutation,
   type UpdateStashSettingsDocumentMutationVariables,
   type UpdateSubscriptionSettingsDocumentMutation,
-  type UpdateSubscriptionSettingsDocumentMutationVariables
+  type UpdateSubscriptionSettingsDocumentMutationVariables,
+  type UpdateSystemSettingsDocumentMutation,
+  type UpdateSystemSettingsDocumentMutationVariables,
+  TaskDeletePolicy
 } from "../../graphql/generated/graphql";
 import type { SettingsTab, ToastTone } from "../../types";
 import {
@@ -45,6 +49,7 @@ import {
   EMPTY_QBITTORRENT_FORM,
   EMPTY_STASH_FORM,
   EMPTY_SUBSCRIPTION_FORM,
+  EMPTY_SYSTEM_FORM,
   LOG_LEVEL_OPTIONS
 } from "../../constants";
 import { serviceStatus } from "../../utils";
@@ -111,6 +116,7 @@ export function SettingsPanel({
   const [jackettForm, setJackettForm] = useState(EMPTY_JACKETT_FORM);
   const [qbittorrentForm, setQBittorrentForm] = useState(EMPTY_QBITTORRENT_FORM);
   const [automationForm, setAutomationForm] = useState(EMPTY_AUTOMATION_FORM);
+  const [systemForm, setSystemForm] = useState(EMPTY_SYSTEM_FORM);
   const [subscriptionForm, setSubscriptionForm] = useState(EMPTY_SUBSCRIPTION_FORM);
 
   const toggleSecret = (key: "stashApiKey" | "jackettApiKey" | "jackettPassword" | "qbittorrentPassword") => {
@@ -149,6 +155,10 @@ export function SettingsPanel({
     UpdateAutomationSettingsDocumentMutation,
     UpdateAutomationSettingsDocumentMutationVariables
   >(UpdateAutomationSettingsDocumentDocument);
+  const [{ fetching: updatingSystem }, updateSystemSettings] = useMutation<
+    UpdateSystemSettingsDocumentMutation,
+    UpdateSystemSettingsDocumentMutationVariables
+  >(UpdateSystemSettingsDocumentDocument);
   const [{ fetching: updatingSubscription }, updateSubscriptionSettings] = useMutation<
     UpdateSubscriptionSettingsDocumentMutation,
     UpdateSubscriptionSettingsDocumentMutationVariables
@@ -189,6 +199,9 @@ export function SettingsPanel({
     setAutomationForm({
       taskProgressSyncIntervalSeconds: String(runtimeSettings.automation.taskProgressSyncIntervalSeconds || 60),
       subscriptionPollIntervalHours: String(runtimeSettings.automation.subscriptionPollIntervalHours || 1)
+    });
+    setSystemForm({
+      taskDeletePolicy: runtimeSettings.system.taskDeletePolicy || TaskDeletePolicy.KeepOnly
     });
     setSubscriptionForm({
       stashBoxEndpoints: [...(runtimeSettings.subscription.stashBoxEndpoints ?? [])]
@@ -302,6 +315,21 @@ export function SettingsPanel({
       return;
     }
     pushToast("tone-success", "Stash-Box 优先级已保存。");
+    await refreshDashboard({ requestPolicy: "network-only" });
+  };
+
+  const saveSystemSettings = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const result = await updateSystemSettings({
+      input: {
+        taskDeletePolicy: systemForm.taskDeletePolicy as TaskDeletePolicy
+      }
+    });
+    if (result.error) {
+      pushToast("tone-danger", describeQueryError(result.error));
+      return;
+    }
+    pushToast("tone-success", "系统设置已保存。");
     await refreshDashboard({ requestPolicy: "network-only" });
   };
 
@@ -883,6 +911,34 @@ export function SettingsPanel({
             ))}
           </div>
         )}
+      </article>
+    );
+  }
+
+  if (settingsTab === "系统") {
+    const deletePolicyInfo = "控制删除 Moji 任务时，是否联动删除 qBittorrent 里的对应下载项，以及是否同时删除下载文件。";
+
+    return (
+      <article className="drawer-card">
+        <div className="drawer-card__head">
+          <h3>系统</h3>
+        </div>
+        <form className="settings-form" onSubmit={(event) => void saveSystemSettings(event)}>
+          <label className="settings-field">
+            <FieldLabel text="删除任务策略" info={deletePolicyInfo} />
+            <select
+              value={systemForm.taskDeletePolicy}
+              onChange={(event) => setSystemForm({ taskDeletePolicy: event.target.value })}
+            >
+              <option value={TaskDeletePolicy.KeepOnly}>仅删除 Moji 任务记录</option>
+              <option value={TaskDeletePolicy.RemoveTorrent}>同时删除 qBittorrent 下载任务</option>
+              <option value={TaskDeletePolicy.RemoveTorrentAndFiles}>同时删除 qBittorrent 下载任务和文件</option>
+            </select>
+          </label>
+          <div className="settings-actions">
+            <button type="submit" disabled={updatingSystem}>保存系统设置</button>
+          </div>
+        </form>
       </article>
     );
   }

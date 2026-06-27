@@ -24,6 +24,33 @@ type QBittorrentConfig struct {
 	Tags            string `yaml:"tags"`
 }
 
+type TaskDeletePolicy string
+
+const (
+	TaskDeletePolicyKeepOnly              TaskDeletePolicy = "KEEP_ONLY"
+	TaskDeletePolicyRemoveTorrent         TaskDeletePolicy = "REMOVE_TORRENT"
+	TaskDeletePolicyRemoveTorrentAndFiles TaskDeletePolicy = "REMOVE_TORRENT_AND_FILES"
+)
+
+func NormalizeTaskDeletePolicy(value string) TaskDeletePolicy {
+	switch TaskDeletePolicy(strings.TrimSpace(value)) {
+	case TaskDeletePolicyRemoveTorrent:
+		return TaskDeletePolicyRemoveTorrent
+	case TaskDeletePolicyRemoveTorrentAndFiles:
+		return TaskDeletePolicyRemoveTorrentAndFiles
+	default:
+		return TaskDeletePolicyKeepOnly
+	}
+}
+
+type SystemConfig struct {
+	TaskDeletePolicy TaskDeletePolicy `yaml:"task_delete_policy"`
+}
+
+func (s SystemConfig) EffectiveTaskDeletePolicy() TaskDeletePolicy {
+	return NormalizeTaskDeletePolicy(string(s.TaskDeletePolicy))
+}
+
 type StashConfig struct {
 	URL    string `yaml:"url"`
 	APIKey string `yaml:"api_key"`
@@ -71,6 +98,7 @@ type Config struct {
 	Stash        StashConfig        `yaml:"stash"`
 	Ingest       IngestConfig       `yaml:"ingest"`
 	Automation   AutomationConfig   `yaml:"automation"`
+	System       SystemConfig       `yaml:"system"`
 	Subscription SubscriptionConfig `yaml:"subscription"`
 	Logging      LoggingConfig      `yaml:"logging"`
 
@@ -93,6 +121,7 @@ func LoadFromPath(path string) (*Config, error) {
 		return nil, fmt.Errorf("parse config %q: %w", path, err)
 	}
 	config.Stash.normalize()
+	config.System.TaskDeletePolicy = config.System.EffectiveTaskDeletePolicy()
 	config.path = path
 
 	return &config, nil

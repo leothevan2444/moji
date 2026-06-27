@@ -37,6 +37,10 @@ export const EMPTY_AUTOMATION_FORM = {
   subscriptionPollIntervalHours: "1"
 };
 
+export const EMPTY_SYSTEM_FORM = {
+  taskDeletePolicy: "KEEP_ONLY"
+};
+
 export const TOAST_LIFETIME_MS = 10000;
 export const TOAST_EXIT_MS = 480;
 

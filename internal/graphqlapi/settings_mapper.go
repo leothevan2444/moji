@@ -51,6 +51,7 @@ func settingsSnapshotToModel(snapshot *SettingsSnapshot, appVersion string) *mod
 			Jackett:      &model.JackettSettings{},
 			Qbittorrent:  &model.QBittorrentSettings{},
 			Automation:   &model.AutomationSettings{},
+			System:       &model.SystemSettings{},
 			Subscription: &model.SubscriptionSettings{},
 		}
 	}
@@ -93,6 +94,9 @@ func settingsSnapshotToModel(snapshot *SettingsSnapshot, appVersion string) *mod
 		Automation: &model.AutomationSettings{
 			TaskProgressSyncIntervalSeconds: snapshot.Automation.TaskProgressSyncIntervalSeconds,
 			SubscriptionPollIntervalHours:   snapshot.Automation.SubscriptionPollIntervalHours,
+		},
+		System: &model.SystemSettings{
+			TaskDeletePolicy: model.TaskDeletePolicy(snapshot.System.TaskDeletePolicy),
 		},
 		Subscription: &model.SubscriptionSettings{
 			StashBoxEndpoints: append([]string(nil), snapshot.Subscription.StashBoxEndpoints...),

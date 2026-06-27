@@ -6,6 +6,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/leothevan2444/moji/internal/config"
 	"github.com/leothevan2444/moji/internal/tracker"
 	"github.com/leothevan2444/moji/pkg/jackett"
 	"github.com/leothevan2444/moji/pkg/qbittorrent"
@@ -197,14 +198,82 @@ func TestDeleteTaskRemovesPersistedTask(t *testing.T) {
 	if task.ID != "task-delete" {
 		t.Fatalf("unexpected deleted task: %+v", task)
 	}
-	if len(qbt.deleteHashes) != 1 || qbt.deleteHashes[0] != "hash-delete" {
-		t.Fatalf("expected qBittorrent delete for hash-delete, got %+v", qbt.deleteHashes)
-	}
-	if qbt.deleteFiles {
-		t.Fatal("expected qBittorrent delete to keep downloaded files")
+	if len(qbt.deleteHashes) != 0 {
+		t.Fatalf("expected KEEP_ONLY to skip qBittorrent delete, got %+v", qbt.deleteHashes)
 	}
 	if _, err := store.Find(context.Background(), "task-delete"); err == nil {
 		t.Fatal("expected deleted task to be removed from store")
+	}
+}
+
+func TestDeleteTaskRemovesQBittorrentTorrentWhenPolicyRequestsIt(t *testing.T) {
+	store := NewMemoryTaskStore()
+	if err := store.Create(context.Background(), &Task{
+		ID:          "task-delete-qbt",
+		Query:       "ABCD-123",
+		Status:      TaskStatusCompleted,
+		TorrentHash: "hash-delete-qbt",
+		CreatedAt:   time.Unix(100, 0).UTC(),
+		UpdatedAt:   time.Unix(100, 0).UTC(),
+	}); err != nil {
+		t.Fatalf("Create failed: %v", err)
+	}
+
+	qbt := &fakeTorrentAdder{}
+	service, err := NewService(
+		fakeTracker{},
+		qbt,
+		store,
+		WithTaskDeletePolicyProvider(func() config.TaskDeletePolicy {
+			return config.TaskDeletePolicyRemoveTorrent
+		}),
+	)
+	if err != nil {
+		t.Fatalf("NewService failed: %v", err)
+	}
+
+	if _, err := service.DeleteTask(context.Background(), "task-delete-qbt"); err != nil {
+		t.Fatalf("DeleteTask failed: %v", err)
+	}
+	if len(qbt.deleteHashes) != 1 || qbt.deleteHashes[0] != "hash-delete-qbt" {
+		t.Fatalf("expected qBittorrent delete for hash-delete-qbt, got %+v", qbt.deleteHashes)
+	}
+	if qbt.deleteFiles {
+		t.Fatal("expected REMOVE_TORRENT policy to keep downloaded files")
+	}
+}
+
+func TestDeleteTaskDeletesDownloadedFilesWhenPolicyRequestsIt(t *testing.T) {
+	store := NewMemoryTaskStore()
+	if err := store.Create(context.Background(), &Task{
+		ID:          "task-delete-files",
+		Query:       "ABCD-123",
+		Status:      TaskStatusCompleted,
+		TorrentHash: "hash-delete-files",
+		CreatedAt:   time.Unix(100, 0).UTC(),
+		UpdatedAt:   time.Unix(100, 0).UTC(),
+	}); err != nil {
+		t.Fatalf("Create failed: %v", err)
+	}
+
+	qbt := &fakeTorrentAdder{}
+	service, err := NewService(
+		fakeTracker{},
+		qbt,
+		store,
+		WithTaskDeletePolicyProvider(func() config.TaskDeletePolicy {
+			return config.TaskDeletePolicyRemoveTorrentAndFiles
+		}),
+	)
+	if err != nil {
+		t.Fatalf("NewService failed: %v", err)
+	}
+
+	if _, err := service.DeleteTask(context.Background(), "task-delete-files"); err != nil {
+		t.Fatalf("DeleteTask failed: %v", err)
+	}
+	if !qbt.deleteFiles {
+		t.Fatal("expected REMOVE_TORRENT_AND_FILES policy to delete downloaded files")
 	}
 }
 
@@ -222,7 +291,14 @@ func TestDeleteTaskKeepsPersistedTaskWhenQBittorrentDeleteFails(t *testing.T) {
 	}
 
 	qbt := &fakeTorrentAdder{deleteErr: errors.New("qbt delete failed")}
-	service, err := NewService(fakeTracker{}, qbt, store)
+	service, err := NewService(
+		fakeTracker{},
+		qbt,
+		store,
+		WithTaskDeletePolicyProvider(func() config.TaskDeletePolicy {
+			return config.TaskDeletePolicyRemoveTorrent
+		}),
+	)
 	if err != nil {
 		t.Fatalf("NewService failed: %v", err)
 	}

@@ -47,6 +47,7 @@ type SettingsEditor interface {
 	UpdateJackettSettings(input UpdateJackettSettingsInput) (*SettingsSnapshot, error)
 	UpdateQBittorrentSettings(input UpdateQBittorrentSettingsInput) (*SettingsSnapshot, error)
 	UpdateAutomationSettings(input UpdateAutomationSettingsInput) (*SettingsSnapshot, error)
+	UpdateSystemSettings(input UpdateSystemSettingsInput) (*SettingsSnapshot, error)
 	UpdateSubscriptionSettings(input UpdateSubscriptionSettingsInput) (*SettingsSnapshot, error)
 }
 
@@ -85,12 +86,17 @@ type UpdateAutomationSettingsInput struct {
 	SubscriptionPollIntervalHours   int
 }
 
+type UpdateSystemSettingsInput struct {
+	TaskDeletePolicy string
+}
+
 type SettingsSnapshot struct {
 	Stash        StashSettingsSnapshot
 	Ingest       IngestSettingsSnapshot
 	Jackett      JackettSettingsSnapshot
 	QBittorrent  QBittorrentSettingsSnapshot
 	Automation   AutomationSettingsSnapshot
+	System       SystemSettingsSnapshot
 	Subscription SubscriptionSettingsSnapshot
 }
 
@@ -137,6 +143,10 @@ type QBittorrentSettingsSnapshot struct {
 type AutomationSettingsSnapshot struct {
 	TaskProgressSyncIntervalSeconds int
 	SubscriptionPollIntervalHours   int
+}
+
+type SystemSettingsSnapshot struct {
+	TaskDeletePolicy string
 }
 
 type SubscriptionSettingsSnapshot struct {

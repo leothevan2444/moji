@@ -134,7 +134,7 @@ func newHTTPRuntime(cfg *config.Config, version string, configStore *config.Stor
 	}
 	apiHandler := api.NewHandler(jackettTracker, api.WithLogFilePath(cfg.EffectiveLogFilePath()))
 	qbittorrentClient, torrentClient := configureQBittorrent(cfg, configStore)
-	downloaderService := configureDownloader(cfg, jackettTracker, torrentClient)
+	downloaderService := configureDownloader(cfg, configStore, jackettTracker, torrentClient)
 	stashClient := configureStashClient(cfg, configStore)
 	stashService := configureStashService(cfg, configStore, stashClient)
 	subscriptionService := configureSubscription(cfg, configStore, stashClient, downloaderService)
@@ -257,7 +257,7 @@ func jackettClientOf(tr tracker.Tracker) *jackett.Client {
 	return nil
 }
 
-func configureDownloader(cfg *config.Config, tr tracker.Tracker, torrent graphqlapi.TorrentClient) graphqlapi.DownloaderService {
+func configureDownloader(cfg *config.Config, configStore *config.Store, tr tracker.Tracker, torrent graphqlapi.TorrentClient) graphqlapi.DownloaderService {
 	if torrent == nil {
 		logging.Infof("runtime: downloader disabled because qBittorrent client is not available")
 		return nil
@@ -267,7 +267,12 @@ func configureDownloader(cfg *config.Config, tr tracker.Tracker, torrent graphql
 	if err != nil {
 		logging.Fatalf("configure task store: %v", err)
 	}
-	service, err := downloader.NewService(tr, torrent, store)
+	service, err := downloader.NewService(
+		tr,
+		torrent,
+		store,
+		downloader.WithTaskDeletePolicyProvider(configureTaskDeletePolicyProvider(configStore, cfg)),
+	)
 	if err != nil {
 		logging.Fatalf("configure downloader: %v", err)
 	}
@@ -296,6 +301,15 @@ func configureProgressSyncInterval(cfg *config.Config) time.Duration {
 func configureProgressSyncIntervalProvider(store *config.Store, cfg *config.Config) func() time.Duration {
 	return func() time.Duration {
 		return configureProgressSyncInterval(storeAutomation(cfg, store))
+	}
+}
+
+func configureTaskDeletePolicyProvider(store *config.Store, cfg *config.Config) func() config.TaskDeletePolicy {
+	return func() config.TaskDeletePolicy {
+		if store != nil {
+			return store.Config().System.EffectiveTaskDeletePolicy()
+		}
+		return cfg.System.EffectiveTaskDeletePolicy()
 	}
 }
 
@@ -367,6 +381,9 @@ func buildSettingsSnapshot(cfg *config.Config, version string) *graphqlapi.Setti
 		Automation: graphqlapi.AutomationSettingsSnapshot{
 			TaskProgressSyncIntervalSeconds: effectiveTaskProgressSyncIntervalSeconds(cfg),
 			SubscriptionPollIntervalHours:   effectiveSubscriptionPollIntervalHours(cfg),
+		},
+		System: graphqlapi.SystemSettingsSnapshot{
+			TaskDeletePolicy: string(cfg.System.EffectiveTaskDeletePolicy()),
 		},
 		Subscription: graphqlapi.SubscriptionSettingsSnapshot{
 			StashBoxEndpoints: append([]string(nil), cfg.Subscription.StashBoxEndpoints...),

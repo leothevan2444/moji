@@ -96,6 +96,7 @@ func TestHTTPHandlerServesSettingsSnapshot(t *testing.T) {
 			stash { configured url apiKeyConfigured }
 			ingest { deliveryMode stashLibraryPath transfer { action mojiSourceRoot mojiTargetRoot } }
 			automation { taskProgressSyncIntervalSeconds subscriptionPollIntervalHours }
+			system { taskDeletePolicy }
 			subscription { stashBoxEndpoints }
 		}
 		settingsStatus {
@@ -117,6 +118,9 @@ func TestHTTPHandlerServesSettingsSnapshot(t *testing.T) {
 	}
 	if resp.Data.Settings.Automation.TaskProgressSyncIntervalSeconds != 60 {
 		t.Fatalf("unexpected automation settings: %+v", resp.Data.Settings.Automation)
+	}
+	if resp.Data.Settings.System.TaskDeletePolicy != "KEEP_ONLY" {
+		t.Fatalf("unexpected system settings: %+v", resp.Data.Settings.System)
 	}
 	if !resp.Data.SettingsStatus.Automation.SubscriptionPollEnabled {
 		t.Fatalf("unexpected automation status: %+v", resp.Data.SettingsStatus.Automation)
@@ -332,6 +336,9 @@ func TestBuildSettingsSnapshotNormalizesDefaults(t *testing.T) {
 	if snapshot.Automation.TaskProgressSyncIntervalSeconds != 60 || snapshot.Automation.SubscriptionPollIntervalHours != 1 {
 		t.Fatalf("unexpected automation snapshot: %+v", snapshot.Automation)
 	}
+	if snapshot.System.TaskDeletePolicy != "KEEP_ONLY" {
+		t.Fatalf("unexpected system snapshot: %+v", snapshot.System)
+	}
 	if len(snapshot.Subscription.StashBoxEndpoints) != 0 {
 		t.Fatalf("expected empty stash box selection in default snapshot, got %+v", snapshot.Subscription)
 	}
@@ -403,6 +410,9 @@ type graphQLResponse struct {
 				TaskProgressSyncIntervalSeconds int `json:"taskProgressSyncIntervalSeconds"`
 				SubscriptionPollIntervalHours   int `json:"subscriptionPollIntervalHours"`
 			} `json:"automation"`
+			System struct {
+				TaskDeletePolicy string `json:"taskDeletePolicy"`
+			} `json:"system"`
 		} `json:"settings"`
 		SettingsStatus struct {
 			Stash struct {

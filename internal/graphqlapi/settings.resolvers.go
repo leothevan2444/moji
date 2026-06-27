@@ -113,6 +113,23 @@ func (r *mutationResolver) UpdateAutomationSettings(ctx context.Context, input m
 	return settingsSnapshotToModel(snapshot, r.AppVersion), nil
 }
 
+// UpdateSystemSettings is the resolver for the updateSystemSettings field.
+func (r *mutationResolver) UpdateSystemSettings(ctx context.Context, input model.UpdateSystemSettingsInput) (*model.Settings, error) {
+	_ = ctx
+	if r.SettingsEditor == nil {
+		return nil, errors.New("settings editor is not configured")
+	}
+
+	snapshot, err := r.SettingsEditor.UpdateSystemSettings(UpdateSystemSettingsInput{
+		TaskDeletePolicy: string(input.TaskDeletePolicy),
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return settingsSnapshotToModel(snapshot, r.AppVersion), nil
+}
+
 // UpdateSubscriptionSettings is the resolver for the updateSubscriptionSettings field.
 func (r *mutationResolver) UpdateSubscriptionSettings(ctx context.Context, input model.UpdateSubscriptionSettingsInput) (*model.Settings, error) {
 	_ = ctx

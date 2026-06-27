@@ -244,6 +244,7 @@ type Settings struct {
 	Jackett      *JackettSettings      `json:"jackett"`
 	Qbittorrent  *QBittorrentSettings  `json:"qbittorrent"`
 	Automation   *AutomationSettings   `json:"automation"`
+	System       *SystemSettings       `json:"system"`
 	Subscription *SubscriptionSettings `json:"subscription"`
 }
 
@@ -438,6 +439,10 @@ type SubscriptionStatus struct {
 	StashBoxesLoadError *string `json:"stashBoxesLoadError,omitempty"`
 }
 
+type SystemSettings struct {
+	TaskDeletePolicy TaskDeletePolicy `json:"taskDeletePolicy"`
+}
+
 type Task struct {
 	ID                  string             `json:"id"`
 	Source              TaskSource         `json:"source"`
@@ -518,6 +523,10 @@ type UpdateStashSettingsInput struct {
 type UpdateSubscriptionSettingsInput struct {
 	// See SubscriptionSettings.stashBoxEndpoints.
 	StashBoxEndpoints []string `json:"stashBoxEndpoints"`
+}
+
+type UpdateSystemSettingsInput struct {
+	TaskDeletePolicy TaskDeletePolicy `json:"taskDeletePolicy"`
 }
 
 type DiscoverSortBy string
@@ -863,6 +872,63 @@ func (e *SceneSourceFilter) UnmarshalJSON(b []byte) error {
 }
 
 func (e SceneSourceFilter) MarshalJSON() ([]byte, error) {
+	var buf bytes.Buffer
+	e.MarshalGQL(&buf)
+	return buf.Bytes(), nil
+}
+
+type TaskDeletePolicy string
+
+const (
+	TaskDeletePolicyKeepOnly              TaskDeletePolicy = "KEEP_ONLY"
+	TaskDeletePolicyRemoveTorrent         TaskDeletePolicy = "REMOVE_TORRENT"
+	TaskDeletePolicyRemoveTorrentAndFiles TaskDeletePolicy = "REMOVE_TORRENT_AND_FILES"
+)
+
+var AllTaskDeletePolicy = []TaskDeletePolicy{
+	TaskDeletePolicyKeepOnly,
+	TaskDeletePolicyRemoveTorrent,
+	TaskDeletePolicyRemoveTorrentAndFiles,
+}
+
+func (e TaskDeletePolicy) IsValid() bool {
+	switch e {
+	case TaskDeletePolicyKeepOnly, TaskDeletePolicyRemoveTorrent, TaskDeletePolicyRemoveTorrentAndFiles:
+		return true
+	}
+	return false
+}
+
+func (e TaskDeletePolicy) String() string {
+	return string(e)
+}
+
+func (e *TaskDeletePolicy) UnmarshalGQL(v any) error {
+	str, ok := v.(string)
+	if !ok {
+		return fmt.Errorf("enums must be strings")
+	}
+
+	*e = TaskDeletePolicy(str)
+	if !e.IsValid() {
+		return fmt.Errorf("%s is not a valid TaskDeletePolicy", str)
+	}
+	return nil
+}
+
+func (e TaskDeletePolicy) MarshalGQL(w io.Writer) {
+	fmt.Fprint(w, strconv.Quote(e.String()))
+}
+
+func (e *TaskDeletePolicy) UnmarshalJSON(b []byte) error {
+	s, err := strconv.Unquote(string(b))
+	if err != nil {
+		return err
+	}
+	return e.UnmarshalGQL(s)
+}
+
+func (e TaskDeletePolicy) MarshalJSON() ([]byte, error) {
 	var buf bytes.Buffer
 	e.MarshalGQL(&buf)
 	return buf.Bytes(), nil
