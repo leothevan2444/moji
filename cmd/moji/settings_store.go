@@ -50,7 +50,7 @@ func (s *runtimeSettingsEditor) UpdateStashSettings(input graphqlapi.UpdateStash
 		logging.Errorf("settings: save stash settings failed: %v", err)
 		return nil, err
 	}
-	logging.Infof("settings: stash settings saved for url=%s", cfg.Stash.URL)
+	logging.Infof("settings: stash settings saved for url=%s", cfg.Connection.Stash.URL)
 	return buildSettingsSnapshot(cfg, s.version), nil
 }
 
@@ -87,7 +87,7 @@ func (s *runtimeSettingsEditor) UpdateJackettSettings(input graphqlapi.UpdateJac
 		logging.Errorf("settings: save jackett settings failed: %v", err)
 		return nil, err
 	}
-	logging.Infof("settings: jackett settings saved for url=%s", cfg.Jackett.URL)
+	logging.Infof("settings: jackett settings saved for url=%s", cfg.Connection.Jackett.URL)
 	return buildSettingsSnapshot(cfg, s.version), nil
 }
 
@@ -106,10 +106,10 @@ func (s *runtimeSettingsEditor) UpdateQBittorrentSettings(input graphqlapi.Updat
 	}
 	logging.Infof(
 		"settings: qBittorrent settings saved for url=%s username=%s save_path=%s category=%s",
-		cfg.QBittorrent.URL,
-		cfg.QBittorrent.Username,
-		cfg.QBittorrent.DefaultSavePath,
-		cfg.QBittorrent.Category,
+		cfg.Connection.QBittorrent.URL,
+		cfg.Connection.QBittorrent.Username,
+		cfg.Connection.QBittorrent.DefaultSavePath,
+		cfg.Connection.QBittorrent.Category,
 	)
 	return buildSettingsSnapshot(cfg, s.version), nil
 }

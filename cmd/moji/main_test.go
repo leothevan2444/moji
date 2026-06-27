@@ -135,7 +135,7 @@ func TestHTTPHandlerServesSettingsSnapshot(t *testing.T) {
 
 func TestIncompleteQBittorrentConfigDisablesResolver(t *testing.T) {
 	cfg := testConfig()
-	cfg.QBittorrent.URL = "http://qbittorrent.invalid"
+	cfg.Connection.QBittorrent.URL = "http://qbittorrent.invalid"
 
 	handler := newHTTPHandler(cfg, "test-version")
 
@@ -150,7 +150,7 @@ func TestIncompleteQBittorrentConfigDisablesResolver(t *testing.T) {
 
 func TestMissingStashConfigDisablesStashResolvers(t *testing.T) {
 	cfg := testConfig()
-	cfg.Stash.URL = ""
+	cfg.Connection.Stash.URL = ""
 	handler := newHTTPHandler(cfg, "test-version")
 
 	jobResp := postGraphQL(t, handler, `{ stashJob(id: "job-1") { id } }`)
@@ -188,8 +188,8 @@ func TestStashConfigured(t *testing.T) {
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			cfg := testConfig()
-			cfg.Stash.URL = tc.url
-			cfg.Stash.APIKey = tc.key
+			cfg.Connection.Stash.URL = tc.url
+			cfg.Connection.Stash.APIKey = tc.key
 			if got := isStashConfigured(cfg); got != tc.want {
 				t.Fatalf("isStashConfigured(%q,%q) = %v, want %v", tc.url, tc.key, got, tc.want)
 			}
@@ -468,9 +468,9 @@ func postGraphQL(t *testing.T, handler http.Handler, query string) graphQLRespon
 
 func testConfig() *config.Config {
 	var cfg config.Config
-	cfg.Jackett.URL = "http://jackett.invalid"
-	cfg.Jackett.APIKey = "test-api-key"
-	cfg.Stash.URL = "http://stash.invalid"
+	cfg.Connection.Jackett.URL = "http://jackett.invalid"
+	cfg.Connection.Jackett.APIKey = "test-api-key"
+	cfg.Connection.Stash.URL = "http://stash.invalid"
 	cfg.Ingest.DeliveryMode = "PATH_MAP"
 	cfg.Ingest.StashLibraryPath = "/library"
 	cfg.Automation.SubscriptionPollIntervalHours = 1

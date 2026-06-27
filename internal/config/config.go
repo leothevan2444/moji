@@ -24,6 +24,12 @@ type QBittorrentConfig struct {
 	Tags            string `yaml:"tags"`
 }
 
+type ConnectionConfig struct {
+	Stash       StashConfig       `yaml:"stash"`
+	Jackett     JackettConfig     `yaml:"jackett"`
+	QBittorrent QBittorrentConfig `yaml:"qbittorrent"`
+}
+
 type TaskDeletePolicy string
 
 const (
@@ -92,10 +98,7 @@ type LoggingConfig struct {
 }
 
 type Config struct {
-	// Jackett is the configuration for the Jackett service
-	Jackett      JackettConfig      `yaml:"jackett"`
-	QBittorrent  QBittorrentConfig  `yaml:"qbittorrent"`
-	Stash        StashConfig        `yaml:"stash"`
+	Connection   ConnectionConfig   `yaml:"connection"`
 	Ingest       IngestConfig       `yaml:"ingest"`
 	Automation   AutomationConfig   `yaml:"automation"`
 	System       SystemConfig       `yaml:"system"`
@@ -120,7 +123,7 @@ func LoadFromPath(path string) (*Config, error) {
 	if err := yaml.Unmarshal(file, &config); err != nil {
 		return nil, fmt.Errorf("parse config %q: %w", path, err)
 	}
-	config.Stash.normalize()
+	config.Connection.Stash.normalize()
 	config.System.TaskDeletePolicy = config.System.EffectiveTaskDeletePolicy()
 	config.path = path
 

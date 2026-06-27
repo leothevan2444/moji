@@ -10,12 +10,13 @@ import (
 func TestStoreUpdateQBittorrentPreservesUnmodeledSections(t *testing.T) {
 	dir := t.TempDir()
 	path := filepath.Join(dir, "config.yaml")
-	content := `database:
+content := `database:
   dsn: "user:password@tcp(localhost:3306)/media_library?parseTime=true"
-qbittorrent:
-  url: "http://localhost:8080"
-  username: "admin"
-  password: "secret"
+connection:
+  qbittorrent:
+    url: "http://localhost:8080"
+    username: "admin"
+    password: "secret"
 tasks:
   progress_sync_interval_seconds: 60
 automation:
@@ -34,8 +35,8 @@ automation:
 	if err != nil {
 		t.Fatalf("update qbittorrent: %v", err)
 	}
-	if cfg.QBittorrent.Password != "" {
-		t.Fatalf("expected password cleared by empty input, got %q", cfg.QBittorrent.Password)
+	if cfg.Connection.QBittorrent.Password != "" {
+		t.Fatalf("expected password cleared by empty input, got %q", cfg.Connection.QBittorrent.Password)
 	}
 
 	updated, err := os.ReadFile(path)
@@ -54,17 +55,18 @@ automation:
 	if reloaded.Automation.TaskProgressSyncIntervalSeconds != 90 {
 		t.Fatalf("expected automation interval preserved, got %d", reloaded.Automation.TaskProgressSyncIntervalSeconds)
 	}
-	if reloaded.QBittorrent.Username != "operator" {
-		t.Fatalf("expected updated username, got %q", reloaded.QBittorrent.Username)
+	if reloaded.Connection.QBittorrent.Username != "operator" {
+		t.Fatalf("expected updated username, got %q", reloaded.Connection.QBittorrent.Username)
 	}
 }
 
 func TestLoadFromPathUsesDirectStashURL(t *testing.T) {
 	dir := t.TempDir()
 	path := filepath.Join(dir, "config.yaml")
-	content := `stash:
-  url: "http://stash.example"
-  api_key: "secret"
+content := `connection:
+  stash:
+    url: "http://stash.example"
+    api_key: "secret"
 ingest:
   delivery_mode: "PATH_MAP"
   path_map:
@@ -79,8 +81,8 @@ ingest:
 	if err != nil {
 		t.Fatalf("load config: %v", err)
 	}
-	if cfg.Stash.GraphQLEndpoint() != "http://stash.example/graphql" {
-		t.Fatalf("expected derived graphql endpoint, got %q", cfg.Stash.GraphQLEndpoint())
+	if cfg.Connection.Stash.GraphQLEndpoint() != "http://stash.example/graphql" {
+		t.Fatalf("expected derived graphql endpoint, got %q", cfg.Connection.Stash.GraphQLEndpoint())
 	}
 }
 

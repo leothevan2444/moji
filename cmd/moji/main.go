@@ -72,11 +72,11 @@ func main() {
 		logging.Fatalf("reconfigure logger: %v", err)
 	}
 
-	if cfg.Jackett.URL == "" {
-		logging.Fatalf("invalid config: jackett.url is required")
+	if cfg.Connection.Jackett.URL == "" {
+		logging.Fatalf("invalid config: connection.jackett.url is required")
 	}
-	if cfg.Jackett.APIKey == "" {
-		logging.Fatalf("invalid config: jackett.api_key is required")
+	if cfg.Connection.Jackett.APIKey == "" {
+		logging.Fatalf("invalid config: connection.jackett.api_key is required")
 	}
 
 	// Dependencies
@@ -198,21 +198,21 @@ func configureJackettConfigProvider(store *config.Store, cfg *config.Config) tra
 // available it always reflects the most recent Web UI write.
 func storeJackett(cfg *config.Config, store *config.Store) *config.JackettConfig {
 	if store != nil {
-		return &store.Config().Jackett
+		return &store.Config().Connection.Jackett
 	}
-	return &cfg.Jackett
+	return &cfg.Connection.Jackett
 }
 
 func configureQBittorrent(cfg *config.Config, store *config.Store) (*qbittorrent.Client, graphqlapi.TorrentClient) {
-	if cfg.QBittorrent.URL == "" {
+	if cfg.Connection.QBittorrent.URL == "" {
 		logging.Infof("runtime: qBittorrent client disabled because qbittorrent.url is empty")
 		return nil, nil
 	}
-	if cfg.QBittorrent.Username == "" {
+	if cfg.Connection.QBittorrent.Username == "" {
 		logging.Warn("qBittorrent disabled: qbittorrent.username is required when qbittorrent.url is set")
 		return nil, nil
 	}
-	if cfg.QBittorrent.Password == "" {
+	if cfg.Connection.QBittorrent.Password == "" {
 		logging.Warn("qBittorrent disabled: qbittorrent.password is required when qbittorrent.url is set")
 		return nil, nil
 	}
@@ -220,10 +220,10 @@ func configureQBittorrent(cfg *config.Config, store *config.Store) (*qbittorrent
 	client := qbittorrent.NewClient(configureQBittorrentConfigProvider(store, cfg))
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
-	if err := client.Login(ctx, cfg.QBittorrent.Username, cfg.QBittorrent.Password); err != nil {
+	if err := client.Login(ctx, cfg.Connection.QBittorrent.Username, cfg.Connection.QBittorrent.Password); err != nil {
 		logging.Fatalf("login qBittorrent: %v", err)
 	}
-	logging.Infof("runtime: qBittorrent client connected to %s as %s", cfg.QBittorrent.URL, cfg.QBittorrent.Username)
+	logging.Infof("runtime: qBittorrent client connected to %s as %s", cfg.Connection.QBittorrent.URL, cfg.Connection.QBittorrent.Username)
 
 	defaultsProvider := func() downloader.TorrentDefaults {
 		current := storeQBittorrent(cfg, store)
@@ -242,9 +242,9 @@ func configureQBittorrent(cfg *config.Config, store *config.Store) (*qbittorrent
 // using it inside a provider see live edits without a restart.
 func storeQBittorrent(cfg *config.Config, store *config.Store) *config.QBittorrentConfig {
 	if store != nil {
-		return &store.Config().QBittorrent
+		return &store.Config().Connection.QBittorrent
 	}
-	return &cfg.QBittorrent
+	return &cfg.Connection.QBittorrent
 }
 
 // jackettClientOf returns the underlying jackett.Client for the stats
@@ -339,16 +339,16 @@ func applySubscriptionOrder(cfg *config.Config, service graphqlapi.SubscriptionS
 
 func buildSettingsSnapshot(cfg *config.Config, version string) *graphqlapi.SettingsSnapshot {
 	_ = version
-	jackettConfigured := cfg.Jackett.URL != "" && cfg.Jackett.APIKey != ""
+	jackettConfigured := cfg.Connection.Jackett.URL != "" && cfg.Connection.Jackett.APIKey != ""
 	stashConfigured := isStashConfigured(cfg)
-	qbittorrentConfigured := cfg.QBittorrent.URL != "" && cfg.QBittorrent.Username != "" && cfg.QBittorrent.Password != ""
+	qbittorrentConfigured := cfg.Connection.QBittorrent.URL != "" && cfg.Connection.QBittorrent.Username != "" && cfg.Connection.QBittorrent.Password != ""
 
 	return &graphqlapi.SettingsSnapshot{
 		Stash: graphqlapi.StashSettingsSnapshot{
 			Configured:       stashConfigured,
-			URL:              cfg.Stash.URL,
-			APIKeyConfigured: cfg.Stash.APIKey != "",
-			APIKey:           cfg.Stash.APIKey,
+			URL:              cfg.Connection.Stash.URL,
+			APIKeyConfigured: cfg.Connection.Stash.APIKey != "",
+			APIKey:           cfg.Connection.Stash.APIKey,
 		},
 		Ingest: graphqlapi.IngestSettingsSnapshot{
 			DeliveryMode:     effectiveDeliveryMode(cfg),
@@ -361,22 +361,22 @@ func buildSettingsSnapshot(cfg *config.Config, version string) *graphqlapi.Setti
 		},
 		Jackett: graphqlapi.JackettSettingsSnapshot{
 			Configured:         jackettConfigured,
-			URL:                cfg.Jackett.URL,
-			APIKeyConfigured:   cfg.Jackett.APIKey != "",
-			APIKey:             cfg.Jackett.APIKey,
-			PasswordConfigured: cfg.Jackett.Password != "",
-			Password:           cfg.Jackett.Password,
+			URL:                cfg.Connection.Jackett.URL,
+			APIKeyConfigured:   cfg.Connection.Jackett.APIKey != "",
+			APIKey:             cfg.Connection.Jackett.APIKey,
+			PasswordConfigured: cfg.Connection.Jackett.Password != "",
+			Password:           cfg.Connection.Jackett.Password,
 		},
 		QBittorrent: graphqlapi.QBittorrentSettingsSnapshot{
 			Configured:         qbittorrentConfigured,
-			URL:                cfg.QBittorrent.URL,
-			Username:           cfg.QBittorrent.Username,
-			UsernameConfigured: cfg.QBittorrent.Username != "",
-			PasswordConfigured: cfg.QBittorrent.Password != "",
-			Password:           cfg.QBittorrent.Password,
-			DefaultSavePath:    cfg.QBittorrent.DefaultSavePath,
-			Category:           cfg.QBittorrent.Category,
-			Tags:               cfg.QBittorrent.Tags,
+			URL:                cfg.Connection.QBittorrent.URL,
+			Username:           cfg.Connection.QBittorrent.Username,
+			UsernameConfigured: cfg.Connection.QBittorrent.Username != "",
+			PasswordConfigured: cfg.Connection.QBittorrent.Password != "",
+			Password:           cfg.Connection.QBittorrent.Password,
+			DefaultSavePath:    cfg.Connection.QBittorrent.DefaultSavePath,
+			Category:           cfg.Connection.QBittorrent.Category,
+			Tags:               cfg.Connection.QBittorrent.Tags,
 		},
 		Automation: graphqlapi.AutomationSettingsSnapshot{
 			TaskProgressSyncIntervalSeconds: effectiveTaskProgressSyncIntervalSeconds(cfg),
@@ -393,10 +393,10 @@ func buildSettingsSnapshot(cfg *config.Config, version string) *graphqlapi.Setti
 
 func buildSettingsStatusSnapshot(cfg *config.Config, version string, downloaderEnabled bool, stashEnabled bool, stashClient *stash.Client, subscriptionService graphqlapi.SubscriptionService) *graphqlapi.SettingsStatusSnapshot {
 	_ = version
-	jackettConfigured := cfg.Jackett.URL != "" && cfg.Jackett.APIKey != ""
+	jackettConfigured := cfg.Connection.Jackett.URL != "" && cfg.Connection.Jackett.APIKey != ""
 	stashConfigured := isStashConfigured(cfg)
 	ingestConfigured := isIngestConfigured(cfg)
-	qbittorrentConfigured := cfg.QBittorrent.URL != "" && cfg.QBittorrent.Username != "" && cfg.QBittorrent.Password != ""
+	qbittorrentConfigured := cfg.Connection.QBittorrent.URL != "" && cfg.Connection.QBittorrent.Username != "" && cfg.Connection.QBittorrent.Password != ""
 
 	subscriptionStatus := graphqlapi.SubscriptionStatusSnapshot{
 		StashBoxes:          []graphqlapi.StashBoxEndpointSnapshot{},
@@ -549,9 +549,9 @@ func configureStashConfigProvider(store *config.Store, cfg *config.Config) stash
 // available it always reflects the most recent Web UI write.
 func storeStash(cfg *config.Config, store *config.Store) *config.StashConfig {
 	if store != nil {
-		return &store.Config().Stash
+		return &store.Config().Connection.Stash
 	}
-	return &cfg.Stash
+	return &cfg.Connection.Stash
 }
 
 func configureStashService(cfg *config.Config, store *config.Store, client *stash.Client) graphqlapi.StashService {
@@ -605,7 +605,7 @@ func isStashConfigured(cfg *config.Config) bool {
 	if cfg == nil {
 		return false
 	}
-	return strings.TrimSpace(cfg.Stash.URL) != ""
+	return strings.TrimSpace(cfg.Connection.Stash.URL) != ""
 }
 
 // isIngestConfigured reports whether the ingest pipeline is fully wired

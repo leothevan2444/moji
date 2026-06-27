@@ -35,7 +35,7 @@ func OpenStore(path string) (*Store, error) {
 	if err := yaml.Unmarshal(file, &cfg); err != nil {
 		return nil, fmt.Errorf("parse config %q: %w", path, err)
 	}
-	cfg.Stash.normalize()
+	cfg.Connection.Stash.normalize()
 	cfg.System.TaskDeletePolicy = cfg.System.EffectiveTaskDeletePolicy()
 	cfg.path = path
 
@@ -67,8 +67,8 @@ func (s *Store) UpdateStash(url, apiKey string) (*Config, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	s.cfg.Stash.URL = trimGraphQLSuffix(url)
-	s.cfg.Stash.APIKey = apiKey
+	s.cfg.Connection.Stash.URL = trimGraphQLSuffix(url)
+	s.cfg.Connection.Stash.APIKey = apiKey
 
 	if err := s.updateConfigNode(); err != nil {
 		return nil, err
@@ -100,9 +100,9 @@ func (s *Store) UpdateJackett(url, apiKey, password string) (*Config, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	s.cfg.Jackett.URL = url
-	s.cfg.Jackett.APIKey = apiKey
-	s.cfg.Jackett.Password = password
+	s.cfg.Connection.Jackett.URL = url
+	s.cfg.Connection.Jackett.APIKey = apiKey
+	s.cfg.Connection.Jackett.Password = password
 
 	if err := s.updateConfigNode(); err != nil {
 		return nil, err
@@ -115,12 +115,12 @@ func (s *Store) UpdateQBittorrent(url, username, password, defaultSavePath, cate
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	s.cfg.QBittorrent.URL = url
-	s.cfg.QBittorrent.Username = username
-	s.cfg.QBittorrent.Password = password
-	s.cfg.QBittorrent.DefaultSavePath = defaultSavePath
-	s.cfg.QBittorrent.Category = category
-	s.cfg.QBittorrent.Tags = tags
+	s.cfg.Connection.QBittorrent.URL = url
+	s.cfg.Connection.QBittorrent.Username = username
+	s.cfg.Connection.QBittorrent.Password = password
+	s.cfg.Connection.QBittorrent.DefaultSavePath = defaultSavePath
+	s.cfg.Connection.QBittorrent.Category = category
+	s.cfg.Connection.QBittorrent.Tags = tags
 
 	if err := s.updateConfigNode(); err != nil {
 		return nil, err
@@ -180,15 +180,17 @@ func (s *Store) UpdateSubscription(selectedEndpoints []string) (*Config, error) 
 func (s *Store) updateConfigNode() error {
 	doc := documentNode(&s.root)
 	top := ensureMapValue(doc)
+	connection := mapValue(top, "connection")
+	ensureMapValue(connection)
 
-	setMapString(top, "jackett", map[string]string{
-		"url":      s.cfg.Jackett.URL,
-		"api_key":  s.cfg.Jackett.APIKey,
-		"password": s.cfg.Jackett.Password,
+	setMapString(connection, "jackett", map[string]string{
+		"url":      s.cfg.Connection.Jackett.URL,
+		"api_key":  s.cfg.Connection.Jackett.APIKey,
+		"password": s.cfg.Connection.Jackett.Password,
 	})
-	setMapString(top, "stash", map[string]string{
-		"url":     s.cfg.Stash.URL,
-		"api_key": s.cfg.Stash.APIKey,
+	setMapString(connection, "stash", map[string]string{
+		"url":     s.cfg.Connection.Stash.URL,
+		"api_key": s.cfg.Connection.Stash.APIKey,
 	})
 	setMapString(top, "ingest", map[string]string{
 		"delivery_mode":      s.cfg.Ingest.DeliveryMode,
@@ -199,21 +201,24 @@ func (s *Store) updateConfigNode() error {
 		"moji_source_root": s.cfg.Ingest.Transfer.MojiSourceRoot,
 		"moji_target_root": s.cfg.Ingest.Transfer.MojiTargetRoot,
 	})
-	setMapString(top, "qbittorrent", map[string]string{
-		"url":               s.cfg.QBittorrent.URL,
-		"username":          s.cfg.QBittorrent.Username,
-		"password":          s.cfg.QBittorrent.Password,
-		"default_save_path": s.cfg.QBittorrent.DefaultSavePath,
-		"category":          s.cfg.QBittorrent.Category,
-		"tags":              s.cfg.QBittorrent.Tags,
+	setMapString(connection, "qbittorrent", map[string]string{
+		"url":               s.cfg.Connection.QBittorrent.URL,
+		"username":          s.cfg.Connection.QBittorrent.Username,
+		"password":          s.cfg.Connection.QBittorrent.Password,
+		"default_save_path": s.cfg.Connection.QBittorrent.DefaultSavePath,
+		"category":          s.cfg.Connection.QBittorrent.Category,
+		"tags":              s.cfg.Connection.QBittorrent.Tags,
 	})
 	setIntScalar(mapValue(top, "automation"), "task_progress_sync_interval_seconds", s.cfg.Automation.TaskProgressSyncIntervalSeconds)
 	setIntScalar(mapValue(top, "automation"), "subscription_poll_interval_hours", s.cfg.Automation.SubscriptionPollIntervalHours)
 	setScalar(mapValue(top, "system"), "task_delete_policy", string(s.cfg.System.EffectiveTaskDeletePolicy()))
 	setStringList(mapValue(top, "subscription"), "selected_stash_box_endpoints", s.cfg.Subscription.StashBoxEndpoints)
+	deleteMapKey(top, "stash")
+	deleteMapKey(top, "jackett")
+	deleteMapKey(top, "qbittorrent")
 	deleteMapKey(top, "tasks")
 	deleteMapKey(top, "logging")
-	if stash := existingMapValue(top, "stash"); stash != nil {
+	if stash := existingMapValue(connection, "stash"); stash != nil {
 		deleteMapKey(stash, "graphql_url")
 		deleteMapKey(stash, "mode")
 		deleteMapKey(stash, "library_path")
