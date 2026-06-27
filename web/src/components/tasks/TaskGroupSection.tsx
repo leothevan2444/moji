@@ -8,9 +8,11 @@ interface TaskGroupSectionProps {
   tasks: DashboardTask[];
   open: boolean;
   pendingTaskScanId: string | null;
+  pendingTaskDeleteId: string | null;
   onToggle: (group: TaskGroupKey) => void;
   onOpenTask: (taskId: string) => void;
   onScanTask: (taskId: string) => void;
+  onDeleteTask: (taskId: string) => void;
   onScanAll: () => void;
 }
 
@@ -21,9 +23,11 @@ export function TaskGroupSection({
   tasks,
   open,
   pendingTaskScanId,
+  pendingTaskDeleteId,
   onToggle,
   onOpenTask,
   onScanTask,
+  onDeleteTask,
   onScanAll
 }: TaskGroupSectionProps) {
   return (
@@ -57,8 +61,10 @@ export function TaskGroupSection({
               key={task.id}
               task={task}
               pendingScanId={pendingTaskScanId}
+              pendingDeleteId={pendingTaskDeleteId}
               onOpen={onOpenTask}
               onScan={onScanTask}
+              onDelete={onDeleteTask}
             />
           ))}
         </div>

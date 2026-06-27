@@ -4,23 +4,36 @@ import type { DashboardTask } from "../../utils";
 interface TaskDrawerProps {
   task: DashboardTask | null;
   pendingScan: boolean;
+  pendingDelete: boolean;
   onCopy: (value: string, successMessage: string) => void | Promise<void>;
   onSyncAll: () => void;
   onScanTask: (taskId: string) => void;
   onScanAll: () => void;
+  onDeleteTask: (taskId: string) => void;
 }
 
-export function TaskDrawer({ task, pendingScan, onCopy, onSyncAll, onScanTask, onScanAll }: TaskDrawerProps) {
+export function TaskDrawer({
+  task,
+  pendingScan,
+  pendingDelete,
+  onCopy,
+  onSyncAll,
+  onScanTask,
+  onScanAll,
+  onDeleteTask
+}: TaskDrawerProps) {
   return (
     <div className="drawer-stack">
       {task ? (
         <TaskDetail
           task={task}
           pendingScan={pendingScan}
+          pendingDelete={pendingDelete}
           onCopy={onCopy}
           onSyncAll={onSyncAll}
           onScanTask={onScanTask}
           onScanAll={onScanAll}
+          onDeleteTask={onDeleteTask}
         />
       ) : (
         <article className="drawer-card">

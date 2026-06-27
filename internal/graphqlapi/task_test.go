@@ -159,6 +159,35 @@ func TestTasksQueryWithoutDownloaderReturnsEmptyList(t *testing.T) {
 	}
 }
 
+func TestDeleteTaskMutation(t *testing.T) {
+	downloader := &fakeDownloader{
+		deleteTask: &downloader.Task{
+			ID:        "task-delete",
+			Status:    downloader.TaskStatusCompleted,
+			CreatedAt: time.Unix(100, 0).UTC(),
+			UpdatedAt: time.Unix(200, 0).UTC(),
+		},
+	}
+	resolver := NewResolver(nil, nil, downloader, nil, "test-version")
+
+	resp := executeGraphQL(t, resolver, `mutation {
+		deleteTask(id: "task-delete") {
+			id
+			status
+		}
+	}`)
+
+	if len(resp.Errors) > 0 {
+		t.Fatalf("expected no errors, got %+v", resp.Errors)
+	}
+	if downloader.deleteTaskID != "task-delete" {
+		t.Fatalf("expected delete request for task-delete, got %q", downloader.deleteTaskID)
+	}
+	if resp.Data.DeleteTask.ID != "task-delete" || resp.Data.DeleteTask.Status != "completed" {
+		t.Fatalf("unexpected delete task response: %+v", resp.Data.DeleteTask)
+	}
+}
+
 func TestStashPerformersQueryPaginatesResults(t *testing.T) {
 	resolver := NewResolver(nil, nil, nil, nil, "test-version")
 	resolver.Subscription = &fakeSubscriptionService{
@@ -679,6 +708,8 @@ type fakeDownloader struct {
 	downloadTask        *downloader.Task
 	findTask            *downloader.Task
 	listTasks           []*downloader.Task
+	deleteTaskID        string
+	deleteTask          *downloader.Task
 	syncTasks           []*downloader.Task
 	stashTasks          []*downloader.Task
 	triggerTaskScanID   string
@@ -701,6 +732,11 @@ func (f *fakeDownloader) FindTask(_ context.Context, _ string) (*downloader.Task
 
 func (f *fakeDownloader) ListTasks(_ context.Context) ([]*downloader.Task, error) {
 	return f.listTasks, nil
+}
+
+func (f *fakeDownloader) DeleteTask(_ context.Context, id string) (*downloader.Task, error) {
+	f.deleteTaskID = id
+	return f.deleteTask, nil
 }
 
 func (f *fakeDownloader) SyncProgress(_ context.Context) ([]*downloader.Task, error) {
@@ -742,6 +778,10 @@ type graphQLTaskResponse struct {
 		Task *struct {
 			ID string `json:"id"`
 		} `json:"task"`
+		DeleteTask struct {
+			ID     string `json:"id"`
+			Status string `json:"status"`
+		} `json:"deleteTask"`
 		SyncTaskProgress []struct {
 			ID               string  `json:"id"`
 			Status           string  `json:"status"`

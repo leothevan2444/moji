@@ -86,6 +86,22 @@ func (s *JSONTaskStore) List(_ context.Context) ([]*Task, error) {
 	return tasks, nil
 }
 
+func (s *JSONTaskStore) Delete(ctx context.Context, id string) (*Task, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	task, exists := s.tasks[id]
+	if !exists {
+		return nil, fmt.Errorf("downloader: task %q not found", id)
+	}
+	delete(s.tasks, id)
+	if err := s.saveLocked(ctx); err != nil {
+		s.tasks[id] = task
+		return nil, err
+	}
+	return cloneTask(task), nil
+}
+
 func (s *JSONTaskStore) load() error {
 	data, err := os.ReadFile(s.path)
 	if err != nil {

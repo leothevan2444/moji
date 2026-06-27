@@ -30,9 +30,14 @@ type TorrentLister interface {
 	GetTorrentList(ctx context.Context, options *qbittorrent.TorrentListOptions) ([]qbittorrent.Torrent, error)
 }
 
+type TorrentRemover interface {
+	DeleteTorrents(ctx context.Context, hashes []string, deleteFiles bool) error
+}
+
 type TorrentClient interface {
 	TorrentAdder
 	TorrentLister
+	TorrentRemover
 }
 
 type TaskStore interface {
@@ -40,6 +45,7 @@ type TaskStore interface {
 	Update(ctx context.Context, task *Task) error
 	Find(ctx context.Context, id string) (*Task, error)
 	List(ctx context.Context) ([]*Task, error)
+	Delete(ctx context.Context, id string) (*Task, error)
 }
 
 type TaskStatus string
@@ -203,6 +209,26 @@ func (s *Service) FindTask(ctx context.Context, id string) (*Task, error) {
 
 func (s *Service) ListTasks(ctx context.Context) ([]*Task, error) {
 	return s.store.List(ctx)
+}
+
+func (s *Service) DeleteTask(ctx context.Context, id string) (*Task, error) {
+	id = strings.TrimSpace(id)
+	if id == "" {
+		return nil, errors.New("downloader: task id is required")
+	}
+
+	task, err := s.store.Find(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+
+	if hash := strings.TrimSpace(task.TorrentHash); hash != "" {
+		if err := s.qbt.DeleteTorrents(ctx, []string{hash}, false); err != nil {
+			return nil, fmt.Errorf("delete qBittorrent torrent %q: %w", hash, err)
+		}
+	}
+
+	return s.store.Delete(ctx, id)
 }
 
 func (s *Service) SyncProgress(ctx context.Context) ([]*Task, error) {
@@ -640,6 +666,18 @@ func (s *MemoryTaskStore) List(_ context.Context) ([]*Task, error) {
 	}
 	sortTasks(tasks)
 	return tasks, nil
+}
+
+func (s *MemoryTaskStore) Delete(_ context.Context, id string) (*Task, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	task, exists := s.tasks[id]
+	if !exists {
+		return nil, fmt.Errorf("downloader: task %q not found", id)
+	}
+	delete(s.tasks, id)
+	return cloneTask(task), nil
 }
 
 func sortTasks(tasks []*Task) {

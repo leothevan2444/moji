@@ -3,6 +3,7 @@ import {
   faCopy,
   faDownload,
   faRotate,
+  faTrashCan,
   faWandMagicSparkles
 } from "@fortawesome/free-solid-svg-icons";
 import { TaskTimeline } from "./TaskTimeline";
@@ -22,19 +23,23 @@ import {
 interface TaskDetailProps {
   task: DashboardTask;
   pendingScan: boolean;
+  pendingDelete: boolean;
   onCopy: (value: string, successMessage: string) => void | Promise<void>;
   onSyncAll: () => void;
   onScanTask: (taskId: string) => void;
   onScanAll: () => void;
+  onDeleteTask: (taskId: string) => void;
 }
 
 export function TaskDetail({
   task,
   pendingScan,
+  pendingDelete,
   onCopy,
   onSyncAll,
   onScanTask,
-  onScanAll
+  onScanAll,
+  onDeleteTask
 }: TaskDetailProps) {
   const presentation = taskPresentation(task);
   const failure = taskFailureSummary(task);
@@ -267,6 +272,15 @@ export function TaskDetail({
           <button type="button" className="ghost-button task-ops__button" onClick={onScanAll}>
             <FontAwesomeIcon icon={faDownload} />
             <span>触发待入库任务扫描</span>
+          </button>
+          <button
+            type="button"
+            className="ghost-button task-ops__button task-ops__button--danger"
+            onClick={() => onDeleteTask(task.id)}
+            disabled={pendingDelete}
+          >
+            <FontAwesomeIcon icon={faTrashCan} />
+            <span>{pendingDelete ? "正在删除当前任务" : "删除当前任务"}</span>
           </button>
         </div>
       </article>

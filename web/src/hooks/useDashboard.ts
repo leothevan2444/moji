@@ -2,6 +2,7 @@ import { useMutation, useQuery } from "urql";
 import {
   AddTorrentDocumentDocument,
   DashboardDocumentDocument,
+  DeleteTaskDocumentDocument,
   SyncTaskProgressDocumentDocument,
   TriggerStashScansDocumentDocument,
   TriggerTaskStashScanDocumentDocument,
@@ -9,6 +10,8 @@ import {
   type AddTorrentDocumentMutationVariables,
   type DashboardDocumentQuery,
   type DashboardDocumentQueryVariables,
+  type DeleteTaskDocumentMutation,
+  type DeleteTaskDocumentMutationVariables,
   type SyncTaskProgressDocumentMutation,
   type SyncTaskProgressDocumentMutationVariables,
   type TriggerStashScansDocumentMutation,
@@ -40,6 +43,11 @@ export function useDashboard() {
     SyncTaskProgressDocumentMutationVariables
   >(SyncTaskProgressDocumentDocument);
 
+  const [, deleteTask] = useMutation<
+    DeleteTaskDocumentMutation,
+    DeleteTaskDocumentMutationVariables
+  >(DeleteTaskDocumentDocument);
+
   const [, triggerTaskStashScan] = useMutation<
     TriggerTaskStashScanDocumentMutation,
     TriggerTaskStashScanDocumentMutationVariables
@@ -56,6 +64,7 @@ export function useDashboard() {
     error,
     refreshDashboard,
     addTorrent,
+    deleteTask,
     syncTaskProgress,
     triggerTaskStashScan,
     triggerStashScans

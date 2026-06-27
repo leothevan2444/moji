@@ -195,11 +195,17 @@
 .task-card__actions {
   display: flex;
   align-items: center;
-  justify-content: space-between;
   gap: 10px;
   padding-top: 10px;
   margin-top: auto;
   border-top: 1px solid var(--line);
+}
+
+.task-card__right {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 6px;
 }
 
 .task-card__actions > span {
@@ -242,6 +248,19 @@
   padding: 0 10px;
   font-size: 12px;
   font-weight: 500;
+}
+
+.task-card__action-button--danger,
+.task-ops__button--danger {
+  color: #b9382d;
+  border-color: rgba(185, 56, 45, 0.18);
+  background: rgba(254, 242, 242, 0.72);
+}
+
+.task-card__action-button--danger:hover,
+.task-ops__button--danger:hover {
+  border-color: rgba(185, 56, 45, 0.32);
+  background: rgba(254, 226, 226, 0.9);
 }
 
 /* 紧凑模式 */

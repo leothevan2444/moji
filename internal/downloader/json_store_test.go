@@ -72,3 +72,42 @@ func TestJSONTaskStoreListSortsNewestFirst(t *testing.T) {
 		t.Fatalf("unexpected task order: %+v", tasks)
 	}
 }
+
+func TestJSONTaskStoreDeleteRemovesPersistedTask(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "tasks.json")
+	store, err := NewJSONTaskStore(path)
+	if err != nil {
+		t.Fatalf("NewJSONTaskStore failed: %v", err)
+	}
+
+	task := &Task{
+		ID:        "task-delete",
+		Query:     "ABCD-123",
+		Status:    TaskStatusCompleted,
+		CreatedAt: time.Unix(100, 0).UTC(),
+		UpdatedAt: time.Unix(100, 0).UTC(),
+	}
+	if err := store.Create(context.Background(), task); err != nil {
+		t.Fatalf("Create failed: %v", err)
+	}
+
+	deleted, err := store.Delete(context.Background(), task.ID)
+	if err != nil {
+		t.Fatalf("Delete failed: %v", err)
+	}
+	if deleted.ID != task.ID {
+		t.Fatalf("unexpected deleted task: %+v", deleted)
+	}
+
+	reopened, err := NewJSONTaskStore(path)
+	if err != nil {
+		t.Fatalf("reopen NewJSONTaskStore failed: %v", err)
+	}
+	tasks, err := reopened.List(context.Background())
+	if err != nil {
+		t.Fatalf("List failed: %v", err)
+	}
+	if len(tasks) != 0 {
+		t.Fatalf("expected deleted task to stay removed, got %+v", tasks)
+	}
+}

@@ -54,3 +54,13 @@ mutation TriggerTaskStashScanDocument($id: ID!) {
     updatedAt
   }
 }
+
+mutation DeleteTaskDocument($id: ID!) {
+  deleteTask(id: $id) {
+    id
+    source
+    status
+    query
+    updatedAt
+  }
+}

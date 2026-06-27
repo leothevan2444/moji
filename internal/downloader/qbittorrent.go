@@ -19,13 +19,13 @@ type TorrentDefaults struct {
 type DefaultsProvider func() TorrentDefaults
 
 type DefaultingTorrentClient struct {
-	client          TorrentClient
+	client           TorrentClient
 	defaultsProvider DefaultsProvider
 }
 
 func NewDefaultingTorrentClient(client TorrentClient, defaultsProvider DefaultsProvider) *DefaultingTorrentClient {
 	return &DefaultingTorrentClient{
-		client:          client,
+		client:           client,
 		defaultsProvider: defaultsProvider,
 	}
 }
@@ -52,4 +52,8 @@ func (c *DefaultingTorrentClient) AddNewTorrent(ctx context.Context, opts qbitto
 	}
 
 	return c.client.AddNewTorrent(ctx, opts)
+}
+
+func (c *DefaultingTorrentClient) DeleteTorrents(ctx context.Context, hashes []string, deleteFiles bool) error {
+	return c.client.DeleteTorrents(ctx, hashes, deleteFiles)
 }

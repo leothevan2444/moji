@@ -26,6 +26,7 @@ interface TasksPageProps {
   taskSort: TaskSortKey;
   taskGroupOpen: Record<TaskGroupKey, boolean>;
   pendingTaskScanId: string | null;
+  pendingTaskDeleteId: string | null;
   onSearchChange: (value: string) => void;
   onStatusChange: (status: TaskStatusFilter) => void;
   onSortChange: (sort: TaskSortKey) => void;
@@ -35,6 +36,7 @@ interface TasksPageProps {
   onScanAll: () => void;
   onOpenTask: (taskId: string) => void;
   onScanTask: (taskId: string) => void;
+  onDeleteTask: (taskId: string) => void;
 }
 
 export function TasksPage({
@@ -45,6 +47,7 @@ export function TasksPage({
   taskSort,
   taskGroupOpen,
   pendingTaskScanId,
+  pendingTaskDeleteId,
   onSearchChange,
   onStatusChange,
   onSortChange,
@@ -53,7 +56,8 @@ export function TasksPage({
   onSync,
   onScanAll,
   onOpenTask,
-  onScanTask
+  onScanTask,
+  onDeleteTask
 }: TasksPageProps) {
   const deferredTaskSearch = useDeferredValue(taskSearch.trim().toLowerCase());
 
@@ -164,9 +168,11 @@ export function TasksPage({
             tasks={item.tasks}
             open={taskGroupOpen[item.group]}
             pendingTaskScanId={pendingTaskScanId}
+            pendingTaskDeleteId={pendingTaskDeleteId}
             onToggle={onToggleGroup}
             onOpenTask={onOpenTask}
             onScanTask={onScanTask}
+            onDeleteTask={onDeleteTask}
             onScanAll={onScanAll}
           />
         ))}

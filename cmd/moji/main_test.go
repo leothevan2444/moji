@@ -496,6 +496,10 @@ func (f *fakeProgressSyncService) ListTasks(context.Context) ([]*downloader.Task
 	return nil, nil
 }
 
+func (f *fakeProgressSyncService) DeleteTask(context.Context, string) (*downloader.Task, error) {
+	return nil, nil
+}
+
 func (f *fakeProgressSyncService) SyncProgress(context.Context) ([]*downloader.Task, error) {
 	select {
 	case f.called <- struct{}{}:

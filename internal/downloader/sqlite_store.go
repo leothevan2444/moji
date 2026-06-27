@@ -116,6 +116,31 @@ func (s *SQLiteTaskStore) List(ctx context.Context) ([]*Task, error) {
 	return tasks, nil
 }
 
+func (s *SQLiteTaskStore) Delete(ctx context.Context, id string) (*Task, error) {
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return nil, fmt.Errorf("downloader: begin delete task tx: %w", err)
+	}
+	defer tx.Rollback()
+
+	task, err := scanTask(tx.QueryRowContext(ctx, taskSelectSQL+` WHERE id = ?`, id))
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, fmt.Errorf("downloader: task %q not found", id)
+		}
+		return nil, fmt.Errorf("downloader: load task %q before delete: %w", id, err)
+	}
+
+	if _, err := tx.ExecContext(ctx, `DELETE FROM tasks WHERE id = ?`, id); err != nil {
+		return nil, fmt.Errorf("downloader: delete task %q: %w", id, err)
+	}
+
+	if err := tx.Commit(); err != nil {
+		return nil, fmt.Errorf("downloader: commit delete task tx: %w", err)
+	}
+	return task, nil
+}
+
 const taskSelectSQL = `
 SELECT
   id,

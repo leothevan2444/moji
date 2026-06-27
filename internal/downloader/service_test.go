@@ -21,9 +21,12 @@ func (f fakeTracker) Search(_ string, _ ...tracker.SearchOption) ([]jackett.Sear
 }
 
 type fakeTorrentAdder struct {
-	options  qbittorrent.AddTorrentOptions
-	torrents []qbittorrent.Torrent
-	err      error
+	options      qbittorrent.AddTorrentOptions
+	torrents     []qbittorrent.Torrent
+	deleteHashes []string
+	deleteFiles  bool
+	deleteErr    error
+	err          error
 }
 
 func (f *fakeTorrentAdder) AddNewTorrent(_ context.Context, opts qbittorrent.AddTorrentOptions) error {
@@ -33,6 +36,12 @@ func (f *fakeTorrentAdder) AddNewTorrent(_ context.Context, opts qbittorrent.Add
 
 func (f *fakeTorrentAdder) GetTorrentList(_ context.Context, _ *qbittorrent.TorrentListOptions) ([]qbittorrent.Torrent, error) {
 	return f.torrents, f.err
+}
+
+func (f *fakeTorrentAdder) DeleteTorrents(_ context.Context, hashes []string, deleteFiles bool) error {
+	f.deleteHashes = append([]string(nil), hashes...)
+	f.deleteFiles = deleteFiles
+	return f.deleteErr
 }
 
 func TestDownloadMediaContextAddsBestTorrent(t *testing.T) {
@@ -159,6 +168,74 @@ func TestAddTorrentContextCreatesPersistedTask(t *testing.T) {
 	}
 	if stored.Status != TaskStatusAdded || stored.TorrentURL != task.TorrentURL {
 		t.Fatalf("unexpected stored task: %+v", stored)
+	}
+}
+
+func TestDeleteTaskRemovesPersistedTask(t *testing.T) {
+	store := NewMemoryTaskStore()
+	if err := store.Create(context.Background(), &Task{
+		ID:          "task-delete",
+		Query:       "ABCD-123",
+		Status:      TaskStatusCompleted,
+		TorrentHash: "hash-delete",
+		CreatedAt:   time.Unix(100, 0).UTC(),
+		UpdatedAt:   time.Unix(100, 0).UTC(),
+	}); err != nil {
+		t.Fatalf("Create failed: %v", err)
+	}
+
+	qbt := &fakeTorrentAdder{}
+	service, err := NewService(fakeTracker{}, qbt, store)
+	if err != nil {
+		t.Fatalf("NewService failed: %v", err)
+	}
+
+	task, err := service.DeleteTask(context.Background(), "task-delete")
+	if err != nil {
+		t.Fatalf("DeleteTask failed: %v", err)
+	}
+	if task.ID != "task-delete" {
+		t.Fatalf("unexpected deleted task: %+v", task)
+	}
+	if len(qbt.deleteHashes) != 1 || qbt.deleteHashes[0] != "hash-delete" {
+		t.Fatalf("expected qBittorrent delete for hash-delete, got %+v", qbt.deleteHashes)
+	}
+	if qbt.deleteFiles {
+		t.Fatal("expected qBittorrent delete to keep downloaded files")
+	}
+	if _, err := store.Find(context.Background(), "task-delete"); err == nil {
+		t.Fatal("expected deleted task to be removed from store")
+	}
+}
+
+func TestDeleteTaskKeepsPersistedTaskWhenQBittorrentDeleteFails(t *testing.T) {
+	store := NewMemoryTaskStore()
+	if err := store.Create(context.Background(), &Task{
+		ID:          "task-delete-fail",
+		Query:       "ABCD-123",
+		Status:      TaskStatusCompleted,
+		TorrentHash: "hash-delete-fail",
+		CreatedAt:   time.Unix(100, 0).UTC(),
+		UpdatedAt:   time.Unix(100, 0).UTC(),
+	}); err != nil {
+		t.Fatalf("Create failed: %v", err)
+	}
+
+	qbt := &fakeTorrentAdder{deleteErr: errors.New("qbt delete failed")}
+	service, err := NewService(fakeTracker{}, qbt, store)
+	if err != nil {
+		t.Fatalf("NewService failed: %v", err)
+	}
+
+	task, err := service.DeleteTask(context.Background(), "task-delete-fail")
+	if err == nil {
+		t.Fatal("expected DeleteTask to fail when qBittorrent delete fails")
+	}
+	if task != nil {
+		t.Fatalf("expected no deleted task on qBittorrent failure, got %+v", task)
+	}
+	if _, err := store.Find(context.Background(), "task-delete-fail"); err != nil {
+		t.Fatalf("expected task to remain in store after qBittorrent failure: %v", err)
 	}
 }
 

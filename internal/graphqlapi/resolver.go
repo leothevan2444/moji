@@ -19,6 +19,7 @@ import (
 type TorrentClient interface {
 	GetTorrentList(ctx context.Context, options *qbittorrent.TorrentListOptions) ([]qbittorrent.Torrent, error)
 	AddNewTorrent(ctx context.Context, opts qbittorrent.AddTorrentOptions) error
+	DeleteTorrents(ctx context.Context, hashes []string, deleteFiles bool) error
 }
 
 type StashService interface {
@@ -32,6 +33,7 @@ type DownloaderService interface {
 	DownloadMediaContext(ctx context.Context, req downloader.DownloadRequest) (*downloader.Task, error)
 	FindTask(ctx context.Context, id string) (*downloader.Task, error)
 	ListTasks(ctx context.Context) ([]*downloader.Task, error)
+	DeleteTask(ctx context.Context, id string) (*downloader.Task, error)
 	SyncProgress(ctx context.Context) ([]*downloader.Task, error)
 	TriggerTaskStashScan(ctx context.Context, id string, scanner downloader.StashScanner) (*downloader.Task, error)
 	TriggerStashScans(ctx context.Context, scanner downloader.StashScanner) ([]*downloader.Task, error)

@@ -136,6 +136,19 @@ func (r *mutationResolver) TriggerStashScans(ctx context.Context) ([]*model.Task
 	return out, nil
 }
 
+// DeleteTask is the resolver for the deleteTask field.
+func (r *mutationResolver) DeleteTask(ctx context.Context, id string) (*model.Task, error) {
+	if r.Downloader == nil {
+		return nil, errors.New("downloader is not configured")
+	}
+
+	task, err := r.Downloader.DeleteTask(ctx, id)
+	if task != nil {
+		return taskToModel(task), err
+	}
+	return nil, err
+}
+
 // QbittorrentTorrents is the resolver for the qbittorrentTorrents field.
 func (r *queryResolver) QbittorrentTorrents(ctx context.Context, limit *int) ([]*model.QBTorrent, error) {
 	if r.Torrent == nil {

@@ -13,15 +13,26 @@ interface TaskCardProps {
   task: DashboardTask;
   compact?: boolean;
   pendingScanId?: string | null;
+  pendingDeleteId?: string | null;
   onOpen: (taskId: string) => void;
   onScan?: (taskId: string) => void;
+  onDelete?: (taskId: string) => void;
 }
 
-export function TaskCard({ task, compact = false, pendingScanId = null, onOpen, onScan }: TaskCardProps) {
+export function TaskCard({
+  task,
+  compact = false,
+  pendingScanId = null,
+  pendingDeleteId = null,
+  onOpen,
+  onScan,
+  onDelete
+}: TaskCardProps) {
   const presentation = taskPresentation(task);
   const failure = taskFailureSummary(task);
   const state = taskCardState(presentation, failure);
   const isPendingScan = pendingScanId === task.id;
+  const isPendingDelete = pendingDeleteId === task.id;
 
   return (
     <article
@@ -78,20 +89,37 @@ export function TaskCard({ task, compact = false, pendingScanId = null, onOpen, 
 
       <div className="task-card__actions">
         <span>{formatDateTime(task.updatedAt)}</span>
-        {canTriggerTaskStashScan(task) && onScan ? (
-          <button
-            type="button"
-            className="ghost-button task-card__action-button"
-            onClick={(event) => {
-              event.stopPropagation();
-              onScan(task.id);
-            }}
-            disabled={isPendingScan}
-            aria-label={`重扫任务：${taskSummary(task)}`}
-          >
-            {isPendingScan ? "扫描中..." : "重扫"}
-          </button>
-        ) : null}
+
+        <div className="task-card__right">
+          {canTriggerTaskStashScan(task) && onScan ? (
+            <button
+              type="button"
+              className="ghost-button task-card__action-button"
+              onClick={(event) => {
+                event.stopPropagation();
+                onScan(task.id);
+              }}
+              disabled={isPendingScan}
+              aria-label={`重扫任务：${taskSummary(task)}`}
+            >
+              {isPendingScan ? "扫描中..." : "重扫"}
+            </button>
+          ) : null}
+          {onDelete ? (
+            <button
+              type="button"
+              className="ghost-button task-card__action-button task-card__action-button--danger"
+              onClick={(event) => {
+                event.stopPropagation();
+                onDelete(task.id);
+              }}
+              disabled={isPendingDelete}
+              aria-label={`删除任务：${taskSummary(task)}`}
+            >
+              {isPendingDelete ? "删除中..." : "删除"}
+            </button>
+          ) : null}
+        </div>
       </div>
     </article>
   );

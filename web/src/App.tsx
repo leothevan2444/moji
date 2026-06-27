@@ -64,6 +64,7 @@ function App() {
   });
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
   const [pendingTaskScanId, setPendingTaskScanId] = useState<string | null>(null);
+  const [pendingTaskDeleteId, setPendingTaskDeleteId] = useState<string | null>(null);
 
   // Discovery page state
   const [discoveryQuery, setDiscoveryQuery] = useState("");
@@ -106,6 +107,7 @@ function App() {
     error,
     refreshDashboard,
     addTorrent,
+    deleteTask,
     syncTaskProgress,
     triggerTaskStashScan,
     triggerStashScans
@@ -317,6 +319,34 @@ function App() {
     }
   };
 
+  const runDeleteTask = async (taskId: string) => {
+    const task = tasks.find((entry) => entry.id === taskId);
+    setPendingTaskDeleteId(taskId);
+
+    try {
+      const response = await deleteTask({ id: taskId });
+      if (response.error) {
+        pushToast("tone-danger", describeQueryError(response.error));
+        return;
+      }
+
+      if (!response.data?.deleteTask?.id) {
+        pushToast("tone-danger", "任务删除失败，后端没有返回已删除的任务记录。");
+        return;
+      }
+
+      if (selectedTaskId === taskId) {
+        setSelectedTaskId(null);
+        setDrawer(null);
+      }
+
+      pushToast("tone-success", `已删除任务：${task ? taskSummary(task) : taskId}。`);
+      await refreshDashboard({ requestPolicy: "network-only" });
+    } finally {
+      setPendingTaskDeleteId(null);
+    }
+  };
+
   const handleAddSearchResult = async (result: SearchDocumentQuery["jackettSearch"][number]) => {
     const taskURL = result.magnetUri || result.link;
     setPendingAddId(result.link);
@@ -517,6 +547,7 @@ function App() {
             taskSort={taskSort}
             taskGroupOpen={taskGroupOpen}
             pendingTaskScanId={pendingTaskScanId}
+            pendingTaskDeleteId={pendingTaskDeleteId}
             onSearchChange={setTaskSearch}
             onStatusChange={setTaskStatus}
             onSortChange={setTaskSort}
@@ -526,6 +557,7 @@ function App() {
             onScanAll={() => void runScan()}
             onOpenTask={openTaskDetail}
             onScanTask={(id) => void runTaskScan(id)}
+            onDeleteTask={(id) => void runDeleteTask(id)}
           />
         ) : null}
 
@@ -651,10 +683,12 @@ function App() {
             <TaskDrawer
               task={activeTask}
               pendingScan={activeTask ? pendingTaskScanId === activeTask.id : false}
+              pendingDelete={activeTask ? pendingTaskDeleteId === activeTask.id : false}
               onCopy={copyText}
               onSyncAll={() => void runSync()}
               onScanTask={(id) => void runTaskScan(id)}
               onScanAll={() => void runScan()}
+              onDeleteTask={(id) => void runDeleteTask(id)}
             />
           ) : null}
 

@@ -27,6 +27,9 @@ type Mutation {
 
   "Trigger Stash metadata scans for completed Moji tasks"
   triggerStashScans: [Task!]!
+
+  "Delete a persisted Moji task record"
+  deleteTask(id: ID!): Task!
 }
 
 type QBTorrent {
