@@ -72,6 +72,11 @@
     width: 100%;
     border-radius: 0;
   }
+
+  .drawer--task {
+    height: 100%;
+    max-height: none;
+  }
 }
 
 @media (max-width: 640px) {
