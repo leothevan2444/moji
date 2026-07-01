@@ -10,7 +10,7 @@ import (
 func TestStoreUpdateQBittorrentPreservesUnmodeledSections(t *testing.T) {
 	dir := t.TempDir()
 	path := filepath.Join(dir, "config.yaml")
-content := `database:
+	content := `database:
   dsn: "user:password@tcp(localhost:3306)/media_library?parseTime=true"
 connection:
   qbittorrent:
@@ -60,10 +60,62 @@ automation:
 	}
 }
 
+func TestStoreUpdateAutomationPersistsTorrentSelection(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "config.yaml")
+	content := `connection:
+  jackett:
+    url: "http://localhost:9117"
+    api_key: "secret"
+    password: "pw"
+automation:
+  task_progress_sync_interval_seconds: 60
+  subscription_poll_interval_hours: 1
+`
+	if err := os.WriteFile(path, []byte(content), 0o644); err != nil {
+		t.Fatalf("write config: %v", err)
+	}
+
+	store, err := OpenStore(path)
+	if err != nil {
+		t.Fatalf("open store: %v", err)
+	}
+
+	cfg, err := store.UpdateAutomation(60, 1, TorrentSelectionConfig{
+		Enabled: true,
+		Rules: []TorrentSelectionRule{
+			{
+				ID:        "pref",
+				Type:      TorrentSelectionRuleTypeIndexerPreference,
+				Enabled:   true,
+				Direction: TorrentSelectionDirectionDesc,
+				IndexerPreference: IndexerPreferenceRuleConfig{
+					TrackerIDs: []string{"alpha", "beta"},
+				},
+			},
+		},
+	})
+	if err != nil {
+		t.Fatalf("update automation: %v", err)
+	}
+	if len(cfg.Automation.TorrentSelection.Rules) != 1 {
+		t.Fatalf("unexpected torrent selection: %+v", cfg.Automation.TorrentSelection)
+	}
+
+	reloaded, err := LoadFromPath(path)
+	if err != nil {
+		t.Fatalf("reload config: %v", err)
+	}
+	got := reloaded.Automation.TorrentSelection.Effective()
+	if !got.Enabled || len(got.Rules) != 1 || len(got.Rules[0].IndexerPreference.TrackerIDs) != 2 {
+		t.Fatalf("expected persisted torrent selection, got %+v", got)
+	}
+}
+
 func TestLoadFromPathUsesDirectStashURL(t *testing.T) {
 	dir := t.TempDir()
 	path := filepath.Join(dir, "config.yaml")
-content := `connection:
+	content := `connection:
   stash:
     url: "http://stash.example"
     api_key: "secret"

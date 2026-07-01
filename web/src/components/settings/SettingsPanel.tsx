@@ -11,9 +11,14 @@ import {
   faRotate
 } from "@fortawesome/free-solid-svg-icons";
 import {
+  JackettIndexersDocumentDocument,
   LogLevel,
   LogsDocumentDocument,
   RefreshSubscriptionStashBoxesDocumentDocument,
+  TitleMatchEffect,
+  TitleMatchPatternMode,
+  TorrentSelectionDirection,
+  TorrentSelectionRuleType,
   UpdateAutomationSettingsDocumentDocument,
   UpdateIngestSettingsDocumentDocument,
   UpdateJackettSettingsDocumentDocument,
@@ -22,6 +27,8 @@ import {
   UpdateSubscriptionSettingsDocumentDocument,
   UpdateSystemSettingsDocumentDocument,
   type DashboardDocumentQuery,
+  type JackettIndexersDocumentQuery,
+  type JackettIndexersDocumentQueryVariables,
   type LogsDocumentQuery,
   type LogsDocumentQueryVariables,
   type RefreshSubscriptionStashBoxesDocumentMutation,
@@ -43,6 +50,7 @@ import {
 } from "../../graphql/generated/graphql";
 import type { SettingsTab, ToastTone } from "../../types";
 import {
+  DEFAULT_TORRENT_SELECTION_RULES,
   EMPTY_AUTOMATION_FORM,
   EMPTY_INGEST_FORM,
   EMPTY_JACKETT_FORM,
@@ -58,6 +66,70 @@ import { formatDateTime, formatLogEntries } from "../../utils";
 
 type RuntimeSettings = NonNullable<DashboardDocumentQuery["settings"]>;
 type RuntimeSettingsStatus = NonNullable<DashboardDocumentQuery["settingsStatus"]>;
+type JackettIndexer = JackettIndexersDocumentQuery["jackettIndexers"][number];
+
+const TORRENT_SELECTION_RULE_TYPE_OPTIONS: TorrentSelectionRuleType[] = [
+  TorrentSelectionRuleType.IndexerPreference,
+  TorrentSelectionRuleType.TitleMatch,
+  TorrentSelectionRuleType.PublishDate,
+  TorrentSelectionRuleType.TitleSimilarity,
+  TorrentSelectionRuleType.Seeders,
+  TorrentSelectionRuleType.Size
+];
+
+const TORRENT_SELECTION_RULE_LABELS: Record<TorrentSelectionRuleType, string> = {
+  [TorrentSelectionRuleType.IndexerPreference]: "索引器偏好",
+  [TorrentSelectionRuleType.TitleMatch]: "标题匹配",
+  [TorrentSelectionRuleType.PublishDate]: "发布时间",
+  [TorrentSelectionRuleType.TitleSimilarity]: "标题相似度",
+  [TorrentSelectionRuleType.Seeders]: "Seeders",
+  [TorrentSelectionRuleType.Size]: "Size"
+};
+
+function makeRuleId(prefix: string) {
+  return `${prefix}-${Math.random().toString(36).slice(2, 10)}`;
+}
+
+function makeTorrentSelectionRule(type: TorrentSelectionRuleType) {
+  return {
+    id: makeRuleId(type.toLowerCase()),
+    type,
+    enabled: true,
+    direction: TorrentSelectionDirection.Desc,
+    indexerPreference: { trackerIds: [] as string[] },
+    titleMatch: { clauses: [] as Array<{ pattern: string; patternMode: TitleMatchPatternMode; effect: TitleMatchEffect }> }
+  };
+}
+
+function torrentSelectionFromRuntime(runtimeSettings: RuntimeSettings) {
+  const rules = runtimeSettings.automation.torrentSelection.rules.length > 0
+    ? runtimeSettings.automation.torrentSelection.rules.map((rule: RuntimeSettings["automation"]["torrentSelection"]["rules"][number]) => ({
+        id: rule.id,
+        type: rule.type,
+        enabled: rule.enabled,
+        direction: rule.direction,
+        indexerPreference: {
+          trackerIds: [...rule.indexerPreference.trackerIds]
+        },
+        titleMatch: {
+          clauses: rule.titleMatch.clauses.map((clause: RuntimeSettings["automation"]["torrentSelection"]["rules"][number]["titleMatch"]["clauses"][number]) => ({
+            pattern: clause.pattern,
+            patternMode: clause.patternMode,
+            effect: clause.effect
+          }))
+        }
+      }))
+    : DEFAULT_TORRENT_SELECTION_RULES.map((rule: typeof DEFAULT_TORRENT_SELECTION_RULES[number]) => ({
+        ...rule,
+        indexerPreference: { trackerIds: [...rule.indexerPreference.trackerIds] },
+        titleMatch: { clauses: rule.titleMatch.clauses.map((clause: typeof rule.titleMatch.clauses[number]) => ({ ...clause })) }
+      }));
+
+  return {
+    enabled: runtimeSettings.automation.torrentSelection.enabled,
+    rules
+  };
+}
 
 interface SettingsPanelProps {
   settingsTab: SettingsTab;
@@ -135,6 +207,15 @@ export function SettingsPanel({
   });
   const logs = logsData?.logs ?? [];
 
+  const [{ data: jackettIndexersData, fetching: fetchingJackettIndexers }] = useQuery<
+    JackettIndexersDocumentQuery,
+    JackettIndexersDocumentQueryVariables
+  >({
+    query: JackettIndexersDocumentDocument,
+    pause: (settingsTab !== "连接" && settingsTab !== "自动化") || (drawer !== "settings" && renderedDrawer !== "settings")
+  });
+  const jackettIndexers = jackettIndexersData?.jackettIndexers ?? [];
+
   const [{ fetching: updatingStash }, updateStashSettings] = useMutation<
     UpdateStashSettingsDocumentMutation,
     UpdateStashSettingsDocumentMutationVariables
@@ -198,7 +279,8 @@ export function SettingsPanel({
     });
     setAutomationForm({
       taskProgressSyncIntervalSeconds: String(runtimeSettings.automation.taskProgressSyncIntervalSeconds || 60),
-      subscriptionPollIntervalHours: String(runtimeSettings.automation.subscriptionPollIntervalHours || 1)
+      subscriptionPollIntervalHours: String(runtimeSettings.automation.subscriptionPollIntervalHours || 1),
+      torrentSelection: torrentSelectionFromRuntime(runtimeSettings)
     });
     setSystemForm({
       taskDeletePolicy: runtimeSettings.system.taskDeletePolicy || TaskDeletePolicy.KeepOnly
@@ -292,7 +374,26 @@ export function SettingsPanel({
     const result = await updateAutomationSettings({
       input: {
         taskProgressSyncIntervalSeconds: Number.isNaN(taskProgressSyncIntervalSeconds) ? 60 : taskProgressSyncIntervalSeconds,
-        subscriptionPollIntervalHours: Number.isNaN(subscriptionPollIntervalHours) ? 1 : subscriptionPollIntervalHours
+        subscriptionPollIntervalHours: Number.isNaN(subscriptionPollIntervalHours) ? 1 : subscriptionPollIntervalHours,
+        torrentSelection: {
+          enabled: automationForm.torrentSelection.enabled,
+          rules: automationForm.torrentSelection.rules.map((rule) => ({
+            id: rule.id,
+            type: rule.type,
+            enabled: rule.enabled,
+            direction: rule.direction,
+            indexerPreference: {
+              trackerIds: rule.indexerPreference.trackerIds
+            },
+            titleMatch: {
+              clauses: rule.titleMatch.clauses.map((clause) => ({
+                pattern: clause.pattern,
+                patternMode: clause.patternMode,
+                effect: clause.effect
+              }))
+            }
+          }))
+        }
       }
     });
     if (result.error) {
@@ -300,6 +401,43 @@ export function SettingsPanel({
       return;
     }
     pushToast("tone-success", "自动化设置已保存。");
+    await refreshDashboard({ requestPolicy: "network-only" });
+  };
+
+  const saveTorrentSelectionSettings = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const taskProgressSyncIntervalSeconds = Number.parseInt(automationForm.taskProgressSyncIntervalSeconds.trim(), 10);
+    const subscriptionPollIntervalHours = Number.parseInt(automationForm.subscriptionPollIntervalHours.trim(), 10);
+    const result = await updateAutomationSettings({
+      input: {
+        taskProgressSyncIntervalSeconds: Number.isNaN(taskProgressSyncIntervalSeconds) ? 60 : taskProgressSyncIntervalSeconds,
+        subscriptionPollIntervalHours: Number.isNaN(subscriptionPollIntervalHours) ? 1 : subscriptionPollIntervalHours,
+        torrentSelection: {
+          enabled: automationForm.torrentSelection.enabled,
+          rules: automationForm.torrentSelection.rules.map((rule) => ({
+            id: rule.id,
+            type: rule.type,
+            enabled: rule.enabled,
+            direction: rule.direction,
+            indexerPreference: {
+              trackerIds: rule.indexerPreference.trackerIds
+            },
+            titleMatch: {
+              clauses: rule.titleMatch.clauses.map((clause) => ({
+                pattern: clause.pattern,
+                patternMode: clause.patternMode,
+                effect: clause.effect
+              }))
+            }
+          }))
+        }
+      }
+    });
+    if (result.error) {
+      pushToast("tone-danger", describeQueryError(result.error));
+      return;
+    }
+    pushToast("tone-success", "自动选种规则已保存。");
     await refreshDashboard({ requestPolicy: "network-only" });
   };
 
@@ -316,6 +454,130 @@ export function SettingsPanel({
     }
     pushToast("tone-success", "Stash-Box 优先级已保存。");
     await refreshDashboard({ requestPolicy: "network-only" });
+  };
+
+  const moveCandidateRule = (from: number, to: number) => {
+    setAutomationForm((current) => {
+      if (to < 0 || to >= current.torrentSelection.rules.length) return current;
+      const rules = [...current.torrentSelection.rules];
+      const [moved] = rules.splice(from, 1);
+      rules.splice(to, 0, moved);
+      return {
+        ...current,
+        torrentSelection: {
+          ...current.torrentSelection,
+          rules
+        }
+      };
+    });
+  };
+
+  const addCandidateRule = (type: TorrentSelectionRuleType) => {
+    setAutomationForm((current) => ({
+      ...current,
+      torrentSelection: {
+        ...current.torrentSelection,
+        rules: [...current.torrentSelection.rules, makeTorrentSelectionRule(type)]
+      }
+    }));
+  };
+
+  const updateCandidateRule = (ruleId: string, updater: (rule: typeof automationForm.torrentSelection.rules[number]) => typeof automationForm.torrentSelection.rules[number]) => {
+    setAutomationForm((current) => ({
+      ...current,
+      torrentSelection: {
+        ...current.torrentSelection,
+        rules: current.torrentSelection.rules.map((rule) => (rule.id === ruleId ? updater(rule) : rule))
+      }
+    }));
+  };
+
+  const removeCandidateRule = (ruleId: string) => {
+    setAutomationForm((current) => ({
+      ...current,
+      torrentSelection: {
+        ...current.torrentSelection,
+        rules: current.torrentSelection.rules.filter((rule) => rule.id !== ruleId)
+      }
+    }));
+  };
+
+  const toggleIndexerPreference = (ruleId: string, trackerId: string) => {
+    updateCandidateRule(ruleId, (rule) => {
+      const exists = rule.indexerPreference.trackerIds.includes(trackerId);
+      return {
+        ...rule,
+        indexerPreference: {
+          trackerIds: exists
+            ? rule.indexerPreference.trackerIds.filter((id) => id !== trackerId)
+            : [...rule.indexerPreference.trackerIds, trackerId]
+        }
+      };
+    });
+  };
+
+  const moveIndexerPreference = (ruleId: string, from: number, to: number) => {
+    updateCandidateRule(ruleId, (rule) => {
+      if (to < 0 || to >= rule.indexerPreference.trackerIds.length) return rule;
+      const trackerIds = [...rule.indexerPreference.trackerIds];
+      const [moved] = trackerIds.splice(from, 1);
+      trackerIds.splice(to, 0, moved);
+      return {
+        ...rule,
+        indexerPreference: { trackerIds }
+      };
+    });
+  };
+
+  const addTitleMatchClause = (ruleId: string) => {
+    updateCandidateRule(ruleId, (rule) => ({
+      ...rule,
+      titleMatch: {
+        clauses: [
+          ...rule.titleMatch.clauses,
+          {
+            pattern: "",
+            patternMode: TitleMatchPatternMode.Plain,
+            effect: TitleMatchEffect.Prefer
+          }
+        ]
+      }
+    }));
+  };
+
+  const updateTitleMatchClause = (
+    ruleId: string,
+    clauseIndex: number,
+    updater: (clause: typeof automationForm.torrentSelection.rules[number]["titleMatch"]["clauses"][number]) => typeof automationForm.torrentSelection.rules[number]["titleMatch"]["clauses"][number]
+  ) => {
+    updateCandidateRule(ruleId, (rule) => ({
+      ...rule,
+      titleMatch: {
+        clauses: rule.titleMatch.clauses.map((clause, index) => (index === clauseIndex ? updater(clause) : clause))
+      }
+    }));
+  };
+
+  const moveTitleMatchClause = (ruleId: string, from: number, to: number) => {
+    updateCandidateRule(ruleId, (rule) => {
+      if (to < 0 || to >= rule.titleMatch.clauses.length) return rule;
+      const clauses = [...rule.titleMatch.clauses];
+      const [moved] = clauses.splice(from, 1);
+      clauses.splice(to, 0, moved);
+      return {
+        ...rule,
+        titleMatch: { clauses }
+      };
+    });
+  };
+
+  const removeTitleMatchClause = (ruleId: string, clauseIndex: number) => {
+    updateCandidateRule(ruleId, (rule) => ({
+      ...rule,
+      titleMatch: {
+        clauses: rule.titleMatch.clauses.filter((_, index) => index !== clauseIndex)
+      }
+    }));
   };
 
   const saveSystemSettings = async (event: FormEvent<HTMLFormElement>) => {
@@ -847,6 +1109,261 @@ export function SettingsPanel({
                 })}
               </ul>
             )}
+          </section>
+        </form>
+
+        <form className="settings-form" onSubmit={(event) => void saveTorrentSelectionSettings(event)}>
+          <section className="stashbox-source">
+            <header className="stashbox-source__head">
+              <div>
+                <h4>自动选种规则</h4>
+                <p className="stashbox-source__sub">
+                  仅影响后端自动挑选下载候选，不影响 Jackett 搜索结果列表展示。规则按从上到下顺序依次比较。
+                </p>
+              </div>
+              <div className="stashbox-source__stats">
+                <button type="submit" disabled={updatingAutomation}>保存自动选种规则</button>
+              </div>
+            </header>
+
+            <label className="settings-field" style={{ padding: 0 }}>
+              <FieldLabel text="启用规则链" />
+              <input
+                type="checkbox"
+                checked={automationForm.torrentSelection.enabled}
+                onChange={(event) =>
+                  setAutomationForm((current) => ({
+                    ...current,
+                    torrentSelection: {
+                      ...current.torrentSelection,
+                      enabled: event.target.checked
+                    }
+                  }))
+                }
+              />
+            </label>
+            <div className="settings-actions" style={{ flexWrap: "wrap" }}>
+              {TORRENT_SELECTION_RULE_TYPE_OPTIONS.map((type) => (
+                <button key={type} type="button" className="ghost-button" onClick={() => addCandidateRule(type)}>
+                  添加 {TORRENT_SELECTION_RULE_LABELS[type]}
+                </button>
+              ))}
+            </div>
+            <div style={{ display: "grid", gap: 12 }}>
+              {automationForm.torrentSelection.rules.map((rule, ruleIndex) => (
+                <article key={rule.id} className="drawer-card">
+                  <div className="drawer-card__head">
+                    <div>
+                      <h3>{TORRENT_SELECTION_RULE_LABELS[rule.type]}</h3>
+                      <p>{rule.id}</p>
+                    </div>
+                    <div className="profile-card__icons">
+                      <button type="button" className="ghost-button" onClick={() => moveCandidateRule(ruleIndex, ruleIndex - 1)} disabled={ruleIndex === 0}>
+                        <FontAwesomeIcon icon={faArrowUp} />
+                      </button>
+                      <button
+                        type="button"
+                        className="ghost-button"
+                        onClick={() => moveCandidateRule(ruleIndex, ruleIndex + 1)}
+                        disabled={ruleIndex === automationForm.torrentSelection.rules.length - 1}
+                      >
+                        <FontAwesomeIcon icon={faArrowDown} />
+                      </button>
+                      <button type="button" className="ghost-button" onClick={() => removeCandidateRule(rule.id)}>
+                        删除
+                      </button>
+                    </div>
+                  </div>
+                  <div className="settings-grid">
+                    <div>
+                      <dt>规则类型</dt>
+                      <dd>
+                        <select
+                          value={rule.type}
+                          onChange={(event) =>
+                            updateCandidateRule(rule.id, (currentRule) => ({
+                              ...currentRule,
+                              type: event.target.value as TorrentSelectionRuleType
+                            }))
+                          }
+                        >
+                          {TORRENT_SELECTION_RULE_TYPE_OPTIONS.map((type) => (
+                            <option key={type} value={type}>
+                              {TORRENT_SELECTION_RULE_LABELS[type]}
+                            </option>
+                          ))}
+                        </select>
+                      </dd>
+                    </div>
+                    <div>
+                      <dt>方向</dt>
+                      <dd>
+                        <select
+                          value={rule.direction}
+                          onChange={(event) =>
+                            updateCandidateRule(rule.id, (currentRule) => ({
+                              ...currentRule,
+                              direction: event.target.value as TorrentSelectionDirection
+                            }))
+                          }
+                        >
+                          <option value={TorrentSelectionDirection.Desc}>DESC</option>
+                          <option value={TorrentSelectionDirection.Asc}>ASC</option>
+                        </select>
+                      </dd>
+                    </div>
+                    <div>
+                      <dt>启用</dt>
+                      <dd>
+                        <input
+                          type="checkbox"
+                          checked={rule.enabled}
+                          onChange={(event) =>
+                            updateCandidateRule(rule.id, (currentRule) => ({
+                              ...currentRule,
+                              enabled: event.target.checked
+                            }))
+                          }
+                        />
+                      </dd>
+                    </div>
+                  </div>
+
+                  {rule.type === TorrentSelectionRuleType.IndexerPreference ? (
+                    <div style={{ marginTop: 12, display: "grid", gap: 12 }}>
+                      <div>
+                        <strong>偏好顺序</strong>
+                        <div style={{ display: "grid", gap: 8, marginTop: 8 }}>
+                          {rule.indexerPreference.trackerIds.length === 0 ? <span>未选择索引器，未命中时保持默认稳定顺序。</span> : null}
+                          {rule.indexerPreference.trackerIds.map((trackerId, index) => (
+                            <div key={trackerId} className="toolbar-inline">
+                              <span>{trackerId}</span>
+                              <button type="button" className="ghost-button" onClick={() => moveIndexerPreference(rule.id, index, index - 1)} disabled={index === 0}>
+                                <FontAwesomeIcon icon={faArrowUp} />
+                              </button>
+                              <button
+                                type="button"
+                                className="ghost-button"
+                                onClick={() => moveIndexerPreference(rule.id, index, index + 1)}
+                                disabled={index === rule.indexerPreference.trackerIds.length - 1}
+                              >
+                                <FontAwesomeIcon icon={faArrowDown} />
+                              </button>
+                              <button type="button" className="ghost-button" onClick={() => toggleIndexerPreference(rule.id, trackerId)}>
+                                移除
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                      <div>
+                        <strong>可选索引器</strong>
+                        <div className="settings-actions" style={{ marginTop: 8, flexWrap: "wrap" }}>
+                          {fetchingJackettIndexers ? <span>加载中…</span> : null}
+                          {!fetchingJackettIndexers && jackettIndexers.length === 0 ? <span>当前没有可用的 Jackett 索引器。</span> : null}
+                          {jackettIndexers.map((indexer: JackettIndexer) => {
+                            const selected = rule.indexerPreference.trackerIds.includes(indexer.id);
+                            return (
+                              <button
+                                key={indexer.id}
+                                type="button"
+                                className="ghost-button"
+                                disabled={selected}
+                                onClick={() => toggleIndexerPreference(rule.id, indexer.id)}
+                              >
+                                {indexer.name}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    </div>
+                  ) : null}
+
+                  {rule.type === TorrentSelectionRuleType.TitleMatch ? (
+                    <div style={{ marginTop: 12, display: "grid", gap: 12 }}>
+                      <div className="settings-actions">
+                        <button type="button" className="ghost-button" onClick={() => addTitleMatchClause(rule.id)}>
+                          添加标题规则
+                        </button>
+                      </div>
+                      {rule.titleMatch.clauses.map((clause, clauseIndex) => (
+                        <div key={`${rule.id}-${clauseIndex}`} className="settings-grid">
+                          <div>
+                            <dt>Pattern</dt>
+                            <dd>
+                              <input
+                                value={clause.pattern}
+                                onChange={(event) =>
+                                  updateTitleMatchClause(rule.id, clauseIndex, (currentClause) => ({
+                                    ...currentClause,
+                                    pattern: event.target.value
+                                  }))
+                                }
+                                placeholder="如 uncensored 或 /\\b4k\\b/i"
+                              />
+                            </dd>
+                          </div>
+                          <div>
+                            <dt>Mode</dt>
+                            <dd>
+                              <select
+                                value={clause.patternMode}
+                                onChange={(event) =>
+                                  updateTitleMatchClause(rule.id, clauseIndex, (currentClause) => ({
+                                    ...currentClause,
+                                    patternMode: event.target.value as TitleMatchPatternMode
+                                  }))
+                                }
+                              >
+                                <option value={TitleMatchPatternMode.Plain}>PLAIN</option>
+                                <option value={TitleMatchPatternMode.Regex}>REGEX</option>
+                              </select>
+                            </dd>
+                          </div>
+                          <div>
+                            <dt>Effect</dt>
+                            <dd>
+                              <select
+                                value={clause.effect}
+                                onChange={(event) =>
+                                  updateTitleMatchClause(rule.id, clauseIndex, (currentClause) => ({
+                                    ...currentClause,
+                                    effect: event.target.value as TitleMatchEffect
+                                  }))
+                                }
+                              >
+                                <option value={TitleMatchEffect.Prefer}>PREFER</option>
+                                <option value={TitleMatchEffect.Avoid}>AVOID</option>
+                              </select>
+                            </dd>
+                          </div>
+                          <div>
+                            <dt>顺序</dt>
+                            <dd className="toolbar-inline">
+                              <button type="button" className="ghost-button" onClick={() => moveTitleMatchClause(rule.id, clauseIndex, clauseIndex - 1)} disabled={clauseIndex === 0}>
+                                <FontAwesomeIcon icon={faArrowUp} />
+                              </button>
+                              <button
+                                type="button"
+                                className="ghost-button"
+                                onClick={() => moveTitleMatchClause(rule.id, clauseIndex, clauseIndex + 1)}
+                                disabled={clauseIndex === rule.titleMatch.clauses.length - 1}
+                              >
+                                <FontAwesomeIcon icon={faArrowDown} />
+                              </button>
+                              <button type="button" className="ghost-button" onClick={() => removeTitleMatchClause(rule.id, clauseIndex)}>
+                                删除
+                              </button>
+                            </dd>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : null}
+                </article>
+              ))}
+            </div>
           </section>
         </form>
       </article>

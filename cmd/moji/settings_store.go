@@ -91,6 +91,33 @@ func (s *runtimeSettingsEditor) UpdateJackettSettings(input graphqlapi.UpdateJac
 	return buildSettingsSnapshot(cfg, s.version), nil
 }
 
+func torrentSelectionConfigRules(rules []graphqlapi.TorrentSelectionRuleSnapshot) []config.TorrentSelectionRule {
+	out := make([]config.TorrentSelectionRule, 0, len(rules))
+	for _, rule := range rules {
+		item := config.TorrentSelectionRule{
+			ID:        strings.TrimSpace(rule.ID),
+			Type:      config.TorrentSelectionRuleType(strings.TrimSpace(rule.Type)),
+			Enabled:   rule.Enabled,
+			Direction: config.TorrentSelectionDirection(strings.TrimSpace(rule.Direction)),
+			IndexerPreference: config.IndexerPreferenceRuleConfig{
+				TrackerIDs: append([]string(nil), rule.IndexerPreference.TrackerIDs...),
+			},
+		}
+		if len(rule.TitleMatch.Clauses) > 0 {
+			item.TitleMatch.Clauses = make([]config.TitleMatchClause, 0, len(rule.TitleMatch.Clauses))
+			for _, clause := range rule.TitleMatch.Clauses {
+				item.TitleMatch.Clauses = append(item.TitleMatch.Clauses, config.TitleMatchClause{
+					Pattern:     strings.TrimSpace(clause.Pattern),
+					PatternMode: config.TitleMatchPatternMode(strings.TrimSpace(clause.PatternMode)),
+					Effect:      config.TitleMatchEffect(strings.TrimSpace(clause.Effect)),
+				})
+			}
+		}
+		out = append(out, item)
+	}
+	return out
+}
+
 func (s *runtimeSettingsEditor) UpdateQBittorrentSettings(input graphqlapi.UpdateQBittorrentSettingsInput) (*graphqlapi.SettingsSnapshot, error) {
 	cfg, err := s.store.UpdateQBittorrent(
 		strings.TrimSpace(input.URL),
@@ -118,6 +145,10 @@ func (s *runtimeSettingsEditor) UpdateAutomationSettings(input graphqlapi.Update
 	cfg, err := s.store.UpdateAutomation(
 		input.TaskProgressSyncIntervalSeconds,
 		input.SubscriptionPollIntervalHours,
+		config.TorrentSelectionConfig{
+			Enabled: input.TorrentSelection.Enabled,
+			Rules:   torrentSelectionConfigRules(input.TorrentSelection.Rules),
+		},
 	)
 	if err != nil {
 		logging.Errorf("settings: save automation settings failed: %v", err)

@@ -15,6 +15,85 @@ type JackettConfig struct {
 	Password string `yaml:"password"`
 }
 
+type TorrentSelectionRuleType string
+
+const (
+	TorrentSelectionRuleTypeIndexerPreference TorrentSelectionRuleType = "INDEXER_PREFERENCE"
+	TorrentSelectionRuleTypeTitleMatch        TorrentSelectionRuleType = "TITLE_MATCH"
+	TorrentSelectionRuleTypePublishDate       TorrentSelectionRuleType = "PUBLISH_DATE"
+	TorrentSelectionRuleTypeTitleSimilarity   TorrentSelectionRuleType = "TITLE_SIMILARITY"
+	TorrentSelectionRuleTypeSeeders           TorrentSelectionRuleType = "SEEDERS"
+	TorrentSelectionRuleTypeSize              TorrentSelectionRuleType = "SIZE"
+)
+
+const (
+	CandidateSelectionRuleTypeIndexerPreference = TorrentSelectionRuleTypeIndexerPreference
+	CandidateSelectionRuleTypeTitleMatch        = TorrentSelectionRuleTypeTitleMatch
+	CandidateSelectionRuleTypePublishDate       = TorrentSelectionRuleTypePublishDate
+	CandidateSelectionRuleTypeTitleSimilarity   = TorrentSelectionRuleTypeTitleSimilarity
+	CandidateSelectionRuleTypeSeeders           = TorrentSelectionRuleTypeSeeders
+	CandidateSelectionRuleTypeSize              = TorrentSelectionRuleTypeSize
+)
+
+type TorrentSelectionDirection string
+
+const (
+	TorrentSelectionDirectionAsc  TorrentSelectionDirection = "ASC"
+	TorrentSelectionDirectionDesc TorrentSelectionDirection = "DESC"
+)
+
+const (
+	CandidateSelectionDirectionAsc  = TorrentSelectionDirectionAsc
+	CandidateSelectionDirectionDesc = TorrentSelectionDirectionDesc
+)
+
+type TitleMatchPatternMode string
+
+const (
+	TitleMatchPatternModePlain TitleMatchPatternMode = "PLAIN"
+	TitleMatchPatternModeRegex TitleMatchPatternMode = "REGEX"
+)
+
+type TitleMatchEffect string
+
+const (
+	TitleMatchEffectPrefer TitleMatchEffect = "PREFER"
+	TitleMatchEffectAvoid  TitleMatchEffect = "AVOID"
+)
+
+type TorrentSelectionConfig struct {
+	Enabled bool                   `yaml:"enabled"`
+	Rules   []TorrentSelectionRule `yaml:"rules"`
+}
+
+type TorrentSelectionRule struct {
+	ID                string                      `yaml:"id"`
+	Type              TorrentSelectionRuleType    `yaml:"type"`
+	Enabled           bool                        `yaml:"enabled"`
+	Direction         TorrentSelectionDirection   `yaml:"direction"`
+	IndexerPreference IndexerPreferenceRuleConfig `yaml:"indexer_preference"`
+	TitleMatch        TitleMatchRuleConfig        `yaml:"title_match"`
+}
+
+type CandidateSelectionRuleType = TorrentSelectionRuleType
+type CandidateSelectionDirection = TorrentSelectionDirection
+type CandidateSelectionConfig = TorrentSelectionConfig
+type CandidateSelectionRule = TorrentSelectionRule
+
+type IndexerPreferenceRuleConfig struct {
+	TrackerIDs []string `yaml:"tracker_ids"`
+}
+
+type TitleMatchRuleConfig struct {
+	Clauses []TitleMatchClause `yaml:"clauses"`
+}
+
+type TitleMatchClause struct {
+	Pattern     string                `yaml:"pattern"`
+	PatternMode TitleMatchPatternMode `yaml:"pattern_mode"`
+	Effect      TitleMatchEffect      `yaml:"effect"`
+}
+
 type QBittorrentConfig struct {
 	URL             string `yaml:"url"`
 	Username        string `yaml:"username"`
@@ -69,8 +148,9 @@ func (s StashConfig) GraphQLEndpoint() string {
 }
 
 type AutomationConfig struct {
-	TaskProgressSyncIntervalSeconds int `yaml:"task_progress_sync_interval_seconds"`
-	SubscriptionPollIntervalHours   int `yaml:"subscription_poll_interval_hours"`
+	TaskProgressSyncIntervalSeconds int                    `yaml:"task_progress_sync_interval_seconds"`
+	SubscriptionPollIntervalHours   int                    `yaml:"subscription_poll_interval_hours"`
+	TorrentSelection                TorrentSelectionConfig `yaml:"torrent_selection"`
 }
 
 type IngestConfig struct {
@@ -108,6 +188,138 @@ type Config struct {
 	path string
 }
 
+func DefaultTorrentSelectionConfig() TorrentSelectionConfig {
+	return TorrentSelectionConfig{
+		Enabled: true,
+		Rules: []TorrentSelectionRule{
+			{
+				ID:        "default-seeders",
+				Type:      TorrentSelectionRuleTypeSeeders,
+				Enabled:   true,
+				Direction: TorrentSelectionDirectionDesc,
+			},
+			{
+				ID:        "default-size",
+				Type:      TorrentSelectionRuleTypeSize,
+				Enabled:   true,
+				Direction: TorrentSelectionDirectionDesc,
+			},
+		},
+	}
+}
+
+func DefaultCandidateSelectionConfig() CandidateSelectionConfig {
+	return DefaultTorrentSelectionConfig()
+}
+
+func NormalizeTorrentSelectionDirection(value TorrentSelectionDirection) TorrentSelectionDirection {
+	switch TorrentSelectionDirection(strings.TrimSpace(string(value))) {
+	case TorrentSelectionDirectionAsc:
+		return TorrentSelectionDirectionAsc
+	default:
+		return TorrentSelectionDirectionDesc
+	}
+}
+
+func NormalizeCandidateSelectionDirection(value CandidateSelectionDirection) CandidateSelectionDirection {
+	return NormalizeTorrentSelectionDirection(value)
+}
+
+func NormalizeTitleMatchPatternMode(value TitleMatchPatternMode) TitleMatchPatternMode {
+	switch TitleMatchPatternMode(strings.TrimSpace(string(value))) {
+	case TitleMatchPatternModeRegex:
+		return TitleMatchPatternModeRegex
+	default:
+		return TitleMatchPatternModePlain
+	}
+}
+
+func NormalizeTitleMatchEffect(value TitleMatchEffect) TitleMatchEffect {
+	switch TitleMatchEffect(strings.TrimSpace(string(value))) {
+	case TitleMatchEffectAvoid:
+		return TitleMatchEffectAvoid
+	default:
+		return TitleMatchEffectPrefer
+	}
+}
+
+func NormalizeTorrentSelectionRuleType(value TorrentSelectionRuleType) TorrentSelectionRuleType {
+	switch TorrentSelectionRuleType(strings.TrimSpace(string(value))) {
+	case TorrentSelectionRuleTypeIndexerPreference,
+		TorrentSelectionRuleTypeTitleMatch,
+		TorrentSelectionRuleTypePublishDate,
+		TorrentSelectionRuleTypeTitleSimilarity,
+		TorrentSelectionRuleTypeSeeders,
+		TorrentSelectionRuleTypeSize:
+		return value
+	default:
+		return TorrentSelectionRuleTypeSeeders
+	}
+}
+
+func NormalizeCandidateSelectionRuleType(value CandidateSelectionRuleType) CandidateSelectionRuleType {
+	return NormalizeTorrentSelectionRuleType(value)
+}
+
+func (c TorrentSelectionConfig) Effective() TorrentSelectionConfig {
+	if len(c.Rules) == 0 {
+		return DefaultTorrentSelectionConfig()
+	}
+
+	normalized := TorrentSelectionConfig{
+		Enabled: c.Enabled,
+		Rules:   make([]TorrentSelectionRule, 0, len(c.Rules)),
+	}
+	for i, rule := range c.Rules {
+		next := rule.normalized(i)
+		if next.Type == "" {
+			continue
+		}
+		normalized.Rules = append(normalized.Rules, next)
+	}
+	if len(normalized.Rules) == 0 {
+		return DefaultTorrentSelectionConfig()
+	}
+	return normalized
+}
+
+func (r TorrentSelectionRule) normalized(index int) TorrentSelectionRule {
+	r.ID = strings.TrimSpace(r.ID)
+	if r.ID == "" {
+		r.ID = fmt.Sprintf("rule-%d", index+1)
+	}
+	r.Type = NormalizeTorrentSelectionRuleType(r.Type)
+	r.Direction = NormalizeTorrentSelectionDirection(r.Direction)
+	r.IndexerPreference.TrackerIDs = cleanStrings(r.IndexerPreference.TrackerIDs)
+
+	if r.Type == TorrentSelectionRuleTypeTitleMatch {
+		clauses := make([]TitleMatchClause, 0, len(r.TitleMatch.Clauses))
+		for _, clause := range r.TitleMatch.Clauses {
+			clause.Pattern = strings.TrimSpace(clause.Pattern)
+			if clause.Pattern == "" {
+				continue
+			}
+			clause.PatternMode = NormalizeTitleMatchPatternMode(clause.PatternMode)
+			clause.Effect = NormalizeTitleMatchEffect(clause.Effect)
+			clauses = append(clauses, clause)
+		}
+		r.TitleMatch.Clauses = clauses
+	}
+	return r
+}
+
+func cleanStrings(values []string) []string {
+	out := make([]string, 0, len(values))
+	for _, value := range values {
+		value = strings.TrimSpace(value)
+		if value == "" {
+			continue
+		}
+		out = append(out, value)
+	}
+	return out
+}
+
 func Load() (*Config, error) {
 	path := DefaultPath()
 	return LoadFromPath(path)
@@ -125,6 +337,7 @@ func LoadFromPath(path string) (*Config, error) {
 	}
 	config.Connection.Stash.normalize()
 	config.System.TaskDeletePolicy = config.System.EffectiveTaskDeletePolicy()
+	config.Automation.TorrentSelection = config.Automation.TorrentSelection.Effective()
 	config.path = path
 
 	return &config, nil

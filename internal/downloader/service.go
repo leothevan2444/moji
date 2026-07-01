@@ -133,19 +133,25 @@ type AddTorrentRequest struct {
 }
 
 type Service struct {
-	tracker tracker.Tracker
-	qbt     TorrentClient
-	store   TaskStore
-	fileOps FileOperator
-	taskDeletePolicy func() config.TaskDeletePolicy
-	now     func() time.Time
-	newID   func() string
+	tracker            tracker.Tracker
+	qbt                TorrentClient
+	store              TaskStore
+	selector           CandidateSelector
+	fileOps            FileOperator
+	candidateSelection func() config.CandidateSelectionConfig
+	taskDeletePolicy   func() config.TaskDeletePolicy
+	now                func() time.Time
+	newID              func() string
 }
 
 type Option func(*Service)
 
 type FileOperator interface {
 	Transfer(ctx context.Context, sourcePath string, action stashsync.TransferAction, targetPath string) error
+}
+
+type CandidateSelector interface {
+	Select(query string, results []jackett.SearchResult, cfg config.CandidateSelectionConfig) (jackett.SearchResult, error)
 }
 
 func WithClock(now func() time.Time) Option {
@@ -176,20 +182,38 @@ func NewService(tr tracker.Tracker, qbt TorrentClient, store TaskStore, options 
 	}
 
 	s := &Service{
-		tracker: tr,
-		qbt:     qbt,
-		store:   store,
-		fileOps: osFileOperator{},
+		tracker:            tr,
+		qbt:                qbt,
+		store:              store,
+		selector:           defaultCandidateSelector{},
+		fileOps:            osFileOperator{},
+		candidateSelection: config.DefaultCandidateSelectionConfig,
 		taskDeletePolicy: func() config.TaskDeletePolicy {
 			return config.TaskDeletePolicyKeepOnly
 		},
-		now:     time.Now,
-		newID:   newTaskID,
+		now:   time.Now,
+		newID: newTaskID,
 	}
 	for _, option := range options {
 		option(s)
 	}
 	return s, nil
+}
+
+func WithCandidateSelectionProvider(provider func() config.CandidateSelectionConfig) Option {
+	return func(s *Service) {
+		if provider != nil {
+			s.candidateSelection = provider
+		}
+	}
+}
+
+func WithCandidateSelector(selector CandidateSelector) Option {
+	return func(s *Service) {
+		if selector != nil {
+			s.selector = selector
+		}
+	}
 }
 
 func WithFileOperator(fileOps FileOperator) Option {
@@ -320,7 +344,15 @@ func (s *Service) DownloadMediaContext(ctx context.Context, req DownloadRequest)
 	}
 	logging.Infof("downloader: search returned %d results for query %q", len(results), query)
 
-	result, err := selectCandidate(results)
+	selectionConfig := config.DefaultCandidateSelectionConfig()
+	if s.candidateSelection != nil {
+		selectionConfig = s.candidateSelection().Effective()
+	}
+	selector := s.selector
+	if selector == nil {
+		selector = defaultCandidateSelector{}
+	}
+	result, err := selector.Select(query, results, selectionConfig)
 	if err != nil {
 		logging.Errorf("downloader: select candidate failed for query %q: %v", query, err)
 		return nil, err
@@ -461,24 +493,6 @@ func (s *Service) AddTorrentContext(ctx context.Context, req AddTorrentRequest) 
 	logging.Infof("downloader: %s task %s added to qBittorrent", strings.ToLower(string(source)), task.ID)
 
 	return task, nil
-}
-
-func selectCandidate(results []jackett.SearchResult) (jackett.SearchResult, error) {
-	var best jackett.SearchResult
-	found := false
-	for _, result := range results {
-		if preferredTorrentURL(result) == "" {
-			continue
-		}
-		if !found || result.Seeders > best.Seeders || result.Seeders == best.Seeders && result.Size > best.Size {
-			best = result
-			found = true
-		}
-	}
-	if !found {
-		return jackett.SearchResult{}, errors.New("downloader: no downloadable torrent candidate found")
-	}
-	return best, nil
 }
 
 func preferredTorrentURL(result jackett.SearchResult) string {

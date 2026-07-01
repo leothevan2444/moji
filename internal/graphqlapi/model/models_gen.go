@@ -10,8 +10,9 @@ import (
 )
 
 type AutomationSettings struct {
-	TaskProgressSyncIntervalSeconds int `json:"taskProgressSyncIntervalSeconds"`
-	SubscriptionPollIntervalHours   int `json:"subscriptionPollIntervalHours"`
+	TaskProgressSyncIntervalSeconds int                       `json:"taskProgressSyncIntervalSeconds"`
+	SubscriptionPollIntervalHours   int                       `json:"subscriptionPollIntervalHours"`
+	TorrentSelection                *TorrentSelectionSettings `json:"torrentSelection"`
 }
 
 type AutomationStatus struct {
@@ -85,6 +86,14 @@ type DownloadMediaInput struct {
 type Health struct {
 	Ok      bool   `json:"ok"`
 	Message string `json:"message"`
+}
+
+type IndexerPreferenceRule struct {
+	TrackerIds []string `json:"trackerIds"`
+}
+
+type IndexerPreferenceRuleInput struct {
+	TrackerIds []string `json:"trackerIds"`
 }
 
 type IngestSettings struct {
@@ -476,6 +485,54 @@ type Task struct {
 	UpdatedAt           string             `json:"updatedAt"`
 }
 
+type TitleMatchClause struct {
+	Pattern     string                `json:"pattern"`
+	PatternMode TitleMatchPatternMode `json:"patternMode"`
+	Effect      TitleMatchEffect      `json:"effect"`
+}
+
+type TitleMatchClauseInput struct {
+	Pattern     string                `json:"pattern"`
+	PatternMode TitleMatchPatternMode `json:"patternMode"`
+	Effect      TitleMatchEffect      `json:"effect"`
+}
+
+type TitleMatchRule struct {
+	Clauses []*TitleMatchClause `json:"clauses"`
+}
+
+type TitleMatchRuleInput struct {
+	Clauses []*TitleMatchClauseInput `json:"clauses"`
+}
+
+type TorrentSelectionRule struct {
+	ID                string                    `json:"id"`
+	Type              TorrentSelectionRuleType  `json:"type"`
+	Enabled           bool                      `json:"enabled"`
+	Direction         TorrentSelectionDirection `json:"direction"`
+	IndexerPreference *IndexerPreferenceRule    `json:"indexerPreference"`
+	TitleMatch        *TitleMatchRule           `json:"titleMatch"`
+}
+
+type TorrentSelectionRuleInput struct {
+	ID                string                      `json:"id"`
+	Type              TorrentSelectionRuleType    `json:"type"`
+	Enabled           bool                        `json:"enabled"`
+	Direction         TorrentSelectionDirection   `json:"direction"`
+	IndexerPreference *IndexerPreferenceRuleInput `json:"indexerPreference,omitempty"`
+	TitleMatch        *TitleMatchRuleInput        `json:"titleMatch,omitempty"`
+}
+
+type TorrentSelectionSettings struct {
+	Enabled bool                    `json:"enabled"`
+	Rules   []*TorrentSelectionRule `json:"rules"`
+}
+
+type TorrentSelectionSettingsInput struct {
+	Enabled bool                         `json:"enabled"`
+	Rules   []*TorrentSelectionRuleInput `json:"rules"`
+}
+
 type TransferIngestSettings struct {
 	Action         string `json:"action"`
 	MojiSourceRoot string `json:"mojiSourceRoot"`
@@ -489,8 +546,9 @@ type TransferIngestSettingsInput struct {
 }
 
 type UpdateAutomationSettingsInput struct {
-	TaskProgressSyncIntervalSeconds int `json:"taskProgressSyncIntervalSeconds"`
-	SubscriptionPollIntervalHours   int `json:"subscriptionPollIntervalHours"`
+	TaskProgressSyncIntervalSeconds int                            `json:"taskProgressSyncIntervalSeconds"`
+	SubscriptionPollIntervalHours   int                            `json:"subscriptionPollIntervalHours"`
+	TorrentSelection                *TorrentSelectionSettingsInput `json:"torrentSelection"`
 }
 
 type UpdateIngestSettingsInput struct {
@@ -986,6 +1044,234 @@ func (e *TaskSource) UnmarshalJSON(b []byte) error {
 }
 
 func (e TaskSource) MarshalJSON() ([]byte, error) {
+	var buf bytes.Buffer
+	e.MarshalGQL(&buf)
+	return buf.Bytes(), nil
+}
+
+type TitleMatchEffect string
+
+const (
+	TitleMatchEffectPrefer TitleMatchEffect = "PREFER"
+	TitleMatchEffectAvoid  TitleMatchEffect = "AVOID"
+)
+
+var AllTitleMatchEffect = []TitleMatchEffect{
+	TitleMatchEffectPrefer,
+	TitleMatchEffectAvoid,
+}
+
+func (e TitleMatchEffect) IsValid() bool {
+	switch e {
+	case TitleMatchEffectPrefer, TitleMatchEffectAvoid:
+		return true
+	}
+	return false
+}
+
+func (e TitleMatchEffect) String() string {
+	return string(e)
+}
+
+func (e *TitleMatchEffect) UnmarshalGQL(v any) error {
+	str, ok := v.(string)
+	if !ok {
+		return fmt.Errorf("enums must be strings")
+	}
+
+	*e = TitleMatchEffect(str)
+	if !e.IsValid() {
+		return fmt.Errorf("%s is not a valid TitleMatchEffect", str)
+	}
+	return nil
+}
+
+func (e TitleMatchEffect) MarshalGQL(w io.Writer) {
+	fmt.Fprint(w, strconv.Quote(e.String()))
+}
+
+func (e *TitleMatchEffect) UnmarshalJSON(b []byte) error {
+	s, err := strconv.Unquote(string(b))
+	if err != nil {
+		return err
+	}
+	return e.UnmarshalGQL(s)
+}
+
+func (e TitleMatchEffect) MarshalJSON() ([]byte, error) {
+	var buf bytes.Buffer
+	e.MarshalGQL(&buf)
+	return buf.Bytes(), nil
+}
+
+type TitleMatchPatternMode string
+
+const (
+	TitleMatchPatternModePlain TitleMatchPatternMode = "PLAIN"
+	TitleMatchPatternModeRegex TitleMatchPatternMode = "REGEX"
+)
+
+var AllTitleMatchPatternMode = []TitleMatchPatternMode{
+	TitleMatchPatternModePlain,
+	TitleMatchPatternModeRegex,
+}
+
+func (e TitleMatchPatternMode) IsValid() bool {
+	switch e {
+	case TitleMatchPatternModePlain, TitleMatchPatternModeRegex:
+		return true
+	}
+	return false
+}
+
+func (e TitleMatchPatternMode) String() string {
+	return string(e)
+}
+
+func (e *TitleMatchPatternMode) UnmarshalGQL(v any) error {
+	str, ok := v.(string)
+	if !ok {
+		return fmt.Errorf("enums must be strings")
+	}
+
+	*e = TitleMatchPatternMode(str)
+	if !e.IsValid() {
+		return fmt.Errorf("%s is not a valid TitleMatchPatternMode", str)
+	}
+	return nil
+}
+
+func (e TitleMatchPatternMode) MarshalGQL(w io.Writer) {
+	fmt.Fprint(w, strconv.Quote(e.String()))
+}
+
+func (e *TitleMatchPatternMode) UnmarshalJSON(b []byte) error {
+	s, err := strconv.Unquote(string(b))
+	if err != nil {
+		return err
+	}
+	return e.UnmarshalGQL(s)
+}
+
+func (e TitleMatchPatternMode) MarshalJSON() ([]byte, error) {
+	var buf bytes.Buffer
+	e.MarshalGQL(&buf)
+	return buf.Bytes(), nil
+}
+
+type TorrentSelectionDirection string
+
+const (
+	TorrentSelectionDirectionAsc  TorrentSelectionDirection = "ASC"
+	TorrentSelectionDirectionDesc TorrentSelectionDirection = "DESC"
+)
+
+var AllTorrentSelectionDirection = []TorrentSelectionDirection{
+	TorrentSelectionDirectionAsc,
+	TorrentSelectionDirectionDesc,
+}
+
+func (e TorrentSelectionDirection) IsValid() bool {
+	switch e {
+	case TorrentSelectionDirectionAsc, TorrentSelectionDirectionDesc:
+		return true
+	}
+	return false
+}
+
+func (e TorrentSelectionDirection) String() string {
+	return string(e)
+}
+
+func (e *TorrentSelectionDirection) UnmarshalGQL(v any) error {
+	str, ok := v.(string)
+	if !ok {
+		return fmt.Errorf("enums must be strings")
+	}
+
+	*e = TorrentSelectionDirection(str)
+	if !e.IsValid() {
+		return fmt.Errorf("%s is not a valid TorrentSelectionDirection", str)
+	}
+	return nil
+}
+
+func (e TorrentSelectionDirection) MarshalGQL(w io.Writer) {
+	fmt.Fprint(w, strconv.Quote(e.String()))
+}
+
+func (e *TorrentSelectionDirection) UnmarshalJSON(b []byte) error {
+	s, err := strconv.Unquote(string(b))
+	if err != nil {
+		return err
+	}
+	return e.UnmarshalGQL(s)
+}
+
+func (e TorrentSelectionDirection) MarshalJSON() ([]byte, error) {
+	var buf bytes.Buffer
+	e.MarshalGQL(&buf)
+	return buf.Bytes(), nil
+}
+
+type TorrentSelectionRuleType string
+
+const (
+	TorrentSelectionRuleTypeIndexerPreference TorrentSelectionRuleType = "INDEXER_PREFERENCE"
+	TorrentSelectionRuleTypeTitleMatch        TorrentSelectionRuleType = "TITLE_MATCH"
+	TorrentSelectionRuleTypePublishDate       TorrentSelectionRuleType = "PUBLISH_DATE"
+	TorrentSelectionRuleTypeTitleSimilarity   TorrentSelectionRuleType = "TITLE_SIMILARITY"
+	TorrentSelectionRuleTypeSeeders           TorrentSelectionRuleType = "SEEDERS"
+	TorrentSelectionRuleTypeSize              TorrentSelectionRuleType = "SIZE"
+)
+
+var AllTorrentSelectionRuleType = []TorrentSelectionRuleType{
+	TorrentSelectionRuleTypeIndexerPreference,
+	TorrentSelectionRuleTypeTitleMatch,
+	TorrentSelectionRuleTypePublishDate,
+	TorrentSelectionRuleTypeTitleSimilarity,
+	TorrentSelectionRuleTypeSeeders,
+	TorrentSelectionRuleTypeSize,
+}
+
+func (e TorrentSelectionRuleType) IsValid() bool {
+	switch e {
+	case TorrentSelectionRuleTypeIndexerPreference, TorrentSelectionRuleTypeTitleMatch, TorrentSelectionRuleTypePublishDate, TorrentSelectionRuleTypeTitleSimilarity, TorrentSelectionRuleTypeSeeders, TorrentSelectionRuleTypeSize:
+		return true
+	}
+	return false
+}
+
+func (e TorrentSelectionRuleType) String() string {
+	return string(e)
+}
+
+func (e *TorrentSelectionRuleType) UnmarshalGQL(v any) error {
+	str, ok := v.(string)
+	if !ok {
+		return fmt.Errorf("enums must be strings")
+	}
+
+	*e = TorrentSelectionRuleType(str)
+	if !e.IsValid() {
+		return fmt.Errorf("%s is not a valid TorrentSelectionRuleType", str)
+	}
+	return nil
+}
+
+func (e TorrentSelectionRuleType) MarshalGQL(w io.Writer) {
+	fmt.Fprint(w, strconv.Quote(e.String()))
+}
+
+func (e *TorrentSelectionRuleType) UnmarshalJSON(b []byte) error {
+	s, err := strconv.Unquote(string(b))
+	if err != nil {
+		return err
+	}
+	return e.UnmarshalGQL(s)
+}
+
+func (e TorrentSelectionRuleType) MarshalJSON() ([]byte, error) {
 	var buf bytes.Buffer
 	e.MarshalGQL(&buf)
 	return buf.Bytes(), nil

@@ -271,6 +271,7 @@ func configureDownloader(cfg *config.Config, configStore *config.Store, tr track
 		tr,
 		torrent,
 		store,
+		downloader.WithCandidateSelectionProvider(configureTorrentSelectionProvider(configStore, cfg)),
 		downloader.WithTaskDeletePolicyProvider(configureTaskDeletePolicyProvider(configStore, cfg)),
 	)
 	if err != nil {
@@ -278,6 +279,16 @@ func configureDownloader(cfg *config.Config, configStore *config.Store, tr track
 	}
 	logging.Infof("runtime: downloader service initialized")
 	return service
+}
+
+func configureTorrentSelectionProvider(store *config.Store, cfg *config.Config) func() config.TorrentSelectionConfig {
+	return func() config.TorrentSelectionConfig {
+		current := cfg
+		if store != nil {
+			current = store.Config()
+		}
+		return current.Automation.TorrentSelection.Effective()
+	}
 }
 
 func configureTaskStore(cfg *config.Config) (downloader.TaskStore, error) {
@@ -381,6 +392,7 @@ func buildSettingsSnapshot(cfg *config.Config, version string) *graphqlapi.Setti
 		Automation: graphqlapi.AutomationSettingsSnapshot{
 			TaskProgressSyncIntervalSeconds: effectiveTaskProgressSyncIntervalSeconds(cfg),
 			SubscriptionPollIntervalHours:   effectiveSubscriptionPollIntervalHours(cfg),
+			TorrentSelection:                torrentSelectionSnapshot(cfg.Automation.TorrentSelection.Effective()),
 		},
 		System: graphqlapi.SystemSettingsSnapshot{
 			TaskDeletePolicy: string(cfg.System.EffectiveTaskDeletePolicy()),
@@ -389,6 +401,37 @@ func buildSettingsSnapshot(cfg *config.Config, version string) *graphqlapi.Setti
 			StashBoxEndpoints: append([]string(nil), cfg.Subscription.StashBoxEndpoints...),
 		},
 	}
+}
+
+func torrentSelectionSnapshot(cfg config.TorrentSelectionConfig) graphqlapi.TorrentSelectionSettingsSnapshot {
+	cfg = cfg.Effective()
+	out := graphqlapi.TorrentSelectionSettingsSnapshot{
+		Enabled: cfg.Enabled,
+		Rules:   make([]graphqlapi.TorrentSelectionRuleSnapshot, 0, len(cfg.Rules)),
+	}
+	for _, rule := range cfg.Rules {
+		item := graphqlapi.TorrentSelectionRuleSnapshot{
+			ID:        rule.ID,
+			Type:      string(rule.Type),
+			Enabled:   rule.Enabled,
+			Direction: string(rule.Direction),
+			IndexerPreference: graphqlapi.IndexerPreferenceRuleSnapshot{
+				TrackerIDs: append([]string(nil), rule.IndexerPreference.TrackerIDs...),
+			},
+		}
+		if len(rule.TitleMatch.Clauses) > 0 {
+			item.TitleMatch.Clauses = make([]graphqlapi.TitleMatchClauseSnapshot, 0, len(rule.TitleMatch.Clauses))
+			for _, clause := range rule.TitleMatch.Clauses {
+				item.TitleMatch.Clauses = append(item.TitleMatch.Clauses, graphqlapi.TitleMatchClauseSnapshot{
+					Pattern:     clause.Pattern,
+					PatternMode: string(clause.PatternMode),
+					Effect:      string(clause.Effect),
+				})
+			}
+		}
+		out.Rules = append(out.Rules, item)
+	}
+	return out
 }
 
 func buildSettingsStatusSnapshot(cfg *config.Config, version string, downloaderEnabled bool, stashEnabled bool, stashClient *stash.Client, subscriptionService graphqlapi.SubscriptionService) *graphqlapi.SettingsStatusSnapshot {

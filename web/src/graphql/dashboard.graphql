@@ -50,6 +50,25 @@ query DashboardDocument {
     automation {
       taskProgressSyncIntervalSeconds
       subscriptionPollIntervalHours
+      torrentSelection {
+        enabled
+        rules {
+          id
+          type
+          enabled
+          direction
+          indexerPreference {
+            trackerIds
+          }
+          titleMatch {
+            clauses {
+              pattern
+              patternMode
+              effect
+            }
+          }
+        }
+      }
     }
     system {
       taskDeletePolicy

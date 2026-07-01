@@ -37,6 +37,7 @@ func OpenStore(path string) (*Store, error) {
 	}
 	cfg.Connection.Stash.normalize()
 	cfg.System.TaskDeletePolicy = cfg.System.EffectiveTaskDeletePolicy()
+	cfg.Automation.TorrentSelection = cfg.Automation.TorrentSelection.Effective()
 	cfg.path = path
 
 	var root yaml.Node
@@ -129,12 +130,13 @@ func (s *Store) UpdateQBittorrent(url, username, password, defaultSavePath, cate
 	return &clone, nil
 }
 
-func (s *Store) UpdateAutomation(taskProgressSyncIntervalSeconds, subscriptionPollIntervalHours int) (*Config, error) {
+func (s *Store) UpdateAutomation(taskProgressSyncIntervalSeconds, subscriptionPollIntervalHours int, torrentSelection TorrentSelectionConfig) (*Config, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
 	s.cfg.Automation.TaskProgressSyncIntervalSeconds = taskProgressSyncIntervalSeconds
 	s.cfg.Automation.SubscriptionPollIntervalHours = subscriptionPollIntervalHours
+	s.cfg.Automation.TorrentSelection = torrentSelection.Effective()
 
 	if err := s.updateConfigNode(); err != nil {
 		return nil, err
@@ -211,6 +213,7 @@ func (s *Store) updateConfigNode() error {
 	})
 	setIntScalar(mapValue(top, "automation"), "task_progress_sync_interval_seconds", s.cfg.Automation.TaskProgressSyncIntervalSeconds)
 	setIntScalar(mapValue(top, "automation"), "subscription_poll_interval_hours", s.cfg.Automation.SubscriptionPollIntervalHours)
+	setNodeValue(mapValue(top, "automation"), "torrent_selection", s.cfg.Automation.TorrentSelection.Effective())
 	setScalar(mapValue(top, "system"), "task_delete_policy", string(s.cfg.System.EffectiveTaskDeletePolicy()))
 	setStringList(mapValue(top, "subscription"), "selected_stash_box_endpoints", s.cfg.Subscription.StashBoxEndpoints)
 	deleteMapKey(top, "stash")
@@ -226,6 +229,9 @@ func (s *Store) updateConfigNode() error {
 		deleteMapKey(stash, "stash_path_prefix")
 		deleteMapKey(stash, "transfer_action")
 		deleteMapKey(stash, "transfer_target_path")
+	}
+	if jackett := existingMapValue(connection, "jackett"); jackett != nil {
+		deleteMapKey(jackett, "candidate_selection")
 	}
 	if ingest := existingMapValue(top, "ingest"); ingest != nil {
 		deleteMapKey(ingest, "mode")
@@ -282,6 +288,24 @@ func setMapString(parent *yaml.Node, key string, values map[string]string) {
 	for field, value := range values {
 		setScalar(section, field, value)
 	}
+}
+
+func setNodeValue(parent *yaml.Node, key string, value any) {
+	ensureMapValue(parent)
+	target := mapValue(parent, key)
+
+	var node yaml.Node
+	if err := node.Encode(value); err != nil {
+		target.Kind = yaml.MappingNode
+		target.Tag = "!!map"
+		target.Content = nil
+		return
+	}
+	if node.Kind == yaml.DocumentNode && len(node.Content) > 0 {
+		*target = *node.Content[0]
+		return
+	}
+	*target = node
 }
 
 func setStringList(parent *yaml.Node, key string, values []string) {

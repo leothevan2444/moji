@@ -105,6 +105,7 @@ func (r *mutationResolver) UpdateAutomationSettings(ctx context.Context, input m
 	snapshot, err := r.SettingsEditor.UpdateAutomationSettings(UpdateAutomationSettingsInput{
 		TaskProgressSyncIntervalSeconds: input.TaskProgressSyncIntervalSeconds,
 		SubscriptionPollIntervalHours:   input.SubscriptionPollIntervalHours,
+		TorrentSelection:                torrentSelectionSettingsFromModel(input.TorrentSelection),
 	})
 	if err != nil {
 		return nil, err

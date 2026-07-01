@@ -166,6 +166,58 @@ type JackettSettings {
   password: String!
 }
 
+type TorrentSelectionSettings {
+  enabled: Boolean!
+  rules: [TorrentSelectionRule!]!
+}
+
+enum TorrentSelectionRuleType {
+  INDEXER_PREFERENCE
+  TITLE_MATCH
+  PUBLISH_DATE
+  TITLE_SIMILARITY
+  SEEDERS
+  SIZE
+}
+
+enum TorrentSelectionDirection {
+  ASC
+  DESC
+}
+
+enum TitleMatchPatternMode {
+  PLAIN
+  REGEX
+}
+
+enum TitleMatchEffect {
+  PREFER
+  AVOID
+}
+
+type TorrentSelectionRule {
+  id: ID!
+  type: TorrentSelectionRuleType!
+  enabled: Boolean!
+  direction: TorrentSelectionDirection!
+  indexerPreference: IndexerPreferenceRule!
+  titleMatch: TitleMatchRule!
+}
+
+type IndexerPreferenceRule {
+  trackerIds: [String!]!
+}
+
+type TitleMatchRule {
+  clauses: [TitleMatchClause!]!
+}
+
+type TitleMatchClause {
+  pattern: String!
+  patternMode: TitleMatchPatternMode!
+  effect: TitleMatchEffect!
+}
+
 type QBittorrentSettings {
   configured: Boolean!
   url: String!
@@ -182,6 +234,7 @@ type QBittorrentSettings {
 type AutomationSettings {
   taskProgressSyncIntervalSeconds: Int!
   subscriptionPollIntervalHours: Int!
+  torrentSelection: TorrentSelectionSettings!
 }
 
 enum TaskDeletePolicy {
@@ -253,6 +306,34 @@ input UpdateJackettSettingsInput {
   password: String!
 }
 
+input TorrentSelectionSettingsInput {
+  enabled: Boolean!
+  rules: [TorrentSelectionRuleInput!]!
+}
+
+input TorrentSelectionRuleInput {
+  id: ID!
+  type: TorrentSelectionRuleType!
+  enabled: Boolean!
+  direction: TorrentSelectionDirection!
+  indexerPreference: IndexerPreferenceRuleInput
+  titleMatch: TitleMatchRuleInput
+}
+
+input IndexerPreferenceRuleInput {
+  trackerIds: [String!]!
+}
+
+input TitleMatchRuleInput {
+  clauses: [TitleMatchClauseInput!]!
+}
+
+input TitleMatchClauseInput {
+  pattern: String!
+  patternMode: TitleMatchPatternMode!
+  effect: TitleMatchEffect!
+}
+
 input UpdateQBittorrentSettingsInput {
   url: String!
   username: String!
@@ -265,6 +346,7 @@ input UpdateQBittorrentSettingsInput {
 input UpdateAutomationSettingsInput {
   taskProgressSyncIntervalSeconds: Int!
   subscriptionPollIntervalHours: Int!
+  torrentSelection: TorrentSelectionSettingsInput!
 }
 
 input UpdateSystemSettingsInput {

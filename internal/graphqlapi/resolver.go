@@ -84,6 +84,7 @@ type UpdateSubscriptionSettingsInput struct {
 type UpdateAutomationSettingsInput struct {
 	TaskProgressSyncIntervalSeconds int
 	SubscriptionPollIntervalHours   int
+	TorrentSelection                TorrentSelectionSettingsSnapshot
 }
 
 type UpdateSystemSettingsInput struct {
@@ -128,6 +129,34 @@ type JackettSettingsSnapshot struct {
 	Password           string
 }
 
+type TorrentSelectionSettingsSnapshot struct {
+	Enabled bool
+	Rules   []TorrentSelectionRuleSnapshot
+}
+
+type TorrentSelectionRuleSnapshot struct {
+	ID                string
+	Type              string
+	Enabled           bool
+	Direction         string
+	IndexerPreference IndexerPreferenceRuleSnapshot
+	TitleMatch        TitleMatchRuleSnapshot
+}
+
+type IndexerPreferenceRuleSnapshot struct {
+	TrackerIDs []string
+}
+
+type TitleMatchRuleSnapshot struct {
+	Clauses []TitleMatchClauseSnapshot
+}
+
+type TitleMatchClauseSnapshot struct {
+	Pattern     string
+	PatternMode string
+	Effect      string
+}
+
 type QBittorrentSettingsSnapshot struct {
 	Configured         bool
 	URL                string
@@ -143,6 +172,7 @@ type QBittorrentSettingsSnapshot struct {
 type AutomationSettingsSnapshot struct {
 	TaskProgressSyncIntervalSeconds int
 	SubscriptionPollIntervalHours   int
+	TorrentSelection                TorrentSelectionSettingsSnapshot
 }
 
 type SystemSettingsSnapshot struct {

@@ -49,6 +49,7 @@ type ComplexityRoot struct {
 	AutomationSettings struct {
 		SubscriptionPollIntervalHours   func(childComplexity int) int
 		TaskProgressSyncIntervalSeconds func(childComplexity int) int
+		TorrentSelection                func(childComplexity int) int
 	}
 
 	AutomationStatus struct {
@@ -104,6 +105,10 @@ type ComplexityRoot struct {
 	Health struct {
 		Message func(childComplexity int) int
 		Ok      func(childComplexity int) int
+	}
+
+	IndexerPreferenceRule struct {
+		TrackerIds func(childComplexity int) int
 	}
 
 	IngestSettings struct {
@@ -457,6 +462,30 @@ type ComplexityRoot struct {
 		UpdatedAt           func(childComplexity int) int
 	}
 
+	TitleMatchClause struct {
+		Effect      func(childComplexity int) int
+		Pattern     func(childComplexity int) int
+		PatternMode func(childComplexity int) int
+	}
+
+	TitleMatchRule struct {
+		Clauses func(childComplexity int) int
+	}
+
+	TorrentSelectionRule struct {
+		Direction         func(childComplexity int) int
+		Enabled           func(childComplexity int) int
+		ID                func(childComplexity int) int
+		IndexerPreference func(childComplexity int) int
+		TitleMatch        func(childComplexity int) int
+		Type              func(childComplexity int) int
+	}
+
+	TorrentSelectionSettings struct {
+		Enabled func(childComplexity int) int
+		Rules   func(childComplexity int) int
+	}
+
 	TransferIngestSettings struct {
 		Action         func(childComplexity int) int
 		MojiSourceRoot func(childComplexity int) int
@@ -539,6 +568,13 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.AutomationSettings.TaskProgressSyncIntervalSeconds(childComplexity), true
+
+	case "AutomationSettings.torrentSelection":
+		if e.complexity.AutomationSettings.TorrentSelection == nil {
+			break
+		}
+
+		return e.complexity.AutomationSettings.TorrentSelection(childComplexity), true
 
 	case "AutomationStatus.subscriptionPollEnabled":
 		if e.complexity.AutomationStatus.SubscriptionPollEnabled == nil {
@@ -798,6 +834,13 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.Health.Ok(childComplexity), true
+
+	case "IndexerPreferenceRule.trackerIds":
+		if e.complexity.IndexerPreferenceRule.TrackerIds == nil {
+			break
+		}
+
+		return e.complexity.IndexerPreferenceRule.TrackerIds(childComplexity), true
 
 	case "IngestSettings.deliveryMode":
 		if e.complexity.IngestSettings.DeliveryMode == nil {
@@ -2693,6 +2736,90 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.Task.UpdatedAt(childComplexity), true
 
+	case "TitleMatchClause.effect":
+		if e.complexity.TitleMatchClause.Effect == nil {
+			break
+		}
+
+		return e.complexity.TitleMatchClause.Effect(childComplexity), true
+
+	case "TitleMatchClause.pattern":
+		if e.complexity.TitleMatchClause.Pattern == nil {
+			break
+		}
+
+		return e.complexity.TitleMatchClause.Pattern(childComplexity), true
+
+	case "TitleMatchClause.patternMode":
+		if e.complexity.TitleMatchClause.PatternMode == nil {
+			break
+		}
+
+		return e.complexity.TitleMatchClause.PatternMode(childComplexity), true
+
+	case "TitleMatchRule.clauses":
+		if e.complexity.TitleMatchRule.Clauses == nil {
+			break
+		}
+
+		return e.complexity.TitleMatchRule.Clauses(childComplexity), true
+
+	case "TorrentSelectionRule.direction":
+		if e.complexity.TorrentSelectionRule.Direction == nil {
+			break
+		}
+
+		return e.complexity.TorrentSelectionRule.Direction(childComplexity), true
+
+	case "TorrentSelectionRule.enabled":
+		if e.complexity.TorrentSelectionRule.Enabled == nil {
+			break
+		}
+
+		return e.complexity.TorrentSelectionRule.Enabled(childComplexity), true
+
+	case "TorrentSelectionRule.id":
+		if e.complexity.TorrentSelectionRule.ID == nil {
+			break
+		}
+
+		return e.complexity.TorrentSelectionRule.ID(childComplexity), true
+
+	case "TorrentSelectionRule.indexerPreference":
+		if e.complexity.TorrentSelectionRule.IndexerPreference == nil {
+			break
+		}
+
+		return e.complexity.TorrentSelectionRule.IndexerPreference(childComplexity), true
+
+	case "TorrentSelectionRule.titleMatch":
+		if e.complexity.TorrentSelectionRule.TitleMatch == nil {
+			break
+		}
+
+		return e.complexity.TorrentSelectionRule.TitleMatch(childComplexity), true
+
+	case "TorrentSelectionRule.type":
+		if e.complexity.TorrentSelectionRule.Type == nil {
+			break
+		}
+
+		return e.complexity.TorrentSelectionRule.Type(childComplexity), true
+
+	case "TorrentSelectionSettings.enabled":
+		if e.complexity.TorrentSelectionSettings.Enabled == nil {
+			break
+		}
+
+		return e.complexity.TorrentSelectionSettings.Enabled(childComplexity), true
+
+	case "TorrentSelectionSettings.rules":
+		if e.complexity.TorrentSelectionSettings.Rules == nil {
+			break
+		}
+
+		return e.complexity.TorrentSelectionSettings.Rules(childComplexity), true
+
 	case "TransferIngestSettings.action":
 		if e.complexity.TransferIngestSettings.Action == nil {
 			break
@@ -2724,11 +2851,16 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 	inputUnmarshalMap := graphql.BuildUnmarshalerMap(
 		ec.unmarshalInputDiscoverScenesInput,
 		ec.unmarshalInputDownloadMediaInput,
+		ec.unmarshalInputIndexerPreferenceRuleInput,
 		ec.unmarshalInputJackettSearchInput,
 		ec.unmarshalInputQBittorrentAddInput,
 		ec.unmarshalInputQueueDiscoveredSceneInput,
 		ec.unmarshalInputStashMetadataScanInput,
 		ec.unmarshalInputStashPerformerScenesInput,
+		ec.unmarshalInputTitleMatchClauseInput,
+		ec.unmarshalInputTitleMatchRuleInput,
+		ec.unmarshalInputTorrentSelectionRuleInput,
+		ec.unmarshalInputTorrentSelectionSettingsInput,
 		ec.unmarshalInputTransferIngestSettingsInput,
 		ec.unmarshalInputUpdateAutomationSettingsInput,
 		ec.unmarshalInputUpdateIngestSettingsInput,
@@ -3132,6 +3264,58 @@ type JackettSettings {
   password: String!
 }
 
+type TorrentSelectionSettings {
+  enabled: Boolean!
+  rules: [TorrentSelectionRule!]!
+}
+
+enum TorrentSelectionRuleType {
+  INDEXER_PREFERENCE
+  TITLE_MATCH
+  PUBLISH_DATE
+  TITLE_SIMILARITY
+  SEEDERS
+  SIZE
+}
+
+enum TorrentSelectionDirection {
+  ASC
+  DESC
+}
+
+enum TitleMatchPatternMode {
+  PLAIN
+  REGEX
+}
+
+enum TitleMatchEffect {
+  PREFER
+  AVOID
+}
+
+type TorrentSelectionRule {
+  id: ID!
+  type: TorrentSelectionRuleType!
+  enabled: Boolean!
+  direction: TorrentSelectionDirection!
+  indexerPreference: IndexerPreferenceRule!
+  titleMatch: TitleMatchRule!
+}
+
+type IndexerPreferenceRule {
+  trackerIds: [String!]!
+}
+
+type TitleMatchRule {
+  clauses: [TitleMatchClause!]!
+}
+
+type TitleMatchClause {
+  pattern: String!
+  patternMode: TitleMatchPatternMode!
+  effect: TitleMatchEffect!
+}
+
 type QBittorrentSettings {
   configured: Boolean!
   url: String!
@@ -3148,6 +3332,7 @@ type QBittorrentSettings {
 type AutomationSettings {
   taskProgressSyncIntervalSeconds: Int!
   subscriptionPollIntervalHours: Int!
+  torrentSelection: TorrentSelectionSettings!
 }
 
 enum TaskDeletePolicy {
@@ -3219,6 +3404,34 @@ input UpdateJackettSettingsInput {
   password: String!
 }
 
+input TorrentSelectionSettingsInput {
+  enabled: Boolean!
+  rules: [TorrentSelectionRuleInput!]!
+}
+
+input TorrentSelectionRuleInput {
+  id: ID!
+  type: TorrentSelectionRuleType!
+  enabled: Boolean!
+  direction: TorrentSelectionDirection!
+  indexerPreference: IndexerPreferenceRuleInput
+  titleMatch: TitleMatchRuleInput
+}
+
+input IndexerPreferenceRuleInput {
+  trackerIds: [String!]!
+}
+
+input TitleMatchRuleInput {
+  clauses: [TitleMatchClauseInput!]!
+}
+
+input TitleMatchClauseInput {
+  pattern: String!
+  patternMode: TitleMatchPatternMode!
+  effect: TitleMatchEffect!
+}
+
 input UpdateQBittorrentSettingsInput {
   url: String!
   username: String!
@@ -3231,6 +3444,7 @@ input UpdateQBittorrentSettingsInput {
 input UpdateAutomationSettingsInput {
   taskProgressSyncIntervalSeconds: Int!
   subscriptionPollIntervalHours: Int!
+  torrentSelection: TorrentSelectionSettingsInput!
 }
 
 input UpdateSystemSettingsInput {
@@ -4621,6 +4835,56 @@ func (ec *executionContext) fieldContext_AutomationSettings_subscriptionPollInte
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AutomationSettings_torrentSelection(ctx context.Context, field graphql.CollectedField, obj *model.AutomationSettings) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_AutomationSettings_torrentSelection(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.TorrentSelection, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*model.TorrentSelectionSettings)
+	fc.Result = res
+	return ec.marshalNTorrentSelectionSettings2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐTorrentSelectionSettings(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_AutomationSettings_torrentSelection(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AutomationSettings",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "enabled":
+				return ec.fieldContext_TorrentSelectionSettings_enabled(ctx, field)
+			case "rules":
+				return ec.fieldContext_TorrentSelectionSettings_rules(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type TorrentSelectionSettings", field.Name)
 		},
 	}
 	return fc, nil
@@ -6261,6 +6525,50 @@ func (ec *executionContext) _Health_message(ctx context.Context, field graphql.C
 func (ec *executionContext) fieldContext_Health_message(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "Health",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _IndexerPreferenceRule_trackerIds(ctx context.Context, field graphql.CollectedField, obj *model.IndexerPreferenceRule) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_IndexerPreferenceRule_trackerIds(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.TrackerIds, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]string)
+	fc.Result = res
+	return ec.marshalNString2ᚕstringᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_IndexerPreferenceRule_trackerIds(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "IndexerPreferenceRule",
 		Field:      field,
 		IsMethod:   false,
 		IsResolver: false,
@@ -12527,6 +12835,8 @@ func (ec *executionContext) fieldContext_Settings_automation(_ context.Context, 
 				return ec.fieldContext_AutomationSettings_taskProgressSyncIntervalSeconds(ctx, field)
 			case "subscriptionPollIntervalHours":
 				return ec.fieldContext_AutomationSettings_subscriptionPollIntervalHours(ctx, field)
+			case "torrentSelection":
+				return ec.fieldContext_AutomationSettings_torrentSelection(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type AutomationSettings", field.Name)
 		},
@@ -18913,6 +19223,564 @@ func (ec *executionContext) fieldContext_Task_updatedAt(_ context.Context, field
 	return fc, nil
 }
 
+func (ec *executionContext) _TitleMatchClause_pattern(ctx context.Context, field graphql.CollectedField, obj *model.TitleMatchClause) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_TitleMatchClause_pattern(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Pattern, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_TitleMatchClause_pattern(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "TitleMatchClause",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _TitleMatchClause_patternMode(ctx context.Context, field graphql.CollectedField, obj *model.TitleMatchClause) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_TitleMatchClause_patternMode(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.PatternMode, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(model.TitleMatchPatternMode)
+	fc.Result = res
+	return ec.marshalNTitleMatchPatternMode2githubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐTitleMatchPatternMode(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_TitleMatchClause_patternMode(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "TitleMatchClause",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type TitleMatchPatternMode does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _TitleMatchClause_effect(ctx context.Context, field graphql.CollectedField, obj *model.TitleMatchClause) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_TitleMatchClause_effect(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Effect, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(model.TitleMatchEffect)
+	fc.Result = res
+	return ec.marshalNTitleMatchEffect2githubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐTitleMatchEffect(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_TitleMatchClause_effect(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "TitleMatchClause",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type TitleMatchEffect does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _TitleMatchRule_clauses(ctx context.Context, field graphql.CollectedField, obj *model.TitleMatchRule) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_TitleMatchRule_clauses(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Clauses, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]*model.TitleMatchClause)
+	fc.Result = res
+	return ec.marshalNTitleMatchClause2ᚕᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐTitleMatchClauseᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_TitleMatchRule_clauses(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "TitleMatchRule",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "pattern":
+				return ec.fieldContext_TitleMatchClause_pattern(ctx, field)
+			case "patternMode":
+				return ec.fieldContext_TitleMatchClause_patternMode(ctx, field)
+			case "effect":
+				return ec.fieldContext_TitleMatchClause_effect(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type TitleMatchClause", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _TorrentSelectionRule_id(ctx context.Context, field graphql.CollectedField, obj *model.TorrentSelectionRule) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_TorrentSelectionRule_id(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.ID, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNID2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_TorrentSelectionRule_id(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "TorrentSelectionRule",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type ID does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _TorrentSelectionRule_type(ctx context.Context, field graphql.CollectedField, obj *model.TorrentSelectionRule) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_TorrentSelectionRule_type(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Type, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(model.TorrentSelectionRuleType)
+	fc.Result = res
+	return ec.marshalNTorrentSelectionRuleType2githubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐTorrentSelectionRuleType(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_TorrentSelectionRule_type(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "TorrentSelectionRule",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type TorrentSelectionRuleType does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _TorrentSelectionRule_enabled(ctx context.Context, field graphql.CollectedField, obj *model.TorrentSelectionRule) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_TorrentSelectionRule_enabled(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Enabled, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(bool)
+	fc.Result = res
+	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_TorrentSelectionRule_enabled(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "TorrentSelectionRule",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _TorrentSelectionRule_direction(ctx context.Context, field graphql.CollectedField, obj *model.TorrentSelectionRule) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_TorrentSelectionRule_direction(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Direction, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(model.TorrentSelectionDirection)
+	fc.Result = res
+	return ec.marshalNTorrentSelectionDirection2githubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐTorrentSelectionDirection(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_TorrentSelectionRule_direction(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "TorrentSelectionRule",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type TorrentSelectionDirection does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _TorrentSelectionRule_indexerPreference(ctx context.Context, field graphql.CollectedField, obj *model.TorrentSelectionRule) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_TorrentSelectionRule_indexerPreference(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.IndexerPreference, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*model.IndexerPreferenceRule)
+	fc.Result = res
+	return ec.marshalNIndexerPreferenceRule2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐIndexerPreferenceRule(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_TorrentSelectionRule_indexerPreference(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "TorrentSelectionRule",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "trackerIds":
+				return ec.fieldContext_IndexerPreferenceRule_trackerIds(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type IndexerPreferenceRule", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _TorrentSelectionRule_titleMatch(ctx context.Context, field graphql.CollectedField, obj *model.TorrentSelectionRule) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_TorrentSelectionRule_titleMatch(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.TitleMatch, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*model.TitleMatchRule)
+	fc.Result = res
+	return ec.marshalNTitleMatchRule2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐTitleMatchRule(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_TorrentSelectionRule_titleMatch(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "TorrentSelectionRule",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "clauses":
+				return ec.fieldContext_TitleMatchRule_clauses(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type TitleMatchRule", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _TorrentSelectionSettings_enabled(ctx context.Context, field graphql.CollectedField, obj *model.TorrentSelectionSettings) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_TorrentSelectionSettings_enabled(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Enabled, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(bool)
+	fc.Result = res
+	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_TorrentSelectionSettings_enabled(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "TorrentSelectionSettings",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _TorrentSelectionSettings_rules(ctx context.Context, field graphql.CollectedField, obj *model.TorrentSelectionSettings) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_TorrentSelectionSettings_rules(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Rules, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]*model.TorrentSelectionRule)
+	fc.Result = res
+	return ec.marshalNTorrentSelectionRule2ᚕᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐTorrentSelectionRuleᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_TorrentSelectionSettings_rules(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "TorrentSelectionSettings",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_TorrentSelectionRule_id(ctx, field)
+			case "type":
+				return ec.fieldContext_TorrentSelectionRule_type(ctx, field)
+			case "enabled":
+				return ec.fieldContext_TorrentSelectionRule_enabled(ctx, field)
+			case "direction":
+				return ec.fieldContext_TorrentSelectionRule_direction(ctx, field)
+			case "indexerPreference":
+				return ec.fieldContext_TorrentSelectionRule_indexerPreference(ctx, field)
+			case "titleMatch":
+				return ec.fieldContext_TorrentSelectionRule_titleMatch(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type TorrentSelectionRule", field.Name)
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _TransferIngestSettings_action(ctx context.Context, field graphql.CollectedField, obj *model.TransferIngestSettings) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_TransferIngestSettings_action(ctx, field)
 	if err != nil {
@@ -21120,6 +21988,33 @@ func (ec *executionContext) unmarshalInputDownloadMediaInput(ctx context.Context
 	return it, nil
 }
 
+func (ec *executionContext) unmarshalInputIndexerPreferenceRuleInput(ctx context.Context, obj any) (model.IndexerPreferenceRuleInput, error) {
+	var it model.IndexerPreferenceRuleInput
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"trackerIds"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "trackerIds":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("trackerIds"))
+			data, err := ec.unmarshalNString2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.TrackerIds = data
+		}
+	}
+
+	return it, nil
+}
+
 func (ec *executionContext) unmarshalInputJackettSearchInput(ctx context.Context, obj any) (model.JackettSearchInput, error) {
 	var it model.JackettSearchInput
 	asMap := map[string]any{}
@@ -21419,6 +22314,170 @@ func (ec *executionContext) unmarshalInputStashPerformerScenesInput(ctx context.
 	return it, nil
 }
 
+func (ec *executionContext) unmarshalInputTitleMatchClauseInput(ctx context.Context, obj any) (model.TitleMatchClauseInput, error) {
+	var it model.TitleMatchClauseInput
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"pattern", "patternMode", "effect"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "pattern":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("pattern"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Pattern = data
+		case "patternMode":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("patternMode"))
+			data, err := ec.unmarshalNTitleMatchPatternMode2githubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐTitleMatchPatternMode(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.PatternMode = data
+		case "effect":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("effect"))
+			data, err := ec.unmarshalNTitleMatchEffect2githubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐTitleMatchEffect(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Effect = data
+		}
+	}
+
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputTitleMatchRuleInput(ctx context.Context, obj any) (model.TitleMatchRuleInput, error) {
+	var it model.TitleMatchRuleInput
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"clauses"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "clauses":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("clauses"))
+			data, err := ec.unmarshalNTitleMatchClauseInput2ᚕᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐTitleMatchClauseInputᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Clauses = data
+		}
+	}
+
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputTorrentSelectionRuleInput(ctx context.Context, obj any) (model.TorrentSelectionRuleInput, error) {
+	var it model.TorrentSelectionRuleInput
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"id", "type", "enabled", "direction", "indexerPreference", "titleMatch"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "id":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
+			data, err := ec.unmarshalNID2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ID = data
+		case "type":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("type"))
+			data, err := ec.unmarshalNTorrentSelectionRuleType2githubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐTorrentSelectionRuleType(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Type = data
+		case "enabled":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("enabled"))
+			data, err := ec.unmarshalNBoolean2bool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Enabled = data
+		case "direction":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("direction"))
+			data, err := ec.unmarshalNTorrentSelectionDirection2githubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐTorrentSelectionDirection(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Direction = data
+		case "indexerPreference":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("indexerPreference"))
+			data, err := ec.unmarshalOIndexerPreferenceRuleInput2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐIndexerPreferenceRuleInput(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.IndexerPreference = data
+		case "titleMatch":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("titleMatch"))
+			data, err := ec.unmarshalOTitleMatchRuleInput2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐTitleMatchRuleInput(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.TitleMatch = data
+		}
+	}
+
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputTorrentSelectionSettingsInput(ctx context.Context, obj any) (model.TorrentSelectionSettingsInput, error) {
+	var it model.TorrentSelectionSettingsInput
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"enabled", "rules"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "enabled":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("enabled"))
+			data, err := ec.unmarshalNBoolean2bool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Enabled = data
+		case "rules":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("rules"))
+			data, err := ec.unmarshalNTorrentSelectionRuleInput2ᚕᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐTorrentSelectionRuleInputᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Rules = data
+		}
+	}
+
+	return it, nil
+}
+
 func (ec *executionContext) unmarshalInputTransferIngestSettingsInput(ctx context.Context, obj any) (model.TransferIngestSettingsInput, error) {
 	var it model.TransferIngestSettingsInput
 	asMap := map[string]any{}
@@ -21467,7 +22526,7 @@ func (ec *executionContext) unmarshalInputUpdateAutomationSettingsInput(ctx cont
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"taskProgressSyncIntervalSeconds", "subscriptionPollIntervalHours"}
+	fieldsInOrder := [...]string{"taskProgressSyncIntervalSeconds", "subscriptionPollIntervalHours", "torrentSelection"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -21488,6 +22547,13 @@ func (ec *executionContext) unmarshalInputUpdateAutomationSettingsInput(ctx cont
 				return it, err
 			}
 			it.SubscriptionPollIntervalHours = data
+		case "torrentSelection":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("torrentSelection"))
+			data, err := ec.unmarshalNTorrentSelectionSettingsInput2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐTorrentSelectionSettingsInput(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.TorrentSelection = data
 		}
 	}
 
@@ -21752,6 +22818,11 @@ func (ec *executionContext) _AutomationSettings(ctx context.Context, sel ast.Sel
 			}
 		case "subscriptionPollIntervalHours":
 			out.Values[i] = ec._AutomationSettings_subscriptionPollIntervalHours(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "torrentSelection":
+			out.Values[i] = ec._AutomationSettings_torrentSelection(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
@@ -22120,6 +23191,45 @@ func (ec *executionContext) _Health(ctx context.Context, sel ast.SelectionSet, o
 			}
 		case "message":
 			out.Values[i] = ec._Health_message(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var indexerPreferenceRuleImplementors = []string{"IndexerPreferenceRule"}
+
+func (ec *executionContext) _IndexerPreferenceRule(ctx context.Context, sel ast.SelectionSet, obj *model.IndexerPreferenceRule) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, indexerPreferenceRuleImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("IndexerPreferenceRule")
+		case "trackerIds":
+			out.Values[i] = ec._IndexerPreferenceRule_trackerIds(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
@@ -24748,6 +25858,202 @@ func (ec *executionContext) _Task(ctx context.Context, sel ast.SelectionSet, obj
 	return out
 }
 
+var titleMatchClauseImplementors = []string{"TitleMatchClause"}
+
+func (ec *executionContext) _TitleMatchClause(ctx context.Context, sel ast.SelectionSet, obj *model.TitleMatchClause) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, titleMatchClauseImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("TitleMatchClause")
+		case "pattern":
+			out.Values[i] = ec._TitleMatchClause_pattern(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "patternMode":
+			out.Values[i] = ec._TitleMatchClause_patternMode(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "effect":
+			out.Values[i] = ec._TitleMatchClause_effect(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var titleMatchRuleImplementors = []string{"TitleMatchRule"}
+
+func (ec *executionContext) _TitleMatchRule(ctx context.Context, sel ast.SelectionSet, obj *model.TitleMatchRule) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, titleMatchRuleImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("TitleMatchRule")
+		case "clauses":
+			out.Values[i] = ec._TitleMatchRule_clauses(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var torrentSelectionRuleImplementors = []string{"TorrentSelectionRule"}
+
+func (ec *executionContext) _TorrentSelectionRule(ctx context.Context, sel ast.SelectionSet, obj *model.TorrentSelectionRule) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, torrentSelectionRuleImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("TorrentSelectionRule")
+		case "id":
+			out.Values[i] = ec._TorrentSelectionRule_id(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "type":
+			out.Values[i] = ec._TorrentSelectionRule_type(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "enabled":
+			out.Values[i] = ec._TorrentSelectionRule_enabled(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "direction":
+			out.Values[i] = ec._TorrentSelectionRule_direction(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "indexerPreference":
+			out.Values[i] = ec._TorrentSelectionRule_indexerPreference(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "titleMatch":
+			out.Values[i] = ec._TorrentSelectionRule_titleMatch(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var torrentSelectionSettingsImplementors = []string{"TorrentSelectionSettings"}
+
+func (ec *executionContext) _TorrentSelectionSettings(ctx context.Context, sel ast.SelectionSet, obj *model.TorrentSelectionSettings) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, torrentSelectionSettingsImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("TorrentSelectionSettings")
+		case "enabled":
+			out.Values[i] = ec._TorrentSelectionSettings_enabled(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "rules":
+			out.Values[i] = ec._TorrentSelectionSettings_rules(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
 var transferIngestSettingsImplementors = []string{"TransferIngestSettings"}
 
 func (ec *executionContext) _TransferIngestSettings(ctx context.Context, sel ast.SelectionSet, obj *model.TransferIngestSettings) graphql.Marshaler {
@@ -25314,6 +26620,16 @@ func (ec *executionContext) marshalNID2string(ctx context.Context, sel ast.Selec
 		}
 	}
 	return res
+}
+
+func (ec *executionContext) marshalNIndexerPreferenceRule2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐIndexerPreferenceRule(ctx context.Context, sel ast.SelectionSet, v *model.IndexerPreferenceRule) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._IndexerPreferenceRule(ctx, sel, v)
 }
 
 func (ec *executionContext) marshalNIngestSettings2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐIngestSettings(ctx context.Context, sel ast.SelectionSet, v *model.IngestSettings) graphql.Marshaler {
@@ -26305,6 +27621,219 @@ func (ec *executionContext) marshalNTaskSource2githubᚗcomᚋleothevan2444ᚋmo
 	return v
 }
 
+func (ec *executionContext) marshalNTitleMatchClause2ᚕᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐTitleMatchClauseᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.TitleMatchClause) graphql.Marshaler {
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalNTitleMatchClause2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐTitleMatchClause(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
+}
+
+func (ec *executionContext) marshalNTitleMatchClause2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐTitleMatchClause(ctx context.Context, sel ast.SelectionSet, v *model.TitleMatchClause) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._TitleMatchClause(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalNTitleMatchClauseInput2ᚕᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐTitleMatchClauseInputᚄ(ctx context.Context, v any) ([]*model.TitleMatchClauseInput, error) {
+	var vSlice []any
+	vSlice = graphql.CoerceList(v)
+	var err error
+	res := make([]*model.TitleMatchClauseInput, len(vSlice))
+	for i := range vSlice {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithIndex(i))
+		res[i], err = ec.unmarshalNTitleMatchClauseInput2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐTitleMatchClauseInput(ctx, vSlice[i])
+		if err != nil {
+			return nil, err
+		}
+	}
+	return res, nil
+}
+
+func (ec *executionContext) unmarshalNTitleMatchClauseInput2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐTitleMatchClauseInput(ctx context.Context, v any) (*model.TitleMatchClauseInput, error) {
+	res, err := ec.unmarshalInputTitleMatchClauseInput(ctx, v)
+	return &res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) unmarshalNTitleMatchEffect2githubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐTitleMatchEffect(ctx context.Context, v any) (model.TitleMatchEffect, error) {
+	var res model.TitleMatchEffect
+	err := res.UnmarshalGQL(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNTitleMatchEffect2githubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐTitleMatchEffect(ctx context.Context, sel ast.SelectionSet, v model.TitleMatchEffect) graphql.Marshaler {
+	return v
+}
+
+func (ec *executionContext) unmarshalNTitleMatchPatternMode2githubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐTitleMatchPatternMode(ctx context.Context, v any) (model.TitleMatchPatternMode, error) {
+	var res model.TitleMatchPatternMode
+	err := res.UnmarshalGQL(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNTitleMatchPatternMode2githubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐTitleMatchPatternMode(ctx context.Context, sel ast.SelectionSet, v model.TitleMatchPatternMode) graphql.Marshaler {
+	return v
+}
+
+func (ec *executionContext) marshalNTitleMatchRule2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐTitleMatchRule(ctx context.Context, sel ast.SelectionSet, v *model.TitleMatchRule) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._TitleMatchRule(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalNTorrentSelectionDirection2githubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐTorrentSelectionDirection(ctx context.Context, v any) (model.TorrentSelectionDirection, error) {
+	var res model.TorrentSelectionDirection
+	err := res.UnmarshalGQL(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNTorrentSelectionDirection2githubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐTorrentSelectionDirection(ctx context.Context, sel ast.SelectionSet, v model.TorrentSelectionDirection) graphql.Marshaler {
+	return v
+}
+
+func (ec *executionContext) marshalNTorrentSelectionRule2ᚕᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐTorrentSelectionRuleᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.TorrentSelectionRule) graphql.Marshaler {
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalNTorrentSelectionRule2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐTorrentSelectionRule(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
+}
+
+func (ec *executionContext) marshalNTorrentSelectionRule2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐTorrentSelectionRule(ctx context.Context, sel ast.SelectionSet, v *model.TorrentSelectionRule) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._TorrentSelectionRule(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalNTorrentSelectionRuleInput2ᚕᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐTorrentSelectionRuleInputᚄ(ctx context.Context, v any) ([]*model.TorrentSelectionRuleInput, error) {
+	var vSlice []any
+	vSlice = graphql.CoerceList(v)
+	var err error
+	res := make([]*model.TorrentSelectionRuleInput, len(vSlice))
+	for i := range vSlice {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithIndex(i))
+		res[i], err = ec.unmarshalNTorrentSelectionRuleInput2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐTorrentSelectionRuleInput(ctx, vSlice[i])
+		if err != nil {
+			return nil, err
+		}
+	}
+	return res, nil
+}
+
+func (ec *executionContext) unmarshalNTorrentSelectionRuleInput2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐTorrentSelectionRuleInput(ctx context.Context, v any) (*model.TorrentSelectionRuleInput, error) {
+	res, err := ec.unmarshalInputTorrentSelectionRuleInput(ctx, v)
+	return &res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) unmarshalNTorrentSelectionRuleType2githubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐTorrentSelectionRuleType(ctx context.Context, v any) (model.TorrentSelectionRuleType, error) {
+	var res model.TorrentSelectionRuleType
+	err := res.UnmarshalGQL(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNTorrentSelectionRuleType2githubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐTorrentSelectionRuleType(ctx context.Context, sel ast.SelectionSet, v model.TorrentSelectionRuleType) graphql.Marshaler {
+	return v
+}
+
+func (ec *executionContext) marshalNTorrentSelectionSettings2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐTorrentSelectionSettings(ctx context.Context, sel ast.SelectionSet, v *model.TorrentSelectionSettings) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._TorrentSelectionSettings(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalNTorrentSelectionSettingsInput2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐTorrentSelectionSettingsInput(ctx context.Context, v any) (*model.TorrentSelectionSettingsInput, error) {
+	res, err := ec.unmarshalInputTorrentSelectionSettingsInput(ctx, v)
+	return &res, graphql.ErrorOnPath(ctx, err)
+}
+
 func (ec *executionContext) marshalNTransferIngestSettings2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐTransferIngestSettings(ctx context.Context, sel ast.SelectionSet, v *model.TransferIngestSettings) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
@@ -26689,6 +28218,14 @@ func (ec *executionContext) marshalOID2ᚖstring(ctx context.Context, sel ast.Se
 	return res
 }
 
+func (ec *executionContext) unmarshalOIndexerPreferenceRuleInput2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐIndexerPreferenceRuleInput(ctx context.Context, v any) (*model.IndexerPreferenceRuleInput, error) {
+	if v == nil {
+		return nil, nil
+	}
+	res, err := ec.unmarshalInputIndexerPreferenceRuleInput(ctx, v)
+	return &res, graphql.ErrorOnPath(ctx, err)
+}
+
 func (ec *executionContext) unmarshalOInt2ᚕintᚄ(ctx context.Context, v any) ([]int, error) {
 	if v == nil {
 		return nil, nil
@@ -26880,6 +28417,14 @@ func (ec *executionContext) marshalOTask2ᚖgithubᚗcomᚋleothevan2444ᚋmoji�
 		return graphql.Null
 	}
 	return ec._Task(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalOTitleMatchRuleInput2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐTitleMatchRuleInput(ctx context.Context, v any) (*model.TitleMatchRuleInput, error) {
+	if v == nil {
+		return nil, nil
+	}
+	res, err := ec.unmarshalInputTitleMatchRuleInput(ctx, v)
+	return &res, graphql.ErrorOnPath(ctx, err)
 }
 
 func (ec *executionContext) marshalO__EnumValue2ᚕgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐEnumValueᚄ(ctx context.Context, sel ast.SelectionSet, v []introspection.EnumValue) graphql.Marshaler {

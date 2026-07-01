@@ -94,6 +94,7 @@ func settingsSnapshotToModel(snapshot *SettingsSnapshot, appVersion string) *mod
 		Automation: &model.AutomationSettings{
 			TaskProgressSyncIntervalSeconds: snapshot.Automation.TaskProgressSyncIntervalSeconds,
 			SubscriptionPollIntervalHours:   snapshot.Automation.SubscriptionPollIntervalHours,
+			TorrentSelection:                torrentSelectionSettingsToModel(snapshot.Automation.TorrentSelection),
 		},
 		System: &model.SystemSettings{
 			TaskDeletePolicy: model.TaskDeletePolicy(snapshot.System.TaskDeletePolicy),
@@ -102,6 +103,36 @@ func settingsSnapshotToModel(snapshot *SettingsSnapshot, appVersion string) *mod
 			StashBoxEndpoints: append([]string(nil), snapshot.Subscription.StashBoxEndpoints...),
 		},
 	}
+}
+
+func torrentSelectionSettingsToModel(snapshot TorrentSelectionSettingsSnapshot) *model.TorrentSelectionSettings {
+	out := &model.TorrentSelectionSettings{
+		Enabled: snapshot.Enabled,
+		Rules:   make([]*model.TorrentSelectionRule, 0, len(snapshot.Rules)),
+	}
+	for _, rule := range snapshot.Rules {
+		item := &model.TorrentSelectionRule{
+			ID:        rule.ID,
+			Type:      model.TorrentSelectionRuleType(rule.Type),
+			Enabled:   rule.Enabled,
+			Direction: model.TorrentSelectionDirection(rule.Direction),
+			IndexerPreference: &model.IndexerPreferenceRule{
+				TrackerIds: append([]string(nil), rule.IndexerPreference.TrackerIDs...),
+			},
+			TitleMatch: &model.TitleMatchRule{
+				Clauses: make([]*model.TitleMatchClause, 0, len(rule.TitleMatch.Clauses)),
+			},
+		}
+		for _, clause := range rule.TitleMatch.Clauses {
+			item.TitleMatch.Clauses = append(item.TitleMatch.Clauses, &model.TitleMatchClause{
+				Pattern:     clause.Pattern,
+				PatternMode: model.TitleMatchPatternMode(clause.PatternMode),
+				Effect:      model.TitleMatchEffect(clause.Effect),
+			})
+		}
+		out.Rules = append(out.Rules, item)
+	}
+	return out
 }
 
 func settingsStatusSnapshotToModel(snapshot *SettingsStatusSnapshot) *model.SettingsStatus {

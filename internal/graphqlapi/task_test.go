@@ -456,6 +456,17 @@ func TestSettingsQueryReturnsRuntimeSnapshot(t *testing.T) {
 		Automation: AutomationSettingsSnapshot{
 			TaskProgressSyncIntervalSeconds: 60,
 			SubscriptionPollIntervalHours:   6,
+			TorrentSelection: TorrentSelectionSettingsSnapshot{
+				Enabled: true,
+				Rules: []TorrentSelectionRuleSnapshot{
+					{
+						ID:        "seeders",
+						Type:      "SEEDERS",
+						Enabled:   true,
+						Direction: "DESC",
+					},
+				},
+			},
 		},
 		System: SystemSettingsSnapshot{
 			TaskDeletePolicy: "KEEP_ONLY",
@@ -476,7 +487,7 @@ func TestSettingsQueryReturnsRuntimeSnapshot(t *testing.T) {
 			ingest { deliveryMode stashLibraryPath }
 			jackett { configured url apiKeyConfigured }
 			qbittorrent { configured url username usernameConfigured passwordConfigured defaultSavePath category tags }
-			automation { taskProgressSyncIntervalSeconds subscriptionPollIntervalHours }
+			automation { taskProgressSyncIntervalSeconds subscriptionPollIntervalHours torrentSelection { enabled rules { id type direction } } }
 			system { taskDeletePolicy }
 		}
 		settingsStatus {
@@ -488,6 +499,9 @@ func TestSettingsQueryReturnsRuntimeSnapshot(t *testing.T) {
 	}
 	if !resp.Data.Settings.Stash.Configured || resp.Data.Settings.Stash.URL != "http://stash.invalid" {
 		t.Fatalf("unexpected stash settings: %+v", resp.Data.Settings.Stash)
+	}
+	if !resp.Data.Settings.Automation.TorrentSelection.Enabled || len(resp.Data.Settings.Automation.TorrentSelection.Rules) != 1 {
+		t.Fatalf("unexpected automation torrent selection: %+v", resp.Data.Settings.Automation.TorrentSelection)
 	}
 	if resp.Data.Settings.Ingest.StashLibraryPath != "/library" {
 		t.Fatalf("unexpected ingest settings: %+v", resp.Data.Settings.Ingest)
@@ -546,6 +560,12 @@ func TestSettingsQueryUsesSettingsEditorSnapshot(t *testing.T) {
 			Automation: AutomationSettingsSnapshot{
 				TaskProgressSyncIntervalSeconds: 60,
 				SubscriptionPollIntervalHours:   1,
+				TorrentSelection: TorrentSelectionSettingsSnapshot{
+					Enabled: true,
+					Rules: []TorrentSelectionRuleSnapshot{
+						{ID: "seeders", Type: "SEEDERS", Enabled: true, Direction: "DESC"},
+					},
+				},
 			},
 			Subscription: SubscriptionSettingsSnapshot{
 				StashBoxEndpoints: []string{"https://javstash.example.org/graphql"},
@@ -566,7 +586,7 @@ func TestSettingsQueryUsesSettingsEditorSnapshot(t *testing.T) {
 		},
 	}
 
-	resp := executeGraphQL(t, resolver, `{ settings { subscription { stashBoxEndpoints } qbittorrent { url username } automation { subscriptionPollIntervalHours } system { taskDeletePolicy } } settingsStatus { automation { subscriptionPollIntervalHours subscriptionPollEnabled } } }`)
+	resp := executeGraphQL(t, resolver, `{ settings { subscription { stashBoxEndpoints } qbittorrent { url username } automation { subscriptionPollIntervalHours torrentSelection { enabled rules { id } } } system { taskDeletePolicy } } settingsStatus { automation { subscriptionPollIntervalHours subscriptionPollEnabled } } }`)
 	if len(resp.Errors) > 0 {
 		t.Fatalf("expected no errors, got %+v", resp.Errors)
 	}
@@ -581,6 +601,9 @@ func TestSettingsQueryUsesSettingsEditorSnapshot(t *testing.T) {
 	}
 	if !resp.Data.SettingsStatus.Automation.SubscriptionPollEnabled || resp.Data.SettingsStatus.Automation.SubscriptionPollIntervalHours != 1 {
 		t.Fatalf("unexpected automation status: %+v", resp.Data.SettingsStatus.Automation)
+	}
+	if len(resp.Data.Settings.Automation.TorrentSelection.Rules) != 1 {
+		t.Fatalf("unexpected automation torrent selection: %+v", resp.Data.Settings.Automation.TorrentSelection)
 	}
 }
 
@@ -657,6 +680,55 @@ func TestUpdateIngestSettingsMutation(t *testing.T) {
 	}
 	if resp.Data.UpdateIngestSettings.Ingest.DeliveryMode != "TRANSFER" {
 		t.Fatalf("unexpected ingest response: %+v", resp.Data.UpdateIngestSettings.Ingest)
+	}
+}
+
+func TestUpdateJackettSettingsMutation(t *testing.T) {
+	editor := &fakeSettingsEditor{
+		updateJackettSnapshot: &SettingsSnapshot{
+			Jackett: JackettSettingsSnapshot{
+				Configured:       true,
+				URL:              "http://jackett.updated",
+				APIKeyConfigured: true,
+			},
+			Automation: AutomationSettingsSnapshot{
+				TorrentSelection: TorrentSelectionSettingsSnapshot{
+					Enabled: true,
+					Rules: []TorrentSelectionRuleSnapshot{
+						{
+							ID:        "pref",
+							Type:      "INDEXER_PREFERENCE",
+							Enabled:   true,
+							Direction: "DESC",
+							IndexerPreference: IndexerPreferenceRuleSnapshot{
+								TrackerIDs: []string{"alpha"},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+	resolver := NewResolver(nil, nil, nil, nil, "test-version")
+	resolver.SettingsEditor = editor
+
+	resp := executeGraphQL(t, resolver, `mutation {
+		updateJackettSettings(input: {
+			url: "http://jackett.updated"
+			apiKey: "secret"
+			password: "pw"
+		}) {
+			jackett { url }
+		}
+	}`)
+	if len(resp.Errors) > 0 {
+		t.Fatalf("expected no errors, got %+v", resp.Errors)
+	}
+	if editor.jackettInput.URL != "http://jackett.updated" || editor.jackettInput.Password != "pw" {
+		t.Fatalf("unexpected jackett input: %+v", editor.jackettInput)
+	}
+	if resp.Data.UpdateJackettSettings.Jackett.URL != "http://jackett.updated" {
+		t.Fatalf("unexpected jackett response: %+v", resp.Data.UpdateJackettSettings.Jackett)
 	}
 }
 
@@ -881,6 +953,14 @@ type graphQLTaskResponse struct {
 			Automation struct {
 				TaskProgressSyncIntervalSeconds int `json:"taskProgressSyncIntervalSeconds"`
 				SubscriptionPollIntervalHours   int `json:"subscriptionPollIntervalHours"`
+				TorrentSelection                struct {
+					Enabled bool `json:"enabled"`
+					Rules   []struct {
+						ID        string `json:"id"`
+						Type      string `json:"type"`
+						Direction string `json:"direction"`
+					} `json:"rules"`
+				} `json:"torrentSelection"`
 			} `json:"automation"`
 			System struct {
 				TaskDeletePolicy string `json:"taskDeletePolicy"`
@@ -935,6 +1015,24 @@ type graphQLTaskResponse struct {
 				} `json:"transfer"`
 			} `json:"ingest"`
 		} `json:"updateIngestSettings"`
+		UpdateJackettSettings struct {
+			Jackett struct {
+				URL string `json:"url"`
+			} `json:"jackett"`
+		} `json:"updateJackettSettings"`
+		UpdateAutomationSettings struct {
+			Automation struct {
+				TaskProgressSyncIntervalSeconds int `json:"taskProgressSyncIntervalSeconds"`
+				SubscriptionPollIntervalHours   int `json:"subscriptionPollIntervalHours"`
+				TorrentSelection                struct {
+					Enabled bool `json:"enabled"`
+					Rules   []struct {
+						ID   string `json:"id"`
+						Type string `json:"type"`
+					} `json:"rules"`
+				} `json:"torrentSelection"`
+			} `json:"automation"`
+		} `json:"updateAutomationSettings"`
 		UpdateSubscriptionSettings struct {
 			Subscription struct {
 				StashBoxEndpoints []string `json:"stashBoxEndpoints"`
@@ -959,6 +1057,8 @@ type fakeSettingsEditor struct {
 	updateStashSnapshot        *SettingsSnapshot
 	ingestInput                UpdateIngestSettingsInput
 	updateIngestSnapshot       *SettingsSnapshot
+	jackettInput               UpdateJackettSettingsInput
+	updateJackettSnapshot      *SettingsSnapshot
 	qbittorrentInput           UpdateQBittorrentSettingsInput
 	updateQBittorrentSnapshot  *SettingsSnapshot
 	automationInput            UpdateAutomationSettingsInput
@@ -987,7 +1087,11 @@ func (f *fakeSettingsEditor) UpdateIngestSettings(input UpdateIngestSettingsInpu
 	return f.updateIngestSnapshot, nil
 }
 
-func (f *fakeSettingsEditor) UpdateJackettSettings(UpdateJackettSettingsInput) (*SettingsSnapshot, error) {
+func (f *fakeSettingsEditor) UpdateJackettSettings(input UpdateJackettSettingsInput) (*SettingsSnapshot, error) {
+	f.jackettInput = input
+	if f.updateJackettSnapshot != nil {
+		return f.updateJackettSnapshot, nil
+	}
 	return f.snapshot, nil
 }
 
