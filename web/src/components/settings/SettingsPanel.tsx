@@ -24,7 +24,6 @@ import {
   UpdateJackettSettingsDocumentDocument,
   UpdateQBittorrentSettingsDocumentDocument,
   UpdateStashSettingsDocumentDocument,
-  UpdateSubscriptionSettingsDocumentDocument,
   UpdateSystemSettingsDocumentDocument,
   type DashboardDocumentQuery,
   type JackettIndexersDocumentQuery,
@@ -42,8 +41,6 @@ import {
   type UpdateQBittorrentSettingsDocumentMutationVariables,
   type UpdateStashSettingsDocumentMutation,
   type UpdateStashSettingsDocumentMutationVariables,
-  type UpdateSubscriptionSettingsDocumentMutation,
-  type UpdateSubscriptionSettingsDocumentMutationVariables,
   type UpdateSystemSettingsDocumentMutation,
   type UpdateSystemSettingsDocumentMutationVariables,
   TaskDeletePolicy
@@ -56,7 +53,6 @@ import {
   EMPTY_JACKETT_FORM,
   EMPTY_QBITTORRENT_FORM,
   EMPTY_STASH_FORM,
-  EMPTY_SUBSCRIPTION_FORM,
   EMPTY_SYSTEM_FORM,
   LOG_LEVEL_OPTIONS
 } from "../../constants";
@@ -189,7 +185,6 @@ export function SettingsPanel({
   const [qbittorrentForm, setQBittorrentForm] = useState(EMPTY_QBITTORRENT_FORM);
   const [automationForm, setAutomationForm] = useState(EMPTY_AUTOMATION_FORM);
   const [systemForm, setSystemForm] = useState(EMPTY_SYSTEM_FORM);
-  const [subscriptionForm, setSubscriptionForm] = useState(EMPTY_SUBSCRIPTION_FORM);
 
   const toggleSecret = (key: "stashApiKey" | "jackettApiKey" | "jackettPassword" | "qbittorrentPassword") => {
     setVisibleSecrets((current) => ({ ...current, [key]: !current[key] }));
@@ -240,10 +235,6 @@ export function SettingsPanel({
     UpdateSystemSettingsDocumentMutation,
     UpdateSystemSettingsDocumentMutationVariables
   >(UpdateSystemSettingsDocumentDocument);
-  const [{ fetching: updatingSubscription }, updateSubscriptionSettings] = useMutation<
-    UpdateSubscriptionSettingsDocumentMutation,
-    UpdateSubscriptionSettingsDocumentMutationVariables
-  >(UpdateSubscriptionSettingsDocumentDocument);
   const [{ fetching: refreshingStashBoxes }, refreshStashBoxesMutation] = useMutation<
     RefreshSubscriptionStashBoxesDocumentMutation
   >(RefreshSubscriptionStashBoxesDocumentDocument);
@@ -280,13 +271,11 @@ export function SettingsPanel({
     setAutomationForm({
       taskProgressSyncIntervalSeconds: String(runtimeSettings.automation.taskProgressSyncIntervalSeconds || 60),
       subscriptionPollIntervalHours: String(runtimeSettings.automation.subscriptionPollIntervalHours || 1),
+      stashBoxEndpoints: [...(runtimeSettings.automation.stashBoxEndpoints ?? [])],
       torrentSelection: torrentSelectionFromRuntime(runtimeSettings)
     });
     setSystemForm({
       taskDeletePolicy: runtimeSettings.system.taskDeletePolicy || TaskDeletePolicy.KeepOnly
-    });
-    setSubscriptionForm({
-      stashBoxEndpoints: [...(runtimeSettings.subscription.stashBoxEndpoints ?? [])]
     });
   }, [runtimeSettings]);
 
@@ -375,6 +364,7 @@ export function SettingsPanel({
       input: {
         taskProgressSyncIntervalSeconds: Number.isNaN(taskProgressSyncIntervalSeconds) ? 60 : taskProgressSyncIntervalSeconds,
         subscriptionPollIntervalHours: Number.isNaN(subscriptionPollIntervalHours) ? 1 : subscriptionPollIntervalHours,
+        stashBoxEndpoints: automationForm.stashBoxEndpoints,
         torrentSelection: {
           enabled: automationForm.torrentSelection.enabled,
           rules: automationForm.torrentSelection.rules.map((rule) => ({
@@ -412,6 +402,7 @@ export function SettingsPanel({
       input: {
         taskProgressSyncIntervalSeconds: Number.isNaN(taskProgressSyncIntervalSeconds) ? 60 : taskProgressSyncIntervalSeconds,
         subscriptionPollIntervalHours: Number.isNaN(subscriptionPollIntervalHours) ? 1 : subscriptionPollIntervalHours,
+        stashBoxEndpoints: automationForm.stashBoxEndpoints,
         torrentSelection: {
           enabled: automationForm.torrentSelection.enabled,
           rules: automationForm.torrentSelection.rules.map((rule) => ({
@@ -441,11 +432,34 @@ export function SettingsPanel({
     await refreshDashboard({ requestPolicy: "network-only" });
   };
 
-  const saveSubscriptionSettings = async (event: FormEvent<HTMLFormElement>) => {
+  const saveStashBoxPrioritySettings = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    const result = await updateSubscriptionSettings({
+    const taskProgressSyncIntervalSeconds = Number.parseInt(automationForm.taskProgressSyncIntervalSeconds.trim(), 10);
+    const subscriptionPollIntervalHours = Number.parseInt(automationForm.subscriptionPollIntervalHours.trim(), 10);
+    const result = await updateAutomationSettings({
       input: {
-        stashBoxEndpoints: subscriptionForm.stashBoxEndpoints
+        taskProgressSyncIntervalSeconds: Number.isNaN(taskProgressSyncIntervalSeconds) ? 60 : taskProgressSyncIntervalSeconds,
+        subscriptionPollIntervalHours: Number.isNaN(subscriptionPollIntervalHours) ? 1 : subscriptionPollIntervalHours,
+        stashBoxEndpoints: automationForm.stashBoxEndpoints,
+        torrentSelection: {
+          enabled: automationForm.torrentSelection.enabled,
+          rules: automationForm.torrentSelection.rules.map((rule) => ({
+            id: rule.id,
+            type: rule.type,
+            enabled: rule.enabled,
+            direction: rule.direction,
+            indexerPreference: {
+              trackerIds: rule.indexerPreference.trackerIds
+            },
+            titleMatch: {
+              clauses: rule.titleMatch.clauses.map((clause) => ({
+                pattern: clause.pattern,
+                patternMode: clause.patternMode,
+                effect: clause.effect
+              }))
+            }
+          }))
+        }
       }
     });
     if (result.error) {
@@ -932,7 +946,7 @@ export function SettingsPanel({
     const stashBoxes = runtimeStatus.subscription.stashBoxes ?? [];
     const loaded = runtimeStatus.subscription.stashBoxesLoaded;
     const loadError = runtimeStatus.subscription.stashBoxesLoadError;
-    const order = subscriptionForm.stashBoxEndpoints;
+    const order = automationForm.stashBoxEndpoints;
     const byEndpoint = new Map(stashBoxes.map((box) => [box.endpoint, box]));
     const display: { endpoint: string; box: typeof stashBoxes[number] | null }[] = [];
     const used = new Set<string>();
@@ -947,7 +961,7 @@ export function SettingsPanel({
     });
 
     const reorder = (next: string[]) => {
-      setSubscriptionForm((current) => ({ ...current, stashBoxEndpoints: next }));
+      setAutomationForm((current) => ({ ...current, stashBoxEndpoints: next }));
     };
     const move = (from: number, to: number) => {
       if (from === to || from < 0 || to < 0 || from >= display.length || to >= display.length) return;
@@ -989,7 +1003,7 @@ export function SettingsPanel({
           </div>
         </form>
 
-        <form className="settings-form" onSubmit={(event) => void saveSubscriptionSettings(event)}>
+        <form className="settings-form" onSubmit={(event) => void saveStashBoxPrioritySettings(event)}>
           <section className="stashbox-source">
             <header className="stashbox-source__head">
               <div>
@@ -1008,7 +1022,7 @@ export function SettingsPanel({
                   <FontAwesomeIcon icon={faRotate} className={refreshingStashBoxes ? "is-spinning" : undefined} />
                   <span>{refreshingStashBoxes ? "刷新中..." : "刷新"}</span>
                 </button>
-                <button type="submit" disabled={updatingSubscription}>保存优先级</button>
+                <button type="submit" disabled={updatingAutomation}>保存优先级</button>
               </div>
             </header>
 

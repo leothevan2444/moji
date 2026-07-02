@@ -456,6 +456,7 @@ func TestSettingsQueryReturnsRuntimeSnapshot(t *testing.T) {
 		Automation: AutomationSettingsSnapshot{
 			TaskProgressSyncIntervalSeconds: 60,
 			SubscriptionPollIntervalHours:   6,
+			StashBoxEndpoints:               []string{"https://javstash.example.org/graphql"},
 			TorrentSelection: TorrentSelectionSettingsSnapshot{
 				Enabled: true,
 				Rules: []TorrentSelectionRuleSnapshot{
@@ -487,7 +488,7 @@ func TestSettingsQueryReturnsRuntimeSnapshot(t *testing.T) {
 			ingest { deliveryMode stashLibraryPath }
 			jackett { configured url apiKeyConfigured }
 			qbittorrent { configured url username usernameConfigured passwordConfigured defaultSavePath category tags }
-			automation { taskProgressSyncIntervalSeconds subscriptionPollIntervalHours torrentSelection { enabled rules { id type direction } } }
+			automation { taskProgressSyncIntervalSeconds subscriptionPollIntervalHours stashBoxEndpoints torrentSelection { enabled rules { id type direction } } }
 			system { taskDeletePolicy }
 		}
 		settingsStatus {
@@ -514,6 +515,9 @@ func TestSettingsQueryReturnsRuntimeSnapshot(t *testing.T) {
 	}
 	if resp.Data.Settings.Automation.TaskProgressSyncIntervalSeconds != 60 {
 		t.Fatalf("unexpected automation settings: %+v", resp.Data.Settings.Automation)
+	}
+	if len(resp.Data.Settings.Automation.StashBoxEndpoints) != 1 {
+		t.Fatalf("unexpected automation stash-box endpoints: %+v", resp.Data.Settings.Automation)
 	}
 	if resp.Data.Settings.System.TaskDeletePolicy != "KEEP_ONLY" {
 		t.Fatalf("unexpected system settings: %+v", resp.Data.Settings.System)
@@ -560,15 +564,13 @@ func TestSettingsQueryUsesSettingsEditorSnapshot(t *testing.T) {
 			Automation: AutomationSettingsSnapshot{
 				TaskProgressSyncIntervalSeconds: 60,
 				SubscriptionPollIntervalHours:   1,
+				StashBoxEndpoints:               []string{"https://javstash.example.org/graphql"},
 				TorrentSelection: TorrentSelectionSettingsSnapshot{
 					Enabled: true,
 					Rules: []TorrentSelectionRuleSnapshot{
 						{ID: "seeders", Type: "SEEDERS", Enabled: true, Direction: "DESC"},
 					},
 				},
-			},
-			Subscription: SubscriptionSettingsSnapshot{
-				StashBoxEndpoints: []string{"https://javstash.example.org/graphql"},
 			},
 			QBittorrent: QBittorrentSettingsSnapshot{
 				URL:      "http://qb.invalid",
@@ -586,12 +588,12 @@ func TestSettingsQueryUsesSettingsEditorSnapshot(t *testing.T) {
 		},
 	}
 
-	resp := executeGraphQL(t, resolver, `{ settings { subscription { stashBoxEndpoints } qbittorrent { url username } automation { subscriptionPollIntervalHours torrentSelection { enabled rules { id } } } system { taskDeletePolicy } } settingsStatus { automation { subscriptionPollIntervalHours subscriptionPollEnabled } } }`)
+	resp := executeGraphQL(t, resolver, `{ settings { qbittorrent { url username } automation { subscriptionPollIntervalHours stashBoxEndpoints torrentSelection { enabled rules { id } } } system { taskDeletePolicy } } settingsStatus { automation { subscriptionPollIntervalHours subscriptionPollEnabled } } }`)
 	if len(resp.Errors) > 0 {
 		t.Fatalf("expected no errors, got %+v", resp.Errors)
 	}
-	if len(resp.Data.Settings.Subscription.StashBoxEndpoints) != 1 {
-		t.Fatalf("unexpected subscription settings: %+v", resp.Data.Settings.Subscription)
+	if len(resp.Data.Settings.Automation.StashBoxEndpoints) != 1 {
+		t.Fatalf("unexpected automation settings: %+v", resp.Data.Settings.Automation)
 	}
 	if resp.Data.Settings.Qbittorrent.Username != "editor-user" {
 		t.Fatalf("unexpected qbittorrent settings: %+v", resp.Data.Settings.Qbittorrent)
@@ -692,6 +694,7 @@ func TestUpdateJackettSettingsMutation(t *testing.T) {
 				APIKeyConfigured: true,
 			},
 			Automation: AutomationSettingsSnapshot{
+				StashBoxEndpoints: []string{"https://javstash.example.org/graphql"},
 				TorrentSelection: TorrentSelectionSettingsSnapshot{
 					Enabled: true,
 					Rules: []TorrentSelectionRuleSnapshot{
@@ -732,11 +735,17 @@ func TestUpdateJackettSettingsMutation(t *testing.T) {
 	}
 }
 
-func TestUpdateSubscriptionSettingsMutation(t *testing.T) {
+func TestUpdateAutomationSettingsMutation(t *testing.T) {
 	editor := &fakeSettingsEditor{
-		updateSubscriptionSnapshot: &SettingsSnapshot{
-			Subscription: SubscriptionSettingsSnapshot{
-				StashBoxEndpoints: []string{"https://javstash.example.org/graphql"},
+		updateAutomationSnapshot: &SettingsSnapshot{
+			Automation: AutomationSettingsSnapshot{
+				TaskProgressSyncIntervalSeconds: 60,
+				SubscriptionPollIntervalHours:   1,
+				StashBoxEndpoints:               []string{"https://javstash.example.org/graphql"},
+				TorrentSelection: TorrentSelectionSettingsSnapshot{
+					Enabled: true,
+					Rules:   []TorrentSelectionRuleSnapshot{{ID: "seeders", Type: "SEEDERS", Enabled: true, Direction: "DESC"}},
+				},
 			},
 		},
 	}
@@ -744,23 +753,36 @@ func TestUpdateSubscriptionSettingsMutation(t *testing.T) {
 	resolver.SettingsEditor = editor
 
 	resp := executeGraphQL(t, resolver, `mutation {
-		updateSubscriptionSettings(input: {
+		updateAutomationSettings(input: {
+			taskProgressSyncIntervalSeconds: 60
+			subscriptionPollIntervalHours: 1
 			stashBoxEndpoints: ["https://javstash.example.org/graphql"]
+			torrentSelection: {
+				enabled: true
+				rules: [{
+					id: "seeders"
+					type: SEEDERS
+					enabled: true
+					direction: DESC
+					indexerPreference: { trackerIds: [] }
+					titleMatch: { clauses: [] }
+				}]
+			}
 		}) {
-			subscription {
+			automation {
 				stashBoxEndpoints
+				torrentSelection { enabled rules { id } }
 			}
 		}
 	}`)
 	if len(resp.Errors) > 0 {
 		t.Fatalf("expected no errors, got %+v", resp.Errors)
 	}
-	if len(editor.subscriptionInput.StashBoxEndpoints) != 1 ||
-		editor.subscriptionInput.StashBoxEndpoints[0] != "https://javstash.example.org/graphql" {
-		t.Fatalf("unexpected selected endpoints: %+v", editor.subscriptionInput.StashBoxEndpoints)
+	if len(editor.automationInput.StashBoxEndpoints) != 1 || editor.automationInput.StashBoxEndpoints[0] != "https://javstash.example.org/graphql" {
+		t.Fatalf("unexpected automation input: %+v", editor.automationInput)
 	}
-	if len(resp.Data.UpdateSubscriptionSettings.Subscription.StashBoxEndpoints) != 1 {
-		t.Fatalf("unexpected subscription response: %+v", resp.Data.UpdateSubscriptionSettings.Subscription)
+	if len(resp.Data.UpdateAutomationSettings.Automation.StashBoxEndpoints) != 1 {
+		t.Fatalf("unexpected automation response: %+v", resp.Data.UpdateAutomationSettings.Automation)
 	}
 }
 
@@ -947,12 +969,10 @@ type graphQLTaskResponse struct {
 				Category           string `json:"category"`
 				Tags               string `json:"tags"`
 			} `json:"qbittorrent"`
-			Subscription struct {
-				StashBoxEndpoints []string `json:"stashBoxEndpoints"`
-			} `json:"subscription"`
 			Automation struct {
-				TaskProgressSyncIntervalSeconds int `json:"taskProgressSyncIntervalSeconds"`
-				SubscriptionPollIntervalHours   int `json:"subscriptionPollIntervalHours"`
+				TaskProgressSyncIntervalSeconds int      `json:"taskProgressSyncIntervalSeconds"`
+				SubscriptionPollIntervalHours   int      `json:"subscriptionPollIntervalHours"`
+				StashBoxEndpoints               []string `json:"stashBoxEndpoints"`
 				TorrentSelection                struct {
 					Enabled bool `json:"enabled"`
 					Rules   []struct {
@@ -1022,8 +1042,9 @@ type graphQLTaskResponse struct {
 		} `json:"updateJackettSettings"`
 		UpdateAutomationSettings struct {
 			Automation struct {
-				TaskProgressSyncIntervalSeconds int `json:"taskProgressSyncIntervalSeconds"`
-				SubscriptionPollIntervalHours   int `json:"subscriptionPollIntervalHours"`
+				TaskProgressSyncIntervalSeconds int      `json:"taskProgressSyncIntervalSeconds"`
+				SubscriptionPollIntervalHours   int      `json:"subscriptionPollIntervalHours"`
+				StashBoxEndpoints               []string `json:"stashBoxEndpoints"`
 				TorrentSelection                struct {
 					Enabled bool `json:"enabled"`
 					Rules   []struct {
@@ -1033,11 +1054,6 @@ type graphQLTaskResponse struct {
 				} `json:"torrentSelection"`
 			} `json:"automation"`
 		} `json:"updateAutomationSettings"`
-		UpdateSubscriptionSettings struct {
-			Subscription struct {
-				StashBoxEndpoints []string `json:"stashBoxEndpoints"`
-			} `json:"subscription"`
-		} `json:"updateSubscriptionSettings"`
 		UpdateSystemSettings struct {
 			System struct {
 				TaskDeletePolicy string `json:"taskDeletePolicy"`
@@ -1051,22 +1067,20 @@ type graphQLTaskResponse struct {
 }
 
 type fakeSettingsEditor struct {
-	snapshot                   *SettingsSnapshot
-	statusSnapshot             *SettingsStatusSnapshot
-	stashInput                 UpdateStashSettingsInput
-	updateStashSnapshot        *SettingsSnapshot
-	ingestInput                UpdateIngestSettingsInput
-	updateIngestSnapshot       *SettingsSnapshot
-	jackettInput               UpdateJackettSettingsInput
-	updateJackettSnapshot      *SettingsSnapshot
-	qbittorrentInput           UpdateQBittorrentSettingsInput
-	updateQBittorrentSnapshot  *SettingsSnapshot
-	automationInput            UpdateAutomationSettingsInput
-	updateAutomationSnapshot   *SettingsSnapshot
-	systemInput                UpdateSystemSettingsInput
-	updateSystemSnapshot       *SettingsSnapshot
-	subscriptionInput          UpdateSubscriptionSettingsInput
-	updateSubscriptionSnapshot *SettingsSnapshot
+	snapshot                  *SettingsSnapshot
+	statusSnapshot            *SettingsStatusSnapshot
+	stashInput                UpdateStashSettingsInput
+	updateStashSnapshot       *SettingsSnapshot
+	ingestInput               UpdateIngestSettingsInput
+	updateIngestSnapshot      *SettingsSnapshot
+	jackettInput              UpdateJackettSettingsInput
+	updateJackettSnapshot     *SettingsSnapshot
+	qbittorrentInput          UpdateQBittorrentSettingsInput
+	updateQBittorrentSnapshot *SettingsSnapshot
+	automationInput           UpdateAutomationSettingsInput
+	updateAutomationSnapshot  *SettingsSnapshot
+	systemInput               UpdateSystemSettingsInput
+	updateSystemSnapshot      *SettingsSnapshot
 }
 
 func (f *fakeSettingsEditor) Snapshot() *SettingsSnapshot {
@@ -1108,11 +1122,6 @@ func (f *fakeSettingsEditor) UpdateAutomationSettings(input UpdateAutomationSett
 func (f *fakeSettingsEditor) UpdateSystemSettings(input UpdateSystemSettingsInput) (*SettingsSnapshot, error) {
 	f.systemInput = input
 	return f.updateSystemSnapshot, nil
-}
-
-func (f *fakeSettingsEditor) UpdateSubscriptionSettings(input UpdateSubscriptionSettingsInput) (*SettingsSnapshot, error) {
-	f.subscriptionInput = input
-	return f.updateSubscriptionSnapshot, nil
 }
 
 func executeGraphQL(t *testing.T, resolver *Resolver, query string) graphQLTaskResponse {

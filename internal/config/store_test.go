@@ -81,7 +81,7 @@ automation:
 		t.Fatalf("open store: %v", err)
 	}
 
-	cfg, err := store.UpdateAutomation(60, 1, TorrentSelectionConfig{
+	cfg, err := store.UpdateAutomation(60, 1, []string{"https://javstash.example.org/graphql"}, TorrentSelectionConfig{
 		Enabled: true,
 		Rules: []TorrentSelectionRule{
 			{
@@ -100,6 +100,9 @@ automation:
 	}
 	if len(cfg.Automation.TorrentSelection.Rules) != 1 {
 		t.Fatalf("unexpected torrent selection: %+v", cfg.Automation.TorrentSelection)
+	}
+	if len(cfg.Automation.StashBoxEndpoints) != 1 {
+		t.Fatalf("unexpected stash-box endpoints: %+v", cfg.Automation.StashBoxEndpoints)
 	}
 
 	reloaded, err := LoadFromPath(path)
@@ -143,7 +146,7 @@ func TestStoreUpdateSystemPersistsTaskDeletePolicy(t *testing.T) {
 	path := filepath.Join(dir, "config.yaml")
 	content := `system:
   task_delete_policy: "KEEP_ONLY"
-subscription:
+automation:
   selected_stash_box_endpoints: []
 `
 	if err := os.WriteFile(path, []byte(content), 0o644); err != nil {

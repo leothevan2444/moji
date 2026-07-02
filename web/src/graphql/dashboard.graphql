@@ -50,6 +50,7 @@ query DashboardDocument {
     automation {
       taskProgressSyncIntervalSeconds
       subscriptionPollIntervalHours
+      stashBoxEndpoints
       torrentSelection {
         enabled
         rules {
@@ -72,9 +73,6 @@ query DashboardDocument {
     }
     system {
       taskDeletePolicy
-    }
-    subscription {
-      stashBoxEndpoints
     }
   }
   settingsStatus {

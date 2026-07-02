@@ -10,9 +10,11 @@ import (
 )
 
 type AutomationSettings struct {
-	TaskProgressSyncIntervalSeconds int                       `json:"taskProgressSyncIntervalSeconds"`
-	SubscriptionPollIntervalHours   int                       `json:"subscriptionPollIntervalHours"`
-	TorrentSelection                *TorrentSelectionSettings `json:"torrentSelection"`
+	TaskProgressSyncIntervalSeconds int `json:"taskProgressSyncIntervalSeconds"`
+	SubscriptionPollIntervalHours   int `json:"subscriptionPollIntervalHours"`
+	// Endpoint URLs in the user-defined order used for subscription lookups. Endpoints not listed here are still queried, in their Stash order, appended after the listed ones. An empty list means use Stash's order as-is.
+	StashBoxEndpoints []string                  `json:"stashBoxEndpoints"`
+	TorrentSelection  *TorrentSelectionSettings `json:"torrentSelection"`
 }
 
 type AutomationStatus struct {
@@ -248,13 +250,12 @@ type ServiceStatus struct {
 }
 
 type Settings struct {
-	Stash        *StashSettings        `json:"stash"`
-	Ingest       *IngestSettings       `json:"ingest"`
-	Jackett      *JackettSettings      `json:"jackett"`
-	Qbittorrent  *QBittorrentSettings  `json:"qbittorrent"`
-	Automation   *AutomationSettings   `json:"automation"`
-	System       *SystemSettings       `json:"system"`
-	Subscription *SubscriptionSettings `json:"subscription"`
+	Stash       *StashSettings       `json:"stash"`
+	Ingest      *IngestSettings      `json:"ingest"`
+	Jackett     *JackettSettings     `json:"jackett"`
+	Qbittorrent *QBittorrentSettings `json:"qbittorrent"`
+	Automation  *AutomationSettings  `json:"automation"`
+	System      *SystemSettings      `json:"system"`
 }
 
 type SettingsStatus struct {
@@ -434,11 +435,6 @@ type SubscriptionRelease struct {
 	SeenAt string  `json:"seenAt"`
 }
 
-type SubscriptionSettings struct {
-	// Endpoint URLs in the user-defined order used for subscription lookups. Endpoints not listed here are still queried, in their Stash order, appended after the listed ones. An empty list means use Stash's order as-is.
-	StashBoxEndpoints []string `json:"stashBoxEndpoints"`
-}
-
 type SubscriptionStatus struct {
 	// Stash Box instances currently configured inside the Stash server.
 	StashBoxes []*StashBoxEndpoint `json:"stashBoxes"`
@@ -548,6 +544,7 @@ type TransferIngestSettingsInput struct {
 type UpdateAutomationSettingsInput struct {
 	TaskProgressSyncIntervalSeconds int                            `json:"taskProgressSyncIntervalSeconds"`
 	SubscriptionPollIntervalHours   int                            `json:"subscriptionPollIntervalHours"`
+	StashBoxEndpoints               []string                       `json:"stashBoxEndpoints"`
 	TorrentSelection                *TorrentSelectionSettingsInput `json:"torrentSelection"`
 }
 
@@ -576,11 +573,6 @@ type UpdateQBittorrentSettingsInput struct {
 type UpdateStashSettingsInput struct {
 	URL    string  `json:"url"`
 	APIKey *string `json:"apiKey,omitempty"`
-}
-
-type UpdateSubscriptionSettingsInput struct {
-	// See SubscriptionSettings.stashBoxEndpoints.
-	StashBoxEndpoints []string `json:"stashBoxEndpoints"`
 }
 
 type UpdateSystemSettingsInput struct {

@@ -25,9 +25,6 @@ extend type Mutation {
   "Update system settings and persist them to backend config"
   updateSystemSettings(input: UpdateSystemSettingsInput!): Settings!
 
-  "Update Subscription settings and persist them to backend config"
-  updateSubscriptionSettings(input: UpdateSubscriptionSettingsInput!): Settings!
-
   "Re-fetch the Stash-Box list from the configured Stash server. The updated list and load status are reflected in the returned Settings snapshot."
   refreshSubscriptionStashBoxes: Settings!
 }
@@ -39,7 +36,6 @@ type Settings {
   qbittorrent: QBittorrentSettings!
   automation: AutomationSettings!
   system: SystemSettings!
-  subscription: SubscriptionSettings!
 }
 
 type SettingsStatus {
@@ -234,6 +230,8 @@ type QBittorrentSettings {
 type AutomationSettings {
   taskProgressSyncIntervalSeconds: Int!
   subscriptionPollIntervalHours: Int!
+  "Endpoint URLs in the user-defined order used for subscription lookups. Endpoints not listed here are still queried, in their Stash order, appended after the listed ones. An empty list means use Stash's order as-is."
+  stashBoxEndpoints: [String!]!
   torrentSelection: TorrentSelectionSettings!
 }
 
@@ -245,11 +243,6 @@ enum TaskDeletePolicy {
 
 type SystemSettings {
   taskDeletePolicy: TaskDeletePolicy!
-}
-
-type SubscriptionSettings {
-  "Endpoint URLs in the user-defined order used for subscription lookups. Endpoints not listed here are still queried, in their Stash order, appended after the listed ones. An empty list means use Stash's order as-is."
-  stashBoxEndpoints: [String!]!
 }
 
 type ServiceStatus {
@@ -346,14 +339,10 @@ input UpdateQBittorrentSettingsInput {
 input UpdateAutomationSettingsInput {
   taskProgressSyncIntervalSeconds: Int!
   subscriptionPollIntervalHours: Int!
+  stashBoxEndpoints: [String!]!
   torrentSelection: TorrentSelectionSettingsInput!
 }
 
 input UpdateSystemSettingsInput {
   taskDeletePolicy: TaskDeletePolicy!
-}
-
-input UpdateSubscriptionSettingsInput {
-  "See SubscriptionSettings.stashBoxEndpoints."
-  stashBoxEndpoints: [String!]!
 }

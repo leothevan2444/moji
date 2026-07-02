@@ -71,13 +71,10 @@ export const EMPTY_QBITTORRENT_FORM = {
   tags: ""
 };
 
-export const EMPTY_SUBSCRIPTION_FORM = {
-  stashBoxEndpoints: [] as string[]
-};
-
 export const EMPTY_AUTOMATION_FORM = {
   taskProgressSyncIntervalSeconds: "60",
   subscriptionPollIntervalHours: "1",
+  stashBoxEndpoints: [] as string[],
   torrentSelection: {
     enabled: true,
     rules: DEFAULT_TORRENT_SELECTION_RULES

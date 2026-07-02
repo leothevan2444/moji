@@ -48,7 +48,6 @@ type SettingsEditor interface {
 	UpdateQBittorrentSettings(input UpdateQBittorrentSettingsInput) (*SettingsSnapshot, error)
 	UpdateAutomationSettings(input UpdateAutomationSettingsInput) (*SettingsSnapshot, error)
 	UpdateSystemSettings(input UpdateSystemSettingsInput) (*SettingsSnapshot, error)
-	UpdateSubscriptionSettings(input UpdateSubscriptionSettingsInput) (*SettingsSnapshot, error)
 }
 
 type UpdateStashSettingsInput struct {
@@ -77,13 +76,10 @@ type UpdateQBittorrentSettingsInput struct {
 	Tags            string
 }
 
-type UpdateSubscriptionSettingsInput struct {
-	StashBoxEndpoints []string
-}
-
 type UpdateAutomationSettingsInput struct {
 	TaskProgressSyncIntervalSeconds int
 	SubscriptionPollIntervalHours   int
+	StashBoxEndpoints               []string
 	TorrentSelection                TorrentSelectionSettingsSnapshot
 }
 
@@ -92,13 +88,12 @@ type UpdateSystemSettingsInput struct {
 }
 
 type SettingsSnapshot struct {
-	Stash        StashSettingsSnapshot
-	Ingest       IngestSettingsSnapshot
-	Jackett      JackettSettingsSnapshot
-	QBittorrent  QBittorrentSettingsSnapshot
-	Automation   AutomationSettingsSnapshot
-	System       SystemSettingsSnapshot
-	Subscription SubscriptionSettingsSnapshot
+	Stash       StashSettingsSnapshot
+	Ingest      IngestSettingsSnapshot
+	Jackett     JackettSettingsSnapshot
+	QBittorrent QBittorrentSettingsSnapshot
+	Automation  AutomationSettingsSnapshot
+	System      SystemSettingsSnapshot
 }
 
 type StashSettingsSnapshot struct {
@@ -172,15 +167,12 @@ type QBittorrentSettingsSnapshot struct {
 type AutomationSettingsSnapshot struct {
 	TaskProgressSyncIntervalSeconds int
 	SubscriptionPollIntervalHours   int
+	StashBoxEndpoints               []string
 	TorrentSelection                TorrentSelectionSettingsSnapshot
 }
 
 type SystemSettingsSnapshot struct {
 	TaskDeletePolicy string
-}
-
-type SubscriptionSettingsSnapshot struct {
-	StashBoxEndpoints []string
 }
 
 type StashLibrarySnapshot struct {

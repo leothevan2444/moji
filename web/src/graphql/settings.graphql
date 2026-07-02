@@ -52,6 +52,7 @@ mutation UpdateAutomationSettingsDocument($input: UpdateAutomationSettingsInput!
     automation {
       taskProgressSyncIntervalSeconds
       subscriptionPollIntervalHours
+      stashBoxEndpoints
       torrentSelection {
         enabled
         rules {
@@ -83,17 +84,9 @@ mutation UpdateSystemSettingsDocument($input: UpdateSystemSettingsInput!) {
   }
 }
 
-mutation UpdateSubscriptionSettingsDocument($input: UpdateSubscriptionSettingsInput!) {
-  updateSubscriptionSettings(input: $input) {
-    subscription {
-      stashBoxEndpoints
-    }
-  }
-}
-
 mutation RefreshSubscriptionStashBoxesDocument {
   refreshSubscriptionStashBoxes {
-    subscription {
+    automation {
       stashBoxEndpoints
     }
   }

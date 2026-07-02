@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"os"
 	"strconv"
-	"strings"
 	"sync"
 
 	"gopkg.in/yaml.v3"
@@ -37,6 +36,7 @@ func OpenStore(path string) (*Store, error) {
 	}
 	cfg.Connection.Stash.normalize()
 	cfg.System.TaskDeletePolicy = cfg.System.EffectiveTaskDeletePolicy()
+	cfg.Automation.StashBoxEndpoints = cleanStrings(cfg.Automation.StashBoxEndpoints)
 	cfg.Automation.TorrentSelection = cfg.Automation.TorrentSelection.Effective()
 	cfg.path = path
 
@@ -130,12 +130,13 @@ func (s *Store) UpdateQBittorrent(url, username, password, defaultSavePath, cate
 	return &clone, nil
 }
 
-func (s *Store) UpdateAutomation(taskProgressSyncIntervalSeconds, subscriptionPollIntervalHours int, torrentSelection TorrentSelectionConfig) (*Config, error) {
+func (s *Store) UpdateAutomation(taskProgressSyncIntervalSeconds, subscriptionPollIntervalHours int, stashBoxEndpoints []string, torrentSelection TorrentSelectionConfig) (*Config, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
 	s.cfg.Automation.TaskProgressSyncIntervalSeconds = taskProgressSyncIntervalSeconds
 	s.cfg.Automation.SubscriptionPollIntervalHours = subscriptionPollIntervalHours
+	s.cfg.Automation.StashBoxEndpoints = cleanStrings(stashBoxEndpoints)
 	s.cfg.Automation.TorrentSelection = torrentSelection.Effective()
 
 	if err := s.updateConfigNode(); err != nil {
@@ -150,27 +151,6 @@ func (s *Store) UpdateSystem(taskDeletePolicy TaskDeletePolicy) (*Config, error)
 	defer s.mu.Unlock()
 
 	s.cfg.System.TaskDeletePolicy = NormalizeTaskDeletePolicy(string(taskDeletePolicy))
-
-	if err := s.updateConfigNode(); err != nil {
-		return nil, err
-	}
-	clone := *s.cfg
-	return &clone, nil
-}
-
-func (s *Store) UpdateSubscription(selectedEndpoints []string) (*Config, error) {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-
-	cleaned := make([]string, 0, len(selectedEndpoints))
-	for _, endpoint := range selectedEndpoints {
-		endpoint = strings.TrimSpace(endpoint)
-		if endpoint == "" {
-			continue
-		}
-		cleaned = append(cleaned, endpoint)
-	}
-	s.cfg.Subscription.StashBoxEndpoints = cleaned
 
 	if err := s.updateConfigNode(); err != nil {
 		return nil, err
@@ -213,14 +193,15 @@ func (s *Store) updateConfigNode() error {
 	})
 	setIntScalar(mapValue(top, "automation"), "task_progress_sync_interval_seconds", s.cfg.Automation.TaskProgressSyncIntervalSeconds)
 	setIntScalar(mapValue(top, "automation"), "subscription_poll_interval_hours", s.cfg.Automation.SubscriptionPollIntervalHours)
+	setStringList(mapValue(top, "automation"), "selected_stash_box_endpoints", s.cfg.Automation.StashBoxEndpoints)
 	setNodeValue(mapValue(top, "automation"), "torrent_selection", s.cfg.Automation.TorrentSelection.Effective())
 	setScalar(mapValue(top, "system"), "task_delete_policy", string(s.cfg.System.EffectiveTaskDeletePolicy()))
-	setStringList(mapValue(top, "subscription"), "selected_stash_box_endpoints", s.cfg.Subscription.StashBoxEndpoints)
 	deleteMapKey(top, "stash")
 	deleteMapKey(top, "jackett")
 	deleteMapKey(top, "qbittorrent")
 	deleteMapKey(top, "tasks")
 	deleteMapKey(top, "logging")
+	deleteMapKey(top, "subscription")
 	if stash := existingMapValue(connection, "stash"); stash != nil {
 		deleteMapKey(stash, "graphql_url")
 		deleteMapKey(stash, "mode")

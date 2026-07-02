@@ -150,6 +150,7 @@ func (s StashConfig) GraphQLEndpoint() string {
 type AutomationConfig struct {
 	TaskProgressSyncIntervalSeconds int                    `yaml:"task_progress_sync_interval_seconds"`
 	SubscriptionPollIntervalHours   int                    `yaml:"subscription_poll_interval_hours"`
+	StashBoxEndpoints               []string               `yaml:"selected_stash_box_endpoints"`
 	TorrentSelection                TorrentSelectionConfig `yaml:"torrent_selection"`
 }
 
@@ -165,10 +166,6 @@ type TransferIngestConfig struct {
 	MojiTargetRoot string `yaml:"moji_target_root"`
 }
 
-type SubscriptionConfig struct {
-	StashBoxEndpoints []string `yaml:"selected_stash_box_endpoints"`
-}
-
 type LoggingConfig struct {
 	Level            string `yaml:"level"`
 	FilePath         string `yaml:"file_path"`
@@ -178,12 +175,11 @@ type LoggingConfig struct {
 }
 
 type Config struct {
-	Connection   ConnectionConfig   `yaml:"connection"`
-	Ingest       IngestConfig       `yaml:"ingest"`
-	Automation   AutomationConfig   `yaml:"automation"`
-	System       SystemConfig       `yaml:"system"`
-	Subscription SubscriptionConfig `yaml:"subscription"`
-	Logging      LoggingConfig      `yaml:"logging"`
+	Connection ConnectionConfig `yaml:"connection"`
+	Ingest     IngestConfig     `yaml:"ingest"`
+	Automation AutomationConfig `yaml:"automation"`
+	System     SystemConfig     `yaml:"system"`
+	Logging    LoggingConfig    `yaml:"logging"`
 
 	path string
 }
@@ -337,6 +333,7 @@ func LoadFromPath(path string) (*Config, error) {
 	}
 	config.Connection.Stash.normalize()
 	config.System.TaskDeletePolicy = config.System.EffectiveTaskDeletePolicy()
+	config.Automation.StashBoxEndpoints = cleanStrings(config.Automation.StashBoxEndpoints)
 	config.Automation.TorrentSelection = config.Automation.TorrentSelection.Effective()
 	config.path = path
 

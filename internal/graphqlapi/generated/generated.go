@@ -47,6 +47,7 @@ type DirectiveRoot struct {
 
 type ComplexityRoot struct {
 	AutomationSettings struct {
+		StashBoxEndpoints               func(childComplexity int) int
 		SubscriptionPollIntervalHours   func(childComplexity int) int
 		TaskProgressSyncIntervalSeconds func(childComplexity int) int
 		TorrentSelection                func(childComplexity int) int
@@ -193,7 +194,6 @@ type ComplexityRoot struct {
 		UpdateJackettSettings         func(childComplexity int, input model.UpdateJackettSettingsInput) int
 		UpdateQBittorrentSettings     func(childComplexity int, input model.UpdateQBittorrentSettingsInput) int
 		UpdateStashSettings           func(childComplexity int, input model.UpdateStashSettingsInput) int
-		UpdateSubscriptionSettings    func(childComplexity int, input model.UpdateSubscriptionSettingsInput) int
 		UpdateSystemSettings          func(childComplexity int, input model.UpdateSystemSettingsInput) int
 	}
 
@@ -259,13 +259,12 @@ type ComplexityRoot struct {
 	}
 
 	Settings struct {
-		Automation   func(childComplexity int) int
-		Ingest       func(childComplexity int) int
-		Jackett      func(childComplexity int) int
-		Qbittorrent  func(childComplexity int) int
-		Stash        func(childComplexity int) int
-		Subscription func(childComplexity int) int
-		System       func(childComplexity int) int
+		Automation  func(childComplexity int) int
+		Ingest      func(childComplexity int) int
+		Jackett     func(childComplexity int) int
+		Qbittorrent func(childComplexity int) int
+		Stash       func(childComplexity int) int
+		System      func(childComplexity int) int
 	}
 
 	SettingsStatus struct {
@@ -415,10 +414,6 @@ type ComplexityRoot struct {
 		URL    func(childComplexity int) int
 	}
 
-	SubscriptionSettings struct {
-		StashBoxEndpoints func(childComplexity int) int
-	}
-
 	SubscriptionStatus struct {
 		StashBoxes          func(childComplexity int) int
 		StashBoxesLoadError func(childComplexity int) int
@@ -508,7 +503,6 @@ type MutationResolver interface {
 	UpdateQBittorrentSettings(ctx context.Context, input model.UpdateQBittorrentSettingsInput) (*model.Settings, error)
 	UpdateAutomationSettings(ctx context.Context, input model.UpdateAutomationSettingsInput) (*model.Settings, error)
 	UpdateSystemSettings(ctx context.Context, input model.UpdateSystemSettingsInput) (*model.Settings, error)
-	UpdateSubscriptionSettings(ctx context.Context, input model.UpdateSubscriptionSettingsInput) (*model.Settings, error)
 	RefreshSubscriptionStashBoxes(ctx context.Context) (*model.Settings, error)
 	StashMetadataScan(ctx context.Context, input model.StashMetadataScanInput) (string, error)
 	SubscribePerformer(ctx context.Context, stashPerformerID string) (*model.SubscribedPerformer, error)
@@ -554,6 +548,13 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 	ec := executionContext{nil, e, 0, 0, nil}
 	_ = ec
 	switch typeName + "." + field {
+
+	case "AutomationSettings.stashBoxEndpoints":
+		if e.complexity.AutomationSettings.StashBoxEndpoints == nil {
+			break
+		}
+
+		return e.complexity.AutomationSettings.StashBoxEndpoints(childComplexity), true
 
 	case "AutomationSettings.subscriptionPollIntervalHours":
 		if e.complexity.AutomationSettings.SubscriptionPollIntervalHours == nil {
@@ -1316,18 +1317,6 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.Mutation.UpdateStashSettings(childComplexity, args["input"].(model.UpdateStashSettingsInput)), true
 
-	case "Mutation.updateSubscriptionSettings":
-		if e.complexity.Mutation.UpdateSubscriptionSettings == nil {
-			break
-		}
-
-		args, err := ec.field_Mutation_updateSubscriptionSettings_args(ctx, rawArgs)
-		if err != nil {
-			return 0, false
-		}
-
-		return e.complexity.Mutation.UpdateSubscriptionSettings(childComplexity, args["input"].(model.UpdateSubscriptionSettingsInput)), true
-
 	case "Mutation.updateSystemSettings":
 		if e.complexity.Mutation.UpdateSystemSettings == nil {
 			break
@@ -1741,13 +1730,6 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.Settings.Stash(childComplexity), true
-
-	case "Settings.subscription":
-		if e.complexity.Settings.Subscription == nil {
-			break
-		}
-
-		return e.complexity.Settings.Subscription(childComplexity), true
 
 	case "Settings.system":
 		if e.complexity.Settings.System == nil {
@@ -2491,13 +2473,6 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.SubscriptionRelease.URL(childComplexity), true
 
-	case "SubscriptionSettings.stashBoxEndpoints":
-		if e.complexity.SubscriptionSettings.StashBoxEndpoints == nil {
-			break
-		}
-
-		return e.complexity.SubscriptionSettings.StashBoxEndpoints(childComplexity), true
-
 	case "SubscriptionStatus.stashBoxes":
 		if e.complexity.SubscriptionStatus.StashBoxes == nil {
 			break
@@ -2867,7 +2842,6 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 		ec.unmarshalInputUpdateJackettSettingsInput,
 		ec.unmarshalInputUpdateQBittorrentSettingsInput,
 		ec.unmarshalInputUpdateStashSettingsInput,
-		ec.unmarshalInputUpdateSubscriptionSettingsInput,
 		ec.unmarshalInputUpdateSystemSettingsInput,
 	)
 	first := true
@@ -3123,9 +3097,6 @@ extend type Mutation {
   "Update system settings and persist them to backend config"
   updateSystemSettings(input: UpdateSystemSettingsInput!): Settings!
 
-  "Update Subscription settings and persist them to backend config"
-  updateSubscriptionSettings(input: UpdateSubscriptionSettingsInput!): Settings!
-
   "Re-fetch the Stash-Box list from the configured Stash server. The updated list and load status are reflected in the returned Settings snapshot."
   refreshSubscriptionStashBoxes: Settings!
 }
@@ -3137,7 +3108,6 @@ type Settings {
   qbittorrent: QBittorrentSettings!
   automation: AutomationSettings!
   system: SystemSettings!
-  subscription: SubscriptionSettings!
 }
 
 type SettingsStatus {
@@ -3332,6 +3302,8 @@ type QBittorrentSettings {
 type AutomationSettings {
   taskProgressSyncIntervalSeconds: Int!
   subscriptionPollIntervalHours: Int!
+  "Endpoint URLs in the user-defined order used for subscription lookups. Endpoints not listed here are still queried, in their Stash order, appended after the listed ones. An empty list means use Stash's order as-is."
+  stashBoxEndpoints: [String!]!
   torrentSelection: TorrentSelectionSettings!
 }
 
@@ -3343,11 +3315,6 @@ enum TaskDeletePolicy {
 
 type SystemSettings {
   taskDeletePolicy: TaskDeletePolicy!
-}
-
-type SubscriptionSettings {
-  "Endpoint URLs in the user-defined order used for subscription lookups. Endpoints not listed here are still queried, in their Stash order, appended after the listed ones. An empty list means use Stash's order as-is."
-  stashBoxEndpoints: [String!]!
 }
 
 type ServiceStatus {
@@ -3444,16 +3411,12 @@ input UpdateQBittorrentSettingsInput {
 input UpdateAutomationSettingsInput {
   taskProgressSyncIntervalSeconds: Int!
   subscriptionPollIntervalHours: Int!
+  stashBoxEndpoints: [String!]!
   torrentSelection: TorrentSelectionSettingsInput!
 }
 
 input UpdateSystemSettingsInput {
   taskDeletePolicy: TaskDeletePolicy!
-}
-
-input UpdateSubscriptionSettingsInput {
-  "See SubscriptionSettings.stashBoxEndpoints."
-  stashBoxEndpoints: [String!]!
 }
 `, BuiltIn: false},
 	{Name: "../../../graphql/moji/types/stash.graphql", Input: `extend type Query {
@@ -4204,34 +4167,6 @@ func (ec *executionContext) field_Mutation_updateStashSettings_argsInput(
 	return zeroVal, nil
 }
 
-func (ec *executionContext) field_Mutation_updateSubscriptionSettings_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
-	var err error
-	args := map[string]any{}
-	arg0, err := ec.field_Mutation_updateSubscriptionSettings_argsInput(ctx, rawArgs)
-	if err != nil {
-		return nil, err
-	}
-	args["input"] = arg0
-	return args, nil
-}
-func (ec *executionContext) field_Mutation_updateSubscriptionSettings_argsInput(
-	ctx context.Context,
-	rawArgs map[string]any,
-) (model.UpdateSubscriptionSettingsInput, error) {
-	if _, ok := rawArgs["input"]; !ok {
-		var zeroVal model.UpdateSubscriptionSettingsInput
-		return zeroVal, nil
-	}
-
-	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
-	if tmp, ok := rawArgs["input"]; ok {
-		return ec.unmarshalNUpdateSubscriptionSettingsInput2githubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐUpdateSubscriptionSettingsInput(ctx, tmp)
-	}
-
-	var zeroVal model.UpdateSubscriptionSettingsInput
-	return zeroVal, nil
-}
-
 func (ec *executionContext) field_Mutation_updateSystemSettings_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
@@ -4835,6 +4770,50 @@ func (ec *executionContext) fieldContext_AutomationSettings_subscriptionPollInte
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AutomationSettings_stashBoxEndpoints(ctx context.Context, field graphql.CollectedField, obj *model.AutomationSettings) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_AutomationSettings_stashBoxEndpoints(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.StashBoxEndpoints, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]string)
+	fc.Result = res
+	return ec.marshalNString2ᚕstringᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_AutomationSettings_stashBoxEndpoints(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AutomationSettings",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
 		},
 	}
 	return fc, nil
@@ -9150,8 +9129,6 @@ func (ec *executionContext) fieldContext_Mutation_updateStashSettings(ctx contex
 				return ec.fieldContext_Settings_automation(ctx, field)
 			case "system":
 				return ec.fieldContext_Settings_system(ctx, field)
-			case "subscription":
-				return ec.fieldContext_Settings_subscription(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Settings", field.Name)
 		},
@@ -9221,8 +9198,6 @@ func (ec *executionContext) fieldContext_Mutation_updateIngestSettings(ctx conte
 				return ec.fieldContext_Settings_automation(ctx, field)
 			case "system":
 				return ec.fieldContext_Settings_system(ctx, field)
-			case "subscription":
-				return ec.fieldContext_Settings_subscription(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Settings", field.Name)
 		},
@@ -9292,8 +9267,6 @@ func (ec *executionContext) fieldContext_Mutation_updateJackettSettings(ctx cont
 				return ec.fieldContext_Settings_automation(ctx, field)
 			case "system":
 				return ec.fieldContext_Settings_system(ctx, field)
-			case "subscription":
-				return ec.fieldContext_Settings_subscription(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Settings", field.Name)
 		},
@@ -9363,8 +9336,6 @@ func (ec *executionContext) fieldContext_Mutation_updateQBittorrentSettings(ctx 
 				return ec.fieldContext_Settings_automation(ctx, field)
 			case "system":
 				return ec.fieldContext_Settings_system(ctx, field)
-			case "subscription":
-				return ec.fieldContext_Settings_subscription(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Settings", field.Name)
 		},
@@ -9434,8 +9405,6 @@ func (ec *executionContext) fieldContext_Mutation_updateAutomationSettings(ctx c
 				return ec.fieldContext_Settings_automation(ctx, field)
 			case "system":
 				return ec.fieldContext_Settings_system(ctx, field)
-			case "subscription":
-				return ec.fieldContext_Settings_subscription(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Settings", field.Name)
 		},
@@ -9505,8 +9474,6 @@ func (ec *executionContext) fieldContext_Mutation_updateSystemSettings(ctx conte
 				return ec.fieldContext_Settings_automation(ctx, field)
 			case "system":
 				return ec.fieldContext_Settings_system(ctx, field)
-			case "subscription":
-				return ec.fieldContext_Settings_subscription(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Settings", field.Name)
 		},
@@ -9519,77 +9486,6 @@ func (ec *executionContext) fieldContext_Mutation_updateSystemSettings(ctx conte
 	}()
 	ctx = graphql.WithFieldContext(ctx, fc)
 	if fc.Args, err = ec.field_Mutation_updateSystemSettings_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
-		ec.Error(ctx, err)
-		return fc, err
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _Mutation_updateSubscriptionSettings(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_Mutation_updateSubscriptionSettings(ctx, field)
-	if err != nil {
-		return graphql.Null
-	}
-	ctx = graphql.WithFieldContext(ctx, fc)
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
-		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Mutation().UpdateSubscriptionSettings(rctx, fc.Args["input"].(model.UpdateSubscriptionSettingsInput))
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(*model.Settings)
-	fc.Result = res
-	return ec.marshalNSettings2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐSettings(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) fieldContext_Mutation_updateSubscriptionSettings(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "Mutation",
-		Field:      field,
-		IsMethod:   true,
-		IsResolver: true,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			switch field.Name {
-			case "stash":
-				return ec.fieldContext_Settings_stash(ctx, field)
-			case "ingest":
-				return ec.fieldContext_Settings_ingest(ctx, field)
-			case "jackett":
-				return ec.fieldContext_Settings_jackett(ctx, field)
-			case "qbittorrent":
-				return ec.fieldContext_Settings_qbittorrent(ctx, field)
-			case "automation":
-				return ec.fieldContext_Settings_automation(ctx, field)
-			case "system":
-				return ec.fieldContext_Settings_system(ctx, field)
-			case "subscription":
-				return ec.fieldContext_Settings_subscription(ctx, field)
-			}
-			return nil, fmt.Errorf("no field named %q was found under type Settings", field.Name)
-		},
-	}
-	defer func() {
-		if r := recover(); r != nil {
-			err = ec.Recover(ctx, r)
-			ec.Error(ctx, err)
-		}
-	}()
-	ctx = graphql.WithFieldContext(ctx, fc)
-	if fc.Args, err = ec.field_Mutation_updateSubscriptionSettings_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return fc, err
 	}
@@ -9647,8 +9543,6 @@ func (ec *executionContext) fieldContext_Mutation_refreshSubscriptionStashBoxes(
 				return ec.fieldContext_Settings_automation(ctx, field)
 			case "system":
 				return ec.fieldContext_Settings_system(ctx, field)
-			case "subscription":
-				return ec.fieldContext_Settings_subscription(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Settings", field.Name)
 		},
@@ -11548,8 +11442,6 @@ func (ec *executionContext) fieldContext_Query_settings(_ context.Context, field
 				return ec.fieldContext_Settings_automation(ctx, field)
 			case "system":
 				return ec.fieldContext_Settings_system(ctx, field)
-			case "subscription":
-				return ec.fieldContext_Settings_subscription(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Settings", field.Name)
 		},
@@ -12835,6 +12727,8 @@ func (ec *executionContext) fieldContext_Settings_automation(_ context.Context, 
 				return ec.fieldContext_AutomationSettings_taskProgressSyncIntervalSeconds(ctx, field)
 			case "subscriptionPollIntervalHours":
 				return ec.fieldContext_AutomationSettings_subscriptionPollIntervalHours(ctx, field)
+			case "stashBoxEndpoints":
+				return ec.fieldContext_AutomationSettings_stashBoxEndpoints(ctx, field)
 			case "torrentSelection":
 				return ec.fieldContext_AutomationSettings_torrentSelection(ctx, field)
 			}
@@ -12887,54 +12781,6 @@ func (ec *executionContext) fieldContext_Settings_system(_ context.Context, fiel
 				return ec.fieldContext_SystemSettings_taskDeletePolicy(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type SystemSettings", field.Name)
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _Settings_subscription(ctx context.Context, field graphql.CollectedField, obj *model.Settings) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_Settings_subscription(ctx, field)
-	if err != nil {
-		return graphql.Null
-	}
-	ctx = graphql.WithFieldContext(ctx, fc)
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.Subscription, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(*model.SubscriptionSettings)
-	fc.Result = res
-	return ec.marshalNSubscriptionSettings2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐSubscriptionSettings(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) fieldContext_Settings_subscription(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "Settings",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			switch field.Name {
-			case "stashBoxEndpoints":
-				return ec.fieldContext_SubscriptionSettings_stashBoxEndpoints(ctx, field)
-			}
-			return nil, fmt.Errorf("no field named %q was found under type SubscriptionSettings", field.Name)
 		},
 	}
 	return fc, nil
@@ -17656,50 +17502,6 @@ func (ec *executionContext) _SubscriptionRelease_seenAt(ctx context.Context, fie
 func (ec *executionContext) fieldContext_SubscriptionRelease_seenAt(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "SubscriptionRelease",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type String does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _SubscriptionSettings_stashBoxEndpoints(ctx context.Context, field graphql.CollectedField, obj *model.SubscriptionSettings) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_SubscriptionSettings_stashBoxEndpoints(ctx, field)
-	if err != nil {
-		return graphql.Null
-	}
-	ctx = graphql.WithFieldContext(ctx, fc)
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.StashBoxEndpoints, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.([]string)
-	fc.Result = res
-	return ec.marshalNString2ᚕstringᚄ(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) fieldContext_SubscriptionSettings_stashBoxEndpoints(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "SubscriptionSettings",
 		Field:      field,
 		IsMethod:   false,
 		IsResolver: false,
@@ -22526,7 +22328,7 @@ func (ec *executionContext) unmarshalInputUpdateAutomationSettingsInput(ctx cont
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"taskProgressSyncIntervalSeconds", "subscriptionPollIntervalHours", "torrentSelection"}
+	fieldsInOrder := [...]string{"taskProgressSyncIntervalSeconds", "subscriptionPollIntervalHours", "stashBoxEndpoints", "torrentSelection"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -22547,6 +22349,13 @@ func (ec *executionContext) unmarshalInputUpdateAutomationSettingsInput(ctx cont
 				return it, err
 			}
 			it.SubscriptionPollIntervalHours = data
+		case "stashBoxEndpoints":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("stashBoxEndpoints"))
+			data, err := ec.unmarshalNString2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.StashBoxEndpoints = data
 		case "torrentSelection":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("torrentSelection"))
 			data, err := ec.unmarshalNTorrentSelectionSettingsInput2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐTorrentSelectionSettingsInput(ctx, v)
@@ -22738,33 +22547,6 @@ func (ec *executionContext) unmarshalInputUpdateStashSettingsInput(ctx context.C
 	return it, nil
 }
 
-func (ec *executionContext) unmarshalInputUpdateSubscriptionSettingsInput(ctx context.Context, obj any) (model.UpdateSubscriptionSettingsInput, error) {
-	var it model.UpdateSubscriptionSettingsInput
-	asMap := map[string]any{}
-	for k, v := range obj.(map[string]any) {
-		asMap[k] = v
-	}
-
-	fieldsInOrder := [...]string{"stashBoxEndpoints"}
-	for _, k := range fieldsInOrder {
-		v, ok := asMap[k]
-		if !ok {
-			continue
-		}
-		switch k {
-		case "stashBoxEndpoints":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("stashBoxEndpoints"))
-			data, err := ec.unmarshalNString2ᚕstringᚄ(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.StashBoxEndpoints = data
-		}
-	}
-
-	return it, nil
-}
-
 func (ec *executionContext) unmarshalInputUpdateSystemSettingsInput(ctx context.Context, obj any) (model.UpdateSystemSettingsInput, error) {
 	var it model.UpdateSystemSettingsInput
 	asMap := map[string]any{}
@@ -22818,6 +22600,11 @@ func (ec *executionContext) _AutomationSettings(ctx context.Context, sel ast.Sel
 			}
 		case "subscriptionPollIntervalHours":
 			out.Values[i] = ec._AutomationSettings_subscriptionPollIntervalHours(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "stashBoxEndpoints":
+			out.Values[i] = ec._AutomationSettings_stashBoxEndpoints(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
@@ -23823,13 +23610,6 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
-		case "updateSubscriptionSettings":
-			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
-				return ec._Mutation_updateSubscriptionSettings(ctx, field)
-			})
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
 		case "refreshSubscriptionStashBoxes":
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
 				return ec._Mutation_refreshSubscriptionStashBoxes(ctx, field)
@@ -24626,11 +24406,6 @@ func (ec *executionContext) _Settings(ctx context.Context, sel ast.SelectionSet,
 			}
 		case "system":
 			out.Values[i] = ec._Settings_system(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
-		case "subscription":
-			out.Values[i] = ec._Settings_subscription(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
@@ -25530,45 +25305,6 @@ func (ec *executionContext) _SubscriptionRelease(ctx context.Context, sel ast.Se
 			out.Values[i] = ec._SubscriptionRelease_taskID(ctx, field, obj)
 		case "seenAt":
 			out.Values[i] = ec._SubscriptionRelease_seenAt(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
-		default:
-			panic("unknown field " + strconv.Quote(field.Name))
-		}
-	}
-	out.Dispatch(ctx)
-	if out.Invalids > 0 {
-		return graphql.Null
-	}
-
-	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
-
-	for label, dfs := range deferred {
-		ec.processDeferredGroup(graphql.DeferredGroup{
-			Label:    label,
-			Path:     graphql.GetPath(ctx),
-			FieldSet: dfs,
-			Context:  ctx,
-		})
-	}
-
-	return out
-}
-
-var subscriptionSettingsImplementors = []string{"SubscriptionSettings"}
-
-func (ec *executionContext) _SubscriptionSettings(ctx context.Context, sel ast.SelectionSet, obj *model.SubscriptionSettings) graphql.Marshaler {
-	fields := graphql.CollectFields(ec.OperationContext, sel, subscriptionSettingsImplementors)
-
-	out := graphql.NewFieldSet(fields)
-	deferred := make(map[string]*graphql.FieldSet)
-	for i, field := range fields {
-		switch field.Name {
-		case "__typename":
-			out.Values[i] = graphql.MarshalString("SubscriptionSettings")
-		case "stashBoxEndpoints":
-			out.Values[i] = ec._SubscriptionSettings_stashBoxEndpoints(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
@@ -27513,16 +27249,6 @@ func (ec *executionContext) marshalNSubscriptionRelease2ᚖgithubᚗcomᚋleothe
 	return ec._SubscriptionRelease(ctx, sel, v)
 }
 
-func (ec *executionContext) marshalNSubscriptionSettings2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐSubscriptionSettings(ctx context.Context, sel ast.SelectionSet, v *model.SubscriptionSettings) graphql.Marshaler {
-	if v == nil {
-		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
-			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
-		}
-		return graphql.Null
-	}
-	return ec._SubscriptionSettings(ctx, sel, v)
-}
-
 func (ec *executionContext) marshalNSubscriptionStatus2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐSubscriptionStatus(ctx context.Context, sel ast.SelectionSet, v *model.SubscriptionStatus) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
@@ -27871,11 +27597,6 @@ func (ec *executionContext) unmarshalNUpdateQBittorrentSettingsInput2githubᚗco
 
 func (ec *executionContext) unmarshalNUpdateStashSettingsInput2githubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐUpdateStashSettingsInput(ctx context.Context, v any) (model.UpdateStashSettingsInput, error) {
 	res, err := ec.unmarshalInputUpdateStashSettingsInput(ctx, v)
-	return res, graphql.ErrorOnPath(ctx, err)
-}
-
-func (ec *executionContext) unmarshalNUpdateSubscriptionSettingsInput2githubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐUpdateSubscriptionSettingsInput(ctx context.Context, v any) (model.UpdateSubscriptionSettingsInput, error) {
-	res, err := ec.unmarshalInputUpdateSubscriptionSettingsInput(ctx, v)
 	return res, graphql.ErrorOnPath(ctx, err)
 }
 

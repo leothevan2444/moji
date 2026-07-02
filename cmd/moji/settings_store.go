@@ -145,6 +145,7 @@ func (s *runtimeSettingsEditor) UpdateAutomationSettings(input graphqlapi.Update
 	cfg, err := s.store.UpdateAutomation(
 		input.TaskProgressSyncIntervalSeconds,
 		input.SubscriptionPollIntervalHours,
+		input.StashBoxEndpoints,
 		config.TorrentSelectionConfig{
 			Enabled: input.TorrentSelection.Enabled,
 			Rules:   torrentSelectionConfigRules(input.TorrentSelection.Rules),
@@ -155,10 +156,12 @@ func (s *runtimeSettingsEditor) UpdateAutomationSettings(input graphqlapi.Update
 		return nil, err
 	}
 	logging.Infof(
-		"settings: automation settings saved task_sync_interval=%d subscription_poll_interval_hours=%d",
+		"settings: automation settings saved task_sync_interval=%d subscription_poll_interval_hours=%d selected_endpoints=%d",
 		cfg.Automation.TaskProgressSyncIntervalSeconds,
 		cfg.Automation.SubscriptionPollIntervalHours,
+		len(cfg.Automation.StashBoxEndpoints),
 	)
+	applySubscriptionOrder(cfg, s.subscriptionService)
 	return buildSettingsSnapshot(cfg, s.version), nil
 }
 
@@ -170,19 +173,5 @@ func (s *runtimeSettingsEditor) UpdateSystemSettings(input graphqlapi.UpdateSyst
 		return nil, err
 	}
 	logging.Infof("settings: system settings saved task_delete_policy=%s", cfg.System.EffectiveTaskDeletePolicy())
-	return buildSettingsSnapshot(cfg, s.version), nil
-}
-
-func (s *runtimeSettingsEditor) UpdateSubscriptionSettings(input graphqlapi.UpdateSubscriptionSettingsInput) (*graphqlapi.SettingsSnapshot, error) {
-	cfg, err := s.store.UpdateSubscription(input.StashBoxEndpoints)
-	if err != nil {
-		logging.Errorf("settings: save subscription settings failed: %v", err)
-		return nil, err
-	}
-	logging.Infof(
-		"settings: subscription settings saved selected_endpoints=%d",
-		len(cfg.Subscription.StashBoxEndpoints),
-	)
-	applySubscriptionOrder(cfg, s.subscriptionService)
 	return buildSettingsSnapshot(cfg, s.version), nil
 }

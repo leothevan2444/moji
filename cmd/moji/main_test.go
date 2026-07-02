@@ -95,9 +95,8 @@ func TestHTTPHandlerServesSettingsSnapshot(t *testing.T) {
 			qbittorrent { configured url usernameConfigured passwordConfigured defaultSavePath }
 			stash { configured url apiKeyConfigured }
 			ingest { deliveryMode stashLibraryPath transfer { action mojiSourceRoot mojiTargetRoot } }
-			automation { taskProgressSyncIntervalSeconds subscriptionPollIntervalHours }
+			automation { taskProgressSyncIntervalSeconds subscriptionPollIntervalHours stashBoxEndpoints }
 			system { taskDeletePolicy }
-			subscription { stashBoxEndpoints }
 		}
 		settingsStatus {
 			stash { configured ready }
@@ -125,8 +124,8 @@ func TestHTTPHandlerServesSettingsSnapshot(t *testing.T) {
 	if !resp.Data.SettingsStatus.Automation.SubscriptionPollEnabled {
 		t.Fatalf("unexpected automation status: %+v", resp.Data.SettingsStatus.Automation)
 	}
-	if len(resp.Data.SettingsStatus.Subscription.StashBoxes) != 0 || len(resp.Data.Settings.Subscription.StashBoxEndpoints) != 0 {
-		t.Fatalf("expected empty stash box selection in snapshot, got %+v", resp.Data.Settings.Subscription)
+	if len(resp.Data.SettingsStatus.Subscription.StashBoxes) != 0 || len(resp.Data.Settings.Automation.StashBoxEndpoints) != 0 {
+		t.Fatalf("expected empty stash box selection in snapshot, got %+v", resp.Data.Settings.Automation)
 	}
 	if resp.Data.Version != "test-version" {
 		t.Fatalf("expected app version %q, got %q", "test-version", resp.Data.Version)
@@ -339,8 +338,8 @@ func TestBuildSettingsSnapshotNormalizesDefaults(t *testing.T) {
 	if snapshot.System.TaskDeletePolicy != "KEEP_ONLY" {
 		t.Fatalf("unexpected system snapshot: %+v", snapshot.System)
 	}
-	if len(snapshot.Subscription.StashBoxEndpoints) != 0 {
-		t.Fatalf("expected empty stash box selection in default snapshot, got %+v", snapshot.Subscription)
+	if len(snapshot.Automation.StashBoxEndpoints) != 0 {
+		t.Fatalf("expected empty stash box selection in default snapshot, got %+v", snapshot.Automation)
 	}
 }
 
@@ -403,12 +402,10 @@ type graphQLResponse struct {
 				PasswordConfigured bool   `json:"passwordConfigured"`
 				DefaultSavePath    string `json:"defaultSavePath"`
 			} `json:"qbittorrent"`
-			Subscription struct {
-				StashBoxEndpoints []string `json:"stashBoxEndpoints"`
-			} `json:"subscription"`
 			Automation struct {
-				TaskProgressSyncIntervalSeconds int `json:"taskProgressSyncIntervalSeconds"`
-				SubscriptionPollIntervalHours   int `json:"subscriptionPollIntervalHours"`
+				TaskProgressSyncIntervalSeconds int      `json:"taskProgressSyncIntervalSeconds"`
+				SubscriptionPollIntervalHours   int      `json:"subscriptionPollIntervalHours"`
+				StashBoxEndpoints               []string `json:"stashBoxEndpoints"`
 			} `json:"automation"`
 			System struct {
 				TaskDeletePolicy string `json:"taskDeletePolicy"`

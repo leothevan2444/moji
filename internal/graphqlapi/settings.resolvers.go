@@ -105,6 +105,7 @@ func (r *mutationResolver) UpdateAutomationSettings(ctx context.Context, input m
 	snapshot, err := r.SettingsEditor.UpdateAutomationSettings(UpdateAutomationSettingsInput{
 		TaskProgressSyncIntervalSeconds: input.TaskProgressSyncIntervalSeconds,
 		SubscriptionPollIntervalHours:   input.SubscriptionPollIntervalHours,
+		StashBoxEndpoints:               append([]string(nil), input.StashBoxEndpoints...),
 		TorrentSelection:                torrentSelectionSettingsFromModel(input.TorrentSelection),
 	})
 	if err != nil {
@@ -123,23 +124,6 @@ func (r *mutationResolver) UpdateSystemSettings(ctx context.Context, input model
 
 	snapshot, err := r.SettingsEditor.UpdateSystemSettings(UpdateSystemSettingsInput{
 		TaskDeletePolicy: string(input.TaskDeletePolicy),
-	})
-	if err != nil {
-		return nil, err
-	}
-
-	return settingsSnapshotToModel(snapshot, r.AppVersion), nil
-}
-
-// UpdateSubscriptionSettings is the resolver for the updateSubscriptionSettings field.
-func (r *mutationResolver) UpdateSubscriptionSettings(ctx context.Context, input model.UpdateSubscriptionSettingsInput) (*model.Settings, error) {
-	_ = ctx
-	if r.SettingsEditor == nil {
-		return nil, errors.New("settings editor is not configured")
-	}
-
-	snapshot, err := r.SettingsEditor.UpdateSubscriptionSettings(UpdateSubscriptionSettingsInput{
-		StashBoxEndpoints: append([]string(nil), input.StashBoxEndpoints...),
 	})
 	if err != nil {
 		return nil, err
