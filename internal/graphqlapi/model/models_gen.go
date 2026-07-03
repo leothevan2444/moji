@@ -84,6 +84,16 @@ type DownloadMediaInput struct {
 	Paused     *bool    `json:"paused,omitempty"`
 }
 
+type DownloadsIngestSettings struct {
+	QbRoot   string `json:"qbRoot"`
+	MojiRoot string `json:"mojiRoot"`
+}
+
+type DownloadsIngestSettingsInput struct {
+	QbRoot   string `json:"qbRoot"`
+	MojiRoot string `json:"mojiRoot"`
+}
+
 // Basic service health
 type Health struct {
 	Ok      bool   `json:"ok"`
@@ -99,9 +109,10 @@ type IndexerPreferenceRuleInput struct {
 }
 
 type IngestSettings struct {
-	DeliveryMode     string                  `json:"deliveryMode"`
-	StashLibraryPath string                  `json:"stashLibraryPath"`
-	Transfer         *TransferIngestSettings `json:"transfer"`
+	DeliveryMode string                   `json:"deliveryMode"`
+	Downloads    *DownloadsIngestSettings `json:"downloads"`
+	Library      *LibraryIngestSettings   `json:"library"`
+	Transfer     *TransferIngestSettings  `json:"transfer"`
 }
 
 type IngestStatus struct {
@@ -164,6 +175,16 @@ type JackettStats struct {
 	LastError *string `json:"lastError,omitempty"`
 	// ISO 8601 timestamp of the most recent successful refresh. Null until the first probe completes successfully.
 	OkAt *string `json:"okAt,omitempty"`
+}
+
+type LibraryIngestSettings struct {
+	MojiRoot  string `json:"mojiRoot"`
+	StashRoot string `json:"stashRoot"`
+}
+
+type LibraryIngestSettingsInput struct {
+	MojiRoot  string `json:"mojiRoot"`
+	StashRoot string `json:"stashRoot"`
 }
 
 type LogEntry struct {
@@ -530,15 +551,11 @@ type TorrentSelectionSettingsInput struct {
 }
 
 type TransferIngestSettings struct {
-	Action         string `json:"action"`
-	MojiSourceRoot string `json:"mojiSourceRoot"`
-	MojiTargetRoot string `json:"mojiTargetRoot"`
+	Action string `json:"action"`
 }
 
 type TransferIngestSettingsInput struct {
-	Action         string `json:"action"`
-	MojiSourceRoot string `json:"mojiSourceRoot"`
-	MojiTargetRoot string `json:"mojiTargetRoot"`
+	Action string `json:"action"`
 }
 
 type UpdateAutomationSettingsInput struct {
@@ -549,9 +566,10 @@ type UpdateAutomationSettingsInput struct {
 }
 
 type UpdateIngestSettingsInput struct {
-	DeliveryMode     string                       `json:"deliveryMode"`
-	StashLibraryPath string                       `json:"stashLibraryPath"`
-	Transfer         *TransferIngestSettingsInput `json:"transfer"`
+	DeliveryMode string                        `json:"deliveryMode"`
+	Downloads    *DownloadsIngestSettingsInput `json:"downloads"`
+	Library      *LibraryIngestSettingsInput   `json:"library"`
+	Transfer     *TransferIngestSettingsInput  `json:"transfer"`
 }
 
 type UpdateJackettSettingsInput struct {

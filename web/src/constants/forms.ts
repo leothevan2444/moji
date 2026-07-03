@@ -48,11 +48,16 @@ export const EMPTY_STASH_FORM = {
 
 export const EMPTY_INGEST_FORM = {
   deliveryMode: "PATH_MAP",
-  stashLibraryPath: "",
+  downloads: {
+    qbRoot: "",
+    mojiRoot: ""
+  },
+  library: {
+    mojiRoot: "",
+    stashRoot: ""
+  },
   transfer: {
-    action: "",
-    mojiSourceRoot: "",
-    mojiTargetRoot: ""
+    action: ""
   }
 };
 

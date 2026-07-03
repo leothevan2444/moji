@@ -435,8 +435,13 @@ func TestSettingsQueryReturnsRuntimeSnapshot(t *testing.T) {
 			APIKeyConfigured: true,
 		},
 		Ingest: IngestSettingsSnapshot{
-			DeliveryMode:     "PATH_MAP",
-			StashLibraryPath: "/library",
+			DeliveryMode: "PATH_MAP",
+			Downloads: DownloadsIngestSettingsSnapshot{
+				QBRoot: "/downloads",
+			},
+			Library: LibraryIngestSettingsSnapshot{
+				StashRoot: "/library",
+			},
 		},
 		Jackett: JackettSettingsSnapshot{
 			Configured:       true,
@@ -485,7 +490,7 @@ func TestSettingsQueryReturnsRuntimeSnapshot(t *testing.T) {
 	resp := executeGraphQL(t, resolver, `{
 		settings {
 			stash { configured url apiKeyConfigured }
-			ingest { deliveryMode stashLibraryPath }
+			ingest { deliveryMode downloads { qbRoot } library { stashRoot } }
 			jackett { configured url apiKeyConfigured }
 			qbittorrent { configured url username usernameConfigured passwordConfigured defaultSavePath category tags }
 			automation { taskProgressSyncIntervalSeconds subscriptionPollIntervalHours stashBoxEndpoints torrentSelection { enabled rules { id type direction } } }
@@ -504,7 +509,7 @@ func TestSettingsQueryReturnsRuntimeSnapshot(t *testing.T) {
 	if !resp.Data.Settings.Automation.TorrentSelection.Enabled || len(resp.Data.Settings.Automation.TorrentSelection.Rules) != 1 {
 		t.Fatalf("unexpected automation torrent selection: %+v", resp.Data.Settings.Automation.TorrentSelection)
 	}
-	if resp.Data.Settings.Ingest.StashLibraryPath != "/library" {
+	if resp.Data.Settings.Ingest.Downloads.QBRoot != "/downloads" || resp.Data.Settings.Ingest.Library.StashRoot != "/library" {
 		t.Fatalf("unexpected ingest settings: %+v", resp.Data.Settings.Ingest)
 	}
 	if resp.Data.Settings.Qbittorrent.PasswordConfigured {
@@ -648,12 +653,17 @@ func TestUpdateIngestSettingsMutation(t *testing.T) {
 	editor := &fakeSettingsEditor{
 		updateIngestSnapshot: &SettingsSnapshot{
 			Ingest: IngestSettingsSnapshot{
-				DeliveryMode:     "TRANSFER",
-				StashLibraryPath: "/library",
+				DeliveryMode: "TRANSFER",
+				Downloads: DownloadsIngestSettingsSnapshot{
+					QBRoot:   "/downloads",
+					MojiRoot: "/srv/downloads",
+				},
+				Library: LibraryIngestSettingsSnapshot{
+					MojiRoot:  "/mnt/library",
+					StashRoot: "/library",
+				},
 				Transfer: TransferIngestSettingsSnapshot{
-					Action:         "COPY",
-					MojiSourceRoot: "/downloads",
-					MojiTargetRoot: "/mnt/library",
+					Action: "COPY",
 				},
 			},
 		},
@@ -664,20 +674,25 @@ func TestUpdateIngestSettingsMutation(t *testing.T) {
 	resp := executeGraphQL(t, resolver, `mutation {
 		updateIngestSettings(input: {
 			deliveryMode: "TRANSFER"
-			stashLibraryPath: "/library"
+			downloads: {
+				qbRoot: "/downloads"
+				mojiRoot: "/srv/downloads"
+			}
+			library: {
+				mojiRoot: "/mnt/library"
+				stashRoot: "/library"
+			}
 			transfer: {
 				action: "COPY"
-				mojiSourceRoot: "/downloads"
-				mojiTargetRoot: "/mnt/library"
 			}
 		}) {
-			ingest { deliveryMode stashLibraryPath transfer { action mojiSourceRoot mojiTargetRoot } }
+			ingest { deliveryMode downloads { qbRoot mojiRoot } library { mojiRoot stashRoot } transfer { action } }
 		}
 	}`)
 	if len(resp.Errors) > 0 {
 		t.Fatalf("expected no errors, got %+v", resp.Errors)
 	}
-	if editor.ingestInput.DeliveryMode != "TRANSFER" || editor.ingestInput.Transfer.MojiTargetRoot != "/mnt/library" {
+	if editor.ingestInput.DeliveryMode != "TRANSFER" || editor.ingestInput.Downloads.MojiRoot != "/srv/downloads" || editor.ingestInput.Library.MojiRoot != "/mnt/library" {
 		t.Fatalf("unexpected ingest input: %+v", editor.ingestInput)
 	}
 	if resp.Data.UpdateIngestSettings.Ingest.DeliveryMode != "TRANSFER" {
@@ -946,12 +961,17 @@ type graphQLTaskResponse struct {
 				APIKeyConfigured bool   `json:"apiKeyConfigured"`
 			} `json:"stash"`
 			Ingest struct {
-				DeliveryMode     string `json:"deliveryMode"`
-				StashLibraryPath string `json:"stashLibraryPath"`
-				Transfer         struct {
-					Action         string `json:"action"`
-					MojiSourceRoot string `json:"mojiSourceRoot"`
-					MojiTargetRoot string `json:"mojiTargetRoot"`
+				DeliveryMode string `json:"deliveryMode"`
+				Downloads    struct {
+					QBRoot   string `json:"qbRoot"`
+					MojiRoot string `json:"mojiRoot"`
+				} `json:"downloads"`
+				Library struct {
+					MojiRoot  string `json:"mojiRoot"`
+					StashRoot string `json:"stashRoot"`
+				} `json:"library"`
+				Transfer struct {
+					Action string `json:"action"`
 				} `json:"transfer"`
 			} `json:"ingest"`
 			Jackett struct {
@@ -1026,12 +1046,17 @@ type graphQLTaskResponse struct {
 		} `json:"updateStashSettings"`
 		UpdateIngestSettings struct {
 			Ingest struct {
-				DeliveryMode     string `json:"deliveryMode"`
-				StashLibraryPath string `json:"stashLibraryPath"`
-				Transfer         struct {
-					Action         string `json:"action"`
-					MojiSourceRoot string `json:"mojiSourceRoot"`
-					MojiTargetRoot string `json:"mojiTargetRoot"`
+				DeliveryMode string `json:"deliveryMode"`
+				Downloads    struct {
+					QBRoot   string `json:"qbRoot"`
+					MojiRoot string `json:"mojiRoot"`
+				} `json:"downloads"`
+				Library struct {
+					MojiRoot  string `json:"mojiRoot"`
+					StashRoot string `json:"stashRoot"`
+				} `json:"library"`
+				Transfer struct {
+					Action string `json:"action"`
 				} `json:"transfer"`
 			} `json:"ingest"`
 		} `json:"updateIngestSettings"`

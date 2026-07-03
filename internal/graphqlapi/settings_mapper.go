@@ -46,7 +46,9 @@ func settingsSnapshotToModel(snapshot *SettingsSnapshot, appVersion string) *mod
 		return &model.Settings{
 			Stash: &model.StashSettings{},
 			Ingest: &model.IngestSettings{
-				Transfer: &model.TransferIngestSettings{},
+				Downloads: &model.DownloadsIngestSettings{},
+				Library:   &model.LibraryIngestSettings{},
+				Transfer:  &model.TransferIngestSettings{},
 			},
 			Jackett:     &model.JackettSettings{},
 			Qbittorrent: &model.QBittorrentSettings{},
@@ -63,12 +65,17 @@ func settingsSnapshotToModel(snapshot *SettingsSnapshot, appVersion string) *mod
 			APIKey:           snapshot.Stash.APIKey,
 		},
 		Ingest: &model.IngestSettings{
-			DeliveryMode:     snapshot.Ingest.DeliveryMode,
-			StashLibraryPath: snapshot.Ingest.StashLibraryPath,
+			DeliveryMode: snapshot.Ingest.DeliveryMode,
+			Downloads: &model.DownloadsIngestSettings{
+				QbRoot:   snapshot.Ingest.Downloads.QBRoot,
+				MojiRoot: snapshot.Ingest.Downloads.MojiRoot,
+			},
+			Library: &model.LibraryIngestSettings{
+				MojiRoot:  snapshot.Ingest.Library.MojiRoot,
+				StashRoot: snapshot.Ingest.Library.StashRoot,
+			},
 			Transfer: &model.TransferIngestSettings{
-				Action:         snapshot.Ingest.Transfer.Action,
-				MojiSourceRoot: snapshot.Ingest.Transfer.MojiSourceRoot,
-				MojiTargetRoot: snapshot.Ingest.Transfer.MojiTargetRoot,
+				Action: snapshot.Ingest.Transfer.Action,
 			},
 		},
 		Jackett: &model.JackettSettings{

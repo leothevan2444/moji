@@ -30,7 +30,9 @@ const (
 
 type StashIntegrationPlan struct {
 	DeliveryMode         stashsync.DeliveryMode
-	SourcePath           string
+	QBSourcePath         string
+	RelativePath         string
+	MojiSourcePath       string
 	ResolvedTransferPath string
 	ResolvedScanPath     string
 	TransferAction       stashsync.TransferAction
@@ -102,8 +104,8 @@ func (s *Service) TriggerTaskStashScan(ctx context.Context, id string, scanner S
 
 func (s *Service) executeTaskStashIntegration(ctx context.Context, task *Task, scanner StashScanner) (*Task, error) {
 	cfg := scanner.CurrentConfig()
-	sourcePath := resolveSource(task)
-	plan := planDelivery(task, cfg, sourcePath)
+	qbSourcePath := resolveSource(task)
+	plan := planDelivery(cfg, qbSourcePath)
 	now := s.now().UTC()
 
 	applyStashIntegrationPlan(task, plan, now)
@@ -115,7 +117,7 @@ func (s *Service) executeTaskStashIntegration(ctx context.Context, task *Task, s
 
 	if err := s.executeDelivery(ctx, task, plan, now); err != nil {
 		recordTransferFailure(task, plan, s.now().UTC(), err)
-		logging.Errorf("downloader: delivery failed for task %s source=%s target=%s: %v", task.ID, plan.SourcePath, plan.ResolvedTransferPath, err)
+		logging.Errorf("downloader: delivery failed for task %s qb_source=%s moji_source=%s target=%s: %v", task.ID, plan.QBSourcePath, plan.MojiSourcePath, plan.ResolvedTransferPath, err)
 		return task, fmt.Errorf("trigger stash scan for task %q: %w", task.ID, err)
 	}
 
@@ -143,7 +145,7 @@ func (s *Service) executeDelivery(ctx context.Context, task *Task, plan StashInt
 	}
 	task.StashTransferStatus = StashTransferStatusStarted
 	task.UpdatedAt = now
-	if err := s.fileOps.Transfer(ctx, plan.SourcePath, plan.TransferAction, plan.ResolvedTransferPath); err != nil {
+	if err := s.fileOps.Transfer(ctx, plan.MojiSourcePath, plan.TransferAction, plan.ResolvedTransferPath); err != nil {
 		return err
 	}
 	task.StashTransferStatus = StashTransferStatusCompleted
@@ -158,10 +160,10 @@ func (s *Service) triggerScan(ctx context.Context, scanner StashScanner, plan St
 }
 
 func planTaskStashIntegration(task *Task, cfg stashsync.IntegrationConfig) StashIntegrationPlan {
-	return planDelivery(task, cfg, resolveSource(task))
+	return planDelivery(cfg, resolveSource(task))
 }
 
-func planDelivery(task *Task, cfg stashsync.IntegrationConfig, sourcePath string) StashIntegrationPlan {
+func planDelivery(cfg stashsync.IntegrationConfig, qbSourcePath string) StashIntegrationPlan {
 	deliveryMode := cfg.DeliveryMode
 	if deliveryMode == "" {
 		deliveryMode = stashsync.DeliveryModePathMap
@@ -169,57 +171,45 @@ func planDelivery(task *Task, cfg stashsync.IntegrationConfig, sourcePath string
 
 	plan := StashIntegrationPlan{
 		DeliveryMode:   deliveryMode,
-		SourcePath:     sourcePath,
+		QBSourcePath:   qbSourcePath,
 		TransferAction: cfg.Transfer.Action,
 	}
+	plan.UserHint = pathMappingHint(deliveryMode)
+
+	if plan.QBSourcePath == "" {
+		plan.ValidationError = errors.New("downloader: qB source path is required for stash integration")
+		plan.UserHint = "任务缺少 qB 原始内容路径，无法开始路径映射。"
+		return plan
+	}
+
+	qbRoot := strings.TrimSpace(cfg.Downloads.QBRoot)
+	if qbRoot == "" {
+		plan.ValidationError = errors.New("downloader: qB downloads root is required")
+		plan.UserHint = "请先配置 qB 视角下的下载根目录。"
+		return plan
+	}
+
+	relative, err := relativePathWithin(qbRoot, plan.QBSourcePath)
+	if err != nil {
+		plan.ValidationError = fmt.Errorf("resolve qB relative path failed: %w", err)
+		plan.UserHint = "当前任务的 qB 路径不在已配置的 qB 下载根目录下。"
+		return plan
+	}
+	plan.RelativePath = relative
+
+	scanPath, err := buildMappedPath(cfg.Library.StashRoot, relative, "build Stash scan path failed", "library.stash_root")
+	if err != nil {
+		plan.ValidationError = err
+		plan.UserHint = "请先配置 Stash 视角下的媒体库根目录。"
+		return plan
+	}
+	plan.ResolvedScanPath = scanPath
 
 	switch deliveryMode {
 	case stashsync.DeliveryModePathMap:
-		plan.UserHint = "基于下载任务的实际保存路径，自动换算为 Stash 媒体库中的扫描路径。"
-		if plan.SourcePath == "" {
-			plan.ValidationError = errors.New("downloader: path map delivery requires a completed task content path or save path")
-			plan.UserHint = "路径映射方式需要可用的内容路径或保存路径。"
-			return plan
-		}
-		if task == nil || strings.TrimSpace(task.SavePath) == "" {
-			plan.ValidationError = errors.New("downloader: path map delivery requires a resolved qBittorrent save path")
-			plan.UserHint = "路径映射方式需要任务记录包含 qBittorrent 实际保存目录。"
-			return plan
-		}
-		stashLibraryPath := strings.TrimSpace(cfg.StashLibraryPath)
-		if stashLibraryPath == "" {
-			plan.ValidationError = errors.New("downloader: path map delivery requires a selected stash library path")
-			plan.UserHint = "请先选择目标 Stash 媒体库。"
-			return plan
-		}
-		relative, err := relativePathWithin(task.SavePath, plan.SourcePath)
-		if err != nil {
-			plan.ValidationError = fmt.Errorf("downloader: resolve path map relative path: %w", err)
-			plan.UserHint = "当前下载路径不在任务记录的保存目录下，无法自动换算到 Stash 媒体库。"
-			return plan
-		}
-		plan.ResolvedScanPath = joinRootAndRelative(stashLibraryPath, relative)
+		return plan
 	case stashsync.DeliveryModeTransfer:
 		plan.NeedsTransfer = true
-		plan.UserHint = "由 Moji 交付文件到媒体库，成功后再触发 Stash 扫描。"
-		if plan.SourcePath == "" {
-			plan.ValidationError = errors.New("downloader: transfer delivery requires a completed task content path or save path")
-			plan.UserHint = "文件交付方式需要可用的内容路径或保存路径。"
-			return plan
-		}
-		stashLibraryPath := strings.TrimSpace(cfg.StashLibraryPath)
-		if stashLibraryPath == "" {
-			plan.ValidationError = errors.New("downloader: transfer delivery requires a selected stash library path")
-			plan.UserHint = "请先选择目标 Stash 媒体库。"
-			return plan
-		}
-		sourceRoot := strings.TrimSpace(cfg.Transfer.MojiSourceRoot)
-		targetRoot := strings.TrimSpace(cfg.Transfer.MojiTargetRoot)
-		if sourceRoot == "" || targetRoot == "" {
-			plan.ValidationError = errors.New("downloader: transfer delivery requires moji source and target roots")
-			plan.UserHint = "请先配置 Moji 可访问的下载区目录和媒体库目录。"
-			return plan
-		}
 		if cfg.Transfer.Action != stashsync.TransferActionCopy &&
 			cfg.Transfer.Action != stashsync.TransferActionMove &&
 			cfg.Transfer.Action != stashsync.TransferActionSymlink {
@@ -227,25 +217,50 @@ func planDelivery(task *Task, cfg stashsync.IntegrationConfig, sourcePath string
 			plan.UserHint = "请先选择交付动作：复制、移动或符号链接。"
 			return plan
 		}
-		relative, err := relativePathWithin(sourceRoot, plan.SourcePath)
+
+		mojiSourcePath, err := buildMappedPath(cfg.Downloads.MojiRoot, relative, "build Moji transfer source path failed", "downloads.moji_root")
 		if err != nil {
-			plan.ValidationError = fmt.Errorf("downloader: resolve transfer relative path: %w", err)
-			plan.UserHint = "当前下载路径不在 Moji 可访问的下载区目录下，无法执行文件交付。"
+			plan.ValidationError = err
+			plan.UserHint = "请先配置 Moji 视角下的下载根目录。"
 			return plan
 		}
-		plan.ResolvedTransferPath = joinRootAndRelative(targetRoot, relative)
-		plan.ResolvedScanPath = joinRootAndRelative(stashLibraryPath, relative)
+		plan.MojiSourcePath = mojiSourcePath
+
+		transferPath, err := buildMappedPath(cfg.Library.MojiRoot, relative, "build Moji transfer target path failed", "library.moji_root")
+		if err != nil {
+			plan.ValidationError = err
+			plan.UserHint = "请先配置 Moji 视角下的媒体库根目录。"
+			return plan
+		}
+		plan.ResolvedTransferPath = transferPath
+		return plan
 	default:
 		plan.ValidationError = fmt.Errorf("downloader: unsupported ingest delivery mode %q", deliveryMode)
 		plan.UserHint = "当前入库方式无效，请重新保存设置。"
+		return plan
 	}
+}
 
-	return plan
+func pathMappingHint(mode stashsync.DeliveryMode) string {
+	switch mode {
+	case stashsync.DeliveryModeTransfer:
+		return "Moji 会先基于 qB 下载根路径计算相对路径，再翻译成自己的源路径、交付目标路径和 Stash 扫描路径。"
+	default:
+		return "Moji 会先基于 qB 下载根路径计算相对路径，再翻译成 Stash 扫描路径。"
+	}
+}
+
+func buildMappedPath(root string, relative string, label string, field string) (string, error) {
+	cleanRoot := strings.TrimSpace(root)
+	if cleanRoot == "" {
+		return "", fmt.Errorf("%s: %s is required", label, field)
+	}
+	return joinRootAndRelative(cleanRoot, relative), nil
 }
 
 func applyStashIntegrationPlan(task *Task, plan StashIntegrationPlan, now time.Time) {
 	task.StashMode = string(plan.DeliveryMode)
-	task.StashSourcePath = plan.SourcePath
+	task.StashSourcePath = plan.MojiSourcePath
 	task.StashTransferAction = string(plan.TransferAction)
 	task.StashTransferPath = plan.ResolvedTransferPath
 	task.StashTransferStatus = StashTransferStatusPending

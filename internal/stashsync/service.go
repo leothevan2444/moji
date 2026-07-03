@@ -31,15 +31,24 @@ const (
 )
 
 type IntegrationConfig struct {
-	DeliveryMode     DeliveryMode
-	StashLibraryPath string
-	Transfer         TransferConfig
+	DeliveryMode DeliveryMode
+	Downloads    DownloadsPathConfig
+	Library      LibraryPathConfig
+	Transfer     TransferConfig
+}
+
+type DownloadsPathConfig struct {
+	QBRoot   string
+	MojiRoot string
+}
+
+type LibraryPathConfig struct {
+	MojiRoot  string
+	StashRoot string
 }
 
 type TransferConfig struct {
-	Action         TransferAction
-	MojiSourceRoot string
-	MojiTargetRoot string
+	Action TransferAction
 }
 
 type ScanRequest struct {
@@ -113,9 +122,10 @@ func (s *Service) CurrentConfig() IntegrationConfig {
 		return IntegrationConfig{}
 	}
 	cfg := s.configProvider()
-	cfg.StashLibraryPath = strings.TrimSpace(cfg.StashLibraryPath)
-	cfg.Transfer.MojiSourceRoot = strings.TrimSpace(cfg.Transfer.MojiSourceRoot)
-	cfg.Transfer.MojiTargetRoot = strings.TrimSpace(cfg.Transfer.MojiTargetRoot)
+	cfg.Downloads.QBRoot = strings.TrimSpace(cfg.Downloads.QBRoot)
+	cfg.Downloads.MojiRoot = strings.TrimSpace(cfg.Downloads.MojiRoot)
+	cfg.Library.MojiRoot = strings.TrimSpace(cfg.Library.MojiRoot)
+	cfg.Library.StashRoot = strings.TrimSpace(cfg.Library.StashRoot)
 	return cfg
 }
 

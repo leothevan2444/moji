@@ -19,15 +19,17 @@ function ingestConfigRows(ingest: IngestSettings): Array<{ key: string; value: s
     case "PATH_MAP":
       return [
         { key: "入库方式", value: deliveryModeLabel(ingest.deliveryMode) },
-        { key: "目标媒体库", value: ingest.stashLibraryPath || "—" }
+        { key: "qB 下载根", value: ingest.downloads.qbRoot || "—" },
+        { key: "Stash 媒体库根", value: ingest.library.stashRoot || "—" }
       ];
     case "TRANSFER":
       return [
         { key: "入库方式", value: deliveryModeLabel(ingest.deliveryMode) },
-        { key: "目标媒体库", value: ingest.stashLibraryPath || "—" },
         { key: "交付动作", value: transferActionLabel(ingest.transfer.action) },
-        { key: "Moji 下载区", value: ingest.transfer.mojiSourceRoot || "—" },
-        { key: "Moji 媒体库", value: ingest.transfer.mojiTargetRoot || "—" }
+        { key: "qB 下载根", value: ingest.downloads.qbRoot || "—" },
+        { key: "Moji 下载根", value: ingest.downloads.mojiRoot || "—" },
+        { key: "Moji 媒体库根", value: ingest.library.mojiRoot || "—" },
+        { key: "Stash 媒体库根", value: ingest.library.stashRoot || "—" }
       ];
     default:
       return [{ key: "入库方式", value: "未选择" }];
@@ -37,13 +39,17 @@ function ingestConfigRows(ingest: IngestSettings): Array<{ key: string; value: s
 function missingFields(ingest: IngestSettings): string[] {
   switch (ingest.deliveryMode) {
     case "PATH_MAP":
-      return [!ingest.stashLibraryPath && "目标媒体库"].filter(Boolean) as string[];
+      return [
+        !ingest.downloads.qbRoot && "qB 下载根",
+        !ingest.library.stashRoot && "Stash 媒体库根"
+      ].filter(Boolean) as string[];
     case "TRANSFER":
       return [
-        !ingest.stashLibraryPath && "目标媒体库",
         !ingest.transfer.action && "交付动作",
-        !ingest.transfer.mojiSourceRoot && "Moji 下载区",
-        !ingest.transfer.mojiTargetRoot && "Moji 媒体库"
+        !ingest.downloads.qbRoot && "qB 下载根",
+        !ingest.downloads.mojiRoot && "Moji 下载根",
+        !ingest.library.mojiRoot && "Moji 媒体库根",
+        !ingest.library.stashRoot && "Stash 媒体库根"
       ].filter(Boolean) as string[];
     default:
       return [];
@@ -56,14 +62,10 @@ export function IngestCard({ ingest, ingestStatus, onOpenSettings }: IngestCardP
   const hasMode = Boolean(mode);
   const guide = deliveryModeGuide(mode);
 
-  // 三状态分支：
-  // 1. 未配置：mode 未选或 ingest=null
-  // 2. 已配置未启用：mode 选了但字段不齐
-  // 3. 已启用：所有字段齐全
   let tone: "tone-neutral" | "tone-warn" | "tone-success";
   let label: string;
   let ctaLabel: string | null = null;
-  let ctaTab: SettingsTab = "入库";
+  const ctaTab: SettingsTab = "入库";
 
   if (!ingest || !hasMode) {
     tone = "tone-neutral";
@@ -104,7 +106,7 @@ export function IngestCard({ ingest, ingestStatus, onOpenSettings }: IngestCardP
         <p className="service-card__diagnostics">
           {missingFields(ingest).length > 0
             ? `缺少: ${missingFields(ingest).join("、")}`
-            : "工作方式已选择，但字段未填完整。"}
+            : "工作方式已选择，但路径映射未填完整。"}
         </p>
       ) : null}
 

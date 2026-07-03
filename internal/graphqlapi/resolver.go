@@ -56,9 +56,10 @@ type UpdateStashSettingsInput struct {
 }
 
 type UpdateIngestSettingsInput struct {
-	DeliveryMode     string
-	StashLibraryPath string
-	Transfer         TransferIngestSettingsSnapshot
+	DeliveryMode string
+	Downloads    DownloadsIngestSettingsSnapshot
+	Library      LibraryIngestSettingsSnapshot
+	Transfer     TransferIngestSettingsSnapshot
 }
 
 type UpdateJackettSettingsInput struct {
@@ -104,15 +105,24 @@ type StashSettingsSnapshot struct {
 }
 
 type IngestSettingsSnapshot struct {
-	DeliveryMode     string
-	StashLibraryPath string
-	Transfer         TransferIngestSettingsSnapshot
+	DeliveryMode string
+	Downloads    DownloadsIngestSettingsSnapshot
+	Library      LibraryIngestSettingsSnapshot
+	Transfer     TransferIngestSettingsSnapshot
+}
+
+type DownloadsIngestSettingsSnapshot struct {
+	QBRoot   string
+	MojiRoot string
+}
+
+type LibraryIngestSettingsSnapshot struct {
+	MojiRoot  string
+	StashRoot string
 }
 
 type TransferIngestSettingsSnapshot struct {
-	Action         string
-	MojiSourceRoot string
-	MojiTargetRoot string
+	Action string
 }
 
 type JackettSettingsSnapshot struct {

@@ -362,12 +362,17 @@ func buildSettingsSnapshot(cfg *config.Config, version string) *graphqlapi.Setti
 			APIKey:           cfg.Connection.Stash.APIKey,
 		},
 		Ingest: graphqlapi.IngestSettingsSnapshot{
-			DeliveryMode:     effectiveDeliveryMode(cfg),
-			StashLibraryPath: cfg.Ingest.StashLibraryPath,
+			DeliveryMode: effectiveDeliveryMode(cfg),
+			Downloads: graphqlapi.DownloadsIngestSettingsSnapshot{
+				QBRoot:   cfg.Ingest.Downloads.QBRoot,
+				MojiRoot: cfg.Ingest.Downloads.MojiRoot,
+			},
+			Library: graphqlapi.LibraryIngestSettingsSnapshot{
+				MojiRoot:  cfg.Ingest.Library.MojiRoot,
+				StashRoot: cfg.Ingest.Library.StashRoot,
+			},
 			Transfer: graphqlapi.TransferIngestSettingsSnapshot{
-				Action:         cfg.Ingest.Transfer.Action,
-				MojiSourceRoot: cfg.Ingest.Transfer.MojiSourceRoot,
-				MojiTargetRoot: cfg.Ingest.Transfer.MojiTargetRoot,
+				Action: cfg.Ingest.Transfer.Action,
 			},
 		},
 		Jackett: graphqlapi.JackettSettingsSnapshot{
@@ -629,12 +634,17 @@ func stashIntegrationConfig(cfg *config.Config) stashsync.IntegrationConfig {
 		return stashsync.IntegrationConfig{}
 	}
 	return stashsync.IntegrationConfig{
-		DeliveryMode:     stashsync.DeliveryMode(effectiveDeliveryMode(cfg)),
-		StashLibraryPath: strings.TrimSpace(cfg.Ingest.StashLibraryPath),
+		DeliveryMode: stashsync.DeliveryMode(effectiveDeliveryMode(cfg)),
+		Downloads: stashsync.DownloadsPathConfig{
+			QBRoot:   strings.TrimSpace(cfg.Ingest.Downloads.QBRoot),
+			MojiRoot: strings.TrimSpace(cfg.Ingest.Downloads.MojiRoot),
+		},
+		Library: stashsync.LibraryPathConfig{
+			MojiRoot:  strings.TrimSpace(cfg.Ingest.Library.MojiRoot),
+			StashRoot: strings.TrimSpace(cfg.Ingest.Library.StashRoot),
+		},
 		Transfer: stashsync.TransferConfig{
-			Action:         stashsync.TransferAction(strings.TrimSpace(cfg.Ingest.Transfer.Action)),
-			MojiSourceRoot: strings.TrimSpace(cfg.Ingest.Transfer.MojiSourceRoot),
-			MojiTargetRoot: strings.TrimSpace(cfg.Ingest.Transfer.MojiTargetRoot),
+			Action: stashsync.TransferAction(strings.TrimSpace(cfg.Ingest.Transfer.Action)),
 		},
 	}
 }
@@ -658,15 +668,15 @@ func isIngestConfigured(cfg *config.Config) bool {
 	}
 	switch stashsync.DeliveryMode(effectiveDeliveryMode(cfg)) {
 	case stashsync.DeliveryModePathMap:
-		return strings.TrimSpace(cfg.Ingest.StashLibraryPath) != ""
+		return strings.TrimSpace(cfg.Ingest.Downloads.QBRoot) != "" &&
+			strings.TrimSpace(cfg.Ingest.Library.StashRoot) != ""
 	case stashsync.DeliveryModeTransfer:
 		action := strings.TrimSpace(cfg.Ingest.Transfer.Action)
-		if strings.TrimSpace(cfg.Ingest.StashLibraryPath) == "" {
-			return false
-		}
 		return (action == string(stashsync.TransferActionCopy) || action == string(stashsync.TransferActionMove) || action == string(stashsync.TransferActionSymlink)) &&
-			strings.TrimSpace(cfg.Ingest.Transfer.MojiSourceRoot) != "" &&
-			strings.TrimSpace(cfg.Ingest.Transfer.MojiTargetRoot) != ""
+			strings.TrimSpace(cfg.Ingest.Downloads.QBRoot) != "" &&
+			strings.TrimSpace(cfg.Ingest.Downloads.MojiRoot) != "" &&
+			strings.TrimSpace(cfg.Ingest.Library.MojiRoot) != "" &&
+			strings.TrimSpace(cfg.Ingest.Library.StashRoot) != ""
 	default:
 		return false
 	}

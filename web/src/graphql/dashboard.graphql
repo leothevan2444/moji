@@ -21,11 +21,16 @@ query DashboardDocument {
     }
     ingest {
       deliveryMode
-      stashLibraryPath
+      downloads {
+        qbRoot
+        mojiRoot
+      }
+      library {
+        mojiRoot
+        stashRoot
+      }
       transfer {
         action
-        mojiSourceRoot
-        mojiTargetRoot
       }
     }
     jackett {

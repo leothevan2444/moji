@@ -185,6 +185,7 @@ export function SettingsPanel({
   const [qbittorrentForm, setQBittorrentForm] = useState(EMPTY_QBITTORRENT_FORM);
   const [automationForm, setAutomationForm] = useState(EMPTY_AUTOMATION_FORM);
   const [systemForm, setSystemForm] = useState(EMPTY_SYSTEM_FORM);
+  const [pendingIngestQBRootInitialization, setPendingIngestQBRootInitialization] = useState<string | null>(null);
 
   const toggleSecret = (key: "stashApiKey" | "jackettApiKey" | "jackettPassword" | "qbittorrentPassword") => {
     setVisibleSecrets((current) => ({ ...current, [key]: !current[key] }));
@@ -248,11 +249,16 @@ export function SettingsPanel({
     });
     setIngestForm({
       deliveryMode: runtimeSettings.ingest.deliveryMode || "PATH_MAP",
-      stashLibraryPath: runtimeSettings.ingest.stashLibraryPath || "",
+      downloads: {
+        qbRoot: runtimeSettings.ingest.downloads.qbRoot || "",
+        mojiRoot: runtimeSettings.ingest.downloads.mojiRoot || ""
+      },
+      library: {
+        mojiRoot: runtimeSettings.ingest.library.mojiRoot || "",
+        stashRoot: runtimeSettings.ingest.library.stashRoot || ""
+      },
       transfer: {
-        action: runtimeSettings.ingest.transfer.action || "",
-        mojiSourceRoot: runtimeSettings.ingest.transfer.mojiSourceRoot || "",
-        mojiTargetRoot: runtimeSettings.ingest.transfer.mojiTargetRoot || ""
+        action: runtimeSettings.ingest.transfer.action || ""
       }
     });
     setJackettForm({
@@ -295,16 +301,20 @@ export function SettingsPanel({
     await refreshDashboard({ requestPolicy: "network-only" });
   };
 
-  const saveIngestSettings = async (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
+  const submitIngestSettings = async (qbRoot: string) => {
     const result = await updateIngestSettings({
       input: {
         deliveryMode: ingestForm.deliveryMode.trim(),
-        stashLibraryPath: ingestForm.stashLibraryPath.trim(),
+        downloads: {
+          qbRoot,
+          mojiRoot: ingestForm.downloads.mojiRoot.trim()
+        },
+        library: {
+          mojiRoot: ingestForm.library.mojiRoot.trim(),
+          stashRoot: ingestForm.library.stashRoot.trim()
+        },
         transfer: {
-          action: ingestForm.transfer.action.trim(),
-          mojiSourceRoot: ingestForm.transfer.mojiSourceRoot.trim(),
-          mojiTargetRoot: ingestForm.transfer.mojiTargetRoot.trim()
+          action: ingestForm.transfer.action.trim()
         }
       }
     });
@@ -314,6 +324,18 @@ export function SettingsPanel({
     }
     pushToast("tone-success", "入库设置已保存。");
     await refreshDashboard({ requestPolicy: "network-only" });
+  };
+
+  const saveIngestSettings = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const qbRoot = ingestForm.downloads.qbRoot.trim();
+    const defaultSavePath = qbittorrentForm.defaultSavePath.trim();
+    if (qbRoot == "" && defaultSavePath !== "") {
+      setPendingIngestQBRootInitialization(defaultSavePath);
+      return;
+    }
+
+    await submitIngestSettings(qbRoot);
   };
 
   const saveJackettSettings = async (event: FormEvent<HTMLFormElement>) => {
@@ -843,13 +865,15 @@ export function SettingsPanel({
   if (settingsTab === "入库") {
     const stashLibraries = runtimeStatus.stashLibraries ?? [];
     const stashLibrariesLoadError = runtimeStatus.stashLibrariesLoadError ?? null;
+    const qbDefaultSavePath = qbittorrentForm.defaultSavePath.trim();
     const deliveryModeInfo = ingestForm.deliveryMode === "PATH_MAP"
-      ? "适用于 qBittorrent 和 Stash 共享同一份底层存储，但容器挂载路径可以不同。Moji 不搬运文件，只会根据任务保存目录和内容路径自动换算出 Stash 侧扫描路径。"
-      : "适用于下载区和媒体库分离的场景。Moji 需要同时访问下载区和媒体库目录，先执行文件交付，再把相对路径换算到所选 Stash 媒体库下触发扫描。";
-    const stashLibraryInfo = "这里选择的是 Stash 已配置的媒体库根路径。无论使用 PATH_MAP 还是 TRANSFER，Moji 最终都会把相对路径拼到这个库路径下，并通知 Stash 扫描。";
+      ? "Moji 只把任务里的 qB 下载路径翻译成 Stash 扫描路径，不直接搬运文件。"
+      : "Moji 先把 qB 下载路径翻译成自己的可操作源路径，再交付到媒体库，并把同一相对路径翻译成 Stash 扫描路径。";
+    const qbRootInfo = "填写 qBittorrent 视角下的下载根目录。任务里的 ContentPath / SavePath 会先基于这个根路径计算相对路径。";
+    const mojiDownloadsRootInfo = "填写 Moji 视角下的下载根目录。TRANSFER 模式会把上一步得到的相对路径拼到这里，得到 Moji 实际读取的源路径。";
+    const mojiLibraryRootInfo = "填写 Moji 视角下的媒体库根目录。TRANSFER 模式会把相对路径拼到这里，得到 Moji 实际写入的交付目标。";
+    const stashLibraryInfo = "填写 Stash 视角下的媒体库根目录。无论使用 PATH_MAP 还是 TRANSFER，Moji 最终都会把相对路径拼到这里并通知 Stash 扫描。";
     const transferActionInfo = "COPY 会保留下载区原文件，MOVE 会把文件迁移进媒体库，SYMLINK 会在媒体库里创建指向源文件的符号链接。目标已存在同名文件或链接时会直接失败。";
-    const mojiSourceRootInfo = "填写 Moji 自己能访问到的下载区根目录。源文件必须位于这个目录之下，Moji 会以它为基准保留相对目录层级。";
-    const mojiTargetRootInfo = "填写 Moji 自己能写入的媒体库根目录。Moji 会把源文件相对下载区的层级结构复制、移动或链接到这里，再映射到上面选择的 Stash 媒体库路径。";
 
     return (
       <article className="drawer-card">
@@ -871,19 +895,47 @@ export function SettingsPanel({
             </select>
           </label>
           <label className="settings-field">
-            <FieldLabel text="目标媒体库" info={stashLibraryInfo} />
+            <FieldLabel text="qB 下载根目录" info={qbRootInfo} />
+            <div className="secret-input">
+              <input
+                className="secret-input__field"
+                value={ingestForm.downloads.qbRoot}
+                onChange={(event) => setIngestForm((current) => ({
+                  ...current,
+                  downloads: { ...current.downloads, qbRoot: event.target.value }
+                }))}
+                placeholder="/downloads"
+              />
+              <button
+                type="button"
+                className="secret-input__toggle"
+                disabled={qbDefaultSavePath === ""}
+                onClick={() => setIngestForm((current) => ({
+                  ...current,
+                  downloads: { ...current.downloads, qbRoot: qbDefaultSavePath }
+                }))}
+                aria-label="使用 qB 默认下载目录"
+                title={qbDefaultSavePath === "" ? "当前未配置 qB 默认下载目录" : `使用 ${qbDefaultSavePath} 初始化 qB 下载根目录`}
+              >
+                <FontAwesomeIcon icon={faRotate} aria-hidden="true" />
+              </button>
+            </div>
+          </label>
+          <label className="settings-field">
+            <FieldLabel text="Stash 媒体库根目录" info={stashLibraryInfo} />
             <select
-              value={ingestForm.stashLibraryPath}
+              value={ingestForm.library.stashRoot}
               onChange={(event) => setIngestForm((current) => ({
                 ...current,
-                stashLibraryPath: event.target.value
+                library: { ...current.library, stashRoot: event.target.value }
               }))}
             >
-              <option value="">请选择 Stash 媒体库</option>
+              <option value="" disabled hidden>{stashLibraries.length > 0 ? "请选择 Stash 媒体库根目录" : "暂无可用媒体库路径"}</option>
+              {ingestForm.library.stashRoot !== "" && !stashLibraries.some((library) => library.path === ingestForm.library.stashRoot) ? (
+                <option value={ingestForm.library.stashRoot}>{ingestForm.library.stashRoot}</option>
+              ) : null}
               {stashLibraries.map((library) => (
-                <option key={library.path} value={library.path}>
-                  {library.path}
-                </option>
+                <option key={library.path} value={library.path}>{library.path}</option>
               ))}
             </select>
           </label>
@@ -910,25 +962,25 @@ export function SettingsPanel({
                 </select>
               </label>
               <label className="settings-field">
-                <FieldLabel text="Moji 下载区目录" info={mojiSourceRootInfo} />
+                <FieldLabel text="Moji 下载根目录" info={mojiDownloadsRootInfo} />
                 <input
-                  value={ingestForm.transfer.mojiSourceRoot}
+                  value={ingestForm.downloads.mojiRoot}
                   onChange={(event) => setIngestForm((current) => ({
                     ...current,
-                    transfer: { ...current.transfer, mojiSourceRoot: event.target.value }
+                    downloads: { ...current.downloads, mojiRoot: event.target.value }
                   }))}
-                  placeholder="/downloads"
+                  placeholder="/srv/downloads"
                 />
               </label>
               <label className="settings-field">
-                <FieldLabel text="Moji 媒体库目录" info={mojiTargetRootInfo} />
+                <FieldLabel text="Moji 媒体库根目录" info={mojiLibraryRootInfo} />
                 <input
-                  value={ingestForm.transfer.mojiTargetRoot}
+                  value={ingestForm.library.mojiRoot}
                   onChange={(event) => setIngestForm((current) => ({
                     ...current,
-                    transfer: { ...current.transfer, mojiTargetRoot: event.target.value }
+                    library: { ...current.library, mojiRoot: event.target.value }
                   }))}
-                  placeholder="/mnt/media-library"
+                  placeholder="/srv/media-library"
                 />
               </label>
             </>
@@ -938,6 +990,69 @@ export function SettingsPanel({
             <button type="submit" disabled={updatingIngest}>保存入库设置</button>
           </div>
         </form>
+
+        {pendingIngestQBRootInitialization ? (
+          <div className="drawer-scrim drawer-scrim--modal" onClick={() => setPendingIngestQBRootInitialization(null)}>
+            <aside className="drawer drawer--modal" onClick={(event) => event.stopPropagation()}>
+              <div className="drawer__head">
+                <div>
+                  <h2>初始化 qB 下载根目录</h2>
+                </div>
+                <button
+                  type="button"
+                  className="ghost-button"
+                  onClick={() => setPendingIngestQBRootInitialization(null)}
+                  disabled={updatingIngest}
+                >
+                  关闭
+                </button>
+              </div>
+              <div className="drawer-body">
+                <div className="drawer-stack">
+                  <article className="drawer-card">
+                    <div className="drawer-card__head">
+                      <div>
+                        <h3>qB 下载根目录当前为空</h3>
+                        <p>是否使用 qB 默认下载目录 {pendingIngestQBRootInitialization} 初始化？</p>
+                      </div>
+                    </div>
+                    <div className="settings-actions">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setIngestForm((current) => ({
+                            ...current,
+                            downloads: { ...current.downloads, qbRoot: pendingIngestQBRootInitialization }
+                          }));
+                          void (async () => {
+                            await submitIngestSettings(pendingIngestQBRootInitialization);
+                            setPendingIngestQBRootInitialization(null);
+                          })();
+                        }}
+                        disabled={updatingIngest}
+                      >
+                        {updatingIngest ? "保存中..." : "使用默认目录并保存"}
+                      </button>
+                      <button
+                        type="button"
+                        className="ghost-button"
+                        onClick={() => {
+                          void (async () => {
+                            await submitIngestSettings("");
+                            setPendingIngestQBRootInitialization(null);
+                          })();
+                        }}
+                        disabled={updatingIngest}
+                      >
+                        保持为空并保存
+                      </button>
+                    </div>
+                  </article>
+                </div>
+              </div>
+            </aside>
+          </div>
+        ) : null}
       </article>
     );
   }

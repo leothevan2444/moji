@@ -137,14 +137,23 @@ type StashSettings {
 
 type IngestSettings {
   deliveryMode: String!
-  stashLibraryPath: String!
+  downloads: DownloadsIngestSettings!
+  library: LibraryIngestSettings!
   transfer: TransferIngestSettings!
+}
+
+type DownloadsIngestSettings {
+  qbRoot: String!
+  mojiRoot: String!
+}
+
+type LibraryIngestSettings {
+  mojiRoot: String!
+  stashRoot: String!
 }
 
 type TransferIngestSettings {
   action: String!
-  mojiSourceRoot: String!
-  mojiTargetRoot: String!
 }
 
 type StashLibrary {
@@ -282,14 +291,23 @@ input UpdateStashSettingsInput {
 
 input UpdateIngestSettingsInput {
   deliveryMode: String!
-  stashLibraryPath: String!
+  downloads: DownloadsIngestSettingsInput!
+  library: LibraryIngestSettingsInput!
   transfer: TransferIngestSettingsInput!
+}
+
+input DownloadsIngestSettingsInput {
+  qbRoot: String!
+  mojiRoot: String!
+}
+
+input LibraryIngestSettingsInput {
+  mojiRoot: String!
+  stashRoot: String!
 }
 
 input TransferIngestSettingsInput {
   action: String!
-  mojiSourceRoot: String!
-  mojiTargetRoot: String!
 }
 
 input UpdateJackettSettingsInput {

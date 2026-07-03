@@ -80,14 +80,16 @@ func (s *Store) UpdateStash(url, apiKey string) (*Config, error) {
 
 func (s *Store) UpdateIngest(
 	deliveryMode string,
-	stashLibraryPath string,
+	downloads DownloadsIngestConfig,
+	library LibraryIngestConfig,
 	transfer TransferIngestConfig,
 ) (*Config, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
 	s.cfg.Ingest.DeliveryMode = deliveryMode
-	s.cfg.Ingest.StashLibraryPath = stashLibraryPath
+	s.cfg.Ingest.Downloads = downloads
+	s.cfg.Ingest.Library = library
 	s.cfg.Ingest.Transfer = transfer
 
 	if err := s.updateConfigNode(); err != nil {
@@ -175,13 +177,18 @@ func (s *Store) updateConfigNode() error {
 		"api_key": s.cfg.Connection.Stash.APIKey,
 	})
 	setMapString(top, "ingest", map[string]string{
-		"delivery_mode":      s.cfg.Ingest.DeliveryMode,
-		"stash_library_path": s.cfg.Ingest.StashLibraryPath,
+		"delivery_mode": s.cfg.Ingest.DeliveryMode,
+	})
+	setMapString(mapValue(top, "ingest"), "downloads", map[string]string{
+		"qb_root":   s.cfg.Ingest.Downloads.QBRoot,
+		"moji_root": s.cfg.Ingest.Downloads.MojiRoot,
+	})
+	setMapString(mapValue(top, "ingest"), "library", map[string]string{
+		"moji_root":  s.cfg.Ingest.Library.MojiRoot,
+		"stash_root": s.cfg.Ingest.Library.StashRoot,
 	})
 	setMapString(mapValue(top, "ingest"), "transfer", map[string]string{
-		"action":           s.cfg.Ingest.Transfer.Action,
-		"moji_source_root": s.cfg.Ingest.Transfer.MojiSourceRoot,
-		"moji_target_root": s.cfg.Ingest.Transfer.MojiTargetRoot,
+		"action": s.cfg.Ingest.Transfer.Action,
 	})
 	setMapString(connection, "qbittorrent", map[string]string{
 		"url":               s.cfg.Connection.QBittorrent.URL,
@@ -221,13 +228,17 @@ func (s *Store) updateConfigNode() error {
 		deleteMapKey(ingest, "library_scan")
 		deleteMapKey(ingest, "scan_scope")
 		deleteMapKey(ingest, "path_map")
+		deleteMapKey(ingest, "stash_library_path")
 		deleteMapKey(ingest, "library_path")
-		deleteMapKey(ingest, "library")
 		deleteMapKey(ingest, "qbittorrent_path_prefix")
 		deleteMapKey(ingest, "stash_path_prefix")
 		deleteMapKey(ingest, "transfer_action")
 		deleteMapKey(ingest, "transfer_target_path")
 		deleteMapKey(ingest, "target_path")
+		if transfer := existingMapValue(ingest, "transfer"); transfer != nil {
+			deleteMapKey(transfer, "moji_source_root")
+			deleteMapKey(transfer, "moji_target_root")
+		}
 	}
 
 	data, err := yaml.Marshal(&s.root)

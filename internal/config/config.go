@@ -155,15 +155,24 @@ type AutomationConfig struct {
 }
 
 type IngestConfig struct {
-	DeliveryMode     string               `yaml:"delivery_mode"`
-	StashLibraryPath string               `yaml:"stash_library_path"`
-	Transfer         TransferIngestConfig `yaml:"transfer"`
+	DeliveryMode string                `yaml:"delivery_mode"`
+	Downloads    DownloadsIngestConfig `yaml:"downloads"`
+	Library      LibraryIngestConfig   `yaml:"library"`
+	Transfer     TransferIngestConfig  `yaml:"transfer"`
+}
+
+type DownloadsIngestConfig struct {
+	QBRoot   string `yaml:"qb_root"`
+	MojiRoot string `yaml:"moji_root"`
+}
+
+type LibraryIngestConfig struct {
+	MojiRoot  string `yaml:"moji_root"`
+	StashRoot string `yaml:"stash_root"`
 }
 
 type TransferIngestConfig struct {
-	Action         string `yaml:"action"`
-	MojiSourceRoot string `yaml:"moji_source_root"`
-	MojiTargetRoot string `yaml:"moji_target_root"`
+	Action string `yaml:"action"`
 }
 
 type LoggingConfig struct {

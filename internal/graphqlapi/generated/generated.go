@@ -103,6 +103,11 @@ type ComplexityRoot struct {
 		Tracker   func(childComplexity int) int
 	}
 
+	DownloadsIngestSettings struct {
+		MojiRoot func(childComplexity int) int
+		QbRoot   func(childComplexity int) int
+	}
+
 	Health struct {
 		Message func(childComplexity int) int
 		Ok      func(childComplexity int) int
@@ -113,9 +118,10 @@ type ComplexityRoot struct {
 	}
 
 	IngestSettings struct {
-		DeliveryMode     func(childComplexity int) int
-		StashLibraryPath func(childComplexity int) int
-		Transfer         func(childComplexity int) int
+		DeliveryMode func(childComplexity int) int
+		Downloads    func(childComplexity int) int
+		Library      func(childComplexity int) int
+		Transfer     func(childComplexity int) int
 	}
 
 	IngestStatus struct {
@@ -159,6 +165,11 @@ type ComplexityRoot struct {
 		LastIndexerLatencyMs   func(childComplexity int) int
 		LastIndexerSearchAt    func(childComplexity int) int
 		OkAt                   func(childComplexity int) int
+	}
+
+	LibraryIngestSettings struct {
+		MojiRoot  func(childComplexity int) int
+		StashRoot func(childComplexity int) int
 	}
 
 	LogEntry struct {
@@ -482,9 +493,7 @@ type ComplexityRoot struct {
 	}
 
 	TransferIngestSettings struct {
-		Action         func(childComplexity int) int
-		MojiSourceRoot func(childComplexity int) int
-		MojiTargetRoot func(childComplexity int) int
+		Action func(childComplexity int) int
 	}
 }
 
@@ -822,6 +831,20 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.DownloadCandidate.Tracker(childComplexity), true
 
+	case "DownloadsIngestSettings.mojiRoot":
+		if e.complexity.DownloadsIngestSettings.MojiRoot == nil {
+			break
+		}
+
+		return e.complexity.DownloadsIngestSettings.MojiRoot(childComplexity), true
+
+	case "DownloadsIngestSettings.qbRoot":
+		if e.complexity.DownloadsIngestSettings.QbRoot == nil {
+			break
+		}
+
+		return e.complexity.DownloadsIngestSettings.QbRoot(childComplexity), true
+
 	case "Health.message":
 		if e.complexity.Health.Message == nil {
 			break
@@ -850,12 +873,19 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.IngestSettings.DeliveryMode(childComplexity), true
 
-	case "IngestSettings.stashLibraryPath":
-		if e.complexity.IngestSettings.StashLibraryPath == nil {
+	case "IngestSettings.downloads":
+		if e.complexity.IngestSettings.Downloads == nil {
 			break
 		}
 
-		return e.complexity.IngestSettings.StashLibraryPath(childComplexity), true
+		return e.complexity.IngestSettings.Downloads(childComplexity), true
+
+	case "IngestSettings.library":
+		if e.complexity.IngestSettings.Library == nil {
+			break
+		}
+
+		return e.complexity.IngestSettings.Library(childComplexity), true
 
 	case "IngestSettings.transfer":
 		if e.complexity.IngestSettings.Transfer == nil {
@@ -1059,6 +1089,20 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.JackettStats.OkAt(childComplexity), true
+
+	case "LibraryIngestSettings.mojiRoot":
+		if e.complexity.LibraryIngestSettings.MojiRoot == nil {
+			break
+		}
+
+		return e.complexity.LibraryIngestSettings.MojiRoot(childComplexity), true
+
+	case "LibraryIngestSettings.stashRoot":
+		if e.complexity.LibraryIngestSettings.StashRoot == nil {
+			break
+		}
+
+		return e.complexity.LibraryIngestSettings.StashRoot(childComplexity), true
 
 	case "LogEntry.level":
 		if e.complexity.LogEntry.Level == nil {
@@ -2802,20 +2846,6 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.TransferIngestSettings.Action(childComplexity), true
 
-	case "TransferIngestSettings.mojiSourceRoot":
-		if e.complexity.TransferIngestSettings.MojiSourceRoot == nil {
-			break
-		}
-
-		return e.complexity.TransferIngestSettings.MojiSourceRoot(childComplexity), true
-
-	case "TransferIngestSettings.mojiTargetRoot":
-		if e.complexity.TransferIngestSettings.MojiTargetRoot == nil {
-			break
-		}
-
-		return e.complexity.TransferIngestSettings.MojiTargetRoot(childComplexity), true
-
 	}
 	return 0, false
 }
@@ -2826,8 +2856,10 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 	inputUnmarshalMap := graphql.BuildUnmarshalerMap(
 		ec.unmarshalInputDiscoverScenesInput,
 		ec.unmarshalInputDownloadMediaInput,
+		ec.unmarshalInputDownloadsIngestSettingsInput,
 		ec.unmarshalInputIndexerPreferenceRuleInput,
 		ec.unmarshalInputJackettSearchInput,
+		ec.unmarshalInputLibraryIngestSettingsInput,
 		ec.unmarshalInputQBittorrentAddInput,
 		ec.unmarshalInputQueueDiscoveredSceneInput,
 		ec.unmarshalInputStashMetadataScanInput,
@@ -3209,14 +3241,23 @@ type StashSettings {
 
 type IngestSettings {
   deliveryMode: String!
-  stashLibraryPath: String!
+  downloads: DownloadsIngestSettings!
+  library: LibraryIngestSettings!
   transfer: TransferIngestSettings!
+}
+
+type DownloadsIngestSettings {
+  qbRoot: String!
+  mojiRoot: String!
+}
+
+type LibraryIngestSettings {
+  mojiRoot: String!
+  stashRoot: String!
 }
 
 type TransferIngestSettings {
   action: String!
-  mojiSourceRoot: String!
-  mojiTargetRoot: String!
 }
 
 type StashLibrary {
@@ -3354,14 +3395,23 @@ input UpdateStashSettingsInput {
 
 input UpdateIngestSettingsInput {
   deliveryMode: String!
-  stashLibraryPath: String!
+  downloads: DownloadsIngestSettingsInput!
+  library: LibraryIngestSettingsInput!
   transfer: TransferIngestSettingsInput!
+}
+
+input DownloadsIngestSettingsInput {
+  qbRoot: String!
+  mojiRoot: String!
+}
+
+input LibraryIngestSettingsInput {
+  mojiRoot: String!
+  stashRoot: String!
 }
 
 input TransferIngestSettingsInput {
   action: String!
-  mojiSourceRoot: String!
-  mojiTargetRoot: String!
 }
 
 input UpdateJackettSettingsInput {
@@ -6426,6 +6476,94 @@ func (ec *executionContext) fieldContext_DownloadCandidate_peers(_ context.Conte
 	return fc, nil
 }
 
+func (ec *executionContext) _DownloadsIngestSettings_qbRoot(ctx context.Context, field graphql.CollectedField, obj *model.DownloadsIngestSettings) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_DownloadsIngestSettings_qbRoot(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.QbRoot, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_DownloadsIngestSettings_qbRoot(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "DownloadsIngestSettings",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _DownloadsIngestSettings_mojiRoot(ctx context.Context, field graphql.CollectedField, obj *model.DownloadsIngestSettings) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_DownloadsIngestSettings_mojiRoot(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.MojiRoot, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_DownloadsIngestSettings_mojiRoot(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "DownloadsIngestSettings",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _Health_ok(ctx context.Context, field graphql.CollectedField, obj *model.Health) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_Health_ok(ctx, field)
 	if err != nil {
@@ -6602,8 +6740,8 @@ func (ec *executionContext) fieldContext_IngestSettings_deliveryMode(_ context.C
 	return fc, nil
 }
 
-func (ec *executionContext) _IngestSettings_stashLibraryPath(ctx context.Context, field graphql.CollectedField, obj *model.IngestSettings) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_IngestSettings_stashLibraryPath(ctx, field)
+func (ec *executionContext) _IngestSettings_downloads(ctx context.Context, field graphql.CollectedField, obj *model.IngestSettings) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_IngestSettings_downloads(ctx, field)
 	if err != nil {
 		return graphql.Null
 	}
@@ -6616,7 +6754,7 @@ func (ec *executionContext) _IngestSettings_stashLibraryPath(ctx context.Context
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
 		ctx = rctx // use context from middleware stack in children
-		return obj.StashLibraryPath, nil
+		return obj.Downloads, nil
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -6628,19 +6766,75 @@ func (ec *executionContext) _IngestSettings_stashLibraryPath(ctx context.Context
 		}
 		return graphql.Null
 	}
-	res := resTmp.(string)
+	res := resTmp.(*model.DownloadsIngestSettings)
 	fc.Result = res
-	return ec.marshalNString2string(ctx, field.Selections, res)
+	return ec.marshalNDownloadsIngestSettings2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐDownloadsIngestSettings(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_IngestSettings_stashLibraryPath(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_IngestSettings_downloads(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "IngestSettings",
 		Field:      field,
 		IsMethod:   false,
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type String does not have child fields")
+			switch field.Name {
+			case "qbRoot":
+				return ec.fieldContext_DownloadsIngestSettings_qbRoot(ctx, field)
+			case "mojiRoot":
+				return ec.fieldContext_DownloadsIngestSettings_mojiRoot(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type DownloadsIngestSettings", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _IngestSettings_library(ctx context.Context, field graphql.CollectedField, obj *model.IngestSettings) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_IngestSettings_library(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Library, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*model.LibraryIngestSettings)
+	fc.Result = res
+	return ec.marshalNLibraryIngestSettings2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐLibraryIngestSettings(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_IngestSettings_library(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "IngestSettings",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "mojiRoot":
+				return ec.fieldContext_LibraryIngestSettings_mojiRoot(ctx, field)
+			case "stashRoot":
+				return ec.fieldContext_LibraryIngestSettings_stashRoot(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type LibraryIngestSettings", field.Name)
 		},
 	}
 	return fc, nil
@@ -6687,10 +6881,6 @@ func (ec *executionContext) fieldContext_IngestSettings_transfer(_ context.Conte
 			switch field.Name {
 			case "action":
 				return ec.fieldContext_TransferIngestSettings_action(ctx, field)
-			case "mojiSourceRoot":
-				return ec.fieldContext_TransferIngestSettings_mojiSourceRoot(ctx, field)
-			case "mojiTargetRoot":
-				return ec.fieldContext_TransferIngestSettings_mojiTargetRoot(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type TransferIngestSettings", field.Name)
 		},
@@ -7908,6 +8098,94 @@ func (ec *executionContext) _JackettStats_okAt(ctx context.Context, field graphq
 func (ec *executionContext) fieldContext_JackettStats_okAt(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "JackettStats",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _LibraryIngestSettings_mojiRoot(ctx context.Context, field graphql.CollectedField, obj *model.LibraryIngestSettings) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_LibraryIngestSettings_mojiRoot(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.MojiRoot, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_LibraryIngestSettings_mojiRoot(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "LibraryIngestSettings",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _LibraryIngestSettings_stashRoot(ctx context.Context, field graphql.CollectedField, obj *model.LibraryIngestSettings) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_LibraryIngestSettings_stashRoot(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.StashRoot, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_LibraryIngestSettings_stashRoot(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "LibraryIngestSettings",
 		Field:      field,
 		IsMethod:   false,
 		IsResolver: false,
@@ -12551,8 +12829,10 @@ func (ec *executionContext) fieldContext_Settings_ingest(_ context.Context, fiel
 			switch field.Name {
 			case "deliveryMode":
 				return ec.fieldContext_IngestSettings_deliveryMode(ctx, field)
-			case "stashLibraryPath":
-				return ec.fieldContext_IngestSettings_stashLibraryPath(ctx, field)
+			case "downloads":
+				return ec.fieldContext_IngestSettings_downloads(ctx, field)
+			case "library":
+				return ec.fieldContext_IngestSettings_library(ctx, field)
 			case "transfer":
 				return ec.fieldContext_IngestSettings_transfer(ctx, field)
 			}
@@ -19627,94 +19907,6 @@ func (ec *executionContext) fieldContext_TransferIngestSettings_action(_ context
 	return fc, nil
 }
 
-func (ec *executionContext) _TransferIngestSettings_mojiSourceRoot(ctx context.Context, field graphql.CollectedField, obj *model.TransferIngestSettings) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_TransferIngestSettings_mojiSourceRoot(ctx, field)
-	if err != nil {
-		return graphql.Null
-	}
-	ctx = graphql.WithFieldContext(ctx, fc)
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.MojiSourceRoot, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(string)
-	fc.Result = res
-	return ec.marshalNString2string(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) fieldContext_TransferIngestSettings_mojiSourceRoot(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "TransferIngestSettings",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type String does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _TransferIngestSettings_mojiTargetRoot(ctx context.Context, field graphql.CollectedField, obj *model.TransferIngestSettings) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_TransferIngestSettings_mojiTargetRoot(ctx, field)
-	if err != nil {
-		return graphql.Null
-	}
-	ctx = graphql.WithFieldContext(ctx, fc)
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.MojiTargetRoot, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(string)
-	fc.Result = res
-	return ec.marshalNString2string(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) fieldContext_TransferIngestSettings_mojiTargetRoot(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "TransferIngestSettings",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type String does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
 func (ec *executionContext) ___Directive_name(ctx context.Context, field graphql.CollectedField, obj *introspection.Directive) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext___Directive_name(ctx, field)
 	if err != nil {
@@ -21790,6 +21982,40 @@ func (ec *executionContext) unmarshalInputDownloadMediaInput(ctx context.Context
 	return it, nil
 }
 
+func (ec *executionContext) unmarshalInputDownloadsIngestSettingsInput(ctx context.Context, obj any) (model.DownloadsIngestSettingsInput, error) {
+	var it model.DownloadsIngestSettingsInput
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"qbRoot", "mojiRoot"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "qbRoot":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("qbRoot"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.QbRoot = data
+		case "mojiRoot":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("mojiRoot"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.MojiRoot = data
+		}
+	}
+
+	return it, nil
+}
+
 func (ec *executionContext) unmarshalInputIndexerPreferenceRuleInput(ctx context.Context, obj any) (model.IndexerPreferenceRuleInput, error) {
 	var it model.IndexerPreferenceRuleInput
 	asMap := map[string]any{}
@@ -21870,6 +22096,40 @@ func (ec *executionContext) unmarshalInputJackettSearchInput(ctx context.Context
 				return it, err
 			}
 			it.SortBy = data
+		}
+	}
+
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputLibraryIngestSettingsInput(ctx context.Context, obj any) (model.LibraryIngestSettingsInput, error) {
+	var it model.LibraryIngestSettingsInput
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"mojiRoot", "stashRoot"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "mojiRoot":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("mojiRoot"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.MojiRoot = data
+		case "stashRoot":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("stashRoot"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.StashRoot = data
 		}
 	}
 
@@ -22287,7 +22547,7 @@ func (ec *executionContext) unmarshalInputTransferIngestSettingsInput(ctx contex
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"action", "mojiSourceRoot", "mojiTargetRoot"}
+	fieldsInOrder := [...]string{"action"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -22301,20 +22561,6 @@ func (ec *executionContext) unmarshalInputTransferIngestSettingsInput(ctx contex
 				return it, err
 			}
 			it.Action = data
-		case "mojiSourceRoot":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("mojiSourceRoot"))
-			data, err := ec.unmarshalNString2string(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.MojiSourceRoot = data
-		case "mojiTargetRoot":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("mojiTargetRoot"))
-			data, err := ec.unmarshalNString2string(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.MojiTargetRoot = data
 		}
 	}
 
@@ -22376,7 +22622,7 @@ func (ec *executionContext) unmarshalInputUpdateIngestSettingsInput(ctx context.
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"deliveryMode", "stashLibraryPath", "transfer"}
+	fieldsInOrder := [...]string{"deliveryMode", "downloads", "library", "transfer"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -22390,13 +22636,20 @@ func (ec *executionContext) unmarshalInputUpdateIngestSettingsInput(ctx context.
 				return it, err
 			}
 			it.DeliveryMode = data
-		case "stashLibraryPath":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("stashLibraryPath"))
-			data, err := ec.unmarshalNString2string(ctx, v)
+		case "downloads":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("downloads"))
+			data, err := ec.unmarshalNDownloadsIngestSettingsInput2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐDownloadsIngestSettingsInput(ctx, v)
 			if err != nil {
 				return it, err
 			}
-			it.StashLibraryPath = data
+			it.Downloads = data
+		case "library":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("library"))
+			data, err := ec.unmarshalNLibraryIngestSettingsInput2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐLibraryIngestSettingsInput(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Library = data
 		case "transfer":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("transfer"))
 			data, err := ec.unmarshalNTransferIngestSettingsInput2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐTransferIngestSettingsInput(ctx, v)
@@ -22960,6 +23213,50 @@ func (ec *executionContext) _DownloadCandidate(ctx context.Context, sel ast.Sele
 	return out
 }
 
+var downloadsIngestSettingsImplementors = []string{"DownloadsIngestSettings"}
+
+func (ec *executionContext) _DownloadsIngestSettings(ctx context.Context, sel ast.SelectionSet, obj *model.DownloadsIngestSettings) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, downloadsIngestSettingsImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("DownloadsIngestSettings")
+		case "qbRoot":
+			out.Values[i] = ec._DownloadsIngestSettings_qbRoot(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "mojiRoot":
+			out.Values[i] = ec._DownloadsIngestSettings_mojiRoot(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
 var healthImplementors = []string{"Health"}
 
 func (ec *executionContext) _Health(ctx context.Context, sel ast.SelectionSet, obj *model.Health) graphql.Marshaler {
@@ -23059,8 +23356,13 @@ func (ec *executionContext) _IngestSettings(ctx context.Context, sel ast.Selecti
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
-		case "stashLibraryPath":
-			out.Values[i] = ec._IngestSettings_stashLibraryPath(ctx, field, obj)
+		case "downloads":
+			out.Values[i] = ec._IngestSettings_downloads(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "library":
+			out.Values[i] = ec._IngestSettings_library(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
@@ -23367,6 +23669,50 @@ func (ec *executionContext) _JackettStats(ctx context.Context, sel ast.Selection
 			out.Values[i] = ec._JackettStats_lastError(ctx, field, obj)
 		case "okAt":
 			out.Values[i] = ec._JackettStats_okAt(ctx, field, obj)
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var libraryIngestSettingsImplementors = []string{"LibraryIngestSettings"}
+
+func (ec *executionContext) _LibraryIngestSettings(ctx context.Context, sel ast.SelectionSet, obj *model.LibraryIngestSettings) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, libraryIngestSettingsImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("LibraryIngestSettings")
+		case "mojiRoot":
+			out.Values[i] = ec._LibraryIngestSettings_mojiRoot(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "stashRoot":
+			out.Values[i] = ec._LibraryIngestSettings_stashRoot(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -25806,16 +26152,6 @@ func (ec *executionContext) _TransferIngestSettings(ctx context.Context, sel ast
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
-		case "mojiSourceRoot":
-			out.Values[i] = ec._TransferIngestSettings_mojiSourceRoot(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
-		case "mojiTargetRoot":
-			out.Values[i] = ec._TransferIngestSettings_mojiTargetRoot(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -26312,6 +26648,21 @@ func (ec *executionContext) unmarshalNDownloadMediaInput2githubᚗcomᚋleotheva
 	return res, graphql.ErrorOnPath(ctx, err)
 }
 
+func (ec *executionContext) marshalNDownloadsIngestSettings2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐDownloadsIngestSettings(ctx context.Context, sel ast.SelectionSet, v *model.DownloadsIngestSettings) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._DownloadsIngestSettings(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalNDownloadsIngestSettingsInput2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐDownloadsIngestSettingsInput(ctx context.Context, v any) (*model.DownloadsIngestSettingsInput, error) {
+	res, err := ec.unmarshalInputDownloadsIngestSettingsInput(ctx, v)
+	return &res, graphql.ErrorOnPath(ctx, err)
+}
+
 func (ec *executionContext) unmarshalNFloat2float64(ctx context.Context, v any) (float64, error) {
 	res, err := graphql.UnmarshalFloatContext(ctx, v)
 	return res, graphql.ErrorOnPath(ctx, err)
@@ -26535,6 +26886,21 @@ func (ec *executionContext) marshalNJackettStats2ᚖgithubᚗcomᚋleothevan2444
 		return graphql.Null
 	}
 	return ec._JackettStats(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNLibraryIngestSettings2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐLibraryIngestSettings(ctx context.Context, sel ast.SelectionSet, v *model.LibraryIngestSettings) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._LibraryIngestSettings(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalNLibraryIngestSettingsInput2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐLibraryIngestSettingsInput(ctx context.Context, v any) (*model.LibraryIngestSettingsInput, error) {
+	res, err := ec.unmarshalInputLibraryIngestSettingsInput(ctx, v)
+	return &res, graphql.ErrorOnPath(ctx, err)
 }
 
 func (ec *executionContext) marshalNLogEntry2ᚕᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐLogEntryᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.LogEntry) graphql.Marshaler {

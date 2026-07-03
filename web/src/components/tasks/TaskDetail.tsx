@@ -135,7 +135,7 @@ export function TaskDetail({
             <dd>{taskSourceLabel(task.source)}</dd>
           </div>
           <div>
-            <dt>保存路径</dt>
+            <dt>qB 保存目录</dt>
             <dd>{task.savePath || "—"}</dd>
           </div>
           <div>
@@ -147,7 +147,7 @@ export function TaskDetail({
             <dd>{task.tags || "—"}</dd>
           </div>
           <div>
-            <dt>保存内容</dt>
+            <dt>qB 内容路径</dt>
             <dd>{task.contentPath || "—"}</dd>
           </div>
           <div>
@@ -209,7 +209,7 @@ export function TaskDetail({
             <dd>{task.stashMode || "—"}</dd>
           </div>
           <div>
-            <dt>源路径</dt>
+            <dt>Moji 搬运源路径</dt>
             <dd>{task.stashSourcePath || "—"}</dd>
           </div>
           <div>
@@ -217,7 +217,7 @@ export function TaskDetail({
             <dd>{task.stashTransferAction || "—"}</dd>
           </div>
           <div>
-            <dt>交付目标</dt>
+            <dt>Moji 交付目标路径</dt>
             <dd>{task.stashTransferPath || "—"}</dd>
           </div>
           <div>
@@ -229,7 +229,7 @@ export function TaskDetail({
             <dd>{task.stashTransferError || "—"}</dd>
           </div>
           <div>
-            <dt>扫描路径</dt>
+            <dt>Stash 扫描路径</dt>
             <dd>{task.stashScanPath || "—"}</dd>
           </div>
           <div>

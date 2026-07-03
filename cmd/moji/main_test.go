@@ -94,7 +94,7 @@ func TestHTTPHandlerServesSettingsSnapshot(t *testing.T) {
 			jackett { configured url apiKeyConfigured }
 			qbittorrent { configured url usernameConfigured passwordConfigured defaultSavePath }
 			stash { configured url apiKeyConfigured }
-			ingest { deliveryMode stashLibraryPath transfer { action mojiSourceRoot mojiTargetRoot } }
+			ingest { deliveryMode downloads { qbRoot mojiRoot } library { mojiRoot stashRoot } transfer { action } }
 			automation { taskProgressSyncIntervalSeconds subscriptionPollIntervalHours stashBoxEndpoints }
 			system { taskDeletePolicy }
 		}
@@ -205,19 +205,22 @@ func TestIngestConfigured(t *testing.T) {
 
 	t.Run("PATH_MAP mode", func(t *testing.T) {
 		cases := []struct {
-			name             string
-			stashLibraryPath string
-			want             bool
+			name      string
+			qbRoot    string
+			stashRoot string
+			want      bool
 		}{
-			{"empty", "", false},
-			{"set", "/library", true},
-			{"whitespace only", "   ", false},
+			{"missing qb root", "", "/library", false},
+			{"missing stash root", "/downloads", "", false},
+			{"set", "/downloads", "/library", true},
+			{"whitespace only", "   ", "   ", false},
 		}
 		for _, tc := range cases {
 			t.Run(tc.name, func(t *testing.T) {
 				cfg := testConfig()
 				cfg.Ingest.DeliveryMode = "PATH_MAP"
-				cfg.Ingest.StashLibraryPath = tc.stashLibraryPath
+				cfg.Ingest.Downloads.QBRoot = tc.qbRoot
+				cfg.Ingest.Library.StashRoot = tc.stashRoot
 				if got := isIngestConfigured(cfg); got != tc.want {
 					t.Fatalf("isIngestConfigured(PATH_MAP) = %v, want %v", got, tc.want)
 				}
@@ -227,30 +230,33 @@ func TestIngestConfigured(t *testing.T) {
 
 	t.Run("TRANSFER mode", func(t *testing.T) {
 		cases := []struct {
-			name         string
-			action       string
-			sourceRoot   string
-			targetRoot   string
-			stashLibrary string
-			want         bool
+			name             string
+			action           string
+			qbRoot           string
+			mojiDownloadRoot string
+			mojiLibraryRoot  string
+			stashRoot        string
+			want             bool
 		}{
-			{"empty action", "", "/downloads", "/mnt/library", "/library", false},
-			{"empty source", "COPY", "", "/mnt/library", "/library", false},
-			{"empty target", "COPY", "/downloads", "", "/library", false},
-			{"empty stash library", "COPY", "/downloads", "/mnt/library", "", false},
-			{"copy complete", "COPY", "/downloads", "/mnt/library", "/library", true},
-			{"move complete", "MOVE", "/downloads", "/mnt/library", "/library", true},
-			{"symlink complete", "SYMLINK", "/downloads", "/mnt/library", "/library", true},
-			{"unsupported action", "GARBAGE", "/downloads", "/mnt/library", "/library", false},
+			{"empty action", "", "/downloads", "/srv/downloads", "/mnt/library", "/library", false},
+			{"empty qb root", "COPY", "", "/srv/downloads", "/mnt/library", "/library", false},
+			{"empty moji download root", "COPY", "/downloads", "", "/mnt/library", "/library", false},
+			{"empty moji library root", "COPY", "/downloads", "/srv/downloads", "", "/library", false},
+			{"empty stash root", "COPY", "/downloads", "/srv/downloads", "/mnt/library", "", false},
+			{"copy complete", "COPY", "/downloads", "/srv/downloads", "/mnt/library", "/library", true},
+			{"move complete", "MOVE", "/downloads", "/srv/downloads", "/mnt/library", "/library", true},
+			{"symlink complete", "SYMLINK", "/downloads", "/srv/downloads", "/mnt/library", "/library", true},
+			{"unsupported action", "GARBAGE", "/downloads", "/srv/downloads", "/mnt/library", "/library", false},
 		}
 		for _, tc := range cases {
 			t.Run(tc.name, func(t *testing.T) {
 				cfg := testConfig()
 				cfg.Ingest.DeliveryMode = "TRANSFER"
 				cfg.Ingest.Transfer.Action = tc.action
-				cfg.Ingest.Transfer.MojiSourceRoot = tc.sourceRoot
-				cfg.Ingest.Transfer.MojiTargetRoot = tc.targetRoot
-				cfg.Ingest.StashLibraryPath = tc.stashLibrary
+				cfg.Ingest.Downloads.QBRoot = tc.qbRoot
+				cfg.Ingest.Downloads.MojiRoot = tc.mojiDownloadRoot
+				cfg.Ingest.Library.MojiRoot = tc.mojiLibraryRoot
+				cfg.Ingest.Library.StashRoot = tc.stashRoot
 				if got := isIngestConfigured(cfg); got != tc.want {
 					t.Fatalf("isIngestConfigured(TRANSFER) = %v, want %v", got, tc.want)
 				}
@@ -261,7 +267,8 @@ func TestIngestConfigured(t *testing.T) {
 	t.Run("default delivery mode falls back to PATH_MAP", func(t *testing.T) {
 		cfg := testConfig()
 		cfg.Ingest.DeliveryMode = ""
-		cfg.Ingest.StashLibraryPath = "/library"
+		cfg.Ingest.Downloads.QBRoot = "/downloads"
+		cfg.Ingest.Library.StashRoot = "/library"
 		if !isIngestConfigured(cfg) {
 			t.Fatal("isIngestConfigured with empty delivery mode should fall back to PATH_MAP")
 		}
@@ -469,7 +476,8 @@ func testConfig() *config.Config {
 	cfg.Connection.Jackett.APIKey = "test-api-key"
 	cfg.Connection.Stash.URL = "http://stash.invalid"
 	cfg.Ingest.DeliveryMode = "PATH_MAP"
-	cfg.Ingest.StashLibraryPath = "/library"
+	cfg.Ingest.Downloads.QBRoot = "/downloads"
+	cfg.Ingest.Library.StashRoot = "/library"
 	cfg.Automation.SubscriptionPollIntervalHours = 1
 	return &cfg
 }

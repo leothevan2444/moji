@@ -2,10 +2,6 @@
  * Mode metadata for the ingest pipeline. Shared by the home IngestCard and
  * the Settings drawer ingest form so the explanation never drifts between
  * surfaces.
- *
- *  - `summary` describes what the mode does.
- *  - `caution` is a short operational warning callers should display verbatim.
- *  - `tone` picks the colour variant used for the side accent in the home card.
  */
 export interface IngestModeGuide {
   title: string;
@@ -20,15 +16,15 @@ export function deliveryModeGuide(mode: string): IngestModeGuide {
       return {
         title: "路径映射",
         tone: "tone-info",
-        summary: "适用于 qBittorrent 和 Stash 共享底层存储；Moji 会基于任务实际保存路径自动换算到所选 Stash 媒体库。",
-        caution: "要求任务能拿到真实保存目录与内容路径；换算失败时不会自动退回其他模式。"
+        summary: "Moji 只负责把 qB 下载路径翻译成 Stash 扫描路径，不直接搬运文件。",
+        caution: "要求先配置 qB 下载根路径和 Stash 媒体库根路径；两者使用各自命名空间。"
       };
     case "TRANSFER":
       return {
         title: "文件交付",
         tone: "tone-warn",
-        summary: "由 Moji 读取下载区文件并交付到媒体库挂载目录，再换算为 Stash 媒体库路径触发扫描。",
-        caution: "Moji 需要同时访问下载区和媒体库；目标已有同名文件或目录时会直接失败。"
+        summary: "Moji 先把 qB 下载路径翻译成自己的可操作路径，再交付到媒体库并换算为 Stash 扫描路径。",
+        caution: "要求同时配置 qB、Moji、Stash 三套根路径；目标已有同名文件或目录时会直接失败。"
       };
     default:
       return {
@@ -65,7 +61,7 @@ export function transferActionLabel(action: string) {
 }
 
 export const INGEST_BLOCKERS = [
-  "任务完成后无法入库",
-  "订阅扫描无目标库",
-  "Stash-Box 元数据无法获取"
+  "qB 下载根路径未映射",
+  "Stash 媒体库根路径未映射",
+  "任务完成后无法闭环换算扫描路径"
 ];

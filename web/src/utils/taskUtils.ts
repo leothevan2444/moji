@@ -183,6 +183,27 @@ export function taskFailureSummary(task: DashboardTask): TaskFailureSummary {
 
 function describeTransferFailure(transferError: string): TaskFailureSummary | null {
   if (!transferError) return null;
+  if (transferError.includes("resolve qB relative path failed")) {
+    return {
+      title: "qB 路径映射失败",
+      detail: transferError,
+      tone: "tone-danger"
+    };
+  }
+  if (transferError.includes("build Moji transfer source path failed")) {
+    return {
+      title: "Moji 源路径构建失败",
+      detail: transferError,
+      tone: "tone-danger"
+    };
+  }
+  if (transferError.includes("build Moji transfer target path failed")) {
+    return {
+      title: "Moji 目标路径构建失败",
+      detail: transferError,
+      tone: "tone-danger"
+    };
+  }
   return {
     title: "文件搬运失败",
     detail: transferError,
@@ -192,6 +213,13 @@ function describeTransferFailure(transferError: string): TaskFailureSummary | nu
 
 function describeScanFailure(stashError: string): TaskFailureSummary | null {
   if (!stashError) return null;
+  if (stashError.includes("build Stash scan path failed")) {
+    return {
+      title: "Stash 扫描路径构建失败",
+      detail: stashError,
+      tone: "tone-danger"
+    };
+  }
   if (stashError.includes("at least one scan path is required")) {
     return {
       title: "缺少扫描路径",

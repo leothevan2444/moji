@@ -39,12 +39,17 @@ func (r *mutationResolver) UpdateIngestSettings(ctx context.Context, input model
 	}
 
 	snapshot, err := r.SettingsEditor.UpdateIngestSettings(UpdateIngestSettingsInput{
-		DeliveryMode:     input.DeliveryMode,
-		StashLibraryPath: input.StashLibraryPath,
+		DeliveryMode: input.DeliveryMode,
+		Downloads: DownloadsIngestSettingsSnapshot{
+			QBRoot:   input.Downloads.QbRoot,
+			MojiRoot: input.Downloads.MojiRoot,
+		},
+		Library: LibraryIngestSettingsSnapshot{
+			MojiRoot:  input.Library.MojiRoot,
+			StashRoot: input.Library.StashRoot,
+		},
 		Transfer: TransferIngestSettingsSnapshot{
-			Action:         input.Transfer.Action,
-			MojiSourceRoot: input.Transfer.MojiSourceRoot,
-			MojiTargetRoot: input.Transfer.MojiTargetRoot,
+			Action: input.Transfer.Action,
 		},
 	})
 	if err != nil {

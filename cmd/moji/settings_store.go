@@ -57,11 +57,16 @@ func (s *runtimeSettingsEditor) UpdateStashSettings(input graphqlapi.UpdateStash
 func (s *runtimeSettingsEditor) UpdateIngestSettings(input graphqlapi.UpdateIngestSettingsInput) (*graphqlapi.SettingsSnapshot, error) {
 	cfg, err := s.store.UpdateIngest(
 		strings.TrimSpace(input.DeliveryMode),
-		strings.TrimSpace(input.StashLibraryPath),
+		config.DownloadsIngestConfig{
+			QBRoot:   strings.TrimSpace(input.Downloads.QBRoot),
+			MojiRoot: strings.TrimSpace(input.Downloads.MojiRoot),
+		},
+		config.LibraryIngestConfig{
+			MojiRoot:  strings.TrimSpace(input.Library.MojiRoot),
+			StashRoot: strings.TrimSpace(input.Library.StashRoot),
+		},
 		config.TransferIngestConfig{
-			Action:         strings.TrimSpace(input.Transfer.Action),
-			MojiSourceRoot: strings.TrimSpace(input.Transfer.MojiSourceRoot),
-			MojiTargetRoot: strings.TrimSpace(input.Transfer.MojiTargetRoot),
+			Action: strings.TrimSpace(input.Transfer.Action),
 		},
 	)
 	if err != nil {
@@ -69,10 +74,11 @@ func (s *runtimeSettingsEditor) UpdateIngestSettings(input graphqlapi.UpdateInge
 		return nil, err
 	}
 	logging.Infof(
-		"settings: ingest settings saved delivery_mode=%s stash_library=%s moji_target_root=%s",
+		"settings: ingest settings saved delivery_mode=%s qb_root=%s moji_download_root=%s stash_library_root=%s",
 		cfg.Ingest.DeliveryMode,
-		cfg.Ingest.StashLibraryPath,
-		cfg.Ingest.Transfer.MojiTargetRoot,
+		cfg.Ingest.Downloads.QBRoot,
+		cfg.Ingest.Downloads.MojiRoot,
+		cfg.Ingest.Library.StashRoot,
 	)
 	return buildSettingsSnapshot(cfg, s.version), nil
 }

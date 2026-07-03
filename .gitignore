@@ -5,10 +5,7 @@ main
 moji
 !moji/
 AGENTS.md
-docs/agent_work_plan.md
-docs/ui_design.md
-docs/app-refactoring-plan.md
-docs/realtime_update_architecture.md
+docs/agent_guidence
 moji.log
 moji.log.*
 moji.db*
