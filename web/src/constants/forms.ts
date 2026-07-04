@@ -9,6 +9,7 @@ import {
 export const DEFAULT_TORRENT_SELECTION_RULES = [
   {
     id: "default-seeders",
+    name: "Seeders",
     type: TorrentSelectionRuleType.Seeders,
     enabled: true,
     direction: TorrentSelectionDirection.Desc,
@@ -25,6 +26,7 @@ export const DEFAULT_TORRENT_SELECTION_RULES = [
   },
   {
     id: "default-size",
+    name: "Size",
     type: TorrentSelectionRuleType.Size,
     enabled: true,
     direction: TorrentSelectionDirection.Desc,

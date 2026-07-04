@@ -62,6 +62,7 @@ mutation UpdateAutomationSettingsDocument($input: UpdateAutomationSettingsInput!
         enabled
         rules {
           id
+          name
           type
           enabled
           direction

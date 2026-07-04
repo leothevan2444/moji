@@ -415,6 +415,7 @@ func torrentSelectionSnapshot(cfg config.TorrentSelectionConfig) graphqlapi.Torr
 	for _, rule := range cfg.Rules {
 		item := graphqlapi.TorrentSelectionRuleSnapshot{
 			ID:        rule.ID,
+			Name:      rule.Name,
 			Type:      string(rule.Type),
 			Enabled:   rule.Enabled,
 			Direction: string(rule.Direction),

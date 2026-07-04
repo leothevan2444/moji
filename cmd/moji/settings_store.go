@@ -102,6 +102,7 @@ func torrentSelectionConfigRules(rules []graphqlapi.TorrentSelectionRuleSnapshot
 	for _, rule := range rules {
 		item := config.TorrentSelectionRule{
 			ID:        strings.TrimSpace(rule.ID),
+			Name:      strings.TrimSpace(rule.Name),
 			Type:      config.TorrentSelectionRuleType(strings.TrimSpace(rule.Type)),
 			Enabled:   rule.Enabled,
 			Direction: config.TorrentSelectionDirection(strings.TrimSpace(rule.Direction)),

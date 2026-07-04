@@ -141,6 +141,7 @@ type TorrentSelectionSettingsSnapshot struct {
 
 type TorrentSelectionRuleSnapshot struct {
 	ID                string
+	Name              string
 	Type              string
 	Enabled           bool
 	Direction         string

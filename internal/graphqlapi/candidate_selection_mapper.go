@@ -20,6 +20,7 @@ func torrentSelectionRulesFromModel(rules []*model.TorrentSelectionRuleInput) []
 		}
 		item := TorrentSelectionRuleSnapshot{
 			ID:        rule.ID,
+			Name:      rule.Name,
 			Type:      string(rule.Type),
 			Enabled:   rule.Enabled,
 			Direction: string(rule.Direction),

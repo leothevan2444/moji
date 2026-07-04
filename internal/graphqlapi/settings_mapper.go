@@ -117,6 +117,7 @@ func torrentSelectionSettingsToModel(snapshot TorrentSelectionSettingsSnapshot) 
 	for _, rule := range snapshot.Rules {
 		item := &model.TorrentSelectionRule{
 			ID:        rule.ID,
+			Name:      rule.Name,
 			Type:      model.TorrentSelectionRuleType(rule.Type),
 			Enabled:   rule.Enabled,
 			Direction: model.TorrentSelectionDirection(rule.Direction),

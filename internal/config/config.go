@@ -68,6 +68,7 @@ type TorrentSelectionConfig struct {
 
 type TorrentSelectionRule struct {
 	ID                string                      `yaml:"id"`
+	Name              string                      `yaml:"name"`
 	Type              TorrentSelectionRuleType    `yaml:"type"`
 	Enabled           bool                        `yaml:"enabled"`
 	Direction         TorrentSelectionDirection   `yaml:"direction"`
@@ -199,12 +200,14 @@ func DefaultTorrentSelectionConfig() TorrentSelectionConfig {
 		Rules: []TorrentSelectionRule{
 			{
 				ID:        "default-seeders",
+				Name:      "Seeders",
 				Type:      TorrentSelectionRuleTypeSeeders,
 				Enabled:   true,
 				Direction: TorrentSelectionDirectionDesc,
 			},
 			{
 				ID:        "default-size",
+				Name:      "Size",
 				Type:      TorrentSelectionRuleTypeSize,
 				Enabled:   true,
 				Direction: TorrentSelectionDirectionDesc,
@@ -262,6 +265,25 @@ func NormalizeTorrentSelectionRuleType(value TorrentSelectionRuleType) TorrentSe
 	}
 }
 
+func DefaultTorrentSelectionRuleName(ruleType TorrentSelectionRuleType, index int) string {
+	switch NormalizeTorrentSelectionRuleType(ruleType) {
+	case TorrentSelectionRuleTypeIndexerPreference:
+		return "Indexer Preference"
+	case TorrentSelectionRuleTypeTitleMatch:
+		return "Title Match"
+	case TorrentSelectionRuleTypePublishDate:
+		return "Publish Date"
+	case TorrentSelectionRuleTypeTitleSimilarity:
+		return "Title Similarity"
+	case TorrentSelectionRuleTypeSeeders:
+		return "Seeders"
+	case TorrentSelectionRuleTypeSize:
+		return "Size"
+	default:
+		return fmt.Sprintf("Rule %d", index+1)
+	}
+}
+
 func NormalizeCandidateSelectionRuleType(value CandidateSelectionRuleType) CandidateSelectionRuleType {
 	return NormalizeTorrentSelectionRuleType(value)
 }
@@ -294,6 +316,10 @@ func (r TorrentSelectionRule) normalized(index int) TorrentSelectionRule {
 		r.ID = fmt.Sprintf("rule-%d", index+1)
 	}
 	r.Type = NormalizeTorrentSelectionRuleType(r.Type)
+	r.Name = strings.TrimSpace(r.Name)
+	if r.Name == "" {
+		r.Name = DefaultTorrentSelectionRuleName(r.Type, index)
+	}
 	r.Direction = NormalizeTorrentSelectionDirection(r.Direction)
 	r.IndexerPreference.TrackerIDs = cleanStrings(r.IndexerPreference.TrackerIDs)
 

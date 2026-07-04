@@ -202,6 +202,7 @@ enum TitleMatchEffect {
 
 type TorrentSelectionRule {
   id: ID!
+  name: String!
   type: TorrentSelectionRuleType!
   enabled: Boolean!
   direction: TorrentSelectionDirection!
@@ -324,6 +325,7 @@ input TorrentSelectionSettingsInput {
 
 input TorrentSelectionRuleInput {
   id: ID!
+  name: String!
   type: TorrentSelectionRuleType!
   enabled: Boolean!
   direction: TorrentSelectionDirection!

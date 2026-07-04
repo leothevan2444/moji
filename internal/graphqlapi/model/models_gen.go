@@ -524,6 +524,7 @@ type TitleMatchRuleInput struct {
 
 type TorrentSelectionRule struct {
 	ID                string                    `json:"id"`
+	Name              string                    `json:"name"`
 	Type              TorrentSelectionRuleType  `json:"type"`
 	Enabled           bool                      `json:"enabled"`
 	Direction         TorrentSelectionDirection `json:"direction"`
@@ -533,6 +534,7 @@ type TorrentSelectionRule struct {
 
 type TorrentSelectionRuleInput struct {
 	ID                string                      `json:"id"`
+	Name              string                      `json:"name"`
 	Type              TorrentSelectionRuleType    `json:"type"`
 	Enabled           bool                        `json:"enabled"`
 	Direction         TorrentSelectionDirection   `json:"direction"`
