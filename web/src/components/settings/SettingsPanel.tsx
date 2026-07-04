@@ -106,6 +106,7 @@ function makeRuleId(prefix: string) {
 function makeTorrentSelectionRule(type: TorrentSelectionRuleType) {
   return {
     id: makeRuleId(type.toLowerCase()),
+    name: TORRENT_SELECTION_RULE_LABELS[type],
     type,
     enabled: true,
     direction: TorrentSelectionDirection.Desc,
@@ -133,6 +134,7 @@ function buildAutomationSettingsPayload(form: AutomationFormShape) {
       enabled: form.torrentSelection.enabled,
       rules: form.torrentSelection.rules.map((rule) => ({
         id: rule.id,
+        name: rule.name.trim(),
         type: rule.type,
         enabled: rule.enabled,
         direction: rule.direction,
@@ -169,6 +171,11 @@ function buildRuleSummary(rule: TorrentSelectionRuleDraft): string {
   return dirLabel;
 }
 
+function displayRuleName(rule: Pick<TorrentSelectionRuleDraft, "name" | "type">): string {
+  const name = rule.name.trim();
+  return name === "" ? TORRENT_SELECTION_RULE_LABELS[rule.type] : name;
+}
+
 /** 给定当前 draft 与新 type，重置类型专属字段，避免跨类型残留旧数据。 */
 function withTypeReset(draft: TorrentSelectionRuleDraft, nextType: TorrentSelectionRuleType): TorrentSelectionRuleDraft {
   if (draft.type === nextType) return draft;
@@ -184,6 +191,7 @@ function torrentSelectionFromRuntime(runtimeSettings: RuntimeSettings) {
   const rules = runtimeSettings.automation.torrentSelection.rules.length > 0
     ? runtimeSettings.automation.torrentSelection.rules.map((rule: RuntimeSettings["automation"]["torrentSelection"]["rules"][number]) => ({
         id: rule.id,
+        name: rule.name,
         type: rule.type,
         enabled: rule.enabled,
         direction: rule.direction,
@@ -496,33 +504,9 @@ export function SettingsPanel({
 
   const saveAutomationSettings = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    const taskProgressSyncIntervalSeconds = Number.parseInt(automationForm.taskProgressSyncIntervalSeconds.trim(), 10);
-    const subscriptionPollIntervalHours = Number.parseInt(automationForm.subscriptionPollIntervalHours.trim(), 10);
+    const payload = buildAutomationSettingsPayload(automationForm);
     const result = await updateAutomationSettings({
-      input: {
-        taskProgressSyncIntervalSeconds: Number.isNaN(taskProgressSyncIntervalSeconds) ? 60 : taskProgressSyncIntervalSeconds,
-        subscriptionPollIntervalHours: Number.isNaN(subscriptionPollIntervalHours) ? 1 : subscriptionPollIntervalHours,
-        stashBoxEndpoints: automationForm.stashBoxEndpoints,
-        torrentSelection: {
-          enabled: automationForm.torrentSelection.enabled,
-          rules: automationForm.torrentSelection.rules.map((rule) => ({
-            id: rule.id,
-            type: rule.type,
-            enabled: rule.enabled,
-            direction: rule.direction,
-            indexerPreference: {
-              trackerIds: rule.indexerPreference.trackerIds
-            },
-            titleMatch: {
-              clauses: rule.titleMatch.clauses.map((clause) => ({
-                pattern: clause.pattern,
-                patternMode: clause.patternMode,
-                effect: clause.effect
-              }))
-            }
-          }))
-        }
-      }
+      input: payload
     });
     if (result.error) {
       pushToast("tone-danger", describeQueryError(result.error));
@@ -558,29 +542,26 @@ export function SettingsPanel({
 
   /**
    * 规则编辑抽屉保存：把已编辑的规则写回 automationForm，再走与列表保存同一 mutation 路径。
-   * 使用 functional setAutomationForm + 在闭包内直接构造最新 payload 的方式，避免 stale closure。
+   * 先基于当前 automationForm 快照计算 nextRules，再同时更新本地状态与 mutation payload，
+   * 避免依赖 React state setter 的调度时机而提交到旧规则。
    */
   const saveRuleEditor = async () => {
     if (!editingRuleDraft) return;
-    let nextRules: AutomationForm["torrentSelection"]["rules"] | null = null;
-    setAutomationForm((current) => {
-      nextRules = current.torrentSelection.rules.map((rule) =>
-        rule.id === editingRuleDraft.id ? editingRuleDraft : rule
-      );
-      return {
-        ...current,
-        torrentSelection: {
-          ...current.torrentSelection,
-          rules: nextRules
-        }
-      };
-    });
-    // setAutomationForm 同步执行，nextRules 已赋值。
+    const nextRules = automationForm.torrentSelection.rules.map((rule) =>
+      rule.id === editingRuleDraft.id ? editingRuleDraft : rule
+    );
+    setAutomationForm((current) => ({
+      ...current,
+      torrentSelection: {
+        ...current.torrentSelection,
+        rules: nextRules
+      }
+    }));
     const formForPayload: AutomationForm = {
       ...automationForm,
       torrentSelection: {
         ...automationForm.torrentSelection,
-        rules: nextRules ?? automationForm.torrentSelection.rules
+        rules: nextRules
       }
     };
     const payload = buildAutomationSettingsPayload(formForPayload);
@@ -1453,7 +1434,7 @@ export function SettingsPanel({
                       <FontAwesomeIcon icon={faGripVertical} />
                     </span>
                     <span className="torrent-rule__order">{ruleIndex + 1}</span>
-                    <h3 className="torrent-rule__name">{TORRENT_SELECTION_RULE_LABELS[rule.type]}</h3>
+                    <h3 className="torrent-rule__name">{displayRuleName(rule)}</h3>
                     <div className="torrent-rule__inline-readonly" aria-hidden="true">
                       <span className="torrent-rule__badge torrent-rule__badge--type">
                         {TORRENT_SELECTION_RULE_LABELS[rule.type]}
@@ -1571,7 +1552,7 @@ export function SettingsPanel({
         <aside className={drawerClass} onClick={(event) => event.stopPropagation()}>
           <div className="drawer__head">
             <div>
-              <h2>编辑规则 · {TORRENT_SELECTION_RULE_LABELS[draft.type]}</h2>
+              <h2>编辑规则 · {displayRuleName(draft)}</h2>
             </div>
             <button type="button" className="ghost-button" onClick={close} disabled={ruleEditorSaving}>
               关闭
@@ -1583,7 +1564,6 @@ export function SettingsPanel({
                 <div className="drawer-card__head">
                   <div>
                     <h3>基础</h3>
-                    <p>规则类型与方向</p>
                   </div>
                 </div>
                 <form
@@ -1593,6 +1573,19 @@ export function SettingsPanel({
                     void saveRuleEditor();
                   }}
                 >
+                  <label className="settings-field">
+                    <FieldLabel text="规则名称" info="仅用于展示和识别这条规则，不影响排序逻辑。" />
+                    <input
+                      value={draft.name}
+                      onChange={(event) =>
+                        setDraft((current) => ({
+                          ...current,
+                          name: event.target.value
+                        }))
+                      }
+                      placeholder={TORRENT_SELECTION_RULE_LABELS[draft.type]}
+                    />
+                  </label>
                   <label className="settings-field">
                     <FieldLabel text="规则类型" />
                     <select
