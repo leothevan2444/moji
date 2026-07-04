@@ -1,14 +1,21 @@
 import { FormEvent, useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import { useMutation, useQuery } from "urql";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faArrowDown,
   faArrowUp,
+  faChevronDown,
+  faChevronUp,
   faCircleInfo,
   faEye,
   faEyeSlash,
   faGripVertical,
-  faRotate
+  faPenToSquare,
+  faPlus,
+  faRotate,
+  faTimes,
+  faTrash
 } from "@fortawesome/free-solid-svg-icons";
 import {
   JackettIndexersDocumentDocument,
@@ -59,6 +66,7 @@ import {
 import { serviceStatus } from "../../utils";
 import { describeQueryError } from "../../services/queryError";
 import { formatDateTime, formatLogEntries } from "../../utils";
+import { Menu } from "../common/Menu";
 
 type RuntimeSettings = NonNullable<DashboardDocumentQuery["settings"]>;
 type RuntimeSettingsStatus = NonNullable<DashboardDocumentQuery["settingsStatus"]>;
@@ -82,6 +90,15 @@ const TORRENT_SELECTION_RULE_LABELS: Record<TorrentSelectionRuleType, string> = 
   [TorrentSelectionRuleType.Size]: "Size"
 };
 
+const TORRENT_SELECTION_RULE_HINTS: Record<TorrentSelectionRuleType, string> = {
+  [TorrentSelectionRuleType.IndexerPreference]: "按索引器优先级挑种",
+  [TorrentSelectionRuleType.TitleMatch]: "匹配/排除关键字或正则",
+  [TorrentSelectionRuleType.PublishDate]: "按发布新旧比较",
+  [TorrentSelectionRuleType.TitleSimilarity]: "与订阅标题相似度",
+  [TorrentSelectionRuleType.Seeders]: "按做种人数比较",
+  [TorrentSelectionRuleType.Size]: "按文件体积比较"
+};
+
 function makeRuleId(prefix: string) {
   return `${prefix}-${Math.random().toString(36).slice(2, 10)}`;
 }
@@ -94,6 +111,72 @@ function makeTorrentSelectionRule(type: TorrentSelectionRuleType) {
     direction: TorrentSelectionDirection.Desc,
     indexerPreference: { trackerIds: [] as string[] },
     titleMatch: { clauses: [] as Array<{ pattern: string; patternMode: TitleMatchPatternMode; effect: TitleMatchEffect }> }
+  };
+}
+
+type AutomationForm = typeof EMPTY_AUTOMATION_FORM;
+type TorrentSelectionRuleDraft = ReturnType<typeof makeTorrentSelectionRule>;
+type AutomationFormShape = AutomationForm;
+
+/**
+ * 把 AutomationForm 表单数据编码为 GraphQL mutation 所需的 input。
+ * 列表保存与抽屉保存都通过此函数构造 payload，保证前后端协议一致。
+ */
+function buildAutomationSettingsPayload(form: AutomationFormShape) {
+  const taskProgressSyncIntervalSeconds = Number.parseInt(form.taskProgressSyncIntervalSeconds.trim(), 10);
+  const subscriptionPollIntervalHours = Number.parseInt(form.subscriptionPollIntervalHours.trim(), 10);
+  return {
+    taskProgressSyncIntervalSeconds: Number.isNaN(taskProgressSyncIntervalSeconds) ? 60 : taskProgressSyncIntervalSeconds,
+    subscriptionPollIntervalHours: Number.isNaN(subscriptionPollIntervalHours) ? 1 : subscriptionPollIntervalHours,
+    stashBoxEndpoints: form.stashBoxEndpoints,
+    torrentSelection: {
+      enabled: form.torrentSelection.enabled,
+      rules: form.torrentSelection.rules.map((rule) => ({
+        id: rule.id,
+        type: rule.type,
+        enabled: rule.enabled,
+        direction: rule.direction,
+        indexerPreference: { trackerIds: rule.indexerPreference.trackerIds },
+        titleMatch: {
+          clauses: rule.titleMatch.clauses.map((clause) => ({
+            pattern: clause.pattern,
+            patternMode: clause.patternMode,
+            effect: clause.effect
+          }))
+        }
+      }))
+    }
+  };
+}
+
+/**
+ * 单条规则的只读摘要：按 type 反映关键配置，紧凑展示给列表页。
+ */
+function buildRuleSummary(rule: TorrentSelectionRuleDraft): string {
+  const dirLabel = rule.direction === TorrentSelectionDirection.Asc ? "ASC" : "DESC";
+  if (rule.type === TorrentSelectionRuleType.IndexerPreference) {
+    const count = rule.indexerPreference.trackerIds.length;
+    return count === 0
+      ? `${dirLabel} · 未配置索引器`
+      : `${dirLabel} · 选中 ${count} 个索引器`;
+  }
+  if (rule.type === TorrentSelectionRuleType.TitleMatch) {
+    const count = rule.titleMatch.clauses.length;
+    return count === 0
+      ? `${dirLabel} · 未配置标题规则`
+      : `${dirLabel} · ${count} 条标题匹配规则`;
+  }
+  return dirLabel;
+}
+
+/** 给定当前 draft 与新 type，重置类型专属字段，避免跨类型残留旧数据。 */
+function withTypeReset(draft: TorrentSelectionRuleDraft, nextType: TorrentSelectionRuleType): TorrentSelectionRuleDraft {
+  if (draft.type === nextType) return draft;
+  return {
+    ...draft,
+    type: nextType,
+    indexerPreference: nextType === TorrentSelectionRuleType.IndexerPreference ? draft.indexerPreference : { trackerIds: [] },
+    titleMatch: nextType === TorrentSelectionRuleType.TitleMatch ? draft.titleMatch : { clauses: [] }
   };
 }
 
@@ -184,6 +267,29 @@ export function SettingsPanel({
   const [jackettForm, setJackettForm] = useState(EMPTY_JACKETT_FORM);
   const [qbittorrentForm, setQBittorrentForm] = useState(EMPTY_QBITTORRENT_FORM);
   const [automationForm, setAutomationForm] = useState(EMPTY_AUTOMATION_FORM);
+  // 规则列表的展开/收起是 UI 偏好：默认按「启用规则链」决定首屏可见性，
+  // 之后用户的展开/收起操作与开关状态相互独立，不被开关重置。
+  const [rulesExpanded, setRulesExpanded] = useState(() => automationForm.torrentSelection.enabled);
+
+  // 规则编辑抽屉：editingRuleDraft 为 null 时不渲染抽屉。
+  const [editingRuleDraft, setEditingRuleDraft] = useState<TorrentSelectionRuleDraft | null>(null);
+  const [ruleEditorClosing, setRuleEditorClosing] = useState(false);
+  const [ruleEditorSaving, setRuleEditorSaving] = useState(false);
+
+  const openRuleEditor = (rule: TorrentSelectionRuleDraft) => {
+    // 深拷贝：避免在抽屉里直接写入 automationForm 的引用
+    setEditingRuleDraft(structuredClone(rule));
+    setRuleEditorClosing(false);
+  };
+
+  const closeRuleEditor = () => {
+    if (!editingRuleDraft) return;
+    setRuleEditorClosing(true);
+    window.setTimeout(() => {
+      setEditingRuleDraft(null);
+      setRuleEditorClosing(false);
+    }, 240);
+  };
   const [systemForm, setSystemForm] = useState(EMPTY_SYSTEM_FORM);
   const [pendingIngestQBRootInitialization, setPendingIngestQBRootInitialization] = useState<string | null>(null);
 
@@ -211,6 +317,16 @@ export function SettingsPanel({
     pause: (settingsTab !== "连接" && settingsTab !== "自动化") || (drawer !== "settings" && renderedDrawer !== "settings")
   });
   const jackettIndexers = jackettIndexersData?.jackettIndexers ?? [];
+
+  // 规则编辑抽屉专用的 Jackett 索引器请求：仅在抽屉打开时拉取，避免与连接/自动化设置共用。
+  const [{ data: ruleEditorJackettData, fetching: fetchingRuleEditorJackettIndexers }] = useQuery<
+    JackettIndexersDocumentQuery,
+    JackettIndexersDocumentQueryVariables
+  >({
+    query: JackettIndexersDocumentDocument,
+    pause: !editingRuleDraft
+  });
+  const ruleEditorJackettIndexers = ruleEditorJackettData?.jackettIndexers ?? [];
 
   const [{ fetching: updatingStash }, updateStashSettings] = useMutation<
     UpdateStashSettingsDocumentMutation,
@@ -418,34 +534,8 @@ export function SettingsPanel({
 
   const saveTorrentSelectionSettings = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    const taskProgressSyncIntervalSeconds = Number.parseInt(automationForm.taskProgressSyncIntervalSeconds.trim(), 10);
-    const subscriptionPollIntervalHours = Number.parseInt(automationForm.subscriptionPollIntervalHours.trim(), 10);
-    const result = await updateAutomationSettings({
-      input: {
-        taskProgressSyncIntervalSeconds: Number.isNaN(taskProgressSyncIntervalSeconds) ? 60 : taskProgressSyncIntervalSeconds,
-        subscriptionPollIntervalHours: Number.isNaN(subscriptionPollIntervalHours) ? 1 : subscriptionPollIntervalHours,
-        stashBoxEndpoints: automationForm.stashBoxEndpoints,
-        torrentSelection: {
-          enabled: automationForm.torrentSelection.enabled,
-          rules: automationForm.torrentSelection.rules.map((rule) => ({
-            id: rule.id,
-            type: rule.type,
-            enabled: rule.enabled,
-            direction: rule.direction,
-            indexerPreference: {
-              trackerIds: rule.indexerPreference.trackerIds
-            },
-            titleMatch: {
-              clauses: rule.titleMatch.clauses.map((clause) => ({
-                pattern: clause.pattern,
-                patternMode: clause.patternMode,
-                effect: clause.effect
-              }))
-            }
-          }))
-        }
-      }
-    });
+    const payload = buildAutomationSettingsPayload(automationForm);
+    const result = await updateAutomationSettings({ input: payload });
     if (result.error) {
       pushToast("tone-danger", describeQueryError(result.error));
       return;
@@ -456,40 +546,57 @@ export function SettingsPanel({
 
   const saveStashBoxPrioritySettings = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    const taskProgressSyncIntervalSeconds = Number.parseInt(automationForm.taskProgressSyncIntervalSeconds.trim(), 10);
-    const subscriptionPollIntervalHours = Number.parseInt(automationForm.subscriptionPollIntervalHours.trim(), 10);
-    const result = await updateAutomationSettings({
-      input: {
-        taskProgressSyncIntervalSeconds: Number.isNaN(taskProgressSyncIntervalSeconds) ? 60 : taskProgressSyncIntervalSeconds,
-        subscriptionPollIntervalHours: Number.isNaN(subscriptionPollIntervalHours) ? 1 : subscriptionPollIntervalHours,
-        stashBoxEndpoints: automationForm.stashBoxEndpoints,
-        torrentSelection: {
-          enabled: automationForm.torrentSelection.enabled,
-          rules: automationForm.torrentSelection.rules.map((rule) => ({
-            id: rule.id,
-            type: rule.type,
-            enabled: rule.enabled,
-            direction: rule.direction,
-            indexerPreference: {
-              trackerIds: rule.indexerPreference.trackerIds
-            },
-            titleMatch: {
-              clauses: rule.titleMatch.clauses.map((clause) => ({
-                pattern: clause.pattern,
-                patternMode: clause.patternMode,
-                effect: clause.effect
-              }))
-            }
-          }))
-        }
-      }
-    });
+    const payload = buildAutomationSettingsPayload(automationForm);
+    const result = await updateAutomationSettings({ input: payload });
     if (result.error) {
       pushToast("tone-danger", describeQueryError(result.error));
       return;
     }
     pushToast("tone-success", "Stash-Box 优先级已保存。");
     await refreshDashboard({ requestPolicy: "network-only" });
+  };
+
+  /**
+   * 规则编辑抽屉保存：把已编辑的规则写回 automationForm，再走与列表保存同一 mutation 路径。
+   * 使用 functional setAutomationForm + 在闭包内直接构造最新 payload 的方式，避免 stale closure。
+   */
+  const saveRuleEditor = async () => {
+    if (!editingRuleDraft) return;
+    let nextRules: AutomationForm["torrentSelection"]["rules"] | null = null;
+    setAutomationForm((current) => {
+      nextRules = current.torrentSelection.rules.map((rule) =>
+        rule.id === editingRuleDraft.id ? editingRuleDraft : rule
+      );
+      return {
+        ...current,
+        torrentSelection: {
+          ...current.torrentSelection,
+          rules: nextRules
+        }
+      };
+    });
+    // setAutomationForm 同步执行，nextRules 已赋值。
+    const formForPayload: AutomationForm = {
+      ...automationForm,
+      torrentSelection: {
+        ...automationForm.torrentSelection,
+        rules: nextRules ?? automationForm.torrentSelection.rules
+      }
+    };
+    const payload = buildAutomationSettingsPayload(formForPayload);
+    setRuleEditorSaving(true);
+    try {
+      const result = await updateAutomationSettings({ input: payload });
+      if (result.error) {
+        pushToast("tone-danger", describeQueryError(result.error));
+        return;
+      }
+      pushToast("tone-success", "规则已保存。");
+      await refreshDashboard({ requestPolicy: "network-only" });
+      closeRuleEditor();
+    } finally {
+      setRuleEditorSaving(false);
+    }
   };
 
   const moveCandidateRule = (from: number, to: number) => {
@@ -1242,59 +1349,140 @@ export function SettingsPanel({
         </form>
 
         <form className="settings-form" onSubmit={(event) => void saveTorrentSelectionSettings(event)}>
-          <section className="stashbox-source">
-            <header className="stashbox-source__head">
+          <section className="torrent-rules">
+            <header className="torrent-rules__head">
               <div>
                 <h4>自动选种规则</h4>
-                <p className="stashbox-source__sub">
+                <p className="torrent-rules__sub">
                   仅影响后端自动挑选下载候选，不影响 Jackett 搜索结果列表展示。规则按从上到下顺序依次比较。
                 </p>
               </div>
-              <div className="stashbox-source__stats">
+              <div className="torrent-rules__save">
                 <button type="submit" disabled={updatingAutomation}>保存自动选种规则</button>
               </div>
             </header>
 
-            <label className="settings-field" style={{ padding: 0 }}>
-              <FieldLabel text="启用规则链" />
-              <input
-                type="checkbox"
-                checked={automationForm.torrentSelection.enabled}
-                onChange={(event) =>
-                  setAutomationForm((current) => ({
-                    ...current,
-                    torrentSelection: {
-                      ...current.torrentSelection,
-                      enabled: event.target.checked
-                    }
-                  }))
-                }
-              />
-            </label>
-            <div className="settings-actions" style={{ flexWrap: "wrap" }}>
-              {TORRENT_SELECTION_RULE_TYPE_OPTIONS.map((type) => (
-                <button key={type} type="button" className="ghost-button" onClick={() => addCandidateRule(type)}>
-                  添加 {TORRENT_SELECTION_RULE_LABELS[type]}
-                </button>
-              ))}
+            <div className="torrent-rules__toolbar">
+              <label className="switch-row">
+                <span className="switch-row__label">启用规则链</span>
+                <span className="switch" role="switch" aria-checked={automationForm.torrentSelection.enabled}>
+                  <input
+                    type="checkbox"
+                    checked={automationForm.torrentSelection.enabled}
+                    onChange={(event) => {
+                      const next = event.target.checked;
+                      setAutomationForm((current) => ({
+                        ...current,
+                        torrentSelection: {
+                          ...current.torrentSelection,
+                          enabled: next
+                        }
+                      }));
+                      // 打开规则链时自动展开列表，让用户能立刻看到并编辑；
+                      // 关闭时不动展开偏好，保留用户的 UI 选择。
+                      if (next) setRulesExpanded(true);
+                    }}
+                  />
+                  <span className="switch__track" aria-hidden="true" />
+                  <span className="switch__thumb" aria-hidden="true" />
+                </span>
+              </label>
+              <button
+                type="button"
+                className="ghost-button torrent-rules__expand"
+                aria-expanded={rulesExpanded}
+                aria-controls="torrent-rules-list"
+                onClick={() => setRulesExpanded((current) => !current)}
+              >
+                <FontAwesomeIcon icon={rulesExpanded ? faChevronUp : faChevronDown} />
+                <span>{rulesExpanded ? "收起" : "展开"}</span>
+              </button>
             </div>
-            <div style={{ display: "grid", gap: 12 }}>
-              {automationForm.torrentSelection.rules.map((rule, ruleIndex) => (
-                <article key={rule.id} className="drawer-card">
-                  <div className="drawer-card__head">
-                    <div>
-                      <h3>{TORRENT_SELECTION_RULE_LABELS[rule.type]}</h3>
-                      <p>{rule.id}</p>
+
+            {!rulesExpanded && automationForm.torrentSelection.rules.length > 0 ? (
+              <p className="torrent-rules__hint">
+                当前已配置 {automationForm.torrentSelection.rules.length} 条规则，启用后才会生效。
+              </p>
+            ) : null}
+
+            <div
+              id="torrent-rules-list"
+              className="torrent-rules__list"
+              hidden={!rulesExpanded}
+            >
+              {automationForm.torrentSelection.rules.map((rule, ruleIndex) => {
+                const ruleClasses = ["torrent-rule"];
+                if (!rule.enabled) ruleClasses.push("is-disabled");
+                if (draggedIndex === ruleIndex) ruleClasses.push("is-dragging");
+                if (dragOverIndex === ruleIndex) {
+                  ruleClasses.push(dragOverIndex < (draggedIndex ?? -1) ? "is-drop-top" : "is-drop-bottom");
+                }
+
+                return (
+                <article
+                  key={rule.id}
+                  className={ruleClasses.join(" ")}
+                  draggable
+                  onDragStart={(event) => {
+                    event.dataTransfer.effectAllowed = "move";
+                    event.dataTransfer.setData("text/plain", String(ruleIndex));
+                    setDraggedIndex(ruleIndex);
+                  }}
+                  onDragOver={(event) => {
+                    event.preventDefault();
+                    event.dataTransfer.dropEffect = "move";
+                    setDragOverIndex(ruleIndex);
+                  }}
+                  onDragLeave={() => {
+                    if (dragOverIndex === ruleIndex) setDragOverIndex(null);
+                  }}
+                  onDrop={(event) => {
+                    event.preventDefault();
+                    const from = Number.parseInt(event.dataTransfer.getData("text/plain"), 10);
+                    moveCandidateRule(Number.isNaN(from) ? draggedIndex ?? ruleIndex : from, ruleIndex);
+                    setDraggedIndex(null);
+                    setDragOverIndex(null);
+                  }}
+                  onDragEnd={() => {
+                    setDraggedIndex(null);
+                    setDragOverIndex(null);
+                  }}
+                >
+                  <header className="torrent-rule__head">
+                    <span className="torrent-rule__handle" aria-hidden="true" title="拖动以重新排序">
+                      <FontAwesomeIcon icon={faGripVertical} />
+                    </span>
+                    <span className="torrent-rule__order">{ruleIndex + 1}</span>
+                    <h3 className="torrent-rule__name">{TORRENT_SELECTION_RULE_LABELS[rule.type]}</h3>
+                    <div className="torrent-rule__inline-readonly" aria-hidden="true">
+                      <span className="torrent-rule__badge torrent-rule__badge--type">
+                        {TORRENT_SELECTION_RULE_LABELS[rule.type]}
+                      </span>
+                      <span className="torrent-rule__badge torrent-rule__badge--dir">
+                        {rule.direction === TorrentSelectionDirection.Asc ? "ASC" : "DESC"}
+                      </span>
+                      <span className={`torrent-rule__badge torrent-rule__badge--status${rule.enabled ? " is-on" : " is-off"}`}>
+                        {rule.enabled ? "启用" : "未启用"}
+                      </span>
                     </div>
-                    <div className="profile-card__icons">
-                      <button type="button" className="ghost-button" onClick={() => moveCandidateRule(ruleIndex, ruleIndex - 1)} disabled={ruleIndex === 0}>
+                    <div className="torrent-rule__actions">
+                      <button
+                        type="button"
+                        className="ghost-button"
+                        onClick={() => openRuleEditor(rule)}
+                      >
+                        <FontAwesomeIcon icon={faPenToSquare} />
+                        <span>编辑</span>
+                      </button>
+                      <button type="button" className="ghost-button ghost-button--icon" onClick={() => moveCandidateRule(ruleIndex, ruleIndex - 1)} disabled={ruleIndex === 0} aria-label="上移">
                         <FontAwesomeIcon icon={faArrowUp} />
                       </button>
                       <button
                         type="button"
-                        className="ghost-button"
+                        className="ghost-button ghost-button--icon"
                         onClick={() => moveCandidateRule(ruleIndex, ruleIndex + 1)}
                         disabled={ruleIndex === automationForm.torrentSelection.rules.length - 1}
+                        aria-label="下移"
                       >
                         <FontAwesomeIcon icon={faArrowDown} />
                       </button>
@@ -1302,200 +1490,435 @@ export function SettingsPanel({
                         删除
                       </button>
                     </div>
-                  </div>
-                  <div className="settings-grid">
-                    <div>
-                      <dt>规则类型</dt>
-                      <dd>
-                        <select
-                          value={rule.type}
-                          onChange={(event) =>
-                            updateCandidateRule(rule.id, (currentRule) => ({
-                              ...currentRule,
-                              type: event.target.value as TorrentSelectionRuleType
-                            }))
-                          }
-                        >
-                          {TORRENT_SELECTION_RULE_TYPE_OPTIONS.map((type) => (
-                            <option key={type} value={type}>
-                              {TORRENT_SELECTION_RULE_LABELS[type]}
-                            </option>
-                          ))}
-                        </select>
-                      </dd>
-                    </div>
-                    <div>
-                      <dt>方向</dt>
-                      <dd>
-                        <select
-                          value={rule.direction}
-                          onChange={(event) =>
-                            updateCandidateRule(rule.id, (currentRule) => ({
-                              ...currentRule,
-                              direction: event.target.value as TorrentSelectionDirection
-                            }))
-                          }
-                        >
-                          <option value={TorrentSelectionDirection.Desc}>DESC</option>
-                          <option value={TorrentSelectionDirection.Asc}>ASC</option>
-                        </select>
-                      </dd>
-                    </div>
-                    <div>
-                      <dt>启用</dt>
-                      <dd>
-                        <input
-                          type="checkbox"
-                          checked={rule.enabled}
-                          onChange={(event) =>
-                            updateCandidateRule(rule.id, (currentRule) => ({
-                              ...currentRule,
-                              enabled: event.target.checked
-                            }))
-                          }
-                        />
-                      </dd>
-                    </div>
-                  </div>
+                  </header>
 
-                  {rule.type === TorrentSelectionRuleType.IndexerPreference ? (
-                    <div style={{ marginTop: 12, display: "grid", gap: 12 }}>
-                      <div>
-                        <strong>偏好顺序</strong>
-                        <div style={{ display: "grid", gap: 8, marginTop: 8 }}>
-                          {rule.indexerPreference.trackerIds.length === 0 ? <span>未选择索引器，未命中时保持默认稳定顺序。</span> : null}
-                          {rule.indexerPreference.trackerIds.map((trackerId, index) => (
-                            <div key={trackerId} className="toolbar-inline">
-                              <span>{trackerId}</span>
-                              <button type="button" className="ghost-button" onClick={() => moveIndexerPreference(rule.id, index, index - 1)} disabled={index === 0}>
+                  <p className="torrent-rule__summary">{buildRuleSummary(rule)}</p>
+                </article>
+                );
+              })}
+
+              <div className="torrent-rule torrent-rule--placeholder">
+                <span className="torrent-rule__placeholder-icon" aria-hidden="true">
+                  <FontAwesomeIcon icon={faPlus} />
+                </span>
+                <div className="torrent-rule__placeholder-body">
+                  <strong>
+                    {automationForm.torrentSelection.rules.length === 0 ? "尚未添加任何规则" : "添加新规则"}
+                  </strong>
+                  <span>规则会按从上到下顺序依次比较；类型可在新增后随时调整。</span>
+                </div>
+                <Menu
+                  ariaLabel="选择规则类型"
+                  triggerAriaLabel="添加规则"
+                  align="end"
+                  triggerLabel={
+                    <>
+                      <FontAwesomeIcon icon={faPlus} />
+                      <span>添加规则</span>
+                      <FontAwesomeIcon icon={faChevronDown} className="menu__trigger-caret" />
+                    </>
+                  }
+                  items={TORRENT_SELECTION_RULE_TYPE_OPTIONS.map((type) => ({
+                    key: type,
+                    label: TORRENT_SELECTION_RULE_LABELS[type],
+                    hint: TORRENT_SELECTION_RULE_HINTS[type],
+                    onSelect: () => addCandidateRule(type)
+                  }))}
+                />
+              </div>
+            </div>
+          </section>
+
+          {editingRuleDraft ? renderRuleEditor() : null}
+        </form>
+      </article>
+    );
+  }
+
+  /**
+   * 规则编辑抽屉的内联实现：复用既有 .drawer-scrim/.drawer 样式，与
+   * pendingIngestQBRootInitialization 走相同的 inline-modal 路径，不影响 App / DrawerKey。
+   * 编辑期间对 draft 的所有改动都不会写回 automationForm，直到点保存。
+   */
+  function renderRuleEditor() {
+    if (!editingRuleDraft) return null;
+    const draft = editingRuleDraft;
+
+    const setDraft = (updater: (current: TorrentSelectionRuleDraft) => TorrentSelectionRuleDraft) => {
+      setEditingRuleDraft((current) => (current ? updater(current) : current));
+    };
+
+    const setDraftType = (nextType: TorrentSelectionRuleType) => {
+      setEditingRuleDraft((current) => (current ? withTypeReset(current, nextType) : current));
+    };
+
+    const close = () => {
+      if (ruleEditorSaving) return;
+      closeRuleEditor();
+    };
+
+    const scrimClass = `drawer-scrim drawer-scrim--modal${ruleEditorClosing ? " is-closing" : ""}`;
+    // 用 --popover 修饰：作为「设置页之上的小一圈弹窗」呈现，
+    // 不与全幅 --modal（配置与系统、删除确认）同级，视觉上明显是二级弹窗。
+    const drawerClass = `drawer drawer--popover${ruleEditorClosing ? " is-closing" : ""}`;
+
+    // 必须用 portal 渲染到 document.body：
+    // `.drawer-card` 祖先链上有 `backdrop-filter`（来自 `%card-base` 的 `@mixin card-base`），
+    // 会为 position:fixed 的后代新建 containing block，导致 drawer 跟随 settings 的滚动条一起移动，
+    // 而不是悬浮于 viewport。portal 到 body 之后，画法与真正的全局 .drawer 一致。
+    return createPortal(
+      <div className={scrimClass} onClick={close}>
+        <aside className={drawerClass} onClick={(event) => event.stopPropagation()}>
+          <div className="drawer__head">
+            <div>
+              <h2>编辑规则 · {TORRENT_SELECTION_RULE_LABELS[draft.type]}</h2>
+            </div>
+            <button type="button" className="ghost-button" onClick={close} disabled={ruleEditorSaving}>
+              关闭
+            </button>
+          </div>
+          <div className="drawer-body">
+            <div className="drawer-stack">
+              <article className="drawer-card">
+                <div className="drawer-card__head">
+                  <div>
+                    <h3>基础</h3>
+                    <p>规则类型与方向</p>
+                  </div>
+                </div>
+                <form
+                  className="settings-form"
+                  onSubmit={(event) => {
+                    event.preventDefault();
+                    void saveRuleEditor();
+                  }}
+                >
+                  <label className="settings-field">
+                    <FieldLabel text="规则类型" />
+                    <select
+                      value={draft.type}
+                      onChange={(event) => setDraftType(event.target.value as TorrentSelectionRuleType)}
+                    >
+                      {TORRENT_SELECTION_RULE_TYPE_OPTIONS.map((type) => (
+                        <option key={type} value={type}>
+                          {TORRENT_SELECTION_RULE_LABELS[type]}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  <label className="settings-field">
+                    <FieldLabel text="方向" />
+                    <select
+                      value={draft.direction}
+                      onChange={(event) =>
+                        setDraft((current) => ({
+                          ...current,
+                          direction: event.target.value as TorrentSelectionDirection
+                        }))
+                      }
+                    >
+                      <option value={TorrentSelectionDirection.Desc}>DESC</option>
+                      <option value={TorrentSelectionDirection.Asc}>ASC</option>
+                    </select>
+                  </label>
+                  <label className="settings-field">
+                    <FieldLabel text="启用" />
+                    <span className="switch switch--sm" role="switch" aria-checked={draft.enabled}>
+                      <input
+                        type="checkbox"
+                        checked={draft.enabled}
+                        onChange={(event) =>
+                          setDraft((current) => ({ ...current, enabled: event.target.checked }))
+                        }
+                      />
+                      <span className="switch__track" aria-hidden="true" />
+                      <span className="switch__thumb" aria-hidden="true" />
+                    </span>
+                  </label>
+                </form>
+              </article>
+
+              {draft.type === TorrentSelectionRuleType.IndexerPreference ? (
+                <article className="drawer-card">
+                  <div className="drawer-card__head">
+                    <div>
+                      <h3>索引器偏好顺序</h3>
+                      <p>勾选右侧索引器加入「偏好顺序」，用 ↑ ↓ 调整优先级。</p>
+                    </div>
+                  </div>
+                  <div className="settings-form">
+                    <div>
+                      <strong className="torrent-rule__subhead">偏好顺序</strong>
+                      {draft.indexerPreference.trackerIds.length === 0 ? (
+                        <p className="torrent-rule__hint">未选择索引器，未命中时保持默认稳定顺序。</p>
+                      ) : (
+                        <ol className="torrent-rule__chips">
+                          {draft.indexerPreference.trackerIds.map((trackerId, index) => (
+                            <li key={`${draft.id}-selected-${trackerId}`} className="torrent-rule__chip">
+                              <button
+                                type="button"
+                                className="torrent-rule__chip-handle"
+                                onClick={() =>
+                                  setDraft((current) => {
+                                    if (!current) return current;
+                                    const ids = [...current.indexerPreference.trackerIds];
+                                    if (index <= 0) return current;
+                                    [ids[index - 1], ids[index]] = [ids[index], ids[index - 1]];
+                                    return {
+                                      ...current,
+                                      indexerPreference: { trackerIds: ids }
+                                    };
+                                  })
+                                }
+                                disabled={index === 0}
+                                aria-label="上移"
+                              >
                                 <FontAwesomeIcon icon={faArrowUp} />
                               </button>
+                              <span className="torrent-rule__chip-label" title={trackerId}>
+                                {trackerId}
+                              </span>
                               <button
                                 type="button"
-                                className="ghost-button"
-                                onClick={() => moveIndexerPreference(rule.id, index, index + 1)}
-                                disabled={index === rule.indexerPreference.trackerIds.length - 1}
+                                className="torrent-rule__chip-remove"
+                                onClick={() =>
+                                  setDraft((current) =>
+                                    current
+                                      ? {
+                                          ...current,
+                                          indexerPreference: {
+                                            trackerIds: current.indexerPreference.trackerIds.filter((id) => id !== trackerId)
+                                          }
+                                        }
+                                      : current
+                                  )
+                                }
+                                aria-label="移除"
                               >
-                                <FontAwesomeIcon icon={faArrowDown} />
+                                <FontAwesomeIcon icon={faTimes} />
                               </button>
-                              <button type="button" className="ghost-button" onClick={() => toggleIndexerPreference(rule.id, trackerId)}>
-                                移除
-                              </button>
-                            </div>
+                            </li>
                           ))}
-                        </div>
-                      </div>
-                      <div>
-                        <strong>可选索引器</strong>
-                        <div className="settings-actions" style={{ marginTop: 8, flexWrap: "wrap" }}>
-                          {fetchingJackettIndexers ? <span>加载中…</span> : null}
-                          {!fetchingJackettIndexers && jackettIndexers.length === 0 ? <span>当前没有可用的 Jackett 索引器。</span> : null}
-                          {jackettIndexers.map((indexer: JackettIndexer) => {
-                            const selected = rule.indexerPreference.trackerIds.includes(indexer.id);
-                            return (
-                              <button
-                                key={indexer.id}
-                                type="button"
-                                className="ghost-button"
-                                disabled={selected}
-                                onClick={() => toggleIndexerPreference(rule.id, indexer.id)}
-                              >
-                                {indexer.name}
-                              </button>
-                            );
-                          })}
-                        </div>
+                        </ol>
+                      )}
+                    </div>
+                    <div>
+                      <strong className="torrent-rule__subhead">可选索引器</strong>
+                      <div className="torrent-rule__candidates">
+                        {fetchingRuleEditorJackettIndexers ? (
+                          <span className="torrent-rule__hint">加载中…</span>
+                        ) : null}
+                        {!fetchingRuleEditorJackettIndexers && ruleEditorJackettIndexers.length === 0 ? (
+                          <span className="torrent-rule__hint">当前没有可用的 Jackett 索引器。</span>
+                        ) : null}
+                        {ruleEditorJackettIndexers.map((indexer: JackettIndexer) => {
+                          const selected = draft.indexerPreference.trackerIds.includes(indexer.id);
+                          return (
+                            <button
+                              key={indexer.id}
+                              type="button"
+                              className="ghost-button"
+                              disabled={selected}
+                              onClick={() =>
+                                setDraft((current) =>
+                                  current
+                                    ? {
+                                        ...current,
+                                        indexerPreference: {
+                                          trackerIds: current.indexerPreference.trackerIds.includes(indexer.id)
+                                            ? current.indexerPreference.trackerIds
+                                            : [...current.indexerPreference.trackerIds, indexer.id]
+                                        }
+                                      }
+                                    : current
+                                )
+                              }
+                            >
+                              {indexer.name}
+                            </button>
+                          );
+                        })}
                       </div>
                     </div>
-                  ) : null}
+                  </div>
+                </article>
+              ) : null}
 
-                  {rule.type === TorrentSelectionRuleType.TitleMatch ? (
-                    <div style={{ marginTop: 12, display: "grid", gap: 12 }}>
-                      <div className="settings-actions">
-                        <button type="button" className="ghost-button" onClick={() => addTitleMatchClause(rule.id)}>
-                          添加标题规则
-                        </button>
-                      </div>
-                      {rule.titleMatch.clauses.map((clause, clauseIndex) => (
-                        <div key={`${rule.id}-${clauseIndex}`} className="settings-grid">
-                          <div>
-                            <dt>Pattern</dt>
-                            <dd>
-                              <input
-                                value={clause.pattern}
-                                onChange={(event) =>
-                                  updateTitleMatchClause(rule.id, clauseIndex, (currentClause) => ({
-                                    ...currentClause,
-                                    pattern: event.target.value
-                                  }))
+              {draft.type === TorrentSelectionRuleType.TitleMatch ? (
+                <article className="drawer-card">
+                  <div className="drawer-card__head">
+                    <div>
+                      <h3>标题匹配规则</h3>
+                      <p>添加关键字或正则，按顺序匹配；PLAIN 表示纯文本，REGEX 表示正则表达式。</p>
+                    </div>
+                    <button
+                      type="button"
+                      className="ghost-button"
+                      onClick={() =>
+                        setDraft((current) =>
+                          current
+                            ? {
+                                ...current,
+                                titleMatch: {
+                                  clauses: [
+                                    ...current.titleMatch.clauses,
+                                    {
+                                      pattern: "",
+                                      patternMode: TitleMatchPatternMode.Plain,
+                                      effect: TitleMatchEffect.Prefer
+                                    }
+                                  ]
                                 }
-                                placeholder="如 uncensored 或 /\\b4k\\b/i"
-                              />
-                            </dd>
-                          </div>
-                          <div>
-                            <dt>Mode</dt>
-                            <dd>
-                              <select
-                                value={clause.patternMode}
-                                onChange={(event) =>
-                                  updateTitleMatchClause(rule.id, clauseIndex, (currentClause) => ({
-                                    ...currentClause,
-                                    patternMode: event.target.value as TitleMatchPatternMode
-                                  }))
-                                }
-                              >
-                                <option value={TitleMatchPatternMode.Plain}>PLAIN</option>
-                                <option value={TitleMatchPatternMode.Regex}>REGEX</option>
-                              </select>
-                            </dd>
-                          </div>
-                          <div>
-                            <dt>Effect</dt>
-                            <dd>
-                              <select
-                                value={clause.effect}
-                                onChange={(event) =>
-                                  updateTitleMatchClause(rule.id, clauseIndex, (currentClause) => ({
-                                    ...currentClause,
-                                    effect: event.target.value as TitleMatchEffect
-                                  }))
-                                }
-                              >
-                                <option value={TitleMatchEffect.Prefer}>PREFER</option>
-                                <option value={TitleMatchEffect.Avoid}>AVOID</option>
-                              </select>
-                            </dd>
-                          </div>
-                          <div>
-                            <dt>顺序</dt>
-                            <dd className="toolbar-inline">
-                              <button type="button" className="ghost-button" onClick={() => moveTitleMatchClause(rule.id, clauseIndex, clauseIndex - 1)} disabled={clauseIndex === 0}>
-                                <FontAwesomeIcon icon={faArrowUp} />
-                              </button>
-                              <button
-                                type="button"
-                                className="ghost-button"
-                                onClick={() => moveTitleMatchClause(rule.id, clauseIndex, clauseIndex + 1)}
-                                disabled={clauseIndex === rule.titleMatch.clauses.length - 1}
-                              >
-                                <FontAwesomeIcon icon={faArrowDown} />
-                              </button>
-                              <button type="button" className="ghost-button" onClick={() => removeTitleMatchClause(rule.id, clauseIndex)}>
-                                删除
-                              </button>
-                            </dd>
+                              }
+                            : current
+                        )
+                      }
+                    >
+                      添加标题规则
+                    </button>
+                  </div>
+                  {draft.titleMatch.clauses.length === 0 ? (
+                    <p className="torrent-rule__hint">尚未添加标题匹配规则。</p>
+                  ) : (
+                    <div className="torrent-rule__clauses">
+                      {draft.titleMatch.clauses.map((clause, clauseIndex) => (
+                        <div key={`${draft.id}-clause-${clauseIndex}`} className="torrent-rule__clause">
+                          <input
+                            className="torrent-rule__clause-pattern"
+                            value={clause.pattern}
+                            onChange={(event) =>
+                              setDraft((current) => {
+                                if (!current) return current;
+                                const clauses = [...current.titleMatch.clauses];
+                                clauses[clauseIndex] = { ...clauses[clauseIndex], pattern: event.target.value };
+                                return { ...current, titleMatch: { clauses } };
+                              })
+                            }
+                            placeholder="Pattern：uncensored 或 /\\b4k\\b/i"
+                            aria-label="Pattern"
+                          />
+                          <select
+                            className="torrent-rule__clause-mode"
+                            value={clause.patternMode}
+                            onChange={(event) =>
+                              setDraft((current) => {
+                                if (!current) return current;
+                                const clauses = [...current.titleMatch.clauses];
+                                clauses[clauseIndex] = {
+                                  ...clauses[clauseIndex],
+                                  patternMode: event.target.value as TitleMatchPatternMode
+                                };
+                                return { ...current, titleMatch: { clauses } };
+                              })
+                            }
+                            aria-label="匹配模式"
+                          >
+                            <option value={TitleMatchPatternMode.Plain}>PLAIN</option>
+                            <option value={TitleMatchPatternMode.Regex}>REGEX</option>
+                          </select>
+                          <select
+                            className="torrent-rule__clause-effect"
+                            value={clause.effect}
+                            onChange={(event) =>
+                              setDraft((current) => {
+                                if (!current) return current;
+                                const clauses = [...current.titleMatch.clauses];
+                                clauses[clauseIndex] = {
+                                  ...clauses[clauseIndex],
+                                  effect: event.target.value as TitleMatchEffect
+                                };
+                                return { ...current, titleMatch: { clauses } };
+                              })
+                            }
+                            aria-label="效果"
+                          >
+                            <option value={TitleMatchEffect.Prefer}>PREFER</option>
+                            <option value={TitleMatchEffect.Avoid}>AVOID</option>
+                          </select>
+                          <div className="torrent-rule__clause-actions">
+                            <button
+                              type="button"
+                              className="ghost-button ghost-button--icon"
+                              onClick={() =>
+                                setDraft((current) => {
+                                  if (!current || clauseIndex === 0) return current;
+                                  const clauses = [...current.titleMatch.clauses];
+                                  [clauses[clauseIndex - 1], clauses[clauseIndex]] = [
+                                    clauses[clauseIndex],
+                                    clauses[clauseIndex - 1]
+                                  ];
+                                  return { ...current, titleMatch: { clauses } };
+                                })
+                              }
+                              disabled={clauseIndex === 0}
+                              aria-label="上移"
+                            >
+                              <FontAwesomeIcon icon={faArrowUp} />
+                            </button>
+                            <button
+                              type="button"
+                              className="ghost-button ghost-button--icon"
+                              onClick={() =>
+                                setDraft((current) => {
+                                  if (!current || clauseIndex === current.titleMatch.clauses.length - 1) return current;
+                                  const clauses = [...current.titleMatch.clauses];
+                                  [clauses[clauseIndex], clauses[clauseIndex + 1]] = [
+                                    clauses[clauseIndex + 1],
+                                    clauses[clauseIndex]
+                                  ];
+                                  return { ...current, titleMatch: { clauses } };
+                                })
+                              }
+                              disabled={clauseIndex === draft.titleMatch.clauses.length - 1}
+                              aria-label="下移"
+                            >
+                              <FontAwesomeIcon icon={faArrowDown} />
+                            </button>
+                            <button
+                              type="button"
+                              className="ghost-button ghost-button--icon"
+                              onClick={() =>
+                                setDraft((current) =>
+                                  current
+                                    ? {
+                                        ...current,
+                                        titleMatch: {
+                                          clauses: current.titleMatch.clauses.filter((_, idx) => idx !== clauseIndex)
+                                        }
+                                      }
+                                    : current
+                                )
+                              }
+                              aria-label="删除"
+                            >
+                              <FontAwesomeIcon icon={faTrash} />
+                            </button>
                           </div>
                         </div>
                       ))}
                     </div>
-                  ) : null}
+                  )}
                 </article>
-              ))}
+              ) : null}
+
+              <div className="settings-actions">
+                <button type="button" className="ghost-button" onClick={close} disabled={ruleEditorSaving}>
+                  取消
+                </button>
+                <button
+                  type="button"
+                  className="primary"
+                  onClick={() => void saveRuleEditor()}
+                  disabled={ruleEditorSaving}
+                >
+                  {ruleEditorSaving ? "保存中…" : "保存"}
+                </button>
+              </div>
             </div>
-          </section>
-        </form>
-      </article>
+          </div>
+        </aside>
+      </div>,
+      document.body
     );
   }
 
