@@ -9,6 +9,7 @@ CREATE TABLE IF NOT EXISTS tasks (
   id TEXT PRIMARY KEY,
   source TEXT NOT NULL DEFAULT 'MANUAL' CHECK (source IN ('MANUAL', 'SEARCH', 'SUBSCRIPTION')),
   query TEXT NOT NULL,
+  code TEXT NOT NULL DEFAULT '',
   status TEXT NOT NULL CHECK (status IN ('pending', 'added', 'downloading', 'completed', 'failed')),
 
   torrent_url TEXT NOT NULL DEFAULT '',
@@ -16,6 +17,8 @@ CREATE TABLE IF NOT EXISTS tasks (
   category TEXT NOT NULL DEFAULT '',
   tags TEXT NOT NULL DEFAULT '',
 
+  torrent_identity_hash TEXT NOT NULL DEFAULT '',
+  torrent_identity_magnet TEXT NOT NULL DEFAULT '',
   torrent_hash TEXT NOT NULL DEFAULT '',
   torrent_name TEXT NOT NULL DEFAULT '',
   progress REAL NOT NULL DEFAULT 0 CHECK (progress >= 0 AND progress <= 1),
@@ -93,7 +96,7 @@ CREATE INDEX IF NOT EXISTS idx_task_events_created_at
   ON task_events (created_at DESC);
 
 INSERT INTO task_store_meta (key, value)
-VALUES ('schema_version', '2')
+VALUES ('schema_version', '3')
 ON CONFLICT(key) DO UPDATE SET value = excluded.value;
 
 CREATE TABLE IF NOT EXISTS subscription_performer_state (

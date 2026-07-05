@@ -75,6 +75,7 @@ type Task {
   id: ID!
   source: TaskSource!
   query: String!
+  code: String!
   status: String!
   candidate: DownloadCandidate!
   torrentUrl: String!

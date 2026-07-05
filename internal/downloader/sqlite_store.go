@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"strings"
 	"time"
 )
 
@@ -93,6 +94,49 @@ func (s *SQLiteTaskStore) Find(ctx context.Context, id string) (*Task, error) {
 	return task, nil
 }
 
+func (s *SQLiteTaskStore) FindByCode(ctx context.Context, code string) (*Task, error) {
+	code = normalizeCode(code)
+	if code == "" {
+		return nil, nil
+	}
+	row := s.db.QueryRowContext(ctx, taskSelectSQL+` WHERE code = ? ORDER BY created_at DESC, id ASC LIMIT 1`, code)
+	task, err := scanTask(row)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, nil
+		}
+		return nil, fmt.Errorf("downloader: find task by code %q: %w", code, err)
+	}
+	return task, nil
+}
+
+func (s *SQLiteTaskStore) FindByTorrentIdentity(ctx context.Context, infoHash string, magnetURI string) (*Task, error) {
+	infoHash = normalizeInfoHash(infoHash)
+	magnetURI = normalizeMagnetURI(magnetURI)
+	if infoHash == "" && magnetURI == "" {
+		return nil, nil
+	}
+	var (
+		row *sql.Row
+	)
+	switch {
+	case infoHash != "" && magnetURI != "":
+		row = s.db.QueryRowContext(ctx, taskSelectSQL+` WHERE torrent_identity_hash = ? OR torrent_identity_magnet = ? ORDER BY created_at DESC, id ASC LIMIT 1`, infoHash, magnetURI)
+	case infoHash != "":
+		row = s.db.QueryRowContext(ctx, taskSelectSQL+` WHERE torrent_identity_hash = ? ORDER BY created_at DESC, id ASC LIMIT 1`, infoHash)
+	default:
+		row = s.db.QueryRowContext(ctx, taskSelectSQL+` WHERE torrent_identity_magnet = ? ORDER BY created_at DESC, id ASC LIMIT 1`, magnetURI)
+	}
+	task, err := scanTask(row)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, nil
+		}
+		return nil, fmt.Errorf("downloader: find task by torrent identity: %w", err)
+	}
+	return task, nil
+}
+
 func (s *SQLiteTaskStore) List(ctx context.Context) ([]*Task, error) {
 	rows, err := s.db.QueryContext(ctx, taskSelectSQL+` ORDER BY created_at DESC, id ASC`)
 	if err != nil {
@@ -146,11 +190,14 @@ SELECT
   id,
   source,
   query,
+  code,
   status,
   torrent_url,
   save_path,
   category,
   tags,
+  torrent_identity_hash,
+  torrent_identity_magnet,
   torrent_hash,
   torrent_name,
   progress,
@@ -189,24 +236,27 @@ func upsertTaskRow(ctx context.Context, tx *sql.Tx, task *Task, isUpdate bool) e
 	}
 	query := `
 INSERT INTO tasks (
-  id, source, query, status, torrent_url, save_path, category, tags,
-  torrent_hash, torrent_name, progress, qbittorrent_state, content_path,
+  id, source, query, code, status, torrent_url, save_path, category, tags,
+  torrent_identity_hash, torrent_identity_magnet, torrent_hash, torrent_name, progress, qbittorrent_state, content_path,
   completed_at, stash_mode, stash_source_path, stash_transfer_action, stash_transfer_path,
   stash_transfer_status, stash_transfer_error, stash_job_id, stash_scan_path, stash_scan_status,
   stash_scan_error, stash_scan_hint, stash_scan_started_at, error,
   candidate_title, candidate_tracker, candidate_info_hash, candidate_link, candidate_magnet_uri,
   candidate_size, candidate_seeders, candidate_peers, created_at, updated_at
-) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
 	if isUpdate {
 		query += `
 ON CONFLICT(id) DO UPDATE SET
   source = excluded.source,
   query = excluded.query,
+  code = excluded.code,
   status = excluded.status,
   torrent_url = excluded.torrent_url,
   save_path = excluded.save_path,
   category = excluded.category,
   tags = excluded.tags,
+  torrent_identity_hash = excluded.torrent_identity_hash,
+  torrent_identity_magnet = excluded.torrent_identity_magnet,
   torrent_hash = excluded.torrent_hash,
   torrent_name = excluded.torrent_name,
   progress = excluded.progress,
@@ -241,11 +291,14 @@ ON CONFLICT(id) DO UPDATE SET
 		task.ID,
 		string(source),
 		task.Query,
+		task.Code,
 		string(task.Status),
 		task.TorrentURL,
 		task.SavePath,
 		task.Category,
 		task.Tags,
+		task.TorrentIdentityHash,
+		task.TorrentIdentityMagnet,
 		task.TorrentHash,
 		task.TorrentName,
 		task.Progress,
@@ -280,7 +333,7 @@ ON CONFLICT(id) DO UPDATE SET
 		if isUpdate {
 			op = "update"
 		}
-		return fmt.Errorf("downloader: %s task %q: %w", op, task.ID, err)
+		return fmt.Errorf("downloader: %s task %q: %w", op, task.ID, translateTaskConstraintError(err))
 	}
 
 	return nil
@@ -322,11 +375,14 @@ func scanTask(scanner taskScanner) (*Task, error) {
 		&task.ID,
 		&source,
 		&task.Query,
+		&task.Code,
 		&status,
 		&task.TorrentURL,
 		&task.SavePath,
 		&task.Category,
 		&task.Tags,
+		&task.TorrentIdentityHash,
+		&task.TorrentIdentityMagnet,
 		&task.TorrentHash,
 		&task.TorrentName,
 		&task.Progress,
@@ -385,4 +441,23 @@ func scanTask(scanner taskScanner) (*Task, error) {
 
 func nowUTC() time.Time {
 	return time.Now().UTC()
+}
+
+func translateTaskConstraintError(err error) error {
+	if err == nil {
+		return nil
+	}
+	message := strings.ToLower(err.Error())
+	switch {
+	case strings.Contains(message, "idx_tasks_code_unique"),
+		strings.Contains(message, "tasks.code"):
+		return ErrDuplicateCodeTask
+	case strings.Contains(message, "idx_tasks_torrent_identity_hash_unique"),
+		strings.Contains(message, "idx_tasks_torrent_identity_magnet_unique"),
+		strings.Contains(message, "tasks.torrent_identity_hash"),
+		strings.Contains(message, "tasks.torrent_identity_magnet"):
+		return ErrDuplicateTorrentTask
+	default:
+		return err
+	}
 }

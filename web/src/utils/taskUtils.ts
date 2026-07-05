@@ -264,6 +264,27 @@ function describeTaskFailure(taskError: string): TaskFailureSummary | null {
       tone: "tone-warn"
     };
   }
+  if (taskError.includes("duplicate torrent task")) {
+    return {
+      title: "重复种子任务",
+      detail: "同一个 torrent 或 magnet 已存在对应的 Moji 任务。",
+      tone: "tone-warn"
+    };
+  }
+  if (taskError.includes("duplicate code task")) {
+    return {
+      title: "重复番号任务",
+      detail: "同一个番号已经存在 Moji 任务，当前请求被严格去重拦截。",
+      tone: "tone-warn"
+    };
+  }
+  if (taskError.includes("task code is required")) {
+    return {
+      title: "无法提取番号",
+      detail: "任务创建前必须解析出影片番号，但当前输入无法稳定提取 code。",
+      tone: "tone-warn"
+    };
+  }
   if (taskError.includes("qBittorrent client is required") || taskError.includes("qBittorrent client is not configured")) {
     return {
       title: "下载器未启用",

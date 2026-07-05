@@ -964,3 +964,59 @@ func TestQueueDiscoveredSceneUsesSearchTaskSource(t *testing.T) {
 		t.Fatalf("unexpected downloader sources: %+v", fakeDL.sources)
 	}
 }
+
+func TestRefreshSubscribedPerformerFailsWhenStashBoxSceneCodeMissing(t *testing.T) {
+	endpoint := "https://javstash.example.org/graphql"
+	title := "Release Without Code"
+
+	registry := newStashboxRegistry(stubFactory{
+		client: &fakeStashboxClient{
+			performer: &stashboxgraphql.PerformerFragment{ID: "js-1", Name: "Rara Anzai"},
+			scenes: []*stashboxgraphql.SceneFragment{
+				{ID: "js-scene-1", Title: &title},
+			},
+		},
+	})
+	registry.Replace([]stash.StashBoxEndpoint{{Name: "JavStash", Endpoint: endpoint, APIKey: "ignored"}})
+
+	service, err := NewService(&fakeStashClient{
+		performers: map[string]*stashgraphql.PerformerFragment{
+			"p1": {
+				ID:           "p1",
+				Name:         "Rara Anzai",
+				CustomFields: map[string]any{DefaultCustomFieldKey: true},
+				StashIds:     []*stashgraphql.StashIDFragment{{Endpoint: endpoint, StashID: "js-1"}},
+			},
+		},
+	}, registry, nil, NewMemoryStore())
+	if err != nil {
+		t.Fatalf("NewService failed: %v", err)
+	}
+
+	_, err = service.RefreshSubscribedPerformer(context.Background(), "p1")
+	if err == nil || err.Error() != `subscription: stash-box scene "js-scene-1" is missing code` {
+		t.Fatalf("expected missing code error, got %v", err)
+	}
+}
+
+func TestQueueDiscoveredSceneRejectsMissingCode(t *testing.T) {
+	endpoint := "https://box.example/graphql"
+	sceneID := "scene-1"
+
+	registry := newStashboxRegistry(stubFactory{
+		client: &fakeStashboxClient{
+			scenes: []*stashboxgraphql.SceneFragment{{ID: sceneID}},
+		},
+	})
+	registry.Replace([]stash.StashBoxEndpoint{{Name: "Preferred", Endpoint: endpoint, APIKey: "ignored"}})
+
+	service, err := NewService(&fakeStashClient{performers: map[string]*stashgraphql.PerformerFragment{}}, registry, &fakeDownloader{}, NewMemoryStore())
+	if err != nil {
+		t.Fatalf("NewService failed: %v", err)
+	}
+
+	task, err := service.QueueDiscoveredScene(context.Background(), sceneID, endpoint)
+	if err == nil || err.Error() != `subscription: scene "scene-1" is missing code` {
+		t.Fatalf("expected missing code error, got task=%+v err=%v", task, err)
+	}
+}

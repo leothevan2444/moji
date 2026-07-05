@@ -438,6 +438,7 @@ type ComplexityRoot struct {
 	Task struct {
 		Candidate           func(childComplexity int) int
 		Category            func(childComplexity int) int
+		Code                func(childComplexity int) int
 		CompletedAt         func(childComplexity int) int
 		ContentPath         func(childComplexity int) int
 		CreatedAt           func(childComplexity int) int
@@ -2560,6 +2561,13 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.Task.Category(childComplexity), true
 
+	case "Task.code":
+		if e.complexity.Task.Code == nil {
+			break
+		}
+
+		return e.complexity.Task.Code(childComplexity), true
+
 	case "Task.completedAt":
 		if e.complexity.Task.CompletedAt == nil {
 			break
@@ -3760,6 +3768,7 @@ type Task {
   id: ID!
   source: TaskSource!
   query: String!
+  code: String!
   status: String!
   candidate: DownloadCandidate!
   torrentUrl: String!
@@ -8614,6 +8623,8 @@ func (ec *executionContext) fieldContext_Mutation_addTorrent(ctx context.Context
 				return ec.fieldContext_Task_source(ctx, field)
 			case "query":
 				return ec.fieldContext_Task_query(ctx, field)
+			case "code":
+				return ec.fieldContext_Task_code(ctx, field)
 			case "status":
 				return ec.fieldContext_Task_status(ctx, field)
 			case "candidate":
@@ -8731,6 +8742,8 @@ func (ec *executionContext) fieldContext_Mutation_downloadMedia(ctx context.Cont
 				return ec.fieldContext_Task_source(ctx, field)
 			case "query":
 				return ec.fieldContext_Task_query(ctx, field)
+			case "code":
+				return ec.fieldContext_Task_code(ctx, field)
 			case "status":
 				return ec.fieldContext_Task_status(ctx, field)
 			case "candidate":
@@ -8848,6 +8861,8 @@ func (ec *executionContext) fieldContext_Mutation_syncTaskProgress(_ context.Con
 				return ec.fieldContext_Task_source(ctx, field)
 			case "query":
 				return ec.fieldContext_Task_query(ctx, field)
+			case "code":
+				return ec.fieldContext_Task_code(ctx, field)
 			case "status":
 				return ec.fieldContext_Task_status(ctx, field)
 			case "candidate":
@@ -8954,6 +8969,8 @@ func (ec *executionContext) fieldContext_Mutation_triggerTaskStashScan(ctx conte
 				return ec.fieldContext_Task_source(ctx, field)
 			case "query":
 				return ec.fieldContext_Task_query(ctx, field)
+			case "code":
+				return ec.fieldContext_Task_code(ctx, field)
 			case "status":
 				return ec.fieldContext_Task_status(ctx, field)
 			case "candidate":
@@ -9071,6 +9088,8 @@ func (ec *executionContext) fieldContext_Mutation_triggerStashScans(_ context.Co
 				return ec.fieldContext_Task_source(ctx, field)
 			case "query":
 				return ec.fieldContext_Task_query(ctx, field)
+			case "code":
+				return ec.fieldContext_Task_code(ctx, field)
 			case "status":
 				return ec.fieldContext_Task_status(ctx, field)
 			case "candidate":
@@ -9177,6 +9196,8 @@ func (ec *executionContext) fieldContext_Mutation_deleteTask(ctx context.Context
 				return ec.fieldContext_Task_source(ctx, field)
 			case "query":
 				return ec.fieldContext_Task_query(ctx, field)
+			case "code":
+				return ec.fieldContext_Task_code(ctx, field)
 			case "status":
 				return ec.fieldContext_Task_status(ctx, field)
 			case "candidate":
@@ -9294,6 +9315,8 @@ func (ec *executionContext) fieldContext_Mutation_queueDiscoveredScene(ctx conte
 				return ec.fieldContext_Task_source(ctx, field)
 			case "query":
 				return ec.fieldContext_Task_query(ctx, field)
+			case "code":
+				return ec.fieldContext_Task_code(ctx, field)
 			case "status":
 				return ec.fieldContext_Task_status(ctx, field)
 			case "candidate":
@@ -12347,6 +12370,8 @@ func (ec *executionContext) fieldContext_Query_task(ctx context.Context, field g
 				return ec.fieldContext_Task_source(ctx, field)
 			case "query":
 				return ec.fieldContext_Task_query(ctx, field)
+			case "code":
+				return ec.fieldContext_Task_code(ctx, field)
 			case "status":
 				return ec.fieldContext_Task_status(ctx, field)
 			case "candidate":
@@ -12464,6 +12489,8 @@ func (ec *executionContext) fieldContext_Query_tasks(_ context.Context, field gr
 				return ec.fieldContext_Task_source(ctx, field)
 			case "query":
 				return ec.fieldContext_Task_query(ctx, field)
+			case "code":
+				return ec.fieldContext_Task_code(ctx, field)
 			case "status":
 				return ec.fieldContext_Task_status(ctx, field)
 			case "candidate":
@@ -18103,6 +18130,50 @@ func (ec *executionContext) _Task_query(ctx context.Context, field graphql.Colle
 }
 
 func (ec *executionContext) fieldContext_Task_query(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Task",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Task_code(ctx context.Context, field graphql.CollectedField, obj *model.Task) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Task_code(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Code, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Task_code(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "Task",
 		Field:      field,
@@ -25848,6 +25919,11 @@ func (ec *executionContext) _Task(ctx context.Context, sel ast.SelectionSet, obj
 			}
 		case "query":
 			out.Values[i] = ec._Task_query(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "code":
+			out.Values[i] = ec._Task_code(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}

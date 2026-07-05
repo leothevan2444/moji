@@ -97,6 +97,7 @@ func taskToModel(task *downloader.Task) *model.Task {
 		ID:                  task.ID,
 		Source:              model.TaskSource(source),
 		Query:               task.Query,
+		Code:                task.Code,
 		Status:              string(task.Status),
 		Candidate:           candidateToModel(task.Candidate),
 		TorrentURL:          task.TorrentURL,

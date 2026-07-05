@@ -22,6 +22,7 @@ func TestDownloadMediaCreatesTask(t *testing.T) {
 		downloadTask: &downloader.Task{
 			ID:         "task-1",
 			Query:      "ABCD-123",
+			Code:       "ABCD-123",
 			Status:     downloader.TaskStatusAdded,
 			TorrentURL: "magnet:?xt=urn:btih:test",
 			Candidate: downloader.Candidate{
@@ -39,6 +40,7 @@ func TestDownloadMediaCreatesTask(t *testing.T) {
 		downloadMedia(input: { query: "ABCD-123", limit: 1 }) {
 			id
 			query
+			code
 			status
 			torrentUrl
 			candidate { title tracker seeders }
@@ -49,7 +51,7 @@ func TestDownloadMediaCreatesTask(t *testing.T) {
 		t.Fatalf("expected no errors, got %+v", resp.Errors)
 	}
 	task := resp.Data.DownloadMedia
-	if task.ID != "task-1" || task.Status != "added" || task.Candidate.Title != "ABCD-123" {
+	if task.ID != "task-1" || task.Code != "ABCD-123" || task.Status != "added" || task.Candidate.Title != "ABCD-123" {
 		t.Fatalf("unexpected download task response: %+v", task)
 	}
 	if downloader.downloadRequest.Query != "ABCD-123" || downloader.downloadRequest.Limit != 1 {
@@ -65,6 +67,7 @@ func TestAddTorrentCreatesTask(t *testing.T) {
 		addTask: &downloader.Task{
 			ID:         "task-manual",
 			Query:      "magnet:?xt=urn:btih:manual",
+			Code:       "ABCD-123",
 			Status:     downloader.TaskStatusAdded,
 			TorrentURL: "magnet:?xt=urn:btih:manual",
 			Candidate: downloader.Candidate{
@@ -80,6 +83,7 @@ func TestAddTorrentCreatesTask(t *testing.T) {
 	resp := executeGraphQL(t, resolver, `mutation {
 		addTorrent(input: { url: "magnet:?xt=urn:btih:manual", category: "moji" }) {
 			id
+			code
 			status
 			torrentUrl
 		}
@@ -88,7 +92,7 @@ func TestAddTorrentCreatesTask(t *testing.T) {
 	if len(resp.Errors) > 0 {
 		t.Fatalf("expected no errors, got %+v", resp.Errors)
 	}
-	if resp.Data.AddTorrent.ID != "task-manual" || resp.Data.AddTorrent.Status != "added" {
+	if resp.Data.AddTorrent.ID != "task-manual" || resp.Data.AddTorrent.Code != "ABCD-123" || resp.Data.AddTorrent.Status != "added" {
 		t.Fatalf("unexpected add torrent response: %+v", resp.Data.AddTorrent)
 	}
 	if downloader.addRequest.URL != "magnet:?xt=urn:btih:manual" || downloader.addRequest.Category != "moji" {
@@ -135,7 +139,7 @@ func TestTasksQueryListsTasks(t *testing.T) {
 	}
 	resolver := NewResolver(nil, nil, downloader, nil, "test-version")
 
-	resp := executeGraphQL(t, resolver, `{ tasks { id query status } }`)
+	resp := executeGraphQL(t, resolver, `{ tasks { id query code status } }`)
 	if len(resp.Errors) > 0 {
 		t.Fatalf("expected no errors, got %+v", resp.Errors)
 	}
@@ -918,12 +922,14 @@ type graphQLTaskResponse struct {
 	Data struct {
 		AddTorrent struct {
 			ID         string `json:"id"`
+			Code       string `json:"code"`
 			Status     string `json:"status"`
 			TorrentURL string `json:"torrentUrl"`
 		} `json:"addTorrent"`
 		DownloadMedia struct {
 			ID         string `json:"id"`
 			Query      string `json:"query"`
+			Code       string `json:"code"`
 			Status     string `json:"status"`
 			TorrentURL string `json:"torrentUrl"`
 			Candidate  struct {
@@ -935,6 +941,7 @@ type graphQLTaskResponse struct {
 		Tasks []struct {
 			ID     string `json:"id"`
 			Query  string `json:"query"`
+			Code   string `json:"code"`
 			Status string `json:"status"`
 		} `json:"tasks"`
 		Task *struct {

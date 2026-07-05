@@ -473,6 +473,7 @@ type Task struct {
 	ID                  string             `json:"id"`
 	Source              TaskSource         `json:"source"`
 	Query               string             `json:"query"`
+	Code                string             `json:"code"`
 	Status              string             `json:"status"`
 	Candidate           *DownloadCandidate `json:"candidate"`
 	TorrentURL          string             `json:"torrentUrl"`

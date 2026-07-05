@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"net/http"
 	"net/url"
 	"os"
 	"path/filepath"
@@ -45,6 +46,8 @@ type TaskStore interface {
 	Create(ctx context.Context, task *Task) error
 	Update(ctx context.Context, task *Task) error
 	Find(ctx context.Context, id string) (*Task, error)
+	FindByCode(ctx context.Context, code string) (*Task, error)
+	FindByTorrentIdentity(ctx context.Context, infoHash string, magnetURI string) (*Task, error)
 	List(ctx context.Context) ([]*Task, error)
 	Delete(ctx context.Context, id string) (*Task, error)
 }
@@ -68,36 +71,39 @@ const (
 )
 
 type Task struct {
-	ID                  string
-	Source              TaskSource
-	Query               string
-	Status              TaskStatus
-	Candidate           Candidate
-	TorrentURL          string
-	SavePath            string
-	Category            string
-	Tags                string
-	TorrentHash         string
-	TorrentName         string
-	Progress            float64
-	QBittorrentState    string
-	ContentPath         string
-	CompletedAt         *time.Time
-	StashMode           string
-	StashSourcePath     string
-	StashTransferAction string
-	StashTransferPath   string
-	StashTransferStatus string
-	StashTransferError  string
-	StashJobID          string
-	StashScanPath       string
-	StashScanStatus     string
-	StashScanError      string
-	StashScanHint       string
-	StashScanStartedAt  *time.Time
-	Error               string
-	CreatedAt           time.Time
-	UpdatedAt           time.Time
+	ID                    string
+	Source                TaskSource
+	Query                 string
+	Code                  string
+	Status                TaskStatus
+	Candidate             Candidate
+	TorrentURL            string
+	SavePath              string
+	Category              string
+	Tags                  string
+	TorrentIdentityHash   string
+	TorrentIdentityMagnet string
+	TorrentHash           string
+	TorrentName           string
+	Progress              float64
+	QBittorrentState      string
+	ContentPath           string
+	CompletedAt           *time.Time
+	StashMode             string
+	StashSourcePath       string
+	StashTransferAction   string
+	StashTransferPath     string
+	StashTransferStatus   string
+	StashTransferError    string
+	StashJobID            string
+	StashScanPath         string
+	StashScanStatus       string
+	StashScanError        string
+	StashScanHint         string
+	StashScanStartedAt    *time.Time
+	Error                 string
+	CreatedAt             time.Time
+	UpdatedAt             time.Time
 }
 
 type Candidate struct {
@@ -132,10 +138,17 @@ type AddTorrentRequest struct {
 	Paused   *bool
 }
 
+var (
+	ErrDuplicateTorrentTask = errors.New("duplicate torrent task")
+	ErrDuplicateCodeTask    = errors.New("duplicate code task")
+	ErrTaskCodeRequired     = errors.New("task code is required")
+)
+
 type Service struct {
 	tracker            tracker.Tracker
 	qbt                TorrentClient
 	store              TaskStore
+	httpClient         *http.Client
 	selector           CandidateSelector
 	fileOps            FileOperator
 	candidateSelection func() config.CandidateSelectionConfig
@@ -185,6 +198,7 @@ func NewService(tr tracker.Tracker, qbt TorrentClient, store TaskStore, options 
 		tracker:            tr,
 		qbt:                qbt,
 		store:              store,
+		httpClient:         &http.Client{Timeout: 15 * time.Second},
 		selector:           defaultCandidateSelector{},
 		fileOps:            osFileOperator{},
 		candidateSelection: config.DefaultCandidateSelectionConfig,
@@ -212,6 +226,14 @@ func WithCandidateSelector(selector CandidateSelector) Option {
 	return func(s *Service) {
 		if selector != nil {
 			s.selector = selector
+		}
+	}
+}
+
+func WithHTTPClient(client *http.Client) Option {
+	return func(s *Service) {
+		if client != nil {
+			s.httpClient = client
 		}
 	}
 }
@@ -360,23 +382,31 @@ func (s *Service) DownloadMediaContext(ctx context.Context, req DownloadRequest)
 
 	candidate := candidateFromSearchResult(result)
 	torrentURL := preferredTorrentURL(result)
+	identity := torrentIdentityFromCandidate(candidate, torrentURL)
+	code := extractCode(candidate.Title, candidate.Link, candidate.MagnetURI)
+	if err := s.ensureTaskCanBeCreated(ctx, identity, code); err != nil {
+		return nil, err
+	}
 	now := s.now().UTC()
 	source := req.Source
 	if source == "" {
 		source = TaskSourceManual
 	}
 	task := &Task{
-		ID:         s.newID(),
-		Source:     source,
-		Query:      query,
-		Status:     TaskStatusPending,
-		Candidate:  candidate,
-		TorrentURL: torrentURL,
-		SavePath:   req.SavePath,
-		Category:   req.Category,
-		Tags:       req.Tags,
-		CreatedAt:  now,
-		UpdatedAt:  now,
+		ID:                    s.newID(),
+		Source:                source,
+		Query:                 query,
+		Code:                  code,
+		Status:                TaskStatusPending,
+		Candidate:             candidate,
+		TorrentURL:            torrentURL,
+		SavePath:              req.SavePath,
+		Category:              req.Category,
+		Tags:                  req.Tags,
+		TorrentIdentityHash:   identity.InfoHash,
+		TorrentIdentityMagnet: identity.MagnetURI,
+		CreatedAt:             now,
+		UpdatedAt:             now,
 	}
 
 	if err := s.store.Create(ctx, task); err != nil {
@@ -434,23 +464,34 @@ func (s *Service) AddTorrentContext(ctx context.Context, req AddTorrentRequest) 
 		return nil, errors.New("downloader: torrent url is required")
 	}
 
+	candidate, code, identity, err := s.resolveManualTorrent(ctx, torrentURL)
+	if err != nil {
+		return nil, err
+	}
+	if err := s.ensureTaskCanBeCreated(ctx, identity, code); err != nil {
+		return nil, err
+	}
+
 	now := s.now().UTC()
 	source := req.Source
 	if source == "" {
 		source = TaskSourceManual
 	}
 	task := &Task{
-		ID:         s.newID(),
-		Source:     source,
-		Query:      torrentURL,
-		Status:     TaskStatusPending,
-		Candidate:  candidateFromTorrentURL(torrentURL),
-		TorrentURL: torrentURL,
-		SavePath:   req.SavePath,
-		Category:   req.Category,
-		Tags:       req.Tags,
-		CreatedAt:  now,
-		UpdatedAt:  now,
+		ID:                    s.newID(),
+		Source:                source,
+		Query:                 torrentURL,
+		Code:                  code,
+		Status:                TaskStatusPending,
+		Candidate:             candidate,
+		TorrentURL:            torrentURL,
+		SavePath:              req.SavePath,
+		Category:              req.Category,
+		Tags:                  req.Tags,
+		TorrentIdentityHash:   identity.InfoHash,
+		TorrentIdentityMagnet: identity.MagnetURI,
+		CreatedAt:             now,
+		UpdatedAt:             now,
 	}
 
 	if err := s.store.Create(ctx, task); err != nil {
@@ -557,13 +598,17 @@ func matchTaskTorrent(task *Task, torrents []qbittorrent.Torrent) (qbittorrent.T
 			}
 		}
 	}
-
-	needle := strings.TrimSpace(task.TorrentURL)
-	for _, torrent := range torrents {
-		if needle != "" && torrent.MagnetURI == needle {
-			return torrent, true
+	if task.TorrentIdentityHash != "" {
+		for _, torrent := range torrents {
+			if strings.EqualFold(torrent.Hash, task.TorrentIdentityHash) {
+				return torrent, true
+			}
 		}
-		if needle != "" && strings.Contains(torrent.Name, needle) {
+	}
+
+	needle := normalizeMagnetURI(task.TorrentURL)
+	for _, torrent := range torrents {
+		if needle != "" && normalizeMagnetURI(torrent.MagnetURI) == needle {
 			return torrent, true
 		}
 		if task.Candidate.Title != "" && torrent.Name == task.Candidate.Title {
@@ -579,6 +624,7 @@ func matchTaskTorrent(task *Task, torrents []qbittorrent.Torrent) (qbittorrent.T
 
 func applyTorrentProgress(task *Task, torrent qbittorrent.Torrent, now time.Time) {
 	task.TorrentHash = torrent.Hash
+	task.TorrentIdentityHash = normalizeInfoHash(torrent.Hash)
 	task.TorrentName = torrent.Name
 	task.Progress = torrent.Progress
 	task.QBittorrentState = string(torrent.State)
@@ -687,6 +733,52 @@ func (s *MemoryTaskStore) Find(_ context.Context, id string) (*Task, error) {
 		return nil, fmt.Errorf("downloader: task %q not found", id)
 	}
 	return cloneTask(task), nil
+}
+
+func (s *MemoryTaskStore) FindByCode(_ context.Context, code string) (*Task, error) {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+
+	code = strings.TrimSpace(code)
+	if code == "" {
+		return nil, nil
+	}
+	for _, task := range s.tasks {
+		if strings.EqualFold(strings.TrimSpace(task.Code), code) {
+			return cloneTask(task), nil
+		}
+	}
+	return nil, nil
+}
+
+func (s *MemoryTaskStore) FindByTorrentIdentity(_ context.Context, infoHash string, magnetURI string) (*Task, error) {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+
+	infoHash = normalizeInfoHash(infoHash)
+	magnetURI = normalizeMagnetURI(magnetURI)
+	if infoHash == "" && magnetURI == "" {
+		return nil, nil
+	}
+	for _, task := range s.tasks {
+		if infoHash != "" && normalizeInfoHash(task.TorrentHash) == infoHash {
+			return cloneTask(task), nil
+		}
+		if infoHash != "" && normalizeInfoHash(task.TorrentIdentityHash) == infoHash {
+			return cloneTask(task), nil
+		}
+		if infoHash != "" && normalizeInfoHash(task.Candidate.InfoHash) == infoHash {
+			return cloneTask(task), nil
+		}
+		if magnetURI != "" {
+			if normalizeMagnetURI(task.TorrentIdentityMagnet) == magnetURI ||
+				normalizeMagnetURI(task.TorrentURL) == magnetURI ||
+				normalizeMagnetURI(task.Candidate.MagnetURI) == magnetURI {
+				return cloneTask(task), nil
+			}
+		}
+	}
+	return nil, nil
 }
 
 func (s *MemoryTaskStore) List(_ context.Context) ([]*Task, error) {

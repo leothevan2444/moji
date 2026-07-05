@@ -98,7 +98,7 @@ func (s *Service) QueueDiscoveredScene(ctx context.Context, sceneID string, stas
 
 	query := buildReleaseQuery(stringValue(scene.Code), stringValue(scene.Title))
 	if query == "" {
-		return nil, fmt.Errorf("subscription: scene %q has no usable code or title", sceneID)
+		return nil, fmt.Errorf("subscription: scene %q is missing code", sceneID)
 	}
 	return s.downloader.DownloadMediaContext(ctx, downloader.DownloadRequest{
 		Source: downloader.TaskSourceSearch,

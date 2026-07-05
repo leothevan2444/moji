@@ -125,8 +125,8 @@ func TestDownloadMediaContextUsesConfiguredCandidateSelection(t *testing.T) {
 	qbt := &fakeTorrentAdder{}
 	service, err := NewService(
 		fakeTracker{results: []jackett.SearchResult{
-			{Title: "larger", MagnetURI: "magnet:?xt=urn:btih:1", Seeders: 10, Size: 200},
-			{Title: "smaller", MagnetURI: "magnet:?xt=urn:btih:2", Seeders: 10, Size: 100},
+			{Title: "ABCD-123 larger", MagnetURI: "magnet:?xt=urn:btih:1", Seeders: 10, Size: 200},
+			{Title: "ABCD-123 smaller", MagnetURI: "magnet:?xt=urn:btih:2", Seeders: 10, Size: 100},
 		}},
 		qbt,
 		NewMemoryTaskStore(),
@@ -152,7 +152,7 @@ func TestDownloadMediaContextUsesConfiguredCandidateSelection(t *testing.T) {
 	if err != nil {
 		t.Fatalf("DownloadMediaContext failed: %v", err)
 	}
-	if task.Candidate.Title != "smaller" {
+	if task.Candidate.Title != "ABCD-123 smaller" {
 		t.Fatalf("expected configured selector to choose smaller torrent, got %+v", task.Candidate)
 	}
 }

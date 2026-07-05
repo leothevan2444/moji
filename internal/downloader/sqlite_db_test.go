@@ -1,10 +1,13 @@
 package downloader
 
 import (
+	"context"
 	"database/sql"
+	"errors"
 	"os"
 	"path/filepath"
 	"testing"
+	"time"
 )
 
 func TestOpenSQLiteDatabaseMigratesExistingTasksTable(t *testing.T) {
@@ -65,6 +68,7 @@ INSERT INTO task_store_meta (key, value) VALUES ('schema_version', '1');
 	defer opened.Close()
 
 	for _, column := range []string{
+		"code",
 		"stash_mode",
 		"stash_source_path",
 		"stash_transfer_action",
@@ -73,6 +77,8 @@ INSERT INTO task_store_meta (key, value) VALUES ('schema_version', '1');
 		"stash_transfer_error",
 		"stash_scan_path",
 		"stash_scan_hint",
+		"torrent_identity_hash",
+		"torrent_identity_magnet",
 	} {
 		exists, err := sqliteColumnExists(opened, "tasks", column)
 		if err != nil {
@@ -87,8 +93,8 @@ INSERT INTO task_store_meta (key, value) VALUES ('schema_version', '1');
 	if err != nil {
 		t.Fatalf("read schema version: %v", err)
 	}
-	if version != "2" {
-		t.Fatalf("expected schema version 2, got %q", version)
+	if version != "3" {
+		t.Fatalf("expected schema version 3, got %q", version)
 	}
 }
 
@@ -104,11 +110,62 @@ func TestOpenSQLiteDatabaseInitializesNewSchemaVersion(t *testing.T) {
 	if err != nil {
 		t.Fatalf("read schema version: %v", err)
 	}
-	if version != "2" {
-		t.Fatalf("expected schema version 2, got %q", version)
+	if version != "3" {
+		t.Fatalf("expected schema version 3, got %q", version)
 	}
 
 	if _, err := os.Stat(path); err != nil {
 		t.Fatalf("expected sqlite file to exist: %v", err)
+	}
+}
+
+func TestSQLiteTaskStoreRejectsDuplicateBusinessKeys(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "tasks.db")
+	store, err := NewSQLiteTaskStore(path)
+	if err != nil {
+		t.Fatalf("NewSQLiteTaskStore failed: %v", err)
+	}
+
+	now := time.Unix(100, 0).UTC()
+	baseTask := &Task{
+		ID:                    "task-1",
+		Query:                 "SONE-000",
+		Code:                  "SONE-000",
+		Status:                TaskStatusAdded,
+		TorrentIdentityHash:   "HASH-ONE",
+		TorrentIdentityMagnet: "magnet:?xt=urn:btih:HASH-ONE",
+		CreatedAt:             now,
+		UpdatedAt:             now,
+	}
+	if err := store.Create(context.Background(), baseTask); err != nil {
+		t.Fatalf("Create failed: %v", err)
+	}
+
+	err = store.Create(context.Background(), &Task{
+		ID:                    "task-2",
+		Query:                 "SONE-000 duplicate",
+		Code:                  "SONE-000",
+		Status:                TaskStatusAdded,
+		TorrentIdentityHash:   "HASH-TWO",
+		TorrentIdentityMagnet: "magnet:?xt=urn:btih:HASH-TWO",
+		CreatedAt:             now.Add(time.Second),
+		UpdatedAt:             now.Add(time.Second),
+	})
+	if !errors.Is(err, ErrDuplicateCodeTask) {
+		t.Fatalf("expected duplicate code error, got %v", err)
+	}
+
+	err = store.Create(context.Background(), &Task{
+		ID:                    "task-3",
+		Query:                 "SONE-001",
+		Code:                  "SONE-001",
+		Status:                TaskStatusAdded,
+		TorrentIdentityHash:   "HASH-ONE",
+		TorrentIdentityMagnet: "magnet:?xt=urn:btih:HASH-ONE",
+		CreatedAt:             now.Add(2 * time.Second),
+		UpdatedAt:             now.Add(2 * time.Second),
+	})
+	if !errors.Is(err, ErrDuplicateTorrentTask) {
+		t.Fatalf("expected duplicate torrent error, got %v", err)
 	}
 }

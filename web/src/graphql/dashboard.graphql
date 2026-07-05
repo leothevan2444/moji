@@ -146,6 +146,7 @@ query DashboardDocument {
     id
     source
     query
+    code
     status
     torrentName
     progress

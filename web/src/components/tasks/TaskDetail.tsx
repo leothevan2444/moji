@@ -131,6 +131,10 @@ export function TaskDetail({
             )}
           </div>
           <div>
+            <dt>番号</dt>
+            <dd>{task.code || "—"}</dd>
+          </div>
+          <div>
             <dt>任务来源</dt>
             <dd>{taskSourceLabel(task.source)}</dd>
           </div>

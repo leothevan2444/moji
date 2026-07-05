@@ -76,6 +76,9 @@ type sqliteColumnMigration struct {
 func migrateSQLiteDatabase(db *sql.DB) error {
 	taskMigrations := []sqliteColumnMigration{
 		{name: "source", definition: "TEXT NOT NULL DEFAULT 'MANUAL' CHECK (source IN ('MANUAL', 'SEARCH', 'SUBSCRIPTION'))"},
+		{name: "code", definition: "TEXT NOT NULL DEFAULT ''"},
+		{name: "torrent_identity_hash", definition: "TEXT NOT NULL DEFAULT ''"},
+		{name: "torrent_identity_magnet", definition: "TEXT NOT NULL DEFAULT ''"},
 		{name: "stash_mode", definition: "TEXT NOT NULL DEFAULT ''"},
 		{name: "stash_source_path", definition: "TEXT NOT NULL DEFAULT ''"},
 		{name: "stash_transfer_action", definition: "TEXT NOT NULL DEFAULT ''"},
@@ -90,7 +93,17 @@ func migrateSQLiteDatabase(db *sql.DB) error {
 			return err
 		}
 	}
-	if _, err := db.Exec(`INSERT INTO task_store_meta (key, value) VALUES ('schema_version', '2')
+	indexes := []string{
+		`CREATE UNIQUE INDEX IF NOT EXISTS idx_tasks_code_unique ON tasks (code) WHERE code <> ''`,
+		`CREATE UNIQUE INDEX IF NOT EXISTS idx_tasks_torrent_identity_hash_unique ON tasks (torrent_identity_hash) WHERE torrent_identity_hash <> ''`,
+		`CREATE UNIQUE INDEX IF NOT EXISTS idx_tasks_torrent_identity_magnet_unique ON tasks (torrent_identity_magnet) WHERE torrent_identity_magnet <> ''`,
+	}
+	for _, query := range indexes {
+		if _, err := db.Exec(query); err != nil {
+			return fmt.Errorf("downloader: create sqlite index: %w", err)
+		}
+	}
+	if _, err := db.Exec(`INSERT INTO task_store_meta (key, value) VALUES ('schema_version', '3')
 		ON CONFLICT(key) DO UPDATE SET value = excluded.value`); err != nil {
 		return fmt.Errorf("downloader: update sqlite schema version: %w", err)
 	}

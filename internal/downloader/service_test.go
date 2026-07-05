@@ -3,6 +3,10 @@ package downloader
 import (
 	"context"
 	"errors"
+	"io"
+	"net/http"
+	"strconv"
+	"strings"
 	"testing"
 	"time"
 
@@ -50,8 +54,8 @@ func TestDownloadMediaContextAddsBestTorrent(t *testing.T) {
 	store := NewMemoryTaskStore()
 	service, err := NewService(
 		fakeTracker{results: []jackett.SearchResult{
-			{Title: "low seeders", Link: "https://example.test/low.torrent", Seeders: 1, Size: 100},
-			{Title: "best", MagnetURI: "magnet:?xt=urn:btih:best", Seeders: 10, Size: 50},
+			{Title: "SONE-000 low seeders", Link: "https://example.test/low.torrent", Seeders: 1, Size: 100},
+			{Title: "SONE-000 best", MagnetURI: "magnet:?xt=urn:btih:best", Seeders: 10, Size: 50},
 		}},
 		qbt,
 		store,
@@ -78,7 +82,7 @@ func TestDownloadMediaContextAddsBestTorrent(t *testing.T) {
 	if task.Source != TaskSourceManual {
 		t.Fatalf("expected task source %q, got %q", TaskSourceManual, task.Source)
 	}
-	if task.Candidate.Title != "best" {
+	if task.Candidate.Title != "SONE-000 best" {
 		t.Fatalf("expected best candidate, got %q", task.Candidate.Title)
 	}
 	if got := qbt.options.URLs; len(got) != 1 || got[0] != "magnet:?xt=urn:btih:best" {
@@ -92,13 +96,16 @@ func TestDownloadMediaContextAddsBestTorrent(t *testing.T) {
 	if stored.Status != TaskStatusAdded {
 		t.Fatalf("expected stored task status %q, got %q", TaskStatusAdded, stored.Status)
 	}
+	if stored.Code != "SONE-000" {
+		t.Fatalf("expected stored code %q, got %q", "SONE-000", stored.Code)
+	}
 }
 
 func TestDownloadMediaContextRecordsAddFailure(t *testing.T) {
 	qbtErr := errors.New("qbt rejected torrent")
 	service, err := NewService(
 		fakeTracker{results: []jackett.SearchResult{
-			{Title: "candidate", Link: "https://example.test/file.torrent", Seeders: 1},
+			{Title: "SONE-000 candidate", Link: "https://example.test/file.torrent", Seeders: 1},
 		}},
 		&fakeTorrentAdder{err: qbtErr},
 		NewMemoryTaskStore(),
@@ -138,7 +145,7 @@ func TestAddTorrentContextCreatesPersistedTask(t *testing.T) {
 	}
 
 	task, err := service.AddTorrentContext(context.Background(), AddTorrentRequest{
-		URL:      "magnet:?xt=urn:btih:manual",
+		URL:      "magnet:?xt=urn:btih:manual123&dn=SONE-000",
 		SavePath: "/downloads/stash",
 		Category: "moji",
 		Tags:     "manual",
@@ -153,11 +160,14 @@ func TestAddTorrentContextCreatesPersistedTask(t *testing.T) {
 	if task.Source != TaskSourceManual {
 		t.Fatalf("expected task source %q, got %q", TaskSourceManual, task.Source)
 	}
-	if task.TorrentURL != "magnet:?xt=urn:btih:manual" || task.Candidate.MagnetURI != task.TorrentURL {
+	if task.TorrentURL != "magnet:?xt=urn:btih:manual123&dn=SONE-000" || task.Candidate.MagnetURI != task.TorrentURL {
 		t.Fatalf("unexpected torrent candidate: %+v", task.Candidate)
 	}
-	if task.Candidate.InfoHash != "manual" {
-		t.Fatalf("expected info hash %q, got %q", "manual", task.Candidate.InfoHash)
+	if task.Candidate.InfoHash != "manual123" {
+		t.Fatalf("expected info hash %q, got %q", "manual123", task.Candidate.InfoHash)
+	}
+	if task.Code != "SONE-000" {
+		t.Fatalf("expected code %q, got %q", "SONE-000", task.Code)
 	}
 	if got := qbt.options.URLs; len(got) != 1 || got[0] != task.TorrentURL {
 		t.Fatalf("unexpected qBittorrent URLs: %v", got)
@@ -170,6 +180,171 @@ func TestAddTorrentContextCreatesPersistedTask(t *testing.T) {
 	if stored.Status != TaskStatusAdded || stored.TorrentURL != task.TorrentURL {
 		t.Fatalf("unexpected stored task: %+v", stored)
 	}
+}
+
+func TestDownloadMediaContextRejectsDuplicateCodeTask(t *testing.T) {
+	store := NewMemoryTaskStore()
+	if err := store.Create(context.Background(), &Task{
+		ID:        "existing-task",
+		Query:     "SONE-000",
+		Code:      "SONE-000",
+		Status:    TaskStatusAdded,
+		CreatedAt: time.Unix(50, 0).UTC(),
+		UpdatedAt: time.Unix(50, 0).UTC(),
+	}); err != nil {
+		t.Fatalf("Create failed: %v", err)
+	}
+
+	service, err := NewService(
+		fakeTracker{results: []jackett.SearchResult{
+			{Title: "SONE-000 best release", MagnetURI: "magnet:?xt=urn:btih:newhash", Seeders: 10},
+		}},
+		&fakeTorrentAdder{},
+		store,
+	)
+	if err != nil {
+		t.Fatalf("NewService failed: %v", err)
+	}
+
+	task, err := service.DownloadMediaContext(context.Background(), DownloadRequest{Query: "SONE-000"})
+	if !errors.Is(err, ErrDuplicateCodeTask) {
+		t.Fatalf("expected duplicate code error, got task=%+v err=%v", task, err)
+	}
+	if task != nil {
+		t.Fatalf("expected no task to be created, got %+v", task)
+	}
+}
+
+func TestAddTorrentContextRejectsDuplicateTorrentTask(t *testing.T) {
+	store := NewMemoryTaskStore()
+	if err := store.Create(context.Background(), &Task{
+		ID:                    "existing-task",
+		Query:                 "magnet:?xt=urn:btih:manual123&dn=SONE-000",
+		Code:                  "SONE-000",
+		Status:                TaskStatusAdded,
+		TorrentIdentityHash:   "MANUAL123",
+		TorrentIdentityMagnet: "magnet:?xt=urn:btih:MANUAL123",
+		CreatedAt:             time.Unix(50, 0).UTC(),
+		UpdatedAt:             time.Unix(50, 0).UTC(),
+	}); err != nil {
+		t.Fatalf("Create failed: %v", err)
+	}
+
+	service, err := NewService(fakeTracker{}, &fakeTorrentAdder{}, store)
+	if err != nil {
+		t.Fatalf("NewService failed: %v", err)
+	}
+
+	task, err := service.AddTorrentContext(context.Background(), AddTorrentRequest{
+		URL: "magnet:?xt=urn:btih:manual123&dn=SONE-999&tr=https://tracker.example.test/announce",
+	})
+	if !errors.Is(err, ErrDuplicateTorrentTask) {
+		t.Fatalf("expected duplicate torrent error, got task=%+v err=%v", task, err)
+	}
+	if task != nil {
+		t.Fatalf("expected no task to be created, got %+v", task)
+	}
+}
+
+func TestDownloadMediaContextRequiresCode(t *testing.T) {
+	service, err := NewService(
+		fakeTracker{results: []jackett.SearchResult{
+			{Title: "plain title without number", MagnetURI: "magnet:?xt=urn:btih:newhash", Seeders: 10},
+		}},
+		&fakeTorrentAdder{},
+		NewMemoryTaskStore(),
+	)
+	if err != nil {
+		t.Fatalf("NewService failed: %v", err)
+	}
+
+	task, err := service.DownloadMediaContext(context.Background(), DownloadRequest{Query: "plain title"})
+	if !errors.Is(err, ErrTaskCodeRequired) {
+		t.Fatalf("expected code required error, got task=%+v err=%v", task, err)
+	}
+	if task != nil {
+		t.Fatalf("expected no task to be created, got %+v", task)
+	}
+}
+
+func TestAddTorrentContextParsesTorrentMetadataForCode(t *testing.T) {
+	qbt := &fakeTorrentAdder{}
+	store := NewMemoryTaskStore()
+	service, err := NewService(
+		fakeTracker{},
+		qbt,
+		store,
+		WithIDGenerator(func() string { return "task-http" }),
+		WithClock(func() time.Time { return time.Unix(100, 0) }),
+		WithHTTPClient(&http.Client{
+			Transport: roundTripFunc(func(req *http.Request) (*http.Response, error) {
+				return &http.Response{
+					StatusCode: http.StatusOK,
+					Header:     make(http.Header),
+					Body:       io.NopCloser(strings.NewReader(testTorrentFile("SONE-001", []string{"SONE-001.mp4"}))),
+					Request:    req,
+				}, nil
+			}),
+		}),
+	)
+	if err != nil {
+		t.Fatalf("NewService failed: %v", err)
+	}
+
+	task, err := service.AddTorrentContext(context.Background(), AddTorrentRequest{
+		URL: "https://example.test/release.torrent",
+	})
+	if err != nil {
+		t.Fatalf("AddTorrentContext failed: %v", err)
+	}
+	if task.Code != "SONE-001" {
+		t.Fatalf("expected code %q, got %q", "SONE-001", task.Code)
+	}
+	if task.Candidate.Title != "SONE-001" {
+		t.Fatalf("expected torrent title %q, got %q", "SONE-001", task.Candidate.Title)
+	}
+	if task.TorrentIdentityHash == "" {
+		t.Fatal("expected info hash to be populated from torrent metadata")
+	}
+	if got := qbt.options.URLs; len(got) != 1 || got[0] != "https://example.test/release.torrent" {
+		t.Fatalf("unexpected qBittorrent URLs: %v", got)
+	}
+}
+
+type roundTripFunc func(*http.Request) (*http.Response, error)
+
+func (fn roundTripFunc) RoundTrip(req *http.Request) (*http.Response, error) {
+	return fn(req)
+}
+
+func testTorrentFile(name string, files []string) string {
+	var builder strings.Builder
+	builder.WriteString("d4:info")
+	builder.WriteString("d")
+	builder.WriteString(bencodeString("name"))
+	builder.WriteString(bencodeString(name))
+	builder.WriteString(bencodeString("files"))
+	builder.WriteString("l")
+	for _, file := range files {
+		builder.WriteString("d")
+		builder.WriteString(bencodeString("length"))
+		builder.WriteString("i1e")
+		builder.WriteString(bencodeString("path"))
+		builder.WriteString("l")
+		for _, segment := range strings.Split(file, "/") {
+			builder.WriteString(bencodeString(segment))
+		}
+		builder.WriteString("e")
+		builder.WriteString("e")
+	}
+	builder.WriteString("e")
+	builder.WriteString("e")
+	builder.WriteString("e")
+	return builder.String()
+}
+
+func bencodeString(value string) string {
+	return strings.Join([]string{strconv.Itoa(len(value)), ":", value}, "")
 }
 
 func TestDeleteTaskRemovesPersistedTask(t *testing.T) {

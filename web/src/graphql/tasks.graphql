@@ -4,6 +4,7 @@ mutation AddTorrentDocument($input: QBittorrentAddInput!) {
     source
     status
     query
+    code
     torrentName
     progress
     stashMode
@@ -61,6 +62,7 @@ mutation DeleteTaskDocument($id: ID!) {
     source
     status
     query
+    code
     updatedAt
   }
 }

@@ -322,10 +322,10 @@ func (s *Service) fetchReleases(ctx context.Context, performer *stashgraphql.Per
 			Value:    []string{target.Performer.ID},
 			Modifier: stashboxgraphql.CriterionModifierIncludes,
 		},
-		Page:       1,
-		PerPage:    12,
-		Direction:  stashboxgraphql.SortDirectionEnumDesc,
-		Sort:       stashboxgraphql.SceneSortEnumDate,
+		Page:      1,
+		PerPage:   12,
+		Direction: stashboxgraphql.SortDirectionEnumDesc,
+		Sort:      stashboxgraphql.SceneSortEnumDate,
 	})
 	if err != nil {
 		return nil, err
@@ -338,13 +338,17 @@ func (s *Service) fetchReleases(ctx context.Context, performer *stashgraphql.Per
 		if scene == nil {
 			continue
 		}
+		code := strings.TrimSpace(stringValue(scene.Code))
+		if code == "" {
+			return nil, fmt.Errorf("subscription: stash-box scene %q is missing code", scene.ID)
+		}
 		release := Release{
 			Key:    keyPrefix + scene.ID,
 			Source: source,
 			Title:  stringValue(scene.Title),
-			Code:   stringValue(scene.Code),
+			Code:   code,
 			Date:   stringValue(scene.Date),
-			Query:  buildReleaseQuery(stringValue(scene.Code), stringValue(scene.Title)),
+			Query:  buildReleaseQuery(code, stringValue(scene.Title)),
 		}
 		if len(scene.Urls) > 0 && scene.Urls[0] != nil {
 			release.URL = scene.Urls[0].URL
@@ -620,12 +624,8 @@ func normalize(value string) string {
 	return strings.ToLower(strings.TrimSpace(value))
 }
 
-func buildReleaseQuery(code, title string) string {
-	code = strings.TrimSpace(code)
-	if code != "" {
-		return code
-	}
-	return strings.TrimSpace(title)
+func buildReleaseQuery(code, _ string) string {
+	return strings.TrimSpace(code)
 }
 
 func trimRecordedReleases(items []RecordedRelease, limit int) []RecordedRelease {
