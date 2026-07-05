@@ -42,6 +42,10 @@ type TorrentClient interface {
 	TorrentRemover
 }
 
+type LibraryCodeChecker interface {
+	HasCode(ctx context.Context, code string) (bool, error)
+}
+
 type TaskStore interface {
 	Create(ctx context.Context, task *Task) error
 	Update(ctx context.Context, task *Task) error
@@ -141,6 +145,7 @@ type AddTorrentRequest struct {
 var (
 	ErrDuplicateTorrentTask = errors.New("duplicate torrent task")
 	ErrDuplicateCodeTask    = errors.New("duplicate code task")
+	ErrDuplicateLibraryCode = errors.New("duplicate library code")
 	ErrTaskCodeRequired     = errors.New("task code is required")
 )
 
@@ -149,6 +154,7 @@ type Service struct {
 	qbt                TorrentClient
 	store              TaskStore
 	httpClient         *http.Client
+	libraryCodeChecker LibraryCodeChecker
 	selector           CandidateSelector
 	fileOps            FileOperator
 	candidateSelection func() config.CandidateSelectionConfig
@@ -180,6 +186,12 @@ func WithIDGenerator(newID func() string) Option {
 		if newID != nil {
 			s.newID = newID
 		}
+	}
+}
+
+func WithLibraryCodeChecker(checker LibraryCodeChecker) Option {
+	return func(s *Service) {
+		s.libraryCodeChecker = checker
 	}
 }
 

@@ -119,6 +119,15 @@ func (s *Service) ensureTaskCanBeCreated(ctx context.Context, identity torrentId
 	} else if existing != nil {
 		return fmt.Errorf("%w: task %q already uses code %s", ErrDuplicateCodeTask, existing.ID, code)
 	}
+	if s.libraryCodeChecker != nil {
+		exists, err := s.libraryCodeChecker.HasCode(ctx, code)
+		if err != nil {
+			return fmt.Errorf("check stash library code %s: %w", code, err)
+		}
+		if exists {
+			return fmt.Errorf("%w: stash library already contains code %s", ErrDuplicateLibraryCode, code)
+		}
+	}
 	return nil
 }
 

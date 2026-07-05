@@ -34,6 +34,18 @@ type fakeTorrentAdder struct {
 	err          error
 }
 
+type fakeLibraryCodeChecker struct {
+	codes map[string]bool
+	err   error
+}
+
+func (f fakeLibraryCodeChecker) HasCode(_ context.Context, code string) (bool, error) {
+	if f.err != nil {
+		return false, f.err
+	}
+	return f.codes[normalizeCode(code)], nil
+}
+
 func (f *fakeTorrentAdder) AddNewTorrent(_ context.Context, opts qbittorrent.AddTorrentOptions) error {
 	f.options = opts
 	return f.err
@@ -209,6 +221,30 @@ func TestDownloadMediaContextRejectsDuplicateCodeTask(t *testing.T) {
 	task, err := service.DownloadMediaContext(context.Background(), DownloadRequest{Query: "SONE-000"})
 	if !errors.Is(err, ErrDuplicateCodeTask) {
 		t.Fatalf("expected duplicate code error, got task=%+v err=%v", task, err)
+	}
+	if task != nil {
+		t.Fatalf("expected no task to be created, got %+v", task)
+	}
+}
+
+func TestDownloadMediaContextRejectsExistingStashLibraryCode(t *testing.T) {
+	service, err := NewService(
+		fakeTracker{results: []jackett.SearchResult{
+			{Title: "SONE-000 best release", MagnetURI: "magnet:?xt=urn:btih:newhash", Seeders: 10},
+		}},
+		&fakeTorrentAdder{},
+		NewMemoryTaskStore(),
+		WithLibraryCodeChecker(fakeLibraryCodeChecker{
+			codes: map[string]bool{"SONE-000": true},
+		}),
+	)
+	if err != nil {
+		t.Fatalf("NewService failed: %v", err)
+	}
+
+	task, err := service.DownloadMediaContext(context.Background(), DownloadRequest{Query: "SONE-000"})
+	if !errors.Is(err, ErrDuplicateLibraryCode) {
+		t.Fatalf("expected duplicate library code error, got task=%+v err=%v", task, err)
 	}
 	if task != nil {
 		t.Fatalf("expected no task to be created, got %+v", task)

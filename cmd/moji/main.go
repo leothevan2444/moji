@@ -29,6 +29,7 @@ import (
 	"github.com/leothevan2444/moji/pkg/jackett"
 	"github.com/leothevan2444/moji/pkg/qbittorrent"
 	"github.com/leothevan2444/moji/pkg/stash"
+	stashgraphql "github.com/leothevan2444/moji/pkg/stash/graphql"
 )
 
 func main() {
@@ -134,8 +135,8 @@ func newHTTPRuntime(cfg *config.Config, version string, configStore *config.Stor
 	}
 	apiHandler := api.NewHandler(jackettTracker, api.WithLogFilePath(cfg.EffectiveLogFilePath()))
 	qbittorrentClient, torrentClient := configureQBittorrent(cfg, configStore)
-	downloaderService := configureDownloader(cfg, configStore, jackettTracker, torrentClient)
 	stashClient := configureStashClient(cfg, configStore)
+	downloaderService := configureDownloader(cfg, configStore, jackettTracker, torrentClient, stashClient)
 	stashService := configureStashService(cfg, configStore, stashClient)
 	subscriptionService := configureSubscription(cfg, configStore, stashClient, downloaderService)
 	applySubscriptionOrder(cfg, subscriptionService)
@@ -257,7 +258,7 @@ func jackettClientOf(tr tracker.Tracker) *jackett.Client {
 	return nil
 }
 
-func configureDownloader(cfg *config.Config, configStore *config.Store, tr tracker.Tracker, torrent graphqlapi.TorrentClient) graphqlapi.DownloaderService {
+func configureDownloader(cfg *config.Config, configStore *config.Store, tr tracker.Tracker, torrent graphqlapi.TorrentClient, stashClient *stash.Client) graphqlapi.DownloaderService {
 	if torrent == nil {
 		logging.Infof("runtime: downloader disabled because qBittorrent client is not available")
 		return nil
@@ -273,6 +274,7 @@ func configureDownloader(cfg *config.Config, configStore *config.Store, tr track
 		store,
 		downloader.WithCandidateSelectionProvider(configureTorrentSelectionProvider(configStore, cfg)),
 		downloader.WithTaskDeletePolicyProvider(configureTaskDeletePolicyProvider(configStore, cfg)),
+		downloader.WithLibraryCodeChecker(stashLibraryCodeChecker{client: stashClient}),
 	)
 	if err != nil {
 		logging.Fatalf("configure downloader: %v", err)
@@ -322,6 +324,35 @@ func configureTaskDeletePolicyProvider(store *config.Store, cfg *config.Config) 
 		}
 		return cfg.System.EffectiveTaskDeletePolicy()
 	}
+}
+
+type stashLibraryCodeChecker struct {
+	client *stash.Client
+}
+
+func (c stashLibraryCodeChecker) HasCode(ctx context.Context, code string) (bool, error) {
+	if c.client == nil {
+		return false, nil
+	}
+	code = strings.TrimSpace(code)
+	if code == "" {
+		return false, nil
+	}
+	page := 1
+	perPage := 1
+	scenes, err := c.client.FindScenes(ctx, &stashgraphql.SceneFilterType{
+		Code: &stashgraphql.StringCriterionInput{
+			Value:    code,
+			Modifier: stashgraphql.CriterionModifierEquals,
+		},
+	}, &stashgraphql.FindFilterType{
+		Page:    &page,
+		PerPage: &perPage,
+	})
+	if err != nil {
+		return false, err
+	}
+	return len(scenes) > 0, nil
 }
 
 // configureQBittorrentConfigProvider returns the latest qBittorrent config
