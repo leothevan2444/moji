@@ -824,7 +824,9 @@ export function SettingsPanel({
             </div>
           </label>
           <div className="settings-actions">
-            <button type="submit" disabled={updatingStash}>保存 Stash 连接</button>
+            <button type="submit" disabled={updatingStash}>
+              {updatingStash ? "保存中..." : "保存 Stash 连接"}
+            </button>
           </div>
         </form>
 
@@ -877,7 +879,9 @@ export function SettingsPanel({
             </div>
           </label>
           <div className="settings-actions">
-            <button type="submit" disabled={updatingJackett}>保存 Jackett 连接</button>
+            <button type="submit" disabled={updatingJackett}>
+              {updatingJackett ? "保存中..." : "保存 Jackett 连接"}
+            </button>
           </div>
         </form>
 
@@ -943,7 +947,9 @@ export function SettingsPanel({
             />
           </label>
           <div className="settings-actions">
-            <button type="submit" disabled={updatingQBittorrent}>保存 qBittorrent 连接</button>
+            <button type="submit" disabled={updatingQBittorrent}>
+              {updatingQBittorrent ? "保存中..." : "保存 qBittorrent 连接"}
+            </button>
           </div>
         </form>
       </article>
@@ -1075,7 +1081,9 @@ export function SettingsPanel({
           ) : null}
 
           <div className="settings-actions">
-            <button type="submit" disabled={updatingIngest}>保存入库设置</button>
+            <button type="submit" disabled={updatingIngest}>
+              {updatingIngest ? "保存中..." : "保存入库设置"}
+            </button>
           </div>
         </form>
 
@@ -1202,7 +1210,9 @@ export function SettingsPanel({
             <span>订阅轮询: {runtimeStatus.automation.subscriptionPollEnabled ? "已启用" : "未启用"}</span>
           </div>
           <div className="settings-actions">
-            <button type="submit" disabled={updatingAutomation}>保存自动化设置</button>
+            <button type="submit" disabled={updatingAutomation}>
+              {updatingAutomation ? "保存中..." : "保存自动化设置"}
+            </button>
           </div>
         </form>
 
@@ -1225,7 +1235,9 @@ export function SettingsPanel({
                   <FontAwesomeIcon icon={faRotate} className={refreshingStashBoxes ? "is-spinning" : undefined} />
                   <span>{refreshingStashBoxes ? "刷新中..." : "刷新"}</span>
                 </button>
-                <button type="submit" disabled={updatingAutomation}>保存优先级</button>
+                <button type="submit" disabled={updatingAutomation}>
+                  {updatingAutomation ? "保存中..." : "保存优先级"}
+                </button>
               </div>
             </header>
 
@@ -1339,7 +1351,9 @@ export function SettingsPanel({
                 </p>
               </div>
               <div className="torrent-rules__save">
-                <button type="submit" disabled={updatingAutomation}>保存自动选种规则</button>
+                <button type="submit" disabled={updatingAutomation}>
+                  {updatingAutomation ? "保存中..." : "保存自动选种规则"}
+                </button>
               </div>
             </header>
 
@@ -1998,7 +2012,9 @@ export function SettingsPanel({
             </select>
           </label>
           <div className="settings-actions">
-            <button type="submit" disabled={updatingSystem}>保存系统设置</button>
+            <button type="submit" disabled={updatingSystem}>
+              {updatingSystem ? "保存中..." : "保存系统设置"}
+            </button>
           </div>
         </form>
       </article>

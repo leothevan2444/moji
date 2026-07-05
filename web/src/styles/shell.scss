@@ -99,7 +99,9 @@
     inset: auto 0 0;
     height: 3px;
     transform-origin: left center;
-    animation: toast-progress 10s linear forwards;
+    // 时长由 toast-card 注入的 --toast-progress-duration 控制；
+    // 兜底 10s 兼容没有 lifetimeMs 的旧调用方。
+    animation: toast-progress var(--toast-progress-duration, 10s) linear forwards;
   }
 }
 

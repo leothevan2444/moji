@@ -7,7 +7,14 @@ export type DrawerKey = "stats" | "settings" | "help" | "task" | "discovery" | "
 
 export type ToastTone = "tone-success" | "tone-danger" | "tone-info";
 export type ToastPhase = "entering" | "leaving";
-export type ToastItem = { id: number; tone: ToastTone; message: string; phase: ToastPhase };
+export type ToastItem = {
+  id: number;
+  tone: ToastTone;
+  message: string;
+  phase: ToastPhase;
+  /** Override the default lifetime (ms) for the progress bar animation. */
+  lifetimeMs?: number;
+};
 
 export type SettingsTab =
   | "连接"

@@ -2,6 +2,10 @@ import { useEffect, useRef, useState } from "react";
 import type { ToastItem, ToastTone } from "../types";
 import { TOAST_LIFETIME_MS, TOAST_EXIT_MS } from "../constants";
 
+// 模块级单调计数器：避免连续 1ms 内 pushToast 时 Date.now() 相同，
+// 同时去掉 Math.random 引入的潜在重复。
+let nextToastId = 0;
+
 export function useToast() {
   const [toasts, setToasts] = useState<ToastItem[]>([]);
   const toastTimersRef = useRef(new Map<number, { exit: number; remove: number }>());
@@ -17,16 +21,16 @@ export function useToast() {
     };
   }, []);
 
-  const pushToast = (tone: ToastTone, message: string) => {
-    const id = Date.now() + Math.floor(Math.random() * 1000);
-    setToasts((current) => [...current, { id, tone, message, phase: "entering" }]);
+  const pushToast = (tone: ToastTone, message: string, lifetimeMs: number = TOAST_LIFETIME_MS) => {
+    const id = ++nextToastId;
+    setToasts((current) => [...current, { id, tone, message, phase: "entering", lifetimeMs }]);
     const exit = window.setTimeout(() => {
       setToasts((current) => current.map((item) => (item.id === id ? { ...item, phase: "leaving" } : item)));
-    }, TOAST_LIFETIME_MS - TOAST_EXIT_MS);
+    }, lifetimeMs - TOAST_EXIT_MS);
     const remove = window.setTimeout(() => {
       setToasts((current) => current.filter((item) => item.id !== id));
       toastTimersRef.current.delete(id);
-    }, TOAST_LIFETIME_MS);
+    }, lifetimeMs);
     toastTimersRef.current.set(id, { exit, remove });
   };
 

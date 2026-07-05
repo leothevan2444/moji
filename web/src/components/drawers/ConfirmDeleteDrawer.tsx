@@ -3,13 +3,15 @@ interface ConfirmDeleteDrawerProps {
   destructive: boolean;
   pending: boolean;
   onConfirm: () => void;
+  onCancel: () => void;
 }
 
 export function ConfirmDeleteDrawer({
   taskLabel,
   destructive,
   pending,
-  onConfirm
+  onConfirm,
+  onCancel
 }: ConfirmDeleteDrawerProps) {
   return (
     <div className="drawer-stack">
@@ -21,6 +23,14 @@ export function ConfirmDeleteDrawer({
           </div>
         </div>
         <div className="settings-actions">
+          <button
+            type="button"
+            className="ghost-button"
+            onClick={onCancel}
+            disabled={pending}
+          >
+            取消
+          </button>
           <button
             type="button"
             className="task-ops__button task-ops__button--danger"

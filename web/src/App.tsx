@@ -107,6 +107,7 @@ function App() {
   const {
     data,
     error,
+    fetching: dashboardFetching,
     refreshDashboard,
     addTorrent,
     deleteTask,
@@ -523,8 +524,13 @@ function App() {
             <h2>{data ? "GraphQL 返回错误" : "GraphQL 当前不可用"}</h2>
             <p>{describeQueryError(error)}</p>
           </div>
-          <button type="button" className="ghost-button" onClick={() => refreshDashboard({ requestPolicy: "network-only" })}>
-            重试
+          <button
+            type="button"
+            className="ghost-button"
+            onClick={() => void refreshDashboard({ requestPolicy: "network-only" })}
+            disabled={dashboardFetching}
+          >
+            {dashboardFetching ? "重试中..." : "重试"}
           </button>
         </section>
       ) : null}
@@ -780,6 +786,11 @@ function App() {
             destructive={deletePolicy === TaskDeletePolicy.RemoveTorrentAndFiles}
             pending={pendingTaskDeleteId === confirmDeleteTaskId}
             onConfirm={() => void runDeleteTask(confirmDeleteTaskId)}
+            onCancel={() => {
+              if (!pendingTaskDeleteId) {
+                setConfirmDeleteTaskId(null);
+              }
+            }}
           />
         </Drawer>
       ) : null}

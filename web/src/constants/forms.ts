@@ -92,8 +92,5 @@ export const EMPTY_SYSTEM_FORM = {
   taskDeletePolicy: "KEEP_ONLY"
 };
 
-export const TOAST_LIFETIME_MS = 10000;
-export const TOAST_EXIT_MS = 480;
-
 export const SUBSCRIPTION_PAGE_SIZE_OPTIONS = [12, 24, 48, 96] as const;
 export const LOG_LEVEL_OPTIONS: LogLevel[] = [LogLevel.Debug, LogLevel.Info, LogLevel.Warning, LogLevel.Error];
