@@ -1,5 +1,8 @@
 .vscode/
 .github/
+.claude/
+.codex/
+.agents/
 config.yaml
 main
 moji
