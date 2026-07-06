@@ -127,12 +127,22 @@ func torrentSelectionSettingsToModel(snapshot TorrentSelectionSettingsSnapshot) 
 			TitleMatch: &model.TitleMatchRule{
 				Clauses: make([]*model.TitleMatchClause, 0, len(rule.TitleMatch.Clauses)),
 			},
+			TorrentFileNameMatch: &model.TorrentFileNameMatchRule{
+				Clauses: make([]*model.TorrentFileNameMatchClause, 0, len(rule.TorrentFileNameMatch.Clauses)),
+			},
 		}
 		for _, clause := range rule.TitleMatch.Clauses {
 			item.TitleMatch.Clauses = append(item.TitleMatch.Clauses, &model.TitleMatchClause{
 				Pattern:     clause.Pattern,
 				PatternMode: model.TitleMatchPatternMode(clause.PatternMode),
 				Effect:      model.TitleMatchEffect(clause.Effect),
+			})
+		}
+		for _, clause := range rule.TorrentFileNameMatch.Clauses {
+			item.TorrentFileNameMatch.Clauses = append(item.TorrentFileNameMatch.Clauses, &model.TorrentFileNameMatchClause{
+				Pattern:     clause.Pattern,
+				PatternMode: model.TitleMatchPatternMode(clause.PatternMode),
+				Effect:      model.TorrentFileMatchEffect(clause.Effect),
 			})
 		}
 		out.Rules = append(out.Rules, item)

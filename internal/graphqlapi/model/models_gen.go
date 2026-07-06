@@ -523,24 +523,46 @@ type TitleMatchRuleInput struct {
 	Clauses []*TitleMatchClauseInput `json:"clauses"`
 }
 
+type TorrentFileNameMatchClause struct {
+	Pattern     string                 `json:"pattern"`
+	PatternMode TitleMatchPatternMode  `json:"patternMode"`
+	Effect      TorrentFileMatchEffect `json:"effect"`
+}
+
+type TorrentFileNameMatchClauseInput struct {
+	Pattern     string                 `json:"pattern"`
+	PatternMode TitleMatchPatternMode  `json:"patternMode"`
+	Effect      TorrentFileMatchEffect `json:"effect"`
+}
+
+type TorrentFileNameMatchRule struct {
+	Clauses []*TorrentFileNameMatchClause `json:"clauses"`
+}
+
+type TorrentFileNameMatchRuleInput struct {
+	Clauses []*TorrentFileNameMatchClauseInput `json:"clauses"`
+}
+
 type TorrentSelectionRule struct {
-	ID                string                    `json:"id"`
-	Name              string                    `json:"name"`
-	Type              TorrentSelectionRuleType  `json:"type"`
-	Enabled           bool                      `json:"enabled"`
-	Direction         TorrentSelectionDirection `json:"direction"`
-	IndexerPreference *IndexerPreferenceRule    `json:"indexerPreference"`
-	TitleMatch        *TitleMatchRule           `json:"titleMatch"`
+	ID                   string                    `json:"id"`
+	Name                 string                    `json:"name"`
+	Type                 TorrentSelectionRuleType  `json:"type"`
+	Enabled              bool                      `json:"enabled"`
+	Direction            TorrentSelectionDirection `json:"direction"`
+	IndexerPreference    *IndexerPreferenceRule    `json:"indexerPreference"`
+	TitleMatch           *TitleMatchRule           `json:"titleMatch"`
+	TorrentFileNameMatch *TorrentFileNameMatchRule `json:"torrentFileNameMatch"`
 }
 
 type TorrentSelectionRuleInput struct {
-	ID                string                      `json:"id"`
-	Name              string                      `json:"name"`
-	Type              TorrentSelectionRuleType    `json:"type"`
-	Enabled           bool                        `json:"enabled"`
-	Direction         TorrentSelectionDirection   `json:"direction"`
-	IndexerPreference *IndexerPreferenceRuleInput `json:"indexerPreference,omitempty"`
-	TitleMatch        *TitleMatchRuleInput        `json:"titleMatch,omitempty"`
+	ID                   string                         `json:"id"`
+	Name                 string                         `json:"name"`
+	Type                 TorrentSelectionRuleType       `json:"type"`
+	Enabled              bool                           `json:"enabled"`
+	Direction            TorrentSelectionDirection      `json:"direction"`
+	IndexerPreference    *IndexerPreferenceRuleInput    `json:"indexerPreference,omitempty"`
+	TitleMatch           *TitleMatchRuleInput           `json:"titleMatch,omitempty"`
+	TorrentFileNameMatch *TorrentFileNameMatchRuleInput `json:"torrentFileNameMatch,omitempty"`
 }
 
 type TorrentSelectionSettings struct {
@@ -1172,6 +1194,63 @@ func (e TitleMatchPatternMode) MarshalJSON() ([]byte, error) {
 	return buf.Bytes(), nil
 }
 
+type TorrentFileMatchEffect string
+
+const (
+	TorrentFileMatchEffectPrefer TorrentFileMatchEffect = "PREFER"
+	TorrentFileMatchEffectAvoid  TorrentFileMatchEffect = "AVOID"
+	TorrentFileMatchEffectLock   TorrentFileMatchEffect = "LOCK"
+)
+
+var AllTorrentFileMatchEffect = []TorrentFileMatchEffect{
+	TorrentFileMatchEffectPrefer,
+	TorrentFileMatchEffectAvoid,
+	TorrentFileMatchEffectLock,
+}
+
+func (e TorrentFileMatchEffect) IsValid() bool {
+	switch e {
+	case TorrentFileMatchEffectPrefer, TorrentFileMatchEffectAvoid, TorrentFileMatchEffectLock:
+		return true
+	}
+	return false
+}
+
+func (e TorrentFileMatchEffect) String() string {
+	return string(e)
+}
+
+func (e *TorrentFileMatchEffect) UnmarshalGQL(v any) error {
+	str, ok := v.(string)
+	if !ok {
+		return fmt.Errorf("enums must be strings")
+	}
+
+	*e = TorrentFileMatchEffect(str)
+	if !e.IsValid() {
+		return fmt.Errorf("%s is not a valid TorrentFileMatchEffect", str)
+	}
+	return nil
+}
+
+func (e TorrentFileMatchEffect) MarshalGQL(w io.Writer) {
+	fmt.Fprint(w, strconv.Quote(e.String()))
+}
+
+func (e *TorrentFileMatchEffect) UnmarshalJSON(b []byte) error {
+	s, err := strconv.Unquote(string(b))
+	if err != nil {
+		return err
+	}
+	return e.UnmarshalGQL(s)
+}
+
+func (e TorrentFileMatchEffect) MarshalJSON() ([]byte, error) {
+	var buf bytes.Buffer
+	e.MarshalGQL(&buf)
+	return buf.Bytes(), nil
+}
+
 type TorrentSelectionDirection string
 
 const (
@@ -1230,12 +1309,14 @@ func (e TorrentSelectionDirection) MarshalJSON() ([]byte, error) {
 type TorrentSelectionRuleType string
 
 const (
-	TorrentSelectionRuleTypeIndexerPreference TorrentSelectionRuleType = "INDEXER_PREFERENCE"
-	TorrentSelectionRuleTypeTitleMatch        TorrentSelectionRuleType = "TITLE_MATCH"
-	TorrentSelectionRuleTypePublishDate       TorrentSelectionRuleType = "PUBLISH_DATE"
-	TorrentSelectionRuleTypeTitleSimilarity   TorrentSelectionRuleType = "TITLE_SIMILARITY"
-	TorrentSelectionRuleTypeSeeders           TorrentSelectionRuleType = "SEEDERS"
-	TorrentSelectionRuleTypeSize              TorrentSelectionRuleType = "SIZE"
+	TorrentSelectionRuleTypeIndexerPreference    TorrentSelectionRuleType = "INDEXER_PREFERENCE"
+	TorrentSelectionRuleTypeTitleMatch           TorrentSelectionRuleType = "TITLE_MATCH"
+	TorrentSelectionRuleTypePublishDate          TorrentSelectionRuleType = "PUBLISH_DATE"
+	TorrentSelectionRuleTypeTitleSimilarity      TorrentSelectionRuleType = "TITLE_SIMILARITY"
+	TorrentSelectionRuleTypeSeeders              TorrentSelectionRuleType = "SEEDERS"
+	TorrentSelectionRuleTypeSize                 TorrentSelectionRuleType = "SIZE"
+	TorrentSelectionRuleTypeTorrentSingleVideo   TorrentSelectionRuleType = "TORRENT_SINGLE_VIDEO"
+	TorrentSelectionRuleTypeTorrentFileNameMatch TorrentSelectionRuleType = "TORRENT_FILE_NAME_MATCH"
 )
 
 var AllTorrentSelectionRuleType = []TorrentSelectionRuleType{
@@ -1245,11 +1326,13 @@ var AllTorrentSelectionRuleType = []TorrentSelectionRuleType{
 	TorrentSelectionRuleTypeTitleSimilarity,
 	TorrentSelectionRuleTypeSeeders,
 	TorrentSelectionRuleTypeSize,
+	TorrentSelectionRuleTypeTorrentSingleVideo,
+	TorrentSelectionRuleTypeTorrentFileNameMatch,
 }
 
 func (e TorrentSelectionRuleType) IsValid() bool {
 	switch e {
-	case TorrentSelectionRuleTypeIndexerPreference, TorrentSelectionRuleTypeTitleMatch, TorrentSelectionRuleTypePublishDate, TorrentSelectionRuleTypeTitleSimilarity, TorrentSelectionRuleTypeSeeders, TorrentSelectionRuleTypeSize:
+	case TorrentSelectionRuleTypeIndexerPreference, TorrentSelectionRuleTypeTitleMatch, TorrentSelectionRuleTypePublishDate, TorrentSelectionRuleTypeTitleSimilarity, TorrentSelectionRuleTypeSeeders, TorrentSelectionRuleTypeSize, TorrentSelectionRuleTypeTorrentSingleVideo, TorrentSelectionRuleTypeTorrentFileNameMatch:
 		return true
 	}
 	return false

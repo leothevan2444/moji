@@ -464,6 +464,16 @@ func torrentSelectionSnapshot(cfg config.TorrentSelectionConfig) graphqlapi.Torr
 				})
 			}
 		}
+		if len(rule.TorrentFileNameMatch.Clauses) > 0 {
+			item.TorrentFileNameMatch.Clauses = make([]graphqlapi.TorrentFileNameMatchClauseSnapshot, 0, len(rule.TorrentFileNameMatch.Clauses))
+			for _, clause := range rule.TorrentFileNameMatch.Clauses {
+				item.TorrentFileNameMatch.Clauses = append(item.TorrentFileNameMatch.Clauses, graphqlapi.TorrentFileNameMatchClauseSnapshot{
+					Pattern:     clause.Pattern,
+					PatternMode: string(clause.PatternMode),
+					Effect:      string(clause.Effect),
+				})
+			}
+		}
 		out.Rules = append(out.Rules, item)
 	}
 	return out

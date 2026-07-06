@@ -183,6 +183,8 @@ enum TorrentSelectionRuleType {
   TITLE_SIMILARITY
   SEEDERS
   SIZE
+  TORRENT_SINGLE_VIDEO
+  TORRENT_FILE_NAME_MATCH
 }
 
 enum TorrentSelectionDirection {
@@ -200,6 +202,12 @@ enum TitleMatchEffect {
   AVOID
 }
 
+enum TorrentFileMatchEffect {
+  PREFER
+  AVOID
+  LOCK
+}
+
 type TorrentSelectionRule {
   id: ID!
   name: String!
@@ -208,6 +216,7 @@ type TorrentSelectionRule {
   direction: TorrentSelectionDirection!
   indexerPreference: IndexerPreferenceRule!
   titleMatch: TitleMatchRule!
+  torrentFileNameMatch: TorrentFileNameMatchRule!
 }
 
 type IndexerPreferenceRule {
@@ -222,6 +231,16 @@ type TitleMatchClause {
   pattern: String!
   patternMode: TitleMatchPatternMode!
   effect: TitleMatchEffect!
+}
+
+type TorrentFileNameMatchRule {
+  clauses: [TorrentFileNameMatchClause!]!
+}
+
+type TorrentFileNameMatchClause {
+  pattern: String!
+  patternMode: TitleMatchPatternMode!
+  effect: TorrentFileMatchEffect!
 }
 
 type QBittorrentSettings {
@@ -331,6 +350,7 @@ input TorrentSelectionRuleInput {
   direction: TorrentSelectionDirection!
   indexerPreference: IndexerPreferenceRuleInput
   titleMatch: TitleMatchRuleInput
+  torrentFileNameMatch: TorrentFileNameMatchRuleInput
 }
 
 input IndexerPreferenceRuleInput {
@@ -345,6 +365,16 @@ input TitleMatchClauseInput {
   pattern: String!
   patternMode: TitleMatchPatternMode!
   effect: TitleMatchEffect!
+}
+
+input TorrentFileNameMatchRuleInput {
+  clauses: [TorrentFileNameMatchClauseInput!]!
+}
+
+input TorrentFileNameMatchClauseInput {
+  pattern: String!
+  patternMode: TitleMatchPatternMode!
+  effect: TorrentFileMatchEffect!
 }
 
 input UpdateQBittorrentSettingsInput {

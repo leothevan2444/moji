@@ -1,7 +1,9 @@
 package downloader
 
 import (
+	"context"
 	"errors"
+	"path"
 	"regexp"
 	"sort"
 	"strings"
@@ -9,12 +11,25 @@ import (
 	"unicode"
 
 	"github.com/leothevan2444/moji/internal/config"
+	"github.com/leothevan2444/moji/internal/logging"
 	"github.com/leothevan2444/moji/pkg/jackett"
 )
 
-type defaultCandidateSelector struct{}
+const torrentInspectionCandidateLimit = 5
 
-func (defaultCandidateSelector) Select(query string, results []jackett.SearchResult, cfg config.CandidateSelectionConfig) (jackett.SearchResult, error) {
+type torrentInspection struct {
+	Paths       []string
+	VideoPaths  []string
+	SingleVideo bool
+}
+
+type torrentInspector func(ctx context.Context, torrentURL string) (torrentInspection, error)
+
+type defaultCandidateSelector struct {
+	inspectTorrent torrentInspector
+}
+
+func (s defaultCandidateSelector) Select(ctx context.Context, query string, results []jackett.SearchResult, cfg config.CandidateSelectionConfig) (jackett.SearchResult, error) {
 	if !cfg.Enabled {
 		cfg = config.DefaultCandidateSelectionConfig()
 	}
@@ -35,20 +50,68 @@ func (defaultCandidateSelector) Select(query string, results []jackett.SearchRes
 	}
 
 	compiled := compileSelectionRules(cfg.Rules)
+	fastRules, fileRules := splitCompiledRules(compiled)
 	sort.SliceStable(candidates, func(i, j int) bool {
-		return compareRankedCandidates(query, candidates[i], candidates[j], compiled) < 0
+		return compareRankedCandidates(query, candidates[i], candidates[j], fastRules) < 0
 	})
-	return candidates[0].result, nil
+	for i := range candidates {
+		candidates[i].rank = i
+	}
+	if len(fileRules) == 0 || s.inspectTorrent == nil {
+		return candidates[0].result, nil
+	}
+
+	inspections := inspectTopTorrentCandidates(ctx, candidates, s.inspectTorrent)
+	best := candidates[0]
+	for i := 1; i < minInt(len(candidates), torrentInspectionCandidateLimit); i++ {
+		candidate := candidates[i]
+		if cmp := compareInspectedCandidates(candidate, best, fileRules, inspections); cmp < 0 {
+			best = candidate
+		}
+	}
+	return best.result, nil
 }
 
 type rankedCandidate struct {
 	index  int
+	rank   int
 	result jackett.SearchResult
 }
 
 type compiledRule struct {
 	rule          config.CandidateSelectionRule
 	regexMatchers []*regexp.Regexp
+}
+
+type inspectedCandidate struct {
+	inspection torrentInspection
+	ok         bool
+}
+
+func (s *Service) inspectSearchResultTorrent(ctx context.Context, torrentURL string) (torrentInspection, error) {
+	metadata, err := s.fetchTorrentMetadata(ctx, torrentURL)
+	if err != nil {
+		return torrentInspection{}, err
+	}
+	return inspectTorrentMetadata(metadata), nil
+}
+
+func inspectTorrentMetadata(metadata downloadedTorrentMetadata) torrentInspection {
+	paths := append([]string(nil), metadata.Paths...)
+	if len(paths) == 0 && metadata.FilePath != "" {
+		paths = append(paths, metadata.FilePath)
+	}
+	videoPaths := make([]string, 0, len(paths))
+	for _, item := range paths {
+		if isVideoFilePath(item) {
+			videoPaths = append(videoPaths, item)
+		}
+	}
+	return torrentInspection{
+		Paths:       paths,
+		VideoPaths:  videoPaths,
+		SingleVideo: len(videoPaths) == 1,
+	}
 }
 
 func compileSelectionRules(rules []config.CandidateSelectionRule) []compiledRule {
@@ -58,22 +121,60 @@ func compileSelectionRules(rules []config.CandidateSelectionRule) []compiledRule
 			continue
 		}
 		item := compiledRule{rule: rule}
-		if rule.Type == config.CandidateSelectionRuleTypeTitleMatch {
-			item.regexMatchers = make([]*regexp.Regexp, len(rule.TitleMatch.Clauses))
-			for i, clause := range rule.TitleMatch.Clauses {
-				if clause.PatternMode != config.TitleMatchPatternModeRegex {
-					continue
-				}
-				re, err := regexp.Compile(clause.Pattern)
-				if err != nil {
-					continue
-				}
-				item.regexMatchers[i] = re
-			}
+		switch rule.Type {
+		case config.CandidateSelectionRuleTypeTitleMatch:
+			item.regexMatchers = compileRegexMatchers(rule.TitleMatch.Clauses)
+		case config.CandidateSelectionRuleTypeTorrentFileNameMatch:
+			item.regexMatchers = compileTorrentFileRegexMatchers(rule.TorrentFileNameMatch.Clauses)
 		}
 		out = append(out, item)
 	}
 	return out
+}
+
+func compileRegexMatchers(clauses []config.TitleMatchClause) []*regexp.Regexp {
+	matchers := make([]*regexp.Regexp, len(clauses))
+	for i, clause := range clauses {
+		if clause.PatternMode != config.TitleMatchPatternModeRegex {
+			continue
+		}
+		re, err := regexp.Compile(clause.Pattern)
+		if err != nil {
+			continue
+		}
+		matchers[i] = re
+	}
+	return matchers
+}
+
+func compileTorrentFileRegexMatchers(clauses []config.TorrentFileNameMatchClause) []*regexp.Regexp {
+	matchers := make([]*regexp.Regexp, len(clauses))
+	for i, clause := range clauses {
+		if clause.PatternMode != config.TitleMatchPatternModeRegex {
+			continue
+		}
+		re, err := regexp.Compile(clause.Pattern)
+		if err != nil {
+			continue
+		}
+		matchers[i] = re
+	}
+	return matchers
+}
+
+func splitCompiledRules(rules []compiledRule) (fast []compiledRule, file []compiledRule) {
+	fast = make([]compiledRule, 0, len(rules))
+	file = make([]compiledRule, 0, len(rules))
+	for _, rule := range rules {
+		switch rule.rule.Type {
+		case config.CandidateSelectionRuleTypeTorrentSingleVideo,
+			config.CandidateSelectionRuleTypeTorrentFileNameMatch:
+			file = append(file, rule)
+		default:
+			fast = append(fast, rule)
+		}
+	}
+	return fast, file
 }
 
 func compareRankedCandidates(query string, left rankedCandidate, right rankedCandidate, rules []compiledRule) int {
@@ -82,10 +183,27 @@ func compareRankedCandidates(query string, left rankedCandidate, right rankedCan
 			return cmp
 		}
 	}
-	if left.index < right.index {
+	if left.rank < right.rank {
 		return -1
 	}
-	if left.index > right.index {
+	if left.rank > right.rank {
+		return 1
+	}
+	return 0
+}
+
+func compareInspectedCandidates(left rankedCandidate, right rankedCandidate, rules []compiledRule, inspections map[int]inspectedCandidate) int {
+	leftInspection := inspections[left.index]
+	rightInspection := inspections[right.index]
+	for _, rule := range rules {
+		if cmp := compareByInspectionRule(leftInspection, rightInspection, rule); cmp != 0 {
+			return cmp
+		}
+	}
+	if left.rank < right.rank {
+		return -1
+	}
+	if left.rank > right.rank {
 		return 1
 	}
 	return 0
@@ -110,6 +228,48 @@ func compareByRule(query string, left jackett.SearchResult, right jackett.Search
 	default:
 		return 0
 	}
+}
+
+func compareByInspectionRule(left inspectedCandidate, right inspectedCandidate, rule compiledRule) int {
+	switch rule.rule.Type {
+	case config.CandidateSelectionRuleTypeTorrentSingleVideo:
+		return compareInts(singleVideoRank(left), singleVideoRank(right), config.CandidateSelectionDirectionAsc)
+	case config.CandidateSelectionRuleTypeTorrentFileNameMatch:
+		leftRank := torrentFileNameMatchRank(left, rule)
+		rightRank := torrentFileNameMatchRank(right, rule)
+		return compareInts(leftRank, rightRank, config.CandidateSelectionDirectionAsc)
+	default:
+		return 0
+	}
+}
+
+func inspectTopTorrentCandidates(ctx context.Context, candidates []rankedCandidate, inspector torrentInspector) map[int]inspectedCandidate {
+	out := make(map[int]inspectedCandidate, torrentInspectionCandidateLimit)
+	limit := minInt(len(candidates), torrentInspectionCandidateLimit)
+	for i := 0; i < limit; i++ {
+		torrentURL := inspectableTorrentURL(candidates[i].result)
+		if torrentURL == "" {
+			continue
+		}
+		inspection, err := inspector(ctx, torrentURL)
+		if err != nil {
+			logging.Infof("downloader: inspect torrent candidate %q failed: %v", candidates[i].result.Title, err)
+			continue
+		}
+		out[candidates[i].index] = inspectedCandidate{
+			inspection: inspection,
+			ok:         true,
+		}
+	}
+	return out
+}
+
+func inspectableTorrentURL(result jackett.SearchResult) string {
+	link := strings.TrimSpace(result.Link)
+	if link == "" || strings.HasPrefix(strings.ToLower(link), "magnet:") {
+		return ""
+	}
+	return link
 }
 
 func indexerPreferenceRank(result jackett.SearchResult, rule config.CandidateSelectionRule) int {
@@ -141,6 +301,40 @@ func titleMatchRank(title string, rule compiledRule) int {
 	return len(rule.rule.TitleMatch.Clauses) + 1
 }
 
+func singleVideoRank(candidate inspectedCandidate) int {
+	if candidate.ok && candidate.inspection.SingleVideo {
+		return 0
+	}
+	return 1
+}
+
+func torrentFileNameMatchRank(candidate inspectedCandidate, rule compiledRule) int {
+	if !candidate.ok || len(rule.rule.TorrentFileNameMatch.Clauses) == 0 {
+		return len(rule.rule.TorrentFileNameMatch.Clauses) + 1
+	}
+	bestRank := len(rule.rule.TorrentFileNameMatch.Clauses) + 1
+	for index, clause := range rule.rule.TorrentFileNameMatch.Clauses {
+		if !matchesTorrentFileClause(candidate.inspection.Paths, clause, rule.regexMatchers, index) {
+			continue
+		}
+		switch clause.Effect {
+		case config.TorrentFileMatchEffectLock:
+			return index
+		case config.TorrentFileMatchEffectAvoid:
+			rank := len(rule.rule.TorrentFileNameMatch.Clauses) + 2 + index
+			if rank < bestRank {
+				bestRank = rank
+			}
+		default:
+			rank := index + 1
+			if rank < bestRank {
+				bestRank = rank
+			}
+		}
+	}
+	return bestRank
+}
+
 func matchesTitleClause(title string, clause config.TitleMatchClause, regexMatchers []*regexp.Regexp, index int) bool {
 	switch clause.PatternMode {
 	case config.TitleMatchPatternModeRegex:
@@ -151,6 +345,29 @@ func matchesTitleClause(title string, clause config.TitleMatchClause, regexMatch
 	default:
 		return strings.Contains(title, strings.ToLower(clause.Pattern))
 	}
+}
+
+func matchesTorrentFileClause(paths []string, clause config.TorrentFileNameMatchClause, regexMatchers []*regexp.Regexp, index int) bool {
+	if len(paths) == 0 {
+		return false
+	}
+	for _, item := range paths {
+		normalized := strings.ToLower(item)
+		switch clause.PatternMode {
+		case config.TitleMatchPatternModeRegex:
+			if index >= len(regexMatchers) || regexMatchers[index] == nil {
+				continue
+			}
+			if regexMatchers[index].MatchString(normalized) {
+				return true
+			}
+		default:
+			if strings.Contains(normalized, strings.ToLower(clause.Pattern)) {
+				return true
+			}
+		}
+	}
+	return false
 }
 
 func parsePublishDate(value string) (time.Time, bool) {
@@ -290,6 +507,16 @@ func lcsLength(left string, right string) int {
 	return prev[len(right)]
 }
 
+func isVideoFilePath(value string) bool {
+	ext := strings.TrimPrefix(strings.ToLower(path.Ext(strings.TrimSpace(value))), ".")
+	switch ext {
+	case "mp4", "mkv", "avi", "wmv", "mov", "ts", "m2ts", "iso":
+		return true
+	default:
+		return false
+	}
+}
+
 func compareInts(left int, right int, direction config.CandidateSelectionDirection) int {
 	switch direction {
 	case config.CandidateSelectionDirectionAsc:
@@ -365,4 +592,11 @@ func compareTimes(left time.Time, leftOK bool, right time.Time, rightOK bool, di
 			return 0
 		}
 	}
+}
+
+func minInt(left int, right int) int {
+	if left < right {
+		return left
+	}
+	return right
 }

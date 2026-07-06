@@ -479,14 +479,25 @@ type ComplexityRoot struct {
 		Clauses func(childComplexity int) int
 	}
 
+	TorrentFileNameMatchClause struct {
+		Effect      func(childComplexity int) int
+		Pattern     func(childComplexity int) int
+		PatternMode func(childComplexity int) int
+	}
+
+	TorrentFileNameMatchRule struct {
+		Clauses func(childComplexity int) int
+	}
+
 	TorrentSelectionRule struct {
-		Direction         func(childComplexity int) int
-		Enabled           func(childComplexity int) int
-		ID                func(childComplexity int) int
-		IndexerPreference func(childComplexity int) int
-		Name              func(childComplexity int) int
-		TitleMatch        func(childComplexity int) int
-		Type              func(childComplexity int) int
+		Direction            func(childComplexity int) int
+		Enabled              func(childComplexity int) int
+		ID                   func(childComplexity int) int
+		IndexerPreference    func(childComplexity int) int
+		Name                 func(childComplexity int) int
+		TitleMatch           func(childComplexity int) int
+		TorrentFileNameMatch func(childComplexity int) int
+		Type                 func(childComplexity int) int
 	}
 
 	TorrentSelectionSettings struct {
@@ -2792,6 +2803,34 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.TitleMatchRule.Clauses(childComplexity), true
 
+	case "TorrentFileNameMatchClause.effect":
+		if e.complexity.TorrentFileNameMatchClause.Effect == nil {
+			break
+		}
+
+		return e.complexity.TorrentFileNameMatchClause.Effect(childComplexity), true
+
+	case "TorrentFileNameMatchClause.pattern":
+		if e.complexity.TorrentFileNameMatchClause.Pattern == nil {
+			break
+		}
+
+		return e.complexity.TorrentFileNameMatchClause.Pattern(childComplexity), true
+
+	case "TorrentFileNameMatchClause.patternMode":
+		if e.complexity.TorrentFileNameMatchClause.PatternMode == nil {
+			break
+		}
+
+		return e.complexity.TorrentFileNameMatchClause.PatternMode(childComplexity), true
+
+	case "TorrentFileNameMatchRule.clauses":
+		if e.complexity.TorrentFileNameMatchRule.Clauses == nil {
+			break
+		}
+
+		return e.complexity.TorrentFileNameMatchRule.Clauses(childComplexity), true
+
 	case "TorrentSelectionRule.direction":
 		if e.complexity.TorrentSelectionRule.Direction == nil {
 			break
@@ -2833,6 +2872,13 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.TorrentSelectionRule.TitleMatch(childComplexity), true
+
+	case "TorrentSelectionRule.torrentFileNameMatch":
+		if e.complexity.TorrentSelectionRule.TorrentFileNameMatch == nil {
+			break
+		}
+
+		return e.complexity.TorrentSelectionRule.TorrentFileNameMatch(childComplexity), true
 
 	case "TorrentSelectionRule.type":
 		if e.complexity.TorrentSelectionRule.Type == nil {
@@ -2882,6 +2928,8 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 		ec.unmarshalInputStashPerformerScenesInput,
 		ec.unmarshalInputTitleMatchClauseInput,
 		ec.unmarshalInputTitleMatchRuleInput,
+		ec.unmarshalInputTorrentFileNameMatchClauseInput,
+		ec.unmarshalInputTorrentFileNameMatchRuleInput,
 		ec.unmarshalInputTorrentSelectionRuleInput,
 		ec.unmarshalInputTorrentSelectionSettingsInput,
 		ec.unmarshalInputTransferIngestSettingsInput,
@@ -3303,6 +3351,8 @@ enum TorrentSelectionRuleType {
   TITLE_SIMILARITY
   SEEDERS
   SIZE
+  TORRENT_SINGLE_VIDEO
+  TORRENT_FILE_NAME_MATCH
 }
 
 enum TorrentSelectionDirection {
@@ -3320,6 +3370,12 @@ enum TitleMatchEffect {
   AVOID
 }
 
+enum TorrentFileMatchEffect {
+  PREFER
+  AVOID
+  LOCK
+}
+
 type TorrentSelectionRule {
   id: ID!
   name: String!
@@ -3328,6 +3384,7 @@ type TorrentSelectionRule {
   direction: TorrentSelectionDirection!
   indexerPreference: IndexerPreferenceRule!
   titleMatch: TitleMatchRule!
+  torrentFileNameMatch: TorrentFileNameMatchRule!
 }
 
 type IndexerPreferenceRule {
@@ -3342,6 +3399,16 @@ type TitleMatchClause {
   pattern: String!
   patternMode: TitleMatchPatternMode!
   effect: TitleMatchEffect!
+}
+
+type TorrentFileNameMatchRule {
+  clauses: [TorrentFileNameMatchClause!]!
+}
+
+type TorrentFileNameMatchClause {
+  pattern: String!
+  patternMode: TitleMatchPatternMode!
+  effect: TorrentFileMatchEffect!
 }
 
 type QBittorrentSettings {
@@ -3451,6 +3518,7 @@ input TorrentSelectionRuleInput {
   direction: TorrentSelectionDirection!
   indexerPreference: IndexerPreferenceRuleInput
   titleMatch: TitleMatchRuleInput
+  torrentFileNameMatch: TorrentFileNameMatchRuleInput
 }
 
 input IndexerPreferenceRuleInput {
@@ -3465,6 +3533,16 @@ input TitleMatchClauseInput {
   pattern: String!
   patternMode: TitleMatchPatternMode!
   effect: TitleMatchEffect!
+}
+
+input TorrentFileNameMatchRuleInput {
+  clauses: [TorrentFileNameMatchClauseInput!]!
+}
+
+input TorrentFileNameMatchClauseInput {
+  pattern: String!
+  patternMode: TitleMatchPatternMode!
+  effect: TorrentFileMatchEffect!
 }
 
 input UpdateQBittorrentSettingsInput {
@@ -19570,6 +19648,190 @@ func (ec *executionContext) fieldContext_TitleMatchRule_clauses(_ context.Contex
 	return fc, nil
 }
 
+func (ec *executionContext) _TorrentFileNameMatchClause_pattern(ctx context.Context, field graphql.CollectedField, obj *model.TorrentFileNameMatchClause) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_TorrentFileNameMatchClause_pattern(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Pattern, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_TorrentFileNameMatchClause_pattern(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "TorrentFileNameMatchClause",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _TorrentFileNameMatchClause_patternMode(ctx context.Context, field graphql.CollectedField, obj *model.TorrentFileNameMatchClause) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_TorrentFileNameMatchClause_patternMode(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.PatternMode, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(model.TitleMatchPatternMode)
+	fc.Result = res
+	return ec.marshalNTitleMatchPatternMode2githubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐTitleMatchPatternMode(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_TorrentFileNameMatchClause_patternMode(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "TorrentFileNameMatchClause",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type TitleMatchPatternMode does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _TorrentFileNameMatchClause_effect(ctx context.Context, field graphql.CollectedField, obj *model.TorrentFileNameMatchClause) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_TorrentFileNameMatchClause_effect(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Effect, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(model.TorrentFileMatchEffect)
+	fc.Result = res
+	return ec.marshalNTorrentFileMatchEffect2githubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐTorrentFileMatchEffect(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_TorrentFileNameMatchClause_effect(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "TorrentFileNameMatchClause",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type TorrentFileMatchEffect does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _TorrentFileNameMatchRule_clauses(ctx context.Context, field graphql.CollectedField, obj *model.TorrentFileNameMatchRule) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_TorrentFileNameMatchRule_clauses(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Clauses, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]*model.TorrentFileNameMatchClause)
+	fc.Result = res
+	return ec.marshalNTorrentFileNameMatchClause2ᚕᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐTorrentFileNameMatchClauseᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_TorrentFileNameMatchRule_clauses(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "TorrentFileNameMatchRule",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "pattern":
+				return ec.fieldContext_TorrentFileNameMatchClause_pattern(ctx, field)
+			case "patternMode":
+				return ec.fieldContext_TorrentFileNameMatchClause_patternMode(ctx, field)
+			case "effect":
+				return ec.fieldContext_TorrentFileNameMatchClause_effect(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type TorrentFileNameMatchClause", field.Name)
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _TorrentSelectionRule_id(ctx context.Context, field graphql.CollectedField, obj *model.TorrentSelectionRule) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_TorrentSelectionRule_id(ctx, field)
 	if err != nil {
@@ -19886,6 +20148,54 @@ func (ec *executionContext) fieldContext_TorrentSelectionRule_titleMatch(_ conte
 	return fc, nil
 }
 
+func (ec *executionContext) _TorrentSelectionRule_torrentFileNameMatch(ctx context.Context, field graphql.CollectedField, obj *model.TorrentSelectionRule) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_TorrentSelectionRule_torrentFileNameMatch(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.TorrentFileNameMatch, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*model.TorrentFileNameMatchRule)
+	fc.Result = res
+	return ec.marshalNTorrentFileNameMatchRule2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐTorrentFileNameMatchRule(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_TorrentSelectionRule_torrentFileNameMatch(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "TorrentSelectionRule",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "clauses":
+				return ec.fieldContext_TorrentFileNameMatchRule_clauses(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type TorrentFileNameMatchRule", field.Name)
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _TorrentSelectionSettings_enabled(ctx context.Context, field graphql.CollectedField, obj *model.TorrentSelectionSettings) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_TorrentSelectionSettings_enabled(ctx, field)
 	if err != nil {
@@ -19983,6 +20293,8 @@ func (ec *executionContext) fieldContext_TorrentSelectionSettings_rules(_ contex
 				return ec.fieldContext_TorrentSelectionRule_indexerPreference(ctx, field)
 			case "titleMatch":
 				return ec.fieldContext_TorrentSelectionRule_titleMatch(ctx, field)
+			case "torrentFileNameMatch":
+				return ec.fieldContext_TorrentSelectionRule_torrentFileNameMatch(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type TorrentSelectionRule", field.Name)
 		},
@@ -22571,6 +22883,74 @@ func (ec *executionContext) unmarshalInputTitleMatchRuleInput(ctx context.Contex
 	return it, nil
 }
 
+func (ec *executionContext) unmarshalInputTorrentFileNameMatchClauseInput(ctx context.Context, obj any) (model.TorrentFileNameMatchClauseInput, error) {
+	var it model.TorrentFileNameMatchClauseInput
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"pattern", "patternMode", "effect"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "pattern":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("pattern"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Pattern = data
+		case "patternMode":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("patternMode"))
+			data, err := ec.unmarshalNTitleMatchPatternMode2githubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐTitleMatchPatternMode(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.PatternMode = data
+		case "effect":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("effect"))
+			data, err := ec.unmarshalNTorrentFileMatchEffect2githubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐTorrentFileMatchEffect(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Effect = data
+		}
+	}
+
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputTorrentFileNameMatchRuleInput(ctx context.Context, obj any) (model.TorrentFileNameMatchRuleInput, error) {
+	var it model.TorrentFileNameMatchRuleInput
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"clauses"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "clauses":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("clauses"))
+			data, err := ec.unmarshalNTorrentFileNameMatchClauseInput2ᚕᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐTorrentFileNameMatchClauseInputᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Clauses = data
+		}
+	}
+
+	return it, nil
+}
+
 func (ec *executionContext) unmarshalInputTorrentSelectionRuleInput(ctx context.Context, obj any) (model.TorrentSelectionRuleInput, error) {
 	var it model.TorrentSelectionRuleInput
 	asMap := map[string]any{}
@@ -22578,7 +22958,7 @@ func (ec *executionContext) unmarshalInputTorrentSelectionRuleInput(ctx context.
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"id", "name", "type", "enabled", "direction", "indexerPreference", "titleMatch"}
+	fieldsInOrder := [...]string{"id", "name", "type", "enabled", "direction", "indexerPreference", "titleMatch", "torrentFileNameMatch"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -22634,6 +23014,13 @@ func (ec *executionContext) unmarshalInputTorrentSelectionRuleInput(ctx context.
 				return it, err
 			}
 			it.TitleMatch = data
+		case "torrentFileNameMatch":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("torrentFileNameMatch"))
+			data, err := ec.unmarshalOTorrentFileNameMatchRuleInput2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐTorrentFileNameMatchRuleInput(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.TorrentFileNameMatch = data
 		}
 	}
 
@@ -26167,6 +26554,94 @@ func (ec *executionContext) _TitleMatchRule(ctx context.Context, sel ast.Selecti
 	return out
 }
 
+var torrentFileNameMatchClauseImplementors = []string{"TorrentFileNameMatchClause"}
+
+func (ec *executionContext) _TorrentFileNameMatchClause(ctx context.Context, sel ast.SelectionSet, obj *model.TorrentFileNameMatchClause) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, torrentFileNameMatchClauseImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("TorrentFileNameMatchClause")
+		case "pattern":
+			out.Values[i] = ec._TorrentFileNameMatchClause_pattern(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "patternMode":
+			out.Values[i] = ec._TorrentFileNameMatchClause_patternMode(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "effect":
+			out.Values[i] = ec._TorrentFileNameMatchClause_effect(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var torrentFileNameMatchRuleImplementors = []string{"TorrentFileNameMatchRule"}
+
+func (ec *executionContext) _TorrentFileNameMatchRule(ctx context.Context, sel ast.SelectionSet, obj *model.TorrentFileNameMatchRule) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, torrentFileNameMatchRuleImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("TorrentFileNameMatchRule")
+		case "clauses":
+			out.Values[i] = ec._TorrentFileNameMatchRule_clauses(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
 var torrentSelectionRuleImplementors = []string{"TorrentSelectionRule"}
 
 func (ec *executionContext) _TorrentSelectionRule(ctx context.Context, sel ast.SelectionSet, obj *model.TorrentSelectionRule) graphql.Marshaler {
@@ -26210,6 +26685,11 @@ func (ec *executionContext) _TorrentSelectionRule(ctx context.Context, sel ast.S
 			}
 		case "titleMatch":
 			out.Values[i] = ec._TorrentSelectionRule_titleMatch(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "torrentFileNameMatch":
+			out.Values[i] = ec._TorrentSelectionRule_torrentFileNameMatch(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
@@ -27961,6 +28441,100 @@ func (ec *executionContext) marshalNTitleMatchRule2ᚖgithubᚗcomᚋleothevan24
 	return ec._TitleMatchRule(ctx, sel, v)
 }
 
+func (ec *executionContext) unmarshalNTorrentFileMatchEffect2githubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐTorrentFileMatchEffect(ctx context.Context, v any) (model.TorrentFileMatchEffect, error) {
+	var res model.TorrentFileMatchEffect
+	err := res.UnmarshalGQL(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNTorrentFileMatchEffect2githubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐTorrentFileMatchEffect(ctx context.Context, sel ast.SelectionSet, v model.TorrentFileMatchEffect) graphql.Marshaler {
+	return v
+}
+
+func (ec *executionContext) marshalNTorrentFileNameMatchClause2ᚕᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐTorrentFileNameMatchClauseᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.TorrentFileNameMatchClause) graphql.Marshaler {
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalNTorrentFileNameMatchClause2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐTorrentFileNameMatchClause(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
+}
+
+func (ec *executionContext) marshalNTorrentFileNameMatchClause2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐTorrentFileNameMatchClause(ctx context.Context, sel ast.SelectionSet, v *model.TorrentFileNameMatchClause) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._TorrentFileNameMatchClause(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalNTorrentFileNameMatchClauseInput2ᚕᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐTorrentFileNameMatchClauseInputᚄ(ctx context.Context, v any) ([]*model.TorrentFileNameMatchClauseInput, error) {
+	var vSlice []any
+	vSlice = graphql.CoerceList(v)
+	var err error
+	res := make([]*model.TorrentFileNameMatchClauseInput, len(vSlice))
+	for i := range vSlice {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithIndex(i))
+		res[i], err = ec.unmarshalNTorrentFileNameMatchClauseInput2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐTorrentFileNameMatchClauseInput(ctx, vSlice[i])
+		if err != nil {
+			return nil, err
+		}
+	}
+	return res, nil
+}
+
+func (ec *executionContext) unmarshalNTorrentFileNameMatchClauseInput2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐTorrentFileNameMatchClauseInput(ctx context.Context, v any) (*model.TorrentFileNameMatchClauseInput, error) {
+	res, err := ec.unmarshalInputTorrentFileNameMatchClauseInput(ctx, v)
+	return &res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNTorrentFileNameMatchRule2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐTorrentFileNameMatchRule(ctx context.Context, sel ast.SelectionSet, v *model.TorrentFileNameMatchRule) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._TorrentFileNameMatchRule(ctx, sel, v)
+}
+
 func (ec *executionContext) unmarshalNTorrentSelectionDirection2githubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐTorrentSelectionDirection(ctx context.Context, v any) (model.TorrentSelectionDirection, error) {
 	var res model.TorrentSelectionDirection
 	err := res.UnmarshalGQL(v)
@@ -28655,6 +29229,14 @@ func (ec *executionContext) unmarshalOTitleMatchRuleInput2ᚖgithubᚗcomᚋleot
 		return nil, nil
 	}
 	res, err := ec.unmarshalInputTitleMatchRuleInput(ctx, v)
+	return &res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) unmarshalOTorrentFileNameMatchRuleInput2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐTorrentFileNameMatchRuleInput(ctx context.Context, v any) (*model.TorrentFileNameMatchRuleInput, error) {
+	if v == nil {
+		return nil, nil
+	}
+	res, err := ec.unmarshalInputTorrentFileNameMatchRuleInput(ctx, v)
 	return &res, graphql.ErrorOnPath(ctx, err)
 }
 

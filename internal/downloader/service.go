@@ -170,7 +170,7 @@ type FileOperator interface {
 }
 
 type CandidateSelector interface {
-	Select(query string, results []jackett.SearchResult, cfg config.CandidateSelectionConfig) (jackett.SearchResult, error)
+	Select(ctx context.Context, query string, results []jackett.SearchResult, cfg config.CandidateSelectionConfig) (jackett.SearchResult, error)
 }
 
 func WithClock(now func() time.Time) Option {
@@ -211,7 +211,6 @@ func NewService(tr tracker.Tracker, qbt TorrentClient, store TaskStore, options 
 		qbt:                qbt,
 		store:              store,
 		httpClient:         &http.Client{Timeout: 15 * time.Second},
-		selector:           defaultCandidateSelector{},
 		fileOps:            osFileOperator{},
 		candidateSelection: config.DefaultCandidateSelectionConfig,
 		taskDeletePolicy: func() config.TaskDeletePolicy {
@@ -384,9 +383,9 @@ func (s *Service) DownloadMediaContext(ctx context.Context, req DownloadRequest)
 	}
 	selector := s.selector
 	if selector == nil {
-		selector = defaultCandidateSelector{}
+		selector = defaultCandidateSelector{inspectTorrent: s.inspectSearchResultTorrent}
 	}
-	result, err := selector.Select(query, results, selectionConfig)
+	result, err := selector.Select(ctx, query, results, selectionConfig)
 	if err != nil {
 		logging.Errorf("downloader: select candidate failed for query %q: %v", query, err)
 		return nil, err

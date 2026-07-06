@@ -1,5 +1,6 @@
 import {
   LogLevel,
+  TorrentFileMatchEffect,
   TitleMatchEffect,
   TitleMatchPatternMode,
   TorrentSelectionDirection,
@@ -22,6 +23,13 @@ export const DEFAULT_TORRENT_SELECTION_RULES = [
         patternMode: TitleMatchPatternMode;
         effect: TitleMatchEffect;
       }>
+    },
+    torrentFileNameMatch: {
+      clauses: [] as Array<{
+        pattern: string;
+        patternMode: TitleMatchPatternMode;
+        effect: TorrentFileMatchEffect;
+      }>
     }
   },
   {
@@ -38,6 +46,64 @@ export const DEFAULT_TORRENT_SELECTION_RULES = [
         pattern: string;
         patternMode: TitleMatchPatternMode;
         effect: TitleMatchEffect;
+      }>
+    },
+    torrentFileNameMatch: {
+      clauses: [] as Array<{
+        pattern: string;
+        patternMode: TitleMatchPatternMode;
+        effect: TorrentFileMatchEffect;
+      }>
+    }
+  }
+];
+
+export const DEFAULT_TORRENT_FILE_INSPECTION_RULES = [
+  {
+    id: "default-torrent-single-video",
+    name: "Single Video",
+    type: TorrentSelectionRuleType.TorrentSingleVideo,
+    enabled: true,
+    direction: TorrentSelectionDirection.Desc,
+    indexerPreference: {
+      trackerIds: [] as string[]
+    },
+    titleMatch: {
+      clauses: [] as Array<{
+        pattern: string;
+        patternMode: TitleMatchPatternMode;
+        effect: TitleMatchEffect;
+      }>
+    },
+    torrentFileNameMatch: {
+      clauses: [] as Array<{
+        pattern: string;
+        patternMode: TitleMatchPatternMode;
+        effect: TorrentFileMatchEffect;
+      }>
+    }
+  },
+  {
+    id: "default-torrent-file-name-match",
+    name: "Torrent File Name Match",
+    type: TorrentSelectionRuleType.TorrentFileNameMatch,
+    enabled: true,
+    direction: TorrentSelectionDirection.Desc,
+    indexerPreference: {
+      trackerIds: [] as string[]
+    },
+    titleMatch: {
+      clauses: [] as Array<{
+        pattern: string;
+        patternMode: TitleMatchPatternMode;
+        effect: TitleMatchEffect;
+      }>
+    },
+    torrentFileNameMatch: {
+      clauses: [] as Array<{
+        pattern: string;
+        patternMode: TitleMatchPatternMode;
+        effect: TorrentFileMatchEffect;
       }>
     }
   }
@@ -84,7 +150,7 @@ export const EMPTY_AUTOMATION_FORM = {
   stashBoxEndpoints: [] as string[],
   torrentSelection: {
     enabled: true,
-    rules: DEFAULT_TORRENT_SELECTION_RULES
+    rules: [...DEFAULT_TORRENT_SELECTION_RULES, ...DEFAULT_TORRENT_FILE_INSPECTION_RULES]
   }
 };
 

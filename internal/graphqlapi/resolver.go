@@ -140,13 +140,14 @@ type TorrentSelectionSettingsSnapshot struct {
 }
 
 type TorrentSelectionRuleSnapshot struct {
-	ID                string
-	Name              string
-	Type              string
-	Enabled           bool
-	Direction         string
-	IndexerPreference IndexerPreferenceRuleSnapshot
-	TitleMatch        TitleMatchRuleSnapshot
+	ID                   string
+	Name                 string
+	Type                 string
+	Enabled              bool
+	Direction            string
+	IndexerPreference    IndexerPreferenceRuleSnapshot
+	TitleMatch           TitleMatchRuleSnapshot
+	TorrentFileNameMatch TorrentFileNameMatchRuleSnapshot
 }
 
 type IndexerPreferenceRuleSnapshot struct {
@@ -158,6 +159,16 @@ type TitleMatchRuleSnapshot struct {
 }
 
 type TitleMatchClauseSnapshot struct {
+	Pattern     string
+	PatternMode string
+	Effect      string
+}
+
+type TorrentFileNameMatchRuleSnapshot struct {
+	Clauses []TorrentFileNameMatchClauseSnapshot
+}
+
+type TorrentFileNameMatchClauseSnapshot struct {
 	Pattern     string
 	PatternMode string
 	Effect      string

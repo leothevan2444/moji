@@ -43,6 +43,19 @@ func torrentSelectionRulesFromModel(rules []*model.TorrentSelectionRuleInput) []
 				})
 			}
 		}
+		if rule.TorrentFileNameMatch != nil {
+			item.TorrentFileNameMatch.Clauses = make([]TorrentFileNameMatchClauseSnapshot, 0, len(rule.TorrentFileNameMatch.Clauses))
+			for _, clause := range rule.TorrentFileNameMatch.Clauses {
+				if clause == nil {
+					continue
+				}
+				item.TorrentFileNameMatch.Clauses = append(item.TorrentFileNameMatch.Clauses, TorrentFileNameMatchClauseSnapshot{
+					Pattern:     clause.Pattern,
+					PatternMode: string(clause.PatternMode),
+					Effect:      string(clause.Effect),
+				})
+			}
+		}
 		out = append(out, item)
 	}
 	return out

@@ -2,6 +2,7 @@ package downloader
 
 import (
 	"context"
+	"strings"
 	"testing"
 
 	"github.com/leothevan2444/moji/internal/config"
@@ -10,7 +11,7 @@ import (
 
 func TestDefaultCandidateSelectorRejectsUndownloadableResults(t *testing.T) {
 	selector := defaultCandidateSelector{}
-	_, err := selector.Select("ABCD-123", []jackett.SearchResult{{Title: "nope"}}, config.DefaultCandidateSelectionConfig())
+	_, err := selector.Select(context.Background(), "ABCD-123", []jackett.SearchResult{{Title: "nope"}}, config.DefaultCandidateSelectionConfig())
 	if err == nil {
 		t.Fatal("expected error when no downloadable candidate exists")
 	}
@@ -18,7 +19,7 @@ func TestDefaultCandidateSelectorRejectsUndownloadableResults(t *testing.T) {
 
 func TestDefaultCandidateSelectorUsesIndexerPreference(t *testing.T) {
 	selector := defaultCandidateSelector{}
-	result, err := selector.Select("ABCD-123", []jackett.SearchResult{
+	result, err := selector.Select(context.Background(), "ABCD-123", []jackett.SearchResult{
 		{Title: "beta", MagnetURI: "magnet:?xt=urn:btih:beta", TrackerID: "beta", Seeders: 100},
 		{Title: "alpha", MagnetURI: "magnet:?xt=urn:btih:alpha", TrackerID: "alpha", Seeders: 1},
 	}, config.CandidateSelectionConfig{
@@ -45,7 +46,7 @@ func TestDefaultCandidateSelectorUsesIndexerPreference(t *testing.T) {
 
 func TestDefaultCandidateSelectorUsesTitleMatchClauses(t *testing.T) {
 	selector := defaultCandidateSelector{}
-	result, err := selector.Select("ABCD-123", []jackett.SearchResult{
+	result, err := selector.Select(context.Background(), "ABCD-123", []jackett.SearchResult{
 		{Title: "ABCD-123 无码", MagnetURI: "magnet:?xt=urn:btih:1"},
 		{Title: "ABCD-123 SAMPLE", MagnetURI: "magnet:?xt=urn:btih:2"},
 	}, config.CandidateSelectionConfig{
@@ -75,7 +76,7 @@ func TestDefaultCandidateSelectorUsesTitleMatchClauses(t *testing.T) {
 
 func TestDefaultCandidateSelectorUsesPublishDateDesc(t *testing.T) {
 	selector := defaultCandidateSelector{}
-	result, err := selector.Select("ABCD-123", []jackett.SearchResult{
+	result, err := selector.Select(context.Background(), "ABCD-123", []jackett.SearchResult{
 		{Title: "older", MagnetURI: "magnet:?xt=urn:btih:1", PublishDate: "2024-01-02"},
 		{Title: "newer", MagnetURI: "magnet:?xt=urn:btih:2", PublishDate: "2025-01-02"},
 	}, config.CandidateSelectionConfig{
@@ -99,7 +100,7 @@ func TestDefaultCandidateSelectorUsesPublishDateDesc(t *testing.T) {
 
 func TestDefaultCandidateSelectorUsesTitleSimilarity(t *testing.T) {
 	selector := defaultCandidateSelector{}
-	result, err := selector.Select("ABCD-123", []jackett.SearchResult{
+	result, err := selector.Select(context.Background(), "ABCD-123", []jackett.SearchResult{
 		{Title: "random release", MagnetURI: "magnet:?xt=urn:btih:1"},
 		{Title: "ABCD 123 uncensored", MagnetURI: "magnet:?xt=urn:btih:2"},
 	}, config.CandidateSelectionConfig{
@@ -118,6 +119,112 @@ func TestDefaultCandidateSelectorUsesTitleSimilarity(t *testing.T) {
 	}
 	if result.Title != "ABCD 123 uncensored" {
 		t.Fatalf("expected most similar title to win, got %+v", result)
+	}
+}
+
+func TestDefaultCandidateSelectorUsesTorrentSingleVideoInspection(t *testing.T) {
+	selector := defaultCandidateSelector{
+		inspectTorrent: func(_ context.Context, torrentURL string) (torrentInspection, error) {
+			if strings.Contains(torrentURL, "single") {
+				return torrentInspection{
+					Paths:       []string{"ABCD-123.mp4"},
+					VideoPaths:  []string{"ABCD-123.mp4"},
+					SingleVideo: true,
+				}, nil
+			}
+			return torrentInspection{
+				Paths:      []string{"ABCD-123.mp4", "sample.jpg"},
+				VideoPaths: []string{"ABCD-123.mp4"},
+			}, nil
+		},
+	}
+	result, err := selector.Select(context.Background(), "ABCD-123", []jackett.SearchResult{
+		{Title: "multi", Link: "https://example.test/multi.torrent", Seeders: 10},
+		{Title: "single", Link: "https://example.test/single.torrent", Seeders: 10},
+	}, config.CandidateSelectionConfig{
+		Enabled: true,
+		Rules: []config.CandidateSelectionRule{
+			{ID: "seeders", Type: config.CandidateSelectionRuleTypeSeeders, Enabled: true, Direction: config.CandidateSelectionDirectionDesc},
+			{ID: "single-video", Type: config.CandidateSelectionRuleTypeTorrentSingleVideo, Enabled: true, Direction: config.CandidateSelectionDirectionDesc},
+		},
+	})
+	if err != nil {
+		t.Fatalf("Select failed: %v", err)
+	}
+	if result.Title != "single" {
+		t.Fatalf("expected single-video candidate to win, got %+v", result)
+	}
+}
+
+func TestDefaultCandidateSelectorUsesTorrentFileNameLock(t *testing.T) {
+	selector := defaultCandidateSelector{
+		inspectTorrent: func(_ context.Context, torrentURL string) (torrentInspection, error) {
+			if strings.Contains(torrentURL, "locked") {
+				return torrentInspection{
+					Paths: []string{"movie/hhd800.com-ABCD-123.mp4"},
+				}, nil
+			}
+			return torrentInspection{
+				Paths: []string{"movie/ABCD-123.mp4"},
+			}, nil
+		},
+	}
+	result, err := selector.Select(context.Background(), "ABCD-123", []jackett.SearchResult{
+		{Title: "baseline", Link: "https://example.test/baseline.torrent", Seeders: 20},
+		{Title: "locked", Link: "https://example.test/locked.torrent", Seeders: 1},
+	}, config.CandidateSelectionConfig{
+		Enabled: true,
+		Rules: []config.CandidateSelectionRule{
+			{ID: "seeders", Type: config.CandidateSelectionRuleTypeSeeders, Enabled: true, Direction: config.CandidateSelectionDirectionDesc},
+			{
+				ID:        "file-name",
+				Type:      config.CandidateSelectionRuleTypeTorrentFileNameMatch,
+				Enabled:   true,
+				Direction: config.CandidateSelectionDirectionDesc,
+				TorrentFileNameMatch: config.TorrentFileNameMatchRuleConfig{
+					Clauses: []config.TorrentFileNameMatchClause{
+						{Pattern: "hhd800.com", PatternMode: config.TitleMatchPatternModePlain, Effect: config.TorrentFileMatchEffectLock},
+					},
+				},
+			},
+		},
+	})
+	if err != nil {
+		t.Fatalf("Select failed: %v", err)
+	}
+	if result.Title != "locked" {
+		t.Fatalf("expected LOCK match to win, got %+v", result)
+	}
+}
+
+func TestDefaultCandidateSelectorOnlyInspectsTopFiveTorrentCandidates(t *testing.T) {
+	inspected := make([]string, 0)
+	selector := defaultCandidateSelector{
+		inspectTorrent: func(_ context.Context, torrentURL string) (torrentInspection, error) {
+			inspected = append(inspected, torrentURL)
+			return torrentInspection{Paths: []string{"ABCD-123.mp4"}}, nil
+		},
+	}
+	results := make([]jackett.SearchResult, 0, 6)
+	for i := 0; i < 6; i++ {
+		results = append(results, jackett.SearchResult{
+			Title:   "candidate-" + string(rune('A'+i)),
+			Link:    "https://example.test/" + string(rune('1'+i)) + ".torrent",
+			Seeders: 100 - i,
+		})
+	}
+	_, err := selector.Select(context.Background(), "ABCD-123", results, config.CandidateSelectionConfig{
+		Enabled: true,
+		Rules: []config.CandidateSelectionRule{
+			{ID: "seeders", Type: config.CandidateSelectionRuleTypeSeeders, Enabled: true, Direction: config.CandidateSelectionDirectionDesc},
+			{ID: "single-video", Type: config.CandidateSelectionRuleTypeTorrentSingleVideo, Enabled: true, Direction: config.CandidateSelectionDirectionDesc},
+		},
+	})
+	if err != nil {
+		t.Fatalf("Select failed: %v", err)
+	}
+	if len(inspected) != 5 {
+		t.Fatalf("expected 5 inspected candidates, got %d (%v)", len(inspected), inspected)
 	}
 }
 

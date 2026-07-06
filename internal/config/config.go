@@ -18,21 +18,25 @@ type JackettConfig struct {
 type TorrentSelectionRuleType string
 
 const (
-	TorrentSelectionRuleTypeIndexerPreference TorrentSelectionRuleType = "INDEXER_PREFERENCE"
-	TorrentSelectionRuleTypeTitleMatch        TorrentSelectionRuleType = "TITLE_MATCH"
-	TorrentSelectionRuleTypePublishDate       TorrentSelectionRuleType = "PUBLISH_DATE"
-	TorrentSelectionRuleTypeTitleSimilarity   TorrentSelectionRuleType = "TITLE_SIMILARITY"
-	TorrentSelectionRuleTypeSeeders           TorrentSelectionRuleType = "SEEDERS"
-	TorrentSelectionRuleTypeSize              TorrentSelectionRuleType = "SIZE"
+	TorrentSelectionRuleTypeIndexerPreference    TorrentSelectionRuleType = "INDEXER_PREFERENCE"
+	TorrentSelectionRuleTypeTitleMatch           TorrentSelectionRuleType = "TITLE_MATCH"
+	TorrentSelectionRuleTypePublishDate          TorrentSelectionRuleType = "PUBLISH_DATE"
+	TorrentSelectionRuleTypeTitleSimilarity      TorrentSelectionRuleType = "TITLE_SIMILARITY"
+	TorrentSelectionRuleTypeSeeders              TorrentSelectionRuleType = "SEEDERS"
+	TorrentSelectionRuleTypeSize                 TorrentSelectionRuleType = "SIZE"
+	TorrentSelectionRuleTypeTorrentSingleVideo   TorrentSelectionRuleType = "TORRENT_SINGLE_VIDEO"
+	TorrentSelectionRuleTypeTorrentFileNameMatch TorrentSelectionRuleType = "TORRENT_FILE_NAME_MATCH"
 )
 
 const (
-	CandidateSelectionRuleTypeIndexerPreference = TorrentSelectionRuleTypeIndexerPreference
-	CandidateSelectionRuleTypeTitleMatch        = TorrentSelectionRuleTypeTitleMatch
-	CandidateSelectionRuleTypePublishDate       = TorrentSelectionRuleTypePublishDate
-	CandidateSelectionRuleTypeTitleSimilarity   = TorrentSelectionRuleTypeTitleSimilarity
-	CandidateSelectionRuleTypeSeeders           = TorrentSelectionRuleTypeSeeders
-	CandidateSelectionRuleTypeSize              = TorrentSelectionRuleTypeSize
+	CandidateSelectionRuleTypeIndexerPreference    = TorrentSelectionRuleTypeIndexerPreference
+	CandidateSelectionRuleTypeTitleMatch           = TorrentSelectionRuleTypeTitleMatch
+	CandidateSelectionRuleTypePublishDate          = TorrentSelectionRuleTypePublishDate
+	CandidateSelectionRuleTypeTitleSimilarity      = TorrentSelectionRuleTypeTitleSimilarity
+	CandidateSelectionRuleTypeSeeders              = TorrentSelectionRuleTypeSeeders
+	CandidateSelectionRuleTypeSize                 = TorrentSelectionRuleTypeSize
+	CandidateSelectionRuleTypeTorrentSingleVideo   = TorrentSelectionRuleTypeTorrentSingleVideo
+	CandidateSelectionRuleTypeTorrentFileNameMatch = TorrentSelectionRuleTypeTorrentFileNameMatch
 )
 
 type TorrentSelectionDirection string
@@ -61,19 +65,28 @@ const (
 	TitleMatchEffectAvoid  TitleMatchEffect = "AVOID"
 )
 
+type TorrentFileMatchEffect string
+
+const (
+	TorrentFileMatchEffectPrefer TorrentFileMatchEffect = "PREFER"
+	TorrentFileMatchEffectAvoid  TorrentFileMatchEffect = "AVOID"
+	TorrentFileMatchEffectLock   TorrentFileMatchEffect = "LOCK"
+)
+
 type TorrentSelectionConfig struct {
 	Enabled bool                   `yaml:"enabled"`
 	Rules   []TorrentSelectionRule `yaml:"rules"`
 }
 
 type TorrentSelectionRule struct {
-	ID                string                      `yaml:"id"`
-	Name              string                      `yaml:"name"`
-	Type              TorrentSelectionRuleType    `yaml:"type"`
-	Enabled           bool                        `yaml:"enabled"`
-	Direction         TorrentSelectionDirection   `yaml:"direction"`
-	IndexerPreference IndexerPreferenceRuleConfig `yaml:"indexer_preference"`
-	TitleMatch        TitleMatchRuleConfig        `yaml:"title_match"`
+	ID                   string                         `yaml:"id"`
+	Name                 string                         `yaml:"name"`
+	Type                 TorrentSelectionRuleType       `yaml:"type"`
+	Enabled              bool                           `yaml:"enabled"`
+	Direction            TorrentSelectionDirection      `yaml:"direction"`
+	IndexerPreference    IndexerPreferenceRuleConfig    `yaml:"indexer_preference"`
+	TitleMatch           TitleMatchRuleConfig           `yaml:"title_match"`
+	TorrentFileNameMatch TorrentFileNameMatchRuleConfig `yaml:"torrent_file_name_match"`
 }
 
 type CandidateSelectionRuleType = TorrentSelectionRuleType
@@ -93,6 +106,16 @@ type TitleMatchClause struct {
 	Pattern     string                `yaml:"pattern"`
 	PatternMode TitleMatchPatternMode `yaml:"pattern_mode"`
 	Effect      TitleMatchEffect      `yaml:"effect"`
+}
+
+type TorrentFileNameMatchRuleConfig struct {
+	Clauses []TorrentFileNameMatchClause `yaml:"clauses"`
+}
+
+type TorrentFileNameMatchClause struct {
+	Pattern     string                 `yaml:"pattern"`
+	PatternMode TitleMatchPatternMode  `yaml:"pattern_mode"`
+	Effect      TorrentFileMatchEffect `yaml:"effect"`
 }
 
 type QBittorrentConfig struct {
@@ -251,6 +274,17 @@ func NormalizeTitleMatchEffect(value TitleMatchEffect) TitleMatchEffect {
 	}
 }
 
+func NormalizeTorrentFileMatchEffect(value TorrentFileMatchEffect) TorrentFileMatchEffect {
+	switch TorrentFileMatchEffect(strings.TrimSpace(string(value))) {
+	case TorrentFileMatchEffectAvoid:
+		return TorrentFileMatchEffectAvoid
+	case TorrentFileMatchEffectLock:
+		return TorrentFileMatchEffectLock
+	default:
+		return TorrentFileMatchEffectPrefer
+	}
+}
+
 func NormalizeTorrentSelectionRuleType(value TorrentSelectionRuleType) TorrentSelectionRuleType {
 	switch TorrentSelectionRuleType(strings.TrimSpace(string(value))) {
 	case TorrentSelectionRuleTypeIndexerPreference,
@@ -258,7 +292,9 @@ func NormalizeTorrentSelectionRuleType(value TorrentSelectionRuleType) TorrentSe
 		TorrentSelectionRuleTypePublishDate,
 		TorrentSelectionRuleTypeTitleSimilarity,
 		TorrentSelectionRuleTypeSeeders,
-		TorrentSelectionRuleTypeSize:
+		TorrentSelectionRuleTypeSize,
+		TorrentSelectionRuleTypeTorrentSingleVideo,
+		TorrentSelectionRuleTypeTorrentFileNameMatch:
 		return value
 	default:
 		return TorrentSelectionRuleTypeSeeders
@@ -279,6 +315,10 @@ func DefaultTorrentSelectionRuleName(ruleType TorrentSelectionRuleType, index in
 		return "Seeders"
 	case TorrentSelectionRuleTypeSize:
 		return "Size"
+	case TorrentSelectionRuleTypeTorrentSingleVideo:
+		return "Single Video"
+	case TorrentSelectionRuleTypeTorrentFileNameMatch:
+		return "Torrent File Name Match"
 	default:
 		return fmt.Sprintf("Rule %d", index+1)
 	}
@@ -335,6 +375,19 @@ func (r TorrentSelectionRule) normalized(index int) TorrentSelectionRule {
 			clauses = append(clauses, clause)
 		}
 		r.TitleMatch.Clauses = clauses
+	}
+	if r.Type == TorrentSelectionRuleTypeTorrentFileNameMatch {
+		clauses := make([]TorrentFileNameMatchClause, 0, len(r.TorrentFileNameMatch.Clauses))
+		for _, clause := range r.TorrentFileNameMatch.Clauses {
+			clause.Pattern = strings.TrimSpace(clause.Pattern)
+			if clause.Pattern == "" {
+				continue
+			}
+			clause.PatternMode = NormalizeTitleMatchPatternMode(clause.PatternMode)
+			clause.Effect = NormalizeTorrentFileMatchEffect(clause.Effect)
+			clauses = append(clauses, clause)
+		}
+		r.TorrentFileNameMatch.Clauses = clauses
 	}
 	return r
 }

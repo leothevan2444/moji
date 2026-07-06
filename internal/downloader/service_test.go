@@ -347,6 +347,26 @@ func TestAddTorrentContextParsesTorrentMetadataForCode(t *testing.T) {
 	}
 }
 
+func TestParseTorrentMetadataIncludesPaths(t *testing.T) {
+	metadata, err := parseTorrentMetadata([]byte(testTorrentFile("SONE-001", []string{"disc1/SONE-001.mp4", "disc1/sample.txt"})))
+	if err != nil {
+		t.Fatalf("parseTorrentMetadata failed: %v", err)
+	}
+	if len(metadata.Paths) != 2 {
+		t.Fatalf("expected 2 paths, got %+v", metadata.Paths)
+	}
+	if metadata.FilePath != "disc1/SONE-001.mp4" {
+		t.Fatalf("unexpected first path: %+v", metadata)
+	}
+	inspection := inspectTorrentMetadata(metadata)
+	if !inspection.SingleVideo {
+		t.Fatalf("expected single video inspection, got %+v", inspection)
+	}
+	if len(inspection.VideoPaths) != 1 || inspection.VideoPaths[0] != "disc1/SONE-001.mp4" {
+		t.Fatalf("unexpected video paths: %+v", inspection.VideoPaths)
+	}
+}
+
 type roundTripFunc func(*http.Request) (*http.Response, error)
 
 func (fn roundTripFunc) RoundTrip(req *http.Request) (*http.Response, error) {

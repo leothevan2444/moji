@@ -135,6 +135,7 @@ type downloadedTorrentMetadata struct {
 	Name     string
 	FilePath string
 	InfoHash string
+	Paths    []string
 }
 
 func (s *Service) resolveManualTorrent(ctx context.Context, torrentURL string) (Candidate, string, torrentIdentity, error) {
@@ -211,6 +212,13 @@ func parseTorrentMetadata(data []byte) (downloadedTorrentMetadata, error) {
 	metadata := downloadedTorrentMetadata{
 		Name:     root.name,
 		FilePath: root.firstPath,
+		Paths:    append([]string(nil), root.paths...),
+	}
+	if len(metadata.Paths) == 0 && metadata.Name != "" {
+		metadata.Paths = []string{metadata.Name}
+	}
+	if metadata.FilePath == "" && len(metadata.Paths) > 0 {
+		metadata.FilePath = metadata.Paths[0]
 	}
 	if len(infoBytes) > 0 {
 		hash := sha1.Sum(infoBytes)
@@ -222,6 +230,7 @@ func parseTorrentMetadata(data []byte) (downloadedTorrentMetadata, error) {
 type torrentMetainfo struct {
 	name      string
 	firstPath string
+	paths     []string
 }
 
 type bencodeParser struct {
@@ -282,11 +291,14 @@ func (p *bencodeParser) parseInfoDict() (torrentMetainfo, error) {
 			}
 			meta.name = value
 		case "files":
-			firstPath, err := p.parseFiles()
+			paths, err := p.parseFiles()
 			if err != nil {
 				return torrentMetainfo{}, err
 			}
-			meta.firstPath = firstPath
+			meta.paths = paths
+			if len(paths) > 0 {
+				meta.firstPath = paths[0]
+			}
 		default:
 			if err := p.skipValue(); err != nil {
 				return torrentMetainfo{}, err
@@ -300,26 +312,26 @@ func (p *bencodeParser) parseInfoDict() (torrentMetainfo, error) {
 	return meta, nil
 }
 
-func (p *bencodeParser) parseFiles() (string, error) {
+func (p *bencodeParser) parseFiles() ([]string, error) {
 	if p.pos >= len(p.data) || p.data[p.pos] != 'l' {
-		return "", errors.New("files is not a list")
+		return nil, errors.New("files is not a list")
 	}
 	p.pos++
-	firstPath := ""
+	paths := make([]string, 0)
 	for p.pos < len(p.data) && p.data[p.pos] != 'e' {
 		pathValue, err := p.parseFileEntry()
 		if err != nil {
-			return "", err
+			return nil, err
 		}
-		if firstPath == "" && pathValue != "" {
-			firstPath = pathValue
+		if pathValue != "" {
+			paths = append(paths, pathValue)
 		}
 	}
 	if p.pos >= len(p.data) || p.data[p.pos] != 'e' {
-		return "", errors.New("unterminated files list")
+		return nil, errors.New("unterminated files list")
 	}
 	p.pos++
-	return firstPath, nil
+	return paths, nil
 }
 
 func (p *bencodeParser) parseFileEntry() (string, error) {
