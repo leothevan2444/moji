@@ -15,8 +15,6 @@ import (
 	"github.com/leothevan2444/moji/pkg/jackett"
 )
 
-const torrentInspectionCandidateLimit = 5
-
 type torrentInspection struct {
 	Paths       []string
 	VideoPaths  []string
@@ -61,9 +59,10 @@ func (s defaultCandidateSelector) Select(ctx context.Context, query string, resu
 		return candidates[0].result, nil
 	}
 
-	inspections := inspectTopTorrentCandidates(ctx, candidates, s.inspectTorrent)
+	inspectionLimit := config.NormalizeTorrentInspectionCandidateLimit(cfg.InspectionCandidateLimit)
+	inspections := inspectTopTorrentCandidates(ctx, candidates, s.inspectTorrent, inspectionLimit)
 	best := candidates[0]
-	for i := 1; i < minInt(len(candidates), torrentInspectionCandidateLimit); i++ {
+	for i := 1; i < minInt(len(candidates), inspectionLimit); i++ {
 		candidate := candidates[i]
 		if cmp := compareInspectedCandidates(candidate, best, fileRules, inspections); cmp < 0 {
 			best = candidate
@@ -243,9 +242,9 @@ func compareByInspectionRule(left inspectedCandidate, right inspectedCandidate, 
 	}
 }
 
-func inspectTopTorrentCandidates(ctx context.Context, candidates []rankedCandidate, inspector torrentInspector) map[int]inspectedCandidate {
-	out := make(map[int]inspectedCandidate, torrentInspectionCandidateLimit)
-	limit := minInt(len(candidates), torrentInspectionCandidateLimit)
+func inspectTopTorrentCandidates(ctx context.Context, candidates []rankedCandidate, inspector torrentInspector, limit int) map[int]inspectedCandidate {
+	out := make(map[int]inspectedCandidate, limit)
+	limit = minInt(len(candidates), limit)
 	for i := 0; i < limit; i++ {
 		torrentURL := inspectableTorrentURL(candidates[i].result)
 		if torrentURL == "" {

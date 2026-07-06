@@ -74,8 +74,9 @@ const (
 )
 
 type TorrentSelectionConfig struct {
-	Enabled bool                   `yaml:"enabled"`
-	Rules   []TorrentSelectionRule `yaml:"rules"`
+	Enabled                  bool                   `yaml:"enabled"`
+	InspectionCandidateLimit int                    `yaml:"inspection_candidate_limit"`
+	Rules                    []TorrentSelectionRule `yaml:"rules"`
 }
 
 type TorrentSelectionRule struct {
@@ -219,7 +220,8 @@ type Config struct {
 
 func DefaultTorrentSelectionConfig() TorrentSelectionConfig {
 	return TorrentSelectionConfig{
-		Enabled: true,
+		Enabled:                  true,
+		InspectionCandidateLimit: 5,
 		Rules: []TorrentSelectionRule{
 			{
 				ID:        "default-seeders",
@@ -241,6 +243,13 @@ func DefaultTorrentSelectionConfig() TorrentSelectionConfig {
 
 func DefaultCandidateSelectionConfig() CandidateSelectionConfig {
 	return DefaultTorrentSelectionConfig()
+}
+
+func NormalizeTorrentInspectionCandidateLimit(value int) int {
+	if value <= 0 {
+		return DefaultTorrentSelectionConfig().InspectionCandidateLimit
+	}
+	return value
 }
 
 func NormalizeTorrentSelectionDirection(value TorrentSelectionDirection) TorrentSelectionDirection {
@@ -334,8 +343,9 @@ func (c TorrentSelectionConfig) Effective() TorrentSelectionConfig {
 	}
 
 	normalized := TorrentSelectionConfig{
-		Enabled: c.Enabled,
-		Rules:   make([]TorrentSelectionRule, 0, len(c.Rules)),
+		Enabled:                  c.Enabled,
+		InspectionCandidateLimit: NormalizeTorrentInspectionCandidateLimit(c.InspectionCandidateLimit),
+		Rules:                    make([]TorrentSelectionRule, 0, len(c.Rules)),
 	}
 	for i, rule := range c.Rules {
 		next := rule.normalized(i)

@@ -58,6 +58,7 @@ query DashboardDocument {
       stashBoxEndpoints
       torrentSelection {
         enabled
+        inspectionCandidateLimit
         rules {
           id
           name

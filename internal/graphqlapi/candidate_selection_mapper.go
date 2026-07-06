@@ -7,8 +7,9 @@ func torrentSelectionSettingsFromModel(input *model.TorrentSelectionSettingsInpu
 		return TorrentSelectionSettingsSnapshot{}
 	}
 	return TorrentSelectionSettingsSnapshot{
-		Enabled: input.Enabled,
-		Rules:   torrentSelectionRulesFromModel(input.Rules),
+		Enabled:                  input.Enabled,
+		InspectionCandidateLimit: input.InspectionCandidateLimit,
+		Rules:                    torrentSelectionRulesFromModel(input.Rules),
 	}
 }
 

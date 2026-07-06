@@ -150,6 +150,7 @@ export const EMPTY_AUTOMATION_FORM = {
   stashBoxEndpoints: [] as string[],
   torrentSelection: {
     enabled: true,
+    inspectionCandidateLimit: "5",
     rules: [...DEFAULT_TORRENT_SELECTION_RULES, ...DEFAULT_TORRENT_FILE_INSPECTION_RULES]
   }
 };

@@ -173,6 +173,7 @@ type JackettSettings {
 
 type TorrentSelectionSettings {
   enabled: Boolean!
+  inspectionCandidateLimit: Int!
   rules: [TorrentSelectionRule!]!
 }
 
@@ -339,6 +340,7 @@ input UpdateJackettSettingsInput {
 
 input TorrentSelectionSettingsInput {
   enabled: Boolean!
+  inspectionCandidateLimit: Int!
   rules: [TorrentSelectionRuleInput!]!
 }
 

@@ -143,6 +143,7 @@ type AutomationFormShape = AutomationForm;
 function buildAutomationSettingsPayload(form: AutomationFormShape) {
   const taskProgressSyncIntervalSeconds = Number.parseInt(form.taskProgressSyncIntervalSeconds.trim(), 10);
   const subscriptionPollIntervalHours = Number.parseInt(form.subscriptionPollIntervalHours.trim(), 10);
+  const inspectionCandidateLimit = Number.parseInt(form.torrentSelection.inspectionCandidateLimit.trim(), 10);
   const { rules } = ensureTorrentFileInspectionRules(form.torrentSelection.rules);
   return {
     taskProgressSyncIntervalSeconds: Number.isNaN(taskProgressSyncIntervalSeconds) ? 60 : taskProgressSyncIntervalSeconds,
@@ -150,6 +151,7 @@ function buildAutomationSettingsPayload(form: AutomationFormShape) {
     stashBoxEndpoints: form.stashBoxEndpoints,
     torrentSelection: {
       enabled: form.torrentSelection.enabled,
+      inspectionCandidateLimit: Number.isNaN(inspectionCandidateLimit) ? 5 : inspectionCandidateLimit,
       rules: rules.map((rule: TorrentSelectionRuleDraft) => ({
         id: rule.id,
         name: rule.name.trim(),
@@ -290,6 +292,7 @@ function torrentSelectionFromRuntime(runtimeSettings: RuntimeSettings) {
 
   return {
     enabled: runtimeSettings.automation.torrentSelection.enabled,
+    inspectionCandidateLimit: String(runtimeSettings.automation.torrentSelection.inspectionCandidateLimit || 5),
     rules
   };
 }
@@ -1642,9 +1645,30 @@ export function SettingsPanel({
               </div>
 
               <div className="torrent-rules__divider" aria-hidden="true" />
-              <p className="torrent-rules__note">
-                Torrent 文件结构精排固定在快速规则之后执行，只检查首轮排序后的前 5 个且带 `.torrent` 链接的候选；下方两条规则为内建策略，可启用、禁用和编辑内容，但不支持新增、删除或改类型。
-              </p>
+              <div className="torrent-rules__inspection-row">
+                <p className="torrent-rules__note">
+                  Torrent 文件结构精排固定在快速规则之后执行，只检查首轮排序后的前 {automationForm.torrentSelection.inspectionCandidateLimit || "5"} 个且带 `.torrent` 链接的候选。
+                </p>
+                <label className="torrent-rules__limit-inline">
+                  <FieldLabel text="检查范围" info="仅作用于下方两条文件结构规则。值越大，第二阶段额外下载并解析种子文件的成本越高。" />
+                  <input
+                    type="number"
+                    min="1"
+                    step="1"
+                    value={automationForm.torrentSelection.inspectionCandidateLimit}
+                    onChange={(event) =>
+                      setAutomationForm((current) => ({
+                        ...current,
+                        torrentSelection: {
+                          ...current.torrentSelection,
+                          inspectionCandidateLimit: event.target.value
+                        }
+                      }))
+                    }
+                    placeholder="5"
+                  />
+                </label>
+              </div>
 
               {fileInspectionRules.map((rule: TorrentSelectionRuleDraft, ruleIndex: number) => {
                 const displayIndex = fastRules.length + ruleIndex + 1;
@@ -1683,7 +1707,7 @@ export function SettingsPanel({
                     <div className="settings-form">
                       {rule.type === TorrentSelectionRuleType.TorrentSingleVideo ? (
                         <p className="torrent-rule__hint">
-                          只检查首轮排序后的前 5 个且带 `.torrent` 链接的候选；命中“单个视频文件”结构时优先。`magnet` 不参与文件结构检查。
+                          只检查首轮排序后的前 {automationForm.torrentSelection.inspectionCandidateLimit || "5"} 个且带 `.torrent` 链接的候选；命中“单个视频文件”结构时优先。`magnet` 不参与文件结构检查。
                         </p>
                       ) : null}
 

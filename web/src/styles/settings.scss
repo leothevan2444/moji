@@ -41,15 +41,15 @@
   &:hover .settings-info__tooltip,
   &:focus-visible .settings-info__tooltip {
     opacity: 1;
-    transform: translateY(-50%) translateX(0);
+    transform: translateY(0);
   }
 
   &__tooltip {
     position: absolute;
-    left: calc(100% + 10px);
-    top: 50%;
+    right: 0;
+    top: calc(100% + 8px);
     z-index: $z-tooltip;
-    width: min(320px, 60vw);
+    width: min(320px, calc(100vw - 48px));
     padding: 10px $space-3;
     border: 1px solid var(--line-strong);
     border-radius: $radius-lg;
@@ -61,7 +61,7 @@
     line-height: 1.55;
     opacity: 0;
     pointer-events: none;
-    transform: translateY(-50%) translateX(-4px);
+    transform: translateY(-4px);
     transition:
       opacity 140ms ease,
       transform 140ms ease;
@@ -645,6 +645,14 @@
     }
   }
 
+  &__limit-field {
+    min-width: 200px;
+
+    input {
+      max-width: 96px;
+    }
+  }
+
   &__hint {
     margin: 0;
     padding: 8px 12px;
@@ -715,11 +723,37 @@
     margin: 2px 0 0;
   }
 
+  &__inspection-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px 14px;
+    flex-wrap: wrap;
+  }
+
   &__note {
     margin: 0;
     font-size: 11.5px;
     line-height: 1.6;
     color: var(--muted);
+    flex: 1 1 360px;
+  }
+
+  &__limit-inline {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    flex: 0 0 auto;
+    min-width: 0;
+
+    .settings-field__label {
+      flex: 0 0 auto;
+      margin: 0;
+    }
+
+    input {
+      width: 88px;
+    }
   }
 
   &__menu {
@@ -1401,6 +1435,7 @@
   .settings-info {
     &__tooltip {
       left: 0;
+      right: auto;
       top: calc(100% + 8px);
       width: min(280px, calc(100vw - 72px));
       transform: translateY(-4px);

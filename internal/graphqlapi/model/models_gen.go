@@ -566,13 +566,15 @@ type TorrentSelectionRuleInput struct {
 }
 
 type TorrentSelectionSettings struct {
-	Enabled bool                    `json:"enabled"`
-	Rules   []*TorrentSelectionRule `json:"rules"`
+	Enabled                  bool                    `json:"enabled"`
+	InspectionCandidateLimit int                     `json:"inspectionCandidateLimit"`
+	Rules                    []*TorrentSelectionRule `json:"rules"`
 }
 
 type TorrentSelectionSettingsInput struct {
-	Enabled bool                         `json:"enabled"`
-	Rules   []*TorrentSelectionRuleInput `json:"rules"`
+	Enabled                  bool                         `json:"enabled"`
+	InspectionCandidateLimit int                          `json:"inspectionCandidateLimit"`
+	Rules                    []*TorrentSelectionRuleInput `json:"rules"`
 }
 
 type TransferIngestSettings struct {

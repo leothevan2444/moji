@@ -60,6 +60,7 @@ mutation UpdateAutomationSettingsDocument($input: UpdateAutomationSettingsInput!
       stashBoxEndpoints
       torrentSelection {
         enabled
+        inspectionCandidateLimit
         rules {
           id
           name

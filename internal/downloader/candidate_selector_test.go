@@ -228,6 +228,45 @@ func TestDefaultCandidateSelectorOnlyInspectsTopFiveTorrentCandidates(t *testing
 	}
 }
 
+func TestDefaultCandidateSelectorUsesConfiguredInspectionCandidateLimit(t *testing.T) {
+	results := []jackett.SearchResult{
+		{Title: "1", Link: "https://example.com/1.torrent", Seeders: 100},
+		{Title: "2", Link: "https://example.com/2.torrent", Seeders: 90},
+		{Title: "3", Link: "https://example.com/3.torrent", Seeders: 80},
+		{Title: "4", Link: "https://example.com/4.torrent", Seeders: 70},
+		{Title: "5", Link: "https://example.com/5.torrent", Seeders: 60},
+		{Title: "6", Link: "https://example.com/6.torrent", Seeders: 50},
+	}
+	inspected := make([]string, 0, len(results))
+	selector := defaultCandidateSelector{
+		inspectTorrent: func(_ context.Context, torrentURL string) (torrentInspection, error) {
+			inspected = append(inspected, torrentURL)
+			if strings.Contains(torrentURL, "/6.torrent") {
+				return torrentInspection{Paths: []string{"movie.mkv"}, VideoPaths: []string{"movie.mkv"}, SingleVideo: true}, nil
+			}
+			return torrentInspection{Paths: []string{"disc/file1.mkv", "disc/file2.srt"}, VideoPaths: []string{"disc/file1.mkv"}, SingleVideo: false}, nil
+		},
+	}
+
+	got, err := selector.Select(context.Background(), "ABCD-123", results, config.CandidateSelectionConfig{
+		Enabled:                  true,
+		InspectionCandidateLimit: 6,
+		Rules: []config.CandidateSelectionRule{
+			{ID: "seeders", Type: config.CandidateSelectionRuleTypeSeeders, Enabled: true, Direction: config.CandidateSelectionDirectionDesc},
+			{ID: "single-video", Type: config.CandidateSelectionRuleTypeTorrentSingleVideo, Enabled: true, Direction: config.CandidateSelectionDirectionDesc},
+		},
+	})
+	if err != nil {
+		t.Fatalf("Select returned error: %v", err)
+	}
+	if got.Link != "https://example.com/6.torrent" {
+		t.Fatalf("expected configured inspection limit to allow sixth candidate, got %+v", got)
+	}
+	if len(inspected) != 6 {
+		t.Fatalf("expected 6 inspected candidates, got %d", len(inspected))
+	}
+}
+
 func TestDownloadMediaContextUsesConfiguredCandidateSelection(t *testing.T) {
 	qbt := &fakeTorrentAdder{}
 	service, err := NewService(

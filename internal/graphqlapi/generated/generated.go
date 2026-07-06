@@ -501,8 +501,9 @@ type ComplexityRoot struct {
 	}
 
 	TorrentSelectionSettings struct {
-		Enabled func(childComplexity int) int
-		Rules   func(childComplexity int) int
+		Enabled                  func(childComplexity int) int
+		InspectionCandidateLimit func(childComplexity int) int
+		Rules                    func(childComplexity int) int
 	}
 
 	TransferIngestSettings struct {
@@ -2894,6 +2895,13 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.TorrentSelectionSettings.Enabled(childComplexity), true
 
+	case "TorrentSelectionSettings.inspectionCandidateLimit":
+		if e.complexity.TorrentSelectionSettings.InspectionCandidateLimit == nil {
+			break
+		}
+
+		return e.complexity.TorrentSelectionSettings.InspectionCandidateLimit(childComplexity), true
+
 	case "TorrentSelectionSettings.rules":
 		if e.complexity.TorrentSelectionSettings.Rules == nil {
 			break
@@ -3341,6 +3349,7 @@ type JackettSettings {
 
 type TorrentSelectionSettings {
   enabled: Boolean!
+  inspectionCandidateLimit: Int!
   rules: [TorrentSelectionRule!]!
 }
 
@@ -3507,6 +3516,7 @@ input UpdateJackettSettingsInput {
 
 input TorrentSelectionSettingsInput {
   enabled: Boolean!
+  inspectionCandidateLimit: Int!
   rules: [TorrentSelectionRuleInput!]!
 }
 
@@ -5007,6 +5017,8 @@ func (ec *executionContext) fieldContext_AutomationSettings_torrentSelection(_ c
 			switch field.Name {
 			case "enabled":
 				return ec.fieldContext_TorrentSelectionSettings_enabled(ctx, field)
+			case "inspectionCandidateLimit":
+				return ec.fieldContext_TorrentSelectionSettings_inspectionCandidateLimit(ctx, field)
 			case "rules":
 				return ec.fieldContext_TorrentSelectionSettings_rules(ctx, field)
 			}
@@ -20240,6 +20252,50 @@ func (ec *executionContext) fieldContext_TorrentSelectionSettings_enabled(_ cont
 	return fc, nil
 }
 
+func (ec *executionContext) _TorrentSelectionSettings_inspectionCandidateLimit(ctx context.Context, field graphql.CollectedField, obj *model.TorrentSelectionSettings) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_TorrentSelectionSettings_inspectionCandidateLimit(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.InspectionCandidateLimit, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int)
+	fc.Result = res
+	return ec.marshalNInt2int(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_TorrentSelectionSettings_inspectionCandidateLimit(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "TorrentSelectionSettings",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _TorrentSelectionSettings_rules(ctx context.Context, field graphql.CollectedField, obj *model.TorrentSelectionSettings) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_TorrentSelectionSettings_rules(ctx, field)
 	if err != nil {
@@ -23034,7 +23090,7 @@ func (ec *executionContext) unmarshalInputTorrentSelectionSettingsInput(ctx cont
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"enabled", "rules"}
+	fieldsInOrder := [...]string{"enabled", "inspectionCandidateLimit", "rules"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -23048,6 +23104,13 @@ func (ec *executionContext) unmarshalInputTorrentSelectionSettingsInput(ctx cont
 				return it, err
 			}
 			it.Enabled = data
+		case "inspectionCandidateLimit":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("inspectionCandidateLimit"))
+			data, err := ec.unmarshalNInt2int(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.InspectionCandidateLimit = data
 		case "rules":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("rules"))
 			data, err := ec.unmarshalNTorrentSelectionRuleInput2ᚕᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐTorrentSelectionRuleInputᚄ(ctx, v)
@@ -26729,6 +26792,11 @@ func (ec *executionContext) _TorrentSelectionSettings(ctx context.Context, sel a
 			out.Values[i] = graphql.MarshalString("TorrentSelectionSettings")
 		case "enabled":
 			out.Values[i] = ec._TorrentSelectionSettings_enabled(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "inspectionCandidateLimit":
+			out.Values[i] = ec._TorrentSelectionSettings_inspectionCandidateLimit(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}

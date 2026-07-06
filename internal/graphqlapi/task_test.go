@@ -764,8 +764,9 @@ func TestUpdateAutomationSettingsMutation(t *testing.T) {
 				SubscriptionPollIntervalHours:   1,
 				StashBoxEndpoints:               []string{"https://javstash.example.org/graphql"},
 				TorrentSelection: TorrentSelectionSettingsSnapshot{
-					Enabled: true,
-					Rules:   []TorrentSelectionRuleSnapshot{{ID: "seeders", Name: "Seeders", Type: "SEEDERS", Enabled: true, Direction: "DESC"}},
+					Enabled:                  true,
+					InspectionCandidateLimit: 5,
+					Rules:                    []TorrentSelectionRuleSnapshot{{ID: "seeders", Name: "Seeders", Type: "SEEDERS", Enabled: true, Direction: "DESC"}},
 				},
 			},
 		},
@@ -780,6 +781,7 @@ func TestUpdateAutomationSettingsMutation(t *testing.T) {
 			stashBoxEndpoints: ["https://javstash.example.org/graphql"]
 			torrentSelection: {
 				enabled: true
+				inspectionCandidateLimit: 5
 				rules: [{
 					id: "seeders"
 					name: "My Seeders Rule"

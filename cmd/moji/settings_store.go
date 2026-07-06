@@ -164,8 +164,9 @@ func (s *runtimeSettingsEditor) UpdateAutomationSettings(input graphqlapi.Update
 		input.SubscriptionPollIntervalHours,
 		input.StashBoxEndpoints,
 		config.TorrentSelectionConfig{
-			Enabled: input.TorrentSelection.Enabled,
-			Rules:   torrentSelectionConfigRules(input.TorrentSelection.Rules),
+			Enabled:                  input.TorrentSelection.Enabled,
+			InspectionCandidateLimit: input.TorrentSelection.InspectionCandidateLimit,
+			Rules:                    torrentSelectionConfigRules(input.TorrentSelection.Rules),
 		},
 	)
 	if err != nil {

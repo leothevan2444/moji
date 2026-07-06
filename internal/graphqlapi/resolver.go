@@ -135,8 +135,9 @@ type JackettSettingsSnapshot struct {
 }
 
 type TorrentSelectionSettingsSnapshot struct {
-	Enabled bool
-	Rules   []TorrentSelectionRuleSnapshot
+	Enabled                  bool
+	InspectionCandidateLimit int
+	Rules                    []TorrentSelectionRuleSnapshot
 }
 
 type TorrentSelectionRuleSnapshot struct {

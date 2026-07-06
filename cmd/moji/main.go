@@ -440,8 +440,9 @@ func buildSettingsSnapshot(cfg *config.Config, version string) *graphqlapi.Setti
 func torrentSelectionSnapshot(cfg config.TorrentSelectionConfig) graphqlapi.TorrentSelectionSettingsSnapshot {
 	cfg = cfg.Effective()
 	out := graphqlapi.TorrentSelectionSettingsSnapshot{
-		Enabled: cfg.Enabled,
-		Rules:   make([]graphqlapi.TorrentSelectionRuleSnapshot, 0, len(cfg.Rules)),
+		Enabled:                  cfg.Enabled,
+		InspectionCandidateLimit: cfg.InspectionCandidateLimit,
+		Rules:                    make([]graphqlapi.TorrentSelectionRuleSnapshot, 0, len(cfg.Rules)),
 	}
 	for _, rule := range cfg.Rules {
 		item := graphqlapi.TorrentSelectionRuleSnapshot{

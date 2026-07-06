@@ -82,7 +82,8 @@ automation:
 	}
 
 	cfg, err := store.UpdateAutomation(60, 1, []string{"https://javstash.example.org/graphql"}, TorrentSelectionConfig{
-		Enabled: true,
+		Enabled:                  true,
+		InspectionCandidateLimit: 8,
 		Rules: []TorrentSelectionRule{
 			{
 				ID:        "pref",
@@ -113,6 +114,9 @@ automation:
 	got := reloaded.Automation.TorrentSelection.Effective()
 	if !got.Enabled || len(got.Rules) != 1 || len(got.Rules[0].IndexerPreference.TrackerIDs) != 2 {
 		t.Fatalf("expected persisted torrent selection, got %+v", got)
+	}
+	if got.InspectionCandidateLimit != 8 {
+		t.Fatalf("expected persisted inspection candidate limit, got %+v", got)
 	}
 	if got.Rules[0].Name != "Preferred Indexers" {
 		t.Fatalf("expected persisted rule name, got %+v", got.Rules[0])

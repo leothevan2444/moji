@@ -111,8 +111,9 @@ func settingsSnapshotToModel(snapshot *SettingsSnapshot, appVersion string) *mod
 
 func torrentSelectionSettingsToModel(snapshot TorrentSelectionSettingsSnapshot) *model.TorrentSelectionSettings {
 	out := &model.TorrentSelectionSettings{
-		Enabled: snapshot.Enabled,
-		Rules:   make([]*model.TorrentSelectionRule, 0, len(snapshot.Rules)),
+		Enabled:                  snapshot.Enabled,
+		InspectionCandidateLimit: snapshot.InspectionCandidateLimit,
+		Rules:                    make([]*model.TorrentSelectionRule, 0, len(snapshot.Rules)),
 	}
 	for _, rule := range snapshot.Rules {
 		item := &model.TorrentSelectionRule{
