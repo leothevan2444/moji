@@ -672,6 +672,61 @@
       display: none;
     }
   }
+
+  &__add-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: $space-3;
+    flex-wrap: wrap;
+    padding: 10px 12px;
+    border: 1px dashed var(--line);
+    border-radius: $radius-xl;
+    background: color-mix(in srgb, var(--surface-strong) 55%, transparent);
+  }
+
+  &__add-copy {
+    display: grid;
+    gap: 2px;
+    min-width: 0;
+
+    strong {
+      font-size: 12.5px;
+      font-weight: 700;
+      color: var(--text);
+    }
+
+    span {
+      font-size: 11.5px;
+      line-height: 1.55;
+      color: var(--muted);
+    }
+  }
+
+  &__divider {
+    height: 1px;
+    border: 0;
+    background: linear-gradient(
+      90deg,
+      transparent,
+      color-mix(in srgb, var(--line-strong) 72%, var(--accent) 10%),
+      transparent
+    );
+    margin: 2px 0 0;
+  }
+
+  &__note {
+    margin: 0;
+    font-size: 11.5px;
+    line-height: 1.6;
+    color: var(--muted);
+  }
+
+  &__menu {
+    .menu__list {
+      min-width: 280px;
+    }
+  }
 }
 
 /* 单条规则卡片：复用 drawer-card 表面，但加入顺序标记与悬停反馈 */

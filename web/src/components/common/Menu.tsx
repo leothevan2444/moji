@@ -20,6 +20,8 @@ interface MenuProps {
   ariaLabel: string;
   /** 菜单对齐触发器：左对齐或右对齐。默认右对齐。 */
   align?: "start" | "end";
+  /** 追加到根节点的可选 className，供局部样式定制。 */
+  className?: string;
 }
 
 /**
@@ -29,14 +31,14 @@ interface MenuProps {
  *  - 菜单项使用 `role="option"` + `aria-disabled`，键盘 / 屏幕阅读器可识别；
  *  - 由父组件控制 `open` 状态——外部亦可强制关闭（例如保存后）。
  */
-export function Menu({ triggerLabel, triggerAriaLabel, items, ariaLabel, align = "end" }: MenuProps) {
+export function Menu({ triggerLabel, triggerAriaLabel, items, ariaLabel, align = "end", className }: MenuProps) {
   const [open, setOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
 
   useClickOutside([rootRef], () => setOpen(false), open);
 
   return (
-    <div ref={rootRef} className={`menu menu--${align}${open ? " is-open" : ""}`}>
+    <div ref={rootRef} className={`menu menu--${align}${open ? " is-open" : ""}${className ? ` ${className}` : ""}`}>
       <button
         type="button"
         className="menu__trigger"
