@@ -449,13 +449,11 @@ func torrentSelectionSnapshot(cfg config.TorrentSelectionConfig) graphqlapi.Torr
 		InspectionCandidateLimit: cfg.InspectionCandidateLimit,
 		FastRules:                make([]graphqlapi.TorrentSelectionRuleSnapshot, 0, len(cfg.FastRuleOrder)),
 		TorrentRules:             make([]graphqlapi.TorrentSelectionRuleSnapshot, 0, len(orderedRules)),
-		Rules:                    make([]graphqlapi.TorrentSelectionRuleSnapshot, 0, len(orderedRules)),
 	}
 	for _, rule := range orderedRules {
 		item := graphqlapi.TorrentSelectionRuleSnapshot{
-			ID:        rule.ID,
-			Type:      string(rule.Type),
-			Enabled:   rule.Enabled,
+			Type:    string(rule.Type),
+			Enabled: rule.Enabled,
 			IndexerPreference: graphqlapi.IndexerPreferenceRuleSnapshot{
 				TrackerIDs: append([]string(nil), rule.IndexerPreference.TrackerIDs...),
 			},
@@ -494,7 +492,6 @@ func torrentSelectionSnapshot(cfg config.TorrentSelectionConfig) graphqlapi.Torr
 		} else {
 			out.TorrentRules = append(out.TorrentRules, item)
 		}
-		out.Rules = append(out.Rules, item)
 	}
 	return out
 }

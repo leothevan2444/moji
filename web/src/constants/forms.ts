@@ -7,9 +7,8 @@ import {
   TorrentSelectionRuleType,
 } from "../graphql/generated/graphql";
 
-function makeDefaultTorrentSelectionRule(id: string, type: TorrentSelectionRuleType) {
+function makeDefaultTorrentSelectionRule(type: TorrentSelectionRuleType) {
   return {
-    id,
     type,
     enabled: true,
     indexerPreference: {
@@ -42,17 +41,17 @@ function makeDefaultTorrentSelectionRule(id: string, type: TorrentSelectionRuleT
 }
 
 export const DEFAULT_TORRENT_SELECTION_RULES = [
-  makeDefaultTorrentSelectionRule("indexer-preference", TorrentSelectionRuleType.IndexerPreference),
-  makeDefaultTorrentSelectionRule("title-match", TorrentSelectionRuleType.TitleMatch),
-  makeDefaultTorrentSelectionRule("publish-date", TorrentSelectionRuleType.PublishDate),
-  makeDefaultTorrentSelectionRule("title-similarity", TorrentSelectionRuleType.TitleSimilarity),
-  makeDefaultTorrentSelectionRule("seeders", TorrentSelectionRuleType.Seeders),
-  makeDefaultTorrentSelectionRule("size", TorrentSelectionRuleType.Size)
+  makeDefaultTorrentSelectionRule(TorrentSelectionRuleType.IndexerPreference),
+  makeDefaultTorrentSelectionRule(TorrentSelectionRuleType.TitleMatch),
+  makeDefaultTorrentSelectionRule(TorrentSelectionRuleType.PublishDate),
+  makeDefaultTorrentSelectionRule(TorrentSelectionRuleType.TitleSimilarity),
+  makeDefaultTorrentSelectionRule(TorrentSelectionRuleType.Seeders),
+  makeDefaultTorrentSelectionRule(TorrentSelectionRuleType.Size)
 ];
 
 export const DEFAULT_TORRENT_FILE_INSPECTION_RULES = [
-  makeDefaultTorrentSelectionRule("torrent-single-video", TorrentSelectionRuleType.TorrentSingleVideo),
-  makeDefaultTorrentSelectionRule("torrent-file-name-match", TorrentSelectionRuleType.TorrentFileNameMatch)
+  makeDefaultTorrentSelectionRule(TorrentSelectionRuleType.TorrentSingleVideo),
+  makeDefaultTorrentSelectionRule(TorrentSelectionRuleType.TorrentFileNameMatch)
 ];
 
 export const EMPTY_STASH_FORM = {

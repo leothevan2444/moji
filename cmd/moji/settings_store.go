@@ -101,9 +101,8 @@ func torrentSelectionConfigRules(rules []graphqlapi.TorrentSelectionRuleSnapshot
 	out := make([]config.TorrentSelectionRule, 0, len(rules))
 	for _, rule := range rules {
 		item := config.TorrentSelectionRule{
-			ID:        strings.TrimSpace(rule.ID),
-			Type:      config.TorrentSelectionRuleType(strings.TrimSpace(rule.Type)),
-			Enabled:   rule.Enabled,
+			Type:    config.TorrentSelectionRuleType(strings.TrimSpace(rule.Type)),
+			Enabled: rule.Enabled,
 			IndexerPreference: config.IndexerPreferenceRuleConfig{
 				TrackerIDs: append([]string(nil), rule.IndexerPreference.TrackerIDs...),
 			},
@@ -145,9 +144,6 @@ func torrentSelectionConfigRules(rules []graphqlapi.TorrentSelectionRuleSnapshot
 func torrentSelectionConfigRulesFromSnapshot(snapshot graphqlapi.TorrentSelectionSettingsSnapshot) []config.TorrentSelectionRule {
 	rules := append([]graphqlapi.TorrentSelectionRuleSnapshot(nil), snapshot.FastRules...)
 	rules = append(rules, snapshot.TorrentRules...)
-	if len(rules) == 0 {
-		rules = append(rules, snapshot.Rules...)
-	}
 	return torrentSelectionConfigRules(rules)
 }
 

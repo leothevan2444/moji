@@ -82,7 +82,6 @@ type TorrentSelectionConfig struct {
 }
 
 type TorrentSelectionRule struct {
-	ID                   string                   `yaml:"-"`
 	Type                 TorrentSelectionRuleType `yaml:"-"`
 	Enabled              bool                     `yaml:"-"`
 	IndexerPreference    IndexerPreferenceRuleConfig
@@ -368,12 +367,8 @@ func (c TorrentSelectionConfig) Effective() TorrentSelectionConfig {
 	return normalized
 }
 
-func (r TorrentSelectionRule) normalized(index int) TorrentSelectionRule {
+func (r TorrentSelectionRule) normalized() TorrentSelectionRule {
 	r.Type = NormalizeTorrentSelectionRuleType(r.Type)
-	r.ID = strings.TrimSpace(r.ID)
-	if r.ID == "" {
-		r.ID = defaultTorrentSelectionRuleID(r.Type, index)
-	}
 	r.IndexerPreference.TrackerIDs = cleanStrings(r.IndexerPreference.TrackerIDs)
 	r.PublishDate.Direction = NormalizeTorrentSelectionDirection(r.PublishDate.Direction)
 	if r.PublishDate.Direction == "" {
@@ -507,7 +502,6 @@ func isTorrentInspectionRuleType(ruleType TorrentSelectionRuleType) bool {
 
 func defaultTorrentSelectionRule(ruleType TorrentSelectionRuleType) TorrentSelectionRule {
 	rule := TorrentSelectionRule{
-		ID:      defaultTorrentSelectionRuleID(ruleType, 0),
 		Type:    ruleType,
 		Enabled: true,
 		PublishDate: PublishDateRuleConfig{
@@ -521,29 +515,6 @@ func defaultTorrentSelectionRule(ruleType TorrentSelectionRuleType) TorrentSelec
 		},
 	}
 	return rule
-}
-
-func defaultTorrentSelectionRuleID(ruleType TorrentSelectionRuleType, index int) string {
-	switch NormalizeTorrentSelectionRuleType(ruleType) {
-	case TorrentSelectionRuleTypeIndexerPreference:
-		return "indexer-preference"
-	case TorrentSelectionRuleTypeTitleMatch:
-		return "title-match"
-	case TorrentSelectionRuleTypePublishDate:
-		return "publish-date"
-	case TorrentSelectionRuleTypeTitleSimilarity:
-		return "title-similarity"
-	case TorrentSelectionRuleTypeSeeders:
-		return "seeders"
-	case TorrentSelectionRuleTypeSize:
-		return "size"
-	case TorrentSelectionRuleTypeTorrentSingleVideo:
-		return "torrent-single-video"
-	case TorrentSelectionRuleTypeTorrentFileNameMatch:
-		return "torrent-file-name-match"
-	default:
-		return fmt.Sprintf("rule-%d", index+1)
-	}
 }
 
 func missingDefaultRuleTypes(current []TorrentSelectionRuleType, defaults []TorrentSelectionRuleType) []TorrentSelectionRuleType {
@@ -588,7 +559,7 @@ func normalizeFastRuleOrder(order []TorrentSelectionRuleType) []TorrentSelection
 func (r FastTorrentSelectionRules) normalized() FastTorrentSelectionRules {
 	out := FastTorrentSelectionRules{}
 	for _, ruleType := range defaultFastTorrentSelectionRuleTypes() {
-		out.setRule(defaultTorrentSelectionRule(ruleType).merge(r.ruleForType(ruleType)).normalized(0))
+		out.setRule(defaultTorrentSelectionRule(ruleType).merge(r.ruleForType(ruleType)).normalized())
 	}
 	return out
 }
@@ -691,7 +662,7 @@ func (r FastTorrentSelectionRules) ruleForType(ruleType TorrentSelectionRuleType
 func (r TorrentInspectionRuleSettings) normalized() TorrentInspectionRuleSettings {
 	out := TorrentInspectionRuleSettings{}
 	for _, ruleType := range defaultTorrentInspectionRuleTypes() {
-		out.setRule(defaultTorrentSelectionRule(ruleType).merge(r.ruleForType(ruleType)).normalized(0))
+		out.setRule(defaultTorrentSelectionRule(ruleType).merge(r.ruleForType(ruleType)).normalized())
 	}
 	return out
 }
@@ -750,9 +721,6 @@ func torrentSelectionRulesFromOrdered(rules []TorrentSelectionRule) (FastTorrent
 }
 
 func (r TorrentSelectionRule) merge(other TorrentSelectionRule) TorrentSelectionRule {
-	if strings.TrimSpace(other.ID) != "" {
-		r.ID = other.ID
-	}
 	r.Enabled = other.Enabled
 	if len(other.IndexerPreference.TrackerIDs) > 0 {
 		r.IndexerPreference = other.IndexerPreference

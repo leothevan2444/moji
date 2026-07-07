@@ -60,7 +60,6 @@ query DashboardDocument {
         enabled
         inspectionCandidateLimit
         fastRules {
-          id
           type
           enabled
           publishDate {
@@ -91,7 +90,6 @@ query DashboardDocument {
           }
         }
         torrentRules {
-          id
           type
           enabled
           publishDate {

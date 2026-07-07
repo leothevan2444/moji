@@ -32,7 +32,6 @@ func TestDefaultCandidateSelectorUsesIndexerPreference(t *testing.T) {
 		{Title: "alpha", MagnetURI: "magnet:?xt=urn:btih:alpha", TrackerID: "alpha", Seeders: 1},
 	}, candidateSelectionConfig(true, 0, []config.CandidateSelectionRule{
 		{
-			ID:      "pref",
 			Type:    config.CandidateSelectionRuleTypeIndexerPreference,
 			Enabled: true,
 			IndexerPreference: config.IndexerPreferenceRuleConfig{
@@ -55,7 +54,6 @@ func TestDefaultCandidateSelectorUsesTitleMatchClauses(t *testing.T) {
 		{Title: "ABCD-123 SAMPLE", MagnetURI: "magnet:?xt=urn:btih:2"},
 	}, candidateSelectionConfig(true, 0, []config.CandidateSelectionRule{
 		{
-			ID:      "title",
 			Type:    config.CandidateSelectionRuleTypeTitleMatch,
 			Enabled: true,
 			TitleMatch: config.TitleMatchRuleConfig{
@@ -81,7 +79,6 @@ func TestDefaultCandidateSelectorUsesPublishDateDesc(t *testing.T) {
 		{Title: "newer", MagnetURI: "magnet:?xt=urn:btih:2", PublishDate: "2025-01-02"},
 	}, candidateSelectionConfig(true, 0, []config.CandidateSelectionRule{
 		{
-			ID:      "date",
 			Type:    config.CandidateSelectionRuleTypePublishDate,
 			Enabled: true,
 			PublishDate: config.PublishDateRuleConfig{
@@ -104,7 +101,6 @@ func TestDefaultCandidateSelectorUsesTitleSimilarity(t *testing.T) {
 		{Title: "ABCD 123 uncensored", MagnetURI: "magnet:?xt=urn:btih:2"},
 	}, candidateSelectionConfig(true, 0, []config.CandidateSelectionRule{
 		{
-			ID:      "similarity",
 			Type:    config.CandidateSelectionRuleTypeTitleSimilarity,
 			Enabled: true,
 		},
@@ -137,8 +133,8 @@ func TestDefaultCandidateSelectorUsesTorrentSingleVideoInspection(t *testing.T) 
 		{Title: "multi", Link: "https://example.test/multi.torrent", Seeders: 10},
 		{Title: "single", Link: "https://example.test/single.torrent", Seeders: 10},
 	}, candidateSelectionConfig(true, 0, []config.CandidateSelectionRule{
-		{ID: "seeders", Type: config.CandidateSelectionRuleTypeSeeders, Enabled: true, Seeders: config.SeedersRuleConfig{Direction: config.CandidateSelectionDirectionDesc}},
-		{ID: "single-video", Type: config.CandidateSelectionRuleTypeTorrentSingleVideo, Enabled: true},
+		{Type: config.CandidateSelectionRuleTypeSeeders, Enabled: true, Seeders: config.SeedersRuleConfig{Direction: config.CandidateSelectionDirectionDesc}},
+		{Type: config.CandidateSelectionRuleTypeTorrentSingleVideo, Enabled: true},
 	}))
 	if err != nil {
 		t.Fatalf("Select failed: %v", err)
@@ -165,9 +161,8 @@ func TestDefaultCandidateSelectorUsesTorrentFileNameLock(t *testing.T) {
 		{Title: "baseline", Link: "https://example.test/baseline.torrent", Seeders: 20},
 		{Title: "locked", Link: "https://example.test/locked.torrent", Seeders: 1},
 	}, candidateSelectionConfig(true, 0, []config.CandidateSelectionRule{
-		{ID: "seeders", Type: config.CandidateSelectionRuleTypeSeeders, Enabled: true, Seeders: config.SeedersRuleConfig{Direction: config.CandidateSelectionDirectionDesc}},
+		{Type: config.CandidateSelectionRuleTypeSeeders, Enabled: true, Seeders: config.SeedersRuleConfig{Direction: config.CandidateSelectionDirectionDesc}},
 		{
-			ID:      "file-name",
 			Type:    config.CandidateSelectionRuleTypeTorrentFileNameMatch,
 			Enabled: true,
 			TorrentFileNameMatch: config.TorrentFileNameMatchRuleConfig{
@@ -205,8 +200,8 @@ func TestDefaultCandidateSelectorOnlyInspectsTopFiveTorrentCandidates(t *testing
 		})
 	}
 	_, err := selector.Select(context.Background(), "ABCD-123", results, candidateSelectionConfig(true, 0, []config.CandidateSelectionRule{
-		{ID: "seeders", Type: config.CandidateSelectionRuleTypeSeeders, Enabled: true, Seeders: config.SeedersRuleConfig{Direction: config.CandidateSelectionDirectionDesc}},
-		{ID: "single-video", Type: config.CandidateSelectionRuleTypeTorrentSingleVideo, Enabled: true},
+		{Type: config.CandidateSelectionRuleTypeSeeders, Enabled: true, Seeders: config.SeedersRuleConfig{Direction: config.CandidateSelectionDirectionDesc}},
+		{Type: config.CandidateSelectionRuleTypeTorrentSingleVideo, Enabled: true},
 	}))
 	if err != nil {
 		t.Fatalf("Select failed: %v", err)
@@ -237,8 +232,8 @@ func TestDefaultCandidateSelectorUsesConfiguredInspectionCandidateLimit(t *testi
 	}
 
 	got, err := selector.Select(context.Background(), "ABCD-123", results, candidateSelectionConfig(true, 6, []config.CandidateSelectionRule{
-		{ID: "seeders", Type: config.CandidateSelectionRuleTypeSeeders, Enabled: true, Seeders: config.SeedersRuleConfig{Direction: config.CandidateSelectionDirectionDesc}},
-		{ID: "single-video", Type: config.CandidateSelectionRuleTypeTorrentSingleVideo, Enabled: true},
+		{Type: config.CandidateSelectionRuleTypeSeeders, Enabled: true, Seeders: config.SeedersRuleConfig{Direction: config.CandidateSelectionDirectionDesc}},
+		{Type: config.CandidateSelectionRuleTypeTorrentSingleVideo, Enabled: true},
 	}))
 	if err != nil {
 		t.Fatalf("Select returned error: %v", err)
@@ -258,7 +253,6 @@ func TestDefaultCandidateSelectorPreviewUsesFastRulesOnly(t *testing.T) {
 		{Title: "alpha", MagnetURI: "magnet:?xt=urn:btih:alpha", TrackerID: "alpha", Seeders: 1},
 	}, candidateSelectionConfig(true, 0, []config.CandidateSelectionRule{
 		{
-			ID:      "pref",
 			Type:    config.CandidateSelectionRuleTypeIndexerPreference,
 			Enabled: true,
 			IndexerPreference: config.IndexerPreferenceRuleConfig{
@@ -290,7 +284,7 @@ func TestDefaultCandidateSelectorPreviewUsesInputOrderForFileRules(t *testing.T)
 		{Title: "first", Link: "https://example.test/first.torrent", Seeders: 100},
 		{Title: "second", Link: "https://example.test/second.torrent", Seeders: 1},
 	}, candidateSelectionConfig(true, 0, []config.CandidateSelectionRule{
-		{ID: "single-video", Type: config.CandidateSelectionRuleTypeTorrentSingleVideo, Enabled: true},
+		{Type: config.CandidateSelectionRuleTypeTorrentSingleVideo, Enabled: true},
 	}), false, true)
 	if err != nil {
 		t.Fatalf("Preview failed: %v", err)
@@ -324,7 +318,7 @@ func TestPreviewJackettSelectionContextCachesTorrentInspection(t *testing.T) {
 		}),
 		WithCandidateSelectionProvider(func() config.CandidateSelectionConfig {
 			return candidateSelectionConfig(true, 0, []config.CandidateSelectionRule{
-				{ID: "single-video", Type: config.CandidateSelectionRuleTypeTorrentSingleVideo, Enabled: true},
+				{Type: config.CandidateSelectionRuleTypeTorrentSingleVideo, Enabled: true},
 			})
 		}),
 	)
@@ -362,7 +356,6 @@ func TestDownloadMediaContextUsesConfiguredCandidateSelection(t *testing.T) {
 		WithCandidateSelectionProvider(func() config.CandidateSelectionConfig {
 			return candidateSelectionConfig(true, 0, []config.CandidateSelectionRule{
 				{
-					ID:      "size-asc",
 					Type:    config.CandidateSelectionRuleTypeSize,
 					Enabled: true,
 					Size: config.SizeRuleConfig{

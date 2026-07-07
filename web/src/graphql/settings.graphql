@@ -62,7 +62,6 @@ mutation UpdateAutomationSettingsDocument($input: UpdateAutomationSettingsInput!
         enabled
         inspectionCandidateLimit
         fastRules {
-          id
           type
           enabled
           publishDate {
@@ -93,7 +92,6 @@ mutation UpdateAutomationSettingsDocument($input: UpdateAutomationSettingsInput!
           }
         }
         torrentRules {
-          id
           type
           enabled
           publishDate {

@@ -140,11 +140,9 @@ type TorrentSelectionSettingsSnapshot struct {
 	InspectionCandidateLimit int
 	FastRules                []TorrentSelectionRuleSnapshot
 	TorrentRules             []TorrentSelectionRuleSnapshot
-	Rules                    []TorrentSelectionRuleSnapshot
 }
 
 type TorrentSelectionRuleSnapshot struct {
-	ID                   string
 	Type                 string
 	Enabled              bool
 	IndexerPreference    IndexerPreferenceRuleSnapshot

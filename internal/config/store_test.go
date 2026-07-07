@@ -86,7 +86,6 @@ automation:
 		8,
 		[]TorrentSelectionRule{
 			{
-				ID:      "pref",
 				Type:    TorrentSelectionRuleTypeIndexerPreference,
 				Enabled: true,
 				IndexerPreference: IndexerPreferenceRuleConfig{

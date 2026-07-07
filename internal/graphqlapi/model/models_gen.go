@@ -588,7 +588,6 @@ type TorrentFileNameMatchRuleInput struct {
 }
 
 type TorrentSelectionRule struct {
-	ID                   string                    `json:"id"`
 	Type                 TorrentSelectionRuleType  `json:"type"`
 	Enabled              bool                      `json:"enabled"`
 	IndexerPreference    *IndexerPreferenceRule    `json:"indexerPreference"`
@@ -600,7 +599,6 @@ type TorrentSelectionRule struct {
 }
 
 type TorrentSelectionRuleInput struct {
-	ID                   string                         `json:"id"`
 	Type                 TorrentSelectionRuleType       `json:"type"`
 	Enabled              bool                           `json:"enabled"`
 	IndexerPreference    *IndexerPreferenceRuleInput    `json:"indexerPreference,omitempty"`
@@ -616,7 +614,6 @@ type TorrentSelectionSettings struct {
 	InspectionCandidateLimit int                     `json:"inspectionCandidateLimit"`
 	FastRules                []*TorrentSelectionRule `json:"fastRules"`
 	TorrentRules             []*TorrentSelectionRule `json:"torrentRules"`
-	Rules                    []*TorrentSelectionRule `json:"rules"`
 }
 
 type TorrentSelectionSettingsInput struct {
@@ -624,7 +621,6 @@ type TorrentSelectionSettingsInput struct {
 	InspectionCandidateLimit int                          `json:"inspectionCandidateLimit"`
 	FastRules                []*TorrentSelectionRuleInput `json:"fastRules,omitempty"`
 	TorrentRules             []*TorrentSelectionRuleInput `json:"torrentRules,omitempty"`
-	Rules                    []*TorrentSelectionRuleInput `json:"rules,omitempty"`
 }
 
 type TransferIngestSettings struct {

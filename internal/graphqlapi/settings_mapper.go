@@ -115,7 +115,6 @@ func torrentSelectionSettingsToModel(snapshot TorrentSelectionSettingsSnapshot) 
 		InspectionCandidateLimit: snapshot.InspectionCandidateLimit,
 		FastRules:                make([]*model.TorrentSelectionRule, 0, len(snapshot.FastRules)),
 		TorrentRules:             make([]*model.TorrentSelectionRule, 0, len(snapshot.TorrentRules)),
-		Rules:                    make([]*model.TorrentSelectionRule, 0, len(snapshot.Rules)),
 	}
 	for _, rule := range snapshot.FastRules {
 		out.FastRules = append(out.FastRules, torrentSelectionRuleToModel(rule))
@@ -123,50 +122,46 @@ func torrentSelectionSettingsToModel(snapshot TorrentSelectionSettingsSnapshot) 
 	for _, rule := range snapshot.TorrentRules {
 		out.TorrentRules = append(out.TorrentRules, torrentSelectionRuleToModel(rule))
 	}
-	for _, rule := range snapshot.Rules {
-		out.Rules = append(out.Rules, torrentSelectionRuleToModel(rule))
-	}
 	return out
 }
 
 func torrentSelectionRuleToModel(rule TorrentSelectionRuleSnapshot) *model.TorrentSelectionRule {
 	item := &model.TorrentSelectionRule{
-			ID:        rule.ID,
-			Type:      model.TorrentSelectionRuleType(rule.Type),
-			Enabled:   rule.Enabled,
-			IndexerPreference: &model.IndexerPreferenceRule{
-				TrackerIds: append([]string(nil), rule.IndexerPreference.TrackerIDs...),
-			},
-			TitleMatch: &model.TitleMatchRule{
-				Clauses: make([]*model.TitleMatchClause, 0, len(rule.TitleMatch.Clauses)),
-			},
-			PublishDate: &model.DirectionRule{
-				Direction: model.TorrentSelectionDirection(rule.PublishDate.Direction),
-			},
-			Seeders: &model.DirectionRule{
-				Direction: model.TorrentSelectionDirection(rule.Seeders.Direction),
-			},
-			Size: &model.DirectionRule{
-				Direction: model.TorrentSelectionDirection(rule.Size.Direction),
-			},
-			TorrentFileNameMatch: &model.TorrentFileNameMatchRule{
-				Clauses: make([]*model.TorrentFileNameMatchClause, 0, len(rule.TorrentFileNameMatch.Clauses)),
-			},
-		}
-		for _, clause := range rule.TitleMatch.Clauses {
-			item.TitleMatch.Clauses = append(item.TitleMatch.Clauses, &model.TitleMatchClause{
-				Pattern:     clause.Pattern,
-				PatternMode: model.TitleMatchPatternMode(clause.PatternMode),
-				Effect:      model.TitleMatchEffect(clause.Effect),
-			})
-		}
-		for _, clause := range rule.TorrentFileNameMatch.Clauses {
-			item.TorrentFileNameMatch.Clauses = append(item.TorrentFileNameMatch.Clauses, &model.TorrentFileNameMatchClause{
-				Pattern:     clause.Pattern,
-				PatternMode: model.TitleMatchPatternMode(clause.PatternMode),
-				Effect:      model.TorrentFileMatchEffect(clause.Effect),
-			})
-		}
+		Type:    model.TorrentSelectionRuleType(rule.Type),
+		Enabled: rule.Enabled,
+		IndexerPreference: &model.IndexerPreferenceRule{
+			TrackerIds: append([]string(nil), rule.IndexerPreference.TrackerIDs...),
+		},
+		TitleMatch: &model.TitleMatchRule{
+			Clauses: make([]*model.TitleMatchClause, 0, len(rule.TitleMatch.Clauses)),
+		},
+		PublishDate: &model.DirectionRule{
+			Direction: model.TorrentSelectionDirection(rule.PublishDate.Direction),
+		},
+		Seeders: &model.DirectionRule{
+			Direction: model.TorrentSelectionDirection(rule.Seeders.Direction),
+		},
+		Size: &model.DirectionRule{
+			Direction: model.TorrentSelectionDirection(rule.Size.Direction),
+		},
+		TorrentFileNameMatch: &model.TorrentFileNameMatchRule{
+			Clauses: make([]*model.TorrentFileNameMatchClause, 0, len(rule.TorrentFileNameMatch.Clauses)),
+		},
+	}
+	for _, clause := range rule.TitleMatch.Clauses {
+		item.TitleMatch.Clauses = append(item.TitleMatch.Clauses, &model.TitleMatchClause{
+			Pattern:     clause.Pattern,
+			PatternMode: model.TitleMatchPatternMode(clause.PatternMode),
+			Effect:      model.TitleMatchEffect(clause.Effect),
+		})
+	}
+	for _, clause := range rule.TorrentFileNameMatch.Clauses {
+		item.TorrentFileNameMatch.Clauses = append(item.TorrentFileNameMatch.Clauses, &model.TorrentFileNameMatchClause{
+			Pattern:     clause.Pattern,
+			PatternMode: model.TitleMatchPatternMode(clause.PatternMode),
+			Effect:      model.TorrentFileMatchEffect(clause.Effect),
+		})
+	}
 	return item
 }
 

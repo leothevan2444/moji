@@ -176,7 +176,6 @@ type TorrentSelectionSettings {
   inspectionCandidateLimit: Int!
   fastRules: [TorrentSelectionRule!]!
   torrentRules: [TorrentSelectionRule!]!
-  rules: [TorrentSelectionRule!]!
 }
 
 enum TorrentSelectionRuleType {
@@ -212,7 +211,6 @@ enum TorrentFileMatchEffect {
 }
 
 type TorrentSelectionRule {
-  id: ID!
   type: TorrentSelectionRuleType!
   enabled: Boolean!
   indexerPreference: IndexerPreferenceRule!
@@ -350,11 +348,9 @@ input TorrentSelectionSettingsInput {
   inspectionCandidateLimit: Int!
   fastRules: [TorrentSelectionRuleInput!]
   torrentRules: [TorrentSelectionRuleInput!]
-  rules: [TorrentSelectionRuleInput!]
 }
 
 input TorrentSelectionRuleInput {
-  id: ID!
   type: TorrentSelectionRuleType!
   enabled: Boolean!
   indexerPreference: IndexerPreferenceRuleInput

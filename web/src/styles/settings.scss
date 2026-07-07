@@ -7,6 +7,10 @@
   gap: $space-3;
 }
 
+.settings-spacer {
+  height: $space-3;
+}
+
 .settings-field {
   display: grid;
   gap: 6px;
@@ -925,16 +929,37 @@
     gap: 4px;
     flex: 0 0 auto;
     margin-left: auto;
+  }
 
-    /* 编辑按钮带文字，比纯 icon 突出 */
-    > .ghost-button:not(.ghost-button--icon) {
-      display: inline-flex;
-      align-items: center;
-      gap: 4px;
+  &__body {
+    display: grid;
+    gap: $space-3;
+  }
+
+  &__section-head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: $space-2;
+    flex-wrap: wrap;
+  }
+
+  &__inline-field {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+
+    select {
+      min-width: 104px;
     }
   }
 
-  /* ── 详情区与编辑控件：当前仅在编辑抽屉内复用 ─────────────────── */
+  &__inline-label {
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--text);
+  }
 
   &__hint {
     margin: 0;
@@ -1058,7 +1083,6 @@
     font-variant-numeric: tabular-nums;
   }
 
-  /* 标题匹配子规则（抽屉内使用） */
   &__clauses {
     display: grid;
     gap: $space-2;
