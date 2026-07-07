@@ -14,7 +14,6 @@ import {
   faPenToSquare,
   faPlus,
   faRotate,
-  faTimes,
   faTrash
 } from "@fortawesome/free-solid-svg-icons";
 import {
@@ -184,10 +183,10 @@ function buildAutomationSettingsPayload(form: AutomationFormShape) {
 function buildRuleSummary(rule: TorrentSelectionRuleDraft): string {
   const dirLabel = rule.direction === TorrentSelectionDirection.Asc ? "ASC" : "DESC";
   if (rule.type === TorrentSelectionRuleType.IndexerPreference) {
-    const count = rule.indexerPreference.trackerIds.length;
-    return count === 0
+    const order = rule.indexerPreference.trackerIds.map((id) => id.trim()).filter(Boolean);
+    return order.length === 0
       ? `${dirLabel} · 未配置索引器`
-      : `${dirLabel} · 选中 ${count} 个索引器`;
+      : `${dirLabel} · ${order.join(" > ")}`;
   }
   if (rule.type === TorrentSelectionRuleType.TitleMatch) {
     const count = rule.titleMatch.clauses.length;
@@ -233,6 +232,13 @@ function cloneTorrentSelectionRule(rule: TorrentSelectionRuleDraft): TorrentSele
     titleMatch: { clauses: rule.titleMatch.clauses.map((clause) => ({ ...clause })) },
     torrentFileNameMatch: { clauses: rule.torrentFileNameMatch.clauses.map((clause) => ({ ...clause })) }
   };
+}
+
+function syncIndexerPreferenceTrackerIds(trackerIds: string[], indexers: JackettIndexer[]): string[] {
+  const enabledIds = indexers.map((indexer) => indexer.id);
+  const kept = trackerIds.filter((id) => enabledIds.includes(id));
+  const missing = enabledIds.filter((id) => !kept.includes(id));
+  return [...kept, ...missing];
 }
 
 function ensureTorrentFileInspectionRules(rules: TorrentSelectionRuleDraft[]) {
@@ -362,6 +368,8 @@ export function SettingsPanel({
   const [editingRuleDraft, setEditingRuleDraft] = useState<TorrentSelectionRuleDraft | null>(null);
   const [ruleEditorClosing, setRuleEditorClosing] = useState(false);
   const [ruleEditorSaving, setRuleEditorSaving] = useState(false);
+  const [draggedIndexerId, setDraggedIndexerId] = useState<string | null>(null);
+  const [dragOverIndexerId, setDragOverIndexerId] = useState<string | null>(null);
 
   const openRuleEditor = (rule: TorrentSelectionRuleDraft) => {
     // 深拷贝：避免在抽屉里直接写入 automationForm 的引用
@@ -375,6 +383,8 @@ export function SettingsPanel({
     window.setTimeout(() => {
       setEditingRuleDraft(null);
       setRuleEditorClosing(false);
+      setDraggedIndexerId(null);
+      setDragOverIndexerId(null);
     }, 240);
   };
   const [systemForm, setSystemForm] = useState(EMPTY_SYSTEM_FORM);
@@ -403,7 +413,7 @@ export function SettingsPanel({
     query: JackettIndexersDocumentDocument,
     pause: (settingsTab !== "连接" && settingsTab !== "自动化") || (drawer !== "settings" && renderedDrawer !== "settings")
   });
-  const jackettIndexers = jackettIndexersData?.jackettIndexers ?? [];
+  const jackettIndexers = (jackettIndexersData?.jackettIndexers ?? []).filter((indexer: JackettIndexer) => indexer.enabled);
 
   // 规则编辑抽屉专用的 Jackett 索引器请求：仅在抽屉打开时拉取，避免与连接/自动化设置共用。
   const [{ data: ruleEditorJackettData, fetching: fetchingRuleEditorJackettIndexers }] = useQuery<
@@ -413,7 +423,49 @@ export function SettingsPanel({
     query: JackettIndexersDocumentDocument,
     pause: !editingRuleDraft
   });
-  const ruleEditorJackettIndexers = ruleEditorJackettData?.jackettIndexers ?? [];
+  const ruleEditorJackettIndexers = (ruleEditorJackettData?.jackettIndexers ?? []).filter((indexer: JackettIndexer) => indexer.enabled);
+
+  useEffect(() => {
+    if (jackettIndexers.length === 0) return;
+    setAutomationForm((current) => {
+      let changed = false;
+      const rules = current.torrentSelection.rules.map((rule) => {
+        if (rule.type !== TorrentSelectionRuleType.IndexerPreference) return rule;
+        const trackerIds = syncIndexerPreferenceTrackerIds(rule.indexerPreference.trackerIds, jackettIndexers);
+        if (trackerIds.length === rule.indexerPreference.trackerIds.length && trackerIds.every((id, index) => id === rule.indexerPreference.trackerIds[index])) {
+          return rule;
+        }
+        changed = true;
+        return {
+          ...rule,
+          indexerPreference: { trackerIds }
+        };
+      });
+      if (!changed) return current;
+      return {
+        ...current,
+        torrentSelection: {
+          ...current.torrentSelection,
+          rules
+        }
+      };
+    });
+  }, [jackettIndexers]);
+
+  useEffect(() => {
+    if (!editingRuleDraft || editingRuleDraft.type !== TorrentSelectionRuleType.IndexerPreference || ruleEditorJackettIndexers.length === 0) return;
+    setEditingRuleDraft((current) => {
+      if (!current || current.type !== TorrentSelectionRuleType.IndexerPreference) return current;
+      const trackerIds = syncIndexerPreferenceTrackerIds(current.indexerPreference.trackerIds, ruleEditorJackettIndexers);
+      if (trackerIds.length === current.indexerPreference.trackerIds.length && trackerIds.every((id, index) => id === current.indexerPreference.trackerIds[index])) {
+        return current;
+      }
+      return {
+        ...current,
+        indexerPreference: { trackerIds }
+      };
+    });
+  }, [editingRuleDraft, ruleEditorJackettIndexers]);
 
   const [{ fetching: updatingStash }, updateStashSettings] = useMutation<
     UpdateStashSettingsDocumentMutation,
@@ -710,33 +762,6 @@ export function SettingsPanel({
         rules: current.torrentSelection.rules.filter((rule) => rule.id !== ruleId || isTorrentInspectionRuleType(rule.type))
       }
     }));
-  };
-
-  const toggleIndexerPreference = (ruleId: string, trackerId: string) => {
-    updateCandidateRule(ruleId, (rule) => {
-      const exists = rule.indexerPreference.trackerIds.includes(trackerId);
-      return {
-        ...rule,
-        indexerPreference: {
-          trackerIds: exists
-            ? rule.indexerPreference.trackerIds.filter((id) => id !== trackerId)
-            : [...rule.indexerPreference.trackerIds, trackerId]
-        }
-      };
-    });
-  };
-
-  const moveIndexerPreference = (ruleId: string, from: number, to: number) => {
-    updateCandidateRule(ruleId, (rule) => {
-      if (to < 0 || to >= rule.indexerPreference.trackerIds.length) return rule;
-      const trackerIds = [...rule.indexerPreference.trackerIds];
-      const [moved] = trackerIds.splice(from, 1);
-      trackerIds.splice(to, 0, moved);
-      return {
-        ...rule,
-        indexerPreference: { trackerIds }
-      };
-    });
   };
 
   const addTitleMatchClause = (ruleId: string) => {
@@ -1921,103 +1946,88 @@ export function SettingsPanel({
                   <div className="drawer-card__head">
                     <div>
                       <h3>索引器偏好顺序</h3>
-                      <p>勾选右侧索引器加入「偏好顺序」，用 ↑ ↓ 调整优先级。</p>
+                      <p className="torrent-rules__note">所有已启用索引器都会参与排序，拖拽手柄可直接调整完整优先级。</p>
                     </div>
                   </div>
                   <div className="settings-form">
-                    <div>
-                      <strong className="torrent-rule__subhead">偏好顺序</strong>
-                      {draft.indexerPreference.trackerIds.length === 0 ? (
-                        <p className="torrent-rule__hint">未选择索引器，未命中时保持默认稳定顺序。</p>
-                      ) : (
-                        <ol className="torrent-rule__chips">
-                          {draft.indexerPreference.trackerIds.map((trackerId, index) => (
-                            <li key={`${draft.id}-selected-${trackerId}`} className="torrent-rule__chip">
-                              <button
-                                type="button"
-                                className="torrent-rule__chip-handle"
-                                onClick={() =>
-                                  setDraft((current) => {
-                                    if (!current) return current;
-                                    const ids = [...current.indexerPreference.trackerIds];
-                                    if (index <= 0) return current;
-                                    [ids[index - 1], ids[index]] = [ids[index], ids[index - 1]];
-                                    return {
-                                      ...current,
-                                      indexerPreference: { trackerIds: ids }
-                                    };
-                                  })
-                                }
-                                disabled={index === 0}
-                                aria-label="上移"
-                              >
-                                <FontAwesomeIcon icon={faArrowUp} />
-                              </button>
-                              <span className="torrent-rule__chip-label" title={trackerId}>
-                                {trackerId}
-                              </span>
-                              <button
-                                type="button"
-                                className="torrent-rule__chip-remove"
-                                onClick={() =>
-                                  setDraft((current) =>
-                                    current
-                                      ? {
-                                          ...current,
-                                          indexerPreference: {
-                                            trackerIds: current.indexerPreference.trackerIds.filter((id) => id !== trackerId)
-                                          }
-                                        }
-                                      : current
-                                  )
-                                }
-                                aria-label="移除"
-                              >
-                                <FontAwesomeIcon icon={faTimes} />
-                              </button>
-                            </li>
-                          ))}
-                        </ol>
-                      )}
-                    </div>
-                    <div>
-                      <strong className="torrent-rule__subhead">可选索引器</strong>
-                      <div className="torrent-rule__candidates">
-                        {fetchingRuleEditorJackettIndexers ? (
-                          <span className="torrent-rule__hint">加载中…</span>
-                        ) : null}
-                        {!fetchingRuleEditorJackettIndexers && ruleEditorJackettIndexers.length === 0 ? (
-                          <span className="torrent-rule__hint">当前没有可用的 Jackett 索引器。</span>
-                        ) : null}
-                        {ruleEditorJackettIndexers.map((indexer: JackettIndexer) => {
-                          const selected = draft.indexerPreference.trackerIds.includes(indexer.id);
+                    {fetchingRuleEditorJackettIndexers ? (
+                      <span className="torrent-rule__hint">加载中…</span>
+                    ) : null}
+                    {!fetchingRuleEditorJackettIndexers && ruleEditorJackettIndexers.length === 0 ? (
+                      <span className="torrent-rule__hint">当前没有可用的 Jackett 索引器。</span>
+                    ) : null}
+                    {!fetchingRuleEditorJackettIndexers && ruleEditorJackettIndexers.length > 0 ? (
+                      <ol className="torrent-rule__indexer-list">
+                        {draft.indexerPreference.trackerIds.map((trackerId, selectedIndex) => {
+                          const indexer = ruleEditorJackettIndexers.find((item: JackettIndexer) => item.id === trackerId);
+                          if (!indexer) return null;
+                          const classes = ["torrent-rule__indexer-card"];
+                          if (draggedIndexerId === indexer.id) classes.push("is-dragging");
+                          if (dragOverIndexerId === indexer.id && draggedIndexerId !== indexer.id) classes.push("is-drop-target");
                           return (
-                            <button
+                            <li
                               key={indexer.id}
-                              type="button"
-                              className="ghost-button"
-                              disabled={selected}
-                              onClick={() =>
-                                setDraft((current) =>
-                                  current
-                                    ? {
-                                        ...current,
-                                        indexerPreference: {
-                                          trackerIds: current.indexerPreference.trackerIds.includes(indexer.id)
-                                            ? current.indexerPreference.trackerIds
-                                            : [...current.indexerPreference.trackerIds, indexer.id]
-                                        }
-                                      }
-                                    : current
-                                )
-                              }
+                              className={classes.join(" ")}
+                              draggable
+                              onDragStart={(event) => {
+                                event.dataTransfer.effectAllowed = "move";
+                                event.dataTransfer.setData("text/plain", indexer.id);
+                                setDraggedIndexerId(indexer.id);
+                              }}
+                              onDragOver={(event) => {
+                                if (!draggedIndexerId || draggedIndexerId === indexer.id) return;
+                                event.preventDefault();
+                                event.dataTransfer.dropEffect = "move";
+                                setDragOverIndexerId(indexer.id);
+                              }}
+                              onDragLeave={() => {
+                                if (dragOverIndexerId === indexer.id) setDragOverIndexerId(null);
+                              }}
+                              onDrop={(event) => {
+                                event.preventDefault();
+                                const fromId = event.dataTransfer.getData("text/plain") || draggedIndexerId;
+                                if (!fromId || fromId === indexer.id) return;
+                                setDraft((current) => {
+                                  if (!current) return current;
+                                  const trackerIds = [...current.indexerPreference.trackerIds];
+                                  const from = trackerIds.indexOf(fromId);
+                                  const to = trackerIds.indexOf(indexer.id);
+                                  if (from < 0 || to < 0) return current;
+                                  const [moved] = trackerIds.splice(from, 1);
+                                  trackerIds.splice(to, 0, moved);
+                                  return {
+                                    ...current,
+                                    indexerPreference: { trackerIds }
+                                  };
+                                });
+                                setDraggedIndexerId(null);
+                                setDragOverIndexerId(null);
+                              }}
+                              onDragEnd={() => {
+                                setDraggedIndexerId(null);
+                                setDragOverIndexerId(null);
+                              }}
                             >
-                              {indexer.name}
-                            </button>
+                              <div className="torrent-rule__indexer-main">
+                                <span
+                                  className="torrent-rule__indexer-handle"
+                                  aria-hidden="true"
+                                  title="拖动以调整优先级"
+                                >
+                                  <FontAwesomeIcon icon={faGripVertical} />
+                                </span>
+                                <div className="torrent-rule__indexer-copy">
+                                  <strong title={indexer.name}>{indexer.name}</strong>
+                                </div>
+                              </div>
+                              <div className="torrent-rule__indexer-meta">
+                                <span className="torrent-rule__indexer-rank">#{selectedIndex + 1}</span>
+                              </div>
+                            </li>
                           );
                         })}
-                      </div>
-                    </div>
+                      </ol>
+                    ) : null}
                   </div>
                 </article>
               ) : null}

@@ -19,7 +19,7 @@ export function useJackettIndexers(enabled: boolean) {
   });
 
   return {
-    indexers: data?.jackettIndexers ?? [],
+    indexers: (data?.jackettIndexers ?? []).filter((indexer) => indexer.enabled),
     fetching,
     error
   };
