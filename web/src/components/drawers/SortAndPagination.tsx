@@ -1,3 +1,5 @@
+import type { ReactNode } from "react";
+
 interface SortOption<V extends string> {
   value: V;
   label: string;
@@ -13,6 +15,7 @@ interface SortAndPaginationProps<V extends string> {
   onPrevPage: () => void;
   onNextPage: () => void;
   label?: string;
+  extraContent?: ReactNode;
 }
 
 /**
@@ -27,7 +30,8 @@ export function SortAndPagination<V extends string>({
   total,
   onPrevPage,
   onNextPage,
-  label = "结果"
+  label = "结果",
+  extraContent
 }: SortAndPaginationProps<V>) {
   const hasResults = total > 0;
   const safeTotalPages = Math.max(totalPages, 1);
@@ -48,6 +52,8 @@ export function SortAndPagination<V extends string>({
           ))}
         </select>
       </div>
+
+      {extraContent ? <div className="discovery-toolbar__extra">{extraContent}</div> : null}
 
       <div className="discovery-toolbar__spacer" />
 

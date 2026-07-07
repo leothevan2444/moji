@@ -2,6 +2,7 @@ export { useToast } from "./useToast";
 export { useDashboard } from "./useDashboard";
 export { useDiscoverScenes } from "./useDiscoverScenes";
 export { useJackettSearch } from "./useJackettSearch";
+export { usePreviewJackettSelection } from "./usePreviewJackettSelection";
 export { useJackettIndexers } from "./useJackettIndexers";
 export { useSubscription } from "./useSubscription";
 export { useDrawerTransition } from "./useDrawerTransition";

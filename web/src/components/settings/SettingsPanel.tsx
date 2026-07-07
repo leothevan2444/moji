@@ -1473,7 +1473,7 @@ export function SettingsPanel({
               <div>
                 <h4>自动选种规则</h4>
                 <p className="torrent-rules__sub">
-                  仅影响后端自动挑选下载候选，不影响 Jackett 搜索结果列表展示。规则按从上到下顺序依次比较。
+                  默认仅影响后端自动挑选下载候选，规则按从上到下顺序依次比较。
                 </p>
               </div>
               <div className="torrent-rules__save">

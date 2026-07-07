@@ -5,6 +5,9 @@ extend type Query {
   "Search torrents via Jackett as a fallback-only power-user tool"
   jackettSearch(input: JackettSearchInput!): [JackettSearchResult!]!
 
+  "Preview automatic torrent-selection ordering on an existing Jackett result set"
+  previewJackettSelection(input: PreviewJackettSelectionInput!): PreviewJackettSelectionResult!
+
   "List the indexers Jackett currently exposes. Returns [] when Jackett is not configured."
   jackettIndexers: [JackettIndexer!]!
 }
@@ -90,4 +93,40 @@ type JackettSearchResult {
   details: String!
   link: String!
   magnetUri: String!
+  infoHash: String!
+}
+
+input PreviewJackettSelectionInput {
+  query: String!
+  results: [PreviewJackettSelectionCandidateInput!]!
+  applyFastRules: Boolean!
+  applyFileRules: Boolean!
+  inspectionCandidateLimit: Int
+}
+
+input PreviewJackettSelectionCandidateInput {
+  title: String!
+  size: Long!
+  seeders: Int!
+  peers: Int!
+  tracker: String!
+  trackerId: String!
+  categoryDesc: String!
+  publishDate: String!
+  details: String!
+  link: String!
+  magnetUri: String!
+  infoHash: String!
+}
+
+type PreviewJackettSelectionResult {
+  results: [JackettSearchResult!]!
+  previewMeta: PreviewJackettSelectionMeta!
+}
+
+type PreviewJackettSelectionMeta {
+  appliedFastRules: Boolean!
+  appliedFileRules: Boolean!
+  inspectedCount: Int!
+  inspectableCount: Int!
 }

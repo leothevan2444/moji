@@ -9,6 +9,7 @@ import (
 	"errors"
 	"strings"
 
+	"github.com/leothevan2444/moji/internal/downloader"
 	"github.com/leothevan2444/moji/internal/graphqlapi/model"
 	"github.com/leothevan2444/moji/internal/tracker"
 )
@@ -78,6 +79,40 @@ func (r *queryResolver) JackettSearch(ctx context.Context, input model.JackettSe
 	}
 	sortJackettResults(out, input.SortBy)
 	return out, nil
+}
+
+// PreviewJackettSelection is the resolver for the previewJackettSelection field.
+func (r *queryResolver) PreviewJackettSelection(ctx context.Context, input model.PreviewJackettSelectionInput) (*model.PreviewJackettSelectionResult, error) {
+	if r.Downloader == nil {
+		return nil, errors.New("downloader is not configured")
+	}
+
+	query := strings.TrimSpace(input.Query)
+	if query == "" {
+		return nil, errors.New("query is required")
+	}
+	if !input.ApplyFastRules && !input.ApplyFileRules {
+		return &model.PreviewJackettSelectionResult{
+			Results:     jackettSearchResultsToModel(previewJackettSelectionCandidatesFromModel(input.Results)),
+			PreviewMeta: &model.PreviewJackettSelectionMeta{},
+		}, nil
+	}
+	inspectionCandidateLimit := 0
+	if input.InspectionCandidateLimit != nil {
+		inspectionCandidateLimit = *input.InspectionCandidateLimit
+	}
+
+	preview, err := r.Downloader.PreviewJackettSelectionContext(ctx, downloader.PreviewJackettSelectionRequest{
+		Query:                    query,
+		Results:                  previewJackettSelectionCandidatesFromModel(input.Results),
+		ApplyFastRules:           input.ApplyFastRules,
+		ApplyFileRules:           input.ApplyFileRules,
+		InspectionCandidateLimit: inspectionCandidateLimit,
+	})
+	if err != nil {
+		return nil, err
+	}
+	return candidateSelectionPreviewToModel(preview), nil
 }
 
 // JackettIndexers is the resolver for the jackettIndexers field. Returns an

@@ -7,6 +7,7 @@ import (
 	"regexp"
 	"sort"
 	"strings"
+	"sync"
 	"time"
 	"unicode"
 
@@ -28,47 +29,94 @@ type defaultCandidateSelector struct {
 }
 
 func (s defaultCandidateSelector) Select(ctx context.Context, query string, results []jackett.SearchResult, cfg config.CandidateSelectionConfig) (jackett.SearchResult, error) {
+	preview, err := s.Preview(ctx, query, results, cfg, true, true)
+	if err != nil {
+		return jackett.SearchResult{}, err
+	}
+	for _, result := range preview.Results {
+		if preferredTorrentURL(result) != "" {
+			return result, nil
+		}
+	}
+	return jackett.SearchResult{}, errors.New("downloader: no downloadable torrent candidate found")
+}
+
+func (s defaultCandidateSelector) Preview(ctx context.Context, query string, results []jackett.SearchResult, cfg config.CandidateSelectionConfig, applyFastRules bool, applyFileRules bool) (CandidateSelectionPreview, error) {
 	if !cfg.Enabled {
 		cfg = config.DefaultCandidateSelectionConfig()
 	}
 	cfg = cfg.Effective()
+	if !applyFastRules && !applyFileRules {
+		return CandidateSelectionPreview{
+			Results: append([]jackett.SearchResult(nil), results...),
+		}, nil
+	}
 
 	candidates := make([]rankedCandidate, 0, len(results))
+	skipped := make([]rankedCandidate, 0, len(results))
 	for index, result := range results {
 		if preferredTorrentURL(result) == "" {
+			skipped = append(skipped, rankedCandidate{
+				index:  index,
+				result: result,
+				rank:   index,
+			})
 			continue
 		}
 		candidates = append(candidates, rankedCandidate{
 			index:  index,
 			result: result,
+			rank:   index,
 		})
 	}
 	if len(candidates) == 0 {
-		return jackett.SearchResult{}, errors.New("downloader: no downloadable torrent candidate found")
+		out := make([]jackett.SearchResult, 0, len(results))
+		for _, skippedCandidate := range skipped {
+			out = append(out, skippedCandidate.result)
+		}
+		return CandidateSelectionPreview{Results: out}, nil
 	}
 
 	compiled := compileSelectionRules(cfg.Rules)
 	fastRules, fileRules := splitCompiledRules(compiled)
-	sort.SliceStable(candidates, func(i, j int) bool {
-		return compareRankedCandidates(query, candidates[i], candidates[j], fastRules) < 0
-	})
+	if applyFastRules && len(fastRules) > 0 {
+		sort.SliceStable(candidates, func(i, j int) bool {
+			return compareRankedCandidates(query, candidates[i], candidates[j], fastRules) < 0
+		})
+	}
 	for i := range candidates {
 		candidates[i].rank = i
 	}
-	if len(fileRules) == 0 || s.inspectTorrent == nil {
-		return candidates[0].result, nil
-	}
 
-	inspectionLimit := config.NormalizeTorrentInspectionCandidateLimit(cfg.InspectionCandidateLimit)
-	inspections := inspectTopTorrentCandidates(ctx, candidates, s.inspectTorrent, inspectionLimit)
-	best := candidates[0]
-	for i := 1; i < minInt(len(candidates), inspectionLimit); i++ {
-		candidate := candidates[i]
-		if cmp := compareInspectedCandidates(candidate, best, fileRules, inspections); cmp < 0 {
-			best = candidate
+	preview := CandidateSelectionPreview{
+		Meta: CandidateSelectionPreviewMeta{
+			AppliedFastRules: applyFastRules && len(fastRules) > 0,
+			AppliedFileRules: applyFileRules && len(fileRules) > 0 && s.inspectTorrent != nil,
+		},
+	}
+	if preview.Meta.AppliedFileRules {
+		inspectionLimit := config.NormalizeTorrentInspectionCandidateLimit(cfg.InspectionCandidateLimit)
+		inspections, inspectableCount := inspectTopTorrentCandidates(ctx, candidates, s.inspectTorrent, inspectionLimit)
+		preview.Meta.InspectableCount = inspectableCount
+		preview.Meta.InspectedCount = len(inspections)
+		limit := minInt(len(candidates), inspectionLimit)
+		sort.SliceStable(candidates[:limit], func(i, j int) bool {
+			return compareInspectedCandidates(candidates[i], candidates[j], fileRules, inspections) < 0
+		})
+		for i := range candidates {
+			candidates[i].rank = i
 		}
 	}
-	return best.result, nil
+
+	out := make([]jackett.SearchResult, 0, len(results))
+	for _, candidate := range candidates {
+		out = append(out, candidate.result)
+	}
+	for _, skippedCandidate := range skipped {
+		out = append(out, skippedCandidate.result)
+	}
+	preview.Results = out
+	return preview, nil
 }
 
 type rankedCandidate struct {
@@ -88,11 +136,58 @@ type inspectedCandidate struct {
 }
 
 func (s *Service) inspectSearchResultTorrent(ctx context.Context, torrentURL string) (torrentInspection, error) {
+	if inspection, ok := s.cachedTorrentInspection(torrentURL); ok {
+		return inspection, nil
+	}
 	metadata, err := s.fetchTorrentMetadata(ctx, torrentURL)
 	if err != nil {
 		return torrentInspection{}, err
 	}
-	return inspectTorrentMetadata(metadata), nil
+	inspection := inspectTorrentMetadata(metadata)
+	s.storeCachedTorrentInspection(torrentURL, inspection)
+	return inspection, nil
+}
+
+func (s *Service) cachedTorrentInspection(torrentURL string) (torrentInspection, bool) {
+	key := normalizeTorrentInspectionCacheKey(torrentURL, "")
+	if key == "" {
+		return torrentInspection{}, false
+	}
+	now := s.now().UTC()
+	s.inspectionCacheMu.Lock()
+	defer s.inspectionCacheMu.Unlock()
+	entry, ok := s.inspectionCache[key]
+	if !ok {
+		return torrentInspection{}, false
+	}
+	if !entry.expiresAt.After(now) {
+		delete(s.inspectionCache, key)
+		return torrentInspection{}, false
+	}
+	return entry.inspection, true
+}
+
+func (s *Service) storeCachedTorrentInspection(torrentURL string, inspection torrentInspection) {
+	key := normalizeTorrentInspectionCacheKey(torrentURL, "")
+	if key == "" {
+		return
+	}
+	s.inspectionCacheMu.Lock()
+	defer s.inspectionCacheMu.Unlock()
+	s.inspectionCache[key] = cachedTorrentInspection{
+		inspection: inspection,
+		expiresAt:  s.now().UTC().Add(torrentInspectionCacheTTL),
+	}
+}
+
+func normalizeTorrentInspectionCacheKey(torrentURL string, infoHash string) string {
+	if trimmed := strings.TrimSpace(infoHash); trimmed != "" {
+		return "hash:" + strings.ToUpper(trimmed)
+	}
+	if trimmed := strings.TrimSpace(torrentURL); trimmed != "" {
+		return "url:" + trimmed
+	}
+	return ""
 }
 
 func inspectTorrentMetadata(metadata downloadedTorrentMetadata) torrentInspection {
@@ -242,25 +337,46 @@ func compareByInspectionRule(left inspectedCandidate, right inspectedCandidate, 
 	}
 }
 
-func inspectTopTorrentCandidates(ctx context.Context, candidates []rankedCandidate, inspector torrentInspector, limit int) map[int]inspectedCandidate {
+func inspectTopTorrentCandidates(ctx context.Context, candidates []rankedCandidate, inspector torrentInspector, limit int) (map[int]inspectedCandidate, int) {
 	out := make(map[int]inspectedCandidate, limit)
 	limit = minInt(len(candidates), limit)
+	inspectableCount := 0
+	var (
+		outMu sync.Mutex
+		wg    sync.WaitGroup
+		sem   = make(chan struct{}, 2)
+	)
 	for i := 0; i < limit; i++ {
-		torrentURL := inspectableTorrentURL(candidates[i].result)
+		candidate := candidates[i]
+		torrentURL := inspectableTorrentURL(candidate.result)
 		if torrentURL == "" {
 			continue
 		}
-		inspection, err := inspector(ctx, torrentURL)
-		if err != nil {
-			logging.Infof("downloader: inspect torrent candidate %q failed: %v", candidates[i].result.Title, err)
-			continue
-		}
-		out[candidates[i].index] = inspectedCandidate{
-			inspection: inspection,
-			ok:         true,
-		}
+		inspectableCount++
+		wg.Add(1)
+		go func(candidate rankedCandidate, torrentURL string) {
+			defer wg.Done()
+			select {
+			case sem <- struct{}{}:
+			case <-ctx.Done():
+				return
+			}
+			defer func() { <-sem }()
+			inspection, err := inspector(ctx, torrentURL)
+			if err != nil {
+				logging.Infof("downloader: inspect torrent candidate %q failed: %v", candidate.result.Title, err)
+				return
+			}
+			outMu.Lock()
+			out[candidate.index] = inspectedCandidate{
+				inspection: inspection,
+				ok:         true,
+			}
+			outMu.Unlock()
+		}(candidate, torrentURL)
 	}
-	return out
+	wg.Wait()
+	return out, inspectableCount
 }
 
 func inspectableTorrentURL(result jackett.SearchResult) string {

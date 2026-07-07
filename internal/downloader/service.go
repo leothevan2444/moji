@@ -161,6 +161,8 @@ type Service struct {
 	taskDeletePolicy   func() config.TaskDeletePolicy
 	now                func() time.Time
 	newID              func() string
+	inspectionCacheMu  sync.Mutex
+	inspectionCache    map[string]cachedTorrentInspection
 }
 
 type Option func(*Service)
@@ -171,7 +173,35 @@ type FileOperator interface {
 
 type CandidateSelector interface {
 	Select(ctx context.Context, query string, results []jackett.SearchResult, cfg config.CandidateSelectionConfig) (jackett.SearchResult, error)
+	Preview(ctx context.Context, query string, results []jackett.SearchResult, cfg config.CandidateSelectionConfig, applyFastRules bool, applyFileRules bool) (CandidateSelectionPreview, error)
 }
+
+type CandidateSelectionPreview struct {
+	Results []jackett.SearchResult
+	Meta    CandidateSelectionPreviewMeta
+}
+
+type CandidateSelectionPreviewMeta struct {
+	AppliedFastRules bool
+	AppliedFileRules bool
+	InspectedCount   int
+	InspectableCount int
+}
+
+type PreviewJackettSelectionRequest struct {
+	Query                    string
+	Results                  []jackett.SearchResult
+	ApplyFastRules           bool
+	ApplyFileRules           bool
+	InspectionCandidateLimit int
+}
+
+type cachedTorrentInspection struct {
+	inspection torrentInspection
+	expiresAt  time.Time
+}
+
+const torrentInspectionCacheTTL = 20 * time.Minute
 
 func WithClock(now func() time.Time) Option {
 	return func(s *Service) {
@@ -216,8 +246,9 @@ func NewService(tr tracker.Tracker, qbt TorrentClient, store TaskStore, options 
 		taskDeletePolicy: func() config.TaskDeletePolicy {
 			return config.TaskDeletePolicyKeepOnly
 		},
-		now:   time.Now,
-		newID: newTaskID,
+		now:             time.Now,
+		newID:           newTaskID,
+		inspectionCache: make(map[string]cachedTorrentInspection),
 	}
 	for _, option := range options {
 		option(s)
@@ -267,6 +298,36 @@ func WithTaskDeletePolicyProvider(provider func() config.TaskDeletePolicy) Optio
 
 func (s *Service) DownloadMedia(query string) (*Task, error) {
 	return s.DownloadMediaContext(context.Background(), DownloadRequest{Query: query})
+}
+
+func (s *Service) PreviewJackettSelectionContext(ctx context.Context, req PreviewJackettSelectionRequest) (*CandidateSelectionPreview, error) {
+	query := strings.TrimSpace(req.Query)
+	if query == "" {
+		return nil, errors.New("downloader: query is required")
+	}
+	if !req.ApplyFastRules && !req.ApplyFileRules {
+		return &CandidateSelectionPreview{
+			Results: append([]jackett.SearchResult(nil), req.Results...),
+		}, nil
+	}
+
+	selectionConfig := config.DefaultCandidateSelectionConfig()
+	if s.candidateSelection != nil {
+		selectionConfig = s.candidateSelection().Effective()
+	}
+	if req.InspectionCandidateLimit > 0 {
+		selectionConfig.InspectionCandidateLimit = req.InspectionCandidateLimit
+	}
+
+	selector := s.selector
+	if selector == nil {
+		selector = defaultCandidateSelector{inspectTorrent: s.inspectSearchResultTorrent}
+	}
+	preview, err := selector.Preview(ctx, query, req.Results, selectionConfig, req.ApplyFastRules, req.ApplyFileRules)
+	if err != nil {
+		return nil, err
+	}
+	return &preview, nil
 }
 
 func (s *Service) FindTask(ctx context.Context, id string) (*Task, error) {

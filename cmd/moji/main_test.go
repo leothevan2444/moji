@@ -503,6 +503,10 @@ func (f *fakeProgressSyncService) DownloadMediaContext(context.Context, download
 	return nil, nil
 }
 
+func (f *fakeProgressSyncService) PreviewJackettSelectionContext(context.Context, downloader.PreviewJackettSelectionRequest) (*downloader.CandidateSelectionPreview, error) {
+	return nil, nil
+}
+
 func (f *fakeProgressSyncService) FindTask(context.Context, string) (*downloader.Task, error) {
 	return nil, nil
 }

@@ -33,10 +33,38 @@ query SearchDocument($input: JackettSearchInput!) {
     seeders
     peers
     tracker
+    trackerId
     categoryDesc
     publishDate
+    details
     link
     magnetUri
+    infoHash
+  }
+}
+
+query PreviewJackettSelectionDocument($input: PreviewJackettSelectionInput!) {
+  previewJackettSelection(input: $input) {
+    results {
+      title
+      size
+      seeders
+      peers
+      tracker
+      trackerId
+      categoryDesc
+      publishDate
+      details
+      link
+      magnetUri
+      infoHash
+    }
+    previewMeta {
+      appliedFastRules
+      appliedFileRules
+      inspectedCount
+      inspectableCount
+    }
   }
 }
 

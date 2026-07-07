@@ -147,6 +147,7 @@ type JackettSearchResult struct {
 	Details      string `json:"details"`
 	Link         string `json:"link"`
 	MagnetURI    string `json:"magnetUri"`
+	InfoHash     string `json:"infoHash"`
 }
 
 type JackettSettings struct {
@@ -201,6 +202,41 @@ type MatchedStashBox struct {
 }
 
 type Mutation struct {
+}
+
+type PreviewJackettSelectionCandidateInput struct {
+	Title        string `json:"title"`
+	Size         int64  `json:"size"`
+	Seeders      int    `json:"seeders"`
+	Peers        int    `json:"peers"`
+	Tracker      string `json:"tracker"`
+	TrackerID    string `json:"trackerId"`
+	CategoryDesc string `json:"categoryDesc"`
+	PublishDate  string `json:"publishDate"`
+	Details      string `json:"details"`
+	Link         string `json:"link"`
+	MagnetURI    string `json:"magnetUri"`
+	InfoHash     string `json:"infoHash"`
+}
+
+type PreviewJackettSelectionInput struct {
+	Query                    string                                   `json:"query"`
+	Results                  []*PreviewJackettSelectionCandidateInput `json:"results"`
+	ApplyFastRules           bool                                     `json:"applyFastRules"`
+	ApplyFileRules           bool                                     `json:"applyFileRules"`
+	InspectionCandidateLimit *int                                     `json:"inspectionCandidateLimit,omitempty"`
+}
+
+type PreviewJackettSelectionMeta struct {
+	AppliedFastRules bool `json:"appliedFastRules"`
+	AppliedFileRules bool `json:"appliedFileRules"`
+	InspectedCount   int  `json:"inspectedCount"`
+	InspectableCount int  `json:"inspectableCount"`
+}
+
+type PreviewJackettSelectionResult struct {
+	Results     []*JackettSearchResult       `json:"results"`
+	PreviewMeta *PreviewJackettSelectionMeta `json:"previewMeta"`
 }
 
 type QBTorrent struct {

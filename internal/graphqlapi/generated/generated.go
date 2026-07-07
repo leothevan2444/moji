@@ -137,6 +137,7 @@ type ComplexityRoot struct {
 	JackettSearchResult struct {
 		CategoryDesc func(childComplexity int) int
 		Details      func(childComplexity int) int
+		InfoHash     func(childComplexity int) int
 		Link         func(childComplexity int) int
 		MagnetURI    func(childComplexity int) int
 		Peers        func(childComplexity int) int
@@ -208,6 +209,18 @@ type ComplexityRoot struct {
 		UpdateSystemSettings          func(childComplexity int, input model.UpdateSystemSettingsInput) int
 	}
 
+	PreviewJackettSelectionMeta struct {
+		AppliedFastRules func(childComplexity int) int
+		AppliedFileRules func(childComplexity int) int
+		InspectableCount func(childComplexity int) int
+		InspectedCount   func(childComplexity int) int
+	}
+
+	PreviewJackettSelectionResult struct {
+		PreviewMeta func(childComplexity int) int
+		Results     func(childComplexity int) int
+	}
+
 	QBTorrent struct {
 		AddedOn  func(childComplexity int) int
 		Category func(childComplexity int) int
@@ -245,23 +258,24 @@ type ComplexityRoot struct {
 	}
 
 	Query struct {
-		DashboardStats       func(childComplexity int) int
-		DiscoverScenes       func(childComplexity int, input model.DiscoverScenesInput) int
-		Health               func(childComplexity int) int
-		JackettIndexers      func(childComplexity int) int
-		JackettSearch        func(childComplexity int, input model.JackettSearchInput) int
-		Logs                 func(childComplexity int, limit *int, minLevel *model.LogLevel) int
-		QbittorrentTorrents  func(childComplexity int, limit *int) int
-		Settings             func(childComplexity int) int
-		SettingsStatus       func(childComplexity int) int
-		StashJob             func(childComplexity int, id string) int
-		StashPerformerDetail func(childComplexity int, id string) int
-		StashPerformerScenes func(childComplexity int, id string, input model.StashPerformerScenesInput) int
-		StashPerformers      func(childComplexity int, search *string, page *int, pageSize *int) int
-		SubscribedPerformers func(childComplexity int) int
-		Task                 func(childComplexity int, id string) int
-		Tasks                func(childComplexity int) int
-		Version              func(childComplexity int) int
+		DashboardStats          func(childComplexity int) int
+		DiscoverScenes          func(childComplexity int, input model.DiscoverScenesInput) int
+		Health                  func(childComplexity int) int
+		JackettIndexers         func(childComplexity int) int
+		JackettSearch           func(childComplexity int, input model.JackettSearchInput) int
+		Logs                    func(childComplexity int, limit *int, minLevel *model.LogLevel) int
+		PreviewJackettSelection func(childComplexity int, input model.PreviewJackettSelectionInput) int
+		QbittorrentTorrents     func(childComplexity int, limit *int) int
+		Settings                func(childComplexity int) int
+		SettingsStatus          func(childComplexity int) int
+		StashJob                func(childComplexity int, id string) int
+		StashPerformerDetail    func(childComplexity int, id string) int
+		StashPerformerScenes    func(childComplexity int, id string, input model.StashPerformerScenesInput) int
+		StashPerformers         func(childComplexity int, search *string, page *int, pageSize *int) int
+		SubscribedPerformers    func(childComplexity int) int
+		Task                    func(childComplexity int, id string) int
+		Tasks                   func(childComplexity int) int
+		Version                 func(childComplexity int) int
 	}
 
 	ServiceStatus struct {
@@ -539,6 +553,7 @@ type QueryResolver interface {
 	Logs(ctx context.Context, limit *int, minLevel *model.LogLevel) ([]*model.LogEntry, error)
 	DiscoverScenes(ctx context.Context, input model.DiscoverScenesInput) (*model.DiscoverSceneConnection, error)
 	JackettSearch(ctx context.Context, input model.JackettSearchInput) ([]*model.JackettSearchResult, error)
+	PreviewJackettSelection(ctx context.Context, input model.PreviewJackettSelectionInput) (*model.PreviewJackettSelectionResult, error)
 	JackettIndexers(ctx context.Context) ([]*model.JackettIndexer, error)
 	Settings(ctx context.Context) (*model.Settings, error)
 	SettingsStatus(ctx context.Context) (*model.SettingsStatus, error)
@@ -949,6 +964,13 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.JackettSearchResult.Details(childComplexity), true
+
+	case "JackettSearchResult.infoHash":
+		if e.complexity.JackettSearchResult.InfoHash == nil {
+			break
+		}
+
+		return e.complexity.JackettSearchResult.InfoHash(childComplexity), true
 
 	case "JackettSearchResult.link":
 		if e.complexity.JackettSearchResult.Link == nil {
@@ -1387,6 +1409,48 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.Mutation.UpdateSystemSettings(childComplexity, args["input"].(model.UpdateSystemSettingsInput)), true
 
+	case "PreviewJackettSelectionMeta.appliedFastRules":
+		if e.complexity.PreviewJackettSelectionMeta.AppliedFastRules == nil {
+			break
+		}
+
+		return e.complexity.PreviewJackettSelectionMeta.AppliedFastRules(childComplexity), true
+
+	case "PreviewJackettSelectionMeta.appliedFileRules":
+		if e.complexity.PreviewJackettSelectionMeta.AppliedFileRules == nil {
+			break
+		}
+
+		return e.complexity.PreviewJackettSelectionMeta.AppliedFileRules(childComplexity), true
+
+	case "PreviewJackettSelectionMeta.inspectableCount":
+		if e.complexity.PreviewJackettSelectionMeta.InspectableCount == nil {
+			break
+		}
+
+		return e.complexity.PreviewJackettSelectionMeta.InspectableCount(childComplexity), true
+
+	case "PreviewJackettSelectionMeta.inspectedCount":
+		if e.complexity.PreviewJackettSelectionMeta.InspectedCount == nil {
+			break
+		}
+
+		return e.complexity.PreviewJackettSelectionMeta.InspectedCount(childComplexity), true
+
+	case "PreviewJackettSelectionResult.previewMeta":
+		if e.complexity.PreviewJackettSelectionResult.PreviewMeta == nil {
+			break
+		}
+
+		return e.complexity.PreviewJackettSelectionResult.PreviewMeta(childComplexity), true
+
+	case "PreviewJackettSelectionResult.results":
+		if e.complexity.PreviewJackettSelectionResult.Results == nil {
+			break
+		}
+
+		return e.complexity.PreviewJackettSelectionResult.Results(childComplexity), true
+
 	case "QBTorrent.addedOn":
 		if e.complexity.QBTorrent.AddedOn == nil {
 			break
@@ -1632,6 +1696,18 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.Query.Logs(childComplexity, args["limit"].(*int), args["minLevel"].(*model.LogLevel)), true
+
+	case "Query.previewJackettSelection":
+		if e.complexity.Query.PreviewJackettSelection == nil {
+			break
+		}
+
+		args, err := ec.field_Query_previewJackettSelection_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Query.PreviewJackettSelection(childComplexity, args["input"].(model.PreviewJackettSelectionInput)), true
 
 	case "Query.qbittorrentTorrents":
 		if e.complexity.Query.QbittorrentTorrents == nil {
@@ -2930,6 +3006,8 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 		ec.unmarshalInputIndexerPreferenceRuleInput,
 		ec.unmarshalInputJackettSearchInput,
 		ec.unmarshalInputLibraryIngestSettingsInput,
+		ec.unmarshalInputPreviewJackettSelectionCandidateInput,
+		ec.unmarshalInputPreviewJackettSelectionInput,
 		ec.unmarshalInputQBittorrentAddInput,
 		ec.unmarshalInputQueueDiscoveredSceneInput,
 		ec.unmarshalInputStashMetadataScanInput,
@@ -3087,6 +3165,9 @@ type LogEntry {
   "Search torrents via Jackett as a fallback-only power-user tool"
   jackettSearch(input: JackettSearchInput!): [JackettSearchResult!]!
 
+  "Preview automatic torrent-selection ordering on an existing Jackett result set"
+  previewJackettSelection(input: PreviewJackettSelectionInput!): PreviewJackettSelectionResult!
+
   "List the indexers Jackett currently exposes. Returns [] when Jackett is not configured."
   jackettIndexers: [JackettIndexer!]!
 }
@@ -3172,6 +3253,42 @@ type JackettSearchResult {
   details: String!
   link: String!
   magnetUri: String!
+  infoHash: String!
+}
+
+input PreviewJackettSelectionInput {
+  query: String!
+  results: [PreviewJackettSelectionCandidateInput!]!
+  applyFastRules: Boolean!
+  applyFileRules: Boolean!
+  inspectionCandidateLimit: Int
+}
+
+input PreviewJackettSelectionCandidateInput {
+  title: String!
+  size: Long!
+  seeders: Int!
+  peers: Int!
+  tracker: String!
+  trackerId: String!
+  categoryDesc: String!
+  publishDate: String!
+  details: String!
+  link: String!
+  magnetUri: String!
+  infoHash: String!
+}
+
+type PreviewJackettSelectionResult {
+  results: [JackettSearchResult!]!
+  previewMeta: PreviewJackettSelectionMeta!
+}
+
+type PreviewJackettSelectionMeta {
+  appliedFastRules: Boolean!
+  appliedFileRules: Boolean!
+  inspectedCount: Int!
+  inspectableCount: Int!
 }
 `, BuiltIn: false},
 	{Name: "../../../graphql/moji/types/settings.graphql", Input: `extend type Query {
@@ -4484,6 +4601,34 @@ func (ec *executionContext) field_Query_logs_argsMinLevel(
 	}
 
 	var zeroVal *model.LogLevel
+	return zeroVal, nil
+}
+
+func (ec *executionContext) field_Query_previewJackettSelection_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := ec.field_Query_previewJackettSelection_argsInput(ctx, rawArgs)
+	if err != nil {
+		return nil, err
+	}
+	args["input"] = arg0
+	return args, nil
+}
+func (ec *executionContext) field_Query_previewJackettSelection_argsInput(
+	ctx context.Context,
+	rawArgs map[string]any,
+) (model.PreviewJackettSelectionInput, error) {
+	if _, ok := rawArgs["input"]; !ok {
+		var zeroVal model.PreviewJackettSelectionInput
+		return zeroVal, nil
+	}
+
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
+	if tmp, ok := rawArgs["input"]; ok {
+		return ec.unmarshalNPreviewJackettSelectionInput2githubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐPreviewJackettSelectionInput(ctx, tmp)
+	}
+
+	var zeroVal model.PreviewJackettSelectionInput
 	return zeroVal, nil
 }
 
@@ -7657,6 +7802,50 @@ func (ec *executionContext) fieldContext_JackettSearchResult_magnetUri(_ context
 	return fc, nil
 }
 
+func (ec *executionContext) _JackettSearchResult_infoHash(ctx context.Context, field graphql.CollectedField, obj *model.JackettSearchResult) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_JackettSearchResult_infoHash(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.InfoHash, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_JackettSearchResult_infoHash(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "JackettSearchResult",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _JackettSettings_configured(ctx context.Context, field graphql.CollectedField, obj *model.JackettSettings) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_JackettSettings_configured(ctx, field)
 	if err != nil {
@@ -10257,6 +10446,306 @@ func (ec *executionContext) fieldContext_Mutation_refreshSubscriptionsNow(_ cont
 	return fc, nil
 }
 
+func (ec *executionContext) _PreviewJackettSelectionMeta_appliedFastRules(ctx context.Context, field graphql.CollectedField, obj *model.PreviewJackettSelectionMeta) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_PreviewJackettSelectionMeta_appliedFastRules(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.AppliedFastRules, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(bool)
+	fc.Result = res
+	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_PreviewJackettSelectionMeta_appliedFastRules(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "PreviewJackettSelectionMeta",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _PreviewJackettSelectionMeta_appliedFileRules(ctx context.Context, field graphql.CollectedField, obj *model.PreviewJackettSelectionMeta) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_PreviewJackettSelectionMeta_appliedFileRules(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.AppliedFileRules, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(bool)
+	fc.Result = res
+	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_PreviewJackettSelectionMeta_appliedFileRules(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "PreviewJackettSelectionMeta",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _PreviewJackettSelectionMeta_inspectedCount(ctx context.Context, field graphql.CollectedField, obj *model.PreviewJackettSelectionMeta) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_PreviewJackettSelectionMeta_inspectedCount(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.InspectedCount, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int)
+	fc.Result = res
+	return ec.marshalNInt2int(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_PreviewJackettSelectionMeta_inspectedCount(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "PreviewJackettSelectionMeta",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _PreviewJackettSelectionMeta_inspectableCount(ctx context.Context, field graphql.CollectedField, obj *model.PreviewJackettSelectionMeta) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_PreviewJackettSelectionMeta_inspectableCount(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.InspectableCount, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int)
+	fc.Result = res
+	return ec.marshalNInt2int(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_PreviewJackettSelectionMeta_inspectableCount(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "PreviewJackettSelectionMeta",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _PreviewJackettSelectionResult_results(ctx context.Context, field graphql.CollectedField, obj *model.PreviewJackettSelectionResult) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_PreviewJackettSelectionResult_results(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Results, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]*model.JackettSearchResult)
+	fc.Result = res
+	return ec.marshalNJackettSearchResult2ᚕᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐJackettSearchResultᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_PreviewJackettSelectionResult_results(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "PreviewJackettSelectionResult",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "title":
+				return ec.fieldContext_JackettSearchResult_title(ctx, field)
+			case "size":
+				return ec.fieldContext_JackettSearchResult_size(ctx, field)
+			case "seeders":
+				return ec.fieldContext_JackettSearchResult_seeders(ctx, field)
+			case "peers":
+				return ec.fieldContext_JackettSearchResult_peers(ctx, field)
+			case "tracker":
+				return ec.fieldContext_JackettSearchResult_tracker(ctx, field)
+			case "trackerId":
+				return ec.fieldContext_JackettSearchResult_trackerId(ctx, field)
+			case "categoryDesc":
+				return ec.fieldContext_JackettSearchResult_categoryDesc(ctx, field)
+			case "publishDate":
+				return ec.fieldContext_JackettSearchResult_publishDate(ctx, field)
+			case "details":
+				return ec.fieldContext_JackettSearchResult_details(ctx, field)
+			case "link":
+				return ec.fieldContext_JackettSearchResult_link(ctx, field)
+			case "magnetUri":
+				return ec.fieldContext_JackettSearchResult_magnetUri(ctx, field)
+			case "infoHash":
+				return ec.fieldContext_JackettSearchResult_infoHash(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type JackettSearchResult", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _PreviewJackettSelectionResult_previewMeta(ctx context.Context, field graphql.CollectedField, obj *model.PreviewJackettSelectionResult) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_PreviewJackettSelectionResult_previewMeta(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.PreviewMeta, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*model.PreviewJackettSelectionMeta)
+	fc.Result = res
+	return ec.marshalNPreviewJackettSelectionMeta2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐPreviewJackettSelectionMeta(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_PreviewJackettSelectionResult_previewMeta(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "PreviewJackettSelectionResult",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "appliedFastRules":
+				return ec.fieldContext_PreviewJackettSelectionMeta_appliedFastRules(ctx, field)
+			case "appliedFileRules":
+				return ec.fieldContext_PreviewJackettSelectionMeta_appliedFileRules(ctx, field)
+			case "inspectedCount":
+				return ec.fieldContext_PreviewJackettSelectionMeta_inspectedCount(ctx, field)
+			case "inspectableCount":
+				return ec.fieldContext_PreviewJackettSelectionMeta_inspectableCount(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type PreviewJackettSelectionMeta", field.Name)
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _QBTorrent_hash(ctx context.Context, field graphql.CollectedField, obj *model.QBTorrent) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_QBTorrent_hash(ctx, field)
 	if err != nil {
@@ -11722,6 +12211,8 @@ func (ec *executionContext) fieldContext_Query_jackettSearch(ctx context.Context
 				return ec.fieldContext_JackettSearchResult_link(ctx, field)
 			case "magnetUri":
 				return ec.fieldContext_JackettSearchResult_magnetUri(ctx, field)
+			case "infoHash":
+				return ec.fieldContext_JackettSearchResult_infoHash(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type JackettSearchResult", field.Name)
 		},
@@ -11734,6 +12225,67 @@ func (ec *executionContext) fieldContext_Query_jackettSearch(ctx context.Context
 	}()
 	ctx = graphql.WithFieldContext(ctx, fc)
 	if fc.Args, err = ec.field_Query_jackettSearch_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Query_previewJackettSelection(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Query_previewJackettSelection(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Query().PreviewJackettSelection(rctx, fc.Args["input"].(model.PreviewJackettSelectionInput))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*model.PreviewJackettSelectionResult)
+	fc.Result = res
+	return ec.marshalNPreviewJackettSelectionResult2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐPreviewJackettSelectionResult(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Query_previewJackettSelection(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "results":
+				return ec.fieldContext_PreviewJackettSelectionResult_results(ctx, field)
+			case "previewMeta":
+				return ec.fieldContext_PreviewJackettSelectionResult_previewMeta(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type PreviewJackettSelectionResult", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Query_previewJackettSelection_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return fc, err
 	}
@@ -22631,6 +23183,165 @@ func (ec *executionContext) unmarshalInputLibraryIngestSettingsInput(ctx context
 	return it, nil
 }
 
+func (ec *executionContext) unmarshalInputPreviewJackettSelectionCandidateInput(ctx context.Context, obj any) (model.PreviewJackettSelectionCandidateInput, error) {
+	var it model.PreviewJackettSelectionCandidateInput
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"title", "size", "seeders", "peers", "tracker", "trackerId", "categoryDesc", "publishDate", "details", "link", "magnetUri", "infoHash"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "title":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("title"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Title = data
+		case "size":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("size"))
+			data, err := ec.unmarshalNLong2int64(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Size = data
+		case "seeders":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("seeders"))
+			data, err := ec.unmarshalNInt2int(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Seeders = data
+		case "peers":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("peers"))
+			data, err := ec.unmarshalNInt2int(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Peers = data
+		case "tracker":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("tracker"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Tracker = data
+		case "trackerId":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("trackerId"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.TrackerID = data
+		case "categoryDesc":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("categoryDesc"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.CategoryDesc = data
+		case "publishDate":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("publishDate"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.PublishDate = data
+		case "details":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("details"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Details = data
+		case "link":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("link"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Link = data
+		case "magnetUri":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("magnetUri"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.MagnetURI = data
+		case "infoHash":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("infoHash"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.InfoHash = data
+		}
+	}
+
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputPreviewJackettSelectionInput(ctx context.Context, obj any) (model.PreviewJackettSelectionInput, error) {
+	var it model.PreviewJackettSelectionInput
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"query", "results", "applyFastRules", "applyFileRules", "inspectionCandidateLimit"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "query":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("query"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Query = data
+		case "results":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("results"))
+			data, err := ec.unmarshalNPreviewJackettSelectionCandidateInput2ᚕᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐPreviewJackettSelectionCandidateInputᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Results = data
+		case "applyFastRules":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("applyFastRules"))
+			data, err := ec.unmarshalNBoolean2bool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ApplyFastRules = data
+		case "applyFileRules":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("applyFileRules"))
+			data, err := ec.unmarshalNBoolean2bool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ApplyFileRules = data
+		case "inspectionCandidateLimit":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("inspectionCandidateLimit"))
+			data, err := ec.unmarshalOInt2ᚖint(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.InspectionCandidateLimit = data
+		}
+	}
+
+	return it, nil
+}
+
 func (ec *executionContext) unmarshalInputQBittorrentAddInput(ctx context.Context, obj any) (model.QBittorrentAddInput, error) {
 	var it model.QBittorrentAddInput
 	asMap := map[string]any{}
@@ -24132,6 +24843,11 @@ func (ec *executionContext) _JackettSearchResult(ctx context.Context, sel ast.Se
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
+		case "infoHash":
+			out.Values[i] = ec._JackettSearchResult_infoHash(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -24605,6 +25321,104 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 	return out
 }
 
+var previewJackettSelectionMetaImplementors = []string{"PreviewJackettSelectionMeta"}
+
+func (ec *executionContext) _PreviewJackettSelectionMeta(ctx context.Context, sel ast.SelectionSet, obj *model.PreviewJackettSelectionMeta) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, previewJackettSelectionMetaImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("PreviewJackettSelectionMeta")
+		case "appliedFastRules":
+			out.Values[i] = ec._PreviewJackettSelectionMeta_appliedFastRules(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "appliedFileRules":
+			out.Values[i] = ec._PreviewJackettSelectionMeta_appliedFileRules(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "inspectedCount":
+			out.Values[i] = ec._PreviewJackettSelectionMeta_inspectedCount(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "inspectableCount":
+			out.Values[i] = ec._PreviewJackettSelectionMeta_inspectableCount(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var previewJackettSelectionResultImplementors = []string{"PreviewJackettSelectionResult"}
+
+func (ec *executionContext) _PreviewJackettSelectionResult(ctx context.Context, sel ast.SelectionSet, obj *model.PreviewJackettSelectionResult) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, previewJackettSelectionResultImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("PreviewJackettSelectionResult")
+		case "results":
+			out.Values[i] = ec._PreviewJackettSelectionResult_results(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "previewMeta":
+			out.Values[i] = ec._PreviewJackettSelectionResult_previewMeta(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
 var qBTorrentImplementors = []string{"QBTorrent"}
 
 func (ec *executionContext) _QBTorrent(ctx context.Context, sel ast.SelectionSet, obj *model.QBTorrent) graphql.Marshaler {
@@ -24953,6 +25767,28 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 					}
 				}()
 				res = ec._Query_jackettSearch(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			rrm := func(ctx context.Context) graphql.Marshaler {
+				return ec.OperationContext.RootResolverMiddleware(ctx,
+					func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
+		case "previewJackettSelection":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_previewJackettSelection(ctx, field)
 				if res == graphql.Null {
 					atomic.AddUint32(&fs.Invalids, 1)
 				}
@@ -27673,6 +28509,55 @@ func (ec *executionContext) marshalNLong2int64(ctx context.Context, sel ast.Sele
 		}
 	}
 	return res
+}
+
+func (ec *executionContext) unmarshalNPreviewJackettSelectionCandidateInput2ᚕᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐPreviewJackettSelectionCandidateInputᚄ(ctx context.Context, v any) ([]*model.PreviewJackettSelectionCandidateInput, error) {
+	var vSlice []any
+	vSlice = graphql.CoerceList(v)
+	var err error
+	res := make([]*model.PreviewJackettSelectionCandidateInput, len(vSlice))
+	for i := range vSlice {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithIndex(i))
+		res[i], err = ec.unmarshalNPreviewJackettSelectionCandidateInput2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐPreviewJackettSelectionCandidateInput(ctx, vSlice[i])
+		if err != nil {
+			return nil, err
+		}
+	}
+	return res, nil
+}
+
+func (ec *executionContext) unmarshalNPreviewJackettSelectionCandidateInput2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐPreviewJackettSelectionCandidateInput(ctx context.Context, v any) (*model.PreviewJackettSelectionCandidateInput, error) {
+	res, err := ec.unmarshalInputPreviewJackettSelectionCandidateInput(ctx, v)
+	return &res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) unmarshalNPreviewJackettSelectionInput2githubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐPreviewJackettSelectionInput(ctx context.Context, v any) (model.PreviewJackettSelectionInput, error) {
+	res, err := ec.unmarshalInputPreviewJackettSelectionInput(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNPreviewJackettSelectionMeta2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐPreviewJackettSelectionMeta(ctx context.Context, sel ast.SelectionSet, v *model.PreviewJackettSelectionMeta) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._PreviewJackettSelectionMeta(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNPreviewJackettSelectionResult2githubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐPreviewJackettSelectionResult(ctx context.Context, sel ast.SelectionSet, v model.PreviewJackettSelectionResult) graphql.Marshaler {
+	return ec._PreviewJackettSelectionResult(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNPreviewJackettSelectionResult2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐPreviewJackettSelectionResult(ctx context.Context, sel ast.SelectionSet, v *model.PreviewJackettSelectionResult) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._PreviewJackettSelectionResult(ctx, sel, v)
 }
 
 func (ec *executionContext) marshalNQBTorrent2ᚕᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐQBTorrentᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.QBTorrent) graphql.Marshaler {

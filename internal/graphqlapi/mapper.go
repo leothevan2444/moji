@@ -24,6 +24,57 @@ func jackettSearchResultToModel(result jackett.SearchResult) *model.JackettSearc
 		Details:      result.Details,
 		Link:         result.Link,
 		MagnetURI:    result.MagnetURI,
+		InfoHash:     result.InfoHash,
+	}
+}
+
+func jackettSearchResultsToModel(results []jackett.SearchResult) []*model.JackettSearchResult {
+	out := make([]*model.JackettSearchResult, 0, len(results))
+	for _, result := range results {
+		out = append(out, jackettSearchResultToModel(result))
+	}
+	return out
+}
+
+func previewJackettSelectionCandidatesFromModel(input []*model.PreviewJackettSelectionCandidateInput) []jackett.SearchResult {
+	out := make([]jackett.SearchResult, 0, len(input))
+	for _, item := range input {
+		if item == nil {
+			continue
+		}
+		out = append(out, jackett.SearchResult{
+			Title:        item.Title,
+			Size:         item.Size,
+			Seeders:      item.Seeders,
+			Peers:        item.Peers,
+			Tracker:      item.Tracker,
+			TrackerID:    item.TrackerID,
+			CategoryDesc: item.CategoryDesc,
+			PublishDate:  item.PublishDate,
+			Details:      item.Details,
+			Link:         item.Link,
+			MagnetURI:    item.MagnetURI,
+			InfoHash:     item.InfoHash,
+		})
+	}
+	return out
+}
+
+func candidateSelectionPreviewToModel(preview *downloader.CandidateSelectionPreview) *model.PreviewJackettSelectionResult {
+	if preview == nil {
+		return &model.PreviewJackettSelectionResult{
+			Results:     []*model.JackettSearchResult{},
+			PreviewMeta: &model.PreviewJackettSelectionMeta{},
+		}
+	}
+	return &model.PreviewJackettSelectionResult{
+		Results: jackettSearchResultsToModel(preview.Results),
+		PreviewMeta: &model.PreviewJackettSelectionMeta{
+			AppliedFastRules: preview.Meta.AppliedFastRules,
+			AppliedFileRules: preview.Meta.AppliedFileRules,
+			InspectedCount:   preview.Meta.InspectedCount,
+			InspectableCount: preview.Meta.InspectableCount,
+		},
 	}
 }
 

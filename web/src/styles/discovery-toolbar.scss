@@ -29,6 +29,27 @@
     }
   }
 
+  &__extra,
+  &__preview {
+    display: inline-flex;
+    align-items: center;
+    gap: $space-3;
+    flex-wrap: wrap;
+    min-width: 0;
+  }
+
+  &__preview {
+    .switch-row {
+      min-width: 0;
+    }
+  }
+
+  &__preview-note {
+    color: var(--muted);
+    font-size: 11.5px;
+    line-height: 1.5;
+  }
+
   &__page {
     &-btn {
       appearance: none;
@@ -72,7 +93,8 @@
     gap: $space-2;
 
     &__sort,
-    &__page {
+    &__page,
+    &__extra {
       width: 100%;
       justify-content: space-between;
     }
@@ -81,6 +103,13 @@
       select {
         flex: 1;
       }
+    }
+
+    &__preview {
+      width: 100%;
+      align-items: flex-start;
+      flex-direction: column;
+      gap: $space-2;
     }
   }
 }

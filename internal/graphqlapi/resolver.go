@@ -31,6 +31,7 @@ type StashService interface {
 type DownloaderService interface {
 	AddTorrentContext(ctx context.Context, req downloader.AddTorrentRequest) (*downloader.Task, error)
 	DownloadMediaContext(ctx context.Context, req downloader.DownloadRequest) (*downloader.Task, error)
+	PreviewJackettSelectionContext(ctx context.Context, req downloader.PreviewJackettSelectionRequest) (*downloader.CandidateSelectionPreview, error)
 	FindTask(ctx context.Context, id string) (*downloader.Task, error)
 	ListTasks(ctx context.Context) ([]*downloader.Task, error)
 	DeleteTask(ctx context.Context, id string) (*downloader.Task, error)

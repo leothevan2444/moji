@@ -15,6 +15,7 @@ import (
 	"github.com/leothevan2444/moji/internal/logging"
 	"github.com/leothevan2444/moji/internal/stashsync"
 	"github.com/leothevan2444/moji/internal/subscription"
+	"github.com/leothevan2444/moji/pkg/jackett"
 )
 
 func TestDownloadMediaCreatesTask(t *testing.T) {
@@ -100,6 +101,78 @@ func TestAddTorrentCreatesTask(t *testing.T) {
 	}
 	if string(downloader.addRequest.Source) != "MANUAL" {
 		t.Fatalf("expected manual task source, got %+v", downloader.addRequest)
+	}
+}
+
+func TestPreviewJackettSelectionReturnsPreviewedResults(t *testing.T) {
+	downloader := &fakeDownloader{
+		previewSelection: &downloader.CandidateSelectionPreview{
+			Results: []jackett.SearchResult{
+				{Title: "preferred", TrackerID: "alpha", Link: "https://example.test/a.torrent"},
+				{Title: "fallback", TrackerID: "beta", Link: "https://example.test/b.torrent"},
+			},
+			Meta: downloader.CandidateSelectionPreviewMeta{
+				AppliedFastRules: true,
+				AppliedFileRules: false,
+				InspectedCount:   0,
+				InspectableCount: 0,
+			},
+		},
+	}
+	resolver := NewResolver(nil, nil, downloader, nil, "test-version")
+
+	resp := executeGraphQL(t, resolver, `query {
+		previewJackettSelection(input: {
+			query: "ABCD-123"
+			applyFastRules: true
+			applyFileRules: false
+			results: [
+				{
+					title: "fallback"
+					size: 1
+					seeders: 1
+					peers: 1
+					tracker: "beta"
+					trackerId: "beta"
+					categoryDesc: ""
+					publishDate: ""
+					details: ""
+					link: "https://example.test/b.torrent"
+					magnetUri: ""
+					infoHash: ""
+				},
+				{
+					title: "preferred"
+					size: 1
+					seeders: 2
+					peers: 1
+					tracker: "alpha"
+					trackerId: "alpha"
+					categoryDesc: ""
+					publishDate: ""
+					details: ""
+					link: "https://example.test/a.torrent"
+					magnetUri: ""
+					infoHash: ""
+				}
+			]
+		}) {
+			results { title trackerId }
+			previewMeta { appliedFastRules appliedFileRules inspectedCount inspectableCount }
+		}
+	}`)
+
+	if len(resp.Errors) > 0 {
+		t.Fatalf("expected no errors, got %+v", resp.Errors)
+	}
+	if downloader.previewRequest.Query != "ABCD-123" || !downloader.previewRequest.ApplyFastRules || downloader.previewRequest.ApplyFileRules {
+		t.Fatalf("unexpected preview request: %+v", downloader.previewRequest)
+	}
+	if len(resp.Data.PreviewJackettSelection.Results) != 2 || resp.Data.PreviewJackettSelection.Results[0].Title != "preferred" {
+		t.Fatalf("unexpected preview response: %+v", resp.Data.PreviewJackettSelection)
+	}
+	if !resp.Data.PreviewJackettSelection.PreviewMeta.AppliedFastRules || resp.Data.PreviewJackettSelection.PreviewMeta.AppliedFileRules {
+		t.Fatalf("unexpected preview meta: %+v", resp.Data.PreviewJackettSelection.PreviewMeta)
 	}
 }
 
@@ -872,8 +945,10 @@ func TestUpdateQBittorrentSettingsRequiresEditor(t *testing.T) {
 type fakeDownloader struct {
 	addRequest          downloader.AddTorrentRequest
 	downloadRequest     downloader.DownloadRequest
+	previewRequest      downloader.PreviewJackettSelectionRequest
 	addTask             *downloader.Task
 	downloadTask        *downloader.Task
+	previewSelection    *downloader.CandidateSelectionPreview
 	findTask            *downloader.Task
 	listTasks           []*downloader.Task
 	deleteTaskID        string
@@ -892,6 +967,11 @@ func (f *fakeDownloader) AddTorrentContext(_ context.Context, req downloader.Add
 func (f *fakeDownloader) DownloadMediaContext(_ context.Context, req downloader.DownloadRequest) (*downloader.Task, error) {
 	f.downloadRequest = req
 	return f.downloadTask, nil
+}
+
+func (f *fakeDownloader) PreviewJackettSelectionContext(_ context.Context, req downloader.PreviewJackettSelectionRequest) (*downloader.CandidateSelectionPreview, error) {
+	f.previewRequest = req
+	return f.previewSelection, nil
 }
 
 func (f *fakeDownloader) FindTask(_ context.Context, _ string) (*downloader.Task, error) {
@@ -940,6 +1020,18 @@ type graphQLTaskResponse struct {
 				Seeders int    `json:"seeders"`
 			} `json:"candidate"`
 		} `json:"downloadMedia"`
+		PreviewJackettSelection struct {
+			Results []struct {
+				Title     string `json:"title"`
+				TrackerID string `json:"trackerId"`
+			} `json:"results"`
+			PreviewMeta struct {
+				AppliedFastRules bool `json:"appliedFastRules"`
+				AppliedFileRules bool `json:"appliedFileRules"`
+				InspectedCount   int  `json:"inspectedCount"`
+				InspectableCount int  `json:"inspectableCount"`
+			} `json:"previewMeta"`
+		} `json:"previewJackettSelection"`
 		Tasks []struct {
 			ID     string `json:"id"`
 			Query  string `json:"query"`

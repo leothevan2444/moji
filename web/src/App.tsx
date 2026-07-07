@@ -7,6 +7,7 @@ import {
   useDrawerTransition,
   useGlobalSlashShortcut,
   useJackettIndexers,
+  usePreviewJackettSelection,
   useJackettSearch,
   useSearchHistory,
   useSubscription,
@@ -42,6 +43,27 @@ import {
   TaskDeletePolicy
 } from "./graphql/generated/graphql";
 
+const PREVIEW_FAST_RULES_STORAGE_KEY = "moji.discovery.previewFastRules";
+const PREVIEW_FILE_RULES_STORAGE_KEY = "moji.discovery.previewFileRules";
+
+function readStoredBoolean(key: string): boolean {
+  if (typeof window === "undefined") return false;
+  try {
+    return window.localStorage.getItem(key) === "true";
+  } catch {
+    return false;
+  }
+}
+
+function writeStoredBoolean(key: string, value: boolean) {
+  if (typeof window === "undefined") return;
+  try {
+    window.localStorage.setItem(key, String(value));
+  } catch {
+    // ignore localStorage failures
+  }
+}
+
 function App() {
   // ── UI state ────────────────────────────────────────────────────────
   const [tab, setTab] = useState<TabKey>("主页");
@@ -76,6 +98,8 @@ function App() {
   const [discoveryJackettSort, setDiscoveryJackettSort] = useState<JackettSortBy>(JackettSortBy.Relevance);
   const [discoveryPage, setDiscoveryPage] = useState(1);
   const [selectedTrackerIDs, setSelectedTrackerIDs] = useState<string[]>([]);
+  const [previewFastRules, setPreviewFastRules] = useState<boolean>(() => readStoredBoolean(PREVIEW_FAST_RULES_STORAGE_KEY));
+  const [previewFileRules, setPreviewFileRules] = useState<boolean>(() => readStoredBoolean(PREVIEW_FILE_RULES_STORAGE_KEY));
   const [discoveryInputFocused, setDiscoveryInputFocused] = useState(false);
   const [historyVisible, setHistoryVisible] = useState(false);
   const [pendingAddId, setPendingAddId] = useState<string | null>(null);
@@ -139,6 +163,23 @@ function App() {
     sortBy: discoveryJackettSort
   });
 
+  const inspectionCandidateLimit = Number.parseInt(
+    String(data?.settings?.automation.torrentSelection.inspectionCandidateLimit ?? 5),
+    10
+  );
+
+  const {
+    results: previewSearchResults,
+    previewMeta,
+    fetching: previewingJackett,
+    error: previewSearchError
+  } = usePreviewJackettSelection(deferredDiscoveryQuery, searchResults, {
+    enabled: discoveryDrawerOpen && discoveryMode === "jackett",
+    applyFastRules: previewFastRules,
+    applyFileRules: previewFileRules,
+    inspectionCandidateLimit: Number.isNaN(inspectionCandidateLimit) ? 5 : inspectionCandidateLimit
+  });
+
   // Jackett 索引器列表：仅在 Jackett 模式下拉取，避免无谓请求。
   const { indexers: jackettIndexers, fetching: fetchingIndexers } = useJackettIndexers(
     discoveryDrawerOpen && discoveryMode === "jackett"
@@ -195,10 +236,23 @@ function App() {
     total: data?.dashboardStats.total ?? 0
   };
 
+  useEffect(() => {
+    writeStoredBoolean(PREVIEW_FAST_RULES_STORAGE_KEY, previewFastRules);
+  }, [previewFastRules]);
+
+  useEffect(() => {
+    writeStoredBoolean(PREVIEW_FILE_RULES_STORAGE_KEY, previewFileRules);
+  }, [previewFileRules]);
+
   // 当前模式下可见的总条数 + 当前页切片结果。前端按 pageSize 切片，单页请求固定返回 50 条。
+  const activeJackettResults = useMemo(() => {
+    if (!previewFastRules && !previewFileRules) return searchResults;
+    return previewSearchResults.length > 0 ? previewSearchResults : searchResults;
+  }, [previewFastRules, previewFileRules, previewSearchResults, searchResults]);
+
   const visibleResults = useMemo(() => {
-    return discoveryMode === "stashbox" ? discoveredScenes : searchResults;
-  }, [discoveryMode, discoveredScenes, searchResults]);
+    return discoveryMode === "stashbox" ? discoveredScenes : activeJackettResults;
+  }, [discoveryMode, discoveredScenes, activeJackettResults]);
 
   const totalPages = Math.max(1, Math.ceil(visibleResults.length / DISCOVERY_PAGE_SIZE));
 
@@ -212,8 +266,8 @@ function App() {
   const jackettPagedResults = useMemo(() => {
     if (discoveryMode !== "jackett") return [] as SearchDocumentQuery["jackettSearch"];
     const start = (discoveryPage - 1) * DISCOVERY_PAGE_SIZE;
-    return searchResults.slice(start, start + DISCOVERY_PAGE_SIZE);
-  }, [discoveryMode, searchResults, discoveryPage]);
+    return activeJackettResults.slice(start, start + DISCOVERY_PAGE_SIZE);
+  }, [discoveryMode, activeJackettResults, discoveryPage]);
 
   // ── Effects ─────────────────────────────────────────────────────────
   useEffect(() => {
@@ -235,7 +289,7 @@ function App() {
   // 切 mode / 切 sort / 切 tracker 时回到第 1 页，结果来自同一份缓存不需要重发请求。
   useEffect(() => {
     setDiscoveryPage(1);
-  }, [discoveryMode, discoveryStashboxSort, discoveryJackettSort, selectedTrackerIDs]);
+  }, [discoveryMode, discoveryStashboxSort, discoveryJackettSort, selectedTrackerIDs, previewFastRules, previewFileRules]);
 
   // ── Action handlers ─────────────────────────────────────────────────
   const openTaskDetail = (taskId: string) => {
@@ -745,13 +799,50 @@ function App() {
                   total={visibleResults.length}
                   onPrevPage={handlePrevPage}
                   onNextPage={handleNextPage}
+                  extraContent={discoveryMode === "jackett" ? (
+                    <div className="discovery-toolbar__preview">
+                      <label className="switch-row">
+                        <span className="switch-row__label">快速规则预览</span>
+                        <span className="switch" role="switch" aria-checked={previewFastRules}>
+                          <input
+                            type="checkbox"
+                            checked={previewFastRules}
+                            onChange={(event) => setPreviewFastRules(event.target.checked)}
+                          />
+                          <span className="switch__track" aria-hidden="true" />
+                          <span className="switch__thumb" aria-hidden="true" />
+                        </span>
+                      </label>
+                      <label className="switch-row">
+                        <span className="switch-row__label">文件结构规则预览</span>
+                        <span className="switch" role="switch" aria-checked={previewFileRules}>
+                          <input
+                            type="checkbox"
+                            checked={previewFileRules}
+                            onChange={(event) => setPreviewFileRules(event.target.checked)}
+                          />
+                          <span className="switch__track" aria-hidden="true" />
+                          <span className="switch__thumb" aria-hidden="true" />
+                        </span>
+                      </label>
+                      {previewFileRules ? (
+                        <span className="discovery-toolbar__preview-note">
+                          {previewingJackett
+                            ? "正在检查文件结构..."
+                            : `已检查 ${previewMeta?.inspectedCount ?? 0} / ${previewMeta?.inspectableCount ?? 0} 条可检查候选`}
+                        </span>
+                      ) : (
+                        <span className="discovery-toolbar__preview-note">仅影响结果展示。</span>
+                      )}
+                    </div>
+                  ) : null}
                 />
 
                 <DiscoveryDrawer
                   mode={discoveryMode}
                   query={deferredDiscoveryQuery}
-                  searching={discoveryMode === "stashbox" ? searchingDiscoverScenes : searchingJackett}
-                  error={(discoveryMode === "stashbox" ? discoverScenesError : searchError) ?? null}
+                  searching={discoveryMode === "stashbox" ? searchingDiscoverScenes : (searchingJackett || previewingJackett)}
+                  error={(discoveryMode === "stashbox" ? discoverScenesError : (previewSearchError ?? searchError)) ?? null}
                   pendingAddId={pendingAddId}
                   discoverResult={discoverResult}
                   discoverItems={stashboxPagedResults}

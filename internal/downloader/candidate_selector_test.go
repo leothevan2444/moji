@@ -2,8 +2,12 @@ package downloader
 
 import (
 	"context"
+	"io"
+	"net/http"
 	"strings"
+	"sync"
 	"testing"
+	"time"
 
 	"github.com/leothevan2444/moji/internal/config"
 	"github.com/leothevan2444/moji/pkg/jackett"
@@ -199,9 +203,12 @@ func TestDefaultCandidateSelectorUsesTorrentFileNameLock(t *testing.T) {
 
 func TestDefaultCandidateSelectorOnlyInspectsTopFiveTorrentCandidates(t *testing.T) {
 	inspected := make([]string, 0)
+	var inspectedMu sync.Mutex
 	selector := defaultCandidateSelector{
 		inspectTorrent: func(_ context.Context, torrentURL string) (torrentInspection, error) {
+			inspectedMu.Lock()
 			inspected = append(inspected, torrentURL)
+			inspectedMu.Unlock()
 			return torrentInspection{Paths: []string{"ABCD-123.mp4"}}, nil
 		},
 	}
@@ -264,6 +271,115 @@ func TestDefaultCandidateSelectorUsesConfiguredInspectionCandidateLimit(t *testi
 	}
 	if len(inspected) != 6 {
 		t.Fatalf("expected 6 inspected candidates, got %d", len(inspected))
+	}
+}
+
+func TestDefaultCandidateSelectorPreviewUsesFastRulesOnly(t *testing.T) {
+	selector := defaultCandidateSelector{}
+	preview, err := selector.Preview(context.Background(), "ABCD-123", []jackett.SearchResult{
+		{Title: "beta", MagnetURI: "magnet:?xt=urn:btih:beta", TrackerID: "beta", Seeders: 100},
+		{Title: "alpha", MagnetURI: "magnet:?xt=urn:btih:alpha", TrackerID: "alpha", Seeders: 1},
+	}, config.CandidateSelectionConfig{
+		Enabled: true,
+		Rules: []config.CandidateSelectionRule{
+			{
+				ID:        "pref",
+				Type:      config.CandidateSelectionRuleTypeIndexerPreference,
+				Enabled:   true,
+				Direction: config.CandidateSelectionDirectionAsc,
+				IndexerPreference: config.IndexerPreferenceRuleConfig{
+					TrackerIDs: []string{"alpha", "beta"},
+				},
+			},
+		},
+	}, true, false)
+	if err != nil {
+		t.Fatalf("Preview failed: %v", err)
+	}
+	if len(preview.Results) != 2 || preview.Results[0].TrackerID != "alpha" {
+		t.Fatalf("unexpected preview order: %+v", preview.Results)
+	}
+	if !preview.Meta.AppliedFastRules || preview.Meta.AppliedFileRules {
+		t.Fatalf("unexpected preview meta: %+v", preview.Meta)
+	}
+}
+
+func TestDefaultCandidateSelectorPreviewUsesInputOrderForFileRules(t *testing.T) {
+	selector := defaultCandidateSelector{
+		inspectTorrent: func(_ context.Context, torrentURL string) (torrentInspection, error) {
+			if strings.Contains(torrentURL, "second") {
+				return torrentInspection{Paths: []string{"movie.mp4"}, VideoPaths: []string{"movie.mp4"}, SingleVideo: true}, nil
+			}
+			return torrentInspection{Paths: []string{"disc/movie.mp4", "sample.txt"}}, nil
+		},
+	}
+	preview, err := selector.Preview(context.Background(), "ABCD-123", []jackett.SearchResult{
+		{Title: "first", Link: "https://example.test/first.torrent", Seeders: 100},
+		{Title: "second", Link: "https://example.test/second.torrent", Seeders: 1},
+	}, config.CandidateSelectionConfig{
+		Enabled: true,
+		Rules: []config.CandidateSelectionRule{
+			{ID: "single-video", Type: config.CandidateSelectionRuleTypeTorrentSingleVideo, Enabled: true, Direction: config.CandidateSelectionDirectionDesc},
+		},
+	}, false, true)
+	if err != nil {
+		t.Fatalf("Preview failed: %v", err)
+	}
+	if preview.Results[0].Title != "second" {
+		t.Fatalf("expected file-rule preview to reorder by input-order baseline, got %+v", preview.Results)
+	}
+	if preview.Meta.InspectableCount != 2 || preview.Meta.InspectedCount != 2 {
+		t.Fatalf("unexpected inspection meta: %+v", preview.Meta)
+	}
+}
+
+func TestPreviewJackettSelectionContextCachesTorrentInspection(t *testing.T) {
+	qbt := &fakeTorrentAdder{}
+	requests := 0
+	service, err := NewService(
+		fakeTracker{},
+		qbt,
+		NewMemoryTaskStore(),
+		WithHTTPClient(&http.Client{
+			Transport: roundTripFunc(func(req *http.Request) (*http.Response, error) {
+				requests++
+				body := io.NopCloser(strings.NewReader(testTorrentFile("ABCD-123", []string{"ABCD-123.mp4"})))
+				return &http.Response{
+					StatusCode: http.StatusOK,
+					Body:       body,
+					Header:     make(http.Header),
+				}, nil
+			}),
+			Timeout: 2 * time.Second,
+		}),
+		WithCandidateSelectionProvider(func() config.CandidateSelectionConfig {
+			return config.CandidateSelectionConfig{
+				Enabled: true,
+				Rules: []config.CandidateSelectionRule{
+					{ID: "single-video", Type: config.CandidateSelectionRuleTypeTorrentSingleVideo, Enabled: true, Direction: config.CandidateSelectionDirectionDesc},
+				},
+			}
+		}),
+	)
+	if err != nil {
+		t.Fatalf("NewService failed: %v", err)
+	}
+
+	req := PreviewJackettSelectionRequest{
+		Query:          "ABCD-123",
+		ApplyFileRules: true,
+		Results: []jackett.SearchResult{
+			{Title: "cached", Link: "https://example.test/cached.torrent"},
+		},
+	}
+	if _, err := service.PreviewJackettSelectionContext(context.Background(), req); err != nil {
+		t.Fatalf("first preview failed: %v", err)
+	}
+	if _, err := service.PreviewJackettSelectionContext(context.Background(), req); err != nil {
+		t.Fatalf("second preview failed: %v", err)
+	}
+	if requests != 1 {
+		t.Fatalf("expected cached inspection to avoid duplicate HTTP fetches, got %d requests", requests)
 	}
 }
 
