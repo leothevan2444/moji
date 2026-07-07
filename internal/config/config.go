@@ -84,9 +84,11 @@ type TorrentSelectionRule struct {
 	Name                 string                         `yaml:"name"`
 	Type                 TorrentSelectionRuleType       `yaml:"type"`
 	Enabled              bool                           `yaml:"enabled"`
-	Direction            TorrentSelectionDirection      `yaml:"direction"`
 	IndexerPreference    IndexerPreferenceRuleConfig    `yaml:"indexer_preference"`
 	TitleMatch           TitleMatchRuleConfig           `yaml:"title_match"`
+	PublishDate          PublishDateRuleConfig          `yaml:"publish_date"`
+	Seeders              SeedersRuleConfig              `yaml:"seeders"`
+	Size                 SizeRuleConfig                 `yaml:"size"`
 	TorrentFileNameMatch TorrentFileNameMatchRuleConfig `yaml:"torrent_file_name_match"`
 }
 
@@ -101,6 +103,18 @@ type IndexerPreferenceRuleConfig struct {
 
 type TitleMatchRuleConfig struct {
 	Clauses []TitleMatchClause `yaml:"clauses"`
+}
+
+type PublishDateRuleConfig struct {
+	Direction TorrentSelectionDirection `yaml:"direction"`
+}
+
+type SeedersRuleConfig struct {
+	Direction TorrentSelectionDirection `yaml:"direction"`
+}
+
+type SizeRuleConfig struct {
+	Direction TorrentSelectionDirection `yaml:"direction"`
 }
 
 type TitleMatchClause struct {
@@ -228,14 +242,18 @@ func DefaultTorrentSelectionConfig() TorrentSelectionConfig {
 				Name:      "Seeders",
 				Type:      TorrentSelectionRuleTypeSeeders,
 				Enabled:   true,
-				Direction: TorrentSelectionDirectionDesc,
+				Seeders: SeedersRuleConfig{
+					Direction: TorrentSelectionDirectionDesc,
+				},
 			},
 			{
 				ID:        "default-size",
 				Name:      "Size",
 				Type:      TorrentSelectionRuleTypeSize,
 				Enabled:   true,
-				Direction: TorrentSelectionDirectionDesc,
+				Size: SizeRuleConfig{
+					Direction: TorrentSelectionDirectionDesc,
+				},
 			},
 		},
 	}
@@ -370,8 +388,19 @@ func (r TorrentSelectionRule) normalized(index int) TorrentSelectionRule {
 	if r.Name == "" {
 		r.Name = DefaultTorrentSelectionRuleName(r.Type, index)
 	}
-	r.Direction = NormalizeTorrentSelectionDirection(r.Direction)
 	r.IndexerPreference.TrackerIDs = cleanStrings(r.IndexerPreference.TrackerIDs)
+	r.PublishDate.Direction = NormalizeTorrentSelectionDirection(r.PublishDate.Direction)
+	if r.PublishDate.Direction == "" {
+		r.PublishDate.Direction = TorrentSelectionDirectionDesc
+	}
+	r.Seeders.Direction = NormalizeTorrentSelectionDirection(r.Seeders.Direction)
+	if r.Seeders.Direction == "" {
+		r.Seeders.Direction = TorrentSelectionDirectionDesc
+	}
+	r.Size.Direction = NormalizeTorrentSelectionDirection(r.Size.Direction)
+	if r.Size.Direction == "" {
+		r.Size.Direction = TorrentSelectionDirectionDesc
+	}
 
 	if r.Type == TorrentSelectionRuleTypeTitleMatch {
 		clauses := make([]TitleMatchClause, 0, len(r.TitleMatch.Clauses))

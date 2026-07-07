@@ -105,9 +105,17 @@ func torrentSelectionConfigRules(rules []graphqlapi.TorrentSelectionRuleSnapshot
 			Name:      strings.TrimSpace(rule.Name),
 			Type:      config.TorrentSelectionRuleType(strings.TrimSpace(rule.Type)),
 			Enabled:   rule.Enabled,
-			Direction: config.TorrentSelectionDirection(strings.TrimSpace(rule.Direction)),
 			IndexerPreference: config.IndexerPreferenceRuleConfig{
 				TrackerIDs: append([]string(nil), rule.IndexerPreference.TrackerIDs...),
+			},
+			PublishDate: config.PublishDateRuleConfig{
+				Direction: config.TorrentSelectionDirection(strings.TrimSpace(rule.PublishDate.Direction)),
+			},
+			Seeders: config.SeedersRuleConfig{
+				Direction: config.TorrentSelectionDirection(strings.TrimSpace(rule.Seeders.Direction)),
+			},
+			Size: config.SizeRuleConfig{
+				Direction: config.TorrentSelectionDirection(strings.TrimSpace(rule.Size.Direction)),
 			},
 		}
 		if len(rule.TitleMatch.Clauses) > 0 {

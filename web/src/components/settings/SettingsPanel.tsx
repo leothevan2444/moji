@@ -118,15 +118,34 @@ function isTorrentInspectionRuleType(type: TorrentSelectionRuleType): boolean {
   return type === TorrentSelectionRuleType.TorrentSingleVideo || type === TorrentSelectionRuleType.TorrentFileNameMatch;
 }
 
+function usesRuleDirection(type: TorrentSelectionRuleType): boolean {
+  return type === TorrentSelectionRuleType.PublishDate || type === TorrentSelectionRuleType.Seeders || type === TorrentSelectionRuleType.Size;
+}
+
+function getRuleDirection(rule: Pick<TorrentSelectionRuleDraft, "type" | "publishDate" | "seeders" | "size">): TorrentSelectionDirection {
+  switch (rule.type) {
+    case TorrentSelectionRuleType.PublishDate:
+      return rule.publishDate.direction;
+    case TorrentSelectionRuleType.Seeders:
+      return rule.seeders.direction;
+    case TorrentSelectionRuleType.Size:
+      return rule.size.direction;
+    default:
+      return TorrentSelectionDirection.Desc;
+  }
+}
+
 function makeTorrentSelectionRule(type: TorrentSelectionRuleType) {
   return {
     id: makeRuleId(type.toLowerCase()),
     name: TORRENT_SELECTION_RULE_LABELS[type],
     type,
     enabled: true,
-    direction: TorrentSelectionDirection.Desc,
     indexerPreference: { trackerIds: [] as string[] },
     titleMatch: { clauses: [] as Array<{ pattern: string; patternMode: TitleMatchPatternMode; effect: TitleMatchEffect }> },
+    publishDate: { direction: TorrentSelectionDirection.Desc },
+    seeders: { direction: TorrentSelectionDirection.Desc },
+    size: { direction: TorrentSelectionDirection.Desc },
     torrentFileNameMatch: { clauses: [] as Array<{ pattern: string; patternMode: TitleMatchPatternMode; effect: TorrentFileMatchEffect }> }
   };
 }
@@ -156,8 +175,10 @@ function buildAutomationSettingsPayload(form: AutomationFormShape) {
         name: rule.name.trim(),
         type: rule.type,
         enabled: rule.enabled,
-        direction: rule.direction,
         indexerPreference: { trackerIds: rule.indexerPreference.trackerIds },
+        publishDate: { direction: rule.publishDate.direction },
+        seeders: { direction: rule.seeders.direction },
+        size: { direction: rule.size.direction },
         titleMatch: {
           clauses: rule.titleMatch.clauses.map((clause: TorrentSelectionRuleDraft["titleMatch"]["clauses"][number]) => ({
             pattern: clause.pattern,
@@ -181,30 +202,41 @@ function buildAutomationSettingsPayload(form: AutomationFormShape) {
  * 单条规则的只读摘要：按 type 反映关键配置，紧凑展示给列表页。
  */
 function buildRuleSummary(rule: TorrentSelectionRuleDraft): string {
-  const dirLabel = rule.direction === TorrentSelectionDirection.Asc ? "ASC" : "DESC";
   if (rule.type === TorrentSelectionRuleType.IndexerPreference) {
     const order = rule.indexerPreference.trackerIds.map((id) => id.trim()).filter(Boolean);
     return order.length === 0
-      ? `${dirLabel} · 未配置索引器`
-      : `${dirLabel} · ${order.join(" > ")}`;
+      ? "未配置索引器"
+      : order.join(" > ");
   }
   if (rule.type === TorrentSelectionRuleType.TitleMatch) {
     const count = rule.titleMatch.clauses.length;
     return count === 0
-      ? `${dirLabel} · 未配置标题规则`
-      : `${dirLabel} · ${count} 条标题匹配规则`;
+      ? "未配置标题规则"
+      : `${count} 条标题匹配规则`;
+  }
+  if (rule.type === TorrentSelectionRuleType.PublishDate) {
+    return rule.publishDate.direction === TorrentSelectionDirection.Asc ? "按发布时间从旧到新" : "按发布时间从新到旧";
+  }
+  if (rule.type === TorrentSelectionRuleType.TitleSimilarity) {
+    return "按标题相似度优先";
+  }
+  if (rule.type === TorrentSelectionRuleType.Seeders) {
+    return rule.seeders.direction === TorrentSelectionDirection.Asc ? "按 Seeders 从少到多" : "按 Seeders 从多到少";
+  }
+  if (rule.type === TorrentSelectionRuleType.Size) {
+    return rule.size.direction === TorrentSelectionDirection.Asc ? "按 Size 从小到大" : "按 Size 从大到小";
   }
   if (rule.type === TorrentSelectionRuleType.TorrentSingleVideo) {
-    return `${dirLabel} · 命中单视频结构时优先`;
+    return "命中单视频结构时优先";
   }
   if (rule.type === TorrentSelectionRuleType.TorrentFileNameMatch) {
     const count = rule.torrentFileNameMatch.clauses.length;
     const hasLock = rule.torrentFileNameMatch.clauses.some((clause) => clause.effect === TorrentFileMatchEffect.Lock);
     return count === 0
-      ? `${dirLabel} · 未配置文件名规则`
-      : `${dirLabel} · ${count} 条文件名规则${hasLock ? " · 含 LOCK" : ""}`;
+      ? "未配置文件名规则"
+      : `${count} 条文件名规则${hasLock ? " · 含 LOCK" : ""}`;
   }
-  return dirLabel;
+  return "";
 }
 
 function displayRuleName(rule: Pick<TorrentSelectionRuleDraft, "name" | "type">): string {
@@ -230,6 +262,9 @@ function cloneTorrentSelectionRule(rule: TorrentSelectionRuleDraft): TorrentSele
     ...rule,
     indexerPreference: { trackerIds: [...rule.indexerPreference.trackerIds] },
     titleMatch: { clauses: rule.titleMatch.clauses.map((clause) => ({ ...clause })) },
+    publishDate: { direction: rule.publishDate.direction },
+    seeders: { direction: rule.seeders.direction },
+    size: { direction: rule.size.direction },
     torrentFileNameMatch: { clauses: rule.torrentFileNameMatch.clauses.map((clause) => ({ ...clause })) }
   };
 }
@@ -263,6 +298,9 @@ function withTypeReset(draft: TorrentSelectionRuleDraft, nextType: TorrentSelect
     type: nextType,
     indexerPreference: nextType === TorrentSelectionRuleType.IndexerPreference ? draft.indexerPreference : { trackerIds: [] },
     titleMatch: nextType === TorrentSelectionRuleType.TitleMatch ? draft.titleMatch : { clauses: [] },
+    publishDate: nextType === TorrentSelectionRuleType.PublishDate ? draft.publishDate : { direction: TorrentSelectionDirection.Desc },
+    seeders: nextType === TorrentSelectionRuleType.Seeders ? draft.seeders : { direction: TorrentSelectionDirection.Desc },
+    size: nextType === TorrentSelectionRuleType.Size ? draft.size : { direction: TorrentSelectionDirection.Desc },
     torrentFileNameMatch: nextType === TorrentSelectionRuleType.TorrentFileNameMatch ? draft.torrentFileNameMatch : { clauses: [] }
   };
 }
@@ -274,7 +312,6 @@ function torrentSelectionFromRuntime(runtimeSettings: RuntimeSettings) {
         name: rule.name,
         type: rule.type,
         enabled: rule.enabled,
-        direction: rule.direction,
         indexerPreference: {
           trackerIds: [...rule.indexerPreference.trackerIds]
         },
@@ -284,6 +321,15 @@ function torrentSelectionFromRuntime(runtimeSettings: RuntimeSettings) {
             patternMode: clause.patternMode,
             effect: clause.effect
           }))
+        },
+        publishDate: {
+          direction: rule.publishDate.direction
+        },
+        seeders: {
+          direction: rule.seeders.direction
+        },
+        size: {
+          direction: rule.size.direction
         },
         torrentFileNameMatch: {
           clauses: rule.torrentFileNameMatch.clauses.map((clause: RuntimeSettings["automation"]["torrentSelection"]["rules"][number]["torrentFileNameMatch"]["clauses"][number]) => ({
@@ -1604,9 +1650,11 @@ export function SettingsPanel({
                       <span className="torrent-rule__badge torrent-rule__badge--type">
                         {TORRENT_SELECTION_RULE_LABELS[rule.type]}
                       </span>
-                      <span className="torrent-rule__badge torrent-rule__badge--dir">
-                        {rule.direction === TorrentSelectionDirection.Asc ? "ASC" : "DESC"}
-                      </span>
+                      {usesRuleDirection(rule.type) ? (
+                        <span className="torrent-rule__badge torrent-rule__badge--dir">
+                          {getRuleDirection(rule) === TorrentSelectionDirection.Asc ? "ASC" : "DESC"}
+                        </span>
+                      ) : null}
                       <span className={`torrent-rule__badge torrent-rule__badge--status${rule.enabled ? " is-on" : " is-off"}`}>
                         {rule.enabled ? "启用" : "未启用"}
                       </span>
@@ -1706,9 +1754,11 @@ export function SettingsPanel({
                         <span className="torrent-rule__badge torrent-rule__badge--type">
                           {TORRENT_SELECTION_RULE_LABELS[rule.type]}
                         </span>
-                        <span className="torrent-rule__badge torrent-rule__badge--dir">
-                          {rule.direction === TorrentSelectionDirection.Asc ? "ASC" : "DESC"}
-                        </span>
+                        {usesRuleDirection(rule.type) ? (
+                          <span className="torrent-rule__badge torrent-rule__badge--dir">
+                            {getRuleDirection(rule) === TorrentSelectionDirection.Asc ? "ASC" : "DESC"}
+                          </span>
+                        ) : null}
                       </div>
                       <div className="torrent-rule__actions">
                         <label className="switch switch--sm" role="switch" aria-checked={rule.enabled} aria-label={`${TORRENT_SELECTION_RULE_LABELS[rule.type]}启用开关`}>
@@ -1909,21 +1959,32 @@ export function SettingsPanel({
                       ))}
                     </select>
                   </label>
-                  <label className="settings-field">
-                    <FieldLabel text="方向" />
-                    <select
-                      value={draft.direction}
-                      onChange={(event) =>
-                        setDraft((current) => ({
-                          ...current,
-                          direction: event.target.value as TorrentSelectionDirection
-                        }))
-                      }
-                    >
-                      <option value={TorrentSelectionDirection.Desc}>DESC</option>
-                      <option value={TorrentSelectionDirection.Asc}>ASC</option>
-                    </select>
-                  </label>
+                  {usesRuleDirection(draft.type) ? (
+                    <label className="settings-field">
+                      <FieldLabel text="方向" />
+                      <select
+                        value={getRuleDirection(draft)}
+                        onChange={(event) =>
+                          setDraft((current) => {
+                            const nextDirection = event.target.value as TorrentSelectionDirection;
+                            if (current.type === TorrentSelectionRuleType.PublishDate) {
+                              return { ...current, publishDate: { direction: nextDirection } };
+                            }
+                            if (current.type === TorrentSelectionRuleType.Seeders) {
+                              return { ...current, seeders: { direction: nextDirection } };
+                            }
+                            if (current.type === TorrentSelectionRuleType.Size) {
+                              return { ...current, size: { direction: nextDirection } };
+                            }
+                            return current;
+                          })
+                        }
+                      >
+                        <option value={TorrentSelectionDirection.Desc}>DESC</option>
+                        <option value={TorrentSelectionDirection.Asc}>ASC</option>
+                      </select>
+                    </label>
+                  ) : null}
                   <label className="settings-field">
                     <FieldLabel text="启用" />
                     <span className="switch switch--sm" role="switch" aria-checked={draft.enabled}>
@@ -2037,7 +2098,7 @@ export function SettingsPanel({
                   <div className="drawer-card__head">
                     <div>
                       <h3>标题匹配规则</h3>
-                      <p>添加关键字或正则，按顺序匹配；PLAIN 表示纯文本，REGEX 表示正则表达式。</p>
+                      <p className="torrent-rules__note">添加关键字或正则，按顺序匹配；PLAIN 表示纯文本，REGEX 表示正则表达式。</p>
                     </div>
                     <button
                       type="button"

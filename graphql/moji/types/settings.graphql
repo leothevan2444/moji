@@ -214,10 +214,16 @@ type TorrentSelectionRule {
   name: String!
   type: TorrentSelectionRuleType!
   enabled: Boolean!
-  direction: TorrentSelectionDirection!
   indexerPreference: IndexerPreferenceRule!
   titleMatch: TitleMatchRule!
+  publishDate: DirectionRule!
+  seeders: DirectionRule!
+  size: DirectionRule!
   torrentFileNameMatch: TorrentFileNameMatchRule!
+}
+
+type DirectionRule {
+  direction: TorrentSelectionDirection!
 }
 
 type IndexerPreferenceRule {
@@ -349,10 +355,16 @@ input TorrentSelectionRuleInput {
   name: String!
   type: TorrentSelectionRuleType!
   enabled: Boolean!
-  direction: TorrentSelectionDirection!
   indexerPreference: IndexerPreferenceRuleInput
   titleMatch: TitleMatchRuleInput
+  publishDate: DirectionRuleInput
+  seeders: DirectionRuleInput
+  size: DirectionRuleInput
   torrentFileNameMatch: TorrentFileNameMatchRuleInput
+}
+
+input DirectionRuleInput {
+  direction: TorrentSelectionDirection!
 }
 
 input IndexerPreferenceRuleInput {

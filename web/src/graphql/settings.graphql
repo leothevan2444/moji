@@ -66,7 +66,15 @@ mutation UpdateAutomationSettingsDocument($input: UpdateAutomationSettingsInput!
           name
           type
           enabled
-          direction
+          publishDate {
+            direction
+          }
+          seeders {
+            direction
+          }
+          size {
+            direction
+          }
           indexerPreference {
             trackerIds
           }

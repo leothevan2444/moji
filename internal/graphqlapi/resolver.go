@@ -146,10 +146,16 @@ type TorrentSelectionRuleSnapshot struct {
 	Name                 string
 	Type                 string
 	Enabled              bool
-	Direction            string
 	IndexerPreference    IndexerPreferenceRuleSnapshot
 	TitleMatch           TitleMatchRuleSnapshot
+	PublishDate          DirectionRuleSnapshot
+	Seeders              DirectionRuleSnapshot
+	Size                 DirectionRuleSnapshot
 	TorrentFileNameMatch TorrentFileNameMatchRuleSnapshot
+}
+
+type DirectionRuleSnapshot struct {
+	Direction string
 }
 
 type IndexerPreferenceRuleSnapshot struct {

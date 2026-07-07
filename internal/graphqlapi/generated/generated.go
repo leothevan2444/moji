@@ -69,6 +69,10 @@ type ComplexityRoot struct {
 		Total        func(childComplexity int) int
 	}
 
+	DirectionRule struct {
+		Direction func(childComplexity int) int
+	}
+
 	DiscoverSceneConnection struct {
 		FallbackCount func(childComplexity int) int
 		Items         func(childComplexity int) int
@@ -504,11 +508,13 @@ type ComplexityRoot struct {
 	}
 
 	TorrentSelectionRule struct {
-		Direction            func(childComplexity int) int
 		Enabled              func(childComplexity int) int
 		ID                   func(childComplexity int) int
 		IndexerPreference    func(childComplexity int) int
 		Name                 func(childComplexity int) int
+		PublishDate          func(childComplexity int) int
+		Seeders              func(childComplexity int) int
+		Size                 func(childComplexity int) int
 		TitleMatch           func(childComplexity int) int
 		TorrentFileNameMatch func(childComplexity int) int
 		Type                 func(childComplexity int) int
@@ -684,6 +690,13 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.DashboardStats.Total(childComplexity), true
+
+	case "DirectionRule.direction":
+		if e.complexity.DirectionRule.Direction == nil {
+			break
+		}
+
+		return e.complexity.DirectionRule.Direction(childComplexity), true
 
 	case "DiscoverSceneConnection.fallbackCount":
 		if e.complexity.DiscoverSceneConnection.FallbackCount == nil {
@@ -2908,13 +2921,6 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.TorrentFileNameMatchRule.Clauses(childComplexity), true
 
-	case "TorrentSelectionRule.direction":
-		if e.complexity.TorrentSelectionRule.Direction == nil {
-			break
-		}
-
-		return e.complexity.TorrentSelectionRule.Direction(childComplexity), true
-
 	case "TorrentSelectionRule.enabled":
 		if e.complexity.TorrentSelectionRule.Enabled == nil {
 			break
@@ -2942,6 +2948,27 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.TorrentSelectionRule.Name(childComplexity), true
+
+	case "TorrentSelectionRule.publishDate":
+		if e.complexity.TorrentSelectionRule.PublishDate == nil {
+			break
+		}
+
+		return e.complexity.TorrentSelectionRule.PublishDate(childComplexity), true
+
+	case "TorrentSelectionRule.seeders":
+		if e.complexity.TorrentSelectionRule.Seeders == nil {
+			break
+		}
+
+		return e.complexity.TorrentSelectionRule.Seeders(childComplexity), true
+
+	case "TorrentSelectionRule.size":
+		if e.complexity.TorrentSelectionRule.Size == nil {
+			break
+		}
+
+		return e.complexity.TorrentSelectionRule.Size(childComplexity), true
 
 	case "TorrentSelectionRule.titleMatch":
 		if e.complexity.TorrentSelectionRule.TitleMatch == nil {
@@ -3000,6 +3027,7 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 	opCtx := graphql.GetOperationContext(ctx)
 	ec := executionContext{opCtx, e, 0, 0, make(chan graphql.DeferredResult)}
 	inputUnmarshalMap := graphql.BuildUnmarshalerMap(
+		ec.unmarshalInputDirectionRuleInput,
 		ec.unmarshalInputDiscoverScenesInput,
 		ec.unmarshalInputDownloadMediaInput,
 		ec.unmarshalInputDownloadsIngestSettingsInput,
@@ -3507,10 +3535,16 @@ type TorrentSelectionRule {
   name: String!
   type: TorrentSelectionRuleType!
   enabled: Boolean!
-  direction: TorrentSelectionDirection!
   indexerPreference: IndexerPreferenceRule!
   titleMatch: TitleMatchRule!
+  publishDate: DirectionRule!
+  seeders: DirectionRule!
+  size: DirectionRule!
   torrentFileNameMatch: TorrentFileNameMatchRule!
+}
+
+type DirectionRule {
+  direction: TorrentSelectionDirection!
 }
 
 type IndexerPreferenceRule {
@@ -3642,10 +3676,16 @@ input TorrentSelectionRuleInput {
   name: String!
   type: TorrentSelectionRuleType!
   enabled: Boolean!
-  direction: TorrentSelectionDirection!
   indexerPreference: IndexerPreferenceRuleInput
   titleMatch: TitleMatchRuleInput
+  publishDate: DirectionRuleInput
+  seeders: DirectionRuleInput
+  size: DirectionRuleInput
   torrentFileNameMatch: TorrentFileNameMatchRuleInput
+}
+
+input DirectionRuleInput {
+  direction: TorrentSelectionDirection!
 }
 
 input IndexerPreferenceRuleInput {
@@ -5608,6 +5648,50 @@ func (ec *executionContext) fieldContext_DashboardStats_failed(_ context.Context
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _DirectionRule_direction(ctx context.Context, field graphql.CollectedField, obj *model.DirectionRule) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_DirectionRule_direction(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Direction, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(model.TorrentSelectionDirection)
+	fc.Result = res
+	return ec.marshalNTorrentSelectionDirection2githubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐTorrentSelectionDirection(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_DirectionRule_direction(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "DirectionRule",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type TorrentSelectionDirection does not have child fields")
 		},
 	}
 	return fc, nil
@@ -20572,50 +20656,6 @@ func (ec *executionContext) fieldContext_TorrentSelectionRule_enabled(_ context.
 	return fc, nil
 }
 
-func (ec *executionContext) _TorrentSelectionRule_direction(ctx context.Context, field graphql.CollectedField, obj *model.TorrentSelectionRule) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_TorrentSelectionRule_direction(ctx, field)
-	if err != nil {
-		return graphql.Null
-	}
-	ctx = graphql.WithFieldContext(ctx, fc)
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.Direction, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(model.TorrentSelectionDirection)
-	fc.Result = res
-	return ec.marshalNTorrentSelectionDirection2githubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐTorrentSelectionDirection(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) fieldContext_TorrentSelectionRule_direction(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "TorrentSelectionRule",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type TorrentSelectionDirection does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
 func (ec *executionContext) _TorrentSelectionRule_indexerPreference(ctx context.Context, field graphql.CollectedField, obj *model.TorrentSelectionRule) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_TorrentSelectionRule_indexerPreference(ctx, field)
 	if err != nil {
@@ -20707,6 +20747,150 @@ func (ec *executionContext) fieldContext_TorrentSelectionRule_titleMatch(_ conte
 				return ec.fieldContext_TitleMatchRule_clauses(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type TitleMatchRule", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _TorrentSelectionRule_publishDate(ctx context.Context, field graphql.CollectedField, obj *model.TorrentSelectionRule) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_TorrentSelectionRule_publishDate(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.PublishDate, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*model.DirectionRule)
+	fc.Result = res
+	return ec.marshalNDirectionRule2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐDirectionRule(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_TorrentSelectionRule_publishDate(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "TorrentSelectionRule",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "direction":
+				return ec.fieldContext_DirectionRule_direction(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type DirectionRule", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _TorrentSelectionRule_seeders(ctx context.Context, field graphql.CollectedField, obj *model.TorrentSelectionRule) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_TorrentSelectionRule_seeders(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Seeders, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*model.DirectionRule)
+	fc.Result = res
+	return ec.marshalNDirectionRule2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐDirectionRule(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_TorrentSelectionRule_seeders(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "TorrentSelectionRule",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "direction":
+				return ec.fieldContext_DirectionRule_direction(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type DirectionRule", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _TorrentSelectionRule_size(ctx context.Context, field graphql.CollectedField, obj *model.TorrentSelectionRule) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_TorrentSelectionRule_size(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Size, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*model.DirectionRule)
+	fc.Result = res
+	return ec.marshalNDirectionRule2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐDirectionRule(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_TorrentSelectionRule_size(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "TorrentSelectionRule",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "direction":
+				return ec.fieldContext_DirectionRule_direction(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type DirectionRule", field.Name)
 		},
 	}
 	return fc, nil
@@ -20895,12 +21079,16 @@ func (ec *executionContext) fieldContext_TorrentSelectionSettings_rules(_ contex
 				return ec.fieldContext_TorrentSelectionRule_type(ctx, field)
 			case "enabled":
 				return ec.fieldContext_TorrentSelectionRule_enabled(ctx, field)
-			case "direction":
-				return ec.fieldContext_TorrentSelectionRule_direction(ctx, field)
 			case "indexerPreference":
 				return ec.fieldContext_TorrentSelectionRule_indexerPreference(ctx, field)
 			case "titleMatch":
 				return ec.fieldContext_TorrentSelectionRule_titleMatch(ctx, field)
+			case "publishDate":
+				return ec.fieldContext_TorrentSelectionRule_publishDate(ctx, field)
+			case "seeders":
+				return ec.fieldContext_TorrentSelectionRule_seeders(ctx, field)
+			case "size":
+				return ec.fieldContext_TorrentSelectionRule_size(ctx, field)
 			case "torrentFileNameMatch":
 				return ec.fieldContext_TorrentSelectionRule_torrentFileNameMatch(ctx, field)
 			}
@@ -22905,6 +23093,33 @@ func (ec *executionContext) fieldContext___Type_isOneOf(_ context.Context, field
 
 // region    **************************** input.gotpl *****************************
 
+func (ec *executionContext) unmarshalInputDirectionRuleInput(ctx context.Context, obj any) (model.DirectionRuleInput, error) {
+	var it model.DirectionRuleInput
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"direction"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "direction":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("direction"))
+			data, err := ec.unmarshalNTorrentSelectionDirection2githubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐTorrentSelectionDirection(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Direction = data
+		}
+	}
+
+	return it, nil
+}
+
 func (ec *executionContext) unmarshalInputDiscoverScenesInput(ctx context.Context, obj any) (model.DiscoverScenesInput, error) {
 	var it model.DiscoverScenesInput
 	asMap := map[string]any{}
@@ -23725,7 +23940,7 @@ func (ec *executionContext) unmarshalInputTorrentSelectionRuleInput(ctx context.
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"id", "name", "type", "enabled", "direction", "indexerPreference", "titleMatch", "torrentFileNameMatch"}
+	fieldsInOrder := [...]string{"id", "name", "type", "enabled", "indexerPreference", "titleMatch", "publishDate", "seeders", "size", "torrentFileNameMatch"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -23760,13 +23975,6 @@ func (ec *executionContext) unmarshalInputTorrentSelectionRuleInput(ctx context.
 				return it, err
 			}
 			it.Enabled = data
-		case "direction":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("direction"))
-			data, err := ec.unmarshalNTorrentSelectionDirection2githubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐTorrentSelectionDirection(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.Direction = data
 		case "indexerPreference":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("indexerPreference"))
 			data, err := ec.unmarshalOIndexerPreferenceRuleInput2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐIndexerPreferenceRuleInput(ctx, v)
@@ -23781,6 +23989,27 @@ func (ec *executionContext) unmarshalInputTorrentSelectionRuleInput(ctx context.
 				return it, err
 			}
 			it.TitleMatch = data
+		case "publishDate":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("publishDate"))
+			data, err := ec.unmarshalODirectionRuleInput2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐDirectionRuleInput(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.PublishDate = data
+		case "seeders":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("seeders"))
+			data, err := ec.unmarshalODirectionRuleInput2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐDirectionRuleInput(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Seeders = data
+		case "size":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("size"))
+			data, err := ec.unmarshalODirectionRuleInput2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐDirectionRuleInput(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Size = data
 		case "torrentFileNameMatch":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("torrentFileNameMatch"))
 			data, err := ec.unmarshalOTorrentFileNameMatchRuleInput2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐTorrentFileNameMatchRuleInput(ctx, v)
@@ -24276,6 +24505,45 @@ func (ec *executionContext) _DashboardStats(ctx context.Context, sel ast.Selecti
 			}
 		case "failed":
 			out.Values[i] = ec._DashboardStats_failed(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var directionRuleImplementors = []string{"DirectionRule"}
+
+func (ec *executionContext) _DirectionRule(ctx context.Context, sel ast.SelectionSet, obj *model.DirectionRule) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, directionRuleImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("DirectionRule")
+		case "direction":
+			out.Values[i] = ec._DirectionRule_direction(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
@@ -27572,11 +27840,6 @@ func (ec *executionContext) _TorrentSelectionRule(ctx context.Context, sel ast.S
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
-		case "direction":
-			out.Values[i] = ec._TorrentSelectionRule_direction(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
 		case "indexerPreference":
 			out.Values[i] = ec._TorrentSelectionRule_indexerPreference(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
@@ -27584,6 +27847,21 @@ func (ec *executionContext) _TorrentSelectionRule(ctx context.Context, sel ast.S
 			}
 		case "titleMatch":
 			out.Values[i] = ec._TorrentSelectionRule_titleMatch(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "publishDate":
+			out.Values[i] = ec._TorrentSelectionRule_publishDate(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "seeders":
+			out.Values[i] = ec._TorrentSelectionRule_seeders(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "size":
+			out.Values[i] = ec._TorrentSelectionRule_size(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
@@ -28086,6 +28364,16 @@ func (ec *executionContext) marshalNDashboardStats2ᚖgithubᚗcomᚋleothevan24
 		return graphql.Null
 	}
 	return ec._DashboardStats(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNDirectionRule2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐDirectionRule(ctx context.Context, sel ast.SelectionSet, v *model.DirectionRule) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._DirectionRule(ctx, sel, v)
 }
 
 func (ec *executionContext) marshalNDiscoverSceneConnection2githubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐDiscoverSceneConnection(ctx context.Context, sel ast.SelectionSet, v model.DiscoverSceneConnection) graphql.Marshaler {
@@ -29923,6 +30211,14 @@ func (ec *executionContext) marshalOBoolean2ᚖbool(ctx context.Context, sel ast
 	_ = ctx
 	res := graphql.MarshalBoolean(*v)
 	return res
+}
+
+func (ec *executionContext) unmarshalODirectionRuleInput2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐDirectionRuleInput(ctx context.Context, v any) (*model.DirectionRuleInput, error) {
+	if v == nil {
+		return nil, nil
+	}
+	res, err := ec.unmarshalInputDirectionRuleInput(ctx, v)
+	return &res, graphql.ErrorOnPath(ctx, err)
 }
 
 func (ec *executionContext) unmarshalODiscoverSortBy2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐDiscoverSortBy(ctx context.Context, v any) (*model.DiscoverSortBy, error) {

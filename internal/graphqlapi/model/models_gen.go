@@ -33,6 +33,14 @@ type DashboardStats struct {
 	Failed       int `json:"failed"`
 }
 
+type DirectionRule struct {
+	Direction TorrentSelectionDirection `json:"direction"`
+}
+
+type DirectionRuleInput struct {
+	Direction TorrentSelectionDirection `json:"direction"`
+}
+
 type DiscoverSceneConnection struct {
 	Items         []*DiscoveredScene `json:"items"`
 	UsedStashBox  *MatchedStashBox   `json:"usedStashBox,omitempty"`
@@ -584,9 +592,11 @@ type TorrentSelectionRule struct {
 	Name                 string                    `json:"name"`
 	Type                 TorrentSelectionRuleType  `json:"type"`
 	Enabled              bool                      `json:"enabled"`
-	Direction            TorrentSelectionDirection `json:"direction"`
 	IndexerPreference    *IndexerPreferenceRule    `json:"indexerPreference"`
 	TitleMatch           *TitleMatchRule           `json:"titleMatch"`
+	PublishDate          *DirectionRule            `json:"publishDate"`
+	Seeders              *DirectionRule            `json:"seeders"`
+	Size                 *DirectionRule            `json:"size"`
 	TorrentFileNameMatch *TorrentFileNameMatchRule `json:"torrentFileNameMatch"`
 }
 
@@ -595,9 +605,11 @@ type TorrentSelectionRuleInput struct {
 	Name                 string                         `json:"name"`
 	Type                 TorrentSelectionRuleType       `json:"type"`
 	Enabled              bool                           `json:"enabled"`
-	Direction            TorrentSelectionDirection      `json:"direction"`
 	IndexerPreference    *IndexerPreferenceRuleInput    `json:"indexerPreference,omitempty"`
 	TitleMatch           *TitleMatchRuleInput           `json:"titleMatch,omitempty"`
+	PublishDate          *DirectionRuleInput            `json:"publishDate,omitempty"`
+	Seeders              *DirectionRuleInput            `json:"seeders,omitempty"`
+	Size                 *DirectionRuleInput            `json:"size,omitempty"`
 	TorrentFileNameMatch *TorrentFileNameMatchRuleInput `json:"torrentFileNameMatch,omitempty"`
 }
 

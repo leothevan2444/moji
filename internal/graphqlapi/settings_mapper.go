@@ -121,12 +121,20 @@ func torrentSelectionSettingsToModel(snapshot TorrentSelectionSettingsSnapshot) 
 			Name:      rule.Name,
 			Type:      model.TorrentSelectionRuleType(rule.Type),
 			Enabled:   rule.Enabled,
-			Direction: model.TorrentSelectionDirection(rule.Direction),
 			IndexerPreference: &model.IndexerPreferenceRule{
 				TrackerIds: append([]string(nil), rule.IndexerPreference.TrackerIDs...),
 			},
 			TitleMatch: &model.TitleMatchRule{
 				Clauses: make([]*model.TitleMatchClause, 0, len(rule.TitleMatch.Clauses)),
+			},
+			PublishDate: &model.DirectionRule{
+				Direction: model.TorrentSelectionDirection(rule.PublishDate.Direction),
+			},
+			Seeders: &model.DirectionRule{
+				Direction: model.TorrentSelectionDirection(rule.Seeders.Direction),
+			},
+			Size: &model.DirectionRule{
+				Direction: model.TorrentSelectionDirection(rule.Size.Direction),
 			},
 			TorrentFileNameMatch: &model.TorrentFileNameMatchRule{
 				Clauses: make([]*model.TorrentFileNameMatchClause, 0, len(rule.TorrentFileNameMatch.Clauses)),

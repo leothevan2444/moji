@@ -33,7 +33,6 @@ func TestDefaultCandidateSelectorUsesIndexerPreference(t *testing.T) {
 				ID:        "pref",
 				Type:      config.CandidateSelectionRuleTypeIndexerPreference,
 				Enabled:   true,
-				Direction: config.CandidateSelectionDirectionAsc,
 				IndexerPreference: config.IndexerPreferenceRuleConfig{
 					TrackerIDs: []string{"alpha", "beta"},
 				},
@@ -60,7 +59,6 @@ func TestDefaultCandidateSelectorUsesTitleMatchClauses(t *testing.T) {
 				ID:        "title",
 				Type:      config.CandidateSelectionRuleTypeTitleMatch,
 				Enabled:   true,
-				Direction: config.CandidateSelectionDirectionDesc,
 				TitleMatch: config.TitleMatchRuleConfig{
 					Clauses: []config.TitleMatchClause{
 						{Pattern: "无码", PatternMode: config.TitleMatchPatternModePlain, Effect: config.TitleMatchEffectPrefer},
@@ -90,7 +88,9 @@ func TestDefaultCandidateSelectorUsesPublishDateDesc(t *testing.T) {
 				ID:        "date",
 				Type:      config.CandidateSelectionRuleTypePublishDate,
 				Enabled:   true,
-				Direction: config.CandidateSelectionDirectionDesc,
+				PublishDate: config.PublishDateRuleConfig{
+					Direction: config.CandidateSelectionDirectionDesc,
+				},
 			},
 		},
 	})
@@ -114,7 +114,6 @@ func TestDefaultCandidateSelectorUsesTitleSimilarity(t *testing.T) {
 				ID:        "similarity",
 				Type:      config.CandidateSelectionRuleTypeTitleSimilarity,
 				Enabled:   true,
-				Direction: config.CandidateSelectionDirectionDesc,
 			},
 		},
 	})
@@ -148,8 +147,8 @@ func TestDefaultCandidateSelectorUsesTorrentSingleVideoInspection(t *testing.T) 
 	}, config.CandidateSelectionConfig{
 		Enabled: true,
 		Rules: []config.CandidateSelectionRule{
-			{ID: "seeders", Type: config.CandidateSelectionRuleTypeSeeders, Enabled: true, Direction: config.CandidateSelectionDirectionDesc},
-			{ID: "single-video", Type: config.CandidateSelectionRuleTypeTorrentSingleVideo, Enabled: true, Direction: config.CandidateSelectionDirectionDesc},
+			{ID: "seeders", Type: config.CandidateSelectionRuleTypeSeeders, Enabled: true, Seeders: config.SeedersRuleConfig{Direction: config.CandidateSelectionDirectionDesc}},
+			{ID: "single-video", Type: config.CandidateSelectionRuleTypeTorrentSingleVideo, Enabled: true},
 		},
 	})
 	if err != nil {
@@ -179,12 +178,11 @@ func TestDefaultCandidateSelectorUsesTorrentFileNameLock(t *testing.T) {
 	}, config.CandidateSelectionConfig{
 		Enabled: true,
 		Rules: []config.CandidateSelectionRule{
-			{ID: "seeders", Type: config.CandidateSelectionRuleTypeSeeders, Enabled: true, Direction: config.CandidateSelectionDirectionDesc},
+			{ID: "seeders", Type: config.CandidateSelectionRuleTypeSeeders, Enabled: true, Seeders: config.SeedersRuleConfig{Direction: config.CandidateSelectionDirectionDesc}},
 			{
 				ID:        "file-name",
 				Type:      config.CandidateSelectionRuleTypeTorrentFileNameMatch,
 				Enabled:   true,
-				Direction: config.CandidateSelectionDirectionDesc,
 				TorrentFileNameMatch: config.TorrentFileNameMatchRuleConfig{
 					Clauses: []config.TorrentFileNameMatchClause{
 						{Pattern: "hhd800.com", PatternMode: config.TitleMatchPatternModePlain, Effect: config.TorrentFileMatchEffectLock},
@@ -223,8 +221,8 @@ func TestDefaultCandidateSelectorOnlyInspectsTopFiveTorrentCandidates(t *testing
 	_, err := selector.Select(context.Background(), "ABCD-123", results, config.CandidateSelectionConfig{
 		Enabled: true,
 		Rules: []config.CandidateSelectionRule{
-			{ID: "seeders", Type: config.CandidateSelectionRuleTypeSeeders, Enabled: true, Direction: config.CandidateSelectionDirectionDesc},
-			{ID: "single-video", Type: config.CandidateSelectionRuleTypeTorrentSingleVideo, Enabled: true, Direction: config.CandidateSelectionDirectionDesc},
+			{ID: "seeders", Type: config.CandidateSelectionRuleTypeSeeders, Enabled: true, Seeders: config.SeedersRuleConfig{Direction: config.CandidateSelectionDirectionDesc}},
+			{ID: "single-video", Type: config.CandidateSelectionRuleTypeTorrentSingleVideo, Enabled: true},
 		},
 	})
 	if err != nil {
@@ -259,8 +257,8 @@ func TestDefaultCandidateSelectorUsesConfiguredInspectionCandidateLimit(t *testi
 		Enabled:                  true,
 		InspectionCandidateLimit: 6,
 		Rules: []config.CandidateSelectionRule{
-			{ID: "seeders", Type: config.CandidateSelectionRuleTypeSeeders, Enabled: true, Direction: config.CandidateSelectionDirectionDesc},
-			{ID: "single-video", Type: config.CandidateSelectionRuleTypeTorrentSingleVideo, Enabled: true, Direction: config.CandidateSelectionDirectionDesc},
+			{ID: "seeders", Type: config.CandidateSelectionRuleTypeSeeders, Enabled: true, Seeders: config.SeedersRuleConfig{Direction: config.CandidateSelectionDirectionDesc}},
+			{ID: "single-video", Type: config.CandidateSelectionRuleTypeTorrentSingleVideo, Enabled: true},
 		},
 	})
 	if err != nil {
@@ -286,7 +284,6 @@ func TestDefaultCandidateSelectorPreviewUsesFastRulesOnly(t *testing.T) {
 				ID:        "pref",
 				Type:      config.CandidateSelectionRuleTypeIndexerPreference,
 				Enabled:   true,
-				Direction: config.CandidateSelectionDirectionAsc,
 				IndexerPreference: config.IndexerPreferenceRuleConfig{
 					TrackerIDs: []string{"alpha", "beta"},
 				},
@@ -319,7 +316,7 @@ func TestDefaultCandidateSelectorPreviewUsesInputOrderForFileRules(t *testing.T)
 	}, config.CandidateSelectionConfig{
 		Enabled: true,
 		Rules: []config.CandidateSelectionRule{
-			{ID: "single-video", Type: config.CandidateSelectionRuleTypeTorrentSingleVideo, Enabled: true, Direction: config.CandidateSelectionDirectionDesc},
+			{ID: "single-video", Type: config.CandidateSelectionRuleTypeTorrentSingleVideo, Enabled: true},
 		},
 	}, false, true)
 	if err != nil {
@@ -356,7 +353,7 @@ func TestPreviewJackettSelectionContextCachesTorrentInspection(t *testing.T) {
 			return config.CandidateSelectionConfig{
 				Enabled: true,
 				Rules: []config.CandidateSelectionRule{
-					{ID: "single-video", Type: config.CandidateSelectionRuleTypeTorrentSingleVideo, Enabled: true, Direction: config.CandidateSelectionDirectionDesc},
+					{ID: "single-video", Type: config.CandidateSelectionRuleTypeTorrentSingleVideo, Enabled: true},
 				},
 			}
 		}),
@@ -400,7 +397,9 @@ func TestDownloadMediaContextUsesConfiguredCandidateSelection(t *testing.T) {
 						ID:        "size-asc",
 						Type:      config.CandidateSelectionRuleTypeSize,
 						Enabled:   true,
-						Direction: config.CandidateSelectionDirectionAsc,
+						Size: config.SizeRuleConfig{
+							Direction: config.CandidateSelectionDirectionAsc,
+						},
 					},
 				},
 			}

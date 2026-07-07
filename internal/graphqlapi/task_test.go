@@ -547,7 +547,7 @@ func TestSettingsQueryReturnsRuntimeSnapshot(t *testing.T) {
 						Name:      "Seeders",
 						Type:      "SEEDERS",
 						Enabled:   true,
-						Direction: "DESC",
+						Seeders:   DirectionRuleSnapshot{Direction: "DESC"},
 					},
 				},
 			},
@@ -571,7 +571,7 @@ func TestSettingsQueryReturnsRuntimeSnapshot(t *testing.T) {
 			ingest { deliveryMode downloads { qbRoot } library { stashRoot } }
 			jackett { configured url apiKeyConfigured }
 			qbittorrent { configured url username usernameConfigured passwordConfigured defaultSavePath category tags }
-			automation { taskProgressSyncIntervalSeconds subscriptionPollIntervalHours stashBoxEndpoints torrentSelection { enabled rules { id name type direction } } }
+			automation { taskProgressSyncIntervalSeconds subscriptionPollIntervalHours stashBoxEndpoints torrentSelection { enabled rules { id name type seeders { direction } } } }
 			system { taskDeletePolicy }
 		}
 		settingsStatus {
@@ -651,7 +651,7 @@ func TestSettingsQueryUsesSettingsEditorSnapshot(t *testing.T) {
 				TorrentSelection: TorrentSelectionSettingsSnapshot{
 					Enabled: true,
 					Rules: []TorrentSelectionRuleSnapshot{
-						{ID: "seeders", Name: "Seeders", Type: "SEEDERS", Enabled: true, Direction: "DESC"},
+						{ID: "seeders", Name: "Seeders", Type: "SEEDERS", Enabled: true, Seeders: DirectionRuleSnapshot{Direction: "DESC"}},
 					},
 				},
 			},
@@ -796,7 +796,6 @@ func TestUpdateJackettSettingsMutation(t *testing.T) {
 							Name:      "Indexer Preference",
 							Type:      "INDEXER_PREFERENCE",
 							Enabled:   true,
-							Direction: "DESC",
 							IndexerPreference: IndexerPreferenceRuleSnapshot{
 								TrackerIDs: []string{"alpha"},
 							},
@@ -839,7 +838,7 @@ func TestUpdateAutomationSettingsMutation(t *testing.T) {
 				TorrentSelection: TorrentSelectionSettingsSnapshot{
 					Enabled:                  true,
 					InspectionCandidateLimit: 5,
-					Rules:                    []TorrentSelectionRuleSnapshot{{ID: "seeders", Name: "Seeders", Type: "SEEDERS", Enabled: true, Direction: "DESC"}},
+					Rules:                    []TorrentSelectionRuleSnapshot{{ID: "seeders", Name: "Seeders", Type: "SEEDERS", Enabled: true, Seeders: DirectionRuleSnapshot{Direction: "DESC"}}},
 				},
 			},
 		},
@@ -860,7 +859,7 @@ func TestUpdateAutomationSettingsMutation(t *testing.T) {
 					name: "My Seeders Rule"
 					type: SEEDERS
 					enabled: true
-					direction: DESC
+					seeders: { direction: DESC }
 					indexerPreference: { trackerIds: [] }
 					titleMatch: { clauses: [] }
 				}]

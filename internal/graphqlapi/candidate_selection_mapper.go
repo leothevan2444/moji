@@ -24,7 +24,6 @@ func torrentSelectionRulesFromModel(rules []*model.TorrentSelectionRuleInput) []
 			Name:      rule.Name,
 			Type:      string(rule.Type),
 			Enabled:   rule.Enabled,
-			Direction: string(rule.Direction),
 		}
 		if rule.IndexerPreference != nil {
 			item.IndexerPreference = IndexerPreferenceRuleSnapshot{
@@ -42,6 +41,21 @@ func torrentSelectionRulesFromModel(rules []*model.TorrentSelectionRuleInput) []
 					PatternMode: string(clause.PatternMode),
 					Effect:      string(clause.Effect),
 				})
+			}
+		}
+		if rule.PublishDate != nil {
+			item.PublishDate = DirectionRuleSnapshot{
+				Direction: string(rule.PublishDate.Direction),
+			}
+		}
+		if rule.Seeders != nil {
+			item.Seeders = DirectionRuleSnapshot{
+				Direction: string(rule.Seeders.Direction),
+			}
+		}
+		if rule.Size != nil {
+			item.Size = DirectionRuleSnapshot{
+				Direction: string(rule.Size.Direction),
 			}
 		}
 		if rule.TorrentFileNameMatch != nil {

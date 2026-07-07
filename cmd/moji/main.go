@@ -450,9 +450,17 @@ func torrentSelectionSnapshot(cfg config.TorrentSelectionConfig) graphqlapi.Torr
 			Name:      rule.Name,
 			Type:      string(rule.Type),
 			Enabled:   rule.Enabled,
-			Direction: string(rule.Direction),
 			IndexerPreference: graphqlapi.IndexerPreferenceRuleSnapshot{
 				TrackerIDs: append([]string(nil), rule.IndexerPreference.TrackerIDs...),
+			},
+			PublishDate: graphqlapi.DirectionRuleSnapshot{
+				Direction: string(rule.PublishDate.Direction),
+			},
+			Seeders: graphqlapi.DirectionRuleSnapshot{
+				Direction: string(rule.Seeders.Direction),
+			},
+			Size: graphqlapi.DirectionRuleSnapshot{
+				Direction: string(rule.Size.Direction),
 			},
 		}
 		if len(rule.TitleMatch.Clauses) > 0 {

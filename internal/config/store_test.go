@@ -90,7 +90,6 @@ automation:
 				Name:      "Preferred Indexers",
 				Type:      TorrentSelectionRuleTypeIndexerPreference,
 				Enabled:   true,
-				Direction: TorrentSelectionDirectionDesc,
 				IndexerPreference: IndexerPreferenceRuleConfig{
 					TrackerIDs: []string{"alpha", "beta"},
 				},

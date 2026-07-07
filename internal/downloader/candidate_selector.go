@@ -306,19 +306,19 @@ func compareInspectedCandidates(left rankedCandidate, right rankedCandidate, rul
 func compareByRule(query string, left jackett.SearchResult, right jackett.SearchResult, rule compiledRule) int {
 	switch rule.rule.Type {
 	case config.CandidateSelectionRuleTypeIndexerPreference:
-		return compareInts(indexerPreferenceRank(left, rule.rule), indexerPreferenceRank(right, rule.rule), rule.rule.Direction)
+		return compareInts(indexerPreferenceRank(left, rule.rule), indexerPreferenceRank(right, rule.rule), config.CandidateSelectionDirectionAsc)
 	case config.CandidateSelectionRuleTypeTitleMatch:
 		return compareInts(titleMatchRank(left.Title, rule), titleMatchRank(right.Title, rule), config.CandidateSelectionDirectionAsc)
 	case config.CandidateSelectionRuleTypePublishDate:
 		leftTime, leftOK := parsePublishDate(left.PublishDate)
 		rightTime, rightOK := parsePublishDate(right.PublishDate)
-		return compareTimes(leftTime, leftOK, rightTime, rightOK, rule.rule.Direction)
+		return compareTimes(leftTime, leftOK, rightTime, rightOK, rule.rule.PublishDate.Direction)
 	case config.CandidateSelectionRuleTypeTitleSimilarity:
 		return compareInts(titleSimilarityScore(query, left.Title), titleSimilarityScore(query, right.Title), config.CandidateSelectionDirectionDesc)
 	case config.CandidateSelectionRuleTypeSeeders:
-		return compareInts(left.Seeders, right.Seeders, rule.rule.Direction)
+		return compareInts(left.Seeders, right.Seeders, rule.rule.Seeders.Direction)
 	case config.CandidateSelectionRuleTypeSize:
-		return compareInt64s(left.Size, right.Size, rule.rule.Direction)
+		return compareInt64s(left.Size, right.Size, rule.rule.Size.Direction)
 	default:
 		return 0
 	}

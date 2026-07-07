@@ -13,7 +13,6 @@ export const DEFAULT_TORRENT_SELECTION_RULES = [
     name: "Seeders",
     type: TorrentSelectionRuleType.Seeders,
     enabled: true,
-    direction: TorrentSelectionDirection.Desc,
     indexerPreference: {
       trackerIds: [] as string[]
     },
@@ -23,6 +22,15 @@ export const DEFAULT_TORRENT_SELECTION_RULES = [
         patternMode: TitleMatchPatternMode;
         effect: TitleMatchEffect;
       }>
+    },
+    publishDate: {
+      direction: TorrentSelectionDirection.Desc
+    },
+    seeders: {
+      direction: TorrentSelectionDirection.Desc
+    },
+    size: {
+      direction: TorrentSelectionDirection.Desc
     },
     torrentFileNameMatch: {
       clauses: [] as Array<{
@@ -37,7 +45,6 @@ export const DEFAULT_TORRENT_SELECTION_RULES = [
     name: "Size",
     type: TorrentSelectionRuleType.Size,
     enabled: true,
-    direction: TorrentSelectionDirection.Desc,
     indexerPreference: {
       trackerIds: [] as string[]
     },
@@ -47,6 +54,15 @@ export const DEFAULT_TORRENT_SELECTION_RULES = [
         patternMode: TitleMatchPatternMode;
         effect: TitleMatchEffect;
       }>
+    },
+    publishDate: {
+      direction: TorrentSelectionDirection.Desc
+    },
+    seeders: {
+      direction: TorrentSelectionDirection.Desc
+    },
+    size: {
+      direction: TorrentSelectionDirection.Desc
     },
     torrentFileNameMatch: {
       clauses: [] as Array<{
@@ -64,7 +80,6 @@ export const DEFAULT_TORRENT_FILE_INSPECTION_RULES = [
     name: "Single Video",
     type: TorrentSelectionRuleType.TorrentSingleVideo,
     enabled: true,
-    direction: TorrentSelectionDirection.Desc,
     indexerPreference: {
       trackerIds: [] as string[]
     },
@@ -74,6 +89,15 @@ export const DEFAULT_TORRENT_FILE_INSPECTION_RULES = [
         patternMode: TitleMatchPatternMode;
         effect: TitleMatchEffect;
       }>
+    },
+    publishDate: {
+      direction: TorrentSelectionDirection.Desc
+    },
+    seeders: {
+      direction: TorrentSelectionDirection.Desc
+    },
+    size: {
+      direction: TorrentSelectionDirection.Desc
     },
     torrentFileNameMatch: {
       clauses: [] as Array<{
@@ -88,7 +112,6 @@ export const DEFAULT_TORRENT_FILE_INSPECTION_RULES = [
     name: "Torrent File Name Match",
     type: TorrentSelectionRuleType.TorrentFileNameMatch,
     enabled: true,
-    direction: TorrentSelectionDirection.Desc,
     indexerPreference: {
       trackerIds: [] as string[]
     },
@@ -98,6 +121,15 @@ export const DEFAULT_TORRENT_FILE_INSPECTION_RULES = [
         patternMode: TitleMatchPatternMode;
         effect: TitleMatchEffect;
       }>
+    },
+    publishDate: {
+      direction: TorrentSelectionDirection.Desc
+    },
+    seeders: {
+      direction: TorrentSelectionDirection.Desc
+    },
+    size: {
+      direction: TorrentSelectionDirection.Desc
     },
     torrentFileNameMatch: {
       clauses: [] as Array<{
