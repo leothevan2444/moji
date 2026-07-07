@@ -1519,210 +1519,214 @@ export function SettingsPanel({
                     </div>
                     </header>
 
-                    <p className="torrent-rule__summary">{buildRuleSummary(rule)}</p>
-                    <div className="torrent-rule__body">
-                      {usesRuleDirection(rule.type) ? (
-                        <label className="torrent-rule__inline-field">
-                          <span className="torrent-rule__inline-label">方向</span>
-                          <select
-                            value={getRuleDirection(rule)}
-                            onChange={(event) =>
-                              updateCandidateRule(rule.type, (current) => {
-                                const nextDirection = event.target.value as TorrentSelectionDirection;
-                                if (current.type === TorrentSelectionRuleType.PublishDate) {
-                                  return { ...current, publishDate: { direction: nextDirection } };
-                                }
-                                if (current.type === TorrentSelectionRuleType.Seeders) {
-                                  return { ...current, seeders: { direction: nextDirection } };
-                                }
-                                if (current.type === TorrentSelectionRuleType.Size) {
-                                  return { ...current, size: { direction: nextDirection } };
-                                }
-                                return current;
-                              })
-                            }
-                          >
-                            <option value={TorrentSelectionDirection.Desc}>DESC</option>
-                            <option value={TorrentSelectionDirection.Asc}>ASC</option>
-                          </select>
-                        </label>
-                      ) : null}
-
-                    {rule.type === TorrentSelectionRuleType.TitleSimilarity ? (
-                      <p className="torrent-rule__hint">按查询词与标题的归一化相似度进行排序，不提供额外参数。</p>
-                    ) : null}
-
-                    {rule.type === TorrentSelectionRuleType.IndexerPreference ? (
+                    {rule.enabled ? (
                       <>
-                        {fetchingJackettIndexers ? <span className="torrent-rule__hint">加载索引器中…</span> : null}
-                        {!fetchingJackettIndexers && jackettIndexers.length === 0 ? (
-                          <span className="torrent-rule__hint">当前没有可用的 Jackett 索引器。</span>
-                        ) : null}
-                        {!fetchingJackettIndexers && jackettIndexers.length > 0 ? (
-                          <ol className="torrent-rule__indexer-list">
-                            {rule.indexerPreference.trackerIds.map((trackerId, selectedIndex) => {
-                              const indexer = jackettIndexers.find((item: JackettIndexer) => item.id === trackerId);
-                              if (!indexer) return null;
-                              const classes = ["torrent-rule__indexer-card"];
-                              if (draggedIndexerId === indexer.id) classes.push("is-dragging");
-                              if (dragOverIndexerId === indexer.id && draggedIndexerId !== indexer.id) classes.push("is-drop-target");
-                              return (
-                                <li
-                                  key={indexer.id}
-                                  className={classes.join(" ")}
-                                  draggable
-                                  onDragStart={(event) => {
-                                    event.dataTransfer.effectAllowed = "move";
-                                    event.dataTransfer.setData("text/plain", indexer.id);
-                                    setDraggedIndexerId(indexer.id);
-                                  }}
-                                  onDragOver={(event) => {
-                                    if (!draggedIndexerId || draggedIndexerId === indexer.id) return;
-                                    event.preventDefault();
-                                    event.dataTransfer.dropEffect = "move";
-                                    setDragOverIndexerId(indexer.id);
-                                  }}
-                                  onDragLeave={() => {
-                                    if (dragOverIndexerId === indexer.id) setDragOverIndexerId(null);
-                                  }}
-                                  onDrop={(event) => {
-                                    event.preventDefault();
-                                    const fromId = event.dataTransfer.getData("text/plain") || draggedIndexerId;
-                                    if (!fromId || fromId === indexer.id) return;
-                                    updateCandidateRule(rule.type, (current) => {
-                                      const trackerIds = [...current.indexerPreference.trackerIds];
-                                      const from = trackerIds.indexOf(fromId);
-                                      const to = trackerIds.indexOf(indexer.id);
-                                      if (from < 0 || to < 0) return current;
-                                      const [moved] = trackerIds.splice(from, 1);
-                                      trackerIds.splice(to, 0, moved);
-                                      return {
-                                        ...current,
-                                        indexerPreference: { trackerIds }
-                                      };
-                                    });
-                                    setDraggedIndexerId(null);
-                                    setDragOverIndexerId(null);
-                                  }}
-                                  onDragEnd={() => {
-                                    setDraggedIndexerId(null);
-                                    setDragOverIndexerId(null);
-                                  }}
-                                >
-                                  <div className="torrent-rule__indexer-main">
-                                    <span className="torrent-rule__indexer-handle" aria-hidden="true" title="拖动以调整优先级">
-                                      <FontAwesomeIcon icon={faGripVertical} />
-                                    </span>
-                                    <div className="torrent-rule__indexer-copy">
-                                      <strong title={indexer.name}>{indexer.name}</strong>
-                                    </div>
-                                  </div>
-                                  <div className="torrent-rule__indexer-meta">
-                                    <span className="torrent-rule__indexer-rank">#{selectedIndex + 1}</span>
-                                  </div>
-                                </li>
-                              );
-                            })}
-                          </ol>
-                        ) : null}
-                      </>
-                    ) : null}
+                        <p className="torrent-rule__summary">{buildRuleSummary(rule)}</p>
+                        <div className="torrent-rule__body">
+                          {usesRuleDirection(rule.type) ? (
+                            <label className="torrent-rule__inline-field">
+                              <span className="torrent-rule__inline-label">方向</span>
+                              <select
+                                value={getRuleDirection(rule)}
+                                onChange={(event) =>
+                                  updateCandidateRule(rule.type, (current) => {
+                                    const nextDirection = event.target.value as TorrentSelectionDirection;
+                                    if (current.type === TorrentSelectionRuleType.PublishDate) {
+                                      return { ...current, publishDate: { direction: nextDirection } };
+                                    }
+                                    if (current.type === TorrentSelectionRuleType.Seeders) {
+                                      return { ...current, seeders: { direction: nextDirection } };
+                                    }
+                                    if (current.type === TorrentSelectionRuleType.Size) {
+                                      return { ...current, size: { direction: nextDirection } };
+                                    }
+                                    return current;
+                                  })
+                                }
+                              >
+                                <option value={TorrentSelectionDirection.Desc}>DESC</option>
+                                <option value={TorrentSelectionDirection.Asc}>ASC</option>
+                              </select>
+                            </label>
+                          ) : null}
 
-                    {rule.type === TorrentSelectionRuleType.TitleMatch ? (
-                      <>
-                        <div className="torrent-rule__section-head">
-                          <div>
-                            <p className="torrent-rule__hint">按顺序匹配标题；PLAIN 为纯文本，REGEX 为正则，PREFER/AVOID 决定排序倾向。</p>
-                          </div>
-                          <button
-                            type="button"
-                            className="ghost-button"
-                            onClick={() => addTitleMatchClause(rule.type)}
-                          >
-                            添加规则
-                          </button>
-                        </div>
-                        {rule.titleMatch.clauses.length === 0 ? (
-                          <p className="torrent-rule__hint">尚未添加标题匹配规则。</p>
-                        ) : (
-                          <div className="torrent-rule__clauses">
-                            {rule.titleMatch.clauses.map((clause, clauseIndex) => (
-                              <div key={`${rule.type}-clause-${clauseIndex}`} className="torrent-rule__clause">
-                                <input
-                                  className="torrent-rule__clause-pattern"
-                                  value={clause.pattern}
-                                  onChange={(event) =>
-                                    updateTitleMatchClause(rule.type, clauseIndex, (current) => ({
-                                      ...current,
-                                      pattern: event.target.value
-                                    }))
-                                  }
-                                  placeholder="Pattern：uncensored 或 /\\b4k\\b/i"
-                                  aria-label="标题 Pattern"
-                                />
-                                <select
-                                  className="torrent-rule__clause-mode"
-                                  value={clause.patternMode}
-                                  onChange={(event) =>
-                                    updateTitleMatchClause(rule.type, clauseIndex, (current) => ({
-                                      ...current,
-                                      patternMode: event.target.value as TitleMatchPatternMode
-                                    }))
-                                  }
-                                  aria-label="匹配模式"
-                                >
-                                  <option value={TitleMatchPatternMode.Plain}>PLAIN</option>
-                                  <option value={TitleMatchPatternMode.Regex}>REGEX</option>
-                                </select>
-                                <select
-                                  className="torrent-rule__clause-effect"
-                                  value={clause.effect}
-                                  onChange={(event) =>
-                                    updateTitleMatchClause(rule.type, clauseIndex, (current) => ({
-                                      ...current,
-                                      effect: event.target.value as TitleMatchEffect
-                                    }))
-                                  }
-                                  aria-label="效果"
-                                >
-                                  <option value={TitleMatchEffect.Prefer}>PREFER</option>
-                                  <option value={TitleMatchEffect.Avoid}>AVOID</option>
-                                </select>
-                                <div className="torrent-rule__clause-actions">
-                                  <button
-                                    type="button"
-                                    className="ghost-button ghost-button--icon"
-                                    onClick={() => moveTitleMatchClause(rule.type, clauseIndex, clauseIndex - 1)}
-                                    disabled={clauseIndex === 0}
-                                    aria-label="上移"
-                                  >
-                                    <FontAwesomeIcon icon={faArrowUp} />
-                                  </button>
-                                  <button
-                                    type="button"
-                                    className="ghost-button ghost-button--icon"
-                                    onClick={() => moveTitleMatchClause(rule.type, clauseIndex, clauseIndex + 1)}
-                                    disabled={clauseIndex === rule.titleMatch.clauses.length - 1}
-                                    aria-label="下移"
-                                  >
-                                    <FontAwesomeIcon icon={faArrowDown} />
-                                  </button>
-                                  <button
-                                    type="button"
-                                    className="ghost-button ghost-button--icon"
-                                    onClick={() => removeTitleMatchClause(rule.type, clauseIndex)}
-                                    aria-label="删除"
-                                  >
-                                    <FontAwesomeIcon icon={faTrash} />
-                                  </button>
+                          {rule.type === TorrentSelectionRuleType.TitleSimilarity ? (
+                            <p className="torrent-rule__hint">按查询词与标题的归一化相似度进行排序，不提供额外参数。</p>
+                          ) : null}
+
+                          {rule.type === TorrentSelectionRuleType.IndexerPreference ? (
+                            <>
+                              {fetchingJackettIndexers ? <span className="torrent-rule__hint">加载索引器中…</span> : null}
+                              {!fetchingJackettIndexers && jackettIndexers.length === 0 ? (
+                                <span className="torrent-rule__hint">当前没有可用的 Jackett 索引器。</span>
+                              ) : null}
+                              {!fetchingJackettIndexers && jackettIndexers.length > 0 ? (
+                                <ol className="torrent-rule__indexer-list">
+                                  {rule.indexerPreference.trackerIds.map((trackerId, selectedIndex) => {
+                                    const indexer = jackettIndexers.find((item: JackettIndexer) => item.id === trackerId);
+                                    if (!indexer) return null;
+                                    const classes = ["torrent-rule__indexer-card"];
+                                    if (draggedIndexerId === indexer.id) classes.push("is-dragging");
+                                    if (dragOverIndexerId === indexer.id && draggedIndexerId !== indexer.id) classes.push("is-drop-target");
+                                    return (
+                                      <li
+                                        key={indexer.id}
+                                        className={classes.join(" ")}
+                                        draggable
+                                        onDragStart={(event) => {
+                                          event.dataTransfer.effectAllowed = "move";
+                                          event.dataTransfer.setData("text/plain", indexer.id);
+                                          setDraggedIndexerId(indexer.id);
+                                        }}
+                                        onDragOver={(event) => {
+                                          if (!draggedIndexerId || draggedIndexerId === indexer.id) return;
+                                          event.preventDefault();
+                                          event.dataTransfer.dropEffect = "move";
+                                          setDragOverIndexerId(indexer.id);
+                                        }}
+                                        onDragLeave={() => {
+                                          if (dragOverIndexerId === indexer.id) setDragOverIndexerId(null);
+                                        }}
+                                        onDrop={(event) => {
+                                          event.preventDefault();
+                                          const fromId = event.dataTransfer.getData("text/plain") || draggedIndexerId;
+                                          if (!fromId || fromId === indexer.id) return;
+                                          updateCandidateRule(rule.type, (current) => {
+                                            const trackerIds = [...current.indexerPreference.trackerIds];
+                                            const from = trackerIds.indexOf(fromId);
+                                            const to = trackerIds.indexOf(indexer.id);
+                                            if (from < 0 || to < 0) return current;
+                                            const [moved] = trackerIds.splice(from, 1);
+                                            trackerIds.splice(to, 0, moved);
+                                            return {
+                                              ...current,
+                                              indexerPreference: { trackerIds }
+                                            };
+                                          });
+                                          setDraggedIndexerId(null);
+                                          setDragOverIndexerId(null);
+                                        }}
+                                        onDragEnd={() => {
+                                          setDraggedIndexerId(null);
+                                          setDragOverIndexerId(null);
+                                        }}
+                                      >
+                                        <div className="torrent-rule__indexer-main">
+                                          <span className="torrent-rule__indexer-handle" aria-hidden="true" title="拖动以调整优先级">
+                                            <FontAwesomeIcon icon={faGripVertical} />
+                                          </span>
+                                          <div className="torrent-rule__indexer-copy">
+                                            <strong title={indexer.name}>{indexer.name}</strong>
+                                          </div>
+                                        </div>
+                                        <div className="torrent-rule__indexer-meta">
+                                          <span className="torrent-rule__indexer-rank">#{selectedIndex + 1}</span>
+                                        </div>
+                                      </li>
+                                    );
+                                  })}
+                                </ol>
+                              ) : null}
+                            </>
+                          ) : null}
+
+                          {rule.type === TorrentSelectionRuleType.TitleMatch ? (
+                            <>
+                              <div className="torrent-rule__section-head">
+                                <div>
+                                  <p className="torrent-rule__hint">按顺序匹配标题；PLAIN 为纯文本，REGEX 为正则，PREFER/AVOID 决定排序倾向。</p>
                                 </div>
+                                <button
+                                  type="button"
+                                  className="ghost-button"
+                                  onClick={() => addTitleMatchClause(rule.type)}
+                                >
+                                  添加规则
+                                </button>
                               </div>
-                            ))}
-                          </div>
-                        )}
+                              {rule.titleMatch.clauses.length === 0 ? (
+                                <p className="torrent-rule__hint">尚未添加标题匹配规则。</p>
+                              ) : (
+                                <div className="torrent-rule__clauses">
+                                  {rule.titleMatch.clauses.map((clause, clauseIndex) => (
+                                    <div key={`${rule.type}-clause-${clauseIndex}`} className="torrent-rule__clause">
+                                      <input
+                                        className="torrent-rule__clause-pattern"
+                                        value={clause.pattern}
+                                        onChange={(event) =>
+                                          updateTitleMatchClause(rule.type, clauseIndex, (current) => ({
+                                            ...current,
+                                            pattern: event.target.value
+                                          }))
+                                        }
+                                        placeholder="Pattern：uncensored 或 /\\b4k\\b/i"
+                                        aria-label="标题 Pattern"
+                                      />
+                                      <select
+                                        className="torrent-rule__clause-mode"
+                                        value={clause.patternMode}
+                                        onChange={(event) =>
+                                          updateTitleMatchClause(rule.type, clauseIndex, (current) => ({
+                                            ...current,
+                                            patternMode: event.target.value as TitleMatchPatternMode
+                                          }))
+                                        }
+                                        aria-label="匹配模式"
+                                      >
+                                        <option value={TitleMatchPatternMode.Plain}>PLAIN</option>
+                                        <option value={TitleMatchPatternMode.Regex}>REGEX</option>
+                                      </select>
+                                      <select
+                                        className="torrent-rule__clause-effect"
+                                        value={clause.effect}
+                                        onChange={(event) =>
+                                          updateTitleMatchClause(rule.type, clauseIndex, (current) => ({
+                                            ...current,
+                                            effect: event.target.value as TitleMatchEffect
+                                          }))
+                                        }
+                                        aria-label="效果"
+                                      >
+                                        <option value={TitleMatchEffect.Prefer}>PREFER</option>
+                                        <option value={TitleMatchEffect.Avoid}>AVOID</option>
+                                      </select>
+                                      <div className="torrent-rule__clause-actions">
+                                        <button
+                                          type="button"
+                                          className="ghost-button ghost-button--icon"
+                                          onClick={() => moveTitleMatchClause(rule.type, clauseIndex, clauseIndex - 1)}
+                                          disabled={clauseIndex === 0}
+                                          aria-label="上移"
+                                        >
+                                          <FontAwesomeIcon icon={faArrowUp} />
+                                        </button>
+                                        <button
+                                          type="button"
+                                          className="ghost-button ghost-button--icon"
+                                          onClick={() => moveTitleMatchClause(rule.type, clauseIndex, clauseIndex + 1)}
+                                          disabled={clauseIndex === rule.titleMatch.clauses.length - 1}
+                                          aria-label="下移"
+                                        >
+                                          <FontAwesomeIcon icon={faArrowDown} />
+                                        </button>
+                                        <button
+                                          type="button"
+                                          className="ghost-button ghost-button--icon"
+                                          onClick={() => removeTitleMatchClause(rule.type, clauseIndex)}
+                                          aria-label="删除"
+                                        >
+                                          <FontAwesomeIcon icon={faTrash} />
+                                        </button>
+                                      </div>
+                                    </div>
+                                  ))}
+                                </div>
+                              )}
+                            </>
+                          ) : null}
+                        </div>
                       </>
                     ) : null}
-                  </div>
                 </article>
                 );
               })}
@@ -1788,92 +1792,96 @@ export function SettingsPanel({
                       </div>
                     </header>
 
-                    <p className="torrent-rule__summary">{buildRuleSummary(rule)}</p>
-                    <div className="settings-form">
-                      {rule.type === TorrentSelectionRuleType.TorrentSingleVideo ? (
-                        <p className="torrent-rule__hint">
-                          只检查首轮排序后的前 {automationForm.torrentSelection.inspectionCandidateLimit || "5"} 个且带 `.torrent` 链接的候选；命中“单个视频文件”结构时优先。`magnet` 不参与文件结构检查。
-                        </p>
-                      ) : null}
+                    {rule.enabled ? (
+                      <>
+                        <p className="torrent-rule__summary">{buildRuleSummary(rule)}</p>
+                        <div className="settings-form">
+                          {rule.type === TorrentSelectionRuleType.TorrentSingleVideo ? (
+                            <p className="torrent-rule__hint">
+                              只检查首轮排序后的前 {automationForm.torrentSelection.inspectionCandidateLimit || "5"} 个且带 `.torrent` 链接的候选；命中“单个视频文件”结构时优先。`magnet` 不参与文件结构检查。
+                            </p>
+                          ) : null}
 
-                      {rule.type === TorrentSelectionRuleType.TorrentFileNameMatch ? (
-                        <>
-                          <div className="drawer-card__head">
-                            <div>
-                              <p className="torrent-rule__hint">按顺序匹配 torrent 内部文件路径或文件名</p>
-                              <p className="torrent-rule__hint">PLAIN 为纯文本，REGEX 为正则，LOCK 命中后直接选中。</p>
-                            </div>
-                            <button
-                              type="button"
-                              className="ghost-button"
-                              onClick={() => addTorrentFileNameMatchClause(rule.type)}
-                            >
-                              添加规则
-                            </button>
-                          </div>
-                          {rule.torrentFileNameMatch.clauses.length === 0 ? (
-                            <p className="torrent-rule__hint">尚未添加文件名匹配规则。</p>
-                          ) : (
-                            <div className="torrent-rule__clauses">
-                              {rule.torrentFileNameMatch.clauses.map((clause, clauseIndex) => (
-                                <div key={`${rule.type}-inline-torrent-file-clause-${clauseIndex}`} className="torrent-rule__clause">
-                                  <input
-                                    className="torrent-rule__clause-pattern"
-                                    value={clause.pattern}
-                                    onChange={(event) =>
-                                      updateTorrentFileNameMatchClause(rule.type, clauseIndex, (current) => ({
-                                        ...current,
-                                        pattern: event.target.value
-                                      }))
-                                    }
-                                    placeholder="Pattern：hhd800.com 或 /sample/i"
-                                    aria-label="Torrent 文件名 Pattern"
-                                  />
-                                  <select
-                                    className="torrent-rule__clause-mode"
-                                    value={clause.patternMode}
-                                    onChange={(event) =>
-                                      updateTorrentFileNameMatchClause(rule.type, clauseIndex, (current) => ({
-                                        ...current,
-                                        patternMode: event.target.value as TitleMatchPatternMode
-                                      }))
-                                    }
-                                    aria-label="匹配模式"
-                                  >
-                                    <option value={TitleMatchPatternMode.Plain}>PLAIN</option>
-                                    <option value={TitleMatchPatternMode.Regex}>REGEX</option>
-                                  </select>
-                                  <select
-                                    className="torrent-rule__clause-effect"
-                                    value={clause.effect}
-                                    onChange={(event) =>
-                                      updateTorrentFileNameMatchClause(rule.type, clauseIndex, (current) => ({
-                                        ...current,
-                                        effect: event.target.value as TorrentFileMatchEffect
-                                      }))
-                                    }
-                                    aria-label="效果"
-                                  >
-                                    <option value={TorrentFileMatchEffect.Prefer}>PREFER</option>
-                                    <option value={TorrentFileMatchEffect.Avoid}>AVOID</option>
-                                    <option value={TorrentFileMatchEffect.Lock}>LOCK</option>
-                                  </select>
-                                  <div className="torrent-rule__clause-actions">
-                                    <button
-                                      type="button"
-                                      className="ghost-button"
-                                      onClick={() => removeTorrentFileNameMatchClause(rule.type, clauseIndex)}
-                                    >
-                                      删除
-                                    </button>
-                                  </div>
+                          {rule.type === TorrentSelectionRuleType.TorrentFileNameMatch ? (
+                            <>
+                              <div className="drawer-card__head">
+                                <div>
+                                  <p className="torrent-rule__hint">按顺序匹配 torrent 内部文件路径或文件名</p>
+                                  <p className="torrent-rule__hint">PLAIN 为纯文本，REGEX 为正则，LOCK 命中后直接选中。</p>
                                 </div>
-                              ))}
-                            </div>
-                          )}
-                        </>
-                      ) : null}
-                    </div>
+                                <button
+                                  type="button"
+                                  className="ghost-button"
+                                  onClick={() => addTorrentFileNameMatchClause(rule.type)}
+                                >
+                                  添加规则
+                                </button>
+                              </div>
+                              {rule.torrentFileNameMatch.clauses.length === 0 ? (
+                                <p className="torrent-rule__hint">尚未添加文件名匹配规则。</p>
+                              ) : (
+                                <div className="torrent-rule__clauses">
+                                  {rule.torrentFileNameMatch.clauses.map((clause, clauseIndex) => (
+                                    <div key={`${rule.type}-inline-torrent-file-clause-${clauseIndex}`} className="torrent-rule__clause">
+                                      <input
+                                        className="torrent-rule__clause-pattern"
+                                        value={clause.pattern}
+                                        onChange={(event) =>
+                                          updateTorrentFileNameMatchClause(rule.type, clauseIndex, (current) => ({
+                                            ...current,
+                                            pattern: event.target.value
+                                          }))
+                                        }
+                                        placeholder="Pattern：hhd800.com 或 /sample/i"
+                                        aria-label="Torrent 文件名 Pattern"
+                                      />
+                                      <select
+                                        className="torrent-rule__clause-mode"
+                                        value={clause.patternMode}
+                                        onChange={(event) =>
+                                          updateTorrentFileNameMatchClause(rule.type, clauseIndex, (current) => ({
+                                            ...current,
+                                            patternMode: event.target.value as TitleMatchPatternMode
+                                          }))
+                                        }
+                                        aria-label="匹配模式"
+                                      >
+                                        <option value={TitleMatchPatternMode.Plain}>PLAIN</option>
+                                        <option value={TitleMatchPatternMode.Regex}>REGEX</option>
+                                      </select>
+                                      <select
+                                        className="torrent-rule__clause-effect"
+                                        value={clause.effect}
+                                        onChange={(event) =>
+                                          updateTorrentFileNameMatchClause(rule.type, clauseIndex, (current) => ({
+                                            ...current,
+                                            effect: event.target.value as TorrentFileMatchEffect
+                                          }))
+                                        }
+                                        aria-label="效果"
+                                      >
+                                        <option value={TorrentFileMatchEffect.Prefer}>PREFER</option>
+                                        <option value={TorrentFileMatchEffect.Avoid}>AVOID</option>
+                                        <option value={TorrentFileMatchEffect.Lock}>LOCK</option>
+                                      </select>
+                                      <div className="torrent-rule__clause-actions">
+                                        <button
+                                          type="button"
+                                          className="ghost-button"
+                                          onClick={() => removeTorrentFileNameMatchClause(rule.type, clauseIndex)}
+                                        >
+                                          删除
+                                        </button>
+                                      </div>
+                                    </div>
+                                  ))}
+                                </div>
+                              )}
+                            </>
+                          ) : null}
+                        </div>
+                      </>
+                    ) : null}
                   </article>
                 );
               })}
