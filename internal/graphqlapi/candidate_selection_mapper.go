@@ -6,10 +6,19 @@ func torrentSelectionSettingsFromModel(input *model.TorrentSelectionSettingsInpu
 	if input == nil {
 		return TorrentSelectionSettingsSnapshot{}
 	}
+	fastRules := torrentSelectionRulesFromModel(input.FastRules)
+	torrentRules := torrentSelectionRulesFromModel(input.TorrentRules)
+	rules := append([]TorrentSelectionRuleSnapshot(nil), fastRules...)
+	rules = append(rules, torrentRules...)
+	if len(rules) == 0 {
+		rules = torrentSelectionRulesFromModel(input.Rules)
+	}
 	return TorrentSelectionSettingsSnapshot{
 		Enabled:                  input.Enabled,
 		InspectionCandidateLimit: input.InspectionCandidateLimit,
-		Rules:                    torrentSelectionRulesFromModel(input.Rules),
+		FastRules:                fastRules,
+		TorrentRules:             torrentRules,
+		Rules:                    rules,
 	}
 }
 
@@ -21,7 +30,6 @@ func torrentSelectionRulesFromModel(rules []*model.TorrentSelectionRuleInput) []
 		}
 		item := TorrentSelectionRuleSnapshot{
 			ID:        rule.ID,
-			Name:      rule.Name,
 			Type:      string(rule.Type),
 			Enabled:   rule.Enabled,
 		}

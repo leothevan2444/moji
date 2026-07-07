@@ -113,12 +113,25 @@ func torrentSelectionSettingsToModel(snapshot TorrentSelectionSettingsSnapshot) 
 	out := &model.TorrentSelectionSettings{
 		Enabled:                  snapshot.Enabled,
 		InspectionCandidateLimit: snapshot.InspectionCandidateLimit,
+		FastRules:                make([]*model.TorrentSelectionRule, 0, len(snapshot.FastRules)),
+		TorrentRules:             make([]*model.TorrentSelectionRule, 0, len(snapshot.TorrentRules)),
 		Rules:                    make([]*model.TorrentSelectionRule, 0, len(snapshot.Rules)),
 	}
+	for _, rule := range snapshot.FastRules {
+		out.FastRules = append(out.FastRules, torrentSelectionRuleToModel(rule))
+	}
+	for _, rule := range snapshot.TorrentRules {
+		out.TorrentRules = append(out.TorrentRules, torrentSelectionRuleToModel(rule))
+	}
 	for _, rule := range snapshot.Rules {
-		item := &model.TorrentSelectionRule{
+		out.Rules = append(out.Rules, torrentSelectionRuleToModel(rule))
+	}
+	return out
+}
+
+func torrentSelectionRuleToModel(rule TorrentSelectionRuleSnapshot) *model.TorrentSelectionRule {
+	item := &model.TorrentSelectionRule{
 			ID:        rule.ID,
-			Name:      rule.Name,
 			Type:      model.TorrentSelectionRuleType(rule.Type),
 			Enabled:   rule.Enabled,
 			IndexerPreference: &model.IndexerPreferenceRule{
@@ -154,9 +167,7 @@ func torrentSelectionSettingsToModel(snapshot TorrentSelectionSettingsSnapshot) 
 				Effect:      model.TorrentFileMatchEffect(clause.Effect),
 			})
 		}
-		out.Rules = append(out.Rules, item)
-	}
-	return out
+	return item
 }
 
 func settingsStatusSnapshotToModel(snapshot *SettingsStatusSnapshot) *model.SettingsStatus {

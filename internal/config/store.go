@@ -37,6 +37,9 @@ func OpenStore(path string) (*Store, error) {
 	cfg.Connection.Stash.normalize()
 	cfg.System.TaskDeletePolicy = cfg.System.EffectiveTaskDeletePolicy()
 	cfg.Automation.StashBoxEndpoints = cleanStrings(cfg.Automation.StashBoxEndpoints)
+	if err := cfg.Automation.TorrentSelection.Validate(); err != nil {
+		return nil, err
+	}
 	cfg.Automation.TorrentSelection = cfg.Automation.TorrentSelection.Effective()
 	cfg.path = path
 
@@ -135,6 +138,10 @@ func (s *Store) UpdateQBittorrent(url, username, password, defaultSavePath, cate
 func (s *Store) UpdateAutomation(taskProgressSyncIntervalSeconds, subscriptionPollIntervalHours int, stashBoxEndpoints []string, torrentSelection TorrentSelectionConfig) (*Config, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
+
+	if err := torrentSelection.Validate(); err != nil {
+		return nil, err
+	}
 
 	s.cfg.Automation.TaskProgressSyncIntervalSeconds = taskProgressSyncIntervalSeconds
 	s.cfg.Automation.SubscriptionPollIntervalHours = subscriptionPollIntervalHours

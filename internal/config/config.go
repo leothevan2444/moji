@@ -74,22 +74,37 @@ const (
 )
 
 type TorrentSelectionConfig struct {
-	Enabled                  bool                   `yaml:"enabled"`
-	InspectionCandidateLimit int                    `yaml:"inspection_candidate_limit"`
-	Rules                    []TorrentSelectionRule `yaml:"rules"`
+	Enabled                  bool                          `yaml:"enabled"`
+	InspectionCandidateLimit int                           `yaml:"inspection_candidate_limit"`
+	FastRuleOrder            []TorrentSelectionRuleType    `yaml:"fast_rule_order"`
+	FastRules                FastTorrentSelectionRules     `yaml:"fast_rules"`
+	TorrentRules             TorrentInspectionRuleSettings `yaml:"torrent_rules"`
 }
 
 type TorrentSelectionRule struct {
-	ID                   string                         `yaml:"id"`
-	Name                 string                         `yaml:"name"`
-	Type                 TorrentSelectionRuleType       `yaml:"type"`
-	Enabled              bool                           `yaml:"enabled"`
-	IndexerPreference    IndexerPreferenceRuleConfig    `yaml:"indexer_preference"`
-	TitleMatch           TitleMatchRuleConfig           `yaml:"title_match"`
-	PublishDate          PublishDateRuleConfig          `yaml:"publish_date"`
-	Seeders              SeedersRuleConfig              `yaml:"seeders"`
-	Size                 SizeRuleConfig                 `yaml:"size"`
-	TorrentFileNameMatch TorrentFileNameMatchRuleConfig `yaml:"torrent_file_name_match"`
+	ID                   string                   `yaml:"-"`
+	Type                 TorrentSelectionRuleType `yaml:"-"`
+	Enabled              bool                     `yaml:"-"`
+	IndexerPreference    IndexerPreferenceRuleConfig
+	TitleMatch           TitleMatchRuleConfig
+	PublishDate          PublishDateRuleConfig
+	Seeders              SeedersRuleConfig
+	Size                 SizeRuleConfig
+	TorrentFileNameMatch TorrentFileNameMatchRuleConfig
+}
+
+type FastTorrentSelectionRules struct {
+	IndexerPreference IndexerPreferenceRuleSettings `yaml:"indexer_preference"`
+	TitleMatch        TitleMatchRuleSettings        `yaml:"title_match"`
+	PublishDate       DirectionRuleSettings         `yaml:"publish_date"`
+	TitleSimilarity   ToggleRuleSettings            `yaml:"title_similarity"`
+	Seeders           DirectionRuleSettings         `yaml:"seeders"`
+	Size              DirectionRuleSettings         `yaml:"size"`
+}
+
+type TorrentInspectionRuleSettings struct {
+	TorrentSingleVideo   ToggleRuleSettings               `yaml:"torrent_single_video"`
+	TorrentFileNameMatch TorrentFileNameMatchRuleSettings `yaml:"torrent_file_name_match"`
 }
 
 type CandidateSelectionRuleType = TorrentSelectionRuleType
@@ -101,12 +116,31 @@ type IndexerPreferenceRuleConfig struct {
 	TrackerIDs []string `yaml:"tracker_ids"`
 }
 
+type IndexerPreferenceRuleSettings struct {
+	Enabled    bool     `yaml:"enabled"`
+	TrackerIDs []string `yaml:"tracker_ids"`
+}
+
 type TitleMatchRuleConfig struct {
+	Clauses []TitleMatchClause `yaml:"clauses"`
+}
+
+type TitleMatchRuleSettings struct {
+	Enabled bool               `yaml:"enabled"`
 	Clauses []TitleMatchClause `yaml:"clauses"`
 }
 
 type PublishDateRuleConfig struct {
 	Direction TorrentSelectionDirection `yaml:"direction"`
+}
+
+type DirectionRuleSettings struct {
+	Enabled   bool                      `yaml:"enabled"`
+	Direction TorrentSelectionDirection `yaml:"direction,omitempty"`
+}
+
+type ToggleRuleSettings struct {
+	Enabled bool `yaml:"enabled"`
 }
 
 type SeedersRuleConfig struct {
@@ -124,6 +158,11 @@ type TitleMatchClause struct {
 }
 
 type TorrentFileNameMatchRuleConfig struct {
+	Clauses []TorrentFileNameMatchClause `yaml:"clauses"`
+}
+
+type TorrentFileNameMatchRuleSettings struct {
+	Enabled bool                         `yaml:"enabled"`
 	Clauses []TorrentFileNameMatchClause `yaml:"clauses"`
 }
 
@@ -233,30 +272,13 @@ type Config struct {
 }
 
 func DefaultTorrentSelectionConfig() TorrentSelectionConfig {
-	return TorrentSelectionConfig{
+	cfg := TorrentSelectionConfig{
 		Enabled:                  true,
 		InspectionCandidateLimit: 5,
-		Rules: []TorrentSelectionRule{
-			{
-				ID:        "default-seeders",
-				Name:      "Seeders",
-				Type:      TorrentSelectionRuleTypeSeeders,
-				Enabled:   true,
-				Seeders: SeedersRuleConfig{
-					Direction: TorrentSelectionDirectionDesc,
-				},
-			},
-			{
-				ID:        "default-size",
-				Name:      "Size",
-				Type:      TorrentSelectionRuleTypeSize,
-				Enabled:   true,
-				Size: SizeRuleConfig{
-					Direction: TorrentSelectionDirectionDesc,
-				},
-			},
-		},
 	}
+	cfg.FastRuleOrder = append([]TorrentSelectionRuleType(nil), defaultFastTorrentSelectionRuleTypes()...)
+	cfg.FastRules, cfg.TorrentRules = torrentSelectionRulesFromOrdered(defaultTorrentSelectionRules())
+	return cfg
 }
 
 func DefaultCandidateSelectionConfig() CandidateSelectionConfig {
@@ -328,65 +350,29 @@ func NormalizeTorrentSelectionRuleType(value TorrentSelectionRuleType) TorrentSe
 	}
 }
 
-func DefaultTorrentSelectionRuleName(ruleType TorrentSelectionRuleType, index int) string {
-	switch NormalizeTorrentSelectionRuleType(ruleType) {
-	case TorrentSelectionRuleTypeIndexerPreference:
-		return "Indexer Preference"
-	case TorrentSelectionRuleTypeTitleMatch:
-		return "Title Match"
-	case TorrentSelectionRuleTypePublishDate:
-		return "Publish Date"
-	case TorrentSelectionRuleTypeTitleSimilarity:
-		return "Title Similarity"
-	case TorrentSelectionRuleTypeSeeders:
-		return "Seeders"
-	case TorrentSelectionRuleTypeSize:
-		return "Size"
-	case TorrentSelectionRuleTypeTorrentSingleVideo:
-		return "Single Video"
-	case TorrentSelectionRuleTypeTorrentFileNameMatch:
-		return "Torrent File Name Match"
-	default:
-		return fmt.Sprintf("Rule %d", index+1)
-	}
-}
-
 func NormalizeCandidateSelectionRuleType(value CandidateSelectionRuleType) CandidateSelectionRuleType {
 	return NormalizeTorrentSelectionRuleType(value)
 }
 
 func (c TorrentSelectionConfig) Effective() TorrentSelectionConfig {
-	if len(c.Rules) == 0 {
-		return DefaultTorrentSelectionConfig()
-	}
-
 	normalized := TorrentSelectionConfig{
 		Enabled:                  c.Enabled,
 		InspectionCandidateLimit: NormalizeTorrentInspectionCandidateLimit(c.InspectionCandidateLimit),
-		Rules:                    make([]TorrentSelectionRule, 0, len(c.Rules)),
+		FastRuleOrder:            normalizeFastRuleOrder(c.FastRuleOrder),
+		FastRules:                c.FastRules.normalized(),
+		TorrentRules:             c.TorrentRules.normalized(),
 	}
-	for i, rule := range c.Rules {
-		next := rule.normalized(i)
-		if next.Type == "" {
-			continue
-		}
-		normalized.Rules = append(normalized.Rules, next)
-	}
-	if len(normalized.Rules) == 0 {
-		return DefaultTorrentSelectionConfig()
+	if len(normalized.FastRuleOrder) == 0 {
+		normalized.FastRuleOrder = append([]TorrentSelectionRuleType(nil), defaultFastTorrentSelectionRuleTypes()...)
 	}
 	return normalized
 }
 
 func (r TorrentSelectionRule) normalized(index int) TorrentSelectionRule {
+	r.Type = NormalizeTorrentSelectionRuleType(r.Type)
 	r.ID = strings.TrimSpace(r.ID)
 	if r.ID == "" {
-		r.ID = fmt.Sprintf("rule-%d", index+1)
-	}
-	r.Type = NormalizeTorrentSelectionRuleType(r.Type)
-	r.Name = strings.TrimSpace(r.Name)
-	if r.Name == "" {
-		r.Name = DefaultTorrentSelectionRuleName(r.Type, index)
+		r.ID = defaultTorrentSelectionRuleID(r.Type, index)
 	}
 	r.IndexerPreference.TrackerIDs = cleanStrings(r.IndexerPreference.TrackerIDs)
 	r.PublishDate.Direction = NormalizeTorrentSelectionDirection(r.PublishDate.Direction)
@@ -431,6 +417,364 @@ func (r TorrentSelectionRule) normalized(index int) TorrentSelectionRule {
 	return r
 }
 
+func (c TorrentSelectionConfig) Validate() error {
+	seen := make(map[TorrentSelectionRuleType]struct{}, len(c.FastRuleOrder))
+	for _, ruleType := range c.FastRuleOrder {
+		normalizedType := NormalizeTorrentSelectionRuleType(ruleType)
+		if isTorrentInspectionRuleType(normalizedType) {
+			return fmt.Errorf("automation.torrent_selection.fast_rule_order contains non-fast rule type %s", normalizedType)
+		}
+		if _, exists := seen[normalizedType]; exists {
+			return fmt.Errorf("automation.torrent_selection.fast_rule_order contains duplicate type %s", normalizedType)
+		}
+		seen[normalizedType] = struct{}{}
+	}
+	return nil
+}
+
+func (c TorrentSelectionConfig) rulesByType() map[TorrentSelectionRuleType]TorrentSelectionRule {
+	out := c.FastRules.toMap()
+	for ruleType, rule := range c.TorrentRules.toMap() {
+		out[ruleType] = rule
+	}
+	return out
+}
+
+func (c TorrentSelectionConfig) OrderedRules() []TorrentSelectionRule {
+	effective := c.Effective()
+	ruleMap := effective.rulesByType()
+	out := make([]TorrentSelectionRule, 0, len(defaultTorrentSelectionRules()))
+	for _, ruleType := range effective.FastRuleOrder {
+		out = append(out, ruleMap[ruleType])
+	}
+	for _, ruleType := range defaultTorrentInspectionRuleTypes() {
+		out = append(out, ruleMap[ruleType])
+	}
+	return out
+}
+
+func NewTorrentSelectionConfig(enabled bool, inspectionCandidateLimit int, orderedRules []TorrentSelectionRule) TorrentSelectionConfig {
+	cfg := DefaultTorrentSelectionConfig()
+	cfg.Enabled = enabled
+	cfg.InspectionCandidateLimit = inspectionCandidateLimit
+	cfg.FastRuleOrder = make([]TorrentSelectionRuleType, 0, len(defaultFastTorrentSelectionRuleTypes()))
+	for _, rule := range orderedRules {
+		normalizedType := NormalizeTorrentSelectionRuleType(rule.Type)
+		if isTorrentInspectionRuleType(normalizedType) {
+			continue
+		}
+		cfg.FastRuleOrder = append(cfg.FastRuleOrder, normalizedType)
+	}
+	cfg.FastRules, cfg.TorrentRules = torrentSelectionRulesFromOrdered(orderedRules)
+	return cfg
+}
+
+func defaultTorrentSelectionRules() []TorrentSelectionRule {
+	ruleTypes := append(defaultFastTorrentSelectionRuleTypes(), defaultTorrentInspectionRuleTypes()...)
+	rules := make([]TorrentSelectionRule, 0, len(ruleTypes))
+	for _, ruleType := range ruleTypes {
+		rules = append(rules, defaultTorrentSelectionRule(ruleType))
+	}
+	return rules
+}
+
+func defaultFastTorrentSelectionRuleTypes() []TorrentSelectionRuleType {
+	return []TorrentSelectionRuleType{
+		TorrentSelectionRuleTypeIndexerPreference,
+		TorrentSelectionRuleTypeTitleMatch,
+		TorrentSelectionRuleTypePublishDate,
+		TorrentSelectionRuleTypeTitleSimilarity,
+		TorrentSelectionRuleTypeSeeders,
+		TorrentSelectionRuleTypeSize,
+	}
+}
+
+func defaultTorrentInspectionRuleTypes() []TorrentSelectionRuleType {
+	return []TorrentSelectionRuleType{
+		TorrentSelectionRuleTypeTorrentSingleVideo,
+		TorrentSelectionRuleTypeTorrentFileNameMatch,
+	}
+}
+
+func isTorrentInspectionRuleType(ruleType TorrentSelectionRuleType) bool {
+	switch ruleType {
+	case TorrentSelectionRuleTypeTorrentSingleVideo, TorrentSelectionRuleTypeTorrentFileNameMatch:
+		return true
+	default:
+		return false
+	}
+}
+
+func defaultTorrentSelectionRule(ruleType TorrentSelectionRuleType) TorrentSelectionRule {
+	rule := TorrentSelectionRule{
+		ID:      defaultTorrentSelectionRuleID(ruleType, 0),
+		Type:    ruleType,
+		Enabled: true,
+		PublishDate: PublishDateRuleConfig{
+			Direction: TorrentSelectionDirectionDesc,
+		},
+		Seeders: SeedersRuleConfig{
+			Direction: TorrentSelectionDirectionDesc,
+		},
+		Size: SizeRuleConfig{
+			Direction: TorrentSelectionDirectionDesc,
+		},
+	}
+	return rule
+}
+
+func defaultTorrentSelectionRuleID(ruleType TorrentSelectionRuleType, index int) string {
+	switch NormalizeTorrentSelectionRuleType(ruleType) {
+	case TorrentSelectionRuleTypeIndexerPreference:
+		return "indexer-preference"
+	case TorrentSelectionRuleTypeTitleMatch:
+		return "title-match"
+	case TorrentSelectionRuleTypePublishDate:
+		return "publish-date"
+	case TorrentSelectionRuleTypeTitleSimilarity:
+		return "title-similarity"
+	case TorrentSelectionRuleTypeSeeders:
+		return "seeders"
+	case TorrentSelectionRuleTypeSize:
+		return "size"
+	case TorrentSelectionRuleTypeTorrentSingleVideo:
+		return "torrent-single-video"
+	case TorrentSelectionRuleTypeTorrentFileNameMatch:
+		return "torrent-file-name-match"
+	default:
+		return fmt.Sprintf("rule-%d", index+1)
+	}
+}
+
+func missingDefaultRuleTypes(current []TorrentSelectionRuleType, defaults []TorrentSelectionRuleType) []TorrentSelectionRuleType {
+	seen := make(map[TorrentSelectionRuleType]struct{}, len(current))
+	for _, ruleType := range current {
+		seen[ruleType] = struct{}{}
+	}
+	missing := make([]TorrentSelectionRuleType, 0, len(defaults))
+	for _, ruleType := range defaults {
+		if _, exists := seen[ruleType]; exists {
+			continue
+		}
+		missing = append(missing, ruleType)
+	}
+	return missing
+}
+
+func chooseDefaultTorrentSelectionRule(ruleType TorrentSelectionRuleType, seen map[TorrentSelectionRuleType]TorrentSelectionRule) TorrentSelectionRule {
+	if rule, exists := seen[ruleType]; exists {
+		return rule
+	}
+	return defaultTorrentSelectionRule(ruleType)
+}
+
+func normalizeFastRuleOrder(order []TorrentSelectionRuleType) []TorrentSelectionRuleType {
+	seen := make(map[TorrentSelectionRuleType]struct{}, len(order))
+	out := make([]TorrentSelectionRuleType, 0, len(defaultFastTorrentSelectionRuleTypes()))
+	for _, ruleType := range order {
+		normalized := NormalizeTorrentSelectionRuleType(ruleType)
+		if isTorrentInspectionRuleType(normalized) {
+			continue
+		}
+		if _, exists := seen[normalized]; exists {
+			continue
+		}
+		seen[normalized] = struct{}{}
+		out = append(out, normalized)
+	}
+	return append(out, missingDefaultRuleTypes(out, defaultFastTorrentSelectionRuleTypes())...)
+}
+
+func (r FastTorrentSelectionRules) normalized() FastTorrentSelectionRules {
+	out := FastTorrentSelectionRules{}
+	for _, ruleType := range defaultFastTorrentSelectionRuleTypes() {
+		out.setRule(defaultTorrentSelectionRule(ruleType).merge(r.ruleForType(ruleType)).normalized(0))
+	}
+	return out
+}
+
+func (r FastTorrentSelectionRules) toMap() map[TorrentSelectionRuleType]TorrentSelectionRule {
+	return map[TorrentSelectionRuleType]TorrentSelectionRule{
+		TorrentSelectionRuleTypeIndexerPreference: r.ruleForType(TorrentSelectionRuleTypeIndexerPreference),
+		TorrentSelectionRuleTypeTitleMatch:        r.ruleForType(TorrentSelectionRuleTypeTitleMatch),
+		TorrentSelectionRuleTypePublishDate:       r.ruleForType(TorrentSelectionRuleTypePublishDate),
+		TorrentSelectionRuleTypeTitleSimilarity:   r.ruleForType(TorrentSelectionRuleTypeTitleSimilarity),
+		TorrentSelectionRuleTypeSeeders:           r.ruleForType(TorrentSelectionRuleTypeSeeders),
+		TorrentSelectionRuleTypeSize:              r.ruleForType(TorrentSelectionRuleTypeSize),
+	}
+}
+
+func (r *FastTorrentSelectionRules) setRule(rule TorrentSelectionRule) {
+	switch rule.Type {
+	case TorrentSelectionRuleTypeIndexerPreference:
+		r.IndexerPreference = IndexerPreferenceRuleSettings{
+			Enabled:    rule.Enabled,
+			TrackerIDs: append([]string(nil), rule.IndexerPreference.TrackerIDs...),
+		}
+	case TorrentSelectionRuleTypeTitleMatch:
+		r.TitleMatch = TitleMatchRuleSettings{
+			Enabled: rule.Enabled,
+			Clauses: append([]TitleMatchClause(nil), rule.TitleMatch.Clauses...),
+		}
+	case TorrentSelectionRuleTypePublishDate:
+		r.PublishDate = DirectionRuleSettings{
+			Enabled:   rule.Enabled,
+			Direction: rule.PublishDate.Direction,
+		}
+	case TorrentSelectionRuleTypeTitleSimilarity:
+		r.TitleSimilarity = ToggleRuleSettings{Enabled: rule.Enabled}
+	case TorrentSelectionRuleTypeSeeders:
+		r.Seeders = DirectionRuleSettings{
+			Enabled:   rule.Enabled,
+			Direction: rule.Seeders.Direction,
+		}
+	case TorrentSelectionRuleTypeSize:
+		r.Size = DirectionRuleSettings{
+			Enabled:   rule.Enabled,
+			Direction: rule.Size.Direction,
+		}
+	}
+}
+
+func (r FastTorrentSelectionRules) ruleForType(ruleType TorrentSelectionRuleType) TorrentSelectionRule {
+	switch ruleType {
+	case TorrentSelectionRuleTypeIndexerPreference:
+		return TorrentSelectionRule{
+			Type:    ruleType,
+			Enabled: r.IndexerPreference.Enabled,
+			IndexerPreference: IndexerPreferenceRuleConfig{
+				TrackerIDs: append([]string(nil), r.IndexerPreference.TrackerIDs...),
+			},
+		}
+	case TorrentSelectionRuleTypeTitleMatch:
+		return TorrentSelectionRule{
+			Type:    ruleType,
+			Enabled: r.TitleMatch.Enabled,
+			TitleMatch: TitleMatchRuleConfig{
+				Clauses: append([]TitleMatchClause(nil), r.TitleMatch.Clauses...),
+			},
+		}
+	case TorrentSelectionRuleTypePublishDate:
+		return TorrentSelectionRule{
+			Type:    ruleType,
+			Enabled: r.PublishDate.Enabled,
+			PublishDate: PublishDateRuleConfig{
+				Direction: r.PublishDate.Direction,
+			},
+		}
+	case TorrentSelectionRuleTypeTitleSimilarity:
+		return TorrentSelectionRule{
+			Type:    ruleType,
+			Enabled: r.TitleSimilarity.Enabled,
+		}
+	case TorrentSelectionRuleTypeSeeders:
+		return TorrentSelectionRule{
+			Type:    ruleType,
+			Enabled: r.Seeders.Enabled,
+			Seeders: SeedersRuleConfig{
+				Direction: r.Seeders.Direction,
+			},
+		}
+	case TorrentSelectionRuleTypeSize:
+		return TorrentSelectionRule{
+			Type:    ruleType,
+			Enabled: r.Size.Enabled,
+			Size: SizeRuleConfig{
+				Direction: r.Size.Direction,
+			},
+		}
+	default:
+		return TorrentSelectionRule{}
+	}
+}
+
+func (r TorrentInspectionRuleSettings) normalized() TorrentInspectionRuleSettings {
+	out := TorrentInspectionRuleSettings{}
+	for _, ruleType := range defaultTorrentInspectionRuleTypes() {
+		out.setRule(defaultTorrentSelectionRule(ruleType).merge(r.ruleForType(ruleType)).normalized(0))
+	}
+	return out
+}
+
+func (r TorrentInspectionRuleSettings) toMap() map[TorrentSelectionRuleType]TorrentSelectionRule {
+	return map[TorrentSelectionRuleType]TorrentSelectionRule{
+		TorrentSelectionRuleTypeTorrentSingleVideo:   r.ruleForType(TorrentSelectionRuleTypeTorrentSingleVideo),
+		TorrentSelectionRuleTypeTorrentFileNameMatch: r.ruleForType(TorrentSelectionRuleTypeTorrentFileNameMatch),
+	}
+}
+
+func (r *TorrentInspectionRuleSettings) setRule(rule TorrentSelectionRule) {
+	switch rule.Type {
+	case TorrentSelectionRuleTypeTorrentSingleVideo:
+		r.TorrentSingleVideo = ToggleRuleSettings{Enabled: rule.Enabled}
+	case TorrentSelectionRuleTypeTorrentFileNameMatch:
+		r.TorrentFileNameMatch = TorrentFileNameMatchRuleSettings{
+			Enabled: rule.Enabled,
+			Clauses: append([]TorrentFileNameMatchClause(nil), rule.TorrentFileNameMatch.Clauses...),
+		}
+	}
+}
+
+func (r TorrentInspectionRuleSettings) ruleForType(ruleType TorrentSelectionRuleType) TorrentSelectionRule {
+	switch ruleType {
+	case TorrentSelectionRuleTypeTorrentSingleVideo:
+		return TorrentSelectionRule{
+			Type:    ruleType,
+			Enabled: r.TorrentSingleVideo.Enabled,
+		}
+	case TorrentSelectionRuleTypeTorrentFileNameMatch:
+		return TorrentSelectionRule{
+			Type:    ruleType,
+			Enabled: r.TorrentFileNameMatch.Enabled,
+			TorrentFileNameMatch: TorrentFileNameMatchRuleConfig{
+				Clauses: append([]TorrentFileNameMatchClause(nil), r.TorrentFileNameMatch.Clauses...),
+			},
+		}
+	default:
+		return TorrentSelectionRule{}
+	}
+}
+
+func torrentSelectionRulesFromOrdered(rules []TorrentSelectionRule) (FastTorrentSelectionRules, TorrentInspectionRuleSettings) {
+	fastRules := FastTorrentSelectionRules{}
+	torrentRules := TorrentInspectionRuleSettings{}
+	for _, rule := range rules {
+		rule.Type = NormalizeTorrentSelectionRuleType(rule.Type)
+		if isTorrentInspectionRuleType(rule.Type) {
+			torrentRules.setRule(rule)
+			continue
+		}
+		fastRules.setRule(rule)
+	}
+	return fastRules, torrentRules
+}
+
+func (r TorrentSelectionRule) merge(other TorrentSelectionRule) TorrentSelectionRule {
+	if strings.TrimSpace(other.ID) != "" {
+		r.ID = other.ID
+	}
+	r.Enabled = other.Enabled
+	if len(other.IndexerPreference.TrackerIDs) > 0 {
+		r.IndexerPreference = other.IndexerPreference
+	}
+	if len(other.TitleMatch.Clauses) > 0 {
+		r.TitleMatch = other.TitleMatch
+	}
+	if other.PublishDate.Direction != "" {
+		r.PublishDate = other.PublishDate
+	}
+	if other.Seeders.Direction != "" {
+		r.Seeders = other.Seeders
+	}
+	if other.Size.Direction != "" {
+		r.Size = other.Size
+	}
+	if len(other.TorrentFileNameMatch.Clauses) > 0 {
+		r.TorrentFileNameMatch = other.TorrentFileNameMatch
+	}
+	return r
+}
+
 func cleanStrings(values []string) []string {
 	out := make([]string, 0, len(values))
 	for _, value := range values {
@@ -461,6 +805,9 @@ func LoadFromPath(path string) (*Config, error) {
 	config.Connection.Stash.normalize()
 	config.System.TaskDeletePolicy = config.System.EffectiveTaskDeletePolicy()
 	config.Automation.StashBoxEndpoints = cleanStrings(config.Automation.StashBoxEndpoints)
+	if err := config.Automation.TorrentSelection.Validate(); err != nil {
+		return nil, err
+	}
 	config.Automation.TorrentSelection = config.Automation.TorrentSelection.Effective()
 	config.path = path
 

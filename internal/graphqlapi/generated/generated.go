@@ -511,7 +511,6 @@ type ComplexityRoot struct {
 		Enabled              func(childComplexity int) int
 		ID                   func(childComplexity int) int
 		IndexerPreference    func(childComplexity int) int
-		Name                 func(childComplexity int) int
 		PublishDate          func(childComplexity int) int
 		Seeders              func(childComplexity int) int
 		Size                 func(childComplexity int) int
@@ -522,8 +521,10 @@ type ComplexityRoot struct {
 
 	TorrentSelectionSettings struct {
 		Enabled                  func(childComplexity int) int
+		FastRules                func(childComplexity int) int
 		InspectionCandidateLimit func(childComplexity int) int
 		Rules                    func(childComplexity int) int
+		TorrentRules             func(childComplexity int) int
 	}
 
 	TransferIngestSettings struct {
@@ -2942,13 +2943,6 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.TorrentSelectionRule.IndexerPreference(childComplexity), true
 
-	case "TorrentSelectionRule.name":
-		if e.complexity.TorrentSelectionRule.Name == nil {
-			break
-		}
-
-		return e.complexity.TorrentSelectionRule.Name(childComplexity), true
-
 	case "TorrentSelectionRule.publishDate":
 		if e.complexity.TorrentSelectionRule.PublishDate == nil {
 			break
@@ -2998,6 +2992,13 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.TorrentSelectionSettings.Enabled(childComplexity), true
 
+	case "TorrentSelectionSettings.fastRules":
+		if e.complexity.TorrentSelectionSettings.FastRules == nil {
+			break
+		}
+
+		return e.complexity.TorrentSelectionSettings.FastRules(childComplexity), true
+
 	case "TorrentSelectionSettings.inspectionCandidateLimit":
 		if e.complexity.TorrentSelectionSettings.InspectionCandidateLimit == nil {
 			break
@@ -3011,6 +3012,13 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.TorrentSelectionSettings.Rules(childComplexity), true
+
+	case "TorrentSelectionSettings.torrentRules":
+		if e.complexity.TorrentSelectionSettings.TorrentRules == nil {
+			break
+		}
+
+		return e.complexity.TorrentSelectionSettings.TorrentRules(childComplexity), true
 
 	case "TransferIngestSettings.action":
 		if e.complexity.TransferIngestSettings.Action == nil {
@@ -3495,6 +3503,8 @@ type JackettSettings {
 type TorrentSelectionSettings {
   enabled: Boolean!
   inspectionCandidateLimit: Int!
+  fastRules: [TorrentSelectionRule!]!
+  torrentRules: [TorrentSelectionRule!]!
   rules: [TorrentSelectionRule!]!
 }
 
@@ -3532,7 +3542,6 @@ enum TorrentFileMatchEffect {
 
 type TorrentSelectionRule {
   id: ID!
-  name: String!
   type: TorrentSelectionRuleType!
   enabled: Boolean!
   indexerPreference: IndexerPreferenceRule!
@@ -3668,12 +3677,13 @@ input UpdateJackettSettingsInput {
 input TorrentSelectionSettingsInput {
   enabled: Boolean!
   inspectionCandidateLimit: Int!
-  rules: [TorrentSelectionRuleInput!]!
+  fastRules: [TorrentSelectionRuleInput!]
+  torrentRules: [TorrentSelectionRuleInput!]
+  rules: [TorrentSelectionRuleInput!]
 }
 
 input TorrentSelectionRuleInput {
   id: ID!
-  name: String!
   type: TorrentSelectionRuleType!
   enabled: Boolean!
   indexerPreference: IndexerPreferenceRuleInput
@@ -5204,6 +5214,10 @@ func (ec *executionContext) fieldContext_AutomationSettings_torrentSelection(_ c
 				return ec.fieldContext_TorrentSelectionSettings_enabled(ctx, field)
 			case "inspectionCandidateLimit":
 				return ec.fieldContext_TorrentSelectionSettings_inspectionCandidateLimit(ctx, field)
+			case "fastRules":
+				return ec.fieldContext_TorrentSelectionSettings_fastRules(ctx, field)
+			case "torrentRules":
+				return ec.fieldContext_TorrentSelectionSettings_torrentRules(ctx, field)
 			case "rules":
 				return ec.fieldContext_TorrentSelectionSettings_rules(ctx, field)
 			}
@@ -20524,50 +20538,6 @@ func (ec *executionContext) fieldContext_TorrentSelectionRule_id(_ context.Conte
 	return fc, nil
 }
 
-func (ec *executionContext) _TorrentSelectionRule_name(ctx context.Context, field graphql.CollectedField, obj *model.TorrentSelectionRule) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_TorrentSelectionRule_name(ctx, field)
-	if err != nil {
-		return graphql.Null
-	}
-	ctx = graphql.WithFieldContext(ctx, fc)
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.Name, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(string)
-	fc.Result = res
-	return ec.marshalNString2string(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) fieldContext_TorrentSelectionRule_name(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "TorrentSelectionRule",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type String does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
 func (ec *executionContext) _TorrentSelectionRule_type(ctx context.Context, field graphql.CollectedField, obj *model.TorrentSelectionRule) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_TorrentSelectionRule_type(ctx, field)
 	if err != nil {
@@ -21032,6 +21002,134 @@ func (ec *executionContext) fieldContext_TorrentSelectionSettings_inspectionCand
 	return fc, nil
 }
 
+func (ec *executionContext) _TorrentSelectionSettings_fastRules(ctx context.Context, field graphql.CollectedField, obj *model.TorrentSelectionSettings) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_TorrentSelectionSettings_fastRules(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.FastRules, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]*model.TorrentSelectionRule)
+	fc.Result = res
+	return ec.marshalNTorrentSelectionRule2ᚕᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐTorrentSelectionRuleᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_TorrentSelectionSettings_fastRules(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "TorrentSelectionSettings",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_TorrentSelectionRule_id(ctx, field)
+			case "type":
+				return ec.fieldContext_TorrentSelectionRule_type(ctx, field)
+			case "enabled":
+				return ec.fieldContext_TorrentSelectionRule_enabled(ctx, field)
+			case "indexerPreference":
+				return ec.fieldContext_TorrentSelectionRule_indexerPreference(ctx, field)
+			case "titleMatch":
+				return ec.fieldContext_TorrentSelectionRule_titleMatch(ctx, field)
+			case "publishDate":
+				return ec.fieldContext_TorrentSelectionRule_publishDate(ctx, field)
+			case "seeders":
+				return ec.fieldContext_TorrentSelectionRule_seeders(ctx, field)
+			case "size":
+				return ec.fieldContext_TorrentSelectionRule_size(ctx, field)
+			case "torrentFileNameMatch":
+				return ec.fieldContext_TorrentSelectionRule_torrentFileNameMatch(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type TorrentSelectionRule", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _TorrentSelectionSettings_torrentRules(ctx context.Context, field graphql.CollectedField, obj *model.TorrentSelectionSettings) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_TorrentSelectionSettings_torrentRules(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.TorrentRules, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]*model.TorrentSelectionRule)
+	fc.Result = res
+	return ec.marshalNTorrentSelectionRule2ᚕᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐTorrentSelectionRuleᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_TorrentSelectionSettings_torrentRules(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "TorrentSelectionSettings",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_TorrentSelectionRule_id(ctx, field)
+			case "type":
+				return ec.fieldContext_TorrentSelectionRule_type(ctx, field)
+			case "enabled":
+				return ec.fieldContext_TorrentSelectionRule_enabled(ctx, field)
+			case "indexerPreference":
+				return ec.fieldContext_TorrentSelectionRule_indexerPreference(ctx, field)
+			case "titleMatch":
+				return ec.fieldContext_TorrentSelectionRule_titleMatch(ctx, field)
+			case "publishDate":
+				return ec.fieldContext_TorrentSelectionRule_publishDate(ctx, field)
+			case "seeders":
+				return ec.fieldContext_TorrentSelectionRule_seeders(ctx, field)
+			case "size":
+				return ec.fieldContext_TorrentSelectionRule_size(ctx, field)
+			case "torrentFileNameMatch":
+				return ec.fieldContext_TorrentSelectionRule_torrentFileNameMatch(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type TorrentSelectionRule", field.Name)
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _TorrentSelectionSettings_rules(ctx context.Context, field graphql.CollectedField, obj *model.TorrentSelectionSettings) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_TorrentSelectionSettings_rules(ctx, field)
 	if err != nil {
@@ -21073,8 +21171,6 @@ func (ec *executionContext) fieldContext_TorrentSelectionSettings_rules(_ contex
 			switch field.Name {
 			case "id":
 				return ec.fieldContext_TorrentSelectionRule_id(ctx, field)
-			case "name":
-				return ec.fieldContext_TorrentSelectionRule_name(ctx, field)
 			case "type":
 				return ec.fieldContext_TorrentSelectionRule_type(ctx, field)
 			case "enabled":
@@ -23940,7 +24036,7 @@ func (ec *executionContext) unmarshalInputTorrentSelectionRuleInput(ctx context.
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"id", "name", "type", "enabled", "indexerPreference", "titleMatch", "publishDate", "seeders", "size", "torrentFileNameMatch"}
+	fieldsInOrder := [...]string{"id", "type", "enabled", "indexerPreference", "titleMatch", "publishDate", "seeders", "size", "torrentFileNameMatch"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -23954,13 +24050,6 @@ func (ec *executionContext) unmarshalInputTorrentSelectionRuleInput(ctx context.
 				return it, err
 			}
 			it.ID = data
-		case "name":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("name"))
-			data, err := ec.unmarshalNString2string(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.Name = data
 		case "type":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("type"))
 			data, err := ec.unmarshalNTorrentSelectionRuleType2githubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐTorrentSelectionRuleType(ctx, v)
@@ -24030,7 +24119,7 @@ func (ec *executionContext) unmarshalInputTorrentSelectionSettingsInput(ctx cont
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"enabled", "inspectionCandidateLimit", "rules"}
+	fieldsInOrder := [...]string{"enabled", "inspectionCandidateLimit", "fastRules", "torrentRules", "rules"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -24051,9 +24140,23 @@ func (ec *executionContext) unmarshalInputTorrentSelectionSettingsInput(ctx cont
 				return it, err
 			}
 			it.InspectionCandidateLimit = data
+		case "fastRules":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("fastRules"))
+			data, err := ec.unmarshalOTorrentSelectionRuleInput2ᚕᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐTorrentSelectionRuleInputᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.FastRules = data
+		case "torrentRules":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("torrentRules"))
+			data, err := ec.unmarshalOTorrentSelectionRuleInput2ᚕᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐTorrentSelectionRuleInputᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.TorrentRules = data
 		case "rules":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("rules"))
-			data, err := ec.unmarshalNTorrentSelectionRuleInput2ᚕᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐTorrentSelectionRuleInputᚄ(ctx, v)
+			data, err := ec.unmarshalOTorrentSelectionRuleInput2ᚕᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐTorrentSelectionRuleInputᚄ(ctx, v)
 			if err != nil {
 				return it, err
 			}
@@ -27825,11 +27928,6 @@ func (ec *executionContext) _TorrentSelectionRule(ctx context.Context, sel ast.S
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
-		case "name":
-			out.Values[i] = ec._TorrentSelectionRule_name(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
 		case "type":
 			out.Values[i] = ec._TorrentSelectionRule_type(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
@@ -27911,6 +28009,16 @@ func (ec *executionContext) _TorrentSelectionSettings(ctx context.Context, sel a
 			}
 		case "inspectionCandidateLimit":
 			out.Values[i] = ec._TorrentSelectionSettings_inspectionCandidateLimit(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "fastRules":
+			out.Values[i] = ec._TorrentSelectionSettings_fastRules(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "torrentRules":
+			out.Values[i] = ec._TorrentSelectionSettings_torrentRules(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
@@ -29840,21 +29948,6 @@ func (ec *executionContext) marshalNTorrentSelectionRule2ᚖgithubᚗcomᚋleoth
 	return ec._TorrentSelectionRule(ctx, sel, v)
 }
 
-func (ec *executionContext) unmarshalNTorrentSelectionRuleInput2ᚕᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐTorrentSelectionRuleInputᚄ(ctx context.Context, v any) ([]*model.TorrentSelectionRuleInput, error) {
-	var vSlice []any
-	vSlice = graphql.CoerceList(v)
-	var err error
-	res := make([]*model.TorrentSelectionRuleInput, len(vSlice))
-	for i := range vSlice {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithIndex(i))
-		res[i], err = ec.unmarshalNTorrentSelectionRuleInput2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐTorrentSelectionRuleInput(ctx, vSlice[i])
-		if err != nil {
-			return nil, err
-		}
-	}
-	return res, nil
-}
-
 func (ec *executionContext) unmarshalNTorrentSelectionRuleInput2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐTorrentSelectionRuleInput(ctx context.Context, v any) (*model.TorrentSelectionRuleInput, error) {
 	res, err := ec.unmarshalInputTorrentSelectionRuleInput(ctx, v)
 	return &res, graphql.ErrorOnPath(ctx, err)
@@ -30487,6 +30580,24 @@ func (ec *executionContext) unmarshalOTorrentFileNameMatchRuleInput2ᚖgithubᚗ
 	}
 	res, err := ec.unmarshalInputTorrentFileNameMatchRuleInput(ctx, v)
 	return &res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) unmarshalOTorrentSelectionRuleInput2ᚕᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐTorrentSelectionRuleInputᚄ(ctx context.Context, v any) ([]*model.TorrentSelectionRuleInput, error) {
+	if v == nil {
+		return nil, nil
+	}
+	var vSlice []any
+	vSlice = graphql.CoerceList(v)
+	var err error
+	res := make([]*model.TorrentSelectionRuleInput, len(vSlice))
+	for i := range vSlice {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithIndex(i))
+		res[i], err = ec.unmarshalNTorrentSelectionRuleInput2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐTorrentSelectionRuleInput(ctx, vSlice[i])
+		if err != nil {
+			return nil, err
+		}
+	}
+	return res, nil
 }
 
 func (ec *executionContext) marshalO__EnumValue2ᚕgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐEnumValueᚄ(ctx context.Context, sel ast.SelectionSet, v []introspection.EnumValue) graphql.Marshaler {

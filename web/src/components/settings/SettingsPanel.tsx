@@ -12,7 +12,6 @@ import {
   faEyeSlash,
   faGripVertical,
   faPenToSquare,
-  faPlus,
   faRotate,
   faTrash
 } from "@fortawesome/free-solid-svg-icons";
@@ -67,26 +66,10 @@ import {
 import { serviceStatus } from "../../utils";
 import { describeQueryError } from "../../services/queryError";
 import { formatDateTime, formatLogEntries } from "../../utils";
-import { Menu } from "../common/Menu";
 
 type RuntimeSettings = NonNullable<DashboardDocumentQuery["settings"]>;
 type RuntimeSettingsStatus = NonNullable<DashboardDocumentQuery["settingsStatus"]>;
 type JackettIndexer = JackettIndexersDocumentQuery["jackettIndexers"][number];
-
-const TORRENT_SELECTION_RULE_TYPE_OPTIONS: TorrentSelectionRuleType[] = [
-  TorrentSelectionRuleType.IndexerPreference,
-  TorrentSelectionRuleType.TitleMatch,
-  TorrentSelectionRuleType.PublishDate,
-  TorrentSelectionRuleType.TitleSimilarity,
-  TorrentSelectionRuleType.Seeders,
-  TorrentSelectionRuleType.Size,
-  TorrentSelectionRuleType.TorrentSingleVideo,
-  TorrentSelectionRuleType.TorrentFileNameMatch
-];
-
-const FAST_TORRENT_SELECTION_RULE_TYPE_OPTIONS = TORRENT_SELECTION_RULE_TYPE_OPTIONS.filter(
-  (type) => type !== TorrentSelectionRuleType.TorrentSingleVideo && type !== TorrentSelectionRuleType.TorrentFileNameMatch
-);
 
 const TORRENT_SELECTION_RULE_LABELS: Record<TorrentSelectionRuleType, string> = {
   [TorrentSelectionRuleType.IndexerPreference]: "索引器偏好",
@@ -98,21 +81,6 @@ const TORRENT_SELECTION_RULE_LABELS: Record<TorrentSelectionRuleType, string> = 
   [TorrentSelectionRuleType.TorrentSingleVideo]: "Torrent 单视频优先",
   [TorrentSelectionRuleType.TorrentFileNameMatch]: "Torrent 文件名匹配"
 };
-
-const TORRENT_SELECTION_RULE_HINTS: Record<TorrentSelectionRuleType, string> = {
-  [TorrentSelectionRuleType.IndexerPreference]: "按索引器优先级挑种",
-  [TorrentSelectionRuleType.TitleMatch]: "匹配/排除关键字或正则",
-  [TorrentSelectionRuleType.PublishDate]: "按发布新旧比较",
-  [TorrentSelectionRuleType.TitleSimilarity]: "与订阅标题相似度",
-  [TorrentSelectionRuleType.Seeders]: "按做种人数比较",
-  [TorrentSelectionRuleType.Size]: "按文件体积比较",
-  [TorrentSelectionRuleType.TorrentSingleVideo]: "优先包含单个视频文件的种子",
-  [TorrentSelectionRuleType.TorrentFileNameMatch]: "匹配 torrent 内部文件路径或文件名"
-};
-
-function makeRuleId(prefix: string) {
-  return `${prefix}-${Math.random().toString(36).slice(2, 10)}`;
-}
 
 function isTorrentInspectionRuleType(type: TorrentSelectionRuleType): boolean {
   return type === TorrentSelectionRuleType.TorrentSingleVideo || type === TorrentSelectionRuleType.TorrentFileNameMatch;
@@ -135,24 +103,80 @@ function getRuleDirection(rule: Pick<TorrentSelectionRuleDraft, "type" | "publis
   }
 }
 
-function makeTorrentSelectionRule(type: TorrentSelectionRuleType) {
-  return {
-    id: makeRuleId(type.toLowerCase()),
-    name: TORRENT_SELECTION_RULE_LABELS[type],
-    type,
-    enabled: true,
-    indexerPreference: { trackerIds: [] as string[] },
-    titleMatch: { clauses: [] as Array<{ pattern: string; patternMode: TitleMatchPatternMode; effect: TitleMatchEffect }> },
-    publishDate: { direction: TorrentSelectionDirection.Desc },
-    seeders: { direction: TorrentSelectionDirection.Desc },
-    size: { direction: TorrentSelectionDirection.Desc },
-    torrentFileNameMatch: { clauses: [] as Array<{ pattern: string; patternMode: TitleMatchPatternMode; effect: TorrentFileMatchEffect }> }
-  };
+type AutomationForm = typeof EMPTY_AUTOMATION_FORM;
+type TorrentSelectionRuleDraft = AutomationForm["torrentSelection"]["fastRules"][number];
+type AutomationFormShape = AutomationForm;
+
+function combineTorrentSelectionRules(torrentSelection: AutomationForm["torrentSelection"]): TorrentSelectionRuleDraft[] {
+  return [...torrentSelection.fastRules, ...torrentSelection.torrentRules];
 }
 
-type AutomationForm = typeof EMPTY_AUTOMATION_FORM;
-type TorrentSelectionRuleDraft = ReturnType<typeof makeTorrentSelectionRule>;
-type AutomationFormShape = AutomationForm;
+function serializeTorrentSelectionRule(rule: TorrentSelectionRuleDraft) {
+  const payload: {
+    id: string;
+    type: TorrentSelectionRuleType;
+    enabled: boolean;
+    indexerPreference?: { trackerIds: string[] };
+    publishDate?: { direction: TorrentSelectionDirection };
+    seeders?: { direction: TorrentSelectionDirection };
+    size?: { direction: TorrentSelectionDirection };
+    titleMatch?: {
+      clauses: Array<{
+        pattern: string;
+        patternMode: TitleMatchPatternMode;
+        effect: TitleMatchEffect;
+      }>;
+    };
+    torrentFileNameMatch?: {
+      clauses: Array<{
+        pattern: string;
+        patternMode: TitleMatchPatternMode;
+        effect: TorrentFileMatchEffect;
+      }>;
+    };
+  } = {
+    id: rule.id,
+    type: rule.type,
+    enabled: rule.enabled,
+  };
+
+  switch (rule.type) {
+    case TorrentSelectionRuleType.IndexerPreference:
+      payload.indexerPreference = { trackerIds: [...rule.indexerPreference.trackerIds] };
+      break;
+    case TorrentSelectionRuleType.TitleMatch:
+      payload.titleMatch = {
+        clauses: rule.titleMatch.clauses.map((clause) => ({
+          pattern: clause.pattern,
+          patternMode: clause.patternMode,
+          effect: clause.effect
+        }))
+      };
+      break;
+    case TorrentSelectionRuleType.PublishDate:
+      payload.publishDate = { direction: rule.publishDate.direction || TorrentSelectionDirection.Desc };
+      break;
+    case TorrentSelectionRuleType.Seeders:
+      payload.seeders = { direction: rule.seeders.direction || TorrentSelectionDirection.Desc };
+      break;
+    case TorrentSelectionRuleType.Size:
+      payload.size = { direction: rule.size.direction || TorrentSelectionDirection.Desc };
+      break;
+    case TorrentSelectionRuleType.TorrentFileNameMatch:
+      payload.torrentFileNameMatch = {
+        clauses: rule.torrentFileNameMatch.clauses.map((clause) => ({
+          pattern: clause.pattern,
+          patternMode: clause.patternMode,
+          effect: clause.effect
+        }))
+      };
+      break;
+    default:
+      break;
+  }
+
+  return payload;
+}
 
 /**
  * 把 AutomationForm 表单数据编码为 GraphQL mutation 所需的 input。
@@ -162,7 +186,8 @@ function buildAutomationSettingsPayload(form: AutomationFormShape) {
   const taskProgressSyncIntervalSeconds = Number.parseInt(form.taskProgressSyncIntervalSeconds.trim(), 10);
   const subscriptionPollIntervalHours = Number.parseInt(form.subscriptionPollIntervalHours.trim(), 10);
   const inspectionCandidateLimit = Number.parseInt(form.torrentSelection.inspectionCandidateLimit.trim(), 10);
-  const { rules } = ensureTorrentFileInspectionRules(form.torrentSelection.rules);
+  const fastRules = form.torrentSelection.fastRules.map(cloneTorrentSelectionRule);
+  const torrentRules = form.torrentSelection.torrentRules.map(cloneTorrentSelectionRule);
   return {
     taskProgressSyncIntervalSeconds: Number.isNaN(taskProgressSyncIntervalSeconds) ? 60 : taskProgressSyncIntervalSeconds,
     subscriptionPollIntervalHours: Number.isNaN(subscriptionPollIntervalHours) ? 1 : subscriptionPollIntervalHours,
@@ -170,30 +195,9 @@ function buildAutomationSettingsPayload(form: AutomationFormShape) {
     torrentSelection: {
       enabled: form.torrentSelection.enabled,
       inspectionCandidateLimit: Number.isNaN(inspectionCandidateLimit) ? 5 : inspectionCandidateLimit,
-      rules: rules.map((rule: TorrentSelectionRuleDraft) => ({
-        id: rule.id,
-        name: rule.name.trim(),
-        type: rule.type,
-        enabled: rule.enabled,
-        indexerPreference: { trackerIds: rule.indexerPreference.trackerIds },
-        publishDate: { direction: rule.publishDate.direction },
-        seeders: { direction: rule.seeders.direction },
-        size: { direction: rule.size.direction },
-        titleMatch: {
-          clauses: rule.titleMatch.clauses.map((clause: TorrentSelectionRuleDraft["titleMatch"]["clauses"][number]) => ({
-            pattern: clause.pattern,
-            patternMode: clause.patternMode,
-            effect: clause.effect
-          }))
-        },
-        torrentFileNameMatch: {
-          clauses: rule.torrentFileNameMatch.clauses.map((clause: TorrentSelectionRuleDraft["torrentFileNameMatch"]["clauses"][number]) => ({
-            pattern: clause.pattern,
-            patternMode: clause.patternMode,
-            effect: clause.effect
-          }))
-        }
-      }))
+      fastRules: fastRules.map(serializeTorrentSelectionRule),
+      torrentRules: torrentRules.map(serializeTorrentSelectionRule),
+      rules: [...fastRules, ...torrentRules].map(serializeTorrentSelectionRule)
     }
   };
 }
@@ -239,25 +243,7 @@ function buildRuleSummary(rule: TorrentSelectionRuleDraft): string {
   return "";
 }
 
-function displayRuleName(rule: Pick<TorrentSelectionRuleDraft, "name" | "type">): string {
-  const name = rule.name.trim();
-  return name === "" ? TORRENT_SELECTION_RULE_LABELS[rule.type] : name;
-}
-
-function partitionTorrentSelectionRules(rules: TorrentSelectionRuleDraft[]) {
-  const fastRules: TorrentSelectionRuleDraft[] = [];
-  const fileInspectionRules: TorrentSelectionRuleDraft[] = [];
-  for (const rule of rules) {
-    if (isTorrentInspectionRuleType(rule.type)) {
-      fileInspectionRules.push(rule);
-    } else {
-      fastRules.push(rule);
-    }
-  }
-  return { fastRules, fileInspectionRules };
-}
-
-function cloneTorrentSelectionRule(rule: TorrentSelectionRuleDraft): TorrentSelectionRuleDraft {
+function cloneDefaultTorrentSelectionRule(rule: TorrentSelectionRuleDraft): TorrentSelectionRuleDraft {
   return {
     ...rule,
     indexerPreference: { trackerIds: [...rule.indexerPreference.trackerIds] },
@@ -269,6 +255,10 @@ function cloneTorrentSelectionRule(rule: TorrentSelectionRuleDraft): TorrentSele
   };
 }
 
+function cloneTorrentSelectionRule(rule: TorrentSelectionRuleDraft): TorrentSelectionRuleDraft {
+  return cloneDefaultTorrentSelectionRule(rule);
+}
+
 function syncIndexerPreferenceTrackerIds(trackerIds: string[], indexers: JackettIndexer[]): string[] {
   const enabledIds = indexers.map((indexer) => indexer.id);
   const kept = trackerIds.filter((id) => enabledIds.includes(id));
@@ -276,47 +266,18 @@ function syncIndexerPreferenceTrackerIds(trackerIds: string[], indexers: Jackett
   return [...kept, ...missing];
 }
 
-function ensureTorrentFileInspectionRules(rules: TorrentSelectionRuleDraft[]) {
-  const { fastRules, fileInspectionRules } = partitionTorrentSelectionRules(rules);
-  const byType = new Map(fileInspectionRules.map((rule) => [rule.type, rule]));
-  const ensuredFileInspectionRules = DEFAULT_TORRENT_FILE_INSPECTION_RULES.map((rule: TorrentSelectionRuleDraft) => {
-    const existing = byType.get(rule.type);
-    return cloneTorrentSelectionRule(existing ?? rule);
-  });
-  return {
-    fastRules,
-    fileInspectionRules: ensuredFileInspectionRules,
-    rules: [...fastRules, ...ensuredFileInspectionRules]
-  };
-}
-
-/** 给定当前 draft 与新 type，重置类型专属字段，避免跨类型残留旧数据。 */
-function withTypeReset(draft: TorrentSelectionRuleDraft, nextType: TorrentSelectionRuleType): TorrentSelectionRuleDraft {
-  if (draft.type === nextType) return draft;
-  return {
-    ...draft,
-    type: nextType,
-    indexerPreference: nextType === TorrentSelectionRuleType.IndexerPreference ? draft.indexerPreference : { trackerIds: [] },
-    titleMatch: nextType === TorrentSelectionRuleType.TitleMatch ? draft.titleMatch : { clauses: [] },
-    publishDate: nextType === TorrentSelectionRuleType.PublishDate ? draft.publishDate : { direction: TorrentSelectionDirection.Desc },
-    seeders: nextType === TorrentSelectionRuleType.Seeders ? draft.seeders : { direction: TorrentSelectionDirection.Desc },
-    size: nextType === TorrentSelectionRuleType.Size ? draft.size : { direction: TorrentSelectionDirection.Desc },
-    torrentFileNameMatch: nextType === TorrentSelectionRuleType.TorrentFileNameMatch ? draft.torrentFileNameMatch : { clauses: [] }
-  };
-}
-
 function torrentSelectionFromRuntime(runtimeSettings: RuntimeSettings) {
-  const rawRules = runtimeSettings.automation.torrentSelection.rules.length > 0
-    ? runtimeSettings.automation.torrentSelection.rules.map((rule: RuntimeSettings["automation"]["torrentSelection"]["rules"][number]) => ({
+  const sourceFastRules = runtimeSettings.automation.torrentSelection.fastRules;
+  const sourceTorrentRules = runtimeSettings.automation.torrentSelection.torrentRules;
+  const mapRule = (rule: RuntimeSettings["automation"]["torrentSelection"]["fastRules"][number]) => ({
         id: rule.id,
-        name: rule.name,
         type: rule.type,
         enabled: rule.enabled,
         indexerPreference: {
           trackerIds: [...rule.indexerPreference.trackerIds]
         },
         titleMatch: {
-          clauses: rule.titleMatch.clauses.map((clause: RuntimeSettings["automation"]["torrentSelection"]["rules"][number]["titleMatch"]["clauses"][number]) => ({
+          clauses: rule.titleMatch.clauses.map((clause: RuntimeSettings["automation"]["torrentSelection"]["fastRules"][number]["titleMatch"]["clauses"][number]) => ({
             pattern: clause.pattern,
             patternMode: clause.patternMode,
             effect: clause.effect
@@ -332,20 +293,25 @@ function torrentSelectionFromRuntime(runtimeSettings: RuntimeSettings) {
           direction: rule.size.direction
         },
         torrentFileNameMatch: {
-          clauses: rule.torrentFileNameMatch.clauses.map((clause: RuntimeSettings["automation"]["torrentSelection"]["rules"][number]["torrentFileNameMatch"]["clauses"][number]) => ({
+          clauses: rule.torrentFileNameMatch.clauses.map((clause: RuntimeSettings["automation"]["torrentSelection"]["fastRules"][number]["torrentFileNameMatch"]["clauses"][number]) => ({
             pattern: clause.pattern,
             patternMode: clause.patternMode,
             effect: clause.effect
           }))
         }
-      }))
-    : [...DEFAULT_TORRENT_SELECTION_RULES, ...DEFAULT_TORRENT_FILE_INSPECTION_RULES].map((rule) => cloneTorrentSelectionRule(rule));
-  const { rules } = ensureTorrentFileInspectionRules(rawRules);
+      });
+  const fastRules = sourceFastRules.length > 0
+    ? sourceFastRules.map(mapRule)
+    : DEFAULT_TORRENT_SELECTION_RULES.map((rule) => cloneTorrentSelectionRule(rule));
+  const torrentRules = sourceTorrentRules.length > 0
+    ? sourceTorrentRules.map(mapRule)
+    : DEFAULT_TORRENT_FILE_INSPECTION_RULES.map((rule) => cloneTorrentSelectionRule(rule));
 
   return {
     enabled: runtimeSettings.automation.torrentSelection.enabled,
     inspectionCandidateLimit: String(runtimeSettings.automation.torrentSelection.inspectionCandidateLimit || 5),
-    rules
+    fastRules,
+    torrentRules
   };
 }
 
@@ -475,7 +441,7 @@ export function SettingsPanel({
     if (jackettIndexers.length === 0) return;
     setAutomationForm((current) => {
       let changed = false;
-      const rules = current.torrentSelection.rules.map((rule) => {
+      const fastRules = current.torrentSelection.fastRules.map((rule) => {
         if (rule.type !== TorrentSelectionRuleType.IndexerPreference) return rule;
         const trackerIds = syncIndexerPreferenceTrackerIds(rule.indexerPreference.trackerIds, jackettIndexers);
         if (trackerIds.length === rule.indexerPreference.trackerIds.length && trackerIds.every((id, index) => id === rule.indexerPreference.trackerIds[index])) {
@@ -492,7 +458,7 @@ export function SettingsPanel({
         ...current,
         torrentSelection: {
           ...current.torrentSelection,
-          rules
+          fastRules
         }
       };
     });
@@ -724,21 +690,26 @@ export function SettingsPanel({
    */
   const saveRuleEditor = async () => {
     if (!editingRuleDraft) return;
-    const nextRules = automationForm.torrentSelection.rules.map((rule) =>
+    const nextFastRules = automationForm.torrentSelection.fastRules.map((rule) =>
+      rule.id === editingRuleDraft.id ? editingRuleDraft : rule
+    );
+    const nextTorrentRules = automationForm.torrentSelection.torrentRules.map((rule) =>
       rule.id === editingRuleDraft.id ? editingRuleDraft : rule
     );
     setAutomationForm((current) => ({
       ...current,
       torrentSelection: {
         ...current.torrentSelection,
-        rules: nextRules
+        fastRules: nextFastRules,
+        torrentRules: nextTorrentRules
       }
     }));
     const formForPayload: AutomationForm = {
       ...automationForm,
       torrentSelection: {
         ...automationForm.torrentSelection,
-        rules: nextRules
+        fastRules: nextFastRules,
+        torrentRules: nextTorrentRules
       }
     };
     const payload = buildAutomationSettingsPayload(formForPayload);
@@ -757,55 +728,31 @@ export function SettingsPanel({
     }
   };
 
-  const moveCandidateRuleInSection = (from: number, to: number) => {
+  const moveCandidateRuleInSection = (section: "fast" | "file", from: number, to: number) => {
     setAutomationForm((current) => {
-      const { fastRules: currentFastRules, fileInspectionRules: currentFileInspectionRules } = ensureTorrentFileInspectionRules(current.torrentSelection.rules);
-      if (to < 0 || to >= currentFastRules.length) return current;
-      const nextFastRules = [...currentFastRules];
-      const [moved] = nextFastRules.splice(from, 1);
-      nextFastRules.splice(to, 0, moved);
-      const rules = [...nextFastRules, ...currentFileInspectionRules];
+      const sourceRules = section === "fast" ? current.torrentSelection.fastRules : current.torrentSelection.torrentRules;
+      if (to < 0 || to >= sourceRules.length) return current;
+      const reordered = [...sourceRules];
+      const [moved] = reordered.splice(from, 1);
+      reordered.splice(to, 0, moved);
       return {
         ...current,
         torrentSelection: {
           ...current.torrentSelection,
-          rules
+          fastRules: section === "fast" ? reordered : current.torrentSelection.fastRules,
+          torrentRules: section === "file" ? reordered : current.torrentSelection.torrentRules
         }
       };
     });
   };
 
-  const addCandidateRule = (type: TorrentSelectionRuleType) => {
-    setAutomationForm((current) => {
-      const { fastRules: currentFastRules, fileInspectionRules: currentFileInspectionRules } = ensureTorrentFileInspectionRules(current.torrentSelection.rules);
-      const nextRule = makeTorrentSelectionRule(type);
-      const rules = [...currentFastRules, nextRule, ...currentFileInspectionRules];
-      return {
-        ...current,
-        torrentSelection: {
-          ...current.torrentSelection,
-          rules
-        }
-      };
-    });
-  };
-
-  const updateCandidateRule = (ruleId: string, updater: (rule: typeof automationForm.torrentSelection.rules[number]) => typeof automationForm.torrentSelection.rules[number]) => {
+  const updateCandidateRule = (ruleId: string, updater: (rule: TorrentSelectionRuleDraft) => TorrentSelectionRuleDraft) => {
     setAutomationForm((current) => ({
       ...current,
       torrentSelection: {
         ...current.torrentSelection,
-        rules: current.torrentSelection.rules.map((rule) => (rule.id === ruleId ? updater(rule) : rule))
-      }
-    }));
-  };
-
-  const removeCandidateRule = (ruleId: string) => {
-    setAutomationForm((current) => ({
-      ...current,
-      torrentSelection: {
-        ...current.torrentSelection,
-        rules: current.torrentSelection.rules.filter((rule) => rule.id !== ruleId || isTorrentInspectionRuleType(rule.type))
+        fastRules: current.torrentSelection.fastRules.map((rule) => (rule.id === ruleId ? updater(rule) : rule)),
+        torrentRules: current.torrentSelection.torrentRules.map((rule) => (rule.id === ruleId ? updater(rule) : rule))
       }
     }));
   };
@@ -829,7 +776,7 @@ export function SettingsPanel({
   const updateTitleMatchClause = (
     ruleId: string,
     clauseIndex: number,
-    updater: (clause: typeof automationForm.torrentSelection.rules[number]["titleMatch"]["clauses"][number]) => typeof automationForm.torrentSelection.rules[number]["titleMatch"]["clauses"][number]
+    updater: (clause: TorrentSelectionRuleDraft["titleMatch"]["clauses"][number]) => TorrentSelectionRuleDraft["titleMatch"]["clauses"][number]
   ) => {
     updateCandidateRule(ruleId, (rule) => ({
       ...rule,
@@ -880,7 +827,7 @@ export function SettingsPanel({
   const updateTorrentFileNameMatchClause = (
     ruleId: string,
     clauseIndex: number,
-    updater: (clause: typeof automationForm.torrentSelection.rules[number]["torrentFileNameMatch"]["clauses"][number]) => typeof automationForm.torrentSelection.rules[number]["torrentFileNameMatch"]["clauses"][number]
+    updater: (clause: TorrentSelectionRuleDraft["torrentFileNameMatch"]["clauses"][number]) => TorrentSelectionRuleDraft["torrentFileNameMatch"]["clauses"][number]
   ) => {
     updateCandidateRule(ruleId, (rule) => ({
       ...rule,
@@ -947,7 +894,8 @@ export function SettingsPanel({
     }
   };
 
-  const { fastRules, fileInspectionRules } = ensureTorrentFileInspectionRules(automationForm.torrentSelection.rules);
+  const fastRules = automationForm.torrentSelection.fastRules;
+  const fileInspectionRules = automationForm.torrentSelection.torrentRules;
 
   if (!runtimeSettings || !runtimeStatus) {
     return (
@@ -1591,9 +1539,9 @@ export function SettingsPanel({
               </button>
             </div>
 
-            {!rulesExpanded && automationForm.torrentSelection.rules.length > 0 ? (
+            {!rulesExpanded && combineTorrentSelectionRules(automationForm.torrentSelection).length > 0 ? (
               <p className="torrent-rules__hint">
-                当前已配置 {automationForm.torrentSelection.rules.length} 条规则，启用后才会生效。
+                当前已配置 {combineTorrentSelectionRules(automationForm.torrentSelection).length} 条规则，启用后才会生效。
               </p>
             ) : null}
 
@@ -1631,7 +1579,7 @@ export function SettingsPanel({
                   onDrop={(event) => {
                     event.preventDefault();
                     const from = Number.parseInt(event.dataTransfer.getData("text/plain"), 10);
-                    moveCandidateRuleInSection(Number.isNaN(from) ? draggedIndex ?? ruleIndex : from, ruleIndex);
+                    moveCandidateRuleInSection("fast", Number.isNaN(from) ? draggedIndex ?? ruleIndex : from, ruleIndex);
                     setDraggedIndex(null);
                     setDragOverIndex(null);
                   }}
@@ -1645,7 +1593,7 @@ export function SettingsPanel({
                       <FontAwesomeIcon icon={faGripVertical} />
                     </span>
                     <span className="torrent-rule__order">{ruleIndex + 1}</span>
-                    <h3 className="torrent-rule__name">{displayRuleName(rule)}</h3>
+                    <h3 className="torrent-rule__name">{TORRENT_SELECTION_RULE_LABELS[rule.type]}</h3>
                     <div className="torrent-rule__inline-readonly" aria-hidden="true">
                       <span className="torrent-rule__badge torrent-rule__badge--type">
                         {TORRENT_SELECTION_RULE_LABELS[rule.type]}
@@ -1655,11 +1603,22 @@ export function SettingsPanel({
                           {getRuleDirection(rule) === TorrentSelectionDirection.Asc ? "ASC" : "DESC"}
                         </span>
                       ) : null}
-                      <span className={`torrent-rule__badge torrent-rule__badge--status${rule.enabled ? " is-on" : " is-off"}`}>
-                        {rule.enabled ? "启用" : "未启用"}
-                      </span>
                     </div>
                     <div className="torrent-rule__actions">
+                      <label className="switch switch--sm" role="switch" aria-checked={rule.enabled} aria-label={`${TORRENT_SELECTION_RULE_LABELS[rule.type]}启用开关`}>
+                        <input
+                          type="checkbox"
+                          checked={rule.enabled}
+                          onChange={(event) =>
+                            updateCandidateRule(rule.id, (current) => ({
+                              ...current,
+                              enabled: event.target.checked
+                            }))
+                          }
+                        />
+                        <span className="switch__track" aria-hidden="true" />
+                        <span className="switch__thumb" aria-hidden="true" />
+                      </label>
                       <button
                         type="button"
                         className="ghost-button"
@@ -1668,20 +1627,17 @@ export function SettingsPanel({
                         <FontAwesomeIcon icon={faPenToSquare} />
                         <span>编辑</span>
                       </button>
-                      <button type="button" className="ghost-button ghost-button--icon" onClick={() => moveCandidateRuleInSection(ruleIndex, ruleIndex - 1)} disabled={ruleIndex === 0} aria-label="上移">
+                      <button type="button" className="ghost-button ghost-button--icon" onClick={() => moveCandidateRuleInSection("fast", ruleIndex, ruleIndex - 1)} disabled={ruleIndex === 0} aria-label="上移">
                         <FontAwesomeIcon icon={faArrowUp} />
                       </button>
                       <button
                         type="button"
                         className="ghost-button ghost-button--icon"
-                        onClick={() => moveCandidateRuleInSection(ruleIndex, ruleIndex + 1)}
+                        onClick={() => moveCandidateRuleInSection("fast", ruleIndex, ruleIndex + 1)}
                         disabled={ruleIndex === fastRules.length - 1}
                         aria-label="下移"
                       >
                         <FontAwesomeIcon icon={faArrowDown} />
-                      </button>
-                      <button type="button" className="ghost-button" onClick={() => removeCandidateRule(rule.id)}>
-                        删除
                       </button>
                     </div>
                   </header>
@@ -1690,32 +1646,6 @@ export function SettingsPanel({
                 </article>
                 );
               })}
-
-              <div className="torrent-rules__add-bar">
-                <div className="torrent-rules__add-copy">
-                  <strong>{fastRules.length === 0 ? "尚未添加任何快速规则" : "添加快速规则"}</strong>
-                  <span>这些规则会在所有候选上先执行，按从上到下顺序依次比较。</span>
-                </div>
-                <Menu
-                  className="torrent-rules__menu"
-                  ariaLabel="选择快速规则类型"
-                  triggerAriaLabel="添加快速规则"
-                  align="end"
-                  triggerLabel={
-                    <>
-                      <FontAwesomeIcon icon={faPlus} />
-                      <span>添加快速规则</span>
-                      <FontAwesomeIcon icon={faChevronDown} className="menu__trigger-caret" />
-                    </>
-                  }
-                  items={FAST_TORRENT_SELECTION_RULE_TYPE_OPTIONS.map((type) => ({
-                    key: type,
-                    label: TORRENT_SELECTION_RULE_LABELS[type],
-                    hint: TORRENT_SELECTION_RULE_HINTS[type],
-                    onSelect: () => addCandidateRule(type)
-                  }))}
-                />
-              </div>
 
               <div className="torrent-rules__divider" aria-hidden="true" />
               <div className="torrent-rules__inspection-row">
@@ -1775,6 +1705,16 @@ export function SettingsPanel({
                           <span className="switch__track" aria-hidden="true" />
                           <span className="switch__thumb" aria-hidden="true" />
                         </label>
+                        {rule.type === TorrentSelectionRuleType.TorrentSingleVideo ? (
+                          <button
+                            type="button"
+                            className="ghost-button"
+                            onClick={() => openRuleEditor(rule)}
+                          >
+                            <FontAwesomeIcon icon={faPenToSquare} />
+                            <span>编辑</span>
+                          </button>
+                        ) : null}
                       </div>
                     </header>
 
@@ -1889,10 +1829,6 @@ export function SettingsPanel({
       setEditingRuleDraft((current) => (current ? updater(current) : current));
     };
 
-    const setDraftType = (nextType: TorrentSelectionRuleType) => {
-      setEditingRuleDraft((current) => (current ? withTypeReset(current, nextType) : current));
-    };
-
     const close = () => {
       if (ruleEditorSaving) return;
       closeRuleEditor();
@@ -1912,7 +1848,7 @@ export function SettingsPanel({
         <aside className={drawerClass} onClick={(event) => event.stopPropagation()}>
           <div className="drawer__head">
             <div>
-              <h2>编辑规则 · {displayRuleName(draft)}</h2>
+              <h2>编辑规则 · {TORRENT_SELECTION_RULE_LABELS[draft.type]}</h2>
             </div>
             <button type="button" className="ghost-button" onClick={close} disabled={ruleEditorSaving}>
               关闭
@@ -1934,30 +1870,8 @@ export function SettingsPanel({
                   }}
                 >
                   <label className="settings-field">
-                    <FieldLabel text="规则名称" info="仅用于展示和识别这条规则，不影响排序逻辑。" />
-                    <input
-                      value={draft.name}
-                      onChange={(event) =>
-                        setDraft((current) => ({
-                          ...current,
-                          name: event.target.value
-                        }))
-                      }
-                      placeholder={TORRENT_SELECTION_RULE_LABELS[draft.type]}
-                    />
-                  </label>
-                  <label className="settings-field">
                     <FieldLabel text="规则类型" />
-                    <select
-                      value={draft.type}
-                      onChange={(event) => setDraftType(event.target.value as TorrentSelectionRuleType)}
-                    >
-                      {FAST_TORRENT_SELECTION_RULE_TYPE_OPTIONS.map((type) => (
-                        <option key={type} value={type}>
-                          {TORRENT_SELECTION_RULE_LABELS[type]}
-                        </option>
-                      ))}
-                    </select>
+                    <input value={TORRENT_SELECTION_RULE_LABELS[draft.type]} disabled />
                   </label>
                   {usesRuleDirection(draft.type) ? (
                     <label className="settings-field">

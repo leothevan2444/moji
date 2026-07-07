@@ -7,138 +7,52 @@ import {
   TorrentSelectionRuleType,
 } from "../graphql/generated/graphql";
 
+function makeDefaultTorrentSelectionRule(id: string, type: TorrentSelectionRuleType) {
+  return {
+    id,
+    type,
+    enabled: true,
+    indexerPreference: {
+      trackerIds: [] as string[]
+    },
+    titleMatch: {
+      clauses: [] as Array<{
+        pattern: string;
+        patternMode: TitleMatchPatternMode;
+        effect: TitleMatchEffect;
+      }>
+    },
+    publishDate: {
+      direction: TorrentSelectionDirection.Desc
+    },
+    seeders: {
+      direction: TorrentSelectionDirection.Desc
+    },
+    size: {
+      direction: TorrentSelectionDirection.Desc
+    },
+    torrentFileNameMatch: {
+      clauses: [] as Array<{
+        pattern: string;
+        patternMode: TitleMatchPatternMode;
+        effect: TorrentFileMatchEffect;
+      }>
+    }
+  };
+}
+
 export const DEFAULT_TORRENT_SELECTION_RULES = [
-  {
-    id: "default-seeders",
-    name: "Seeders",
-    type: TorrentSelectionRuleType.Seeders,
-    enabled: true,
-    indexerPreference: {
-      trackerIds: [] as string[]
-    },
-    titleMatch: {
-      clauses: [] as Array<{
-        pattern: string;
-        patternMode: TitleMatchPatternMode;
-        effect: TitleMatchEffect;
-      }>
-    },
-    publishDate: {
-      direction: TorrentSelectionDirection.Desc
-    },
-    seeders: {
-      direction: TorrentSelectionDirection.Desc
-    },
-    size: {
-      direction: TorrentSelectionDirection.Desc
-    },
-    torrentFileNameMatch: {
-      clauses: [] as Array<{
-        pattern: string;
-        patternMode: TitleMatchPatternMode;
-        effect: TorrentFileMatchEffect;
-      }>
-    }
-  },
-  {
-    id: "default-size",
-    name: "Size",
-    type: TorrentSelectionRuleType.Size,
-    enabled: true,
-    indexerPreference: {
-      trackerIds: [] as string[]
-    },
-    titleMatch: {
-      clauses: [] as Array<{
-        pattern: string;
-        patternMode: TitleMatchPatternMode;
-        effect: TitleMatchEffect;
-      }>
-    },
-    publishDate: {
-      direction: TorrentSelectionDirection.Desc
-    },
-    seeders: {
-      direction: TorrentSelectionDirection.Desc
-    },
-    size: {
-      direction: TorrentSelectionDirection.Desc
-    },
-    torrentFileNameMatch: {
-      clauses: [] as Array<{
-        pattern: string;
-        patternMode: TitleMatchPatternMode;
-        effect: TorrentFileMatchEffect;
-      }>
-    }
-  }
+  makeDefaultTorrentSelectionRule("indexer-preference", TorrentSelectionRuleType.IndexerPreference),
+  makeDefaultTorrentSelectionRule("title-match", TorrentSelectionRuleType.TitleMatch),
+  makeDefaultTorrentSelectionRule("publish-date", TorrentSelectionRuleType.PublishDate),
+  makeDefaultTorrentSelectionRule("title-similarity", TorrentSelectionRuleType.TitleSimilarity),
+  makeDefaultTorrentSelectionRule("seeders", TorrentSelectionRuleType.Seeders),
+  makeDefaultTorrentSelectionRule("size", TorrentSelectionRuleType.Size)
 ];
 
 export const DEFAULT_TORRENT_FILE_INSPECTION_RULES = [
-  {
-    id: "default-torrent-single-video",
-    name: "Single Video",
-    type: TorrentSelectionRuleType.TorrentSingleVideo,
-    enabled: true,
-    indexerPreference: {
-      trackerIds: [] as string[]
-    },
-    titleMatch: {
-      clauses: [] as Array<{
-        pattern: string;
-        patternMode: TitleMatchPatternMode;
-        effect: TitleMatchEffect;
-      }>
-    },
-    publishDate: {
-      direction: TorrentSelectionDirection.Desc
-    },
-    seeders: {
-      direction: TorrentSelectionDirection.Desc
-    },
-    size: {
-      direction: TorrentSelectionDirection.Desc
-    },
-    torrentFileNameMatch: {
-      clauses: [] as Array<{
-        pattern: string;
-        patternMode: TitleMatchPatternMode;
-        effect: TorrentFileMatchEffect;
-      }>
-    }
-  },
-  {
-    id: "default-torrent-file-name-match",
-    name: "Torrent File Name Match",
-    type: TorrentSelectionRuleType.TorrentFileNameMatch,
-    enabled: true,
-    indexerPreference: {
-      trackerIds: [] as string[]
-    },
-    titleMatch: {
-      clauses: [] as Array<{
-        pattern: string;
-        patternMode: TitleMatchPatternMode;
-        effect: TitleMatchEffect;
-      }>
-    },
-    publishDate: {
-      direction: TorrentSelectionDirection.Desc
-    },
-    seeders: {
-      direction: TorrentSelectionDirection.Desc
-    },
-    size: {
-      direction: TorrentSelectionDirection.Desc
-    },
-    torrentFileNameMatch: {
-      clauses: [] as Array<{
-        pattern: string;
-        patternMode: TitleMatchPatternMode;
-        effect: TorrentFileMatchEffect;
-      }>
-    }
-  }
+  makeDefaultTorrentSelectionRule("torrent-single-video", TorrentSelectionRuleType.TorrentSingleVideo),
+  makeDefaultTorrentSelectionRule("torrent-file-name-match", TorrentSelectionRuleType.TorrentFileNameMatch)
 ];
 
 export const EMPTY_STASH_FORM = {
@@ -183,7 +97,8 @@ export const EMPTY_AUTOMATION_FORM = {
   torrentSelection: {
     enabled: true,
     inspectionCandidateLimit: "5",
-    rules: [...DEFAULT_TORRENT_SELECTION_RULES, ...DEFAULT_TORRENT_FILE_INSPECTION_RULES]
+    fastRules: DEFAULT_TORRENT_SELECTION_RULES.map((rule) => structuredClone(rule)),
+    torrentRules: DEFAULT_TORRENT_FILE_INSPECTION_RULES.map((rule) => structuredClone(rule))
   }
 };
 

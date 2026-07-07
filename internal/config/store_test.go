@@ -81,29 +81,37 @@ automation:
 		t.Fatalf("open store: %v", err)
 	}
 
-	cfg, err := store.UpdateAutomation(60, 1, []string{"https://javstash.example.org/graphql"}, TorrentSelectionConfig{
-		Enabled:                  true,
-		InspectionCandidateLimit: 8,
-		Rules: []TorrentSelectionRule{
+	cfg, err := store.UpdateAutomation(60, 1, []string{"https://javstash.example.org/graphql"}, NewTorrentSelectionConfig(
+		true,
+		8,
+		[]TorrentSelectionRule{
 			{
-				ID:        "pref",
-				Name:      "Preferred Indexers",
-				Type:      TorrentSelectionRuleTypeIndexerPreference,
-				Enabled:   true,
+				ID:      "pref",
+				Type:    TorrentSelectionRuleTypeIndexerPreference,
+				Enabled: true,
 				IndexerPreference: IndexerPreferenceRuleConfig{
 					TrackerIDs: []string{"alpha", "beta"},
 				},
 			},
 		},
-	})
+	))
 	if err != nil {
 		t.Fatalf("update automation: %v", err)
 	}
-	if len(cfg.Automation.TorrentSelection.Rules) != 1 {
+	if len(cfg.Automation.TorrentSelection.OrderedRules()) != 8 {
 		t.Fatalf("unexpected torrent selection: %+v", cfg.Automation.TorrentSelection)
 	}
 	if len(cfg.Automation.StashBoxEndpoints) != 1 {
 		t.Fatalf("unexpected stash-box endpoints: %+v", cfg.Automation.StashBoxEndpoints)
+	}
+
+	updated, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatalf("read config: %v", err)
+	}
+	text := string(updated)
+	if !strings.Contains(text, "fast_rule_order:") || !strings.Contains(text, "fast_rules:") || !strings.Contains(text, "torrent_rules:") {
+		t.Fatalf("expected singleton torrent selection structure, got:\n%s", text)
 	}
 
 	reloaded, err := LoadFromPath(path)
@@ -111,14 +119,15 @@ automation:
 		t.Fatalf("reload config: %v", err)
 	}
 	got := reloaded.Automation.TorrentSelection.Effective()
-	if !got.Enabled || len(got.Rules) != 1 || len(got.Rules[0].IndexerPreference.TrackerIDs) != 2 {
+	ordered := got.OrderedRules()
+	if !got.Enabled || len(ordered) != 8 {
 		t.Fatalf("expected persisted torrent selection, got %+v", got)
 	}
 	if got.InspectionCandidateLimit != 8 {
 		t.Fatalf("expected persisted inspection candidate limit, got %+v", got)
 	}
-	if got.Rules[0].Name != "Preferred Indexers" {
-		t.Fatalf("expected persisted rule name, got %+v", got.Rules[0])
+	if ordered[0].Type != TorrentSelectionRuleTypeIndexerPreference || len(ordered[0].IndexerPreference.TrackerIDs) != 2 {
+		t.Fatalf("expected persisted indexer preference rule, got %+v", ordered[0])
 	}
 }
 
@@ -145,6 +154,27 @@ ingest:
 	}
 	if cfg.Connection.Stash.GraphQLEndpoint() != "http://stash.example/graphql" {
 		t.Fatalf("expected derived graphql endpoint, got %q", cfg.Connection.Stash.GraphQLEndpoint())
+	}
+}
+
+func TestLoadFromPathRejectsDuplicateFastRuleOrderTypes(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "config.yaml")
+	content := `automation:
+  torrent_selection:
+    enabled: true
+    inspection_candidate_limit: 5
+    fast_rule_order:
+      - "SEEDERS"
+      - "SEEDERS"
+`
+	if err := os.WriteFile(path, []byte(content), 0o644); err != nil {
+		t.Fatalf("write config: %v", err)
+	}
+
+	_, err := LoadFromPath(path)
+	if err == nil || !strings.Contains(err.Error(), "duplicate type SEEDERS") {
+		t.Fatalf("expected duplicate type error, got %v", err)
 	}
 }
 

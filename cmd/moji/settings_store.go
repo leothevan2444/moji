@@ -102,7 +102,6 @@ func torrentSelectionConfigRules(rules []graphqlapi.TorrentSelectionRuleSnapshot
 	for _, rule := range rules {
 		item := config.TorrentSelectionRule{
 			ID:        strings.TrimSpace(rule.ID),
-			Name:      strings.TrimSpace(rule.Name),
 			Type:      config.TorrentSelectionRuleType(strings.TrimSpace(rule.Type)),
 			Enabled:   rule.Enabled,
 			IndexerPreference: config.IndexerPreferenceRuleConfig{
@@ -143,6 +142,15 @@ func torrentSelectionConfigRules(rules []graphqlapi.TorrentSelectionRuleSnapshot
 	return out
 }
 
+func torrentSelectionConfigRulesFromSnapshot(snapshot graphqlapi.TorrentSelectionSettingsSnapshot) []config.TorrentSelectionRule {
+	rules := append([]graphqlapi.TorrentSelectionRuleSnapshot(nil), snapshot.FastRules...)
+	rules = append(rules, snapshot.TorrentRules...)
+	if len(rules) == 0 {
+		rules = append(rules, snapshot.Rules...)
+	}
+	return torrentSelectionConfigRules(rules)
+}
+
 func (s *runtimeSettingsEditor) UpdateQBittorrentSettings(input graphqlapi.UpdateQBittorrentSettingsInput) (*graphqlapi.SettingsSnapshot, error) {
 	cfg, err := s.store.UpdateQBittorrent(
 		strings.TrimSpace(input.URL),
@@ -171,11 +179,11 @@ func (s *runtimeSettingsEditor) UpdateAutomationSettings(input graphqlapi.Update
 		input.TaskProgressSyncIntervalSeconds,
 		input.SubscriptionPollIntervalHours,
 		input.StashBoxEndpoints,
-		config.TorrentSelectionConfig{
-			Enabled:                  input.TorrentSelection.Enabled,
-			InspectionCandidateLimit: input.TorrentSelection.InspectionCandidateLimit,
-			Rules:                    torrentSelectionConfigRules(input.TorrentSelection.Rules),
-		},
+		config.NewTorrentSelectionConfig(
+			input.TorrentSelection.Enabled,
+			input.TorrentSelection.InspectionCandidateLimit,
+			torrentSelectionConfigRulesFromSnapshot(input.TorrentSelection),
+		),
 	)
 	if err != nil {
 		logging.Errorf("settings: save automation settings failed: %v", err)

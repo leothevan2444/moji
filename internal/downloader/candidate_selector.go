@@ -77,7 +77,7 @@ func (s defaultCandidateSelector) Preview(ctx context.Context, query string, res
 		return CandidateSelectionPreview{Results: out}, nil
 	}
 
-	compiled := compileSelectionRules(cfg.Rules)
+	compiled := compileSelectionRules(cfg.OrderedRules())
 	fastRules, fileRules := splitCompiledRules(compiled)
 	if applyFastRules && len(fastRules) > 0 {
 		sort.SliceStable(candidates, func(i, j int) bool {

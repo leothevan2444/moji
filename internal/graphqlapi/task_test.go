@@ -544,7 +544,6 @@ func TestSettingsQueryReturnsRuntimeSnapshot(t *testing.T) {
 				Rules: []TorrentSelectionRuleSnapshot{
 					{
 						ID:        "seeders",
-						Name:      "Seeders",
 						Type:      "SEEDERS",
 						Enabled:   true,
 						Seeders:   DirectionRuleSnapshot{Direction: "DESC"},
@@ -571,7 +570,7 @@ func TestSettingsQueryReturnsRuntimeSnapshot(t *testing.T) {
 			ingest { deliveryMode downloads { qbRoot } library { stashRoot } }
 			jackett { configured url apiKeyConfigured }
 			qbittorrent { configured url username usernameConfigured passwordConfigured defaultSavePath category tags }
-			automation { taskProgressSyncIntervalSeconds subscriptionPollIntervalHours stashBoxEndpoints torrentSelection { enabled rules { id name type seeders { direction } } } }
+			automation { taskProgressSyncIntervalSeconds subscriptionPollIntervalHours stashBoxEndpoints torrentSelection { enabled rules { id type seeders { direction } } } }
 			system { taskDeletePolicy }
 		}
 		settingsStatus {
@@ -651,7 +650,7 @@ func TestSettingsQueryUsesSettingsEditorSnapshot(t *testing.T) {
 				TorrentSelection: TorrentSelectionSettingsSnapshot{
 					Enabled: true,
 					Rules: []TorrentSelectionRuleSnapshot{
-						{ID: "seeders", Name: "Seeders", Type: "SEEDERS", Enabled: true, Seeders: DirectionRuleSnapshot{Direction: "DESC"}},
+						{ID: "seeders", Type: "SEEDERS", Enabled: true, Seeders: DirectionRuleSnapshot{Direction: "DESC"}},
 					},
 				},
 			},
@@ -671,7 +670,7 @@ func TestSettingsQueryUsesSettingsEditorSnapshot(t *testing.T) {
 		},
 	}
 
-	resp := executeGraphQL(t, resolver, `{ settings { qbittorrent { url username } automation { subscriptionPollIntervalHours stashBoxEndpoints torrentSelection { enabled rules { id name } } } system { taskDeletePolicy } } settingsStatus { automation { subscriptionPollIntervalHours subscriptionPollEnabled } } }`)
+	resp := executeGraphQL(t, resolver, `{ settings { qbittorrent { url username } automation { subscriptionPollIntervalHours stashBoxEndpoints torrentSelection { enabled rules { id type } } } system { taskDeletePolicy } } settingsStatus { automation { subscriptionPollIntervalHours subscriptionPollEnabled } } }`)
 	if len(resp.Errors) > 0 {
 		t.Fatalf("expected no errors, got %+v", resp.Errors)
 	}
@@ -793,7 +792,6 @@ func TestUpdateJackettSettingsMutation(t *testing.T) {
 					Rules: []TorrentSelectionRuleSnapshot{
 						{
 							ID:        "pref",
-							Name:      "Indexer Preference",
 							Type:      "INDEXER_PREFERENCE",
 							Enabled:   true,
 							IndexerPreference: IndexerPreferenceRuleSnapshot{
@@ -838,7 +836,7 @@ func TestUpdateAutomationSettingsMutation(t *testing.T) {
 				TorrentSelection: TorrentSelectionSettingsSnapshot{
 					Enabled:                  true,
 					InspectionCandidateLimit: 5,
-					Rules:                    []TorrentSelectionRuleSnapshot{{ID: "seeders", Name: "Seeders", Type: "SEEDERS", Enabled: true, Seeders: DirectionRuleSnapshot{Direction: "DESC"}}},
+					Rules:                    []TorrentSelectionRuleSnapshot{{ID: "seeders", Type: "SEEDERS", Enabled: true, Seeders: DirectionRuleSnapshot{Direction: "DESC"}}},
 				},
 			},
 		},
@@ -856,7 +854,6 @@ func TestUpdateAutomationSettingsMutation(t *testing.T) {
 				inspectionCandidateLimit: 5
 				rules: [{
 					id: "seeders"
-					name: "My Seeders Rule"
 					type: SEEDERS
 					enabled: true
 					seeders: { direction: DESC }
@@ -867,7 +864,7 @@ func TestUpdateAutomationSettingsMutation(t *testing.T) {
 		}) {
 			automation {
 				stashBoxEndpoints
-				torrentSelection { enabled rules { id name } }
+				torrentSelection { enabled rules { id type } }
 			}
 		}
 	}`)
@@ -877,13 +874,13 @@ func TestUpdateAutomationSettingsMutation(t *testing.T) {
 	if len(editor.automationInput.StashBoxEndpoints) != 1 || editor.automationInput.StashBoxEndpoints[0] != "https://javstash.example.org/graphql" {
 		t.Fatalf("unexpected automation input: %+v", editor.automationInput)
 	}
-	if len(editor.automationInput.TorrentSelection.Rules) != 1 || editor.automationInput.TorrentSelection.Rules[0].Name != "My Seeders Rule" {
+	if len(editor.automationInput.TorrentSelection.Rules) != 1 || editor.automationInput.TorrentSelection.Rules[0].Type != "SEEDERS" {
 		t.Fatalf("unexpected automation rule input: %+v", editor.automationInput.TorrentSelection.Rules)
 	}
 	if len(resp.Data.UpdateAutomationSettings.Automation.StashBoxEndpoints) != 1 {
 		t.Fatalf("unexpected automation response: %+v", resp.Data.UpdateAutomationSettings.Automation)
 	}
-	if len(resp.Data.UpdateAutomationSettings.Automation.TorrentSelection.Rules) != 1 || resp.Data.UpdateAutomationSettings.Automation.TorrentSelection.Rules[0].Name != "Seeders" {
+	if len(resp.Data.UpdateAutomationSettings.Automation.TorrentSelection.Rules) != 1 || resp.Data.UpdateAutomationSettings.Automation.TorrentSelection.Rules[0].Type != "SEEDERS" {
 		t.Fatalf("unexpected automation response rules: %+v", resp.Data.UpdateAutomationSettings.Automation.TorrentSelection.Rules)
 	}
 }

@@ -59,9 +59,39 @@ query DashboardDocument {
       torrentSelection {
         enabled
         inspectionCandidateLimit
-        rules {
+        fastRules {
           id
-          name
+          type
+          enabled
+          publishDate {
+            direction
+          }
+          seeders {
+            direction
+          }
+          size {
+            direction
+          }
+          indexerPreference {
+            trackerIds
+          }
+          titleMatch {
+            clauses {
+              pattern
+              patternMode
+              effect
+            }
+          }
+          torrentFileNameMatch {
+            clauses {
+              pattern
+              patternMode
+              effect
+            }
+          }
+        }
+        torrentRules {
+          id
           type
           enabled
           publishDate {

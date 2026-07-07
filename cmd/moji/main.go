@@ -439,15 +439,21 @@ func buildSettingsSnapshot(cfg *config.Config, version string) *graphqlapi.Setti
 
 func torrentSelectionSnapshot(cfg config.TorrentSelectionConfig) graphqlapi.TorrentSelectionSettingsSnapshot {
 	cfg = cfg.Effective()
+	orderedRules := cfg.OrderedRules()
+	fastRuleTypes := make(map[config.TorrentSelectionRuleType]struct{}, len(cfg.FastRuleOrder))
+	for _, ruleType := range cfg.FastRuleOrder {
+		fastRuleTypes[ruleType] = struct{}{}
+	}
 	out := graphqlapi.TorrentSelectionSettingsSnapshot{
 		Enabled:                  cfg.Enabled,
 		InspectionCandidateLimit: cfg.InspectionCandidateLimit,
-		Rules:                    make([]graphqlapi.TorrentSelectionRuleSnapshot, 0, len(cfg.Rules)),
+		FastRules:                make([]graphqlapi.TorrentSelectionRuleSnapshot, 0, len(cfg.FastRuleOrder)),
+		TorrentRules:             make([]graphqlapi.TorrentSelectionRuleSnapshot, 0, len(orderedRules)),
+		Rules:                    make([]graphqlapi.TorrentSelectionRuleSnapshot, 0, len(orderedRules)),
 	}
-	for _, rule := range cfg.Rules {
+	for _, rule := range orderedRules {
 		item := graphqlapi.TorrentSelectionRuleSnapshot{
 			ID:        rule.ID,
-			Name:      rule.Name,
 			Type:      string(rule.Type),
 			Enabled:   rule.Enabled,
 			IndexerPreference: graphqlapi.IndexerPreferenceRuleSnapshot{
@@ -482,6 +488,11 @@ func torrentSelectionSnapshot(cfg config.TorrentSelectionConfig) graphqlapi.Torr
 					Effect:      string(clause.Effect),
 				})
 			}
+		}
+		if _, ok := fastRuleTypes[rule.Type]; ok {
+			out.FastRules = append(out.FastRules, item)
+		} else {
+			out.TorrentRules = append(out.TorrentRules, item)
 		}
 		out.Rules = append(out.Rules, item)
 	}
