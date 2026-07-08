@@ -73,6 +73,10 @@ function subscriptionReleaseReasonLabel(release: SubscriptionReleaseEntry): stri
       return "总集按策略拦截";
     case "metadata_unknown_review":
       return "元数据不足，已记录供复核";
+    case "release_date_out_of_range_review":
+      return "发行时间超出自动下载范围，已记录供复核";
+    case "release_date_unknown_review":
+      return "发行日期缺失，已记录供复核";
     default:
       return release.decision === SubscriptionReleaseDecision.Downloaded ? "已进入下载链路" : "已按策略保留记录";
   }

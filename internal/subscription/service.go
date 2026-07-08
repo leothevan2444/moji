@@ -351,7 +351,7 @@ func (s *Service) fetchReleases(ctx context.Context, performer *stashgraphql.Per
 		if scene == nil {
 			continue
 		}
-		evaluation, matched := evaluateReleasePolicy(s.currentReleasePolicy(), target.Performer, scene)
+		evaluation, matched := evaluateReleasePolicy(s.currentReleasePolicy(), s.now(), target.Performer, scene)
 		if !matched {
 			continue
 		}

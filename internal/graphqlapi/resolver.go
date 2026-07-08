@@ -207,6 +207,7 @@ type SubscriptionReleasePolicySnapshot struct {
 	GroupBehavior          string
 	CompilationBehavior    string
 	MaxGroupPerformerCount int
+	ReleaseDateRange       string
 }
 
 type SystemSettingsSnapshot struct {

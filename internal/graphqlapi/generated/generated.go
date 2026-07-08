@@ -453,6 +453,7 @@ type ComplexityRoot struct {
 		CompilationBehavior    func(childComplexity int) int
 		GroupBehavior          func(childComplexity int) int
 		MaxGroupPerformerCount func(childComplexity int) int
+		ReleaseDateRange       func(childComplexity int) int
 		SoloBehavior           func(childComplexity int) int
 	}
 
@@ -2695,6 +2696,13 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.SubscriptionReleasePolicy.MaxGroupPerformerCount(childComplexity), true
 
+	case "SubscriptionReleasePolicy.releaseDateRange":
+		if e.complexity.SubscriptionReleasePolicy.ReleaseDateRange == nil {
+			break
+		}
+
+		return e.complexity.SubscriptionReleasePolicy.ReleaseDateRange(childComplexity), true
+
 	case "SubscriptionReleasePolicy.soloBehavior":
 		if e.complexity.SubscriptionReleasePolicy.SoloBehavior == nil {
 			break
@@ -3673,12 +3681,21 @@ type SubscriptionReleasePolicy {
   groupBehavior: SubscriptionReleaseBehavior!
   compilationBehavior: SubscriptionReleaseBehavior!
   maxGroupPerformerCount: Int!
+  releaseDateRange: SubscriptionReleaseDateRange!
 }
 
 enum SubscriptionReleaseBehavior {
   DOWNLOAD
   REVIEW
   BLOCK
+}
+
+enum SubscriptionReleaseDateRange {
+  ALL
+  ONE_YEAR
+  TWO_YEARS
+  THREE_YEARS
+  FIVE_YEARS
 }
 
 enum TaskDeletePolicy {
@@ -3822,6 +3839,7 @@ input SubscriptionReleasePolicyInput {
   groupBehavior: SubscriptionReleaseBehavior!
   compilationBehavior: SubscriptionReleaseBehavior!
   maxGroupPerformerCount: Int!
+  releaseDateRange: SubscriptionReleaseDateRange!
 }
 
 input UpdateSystemSettingsInput {
@@ -5323,6 +5341,8 @@ func (ec *executionContext) fieldContext_AutomationSettings_subscriptionReleaseP
 				return ec.fieldContext_SubscriptionReleasePolicy_compilationBehavior(ctx, field)
 			case "maxGroupPerformerCount":
 				return ec.fieldContext_SubscriptionReleasePolicy_maxGroupPerformerCount(ctx, field)
+			case "releaseDateRange":
+				return ec.fieldContext_SubscriptionReleasePolicy_releaseDateRange(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type SubscriptionReleasePolicy", field.Name)
 		},
@@ -19134,6 +19154,50 @@ func (ec *executionContext) fieldContext_SubscriptionReleasePolicy_maxGroupPerfo
 	return fc, nil
 }
 
+func (ec *executionContext) _SubscriptionReleasePolicy_releaseDateRange(ctx context.Context, field graphql.CollectedField, obj *model.SubscriptionReleasePolicy) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_SubscriptionReleasePolicy_releaseDateRange(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.ReleaseDateRange, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(model.SubscriptionReleaseDateRange)
+	fc.Result = res
+	return ec.marshalNSubscriptionReleaseDateRange2githubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐSubscriptionReleaseDateRange(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_SubscriptionReleasePolicy_releaseDateRange(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "SubscriptionReleasePolicy",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type SubscriptionReleaseDateRange does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _SubscriptionStatus_stashBoxes(ctx context.Context, field graphql.CollectedField, obj *model.SubscriptionStatus) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_SubscriptionStatus_stashBoxes(ctx, field)
 	if err != nil {
@@ -24353,7 +24417,7 @@ func (ec *executionContext) unmarshalInputSubscriptionReleasePolicyInput(ctx con
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"soloBehavior", "groupBehavior", "compilationBehavior", "maxGroupPerformerCount"}
+	fieldsInOrder := [...]string{"soloBehavior", "groupBehavior", "compilationBehavior", "maxGroupPerformerCount", "releaseDateRange"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -24388,6 +24452,13 @@ func (ec *executionContext) unmarshalInputSubscriptionReleasePolicyInput(ctx con
 				return it, err
 			}
 			it.MaxGroupPerformerCount = data
+		case "releaseDateRange":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("releaseDateRange"))
+			data, err := ec.unmarshalNSubscriptionReleaseDateRange2githubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐSubscriptionReleaseDateRange(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ReleaseDateRange = data
 		}
 	}
 
@@ -28023,6 +28094,11 @@ func (ec *executionContext) _SubscriptionReleasePolicy(ctx context.Context, sel 
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
+		case "releaseDateRange":
+			out.Values[i] = ec._SubscriptionReleasePolicy_releaseDateRange(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -30173,6 +30249,16 @@ func (ec *executionContext) unmarshalNSubscriptionReleaseClassification2github�
 }
 
 func (ec *executionContext) marshalNSubscriptionReleaseClassification2githubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐSubscriptionReleaseClassification(ctx context.Context, sel ast.SelectionSet, v model.SubscriptionReleaseClassification) graphql.Marshaler {
+	return v
+}
+
+func (ec *executionContext) unmarshalNSubscriptionReleaseDateRange2githubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐSubscriptionReleaseDateRange(ctx context.Context, v any) (model.SubscriptionReleaseDateRange, error) {
+	var res model.SubscriptionReleaseDateRange
+	err := res.UnmarshalGQL(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNSubscriptionReleaseDateRange2githubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐSubscriptionReleaseDateRange(ctx context.Context, sel ast.SelectionSet, v model.SubscriptionReleaseDateRange) graphql.Marshaler {
 	return v
 }
 

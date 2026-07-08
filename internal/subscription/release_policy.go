@@ -2,6 +2,7 @@ package subscription
 
 import (
 	"strings"
+	"time"
 
 	"github.com/leothevan2444/moji/internal/config"
 	stashboxgraphql "github.com/leothevan2444/moji/pkg/stashbox/graphql"
@@ -26,7 +27,7 @@ func DefaultReleasePolicyConfig() ReleasePolicyConfig {
 	return config.DefaultSubscriptionReleasePolicyConfig()
 }
 
-func evaluateReleasePolicy(policy ReleasePolicyConfig, targetPerformer *stashboxgraphql.PerformerFragment, scene *stashboxgraphql.SceneFragment) (ReleaseEvaluation, bool) {
+func evaluateReleasePolicy(policy ReleasePolicyConfig, now time.Time, targetPerformer *stashboxgraphql.PerformerFragment, scene *stashboxgraphql.SceneFragment) (ReleaseEvaluation, bool) {
 	policy = policy.Effective()
 	names, matched := releasePerformerNames(targetPerformer, scene)
 	if !matched {
@@ -50,9 +51,11 @@ func evaluateReleasePolicy(policy ReleasePolicyConfig, targetPerformer *stashbox
 	default:
 		if evaluation.Classification == ReleaseClassificationSolo {
 			applyBehavior(&evaluation, policy.SoloBehavior, "solo_behavior")
+			applyReleaseDateRange(&evaluation, policy.ReleaseDateRange, now, scene)
 			return evaluation, true
 		}
 		applyBehavior(&evaluation, policy.GroupBehavior, "group_behavior")
+		applyReleaseDateRange(&evaluation, policy.ReleaseDateRange, now, scene)
 		return evaluation, true
 	}
 }
@@ -68,6 +71,25 @@ func applyBehavior(evaluation *ReleaseEvaluation, behavior config.SubscriptionRe
 	default:
 		evaluation.Decision = ReleaseDecisionDownloaded
 		evaluation.DecisionReason = reasonPrefix + "_download"
+	}
+}
+
+func applyReleaseDateRange(evaluation *ReleaseEvaluation, dateRange config.SubscriptionReleaseDateRange, now time.Time, scene *stashboxgraphql.SceneFragment) {
+	if evaluation.Decision != ReleaseDecisionDownloaded {
+		return
+	}
+	if config.NormalizeSubscriptionReleaseDateRange(dateRange) == config.SubscriptionReleaseDateRangeAll {
+		return
+	}
+	releaseDate, ok := parseReleaseDate(stringValue(scene.Date))
+	if !ok {
+		evaluation.Decision = ReleaseDecisionQueued
+		evaluation.DecisionReason = "release_date_unknown_review"
+		return
+	}
+	if releaseDate.Before(releaseDateCutoff(now, dateRange)) {
+		evaluation.Decision = ReleaseDecisionQueued
+		evaluation.DecisionReason = "release_date_out_of_range_review"
 	}
 }
 
@@ -143,4 +165,39 @@ func isCompilationLikeScene(scene *stashboxgraphql.SceneFragment, performerCount
 
 func normalizeForKeywordMatch(value string) string {
 	return strings.ToLower(strings.TrimSpace(value))
+}
+
+func parseReleaseDate(value string) (time.Time, bool) {
+	value = strings.TrimSpace(value)
+	if value == "" {
+		return time.Time{}, false
+	}
+	layouts := []string{
+		"2006-01-02",
+		time.RFC3339,
+		time.RFC3339Nano,
+	}
+	for _, layout := range layouts {
+		parsed, err := time.Parse(layout, value)
+		if err == nil {
+			return parsed.UTC(), true
+		}
+	}
+	return time.Time{}, false
+}
+
+func releaseDateCutoff(now time.Time, dateRange config.SubscriptionReleaseDateRange) time.Time {
+	now = now.UTC()
+	switch config.NormalizeSubscriptionReleaseDateRange(dateRange) {
+	case config.SubscriptionReleaseDateRangeOneYear:
+		return now.AddDate(-1, 0, 0)
+	case config.SubscriptionReleaseDateRangeTwoYears:
+		return now.AddDate(-2, 0, 0)
+	case config.SubscriptionReleaseDateRangeThreeYears:
+		return now.AddDate(-3, 0, 0)
+	case config.SubscriptionReleaseDateRangeFiveYears:
+		return now.AddDate(-5, 0, 0)
+	default:
+		return time.Time{}
+	}
 }

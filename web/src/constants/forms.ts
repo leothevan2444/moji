@@ -1,6 +1,7 @@
 import {
   LogLevel,
   SubscriptionReleaseBehavior,
+  SubscriptionReleaseDateRange,
   TorrentFileMatchEffect,
   TitleMatchEffect,
   TitleMatchPatternMode,
@@ -98,7 +99,8 @@ export const EMPTY_AUTOMATION_FORM = {
     soloBehavior: SubscriptionReleaseBehavior.Download,
     groupBehavior: SubscriptionReleaseBehavior.Review,
     compilationBehavior: SubscriptionReleaseBehavior.Block,
-    maxGroupPerformerCount: "3"
+    maxGroupPerformerCount: "3",
+    releaseDateRange: SubscriptionReleaseDateRange.All
   },
   torrentSelection: {
     enabled: true,

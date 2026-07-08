@@ -153,6 +153,7 @@ func subscriptionReleasePolicyConfigFromSnapshot(snapshot graphqlapi.Subscriptio
 		GroupBehavior:          config.SubscriptionReleaseBehavior(strings.TrimSpace(snapshot.GroupBehavior)),
 		CompilationBehavior:    config.SubscriptionReleaseBehavior(strings.TrimSpace(snapshot.CompilationBehavior)),
 		MaxGroupPerformerCount: snapshot.MaxGroupPerformerCount,
+		ReleaseDateRange:       config.SubscriptionReleaseDateRange(strings.TrimSpace(snapshot.ReleaseDateRange)),
 	}
 }
 

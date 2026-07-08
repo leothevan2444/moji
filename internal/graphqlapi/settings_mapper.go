@@ -116,6 +116,7 @@ func subscriptionReleasePolicyToModel(snapshot SubscriptionReleasePolicySnapshot
 		GroupBehavior:          model.SubscriptionReleaseBehavior(snapshot.GroupBehavior),
 		CompilationBehavior:    model.SubscriptionReleaseBehavior(snapshot.CompilationBehavior),
 		MaxGroupPerformerCount: snapshot.MaxGroupPerformerCount,
+		ReleaseDateRange:       model.SubscriptionReleaseDateRange(snapshot.ReleaseDateRange),
 	}
 }
 

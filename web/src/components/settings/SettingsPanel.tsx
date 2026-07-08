@@ -19,6 +19,7 @@ import {
   LogsDocumentDocument,
   RefreshSubscriptionStashBoxesDocumentDocument,
   SubscriptionReleaseBehavior,
+  SubscriptionReleaseDateRange,
   TorrentFileMatchEffect,
   TitleMatchEffect,
   TitleMatchPatternMode,
@@ -91,6 +92,22 @@ const SUBSCRIPTION_RELEASE_BEHAVIOR_OPTIONS = [
   SubscriptionReleaseBehavior.Download,
   SubscriptionReleaseBehavior.Review,
   SubscriptionReleaseBehavior.Block
+] as const;
+
+const SUBSCRIPTION_RELEASE_DATE_RANGE_LABELS: Record<SubscriptionReleaseDateRange, string> = {
+  [SubscriptionReleaseDateRange.All]: "所有",
+  [SubscriptionReleaseDateRange.OneYear]: "一年内",
+  [SubscriptionReleaseDateRange.TwoYears]: "两年内",
+  [SubscriptionReleaseDateRange.ThreeYears]: "三年内",
+  [SubscriptionReleaseDateRange.FiveYears]: "五年内",
+};
+
+const SUBSCRIPTION_RELEASE_DATE_RANGE_OPTIONS = [
+  SubscriptionReleaseDateRange.OneYear,
+  SubscriptionReleaseDateRange.TwoYears,
+  SubscriptionReleaseDateRange.ThreeYears,
+  SubscriptionReleaseDateRange.FiveYears,
+  SubscriptionReleaseDateRange.All
 ] as const;
 
 function isTorrentInspectionRuleType(type: TorrentSelectionRuleType): boolean {
@@ -200,7 +217,8 @@ function buildAutomationSettingsPayload(form: AutomationFormShape) {
       soloBehavior: form.subscriptionReleasePolicy.soloBehavior,
       groupBehavior: form.subscriptionReleasePolicy.groupBehavior,
       compilationBehavior: form.subscriptionReleasePolicy.compilationBehavior,
-      maxGroupPerformerCount: Number.isNaN(maxGroupPerformerCount) ? 3 : maxGroupPerformerCount
+      maxGroupPerformerCount: Number.isNaN(maxGroupPerformerCount) ? 3 : maxGroupPerformerCount,
+      releaseDateRange: form.subscriptionReleasePolicy.releaseDateRange
     },
     torrentSelection: {
       enabled: form.torrentSelection.enabled,
@@ -214,7 +232,10 @@ function buildAutomationSettingsPayload(form: AutomationFormShape) {
 function releasePolicySummary(form: AutomationFormShape["subscriptionReleasePolicy"]) {
   const max = Number.parseInt(form.maxGroupPerformerCount.trim(), 10);
   const safeMax = Number.isNaN(max) ? 3 : max;
-  return `独演${SUBSCRIPTION_RELEASE_BEHAVIOR_LABELS[form.soloBehavior]}；2-${safeMax} 人共演${SUBSCRIPTION_RELEASE_BEHAVIOR_LABELS[form.groupBehavior]}；总集${SUBSCRIPTION_RELEASE_BEHAVIOR_LABELS[form.compilationBehavior]}；无法可靠判断时仅记录。`;
+  const dateRange = form.releaseDateRange === SubscriptionReleaseDateRange.All
+    ? "自动下载不限制发行时间"
+    : `自动下载仅限${SUBSCRIPTION_RELEASE_DATE_RANGE_LABELS[form.releaseDateRange]}发行`;
+  return `独演${SUBSCRIPTION_RELEASE_BEHAVIOR_LABELS[form.soloBehavior]}；2-${safeMax} 人共演${SUBSCRIPTION_RELEASE_BEHAVIOR_LABELS[form.groupBehavior]}；总集${SUBSCRIPTION_RELEASE_BEHAVIOR_LABELS[form.compilationBehavior]}；${dateRange}；无法可靠判断或日期不明确时仅记录。`;
 }
 
 function renderSubscriptionReleaseBehaviorOptions() {
@@ -523,7 +544,8 @@ export function SettingsPanel({
         soloBehavior: runtimeSettings.automation.subscriptionReleasePolicy.soloBehavior,
         groupBehavior: runtimeSettings.automation.subscriptionReleasePolicy.groupBehavior,
         compilationBehavior: runtimeSettings.automation.subscriptionReleasePolicy.compilationBehavior,
-        maxGroupPerformerCount: String(runtimeSettings.automation.subscriptionReleasePolicy.maxGroupPerformerCount || 3)
+        maxGroupPerformerCount: String(runtimeSettings.automation.subscriptionReleasePolicy.maxGroupPerformerCount || 3),
+        releaseDateRange: runtimeSettings.automation.subscriptionReleasePolicy.releaseDateRange
       },
       torrentSelection: torrentSelectionFromRuntime(runtimeSettings)
     });
@@ -1351,6 +1373,27 @@ export function SettingsPanel({
                 }
                 placeholder="3"
               />
+            </label>
+            <label className="settings-field">
+              <FieldLabel text="自动下载时间范围" info="只在策略本来会自动下载时生效。超出范围或发行日期缺失的影片会改为记录供复核。" />
+              <select
+                value={automationForm.subscriptionReleasePolicy.releaseDateRange}
+                onChange={(event) =>
+                  setAutomationForm((current) => ({
+                    ...current,
+                    subscriptionReleasePolicy: {
+                      ...current.subscriptionReleasePolicy,
+                      releaseDateRange: event.target.value as SubscriptionReleaseDateRange
+                    }
+                  }))
+                }
+              >
+                {SUBSCRIPTION_RELEASE_DATE_RANGE_OPTIONS.map((dateRange) => (
+                  <option key={dateRange} value={dateRange}>
+                    {SUBSCRIPTION_RELEASE_DATE_RANGE_LABELS[dateRange]}
+                  </option>
+                ))}
+              </select>
             </label>
           </section>
           <div className="settings-actions">

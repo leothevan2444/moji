@@ -435,6 +435,7 @@ func buildSettingsSnapshot(cfg *config.Config, version string) *graphqlapi.Setti
 				GroupBehavior:          string(cfg.Automation.SubscriptionReleasePolicy.Effective().GroupBehavior),
 				CompilationBehavior:    string(cfg.Automation.SubscriptionReleasePolicy.Effective().CompilationBehavior),
 				MaxGroupPerformerCount: cfg.Automation.SubscriptionReleasePolicy.Effective().MaxGroupPerformerCount,
+				ReleaseDateRange:       string(cfg.Automation.SubscriptionReleasePolicy.Effective().ReleaseDateRange),
 			},
 			TorrentSelection: torrentSelectionSnapshot(cfg.Automation.TorrentSelection.Effective()),
 		},

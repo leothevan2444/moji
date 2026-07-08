@@ -836,6 +836,7 @@ func TestUpdateAutomationSettingsMutation(t *testing.T) {
 					GroupBehavior:          "REVIEW",
 					CompilationBehavior:    "BLOCK",
 					MaxGroupPerformerCount: 3,
+					ReleaseDateRange:       "ALL",
 				},
 				TorrentSelection: TorrentSelectionSettingsSnapshot{
 					Enabled:                  true,
@@ -858,6 +859,7 @@ func TestUpdateAutomationSettingsMutation(t *testing.T) {
 					groupBehavior: REVIEW
 					compilationBehavior: BLOCK
 					maxGroupPerformerCount: 3
+					releaseDateRange: ALL
 				}
 				torrentSelection: {
 					enabled: true
@@ -874,7 +876,7 @@ func TestUpdateAutomationSettingsMutation(t *testing.T) {
 		}) {
 			automation {
 				stashBoxEndpoints
-				subscriptionReleasePolicy { soloBehavior groupBehavior compilationBehavior maxGroupPerformerCount }
+				subscriptionReleasePolicy { soloBehavior groupBehavior compilationBehavior maxGroupPerformerCount releaseDateRange }
 				torrentSelection { enabled fastRules { type } torrentRules { type } }
 			}
 		}

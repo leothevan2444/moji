@@ -63,6 +63,7 @@ mutation UpdateAutomationSettingsDocument($input: UpdateAutomationSettingsInput!
         groupBehavior
         compilationBehavior
         maxGroupPerformerCount
+        releaseDateRange
       }
       torrentSelection {
         enabled

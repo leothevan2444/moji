@@ -240,11 +240,22 @@ const (
 	SubscriptionReleaseBehaviorBlock    SubscriptionReleaseBehavior = "BLOCK"
 )
 
+type SubscriptionReleaseDateRange string
+
+const (
+	SubscriptionReleaseDateRangeAll        SubscriptionReleaseDateRange = "ALL"
+	SubscriptionReleaseDateRangeOneYear    SubscriptionReleaseDateRange = "ONE_YEAR"
+	SubscriptionReleaseDateRangeTwoYears   SubscriptionReleaseDateRange = "TWO_YEARS"
+	SubscriptionReleaseDateRangeThreeYears SubscriptionReleaseDateRange = "THREE_YEARS"
+	SubscriptionReleaseDateRangeFiveYears  SubscriptionReleaseDateRange = "FIVE_YEARS"
+)
+
 type SubscriptionReleasePolicyConfig struct {
-	SoloBehavior           SubscriptionReleaseBehavior `yaml:"solo_behavior"`
-	GroupBehavior          SubscriptionReleaseBehavior `yaml:"group_behavior"`
-	CompilationBehavior    SubscriptionReleaseBehavior `yaml:"compilation_behavior"`
-	MaxGroupPerformerCount int                         `yaml:"max_group_performer_count"`
+	SoloBehavior           SubscriptionReleaseBehavior  `yaml:"solo_behavior"`
+	GroupBehavior          SubscriptionReleaseBehavior  `yaml:"group_behavior"`
+	CompilationBehavior    SubscriptionReleaseBehavior  `yaml:"compilation_behavior"`
+	MaxGroupPerformerCount int                          `yaml:"max_group_performer_count"`
+	ReleaseDateRange       SubscriptionReleaseDateRange `yaml:"release_date_range"`
 }
 
 type IngestConfig struct {
@@ -306,6 +317,7 @@ func DefaultSubscriptionReleasePolicyConfig() SubscriptionReleasePolicyConfig {
 		GroupBehavior:          SubscriptionReleaseBehaviorReview,
 		CompilationBehavior:    SubscriptionReleaseBehaviorBlock,
 		MaxGroupPerformerCount: 3,
+		ReleaseDateRange:       SubscriptionReleaseDateRangeAll,
 	}
 }
 
@@ -389,6 +401,18 @@ func NormalizeSubscriptionReleaseBehavior(value SubscriptionReleaseBehavior) Sub
 	}
 }
 
+func NormalizeSubscriptionReleaseDateRange(value SubscriptionReleaseDateRange) SubscriptionReleaseDateRange {
+	switch SubscriptionReleaseDateRange(strings.TrimSpace(string(value))) {
+	case SubscriptionReleaseDateRangeOneYear,
+		SubscriptionReleaseDateRangeTwoYears,
+		SubscriptionReleaseDateRangeThreeYears,
+		SubscriptionReleaseDateRangeFiveYears:
+		return value
+	default:
+		return SubscriptionReleaseDateRangeAll
+	}
+}
+
 func NormalizeSubscriptionReleaseMaxGroupPerformerCount(value int) int {
 	if value <= 0 {
 		return DefaultSubscriptionReleasePolicyConfig().MaxGroupPerformerCount
@@ -416,6 +440,7 @@ func (p SubscriptionReleasePolicyConfig) Effective() SubscriptionReleasePolicyCo
 		GroupBehavior:          NormalizeSubscriptionReleaseBehavior(p.GroupBehavior),
 		CompilationBehavior:    NormalizeSubscriptionReleaseBehavior(p.CompilationBehavior),
 		MaxGroupPerformerCount: NormalizeSubscriptionReleaseMaxGroupPerformerCount(p.MaxGroupPerformerCount),
+		ReleaseDateRange:       NormalizeSubscriptionReleaseDateRange(p.ReleaseDateRange),
 	}
 }
 

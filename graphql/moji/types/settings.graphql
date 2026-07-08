@@ -276,12 +276,21 @@ type SubscriptionReleasePolicy {
   groupBehavior: SubscriptionReleaseBehavior!
   compilationBehavior: SubscriptionReleaseBehavior!
   maxGroupPerformerCount: Int!
+  releaseDateRange: SubscriptionReleaseDateRange!
 }
 
 enum SubscriptionReleaseBehavior {
   DOWNLOAD
   REVIEW
   BLOCK
+}
+
+enum SubscriptionReleaseDateRange {
+  ALL
+  ONE_YEAR
+  TWO_YEARS
+  THREE_YEARS
+  FIVE_YEARS
 }
 
 enum TaskDeletePolicy {
@@ -425,6 +434,7 @@ input SubscriptionReleasePolicyInput {
   groupBehavior: SubscriptionReleaseBehavior!
   compilationBehavior: SubscriptionReleaseBehavior!
   maxGroupPerformerCount: Int!
+  releaseDateRange: SubscriptionReleaseDateRange!
 }
 
 input UpdateSystemSettingsInput {

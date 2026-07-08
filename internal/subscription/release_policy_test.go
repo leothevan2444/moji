@@ -2,6 +2,7 @@ package subscription
 
 import (
 	"testing"
+	"time"
 
 	"github.com/leothevan2444/moji/internal/config"
 	stashboxgraphql "github.com/leothevan2444/moji/pkg/stashbox/graphql"
@@ -16,7 +17,7 @@ func TestEvaluateReleasePolicySoloBehavior(t *testing.T) {
 		GroupBehavior:          config.SubscriptionReleaseBehaviorDownload,
 		CompilationBehavior:    config.SubscriptionReleaseBehaviorDownload,
 		MaxGroupPerformerCount: 3,
-	}, target, scene)
+	}, time.Date(2026, 7, 8, 0, 0, 0, 0, time.UTC), target, scene)
 	if !matched {
 		t.Fatalf("expected target performer to match")
 	}
@@ -44,7 +45,7 @@ func TestEvaluateReleasePolicyGroupBehaviorCoversLargeGroup(t *testing.T) {
 		GroupBehavior:          config.SubscriptionReleaseBehaviorReview,
 		CompilationBehavior:    config.SubscriptionReleaseBehaviorBlock,
 		MaxGroupPerformerCount: 3,
-	}, target, scene)
+	}, time.Date(2026, 7, 8, 0, 0, 0, 0, time.UTC), target, scene)
 	if !matched {
 		t.Fatalf("expected target performer to match")
 	}
@@ -67,7 +68,7 @@ func TestEvaluateReleasePolicyCompilationBehavior(t *testing.T) {
 		GroupBehavior:          config.SubscriptionReleaseBehaviorDownload,
 		CompilationBehavior:    config.SubscriptionReleaseBehaviorBlock,
 		MaxGroupPerformerCount: 3,
-	}, target, scene)
+	}, time.Date(2026, 7, 8, 0, 0, 0, 0, time.UTC), target, scene)
 	if !matched {
 		t.Fatalf("expected target performer to match")
 	}
@@ -88,7 +89,7 @@ func TestEvaluateReleasePolicyUnknownMetadataAlwaysReviews(t *testing.T) {
 		GroupBehavior:          config.SubscriptionReleaseBehaviorBlock,
 		CompilationBehavior:    config.SubscriptionReleaseBehaviorBlock,
 		MaxGroupPerformerCount: 3,
-	}, target, scene)
+	}, time.Date(2026, 7, 8, 0, 0, 0, 0, time.UTC), target, scene)
 	if matched {
 		t.Fatalf("expected unmatched target when performer metadata is absent")
 	}
@@ -99,7 +100,7 @@ func TestEvaluateReleasePolicyUnknownMetadataAlwaysReviews(t *testing.T) {
 		GroupBehavior:          config.SubscriptionReleaseBehaviorBlock,
 		CompilationBehavior:    config.SubscriptionReleaseBehaviorBlock,
 		MaxGroupPerformerCount: 3,
-	}, target, scene)
+	}, time.Date(2026, 7, 8, 0, 0, 0, 0, time.UTC), target, scene)
 	if !matched {
 		t.Fatalf("expected target performer to match")
 	}
@@ -121,4 +122,44 @@ func releasePolicyScene(id string, target *stashboxgraphql.PerformerFragment, pe
 		scene.Performers = append(scene.Performers, &stashboxgraphql.PerformerAppearanceFragment{Performer: performer})
 	}
 	return scene
+}
+
+func TestEvaluateReleasePolicyReleaseDateOutOfRangeReviews(t *testing.T) {
+	target := &stashboxgraphql.PerformerFragment{ID: "p1", Name: "Actor A"}
+	date := "2020-06-01"
+	scene := releasePolicyScene("scene-5", target, target)
+	scene.Date = &date
+
+	evaluation, matched := evaluateReleasePolicy(config.SubscriptionReleasePolicyConfig{
+		SoloBehavior:           config.SubscriptionReleaseBehaviorDownload,
+		GroupBehavior:          config.SubscriptionReleaseBehaviorDownload,
+		CompilationBehavior:    config.SubscriptionReleaseBehaviorDownload,
+		MaxGroupPerformerCount: 3,
+		ReleaseDateRange:       config.SubscriptionReleaseDateRangeOneYear,
+	}, time.Date(2026, 7, 8, 0, 0, 0, 0, time.UTC), target, scene)
+	if !matched {
+		t.Fatalf("expected target performer to match")
+	}
+	if evaluation.Decision != ReleaseDecisionQueued || evaluation.DecisionReason != "release_date_out_of_range_review" {
+		t.Fatalf("unexpected date-range evaluation: %+v", evaluation)
+	}
+}
+
+func TestEvaluateReleasePolicyReleaseDateUnknownReviews(t *testing.T) {
+	target := &stashboxgraphql.PerformerFragment{ID: "p1", Name: "Actor A"}
+	scene := releasePolicyScene("scene-6", target, target)
+
+	evaluation, matched := evaluateReleasePolicy(config.SubscriptionReleasePolicyConfig{
+		SoloBehavior:           config.SubscriptionReleaseBehaviorDownload,
+		GroupBehavior:          config.SubscriptionReleaseBehaviorDownload,
+		CompilationBehavior:    config.SubscriptionReleaseBehaviorDownload,
+		MaxGroupPerformerCount: 3,
+		ReleaseDateRange:       config.SubscriptionReleaseDateRangeOneYear,
+	}, time.Date(2026, 7, 8, 0, 0, 0, 0, time.UTC), target, scene)
+	if !matched {
+		t.Fatalf("expected target performer to match")
+	}
+	if evaluation.Decision != ReleaseDecisionQueued || evaluation.DecisionReason != "release_date_unknown_review" {
+		t.Fatalf("unexpected unknown-date evaluation: %+v", evaluation)
+	}
 }

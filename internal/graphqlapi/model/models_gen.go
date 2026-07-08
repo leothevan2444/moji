@@ -507,17 +507,19 @@ type SubscriptionRelease struct {
 }
 
 type SubscriptionReleasePolicy struct {
-	SoloBehavior           SubscriptionReleaseBehavior `json:"soloBehavior"`
-	GroupBehavior          SubscriptionReleaseBehavior `json:"groupBehavior"`
-	CompilationBehavior    SubscriptionReleaseBehavior `json:"compilationBehavior"`
-	MaxGroupPerformerCount int                         `json:"maxGroupPerformerCount"`
+	SoloBehavior           SubscriptionReleaseBehavior  `json:"soloBehavior"`
+	GroupBehavior          SubscriptionReleaseBehavior  `json:"groupBehavior"`
+	CompilationBehavior    SubscriptionReleaseBehavior  `json:"compilationBehavior"`
+	MaxGroupPerformerCount int                          `json:"maxGroupPerformerCount"`
+	ReleaseDateRange       SubscriptionReleaseDateRange `json:"releaseDateRange"`
 }
 
 type SubscriptionReleasePolicyInput struct {
-	SoloBehavior           SubscriptionReleaseBehavior `json:"soloBehavior"`
-	GroupBehavior          SubscriptionReleaseBehavior `json:"groupBehavior"`
-	CompilationBehavior    SubscriptionReleaseBehavior `json:"compilationBehavior"`
-	MaxGroupPerformerCount int                         `json:"maxGroupPerformerCount"`
+	SoloBehavior           SubscriptionReleaseBehavior  `json:"soloBehavior"`
+	GroupBehavior          SubscriptionReleaseBehavior  `json:"groupBehavior"`
+	CompilationBehavior    SubscriptionReleaseBehavior  `json:"compilationBehavior"`
+	MaxGroupPerformerCount int                          `json:"maxGroupPerformerCount"`
+	ReleaseDateRange       SubscriptionReleaseDateRange `json:"releaseDateRange"`
 }
 
 type SubscriptionStatus struct {
@@ -1152,6 +1154,67 @@ func (e *SubscriptionReleaseClassification) UnmarshalJSON(b []byte) error {
 }
 
 func (e SubscriptionReleaseClassification) MarshalJSON() ([]byte, error) {
+	var buf bytes.Buffer
+	e.MarshalGQL(&buf)
+	return buf.Bytes(), nil
+}
+
+type SubscriptionReleaseDateRange string
+
+const (
+	SubscriptionReleaseDateRangeAll        SubscriptionReleaseDateRange = "ALL"
+	SubscriptionReleaseDateRangeOneYear    SubscriptionReleaseDateRange = "ONE_YEAR"
+	SubscriptionReleaseDateRangeTwoYears   SubscriptionReleaseDateRange = "TWO_YEARS"
+	SubscriptionReleaseDateRangeThreeYears SubscriptionReleaseDateRange = "THREE_YEARS"
+	SubscriptionReleaseDateRangeFiveYears  SubscriptionReleaseDateRange = "FIVE_YEARS"
+)
+
+var AllSubscriptionReleaseDateRange = []SubscriptionReleaseDateRange{
+	SubscriptionReleaseDateRangeAll,
+	SubscriptionReleaseDateRangeOneYear,
+	SubscriptionReleaseDateRangeTwoYears,
+	SubscriptionReleaseDateRangeThreeYears,
+	SubscriptionReleaseDateRangeFiveYears,
+}
+
+func (e SubscriptionReleaseDateRange) IsValid() bool {
+	switch e {
+	case SubscriptionReleaseDateRangeAll, SubscriptionReleaseDateRangeOneYear, SubscriptionReleaseDateRangeTwoYears, SubscriptionReleaseDateRangeThreeYears, SubscriptionReleaseDateRangeFiveYears:
+		return true
+	}
+	return false
+}
+
+func (e SubscriptionReleaseDateRange) String() string {
+	return string(e)
+}
+
+func (e *SubscriptionReleaseDateRange) UnmarshalGQL(v any) error {
+	str, ok := v.(string)
+	if !ok {
+		return fmt.Errorf("enums must be strings")
+	}
+
+	*e = SubscriptionReleaseDateRange(str)
+	if !e.IsValid() {
+		return fmt.Errorf("%s is not a valid SubscriptionReleaseDateRange", str)
+	}
+	return nil
+}
+
+func (e SubscriptionReleaseDateRange) MarshalGQL(w io.Writer) {
+	fmt.Fprint(w, strconv.Quote(e.String()))
+}
+
+func (e *SubscriptionReleaseDateRange) UnmarshalJSON(b []byte) error {
+	s, err := strconv.Unquote(string(b))
+	if err != nil {
+		return err
+	}
+	return e.UnmarshalGQL(s)
+}
+
+func (e SubscriptionReleaseDateRange) MarshalJSON() ([]byte, error) {
 	var buf bytes.Buffer
 	e.MarshalGQL(&buf)
 	return buf.Bytes(), nil

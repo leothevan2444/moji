@@ -116,6 +116,7 @@ func (r *mutationResolver) UpdateAutomationSettings(ctx context.Context, input m
 			GroupBehavior:          string(input.SubscriptionReleasePolicy.GroupBehavior),
 			CompilationBehavior:    string(input.SubscriptionReleasePolicy.CompilationBehavior),
 			MaxGroupPerformerCount: input.SubscriptionReleasePolicy.MaxGroupPerformerCount,
+			ReleaseDateRange:       string(input.SubscriptionReleasePolicy.ReleaseDateRange),
 		},
 		TorrentSelection: torrentSelectionSettingsFromModel(input.TorrentSelection),
 	})

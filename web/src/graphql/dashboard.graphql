@@ -61,6 +61,7 @@ query DashboardDocument {
         groupBehavior
         compilationBehavior
         maxGroupPerformerCount
+        releaseDateRange
       }
       torrentSelection {
         enabled
