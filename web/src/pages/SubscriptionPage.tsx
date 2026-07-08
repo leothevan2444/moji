@@ -7,6 +7,8 @@ import { formatDateTime, formatRelativeDate, performerImageURL, performerInitial
 import {
   LibraryFilter,
   SceneSourceFilter,
+  SubscriptionReleaseClassification,
+  SubscriptionReleaseDecision,
   type DashboardDocumentQuery,
   type StashPerformerDetailQuery,
   type StashPerformerScenesQuery,
@@ -20,7 +22,61 @@ type StashPerformerDetail = StashPerformerDetailQuery["stashPerformerDetail"];
 type StashPerformerScenePage = StashPerformerScenesQuery["stashPerformerScenes"];
 type StashPerformerSceneEntry = StashPerformerScenePage["items"][number];
 type SubscribedPerformerEntry = SubscribedPerformersQuery["subscribedPerformers"][number];
+type SubscriptionReleaseEntry = SubscribedPerformerEntry["recentReleases"][number];
 type RuntimeSettings = NonNullable<DashboardDocumentQuery["settings"]>;
+
+function subscriptionReleaseClassificationLabel(release: SubscriptionReleaseEntry): string {
+  switch (release.classification) {
+    case SubscriptionReleaseClassification.Solo:
+      return "独演";
+    case SubscriptionReleaseClassification.SmallGroup:
+      return `共演(${release.performerCount})`;
+    case SubscriptionReleaseClassification.LargeGroup:
+      return `多人共演(${release.performerCount})`;
+    case SubscriptionReleaseClassification.CompilationLike:
+      return "合集疑似";
+    default:
+      return "未知";
+  }
+}
+
+function subscriptionReleaseDecisionLabel(release: SubscriptionReleaseEntry): string {
+  switch (release.decision) {
+    case SubscriptionReleaseDecision.Downloaded:
+      return "已加入下载";
+    case SubscriptionReleaseDecision.Blocked:
+      return "已拦截";
+    default:
+      return "仅记录";
+  }
+}
+
+function subscriptionReleaseReasonLabel(release: SubscriptionReleaseEntry): string {
+  switch (release.decisionReason) {
+    case "solo_behavior_download":
+      return "独演按策略自动下载";
+    case "solo_behavior_review":
+      return "独演按策略记录供复核";
+    case "solo_behavior_block":
+      return "独演按策略拦截";
+    case "group_behavior_download":
+      return "共演按策略自动下载";
+    case "group_behavior_review":
+      return "共演按策略记录供复核";
+    case "group_behavior_block":
+      return "共演按策略拦截";
+    case "compilation_behavior_download":
+      return "总集按策略自动下载";
+    case "compilation_behavior_review":
+      return "总集按策略记录供复核";
+    case "compilation_behavior_block":
+      return "总集按策略拦截";
+    case "metadata_unknown_review":
+      return "元数据不足，已记录供复核";
+    default:
+      return release.decision === SubscriptionReleaseDecision.Downloaded ? "已进入下载链路" : "已按策略保留记录";
+  }
+}
 
 interface SubscriptionPageProps {
   runtimeSettings: RuntimeSettings | null;
@@ -224,6 +280,31 @@ export function SubscriptionPage({
                   <dd>{performerDetail.heightCm ? `${performerDetail.heightCm} cm` : "-"}</dd>
                 </div>
               </div>
+
+              {performerSubscription?.recentReleases.length ? (
+                <div style={{ marginTop: 16, display: "grid", gap: 10 }}>
+                  <strong>最近发行记录</strong>
+                  {performerSubscription.recentReleases.map((release) => (
+                    <article key={release.key} className="candidate-card" style={{ padding: 12 }}>
+                      <div className="candidate-card__head">
+                        <div>
+                          <h3>{release.code || release.title}</h3>
+                          <p>{release.title || "无标题"}</p>
+                        </div>
+                        <div className="chip-row">
+                          <span className="status-chip tone-info">{subscriptionReleaseClassificationLabel(release)}</span>
+                          <span className={`status-chip ${release.decision === SubscriptionReleaseDecision.Downloaded ? "tone-success" : release.decision === SubscriptionReleaseDecision.Blocked ? "tone-danger" : "tone-warn"}`}>
+                            {subscriptionReleaseDecisionLabel(release)}
+                          </span>
+                        </div>
+                      </div>
+                      <p style={{ marginTop: 10 }}>
+                        {release.date || formatDateTime(release.seenAt)} · {subscriptionReleaseReasonLabel(release)}
+                      </p>
+                    </article>
+                  ))}
+                </div>
+              ) : null}
             </article>
 
             <div className="toolbar-inline toolbar-inline--subscription">
@@ -461,6 +542,14 @@ export function SubscriptionPage({
                         ? "已订阅，等待首次检查结果。"
                         : "尚未订阅。"}
                 </p>
+                {latestRelease ? (
+                  <div className="chip-row" style={{ marginTop: 10 }}>
+                    <span className="status-chip tone-info">{subscriptionReleaseClassificationLabel(latestRelease)}</span>
+                    <span className={`status-chip ${latestRelease.decision === SubscriptionReleaseDecision.Downloaded ? "tone-success" : latestRelease.decision === SubscriptionReleaseDecision.Blocked ? "tone-danger" : "tone-warn"}`} title={subscriptionReleaseReasonLabel(latestRelease)}>
+                      {subscriptionReleaseDecisionLabel(latestRelease)}
+                    </span>
+                  </div>
+                ) : null}
                 <div className="profile-actions" onClick={(event) => event.stopPropagation()}>
                   <button
                     type="button"

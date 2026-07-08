@@ -49,6 +49,7 @@ type ComplexityRoot struct {
 	AutomationSettings struct {
 		StashBoxEndpoints               func(childComplexity int) int
 		SubscriptionPollIntervalHours   func(childComplexity int) int
+		SubscriptionReleasePolicy       func(childComplexity int) int
 		TaskProgressSyncIntervalSeconds func(childComplexity int) int
 		TorrentSelection                func(childComplexity int) int
 	}
@@ -432,15 +433,27 @@ type ComplexityRoot struct {
 	}
 
 	SubscriptionRelease struct {
-		Code   func(childComplexity int) int
-		Date   func(childComplexity int) int
-		Key    func(childComplexity int) int
-		Query  func(childComplexity int) int
-		SeenAt func(childComplexity int) int
-		Source func(childComplexity int) int
-		TaskID func(childComplexity int) int
-		Title  func(childComplexity int) int
-		URL    func(childComplexity int) int
+		Classification func(childComplexity int) int
+		Code           func(childComplexity int) int
+		Date           func(childComplexity int) int
+		Decision       func(childComplexity int) int
+		DecisionReason func(childComplexity int) int
+		Key            func(childComplexity int) int
+		PerformerCount func(childComplexity int) int
+		PerformerNames func(childComplexity int) int
+		Query          func(childComplexity int) int
+		SeenAt         func(childComplexity int) int
+		Source         func(childComplexity int) int
+		TaskID         func(childComplexity int) int
+		Title          func(childComplexity int) int
+		URL            func(childComplexity int) int
+	}
+
+	SubscriptionReleasePolicy struct {
+		CompilationBehavior    func(childComplexity int) int
+		GroupBehavior          func(childComplexity int) int
+		MaxGroupPerformerCount func(childComplexity int) int
+		SoloBehavior           func(childComplexity int) int
 	}
 
 	SubscriptionStatus struct {
@@ -605,6 +618,13 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.AutomationSettings.SubscriptionPollIntervalHours(childComplexity), true
+
+	case "AutomationSettings.subscriptionReleasePolicy":
+		if e.complexity.AutomationSettings.SubscriptionReleasePolicy == nil {
+			break
+		}
+
+		return e.complexity.AutomationSettings.SubscriptionReleasePolicy(childComplexity), true
 
 	case "AutomationSettings.taskProgressSyncIntervalSeconds":
 		if e.complexity.AutomationSettings.TaskProgressSyncIntervalSeconds == nil {
@@ -2556,6 +2576,13 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.SubscribedPerformer.RecentReleases(childComplexity), true
 
+	case "SubscriptionRelease.classification":
+		if e.complexity.SubscriptionRelease.Classification == nil {
+			break
+		}
+
+		return e.complexity.SubscriptionRelease.Classification(childComplexity), true
+
 	case "SubscriptionRelease.code":
 		if e.complexity.SubscriptionRelease.Code == nil {
 			break
@@ -2570,12 +2597,40 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.SubscriptionRelease.Date(childComplexity), true
 
+	case "SubscriptionRelease.decision":
+		if e.complexity.SubscriptionRelease.Decision == nil {
+			break
+		}
+
+		return e.complexity.SubscriptionRelease.Decision(childComplexity), true
+
+	case "SubscriptionRelease.decisionReason":
+		if e.complexity.SubscriptionRelease.DecisionReason == nil {
+			break
+		}
+
+		return e.complexity.SubscriptionRelease.DecisionReason(childComplexity), true
+
 	case "SubscriptionRelease.key":
 		if e.complexity.SubscriptionRelease.Key == nil {
 			break
 		}
 
 		return e.complexity.SubscriptionRelease.Key(childComplexity), true
+
+	case "SubscriptionRelease.performerCount":
+		if e.complexity.SubscriptionRelease.PerformerCount == nil {
+			break
+		}
+
+		return e.complexity.SubscriptionRelease.PerformerCount(childComplexity), true
+
+	case "SubscriptionRelease.performerNames":
+		if e.complexity.SubscriptionRelease.PerformerNames == nil {
+			break
+		}
+
+		return e.complexity.SubscriptionRelease.PerformerNames(childComplexity), true
 
 	case "SubscriptionRelease.query":
 		if e.complexity.SubscriptionRelease.Query == nil {
@@ -2618,6 +2673,34 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.SubscriptionRelease.URL(childComplexity), true
+
+	case "SubscriptionReleasePolicy.compilationBehavior":
+		if e.complexity.SubscriptionReleasePolicy.CompilationBehavior == nil {
+			break
+		}
+
+		return e.complexity.SubscriptionReleasePolicy.CompilationBehavior(childComplexity), true
+
+	case "SubscriptionReleasePolicy.groupBehavior":
+		if e.complexity.SubscriptionReleasePolicy.GroupBehavior == nil {
+			break
+		}
+
+		return e.complexity.SubscriptionReleasePolicy.GroupBehavior(childComplexity), true
+
+	case "SubscriptionReleasePolicy.maxGroupPerformerCount":
+		if e.complexity.SubscriptionReleasePolicy.MaxGroupPerformerCount == nil {
+			break
+		}
+
+		return e.complexity.SubscriptionReleasePolicy.MaxGroupPerformerCount(childComplexity), true
+
+	case "SubscriptionReleasePolicy.soloBehavior":
+		if e.complexity.SubscriptionReleasePolicy.SoloBehavior == nil {
+			break
+		}
+
+		return e.complexity.SubscriptionReleasePolicy.SoloBehavior(childComplexity), true
 
 	case "SubscriptionStatus.stashBoxes":
 		if e.complexity.SubscriptionStatus.StashBoxes == nil {
@@ -3032,6 +3115,7 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 		ec.unmarshalInputQueueDiscoveredSceneInput,
 		ec.unmarshalInputStashMetadataScanInput,
 		ec.unmarshalInputStashPerformerScenesInput,
+		ec.unmarshalInputSubscriptionReleasePolicyInput,
 		ec.unmarshalInputTitleMatchClauseInput,
 		ec.unmarshalInputTitleMatchRuleInput,
 		ec.unmarshalInputTorrentFileNameMatchClauseInput,
@@ -3580,7 +3664,21 @@ type AutomationSettings {
   subscriptionPollIntervalHours: Int!
   "Endpoint URLs in the user-defined order used for subscription lookups. Endpoints not listed here are still queried, in their Stash order, appended after the listed ones. An empty list means use Stash's order as-is."
   stashBoxEndpoints: [String!]!
+  subscriptionReleasePolicy: SubscriptionReleasePolicy!
   torrentSelection: TorrentSelectionSettings!
+}
+
+type SubscriptionReleasePolicy {
+  soloBehavior: SubscriptionReleaseBehavior!
+  groupBehavior: SubscriptionReleaseBehavior!
+  compilationBehavior: SubscriptionReleaseBehavior!
+  maxGroupPerformerCount: Int!
+}
+
+enum SubscriptionReleaseBehavior {
+  DOWNLOAD
+  REVIEW
+  BLOCK
 }
 
 enum TaskDeletePolicy {
@@ -3715,7 +3813,15 @@ input UpdateAutomationSettingsInput {
   taskProgressSyncIntervalSeconds: Int!
   subscriptionPollIntervalHours: Int!
   stashBoxEndpoints: [String!]!
+  subscriptionReleasePolicy: SubscriptionReleasePolicyInput!
   torrentSelection: TorrentSelectionSettingsInput!
+}
+
+input SubscriptionReleasePolicyInput {
+  soloBehavior: SubscriptionReleaseBehavior!
+  groupBehavior: SubscriptionReleaseBehavior!
+  compilationBehavior: SubscriptionReleaseBehavior!
+  maxGroupPerformerCount: Int!
 }
 
 input UpdateSystemSettingsInput {
@@ -3923,7 +4029,26 @@ type SubscriptionRelease {
   url: String
   query: String!
   taskID: ID
+  performerCount: Int!
+  performerNames: [String!]!
+  classification: SubscriptionReleaseClassification!
+  decision: SubscriptionReleaseDecision!
+  decisionReason: String!
   seenAt: String!
+}
+
+enum SubscriptionReleaseClassification {
+  SOLO
+  SMALL_GROUP
+  LARGE_GROUP
+  COMPILATION_LIKE
+  UNKNOWN
+}
+
+enum SubscriptionReleaseDecision {
+  DOWNLOADED
+  QUEUED
+  BLOCKED
 }
 `, BuiltIn: false},
 	{Name: "../../../graphql/moji/types/task.graphql", Input: `extend type Query {
@@ -5146,6 +5271,60 @@ func (ec *executionContext) fieldContext_AutomationSettings_stashBoxEndpoints(_ 
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AutomationSettings_subscriptionReleasePolicy(ctx context.Context, field graphql.CollectedField, obj *model.AutomationSettings) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_AutomationSettings_subscriptionReleasePolicy(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.SubscriptionReleasePolicy, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*model.SubscriptionReleasePolicy)
+	fc.Result = res
+	return ec.marshalNSubscriptionReleasePolicy2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐSubscriptionReleasePolicy(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_AutomationSettings_subscriptionReleasePolicy(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AutomationSettings",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "soloBehavior":
+				return ec.fieldContext_SubscriptionReleasePolicy_soloBehavior(ctx, field)
+			case "groupBehavior":
+				return ec.fieldContext_SubscriptionReleasePolicy_groupBehavior(ctx, field)
+			case "compilationBehavior":
+				return ec.fieldContext_SubscriptionReleasePolicy_compilationBehavior(ctx, field)
+			case "maxGroupPerformerCount":
+				return ec.fieldContext_SubscriptionReleasePolicy_maxGroupPerformerCount(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type SubscriptionReleasePolicy", field.Name)
 		},
 	}
 	return fc, nil
@@ -13764,6 +13943,8 @@ func (ec *executionContext) fieldContext_Settings_automation(_ context.Context, 
 				return ec.fieldContext_AutomationSettings_subscriptionPollIntervalHours(ctx, field)
 			case "stashBoxEndpoints":
 				return ec.fieldContext_AutomationSettings_stashBoxEndpoints(ctx, field)
+			case "subscriptionReleasePolicy":
+				return ec.fieldContext_AutomationSettings_subscriptionReleasePolicy(ctx, field)
 			case "torrentSelection":
 				return ec.fieldContext_AutomationSettings_torrentSelection(ctx, field)
 			}
@@ -18154,6 +18335,16 @@ func (ec *executionContext) fieldContext_SubscribedPerformer_recentReleases(_ co
 				return ec.fieldContext_SubscriptionRelease_query(ctx, field)
 			case "taskID":
 				return ec.fieldContext_SubscriptionRelease_taskID(ctx, field)
+			case "performerCount":
+				return ec.fieldContext_SubscriptionRelease_performerCount(ctx, field)
+			case "performerNames":
+				return ec.fieldContext_SubscriptionRelease_performerNames(ctx, field)
+			case "classification":
+				return ec.fieldContext_SubscriptionRelease_classification(ctx, field)
+			case "decision":
+				return ec.fieldContext_SubscriptionRelease_decision(ctx, field)
+			case "decisionReason":
+				return ec.fieldContext_SubscriptionRelease_decisionReason(ctx, field)
 			case "seenAt":
 				return ec.fieldContext_SubscriptionRelease_seenAt(ctx, field)
 			}
@@ -18503,6 +18694,226 @@ func (ec *executionContext) fieldContext_SubscriptionRelease_taskID(_ context.Co
 	return fc, nil
 }
 
+func (ec *executionContext) _SubscriptionRelease_performerCount(ctx context.Context, field graphql.CollectedField, obj *model.SubscriptionRelease) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_SubscriptionRelease_performerCount(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.PerformerCount, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int)
+	fc.Result = res
+	return ec.marshalNInt2int(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_SubscriptionRelease_performerCount(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "SubscriptionRelease",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _SubscriptionRelease_performerNames(ctx context.Context, field graphql.CollectedField, obj *model.SubscriptionRelease) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_SubscriptionRelease_performerNames(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.PerformerNames, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]string)
+	fc.Result = res
+	return ec.marshalNString2ᚕstringᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_SubscriptionRelease_performerNames(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "SubscriptionRelease",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _SubscriptionRelease_classification(ctx context.Context, field graphql.CollectedField, obj *model.SubscriptionRelease) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_SubscriptionRelease_classification(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Classification, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(model.SubscriptionReleaseClassification)
+	fc.Result = res
+	return ec.marshalNSubscriptionReleaseClassification2githubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐSubscriptionReleaseClassification(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_SubscriptionRelease_classification(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "SubscriptionRelease",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type SubscriptionReleaseClassification does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _SubscriptionRelease_decision(ctx context.Context, field graphql.CollectedField, obj *model.SubscriptionRelease) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_SubscriptionRelease_decision(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Decision, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(model.SubscriptionReleaseDecision)
+	fc.Result = res
+	return ec.marshalNSubscriptionReleaseDecision2githubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐSubscriptionReleaseDecision(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_SubscriptionRelease_decision(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "SubscriptionRelease",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type SubscriptionReleaseDecision does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _SubscriptionRelease_decisionReason(ctx context.Context, field graphql.CollectedField, obj *model.SubscriptionRelease) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_SubscriptionRelease_decisionReason(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.DecisionReason, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_SubscriptionRelease_decisionReason(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "SubscriptionRelease",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _SubscriptionRelease_seenAt(ctx context.Context, field graphql.CollectedField, obj *model.SubscriptionRelease) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_SubscriptionRelease_seenAt(ctx, field)
 	if err != nil {
@@ -18542,6 +18953,182 @@ func (ec *executionContext) fieldContext_SubscriptionRelease_seenAt(_ context.Co
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _SubscriptionReleasePolicy_soloBehavior(ctx context.Context, field graphql.CollectedField, obj *model.SubscriptionReleasePolicy) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_SubscriptionReleasePolicy_soloBehavior(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.SoloBehavior, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(model.SubscriptionReleaseBehavior)
+	fc.Result = res
+	return ec.marshalNSubscriptionReleaseBehavior2githubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐSubscriptionReleaseBehavior(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_SubscriptionReleasePolicy_soloBehavior(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "SubscriptionReleasePolicy",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type SubscriptionReleaseBehavior does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _SubscriptionReleasePolicy_groupBehavior(ctx context.Context, field graphql.CollectedField, obj *model.SubscriptionReleasePolicy) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_SubscriptionReleasePolicy_groupBehavior(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.GroupBehavior, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(model.SubscriptionReleaseBehavior)
+	fc.Result = res
+	return ec.marshalNSubscriptionReleaseBehavior2githubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐSubscriptionReleaseBehavior(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_SubscriptionReleasePolicy_groupBehavior(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "SubscriptionReleasePolicy",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type SubscriptionReleaseBehavior does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _SubscriptionReleasePolicy_compilationBehavior(ctx context.Context, field graphql.CollectedField, obj *model.SubscriptionReleasePolicy) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_SubscriptionReleasePolicy_compilationBehavior(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.CompilationBehavior, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(model.SubscriptionReleaseBehavior)
+	fc.Result = res
+	return ec.marshalNSubscriptionReleaseBehavior2githubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐSubscriptionReleaseBehavior(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_SubscriptionReleasePolicy_compilationBehavior(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "SubscriptionReleasePolicy",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type SubscriptionReleaseBehavior does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _SubscriptionReleasePolicy_maxGroupPerformerCount(ctx context.Context, field graphql.CollectedField, obj *model.SubscriptionReleasePolicy) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_SubscriptionReleasePolicy_maxGroupPerformerCount(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.MaxGroupPerformerCount, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int)
+	fc.Result = res
+	return ec.marshalNInt2int(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_SubscriptionReleasePolicy_maxGroupPerformerCount(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "SubscriptionReleasePolicy",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
 		},
 	}
 	return fc, nil
@@ -23759,6 +24346,54 @@ func (ec *executionContext) unmarshalInputStashPerformerScenesInput(ctx context.
 	return it, nil
 }
 
+func (ec *executionContext) unmarshalInputSubscriptionReleasePolicyInput(ctx context.Context, obj any) (model.SubscriptionReleasePolicyInput, error) {
+	var it model.SubscriptionReleasePolicyInput
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"soloBehavior", "groupBehavior", "compilationBehavior", "maxGroupPerformerCount"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "soloBehavior":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("soloBehavior"))
+			data, err := ec.unmarshalNSubscriptionReleaseBehavior2githubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐSubscriptionReleaseBehavior(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.SoloBehavior = data
+		case "groupBehavior":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("groupBehavior"))
+			data, err := ec.unmarshalNSubscriptionReleaseBehavior2githubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐSubscriptionReleaseBehavior(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.GroupBehavior = data
+		case "compilationBehavior":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("compilationBehavior"))
+			data, err := ec.unmarshalNSubscriptionReleaseBehavior2githubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐSubscriptionReleaseBehavior(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.CompilationBehavior = data
+		case "maxGroupPerformerCount":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("maxGroupPerformerCount"))
+			data, err := ec.unmarshalNInt2int(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.MaxGroupPerformerCount = data
+		}
+	}
+
+	return it, nil
+}
+
 func (ec *executionContext) unmarshalInputTitleMatchClauseInput(ctx context.Context, obj any) (model.TitleMatchClauseInput, error) {
 	var it model.TitleMatchClauseInput
 	asMap := map[string]any{}
@@ -24053,7 +24688,7 @@ func (ec *executionContext) unmarshalInputUpdateAutomationSettingsInput(ctx cont
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"taskProgressSyncIntervalSeconds", "subscriptionPollIntervalHours", "stashBoxEndpoints", "torrentSelection"}
+	fieldsInOrder := [...]string{"taskProgressSyncIntervalSeconds", "subscriptionPollIntervalHours", "stashBoxEndpoints", "subscriptionReleasePolicy", "torrentSelection"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -24081,6 +24716,13 @@ func (ec *executionContext) unmarshalInputUpdateAutomationSettingsInput(ctx cont
 				return it, err
 			}
 			it.StashBoxEndpoints = data
+		case "subscriptionReleasePolicy":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("subscriptionReleasePolicy"))
+			data, err := ec.unmarshalNSubscriptionReleasePolicyInput2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐSubscriptionReleasePolicyInput(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.SubscriptionReleasePolicy = data
 		case "torrentSelection":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("torrentSelection"))
 			data, err := ec.unmarshalNTorrentSelectionSettingsInput2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐTorrentSelectionSettingsInput(ctx, v)
@@ -24337,6 +24979,11 @@ func (ec *executionContext) _AutomationSettings(ctx context.Context, sel ast.Sel
 			}
 		case "stashBoxEndpoints":
 			out.Values[i] = ec._AutomationSettings_stashBoxEndpoints(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "subscriptionReleasePolicy":
+			out.Values[i] = ec._AutomationSettings_subscriptionReleasePolicy(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
@@ -27292,8 +27939,87 @@ func (ec *executionContext) _SubscriptionRelease(ctx context.Context, sel ast.Se
 			}
 		case "taskID":
 			out.Values[i] = ec._SubscriptionRelease_taskID(ctx, field, obj)
+		case "performerCount":
+			out.Values[i] = ec._SubscriptionRelease_performerCount(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "performerNames":
+			out.Values[i] = ec._SubscriptionRelease_performerNames(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "classification":
+			out.Values[i] = ec._SubscriptionRelease_classification(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "decision":
+			out.Values[i] = ec._SubscriptionRelease_decision(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "decisionReason":
+			out.Values[i] = ec._SubscriptionRelease_decisionReason(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
 		case "seenAt":
 			out.Values[i] = ec._SubscriptionRelease_seenAt(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var subscriptionReleasePolicyImplementors = []string{"SubscriptionReleasePolicy"}
+
+func (ec *executionContext) _SubscriptionReleasePolicy(ctx context.Context, sel ast.SelectionSet, obj *model.SubscriptionReleasePolicy) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, subscriptionReleasePolicyImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("SubscriptionReleasePolicy")
+		case "soloBehavior":
+			out.Values[i] = ec._SubscriptionReleasePolicy_soloBehavior(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "groupBehavior":
+			out.Values[i] = ec._SubscriptionReleasePolicy_groupBehavior(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "compilationBehavior":
+			out.Values[i] = ec._SubscriptionReleasePolicy_compilationBehavior(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "maxGroupPerformerCount":
+			out.Values[i] = ec._SubscriptionReleasePolicy_maxGroupPerformerCount(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
@@ -29428,6 +30154,51 @@ func (ec *executionContext) marshalNSubscriptionRelease2ᚖgithubᚗcomᚋleothe
 		return graphql.Null
 	}
 	return ec._SubscriptionRelease(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalNSubscriptionReleaseBehavior2githubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐSubscriptionReleaseBehavior(ctx context.Context, v any) (model.SubscriptionReleaseBehavior, error) {
+	var res model.SubscriptionReleaseBehavior
+	err := res.UnmarshalGQL(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNSubscriptionReleaseBehavior2githubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐSubscriptionReleaseBehavior(ctx context.Context, sel ast.SelectionSet, v model.SubscriptionReleaseBehavior) graphql.Marshaler {
+	return v
+}
+
+func (ec *executionContext) unmarshalNSubscriptionReleaseClassification2githubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐSubscriptionReleaseClassification(ctx context.Context, v any) (model.SubscriptionReleaseClassification, error) {
+	var res model.SubscriptionReleaseClassification
+	err := res.UnmarshalGQL(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNSubscriptionReleaseClassification2githubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐSubscriptionReleaseClassification(ctx context.Context, sel ast.SelectionSet, v model.SubscriptionReleaseClassification) graphql.Marshaler {
+	return v
+}
+
+func (ec *executionContext) unmarshalNSubscriptionReleaseDecision2githubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐSubscriptionReleaseDecision(ctx context.Context, v any) (model.SubscriptionReleaseDecision, error) {
+	var res model.SubscriptionReleaseDecision
+	err := res.UnmarshalGQL(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNSubscriptionReleaseDecision2githubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐSubscriptionReleaseDecision(ctx context.Context, sel ast.SelectionSet, v model.SubscriptionReleaseDecision) graphql.Marshaler {
+	return v
+}
+
+func (ec *executionContext) marshalNSubscriptionReleasePolicy2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐSubscriptionReleasePolicy(ctx context.Context, sel ast.SelectionSet, v *model.SubscriptionReleasePolicy) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._SubscriptionReleasePolicy(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalNSubscriptionReleasePolicyInput2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐSubscriptionReleasePolicyInput(ctx context.Context, v any) (*model.SubscriptionReleasePolicyInput, error) {
+	res, err := ec.unmarshalInputSubscriptionReleasePolicyInput(ctx, v)
+	return &res, graphql.ErrorOnPath(ctx, err)
 }
 
 func (ec *executionContext) marshalNSubscriptionStatus2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐSubscriptionStatus(ctx context.Context, sel ast.SelectionSet, v *model.SubscriptionStatus) graphql.Marshaler {

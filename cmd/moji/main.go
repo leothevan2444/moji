@@ -376,6 +376,7 @@ func applySubscriptionOrder(cfg *config.Config, service graphqlapi.SubscriptionS
 	}
 	if concrete, ok := service.(*subscription.Service); ok {
 		concrete.SetEndpointOrder(cfg.Automation.StashBoxEndpoints)
+		concrete.SetReleasePolicy(cfg.Automation.SubscriptionReleasePolicy.Effective())
 	}
 }
 
@@ -429,7 +430,13 @@ func buildSettingsSnapshot(cfg *config.Config, version string) *graphqlapi.Setti
 			TaskProgressSyncIntervalSeconds: effectiveTaskProgressSyncIntervalSeconds(cfg),
 			SubscriptionPollIntervalHours:   effectiveSubscriptionPollIntervalHours(cfg),
 			StashBoxEndpoints:               append([]string(nil), cfg.Automation.StashBoxEndpoints...),
-			TorrentSelection:                torrentSelectionSnapshot(cfg.Automation.TorrentSelection.Effective()),
+			SubscriptionReleasePolicy: graphqlapi.SubscriptionReleasePolicySnapshot{
+				SoloBehavior:           string(cfg.Automation.SubscriptionReleasePolicy.Effective().SoloBehavior),
+				GroupBehavior:          string(cfg.Automation.SubscriptionReleasePolicy.Effective().GroupBehavior),
+				CompilationBehavior:    string(cfg.Automation.SubscriptionReleasePolicy.Effective().CompilationBehavior),
+				MaxGroupPerformerCount: cfg.Automation.SubscriptionReleasePolicy.Effective().MaxGroupPerformerCount,
+			},
+			TorrentSelection: torrentSelectionSnapshot(cfg.Automation.TorrentSelection.Effective()),
 		},
 		System: graphqlapi.SystemSettingsSnapshot{
 			TaskDeletePolicy: string(cfg.System.EffectiveTaskDeletePolicy()),

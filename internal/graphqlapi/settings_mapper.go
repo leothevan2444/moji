@@ -101,11 +101,21 @@ func settingsSnapshotToModel(snapshot *SettingsSnapshot, appVersion string) *mod
 			TaskProgressSyncIntervalSeconds: snapshot.Automation.TaskProgressSyncIntervalSeconds,
 			SubscriptionPollIntervalHours:   snapshot.Automation.SubscriptionPollIntervalHours,
 			StashBoxEndpoints:               append([]string(nil), snapshot.Automation.StashBoxEndpoints...),
+			SubscriptionReleasePolicy:       subscriptionReleasePolicyToModel(snapshot.Automation.SubscriptionReleasePolicy),
 			TorrentSelection:                torrentSelectionSettingsToModel(snapshot.Automation.TorrentSelection),
 		},
 		System: &model.SystemSettings{
 			TaskDeletePolicy: model.TaskDeletePolicy(snapshot.System.TaskDeletePolicy),
 		},
+	}
+}
+
+func subscriptionReleasePolicyToModel(snapshot SubscriptionReleasePolicySnapshot) *model.SubscriptionReleasePolicy {
+	return &model.SubscriptionReleasePolicy{
+		SoloBehavior:           model.SubscriptionReleaseBehavior(snapshot.SoloBehavior),
+		GroupBehavior:          model.SubscriptionReleaseBehavior(snapshot.GroupBehavior),
+		CompilationBehavior:    model.SubscriptionReleaseBehavior(snapshot.CompilationBehavior),
+		MaxGroupPerformerCount: snapshot.MaxGroupPerformerCount,
 	}
 }
 

@@ -1,5 +1,6 @@
 import {
   LogLevel,
+  SubscriptionReleaseBehavior,
   TorrentFileMatchEffect,
   TitleMatchEffect,
   TitleMatchPatternMode,
@@ -93,6 +94,12 @@ export const EMPTY_AUTOMATION_FORM = {
   taskProgressSyncIntervalSeconds: "60",
   subscriptionPollIntervalHours: "1",
   stashBoxEndpoints: [] as string[],
+  subscriptionReleasePolicy: {
+    soloBehavior: SubscriptionReleaseBehavior.Download,
+    groupBehavior: SubscriptionReleaseBehavior.Review,
+    compilationBehavior: SubscriptionReleaseBehavior.Block,
+    maxGroupPerformerCount: "3"
+  },
   torrentSelection: {
     enabled: true,
     inspectionCandidateLimit: "5",

@@ -267,7 +267,21 @@ type AutomationSettings {
   subscriptionPollIntervalHours: Int!
   "Endpoint URLs in the user-defined order used for subscription lookups. Endpoints not listed here are still queried, in their Stash order, appended after the listed ones. An empty list means use Stash's order as-is."
   stashBoxEndpoints: [String!]!
+  subscriptionReleasePolicy: SubscriptionReleasePolicy!
   torrentSelection: TorrentSelectionSettings!
+}
+
+type SubscriptionReleasePolicy {
+  soloBehavior: SubscriptionReleaseBehavior!
+  groupBehavior: SubscriptionReleaseBehavior!
+  compilationBehavior: SubscriptionReleaseBehavior!
+  maxGroupPerformerCount: Int!
+}
+
+enum SubscriptionReleaseBehavior {
+  DOWNLOAD
+  REVIEW
+  BLOCK
 }
 
 enum TaskDeletePolicy {
@@ -402,7 +416,15 @@ input UpdateAutomationSettingsInput {
   taskProgressSyncIntervalSeconds: Int!
   subscriptionPollIntervalHours: Int!
   stashBoxEndpoints: [String!]!
+  subscriptionReleasePolicy: SubscriptionReleasePolicyInput!
   torrentSelection: TorrentSelectionSettingsInput!
+}
+
+input SubscriptionReleasePolicyInput {
+  soloBehavior: SubscriptionReleaseBehavior!
+  groupBehavior: SubscriptionReleaseBehavior!
+  compilationBehavior: SubscriptionReleaseBehavior!
+  maxGroupPerformerCount: Int!
 }
 
 input UpdateSystemSettingsInput {

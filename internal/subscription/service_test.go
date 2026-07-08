@@ -122,7 +122,20 @@ func (f *fakeStashboxClient) SearchScene(_ context.Context, _ string) ([]*stashb
 }
 
 func (f *fakeStashboxClient) QueryScenes(_ context.Context, _ stashboxgraphql.SceneQueryInput) ([]*stashboxgraphql.SceneFragment, error) {
-	return f.scenes, nil
+	out := make([]*stashboxgraphql.SceneFragment, 0, len(f.scenes))
+	for _, scene := range f.scenes {
+		if scene == nil {
+			continue
+		}
+		cloned := *scene
+		if len(cloned.Performers) == 0 && f.performer != nil {
+			cloned.Performers = []*stashboxgraphql.PerformerAppearanceFragment{
+				{Performer: &stashboxgraphql.PerformerFragment{ID: f.performer.ID, Name: f.performer.Name}},
+			}
+		}
+		out = append(out, &cloned)
+	}
+	return out, nil
 }
 
 func (f *fakeDownloader) DownloadMediaContext(_ context.Context, req downloader.DownloadRequest) (*downloader.Task, error) {

@@ -56,6 +56,12 @@ query DashboardDocument {
       taskProgressSyncIntervalSeconds
       subscriptionPollIntervalHours
       stashBoxEndpoints
+      subscriptionReleasePolicy {
+        soloBehavior
+        groupBehavior
+        compilationBehavior
+        maxGroupPerformerCount
+      }
       torrentSelection {
         enabled
         inspectionCandidateLimit

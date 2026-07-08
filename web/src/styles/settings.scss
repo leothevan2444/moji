@@ -44,14 +44,14 @@
 
   &:hover .settings-info__tooltip,
   &:focus-visible .settings-info__tooltip {
-    opacity: 1;
-    transform: translateY(0);
+    display: block;
+    transform: translate(0, -50%);
   }
 
   &__tooltip {
     position: absolute;
-    right: 0;
-    top: calc(100% + 8px);
+    left: calc(100% + 10px);
+    top: 50%;
     z-index: $z-tooltip;
     width: min(320px, calc(100vw - 48px));
     padding: 10px $space-3;
@@ -63,12 +63,9 @@
     font-size: 12px;
     font-weight: 500;
     line-height: 1.55;
-    opacity: 0;
+    display: none;
     pointer-events: none;
-    transform: translateY(-4px);
-    transition:
-      opacity 140ms ease,
-      transform 140ms ease;
+    transform: translate(-4px, -50%);
   }
 }
 
@@ -138,6 +135,53 @@
   display: flex;
   justify-content: flex-end;
   gap: 6px;
+}
+
+.settings-section {
+  display: grid;
+  gap: $space-3;
+
+  &--nested {
+    padding: $space-3;
+    border: 1px solid var(--line);
+    border-radius: $radius-xl;
+    background: color-mix(in srgb, var(--surface-strong) 88%, transparent);
+  }
+
+  &__head {
+    display: grid;
+    gap: 6px;
+  }
+
+  &__head h4,
+  &__head p {
+    margin: 0;
+  }
+
+  &__hint {
+    color: var(--muted);
+    font-size: 13px;
+    line-height: 1.5;
+  }
+}
+
+.settings-card {
+  padding: $space-3;
+  border: 1px solid var(--line);
+  border-radius: $radius-lg;
+  background: var(--surface);
+
+  strong,
+  p {
+    margin: 0;
+  }
+
+  p {
+    margin-top: 6px;
+    color: var(--muted);
+    font-size: 13px;
+    line-height: 1.5;
+  }
 }
 
 /* ── Menu (popover listbox triggered by a button) ─────────────── */
@@ -1486,7 +1530,6 @@
   .settings-info {
     &__tooltip {
       left: 0;
-      right: auto;
       top: calc(100% + 8px);
       width: min(280px, calc(100vw - 72px));
       transform: translateY(-4px);
@@ -1494,6 +1537,7 @@
 
     &:hover .settings-info__tooltip,
     &:focus-visible .settings-info__tooltip {
+      display: block;
       transform: translateY(0);
     }
   }

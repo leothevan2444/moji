@@ -62,6 +62,12 @@ func cloneState(state *PerformerState) *PerformerState {
 	cloned := *state
 	cloned.ProcessedReleases = append([]RecordedRelease(nil), state.ProcessedReleases...)
 	cloned.PendingReleases = append([]RecordedRelease(nil), state.PendingReleases...)
+	for i := range cloned.ProcessedReleases {
+		cloned.ProcessedReleases[i].PerformerNames = append([]string(nil), cloned.ProcessedReleases[i].PerformerNames...)
+	}
+	for i := range cloned.PendingReleases {
+		cloned.PendingReleases[i].PerformerNames = append([]string(nil), cloned.PendingReleases[i].PerformerNames...)
+	}
 	return &cloned
 }
 

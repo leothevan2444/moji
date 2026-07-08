@@ -225,10 +225,26 @@ func (s StashConfig) GraphQLEndpoint() string {
 }
 
 type AutomationConfig struct {
-	TaskProgressSyncIntervalSeconds int                    `yaml:"task_progress_sync_interval_seconds"`
-	SubscriptionPollIntervalHours   int                    `yaml:"subscription_poll_interval_hours"`
-	StashBoxEndpoints               []string               `yaml:"selected_stash_box_endpoints"`
-	TorrentSelection                TorrentSelectionConfig `yaml:"torrent_selection"`
+	TaskProgressSyncIntervalSeconds int                             `yaml:"task_progress_sync_interval_seconds"`
+	SubscriptionPollIntervalHours   int                             `yaml:"subscription_poll_interval_hours"`
+	StashBoxEndpoints               []string                        `yaml:"selected_stash_box_endpoints"`
+	SubscriptionReleasePolicy       SubscriptionReleasePolicyConfig `yaml:"subscription_release_policy"`
+	TorrentSelection                TorrentSelectionConfig          `yaml:"torrent_selection"`
+}
+
+type SubscriptionReleaseBehavior string
+
+const (
+	SubscriptionReleaseBehaviorDownload SubscriptionReleaseBehavior = "DOWNLOAD"
+	SubscriptionReleaseBehaviorReview   SubscriptionReleaseBehavior = "REVIEW"
+	SubscriptionReleaseBehaviorBlock    SubscriptionReleaseBehavior = "BLOCK"
+)
+
+type SubscriptionReleasePolicyConfig struct {
+	SoloBehavior           SubscriptionReleaseBehavior `yaml:"solo_behavior"`
+	GroupBehavior          SubscriptionReleaseBehavior `yaml:"group_behavior"`
+	CompilationBehavior    SubscriptionReleaseBehavior `yaml:"compilation_behavior"`
+	MaxGroupPerformerCount int                         `yaml:"max_group_performer_count"`
 }
 
 type IngestConfig struct {
@@ -282,6 +298,15 @@ func DefaultTorrentSelectionConfig() TorrentSelectionConfig {
 
 func DefaultCandidateSelectionConfig() CandidateSelectionConfig {
 	return DefaultTorrentSelectionConfig()
+}
+
+func DefaultSubscriptionReleasePolicyConfig() SubscriptionReleasePolicyConfig {
+	return SubscriptionReleasePolicyConfig{
+		SoloBehavior:           SubscriptionReleaseBehaviorDownload,
+		GroupBehavior:          SubscriptionReleaseBehaviorReview,
+		CompilationBehavior:    SubscriptionReleaseBehaviorBlock,
+		MaxGroupPerformerCount: 3,
+	}
 }
 
 func NormalizeTorrentInspectionCandidateLimit(value int) int {
@@ -353,6 +378,24 @@ func NormalizeCandidateSelectionRuleType(value CandidateSelectionRuleType) Candi
 	return NormalizeTorrentSelectionRuleType(value)
 }
 
+func NormalizeSubscriptionReleaseBehavior(value SubscriptionReleaseBehavior) SubscriptionReleaseBehavior {
+	switch SubscriptionReleaseBehavior(strings.TrimSpace(string(value))) {
+	case SubscriptionReleaseBehaviorDownload,
+		SubscriptionReleaseBehaviorReview,
+		SubscriptionReleaseBehaviorBlock:
+		return value
+	default:
+		return SubscriptionReleaseBehaviorReview
+	}
+}
+
+func NormalizeSubscriptionReleaseMaxGroupPerformerCount(value int) int {
+	if value <= 0 {
+		return DefaultSubscriptionReleasePolicyConfig().MaxGroupPerformerCount
+	}
+	return value
+}
+
 func (c TorrentSelectionConfig) Effective() TorrentSelectionConfig {
 	normalized := TorrentSelectionConfig{
 		Enabled:                  c.Enabled,
@@ -365,6 +408,15 @@ func (c TorrentSelectionConfig) Effective() TorrentSelectionConfig {
 		normalized.FastRuleOrder = append([]TorrentSelectionRuleType(nil), defaultFastTorrentSelectionRuleTypes()...)
 	}
 	return normalized
+}
+
+func (p SubscriptionReleasePolicyConfig) Effective() SubscriptionReleasePolicyConfig {
+	return SubscriptionReleasePolicyConfig{
+		SoloBehavior:           NormalizeSubscriptionReleaseBehavior(p.SoloBehavior),
+		GroupBehavior:          NormalizeSubscriptionReleaseBehavior(p.GroupBehavior),
+		CompilationBehavior:    NormalizeSubscriptionReleaseBehavior(p.CompilationBehavior),
+		MaxGroupPerformerCount: NormalizeSubscriptionReleaseMaxGroupPerformerCount(p.MaxGroupPerformerCount),
+	}
 }
 
 func (r TorrentSelectionRule) normalized() TorrentSelectionRule {
@@ -773,6 +825,7 @@ func LoadFromPath(path string) (*Config, error) {
 	config.Connection.Stash.normalize()
 	config.System.TaskDeletePolicy = config.System.EffectiveTaskDeletePolicy()
 	config.Automation.StashBoxEndpoints = cleanStrings(config.Automation.StashBoxEndpoints)
+	config.Automation.SubscriptionReleasePolicy = config.Automation.SubscriptionReleasePolicy.Effective()
 	if err := config.Automation.TorrentSelection.Validate(); err != nil {
 		return nil, err
 	}

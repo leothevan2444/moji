@@ -127,23 +127,23 @@ func performerSceneToModel(item subscription.PerformerScene) *model.StashPerform
 		})
 	}
 	return &model.StashPerformerScene{
-		Key:                item.Key,
-		PrimarySource:      model.SceneSource(item.PrimarySource),
-		SourceSceneID:      item.SourceSceneID,
-		Title:              nilIfEmpty(item.Title),
-		Code:               nilIfEmpty(item.Code),
-		Date:               nilIfEmpty(item.Date),
-		StudioName:         nilIfEmpty(item.StudioName),
-		ImageURL:           nilIfEmpty(item.ImageURL),
-		URL:                nilIfEmpty(item.URL),
-		InLibrary:          item.InLibrary,
+		Key:                 item.Key,
+		PrimarySource:       model.SceneSource(item.PrimarySource),
+		SourceSceneID:       item.SourceSceneID,
+		Title:               nilIfEmpty(item.Title),
+		Code:                nilIfEmpty(item.Code),
+		Date:                nilIfEmpty(item.Date),
+		StudioName:          nilIfEmpty(item.StudioName),
+		ImageURL:            nilIfEmpty(item.ImageURL),
+		URL:                 nilIfEmpty(item.URL),
+		InLibrary:           item.InLibrary,
 		MatchedStashSceneID: nilIfEmpty(item.MatchedStashSceneID),
-		HasStashSource:     item.HasStashSource,
-		HasStashBoxSource:  item.HasStashBoxSource,
-		StashBoxSceneID:    nilIfEmpty(item.StashBoxSceneID),
-		StashBoxEndpoint:   nilIfEmpty(item.StashBoxEndpoint),
-		SourceLabels:       append([]string(nil), item.SourceLabels...),
-		StashIds:           stashIDs,
+		HasStashSource:      item.HasStashSource,
+		HasStashBoxSource:   item.HasStashBoxSource,
+		StashBoxSceneID:     nilIfEmpty(item.StashBoxSceneID),
+		StashBoxEndpoint:    nilIfEmpty(item.StashBoxEndpoint),
+		SourceLabels:        append([]string(nil), item.SourceLabels...),
+		StashIds:            stashIDs,
 	}
 }
 
@@ -165,15 +165,20 @@ func subscriptionPerformerToModel(item subscription.SubscribedPerformer) *model.
 
 func subscriptionReleaseToModel(release subscription.RecordedRelease) *model.SubscriptionRelease {
 	return &model.SubscriptionRelease{
-		Key:    release.Key,
-		Source: release.Source,
-		Title:  release.Title,
-		Code:   nilIfEmpty(release.Code),
-		Date:   nilIfEmpty(release.Date),
-		URL:    nilIfEmpty(release.URL),
-		Query:  release.Query,
-		TaskID: nilIfEmpty(release.TaskID),
-		SeenAt: formatTime(release.SeenAt),
+		Key:            release.Key,
+		Source:         release.Source,
+		Title:          release.Title,
+		Code:           nilIfEmpty(release.Code),
+		Date:           nilIfEmpty(release.Date),
+		URL:            nilIfEmpty(release.URL),
+		Query:          release.Query,
+		TaskID:         nilIfEmpty(release.TaskID),
+		PerformerCount: release.PerformerCount,
+		PerformerNames: append([]string(nil), release.PerformerNames...),
+		Classification: model.SubscriptionReleaseClassification(release.Classification),
+		Decision:       model.SubscriptionReleaseDecision(release.Decision),
+		DecisionReason: release.DecisionReason,
+		SeenAt:         formatTime(release.SeenAt),
 	}
 }
 

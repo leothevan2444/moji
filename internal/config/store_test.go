@@ -81,7 +81,7 @@ automation:
 		t.Fatalf("open store: %v", err)
 	}
 
-	cfg, err := store.UpdateAutomation(60, 1, []string{"https://javstash.example.org/graphql"}, NewTorrentSelectionConfig(
+	cfg, err := store.UpdateAutomation(60, 1, []string{"https://javstash.example.org/graphql"}, DefaultSubscriptionReleasePolicyConfig(), NewTorrentSelectionConfig(
 		true,
 		8,
 		[]TorrentSelectionRule{

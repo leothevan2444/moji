@@ -18,6 +18,7 @@ import {
   LogLevel,
   LogsDocumentDocument,
   RefreshSubscriptionStashBoxesDocumentDocument,
+  SubscriptionReleaseBehavior,
   TorrentFileMatchEffect,
   TitleMatchEffect,
   TitleMatchPatternMode,
@@ -79,6 +80,18 @@ const TORRENT_SELECTION_RULE_LABELS: Record<TorrentSelectionRuleType, string> = 
   [TorrentSelectionRuleType.TorrentSingleVideo]: "Torrent 单视频优先",
   [TorrentSelectionRuleType.TorrentFileNameMatch]: "Torrent 文件名匹配"
 };
+
+const SUBSCRIPTION_RELEASE_BEHAVIOR_LABELS: Record<SubscriptionReleaseBehavior, string> = {
+  [SubscriptionReleaseBehavior.Download]: "下载",
+  [SubscriptionReleaseBehavior.Review]: "记录供复核",
+  [SubscriptionReleaseBehavior.Block]: "拦截",
+};
+
+const SUBSCRIPTION_RELEASE_BEHAVIOR_OPTIONS = [
+  SubscriptionReleaseBehavior.Download,
+  SubscriptionReleaseBehavior.Review,
+  SubscriptionReleaseBehavior.Block
+] as const;
 
 function isTorrentInspectionRuleType(type: TorrentSelectionRuleType): boolean {
   return type === TorrentSelectionRuleType.TorrentSingleVideo || type === TorrentSelectionRuleType.TorrentFileNameMatch;
@@ -178,10 +191,17 @@ function buildAutomationSettingsPayload(form: AutomationFormShape) {
   const taskProgressSyncIntervalSeconds = Number.parseInt(form.taskProgressSyncIntervalSeconds.trim(), 10);
   const subscriptionPollIntervalHours = Number.parseInt(form.subscriptionPollIntervalHours.trim(), 10);
   const inspectionCandidateLimit = Number.parseInt(form.torrentSelection.inspectionCandidateLimit.trim(), 10);
+  const maxGroupPerformerCount = Number.parseInt(form.subscriptionReleasePolicy.maxGroupPerformerCount.trim(), 10);
   return {
     taskProgressSyncIntervalSeconds: Number.isNaN(taskProgressSyncIntervalSeconds) ? 60 : taskProgressSyncIntervalSeconds,
     subscriptionPollIntervalHours: Number.isNaN(subscriptionPollIntervalHours) ? 1 : subscriptionPollIntervalHours,
     stashBoxEndpoints: form.stashBoxEndpoints,
+    subscriptionReleasePolicy: {
+      soloBehavior: form.subscriptionReleasePolicy.soloBehavior,
+      groupBehavior: form.subscriptionReleasePolicy.groupBehavior,
+      compilationBehavior: form.subscriptionReleasePolicy.compilationBehavior,
+      maxGroupPerformerCount: Number.isNaN(maxGroupPerformerCount) ? 3 : maxGroupPerformerCount
+    },
     torrentSelection: {
       enabled: form.torrentSelection.enabled,
       inspectionCandidateLimit: Number.isNaN(inspectionCandidateLimit) ? 5 : inspectionCandidateLimit,
@@ -189,6 +209,20 @@ function buildAutomationSettingsPayload(form: AutomationFormShape) {
       torrentRules: form.torrentSelection.torrentRules.map(serializeTorrentSelectionRule)
     }
   };
+}
+
+function releasePolicySummary(form: AutomationFormShape["subscriptionReleasePolicy"]) {
+  const max = Number.parseInt(form.maxGroupPerformerCount.trim(), 10);
+  const safeMax = Number.isNaN(max) ? 3 : max;
+  return `独演${SUBSCRIPTION_RELEASE_BEHAVIOR_LABELS[form.soloBehavior]}；2-${safeMax} 人共演${SUBSCRIPTION_RELEASE_BEHAVIOR_LABELS[form.groupBehavior]}；总集${SUBSCRIPTION_RELEASE_BEHAVIOR_LABELS[form.compilationBehavior]}；无法可靠判断时仅记录。`;
+}
+
+function renderSubscriptionReleaseBehaviorOptions() {
+  return SUBSCRIPTION_RELEASE_BEHAVIOR_OPTIONS.map((behavior) => (
+    <option key={behavior} value={behavior}>
+      {SUBSCRIPTION_RELEASE_BEHAVIOR_LABELS[behavior]}
+    </option>
+  ));
 }
 
 /**
@@ -485,6 +519,12 @@ export function SettingsPanel({
       taskProgressSyncIntervalSeconds: String(runtimeSettings.automation.taskProgressSyncIntervalSeconds || 60),
       subscriptionPollIntervalHours: String(runtimeSettings.automation.subscriptionPollIntervalHours || 1),
       stashBoxEndpoints: [...(runtimeSettings.automation.stashBoxEndpoints ?? [])],
+      subscriptionReleasePolicy: {
+        soloBehavior: runtimeSettings.automation.subscriptionReleasePolicy.soloBehavior,
+        groupBehavior: runtimeSettings.automation.subscriptionReleasePolicy.groupBehavior,
+        compilationBehavior: runtimeSettings.automation.subscriptionReleasePolicy.compilationBehavior,
+        maxGroupPerformerCount: String(runtimeSettings.automation.subscriptionReleasePolicy.maxGroupPerformerCount || 3)
+      },
       torrentSelection: torrentSelectionFromRuntime(runtimeSettings)
     });
     setSystemForm({
@@ -598,7 +638,7 @@ export function SettingsPanel({
 
   const saveAutomationSettings = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    await saveAutomationSettingsSection("自动化设置已保存。");
+    await saveAutomationSettingsSection("自动化设置已保存。新的订阅发现将按此策略决定是否自动下载；已记录发行不回溯重判。");
   };
 
   const saveTorrentSelectionSettings = async (event: FormEvent<HTMLFormElement>) => {
@@ -1238,6 +1278,81 @@ export function SettingsPanel({
             <span>任务同步: {runtimeStatus.automation.taskProgressSyncEnabled ? "已启用" : "未启用"}</span>
             <span>订阅轮询: {runtimeStatus.automation.subscriptionPollEnabled ? "已启用" : "未启用"}</span>
           </div>
+          <section className="settings-section settings-section--nested">
+            <header className="settings-section__head">
+              <div>
+                <h4>新发行下载策略</h4>
+                <p className="settings-section__hint">{releasePolicySummary(automationForm.subscriptionReleasePolicy)}</p>
+              </div>
+            </header>
+            <label className="settings-field">
+              <FieldLabel text="独演" info="演员数为 1 时按这里的行为处理。" />
+              <select
+                value={automationForm.subscriptionReleasePolicy.soloBehavior}
+                onChange={(event) =>
+                  setAutomationForm((current) => ({
+                    ...current,
+                    subscriptionReleasePolicy: {
+                      ...current.subscriptionReleasePolicy,
+                      soloBehavior: event.target.value as SubscriptionReleaseBehavior
+                    }
+                  }))
+                }
+              >
+                {renderSubscriptionReleaseBehaviorOptions()}
+              </select>
+            </label>
+            <label className="settings-field">
+              <FieldLabel text="共演" info="演员数 2 到上限 N 的影片，以及超过 N 但未命中总集规则的影片，都按这里处理。" />
+              <select
+                value={automationForm.subscriptionReleasePolicy.groupBehavior}
+                onChange={(event) =>
+                  setAutomationForm((current) => ({
+                    ...current,
+                    subscriptionReleasePolicy: {
+                      ...current.subscriptionReleasePolicy,
+                      groupBehavior: event.target.value as SubscriptionReleaseBehavior
+                    }
+                  }))
+                }
+              >
+                {renderSubscriptionReleaseBehaviorOptions()}
+              </select>
+            </label>
+            <label className="settings-field">
+              <FieldLabel text="总集" info="总集优先于独演和共演分类，优先根据标题、详情、标签和异常大的演员数判断。" />
+              <select
+                value={automationForm.subscriptionReleasePolicy.compilationBehavior}
+                onChange={(event) =>
+                  setAutomationForm((current) => ({
+                    ...current,
+                    subscriptionReleasePolicy: {
+                      ...current.subscriptionReleasePolicy,
+                      compilationBehavior: event.target.value as SubscriptionReleaseBehavior
+                    }
+                  }))
+                }
+              >
+                {renderSubscriptionReleaseBehaviorOptions()}
+              </select>
+            </label>
+            <label className="settings-field">
+              <FieldLabel text="共演人数上限" info="共演指演员数 2 到 N；超过 N 但未命中总集规则的影片，仍按共演处理。" />
+              <input
+                value={automationForm.subscriptionReleasePolicy.maxGroupPerformerCount}
+                onChange={(event) =>
+                  setAutomationForm((current) => ({
+                    ...current,
+                    subscriptionReleasePolicy: {
+                      ...current.subscriptionReleasePolicy,
+                      maxGroupPerformerCount: event.target.value
+                    }
+                  }))
+                }
+                placeholder="3"
+              />
+            </label>
+          </section>
           <div className="settings-actions">
             <button type="submit" disabled={updatingAutomation}>
               {updatingAutomation ? "保存中..." : "保存自动化设置"}

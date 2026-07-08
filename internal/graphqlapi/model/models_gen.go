@@ -13,8 +13,9 @@ type AutomationSettings struct {
 	TaskProgressSyncIntervalSeconds int `json:"taskProgressSyncIntervalSeconds"`
 	SubscriptionPollIntervalHours   int `json:"subscriptionPollIntervalHours"`
 	// Endpoint URLs in the user-defined order used for subscription lookups. Endpoints not listed here are still queried, in their Stash order, appended after the listed ones. An empty list means use Stash's order as-is.
-	StashBoxEndpoints []string                  `json:"stashBoxEndpoints"`
-	TorrentSelection  *TorrentSelectionSettings `json:"torrentSelection"`
+	StashBoxEndpoints         []string                   `json:"stashBoxEndpoints"`
+	SubscriptionReleasePolicy *SubscriptionReleasePolicy `json:"subscriptionReleasePolicy"`
+	TorrentSelection          *TorrentSelectionSettings  `json:"torrentSelection"`
 }
 
 type AutomationStatus struct {
@@ -489,15 +490,34 @@ type SubscribedPerformer struct {
 }
 
 type SubscriptionRelease struct {
-	Key    string  `json:"key"`
-	Source string  `json:"source"`
-	Title  string  `json:"title"`
-	Code   *string `json:"code,omitempty"`
-	Date   *string `json:"date,omitempty"`
-	URL    *string `json:"url,omitempty"`
-	Query  string  `json:"query"`
-	TaskID *string `json:"taskID,omitempty"`
-	SeenAt string  `json:"seenAt"`
+	Key            string                            `json:"key"`
+	Source         string                            `json:"source"`
+	Title          string                            `json:"title"`
+	Code           *string                           `json:"code,omitempty"`
+	Date           *string                           `json:"date,omitempty"`
+	URL            *string                           `json:"url,omitempty"`
+	Query          string                            `json:"query"`
+	TaskID         *string                           `json:"taskID,omitempty"`
+	PerformerCount int                               `json:"performerCount"`
+	PerformerNames []string                          `json:"performerNames"`
+	Classification SubscriptionReleaseClassification `json:"classification"`
+	Decision       SubscriptionReleaseDecision       `json:"decision"`
+	DecisionReason string                            `json:"decisionReason"`
+	SeenAt         string                            `json:"seenAt"`
+}
+
+type SubscriptionReleasePolicy struct {
+	SoloBehavior           SubscriptionReleaseBehavior `json:"soloBehavior"`
+	GroupBehavior          SubscriptionReleaseBehavior `json:"groupBehavior"`
+	CompilationBehavior    SubscriptionReleaseBehavior `json:"compilationBehavior"`
+	MaxGroupPerformerCount int                         `json:"maxGroupPerformerCount"`
+}
+
+type SubscriptionReleasePolicyInput struct {
+	SoloBehavior           SubscriptionReleaseBehavior `json:"soloBehavior"`
+	GroupBehavior          SubscriptionReleaseBehavior `json:"groupBehavior"`
+	CompilationBehavior    SubscriptionReleaseBehavior `json:"compilationBehavior"`
+	MaxGroupPerformerCount int                         `json:"maxGroupPerformerCount"`
 }
 
 type SubscriptionStatus struct {
@@ -632,10 +652,11 @@ type TransferIngestSettingsInput struct {
 }
 
 type UpdateAutomationSettingsInput struct {
-	TaskProgressSyncIntervalSeconds int                            `json:"taskProgressSyncIntervalSeconds"`
-	SubscriptionPollIntervalHours   int                            `json:"subscriptionPollIntervalHours"`
-	StashBoxEndpoints               []string                       `json:"stashBoxEndpoints"`
-	TorrentSelection                *TorrentSelectionSettingsInput `json:"torrentSelection"`
+	TaskProgressSyncIntervalSeconds int                             `json:"taskProgressSyncIntervalSeconds"`
+	SubscriptionPollIntervalHours   int                             `json:"subscriptionPollIntervalHours"`
+	StashBoxEndpoints               []string                        `json:"stashBoxEndpoints"`
+	SubscriptionReleasePolicy       *SubscriptionReleasePolicyInput `json:"subscriptionReleasePolicy"`
+	TorrentSelection                *TorrentSelectionSettingsInput  `json:"torrentSelection"`
 }
 
 type UpdateIngestSettingsInput struct {
@@ -1013,6 +1034,181 @@ func (e *SceneSourceFilter) UnmarshalJSON(b []byte) error {
 }
 
 func (e SceneSourceFilter) MarshalJSON() ([]byte, error) {
+	var buf bytes.Buffer
+	e.MarshalGQL(&buf)
+	return buf.Bytes(), nil
+}
+
+type SubscriptionReleaseBehavior string
+
+const (
+	SubscriptionReleaseBehaviorDownload SubscriptionReleaseBehavior = "DOWNLOAD"
+	SubscriptionReleaseBehaviorReview   SubscriptionReleaseBehavior = "REVIEW"
+	SubscriptionReleaseBehaviorBlock    SubscriptionReleaseBehavior = "BLOCK"
+)
+
+var AllSubscriptionReleaseBehavior = []SubscriptionReleaseBehavior{
+	SubscriptionReleaseBehaviorDownload,
+	SubscriptionReleaseBehaviorReview,
+	SubscriptionReleaseBehaviorBlock,
+}
+
+func (e SubscriptionReleaseBehavior) IsValid() bool {
+	switch e {
+	case SubscriptionReleaseBehaviorDownload, SubscriptionReleaseBehaviorReview, SubscriptionReleaseBehaviorBlock:
+		return true
+	}
+	return false
+}
+
+func (e SubscriptionReleaseBehavior) String() string {
+	return string(e)
+}
+
+func (e *SubscriptionReleaseBehavior) UnmarshalGQL(v any) error {
+	str, ok := v.(string)
+	if !ok {
+		return fmt.Errorf("enums must be strings")
+	}
+
+	*e = SubscriptionReleaseBehavior(str)
+	if !e.IsValid() {
+		return fmt.Errorf("%s is not a valid SubscriptionReleaseBehavior", str)
+	}
+	return nil
+}
+
+func (e SubscriptionReleaseBehavior) MarshalGQL(w io.Writer) {
+	fmt.Fprint(w, strconv.Quote(e.String()))
+}
+
+func (e *SubscriptionReleaseBehavior) UnmarshalJSON(b []byte) error {
+	s, err := strconv.Unquote(string(b))
+	if err != nil {
+		return err
+	}
+	return e.UnmarshalGQL(s)
+}
+
+func (e SubscriptionReleaseBehavior) MarshalJSON() ([]byte, error) {
+	var buf bytes.Buffer
+	e.MarshalGQL(&buf)
+	return buf.Bytes(), nil
+}
+
+type SubscriptionReleaseClassification string
+
+const (
+	SubscriptionReleaseClassificationSolo            SubscriptionReleaseClassification = "SOLO"
+	SubscriptionReleaseClassificationSmallGroup      SubscriptionReleaseClassification = "SMALL_GROUP"
+	SubscriptionReleaseClassificationLargeGroup      SubscriptionReleaseClassification = "LARGE_GROUP"
+	SubscriptionReleaseClassificationCompilationLike SubscriptionReleaseClassification = "COMPILATION_LIKE"
+	SubscriptionReleaseClassificationUnknown         SubscriptionReleaseClassification = "UNKNOWN"
+)
+
+var AllSubscriptionReleaseClassification = []SubscriptionReleaseClassification{
+	SubscriptionReleaseClassificationSolo,
+	SubscriptionReleaseClassificationSmallGroup,
+	SubscriptionReleaseClassificationLargeGroup,
+	SubscriptionReleaseClassificationCompilationLike,
+	SubscriptionReleaseClassificationUnknown,
+}
+
+func (e SubscriptionReleaseClassification) IsValid() bool {
+	switch e {
+	case SubscriptionReleaseClassificationSolo, SubscriptionReleaseClassificationSmallGroup, SubscriptionReleaseClassificationLargeGroup, SubscriptionReleaseClassificationCompilationLike, SubscriptionReleaseClassificationUnknown:
+		return true
+	}
+	return false
+}
+
+func (e SubscriptionReleaseClassification) String() string {
+	return string(e)
+}
+
+func (e *SubscriptionReleaseClassification) UnmarshalGQL(v any) error {
+	str, ok := v.(string)
+	if !ok {
+		return fmt.Errorf("enums must be strings")
+	}
+
+	*e = SubscriptionReleaseClassification(str)
+	if !e.IsValid() {
+		return fmt.Errorf("%s is not a valid SubscriptionReleaseClassification", str)
+	}
+	return nil
+}
+
+func (e SubscriptionReleaseClassification) MarshalGQL(w io.Writer) {
+	fmt.Fprint(w, strconv.Quote(e.String()))
+}
+
+func (e *SubscriptionReleaseClassification) UnmarshalJSON(b []byte) error {
+	s, err := strconv.Unquote(string(b))
+	if err != nil {
+		return err
+	}
+	return e.UnmarshalGQL(s)
+}
+
+func (e SubscriptionReleaseClassification) MarshalJSON() ([]byte, error) {
+	var buf bytes.Buffer
+	e.MarshalGQL(&buf)
+	return buf.Bytes(), nil
+}
+
+type SubscriptionReleaseDecision string
+
+const (
+	SubscriptionReleaseDecisionDownloaded SubscriptionReleaseDecision = "DOWNLOADED"
+	SubscriptionReleaseDecisionQueued     SubscriptionReleaseDecision = "QUEUED"
+	SubscriptionReleaseDecisionBlocked    SubscriptionReleaseDecision = "BLOCKED"
+)
+
+var AllSubscriptionReleaseDecision = []SubscriptionReleaseDecision{
+	SubscriptionReleaseDecisionDownloaded,
+	SubscriptionReleaseDecisionQueued,
+	SubscriptionReleaseDecisionBlocked,
+}
+
+func (e SubscriptionReleaseDecision) IsValid() bool {
+	switch e {
+	case SubscriptionReleaseDecisionDownloaded, SubscriptionReleaseDecisionQueued, SubscriptionReleaseDecisionBlocked:
+		return true
+	}
+	return false
+}
+
+func (e SubscriptionReleaseDecision) String() string {
+	return string(e)
+}
+
+func (e *SubscriptionReleaseDecision) UnmarshalGQL(v any) error {
+	str, ok := v.(string)
+	if !ok {
+		return fmt.Errorf("enums must be strings")
+	}
+
+	*e = SubscriptionReleaseDecision(str)
+	if !e.IsValid() {
+		return fmt.Errorf("%s is not a valid SubscriptionReleaseDecision", str)
+	}
+	return nil
+}
+
+func (e SubscriptionReleaseDecision) MarshalGQL(w io.Writer) {
+	fmt.Fprint(w, strconv.Quote(e.String()))
+}
+
+func (e *SubscriptionReleaseDecision) UnmarshalJSON(b []byte) error {
+	s, err := strconv.Unquote(string(b))
+	if err != nil {
+		return err
+	}
+	return e.UnmarshalGQL(s)
+}
+
+func (e SubscriptionReleaseDecision) MarshalJSON() ([]byte, error) {
 	var buf bytes.Buffer
 	e.MarshalGQL(&buf)
 	return buf.Bytes(), nil

@@ -82,6 +82,7 @@ type UpdateAutomationSettingsInput struct {
 	TaskProgressSyncIntervalSeconds int
 	SubscriptionPollIntervalHours   int
 	StashBoxEndpoints               []string
+	SubscriptionReleasePolicy       SubscriptionReleasePolicySnapshot
 	TorrentSelection                TorrentSelectionSettingsSnapshot
 }
 
@@ -197,7 +198,15 @@ type AutomationSettingsSnapshot struct {
 	TaskProgressSyncIntervalSeconds int
 	SubscriptionPollIntervalHours   int
 	StashBoxEndpoints               []string
+	SubscriptionReleasePolicy       SubscriptionReleasePolicySnapshot
 	TorrentSelection                TorrentSelectionSettingsSnapshot
+}
+
+type SubscriptionReleasePolicySnapshot struct {
+	SoloBehavior           string
+	GroupBehavior          string
+	CompilationBehavior    string
+	MaxGroupPerformerCount int
 }
 
 type SystemSettingsSnapshot struct {

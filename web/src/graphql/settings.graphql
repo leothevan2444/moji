@@ -58,6 +58,12 @@ mutation UpdateAutomationSettingsDocument($input: UpdateAutomationSettingsInput!
       taskProgressSyncIntervalSeconds
       subscriptionPollIntervalHours
       stashBoxEndpoints
+      subscriptionReleasePolicy {
+        soloBehavior
+        groupBehavior
+        compilationBehavior
+        maxGroupPerformerCount
+      }
       torrentSelection {
         enabled
         inspectionCandidateLimit

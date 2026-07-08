@@ -52,6 +52,9 @@ type Service struct {
 
 	orderMu       sync.RWMutex
 	endpointOrder []string
+
+	policyMu      sync.RWMutex
+	releasePolicy ReleasePolicyConfig
 }
 
 func NewService(stash StashClient, stashbox *stashboxRegistry, downloader Downloader, store Store) (*Service, error) {
@@ -72,6 +75,7 @@ func NewService(stash StashClient, stashbox *stashboxRegistry, downloader Downlo
 		store:          store,
 		customFieldKey: DefaultCustomFieldKey,
 		now:            time.Now,
+		releasePolicy:  DefaultReleasePolicyConfig(),
 	}, nil
 }
 
@@ -221,14 +225,19 @@ func (s *Service) RefreshSubscribedPerformer(ctx context.Context, performerID st
 			continue
 		}
 		record := RecordedRelease{
-			Key:    release.Key,
-			Source: release.Source,
-			Title:  release.Title,
-			Code:   release.Code,
-			Date:   release.Date,
-			URL:    release.URL,
-			Query:  release.Query,
-			SeenAt: now,
+			Key:            release.Key,
+			Source:         release.Source,
+			Title:          release.Title,
+			Code:           release.Code,
+			Date:           release.Date,
+			URL:            release.URL,
+			Query:          release.Query,
+			SeenAt:         now,
+			PerformerCount: release.PerformerCount,
+			PerformerNames: append([]string(nil), release.PerformerNames...),
+			Classification: release.Classification,
+			Decision:       release.Decision,
+			DecisionReason: release.DecisionReason,
 		}
 		pending = append(pending, record)
 	}
@@ -239,6 +248,10 @@ func (s *Service) RefreshSubscribedPerformer(ctx context.Context, performerID st
 	if s.downloader != nil {
 		nextPending := append([]RecordedRelease(nil), existingPending...)
 		for i := range pending {
+			if pending[i].Decision != ReleaseDecisionDownloaded {
+				nextPending = append(nextPending, pending[i])
+				continue
+			}
 			task, err := s.downloader.DownloadMediaContext(ctx, downloader.DownloadRequest{
 				Source: downloader.TaskSourceSubscription,
 				Query:  pending[i].Query,
@@ -338,17 +351,26 @@ func (s *Service) fetchReleases(ctx context.Context, performer *stashgraphql.Per
 		if scene == nil {
 			continue
 		}
+		evaluation, matched := evaluateReleasePolicy(s.currentReleasePolicy(), target.Performer, scene)
+		if !matched {
+			continue
+		}
 		code := strings.TrimSpace(stringValue(scene.Code))
 		if code == "" {
 			return nil, fmt.Errorf("subscription: stash-box scene %q is missing code", scene.ID)
 		}
 		release := Release{
-			Key:    keyPrefix + scene.ID,
-			Source: source,
-			Title:  stringValue(scene.Title),
-			Code:   code,
-			Date:   stringValue(scene.Date),
-			Query:  buildReleaseQuery(code, stringValue(scene.Title)),
+			Key:            keyPrefix + scene.ID,
+			Source:         source,
+			Title:          stringValue(scene.Title),
+			Code:           code,
+			Date:           stringValue(scene.Date),
+			Query:          buildReleaseQuery(code, stringValue(scene.Title)),
+			PerformerCount: evaluation.PerformerCount,
+			PerformerNames: append([]string(nil), evaluation.PerformerNames...),
+			Classification: evaluation.Classification,
+			Decision:       evaluation.Decision,
+			DecisionReason: evaluation.DecisionReason,
 		}
 		if len(scene.Urls) > 0 && scene.Urls[0] != nil {
 			release.URL = scene.Urls[0].URL
@@ -496,6 +518,25 @@ func (s *Service) SetEndpointOrder(order []string) {
 	s.orderMu.Lock()
 	s.endpointOrder = cleaned
 	s.orderMu.Unlock()
+}
+
+func (s *Service) SetReleasePolicy(policy ReleasePolicyConfig) {
+	if s == nil {
+		return
+	}
+	s.policyMu.Lock()
+	s.releasePolicy = policy.Effective()
+	s.policyMu.Unlock()
+}
+
+func (s *Service) currentReleasePolicy() ReleasePolicyConfig {
+	if s == nil {
+		return DefaultReleasePolicyConfig()
+	}
+	s.policyMu.RLock()
+	policy := s.releasePolicy
+	s.policyMu.RUnlock()
+	return policy.Effective()
 }
 
 // orderedEndpoints merges the user-defined order with the registry order:

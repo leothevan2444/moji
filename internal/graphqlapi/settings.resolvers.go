@@ -111,7 +111,13 @@ func (r *mutationResolver) UpdateAutomationSettings(ctx context.Context, input m
 		TaskProgressSyncIntervalSeconds: input.TaskProgressSyncIntervalSeconds,
 		SubscriptionPollIntervalHours:   input.SubscriptionPollIntervalHours,
 		StashBoxEndpoints:               append([]string(nil), input.StashBoxEndpoints...),
-		TorrentSelection:                torrentSelectionSettingsFromModel(input.TorrentSelection),
+		SubscriptionReleasePolicy: SubscriptionReleasePolicySnapshot{
+			SoloBehavior:           string(input.SubscriptionReleasePolicy.SoloBehavior),
+			GroupBehavior:          string(input.SubscriptionReleasePolicy.GroupBehavior),
+			CompilationBehavior:    string(input.SubscriptionReleasePolicy.CompilationBehavior),
+			MaxGroupPerformerCount: input.SubscriptionReleasePolicy.MaxGroupPerformerCount,
+		},
+		TorrentSelection: torrentSelectionSettingsFromModel(input.TorrentSelection),
 	})
 	if err != nil {
 		return nil, err

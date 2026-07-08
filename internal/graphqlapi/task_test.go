@@ -831,6 +831,12 @@ func TestUpdateAutomationSettingsMutation(t *testing.T) {
 				TaskProgressSyncIntervalSeconds: 60,
 				SubscriptionPollIntervalHours:   1,
 				StashBoxEndpoints:               []string{"https://javstash.example.org/graphql"},
+				SubscriptionReleasePolicy: SubscriptionReleasePolicySnapshot{
+					SoloBehavior:           "DOWNLOAD",
+					GroupBehavior:          "REVIEW",
+					CompilationBehavior:    "BLOCK",
+					MaxGroupPerformerCount: 3,
+				},
 				TorrentSelection: TorrentSelectionSettingsSnapshot{
 					Enabled:                  true,
 					InspectionCandidateLimit: 5,
@@ -847,6 +853,12 @@ func TestUpdateAutomationSettingsMutation(t *testing.T) {
 			taskProgressSyncIntervalSeconds: 60
 			subscriptionPollIntervalHours: 1
 			stashBoxEndpoints: ["https://javstash.example.org/graphql"]
+				subscriptionReleasePolicy: {
+					soloBehavior: DOWNLOAD
+					groupBehavior: REVIEW
+					compilationBehavior: BLOCK
+					maxGroupPerformerCount: 3
+				}
 				torrentSelection: {
 					enabled: true
 					inspectionCandidateLimit: 5
@@ -862,6 +874,7 @@ func TestUpdateAutomationSettingsMutation(t *testing.T) {
 		}) {
 			automation {
 				stashBoxEndpoints
+				subscriptionReleasePolicy { soloBehavior groupBehavior compilationBehavior maxGroupPerformerCount }
 				torrentSelection { enabled fastRules { type } torrentRules { type } }
 			}
 		}

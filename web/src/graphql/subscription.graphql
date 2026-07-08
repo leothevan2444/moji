@@ -110,6 +110,11 @@ query SubscribedPerformers {
       url
       query
       taskID
+      performerCount
+      performerNames
+      classification
+      decision
+      decisionReason
       seenAt
     }
   }
@@ -145,6 +150,11 @@ mutation RefreshSubscribedPerformer($stashPerformerID: ID!) {
       date
       query
       taskID
+      performerCount
+      performerNames
+      classification
+      decision
+      decisionReason
       seenAt
     }
   }

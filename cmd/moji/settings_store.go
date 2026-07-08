@@ -147,6 +147,15 @@ func torrentSelectionConfigRulesFromSnapshot(snapshot graphqlapi.TorrentSelectio
 	return torrentSelectionConfigRules(rules)
 }
 
+func subscriptionReleasePolicyConfigFromSnapshot(snapshot graphqlapi.SubscriptionReleasePolicySnapshot) config.SubscriptionReleasePolicyConfig {
+	return config.SubscriptionReleasePolicyConfig{
+		SoloBehavior:           config.SubscriptionReleaseBehavior(strings.TrimSpace(snapshot.SoloBehavior)),
+		GroupBehavior:          config.SubscriptionReleaseBehavior(strings.TrimSpace(snapshot.GroupBehavior)),
+		CompilationBehavior:    config.SubscriptionReleaseBehavior(strings.TrimSpace(snapshot.CompilationBehavior)),
+		MaxGroupPerformerCount: snapshot.MaxGroupPerformerCount,
+	}
+}
+
 func (s *runtimeSettingsEditor) UpdateQBittorrentSettings(input graphqlapi.UpdateQBittorrentSettingsInput) (*graphqlapi.SettingsSnapshot, error) {
 	cfg, err := s.store.UpdateQBittorrent(
 		strings.TrimSpace(input.URL),
@@ -175,6 +184,7 @@ func (s *runtimeSettingsEditor) UpdateAutomationSettings(input graphqlapi.Update
 		input.TaskProgressSyncIntervalSeconds,
 		input.SubscriptionPollIntervalHours,
 		input.StashBoxEndpoints,
+		subscriptionReleasePolicyConfigFromSnapshot(input.SubscriptionReleasePolicy),
 		config.NewTorrentSelectionConfig(
 			input.TorrentSelection.Enabled,
 			input.TorrentSelection.InspectionCandidateLimit,

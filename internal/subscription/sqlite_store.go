@@ -3,6 +3,7 @@ package subscription
 import (
 	"context"
 	"database/sql"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"sort"
@@ -57,6 +58,11 @@ SELECT
   sre.url,
   sre.query,
   sre.task_id,
+  sre.performer_count,
+  sre.performer_names,
+  sre.classification,
+  sre.decision,
+  sre.decision_reason,
   sre.seen_at
 FROM subscription_performer_releases spr
 JOIN subscription_release_entities sre ON sre.id = spr.release_id
@@ -69,9 +75,10 @@ ORDER BY sre.seen_at DESC, sre.release_key ASC`, performerID)
 
 	for rows.Next() {
 		var (
-			status string
-			item   RecordedRelease
-			seenAt string
+			status             string
+			item               RecordedRelease
+			seenAt             string
+			performerNamesJSON string
 		)
 		if err := rows.Scan(
 			&status,
@@ -83,9 +90,19 @@ ORDER BY sre.seen_at DESC, sre.release_key ASC`, performerID)
 			&item.URL,
 			&item.Query,
 			&item.TaskID,
+			&item.PerformerCount,
+			&performerNamesJSON,
+			&item.Classification,
+			&item.Decision,
+			&item.DecisionReason,
 			&seenAt,
 		); err != nil {
 			return nil, fmt.Errorf("subscription: scan release for %q: %w", performerID, err)
+		}
+		if performerNamesJSON != "" {
+			if err := json.Unmarshal([]byte(performerNamesJSON), &item.PerformerNames); err != nil {
+				return nil, fmt.Errorf("subscription: parse performer_names for %q release %q: %w", performerID, item.Key, err)
+			}
 		}
 		item.SeenAt, err = parseTimestamp(seenAt)
 		if err != nil {
@@ -237,8 +254,8 @@ func upsertReleaseEntity(ctx context.Context, tx *sql.Tx, status string, release
 	var id int64
 	if err := tx.QueryRowContext(ctx, `
 INSERT INTO subscription_release_entities (
-  release_key, status, source, title, code, release_date, url, query, task_id, last_error, seen_at, created_at, updated_at
-) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, '', ?, ?, ?)
+  release_key, status, source, title, code, release_date, url, query, task_id, performer_count, performer_names, classification, decision, decision_reason, last_error, seen_at, created_at, updated_at
+) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, '', ?, ?, ?)
 ON CONFLICT(release_key) DO UPDATE SET
   status = excluded.status,
   source = excluded.source,
@@ -248,6 +265,11 @@ ON CONFLICT(release_key) DO UPDATE SET
   url = excluded.url,
   query = excluded.query,
   task_id = CASE WHEN excluded.task_id <> '' THEN excluded.task_id ELSE subscription_release_entities.task_id END,
+  performer_count = excluded.performer_count,
+  performer_names = excluded.performer_names,
+  classification = excluded.classification,
+  decision = excluded.decision,
+  decision_reason = excluded.decision_reason,
   seen_at = excluded.seen_at,
   updated_at = excluded.updated_at
 RETURNING id`,
@@ -260,6 +282,11 @@ RETURNING id`,
 		release.URL,
 		release.Query,
 		release.TaskID,
+		release.PerformerCount,
+		marshalPerformerNames(release.PerformerNames),
+		release.Classification,
+		release.Decision,
+		release.DecisionReason,
 		formatTimestamp(seenAt),
 		formatTimestamp(now),
 		formatTimestamp(now),
@@ -268,6 +295,17 @@ RETURNING id`,
 	}
 
 	return id, nil
+}
+
+func marshalPerformerNames(names []string) string {
+	if len(names) == 0 {
+		return "[]"
+	}
+	data, err := json.Marshal(names)
+	if err != nil {
+		return "[]"
+	}
+	return string(data)
 }
 
 func deleteOrphanReleaseEntities(ctx context.Context, tx *sql.Tx) error {

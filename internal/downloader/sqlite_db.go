@@ -93,6 +93,18 @@ func migrateSQLiteDatabase(db *sql.DB) error {
 			return err
 		}
 	}
+	subscriptionReleaseMigrations := []sqliteColumnMigration{
+		{name: "performer_count", definition: "INTEGER NOT NULL DEFAULT 0"},
+		{name: "performer_names", definition: "TEXT NOT NULL DEFAULT '[]'"},
+		{name: "classification", definition: "TEXT NOT NULL DEFAULT ''"},
+		{name: "decision", definition: "TEXT NOT NULL DEFAULT ''"},
+		{name: "decision_reason", definition: "TEXT NOT NULL DEFAULT ''"},
+	}
+	for _, migration := range subscriptionReleaseMigrations {
+		if err := ensureSQLiteColumn(db, "subscription_release_entities", migration); err != nil {
+			return err
+		}
+	}
 	indexes := []string{
 		`CREATE UNIQUE INDEX IF NOT EXISTS idx_tasks_code_unique ON tasks (code) WHERE code <> ''`,
 		`CREATE UNIQUE INDEX IF NOT EXISTS idx_tasks_torrent_identity_hash_unique ON tasks (torrent_identity_hash) WHERE torrent_identity_hash <> ''`,
