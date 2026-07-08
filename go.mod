@@ -6,6 +6,7 @@ require (
 	github.com/99designs/gqlgen v0.17.73
 	github.com/Yamashou/gqlgenc v0.33.0
 	github.com/jackc/pgx/v5 v5.8.0
+	github.com/jmoiron/sqlx v1.4.0
 	github.com/vektah/gqlparser/v2 v2.5.32
 	golang.org/x/time v0.14.0
 	gopkg.in/yaml.v3 v3.0.1

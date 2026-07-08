@@ -49,8 +49,8 @@ export type TaskCardState = "error" | "pending" | "progress" | "completed";
 
 // ── Simple helpers ──────────────────────────────────────────────────
 
-export function normalizeStatus(value: string) {
-  return value.trim().toLowerCase();
+export function normalizeStatus(value?: string | null) {
+  return (value ?? "").trim().toLowerCase();
 }
 
 export function isStatus(task: DashboardTask, ...values: string[]) {
@@ -65,7 +65,7 @@ export function isTaskActive(task: DashboardTask) {
 }
 
 export function isScanPending(task: DashboardTask) {
-  const status = task.stashScanStatus.trim().toLowerCase();
+  const status = normalizeStatus(task.stashScanStatus);
   if (!status) return false;
   return !["completed", "done", "failed", "skipped", "idle"].includes(status);
 }
@@ -122,9 +122,9 @@ export function taskGroupDescription(group: TaskGroupKey) {
 // ── Task actions ────────────────────────────────────────────────────
 
 export function canTriggerTaskStashScan(task: DashboardTask) {
-  return task.status.trim().toLowerCase() === "completed"
-    && task.stashScanStatus.trim().toLowerCase() !== "started"
-    && task.stashTransferStatus.trim().toLowerCase() !== "started";
+  return normalizeStatus(task.status) === "completed"
+    && normalizeStatus(task.stashScanStatus) !== "started"
+    && normalizeStatus(task.stashTransferStatus) !== "started";
 }
 
 // ── Task presentation helpers ───────────────────────────────────────
@@ -408,11 +408,11 @@ export function taskLifecycle(task: DashboardTask, failure: TaskFailureSummary):
                 ? "入库阶段"
                 : "等待扫描",
       detail: hasTransferFailure
-        ? simplifyMessage(task.stashTransferError)
+        ? simplifyMessage(task.stashTransferError ?? "")
         : transferStarted
-          ? `${transferActionLabel(task.stashTransferAction) || "交付"} -> ${task.stashTransferPath || "目标路径待定"}`
+          ? `${transferActionLabel(task.stashTransferAction ?? "") || "交付"} -> ${task.stashTransferPath || "目标路径待定"}`
           : hasScanFailure
-        ? simplifyMessage(task.stashScanError)
+            ? simplifyMessage(task.stashScanError ?? "")
         : scanStarted
           ? `Stash job ${task.stashJobId || "已创建"} 正在运行。`
           : transferCompleted
@@ -442,7 +442,7 @@ export function taskPresentation(task: DashboardTask): TaskPresentation {
     detail = failure.detail;
   } else if (primary.phase === "transferRunning") {
     summary = "下载已完成，Moji 正在准备文件搬运。";
-    detail = task.stashTransferPath ? `${transferActionLabel(task.stashTransferAction) || "交付"} -> ${task.stashTransferPath}` : "正在准备交付目标路径。";
+    detail = task.stashTransferPath ? `${transferActionLabel(task.stashTransferAction ?? "") || "交付"} -> ${task.stashTransferPath}` : "正在准备交付目标路径。";
   } else if (primary.phase === "scanRunning") {
     summary = "已完成下载，正在等待 Stash 收口。";
     detail = task.stashJobId ? `Stash job ${task.stashJobId} 正在执行。` : "Stash 已接手当前任务。";

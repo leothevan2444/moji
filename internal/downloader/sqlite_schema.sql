@@ -13,33 +13,33 @@ CREATE TABLE IF NOT EXISTS tasks (
   status TEXT NOT NULL CHECK (status IN ('pending', 'added', 'downloading', 'completed', 'failed')),
 
   torrent_url TEXT NOT NULL DEFAULT '',
-  save_path TEXT NOT NULL DEFAULT '',
-  category TEXT NOT NULL DEFAULT '',
-  tags TEXT NOT NULL DEFAULT '',
+  save_path TEXT,
+  category TEXT,
+  tags TEXT,
 
-  torrent_identity_hash TEXT NOT NULL DEFAULT '',
-  torrent_identity_magnet TEXT NOT NULL DEFAULT '',
-  torrent_hash TEXT NOT NULL DEFAULT '',
-  torrent_name TEXT NOT NULL DEFAULT '',
+  torrent_identity_hash TEXT,
+  torrent_identity_magnet TEXT,
+  torrent_hash TEXT,
+  torrent_name TEXT,
   progress REAL NOT NULL DEFAULT 0 CHECK (progress >= 0 AND progress <= 1),
-  qbittorrent_state TEXT NOT NULL DEFAULT '',
-  content_path TEXT NOT NULL DEFAULT '',
+  qbittorrent_state TEXT,
+  content_path TEXT,
 
   completed_at TEXT,
-  stash_mode TEXT NOT NULL DEFAULT '',
-  stash_source_path TEXT NOT NULL DEFAULT '',
-  stash_transfer_action TEXT NOT NULL DEFAULT '',
-  stash_transfer_path TEXT NOT NULL DEFAULT '',
-  stash_transfer_status TEXT NOT NULL DEFAULT '' CHECK (stash_transfer_status IN ('', 'started', 'completed', 'failed')),
-  stash_transfer_error TEXT NOT NULL DEFAULT '',
-  stash_job_id TEXT NOT NULL DEFAULT '',
-  stash_scan_path TEXT NOT NULL DEFAULT '',
-  stash_scan_status TEXT NOT NULL DEFAULT '' CHECK (stash_scan_status IN ('', 'started', 'failed')),
-  stash_scan_error TEXT NOT NULL DEFAULT '',
-  stash_scan_hint TEXT NOT NULL DEFAULT '',
+  stash_mode TEXT,
+  stash_source_path TEXT,
+  stash_transfer_action TEXT,
+  stash_transfer_path TEXT,
+  stash_transfer_status TEXT CHECK (stash_transfer_status IN ('started', 'completed', 'failed')),
+  stash_transfer_error TEXT,
+  stash_job_id TEXT,
+  stash_scan_path TEXT,
+  stash_scan_status TEXT CHECK (stash_scan_status IN ('started', 'failed')),
+  stash_scan_error TEXT,
+  stash_scan_hint TEXT,
   stash_scan_started_at TEXT,
 
-  error TEXT NOT NULL DEFAULT '',
+  error TEXT,
 
   candidate_title TEXT NOT NULL DEFAULT '',
   candidate_tracker TEXT NOT NULL DEFAULT '',
@@ -74,7 +74,7 @@ CREATE INDEX IF NOT EXISTS idx_tasks_stash_job_id
 
 CREATE INDEX IF NOT EXISTS idx_tasks_scan_queue
   ON tasks (updated_at DESC)
-  WHERE status = 'completed' AND stash_job_id = '' AND stash_scan_status = '';
+  WHERE status = 'completed' AND stash_job_id IS NULL AND stash_scan_status IS NULL;
 
 CREATE TABLE IF NOT EXISTS task_events (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -84,7 +84,6 @@ CREATE TABLE IF NOT EXISTS task_events (
   message TEXT NOT NULL,
   old_status TEXT NOT NULL DEFAULT '',
   new_status TEXT NOT NULL DEFAULT '',
-  payload_json TEXT NOT NULL DEFAULT '{}',
   created_at TEXT NOT NULL,
   FOREIGN KEY (task_id) REFERENCES tasks(id) ON DELETE CASCADE
 ) STRICT;
@@ -96,13 +95,13 @@ CREATE INDEX IF NOT EXISTS idx_task_events_created_at
   ON task_events (created_at DESC);
 
 INSERT INTO task_store_meta (key, value)
-VALUES ('schema_version', '3')
+VALUES ('schema_version', '4')
 ON CONFLICT(key) DO UPDATE SET value = excluded.value;
 
 CREATE TABLE IF NOT EXISTS subscription_performer_state (
   performer_id TEXT PRIMARY KEY,
   last_checked_at TEXT,
-  last_error TEXT NOT NULL DEFAULT '',
+  last_error TEXT,
   created_at TEXT NOT NULL,
   updated_at TEXT NOT NULL
 ) STRICT;
@@ -120,20 +119,19 @@ CREATE TABLE IF NOT EXISTS subscription_release_entities (
   source TEXT NOT NULL DEFAULT '',
   title TEXT NOT NULL DEFAULT '',
   code TEXT NOT NULL DEFAULT '',
-  release_date TEXT NOT NULL DEFAULT '',
-  url TEXT NOT NULL DEFAULT '',
+  release_date TEXT,
+  url TEXT,
   query TEXT NOT NULL DEFAULT '',
-  task_id TEXT NOT NULL DEFAULT '',
+  task_id TEXT,
   performer_count INTEGER NOT NULL DEFAULT 0,
   performer_names TEXT NOT NULL DEFAULT '[]',
   classification TEXT NOT NULL DEFAULT '',
   decision TEXT NOT NULL DEFAULT '',
   decision_reason TEXT NOT NULL DEFAULT '',
-  last_error TEXT NOT NULL DEFAULT '',
   seen_at TEXT NOT NULL,
   created_at TEXT NOT NULL,
   updated_at TEXT NOT NULL,
-  FOREIGN KEY (task_id) REFERENCES tasks(id) ON DELETE SET DEFAULT
+  FOREIGN KEY (task_id) REFERENCES tasks(id) ON DELETE SET NULL
 ) STRICT;
 
 CREATE UNIQUE INDEX IF NOT EXISTS idx_subscription_release_entities_key
@@ -152,18 +150,13 @@ CREATE INDEX IF NOT EXISTS idx_subscription_release_entities_task_id
   ON subscription_release_entities (task_id);
 
 CREATE TABLE IF NOT EXISTS subscription_performer_releases (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
   performer_id TEXT NOT NULL,
   release_id INTEGER NOT NULL,
   linked_at TEXT NOT NULL,
-  created_at TEXT NOT NULL,
-  updated_at TEXT NOT NULL,
+  PRIMARY KEY (performer_id, release_id),
   FOREIGN KEY (performer_id) REFERENCES subscription_performer_state(performer_id) ON DELETE CASCADE,
   FOREIGN KEY (release_id) REFERENCES subscription_release_entities(id) ON DELETE CASCADE
 ) STRICT;
-
-CREATE UNIQUE INDEX IF NOT EXISTS idx_subscription_performer_releases_unique
-  ON subscription_performer_releases (performer_id, release_id);
 
 CREATE INDEX IF NOT EXISTS idx_subscription_performer_releases_performer_linked_at
   ON subscription_performer_releases (performer_id, linked_at DESC);

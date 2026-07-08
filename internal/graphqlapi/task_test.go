@@ -236,6 +236,38 @@ func TestTasksQueryWithoutDownloaderReturnsEmptyList(t *testing.T) {
 	}
 }
 
+func TestTasksQueryReturnsNullForUnsetOptionalFields(t *testing.T) {
+	downloader := &fakeDownloader{
+		listTasks: []*downloader.Task{
+			{ID: "task-1", Query: "AAAA-111", Status: downloader.TaskStatusPending, CreatedAt: time.Unix(100, 0).UTC(), UpdatedAt: time.Unix(100, 0).UTC()},
+		},
+	}
+	resolver := NewResolver(nil, nil, downloader, nil, "test-version")
+
+	var resp struct {
+		Data struct {
+			Tasks []struct {
+				ID         string  `json:"id"`
+				SavePath   *string `json:"savePath"`
+				StashJobID *string `json:"stashJobId"`
+				Error      *string `json:"error"`
+			} `json:"tasks"`
+		} `json:"data"`
+		Errors []any `json:"errors"`
+	}
+	executeGraphQLInto(t, resolver, `{ tasks { id savePath stashJobId error } }`, &resp)
+
+	if len(resp.Errors) > 0 {
+		t.Fatalf("expected no errors, got %+v", resp.Errors)
+	}
+	if len(resp.Data.Tasks) != 1 {
+		t.Fatalf("expected one task, got %+v", resp.Data.Tasks)
+	}
+	if resp.Data.Tasks[0].SavePath != nil || resp.Data.Tasks[0].StashJobID != nil || resp.Data.Tasks[0].Error != nil {
+		t.Fatalf("expected unset optional task fields to serialize as null, got %+v", resp.Data.Tasks[0])
+	}
+}
+
 func TestDeleteTaskMutation(t *testing.T) {
 	downloader := &fakeDownloader{
 		deleteTask: &downloader.Task{
@@ -1272,6 +1304,12 @@ func (f *fakeSettingsEditor) UpdateSystemSettings(input UpdateSystemSettingsInpu
 }
 
 func executeGraphQL(t *testing.T, resolver *Resolver, query string) graphQLTaskResponse {
+	var resp graphQLTaskResponse
+	executeGraphQLInto(t, resolver, query, &resp)
+	return resp
+}
+
+func executeGraphQLInto(t *testing.T, resolver *Resolver, query string, target any) {
 	t.Helper()
 
 	srv := handler.NewDefaultServer(generated.NewExecutableSchema(generated.Config{Resolvers: resolver}))
@@ -1288,11 +1326,9 @@ func executeGraphQL(t *testing.T, resolver *Resolver, query string) graphQLTaskR
 		t.Fatalf("expected status %d, got %d: %s", http.StatusOK, rec.Code, rec.Body.String())
 	}
 
-	var resp graphQLTaskResponse
-	if err := json.NewDecoder(rec.Body).Decode(&resp); err != nil {
+	if err := json.NewDecoder(rec.Body).Decode(target); err != nil {
 		t.Fatalf("decode response: %v", err)
 	}
-	return resp
 }
 
 type fakeStashService struct{}

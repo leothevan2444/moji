@@ -869,34 +869,34 @@ export type SystemSettings = {
 export type Task = {
   __typename?: 'Task';
   candidate: DownloadCandidate;
-  category: Scalars['String']['output'];
+  category?: Maybe<Scalars['String']['output']>;
   code: Scalars['String']['output'];
   completedAt?: Maybe<Scalars['String']['output']>;
-  contentPath: Scalars['String']['output'];
+  contentPath?: Maybe<Scalars['String']['output']>;
   createdAt: Scalars['String']['output'];
-  error: Scalars['String']['output'];
+  error?: Maybe<Scalars['String']['output']>;
   id: Scalars['ID']['output'];
   progress: Scalars['Float']['output'];
-  qbittorrentState: Scalars['String']['output'];
+  qbittorrentState?: Maybe<Scalars['String']['output']>;
   query: Scalars['String']['output'];
-  savePath: Scalars['String']['output'];
+  savePath?: Maybe<Scalars['String']['output']>;
   source: TaskSource;
-  stashJobId: Scalars['ID']['output'];
-  stashMode: Scalars['String']['output'];
-  stashScanError: Scalars['String']['output'];
-  stashScanHint: Scalars['String']['output'];
-  stashScanPath: Scalars['String']['output'];
+  stashJobId?: Maybe<Scalars['ID']['output']>;
+  stashMode?: Maybe<Scalars['String']['output']>;
+  stashScanError?: Maybe<Scalars['String']['output']>;
+  stashScanHint?: Maybe<Scalars['String']['output']>;
+  stashScanPath?: Maybe<Scalars['String']['output']>;
   stashScanStartedAt?: Maybe<Scalars['String']['output']>;
-  stashScanStatus: Scalars['String']['output'];
-  stashSourcePath: Scalars['String']['output'];
-  stashTransferAction: Scalars['String']['output'];
-  stashTransferError: Scalars['String']['output'];
-  stashTransferPath: Scalars['String']['output'];
-  stashTransferStatus: Scalars['String']['output'];
+  stashScanStatus?: Maybe<Scalars['String']['output']>;
+  stashSourcePath?: Maybe<Scalars['String']['output']>;
+  stashTransferAction?: Maybe<Scalars['String']['output']>;
+  stashTransferError?: Maybe<Scalars['String']['output']>;
+  stashTransferPath?: Maybe<Scalars['String']['output']>;
+  stashTransferStatus?: Maybe<Scalars['String']['output']>;
   status: Scalars['String']['output'];
-  tags: Scalars['String']['output'];
-  torrentHash: Scalars['String']['output'];
-  torrentName: Scalars['String']['output'];
+  tags?: Maybe<Scalars['String']['output']>;
+  torrentHash?: Maybe<Scalars['String']['output']>;
+  torrentName?: Maybe<Scalars['String']['output']>;
   torrentUrl: Scalars['String']['output'];
   updatedAt: Scalars['String']['output'];
 };
@@ -1079,7 +1079,7 @@ export type UpdateSystemSettingsInput = {
 export type DashboardDocumentQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type DashboardDocumentQuery = { __typename?: 'Query', version: string, health: { __typename?: 'Health', ok: boolean, message: string }, dashboardStats: { __typename?: 'DashboardStats', total: number, active: number, completed: number, downloading: number, pendingScans: number, failed: number }, settings: { __typename?: 'Settings', stash: { __typename?: 'StashSettings', configured: boolean, url: string, apiKeyConfigured: boolean, apiKey: string }, ingest: { __typename?: 'IngestSettings', deliveryMode: string, downloads: { __typename?: 'DownloadsIngestSettings', qbRoot: string, mojiRoot: string }, library: { __typename?: 'LibraryIngestSettings', mojiRoot: string, stashRoot: string }, transfer: { __typename?: 'TransferIngestSettings', action: string } }, jackett: { __typename?: 'JackettSettings', configured: boolean, url: string, apiKeyConfigured: boolean, apiKey: string, passwordConfigured: boolean, password: string }, qbittorrent: { __typename?: 'QBittorrentSettings', configured: boolean, url: string, username: string, usernameConfigured: boolean, passwordConfigured: boolean, password: string, defaultSavePath: string, category: string, tags: string }, automation: { __typename?: 'AutomationSettings', taskProgressSyncIntervalSeconds: number, subscriptionPollIntervalHours: number, stashBoxEndpoints: Array<string>, subscriptionReleasePolicy: { __typename?: 'SubscriptionReleasePolicy', soloBehavior: SubscriptionReleaseBehavior, groupBehavior: SubscriptionReleaseBehavior, compilationBehavior: SubscriptionReleaseBehavior, maxGroupPerformerCount: number, releaseDateRange: SubscriptionReleaseDateRange }, torrentSelection: { __typename?: 'TorrentSelectionSettings', enabled: boolean, inspectionCandidateLimit: number, fastRules: Array<{ __typename?: 'TorrentSelectionRule', type: TorrentSelectionRuleType, enabled: boolean, publishDate: { __typename?: 'DirectionRule', direction: TorrentSelectionDirection }, seeders: { __typename?: 'DirectionRule', direction: TorrentSelectionDirection }, size: { __typename?: 'DirectionRule', direction: TorrentSelectionDirection }, indexerPreference: { __typename?: 'IndexerPreferenceRule', trackerIds: Array<string> }, titleMatch: { __typename?: 'TitleMatchRule', clauses: Array<{ __typename?: 'TitleMatchClause', pattern: string, patternMode: TitleMatchPatternMode, effect: TitleMatchEffect }> }, torrentFileNameMatch: { __typename?: 'TorrentFileNameMatchRule', clauses: Array<{ __typename?: 'TorrentFileNameMatchClause', pattern: string, patternMode: TitleMatchPatternMode, effect: TorrentFileMatchEffect }> } }>, torrentRules: Array<{ __typename?: 'TorrentSelectionRule', type: TorrentSelectionRuleType, enabled: boolean, publishDate: { __typename?: 'DirectionRule', direction: TorrentSelectionDirection }, seeders: { __typename?: 'DirectionRule', direction: TorrentSelectionDirection }, size: { __typename?: 'DirectionRule', direction: TorrentSelectionDirection }, indexerPreference: { __typename?: 'IndexerPreferenceRule', trackerIds: Array<string> }, titleMatch: { __typename?: 'TitleMatchRule', clauses: Array<{ __typename?: 'TitleMatchClause', pattern: string, patternMode: TitleMatchPatternMode, effect: TitleMatchEffect }> }, torrentFileNameMatch: { __typename?: 'TorrentFileNameMatchRule', clauses: Array<{ __typename?: 'TorrentFileNameMatchClause', pattern: string, patternMode: TitleMatchPatternMode, effect: TorrentFileMatchEffect }> } }> } }, system: { __typename?: 'SystemSettings', taskDeletePolicy: TaskDeletePolicy } }, settingsStatus: { __typename?: 'SettingsStatus', stashLibrariesLoadError?: string | null, stash: { __typename?: 'ServiceStatus', configured: boolean, ready: boolean }, jackett: { __typename?: 'ServiceStatus', configured: boolean, ready: boolean }, qbittorrent: { __typename?: 'ServiceStatus', configured: boolean, ready: boolean }, automation: { __typename?: 'AutomationStatus', taskProgressSyncIntervalSeconds: number, taskProgressSyncEnabled: boolean, subscriptionPollIntervalHours: number, subscriptionPollEnabled: boolean }, subscription: { __typename?: 'SubscriptionStatus', stashBoxesLoaded: boolean, stashBoxesLoadError?: string | null, stashBoxes: Array<{ __typename?: 'StashBoxEndpoint', name: string, endpoint: string, apiKeyConfigured: boolean }> }, stashLibraries: Array<{ __typename?: 'StashLibrary', path: string }>, ingest: { __typename?: 'IngestStatus', configured: boolean }, stashStats: { __typename?: 'StashStats', version?: string | null, sceneCount?: number | null, pendingMojiScanCount: number, lastError?: string | null, okAt?: string | null }, jackettStats: { __typename?: 'JackettStats', indexerCount: number, configuredIndexerCount: number, lastIndexerLatencyMs: number, lastIndexerError?: string | null, lastIndexerSearchAt?: string | null, lastError?: string | null, okAt?: string | null }, qbittorrentStats: { __typename?: 'QBittorrentStats', downloadSpeed: number, uploadSpeed: number, activeTorrentCount: number, connectionStatus: string, altSpeedLimitEnabled: boolean, lastError?: string | null, okAt?: string | null } }, tasks: Array<{ __typename?: 'Task', id: string, source: TaskSource, query: string, code: string, status: string, torrentName: string, progress: number, qbittorrentState: string, contentPath: string, torrentHash: string, savePath: string, category: string, tags: string, error: string, completedAt?: string | null, stashMode: string, stashSourcePath: string, stashTransferAction: string, stashTransferPath: string, stashTransferStatus: string, stashTransferError: string, stashJobId: string, stashScanPath: string, stashScanStatus: string, stashScanError: string, stashScanHint: string, createdAt: string, updatedAt: string }> };
+export type DashboardDocumentQuery = { __typename?: 'Query', version: string, health: { __typename?: 'Health', ok: boolean, message: string }, dashboardStats: { __typename?: 'DashboardStats', total: number, active: number, completed: number, downloading: number, pendingScans: number, failed: number }, settings: { __typename?: 'Settings', stash: { __typename?: 'StashSettings', configured: boolean, url: string, apiKeyConfigured: boolean, apiKey: string }, ingest: { __typename?: 'IngestSettings', deliveryMode: string, downloads: { __typename?: 'DownloadsIngestSettings', qbRoot: string, mojiRoot: string }, library: { __typename?: 'LibraryIngestSettings', mojiRoot: string, stashRoot: string }, transfer: { __typename?: 'TransferIngestSettings', action: string } }, jackett: { __typename?: 'JackettSettings', configured: boolean, url: string, apiKeyConfigured: boolean, apiKey: string, passwordConfigured: boolean, password: string }, qbittorrent: { __typename?: 'QBittorrentSettings', configured: boolean, url: string, username: string, usernameConfigured: boolean, passwordConfigured: boolean, password: string, defaultSavePath: string, category: string, tags: string }, automation: { __typename?: 'AutomationSettings', taskProgressSyncIntervalSeconds: number, subscriptionPollIntervalHours: number, stashBoxEndpoints: Array<string>, subscriptionReleasePolicy: { __typename?: 'SubscriptionReleasePolicy', soloBehavior: SubscriptionReleaseBehavior, groupBehavior: SubscriptionReleaseBehavior, compilationBehavior: SubscriptionReleaseBehavior, maxGroupPerformerCount: number, releaseDateRange: SubscriptionReleaseDateRange }, torrentSelection: { __typename?: 'TorrentSelectionSettings', enabled: boolean, inspectionCandidateLimit: number, fastRules: Array<{ __typename?: 'TorrentSelectionRule', type: TorrentSelectionRuleType, enabled: boolean, publishDate: { __typename?: 'DirectionRule', direction: TorrentSelectionDirection }, seeders: { __typename?: 'DirectionRule', direction: TorrentSelectionDirection }, size: { __typename?: 'DirectionRule', direction: TorrentSelectionDirection }, indexerPreference: { __typename?: 'IndexerPreferenceRule', trackerIds: Array<string> }, titleMatch: { __typename?: 'TitleMatchRule', clauses: Array<{ __typename?: 'TitleMatchClause', pattern: string, patternMode: TitleMatchPatternMode, effect: TitleMatchEffect }> }, torrentFileNameMatch: { __typename?: 'TorrentFileNameMatchRule', clauses: Array<{ __typename?: 'TorrentFileNameMatchClause', pattern: string, patternMode: TitleMatchPatternMode, effect: TorrentFileMatchEffect }> } }>, torrentRules: Array<{ __typename?: 'TorrentSelectionRule', type: TorrentSelectionRuleType, enabled: boolean, publishDate: { __typename?: 'DirectionRule', direction: TorrentSelectionDirection }, seeders: { __typename?: 'DirectionRule', direction: TorrentSelectionDirection }, size: { __typename?: 'DirectionRule', direction: TorrentSelectionDirection }, indexerPreference: { __typename?: 'IndexerPreferenceRule', trackerIds: Array<string> }, titleMatch: { __typename?: 'TitleMatchRule', clauses: Array<{ __typename?: 'TitleMatchClause', pattern: string, patternMode: TitleMatchPatternMode, effect: TitleMatchEffect }> }, torrentFileNameMatch: { __typename?: 'TorrentFileNameMatchRule', clauses: Array<{ __typename?: 'TorrentFileNameMatchClause', pattern: string, patternMode: TitleMatchPatternMode, effect: TorrentFileMatchEffect }> } }> } }, system: { __typename?: 'SystemSettings', taskDeletePolicy: TaskDeletePolicy } }, settingsStatus: { __typename?: 'SettingsStatus', stashLibrariesLoadError?: string | null, stash: { __typename?: 'ServiceStatus', configured: boolean, ready: boolean }, jackett: { __typename?: 'ServiceStatus', configured: boolean, ready: boolean }, qbittorrent: { __typename?: 'ServiceStatus', configured: boolean, ready: boolean }, automation: { __typename?: 'AutomationStatus', taskProgressSyncIntervalSeconds: number, taskProgressSyncEnabled: boolean, subscriptionPollIntervalHours: number, subscriptionPollEnabled: boolean }, subscription: { __typename?: 'SubscriptionStatus', stashBoxesLoaded: boolean, stashBoxesLoadError?: string | null, stashBoxes: Array<{ __typename?: 'StashBoxEndpoint', name: string, endpoint: string, apiKeyConfigured: boolean }> }, stashLibraries: Array<{ __typename?: 'StashLibrary', path: string }>, ingest: { __typename?: 'IngestStatus', configured: boolean }, stashStats: { __typename?: 'StashStats', version?: string | null, sceneCount?: number | null, pendingMojiScanCount: number, lastError?: string | null, okAt?: string | null }, jackettStats: { __typename?: 'JackettStats', indexerCount: number, configuredIndexerCount: number, lastIndexerLatencyMs: number, lastIndexerError?: string | null, lastIndexerSearchAt?: string | null, lastError?: string | null, okAt?: string | null }, qbittorrentStats: { __typename?: 'QBittorrentStats', downloadSpeed: number, uploadSpeed: number, activeTorrentCount: number, connectionStatus: string, altSpeedLimitEnabled: boolean, lastError?: string | null, okAt?: string | null } }, tasks: Array<{ __typename?: 'Task', id: string, source: TaskSource, query: string, code: string, status: string, torrentName?: string | null, progress: number, qbittorrentState?: string | null, contentPath?: string | null, torrentHash?: string | null, savePath?: string | null, category?: string | null, tags?: string | null, error?: string | null, completedAt?: string | null, stashMode?: string | null, stashSourcePath?: string | null, stashTransferAction?: string | null, stashTransferPath?: string | null, stashTransferStatus?: string | null, stashTransferError?: string | null, stashJobId?: string | null, stashScanPath?: string | null, stashScanStatus?: string | null, stashScanError?: string | null, stashScanHint?: string | null, createdAt: string, updatedAt: string }> };
 
 export type DiscoverScenesDocumentQueryVariables = Exact<{
   input: DiscoverScenesInput;
@@ -1112,7 +1112,7 @@ export type QueueDiscoveredSceneDocumentMutationVariables = Exact<{
 }>;
 
 
-export type QueueDiscoveredSceneDocumentMutation = { __typename?: 'Mutation', queueDiscoveredScene: { __typename?: 'Task', id: string, source: TaskSource, status: string, query: string, torrentName: string, progress: number, stashMode: string, stashScanStatus: string, createdAt: string } };
+export type QueueDiscoveredSceneDocumentMutation = { __typename?: 'Mutation', queueDiscoveredScene: { __typename?: 'Task', id: string, source: TaskSource, status: string, query: string, torrentName?: string | null, progress: number, stashMode?: string | null, stashScanStatus?: string | null, createdAt: string } };
 
 export type UpdateStashSettingsDocumentMutationVariables = Exact<{
   input: UpdateStashSettingsInput;
@@ -1229,24 +1229,24 @@ export type AddTorrentDocumentMutationVariables = Exact<{
 }>;
 
 
-export type AddTorrentDocumentMutation = { __typename?: 'Mutation', addTorrent: { __typename?: 'Task', id: string, source: TaskSource, status: string, query: string, code: string, torrentName: string, progress: number, stashMode: string, stashScanStatus: string, createdAt: string } };
+export type AddTorrentDocumentMutation = { __typename?: 'Mutation', addTorrent: { __typename?: 'Task', id: string, source: TaskSource, status: string, query: string, code: string, torrentName?: string | null, progress: number, stashMode?: string | null, stashScanStatus?: string | null, createdAt: string } };
 
 export type SyncTaskProgressDocumentMutationVariables = Exact<{ [key: string]: never; }>;
 
 
-export type SyncTaskProgressDocumentMutation = { __typename?: 'Mutation', syncTaskProgress: Array<{ __typename?: 'Task', id: string, source: TaskSource, status: string, progress: number, qbittorrentState: string, updatedAt: string }> };
+export type SyncTaskProgressDocumentMutation = { __typename?: 'Mutation', syncTaskProgress: Array<{ __typename?: 'Task', id: string, source: TaskSource, status: string, progress: number, qbittorrentState?: string | null, updatedAt: string }> };
 
 export type TriggerStashScansDocumentMutationVariables = Exact<{ [key: string]: never; }>;
 
 
-export type TriggerStashScansDocumentMutation = { __typename?: 'Mutation', triggerStashScans: Array<{ __typename?: 'Task', id: string, source: TaskSource, stashMode: string, stashTransferStatus: string, stashTransferError: string, stashJobId: string, stashScanPath: string, stashScanStatus: string, stashScanError: string, stashScanHint: string, updatedAt: string }> };
+export type TriggerStashScansDocumentMutation = { __typename?: 'Mutation', triggerStashScans: Array<{ __typename?: 'Task', id: string, source: TaskSource, stashMode?: string | null, stashTransferStatus?: string | null, stashTransferError?: string | null, stashJobId?: string | null, stashScanPath?: string | null, stashScanStatus?: string | null, stashScanError?: string | null, stashScanHint?: string | null, updatedAt: string }> };
 
 export type TriggerTaskStashScanDocumentMutationVariables = Exact<{
   id: Scalars['ID']['input'];
 }>;
 
 
-export type TriggerTaskStashScanDocumentMutation = { __typename?: 'Mutation', triggerTaskStashScan: { __typename?: 'Task', id: string, source: TaskSource, stashMode: string, stashTransferStatus: string, stashTransferError: string, stashJobId: string, stashScanPath: string, stashScanStatus: string, stashScanError: string, stashScanHint: string, updatedAt: string } };
+export type TriggerTaskStashScanDocumentMutation = { __typename?: 'Mutation', triggerTaskStashScan: { __typename?: 'Task', id: string, source: TaskSource, stashMode?: string | null, stashTransferStatus?: string | null, stashTransferError?: string | null, stashJobId?: string | null, stashScanPath?: string | null, stashScanStatus?: string | null, stashScanError?: string | null, stashScanHint?: string | null, updatedAt: string } };
 
 export type DeleteTaskDocumentMutationVariables = Exact<{
   id: Scalars['ID']['input'];

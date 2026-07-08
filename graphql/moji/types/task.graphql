@@ -79,28 +79,28 @@ type Task {
   status: String!
   candidate: DownloadCandidate!
   torrentUrl: String!
-  savePath: String!
-  category: String!
-  tags: String!
-  torrentHash: String!
-  torrentName: String!
+  savePath: String
+  category: String
+  tags: String
+  torrentHash: String
+  torrentName: String
   progress: Float!
-  qbittorrentState: String!
-  contentPath: String!
+  qbittorrentState: String
+  contentPath: String
   completedAt: String
-  stashMode: String!
-  stashSourcePath: String!
-  stashTransferAction: String!
-  stashTransferPath: String!
-  stashTransferStatus: String!
-  stashTransferError: String!
-  stashJobId: ID!
-  stashScanPath: String!
-  stashScanStatus: String!
-  stashScanError: String!
-  stashScanHint: String!
+  stashMode: String
+  stashSourcePath: String
+  stashTransferAction: String
+  stashTransferPath: String
+  stashTransferStatus: String
+  stashTransferError: String
+  stashJobId: ID
+  stashScanPath: String
+  stashScanStatus: String
+  stashScanError: String
+  stashScanHint: String
   stashScanStartedAt: String
-  error: String!
+  error: String
   createdAt: String!
   updatedAt: String!
 }

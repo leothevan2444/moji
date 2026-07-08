@@ -4150,28 +4150,28 @@ type Task {
   status: String!
   candidate: DownloadCandidate!
   torrentUrl: String!
-  savePath: String!
-  category: String!
-  tags: String!
-  torrentHash: String!
-  torrentName: String!
+  savePath: String
+  category: String
+  tags: String
+  torrentHash: String
+  torrentName: String
   progress: Float!
-  qbittorrentState: String!
-  contentPath: String!
+  qbittorrentState: String
+  contentPath: String
   completedAt: String
-  stashMode: String!
-  stashSourcePath: String!
-  stashTransferAction: String!
-  stashTransferPath: String!
-  stashTransferStatus: String!
-  stashTransferError: String!
-  stashJobId: ID!
-  stashScanPath: String!
-  stashScanStatus: String!
-  stashScanError: String!
-  stashScanHint: String!
+  stashMode: String
+  stashSourcePath: String
+  stashTransferAction: String
+  stashTransferPath: String
+  stashTransferStatus: String
+  stashTransferError: String
+  stashJobId: ID
+  stashScanPath: String
+  stashScanStatus: String
+  stashScanError: String
+  stashScanHint: String
   stashScanStartedAt: String
-  error: String!
+  error: String
   createdAt: String!
   updatedAt: String!
 }
@@ -19726,14 +19726,11 @@ func (ec *executionContext) _Task_savePath(ctx context.Context, field graphql.Co
 		return graphql.Null
 	}
 	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
 		return graphql.Null
 	}
-	res := resTmp.(string)
+	res := resTmp.(*string)
 	fc.Result = res
-	return ec.marshalNString2string(ctx, field.Selections, res)
+	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_Task_savePath(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -19770,14 +19767,11 @@ func (ec *executionContext) _Task_category(ctx context.Context, field graphql.Co
 		return graphql.Null
 	}
 	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
 		return graphql.Null
 	}
-	res := resTmp.(string)
+	res := resTmp.(*string)
 	fc.Result = res
-	return ec.marshalNString2string(ctx, field.Selections, res)
+	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_Task_category(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -19814,14 +19808,11 @@ func (ec *executionContext) _Task_tags(ctx context.Context, field graphql.Collec
 		return graphql.Null
 	}
 	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
 		return graphql.Null
 	}
-	res := resTmp.(string)
+	res := resTmp.(*string)
 	fc.Result = res
-	return ec.marshalNString2string(ctx, field.Selections, res)
+	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_Task_tags(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -19858,14 +19849,11 @@ func (ec *executionContext) _Task_torrentHash(ctx context.Context, field graphql
 		return graphql.Null
 	}
 	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
 		return graphql.Null
 	}
-	res := resTmp.(string)
+	res := resTmp.(*string)
 	fc.Result = res
-	return ec.marshalNString2string(ctx, field.Selections, res)
+	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_Task_torrentHash(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -19902,14 +19890,11 @@ func (ec *executionContext) _Task_torrentName(ctx context.Context, field graphql
 		return graphql.Null
 	}
 	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
 		return graphql.Null
 	}
-	res := resTmp.(string)
+	res := resTmp.(*string)
 	fc.Result = res
-	return ec.marshalNString2string(ctx, field.Selections, res)
+	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_Task_torrentName(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -19990,14 +19975,11 @@ func (ec *executionContext) _Task_qbittorrentState(ctx context.Context, field gr
 		return graphql.Null
 	}
 	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
 		return graphql.Null
 	}
-	res := resTmp.(string)
+	res := resTmp.(*string)
 	fc.Result = res
-	return ec.marshalNString2string(ctx, field.Selections, res)
+	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_Task_qbittorrentState(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -20034,14 +20016,11 @@ func (ec *executionContext) _Task_contentPath(ctx context.Context, field graphql
 		return graphql.Null
 	}
 	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
 		return graphql.Null
 	}
-	res := resTmp.(string)
+	res := resTmp.(*string)
 	fc.Result = res
-	return ec.marshalNString2string(ctx, field.Selections, res)
+	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_Task_contentPath(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -20119,14 +20098,11 @@ func (ec *executionContext) _Task_stashMode(ctx context.Context, field graphql.C
 		return graphql.Null
 	}
 	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
 		return graphql.Null
 	}
-	res := resTmp.(string)
+	res := resTmp.(*string)
 	fc.Result = res
-	return ec.marshalNString2string(ctx, field.Selections, res)
+	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_Task_stashMode(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -20163,14 +20139,11 @@ func (ec *executionContext) _Task_stashSourcePath(ctx context.Context, field gra
 		return graphql.Null
 	}
 	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
 		return graphql.Null
 	}
-	res := resTmp.(string)
+	res := resTmp.(*string)
 	fc.Result = res
-	return ec.marshalNString2string(ctx, field.Selections, res)
+	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_Task_stashSourcePath(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -20207,14 +20180,11 @@ func (ec *executionContext) _Task_stashTransferAction(ctx context.Context, field
 		return graphql.Null
 	}
 	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
 		return graphql.Null
 	}
-	res := resTmp.(string)
+	res := resTmp.(*string)
 	fc.Result = res
-	return ec.marshalNString2string(ctx, field.Selections, res)
+	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_Task_stashTransferAction(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -20251,14 +20221,11 @@ func (ec *executionContext) _Task_stashTransferPath(ctx context.Context, field g
 		return graphql.Null
 	}
 	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
 		return graphql.Null
 	}
-	res := resTmp.(string)
+	res := resTmp.(*string)
 	fc.Result = res
-	return ec.marshalNString2string(ctx, field.Selections, res)
+	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_Task_stashTransferPath(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -20295,14 +20262,11 @@ func (ec *executionContext) _Task_stashTransferStatus(ctx context.Context, field
 		return graphql.Null
 	}
 	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
 		return graphql.Null
 	}
-	res := resTmp.(string)
+	res := resTmp.(*string)
 	fc.Result = res
-	return ec.marshalNString2string(ctx, field.Selections, res)
+	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_Task_stashTransferStatus(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -20339,14 +20303,11 @@ func (ec *executionContext) _Task_stashTransferError(ctx context.Context, field 
 		return graphql.Null
 	}
 	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
 		return graphql.Null
 	}
-	res := resTmp.(string)
+	res := resTmp.(*string)
 	fc.Result = res
-	return ec.marshalNString2string(ctx, field.Selections, res)
+	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_Task_stashTransferError(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -20383,14 +20344,11 @@ func (ec *executionContext) _Task_stashJobId(ctx context.Context, field graphql.
 		return graphql.Null
 	}
 	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
 		return graphql.Null
 	}
-	res := resTmp.(string)
+	res := resTmp.(*string)
 	fc.Result = res
-	return ec.marshalNID2string(ctx, field.Selections, res)
+	return ec.marshalOID2ᚖstring(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_Task_stashJobId(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -20427,14 +20385,11 @@ func (ec *executionContext) _Task_stashScanPath(ctx context.Context, field graph
 		return graphql.Null
 	}
 	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
 		return graphql.Null
 	}
-	res := resTmp.(string)
+	res := resTmp.(*string)
 	fc.Result = res
-	return ec.marshalNString2string(ctx, field.Selections, res)
+	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_Task_stashScanPath(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -20471,14 +20426,11 @@ func (ec *executionContext) _Task_stashScanStatus(ctx context.Context, field gra
 		return graphql.Null
 	}
 	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
 		return graphql.Null
 	}
-	res := resTmp.(string)
+	res := resTmp.(*string)
 	fc.Result = res
-	return ec.marshalNString2string(ctx, field.Selections, res)
+	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_Task_stashScanStatus(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -20515,14 +20467,11 @@ func (ec *executionContext) _Task_stashScanError(ctx context.Context, field grap
 		return graphql.Null
 	}
 	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
 		return graphql.Null
 	}
-	res := resTmp.(string)
+	res := resTmp.(*string)
 	fc.Result = res
-	return ec.marshalNString2string(ctx, field.Selections, res)
+	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_Task_stashScanError(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -20559,14 +20508,11 @@ func (ec *executionContext) _Task_stashScanHint(ctx context.Context, field graph
 		return graphql.Null
 	}
 	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
 		return graphql.Null
 	}
-	res := resTmp.(string)
+	res := resTmp.(*string)
 	fc.Result = res
-	return ec.marshalNString2string(ctx, field.Selections, res)
+	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_Task_stashScanHint(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -20644,14 +20590,11 @@ func (ec *executionContext) _Task_error(ctx context.Context, field graphql.Colle
 		return graphql.Null
 	}
 	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
 		return graphql.Null
 	}
-	res := resTmp.(string)
+	res := resTmp.(*string)
 	fc.Result = res
-	return ec.marshalNString2string(ctx, field.Selections, res)
+	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_Task_error(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -28255,29 +28198,14 @@ func (ec *executionContext) _Task(ctx context.Context, sel ast.SelectionSet, obj
 			}
 		case "savePath":
 			out.Values[i] = ec._Task_savePath(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
 		case "category":
 			out.Values[i] = ec._Task_category(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
 		case "tags":
 			out.Values[i] = ec._Task_tags(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
 		case "torrentHash":
 			out.Values[i] = ec._Task_torrentHash(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
 		case "torrentName":
 			out.Values[i] = ec._Task_torrentName(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
 		case "progress":
 			out.Values[i] = ec._Task_progress(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
@@ -28285,78 +28213,36 @@ func (ec *executionContext) _Task(ctx context.Context, sel ast.SelectionSet, obj
 			}
 		case "qbittorrentState":
 			out.Values[i] = ec._Task_qbittorrentState(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
 		case "contentPath":
 			out.Values[i] = ec._Task_contentPath(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
 		case "completedAt":
 			out.Values[i] = ec._Task_completedAt(ctx, field, obj)
 		case "stashMode":
 			out.Values[i] = ec._Task_stashMode(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
 		case "stashSourcePath":
 			out.Values[i] = ec._Task_stashSourcePath(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
 		case "stashTransferAction":
 			out.Values[i] = ec._Task_stashTransferAction(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
 		case "stashTransferPath":
 			out.Values[i] = ec._Task_stashTransferPath(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
 		case "stashTransferStatus":
 			out.Values[i] = ec._Task_stashTransferStatus(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
 		case "stashTransferError":
 			out.Values[i] = ec._Task_stashTransferError(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
 		case "stashJobId":
 			out.Values[i] = ec._Task_stashJobId(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
 		case "stashScanPath":
 			out.Values[i] = ec._Task_stashScanPath(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
 		case "stashScanStatus":
 			out.Values[i] = ec._Task_stashScanStatus(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
 		case "stashScanError":
 			out.Values[i] = ec._Task_stashScanError(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
 		case "stashScanHint":
 			out.Values[i] = ec._Task_stashScanHint(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
 		case "stashScanStartedAt":
 			out.Values[i] = ec._Task_stashScanStartedAt(ctx, field, obj)
 		case "error":
 			out.Values[i] = ec._Task_error(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
 		case "createdAt":
 			out.Values[i] = ec._Task_createdAt(ctx, field, obj)
 			if out.Values[i] == graphql.Null {

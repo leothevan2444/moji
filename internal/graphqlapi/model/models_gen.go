@@ -543,28 +543,28 @@ type Task struct {
 	Status              string             `json:"status"`
 	Candidate           *DownloadCandidate `json:"candidate"`
 	TorrentURL          string             `json:"torrentUrl"`
-	SavePath            string             `json:"savePath"`
-	Category            string             `json:"category"`
-	Tags                string             `json:"tags"`
-	TorrentHash         string             `json:"torrentHash"`
-	TorrentName         string             `json:"torrentName"`
+	SavePath            *string            `json:"savePath,omitempty"`
+	Category            *string            `json:"category,omitempty"`
+	Tags                *string            `json:"tags,omitempty"`
+	TorrentHash         *string            `json:"torrentHash,omitempty"`
+	TorrentName         *string            `json:"torrentName,omitempty"`
 	Progress            float64            `json:"progress"`
-	QbittorrentState    string             `json:"qbittorrentState"`
-	ContentPath         string             `json:"contentPath"`
+	QbittorrentState    *string            `json:"qbittorrentState,omitempty"`
+	ContentPath         *string            `json:"contentPath,omitempty"`
 	CompletedAt         *string            `json:"completedAt,omitempty"`
-	StashMode           string             `json:"stashMode"`
-	StashSourcePath     string             `json:"stashSourcePath"`
-	StashTransferAction string             `json:"stashTransferAction"`
-	StashTransferPath   string             `json:"stashTransferPath"`
-	StashTransferStatus string             `json:"stashTransferStatus"`
-	StashTransferError  string             `json:"stashTransferError"`
-	StashJobID          string             `json:"stashJobId"`
-	StashScanPath       string             `json:"stashScanPath"`
-	StashScanStatus     string             `json:"stashScanStatus"`
-	StashScanError      string             `json:"stashScanError"`
-	StashScanHint       string             `json:"stashScanHint"`
+	StashMode           *string            `json:"stashMode,omitempty"`
+	StashSourcePath     *string            `json:"stashSourcePath,omitempty"`
+	StashTransferAction *string            `json:"stashTransferAction,omitempty"`
+	StashTransferPath   *string            `json:"stashTransferPath,omitempty"`
+	StashTransferStatus *string            `json:"stashTransferStatus,omitempty"`
+	StashTransferError  *string            `json:"stashTransferError,omitempty"`
+	StashJobID          *string            `json:"stashJobId,omitempty"`
+	StashScanPath       *string            `json:"stashScanPath,omitempty"`
+	StashScanStatus     *string            `json:"stashScanStatus,omitempty"`
+	StashScanError      *string            `json:"stashScanError,omitempty"`
+	StashScanHint       *string            `json:"stashScanHint,omitempty"`
 	StashScanStartedAt  *string            `json:"stashScanStartedAt,omitempty"`
-	Error               string             `json:"error"`
+	Error               *string            `json:"error,omitempty"`
 	CreatedAt           string             `json:"createdAt"`
 	UpdatedAt           string             `json:"updatedAt"`
 }

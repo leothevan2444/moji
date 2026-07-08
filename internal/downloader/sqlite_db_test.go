@@ -93,8 +93,8 @@ INSERT INTO task_store_meta (key, value) VALUES ('schema_version', '1');
 	if err != nil {
 		t.Fatalf("read schema version: %v", err)
 	}
-	if version != "3" {
-		t.Fatalf("expected schema version 3, got %q", version)
+	if version != "4" {
+		t.Fatalf("expected schema version 4, got %q", version)
 	}
 }
 
@@ -110,8 +110,8 @@ func TestOpenSQLiteDatabaseInitializesNewSchemaVersion(t *testing.T) {
 	if err != nil {
 		t.Fatalf("read schema version: %v", err)
 	}
-	if version != "3" {
-		t.Fatalf("expected schema version 3, got %q", version)
+	if version != "4" {
+		t.Fatalf("expected schema version 4, got %q", version)
 	}
 
 	if _, err := os.Stat(path); err != nil {
@@ -167,5 +167,197 @@ func TestSQLiteTaskStoreRejectsDuplicateBusinessKeys(t *testing.T) {
 	})
 	if !errors.Is(err, ErrDuplicateTorrentTask) {
 		t.Fatalf("expected duplicate torrent error, got %v", err)
+	}
+}
+
+func TestOpenSQLiteDatabaseConvertsEmptyStringsToNull(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "nullable-migration.db")
+
+	db, err := sql.Open("sqlite", path)
+	if err != nil {
+		t.Fatalf("open sqlite: %v", err)
+	}
+	t.Cleanup(func() { _ = db.Close() })
+
+	legacySchema := `
+CREATE TABLE task_store_meta (
+  key TEXT PRIMARY KEY,
+  value TEXT NOT NULL
+) STRICT;
+CREATE TABLE tasks (
+  id TEXT PRIMARY KEY,
+  source TEXT NOT NULL DEFAULT 'MANUAL',
+  query TEXT NOT NULL,
+  code TEXT NOT NULL DEFAULT '',
+  status TEXT NOT NULL,
+  torrent_url TEXT NOT NULL DEFAULT '',
+  save_path TEXT NOT NULL DEFAULT '',
+  category TEXT NOT NULL DEFAULT '',
+  tags TEXT NOT NULL DEFAULT '',
+  torrent_identity_hash TEXT NOT NULL DEFAULT '',
+  torrent_identity_magnet TEXT NOT NULL DEFAULT '',
+  torrent_hash TEXT NOT NULL DEFAULT '',
+  torrent_name TEXT NOT NULL DEFAULT '',
+  progress REAL NOT NULL DEFAULT 0,
+  qbittorrent_state TEXT NOT NULL DEFAULT '',
+  content_path TEXT NOT NULL DEFAULT '',
+  completed_at TEXT,
+  stash_mode TEXT NOT NULL DEFAULT '',
+  stash_source_path TEXT NOT NULL DEFAULT '',
+  stash_transfer_action TEXT NOT NULL DEFAULT '',
+  stash_transfer_path TEXT NOT NULL DEFAULT '',
+  stash_transfer_status TEXT NOT NULL DEFAULT '',
+  stash_transfer_error TEXT NOT NULL DEFAULT '',
+  stash_job_id TEXT NOT NULL DEFAULT '',
+  stash_scan_path TEXT NOT NULL DEFAULT '',
+  stash_scan_status TEXT NOT NULL DEFAULT '',
+  stash_scan_error TEXT NOT NULL DEFAULT '',
+  stash_scan_hint TEXT NOT NULL DEFAULT '',
+  stash_scan_started_at TEXT,
+  error TEXT NOT NULL DEFAULT '',
+  candidate_title TEXT NOT NULL DEFAULT '',
+  candidate_tracker TEXT NOT NULL DEFAULT '',
+  candidate_info_hash TEXT NOT NULL DEFAULT '',
+  candidate_link TEXT NOT NULL DEFAULT '',
+  candidate_magnet_uri TEXT NOT NULL DEFAULT '',
+  candidate_size INTEGER NOT NULL DEFAULT 0,
+  candidate_seeders INTEGER NOT NULL DEFAULT 0,
+  candidate_peers INTEGER NOT NULL DEFAULT 0,
+  created_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL
+) STRICT;
+CREATE TABLE subscription_performer_state (
+  performer_id TEXT PRIMARY KEY,
+  last_checked_at TEXT,
+  last_error TEXT NOT NULL DEFAULT '',
+  created_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL
+) STRICT;
+CREATE TABLE subscription_release_entities (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  release_key TEXT NOT NULL,
+  status TEXT NOT NULL DEFAULT 'pending',
+  source TEXT NOT NULL DEFAULT '',
+  title TEXT NOT NULL DEFAULT '',
+  code TEXT NOT NULL DEFAULT '',
+  release_date TEXT NOT NULL DEFAULT '',
+  url TEXT NOT NULL DEFAULT '',
+  query TEXT NOT NULL DEFAULT '',
+  task_id TEXT NOT NULL DEFAULT '',
+  performer_count INTEGER NOT NULL DEFAULT 0,
+  performer_names TEXT NOT NULL DEFAULT '[]',
+  classification TEXT NOT NULL DEFAULT 'UNKNOWN',
+  decision TEXT NOT NULL DEFAULT 'QUEUED',
+  decision_reason TEXT NOT NULL DEFAULT '',
+  last_error TEXT NOT NULL DEFAULT '',
+  seen_at TEXT NOT NULL,
+  created_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL
+) STRICT;
+CREATE TABLE subscription_performer_releases (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  performer_id TEXT NOT NULL,
+  release_id INTEGER NOT NULL,
+  linked_at TEXT NOT NULL,
+  created_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL
+) STRICT;
+INSERT INTO task_store_meta (key, value) VALUES ('schema_version', '3');
+`
+	if _, err := db.Exec(legacySchema); err != nil {
+		t.Fatalf("create legacy schema: %v", err)
+	}
+
+	now := time.Unix(200, 0).UTC().Format(time.RFC3339Nano)
+	if _, err := db.Exec(`
+INSERT INTO tasks (
+  id, source, query, code, status, torrent_url, save_path, category, tags,
+  torrent_identity_hash, torrent_identity_magnet, torrent_hash, torrent_name, progress,
+  qbittorrent_state, content_path, stash_mode, stash_source_path, stash_transfer_action,
+  stash_transfer_path, stash_transfer_status, stash_transfer_error, stash_job_id, stash_scan_path,
+  stash_scan_status, stash_scan_error, stash_scan_hint, error, created_at, updated_at
+) VALUES (?, 'SEARCH', ?, ?, 'pending', ?, '', '', '', '', '', '', '', 0, '', '', '', '', '', '', '', '', '', '', '', '', '', '', ?, ?)`,
+		"task-nullable",
+		"ABCD-123",
+		"ABCD-123",
+		"magnet:?xt=urn:btih:null-task",
+		now,
+		now,
+	); err != nil {
+		t.Fatalf("insert legacy task: %v", err)
+	}
+	if _, err := db.Exec(`
+INSERT INTO subscription_performer_state (performer_id, last_checked_at, last_error, created_at, updated_at)
+VALUES ('performer-1', NULL, '', ?, ?)`, now, now); err != nil {
+		t.Fatalf("insert legacy performer state: %v", err)
+	}
+	if _, err := db.Exec(`
+INSERT INTO subscription_release_entities (
+  release_key, status, source, title, code, release_date, url, query, task_id,
+  performer_count, performer_names, classification, decision, decision_reason, last_error, seen_at, created_at, updated_at
+) VALUES ('release-1', 'pending', 'stash-box:test', 'Title', 'ABCD-123', '', '', 'ABCD-123', '', 1, '[]', 'UNKNOWN', 'QUEUED', '', '', ?, ?, ?)`,
+		now, now, now,
+	); err != nil {
+		t.Fatalf("insert legacy release entity: %v", err)
+	}
+
+	_ = db.Close()
+
+	opened, err := OpenSQLiteDatabase(path)
+	if err != nil {
+		t.Fatalf("migrate sqlite db: %v", err)
+	}
+	defer opened.Close()
+
+	var (
+		savePath  sql.NullString
+		taskID    sql.NullString
+		lastError sql.NullString
+	)
+	if err := opened.QueryRow(`SELECT save_path FROM tasks WHERE id = ?`, "task-nullable").Scan(&savePath); err != nil {
+		t.Fatalf("read migrated task: %v", err)
+	}
+	if savePath.Valid {
+		t.Fatalf("expected migrated save_path to be NULL, got %q", savePath.String)
+	}
+	if err := opened.QueryRow(`SELECT task_id FROM subscription_release_entities WHERE release_key = ?`, "release-1").Scan(&taskID); err != nil {
+		t.Fatalf("read migrated release entity: %v", err)
+	}
+	if taskID.Valid {
+		t.Fatalf("expected migrated task_id to be NULL, got %q", taskID.String)
+	}
+	if err := opened.QueryRow(`SELECT last_error FROM subscription_performer_state WHERE performer_id = ?`, "performer-1").Scan(&lastError); err != nil {
+		t.Fatalf("read migrated performer state: %v", err)
+	}
+	if lastError.Valid {
+		t.Fatalf("expected migrated last_error to be NULL, got %q", lastError.String)
+	}
+}
+
+func TestSubscriptionPerformerReleasesUsesCompositePrimaryKey(t *testing.T) {
+	db, err := OpenSQLiteDatabase(filepath.Join(t.TempDir(), "subscription-links.db"))
+	if err != nil {
+		t.Fatalf("open sqlite db: %v", err)
+	}
+	defer db.Close()
+
+	now := time.Unix(300, 0).UTC().Format(time.RFC3339Nano)
+	if _, err := db.Exec(`INSERT INTO subscription_performer_state (performer_id, created_at, updated_at) VALUES (?, ?, ?)`, "performer-1", now, now); err != nil {
+		t.Fatalf("insert performer state: %v", err)
+	}
+	if _, err := db.Exec(`
+INSERT INTO subscription_release_entities (
+  release_key, status, source, title, code, query, performer_count, performer_names, classification, decision, decision_reason, seen_at, created_at, updated_at
+) VALUES (?, 'pending', 'stash-box:test', 'Title', 'ABCD-123', 'ABCD-123', 1, '[]', 'UNKNOWN', 'QUEUED', '', ?, ?, ?)`,
+		"release-1", now, now, now,
+	); err != nil {
+		t.Fatalf("insert release entity: %v", err)
+	}
+
+	if _, err := db.Exec(`INSERT INTO subscription_performer_releases (performer_id, release_id, linked_at) VALUES ('performer-1', 1, ?)`, now); err != nil {
+		t.Fatalf("insert first performer release link: %v", err)
+	}
+	if _, err := db.Exec(`INSERT INTO subscription_performer_releases (performer_id, release_id, linked_at) VALUES ('performer-1', 1, ?)`, now); err == nil {
+		t.Fatal("expected duplicate composite key insert to fail")
 	}
 }
