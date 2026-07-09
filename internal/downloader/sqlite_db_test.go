@@ -10,7 +10,7 @@ import (
 	"time"
 )
 
-func TestOpenSQLiteDatabaseMigratesExistingTasksTable(t *testing.T) {
+func TestOpenSQLiteDatabaseResetsLegacyTasksTableToNewSchema(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "moji.db")
 
 	db, err := sql.Open("sqlite", path)
@@ -69,12 +69,11 @@ INSERT INTO task_store_meta (key, value) VALUES ('schema_version', '1');
 
 	for _, column := range []string{
 		"code",
-		"stash_mode",
-		"stash_source_path",
-		"stash_transfer_action",
-		"stash_transfer_path",
-		"stash_transfer_status",
-		"stash_transfer_error",
+		"delivery_mode",
+		"moji_source_path",
+		"transfer_action",
+		"moji_transfer_path",
+		"transfer_error",
 		"stash_scan_path",
 		"stash_scan_hint",
 		"torrent_identity_hash",
@@ -93,8 +92,8 @@ INSERT INTO task_store_meta (key, value) VALUES ('schema_version', '1');
 	if err != nil {
 		t.Fatalf("read schema version: %v", err)
 	}
-	if version != "4" {
-		t.Fatalf("expected schema version 4, got %q", version)
+	if version != "6" {
+		t.Fatalf("expected schema version 6, got %q", version)
 	}
 }
 
@@ -110,8 +109,8 @@ func TestOpenSQLiteDatabaseInitializesNewSchemaVersion(t *testing.T) {
 	if err != nil {
 		t.Fatalf("read schema version: %v", err)
 	}
-	if version != "4" {
-		t.Fatalf("expected schema version 4, got %q", version)
+	if version != "6" {
+		t.Fatalf("expected schema version 6, got %q", version)
 	}
 
 	if _, err := os.Stat(path); err != nil {
@@ -170,7 +169,7 @@ func TestSQLiteTaskStoreRejectsDuplicateBusinessKeys(t *testing.T) {
 	}
 }
 
-func TestOpenSQLiteDatabaseConvertsEmptyStringsToNull(t *testing.T) {
+func TestOpenSQLiteDatabaseResetsLegacyRowsOnSchemaMismatch(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "nullable-migration.db")
 
 	db, err := sql.Open("sqlite", path)
@@ -309,28 +308,19 @@ INSERT INTO subscription_release_entities (
 	}
 	defer opened.Close()
 
-	var (
-		savePath  sql.NullString
-		taskID    sql.NullString
-		lastError sql.NullString
-	)
-	if err := opened.QueryRow(`SELECT save_path FROM tasks WHERE id = ?`, "task-nullable").Scan(&savePath); err != nil {
-		t.Fatalf("read migrated task: %v", err)
+	var taskCount int
+	if err := opened.QueryRow(`SELECT COUNT(*) FROM tasks`).Scan(&taskCount); err != nil {
+		t.Fatalf("count tasks after reset: %v", err)
 	}
-	if savePath.Valid {
-		t.Fatalf("expected migrated save_path to be NULL, got %q", savePath.String)
+	if taskCount != 0 {
+		t.Fatalf("expected legacy tasks to be dropped during schema reset, got %d", taskCount)
 	}
-	if err := opened.QueryRow(`SELECT task_id FROM subscription_release_entities WHERE release_key = ?`, "release-1").Scan(&taskID); err != nil {
-		t.Fatalf("read migrated release entity: %v", err)
+	var releaseCount int
+	if err := opened.QueryRow(`SELECT COUNT(*) FROM subscription_release_entities`).Scan(&releaseCount); err != nil {
+		t.Fatalf("count subscription releases after reset: %v", err)
 	}
-	if taskID.Valid {
-		t.Fatalf("expected migrated task_id to be NULL, got %q", taskID.String)
-	}
-	if err := opened.QueryRow(`SELECT last_error FROM subscription_performer_state WHERE performer_id = ?`, "performer-1").Scan(&lastError); err != nil {
-		t.Fatalf("read migrated performer state: %v", err)
-	}
-	if lastError.Valid {
-		t.Fatalf("expected migrated last_error to be NULL, got %q", lastError.String)
+	if releaseCount != 0 {
+		t.Fatalf("expected legacy subscription releases to be dropped during schema reset, got %d", releaseCount)
 	}
 }
 

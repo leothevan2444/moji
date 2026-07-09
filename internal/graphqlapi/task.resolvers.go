@@ -136,6 +136,18 @@ func (r *mutationResolver) TriggerStashScans(ctx context.Context) ([]*model.Task
 	return out, nil
 }
 
+// RetryTask is the resolver for the retryTask field.
+func (r *mutationResolver) RetryTask(ctx context.Context, id string) (*model.Task, error) {
+	if r.Downloader == nil {
+		return nil, errors.New("downloader is not configured")
+	}
+	task, err := r.Downloader.RetryTask(ctx, id, r.Stash)
+	if task != nil {
+		return taskToModel(task), err
+	}
+	return nil, err
+}
+
 // DeleteTask is the resolver for the deleteTask field.
 func (r *mutationResolver) DeleteTask(ctx context.Context, id string) (*model.Task, error) {
 	if r.Downloader == nil {

@@ -80,7 +80,7 @@ export function TaskDetail({
           </div>
           <div>
             <dt>完成时间</dt>
-            <dd>{formatDateTime(task.completedAt)}</dd>
+            <dd>{formatDateTime(task.downloadCompletedAt)}</dd>
           </div>
           <div>
             <dt>当前进度</dt>
@@ -206,39 +206,39 @@ export function TaskDetail({
           </div>
           <div>
             <dt>Stash job</dt>
-            <dd>{task.stashJobId || "—"}</dd>
+            <dd>{task.stashScanJobId || "—"}</dd>
           </div>
           <div>
             <dt>入库方式</dt>
-            <dd>{task.stashMode || "—"}</dd>
+            <dd>{task.deliveryMode || "—"}</dd>
           </div>
           <div>
             <dt>Moji 搬运源路径</dt>
-            <dd>{task.stashSourcePath || "—"}</dd>
+            <dd>{task.mojiSourcePath || "—"}</dd>
           </div>
           <div>
             <dt>交付动作</dt>
-            <dd>{task.stashTransferAction || "—"}</dd>
+            <dd>{task.transferAction || "—"}</dd>
           </div>
           <div>
             <dt>Moji 交付目标路径</dt>
-            <dd>{task.stashTransferPath || "—"}</dd>
+            <dd>{task.mojiTransferPath || "—"}</dd>
           </div>
           <div>
-            <dt>交付状态</dt>
-            <dd>{task.stashTransferStatus || "未开始"}</dd>
+            <dt>交付结果</dt>
+            <dd>{task.stage === "TRANSFERRING" ? task.stageStatusLabel : (task.mojiTransferPath ? "已完成" : "未触发")}</dd>
           </div>
           <div>
             <dt>交付错误</dt>
-            <dd>{task.stashTransferError || "—"}</dd>
+            <dd>{task.transferError || "—"}</dd>
           </div>
           <div>
             <dt>Stash 扫描路径</dt>
             <dd>{task.stashScanPath || "—"}</dd>
           </div>
           <div>
-            <dt>扫描状态</dt>
-            <dd>{task.stashScanStatus || "未开始"}</dd>
+            <dt>扫描阶段</dt>
+            <dd>{task.stage === "SCANNING" || task.stage === "COMPLETED" ? task.stageStatusLabel : "未开始"}</dd>
           </div>
           <div>
             <dt>扫描提示</dt>

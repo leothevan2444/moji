@@ -35,6 +35,7 @@ type DownloaderService interface {
 	FindTask(ctx context.Context, id string) (*downloader.Task, error)
 	ListTasks(ctx context.Context) ([]*downloader.Task, error)
 	DeleteTask(ctx context.Context, id string) (*downloader.Task, error)
+	RetryTask(ctx context.Context, id string, scanner downloader.StashScanner) (*downloader.Task, error)
 	SyncProgress(ctx context.Context) ([]*downloader.Task, error)
 	TriggerTaskStashScan(ctx context.Context, id string, scanner downloader.StashScanner) (*downloader.Task, error)
 	TriggerStashScans(ctx context.Context, scanner downloader.StashScanner) ([]*downloader.Task, error)

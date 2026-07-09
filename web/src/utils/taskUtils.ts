@@ -47,27 +47,46 @@ export type TaskPresentation = {
  */
 export type TaskCardState = "error" | "pending" | "progress" | "completed";
 
+const TASK_STAGE_SEQUENCE = [
+  "sourcing",
+  "downloading",
+  "pending_ingest",
+  "transferring",
+  "scanning",
+  "completed"
+] as const;
+
+type TaskStageKey = typeof TASK_STAGE_SEQUENCE[number];
+
 // ── Simple helpers ──────────────────────────────────────────────────
 
 export function normalizeStatus(value?: string | null) {
   return (value ?? "").trim().toLowerCase();
 }
 
+export function stageValue(task: DashboardTask) {
+  return normalizeStatus(task.stage);
+}
+
+export function stageStatusValue(task: DashboardTask) {
+  return normalizeStatus(task.stageStatus);
+}
+
 export function isStatus(task: DashboardTask, ...values: string[]) {
-  const status = normalizeStatus(task.status);
+  const status = stageValue(task);
   return values.some((value) => status === value || status.includes(value));
 }
 
 export function isTaskActive(task: DashboardTask) {
-  return !isStatus(task, "completed", "failed", "cancelled", "canceled", "paused")
-    || normalizeStatus(task.stashTransferStatus || "") === "started"
-    || normalizeStatus(task.stashScanStatus || "") === "started";
+  if (stageStatusValue(task) === "blocked" || stageValue(task) === "completed") return false;
+  return ["sourcing", "downloading", "transferring", "scanning"].includes(stageValue(task))
+    || Boolean(task.stashScanJobId);
 }
 
 export function isScanPending(task: DashboardTask) {
-  const status = normalizeStatus(task.stashScanStatus);
-  if (!status) return false;
-  return !["completed", "done", "failed", "skipped", "idle"].includes(status);
+  return stageValue(task) === "pending_ingest"
+    || (stageValue(task) === "scanning" && stageStatusValue(task) === "pending")
+    || stageValue(task) === "transferring";
 }
 
 export function isMagnetLink(value?: string | null) {
@@ -99,7 +118,7 @@ export function taskSourceLabel(source: string) {
 // ── Task grouping ───────────────────────────────────────────────────
 
 export function taskGroup(task: DashboardTask): TaskGroupKey {
-  if (isStatus(task, "failed") || task.stashScanError) return "需处理";
+  if (stageStatusValue(task) === "blocked") return "需处理";
   if (isTaskActive(task)) return "运行中";
   if (isScanPending(task)) return "待入库";
   return "已完成";
@@ -122,9 +141,7 @@ export function taskGroupDescription(group: TaskGroupKey) {
 // ── Task actions ────────────────────────────────────────────────────
 
 export function canTriggerTaskStashScan(task: DashboardTask) {
-  return normalizeStatus(task.status) === "completed"
-    && normalizeStatus(task.stashScanStatus) !== "started"
-    && normalizeStatus(task.stashTransferStatus) !== "started";
+  return stageValue(task) === "pending_ingest" && !task.stashScanJobId;
 }
 
 // ── Task presentation helpers ───────────────────────────────────────
@@ -134,11 +151,9 @@ function simplifyMessage(message: string) {
 }
 
 export function taskFailureSummary(task: DashboardTask): TaskFailureSummary {
-  const transferError = simplifyMessage(task.stashTransferError || "");
+  const transferError = simplifyMessage(task.transferError || "");
   const stashError = simplifyMessage(task.stashScanError || "");
-  const taskError = simplifyMessage(task.error || "");
-  const status = normalizeStatus(task.status);
-  const scanStatus = normalizeStatus(task.stashScanStatus || "");
+  const taskError = simplifyMessage(task.stageErrorMessage || "");
   const qbtState = normalizeStatus(task.qbittorrentState || "");
 
   const transferFailure = describeTransferFailure(transferError);
@@ -150,18 +165,18 @@ export function taskFailureSummary(task: DashboardTask): TaskFailureSummary {
   const taskFailure = describeTaskFailure(taskError);
   if (taskFailure) return taskFailure;
 
-  if (status.includes("failed")) {
+  if (stageStatusValue(task) === "blocked") {
     return {
-      title: "任务状态失败",
-      detail: task.status || "任务被标记为失败，但没有更多错误上下文。",
+      title: "当前阶段受阻",
+      detail: task.stageErrorMessage || "任务被阻塞，但没有更多错误上下文。",
       tone: "tone-danger"
     };
   }
 
-  if (scanStatus) {
+  if (task.stashScanJobId || task.stashScanStartedAt) {
     return {
       title: "等待扫描收口",
-      detail: task.stashScanHint || task.stashScanStatus || "下载已完成，等待 Stash 扫描继续推进。",
+      detail: task.stashScanHint || "下载已完成，等待 Stash 扫描继续推进。",
       tone: "tone-warn"
     };
   }
@@ -307,39 +322,32 @@ function describeTaskFailure(taskError: string): TaskFailureSummary | null {
 }
 
 export function taskProgressPercent(task: DashboardTask) {
-  if (isStatus(task, "completed")) return 100;
+  if (stageValue(task) === "completed") return 100;
   return Math.max(0, Math.min(100, Math.round(task.progress * 100)));
 }
 
 export function taskPrimaryState(task: DashboardTask): Pick<TaskPresentation, "phase" | "label" | "tone"> {
-  if (task.stashScanError || task.error || isStatus(task, "failed")) {
-    if (task.stashScanError) {
-      return { phase: "failed", label: "扫描失败", tone: "tone-danger" as const };
-    }
-    if (task.error) {
-      return { phase: "failed", label: "下载失败", tone: "tone-danger" as const };
-    }
-    return { phase: "failed", label: "任务失败", tone: "tone-danger" as const };
+  if (stageStatusValue(task) === "blocked") {
+    return { phase: "failed", label: `${task.stageLabel}受阻`, tone: "tone-danger" as const };
   }
 
-  const transferStatus = normalizeStatus(task.stashTransferStatus || "");
-  if (transferStatus === "started") {
+  if (stageValue(task) === "transferring") {
     return { phase: "transferRunning", label: "搬运中", tone: "tone-info" as const };
   }
 
-  const scanStatus = normalizeStatus(task.stashScanStatus || "");
-  if (scanStatus === "started") {
+  if (stageValue(task) === "scanning" && stageStatusValue(task) === "running") {
     return { phase: "scanRunning", label: "扫描中", tone: "tone-info" as const };
   }
 
-  if (isStatus(task, "completed")) {
-    if (scanStatus || task.stashJobId) {
-      return { phase: "scanPending", label: "待扫描", tone: "tone-warn" as const };
-    }
+  if (stageValue(task) === "pending_ingest" || (stageValue(task) === "scanning" && stageStatusValue(task) === "pending")) {
+    return { phase: "scanPending", label: "待入库", tone: "tone-warn" as const };
+  }
+
+  if (stageValue(task) === "completed") {
     return { phase: "completed", label: "已完成", tone: "tone-success" as const };
   }
 
-  if (task.qbittorrentState || isTaskActive(task)) {
+  if (stageValue(task) === "downloading" || isTaskActive(task)) {
     return { phase: "downloading", label: "下载中", tone: "tone-info" as const };
   }
 
@@ -354,79 +362,151 @@ export function taskMetaLine(task: DashboardTask) {
   if (task.category) {
     parts.push(task.category);
   }
-  if (task.stashMode) {
-    parts.push(deliveryModeLabel(task.stashMode));
+  if (task.deliveryMode) {
+    parts.push(deliveryModeLabel(task.deliveryMode));
   }
   return parts.filter(Boolean).join(" · ");
 }
 
-export function taskLifecycle(task: DashboardTask, failure: TaskFailureSummary): TaskLifecycleStep[] {
-  const primary = taskPrimaryState(task);
-  const progress = taskProgressPercent(task);
-  const hasCompletedDownload = isStatus(task, "completed");
-  const transferStarted = normalizeStatus(task.stashTransferStatus || "") === "started";
-  const transferCompleted = normalizeStatus(task.stashTransferStatus || "") === "completed";
-  const hasTransferFailure = Boolean(task.stashTransferError);
-  const scanStarted = normalizeStatus(task.stashScanStatus || "") === "started";
-  const hasScanFailure = Boolean(task.stashScanError);
-  const hasFailure = Boolean(task.error) || isStatus(task, "failed");
+function taskStageIndex(task: DashboardTask) {
+  const index = TASK_STAGE_SEQUENCE.indexOf(stageValue(task) as TaskStageKey);
+  return index >= 0 ? index : 0;
+}
 
-  return [
-    {
-      key: "created",
-      label: "已创建",
-      detail: "Moji 已记录任务并等待后续处理。",
-      state: "done",
-      tone: "tone-success",
-      time: task.createdAt
-    },
-    {
-      key: "download",
-      label: hasCompletedDownload ? "下载完成" : primary.phase === "failed" && hasFailure ? "下载失败" : "下载阶段",
-      detail: hasCompletedDownload
-        ? `内容已落地${task.contentPath ? `：${task.contentPath}` : "。"}`
-        : task.qbittorrentState
-          ? `${task.qbittorrentState} · ${progress}%`
-          : primary.phase === "queued"
-            ? "任务尚未进入下载器。"
-            : failure.detail,
-      state: primary.phase === "failed" && hasFailure ? "error" : hasCompletedDownload || primary.phase === "downloading" ? (hasCompletedDownload ? "done" : "current") : "upcoming",
-      tone: primary.phase === "failed" && hasFailure ? "tone-danger" : primary.phase === "downloading" ? "tone-info" : hasCompletedDownload ? "tone-success" : "tone-neutral",
-      time: hasCompletedDownload ? task.completedAt || task.updatedAt : task.updatedAt
-    },
-    {
-      key: "scan",
-      label: hasTransferFailure
-        ? "搬运失败"
-        : transferStarted
-          ? "搬运中"
-          : hasScanFailure
-            ? "扫描失败"
-            : scanStarted
-              ? "扫描中"
-              : hasCompletedDownload
-                ? "入库阶段"
-                : "等待扫描",
-      detail: hasTransferFailure
-        ? simplifyMessage(task.stashTransferError ?? "")
-        : transferStarted
-          ? `${transferActionLabel(task.stashTransferAction ?? "") || "交付"} -> ${task.stashTransferPath || "目标路径待定"}`
-          : hasScanFailure
-            ? simplifyMessage(task.stashScanError ?? "")
-        : scanStarted
-          ? `Stash job ${task.stashJobId || "已创建"} 正在运行。`
-          : transferCompleted
-            ? `文件已准备完成，扫描路径：${task.stashScanPath || task.stashTransferPath || "—"}`
-          : hasCompletedDownload
-            ? task.stashScanHint || task.stashJobId || task.stashScanStatus
-              ? "下载已完成，等待 Stash 收口。"
-              : "当前任务无需或尚未触发 Stash 扫描。"
-            : "下载完成后才会进入此阶段。",
-      state: hasTransferFailure || hasScanFailure ? "error" : transferStarted || scanStarted ? "current" : hasCompletedDownload ? "current" : "upcoming",
-      tone: hasTransferFailure || hasScanFailure ? "tone-danger" : transferStarted || scanStarted ? "tone-info" : hasCompletedDownload ? "tone-warn" : "tone-neutral",
-      time: task.updatedAt
+function lifecycleLabel(stage: TaskStageKey) {
+  if (stage === "sourcing") return "待选种";
+  if (stage === "downloading") return "下载中";
+  if (stage === "pending_ingest") return "待入库";
+  if (stage === "transferring") return "搬运中";
+  if (stage === "scanning") return "扫描中";
+  return "已完成";
+}
+
+function lifecycleTime(task: DashboardTask, stage: TaskStageKey) {
+  const currentIndex = taskStageIndex(task);
+  const stageIndex = TASK_STAGE_SEQUENCE.indexOf(stage);
+
+  if (stage === "sourcing") return task.createdAt;
+  if (stage === "downloading") {
+    return currentIndex >= stageIndex ? (task.downloadCompletedAt || task.updatedAt) : null;
+  }
+  if (stage === "pending_ingest") {
+    return currentIndex >= stageIndex ? (task.downloadCompletedAt || task.updatedAt) : null;
+  }
+  if (stage === "transferring") {
+    return currentIndex >= stageIndex ? task.updatedAt : null;
+  }
+  if (stage === "scanning") {
+    return task.stashScanStartedAt || (currentIndex >= stageIndex ? task.updatedAt : null);
+  }
+  return stageValue(task) === "completed" ? task.updatedAt : null;
+}
+
+function lifecycleDetail(task: DashboardTask, stage: TaskStageKey, failure: TaskFailureSummary, progress: number) {
+  const currentStage = stageValue(task);
+  const currentStatus = stageStatusValue(task);
+  const isCurrent = currentStage === stage;
+  const isBlocked = isCurrent && currentStatus === "blocked";
+
+  if (stage === "sourcing") {
+    if (isBlocked) return failure.detail;
+    if (isCurrent) return "Moji 已创建正式任务，正在搜索并筛选可用资源。";
+    return "等待创建正式任务后开始搜索资源。";
+  }
+
+  if (stage === "downloading") {
+    if (isBlocked) return failure.detail;
+    if (currentStage === "sourcing") return "选种完成并提交到 qBittorrent 后进入此阶段。";
+    if (isCurrent) {
+      return task.qbittorrentState
+        ? `${task.qbittorrentState} · ${progress}%`
+        : `已提交到 qBittorrent，当前进度 ${progress}%。`;
     }
-  ];
+    if (task.contentPath) return `内容已落地：${task.contentPath}`;
+    return "下载已完成。";
+  }
+
+  if (stage === "pending_ingest") {
+    if (isBlocked) return failure.detail;
+    if (currentStage === "sourcing" || currentStage === "downloading") return "qB 下载完成后，任务会进入待入库阶段。";
+    if (isCurrent) return task.stashScanHint || "下载已完成，等待开始入库处理。";
+    return task.stashScanHint || "下载已完成，已进入入库链路。";
+  }
+
+  if (stage === "transferring") {
+    if (task.deliveryMode === "PATH_MAP") {
+      return isCurrent ? "当前入库方式无需搬运文件，Moji 会直接进入扫描阶段。" : "当前入库方式无需搬运文件。";
+    }
+    if (isBlocked) return failure.detail;
+    if (currentStage === "sourcing" || currentStage === "downloading" || currentStage === "pending_ingest") {
+      return "需要搬运时，Moji 会在这里执行复制、移动或符号链接。";
+    }
+    if (isCurrent) {
+      return task.mojiTransferPath
+        ? `${transferActionLabel(task.transferAction ?? "") || "交付"} -> ${task.mojiTransferPath}`
+        : "Moji 正在准备搬运目标路径。";
+    }
+    if (task.mojiTransferPath) return `搬运已完成：${task.mojiTransferPath}`;
+    return "搬运已完成。";
+  }
+
+  if (stage === "scanning") {
+    if (isBlocked) return failure.detail;
+    if (currentStage === "sourcing" || currentStage === "downloading" || currentStage === "pending_ingest") {
+      return "入库准备完成后，Moji 会触发 Stash 扫描。";
+    }
+    if (isCurrent) {
+      return task.stashScanJobId
+        ? `Stash job ${task.stashScanJobId} 正在执行。`
+        : task.stashScanHint || "等待 Stash 接手当前扫描。";
+    }
+    if (task.stashScanPath) return `扫描路径：${task.stashScanPath}`;
+    return "扫描已完成。";
+  }
+
+  if (isCurrent && currentStatus === "done") return task.stashScanPath || task.contentPath || "任务已完成闭环。";
+  if (currentStage === "completed") return task.stashScanPath || task.contentPath || "任务已完成闭环。";
+  return "扫描完成并收口后，任务会进入最终完成态。";
+}
+
+export function taskLifecycle(task: DashboardTask, failure: TaskFailureSummary): TaskLifecycleStep[] {
+  const progress = taskProgressPercent(task);
+  const currentStage = stageValue(task);
+  const currentStatus = stageStatusValue(task);
+  const currentIndex = taskStageIndex(task);
+
+  return TASK_STAGE_SEQUENCE.map((stage) => {
+    const stageIndex = TASK_STAGE_SEQUENCE.indexOf(stage);
+    const isCurrent = currentStage === stage;
+
+    let state: TaskLifecycleState = "upcoming";
+    let tone: TaskLifecycleStep["tone"] = "tone-neutral";
+
+    if (stageIndex < currentIndex) {
+      state = "done";
+      tone = "tone-success";
+    } else if (isCurrent) {
+      if (currentStatus === "blocked") {
+        state = "error";
+        tone = "tone-danger";
+      } else if (stage === "completed" && currentStatus === "done") {
+        state = "done";
+        tone = "tone-success";
+      } else {
+        state = "current";
+        tone = stage === "pending_ingest" ? "tone-warn" : "tone-info";
+      }
+    }
+
+    return {
+      key: stage,
+      label: lifecycleLabel(stage),
+      detail: lifecycleDetail(task, stage, failure, progress),
+      state,
+      tone,
+      time: lifecycleTime(task, stage)
+    };
+  });
 }
 
 export function taskPresentation(task: DashboardTask): TaskPresentation {
@@ -442,13 +522,13 @@ export function taskPresentation(task: DashboardTask): TaskPresentation {
     detail = failure.detail;
   } else if (primary.phase === "transferRunning") {
     summary = "下载已完成，Moji 正在准备文件搬运。";
-    detail = task.stashTransferPath ? `${transferActionLabel(task.stashTransferAction ?? "") || "交付"} -> ${task.stashTransferPath}` : "正在准备交付目标路径。";
+    detail = task.mojiTransferPath ? `${transferActionLabel(task.transferAction ?? "") || "交付"} -> ${task.mojiTransferPath}` : "正在准备交付目标路径。";
   } else if (primary.phase === "scanRunning") {
     summary = "已完成下载，正在等待 Stash 收口。";
-    detail = task.stashJobId ? `Stash job ${task.stashJobId} 正在执行。` : "Stash 已接手当前任务。";
+    detail = task.stashScanJobId ? `Stash job ${task.stashScanJobId} 正在执行。` : "Stash 已接手当前任务。";
   } else if (primary.phase === "scanPending") {
     summary = "下载已结束，等待触发或完成 Stash 扫描。";
-    detail = task.stashScanHint || task.stashScanStatus || "当前尚未有扫描结果。";
+    detail = task.stashScanHint || task.stageLabel || "当前尚未有扫描结果。";
   } else if (primary.phase === "completed") {
     summary = "下载与入库链路已完成。";
     detail = task.stashScanPath || task.contentPath || "任务已闭环。";
@@ -456,8 +536,8 @@ export function taskPresentation(task: DashboardTask): TaskPresentation {
     summary = task.qbittorrentState ? `qBittorrent: ${task.qbittorrentState}` : "任务正在等待下载器推进。";
     detail = `当前进度 ${progress}%`;
   } else {
-    summary = "任务已创建，等待进入下载器。";
-    detail = "下一次同步后会补齐下载状态。";
+    summary = "任务已创建，正在搜寻资源。";
+    detail = task.stageLabel || "当前阶段等待继续推进。";
   }
 
   return {

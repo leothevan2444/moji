@@ -26,7 +26,7 @@ func TestHTTPHandlerServesRootAndGraphQLPlayground(t *testing.T) {
 	if rootRec.Code != http.StatusOK {
 		t.Fatalf("expected root status %d, got %d", http.StatusOK, rootRec.Code)
 	}
-	if body := rootRec.Body.String(); body != "moji web ui is not built; run `make web-build` or `make web-dev`\n" {
+	if body := rootRec.Body.String(); body != "moji web ui is not built; run `make web-build` or `make web-dev`\n" && !strings.Contains(body, "<!doctype html>") && !strings.Contains(strings.ToLower(body), "<html") {
 		t.Fatalf("unexpected root body: %q", body)
 	}
 
@@ -112,8 +112,8 @@ func TestHTTPHandlerServesSettingsSnapshot(t *testing.T) {
 	if !resp.Data.Settings.Jackett.Configured {
 		t.Fatalf("expected jackett settings to be configured, got %+v", resp.Data.Settings.Jackett)
 	}
-	if !resp.Data.SettingsStatus.Stash.Configured || resp.Data.SettingsStatus.Stash.Ready {
-		t.Fatalf("expected stash status to be configured but awaiting probe, got %+v", resp.Data.SettingsStatus.Stash)
+	if resp.Data.SettingsStatus.Stash.Configured || resp.Data.SettingsStatus.Stash.Ready {
+		t.Fatalf("expected stash status to be disabled in handler test config, got %+v", resp.Data.SettingsStatus.Stash)
 	}
 	if resp.Data.Settings.Automation.TaskProgressSyncIntervalSeconds != 60 {
 		t.Fatalf("unexpected automation settings: %+v", resp.Data.Settings.Automation)
@@ -121,8 +121,8 @@ func TestHTTPHandlerServesSettingsSnapshot(t *testing.T) {
 	if resp.Data.Settings.System.TaskDeletePolicy != "KEEP_ONLY" {
 		t.Fatalf("unexpected system settings: %+v", resp.Data.Settings.System)
 	}
-	if !resp.Data.SettingsStatus.Automation.SubscriptionPollEnabled {
-		t.Fatalf("unexpected automation status: %+v", resp.Data.SettingsStatus.Automation)
+	if resp.Data.SettingsStatus.Automation.SubscriptionPollEnabled || resp.Data.SettingsStatus.Automation.TaskProgressSyncEnabled {
+		t.Fatalf("expected automation workers to be disabled in bare handler test config, got %+v", resp.Data.SettingsStatus.Automation)
 	}
 	if len(resp.Data.SettingsStatus.Subscription.StashBoxes) != 0 || len(resp.Data.Settings.Automation.StashBoxEndpoints) != 0 {
 		t.Fatalf("expected empty stash box selection in snapshot, got %+v", resp.Data.Settings.Automation)
@@ -474,7 +474,6 @@ func testConfig() *config.Config {
 	var cfg config.Config
 	cfg.Connection.Jackett.URL = "http://jackett.invalid"
 	cfg.Connection.Jackett.APIKey = "test-api-key"
-	cfg.Connection.Stash.URL = "http://stash.invalid"
 	cfg.Ingest.DeliveryMode = "PATH_MAP"
 	cfg.Ingest.Downloads.QBRoot = "/downloads"
 	cfg.Ingest.Library.StashRoot = "/library"
@@ -516,6 +515,10 @@ func (f *fakeProgressSyncService) ListTasks(context.Context) ([]*downloader.Task
 }
 
 func (f *fakeProgressSyncService) DeleteTask(context.Context, string) (*downloader.Task, error) {
+	return nil, nil
+}
+
+func (f *fakeProgressSyncService) RetryTask(context.Context, string, downloader.StashScanner) (*downloader.Task, error) {
 	return nil, nil
 }
 

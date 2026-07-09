@@ -540,7 +540,12 @@ type Task struct {
 	Source              TaskSource         `json:"source"`
 	Query               string             `json:"query"`
 	Code                string             `json:"code"`
-	Status              string             `json:"status"`
+	Stage               TaskStage          `json:"stage"`
+	StageStatus         TaskStageStatus    `json:"stageStatus"`
+	StageLabel          string             `json:"stageLabel"`
+	StageStatusLabel    string             `json:"stageStatusLabel"`
+	StageErrorCode      *string            `json:"stageErrorCode,omitempty"`
+	StageErrorMessage   *string            `json:"stageErrorMessage,omitempty"`
 	Candidate           *DownloadCandidate `json:"candidate"`
 	TorrentURL          string             `json:"torrentUrl"`
 	SavePath            *string            `json:"savePath,omitempty"`
@@ -551,20 +556,17 @@ type Task struct {
 	Progress            float64            `json:"progress"`
 	QbittorrentState    *string            `json:"qbittorrentState,omitempty"`
 	ContentPath         *string            `json:"contentPath,omitempty"`
-	CompletedAt         *string            `json:"completedAt,omitempty"`
-	StashMode           *string            `json:"stashMode,omitempty"`
-	StashSourcePath     *string            `json:"stashSourcePath,omitempty"`
-	StashTransferAction *string            `json:"stashTransferAction,omitempty"`
-	StashTransferPath   *string            `json:"stashTransferPath,omitempty"`
-	StashTransferStatus *string            `json:"stashTransferStatus,omitempty"`
-	StashTransferError  *string            `json:"stashTransferError,omitempty"`
-	StashJobID          *string            `json:"stashJobId,omitempty"`
+	DownloadCompletedAt *string            `json:"downloadCompletedAt,omitempty"`
+	DeliveryMode        *string            `json:"deliveryMode,omitempty"`
+	MojiSourcePath      *string            `json:"mojiSourcePath,omitempty"`
+	TransferAction      *string            `json:"transferAction,omitempty"`
+	MojiTransferPath    *string            `json:"mojiTransferPath,omitempty"`
+	TransferError       *string            `json:"transferError,omitempty"`
+	StashScanJobID      *string            `json:"stashScanJobId,omitempty"`
 	StashScanPath       *string            `json:"stashScanPath,omitempty"`
-	StashScanStatus     *string            `json:"stashScanStatus,omitempty"`
 	StashScanError      *string            `json:"stashScanError,omitempty"`
 	StashScanHint       *string            `json:"stashScanHint,omitempty"`
 	StashScanStartedAt  *string            `json:"stashScanStartedAt,omitempty"`
-	Error               *string            `json:"error,omitempty"`
 	CreatedAt           string             `json:"createdAt"`
 	UpdatedAt           string             `json:"updatedAt"`
 }
@@ -1386,6 +1388,128 @@ func (e *TaskSource) UnmarshalJSON(b []byte) error {
 }
 
 func (e TaskSource) MarshalJSON() ([]byte, error) {
+	var buf bytes.Buffer
+	e.MarshalGQL(&buf)
+	return buf.Bytes(), nil
+}
+
+type TaskStage string
+
+const (
+	TaskStageSourcing      TaskStage = "SOURCING"
+	TaskStageDownloading   TaskStage = "DOWNLOADING"
+	TaskStagePendingIngest TaskStage = "PENDING_INGEST"
+	TaskStageTransferring  TaskStage = "TRANSFERRING"
+	TaskStageScanning      TaskStage = "SCANNING"
+	TaskStageCompleted     TaskStage = "COMPLETED"
+)
+
+var AllTaskStage = []TaskStage{
+	TaskStageSourcing,
+	TaskStageDownloading,
+	TaskStagePendingIngest,
+	TaskStageTransferring,
+	TaskStageScanning,
+	TaskStageCompleted,
+}
+
+func (e TaskStage) IsValid() bool {
+	switch e {
+	case TaskStageSourcing, TaskStageDownloading, TaskStagePendingIngest, TaskStageTransferring, TaskStageScanning, TaskStageCompleted:
+		return true
+	}
+	return false
+}
+
+func (e TaskStage) String() string {
+	return string(e)
+}
+
+func (e *TaskStage) UnmarshalGQL(v any) error {
+	str, ok := v.(string)
+	if !ok {
+		return fmt.Errorf("enums must be strings")
+	}
+
+	*e = TaskStage(str)
+	if !e.IsValid() {
+		return fmt.Errorf("%s is not a valid TaskStage", str)
+	}
+	return nil
+}
+
+func (e TaskStage) MarshalGQL(w io.Writer) {
+	fmt.Fprint(w, strconv.Quote(e.String()))
+}
+
+func (e *TaskStage) UnmarshalJSON(b []byte) error {
+	s, err := strconv.Unquote(string(b))
+	if err != nil {
+		return err
+	}
+	return e.UnmarshalGQL(s)
+}
+
+func (e TaskStage) MarshalJSON() ([]byte, error) {
+	var buf bytes.Buffer
+	e.MarshalGQL(&buf)
+	return buf.Bytes(), nil
+}
+
+type TaskStageStatus string
+
+const (
+	TaskStageStatusPending TaskStageStatus = "PENDING"
+	TaskStageStatusRunning TaskStageStatus = "RUNNING"
+	TaskStageStatusBlocked TaskStageStatus = "BLOCKED"
+	TaskStageStatusDone    TaskStageStatus = "DONE"
+)
+
+var AllTaskStageStatus = []TaskStageStatus{
+	TaskStageStatusPending,
+	TaskStageStatusRunning,
+	TaskStageStatusBlocked,
+	TaskStageStatusDone,
+}
+
+func (e TaskStageStatus) IsValid() bool {
+	switch e {
+	case TaskStageStatusPending, TaskStageStatusRunning, TaskStageStatusBlocked, TaskStageStatusDone:
+		return true
+	}
+	return false
+}
+
+func (e TaskStageStatus) String() string {
+	return string(e)
+}
+
+func (e *TaskStageStatus) UnmarshalGQL(v any) error {
+	str, ok := v.(string)
+	if !ok {
+		return fmt.Errorf("enums must be strings")
+	}
+
+	*e = TaskStageStatus(str)
+	if !e.IsValid() {
+		return fmt.Errorf("%s is not a valid TaskStageStatus", str)
+	}
+	return nil
+}
+
+func (e TaskStageStatus) MarshalGQL(w io.Writer) {
+	fmt.Fprint(w, strconv.Quote(e.String()))
+}
+
+func (e *TaskStageStatus) UnmarshalJSON(b []byte) error {
+	s, err := strconv.Unquote(string(b))
+	if err != nil {
+		return err
+	}
+	return e.UnmarshalGQL(s)
+}
+
+func (e TaskStageStatus) MarshalJSON() ([]byte, error) {
 	var buf bytes.Buffer
 	e.MarshalGQL(&buf)
 	return buf.Bytes(), nil

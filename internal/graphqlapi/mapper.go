@@ -139,6 +139,7 @@ func taskToModel(task *downloader.Task) *model.Task {
 	if task == nil {
 		return nil
 	}
+	task = downloaderTaskForView(task)
 	source := task.Source
 	if source == "" {
 		source = downloader.TaskSourceManual
@@ -149,7 +150,12 @@ func taskToModel(task *downloader.Task) *model.Task {
 		Source:              model.TaskSource(source),
 		Query:               task.Query,
 		Code:                task.Code,
-		Status:              string(task.Status),
+		Stage:               model.TaskStage(task.Stage),
+		StageStatus:         model.TaskStageStatus(task.StageStatus),
+		StageLabel:          task.StageLabel,
+		StageStatusLabel:    task.StageStatusLabel,
+		StageErrorCode:      nilIfEmpty(task.StageErrorCode),
+		StageErrorMessage:   nilIfEmpty(task.StageErrorMessage),
 		Candidate:           candidateToModel(task.Candidate),
 		TorrentURL:          task.TorrentURL,
 		SavePath:            nilIfEmpty(task.SavePath),
@@ -160,22 +166,99 @@ func taskToModel(task *downloader.Task) *model.Task {
 		Progress:            task.Progress,
 		QbittorrentState:    nilIfEmpty(task.QBittorrentState),
 		ContentPath:         nilIfEmpty(task.ContentPath),
-		CompletedAt:         formatOptionalTime(task.CompletedAt),
-		StashMode:           nilIfEmpty(task.StashMode),
-		StashSourcePath:     nilIfEmpty(task.StashSourcePath),
-		StashTransferAction: nilIfEmpty(task.StashTransferAction),
-		StashTransferPath:   nilIfEmpty(task.StashTransferPath),
-		StashTransferStatus: nilIfEmpty(task.StashTransferStatus),
-		StashTransferError:  nilIfEmpty(task.StashTransferError),
-		StashJobID:          nilIfEmpty(task.StashJobID),
+		DownloadCompletedAt: formatOptionalTime(task.DownloadCompletedAt),
+		DeliveryMode:        nilIfEmpty(task.DeliveryMode),
+		MojiSourcePath:      nilIfEmpty(task.MojiSourcePath),
+		TransferAction:      nilIfEmpty(task.TransferAction),
+		MojiTransferPath:    nilIfEmpty(task.MojiTransferPath),
+		TransferError:       nilIfEmpty(task.TransferError),
+		StashScanJobID:      nilIfEmpty(task.StashScanJobID),
 		StashScanPath:       nilIfEmpty(task.StashScanPath),
-		StashScanStatus:     nilIfEmpty(task.StashScanStatus),
 		StashScanError:      nilIfEmpty(task.StashScanError),
 		StashScanHint:       nilIfEmpty(task.StashScanHint),
 		StashScanStartedAt:  formatOptionalTime(task.StashScanStartedAt),
-		Error:               nilIfEmpty(task.Error),
 		CreatedAt:           formatTime(task.CreatedAt),
 		UpdatedAt:           formatTime(task.UpdatedAt),
+	}
+}
+
+func downloaderTaskForView(task *downloader.Task) *downloader.Task {
+	if task == nil {
+		return nil
+	}
+	cp := *task
+	refreshTaskLike(&cp)
+	return &cp
+}
+
+func refreshTaskLike(task *downloader.Task) {
+	if task == nil {
+		return
+	}
+	if task.Stage == "" && task.Status != "" {
+		switch task.Status {
+		case downloader.TaskStatusPending:
+			task.Stage = downloader.TaskStageSourcing
+			task.StageStatus = downloader.TaskStageStatusRunning
+		case downloader.TaskStatusAdded, downloader.TaskStatusDownloading:
+			task.Stage = downloader.TaskStageDownloading
+			task.StageStatus = downloader.TaskStageStatusRunning
+		case downloader.TaskStatusCompleted:
+			task.Stage = downloader.TaskStagePendingIngest
+			task.StageStatus = downloader.TaskStageStatusPending
+		case downloader.TaskStatusFailed:
+			task.Stage = downloader.TaskStageDownloading
+			task.StageStatus = downloader.TaskStageStatusBlocked
+		}
+	}
+	if task.StageLabel == "" {
+		switch task.Stage {
+		case downloader.TaskStageSourcing:
+			task.StageLabel = "待选种"
+		case downloader.TaskStageDownloading:
+			task.StageLabel = "下载中"
+		case downloader.TaskStagePendingIngest:
+			task.StageLabel = "待入库"
+		case downloader.TaskStageTransferring:
+			task.StageLabel = "搬运中"
+		case downloader.TaskStageScanning:
+			task.StageLabel = "扫描中"
+		case downloader.TaskStageCompleted:
+			task.StageLabel = "已完成"
+		}
+	}
+	if task.StageStatusLabel == "" {
+		switch task.StageStatus {
+		case downloader.TaskStageStatusPending:
+			task.StageStatusLabel = "待处理"
+		case downloader.TaskStageStatusRunning:
+			task.StageStatusLabel = "进行中"
+		case downloader.TaskStageStatusBlocked:
+			task.StageStatusLabel = "受阻"
+		case downloader.TaskStageStatusDone:
+			task.StageStatusLabel = "已完成"
+		}
+	}
+	if task.DownloadCompletedAt == nil && task.CompletedAt != nil {
+		task.DownloadCompletedAt = task.CompletedAt
+	}
+	if task.DeliveryMode == "" {
+		task.DeliveryMode = task.StashMode
+	}
+	if task.MojiSourcePath == "" {
+		task.MojiSourcePath = task.StashSourcePath
+	}
+	if task.TransferAction == "" {
+		task.TransferAction = task.StashTransferAction
+	}
+	if task.MojiTransferPath == "" {
+		task.MojiTransferPath = task.StashTransferPath
+	}
+	if task.TransferError == "" {
+		task.TransferError = task.StashTransferError
+	}
+	if task.StashScanJobID == "" {
+		task.StashScanJobID = task.StashJobID
 	}
 }
 

@@ -14,15 +14,14 @@ import (
 
 type StashScanner interface {
 	MetadataScan(ctx context.Context, req stashsync.ScanRequest) (string, error)
+	FindJob(ctx context.Context, id string) (*stashsync.Job, error)
 	CurrentConfig() stashsync.IntegrationConfig
 }
 
 const (
-	StashScanStatusPending = ""
-	StashScanStatusStarted = "started"
-	StashScanStatusFailed  = "failed"
-
-	StashTransferStatusPending   = ""
+	StashScanStatusStarted       = "started"
+	StashScanStatusCompleted     = "completed"
+	StashScanStatusFailed        = "failed"
 	StashTransferStatusStarted   = "started"
 	StashTransferStatusCompleted = "completed"
 	StashTransferStatusFailed    = "failed"
@@ -54,7 +53,25 @@ func (s *Service) TriggerStashScans(ctx context.Context, scanner StashScanner) (
 	updated := make([]*Task, 0, len(tasks))
 	var firstErr error
 	for _, task := range tasks {
-		if task == nil || !shouldTriggerStashScan(task) {
+		if task == nil {
+			updated = append(updated, task)
+			continue
+		}
+		if task.Stage == TaskStageScanning && task.StageStatus == TaskStageStatusRunning {
+			next, pollErr := s.syncStashScanJob(ctx, cloneTask(task), scanner)
+			if persistErr := s.store.Update(ctx, next); persistErr != nil {
+				logging.Errorf("downloader: persist stash scan job state failed for task %s: %v", next.ID, persistErr)
+				if firstErr == nil {
+					firstErr = fmt.Errorf("update task %q: %w", next.ID, persistErr)
+				}
+			}
+			if pollErr != nil && firstErr == nil {
+				firstErr = pollErr
+			}
+			updated = append(updated, next)
+			continue
+		}
+		if !shouldTriggerStashScan(task) {
 			updated = append(updated, task)
 			continue
 		}
@@ -111,31 +128,73 @@ func (s *Service) executeTaskStashIntegration(ctx context.Context, task *Task, s
 	applyStashIntegrationPlan(task, plan, now)
 	if plan.ValidationError != nil {
 		recordStashIntegrationFailure(task, plan, now, plan.ValidationError)
+		blockTask(task, TaskStageErrorTransferPlan, plan.ValidationError.Error(), now)
 		logging.Errorf("downloader: stash integration planning failed for task %s delivery_mode=%s: %v", task.ID, plan.DeliveryMode, plan.ValidationError)
 		return task, fmt.Errorf("trigger stash scan for task %q: %w", task.ID, plan.ValidationError)
 	}
 
+	if plan.NeedsTransfer {
+		setTaskStage(task, TaskStageTransferring, TaskStageStatusRunning)
+	} else {
+		setTaskStage(task, TaskStageScanning, TaskStageStatusPending)
+	}
+	clearTaskStageError(task)
 	if err := s.executeDelivery(ctx, task, plan, now); err != nil {
 		recordTransferFailure(task, plan, s.now().UTC(), err)
+		blockTask(task, TaskStageErrorTransfer, err.Error(), s.now().UTC())
 		logging.Errorf("downloader: delivery failed for task %s qb_source=%s moji_source=%s target=%s: %v", task.ID, plan.QBSourcePath, plan.MojiSourcePath, plan.ResolvedTransferPath, err)
 		return task, fmt.Errorf("trigger stash scan for task %q: %w", task.ID, err)
 	}
 
+	setTaskStage(task, TaskStageScanning, TaskStageStatusRunning)
 	jobID, err := s.triggerScan(ctx, scanner, plan)
 	now = s.now().UTC()
 	task.UpdatedAt = now
 	task.StashScanStartedAt = &now
 	if err != nil {
-		task.StashScanStatus = StashScanStatusFailed
 		task.StashScanError = err.Error()
+		blockTask(task, TaskStageErrorScanTrigger, err.Error(), now)
 		logging.Errorf("downloader: stash scan trigger failed for task %s delivery_mode=%s path=%s: %v", task.ID, plan.DeliveryMode, plan.ResolvedScanPath, err)
 		return task, fmt.Errorf("trigger stash scan for task %q: %w", task.ID, err)
 	}
 
-	task.StashJobID = jobID
-	task.StashScanStatus = StashScanStatusStarted
+	task.StashScanJobID = jobID
 	task.StashScanError = ""
+	clearTaskStageError(task)
 	logging.Infof("downloader: started stash scan for task %s delivery_mode=%s path=%s job=%s", task.ID, plan.DeliveryMode, plan.ResolvedScanPath, jobID)
+	return task, nil
+}
+
+func (s *Service) syncStashScanJob(ctx context.Context, task *Task, scanner StashScanner) (*Task, error) {
+	if task == nil || strings.TrimSpace(task.StashScanJobID) == "" {
+		return task, nil
+	}
+
+	job, err := scanner.FindJob(ctx, task.StashScanJobID)
+	if err != nil {
+		task.StashScanError = err.Error()
+		blockTask(task, TaskStageErrorScanTrigger, err.Error(), s.now().UTC())
+		return task, fmt.Errorf("find stash job %q for task %q: %w", task.StashScanJobID, task.ID, err)
+	}
+	if job == nil {
+		return task, nil
+	}
+
+	now := s.now().UTC()
+	switch strings.ToUpper(strings.TrimSpace(job.Status)) {
+	case "FINISHED":
+		setTaskStage(task, TaskStageCompleted, TaskStageStatusDone)
+		clearTaskStageError(task)
+		task.StashScanError = ""
+		task.UpdatedAt = now
+	case "FAILED", "CANCELLED":
+		task.StashScanError = firstNonEmpty([]string{stringValue(job.Error), "stash scan job did not complete successfully"})
+		blockTask(task, TaskStageErrorScanTrigger, task.StashScanError, now)
+	default:
+		setTaskStage(task, TaskStageScanning, TaskStageStatusRunning)
+		task.UpdatedAt = now
+	}
+
 	return task, nil
 }
 
@@ -143,13 +202,11 @@ func (s *Service) executeDelivery(ctx context.Context, task *Task, plan StashInt
 	if !plan.NeedsTransfer {
 		return nil
 	}
-	task.StashTransferStatus = StashTransferStatusStarted
 	task.UpdatedAt = now
 	if err := s.fileOps.Transfer(ctx, plan.MojiSourcePath, plan.TransferAction, plan.ResolvedTransferPath); err != nil {
 		return err
 	}
-	task.StashTransferStatus = StashTransferStatusCompleted
-	task.StashTransferError = ""
+	task.TransferError = ""
 	task.StashScanPath = plan.ResolvedScanPath
 	task.UpdatedAt = s.now().UTC()
 	return nil
@@ -259,38 +316,35 @@ func buildMappedPath(root string, relative string, label string, field string) (
 }
 
 func applyStashIntegrationPlan(task *Task, plan StashIntegrationPlan, now time.Time) {
-	task.StashMode = string(plan.DeliveryMode)
-	task.StashSourcePath = plan.MojiSourcePath
-	task.StashTransferAction = string(plan.TransferAction)
-	task.StashTransferPath = plan.ResolvedTransferPath
-	task.StashTransferStatus = StashTransferStatusPending
-	task.StashTransferError = ""
-	task.StashJobID = ""
+	task.DeliveryMode = string(plan.DeliveryMode)
+	task.MojiSourcePath = plan.MojiSourcePath
+	task.TransferAction = string(plan.TransferAction)
+	task.MojiTransferPath = plan.ResolvedTransferPath
+	task.TransferError = ""
+	task.StashScanJobID = ""
 	task.StashScanPath = plan.ResolvedScanPath
-	task.StashScanStatus = StashScanStatusPending
 	task.StashScanError = ""
 	task.StashScanHint = plan.UserHint
 	task.StashScanStartedAt = nil
 	task.UpdatedAt = now
+	refreshTaskStageFields(task)
 }
 
 func recordStashIntegrationFailure(task *Task, plan StashIntegrationPlan, now time.Time, err error) {
 	if plan.NeedsTransfer {
-		task.StashTransferStatus = StashTransferStatusFailed
-		task.StashTransferError = err.Error()
+		task.TransferError = err.Error()
 	}
-	task.StashScanStatus = StashScanStatusFailed
 	task.StashScanError = err.Error()
 	task.UpdatedAt = now
+	refreshTaskStageFields(task)
 }
 
 func recordTransferFailure(task *Task, plan StashIntegrationPlan, now time.Time, err error) {
-	task.StashTransferStatus = StashTransferStatusFailed
-	task.StashTransferError = err.Error()
-	task.StashScanStatus = StashScanStatusFailed
+	task.TransferError = err.Error()
 	task.StashScanError = err.Error()
 	task.StashScanHint = plan.UserHint
 	task.UpdatedAt = now
+	refreshTaskStageFields(task)
 }
 
 func resolveSource(task *Task) string {
@@ -329,26 +383,29 @@ func joinRootAndRelative(root string, relative string) string {
 }
 
 func shouldTriggerStashScan(task *Task) bool {
-	if task.Status != TaskStatusCompleted {
+	if task == nil {
 		return false
 	}
-	if task.StashJobID != "" {
+	if task.Stage != TaskStagePendingIngest || task.StageStatus != TaskStageStatusPending {
 		return false
 	}
-	if task.StashTransferStatus == StashTransferStatusStarted {
+	if task.StashScanJobID != "" {
 		return false
 	}
-	return task.StashScanStatus == StashScanStatusPending
+	return true
 }
 
 func shouldAllowManualStashScan(task *Task) bool {
-	if task == nil || task.Status != TaskStatusCompleted {
+	if task == nil {
 		return false
 	}
-	if task.StashScanStatus == StashScanStatusStarted || task.StashTransferStatus == StashTransferStatusStarted {
+	if task.Stage != TaskStagePendingIngest && task.Stage != TaskStageTransferring && task.Stage != TaskStageScanning {
 		return false
 	}
-	return task.StashJobID == "" || task.StashScanStatus == StashScanStatusFailed
+	if task.Stage == TaskStageScanning && task.StageStatus == TaskStageStatusRunning {
+		return false
+	}
+	return task.StageStatus == TaskStageStatusPending || task.StageStatus == TaskStageStatusBlocked
 }
 
 func cloneTime(t *time.Time) *time.Time {
@@ -357,4 +414,11 @@ func cloneTime(t *time.Time) *time.Time {
 	}
 	cp := *t
 	return &cp
+}
+
+func stringValue(value *string) string {
+	if value == nil {
+		return ""
+	}
+	return strings.TrimSpace(*value)
 }

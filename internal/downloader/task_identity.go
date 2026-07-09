@@ -131,6 +131,37 @@ func (s *Service) ensureTaskCanBeCreated(ctx context.Context, identity torrentId
 	return nil
 }
 
+func (s *Service) ensureTaskCodeCanBeCreated(ctx context.Context, code string) error {
+	code = normalizeCode(code)
+	if code == "" {
+		return ErrTaskCodeRequired
+	}
+	if existing, err := s.store.FindByCode(ctx, code); err != nil {
+		return err
+	} else if existing != nil {
+		return fmt.Errorf("%w: task %q already uses code %s", ErrDuplicateCodeTask, existing.ID, code)
+	}
+	if s.libraryCodeChecker != nil {
+		exists, err := s.libraryCodeChecker.HasCode(ctx, code)
+		if err != nil {
+			return fmt.Errorf("check stash library code %s: %w", code, err)
+		}
+		if exists {
+			return fmt.Errorf("%w: stash library already contains code %s", ErrDuplicateLibraryCode, code)
+		}
+	}
+	return nil
+}
+
+func (s *Service) ensureTaskIdentityAvailable(ctx context.Context, taskID string, identity torrentIdentity) error {
+	if existing, err := s.store.FindByTorrentIdentity(ctx, identity.InfoHash, identity.MagnetURI); err != nil {
+		return err
+	} else if existing != nil && existing.ID != strings.TrimSpace(taskID) {
+		return fmt.Errorf("%w: task %q already uses the same torrent", ErrDuplicateTorrentTask, existing.ID)
+	}
+	return nil
+}
+
 type downloadedTorrentMetadata struct {
 	Name     string
 	FilePath string

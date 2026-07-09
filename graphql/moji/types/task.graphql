@@ -28,6 +28,9 @@ type Mutation {
   "Trigger Stash metadata scans for completed Moji tasks"
   triggerStashScans: [Task!]!
 
+  "Retry a blocked Moji task from its current stage"
+  retryTask(id: ID!): Task!
+
   "Delete a persisted Moji task record"
   deleteTask(id: ID!): Task!
 }
@@ -76,7 +79,12 @@ type Task {
   source: TaskSource!
   query: String!
   code: String!
-  status: String!
+  stage: TaskStage!
+  stageStatus: TaskStageStatus!
+  stageLabel: String!
+  stageStatusLabel: String!
+  stageErrorCode: String
+  stageErrorMessage: String
   candidate: DownloadCandidate!
   torrentUrl: String!
   savePath: String
@@ -87,22 +95,35 @@ type Task {
   progress: Float!
   qbittorrentState: String
   contentPath: String
-  completedAt: String
-  stashMode: String
-  stashSourcePath: String
-  stashTransferAction: String
-  stashTransferPath: String
-  stashTransferStatus: String
-  stashTransferError: String
-  stashJobId: ID
+  downloadCompletedAt: String
+  deliveryMode: String
+  mojiSourcePath: String
+  transferAction: String
+  mojiTransferPath: String
+  transferError: String
+  stashScanJobId: ID
   stashScanPath: String
-  stashScanStatus: String
   stashScanError: String
   stashScanHint: String
   stashScanStartedAt: String
-  error: String
   createdAt: String!
   updatedAt: String!
+}
+
+enum TaskStage {
+  SOURCING
+  DOWNLOADING
+  PENDING_INGEST
+  TRANSFERRING
+  SCANNING
+  COMPLETED
+}
+
+enum TaskStageStatus {
+  PENDING
+  RUNNING
+  BLOCKED
+  DONE
 }
 
 type DownloadCandidate {

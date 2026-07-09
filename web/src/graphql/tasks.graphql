@@ -2,13 +2,17 @@ mutation AddTorrentDocument($input: QBittorrentAddInput!) {
   addTorrent(input: $input) {
     id
     source
-    status
+    stage
+    stageStatus
+    stageLabel
+    stageStatusLabel
+    stageErrorCode
+    stageErrorMessage
     query
     code
     torrentName
     progress
-    stashMode
-    stashScanStatus
+    deliveryMode
     createdAt
   }
 }
@@ -17,7 +21,10 @@ mutation SyncTaskProgressDocument {
   syncTaskProgress {
     id
     source
-    status
+    stage
+    stageStatus
+    stageLabel
+    stageStatusLabel
     progress
     qbittorrentState
     updatedAt
@@ -28,12 +35,10 @@ mutation TriggerStashScansDocument {
   triggerStashScans {
     id
     source
-    stashMode
-    stashTransferStatus
-    stashTransferError
-    stashJobId
+    deliveryMode
+    transferError
+    stashScanJobId
     stashScanPath
-    stashScanStatus
     stashScanError
     stashScanHint
     updatedAt
@@ -44,12 +49,10 @@ mutation TriggerTaskStashScanDocument($id: ID!) {
   triggerTaskStashScan(id: $id) {
     id
     source
-    stashMode
-    stashTransferStatus
-    stashTransferError
-    stashJobId
+    deliveryMode
+    transferError
+    stashScanJobId
     stashScanPath
-    stashScanStatus
     stashScanError
     stashScanHint
     updatedAt
@@ -60,9 +63,30 @@ mutation DeleteTaskDocument($id: ID!) {
   deleteTask(id: $id) {
     id
     source
-    status
+    stage
+    stageStatus
+    stageLabel
+    stageStatusLabel
     query
     code
+    updatedAt
+  }
+}
+
+mutation RetryTaskDocument($id: ID!) {
+  retryTask(id: $id) {
+    id
+    source
+    stage
+    stageStatus
+    stageLabel
+    stageStatusLabel
+    stageErrorCode
+    stageErrorMessage
+    query
+    code
+    progress
+    qbittorrentState
     updatedAt
   }
 }

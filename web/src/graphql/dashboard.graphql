@@ -198,7 +198,12 @@ query DashboardDocument {
     source
     query
     code
-    status
+    stage
+    stageStatus
+    stageLabel
+    stageStatusLabel
+    stageErrorCode
+    stageErrorMessage
     torrentName
     progress
     qbittorrentState
@@ -207,19 +212,17 @@ query DashboardDocument {
     savePath
     category
     tags
-    error
-    completedAt
-    stashMode
-    stashSourcePath
-    stashTransferAction
-    stashTransferPath
-    stashTransferStatus
-    stashTransferError
-    stashJobId
+    downloadCompletedAt
+    deliveryMode
+    mojiSourcePath
+    transferAction
+    mojiTransferPath
+    transferError
+    stashScanJobId
     stashScanPath
-    stashScanStatus
     stashScanError
     stashScanHint
+    stashScanStartedAt
     createdAt
     updatedAt
   }

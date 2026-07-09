@@ -39,11 +39,11 @@ type TaskLister interface {
 // StashStats is the snapshot value exposed to the GraphQL layer. All fields
 // except lastError and okAt are zero-valued until first successful refresh.
 type StashStats struct {
-	Version             string
-	SceneCount          *int
+	Version              string
+	SceneCount           *int
 	PendingMojiScanCount int
-	LastError           string
-	OKAt                time.Time
+	LastError            string
+	OKAt                 time.Time
 }
 
 // JackettStats mirrors the GraphQL JackettStats shape.
@@ -102,13 +102,13 @@ func (s *Snapshot) Clone() Snapshot {
 type Collector struct {
 	Snapshot *Snapshot
 
-	stashClient    *stash.Client
-	jackettClient  *jackett.Client
-	qbittClient    *qbittorrent.Client
-	taskLister     TaskLister
-	intervalFast   time.Duration
-	intervalSlow   time.Duration
-	logger         *slog.Logger
+	stashClient   *stash.Client
+	jackettClient *jackett.Client
+	qbittClient   *qbittorrent.Client
+	taskLister    TaskLister
+	intervalFast  time.Duration
+	intervalSlow  time.Duration
+	logger        *slog.Logger
 
 	// searchHookInstalled guards against double-install.
 	hookOnce sync.Once
@@ -288,7 +288,9 @@ func (c *Collector) refreshMojiScanCount(ctx context.Context) {
 		if t == nil {
 			continue
 		}
-		if t.StashScanStatus == "RUNNING" || t.StashScanStatus == "READY" {
+		if t.Stage == downloader.TaskStagePendingIngest ||
+			t.Stage == downloader.TaskStageTransferring ||
+			t.Stage == downloader.TaskStageScanning {
 			count++
 		}
 	}

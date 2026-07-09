@@ -15,13 +15,14 @@ func TestTriggerStashScansStartsSharedStorageScanForCompletedTask(t *testing.T) 
 	store := NewMemoryTaskStore()
 	completedAt := time.Unix(200, 0).UTC()
 	if err := store.Create(context.Background(), &Task{
-		ID:          "task-completed",
-		Status:      TaskStatusCompleted,
-		SavePath:    "/downloads",
-		ContentPath: "/downloads/ABCD-123.mp4",
-		CompletedAt: &completedAt,
-		CreatedAt:   time.Unix(100, 0).UTC(),
-		UpdatedAt:   time.Unix(200, 0).UTC(),
+		ID:                  "task-completed",
+		Stage:               TaskStagePendingIngest,
+		StageStatus:         TaskStageStatusPending,
+		SavePath:            "/downloads",
+		ContentPath:         "/downloads/ABCD-123.mp4",
+		DownloadCompletedAt: &completedAt,
+		CreatedAt:           time.Unix(100, 0).UTC(),
+		UpdatedAt:           time.Unix(200, 0).UTC(),
 	}); err != nil {
 		t.Fatalf("Create failed: %v", err)
 	}
@@ -53,16 +54,16 @@ func TestTriggerStashScansStartsSharedStorageScanForCompletedTask(t *testing.T) 
 		t.Fatalf("TriggerStashScans failed: %v", err)
 	}
 	task := tasks[0]
-	if task.StashMode != string(stashsync.DeliveryModePathMap) {
+	if task.DeliveryMode != string(stashsync.DeliveryModePathMap) {
 		t.Fatalf("unexpected stash mode: %+v", task)
 	}
-	if task.StashSourcePath != "" {
+	if task.MojiSourcePath != "" {
 		t.Fatalf("path-map mode should not record a Moji transfer source path: %+v", task)
 	}
 	if task.StashScanPath != "/library/ABCD-123.mp4" {
 		t.Fatalf("unexpected scan path: %+v", task)
 	}
-	if task.StashJobID != "job-1" || task.StashScanStatus != StashScanStatusStarted {
+	if task.StashScanJobID != "job-1" || task.Stage != TaskStageScanning || task.StageStatus != TaskStageStatusRunning {
 		t.Fatalf("unexpected stash scan task: %+v", task)
 	}
 }
@@ -424,9 +425,69 @@ func TestTriggerStashScansPersistsSQLiteUpdatesWithExtendedStashColumns(t *testi
 	}
 }
 
+func TestTriggerStashScansPersistsCompletedScanJobState(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "tasks-completed.db")
+	store, err := NewSQLiteTaskStore(path)
+	if err != nil {
+		t.Fatalf("NewSQLiteTaskStore failed: %v", err)
+	}
+
+	if err := store.Create(context.Background(), &Task{
+		ID:                 "task-scan-finished",
+		Stage:              TaskStageScanning,
+		StageStatus:        TaskStageStatusRunning,
+		StashJobID:         "job-finished",
+		StashScanStatus:    StashScanStatusStarted,
+		CreatedAt:          time.Unix(100, 0).UTC(),
+		UpdatedAt:          time.Unix(200, 0).UTC(),
+		StashScanStartedAt: ptrTime(time.Unix(150, 0).UTC()),
+	}); err != nil {
+		t.Fatalf("Create failed: %v", err)
+	}
+
+	service, err := NewService(
+		fakeTracker{},
+		&fakeTorrentAdder{},
+		store,
+		WithClock(func() time.Time { return time.Unix(300, 0).UTC() }),
+	)
+	if err != nil {
+		t.Fatalf("NewService failed: %v", err)
+	}
+
+	tasks, err := service.TriggerStashScans(context.Background(), &fakeStashScanner{
+		job: &stashsync.Job{ID: "job-finished", Status: "FINISHED"},
+	})
+	if err != nil {
+		t.Fatalf("TriggerStashScans failed: %v", err)
+	}
+	if len(tasks) != 1 {
+		t.Fatalf("expected one updated task, got %d", len(tasks))
+	}
+	if tasks[0].Stage != TaskStageCompleted || tasks[0].StageStatus != TaskStageStatusDone {
+		t.Fatalf("expected completed task stage, got %+v", tasks[0])
+	}
+	if tasks[0].StashScanStatus != StashScanStatusCompleted {
+		t.Fatalf("expected completed stash scan status, got %+v", tasks[0])
+	}
+
+	reloaded, err := store.Find(context.Background(), "task-scan-finished")
+	if err != nil {
+		t.Fatalf("Find failed: %v", err)
+	}
+	if reloaded.Stage != TaskStageCompleted || reloaded.StageStatus != TaskStageStatusDone {
+		t.Fatalf("expected persisted completed stage, got %+v", reloaded)
+	}
+	if reloaded.StashScanStatus != StashScanStatusCompleted {
+		t.Fatalf("expected persisted completed stash scan status, got %+v", reloaded)
+	}
+}
+
 type fakeStashScanner struct {
 	jobID    string
 	err      error
+	job      *stashsync.Job
+	jobErr   error
 	config   stashsync.IntegrationConfig
 	requests []stashsync.ScanRequest
 }
@@ -434,6 +495,10 @@ type fakeStashScanner struct {
 func (f *fakeStashScanner) MetadataScan(_ context.Context, req stashsync.ScanRequest) (string, error) {
 	f.requests = append(f.requests, req)
 	return f.jobID, f.err
+}
+
+func (f *fakeStashScanner) FindJob(_ context.Context, _ string) (*stashsync.Job, error) {
+	return f.job, f.jobErr
 }
 
 func (f *fakeStashScanner) CurrentConfig() stashsync.IntegrationConfig {
@@ -458,4 +523,8 @@ func (f *fakeFileOperator) Transfer(_ context.Context, sourcePath string, action
 		action:     action,
 	})
 	return f.err
+}
+
+func ptrTime(value time.Time) *time.Time {
+	return &value
 }

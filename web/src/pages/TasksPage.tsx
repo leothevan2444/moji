@@ -67,9 +67,12 @@ export function TasksPage({
       if (!search) return true;
       const haystack = [
         taskSummary(task),
-        task.status,
+        task.stage,
+        task.stageStatus,
+        task.stageLabel,
+        task.stageStatusLabel,
         task.qbittorrentState,
-        task.stashScanStatus,
+        task.stashScanJobId,
         task.torrentHash,
         task.contentPath,
         task.query
@@ -84,7 +87,7 @@ export function TasksPage({
     } else if (taskStatus === "完成") {
       next = next.filter((task) => isStatus(task, "completed"));
     } else if (taskStatus === "失败") {
-      next = next.filter((task) => isStatus(task, "failed"));
+      next = next.filter((task) => task.stageStatus === "BLOCKED");
     } else if (taskStatus === "待扫描") {
       next = next.filter(isScanPending);
     }

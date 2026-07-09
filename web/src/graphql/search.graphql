@@ -80,12 +80,14 @@ mutation QueueDiscoveredSceneDocument($input: QueueDiscoveredSceneInput!) {
   queueDiscoveredScene(input: $input) {
     id
     source
-    status
+    stage
+    stageStatus
+    stageLabel
+    stageStatusLabel
     query
     torrentName
     progress
-    stashMode
-    stashScanStatus
+    deliveryMode
     createdAt
   }
 }

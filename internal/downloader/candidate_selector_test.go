@@ -221,9 +221,12 @@ func TestDefaultCandidateSelectorUsesConfiguredInspectionCandidateLimit(t *testi
 		{Title: "6", Link: "https://example.com/6.torrent", Seeders: 50},
 	}
 	inspected := make([]string, 0, len(results))
+	var inspectedMu sync.Mutex
 	selector := defaultCandidateSelector{
 		inspectTorrent: func(_ context.Context, torrentURL string) (torrentInspection, error) {
+			inspectedMu.Lock()
 			inspected = append(inspected, torrentURL)
+			inspectedMu.Unlock()
 			if strings.Contains(torrentURL, "/6.torrent") {
 				return torrentInspection{Paths: []string{"movie.mkv"}, VideoPaths: []string{"movie.mkv"}, SingleVideo: true}, nil
 			}

@@ -17,7 +17,7 @@ import (
 //go:embed sqlite_schema.sql
 var sqliteSchema string
 
-const sqliteSchemaVersion = "4"
+const sqliteSchemaVersion = "6"
 
 func OpenSQLiteDatabase(path string) (*sqlx.DB, error) {
 	trimmed := strings.TrimSpace(path)
@@ -76,11 +76,17 @@ func configureSQLiteDatabase(db *sqlx.DB) error {
 		}
 	}
 
-	if _, err := db.Exec(sqliteSchema); err != nil {
-		return fmt.Errorf("downloader: initialize sqlite schema: %w", err)
-	}
-	if err := migrateSQLiteDatabase(db, hadSchema, versionBeforeInit); err != nil {
-		return err
+	if !hadSchema || versionBeforeInit == sqliteSchemaVersion {
+		if _, err := db.Exec(sqliteSchema); err != nil {
+			return fmt.Errorf("downloader: initialize sqlite schema: %w", err)
+		}
+	} else {
+		if err := resetSQLiteDatabase(db); err != nil {
+			return err
+		}
+		if _, err := db.Exec(sqliteSchema); err != nil {
+			return fmt.Errorf("downloader: reinitialize sqlite schema: %w", err)
+		}
 	}
 	if err := ensureSQLiteRuntimeState(db); err != nil {
 		return err
@@ -89,58 +95,30 @@ func configureSQLiteDatabase(db *sqlx.DB) error {
 	return nil
 }
 
-func migrateSQLiteDatabase(db *sqlx.DB, hadSchema bool, version string) error {
-	if !hadSchema && version == "" {
-		return nil
-	}
-	if version == sqliteSchemaVersion {
-		return nil
-	}
-
+func resetSQLiteDatabase(db *sqlx.DB) error {
 	tx, err := db.Beginx()
 	if err != nil {
-		return fmt.Errorf("downloader: begin sqlite schema migration: %w", err)
+		return fmt.Errorf("downloader: begin sqlite schema reset: %w", err)
 	}
 	defer tx.Rollback()
 
-	if _, err := tx.Exec(`PRAGMA foreign_keys = OFF`); err != nil {
-		return fmt.Errorf("downloader: disable sqlite foreign keys for migration: %w", err)
+	statements := []string{
+		`PRAGMA foreign_keys = OFF`,
+		`DROP TABLE IF EXISTS subscription_performer_releases`,
+		`DROP TABLE IF EXISTS subscription_release_entities`,
+		`DROP TABLE IF EXISTS subscription_performer_state`,
+		`DROP TABLE IF EXISTS task_events`,
+		`DROP TABLE IF EXISTS tasks`,
+		`DROP TABLE IF EXISTS task_store_meta`,
+		`PRAGMA foreign_keys = ON`,
 	}
-	if err := ensureLegacySQLiteColumns(tx); err != nil {
-		return err
+	for _, statement := range statements {
+		if _, err := tx.Exec(statement); err != nil {
+			return fmt.Errorf("downloader: reset sqlite schema with %q: %w", statement, err)
+		}
 	}
-
-	if err := recreateTasksTable(tx); err != nil {
-		return err
-	}
-	if err := recreateTaskEventsTable(tx); err != nil {
-		return err
-	}
-	if err := recreateSubscriptionPerformerStateTable(tx); err != nil {
-		return err
-	}
-	if err := recreateSubscriptionReleaseEntitiesTable(tx); err != nil {
-		return err
-	}
-	if err := recreateSubscriptionPerformerReleasesTable(tx); err != nil {
-		return err
-	}
-	if err := recreateSQLiteIndexes(tx); err != nil {
-		return err
-	}
-	if err := clearDanglingSubscriptionTaskReferences(tx); err != nil {
-		return err
-	}
-	if _, err := tx.Exec(`PRAGMA foreign_keys = ON`); err != nil {
-		return fmt.Errorf("downloader: re-enable sqlite foreign keys after migration: %w", err)
-	}
-	if _, err := tx.Exec(`INSERT INTO task_store_meta (key, value) VALUES ('schema_version', ?)
-		ON CONFLICT(key) DO UPDATE SET value = excluded.value`, sqliteSchemaVersion); err != nil {
-		return fmt.Errorf("downloader: update sqlite schema version: %w", err)
-	}
-
 	if err := tx.Commit(); err != nil {
-		return fmt.Errorf("downloader: commit sqlite schema migration: %w", err)
+		return fmt.Errorf("downloader: commit sqlite schema reset: %w", err)
 	}
 	return nil
 }
@@ -172,6 +150,9 @@ func ensureLegacySQLiteColumns(tx *sqlx.Tx) error {
 	taskMigrations := map[string]string{
 		"source":                  "TEXT NOT NULL DEFAULT 'MANUAL' CHECK (source IN ('MANUAL', 'SEARCH', 'SUBSCRIPTION'))",
 		"code":                    "TEXT NOT NULL DEFAULT ''",
+		"stage_status":            "TEXT NOT NULL DEFAULT 'PENDING' CHECK (stage_status IN ('PENDING', 'RUNNING', 'BLOCKED', 'DONE'))",
+		"stage_error_code":        "TEXT",
+		"stage_error_message":     "TEXT",
 		"torrent_identity_hash":   "TEXT NOT NULL DEFAULT ''",
 		"torrent_identity_magnet": "TEXT NOT NULL DEFAULT ''",
 		"stash_mode":              "TEXT NOT NULL DEFAULT ''",
@@ -196,9 +177,13 @@ func ensureLegacySQLiteColumns(tx *sqlx.Tx) error {
 		"decision":        "TEXT NOT NULL DEFAULT ''",
 		"decision_reason": "TEXT NOT NULL DEFAULT ''",
 	}
-	for name, definition := range subscriptionReleaseMigrations {
-		if err := ensureSQLiteColumnTx(tx, "subscription_release_entities", name, definition); err != nil {
-			return err
+	if exists, err := sqliteTableExistsTx(tx, "subscription_release_entities"); err != nil {
+		return err
+	} else if exists {
+		for name, definition := range subscriptionReleaseMigrations {
+			if err := ensureSQLiteColumnTx(tx, "subscription_release_entities", name, definition); err != nil {
+				return err
+			}
 		}
 	}
 
@@ -229,13 +214,16 @@ func recreateTasksTable(tx *sqlx.Tx) error {
 	}
 
 	statements := []string{
-		`DROP TABLE IF EXISTS tasks_v4_new`,
-		`CREATE TABLE tasks_v4_new (
+		`DROP TABLE IF EXISTS tasks_v5_new`,
+		`CREATE TABLE tasks_v5_new (
 			id TEXT PRIMARY KEY,
 			source TEXT NOT NULL DEFAULT 'MANUAL' CHECK (source IN ('MANUAL', 'SEARCH', 'SUBSCRIPTION')),
 			query TEXT NOT NULL,
 			code TEXT NOT NULL DEFAULT '',
-			status TEXT NOT NULL CHECK (status IN ('pending', 'added', 'downloading', 'completed', 'failed')),
+			status TEXT NOT NULL CHECK (status IN ('SOURCING', 'DOWNLOADING', 'PENDING_INGEST', 'TRANSFERRING', 'SCANNING', 'COMPLETED')),
+			stage_status TEXT NOT NULL DEFAULT 'PENDING' CHECK (stage_status IN ('PENDING', 'RUNNING', 'BLOCKED', 'DONE')),
+			stage_error_code TEXT,
+			stage_error_message TEXT,
 			torrent_url TEXT NOT NULL DEFAULT '',
 			save_path TEXT,
 			category TEXT,
@@ -256,7 +244,7 @@ func recreateTasksTable(tx *sqlx.Tx) error {
 			stash_transfer_error TEXT,
 			stash_job_id TEXT,
 			stash_scan_path TEXT,
-			stash_scan_status TEXT CHECK (stash_scan_status IN ('started', 'failed')),
+			stash_scan_status TEXT CHECK (stash_scan_status IN ('started', 'completed', 'failed')),
 			stash_scan_error TEXT,
 			stash_scan_hint TEXT,
 			stash_scan_started_at TEXT,
@@ -272,8 +260,8 @@ func recreateTasksTable(tx *sqlx.Tx) error {
 			created_at TEXT NOT NULL,
 			updated_at TEXT NOT NULL
 		) STRICT`,
-		`INSERT INTO tasks_v4_new (
-			id, source, query, code, status, torrent_url, save_path, category, tags,
+		`INSERT INTO tasks_v5_new (
+			id, source, query, code, status, stage_status, stage_error_code, stage_error_message, torrent_url, save_path, category, tags,
 			torrent_identity_hash, torrent_identity_magnet, torrent_hash, torrent_name, progress, qbittorrent_state, content_path,
 			completed_at, stash_mode, stash_source_path, stash_transfer_action, stash_transfer_path,
 			stash_transfer_status, stash_transfer_error, stash_job_id, stash_scan_path, stash_scan_status,
@@ -286,7 +274,24 @@ func recreateTasksTable(tx *sqlx.Tx) error {
 			COALESCE(NULLIF(source, ''), 'MANUAL'),
 			query,
 			COALESCE(code, ''),
-			status,
+			CASE
+				WHEN status = 'pending' THEN 'SOURCING'
+				WHEN status IN ('added', 'downloading') THEN 'DOWNLOADING'
+				WHEN status = 'completed' THEN 'PENDING_INGEST'
+				WHEN status = 'failed' AND COALESCE(stash_scan_status, '') <> '' THEN 'SCANNING'
+				WHEN status = 'failed' AND COALESCE(stash_transfer_status, '') <> '' THEN 'TRANSFERRING'
+				WHEN status = 'failed' AND COALESCE(torrent_url, '') <> '' THEN 'DOWNLOADING'
+				ELSE 'SOURCING'
+			END,
+			CASE
+				WHEN status = 'pending' THEN 'RUNNING'
+				WHEN status IN ('added', 'downloading') THEN 'RUNNING'
+				WHEN status = 'completed' THEN 'PENDING'
+				WHEN status = 'failed' THEN 'BLOCKED'
+				ELSE 'PENDING'
+			END,
+			NULL,
+			NULLIF(error, ''),
 			torrent_url,
 			NULLIF(save_path, ''),
 			NULLIF(category, ''),
@@ -324,7 +329,7 @@ func recreateTasksTable(tx *sqlx.Tx) error {
 			updated_at
 		FROM tasks`,
 		`DROP TABLE tasks`,
-		`ALTER TABLE tasks_v4_new RENAME TO tasks`,
+		`ALTER TABLE tasks_v5_new RENAME TO tasks`,
 	}
 
 	for _, statement := range statements {
@@ -509,39 +514,66 @@ func recreateSubscriptionPerformerReleasesTable(tx *sqlx.Tx) error {
 }
 
 func recreateSQLiteIndexes(tx *sqlx.Tx) error {
-	indexes := []string{
-		`CREATE INDEX IF NOT EXISTS idx_tasks_status_created_at ON tasks (status, created_at DESC)`,
-		`CREATE INDEX IF NOT EXISTS idx_tasks_updated_at ON tasks (updated_at DESC)`,
-		`CREATE INDEX IF NOT EXISTS idx_tasks_completed_at ON tasks (completed_at DESC)`,
-		`CREATE INDEX IF NOT EXISTS idx_tasks_torrent_hash ON tasks (torrent_hash)`,
-		`CREATE INDEX IF NOT EXISTS idx_tasks_candidate_info_hash ON tasks (candidate_info_hash)`,
-		`CREATE INDEX IF NOT EXISTS idx_tasks_stash_job_id ON tasks (stash_job_id)`,
-		`CREATE INDEX IF NOT EXISTS idx_tasks_scan_queue ON tasks (updated_at DESC) WHERE status = 'completed' AND stash_job_id IS NULL AND stash_scan_status IS NULL`,
-		`CREATE UNIQUE INDEX IF NOT EXISTS idx_tasks_code_unique ON tasks (code) WHERE code <> ''`,
-		`CREATE UNIQUE INDEX IF NOT EXISTS idx_tasks_torrent_identity_hash_unique ON tasks (torrent_identity_hash) WHERE torrent_identity_hash IS NOT NULL`,
-		`CREATE UNIQUE INDEX IF NOT EXISTS idx_tasks_torrent_identity_magnet_unique ON tasks (torrent_identity_magnet) WHERE torrent_identity_magnet IS NOT NULL`,
-		`CREATE INDEX IF NOT EXISTS idx_task_events_task_created_at ON task_events (task_id, created_at DESC)`,
-		`CREATE INDEX IF NOT EXISTS idx_task_events_created_at ON task_events (created_at DESC)`,
-		`CREATE INDEX IF NOT EXISTS idx_subscription_state_last_checked_at ON subscription_performer_state (last_checked_at DESC)`,
-		`CREATE INDEX IF NOT EXISTS idx_subscription_state_updated_at ON subscription_performer_state (updated_at DESC)`,
-		`CREATE UNIQUE INDEX IF NOT EXISTS idx_subscription_release_entities_key ON subscription_release_entities (release_key)`,
-		`CREATE INDEX IF NOT EXISTS idx_subscription_release_entities_date ON subscription_release_entities (release_date DESC, seen_at DESC)`,
-		`CREATE INDEX IF NOT EXISTS idx_subscription_release_entities_code ON subscription_release_entities (code)`,
-		`CREATE INDEX IF NOT EXISTS idx_subscription_release_entities_status_seen_at ON subscription_release_entities (status, seen_at DESC)`,
-		`CREATE INDEX IF NOT EXISTS idx_subscription_release_entities_task_id ON subscription_release_entities (task_id)`,
-		`CREATE INDEX IF NOT EXISTS idx_subscription_performer_releases_performer_linked_at ON subscription_performer_releases (performer_id, linked_at DESC)`,
-		`CREATE INDEX IF NOT EXISTS idx_subscription_performer_releases_release_id ON subscription_performer_releases (release_id)`,
+	indexesByTable := map[string][]string{
+		"tasks": {
+			`CREATE INDEX IF NOT EXISTS idx_tasks_stage_created_at ON tasks (stage, created_at DESC)`,
+			`CREATE INDEX IF NOT EXISTS idx_tasks_stage_status_created_at ON tasks (stage_status, created_at DESC)`,
+			`CREATE INDEX IF NOT EXISTS idx_tasks_updated_at ON tasks (updated_at DESC)`,
+			`CREATE INDEX IF NOT EXISTS idx_tasks_download_completed_at ON tasks (download_completed_at DESC)`,
+			`CREATE INDEX IF NOT EXISTS idx_tasks_torrent_hash ON tasks (torrent_hash)`,
+			`CREATE INDEX IF NOT EXISTS idx_tasks_selected_info_hash ON tasks (selected_info_hash)`,
+			`CREATE INDEX IF NOT EXISTS idx_tasks_stash_scan_job_id ON tasks (stash_scan_job_id)`,
+			`CREATE INDEX IF NOT EXISTS idx_tasks_scan_queue ON tasks (updated_at DESC) WHERE stage = 'PENDING_INGEST' AND stage_status = 'PENDING' AND stash_scan_job_id IS NULL`,
+			`CREATE UNIQUE INDEX IF NOT EXISTS idx_tasks_code_unique ON tasks (code) WHERE code <> ''`,
+			`CREATE UNIQUE INDEX IF NOT EXISTS idx_tasks_torrent_identity_hash_unique ON tasks (torrent_identity_hash) WHERE torrent_identity_hash IS NOT NULL`,
+			`CREATE UNIQUE INDEX IF NOT EXISTS idx_tasks_torrent_identity_magnet_unique ON tasks (torrent_identity_magnet) WHERE torrent_identity_magnet IS NOT NULL`,
+		},
+		"task_events": {
+			`CREATE INDEX IF NOT EXISTS idx_task_events_task_created_at ON task_events (task_id, created_at DESC)`,
+			`CREATE INDEX IF NOT EXISTS idx_task_events_created_at ON task_events (created_at DESC)`,
+		},
+		"subscription_performer_state": {
+			`CREATE INDEX IF NOT EXISTS idx_subscription_state_last_checked_at ON subscription_performer_state (last_checked_at DESC)`,
+			`CREATE INDEX IF NOT EXISTS idx_subscription_state_updated_at ON subscription_performer_state (updated_at DESC)`,
+		},
+		"subscription_release_entities": {
+			`CREATE UNIQUE INDEX IF NOT EXISTS idx_subscription_release_entities_key ON subscription_release_entities (release_key)`,
+			`CREATE INDEX IF NOT EXISTS idx_subscription_release_entities_date ON subscription_release_entities (release_date DESC, seen_at DESC)`,
+			`CREATE INDEX IF NOT EXISTS idx_subscription_release_entities_code ON subscription_release_entities (code)`,
+			`CREATE INDEX IF NOT EXISTS idx_subscription_release_entities_status_seen_at ON subscription_release_entities (status, seen_at DESC)`,
+			`CREATE INDEX IF NOT EXISTS idx_subscription_release_entities_task_id ON subscription_release_entities (task_id)`,
+		},
+		"subscription_performer_releases": {
+			`CREATE INDEX IF NOT EXISTS idx_subscription_performer_releases_performer_linked_at ON subscription_performer_releases (performer_id, linked_at DESC)`,
+			`CREATE INDEX IF NOT EXISTS idx_subscription_performer_releases_release_id ON subscription_performer_releases (release_id)`,
+		},
 	}
 
-	for _, query := range indexes {
-		if _, err := tx.Exec(query); err != nil {
-			return fmt.Errorf("downloader: create sqlite index: %w", err)
+	for table, indexes := range indexesByTable {
+		exists, err := sqliteTableExistsTx(tx, table)
+		if err != nil {
+			return err
+		}
+		if !exists {
+			continue
+		}
+		for _, query := range indexes {
+			if _, err := tx.Exec(query); err != nil {
+				return fmt.Errorf("downloader: create sqlite index: %w", err)
+			}
 		}
 	}
 	return nil
 }
 
 func clearDanglingSubscriptionTaskReferences(tx *sqlx.Tx) error {
+	exists, err := sqliteTableExistsTx(tx, "subscription_release_entities")
+	if err != nil {
+		return err
+	}
+	if !exists {
+		return nil
+	}
 	if _, err := tx.Exec(`
 UPDATE subscription_release_entities
 SET task_id = NULL

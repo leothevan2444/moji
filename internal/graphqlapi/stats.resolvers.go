@@ -6,8 +6,8 @@ package graphqlapi
 
 import (
 	"context"
-	"strings"
 
+	"github.com/leothevan2444/moji/internal/downloader"
 	"github.com/leothevan2444/moji/internal/graphqlapi/model"
 )
 
@@ -30,22 +30,19 @@ func (r *queryResolver) DashboardStats(ctx context.Context) (*model.DashboardSta
 			continue
 		}
 
-		status := strings.TrimSpace(strings.ToLower(string(task.Status)))
-		scanStatus := strings.TrimSpace(strings.ToLower(task.StashScanStatus))
-
-		if !isTaskTerminalStatus(status) {
+		if task.Stage != downloader.TaskStageCompleted {
 			stats.Active++
 		}
-		if status == "completed" {
+		if task.Stage == downloader.TaskStageCompleted {
 			stats.Completed++
 		}
-		if isDownloadingStatus(status) {
+		if task.Stage == downloader.TaskStageDownloading && task.StageStatus == downloader.TaskStageStatusRunning {
 			stats.Downloading++
 		}
-		if isPendingScanStatus(scanStatus) {
+		if task.Stage == downloader.TaskStagePendingIngest || task.Stage == downloader.TaskStageTransferring || task.Stage == downloader.TaskStageScanning {
 			stats.PendingScans++
 		}
-		if status == "failed" || task.StashScanError != "" {
+		if task.StageStatus == downloader.TaskStageStatusBlocked {
 			stats.Failed++
 		}
 	}

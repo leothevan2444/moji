@@ -42,7 +42,8 @@ func TestDownloadMediaCreatesTask(t *testing.T) {
 			id
 			query
 			code
-			status
+			stage
+			stageStatus
 			torrentUrl
 			candidate { title tracker seeders }
 		}
@@ -52,7 +53,7 @@ func TestDownloadMediaCreatesTask(t *testing.T) {
 		t.Fatalf("expected no errors, got %+v", resp.Errors)
 	}
 	task := resp.Data.DownloadMedia
-	if task.ID != "task-1" || task.Code != "ABCD-123" || task.Status != "added" || task.Candidate.Title != "ABCD-123" {
+	if task.ID != "task-1" || task.Code != "ABCD-123" || task.Stage != "DOWNLOADING" || task.StageStatus != "RUNNING" || task.Candidate.Title != "ABCD-123" {
 		t.Fatalf("unexpected download task response: %+v", task)
 	}
 	if downloader.downloadRequest.Query != "ABCD-123" || downloader.downloadRequest.Limit != 1 {
@@ -85,7 +86,8 @@ func TestAddTorrentCreatesTask(t *testing.T) {
 		addTorrent(input: { url: "magnet:?xt=urn:btih:manual", category: "moji" }) {
 			id
 			code
-			status
+			stage
+			stageStatus
 			torrentUrl
 		}
 	}`)
@@ -93,7 +95,7 @@ func TestAddTorrentCreatesTask(t *testing.T) {
 	if len(resp.Errors) > 0 {
 		t.Fatalf("expected no errors, got %+v", resp.Errors)
 	}
-	if resp.Data.AddTorrent.ID != "task-manual" || resp.Data.AddTorrent.Code != "ABCD-123" || resp.Data.AddTorrent.Status != "added" {
+	if resp.Data.AddTorrent.ID != "task-manual" || resp.Data.AddTorrent.Code != "ABCD-123" || resp.Data.AddTorrent.Stage != "DOWNLOADING" || resp.Data.AddTorrent.StageStatus != "RUNNING" {
 		t.Fatalf("unexpected add torrent response: %+v", resp.Data.AddTorrent)
 	}
 	if downloader.addRequest.URL != "magnet:?xt=urn:btih:manual" || downloader.addRequest.Category != "moji" {
@@ -212,7 +214,7 @@ func TestTasksQueryListsTasks(t *testing.T) {
 	}
 	resolver := NewResolver(nil, nil, downloader, nil, "test-version")
 
-	resp := executeGraphQL(t, resolver, `{ tasks { id query code status } }`)
+	resp := executeGraphQL(t, resolver, `{ tasks { id query code stage } }`)
 	if len(resp.Errors) > 0 {
 		t.Fatalf("expected no errors, got %+v", resp.Errors)
 	}
@@ -247,15 +249,15 @@ func TestTasksQueryReturnsNullForUnsetOptionalFields(t *testing.T) {
 	var resp struct {
 		Data struct {
 			Tasks []struct {
-				ID         string  `json:"id"`
-				SavePath   *string `json:"savePath"`
-				StashJobID *string `json:"stashJobId"`
-				Error      *string `json:"error"`
+				ID             string  `json:"id"`
+				SavePath       *string `json:"savePath"`
+				StashScanJobID *string `json:"stashScanJobId"`
+				TransferError  *string `json:"transferError"`
 			} `json:"tasks"`
 		} `json:"data"`
 		Errors []any `json:"errors"`
 	}
-	executeGraphQLInto(t, resolver, `{ tasks { id savePath stashJobId error } }`, &resp)
+	executeGraphQLInto(t, resolver, `{ tasks { id savePath stashScanJobId transferError } }`, &resp)
 
 	if len(resp.Errors) > 0 {
 		t.Fatalf("expected no errors, got %+v", resp.Errors)
@@ -263,7 +265,7 @@ func TestTasksQueryReturnsNullForUnsetOptionalFields(t *testing.T) {
 	if len(resp.Data.Tasks) != 1 {
 		t.Fatalf("expected one task, got %+v", resp.Data.Tasks)
 	}
-	if resp.Data.Tasks[0].SavePath != nil || resp.Data.Tasks[0].StashJobID != nil || resp.Data.Tasks[0].Error != nil {
+	if resp.Data.Tasks[0].SavePath != nil || resp.Data.Tasks[0].StashScanJobID != nil || resp.Data.Tasks[0].TransferError != nil {
 		t.Fatalf("expected unset optional task fields to serialize as null, got %+v", resp.Data.Tasks[0])
 	}
 }
@@ -282,7 +284,7 @@ func TestDeleteTaskMutation(t *testing.T) {
 	resp := executeGraphQL(t, resolver, `mutation {
 		deleteTask(id: "task-delete") {
 			id
-			status
+			stage
 		}
 	}`)
 
@@ -292,7 +294,7 @@ func TestDeleteTaskMutation(t *testing.T) {
 	if downloader.deleteTaskID != "task-delete" {
 		t.Fatalf("expected delete request for task-delete, got %q", downloader.deleteTaskID)
 	}
-	if resp.Data.DeleteTask.ID != "task-delete" || resp.Data.DeleteTask.Status != "completed" {
+	if resp.Data.DeleteTask.ID != "task-delete" || resp.Data.DeleteTask.Stage != "PENDING_INGEST" {
 		t.Fatalf("unexpected delete task response: %+v", resp.Data.DeleteTask)
 	}
 }
@@ -395,7 +397,8 @@ func TestSyncTaskProgress(t *testing.T) {
 	resp := executeGraphQL(t, resolver, `mutation {
 		syncTaskProgress {
 			id
-			status
+			stage
+			stageStatus
 			torrentHash
 			progress
 			qbittorrentState
@@ -409,7 +412,7 @@ func TestSyncTaskProgress(t *testing.T) {
 		t.Fatalf("expected one synced task, got %+v", resp.Data.SyncTaskProgress)
 	}
 	task := resp.Data.SyncTaskProgress[0]
-	if task.ID != "task-sync" || task.TorrentHash != "hash-sync" || task.Progress != 0.5 {
+	if task.ID != "task-sync" || task.Stage != "DOWNLOADING" || task.StageStatus != "RUNNING" || task.TorrentHash != "hash-sync" || task.Progress != 0.5 {
 		t.Fatalf("unexpected synced task: %+v", task)
 	}
 }
@@ -433,8 +436,9 @@ func TestTriggerStashScans(t *testing.T) {
 	resp := executeGraphQL(t, resolver, `mutation {
 		triggerStashScans {
 			id
-			stashJobId
-			stashScanStatus
+			stashScanJobId
+			stage
+			stageStatus
 			stashScanStartedAt
 		}
 	}`)
@@ -445,7 +449,7 @@ func TestTriggerStashScans(t *testing.T) {
 		t.Fatalf("expected one stash scan task, got %+v", resp.Data.TriggerStashScans)
 	}
 	task := resp.Data.TriggerStashScans[0]
-	if task.StashJobID != "job-1" || task.StashScanStatus != downloader.StashScanStatusStarted {
+	if task.StashScanJobID != "job-1" || task.Stage != "PENDING_INGEST" || task.StageStatus != "PENDING" {
 		t.Fatalf("unexpected stash scan task: %+v", task)
 	}
 }
@@ -466,8 +470,9 @@ func TestTriggerTaskStashScan(t *testing.T) {
 	resp := executeGraphQL(t, resolver, `mutation {
 		triggerTaskStashScan(id: "task-single") {
 			id
-			stashJobId
-			stashScanStatus
+			stashScanJobId
+			stage
+			stageStatus
 		}
 	}`)
 	if len(resp.Errors) > 0 {
@@ -476,7 +481,7 @@ func TestTriggerTaskStashScan(t *testing.T) {
 	if dl.triggerTaskScanID != "task-single" {
 		t.Fatalf("unexpected trigger task id: %q", dl.triggerTaskScanID)
 	}
-	if resp.Data.TriggerTaskStashScan.ID != "task-single" || resp.Data.TriggerTaskStashScan.StashJobID != "job-single" {
+	if resp.Data.TriggerTaskStashScan.ID != "task-single" || resp.Data.TriggerTaskStashScan.StashScanJobID != "job-single" {
 		t.Fatalf("unexpected single stash scan response: %+v", resp.Data.TriggerTaskStashScan)
 	}
 }
@@ -643,10 +648,10 @@ func TestSettingsQueryReturnsRuntimeSnapshot(t *testing.T) {
 func TestDashboardStatsQueryAggregatesTasks(t *testing.T) {
 	downloader := &fakeDownloader{
 		listTasks: []*downloader.Task{
-			{ID: "task-1", Status: downloader.TaskStatusDownloading},
-			{ID: "task-2", Status: downloader.TaskStatusCompleted, StashScanStatus: downloader.StashScanStatusStarted},
-			{ID: "task-3", Status: downloader.TaskStatusFailed},
-			{ID: "task-4", Status: downloader.TaskStatusCompleted, StashScanError: "stash rejected scan"},
+			{ID: "task-1", Stage: downloader.TaskStageDownloading, StageStatus: downloader.TaskStageStatusRunning},
+			{ID: "task-2", Stage: downloader.TaskStageScanning, StageStatus: downloader.TaskStageStatusRunning, StashScanStatus: downloader.StashScanStatusStarted},
+			{ID: "task-3", Stage: downloader.TaskStageDownloading, StageStatus: downloader.TaskStageStatusBlocked},
+			{ID: "task-4", Stage: downloader.TaskStageCompleted, StageStatus: downloader.TaskStageStatusDone},
 		},
 	}
 	resolver := NewResolver(nil, nil, downloader, nil, "test-version")
@@ -665,7 +670,7 @@ func TestDashboardStatsQueryAggregatesTasks(t *testing.T) {
 		t.Fatalf("expected no errors, got %+v", resp.Errors)
 	}
 	stats := resp.Data.DashboardStats
-	if stats.Total != 4 || stats.Active != 1 || stats.Completed != 2 || stats.Downloading != 1 || stats.PendingScans != 1 || stats.Failed != 2 {
+	if stats.Total != 4 || stats.Active != 3 || stats.Completed != 1 || stats.Downloading != 1 || stats.PendingScans != 1 || stats.Failed != 1 {
 		t.Fatalf("unexpected dashboard stats: %+v", stats)
 	}
 }
@@ -1028,6 +1033,10 @@ func (f *fakeDownloader) DeleteTask(_ context.Context, id string) (*downloader.T
 	return f.deleteTask, nil
 }
 
+func (f *fakeDownloader) RetryTask(_ context.Context, _ string, _ downloader.StashScanner) (*downloader.Task, error) {
+	return nil, nil
+}
+
 func (f *fakeDownloader) SyncProgress(_ context.Context) ([]*downloader.Task, error) {
 	return f.syncTasks, nil
 }
@@ -1044,18 +1053,20 @@ func (f *fakeDownloader) TriggerStashScans(_ context.Context, _ downloader.Stash
 type graphQLTaskResponse struct {
 	Data struct {
 		AddTorrent struct {
-			ID         string `json:"id"`
-			Code       string `json:"code"`
-			Status     string `json:"status"`
-			TorrentURL string `json:"torrentUrl"`
+			ID          string `json:"id"`
+			Code        string `json:"code"`
+			Stage       string `json:"stage"`
+			StageStatus string `json:"stageStatus"`
+			TorrentURL  string `json:"torrentUrl"`
 		} `json:"addTorrent"`
 		DownloadMedia struct {
-			ID         string `json:"id"`
-			Query      string `json:"query"`
-			Code       string `json:"code"`
-			Status     string `json:"status"`
-			TorrentURL string `json:"torrentUrl"`
-			Candidate  struct {
+			ID          string `json:"id"`
+			Query       string `json:"query"`
+			Code        string `json:"code"`
+			Stage       string `json:"stage"`
+			StageStatus string `json:"stageStatus"`
+			TorrentURL  string `json:"torrentUrl"`
+			Candidate   struct {
 				Title   string `json:"title"`
 				Tracker string `json:"tracker"`
 				Seeders int    `json:"seeders"`
@@ -1074,21 +1085,22 @@ type graphQLTaskResponse struct {
 			} `json:"previewMeta"`
 		} `json:"previewJackettSelection"`
 		Tasks []struct {
-			ID     string `json:"id"`
-			Query  string `json:"query"`
-			Code   string `json:"code"`
-			Status string `json:"status"`
+			ID    string `json:"id"`
+			Query string `json:"query"`
+			Code  string `json:"code"`
+			Stage string `json:"stage"`
 		} `json:"tasks"`
 		Task *struct {
 			ID string `json:"id"`
 		} `json:"task"`
 		DeleteTask struct {
-			ID     string `json:"id"`
-			Status string `json:"status"`
+			ID    string `json:"id"`
+			Stage string `json:"stage"`
 		} `json:"deleteTask"`
 		SyncTaskProgress []struct {
 			ID               string  `json:"id"`
-			Status           string  `json:"status"`
+			Stage            string  `json:"stage"`
+			StageStatus      string  `json:"stageStatus"`
 			TorrentHash      string  `json:"torrentHash"`
 			Progress         float64 `json:"progress"`
 			QbittorrentState string  `json:"qbittorrentState"`
@@ -1096,14 +1108,16 @@ type graphQLTaskResponse struct {
 		} `json:"syncTaskProgress"`
 		TriggerStashScans []struct {
 			ID                 string  `json:"id"`
-			StashJobID         string  `json:"stashJobId"`
-			StashScanStatus    string  `json:"stashScanStatus"`
+			StashScanJobID     string  `json:"stashScanJobId"`
+			Stage              string  `json:"stage"`
+			StageStatus        string  `json:"stageStatus"`
 			StashScanStartedAt *string `json:"stashScanStartedAt"`
 		} `json:"triggerStashScans"`
 		TriggerTaskStashScan struct {
-			ID              string `json:"id"`
-			StashJobID      string `json:"stashJobId"`
-			StashScanStatus string `json:"stashScanStatus"`
+			ID             string `json:"id"`
+			StashScanJobID string `json:"stashScanJobId"`
+			Stage          string `json:"stage"`
+			StageStatus    string `json:"stageStatus"`
 		} `json:"triggerTaskStashScan"`
 		Settings struct {
 			Stash struct {

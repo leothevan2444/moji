@@ -88,8 +88,8 @@ func TestDownloadMediaContextAddsBestTorrent(t *testing.T) {
 		t.Fatalf("DownloadMediaContext failed: %v", err)
 	}
 
-	if task.Status != TaskStatusAdded {
-		t.Fatalf("expected task status %q, got %q", TaskStatusAdded, task.Status)
+	if task.Stage != TaskStageDownloading || task.StageStatus != TaskStageStatusRunning {
+		t.Fatalf("expected task stage DOWNLOADING/RUNNING, got %s/%s", task.Stage, task.StageStatus)
 	}
 	if task.Source != TaskSourceManual {
 		t.Fatalf("expected task source %q, got %q", TaskSourceManual, task.Source)
@@ -105,8 +105,8 @@ func TestDownloadMediaContextAddsBestTorrent(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Find failed: %v", err)
 	}
-	if stored.Status != TaskStatusAdded {
-		t.Fatalf("expected stored task status %q, got %q", TaskStatusAdded, stored.Status)
+	if stored.Stage != TaskStageDownloading || stored.StageStatus != TaskStageStatusRunning {
+		t.Fatalf("expected stored task stage DOWNLOADING/RUNNING, got %s/%s", stored.Stage, stored.StageStatus)
 	}
 	if stored.Code != "SONE-000" {
 		t.Fatalf("expected stored code %q, got %q", "SONE-000", stored.Code)
@@ -134,11 +134,11 @@ func TestDownloadMediaContextRecordsAddFailure(t *testing.T) {
 	if task == nil {
 		t.Fatal("expected failed task to be returned")
 	}
-	if task.Status != TaskStatusFailed {
-		t.Fatalf("expected task status %q, got %q", TaskStatusFailed, task.Status)
+	if task.Stage != TaskStageDownloading || task.StageStatus != TaskStageStatusBlocked {
+		t.Fatalf("expected task stage DOWNLOADING/BLOCKED, got %s/%s", task.Stage, task.StageStatus)
 	}
-	if task.Error != qbtErr.Error() {
-		t.Fatalf("expected task error %q, got %q", qbtErr.Error(), task.Error)
+	if task.StageErrorMessage != qbtErr.Error() {
+		t.Fatalf("expected task stage error %q, got %q", qbtErr.Error(), task.StageErrorMessage)
 	}
 }
 
@@ -166,7 +166,7 @@ func TestAddTorrentContextCreatesPersistedTask(t *testing.T) {
 		t.Fatalf("AddTorrentContext failed: %v", err)
 	}
 
-	if task.ID != "task-manual" || task.Status != TaskStatusAdded {
+	if task.ID != "task-manual" || task.Stage != TaskStageDownloading || task.StageStatus != TaskStageStatusRunning {
 		t.Fatalf("unexpected task: %+v", task)
 	}
 	if task.Source != TaskSourceManual {
@@ -189,7 +189,7 @@ func TestAddTorrentContextCreatesPersistedTask(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Find failed: %v", err)
 	}
-	if stored.Status != TaskStatusAdded || stored.TorrentURL != task.TorrentURL {
+	if stored.Stage != TaskStageDownloading || stored.StageStatus != TaskStageStatusRunning || stored.TorrentURL != task.TorrentURL {
 		t.Fatalf("unexpected stored task: %+v", stored)
 	}
 }
@@ -589,8 +589,8 @@ func TestSyncProgressUpdatesTaskFromTorrentList(t *testing.T) {
 		t.Fatalf("expected one task, got %d", len(tasks))
 	}
 	task := tasks[0]
-	if task.Status != TaskStatusDownloading {
-		t.Fatalf("expected status %q, got %q", TaskStatusDownloading, task.Status)
+	if task.Stage != TaskStageDownloading || task.StageStatus != TaskStageStatusRunning {
+		t.Fatalf("expected stage DOWNLOADING/RUNNING, got %s/%s", task.Stage, task.StageStatus)
 	}
 	if task.TorrentHash != "hash-sync" || task.Progress != 0.5 || task.QBittorrentState != string(qbittorrent.TorrentStateDownloading) {
 		t.Fatalf("unexpected synced task: %+v", task)
@@ -636,10 +636,10 @@ func TestSyncProgressMarksCompletedTask(t *testing.T) {
 		t.Fatalf("SyncProgress failed: %v", err)
 	}
 	task := tasks[0]
-	if task.Status != TaskStatusCompleted {
-		t.Fatalf("expected status %q, got %q", TaskStatusCompleted, task.Status)
+	if task.Stage != TaskStagePendingIngest || task.StageStatus != TaskStageStatusPending {
+		t.Fatalf("expected stage PENDING_INGEST/PENDING, got %s/%s", task.Stage, task.StageStatus)
 	}
-	if task.CompletedAt == nil || !task.CompletedAt.Equal(time.Unix(300, 0).UTC()) {
-		t.Fatalf("unexpected completed at: %v", task.CompletedAt)
+	if task.DownloadCompletedAt == nil || !task.DownloadCompletedAt.Equal(time.Unix(300, 0).UTC()) {
+		t.Fatalf("unexpected download completed at: %v", task.DownloadCompletedAt)
 	}
 }

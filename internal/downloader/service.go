@@ -56,16 +56,6 @@ type TaskStore interface {
 	Delete(ctx context.Context, id string) (*Task, error)
 }
 
-type TaskStatus string
-
-const (
-	TaskStatusPending     TaskStatus = "pending"
-	TaskStatusAdded       TaskStatus = "added"
-	TaskStatusDownloading TaskStatus = "downloading"
-	TaskStatusCompleted   TaskStatus = "completed"
-	TaskStatusFailed      TaskStatus = "failed"
-)
-
 type TaskSource string
 
 const (
@@ -80,6 +70,12 @@ type Task struct {
 	Query                 string
 	Code                  string
 	Status                TaskStatus
+	Stage                 TaskStage
+	StageStatus           TaskStageStatus
+	StageLabel            string
+	StageStatusLabel      string
+	StageErrorCode        string
+	StageErrorMessage     string
 	Candidate             Candidate
 	TorrentURL            string
 	SavePath              string
@@ -93,13 +89,20 @@ type Task struct {
 	QBittorrentState      string
 	ContentPath           string
 	CompletedAt           *time.Time
+	DownloadCompletedAt   *time.Time
 	StashMode             string
+	DeliveryMode          string
 	StashSourcePath       string
+	MojiSourcePath        string
 	StashTransferAction   string
+	TransferAction        string
 	StashTransferPath     string
+	MojiTransferPath      string
 	StashTransferStatus   string
 	StashTransferError    string
+	TransferError         string
 	StashJobID            string
+	StashScanJobID        string
 	StashScanPath         string
 	StashScanStatus       string
 	StashScanError        string
@@ -368,6 +371,41 @@ func (s *Service) DeleteTask(ctx context.Context, id string) (*Task, error) {
 	return s.store.Delete(ctx, id)
 }
 
+func (s *Service) RetryTask(ctx context.Context, id string, scanner StashScanner) (*Task, error) {
+	id = strings.TrimSpace(id)
+	if id == "" {
+		return nil, errors.New("downloader: task id is required")
+	}
+
+	task, err := s.store.Find(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+	if task == nil {
+		return nil, fmt.Errorf("downloader: task %q not found", id)
+	}
+	if task.Stage == TaskStageCompleted {
+		return nil, fmt.Errorf("downloader: task %q is already completed", id)
+	}
+	if task.StageStatus != TaskStageStatusBlocked {
+		return nil, fmt.Errorf("downloader: task %q is not blocked", id)
+	}
+
+	switch task.Stage {
+	case TaskStageSourcing:
+		return s.retrySourcingTask(ctx, task)
+	case TaskStageDownloading:
+		return s.retryDownloadingTask(ctx, task)
+	case TaskStagePendingIngest, TaskStageTransferring, TaskStageScanning:
+		if scanner == nil {
+			return nil, errors.New("downloader: stash scanner is required")
+		}
+		return s.retryIngestTask(ctx, task, scanner)
+	default:
+		return nil, fmt.Errorf("downloader: task %q has unsupported retry stage %s", id, task.Stage)
+	}
+}
+
 func (s *Service) SyncProgress(ctx context.Context) ([]*Task, error) {
 	tasks, err := s.store.List(ctx)
 	if err != nil {
@@ -381,7 +419,15 @@ func (s *Service) SyncProgress(ctx context.Context) ([]*Task, error) {
 
 	updated := make([]*Task, 0, len(tasks))
 	for _, task := range tasks {
-		if task == nil || task.Status == TaskStatusFailed || task.Status == TaskStatusCompleted {
+		if task == nil || task.Stage == TaskStageCompleted {
+			updated = append(updated, task)
+			continue
+		}
+		if task.Stage == TaskStageScanning && task.StageStatus == TaskStageStatusRunning {
+			updated = append(updated, task)
+			continue
+		}
+		if task.Stage == TaskStagePendingIngest || task.Stage == TaskStageTransferring {
 			updated = append(updated, task)
 			continue
 		}
@@ -393,23 +439,26 @@ func (s *Service) SyncProgress(ctx context.Context) ([]*Task, error) {
 		}
 
 		next := cloneTask(task)
-		prevStatus := next.Status
+		prevStage := next.Stage
+		prevStageStatus := next.StageStatus
 		prevProgress := next.Progress
 		applyTorrentProgress(next, torrent, s.now().UTC())
 		if err := s.store.Update(ctx, next); err != nil {
 			return updated, fmt.Errorf("update task %q: %w", next.ID, err)
 		}
-		if next.Status != prevStatus {
+		if next.Stage != prevStage || next.StageStatus != prevStageStatus {
 			logging.Infof(
-				"downloader: task %s status %s -> %s (%s %.1f%%)",
+				"downloader: task %s stage %s/%s -> %s/%s (%s %.1f%%)",
 				next.ID,
-				prevStatus,
-				next.Status,
+				prevStage,
+				prevStageStatus,
+				next.Stage,
+				next.StageStatus,
 				next.Candidate.Title,
 				next.Progress*100,
 			)
-		} else if next.Status == TaskStatusCompleted && next.Progress != prevProgress {
-			logging.Infof("downloader: task %s completed with content path %s", next.ID, next.ContentPath)
+		} else if next.Stage == TaskStagePendingIngest && next.Progress != prevProgress {
+			logging.Infof("downloader: task %s download completed with content path %s", next.ID, next.ContentPath)
 		}
 		updated = append(updated, next)
 	}
@@ -417,12 +466,98 @@ func (s *Service) SyncProgress(ctx context.Context) ([]*Task, error) {
 	return updated, nil
 }
 
+func (s *Service) retrySourcingTask(ctx context.Context, task *Task) (*Task, error) {
+	next := cloneTask(task)
+	setTaskStage(next, TaskStageSourcing, TaskStageStatusRunning)
+	clearTaskStageError(next)
+	next.UpdatedAt = s.now().UTC()
+	if err := s.store.Update(ctx, next); err != nil {
+		return nil, fmt.Errorf("update task %q: %w", next.ID, err)
+	}
+	return s.runSourcingFlow(ctx, next, DownloadRequest{
+		Source:   next.Source,
+		Query:    next.Query,
+		SavePath: next.SavePath,
+		Category: next.Category,
+		Tags:     next.Tags,
+	})
+}
+
+func (s *Service) retryDownloadingTask(ctx context.Context, task *Task) (*Task, error) {
+	next := cloneTask(task)
+	setTaskStage(next, TaskStageDownloading, TaskStageStatusRunning)
+	clearTaskStageError(next)
+	next.UpdatedAt = s.now().UTC()
+	if err := s.store.Update(ctx, next); err != nil {
+		return nil, fmt.Errorf("update task %q: %w", next.ID, err)
+	}
+	if err := s.submitTaskTorrent(ctx, next, next.TorrentURL, next.SavePath, next.Category, next.Tags, nil); err != nil {
+		return next, err
+	}
+	return next, nil
+}
+
+func (s *Service) retryIngestTask(ctx context.Context, task *Task, scanner StashScanner) (*Task, error) {
+	next := cloneTask(task)
+	setTaskStage(next, next.Stage, TaskStageStatusPending)
+	clearTaskStageError(next)
+	next.UpdatedAt = s.now().UTC()
+	if err := s.store.Update(ctx, next); err != nil {
+		return nil, fmt.Errorf("update task %q: %w", next.ID, err)
+	}
+
+	retried, execErr := s.executeTaskStashIntegration(ctx, next, scanner)
+	if persistErr := s.store.Update(ctx, retried); persistErr != nil {
+		return nil, fmt.Errorf("update task %q: %w", retried.ID, persistErr)
+	}
+	if execErr != nil {
+		return retried, execErr
+	}
+	return retried, nil
+}
+
 func (s *Service) DownloadMediaContext(ctx context.Context, req DownloadRequest) (*Task, error) {
 	query := strings.TrimSpace(req.Query)
 	if query == "" {
 		return nil, errors.New("downloader: query is required")
 	}
+	code := extractCode(query)
+	if code == "" {
+		return nil, ErrTaskCodeRequired
+	}
+	if err := s.ensureTaskCodeCanBeCreated(ctx, code); err != nil {
+		return nil, err
+	}
 
+	now := s.now().UTC()
+	source := req.Source
+	if source == "" {
+		source = TaskSourceManual
+	}
+	task := &Task{
+		ID:        s.newID(),
+		Source:    source,
+		Query:     query,
+		Code:      code,
+		SavePath:  req.SavePath,
+		Category:  req.Category,
+		Tags:      req.Tags,
+		CreatedAt: now,
+		UpdatedAt: now,
+	}
+	setTaskStage(task, TaskStageSourcing, TaskStageStatusRunning)
+
+	if err := s.store.Create(ctx, task); err != nil {
+		logging.Errorf("downloader: create task failed for query %q: %v", query, err)
+		return nil, fmt.Errorf("create task: %w", err)
+	}
+	logging.Infof("downloader: created %s task %s for query %q", strings.ToLower(string(source)), task.ID, query)
+
+	return s.runSourcingFlow(ctx, task, req)
+}
+
+func (s *Service) runSourcingFlow(ctx context.Context, task *Task, req DownloadRequest) (*Task, error) {
+	query := strings.TrimSpace(task.Query)
 	searchOptions := []tracker.SearchOption{
 		tracker.WithTrackers(req.Trackers),
 		tracker.WithCategories(req.Categories),
@@ -433,10 +568,18 @@ func (s *Service) DownloadMediaContext(ctx context.Context, req DownloadRequest)
 
 	results, err := s.tracker.Search(query, searchOptions...)
 	if err != nil {
+		blockTask(task, TaskStageErrorSearch, err.Error(), s.now().UTC())
+		_ = s.store.Update(ctx, task)
 		logging.Errorf("downloader: search failed for query %q: %v", query, err)
-		return nil, fmt.Errorf("search torrents: %w", err)
+		return task, fmt.Errorf("search torrents: %w", err)
 	}
 	logging.Infof("downloader: search returned %d results for query %q", len(results), query)
+	if len(results) == 0 {
+		err = errors.New("no candidate found for the current query")
+		blockTask(task, TaskStageErrorNoCandidate, err.Error(), s.now().UTC())
+		_ = s.store.Update(ctx, task)
+		return task, err
+	}
 
 	selectionConfig := config.DefaultCandidateSelectionConfig()
 	if s.candidateSelection != nil {
@@ -448,84 +591,39 @@ func (s *Service) DownloadMediaContext(ctx context.Context, req DownloadRequest)
 	}
 	result, err := selector.Select(ctx, query, results, selectionConfig)
 	if err != nil {
+		errorCode := TaskStageErrorSearch
+		if strings.Contains(err.Error(), "no downloadable torrent candidate found") {
+			errorCode = TaskStageErrorNoDownloadCandidate
+		}
+		blockTask(task, errorCode, err.Error(), s.now().UTC())
+		_ = s.store.Update(ctx, task)
 		logging.Errorf("downloader: select candidate failed for query %q: %v", query, err)
-		return nil, err
+		return task, err
 	}
 
 	candidate := candidateFromSearchResult(result)
 	torrentURL := preferredTorrentURL(result)
 	identity := torrentIdentityFromCandidate(candidate, torrentURL)
-	code := extractCode(candidate.Title, candidate.Link, candidate.MagnetURI)
-	if err := s.ensureTaskCanBeCreated(ctx, identity, code); err != nil {
-		return nil, err
-	}
-	now := s.now().UTC()
-	source := req.Source
-	if source == "" {
-		source = TaskSourceManual
-	}
-	task := &Task{
-		ID:                    s.newID(),
-		Source:                source,
-		Query:                 query,
-		Code:                  code,
-		Status:                TaskStatusPending,
-		Candidate:             candidate,
-		TorrentURL:            torrentURL,
-		SavePath:              req.SavePath,
-		Category:              req.Category,
-		Tags:                  req.Tags,
-		TorrentIdentityHash:   identity.InfoHash,
-		TorrentIdentityMagnet: identity.MagnetURI,
-		CreatedAt:             now,
-		UpdatedAt:             now,
-	}
-
-	if err := s.store.Create(ctx, task); err != nil {
-		logging.Errorf("downloader: create task failed for query %q: %v", query, err)
-		return nil, fmt.Errorf("create task: %w", err)
-	}
-	logging.Infof(
-		"downloader: created %s task %s for query %q using tracker=%s title=%q",
-		strings.ToLower(string(source)),
-		task.ID,
-		query,
-		candidate.Tracker,
-		candidate.Title,
-	)
-
-	addOptions := qbittorrent.AddTorrentOptions{
-		URLs: []string{torrentURL},
-	}
-	if req.SavePath != "" {
-		addOptions.SavePath = &req.SavePath
-	}
-	if req.Category != "" {
-		addOptions.Category = &req.Category
-	}
-	if req.Tags != "" {
-		addOptions.Tags = &req.Tags
-	}
-	if req.Paused != nil {
-		addOptions.Paused = req.Paused
-	}
-
-	if err := s.qbt.AddNewTorrent(ctx, addOptions); err != nil {
-		task.Status = TaskStatusFailed
-		task.Error = err.Error()
-		task.UpdatedAt = s.now().UTC()
+	if err := s.ensureTaskIdentityAvailable(ctx, task.ID, identity); err != nil {
+		blockTask(task, TaskStageErrorDuplicateTorrent, err.Error(), s.now().UTC())
 		_ = s.store.Update(ctx, task)
-		logging.Errorf("downloader: add torrent failed for task %s query %q: %v", task.ID, query, err)
-		return task, fmt.Errorf("add torrent: %w", err)
+		return task, err
 	}
-
-	task.Status = TaskStatusAdded
+	task.Candidate = candidate
+	task.TorrentURL = torrentURL
+	task.TorrentIdentityHash = identity.InfoHash
+	task.TorrentIdentityMagnet = identity.MagnetURI
+	setTaskStage(task, TaskStageDownloading, TaskStageStatusRunning)
+	clearTaskStageError(task)
 	task.UpdatedAt = s.now().UTC()
 	if err := s.store.Update(ctx, task); err != nil {
-		logging.Errorf("downloader: persist added task %s failed: %v", task.ID, err)
 		return task, fmt.Errorf("update task: %w", err)
 	}
-	logging.Infof("downloader: %s task %s added to qBittorrent for query %q", strings.ToLower(string(source)), task.ID, query)
+
+	if err := s.submitTaskTorrent(ctx, task, torrentURL, req.SavePath, req.Category, req.Tags, req.Paused); err != nil {
+		return task, err
+	}
+	logging.Infof("downloader: %s task %s added to qBittorrent for query %q", strings.ToLower(string(task.Source)), task.ID, query)
 
 	return task, nil
 }
@@ -554,7 +652,8 @@ func (s *Service) AddTorrentContext(ctx context.Context, req AddTorrentRequest) 
 		Source:                source,
 		Query:                 torrentURL,
 		Code:                  code,
-		Status:                TaskStatusPending,
+		Stage:                 TaskStageDownloading,
+		StageStatus:           TaskStageStatusRunning,
 		Candidate:             candidate,
 		TorrentURL:            torrentURL,
 		SavePath:              req.SavePath,
@@ -565,6 +664,7 @@ func (s *Service) AddTorrentContext(ctx context.Context, req AddTorrentRequest) 
 		CreatedAt:             now,
 		UpdatedAt:             now,
 	}
+	refreshTaskStageFields(task)
 
 	if err := s.store.Create(ctx, task); err != nil {
 		logging.Errorf("downloader: create manual task failed for url %q: %v", torrentURL, err)
@@ -572,40 +672,44 @@ func (s *Service) AddTorrentContext(ctx context.Context, req AddTorrentRequest) 
 	}
 	logging.Infof("downloader: created %s task %s for url %q", strings.ToLower(string(source)), task.ID, torrentURL)
 
-	addOptions := qbittorrent.AddTorrentOptions{
-		URLs: []string{torrentURL},
-	}
-	if req.SavePath != "" {
-		addOptions.SavePath = &req.SavePath
-	}
-	if req.Category != "" {
-		addOptions.Category = &req.Category
-	}
-	if req.Tags != "" {
-		addOptions.Tags = &req.Tags
-	}
-	if req.Paused != nil {
-		addOptions.Paused = req.Paused
-	}
-
-	if err := s.qbt.AddNewTorrent(ctx, addOptions); err != nil {
-		task.Status = TaskStatusFailed
-		task.Error = err.Error()
-		task.UpdatedAt = s.now().UTC()
-		_ = s.store.Update(ctx, task)
-		logging.Errorf("downloader: add manual torrent failed for task %s: %v", task.ID, err)
-		return task, fmt.Errorf("add torrent: %w", err)
-	}
-
-	task.Status = TaskStatusAdded
-	task.UpdatedAt = s.now().UTC()
-	if err := s.store.Update(ctx, task); err != nil {
-		logging.Errorf("downloader: persist manual task %s failed: %v", task.ID, err)
-		return task, fmt.Errorf("update task: %w", err)
+	if err := s.submitTaskTorrent(ctx, task, torrentURL, req.SavePath, req.Category, req.Tags, req.Paused); err != nil {
+		return task, err
 	}
 	logging.Infof("downloader: %s task %s added to qBittorrent", strings.ToLower(string(source)), task.ID)
 
 	return task, nil
+}
+
+func (s *Service) submitTaskTorrent(ctx context.Context, task *Task, torrentURL string, savePath string, category string, tags string, paused *bool) error {
+	addOptions := qbittorrent.AddTorrentOptions{URLs: []string{torrentURL}}
+	if savePath != "" {
+		addOptions.SavePath = &savePath
+	}
+	if category != "" {
+		addOptions.Category = &category
+	}
+	if tags != "" {
+		addOptions.Tags = &tags
+	}
+	if paused != nil {
+		addOptions.Paused = paused
+	}
+
+	if err := s.qbt.AddNewTorrent(ctx, addOptions); err != nil {
+		blockTask(task, TaskStageErrorTorrentSubmit, err.Error(), s.now().UTC())
+		_ = s.store.Update(ctx, task)
+		logging.Errorf("downloader: add torrent failed for task %s: %v", task.ID, err)
+		return fmt.Errorf("add torrent: %w", err)
+	}
+
+	setTaskStage(task, TaskStageDownloading, TaskStageStatusRunning)
+	clearTaskStageError(task)
+	task.UpdatedAt = s.now().UTC()
+	if err := s.store.Update(ctx, task); err != nil {
+		logging.Errorf("downloader: persist task %s failed after qB submit: %v", task.ID, err)
+		return fmt.Errorf("update task: %w", err)
+	}
+	return nil
 }
 
 func preferredTorrentURL(result jackett.SearchResult) string {
@@ -705,21 +809,23 @@ func applyTorrentProgress(task *Task, torrent qbittorrent.Torrent, now time.Time
 	task.UpdatedAt = now
 
 	if torrent.Progress >= 1 || torrent.CompletionOn > 0 || isCompletedTorrentState(torrent.State) {
-		task.Status = TaskStatusCompleted
+		setTaskStage(task, TaskStagePendingIngest, TaskStageStatusPending)
+		clearTaskStageError(task)
 		completedAt := now
 		if torrent.CompletionOn > 0 {
 			completedAt = time.Unix(torrent.CompletionOn, 0).UTC()
 		}
-		task.CompletedAt = &completedAt
+		task.DownloadCompletedAt = &completedAt
+		task.CompletedAt = cloneTime(task.DownloadCompletedAt)
 		return
 	}
 
 	if torrent.Progress > 0 || isDownloadingTorrentState(torrent.State) {
-		task.Status = TaskStatusDownloading
+		setTaskStage(task, TaskStageDownloading, TaskStageStatusRunning)
 		return
 	}
 
-	task.Status = TaskStatusAdded
+	setTaskStage(task, TaskStageDownloading, TaskStageStatusRunning)
 }
 
 func isCompletedTorrentState(state qbittorrent.TorrentState) bool {
@@ -891,9 +997,20 @@ func cloneTask(task *Task) *Task {
 		return nil
 	}
 	cp := *task
-	cp.CompletedAt = cloneTime(task.CompletedAt)
+	cp.DownloadCompletedAt = cloneTime(task.DownloadCompletedAt)
 	cp.StashScanStartedAt = cloneTime(task.StashScanStartedAt)
+	refreshTaskStageFields(&cp)
 	return &cp
+}
+
+func blockTask(task *Task, code string, message string, now time.Time) {
+	if task == nil {
+		return
+	}
+	setTaskStage(task, task.Stage, TaskStageStatusBlocked)
+	setTaskStageError(task, code, message)
+	task.UpdatedAt = now
+	refreshTaskStageFields(task)
 }
 
 type osFileOperator struct{}

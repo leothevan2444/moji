@@ -37,7 +37,7 @@ func (s *SQLiteTaskStore) Create(ctx context.Context, task *Task) error {
 	if err := upsertTaskRow(ctx, tx, task, false); err != nil {
 		return err
 	}
-	if err := insertTaskEvent(ctx, tx, task.ID, "created", "", string(task.Status), "task created"); err != nil {
+	if err := insertTaskEvent(ctx, tx, task.ID, "created", "", string(task.Stage), "task created"); err != nil {
 		return err
 	}
 
@@ -58,8 +58,8 @@ func (s *SQLiteTaskStore) Update(ctx context.Context, task *Task) error {
 	}
 	defer tx.Rollback()
 
-	var previousStatus string
-	if err := tx.GetContext(ctx, &previousStatus, `SELECT status FROM tasks WHERE id = ?`, task.ID); err != nil {
+	var previousStage string
+	if err := tx.GetContext(ctx, &previousStage, `SELECT stage FROM tasks WHERE id = ?`, task.ID); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return fmt.Errorf("downloader: task %q not found", task.ID)
 		}
@@ -71,10 +71,10 @@ func (s *SQLiteTaskStore) Update(ctx context.Context, task *Task) error {
 	}
 
 	message := "task updated"
-	if previousStatus != string(task.Status) {
-		message = fmt.Sprintf("task status %s -> %s", previousStatus, task.Status)
+	if previousStage != string(task.Stage) {
+		message = fmt.Sprintf("task stage %s -> %s", previousStage, task.Stage)
 	}
-	if err := insertTaskEvent(ctx, tx, task.ID, "updated", previousStatus, string(task.Status), message); err != nil {
+	if err := insertTaskEvent(ctx, tx, task.ID, "updated", previousStage, string(task.Stage), message); err != nil {
 		return err
 	}
 
@@ -197,7 +197,10 @@ SELECT
   source,
   query,
   code,
-  status,
+  stage,
+  stage_status,
+  stage_error_code,
+  stage_error_message,
   torrent_url,
   save_path,
   category,
@@ -209,28 +212,25 @@ SELECT
   progress,
   qbittorrent_state,
   content_path,
-  completed_at,
-  stash_mode,
-  stash_source_path,
-  stash_transfer_action,
-  stash_transfer_path,
-  stash_transfer_status,
-  stash_transfer_error,
-  stash_job_id,
+  download_completed_at,
+  delivery_mode,
+  moji_source_path,
+  transfer_action,
+  moji_transfer_path,
+  transfer_error,
+  stash_scan_job_id,
   stash_scan_path,
-  stash_scan_status,
   stash_scan_error,
   stash_scan_hint,
   stash_scan_started_at,
-  error,
-  candidate_title,
-  candidate_tracker,
-  candidate_info_hash,
-  candidate_link,
-  candidate_magnet_uri,
-  candidate_size,
-  candidate_seeders,
-  candidate_peers,
+  selected_title,
+  selected_tracker,
+  selected_info_hash,
+  selected_link,
+  selected_magnet_uri,
+  selected_size,
+  selected_seeders,
+  selected_peers,
   created_at,
   updated_at
 FROM tasks`
@@ -240,7 +240,10 @@ type sqliteTaskRow struct {
 	Source                string         `db:"source"`
 	Query                 string         `db:"query"`
 	Code                  string         `db:"code"`
-	Status                string         `db:"status"`
+	Stage                 string         `db:"stage"`
+	StageStatus           string         `db:"stage_status"`
+	StageErrorCode        sql.NullString `db:"stage_error_code"`
+	StageErrorMessage     sql.NullString `db:"stage_error_message"`
 	TorrentURL            string         `db:"torrent_url"`
 	SavePath              sql.NullString `db:"save_path"`
 	Category              sql.NullString `db:"category"`
@@ -252,28 +255,25 @@ type sqliteTaskRow struct {
 	Progress              float64        `db:"progress"`
 	QBittorrentState      sql.NullString `db:"qbittorrent_state"`
 	ContentPath           sql.NullString `db:"content_path"`
-	CompletedAt           sql.NullString `db:"completed_at"`
-	StashMode             sql.NullString `db:"stash_mode"`
-	StashSourcePath       sql.NullString `db:"stash_source_path"`
-	StashTransferAction   sql.NullString `db:"stash_transfer_action"`
-	StashTransferPath     sql.NullString `db:"stash_transfer_path"`
-	StashTransferStatus   sql.NullString `db:"stash_transfer_status"`
-	StashTransferError    sql.NullString `db:"stash_transfer_error"`
-	StashJobID            sql.NullString `db:"stash_job_id"`
+	DownloadCompletedAt   sql.NullString `db:"download_completed_at"`
+	DeliveryMode          sql.NullString `db:"delivery_mode"`
+	MojiSourcePath        sql.NullString `db:"moji_source_path"`
+	TransferAction        sql.NullString `db:"transfer_action"`
+	MojiTransferPath      sql.NullString `db:"moji_transfer_path"`
+	TransferError         sql.NullString `db:"transfer_error"`
+	StashScanJobID        sql.NullString `db:"stash_scan_job_id"`
 	StashScanPath         sql.NullString `db:"stash_scan_path"`
-	StashScanStatus       sql.NullString `db:"stash_scan_status"`
 	StashScanError        sql.NullString `db:"stash_scan_error"`
 	StashScanHint         sql.NullString `db:"stash_scan_hint"`
 	StashScanStartedAt    sql.NullString `db:"stash_scan_started_at"`
-	Error                 sql.NullString `db:"error"`
-	CandidateTitle        string         `db:"candidate_title"`
-	CandidateTracker      string         `db:"candidate_tracker"`
-	CandidateInfoHash     string         `db:"candidate_info_hash"`
-	CandidateLink         string         `db:"candidate_link"`
-	CandidateMagnetURI    string         `db:"candidate_magnet_uri"`
-	CandidateSize         int64          `db:"candidate_size"`
-	CandidateSeeders      int            `db:"candidate_seeders"`
-	CandidatePeers        int            `db:"candidate_peers"`
+	SelectedTitle         string         `db:"selected_title"`
+	SelectedTracker       string         `db:"selected_tracker"`
+	SelectedInfoHash      string         `db:"selected_info_hash"`
+	SelectedLink          string         `db:"selected_link"`
+	SelectedMagnetURI     string         `db:"selected_magnet_uri"`
+	SelectedSize          int64          `db:"selected_size"`
+	SelectedSeeders       int            `db:"selected_seeders"`
+	SelectedPeers         int            `db:"selected_peers"`
 	CreatedAt             string         `db:"created_at"`
 	UpdatedAt             string         `db:"updated_at"`
 }
@@ -284,7 +284,10 @@ func (r sqliteTaskRow) toTask() (*Task, error) {
 		Source:                TaskSource(r.Source),
 		Query:                 r.Query,
 		Code:                  r.Code,
-		Status:                TaskStatus(r.Status),
+		Stage:                 TaskStage(r.Stage),
+		StageStatus:           TaskStageStatus(r.StageStatus),
+		StageErrorCode:        nullableStringValue(r.StageErrorCode),
+		StageErrorMessage:     nullableStringValue(r.StageErrorMessage),
 		TorrentURL:            r.TorrentURL,
 		SavePath:              nullableStringValue(r.SavePath),
 		Category:              nullableStringValue(r.Category),
@@ -296,27 +299,24 @@ func (r sqliteTaskRow) toTask() (*Task, error) {
 		Progress:              r.Progress,
 		QBittorrentState:      nullableStringValue(r.QBittorrentState),
 		ContentPath:           nullableStringValue(r.ContentPath),
-		StashMode:             nullableStringValue(r.StashMode),
-		StashSourcePath:       nullableStringValue(r.StashSourcePath),
-		StashTransferAction:   nullableStringValue(r.StashTransferAction),
-		StashTransferPath:     nullableStringValue(r.StashTransferPath),
-		StashTransferStatus:   nullableStringValue(r.StashTransferStatus),
-		StashTransferError:    nullableStringValue(r.StashTransferError),
-		StashJobID:            nullableStringValue(r.StashJobID),
+		DeliveryMode:          nullableStringValue(r.DeliveryMode),
+		MojiSourcePath:        nullableStringValue(r.MojiSourcePath),
+		TransferAction:        nullableStringValue(r.TransferAction),
+		MojiTransferPath:      nullableStringValue(r.MojiTransferPath),
+		TransferError:         nullableStringValue(r.TransferError),
+		StashScanJobID:        nullableStringValue(r.StashScanJobID),
 		StashScanPath:         nullableStringValue(r.StashScanPath),
-		StashScanStatus:       nullableStringValue(r.StashScanStatus),
 		StashScanError:        nullableStringValue(r.StashScanError),
 		StashScanHint:         nullableStringValue(r.StashScanHint),
-		Error:                 nullableStringValue(r.Error),
 		Candidate: Candidate{
-			Title:     r.CandidateTitle,
-			Tracker:   r.CandidateTracker,
-			InfoHash:  r.CandidateInfoHash,
-			Link:      r.CandidateLink,
-			MagnetURI: r.CandidateMagnetURI,
-			Size:      r.CandidateSize,
-			Seeders:   r.CandidateSeeders,
-			Peers:     r.CandidatePeers,
+			Title:     r.SelectedTitle,
+			Tracker:   r.SelectedTracker,
+			InfoHash:  r.SelectedInfoHash,
+			Link:      r.SelectedLink,
+			MagnetURI: r.SelectedMagnetURI,
+			Size:      r.SelectedSize,
+			Seeders:   r.SelectedSeeders,
+			Peers:     r.SelectedPeers,
 		},
 	}
 	if task.Source == "" {
@@ -324,8 +324,8 @@ func (r sqliteTaskRow) toTask() (*Task, error) {
 	}
 
 	var err error
-	if task.CompletedAt, err = parseOptionalSQLiteTimestamp(r.CompletedAt); err != nil {
-		return nil, fmt.Errorf("downloader: parse completed_at for task %q: %w", task.ID, err)
+	if task.DownloadCompletedAt, err = parseOptionalSQLiteTimestamp(r.DownloadCompletedAt); err != nil {
+		return nil, fmt.Errorf("downloader: parse download_completed_at for task %q: %w", task.ID, err)
 	}
 	if task.StashScanStartedAt, err = parseOptionalSQLiteTimestamp(r.StashScanStartedAt); err != nil {
 		return nil, fmt.Errorf("downloader: parse stash_scan_started_at for task %q: %w", task.ID, err)
@@ -336,6 +336,7 @@ func (r sqliteTaskRow) toTask() (*Task, error) {
 	if task.UpdatedAt, err = parseSQLiteTimestamp(r.UpdatedAt); err != nil {
 		return nil, fmt.Errorf("downloader: parse updated_at for task %q: %w", task.ID, err)
 	}
+	refreshTaskStageFields(task)
 	return task, nil
 }
 
@@ -344,7 +345,10 @@ type sqliteTaskParams struct {
 	Source                string  `db:"source"`
 	Query                 string  `db:"query"`
 	Code                  string  `db:"code"`
-	Status                string  `db:"status"`
+	Stage                 string  `db:"stage"`
+	StageStatus           string  `db:"stage_status"`
+	StageErrorCode        any     `db:"stage_error_code"`
+	StageErrorMessage     any     `db:"stage_error_message"`
 	TorrentURL            string  `db:"torrent_url"`
 	SavePath              any     `db:"save_path"`
 	Category              any     `db:"category"`
@@ -356,33 +360,31 @@ type sqliteTaskParams struct {
 	Progress              float64 `db:"progress"`
 	QBittorrentState      any     `db:"qbittorrent_state"`
 	ContentPath           any     `db:"content_path"`
-	CompletedAt           any     `db:"completed_at"`
-	StashMode             any     `db:"stash_mode"`
-	StashSourcePath       any     `db:"stash_source_path"`
-	StashTransferAction   any     `db:"stash_transfer_action"`
-	StashTransferPath     any     `db:"stash_transfer_path"`
-	StashTransferStatus   any     `db:"stash_transfer_status"`
-	StashTransferError    any     `db:"stash_transfer_error"`
-	StashJobID            any     `db:"stash_job_id"`
+	DownloadCompletedAt   any     `db:"download_completed_at"`
+	DeliveryMode          any     `db:"delivery_mode"`
+	MojiSourcePath        any     `db:"moji_source_path"`
+	TransferAction        any     `db:"transfer_action"`
+	MojiTransferPath      any     `db:"moji_transfer_path"`
+	TransferError         any     `db:"transfer_error"`
+	StashScanJobID        any     `db:"stash_scan_job_id"`
 	StashScanPath         any     `db:"stash_scan_path"`
-	StashScanStatus       any     `db:"stash_scan_status"`
 	StashScanError        any     `db:"stash_scan_error"`
 	StashScanHint         any     `db:"stash_scan_hint"`
 	StashScanStartedAt    any     `db:"stash_scan_started_at"`
-	Error                 any     `db:"error"`
-	CandidateTitle        string  `db:"candidate_title"`
-	CandidateTracker      string  `db:"candidate_tracker"`
-	CandidateInfoHash     string  `db:"candidate_info_hash"`
-	CandidateLink         string  `db:"candidate_link"`
-	CandidateMagnetURI    string  `db:"candidate_magnet_uri"`
-	CandidateSize         int64   `db:"candidate_size"`
-	CandidateSeeders      int     `db:"candidate_seeders"`
-	CandidatePeers        int     `db:"candidate_peers"`
+	SelectedTitle         string  `db:"selected_title"`
+	SelectedTracker       string  `db:"selected_tracker"`
+	SelectedInfoHash      string  `db:"selected_info_hash"`
+	SelectedLink          string  `db:"selected_link"`
+	SelectedMagnetURI     string  `db:"selected_magnet_uri"`
+	SelectedSize          int64   `db:"selected_size"`
+	SelectedSeeders       int     `db:"selected_seeders"`
+	SelectedPeers         int     `db:"selected_peers"`
 	CreatedAt             string  `db:"created_at"`
 	UpdatedAt             string  `db:"updated_at"`
 }
 
 func taskToSQLiteParams(task *Task) sqliteTaskParams {
+	task = cloneTask(task)
 	source := task.Source
 	if source == "" {
 		source = TaskSourceManual
@@ -392,7 +394,10 @@ func taskToSQLiteParams(task *Task) sqliteTaskParams {
 		Source:                string(source),
 		Query:                 task.Query,
 		Code:                  task.Code,
-		Status:                string(task.Status),
+		Stage:                 string(task.Stage),
+		StageStatus:           string(task.StageStatus),
+		StageErrorCode:        nullableStringParam(task.StageErrorCode),
+		StageErrorMessage:     nullableStringParam(task.StageErrorMessage),
 		TorrentURL:            task.TorrentURL,
 		SavePath:              nullableStringParam(task.SavePath),
 		Category:              nullableStringParam(task.Category),
@@ -404,28 +409,25 @@ func taskToSQLiteParams(task *Task) sqliteTaskParams {
 		Progress:              task.Progress,
 		QBittorrentState:      nullableStringParam(task.QBittorrentState),
 		ContentPath:           nullableStringParam(task.ContentPath),
-		CompletedAt:           formatOptionalSQLiteTimestamp(task.CompletedAt),
-		StashMode:             nullableStringParam(task.StashMode),
-		StashSourcePath:       nullableStringParam(task.StashSourcePath),
-		StashTransferAction:   nullableStringParam(task.StashTransferAction),
-		StashTransferPath:     nullableStringParam(task.StashTransferPath),
-		StashTransferStatus:   nullableStringParam(task.StashTransferStatus),
-		StashTransferError:    nullableStringParam(task.StashTransferError),
-		StashJobID:            nullableStringParam(task.StashJobID),
+		DownloadCompletedAt:   formatOptionalSQLiteTimestamp(task.DownloadCompletedAt),
+		DeliveryMode:          nullableStringParam(task.DeliveryMode),
+		MojiSourcePath:        nullableStringParam(task.MojiSourcePath),
+		TransferAction:        nullableStringParam(task.TransferAction),
+		MojiTransferPath:      nullableStringParam(task.MojiTransferPath),
+		TransferError:         nullableStringParam(task.TransferError),
+		StashScanJobID:        nullableStringParam(task.StashScanJobID),
 		StashScanPath:         nullableStringParam(task.StashScanPath),
-		StashScanStatus:       nullableStringParam(task.StashScanStatus),
 		StashScanError:        nullableStringParam(task.StashScanError),
 		StashScanHint:         nullableStringParam(task.StashScanHint),
 		StashScanStartedAt:    formatOptionalSQLiteTimestamp(task.StashScanStartedAt),
-		Error:                 nullableStringParam(task.Error),
-		CandidateTitle:        task.Candidate.Title,
-		CandidateTracker:      task.Candidate.Tracker,
-		CandidateInfoHash:     task.Candidate.InfoHash,
-		CandidateLink:         task.Candidate.Link,
-		CandidateMagnetURI:    task.Candidate.MagnetURI,
-		CandidateSize:         task.Candidate.Size,
-		CandidateSeeders:      task.Candidate.Seeders,
-		CandidatePeers:        task.Candidate.Peers,
+		SelectedTitle:         task.Candidate.Title,
+		SelectedTracker:       task.Candidate.Tracker,
+		SelectedInfoHash:      task.Candidate.InfoHash,
+		SelectedLink:          task.Candidate.Link,
+		SelectedMagnetURI:     task.Candidate.MagnetURI,
+		SelectedSize:          task.Candidate.Size,
+		SelectedSeeders:       task.Candidate.Seeders,
+		SelectedPeers:         task.Candidate.Peers,
 		CreatedAt:             formatSQLiteTimestamp(task.CreatedAt),
 		UpdatedAt:             formatSQLiteTimestamp(task.UpdatedAt),
 	}
@@ -435,21 +437,19 @@ func upsertTaskRow(ctx context.Context, tx *sqlx.Tx, task *Task, isUpdate bool) 
 	params := taskToSQLiteParams(task)
 	query := `
 INSERT INTO tasks (
-  id, source, query, code, status, torrent_url, save_path, category, tags,
+  id, source, query, code, stage, stage_status, stage_error_code, stage_error_message, torrent_url, save_path, category, tags,
   torrent_identity_hash, torrent_identity_magnet, torrent_hash, torrent_name, progress, qbittorrent_state, content_path,
-  completed_at, stash_mode, stash_source_path, stash_transfer_action, stash_transfer_path,
-  stash_transfer_status, stash_transfer_error, stash_job_id, stash_scan_path, stash_scan_status,
-  stash_scan_error, stash_scan_hint, stash_scan_started_at, error,
-  candidate_title, candidate_tracker, candidate_info_hash, candidate_link, candidate_magnet_uri,
-  candidate_size, candidate_seeders, candidate_peers, created_at, updated_at
+  download_completed_at, delivery_mode, moji_source_path, transfer_action, moji_transfer_path,
+  transfer_error, stash_scan_job_id, stash_scan_path, stash_scan_error, stash_scan_hint,
+  stash_scan_started_at, selected_title, selected_tracker, selected_info_hash, selected_link, selected_magnet_uri,
+  selected_size, selected_seeders, selected_peers, created_at, updated_at
 ) VALUES (
-  :id, :source, :query, :code, :status, :torrent_url, :save_path, :category, :tags,
+  :id, :source, :query, :code, :stage, :stage_status, :stage_error_code, :stage_error_message, :torrent_url, :save_path, :category, :tags,
   :torrent_identity_hash, :torrent_identity_magnet, :torrent_hash, :torrent_name, :progress, :qbittorrent_state, :content_path,
-  :completed_at, :stash_mode, :stash_source_path, :stash_transfer_action, :stash_transfer_path,
-  :stash_transfer_status, :stash_transfer_error, :stash_job_id, :stash_scan_path, :stash_scan_status,
-  :stash_scan_error, :stash_scan_hint, :stash_scan_started_at, :error,
-  :candidate_title, :candidate_tracker, :candidate_info_hash, :candidate_link, :candidate_magnet_uri,
-  :candidate_size, :candidate_seeders, :candidate_peers, :created_at, :updated_at
+  :download_completed_at, :delivery_mode, :moji_source_path, :transfer_action, :moji_transfer_path,
+  :transfer_error, :stash_scan_job_id, :stash_scan_path, :stash_scan_error, :stash_scan_hint,
+  :stash_scan_started_at, :selected_title, :selected_tracker, :selected_info_hash, :selected_link, :selected_magnet_uri,
+  :selected_size, :selected_seeders, :selected_peers, :created_at, :updated_at
 )`
 	if isUpdate {
 		query += `
@@ -457,7 +457,10 @@ ON CONFLICT(id) DO UPDATE SET
   source = excluded.source,
   query = excluded.query,
   code = excluded.code,
-  status = excluded.status,
+  stage = excluded.stage,
+  stage_status = excluded.stage_status,
+  stage_error_code = excluded.stage_error_code,
+  stage_error_message = excluded.stage_error_message,
   torrent_url = excluded.torrent_url,
   save_path = excluded.save_path,
   category = excluded.category,
@@ -469,28 +472,25 @@ ON CONFLICT(id) DO UPDATE SET
   progress = excluded.progress,
   qbittorrent_state = excluded.qbittorrent_state,
   content_path = excluded.content_path,
-  completed_at = excluded.completed_at,
-  stash_mode = excluded.stash_mode,
-  stash_source_path = excluded.stash_source_path,
-  stash_transfer_action = excluded.stash_transfer_action,
-  stash_transfer_path = excluded.stash_transfer_path,
-  stash_transfer_status = excluded.stash_transfer_status,
-  stash_transfer_error = excluded.stash_transfer_error,
-  stash_job_id = excluded.stash_job_id,
+  download_completed_at = excluded.download_completed_at,
+  delivery_mode = excluded.delivery_mode,
+  moji_source_path = excluded.moji_source_path,
+  transfer_action = excluded.transfer_action,
+  moji_transfer_path = excluded.moji_transfer_path,
+  transfer_error = excluded.transfer_error,
+  stash_scan_job_id = excluded.stash_scan_job_id,
   stash_scan_path = excluded.stash_scan_path,
-  stash_scan_status = excluded.stash_scan_status,
   stash_scan_error = excluded.stash_scan_error,
   stash_scan_hint = excluded.stash_scan_hint,
   stash_scan_started_at = excluded.stash_scan_started_at,
-  error = excluded.error,
-  candidate_title = excluded.candidate_title,
-  candidate_tracker = excluded.candidate_tracker,
-  candidate_info_hash = excluded.candidate_info_hash,
-  candidate_link = excluded.candidate_link,
-  candidate_magnet_uri = excluded.candidate_magnet_uri,
-  candidate_size = excluded.candidate_size,
-  candidate_seeders = excluded.candidate_seeders,
-  candidate_peers = excluded.candidate_peers,
+  selected_title = excluded.selected_title,
+  selected_tracker = excluded.selected_tracker,
+  selected_info_hash = excluded.selected_info_hash,
+  selected_link = excluded.selected_link,
+  selected_magnet_uri = excluded.selected_magnet_uri,
+  selected_size = excluded.selected_size,
+  selected_seeders = excluded.selected_seeders,
+  selected_peers = excluded.selected_peers,
   updated_at = excluded.updated_at`
 	}
 
@@ -504,17 +504,17 @@ ON CONFLICT(id) DO UPDATE SET
 	return nil
 }
 
-func insertTaskEvent(ctx context.Context, tx *sqlx.Tx, taskID, eventType, oldStatus, newStatus, message string) error {
+func insertTaskEvent(ctx context.Context, tx *sqlx.Tx, taskID, eventType, oldStage, newStage, message string) error {
 	if _, err := tx.NamedExecContext(
 		ctx,
-		`INSERT INTO task_events (task_id, event_type, level, message, old_status, new_status, created_at)
-		 VALUES (:task_id, :event_type, 'info', :message, :old_status, :new_status, :created_at)`,
+		`INSERT INTO task_events (task_id, event_type, level, message, old_stage, new_stage, created_at)
+		 VALUES (:task_id, :event_type, 'info', :message, :old_stage, :new_stage, :created_at)`,
 		map[string]any{
 			"task_id":    taskID,
 			"event_type": eventType,
 			"message":    message,
-			"old_status": oldStatus,
-			"new_status": newStatus,
+			"old_stage":  oldStage,
+			"new_stage":  newStage,
 			"created_at": formatSQLiteTimestamp(nowUTC()),
 		},
 	); err != nil {
