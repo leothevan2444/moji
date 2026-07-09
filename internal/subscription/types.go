@@ -148,6 +148,7 @@ type PerformerDetail struct {
 }
 
 type Release struct {
+	SceneID         string
 	Key            string
 	Source         string
 	Title          string

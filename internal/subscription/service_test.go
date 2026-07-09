@@ -5,6 +5,7 @@ import (
 	"errors"
 	"testing"
 
+	"github.com/leothevan2444/moji/internal/config"
 	"github.com/leothevan2444/moji/internal/downloader"
 	"github.com/leothevan2444/moji/pkg/stash"
 	stashgraphql "github.com/leothevan2444/moji/pkg/stash/graphql"
@@ -12,9 +13,15 @@ import (
 )
 
 type fakeStashClient struct {
-	performers map[string]*stashgraphql.PerformerFragment
-	scenes     []*stashgraphql.SceneFragment
-	boxes      []stash.StashBoxEndpoint
+	performers      map[string]*stashgraphql.PerformerFragment
+	scenes          []*stashgraphql.SceneFragment
+	boxes           []stash.StashBoxEndpoint
+	findScenesCalls []fakeFindScenesCall
+}
+
+type fakeFindScenesCall struct {
+	SceneFilter *stashgraphql.SceneFilterType
+	Filter      *stashgraphql.FindFilterType
 }
 
 func (f *fakeStashClient) AllPerformers(_ context.Context) ([]*stashgraphql.PerformerFragment, error) {
@@ -29,7 +36,8 @@ func (f *fakeStashClient) FindPerformerByID(_ context.Context, id string) (*stas
 	return f.performers[id], nil
 }
 
-func (f *fakeStashClient) FindScenes(_ context.Context, sceneFilter *stashgraphql.SceneFilterType, _ *stashgraphql.FindFilterType) ([]*stashgraphql.SceneFragment, error) {
+func (f *fakeStashClient) FindScenes(_ context.Context, sceneFilter *stashgraphql.SceneFilterType, filter *stashgraphql.FindFilterType) ([]*stashgraphql.SceneFragment, error) {
+	f.findScenesCalls = append(f.findScenesCalls, fakeFindScenesCall{SceneFilter: sceneFilter, Filter: filter})
 	if sceneFilter != nil && sceneFilter.StashIDEndpoint != nil && sceneFilter.StashIDEndpoint.StashID != nil {
 		out := make([]*stashgraphql.SceneFragment, 0)
 		for _, scene := range f.scenes {
@@ -76,8 +84,10 @@ func (f *fakeStashClient) GetStashBoxes(_ context.Context) ([]stash.StashBoxEndp
 type fakeStashboxClient struct {
 	performer    *stashboxgraphql.PerformerFragment
 	scenes       []*stashboxgraphql.SceneFragment
+	scenesByPage map[int][]*stashboxgraphql.SceneFragment
 	searchErr    error
 	findSceneErr error
+	queryInputs  []stashboxgraphql.SceneQueryInput
 }
 
 type fakeDownloader struct {
@@ -121,9 +131,14 @@ func (f *fakeStashboxClient) SearchScene(_ context.Context, _ string) ([]*stashb
 	return append([]*stashboxgraphql.SceneFragment(nil), f.scenes...), nil
 }
 
-func (f *fakeStashboxClient) QueryScenes(_ context.Context, _ stashboxgraphql.SceneQueryInput) ([]*stashboxgraphql.SceneFragment, error) {
-	out := make([]*stashboxgraphql.SceneFragment, 0, len(f.scenes))
-	for _, scene := range f.scenes {
+func (f *fakeStashboxClient) QueryScenes(_ context.Context, input stashboxgraphql.SceneQueryInput) ([]*stashboxgraphql.SceneFragment, error) {
+	f.queryInputs = append(f.queryInputs, input)
+	sourceScenes := f.scenes
+	if f.scenesByPage != nil {
+		sourceScenes = f.scenesByPage[input.Page]
+	}
+	out := make([]*stashboxgraphql.SceneFragment, 0, len(sourceScenes))
+	for _, scene := range sourceScenes {
 		if scene == nil {
 			continue
 		}
@@ -349,6 +364,477 @@ func TestRefreshPerformerDoesNotDuplicatePendingReleasesAcrossPolls(t *testing.T
 	}
 	if second.RecentReleases[0].Key != "stashbox:https___javstash.example.org_graphql:js-scene-1" {
 		t.Fatalf("unexpected release key after repeated refresh: %q", second.RecentReleases[0].Key)
+	}
+}
+
+func TestRefreshPerformerSkipsReleaseAlreadyInStashLibrary(t *testing.T) {
+	endpoint := "https://javstash.example.org/graphql"
+	code := "ABCD-123"
+	title := "Library Hit"
+	stashClient := &fakeStashClient{
+		performers: map[string]*stashgraphql.PerformerFragment{
+			"p1": {
+				ID:           "p1",
+				Name:         "Rara Anzai",
+				CustomFields: map[string]any{DefaultCustomFieldKey: true},
+				StashIds:     []*stashgraphql.StashIDFragment{{Endpoint: endpoint, StashID: "js-1"}},
+			},
+		},
+		scenes: []*stashgraphql.SceneFragment{{
+			ID:   "stash-scene-1",
+			Code: &code,
+			StashIds: []*stashgraphql.StashIDFragment{
+				{Endpoint: endpoint, StashID: "js-scene-1"},
+			},
+		}},
+	}
+	registry := newStashboxRegistry(stubFactory{
+		client: &fakeStashboxClient{
+			performer: &stashboxgraphql.PerformerFragment{ID: "js-1", Name: "Rara Anzai"},
+			scenes: []*stashboxgraphql.SceneFragment{{
+				ID:    "js-scene-1",
+				Title: &title,
+				Code:  &code,
+			}},
+		},
+	})
+	registry.Replace([]stash.StashBoxEndpoint{{Name: "javstash", Endpoint: endpoint, APIKey: "ignored"}})
+	service, err := NewService(stashClient, registry, nil, NewMemoryStore())
+	if err != nil {
+		t.Fatalf("NewService failed: %v", err)
+	}
+
+	item, err := service.RefreshSubscribedPerformer(context.Background(), "p1")
+	if err != nil {
+		t.Fatalf("RefreshSubscribedPerformer failed: %v", err)
+	}
+	if item.PendingReleaseCount != 0 {
+		t.Fatalf("expected in-library release to be skipped, got %d pending", item.PendingReleaseCount)
+	}
+	if len(stashClient.findScenesCalls) != 1 {
+		t.Fatalf("expected 1 stash dedupe lookup, got %d", len(stashClient.findScenesCalls))
+	}
+	call := stashClient.findScenesCalls[0]
+	if call.SceneFilter == nil || call.SceneFilter.StashIDEndpoint == nil || call.SceneFilter.StashIDEndpoint.StashID == nil || *call.SceneFilter.StashIDEndpoint.StashID != "js-scene-1" {
+		t.Fatalf("unexpected stash dedupe query: %+v", call.SceneFilter)
+	}
+}
+
+func TestRefreshPerformerKeepsReleaseWhenNotFoundInStashLibrary(t *testing.T) {
+	endpoint := "https://javstash.example.org/graphql"
+	code := "ABCD-123"
+	title := "New Release"
+	stashClient := &fakeStashClient{
+		performers: map[string]*stashgraphql.PerformerFragment{
+			"p1": {
+				ID:           "p1",
+				Name:         "Rara Anzai",
+				CustomFields: map[string]any{DefaultCustomFieldKey: true},
+				StashIds:     []*stashgraphql.StashIDFragment{{Endpoint: endpoint, StashID: "js-1"}},
+			},
+		},
+	}
+	registry := newStashboxRegistry(stubFactory{
+		client: &fakeStashboxClient{
+			performer: &stashboxgraphql.PerformerFragment{ID: "js-1", Name: "Rara Anzai"},
+			scenes: []*stashboxgraphql.SceneFragment{{
+				ID:    "js-scene-1",
+				Title: &title,
+				Code:  &code,
+			}},
+		},
+	})
+	registry.Replace([]stash.StashBoxEndpoint{{Name: "javstash", Endpoint: endpoint, APIKey: "ignored"}})
+	service, err := NewService(stashClient, registry, nil, NewMemoryStore())
+	if err != nil {
+		t.Fatalf("NewService failed: %v", err)
+	}
+
+	item, err := service.RefreshSubscribedPerformer(context.Background(), "p1")
+	if err != nil {
+		t.Fatalf("RefreshSubscribedPerformer failed: %v", err)
+	}
+	if item.PendingReleaseCount != 1 {
+		t.Fatalf("expected release to remain pending, got %d", item.PendingReleaseCount)
+	}
+	if len(stashClient.findScenesCalls) != 1 {
+		t.Fatalf("expected 1 stash dedupe lookup, got %d", len(stashClient.findScenesCalls))
+	}
+}
+
+func TestRefreshPerformerSkipsStashLookupForKnownRelease(t *testing.T) {
+	endpoint := "https://javstash.example.org/graphql"
+	code := "ABCD-123"
+	title := "Known Release"
+	stashClient := &fakeStashClient{
+		performers: map[string]*stashgraphql.PerformerFragment{
+			"p1": {
+				ID:           "p1",
+				Name:         "Rara Anzai",
+				CustomFields: map[string]any{DefaultCustomFieldKey: true},
+				StashIds:     []*stashgraphql.StashIDFragment{{Endpoint: endpoint, StashID: "js-1"}},
+			},
+		},
+	}
+	registry := newStashboxRegistry(stubFactory{
+		client: &fakeStashboxClient{
+			performer: &stashboxgraphql.PerformerFragment{ID: "js-1", Name: "Rara Anzai"},
+			scenes: []*stashboxgraphql.SceneFragment{{
+				ID:    "js-scene-1",
+				Title: &title,
+				Code:  &code,
+			}},
+		},
+	})
+	registry.Replace([]stash.StashBoxEndpoint{{Name: "javstash", Endpoint: endpoint, APIKey: "ignored"}})
+	store := NewMemoryStore()
+	if err := store.Put(context.Background(), &PerformerState{
+		PerformerID: "p1",
+		PendingReleases: []RecordedRelease{{
+			Key:   "stashbox:https___javstash.example.org_graphql:js-scene-1",
+			Query: code,
+		}},
+	}); err != nil {
+		t.Fatalf("seed state failed: %v", err)
+	}
+	service, err := NewService(stashClient, registry, nil, store)
+	if err != nil {
+		t.Fatalf("NewService failed: %v", err)
+	}
+
+	item, err := service.RefreshSubscribedPerformer(context.Background(), "p1")
+	if err != nil {
+		t.Fatalf("RefreshSubscribedPerformer failed: %v", err)
+	}
+	if item.PendingReleaseCount != 1 {
+		t.Fatalf("expected known release to stay pending once, got %d", item.PendingReleaseCount)
+	}
+	if len(stashClient.findScenesCalls) != 0 {
+		t.Fatalf("expected no stash dedupe lookup for known release, got %d", len(stashClient.findScenesCalls))
+	}
+}
+
+func TestRefreshPerformerMixedLibraryAndNewReleases(t *testing.T) {
+	endpoint := "https://javstash.example.org/graphql"
+	stashClient := &fakeStashClient{
+		performers: map[string]*stashgraphql.PerformerFragment{
+			"p1": {
+				ID:           "p1",
+				Name:         "Rara Anzai",
+				CustomFields: map[string]any{DefaultCustomFieldKey: true},
+				StashIds:     []*stashgraphql.StashIDFragment{{Endpoint: endpoint, StashID: "js-1"}},
+			},
+		},
+		scenes: []*stashgraphql.SceneFragment{{
+			ID: "stash-scene-1",
+			StashIds: []*stashgraphql.StashIDFragment{
+				{Endpoint: endpoint, StashID: "js-scene-1"},
+			},
+		}},
+	}
+	registry := newStashboxRegistry(stubFactory{
+		client: &fakeStashboxClient{
+			performer: &stashboxgraphql.PerformerFragment{ID: "js-1", Name: "Rara Anzai"},
+			scenesByPage: map[int][]*stashboxgraphql.SceneFragment{
+				1: {
+					{ID: "js-scene-1", Code: stringPtr("ABCD-001")},
+					{ID: "js-scene-2", Code: stringPtr("ABCD-002")},
+				},
+				2: {},
+			},
+		},
+	})
+	registry.Replace([]stash.StashBoxEndpoint{{Name: "javstash", Endpoint: endpoint, APIKey: "ignored"}})
+	service, err := NewService(stashClient, registry, nil, NewMemoryStore())
+	if err != nil {
+		t.Fatalf("NewService failed: %v", err)
+	}
+
+	item, err := service.RefreshSubscribedPerformer(context.Background(), "p1")
+	if err != nil {
+		t.Fatalf("RefreshSubscribedPerformer failed: %v", err)
+	}
+	if item.PendingReleaseCount != 1 {
+		t.Fatalf("expected only non-library release to remain, got %d", item.PendingReleaseCount)
+	}
+	if item.RecentReleases[0].Key != "stashbox:https___javstash.example.org_graphql:js-scene-2" {
+		t.Fatalf("unexpected pending release key: %q", item.RecentReleases[0].Key)
+	}
+	if len(stashClient.findScenesCalls) != 2 {
+		t.Fatalf("expected 2 stash dedupe lookups, got %d", len(stashClient.findScenesCalls))
+	}
+}
+
+func TestRefreshPerformerInLibraryReleaseIsCheckedAgainOnNextPoll(t *testing.T) {
+	endpoint := "https://javstash.example.org/graphql"
+	code := "ABCD-123"
+	stashClient := &fakeStashClient{
+		performers: map[string]*stashgraphql.PerformerFragment{
+			"p1": {
+				ID:           "p1",
+				Name:         "Rara Anzai",
+				CustomFields: map[string]any{DefaultCustomFieldKey: true},
+				StashIds:     []*stashgraphql.StashIDFragment{{Endpoint: endpoint, StashID: "js-1"}},
+			},
+		},
+		scenes: []*stashgraphql.SceneFragment{{
+			ID: "stash-scene-1",
+			StashIds: []*stashgraphql.StashIDFragment{
+				{Endpoint: endpoint, StashID: "js-scene-1"},
+			},
+		}},
+	}
+	registry := newStashboxRegistry(stubFactory{
+		client: &fakeStashboxClient{
+			performer: &stashboxgraphql.PerformerFragment{ID: "js-1", Name: "Rara Anzai"},
+			scenes: []*stashboxgraphql.SceneFragment{{
+				ID:   "js-scene-1",
+				Code: &code,
+			}},
+		},
+	})
+	registry.Replace([]stash.StashBoxEndpoint{{Name: "javstash", Endpoint: endpoint, APIKey: "ignored"}})
+	service, err := NewService(stashClient, registry, nil, NewMemoryStore())
+	if err != nil {
+		t.Fatalf("NewService failed: %v", err)
+	}
+
+	first, err := service.RefreshSubscribedPerformer(context.Background(), "p1")
+	if err != nil {
+		t.Fatalf("first refresh failed: %v", err)
+	}
+	second, err := service.RefreshSubscribedPerformer(context.Background(), "p1")
+	if err != nil {
+		t.Fatalf("second refresh failed: %v", err)
+	}
+	if first.PendingReleaseCount != 0 || second.PendingReleaseCount != 0 {
+		t.Fatalf("expected in-library release to stay skipped, got first=%d second=%d", first.PendingReleaseCount, second.PendingReleaseCount)
+	}
+	if len(stashClient.findScenesCalls) != 2 {
+		t.Fatalf("expected repeated stash dedupe lookup across polls, got %d", len(stashClient.findScenesCalls))
+	}
+}
+
+func TestRefreshPerformerBackfillsAcrossMultiplePages(t *testing.T) {
+	endpoint := "https://javstash.example.org/graphql"
+	client := &fakeStashboxClient{
+		performer: &stashboxgraphql.PerformerFragment{ID: "js-1", Name: "Rara Anzai"},
+		scenesByPage: map[int][]*stashboxgraphql.SceneFragment{
+			1: {{ID: "js-scene-1", Code: stringPtr("ABCD-001"), Date: stringPtr("2026-06-01")}},
+			2: {{ID: "js-scene-2", Code: stringPtr("ABCD-002"), Date: stringPtr("2026-05-01")}},
+			3: {},
+		},
+	}
+	registry := newStashboxRegistry(stubFactory{client: client})
+	registry.Replace([]stash.StashBoxEndpoint{{Name: "javstash", Endpoint: endpoint, APIKey: "ignored"}})
+	service, err := NewService(&fakeStashClient{
+		performers: map[string]*stashgraphql.PerformerFragment{
+			"p1": {
+				ID:           "p1",
+				Name:         "Rara Anzai",
+				CustomFields: map[string]any{DefaultCustomFieldKey: true},
+				StashIds:     []*stashgraphql.StashIDFragment{{Endpoint: endpoint, StashID: "js-1"}},
+			},
+		},
+	}, registry, nil, NewMemoryStore())
+	if err != nil {
+		t.Fatalf("NewService failed: %v", err)
+	}
+
+	item, err := service.RefreshSubscribedPerformer(context.Background(), "p1")
+	if err != nil {
+		t.Fatalf("RefreshSubscribedPerformer failed: %v", err)
+	}
+	if item.PendingReleaseCount != 2 {
+		t.Fatalf("expected 2 backfilled releases, got %d", item.PendingReleaseCount)
+	}
+	if len(client.queryInputs) != 3 {
+		t.Fatalf("expected 3 page fetches, got %d", len(client.queryInputs))
+	}
+	if client.queryInputs[0].PerPage != releaseQueryPerPage || client.queryInputs[0].Page != 1 || client.queryInputs[1].Page != 2 {
+		t.Fatalf("unexpected paging inputs: %+v", client.queryInputs)
+	}
+}
+
+func TestRefreshPerformerPollFindsNewReleaseOnLaterPage(t *testing.T) {
+	endpoint := "https://javstash.example.org/graphql"
+	store := NewMemoryStore()
+	if err := store.Put(context.Background(), &PerformerState{
+		PerformerID: "p1",
+		PendingReleases: []RecordedRelease{{
+			Key:   "stashbox:https___javstash.example.org_graphql:js-scene-1",
+			Query: "ABCD-001",
+		}},
+	}); err != nil {
+		t.Fatalf("seed state failed: %v", err)
+	}
+	client := &fakeStashboxClient{
+		performer: &stashboxgraphql.PerformerFragment{ID: "js-1", Name: "Rara Anzai"},
+		scenesByPage: map[int][]*stashboxgraphql.SceneFragment{
+			1: {{ID: "js-scene-1", Code: stringPtr("ABCD-001"), Date: stringPtr("2026-06-01")}},
+			2: {{ID: "js-scene-2", Code: stringPtr("ABCD-002"), Date: stringPtr("2026-05-01")}},
+			3: {},
+		},
+	}
+	registry := newStashboxRegistry(stubFactory{client: client})
+	registry.Replace([]stash.StashBoxEndpoint{{Name: "javstash", Endpoint: endpoint, APIKey: "ignored"}})
+	service, err := NewService(&fakeStashClient{
+		performers: map[string]*stashgraphql.PerformerFragment{
+			"p1": {
+				ID:           "p1",
+				Name:         "Rara Anzai",
+				CustomFields: map[string]any{DefaultCustomFieldKey: true},
+				StashIds:     []*stashgraphql.StashIDFragment{{Endpoint: endpoint, StashID: "js-1"}},
+			},
+		},
+	}, registry, nil, store)
+	if err != nil {
+		t.Fatalf("NewService failed: %v", err)
+	}
+
+	item, err := service.RefreshSubscribedPerformer(context.Background(), "p1")
+	if err != nil {
+		t.Fatalf("RefreshSubscribedPerformer failed: %v", err)
+	}
+	if item.PendingReleaseCount != 2 {
+		t.Fatalf("expected existing + new pending release, got %d", item.PendingReleaseCount)
+	}
+	if len(client.queryInputs) != 3 {
+		t.Fatalf("expected poll to reach page 3 empty boundary, got %d calls", len(client.queryInputs))
+	}
+	if client.queryInputs[0].PerPage != releaseQueryPerPage || client.queryInputs[2].Page != 3 {
+		t.Fatalf("unexpected query inputs: %+v", client.queryInputs)
+	}
+}
+
+func TestRefreshPerformerPollStopsAtKnownReleaseBoundary(t *testing.T) {
+	endpoint := "https://javstash.example.org/graphql"
+	store := NewMemoryStore()
+	if err := store.Put(context.Background(), &PerformerState{
+		PerformerID: "p1",
+		PendingReleases: []RecordedRelease{{
+			Key:   "stashbox:https___javstash.example.org_graphql:js-scene-2",
+			Query: "ABCD-002",
+		}},
+	}); err != nil {
+		t.Fatalf("seed state failed: %v", err)
+	}
+	client := &fakeStashboxClient{
+		performer: &stashboxgraphql.PerformerFragment{ID: "js-1", Name: "Rara Anzai"},
+		scenesByPage: map[int][]*stashboxgraphql.SceneFragment{
+			1: {{ID: "js-scene-1", Code: stringPtr("ABCD-001"), Date: stringPtr("2026-06-01")}},
+			2: {{ID: "js-scene-2", Code: stringPtr("ABCD-002"), Date: stringPtr("2026-05-01")}},
+			3: {{ID: "js-scene-3", Code: stringPtr("ABCD-003"), Date: stringPtr("2026-04-01")}},
+		},
+	}
+	registry := newStashboxRegistry(stubFactory{client: client})
+	registry.Replace([]stash.StashBoxEndpoint{{Name: "javstash", Endpoint: endpoint, APIKey: "ignored"}})
+	service, err := NewService(&fakeStashClient{
+		performers: map[string]*stashgraphql.PerformerFragment{
+			"p1": {
+				ID:           "p1",
+				Name:         "Rara Anzai",
+				CustomFields: map[string]any{DefaultCustomFieldKey: true},
+				StashIds:     []*stashgraphql.StashIDFragment{{Endpoint: endpoint, StashID: "js-1"}},
+			},
+		},
+	}, registry, nil, store)
+	if err != nil {
+		t.Fatalf("NewService failed: %v", err)
+	}
+
+	_, err = service.RefreshSubscribedPerformer(context.Background(), "p1")
+	if err != nil {
+		t.Fatalf("RefreshSubscribedPerformer failed: %v", err)
+	}
+	if len(client.queryInputs) != 2 {
+		t.Fatalf("expected known-release boundary to stop on second page, got %d calls", len(client.queryInputs))
+	}
+}
+
+func TestRefreshPerformerPollStopsAtReleaseDateBoundary(t *testing.T) {
+	endpoint := "https://javstash.example.org/graphql"
+	store := NewMemoryStore()
+	if err := store.Put(context.Background(), &PerformerState{
+		PerformerID:       "p1",
+		ProcessedReleases: []RecordedRelease{{Key: "existing", Query: "EXISTING-001"}},
+	}); err != nil {
+		t.Fatalf("seed state failed: %v", err)
+	}
+	client := &fakeStashboxClient{
+		performer: &stashboxgraphql.PerformerFragment{ID: "js-1", Name: "Rara Anzai"},
+		scenesByPage: map[int][]*stashboxgraphql.SceneFragment{
+			1: {{ID: "js-scene-1", Code: stringPtr("ABCD-001"), Date: stringPtr("2020-01-01")}},
+			2: {{ID: "js-scene-2", Code: stringPtr("ABCD-002"), Date: stringPtr("2019-01-01")}},
+		},
+	}
+	registry := newStashboxRegistry(stubFactory{client: client})
+	registry.Replace([]stash.StashBoxEndpoint{{Name: "javstash", Endpoint: endpoint, APIKey: "ignored"}})
+	service, err := NewService(&fakeStashClient{
+		performers: map[string]*stashgraphql.PerformerFragment{
+			"p1": {
+				ID:           "p1",
+				Name:         "Rara Anzai",
+				CustomFields: map[string]any{DefaultCustomFieldKey: true},
+				StashIds:     []*stashgraphql.StashIDFragment{{Endpoint: endpoint, StashID: "js-1"}},
+			},
+		},
+	}, registry, nil, store)
+	if err != nil {
+		t.Fatalf("NewService failed: %v", err)
+	}
+	service.SetReleasePolicy(ReleasePolicyConfig{
+		SoloBehavior:     config.SubscriptionReleaseBehaviorDownload,
+		GroupBehavior:    config.SubscriptionReleaseBehaviorDownload,
+		ReleaseDateRange: config.SubscriptionReleaseDateRangeOneYear,
+	})
+
+	item, err := service.RefreshSubscribedPerformer(context.Background(), "p1")
+	if err != nil {
+		t.Fatalf("RefreshSubscribedPerformer failed: %v", err)
+	}
+	if len(client.queryInputs) != 1 {
+		t.Fatalf("expected release-date boundary to stop after first page, got %d calls", len(client.queryInputs))
+	}
+	if item.PendingReleaseCount != 1 || item.RecentReleases[0].DecisionReason != "release_date_out_of_range_review" {
+		t.Fatalf("unexpected date-boundary release result: %+v", item.RecentReleases)
+	}
+}
+
+func TestRefreshPerformerDeduplicatesScenesAcrossPages(t *testing.T) {
+	endpoint := "https://javstash.example.org/graphql"
+	client := &fakeStashboxClient{
+		performer: &stashboxgraphql.PerformerFragment{ID: "js-1", Name: "Rara Anzai"},
+		scenesByPage: map[int][]*stashboxgraphql.SceneFragment{
+			1: {{ID: "js-scene-1", Code: stringPtr("ABCD-001"), Date: stringPtr("2026-06-01")}},
+			2: {{ID: "js-scene-1", Code: stringPtr("ABCD-001"), Date: stringPtr("2026-06-01")}},
+		},
+	}
+	registry := newStashboxRegistry(stubFactory{client: client})
+	registry.Replace([]stash.StashBoxEndpoint{{Name: "javstash", Endpoint: endpoint, APIKey: "ignored"}})
+	service, err := NewService(&fakeStashClient{
+		performers: map[string]*stashgraphql.PerformerFragment{
+			"p1": {
+				ID:           "p1",
+				Name:         "Rara Anzai",
+				CustomFields: map[string]any{DefaultCustomFieldKey: true},
+				StashIds:     []*stashgraphql.StashIDFragment{{Endpoint: endpoint, StashID: "js-1"}},
+			},
+		},
+	}, registry, nil, NewMemoryStore())
+	if err != nil {
+		t.Fatalf("NewService failed: %v", err)
+	}
+
+	item, err := service.RefreshSubscribedPerformer(context.Background(), "p1")
+	if err != nil {
+		t.Fatalf("RefreshSubscribedPerformer failed: %v", err)
+	}
+	if item.PendingReleaseCount != 1 {
+		t.Fatalf("expected 1 deduped release, got %d", item.PendingReleaseCount)
+	}
+	if len(client.queryInputs) != 2 {
+		t.Fatalf("expected duplicate-only second page to stop fetch, got %d calls", len(client.queryInputs))
 	}
 }
 

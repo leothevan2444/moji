@@ -60,6 +60,19 @@ func evaluateReleasePolicy(policy ReleasePolicyConfig, now time.Time, targetPerf
 	}
 }
 
+func releaseDateBoundaryCandidate(policy ReleasePolicyConfig, now time.Time, targetPerformer *stashboxgraphql.PerformerFragment, scene *stashboxgraphql.SceneFragment, evaluation ReleaseEvaluation) (candidate bool, hitBoundary bool) {
+	if scene == nil {
+		return false, false
+	}
+	basePolicy := policy.Effective()
+	basePolicy.ReleaseDateRange = config.SubscriptionReleaseDateRangeAll
+	baseEvaluation, matched := evaluateReleasePolicy(basePolicy, now, targetPerformer, scene)
+	if !matched || baseEvaluation.Decision != ReleaseDecisionDownloaded {
+		return false, false
+	}
+	return true, evaluation.DecisionReason == "release_date_out_of_range_review"
+}
+
 func applyBehavior(evaluation *ReleaseEvaluation, behavior config.SubscriptionReleaseBehavior, reasonPrefix string) {
 	switch behavior {
 	case config.SubscriptionReleaseBehaviorBlock:

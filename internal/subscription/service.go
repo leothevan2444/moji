@@ -57,6 +57,31 @@ type Service struct {
 	releasePolicy ReleasePolicyConfig
 }
 
+const (
+	releaseQueryPerPage            = 24
+	releaseQueryPollMaxPages       = 3
+	releaseQueryBackfillMaxPages   = 10
+)
+
+type releaseFetchMode string
+
+const (
+	releaseFetchModePoll     releaseFetchMode = "poll"
+	releaseFetchModeBackfill releaseFetchMode = "backfill"
+)
+
+type releaseFetchStrategy struct {
+	mode     releaseFetchMode
+	perPage  int
+	maxPages int
+}
+
+type releaseFetchStats struct {
+	pagesRequested  int
+	pagesWithResult int
+	stopReason      string
+}
+
 func NewService(stash StashClient, stashbox *stashboxRegistry, downloader Downloader, store Store) (*Service, error) {
 	if stash == nil {
 		return nil, errors.New("subscription: stash client is required")
@@ -195,7 +220,7 @@ func (s *Service) RefreshSubscribedPerformer(ctx context.Context, performerID st
 	previousLastError := state.LastError
 	state.LastError = ""
 
-	releases, err := s.fetchReleases(ctx, performer)
+	releases, err := s.fetchReleases(ctx, performer, state)
 	if err != nil {
 		state.LastError = err.Error()
 		if putErr := s.store.Put(ctx, state); putErr != nil {
@@ -220,8 +245,24 @@ func (s *Service) RefreshSubscribedPerformer(ctx context.Context, performerID st
 
 	existingPending := append([]RecordedRelease(nil), state.PendingReleases...)
 	pending := make([]RecordedRelease, 0)
+	skippedInLibrary := 0
 	for _, release := range releases {
 		if _, exists := processed[release.Key]; exists {
+			continue
+		}
+		inLibrary, err := s.stashSceneExistsForRelease(ctx, release)
+		if err != nil {
+			return SubscribedPerformer{}, err
+		}
+		if inLibrary {
+			skippedInLibrary++
+			logging.Infof(
+				"subscription: skipped in-library release performer=%s release_key=%s stash_box=%s scene_id=%s",
+				performerID,
+				release.Key,
+				release.Source,
+				release.SceneID,
+			)
 			continue
 		}
 		record := RecordedRelease{
@@ -286,11 +327,12 @@ func (s *Service) RefreshSubscribedPerformer(ctx context.Context, performerID st
 		return SubscribedPerformer{}, err
 	}
 	logging.Infof(
-		"subscription: refresh completed for performer %s (%s), processed=%d pending=%d",
+		"subscription: refresh completed for performer %s (%s), processed=%d pending=%d skipped_in_library=%d",
 		performerID,
 		performer.Name,
 		len(state.ProcessedReleases),
 		len(state.PendingReleases),
+		skippedInLibrary,
 	)
 
 	return buildSubscribedPerformer(item, state), nil
@@ -317,7 +359,7 @@ func (s *Service) RefreshAll(ctx context.Context) ([]SubscribedPerformer, error)
 	return out, nil
 }
 
-func (s *Service) fetchReleases(ctx context.Context, performer *stashgraphql.PerformerFragment) ([]Release, error) {
+func (s *Service) fetchReleases(ctx context.Context, performer *stashgraphql.PerformerFragment, state *PerformerState) ([]Release, error) {
 	if s.stashbox == nil || len(s.stashbox.Endpoints()) == 0 {
 		return nil, errors.New("subscription: no stash-box endpoints configured in Stash")
 	}
@@ -330,54 +372,123 @@ func (s *Service) fetchReleases(ctx context.Context, performer *stashgraphql.Per
 		return nil, fmt.Errorf("subscription: no stash-box performer match for %q", performer.Name)
 	}
 
-	scenes, err := target.Client.QueryScenes(ctx, stashboxgraphql.SceneQueryInput{
-		Performers: &stashboxgraphql.MultiIDCriterionInput{
-			Value:    []string{target.Performer.ID},
-			Modifier: stashboxgraphql.CriterionModifierIncludes,
-		},
-		Page:      1,
-		PerPage:   12,
-		Direction: stashboxgraphql.SortDirectionEnumDesc,
-		Sort:      stashboxgraphql.SceneSortEnumDate,
-	})
-	if err != nil {
-		return nil, err
-	}
-
 	source := "stash-box:" + target.Endpoint
 	keyPrefix := "stashbox:" + endpointKey(target.Endpoint) + ":"
-	releases := make([]Release, 0, len(scenes))
-	for _, scene := range scenes {
-		if scene == nil {
-			continue
-		}
-		evaluation, matched := evaluateReleasePolicy(s.currentReleasePolicy(), s.now(), target.Performer, scene)
-		if !matched {
-			continue
-		}
-		code := strings.TrimSpace(stringValue(scene.Code))
-		if code == "" {
-			return nil, fmt.Errorf("subscription: stash-box scene %q is missing code", scene.ID)
-		}
-		release := Release{
-			Key:            keyPrefix + scene.ID,
-			Source:         source,
-			Title:          stringValue(scene.Title),
-			Code:           code,
-			Date:           stringValue(scene.Date),
-			Query:          buildReleaseQuery(code, stringValue(scene.Title)),
-			PerformerCount: evaluation.PerformerCount,
-			PerformerNames: append([]string(nil), evaluation.PerformerNames...),
-			Classification: evaluation.Classification,
-			Decision:       evaluation.Decision,
-			DecisionReason: evaluation.DecisionReason,
-		}
-		if len(scene.Urls) > 0 && scene.Urls[0] != nil {
-			release.URL = scene.Urls[0].URL
-		}
-		releases = append(releases, release)
-	}
+	strategy := selectReleaseFetchStrategy(state)
+	policy := s.currentReleasePolicy()
+	now := s.now()
+	knownReleaseKeys := recordedReleaseKeys(state)
+	seenSceneIDs := make(map[string]struct{})
+	seenReleaseKeys := make(map[string]struct{})
+	releases := make([]Release, 0, releaseQueryPerPage)
+	stats := releaseFetchStats{}
 
+	for page := 1; page <= strategy.maxPages; page++ {
+		stats.pagesRequested++
+		scenes, err := target.Client.QueryScenes(ctx, stashboxgraphql.SceneQueryInput{
+			Performers: &stashboxgraphql.MultiIDCriterionInput{
+				Value:    []string{target.Performer.ID},
+				Modifier: stashboxgraphql.CriterionModifierIncludes,
+			},
+			Page:      page,
+			PerPage:   strategy.perPage,
+			Direction: stashboxgraphql.SortDirectionEnumDesc,
+			Sort:      stashboxgraphql.SceneSortEnumDate,
+		})
+		if err != nil {
+			return nil, err
+		}
+		if len(scenes) == 0 {
+			stats.stopReason = "empty_page"
+			break
+		}
+		stats.pagesWithResult++
+
+		pageHasUniqueScene := false
+		pageReleaseCount := 0
+		pageKnownReleaseCount := 0
+		pageDownloadCandidateCount := 0
+		pageDateBoundaryHitCount := 0
+
+		for _, scene := range scenes {
+			if scene == nil {
+				continue
+			}
+			if _, exists := seenSceneIDs[scene.ID]; exists {
+				continue
+			}
+			seenSceneIDs[scene.ID] = struct{}{}
+			pageHasUniqueScene = true
+
+			evaluation, matched := evaluateReleasePolicy(policy, now, target.Performer, scene)
+			if !matched {
+				continue
+			}
+			code := strings.TrimSpace(stringValue(scene.Code))
+			if code == "" {
+				return nil, fmt.Errorf("subscription: stash-box scene %q is missing code", scene.ID)
+			}
+			pageReleaseCount++
+			release := Release{
+				SceneID:         scene.ID,
+				Key:            keyPrefix + scene.ID,
+				Source:         source,
+				Title:          stringValue(scene.Title),
+				Code:           code,
+				Date:           stringValue(scene.Date),
+				Query:          buildReleaseQuery(code, stringValue(scene.Title)),
+				PerformerCount: evaluation.PerformerCount,
+				PerformerNames: append([]string(nil), evaluation.PerformerNames...),
+				Classification: evaluation.Classification,
+				Decision:       evaluation.Decision,
+				DecisionReason: evaluation.DecisionReason,
+			}
+			if len(scene.Urls) > 0 && scene.Urls[0] != nil {
+				release.URL = scene.Urls[0].URL
+			}
+			if _, exists := seenReleaseKeys[release.Key]; !exists {
+				seenReleaseKeys[release.Key] = struct{}{}
+				releases = append(releases, release)
+			}
+			if _, exists := knownReleaseKeys[release.Key]; exists {
+				pageKnownReleaseCount++
+			}
+			if candidate, hitBoundary := releaseDateBoundaryCandidate(policy, now, target.Performer, scene, evaluation); candidate {
+				pageDownloadCandidateCount++
+				if hitBoundary {
+					pageDateBoundaryHitCount++
+				}
+			}
+		}
+
+		if !pageHasUniqueScene || pageReleaseCount == 0 {
+			stats.stopReason = "empty_page"
+			break
+		}
+		if strategy.mode == releaseFetchModePoll {
+			if page > 1 && pageKnownReleaseCount == pageReleaseCount {
+				stats.stopReason = "known_release_boundary"
+				break
+			}
+			if pageDownloadCandidateCount > 0 && pageDateBoundaryHitCount == pageDownloadCandidateCount {
+				stats.stopReason = "release_date_boundary"
+				break
+			}
+		}
+	}
+	if stats.stopReason == "" {
+		stats.stopReason = "max_pages_reached"
+	}
+	logging.Infof(
+		"subscription: fetched releases performer=%s stash_box=%s mode=%s pages_requested=%d pages_with_results=%d releases=%d stop_reason=%s",
+		performer.ID,
+		target.Endpoint,
+		strategy.mode,
+		stats.pagesRequested,
+		stats.pagesWithResult,
+		len(releases),
+		stats.stopReason,
+	)
 	return releases, nil
 }
 
@@ -667,6 +778,58 @@ func normalize(value string) string {
 
 func buildReleaseQuery(code, _ string) string {
 	return strings.TrimSpace(code)
+}
+
+func selectReleaseFetchStrategy(state *PerformerState) releaseFetchStrategy {
+	if state == nil || (len(state.ProcessedReleases) == 0 && len(state.PendingReleases) == 0) {
+		return releaseFetchStrategy{
+			mode:     releaseFetchModeBackfill,
+			perPage:  releaseQueryPerPage,
+			maxPages: releaseQueryBackfillMaxPages,
+		}
+	}
+	return releaseFetchStrategy{
+		mode:     releaseFetchModePoll,
+		perPage:  releaseQueryPerPage,
+		maxPages: releaseQueryPollMaxPages,
+	}
+}
+
+func recordedReleaseKeys(state *PerformerState) map[string]struct{} {
+	if state == nil {
+		return map[string]struct{}{}
+	}
+	out := make(map[string]struct{}, len(state.ProcessedReleases)+len(state.PendingReleases))
+	for _, release := range state.ProcessedReleases {
+		out[release.Key] = struct{}{}
+	}
+	for _, release := range state.PendingReleases {
+		out[release.Key] = struct{}{}
+	}
+	return out
+}
+
+func (s *Service) stashSceneExistsForRelease(ctx context.Context, release Release) (bool, error) {
+	sceneID := strings.TrimSpace(release.SceneID)
+	source := strings.TrimSpace(release.Source)
+	if sceneID == "" || !strings.HasPrefix(source, "stash-box:") {
+		return false, nil
+	}
+	endpoint := strings.TrimPrefix(source, "stash-box:")
+	scenes, err := s.stash.FindScenes(ctx, &stashgraphql.SceneFilterType{
+		StashIDEndpoint: &stashgraphql.StashIDCriterionInput{
+			Endpoint: stringPointer(endpoint),
+			StashID:  stringPointer(sceneID),
+			Modifier: stashgraphql.CriterionModifierEquals,
+		},
+	}, &stashgraphql.FindFilterType{
+		Page:    intPointer(1),
+		PerPage: intPointer(1),
+	})
+	if err != nil {
+		return false, fmt.Errorf("subscription: check stash library for release %q: %w", release.Key, err)
+	}
+	return len(scenes) > 0, nil
 }
 
 func trimRecordedReleases(items []RecordedRelease, limit int) []RecordedRelease {
