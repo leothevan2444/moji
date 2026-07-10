@@ -23,6 +23,10 @@ func NewSQLiteStore(path string) (*SQLiteStore, error) {
 	if err != nil {
 		return nil, err
 	}
+	if err := ensureSubscriptionSQLiteSchema(db); err != nil {
+		_ = db.Close()
+		return nil, err
+	}
 	return &SQLiteStore{db: db}, nil
 }
 
@@ -362,14 +366,6 @@ func sanitizeReleaseTaskID(ctx context.Context, tx *sqlx.Tx, releaseKey, candida
 	return nil, nil
 }
 
-func sqliteTaskExists(ctx context.Context, tx *sqlx.Tx, taskID string) (bool, error) {
-	var count int
-	if err := tx.GetContext(ctx, &count, `SELECT COUNT(1) FROM tasks WHERE id = ?`, taskID); err != nil {
-		return false, err
-	}
-	return count > 0, nil
-}
-
 func marshalPerformerNames(names []string) string {
 	if len(names) == 0 {
 		return "[]"
@@ -444,11 +440,4 @@ func nullableStringParam(value string) any {
 		return nil
 	}
 	return value
-}
-
-func nullableStringValue(value sql.NullString) string {
-	if !value.Valid {
-		return ""
-	}
-	return value.String
 }

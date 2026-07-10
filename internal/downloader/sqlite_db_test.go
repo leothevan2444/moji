@@ -112,6 +112,32 @@ func TestOpenSQLiteDatabaseInitializesNewSchemaVersion(t *testing.T) {
 	if version != "7" {
 		t.Fatalf("expected schema version 7, got %q", version)
 	}
+	for _, table := range []string{
+		"task_store_meta",
+		"tasks",
+		"task_events",
+	} {
+		exists, err := sqliteTableExists(db, table)
+		if err != nil {
+			t.Fatalf("check %s existence: %v", table, err)
+		}
+		if !exists {
+			t.Fatalf("expected %s to exist", table)
+		}
+	}
+	for _, table := range []string{
+		"subscription_performer_state",
+		"subscription_release_entities",
+		"subscription_performer_releases",
+	} {
+		exists, err := sqliteTableExists(db, table)
+		if err != nil {
+			t.Fatalf("check %s absence: %v", table, err)
+		}
+		if exists {
+			t.Fatalf("expected %s to remain outside downloader schema ownership", table)
+		}
+	}
 
 	if _, err := os.Stat(path); err != nil {
 		t.Fatalf("expected sqlite file to exist: %v", err)
@@ -225,41 +251,25 @@ CREATE TABLE tasks (
   created_at TEXT NOT NULL,
   updated_at TEXT NOT NULL
 ) STRICT;
-CREATE TABLE subscription_performer_state (
-  performer_id TEXT PRIMARY KEY,
-  last_checked_at TEXT,
-  last_error TEXT NOT NULL DEFAULT '',
-  created_at TEXT NOT NULL,
-  updated_at TEXT NOT NULL
-) STRICT;
 CREATE TABLE subscription_release_entities (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   release_key TEXT NOT NULL,
-  status TEXT NOT NULL DEFAULT 'pending',
+  status TEXT NOT NULL DEFAULT 'discovered',
   source TEXT NOT NULL DEFAULT '',
   title TEXT NOT NULL DEFAULT '',
   code TEXT NOT NULL DEFAULT '',
-  release_date TEXT NOT NULL DEFAULT '',
-  url TEXT NOT NULL DEFAULT '',
-  query TEXT NOT NULL DEFAULT '',
-  task_id TEXT NOT NULL DEFAULT '',
+  release_date TEXT,
+  url TEXT,
+  task_id TEXT,
   performer_count INTEGER NOT NULL DEFAULT 0,
   performer_names TEXT NOT NULL DEFAULT '[]',
-  classification TEXT NOT NULL DEFAULT 'UNKNOWN',
-  decision TEXT NOT NULL DEFAULT 'QUEUED',
+  classification TEXT NOT NULL DEFAULT '',
+  decision TEXT NOT NULL DEFAULT '',
   decision_reason TEXT NOT NULL DEFAULT '',
-  last_error TEXT NOT NULL DEFAULT '',
   seen_at TEXT NOT NULL,
   created_at TEXT NOT NULL,
-  updated_at TEXT NOT NULL
-) STRICT;
-CREATE TABLE subscription_performer_releases (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
-  performer_id TEXT NOT NULL,
-  release_id INTEGER NOT NULL,
-  linked_at TEXT NOT NULL,
-  created_at TEXT NOT NULL,
-  updated_at TEXT NOT NULL
+  updated_at TEXT NOT NULL,
+  FOREIGN KEY (task_id) REFERENCES tasks(id) ON DELETE SET NULL
 ) STRICT;
 INSERT INTO task_store_meta (key, value) VALUES ('schema_version', '3');
 `
@@ -286,15 +296,10 @@ INSERT INTO tasks (
 		t.Fatalf("insert legacy task: %v", err)
 	}
 	if _, err := db.Exec(`
-INSERT INTO subscription_performer_state (performer_id, last_checked_at, last_error, created_at, updated_at)
-VALUES ('performer-1', NULL, '', ?, ?)`, now, now); err != nil {
-		t.Fatalf("insert legacy performer state: %v", err)
-	}
-	if _, err := db.Exec(`
 INSERT INTO subscription_release_entities (
-  release_key, status, source, title, code, release_date, url, query, task_id,
-  performer_count, performer_names, classification, decision, decision_reason, last_error, seen_at, created_at, updated_at
-) VALUES ('release-1', 'pending', 'stash-box:test', 'Title', 'ABCD-123', '', '', 'ABCD-123', '', 1, '[]', 'UNKNOWN', 'QUEUED', '', '', ?, ?, ?)`,
+  release_key, status, source, title, code, release_date, url, task_id,
+  performer_count, performer_names, classification, decision, decision_reason, seen_at, created_at, updated_at
+) VALUES ('release-1', 'discovered', 'stash-box:test', 'Title', 'ABCD-123', NULL, NULL, NULL, 1, '[]', '', '', '', ?, ?, ?)`,
 		now, now, now,
 	); err != nil {
 		t.Fatalf("insert legacy release entity: %v", err)
@@ -317,37 +322,80 @@ INSERT INTO subscription_release_entities (
 	}
 	var releaseCount int
 	if err := opened.QueryRow(`SELECT COUNT(*) FROM subscription_release_entities`).Scan(&releaseCount); err != nil {
-		t.Fatalf("count subscription releases after reset: %v", err)
+		t.Fatalf("count subscription releases after downloader reset: %v", err)
 	}
-	if releaseCount != 0 {
-		t.Fatalf("expected legacy subscription releases to be dropped during schema reset, got %d", releaseCount)
+	if releaseCount != 1 {
+		t.Fatalf("expected downloader reset to preserve subscription rows, got %d", releaseCount)
 	}
 }
 
-func TestSubscriptionPerformerReleasesUsesCompositePrimaryKey(t *testing.T) {
-	db, err := OpenSQLiteDatabase(filepath.Join(t.TempDir(), "subscription-links.db"))
+func TestOpenSQLiteDatabaseAddsTaskSchemaToExistingSubscriptionDatabase(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "subscription-first.db")
+
+	db, err := sql.Open("sqlite", path)
 	if err != nil {
-		t.Fatalf("open sqlite db: %v", err)
+		t.Fatalf("open sqlite: %v", err)
 	}
 	defer db.Close()
 
 	now := time.Unix(300, 0).UTC().Format(time.RFC3339Nano)
-	if _, err := db.Exec(`INSERT INTO subscription_performer_state (performer_id, created_at, updated_at) VALUES (?, ?, ?)`, "performer-1", now, now); err != nil {
-		t.Fatalf("insert performer state: %v", err)
-	}
 	if _, err := db.Exec(`
+CREATE TABLE subscription_performer_state (
+  performer_id TEXT PRIMARY KEY,
+  last_checked_at TEXT,
+  last_error TEXT,
+  created_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL
+) STRICT;
+CREATE TABLE subscription_release_entities (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  release_key TEXT NOT NULL,
+  status TEXT NOT NULL DEFAULT 'discovered',
+  source TEXT NOT NULL DEFAULT '',
+  title TEXT NOT NULL DEFAULT '',
+  code TEXT NOT NULL DEFAULT '',
+  release_date TEXT,
+  url TEXT,
+  task_id TEXT,
+  performer_count INTEGER NOT NULL DEFAULT 0,
+  performer_names TEXT NOT NULL DEFAULT '[]',
+  classification TEXT NOT NULL DEFAULT '',
+  decision TEXT NOT NULL DEFAULT '',
+  decision_reason TEXT NOT NULL DEFAULT '',
+  seen_at TEXT NOT NULL,
+  created_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL
+) STRICT;
+INSERT INTO subscription_performer_state (performer_id, created_at, updated_at) VALUES ('performer-1', ?, ?);
 INSERT INTO subscription_release_entities (
   release_key, status, source, title, code, performer_count, performer_names, classification, decision, decision_reason, seen_at, created_at, updated_at
-) VALUES (?, 'pending', 'stash-box:test', 'Title', 'ABCD-123', 1, '[]', 'UNKNOWN', 'QUEUED', '', ?, ?, ?)`,
-		"release-1", now, now, now,
+) VALUES ('release-1', 'discovered', 'stash-box:test', 'Title', 'ABCD-123', 1, '[]', '', '', '', ?, ?, ?)`,
+		now, now, now, now, now,
 	); err != nil {
-		t.Fatalf("insert release entity: %v", err)
+		t.Fatalf("seed subscription schema: %v", err)
 	}
 
-	if _, err := db.Exec(`INSERT INTO subscription_performer_releases (performer_id, release_id, linked_at) VALUES ('performer-1', 1, ?)`, now); err != nil {
-		t.Fatalf("insert first performer release link: %v", err)
+	opened, err := OpenSQLiteDatabase(path)
+	if err != nil {
+		t.Fatalf("open sqlite db with downloader schema: %v", err)
 	}
-	if _, err := db.Exec(`INSERT INTO subscription_performer_releases (performer_id, release_id, linked_at) VALUES ('performer-1', 1, ?)`, now); err == nil {
-		t.Fatal("expected duplicate composite key insert to fail")
+	defer opened.Close()
+
+	for _, table := range []string{"tasks", "task_events", "task_store_meta", "subscription_performer_state", "subscription_release_entities"} {
+		exists, err := sqliteTableExists(opened, table)
+		if err != nil {
+			t.Fatalf("check %s existence: %v", table, err)
+		}
+		if !exists {
+			t.Fatalf("expected %s to exist after downloader init", table)
+		}
+	}
+
+	var releaseCount int
+	if err := opened.QueryRow(`SELECT COUNT(*) FROM subscription_release_entities`).Scan(&releaseCount); err != nil {
+		t.Fatalf("count subscription releases: %v", err)
+	}
+	if releaseCount != 1 {
+		t.Fatalf("expected existing subscription rows to survive downloader init, got %d", releaseCount)
 	}
 }

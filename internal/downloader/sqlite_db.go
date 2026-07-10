@@ -69,12 +69,6 @@ func configureSQLiteDatabase(db *sqlx.DB) error {
 	if err != nil {
 		return err
 	}
-	if !hadSchema {
-		hadSchema, err = sqliteTableExists(db, "subscription_release_entities")
-		if err != nil {
-			return err
-		}
-	}
 
 	if !hadSchema || versionBeforeInit == sqliteSchemaVersion {
 		if _, err := db.Exec(sqliteSchema); err != nil {
@@ -104,9 +98,6 @@ func resetSQLiteDatabase(db *sqlx.DB) error {
 
 	statements := []string{
 		`PRAGMA foreign_keys = OFF`,
-		`DROP TABLE IF EXISTS subscription_performer_releases`,
-		`DROP TABLE IF EXISTS subscription_release_entities`,
-		`DROP TABLE IF EXISTS subscription_performer_state`,
 		`DROP TABLE IF EXISTS task_events`,
 		`DROP TABLE IF EXISTS tasks`,
 		`DROP TABLE IF EXISTS task_store_meta`,
@@ -131,9 +122,6 @@ func ensureSQLiteRuntimeState(db *sqlx.DB) error {
 	defer tx.Rollback()
 
 	if err := recreateSQLiteIndexes(tx); err != nil {
-		return err
-	}
-	if err := clearDanglingSubscriptionTaskReferences(tx); err != nil {
 		return err
 	}
 	if _, err := tx.Exec(`INSERT INTO task_store_meta (key, value) VALUES ('schema_version', ?)
@@ -165,21 +153,6 @@ func recreateSQLiteIndexes(tx *sqlx.Tx) error {
 			`CREATE INDEX IF NOT EXISTS idx_task_events_task_created_at ON task_events (task_id, created_at DESC)`,
 			`CREATE INDEX IF NOT EXISTS idx_task_events_created_at ON task_events (created_at DESC)`,
 		},
-		"subscription_performer_state": {
-			`CREATE INDEX IF NOT EXISTS idx_subscription_state_last_checked_at ON subscription_performer_state (last_checked_at DESC)`,
-			`CREATE INDEX IF NOT EXISTS idx_subscription_state_updated_at ON subscription_performer_state (updated_at DESC)`,
-		},
-		"subscription_release_entities": {
-			`CREATE UNIQUE INDEX IF NOT EXISTS idx_subscription_release_entities_key ON subscription_release_entities (release_key)`,
-			`CREATE INDEX IF NOT EXISTS idx_subscription_release_entities_date ON subscription_release_entities (release_date DESC, seen_at DESC)`,
-			`CREATE INDEX IF NOT EXISTS idx_subscription_release_entities_code ON subscription_release_entities (code)`,
-			`CREATE INDEX IF NOT EXISTS idx_subscription_release_entities_status_seen_at ON subscription_release_entities (status, seen_at DESC)`,
-			`CREATE INDEX IF NOT EXISTS idx_subscription_release_entities_task_id ON subscription_release_entities (task_id)`,
-		},
-		"subscription_performer_releases": {
-			`CREATE INDEX IF NOT EXISTS idx_subscription_performer_releases_performer_linked_at ON subscription_performer_releases (performer_id, linked_at DESC)`,
-			`CREATE INDEX IF NOT EXISTS idx_subscription_performer_releases_release_id ON subscription_performer_releases (release_id)`,
-		},
 	}
 
 	for table, indexes := range indexesByTable {
@@ -195,28 +168,6 @@ func recreateSQLiteIndexes(tx *sqlx.Tx) error {
 				return fmt.Errorf("downloader: create sqlite index: %w", err)
 			}
 		}
-	}
-	return nil
-}
-
-func clearDanglingSubscriptionTaskReferences(tx *sqlx.Tx) error {
-	exists, err := sqliteTableExistsTx(tx, "subscription_release_entities")
-	if err != nil {
-		return err
-	}
-	if !exists {
-		return nil
-	}
-	if _, err := tx.Exec(`
-UPDATE subscription_release_entities
-SET task_id = NULL
-WHERE task_id IS NOT NULL
-  AND NOT EXISTS (
-    SELECT 1
-    FROM tasks
-    WHERE tasks.id = subscription_release_entities.task_id
-  )`); err != nil {
-		return fmt.Errorf("downloader: clear dangling subscription task references: %w", err)
 	}
 	return nil
 }
