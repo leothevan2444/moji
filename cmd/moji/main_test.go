@@ -522,6 +522,10 @@ func (f *fakeProgressSyncService) RetryTask(context.Context, string, taskruntime
 	return nil, nil
 }
 
+func (f *fakeProgressSyncService) ResolveBlockedSourcingTask(context.Context, string, taskruntime.ResolveBlockedSourcingRequest) (*taskruntime.Task, error) {
+	return nil, nil
+}
+
 func (f *fakeProgressSyncService) SyncProgress(context.Context) ([]*taskruntime.Task, error) {
 	select {
 	case f.called <- struct{}{}:

@@ -17,7 +17,7 @@ import {
 import { taskSummary, type TaskGroupKey } from "./utils";
 import type { DrawerKey, SettingsTab, TabKey } from "./types";
 import { Drawer, Header, ToastStack } from "./components/layout";
-import { ConfirmDeleteDrawer, DiscoveryDrawer, HelpDrawer, SettingsDrawer, StatsDrawer, TaskDrawer } from "./components/drawers";
+import { ConfirmDeleteDrawer, DiscoveryDrawer, HelpDrawer, SettingsDrawer, SourcingResolutionDrawer, StatsDrawer, TaskDrawer } from "./components/drawers";
 import { JackettFilterPanel } from "./components/drawers/JackettFilterPanel";
 import { SortAndPagination } from "./components/drawers/SortAndPagination";
 import {
@@ -299,6 +299,16 @@ function App() {
   // ── Action handlers ─────────────────────────────────────────────────
   const openTaskDetail = (taskId: string) => {
     setSelectedTaskId(taskId);
+    setDrawer("task");
+  };
+
+  const openTaskResolution = (taskId: string) => {
+    setSelectedTaskId(taskId);
+    setDrawer("task-resolution");
+  };
+
+  const handleSourcingResolved = async () => {
+    await refreshDashboard({ requestPolicy: "network-only" });
     setDrawer("task");
   };
 
@@ -670,6 +680,7 @@ function App() {
     if (visibleDrawer === "settings") return "配置与系统";
     if (visibleDrawer === "help") return "Markdown 帮助";
     if (visibleDrawer === "discovery") return discoveryMode === "stashbox" ? "StashBox 搜索结果" : "Jackett 搜索结果";
+    if (visibleDrawer === "task-resolution") return activeTask ? `人工处理：${taskSummary(activeTask)}` : "人工处理受阻任务";
     return activeTask ? taskSummary(activeTask) : "任务详情";
   })();
 
@@ -711,6 +722,7 @@ function App() {
             onOpenTask={openTaskDetail}
             onScanTask={(id) => void runTaskScan(id)}
             onRetryTask={(id) => void runRetryTask(id)}
+            onResolveTask={openTaskResolution}
             onOpenSettings={openSettings}
           />
         ) : null}
@@ -742,6 +754,7 @@ function App() {
             onOpenTask={openTaskDetail}
             onScanTask={(id) => void runTaskScan(id)}
             onRetryTask={(id) => void runRetryTask(id)}
+            onResolveTask={openTaskResolution}
             onRetryBlockedTasks={() => void runRetryBlockedTasks()}
             onDeleteTask={requestDeleteTask}
           />
@@ -880,6 +893,10 @@ function App() {
               onScanAll={() => void runScan()}
               onDeleteTask={requestDeleteTask}
             />
+          ) : null}
+
+          {visibleDrawer === "task-resolution" ? (
+            <SourcingResolutionDrawer task={activeTask} onResolved={handleSourcingResolved} />
           ) : null}
 
           {visibleDrawer === "discovery" ? (

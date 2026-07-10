@@ -39,6 +39,7 @@ interface TasksPageProps {
   onOpenTask: (taskId: string) => void;
   onScanTask: (taskId: string) => void;
   onRetryTask: (taskId: string) => void;
+  onResolveTask: (taskId: string) => void;
   onRetryBlockedTasks: () => void;
   onDeleteTask: (taskId: string) => void;
 }
@@ -64,6 +65,7 @@ export function TasksPage({
   onOpenTask,
   onScanTask,
   onRetryTask,
+  onResolveTask,
   onRetryBlockedTasks,
   onDeleteTask
 }: TasksPageProps) {
@@ -194,6 +196,7 @@ export function TasksPage({
             onOpenTask={onOpenTask}
             onScanTask={onScanTask}
             onRetryTask={onRetryTask}
+            onResolveTask={onResolveTask}
             onDeleteTask={onDeleteTask}
             onScanAll={onScanAll}
           />

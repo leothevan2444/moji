@@ -429,6 +429,66 @@ $task-status-tones: (
   }
 }
 
+.sourcing-resolution {
+  display: grid;
+  gap: 14px;
+
+  .drawer-card__head p {
+    margin: 6px 0 0;
+  }
+
+  &__magnet {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 10px;
+  }
+
+  &__search {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+
+    span {
+      color: var(--text-muted);
+      font-size: 13px;
+    }
+  }
+
+  &__candidates {
+    display: grid;
+    gap: 8px;
+    max-height: 360px;
+    overflow-y: auto;
+  }
+}
+
+.sourcing-candidate {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: $radius-lg;
+  background: var(--surface);
+
+  div {
+    min-width: 0;
+    display: grid;
+    gap: 4px;
+  }
+
+  strong,
+  span {
+    overflow-wrap: anywhere;
+  }
+
+  span {
+    color: var(--muted);
+    font-size: 13px;
+  }
+}
+
 .icon-button {
   display: inline-flex;
   align-items: center;

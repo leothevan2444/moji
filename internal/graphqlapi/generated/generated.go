@@ -201,6 +201,7 @@ type ComplexityRoot struct {
 		RefreshSubscribedPerformer    func(childComplexity int, stashPerformerID string) int
 		RefreshSubscriptionStashBoxes func(childComplexity int) int
 		RefreshSubscriptionsNow       func(childComplexity int) int
+		ResolveBlockedSourcingTask    func(childComplexity int, id string, input model.ResolveBlockedSourcingTaskInput) int
 		RetryTask                     func(childComplexity int, id string) int
 		StashMetadataScan             func(childComplexity int, input model.StashMetadataScanInput) int
 		SubscribePerformer            func(childComplexity int, stashPerformerID string) int
@@ -265,24 +266,25 @@ type ComplexityRoot struct {
 	}
 
 	Query struct {
-		DashboardStats          func(childComplexity int) int
-		DiscoverScenes          func(childComplexity int, input model.DiscoverScenesInput) int
-		Health                  func(childComplexity int) int
-		JackettIndexers         func(childComplexity int) int
-		JackettSearch           func(childComplexity int, input model.JackettSearchInput) int
-		Logs                    func(childComplexity int, limit *int, minLevel *model.LogLevel) int
-		PreviewJackettSelection func(childComplexity int, input model.PreviewJackettSelectionInput) int
-		QbittorrentTorrents     func(childComplexity int, limit *int) int
-		Settings                func(childComplexity int) int
-		SettingsStatus          func(childComplexity int) int
-		StashJob                func(childComplexity int, id string) int
-		StashPerformerDetail    func(childComplexity int, id string) int
-		StashPerformerScenes    func(childComplexity int, id string, input model.StashPerformerScenesInput) int
-		StashPerformers         func(childComplexity int, search *string, page *int, pageSize *int) int
-		SubscribedPerformers    func(childComplexity int) int
-		Task                    func(childComplexity int, id string) int
-		Tasks                   func(childComplexity int) int
-		Version                 func(childComplexity int) int
+		BlockedTaskTorrentCandidates func(childComplexity int, id string, limit *int) int
+		DashboardStats               func(childComplexity int) int
+		DiscoverScenes               func(childComplexity int, input model.DiscoverScenesInput) int
+		Health                       func(childComplexity int) int
+		JackettIndexers              func(childComplexity int) int
+		JackettSearch                func(childComplexity int, input model.JackettSearchInput) int
+		Logs                         func(childComplexity int, limit *int, minLevel *model.LogLevel) int
+		PreviewJackettSelection      func(childComplexity int, input model.PreviewJackettSelectionInput) int
+		QbittorrentTorrents          func(childComplexity int, limit *int) int
+		Settings                     func(childComplexity int) int
+		SettingsStatus               func(childComplexity int) int
+		StashJob                     func(childComplexity int, id string) int
+		StashPerformerDetail         func(childComplexity int, id string) int
+		StashPerformerScenes         func(childComplexity int, id string, input model.StashPerformerScenesInput) int
+		StashPerformers              func(childComplexity int, search *string, page *int, pageSize *int) int
+		SubscribedPerformers         func(childComplexity int) int
+		Task                         func(childComplexity int, id string) int
+		Tasks                        func(childComplexity int) int
+		Version                      func(childComplexity int) int
 	}
 
 	QueuePerformerSceneResult struct {
@@ -576,6 +578,7 @@ type MutationResolver interface {
 	TriggerTaskStashScan(ctx context.Context, id string) (*model.Task, error)
 	TriggerStashScans(ctx context.Context) ([]*model.Task, error)
 	RetryTask(ctx context.Context, id string) (*model.Task, error)
+	ResolveBlockedSourcingTask(ctx context.Context, id string, input model.ResolveBlockedSourcingTaskInput) (*model.Task, error)
 	DeleteTask(ctx context.Context, id string) (*model.Task, error)
 	QueueDiscoveredScene(ctx context.Context, input model.QueueDiscoveredSceneInput) (*model.Task, error)
 	UpdateStashSettings(ctx context.Context, input model.UpdateStashSettingsInput) (*model.Settings, error)
@@ -600,6 +603,7 @@ type QueryResolver interface {
 	JackettSearch(ctx context.Context, input model.JackettSearchInput) ([]*model.JackettSearchResult, error)
 	PreviewJackettSelection(ctx context.Context, input model.PreviewJackettSelectionInput) (*model.PreviewJackettSelectionResult, error)
 	JackettIndexers(ctx context.Context) ([]*model.JackettIndexer, error)
+	BlockedTaskTorrentCandidates(ctx context.Context, id string, limit *int) ([]*model.JackettSearchResult, error)
 	Settings(ctx context.Context) (*model.Settings, error)
 	SettingsStatus(ctx context.Context) (*model.SettingsStatus, error)
 	StashJob(ctx context.Context, id string) (*model.StashJob, error)
@@ -1346,6 +1350,18 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.Mutation.RefreshSubscriptionsNow(childComplexity), true
 
+	case "Mutation.resolveBlockedSourcingTask":
+		if e.complexity.Mutation.ResolveBlockedSourcingTask == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_resolveBlockedSourcingTask_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.ResolveBlockedSourcingTask(childComplexity, args["id"].(string), args["input"].(model.ResolveBlockedSourcingTaskInput)), true
+
 	case "Mutation.retryTask":
 		if e.complexity.Mutation.RetryTask == nil {
 			break
@@ -1722,6 +1738,18 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.QBittorrentStats.UploadSpeed(childComplexity), true
+
+	case "Query.blockedTaskTorrentCandidates":
+		if e.complexity.Query.BlockedTaskTorrentCandidates == nil {
+			break
+		}
+
+		args, err := ec.field_Query_blockedTaskTorrentCandidates_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Query.BlockedTaskTorrentCandidates(childComplexity, args["id"].(string), args["limit"].(*int)), true
 
 	case "Query.dashboardStats":
 		if e.complexity.Query.DashboardStats == nil {
@@ -3264,6 +3292,7 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 		ec.unmarshalInputQueueDiscoveredSceneInput,
 		ec.unmarshalInputQueuePerformerSceneInput,
 		ec.unmarshalInputQueuePerformerScenesInput,
+		ec.unmarshalInputResolveBlockedSourcingTaskInput,
 		ec.unmarshalInputStashMetadataScanInput,
 		ec.unmarshalInputStashPerformerScenesInput,
 		ec.unmarshalInputSubscriptionReleasePolicyInput,
@@ -3425,6 +3454,9 @@ type LogEntry {
 
   "List the indexers Jackett currently exposes. Returns [] when Jackett is not configured."
   jackettIndexers: [JackettIndexer!]!
+
+  "Search torrent candidates for a blocked sourcing task"
+  blockedTaskTorrentCandidates(id: ID!, limit: Int = 50): [JackettSearchResult!]!
 }
 
 extend type Mutation {
@@ -4290,6 +4322,9 @@ type Mutation {
   "Retry a blocked Moji task from its current stage"
   retryTask(id: ID!): Task!
 
+  "Resolve a blocked sourcing task with a manually selected torrent"
+  resolveBlockedSourcingTask(id: ID!, input: ResolveBlockedSourcingTaskInput!): Task!
+
   "Delete a persisted Moji task record"
   deleteTask(id: ID!): Task!
 }
@@ -4324,6 +4359,17 @@ input DownloadMediaInput {
   savePath: String
   category: String
   tags: String
+  paused: Boolean
+}
+
+input ResolveBlockedSourcingTaskInput {
+  torrentUrl: String!
+  title: String
+  tracker: String
+  infoHash: String
+  size: Long
+  seeders: Int
+  peers: Int
   paused: Boolean
 }
 
@@ -4595,6 +4641,57 @@ func (ec *executionContext) field_Mutation_refreshSubscribedPerformer_argsStashP
 	}
 
 	var zeroVal string
+	return zeroVal, nil
+}
+
+func (ec *executionContext) field_Mutation_resolveBlockedSourcingTask_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := ec.field_Mutation_resolveBlockedSourcingTask_argsID(ctx, rawArgs)
+	if err != nil {
+		return nil, err
+	}
+	args["id"] = arg0
+	arg1, err := ec.field_Mutation_resolveBlockedSourcingTask_argsInput(ctx, rawArgs)
+	if err != nil {
+		return nil, err
+	}
+	args["input"] = arg1
+	return args, nil
+}
+func (ec *executionContext) field_Mutation_resolveBlockedSourcingTask_argsID(
+	ctx context.Context,
+	rawArgs map[string]any,
+) (string, error) {
+	if _, ok := rawArgs["id"]; !ok {
+		var zeroVal string
+		return zeroVal, nil
+	}
+
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
+	if tmp, ok := rawArgs["id"]; ok {
+		return ec.unmarshalNID2string(ctx, tmp)
+	}
+
+	var zeroVal string
+	return zeroVal, nil
+}
+
+func (ec *executionContext) field_Mutation_resolveBlockedSourcingTask_argsInput(
+	ctx context.Context,
+	rawArgs map[string]any,
+) (model.ResolveBlockedSourcingTaskInput, error) {
+	if _, ok := rawArgs["input"]; !ok {
+		var zeroVal model.ResolveBlockedSourcingTaskInput
+		return zeroVal, nil
+	}
+
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
+	if tmp, ok := rawArgs["input"]; ok {
+		return ec.unmarshalNResolveBlockedSourcingTaskInput2githubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐResolveBlockedSourcingTaskInput(ctx, tmp)
+	}
+
+	var zeroVal model.ResolveBlockedSourcingTaskInput
 	return zeroVal, nil
 }
 
@@ -4931,6 +5028,57 @@ func (ec *executionContext) field_Query___type_argsName(
 	}
 
 	var zeroVal string
+	return zeroVal, nil
+}
+
+func (ec *executionContext) field_Query_blockedTaskTorrentCandidates_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := ec.field_Query_blockedTaskTorrentCandidates_argsID(ctx, rawArgs)
+	if err != nil {
+		return nil, err
+	}
+	args["id"] = arg0
+	arg1, err := ec.field_Query_blockedTaskTorrentCandidates_argsLimit(ctx, rawArgs)
+	if err != nil {
+		return nil, err
+	}
+	args["limit"] = arg1
+	return args, nil
+}
+func (ec *executionContext) field_Query_blockedTaskTorrentCandidates_argsID(
+	ctx context.Context,
+	rawArgs map[string]any,
+) (string, error) {
+	if _, ok := rawArgs["id"]; !ok {
+		var zeroVal string
+		return zeroVal, nil
+	}
+
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
+	if tmp, ok := rawArgs["id"]; ok {
+		return ec.unmarshalNID2string(ctx, tmp)
+	}
+
+	var zeroVal string
+	return zeroVal, nil
+}
+
+func (ec *executionContext) field_Query_blockedTaskTorrentCandidates_argsLimit(
+	ctx context.Context,
+	rawArgs map[string]any,
+) (*int, error) {
+	if _, ok := rawArgs["limit"]; !ok {
+		var zeroVal *int
+		return zeroVal, nil
+	}
+
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("limit"))
+	if tmp, ok := rawArgs["limit"]; ok {
+		return ec.unmarshalOInt2ᚖint(ctx, tmp)
+	}
+
+	var zeroVal *int
 	return zeroVal, nil
 }
 
@@ -10100,6 +10248,127 @@ func (ec *executionContext) fieldContext_Mutation_retryTask(ctx context.Context,
 	return fc, nil
 }
 
+func (ec *executionContext) _Mutation_resolveBlockedSourcingTask(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Mutation_resolveBlockedSourcingTask(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().ResolveBlockedSourcingTask(rctx, fc.Args["id"].(string), fc.Args["input"].(model.ResolveBlockedSourcingTaskInput))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*model.Task)
+	fc.Result = res
+	return ec.marshalNTask2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐTask(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Mutation_resolveBlockedSourcingTask(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_Task_id(ctx, field)
+			case "source":
+				return ec.fieldContext_Task_source(ctx, field)
+			case "code":
+				return ec.fieldContext_Task_code(ctx, field)
+			case "stage":
+				return ec.fieldContext_Task_stage(ctx, field)
+			case "stageStatus":
+				return ec.fieldContext_Task_stageStatus(ctx, field)
+			case "stageLabel":
+				return ec.fieldContext_Task_stageLabel(ctx, field)
+			case "stageStatusLabel":
+				return ec.fieldContext_Task_stageStatusLabel(ctx, field)
+			case "stageErrorCode":
+				return ec.fieldContext_Task_stageErrorCode(ctx, field)
+			case "stageErrorMessage":
+				return ec.fieldContext_Task_stageErrorMessage(ctx, field)
+			case "candidate":
+				return ec.fieldContext_Task_candidate(ctx, field)
+			case "torrentUrl":
+				return ec.fieldContext_Task_torrentUrl(ctx, field)
+			case "savePath":
+				return ec.fieldContext_Task_savePath(ctx, field)
+			case "category":
+				return ec.fieldContext_Task_category(ctx, field)
+			case "tags":
+				return ec.fieldContext_Task_tags(ctx, field)
+			case "torrentHash":
+				return ec.fieldContext_Task_torrentHash(ctx, field)
+			case "torrentName":
+				return ec.fieldContext_Task_torrentName(ctx, field)
+			case "progress":
+				return ec.fieldContext_Task_progress(ctx, field)
+			case "qbittorrentState":
+				return ec.fieldContext_Task_qbittorrentState(ctx, field)
+			case "contentPath":
+				return ec.fieldContext_Task_contentPath(ctx, field)
+			case "downloadCompletedAt":
+				return ec.fieldContext_Task_downloadCompletedAt(ctx, field)
+			case "deliveryMode":
+				return ec.fieldContext_Task_deliveryMode(ctx, field)
+			case "mojiSourcePath":
+				return ec.fieldContext_Task_mojiSourcePath(ctx, field)
+			case "transferAction":
+				return ec.fieldContext_Task_transferAction(ctx, field)
+			case "mojiTransferPath":
+				return ec.fieldContext_Task_mojiTransferPath(ctx, field)
+			case "transferError":
+				return ec.fieldContext_Task_transferError(ctx, field)
+			case "stashScanJobId":
+				return ec.fieldContext_Task_stashScanJobId(ctx, field)
+			case "stashScanPath":
+				return ec.fieldContext_Task_stashScanPath(ctx, field)
+			case "stashScanError":
+				return ec.fieldContext_Task_stashScanError(ctx, field)
+			case "stashScanHint":
+				return ec.fieldContext_Task_stashScanHint(ctx, field)
+			case "stashScanStartedAt":
+				return ec.fieldContext_Task_stashScanStartedAt(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_Task_createdAt(ctx, field)
+			case "updatedAt":
+				return ec.fieldContext_Task_updatedAt(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type Task", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_resolveBlockedSourcingTask_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _Mutation_deleteTask(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_Mutation_deleteTask(ctx, field)
 	if err != nil {
@@ -13077,6 +13346,87 @@ func (ec *executionContext) fieldContext_Query_jackettIndexers(_ context.Context
 			}
 			return nil, fmt.Errorf("no field named %q was found under type JackettIndexer", field.Name)
 		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Query_blockedTaskTorrentCandidates(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Query_blockedTaskTorrentCandidates(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Query().BlockedTaskTorrentCandidates(rctx, fc.Args["id"].(string), fc.Args["limit"].(*int))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]*model.JackettSearchResult)
+	fc.Result = res
+	return ec.marshalNJackettSearchResult2ᚕᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐJackettSearchResultᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Query_blockedTaskTorrentCandidates(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "title":
+				return ec.fieldContext_JackettSearchResult_title(ctx, field)
+			case "size":
+				return ec.fieldContext_JackettSearchResult_size(ctx, field)
+			case "seeders":
+				return ec.fieldContext_JackettSearchResult_seeders(ctx, field)
+			case "peers":
+				return ec.fieldContext_JackettSearchResult_peers(ctx, field)
+			case "tracker":
+				return ec.fieldContext_JackettSearchResult_tracker(ctx, field)
+			case "trackerId":
+				return ec.fieldContext_JackettSearchResult_trackerId(ctx, field)
+			case "categoryDesc":
+				return ec.fieldContext_JackettSearchResult_categoryDesc(ctx, field)
+			case "publishDate":
+				return ec.fieldContext_JackettSearchResult_publishDate(ctx, field)
+			case "details":
+				return ec.fieldContext_JackettSearchResult_details(ctx, field)
+			case "link":
+				return ec.fieldContext_JackettSearchResult_link(ctx, field)
+			case "magnetUri":
+				return ec.fieldContext_JackettSearchResult_magnetUri(ctx, field)
+			case "infoHash":
+				return ec.fieldContext_JackettSearchResult_infoHash(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type JackettSearchResult", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Query_blockedTaskTorrentCandidates_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
 	}
 	return fc, nil
 }
@@ -25494,6 +25844,82 @@ func (ec *executionContext) unmarshalInputQueuePerformerScenesInput(ctx context.
 	return it, nil
 }
 
+func (ec *executionContext) unmarshalInputResolveBlockedSourcingTaskInput(ctx context.Context, obj any) (model.ResolveBlockedSourcingTaskInput, error) {
+	var it model.ResolveBlockedSourcingTaskInput
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"torrentUrl", "title", "tracker", "infoHash", "size", "seeders", "peers", "paused"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "torrentUrl":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("torrentUrl"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.TorrentURL = data
+		case "title":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("title"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Title = data
+		case "tracker":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("tracker"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Tracker = data
+		case "infoHash":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("infoHash"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.InfoHash = data
+		case "size":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("size"))
+			data, err := ec.unmarshalOLong2ᚖint64(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Size = data
+		case "seeders":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("seeders"))
+			data, err := ec.unmarshalOInt2ᚖint(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Seeders = data
+		case "peers":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("peers"))
+			data, err := ec.unmarshalOInt2ᚖint(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Peers = data
+		case "paused":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("paused"))
+			data, err := ec.unmarshalOBoolean2ᚖbool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Paused = data
+		}
+	}
+
+	return it, nil
+}
+
 func (ec *executionContext) unmarshalInputStashMetadataScanInput(ctx context.Context, obj any) (model.StashMetadataScanInput, error) {
 	var it model.StashMetadataScanInput
 	asMap := map[string]any{}
@@ -27383,6 +27809,13 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
+		case "resolveBlockedSourcingTask":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_resolveBlockedSourcingTask(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
 		case "deleteTask":
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
 				return ec._Mutation_deleteTask(ctx, field)
@@ -28001,6 +28434,28 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 					}
 				}()
 				res = ec._Query_jackettIndexers(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			rrm := func(ctx context.Context) graphql.Marshaler {
+				return ec.OperationContext.RootResolverMiddleware(ctx,
+					func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
+		case "blockedTaskTorrentCandidates":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_blockedTaskTorrentCandidates(ctx, field)
 				if res == graphql.Null {
 					atomic.AddUint32(&fs.Invalids, 1)
 				}
@@ -31153,6 +31608,11 @@ func (ec *executionContext) marshalNQueuePerformerScenesSummary2ᚖgithubᚗcom�
 	return ec._QueuePerformerScenesSummary(ctx, sel, v)
 }
 
+func (ec *executionContext) unmarshalNResolveBlockedSourcingTaskInput2githubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐResolveBlockedSourcingTaskInput(ctx context.Context, v any) (model.ResolveBlockedSourcingTaskInput, error) {
+	res, err := ec.unmarshalInputResolveBlockedSourcingTaskInput(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
 func (ec *executionContext) unmarshalNSceneSource2githubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐSceneSource(ctx context.Context, v any) (model.SceneSource, error) {
 	var res model.SceneSource
 	err := res.UnmarshalGQL(v)
@@ -32661,6 +33121,24 @@ func (ec *executionContext) marshalOLogLevel2ᚖgithubᚗcomᚋleothevan2444ᚋm
 		return graphql.Null
 	}
 	return v
+}
+
+func (ec *executionContext) unmarshalOLong2ᚖint64(ctx context.Context, v any) (*int64, error) {
+	if v == nil {
+		return nil, nil
+	}
+	res, err := graphql.UnmarshalInt64(v)
+	return &res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalOLong2ᚖint64(ctx context.Context, sel ast.SelectionSet, v *int64) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	_ = sel
+	_ = ctx
+	res := graphql.MarshalInt64(*v)
+	return res
 }
 
 func (ec *executionContext) marshalOMatchedStashBox2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐMatchedStashBox(ctx context.Context, sel ast.SelectionSet, v *model.MatchedStashBox) graphql.Marshaler {

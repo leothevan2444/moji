@@ -87,3 +87,29 @@ mutation RetryTaskDocument($id: ID!) {
     updatedAt
   }
 }
+
+mutation ResolveBlockedSourcingTaskDocument($id: ID!, $input: ResolveBlockedSourcingTaskInput!) {
+  resolveBlockedSourcingTask(id: $id, input: $input) {
+    id
+    source
+    stage
+    stageStatus
+    stageLabel
+    stageStatusLabel
+    stageErrorCode
+    stageErrorMessage
+    code
+    candidate {
+      title
+      tracker
+      infoHash
+      size
+      seeders
+      peers
+    }
+    torrentUrl
+    progress
+    qbittorrentState
+    updatedAt
+  }
+}

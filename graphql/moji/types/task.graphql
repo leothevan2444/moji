@@ -31,6 +31,9 @@ type Mutation {
   "Retry a blocked Moji task from its current stage"
   retryTask(id: ID!): Task!
 
+  "Resolve a blocked sourcing task with a manually selected torrent"
+  resolveBlockedSourcingTask(id: ID!, input: ResolveBlockedSourcingTaskInput!): Task!
+
   "Delete a persisted Moji task record"
   deleteTask(id: ID!): Task!
 }
@@ -65,6 +68,17 @@ input DownloadMediaInput {
   savePath: String
   category: String
   tags: String
+  paused: Boolean
+}
+
+input ResolveBlockedSourcingTaskInput {
+  torrentUrl: String!
+  title: String
+  tracker: String
+  infoHash: String
+  size: Long
+  seeders: Int
+  peers: Int
   paused: Boolean
 }
 

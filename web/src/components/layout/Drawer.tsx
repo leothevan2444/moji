@@ -10,13 +10,14 @@ interface DrawerProps {
 }
 
 export function Drawer({ visibleDrawer, closing, title, onClose, children }: DrawerProps) {
+  const isTaskDrawer = visibleDrawer === "task" || visibleDrawer === "task-resolution";
   return (
     <div
-      className={`drawer-scrim ${visibleDrawer === "task" ? "drawer-scrim--task" : "drawer-scrim--modal"} ${closing ? "is-closing" : ""}`}
+      className={`drawer-scrim ${isTaskDrawer ? "drawer-scrim--task" : "drawer-scrim--modal"} ${closing ? "is-closing" : ""}`}
       onClick={onClose}
     >
       <aside
-        className={`drawer ${visibleDrawer === "task" ? "drawer--task" : "drawer--modal"} ${closing ? "is-closing" : ""}`}
+        className={`drawer ${isTaskDrawer ? "drawer--task" : "drawer--modal"} ${closing ? "is-closing" : ""}`}
         onClick={(event) => event.stopPropagation()}
       >
         <div className="drawer__head">

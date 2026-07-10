@@ -10,6 +10,9 @@ extend type Query {
 
   "List the indexers Jackett currently exposes. Returns [] when Jackett is not configured."
   jackettIndexers: [JackettIndexer!]!
+
+  "Search torrent candidates for a blocked sourcing task"
+  blockedTaskTorrentCandidates(id: ID!, limit: Int = 50): [JackettSearchResult!]!
 }
 
 extend type Mutation {

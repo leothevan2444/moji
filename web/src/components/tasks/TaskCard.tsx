@@ -18,6 +18,7 @@ interface TaskCardProps {
   onOpen: (taskId: string) => void;
   onScan?: (taskId: string) => void;
   onRetry?: (taskId: string) => void;
+  onResolve?: (taskId: string) => void;
   onDelete?: (taskId: string) => void;
 }
 
@@ -30,6 +31,7 @@ export function TaskCard({
   onOpen,
   onScan,
   onRetry,
+  onResolve,
   onDelete
 }: TaskCardProps) {
   const presentation = taskPresentation(task);
@@ -96,6 +98,20 @@ export function TaskCard({
         <span>{formatDateTime(task.updatedAt)}</span>
 
         <div className="task-card__right">
+          {task.stage === "SOURCING" && task.stageStatus === "BLOCKED" && onResolve ? (
+            <button
+              type="button"
+              className="ghost-button task-card__action-button"
+              onClick={(event) => {
+                event.stopPropagation();
+                onResolve(task.id);
+              }}
+              onKeyDown={(event) => event.stopPropagation()}
+              aria-label={`人工处理任务：${taskSummary(task)}`}
+            >
+              人工处理
+            </button>
+          ) : null}
           {task.stageStatus === "BLOCKED" && onRetry ? (
             <button
               type="button"

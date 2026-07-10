@@ -136,3 +136,36 @@ func (r *queryResolver) JackettIndexers(ctx context.Context) ([]*model.JackettIn
 	}
 	return out, nil
 }
+
+// BlockedTaskTorrentCandidates is the resolver for the blockedTaskTorrentCandidates field.
+func (r *queryResolver) BlockedTaskTorrentCandidates(ctx context.Context, id string, limit *int) ([]*model.JackettSearchResult, error) {
+	if r.TaskRuntime == nil {
+		return nil, errors.New("task runtime is not configured")
+	}
+	if r.Tracker == nil {
+		return nil, errors.New("tracker is not configured")
+	}
+	task, err := r.TaskRuntime.FindTask(ctx, strings.TrimSpace(id))
+	if err != nil {
+		return nil, err
+	}
+	if task == nil {
+		return nil, errors.New("task not found")
+	}
+	if task.Stage != taskruntime.TaskStageSourcing || task.StageStatus != taskruntime.TaskStageStatusBlocked {
+		return nil, errors.New("task is not a blocked sourcing task")
+	}
+	options := []tracker.SearchOption{}
+	if limit != nil {
+		options = append(options, tracker.WithLimit(*limit))
+	}
+	results, err := r.Tracker.Search(task.Code, options...)
+	if err != nil {
+		return nil, err
+	}
+	out := make([]*model.JackettSearchResult, 0, len(results))
+	for _, result := range results {
+		out = append(out, jackettSearchResultToModel(result))
+	}
+	return out, nil
+}

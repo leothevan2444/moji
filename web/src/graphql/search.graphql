@@ -76,6 +76,23 @@ query JackettIndexersDocument {
   }
 }
 
+query BlockedTaskTorrentCandidatesDocument($id: ID!, $limit: Int) {
+  blockedTaskTorrentCandidates(id: $id, limit: $limit) {
+    title
+    size
+    seeders
+    peers
+    tracker
+    trackerId
+    categoryDesc
+    publishDate
+    details
+    link
+    magnetUri
+    infoHash
+  }
+}
+
 mutation QueueDiscoveredSceneDocument($input: QueueDiscoveredSceneInput!) {
   queueDiscoveredScene(input: $input) {
     id

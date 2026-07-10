@@ -37,6 +37,7 @@ type TaskRuntimeService interface {
 	ListTasks(ctx context.Context) ([]*taskruntime.Task, error)
 	DeleteTask(ctx context.Context, id string) (*taskruntime.Task, error)
 	RetryTask(ctx context.Context, id string, scanner taskruntime.StashScanner) (*taskruntime.Task, error)
+	ResolveBlockedSourcingTask(ctx context.Context, id string, req taskruntime.ResolveBlockedSourcingRequest) (*taskruntime.Task, error)
 	SyncProgress(ctx context.Context) ([]*taskruntime.Task, error)
 	TriggerTaskStashScan(ctx context.Context, id string, scanner taskruntime.StashScanner) (*taskruntime.Task, error)
 	TriggerStashScans(ctx context.Context, scanner taskruntime.StashScanner) ([]*taskruntime.Task, error)

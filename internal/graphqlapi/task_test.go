@@ -15,6 +15,7 @@ import (
 	"github.com/leothevan2444/moji/internal/stashsync"
 	"github.com/leothevan2444/moji/internal/subscription"
 	"github.com/leothevan2444/moji/internal/taskruntime"
+	"github.com/leothevan2444/moji/internal/tracker"
 	"github.com/leothevan2444/moji/pkg/jackett"
 )
 
@@ -102,6 +103,53 @@ func TestAddTorrentCreatesTask(t *testing.T) {
 	}
 	if string(taskRuntime.addRequest.Source) != "MANUAL" {
 		t.Fatalf("expected manual task source, got %+v", taskRuntime.addRequest)
+	}
+}
+
+func TestResolveBlockedSourcingTaskUsesSelectedCandidate(t *testing.T) {
+	taskRuntime := &fakeTaskRuntime{
+		resolveSourcingTask: &taskruntime.Task{
+			ID: "task-blocked", Code: "ABCD-123", Stage: taskruntime.TaskStageDownloading,
+			StageStatus: taskruntime.TaskStageStatusRunning,
+			Candidate:   taskruntime.Candidate{Title: "ABCD-123 selected", Tracker: "demo", InfoHash: "abc123"},
+			TorrentURL:  "magnet:?xt=urn:btih:abc123", CreatedAt: time.Unix(100, 0), UpdatedAt: time.Unix(200, 0),
+		},
+	}
+	resolver := NewResolver(nil, nil, taskRuntime, nil, "test-version")
+	resp := executeGraphQL(t, resolver, `mutation {
+		resolveBlockedSourcingTask(id: "task-blocked", input: {
+			torrentUrl: "magnet:?xt=urn:btih:abc123"
+			title: "ABCD-123 selected"
+			tracker: "demo"
+			infoHash: "abc123"
+			seeders: 8
+		}) { id stage stageStatus torrentUrl candidate { title tracker infoHash } }
+	}`)
+	if len(resp.Errors) > 0 {
+		t.Fatalf("expected no errors, got %+v", resp.Errors)
+	}
+	if resp.Data.ResolveBlockedSourcingTask.ID != "task-blocked" || resp.Data.ResolveBlockedSourcingTask.Stage != "DOWNLOADING" {
+		t.Fatalf("unexpected response: %+v", resp.Data.ResolveBlockedSourcingTask)
+	}
+	if taskRuntime.resolveSourcingID != "task-blocked" || taskRuntime.resolveSourcingReq.Title != "ABCD-123 selected" || taskRuntime.resolveSourcingReq.Seeders != 8 {
+		t.Fatalf("unexpected resolution request: %+v", taskRuntime.resolveSourcingReq)
+	}
+}
+
+func TestBlockedTaskTorrentCandidatesSearchesTaskCode(t *testing.T) {
+	taskRuntime := &fakeTaskRuntime{findTask: &taskruntime.Task{
+		ID: "task-blocked", Code: "ABCD-123", Stage: taskruntime.TaskStageSourcing, StageStatus: taskruntime.TaskStageStatusBlocked,
+	}}
+	trackerClient := &fakeGraphQLTracker{results: []jackett.SearchResult{{Title: "ABCD-123 candidate", Tracker: "demo", MagnetURI: "magnet:?xt=urn:btih:test"}}}
+	resolver := NewResolver(trackerClient, nil, taskRuntime, nil, "test-version")
+	resp := executeGraphQL(t, resolver, `query {
+		blockedTaskTorrentCandidates(id: "task-blocked", limit: 20) { title tracker magnetUri }
+	}`)
+	if len(resp.Errors) > 0 {
+		t.Fatalf("expected no errors, got %+v", resp.Errors)
+	}
+	if trackerClient.query != "ABCD-123" || len(resp.Data.BlockedTaskTorrentCandidates) != 1 {
+		t.Fatalf("unexpected candidate search: query=%q response=%+v", trackerClient.query, resp.Data.BlockedTaskTorrentCandidates)
 	}
 }
 
@@ -1106,6 +1154,19 @@ type fakeTaskRuntime struct {
 	stashTasks          []*taskruntime.Task
 	triggerTaskScanID   string
 	triggerTaskScanTask *taskruntime.Task
+	resolveSourcingID   string
+	resolveSourcingReq  taskruntime.ResolveBlockedSourcingRequest
+	resolveSourcingTask *taskruntime.Task
+}
+
+type fakeGraphQLTracker struct {
+	query   string
+	results []jackett.SearchResult
+}
+
+func (f *fakeGraphQLTracker) Search(query string, _ ...tracker.SearchOption) ([]jackett.SearchResult, error) {
+	f.query = query
+	return f.results, nil
 }
 
 func (f *fakeTaskRuntime) AddTorrentContext(_ context.Context, req taskruntime.AddTorrentRequest) (*taskruntime.Task, error) {
@@ -1138,6 +1199,12 @@ func (f *fakeTaskRuntime) DeleteTask(_ context.Context, id string) (*taskruntime
 
 func (f *fakeTaskRuntime) RetryTask(_ context.Context, _ string, _ taskruntime.StashScanner) (*taskruntime.Task, error) {
 	return nil, nil
+}
+
+func (f *fakeTaskRuntime) ResolveBlockedSourcingTask(_ context.Context, id string, req taskruntime.ResolveBlockedSourcingRequest) (*taskruntime.Task, error) {
+	f.resolveSourcingID = id
+	f.resolveSourcingReq = req
+	return f.resolveSourcingTask, nil
 }
 
 func (f *fakeTaskRuntime) SyncProgress(_ context.Context) ([]*taskruntime.Task, error) {
@@ -1198,6 +1265,17 @@ type graphQLTaskResponse struct {
 			ID    string `json:"id"`
 			Stage string `json:"stage"`
 		} `json:"deleteTask"`
+		ResolveBlockedSourcingTask struct {
+			ID          string `json:"id"`
+			Stage       string `json:"stage"`
+			StageStatus string `json:"stageStatus"`
+			TorrentURL  string `json:"torrentUrl"`
+		} `json:"resolveBlockedSourcingTask"`
+		BlockedTaskTorrentCandidates []struct {
+			Title     string `json:"title"`
+			Tracker   string `json:"tracker"`
+			MagnetURI string `json:"magnetUri"`
+		} `json:"blockedTaskTorrentCandidates"`
 		SyncTaskProgress []struct {
 			ID               string  `json:"id"`
 			Stage            string  `json:"stage"`

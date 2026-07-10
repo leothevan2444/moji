@@ -39,6 +39,7 @@ interface HomePageProps {
   onOpenTask: (taskId: string) => void;
   onScanTask: (taskId: string) => void;
   onRetryTask: (taskId: string) => void;
+  onResolveTask: (taskId: string) => void;
   onOpenSettings: (tab: SettingsTab) => void;
 }
 
@@ -51,6 +52,7 @@ export function HomePage({
   onOpenTask,
   onScanTask,
   onRetryTask,
+  onResolveTask,
   onOpenSettings
 }: HomePageProps) {
   const todoTasks = tasks.filter((task) => isStatus(task, "failed") || isScanPending(task)).slice(0, 4);
@@ -201,6 +203,7 @@ export function HomePage({
               onOpen={onOpenTask}
               onScan={onScanTask}
               onRetry={onRetryTask}
+              onResolve={onResolveTask}
             />
           ))}
           {!hasTodos ? (

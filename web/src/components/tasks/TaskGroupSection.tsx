@@ -14,6 +14,7 @@ interface TaskGroupSectionProps {
   onOpenTask: (taskId: string) => void;
   onScanTask: (taskId: string) => void;
   onRetryTask: (taskId: string) => void;
+  onResolveTask: (taskId: string) => void;
   onDeleteTask: (taskId: string) => void;
   onScanAll: () => void;
 }
@@ -31,6 +32,7 @@ export function TaskGroupSection({
   onOpenTask,
   onScanTask,
   onRetryTask,
+  onResolveTask,
   onDeleteTask,
   onScanAll
 }: TaskGroupSectionProps) {
@@ -70,6 +72,7 @@ export function TaskGroupSection({
               onOpen={onOpenTask}
               onScan={onScanTask}
               onRetry={onRetryTask}
+              onResolve={onResolveTask}
               onDelete={onDeleteTask}
             />
           ))}

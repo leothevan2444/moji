@@ -345,6 +345,17 @@ type QueuePerformerScenesSummary struct {
 	FailedCount    int `json:"failedCount"`
 }
 
+type ResolveBlockedSourcingTaskInput struct {
+	TorrentURL string  `json:"torrentUrl"`
+	Title      *string `json:"title,omitempty"`
+	Tracker    *string `json:"tracker,omitempty"`
+	InfoHash   *string `json:"infoHash,omitempty"`
+	Size       *int64  `json:"size,omitempty"`
+	Seeders    *int    `json:"seeders,omitempty"`
+	Peers      *int    `json:"peers,omitempty"`
+	Paused     *bool   `json:"paused,omitempty"`
+}
+
 type ServiceStatus struct {
 	// True iff the minimum connection fields are present, so the backend can attempt to talk to the upstream service.
 	Configured bool `json:"configured"`

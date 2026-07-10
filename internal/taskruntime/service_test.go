@@ -113,6 +113,65 @@ func TestDownloadMediaContextAddsBestTorrent(t *testing.T) {
 	}
 }
 
+func TestResolveBlockedSourcingTaskUsesSelectedTorrentOnExistingTask(t *testing.T) {
+	qbt := &fakeTorrentAdder{}
+	store := NewMemoryTaskStore()
+	blocked := &Task{
+		ID: "task-blocked", Source: TaskSourceSearch, Code: "ABCD-123",
+		Stage: TaskStageSourcing, StageStatus: TaskStageStatusBlocked,
+		StageErrorCode: TaskStageErrorNoCandidate, StageErrorMessage: "no candidate",
+		SavePath: "/downloads", Category: "moji", Tags: "stash",
+		CreatedAt: time.Unix(100, 0).UTC(), UpdatedAt: time.Unix(100, 0).UTC(),
+	}
+	if err := store.Create(context.Background(), blocked); err != nil {
+		t.Fatalf("create blocked task: %v", err)
+	}
+	service, err := NewService(fakeTracker{}, qbt, store, WithClock(func() time.Time { return time.Unix(200, 0) }))
+	if err != nil {
+		t.Fatalf("NewService failed: %v", err)
+	}
+
+	task, err := service.ResolveBlockedSourcingTask(context.Background(), blocked.ID, ResolveBlockedSourcingRequest{
+		URL:   "magnet:?xt=urn:btih:selected123&dn=ABCD-123+manual",
+		Title: "ABCD-123 selected", Tracker: "manual-indexer", InfoHash: "selected123",
+		Size: 42, Seeders: 7, Peers: 3,
+	})
+	if err != nil {
+		t.Fatalf("ResolveBlockedSourcingTask failed: %v", err)
+	}
+	if task.ID != blocked.ID || task.Stage != TaskStageDownloading || task.StageStatus != TaskStageStatusRunning {
+		t.Fatalf("unexpected resolved task state: %+v", task)
+	}
+	if task.StageErrorCode != "" || task.StageErrorMessage != "" {
+		t.Fatalf("expected stage error to be cleared: %+v", task)
+	}
+	if task.Candidate.Title != "ABCD-123 selected" || task.Candidate.Tracker != "manual-indexer" || task.Candidate.Seeders != 7 {
+		t.Fatalf("unexpected selected candidate: %+v", task.Candidate)
+	}
+	if len(qbt.options.URLs) != 1 || qbt.options.URLs[0] != task.TorrentURL {
+		t.Fatalf("unexpected qBittorrent options: %+v", qbt.options)
+	}
+	stored, err := store.Find(context.Background(), blocked.ID)
+	if err != nil || stored.StageStatus != TaskStageStatusRunning || stored.TorrentURL != task.TorrentURL {
+		t.Fatalf("resolved task was not persisted: task=%+v err=%v", stored, err)
+	}
+}
+
+func TestResolveBlockedSourcingTaskRejectsOtherStages(t *testing.T) {
+	store := NewMemoryTaskStore()
+	task := &Task{ID: "task-running", Code: "ABCD-123", Stage: TaskStageDownloading, StageStatus: TaskStageStatusRunning, CreatedAt: time.Now(), UpdatedAt: time.Now()}
+	if err := store.Create(context.Background(), task); err != nil {
+		t.Fatalf("create task: %v", err)
+	}
+	service, err := NewService(fakeTracker{}, &fakeTorrentAdder{}, store)
+	if err != nil {
+		t.Fatalf("NewService failed: %v", err)
+	}
+	if _, err := service.ResolveBlockedSourcingTask(context.Background(), task.ID, ResolveBlockedSourcingRequest{URL: "magnet:?xt=urn:btih:test"}); err == nil {
+		t.Fatal("expected non-blocked sourcing task to be rejected")
+	}
+}
+
 func TestDownloadMediaContextRecordsAddFailure(t *testing.T) {
 	qbtErr := errors.New("qbt rejected torrent")
 	service, err := NewService(

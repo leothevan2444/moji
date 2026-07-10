@@ -4,3 +4,4 @@ export { TaskDrawer } from "./TaskDrawer";
 export { SettingsDrawer } from "./SettingsDrawer";
 export { DiscoveryDrawer } from "./DiscoveryDrawer";
 export { ConfirmDeleteDrawer } from "./ConfirmDeleteDrawer";
+export { SourcingResolutionDrawer } from "./SourcingResolutionDrawer";

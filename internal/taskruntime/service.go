@@ -133,6 +133,17 @@ type AddTorrentRequest struct {
 	Paused   *bool
 }
 
+type ResolveBlockedSourcingRequest struct {
+	URL      string
+	Title    string
+	Tracker  string
+	InfoHash string
+	Size     int64
+	Seeders  int
+	Peers    int
+	Paused   *bool
+}
+
 var (
 	ErrDuplicateTorrentTask = errors.New("duplicate torrent task")
 	ErrDuplicateCodeTask    = errors.New("duplicate code task")
@@ -392,6 +403,66 @@ func (s *Service) RetryTask(ctx context.Context, id string, scanner StashScanner
 	default:
 		return nil, fmt.Errorf("taskruntime: task %q has unsupported retry stage %s", id, task.Stage)
 	}
+}
+
+func (s *Service) ResolveBlockedSourcingTask(ctx context.Context, id string, req ResolveBlockedSourcingRequest) (*Task, error) {
+	id = strings.TrimSpace(id)
+	if id == "" {
+		return nil, errors.New("taskruntime: task id is required")
+	}
+	task, err := s.store.Find(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+	if task == nil {
+		return nil, fmt.Errorf("taskruntime: task %q not found", id)
+	}
+	if task.Stage != TaskStageSourcing || task.StageStatus != TaskStageStatusBlocked {
+		return nil, fmt.Errorf("taskruntime: task %q is not a blocked sourcing task", id)
+	}
+
+	torrentURL := strings.TrimSpace(req.URL)
+	if torrentURL == "" {
+		return nil, errors.New("taskruntime: torrent url is required")
+	}
+	candidate, _, identity, err := s.resolveManualTorrent(ctx, torrentURL)
+	if err != nil {
+		return task, err
+	}
+	if value := strings.TrimSpace(req.Title); value != "" {
+		candidate.Title = value
+	}
+	if value := strings.TrimSpace(req.Tracker); value != "" {
+		candidate.Tracker = value
+	}
+	if value := normalizeInfoHash(req.InfoHash); value != "" {
+		candidate.InfoHash = value
+		identity.InfoHash = value
+	}
+	if req.Size > 0 {
+		candidate.Size = req.Size
+	}
+	candidate.Seeders = req.Seeders
+	candidate.Peers = req.Peers
+	if err := s.ensureTaskIdentityAvailable(ctx, task.ID, identity); err != nil {
+		return task, err
+	}
+
+	next := cloneTask(task)
+	next.Candidate = candidate
+	next.TorrentURL = torrentURL
+	next.TorrentIdentityHash = identity.InfoHash
+	next.TorrentIdentityMagnet = identity.MagnetURI
+	setTaskStage(next, TaskStageDownloading, TaskStageStatusRunning)
+	clearTaskStageError(next)
+	next.UpdatedAt = s.now().UTC()
+	if err := s.store.Update(ctx, next); err != nil {
+		return next, fmt.Errorf("update task %q: %w", next.ID, err)
+	}
+	if err := s.submitTaskTorrent(ctx, next, torrentURL, next.SavePath, next.Category, next.Tags, req.Paused); err != nil {
+		return next, err
+	}
+	return next, nil
 }
 
 func (s *Service) SyncProgress(ctx context.Context) ([]*Task, error) {

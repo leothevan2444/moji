@@ -11,6 +11,7 @@ import (
 	"github.com/leothevan2444/moji/internal/graphqlapi/generated"
 	"github.com/leothevan2444/moji/internal/graphqlapi/model"
 	"github.com/leothevan2444/moji/internal/taskflow"
+	"github.com/leothevan2444/moji/internal/taskruntime"
 	"github.com/leothevan2444/moji/pkg/qbittorrent"
 )
 
@@ -140,6 +141,40 @@ func (r *mutationResolver) RetryTask(ctx context.Context, id string) (*model.Tas
 		return nil, errors.New("task runtime is not configured")
 	}
 	task, err := r.TaskRuntime.RetryTask(ctx, id, r.Stash)
+	if task != nil {
+		return taskToModel(task), err
+	}
+	return nil, err
+}
+
+// ResolveBlockedSourcingTask is the resolver for the resolveBlockedSourcingTask field.
+func (r *mutationResolver) ResolveBlockedSourcingTask(ctx context.Context, id string, input model.ResolveBlockedSourcingTaskInput) (*model.Task, error) {
+	if r.TaskRuntime == nil {
+		return nil, errors.New("task runtime is not configured")
+	}
+	req := taskruntime.ResolveBlockedSourcingRequest{
+		URL:    input.TorrentURL,
+		Paused: input.Paused,
+	}
+	if input.Title != nil {
+		req.Title = *input.Title
+	}
+	if input.Tracker != nil {
+		req.Tracker = *input.Tracker
+	}
+	if input.InfoHash != nil {
+		req.InfoHash = *input.InfoHash
+	}
+	if input.Size != nil {
+		req.Size = *input.Size
+	}
+	if input.Seeders != nil {
+		req.Seeders = *input.Seeders
+	}
+	if input.Peers != nil {
+		req.Peers = *input.Peers
+	}
+	task, err := r.TaskRuntime.ResolveBlockedSourcingTask(ctx, id, req)
 	if task != nil {
 		return taskToModel(task), err
 	}
