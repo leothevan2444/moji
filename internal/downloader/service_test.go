@@ -197,12 +197,13 @@ func TestAddTorrentContextCreatesPersistedTask(t *testing.T) {
 func TestDownloadMediaContextRejectsDuplicateCodeTask(t *testing.T) {
 	store := NewMemoryTaskStore()
 	if err := store.Create(context.Background(), &Task{
-		ID:        "existing-task",
-		Query:     "SONE-000",
-		Code:      "SONE-000",
-		Status:    TaskStatusAdded,
-		CreatedAt: time.Unix(50, 0).UTC(),
-		UpdatedAt: time.Unix(50, 0).UTC(),
+		ID:          "existing-task",
+		Query:       "SONE-000",
+		Code:        "SONE-000",
+		Stage:       TaskStageDownloading,
+		StageStatus: TaskStageStatusRunning,
+		CreatedAt:   time.Unix(50, 0).UTC(),
+		UpdatedAt:   time.Unix(50, 0).UTC(),
 	}); err != nil {
 		t.Fatalf("Create failed: %v", err)
 	}
@@ -257,7 +258,8 @@ func TestAddTorrentContextRejectsDuplicateTorrentTask(t *testing.T) {
 		ID:                    "existing-task",
 		Query:                 "magnet:?xt=urn:btih:manual123&dn=SONE-000",
 		Code:                  "SONE-000",
-		Status:                TaskStatusAdded,
+		Stage:                 TaskStageDownloading,
+		StageStatus:           TaskStageStatusRunning,
 		TorrentIdentityHash:   "MANUAL123",
 		TorrentIdentityMagnet: "magnet:?xt=urn:btih:MANUAL123",
 		CreatedAt:             time.Unix(50, 0).UTC(),
@@ -408,7 +410,8 @@ func TestDeleteTaskRemovesPersistedTask(t *testing.T) {
 	if err := store.Create(context.Background(), &Task{
 		ID:          "task-delete",
 		Query:       "ABCD-123",
-		Status:      TaskStatusCompleted,
+		Stage:       TaskStageCompleted,
+		StageStatus: TaskStageStatusDone,
 		TorrentHash: "hash-delete",
 		CreatedAt:   time.Unix(100, 0).UTC(),
 		UpdatedAt:   time.Unix(100, 0).UTC(),
@@ -442,7 +445,8 @@ func TestDeleteTaskRemovesQBittorrentTorrentWhenPolicyRequestsIt(t *testing.T) {
 	if err := store.Create(context.Background(), &Task{
 		ID:          "task-delete-qbt",
 		Query:       "ABCD-123",
-		Status:      TaskStatusCompleted,
+		Stage:       TaskStageCompleted,
+		StageStatus: TaskStageStatusDone,
 		TorrentHash: "hash-delete-qbt",
 		CreatedAt:   time.Unix(100, 0).UTC(),
 		UpdatedAt:   time.Unix(100, 0).UTC(),
@@ -479,7 +483,8 @@ func TestDeleteTaskDeletesDownloadedFilesWhenPolicyRequestsIt(t *testing.T) {
 	if err := store.Create(context.Background(), &Task{
 		ID:          "task-delete-files",
 		Query:       "ABCD-123",
-		Status:      TaskStatusCompleted,
+		Stage:       TaskStageCompleted,
+		StageStatus: TaskStageStatusDone,
 		TorrentHash: "hash-delete-files",
 		CreatedAt:   time.Unix(100, 0).UTC(),
 		UpdatedAt:   time.Unix(100, 0).UTC(),
@@ -513,7 +518,8 @@ func TestDeleteTaskKeepsPersistedTaskWhenQBittorrentDeleteFails(t *testing.T) {
 	if err := store.Create(context.Background(), &Task{
 		ID:          "task-delete-fail",
 		Query:       "ABCD-123",
-		Status:      TaskStatusCompleted,
+		Stage:       TaskStageCompleted,
+		StageStatus: TaskStageStatusDone,
 		TorrentHash: "hash-delete-fail",
 		CreatedAt:   time.Unix(100, 0).UTC(),
 		UpdatedAt:   time.Unix(100, 0).UTC(),
@@ -549,12 +555,13 @@ func TestDeleteTaskKeepsPersistedTaskWhenQBittorrentDeleteFails(t *testing.T) {
 func TestSyncProgressUpdatesTaskFromTorrentList(t *testing.T) {
 	store := NewMemoryTaskStore()
 	if err := store.Create(context.Background(), &Task{
-		ID:         "task-sync",
-		Query:      "ABCD-123",
-		Status:     TaskStatusAdded,
-		TorrentURL: "magnet:?xt=urn:btih:sync",
-		CreatedAt:  time.Unix(100, 0).UTC(),
-		UpdatedAt:  time.Unix(100, 0).UTC(),
+		ID:          "task-sync",
+		Query:       "ABCD-123",
+		Stage:       TaskStageDownloading,
+		StageStatus: TaskStageStatusRunning,
+		TorrentURL:  "magnet:?xt=urn:btih:sync",
+		CreatedAt:   time.Unix(100, 0).UTC(),
+		UpdatedAt:   time.Unix(100, 0).UTC(),
 	}); err != nil {
 		t.Fatalf("Create failed: %v", err)
 	}
@@ -602,7 +609,8 @@ func TestSyncProgressMarksCompletedTask(t *testing.T) {
 	if err := store.Create(context.Background(), &Task{
 		ID:          "task-complete",
 		Query:       "ABCD-123",
-		Status:      TaskStatusDownloading,
+		Stage:       TaskStageDownloading,
+		StageStatus: TaskStageStatusRunning,
 		TorrentHash: "hash-complete",
 		CreatedAt:   time.Unix(100, 0).UTC(),
 		UpdatedAt:   time.Unix(100, 0).UTC(),

@@ -18,15 +18,6 @@ type StashScanner interface {
 	CurrentConfig() stashsync.IntegrationConfig
 }
 
-const (
-	StashScanStatusStarted       = "started"
-	StashScanStatusCompleted     = "completed"
-	StashScanStatusFailed        = "failed"
-	StashTransferStatusStarted   = "started"
-	StashTransferStatusCompleted = "completed"
-	StashTransferStatusFailed    = "failed"
-)
-
 type StashIntegrationPlan struct {
 	DeliveryMode         stashsync.DeliveryMode
 	QBSourcePath         string

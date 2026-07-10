@@ -26,17 +26,18 @@
 
 - `id` remains the application-generated task ID.
 - Timestamps are stored as RFC3339 UTC text so the database remains easy to inspect manually.
-- `status` and `stash_scan_status` are constrained with `CHECK` rules to match current runtime enums.
+- `stage` and `stage_status` are constrained with `CHECK` rules to match current runtime enums.
 - `progress` is constrained to the `[0, 1]` range.
-- Empty strings are used instead of nullable text for most optional string fields, matching the current Go model more closely.
+- Optional text remains nullable in SQLite where "missing" and "empty" are meaningfully different in the runtime model.
 
 ### Important Indexes
 
-- `(status, created_at DESC)` for task-center status views.
+- `(stage, created_at DESC)` for task-center stage views.
+- `(stage_status, created_at DESC)` for blocked/pending/running views.
 - `(updated_at DESC)` for default newest/recent activity views.
-- `(completed_at DESC)` for completed-task history.
-- `torrent_hash` and `candidate_info_hash` to support future dedupe logic.
-- Partial `scan_queue` index for completed tasks waiting for Stash scan triggering.
+- `(download_completed_at DESC)` for completed-download history.
+- `code`, `torrent_identity_hash`, and `torrent_identity_magnet` support strict task dedupe.
+- Partial `scan_queue` index for `PENDING_INGEST + PENDING` tasks waiting for Stash scan triggering.
 
 ## Table: `task_events`
 
@@ -51,8 +52,7 @@
 
 - `event_type` is intentionally open text in v1 so the application can evolve event vocabulary without immediate schema churn.
 - `level` supports UI tone and troubleshooting.
-- `old_status` and `new_status` make status transitions easy to query.
-- `payload_json` provides room for structured details without forcing schema growth for every new event subtype.
+- `old_stage` and `new_stage` make product-stage transitions easy to query.
 
 ## Why Not More Tables Yet
 
@@ -101,7 +101,6 @@
 - Because one global release should produce one global Moji task, release-level processing fields also live here:
   - `status`;
   - `task_id`;
-  - `last_error`.
 
 ### Table: `subscription_performer_releases`
 
@@ -127,7 +126,7 @@
   - unsubscribing a performer should fully remove only that performer's Moji-local linkage state.
 - Use `ON DELETE CASCADE` from release entity to performer-release rows:
   - if a release entity is ever pruned, all performer links disappear with it.
-- Use `ON DELETE SET DEFAULT` from release `task_id` to `tasks.id`:
+- Use `ON DELETE SET NULL` from release `task_id` to `tasks.id`:
   - if a task is ever pruned in the future, the release record can remain while dropping the task link.
 
 ## Next Implementation Steps

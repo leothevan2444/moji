@@ -69,7 +69,6 @@ type Task struct {
 	Source                TaskSource
 	Query                 string
 	Code                  string
-	Status                TaskStatus
 	Stage                 TaskStage
 	StageStatus           TaskStageStatus
 	StageLabel            string
@@ -88,27 +87,17 @@ type Task struct {
 	Progress              float64
 	QBittorrentState      string
 	ContentPath           string
-	CompletedAt           *time.Time
 	DownloadCompletedAt   *time.Time
-	StashMode             string
 	DeliveryMode          string
-	StashSourcePath       string
 	MojiSourcePath        string
-	StashTransferAction   string
 	TransferAction        string
-	StashTransferPath     string
 	MojiTransferPath      string
-	StashTransferStatus   string
-	StashTransferError    string
 	TransferError         string
-	StashJobID            string
 	StashScanJobID        string
 	StashScanPath         string
-	StashScanStatus       string
 	StashScanError        string
 	StashScanHint         string
 	StashScanStartedAt    *time.Time
-	Error                 string
 	CreatedAt             time.Time
 	UpdatedAt             time.Time
 }
@@ -816,7 +805,6 @@ func applyTorrentProgress(task *Task, torrent qbittorrent.Torrent, now time.Time
 			completedAt = time.Unix(torrent.CompletionOn, 0).UTC()
 		}
 		task.DownloadCompletedAt = &completedAt
-		task.CompletedAt = cloneTime(task.DownloadCompletedAt)
 		return
 	}
 

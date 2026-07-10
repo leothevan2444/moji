@@ -50,58 +50,6 @@ func normalizeTaskStage(value TaskStage) TaskStage {
 	}
 }
 
-type TaskStatus string
-
-const (
-	TaskStatusPending     TaskStatus = "pending"
-	TaskStatusAdded       TaskStatus = "added"
-	TaskStatusDownloading TaskStatus = "downloading"
-	TaskStatusCompleted   TaskStatus = "completed"
-	TaskStatusFailed      TaskStatus = "failed"
-)
-
-func legacyStatusToStage(value TaskStatus) (TaskStage, TaskStageStatus) {
-	switch value {
-	case TaskStatusPending:
-		return TaskStageSourcing, TaskStageStatusRunning
-	case TaskStatusAdded, TaskStatusDownloading:
-		return TaskStageDownloading, TaskStageStatusRunning
-	case TaskStatusCompleted:
-		return TaskStagePendingIngest, TaskStageStatusPending
-	case TaskStatusFailed:
-		return TaskStageDownloading, TaskStageStatusBlocked
-	default:
-		return TaskStageSourcing, TaskStageStatusPending
-	}
-}
-
-func stageToLegacyStatus(stage TaskStage, status TaskStageStatus) TaskStatus {
-	switch normalizeTaskStage(stage) {
-	case TaskStageSourcing:
-		if normalizeTaskStageStatus(status) == TaskStageStatusBlocked {
-			return TaskStatusFailed
-		}
-		return TaskStatusPending
-	case TaskStageDownloading:
-		if normalizeTaskStageStatus(status) == TaskStageStatusBlocked {
-			return TaskStatusFailed
-		}
-		if normalizeTaskStageStatus(status) == TaskStageStatusPending {
-			return TaskStatusAdded
-		}
-		return TaskStatusDownloading
-	case TaskStagePendingIngest, TaskStageTransferring, TaskStageScanning:
-		if normalizeTaskStageStatus(status) == TaskStageStatusBlocked {
-			return TaskStatusFailed
-		}
-		return TaskStatusCompleted
-	case TaskStageCompleted:
-		return TaskStatusCompleted
-	default:
-		return TaskStatusPending
-	}
-}
-
 func normalizeTaskStageStatus(value TaskStageStatus) TaskStageStatus {
 	switch value {
 	case TaskStageStatusPending,
@@ -152,73 +100,12 @@ func refreshTaskStageFields(task *Task) {
 	if task == nil {
 		return
 	}
-	if task.Stage == "" && task.Status != "" {
-		task.Stage, task.StageStatus = legacyStatusToStage(task.Status)
-	}
-	if task.DownloadCompletedAt == nil && task.CompletedAt != nil {
-		task.DownloadCompletedAt = cloneTime(task.CompletedAt)
-	}
-	if task.DeliveryMode == "" {
-		task.DeliveryMode = task.StashMode
-	}
-	if task.MojiSourcePath == "" {
-		task.MojiSourcePath = task.StashSourcePath
-	}
-	if task.TransferAction == "" {
-		task.TransferAction = task.StashTransferAction
-	}
-	if task.MojiTransferPath == "" {
-		task.MojiTransferPath = task.StashTransferPath
-	}
-	if task.TransferError == "" {
-		task.TransferError = task.StashTransferError
-	}
-	if task.StashScanJobID == "" {
-		task.StashScanJobID = task.StashJobID
-	}
 	task.Stage = normalizeTaskStage(task.Stage)
 	task.StageStatus = normalizeTaskStageStatus(task.StageStatus)
 	task.StageLabel = taskStageLabel(task.Stage)
 	task.StageStatusLabel = taskStageStatusLabel(task.StageStatus)
 	task.StageErrorCode = strings.TrimSpace(task.StageErrorCode)
 	task.StageErrorMessage = strings.TrimSpace(task.StageErrorMessage)
-	task.Status = stageToLegacyStatus(task.Stage, task.StageStatus)
-	task.CompletedAt = cloneTime(task.DownloadCompletedAt)
-	task.StashMode = task.DeliveryMode
-	task.StashSourcePath = task.MojiSourcePath
-	task.StashTransferAction = task.TransferAction
-	task.StashTransferPath = task.MojiTransferPath
-	task.StashTransferError = task.TransferError
-	task.StashJobID = task.StashScanJobID
-	switch {
-	case task.Stage == TaskStageTransferring && task.StageStatus == TaskStageStatusRunning:
-		task.StashTransferStatus = "started"
-	case task.Stage == TaskStageScanning || task.Stage == TaskStageCompleted:
-		if task.MojiTransferPath != "" {
-			task.StashTransferStatus = "completed"
-		} else {
-			task.StashTransferStatus = ""
-		}
-	case task.Stage == TaskStageTransferring && task.StageStatus == TaskStageStatusBlocked:
-		task.StashTransferStatus = "failed"
-	default:
-		task.StashTransferStatus = ""
-	}
-	switch {
-	case task.Stage == TaskStageScanning && task.StageStatus == TaskStageStatusRunning:
-		task.StashScanStatus = "started"
-	case task.Stage == TaskStageCompleted && task.StageStatus == TaskStageStatusDone:
-		task.StashScanStatus = "completed"
-	case task.StageStatus == TaskStageStatusBlocked && task.StashScanError != "":
-		task.StashScanStatus = "failed"
-	default:
-		task.StashScanStatus = ""
-	}
-	if task.StageStatus == TaskStageStatusBlocked {
-		task.Error = task.StageErrorMessage
-	} else {
-		task.Error = ""
-	}
 }
 
 func setTaskStage(task *Task, stage TaskStage, status TaskStageStatus) {

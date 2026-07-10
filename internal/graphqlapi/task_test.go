@@ -21,11 +21,12 @@ import (
 func TestDownloadMediaCreatesTask(t *testing.T) {
 	downloader := &fakeDownloader{
 		downloadTask: &downloader.Task{
-			ID:         "task-1",
-			Query:      "ABCD-123",
-			Code:       "ABCD-123",
-			Status:     downloader.TaskStatusAdded,
-			TorrentURL: "magnet:?xt=urn:btih:test",
+			ID:          "task-1",
+			Query:       "ABCD-123",
+			Code:        "ABCD-123",
+			Stage:       downloader.TaskStageDownloading,
+			StageStatus: downloader.TaskStageStatusRunning,
+			TorrentURL:  "magnet:?xt=urn:btih:test",
 			Candidate: downloader.Candidate{
 				Title:   "ABCD-123",
 				Tracker: "demo",
@@ -67,11 +68,12 @@ func TestDownloadMediaCreatesTask(t *testing.T) {
 func TestAddTorrentCreatesTask(t *testing.T) {
 	downloader := &fakeDownloader{
 		addTask: &downloader.Task{
-			ID:         "task-manual",
-			Query:      "magnet:?xt=urn:btih:manual",
-			Code:       "ABCD-123",
-			Status:     downloader.TaskStatusAdded,
-			TorrentURL: "magnet:?xt=urn:btih:manual",
+			ID:          "task-manual",
+			Query:       "magnet:?xt=urn:btih:manual",
+			Code:        "ABCD-123",
+			Stage:       downloader.TaskStageDownloading,
+			StageStatus: downloader.TaskStageStatusRunning,
+			TorrentURL:  "magnet:?xt=urn:btih:manual",
 			Candidate: downloader.Candidate{
 				Title:     "magnet:?xt=urn:btih:manual",
 				MagnetURI: "magnet:?xt=urn:btih:manual",
@@ -181,11 +183,12 @@ func TestPreviewJackettSelectionReturnsPreviewedResults(t *testing.T) {
 func TestDeprecatedQBittorrentAddCreatesTask(t *testing.T) {
 	downloader := &fakeDownloader{
 		addTask: &downloader.Task{
-			ID:         "task-manual",
-			Status:     downloader.TaskStatusAdded,
-			TorrentURL: "magnet:?xt=urn:btih:manual",
-			CreatedAt:  time.Unix(100, 0).UTC(),
-			UpdatedAt:  time.Unix(200, 0).UTC(),
+			ID:          "task-manual",
+			Stage:       downloader.TaskStageDownloading,
+			StageStatus: downloader.TaskStageStatusRunning,
+			TorrentURL:  "magnet:?xt=urn:btih:manual",
+			CreatedAt:   time.Unix(100, 0).UTC(),
+			UpdatedAt:   time.Unix(200, 0).UTC(),
 		},
 	}
 	resolver := NewResolver(nil, nil, downloader, nil, "test-version")
@@ -208,8 +211,8 @@ func TestDeprecatedQBittorrentAddCreatesTask(t *testing.T) {
 func TestTasksQueryListsTasks(t *testing.T) {
 	downloader := &fakeDownloader{
 		listTasks: []*downloader.Task{
-			{ID: "task-2", Query: "BBBB-222", Status: downloader.TaskStatusAdded, CreatedAt: time.Unix(200, 0).UTC(), UpdatedAt: time.Unix(200, 0).UTC()},
-			{ID: "task-1", Query: "AAAA-111", Status: downloader.TaskStatusFailed, CreatedAt: time.Unix(100, 0).UTC(), UpdatedAt: time.Unix(100, 0).UTC()},
+			{ID: "task-2", Query: "BBBB-222", Stage: downloader.TaskStageDownloading, StageStatus: downloader.TaskStageStatusRunning, CreatedAt: time.Unix(200, 0).UTC(), UpdatedAt: time.Unix(200, 0).UTC()},
+			{ID: "task-1", Query: "AAAA-111", Stage: downloader.TaskStageDownloading, StageStatus: downloader.TaskStageStatusBlocked, CreatedAt: time.Unix(100, 0).UTC(), UpdatedAt: time.Unix(100, 0).UTC()},
 		},
 	}
 	resolver := NewResolver(nil, nil, downloader, nil, "test-version")
@@ -241,7 +244,7 @@ func TestTasksQueryWithoutDownloaderReturnsEmptyList(t *testing.T) {
 func TestTasksQueryReturnsNullForUnsetOptionalFields(t *testing.T) {
 	downloader := &fakeDownloader{
 		listTasks: []*downloader.Task{
-			{ID: "task-1", Query: "AAAA-111", Status: downloader.TaskStatusPending, CreatedAt: time.Unix(100, 0).UTC(), UpdatedAt: time.Unix(100, 0).UTC()},
+			{ID: "task-1", Query: "AAAA-111", Stage: downloader.TaskStageSourcing, StageStatus: downloader.TaskStageStatusRunning, CreatedAt: time.Unix(100, 0).UTC(), UpdatedAt: time.Unix(100, 0).UTC()},
 		},
 	}
 	resolver := NewResolver(nil, nil, downloader, nil, "test-version")
@@ -273,10 +276,11 @@ func TestTasksQueryReturnsNullForUnsetOptionalFields(t *testing.T) {
 func TestDeleteTaskMutation(t *testing.T) {
 	downloader := &fakeDownloader{
 		deleteTask: &downloader.Task{
-			ID:        "task-delete",
-			Status:    downloader.TaskStatusCompleted,
-			CreatedAt: time.Unix(100, 0).UTC(),
-			UpdatedAt: time.Unix(200, 0).UTC(),
+			ID:          "task-delete",
+			Stage:       downloader.TaskStagePendingIngest,
+			StageStatus: downloader.TaskStageStatusPending,
+			CreatedAt:   time.Unix(100, 0).UTC(),
+			UpdatedAt:   time.Unix(200, 0).UTC(),
 		},
 	}
 	resolver := NewResolver(nil, nil, downloader, nil, "test-version")
@@ -381,7 +385,8 @@ func TestSyncTaskProgress(t *testing.T) {
 			{
 				ID:               "task-sync",
 				Query:            "ABCD-123",
-				Status:           downloader.TaskStatusDownloading,
+				Stage:            downloader.TaskStageDownloading,
+				StageStatus:      downloader.TaskStageStatusRunning,
 				TorrentHash:      "hash-sync",
 				TorrentName:      "ABCD-123",
 				Progress:         0.5,
@@ -422,9 +427,9 @@ func TestTriggerStashScans(t *testing.T) {
 		stashTasks: []*downloader.Task{
 			{
 				ID:                 "task-stash",
-				Status:             downloader.TaskStatusCompleted,
-				StashJobID:         "job-1",
-				StashScanStatus:    downloader.StashScanStatusStarted,
+				Stage:              downloader.TaskStagePendingIngest,
+				StageStatus:        downloader.TaskStageStatusPending,
+				StashScanJobID:     "job-1",
 				StashScanStartedAt: ptrTime(time.Unix(300, 0).UTC()),
 				CreatedAt:          time.Unix(100, 0).UTC(),
 				UpdatedAt:          time.Unix(300, 0).UTC(),
@@ -457,12 +462,12 @@ func TestTriggerStashScans(t *testing.T) {
 func TestTriggerTaskStashScan(t *testing.T) {
 	dl := &fakeDownloader{
 		triggerTaskScanTask: &downloader.Task{
-			ID:              "task-single",
-			Status:          downloader.TaskStatusCompleted,
-			StashJobID:      "job-single",
-			StashScanStatus: downloader.StashScanStatusStarted,
-			CreatedAt:       time.Unix(100, 0).UTC(),
-			UpdatedAt:       time.Unix(300, 0).UTC(),
+			ID:             "task-single",
+			Stage:          downloader.TaskStagePendingIngest,
+			StageStatus:    downloader.TaskStageStatusPending,
+			StashScanJobID: "job-single",
+			CreatedAt:      time.Unix(100, 0).UTC(),
+			UpdatedAt:      time.Unix(300, 0).UTC(),
 		},
 	}
 	resolver := NewResolver(nil, nil, dl, fakeStashService{}, "test-version")
@@ -649,7 +654,7 @@ func TestDashboardStatsQueryAggregatesTasks(t *testing.T) {
 	downloader := &fakeDownloader{
 		listTasks: []*downloader.Task{
 			{ID: "task-1", Stage: downloader.TaskStageDownloading, StageStatus: downloader.TaskStageStatusRunning},
-			{ID: "task-2", Stage: downloader.TaskStageScanning, StageStatus: downloader.TaskStageStatusRunning, StashScanStatus: downloader.StashScanStatusStarted},
+			{ID: "task-2", Stage: downloader.TaskStageScanning, StageStatus: downloader.TaskStageStatusRunning, StashScanJobID: "job-2"},
 			{ID: "task-3", Stage: downloader.TaskStageDownloading, StageStatus: downloader.TaskStageStatusBlocked},
 			{ID: "task-4", Stage: downloader.TaskStageCompleted, StageStatus: downloader.TaskStageStatusDone},
 		},
