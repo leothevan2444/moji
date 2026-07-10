@@ -98,6 +98,20 @@ type fakeDownloader struct {
 	sources []downloader.TaskSource
 }
 
+type fakeTaskCreator struct {
+	queueTask         *downloader.Task
+	queueErr          error
+	queueCalls        []fakeQueuedSceneCall
+	subscriptionTask  *downloader.Task
+	subscriptionQuery string
+	subscriptionErr   error
+}
+
+type fakeQueuedSceneCall struct {
+	SceneID          string
+	StashBoxEndpoint string
+}
+
 func (f *fakeDownloader) AddTorrentContext(_ context.Context, _ downloader.AddTorrentRequest) (*downloader.Task, error) {
 	if f.err != nil {
 		return nil, f.err
@@ -178,6 +192,18 @@ func (f *fakeDownloader) DownloadMediaContext(_ context.Context, req downloader.
 	task := f.tasks[0]
 	f.tasks = f.tasks[1:]
 	return task, nil
+}
+
+func (f *fakeTaskCreator) QueueDiscoveredScene(_ context.Context, sceneID string, stashBoxEndpoint string) (*downloader.Task, error) {
+	f.queueCalls = append(f.queueCalls, fakeQueuedSceneCall{SceneID: sceneID, StashBoxEndpoint: stashBoxEndpoint})
+	return f.queueTask, f.queueErr
+}
+
+func (f *fakeTaskCreator) QueueSubscriptionRelease(_ context.Context, query, _, _ string) (*downloader.Task, string, error) {
+	if f.subscriptionQuery != "" {
+		query = f.subscriptionQuery
+	}
+	return f.subscriptionTask, query, f.subscriptionErr
 }
 
 // stubFactory is a StashboxClientFactory that always returns the same client
@@ -1529,5 +1555,189 @@ func TestQueueDiscoveredSceneRejectsMissingCode(t *testing.T) {
 	task, err := service.QueueDiscoveredScene(context.Background(), sceneID, endpoint)
 	if err == nil || err.Error() != `subscription: scene "scene-1" is missing code` {
 		t.Fatalf("expected missing code error, got task=%+v err=%v", task, err)
+	}
+}
+
+func TestQueuePerformerScenesQueuesEligibleScene(t *testing.T) {
+	endpoint := "https://box.example/graphql"
+	sceneID := "scene-1"
+	code := "ABCD-123"
+	task := &downloader.Task{ID: "task-1", Source: downloader.TaskSourceSearch}
+
+	registry := newStashboxRegistry(stubFactory{
+		client: &fakeStashboxClient{
+			performer: &stashboxgraphql.PerformerFragment{ID: "sb-1", Name: "Rara"},
+			scenes: []*stashboxgraphql.SceneFragment{
+				{ID: sceneID, Code: &code},
+			},
+		},
+	})
+	registry.Replace([]stash.StashBoxEndpoint{{Name: "Preferred", Endpoint: endpoint, APIKey: "ignored"}})
+
+	service, err := NewService(&fakeStashClient{
+		performers: map[string]*stashgraphql.PerformerFragment{
+			"p1": {
+				ID:       "p1",
+				Name:     "Rara",
+				StashIds: []*stashgraphql.StashIDFragment{{Endpoint: endpoint, StashID: "sb-1"}},
+			},
+		},
+	}, registry, &fakeDownloader{}, NewMemoryStore())
+	if err != nil {
+		t.Fatalf("NewService failed: %v", err)
+	}
+	creator := &fakeTaskCreator{queueTask: task}
+	service.SetTaskCreator(creator)
+
+	result, err := service.QueuePerformerScenes(context.Background(), "p1", []QueuePerformerSceneSelection{{
+		Key:              "stashbox:" + endpointKey(endpoint) + ":" + sceneID,
+		SourceSceneID:    sceneID,
+		StashBoxSceneID:  sceneID,
+		StashBoxEndpoint: endpoint,
+		Code:             code,
+		Title:            "ignored",
+		InLibrary:        false,
+	}})
+	if err != nil {
+		t.Fatalf("QueuePerformerScenes failed: %v", err)
+	}
+	if len(creator.queueCalls) != 1 || creator.queueCalls[0].SceneID != sceneID || creator.queueCalls[0].StashBoxEndpoint != endpoint {
+		t.Fatalf("unexpected task creator calls: %+v", creator.queueCalls)
+	}
+	if result.Summary.RequestedCount != 1 || result.Summary.QueuedCount != 1 || result.Summary.SkippedCount != 0 || result.Summary.FailedCount != 0 {
+		t.Fatalf("unexpected summary: %+v", result.Summary)
+	}
+	if len(result.QueuedTasks) != 1 || result.QueuedTasks[0].ID != "task-1" {
+		t.Fatalf("unexpected queued tasks: %+v", result.QueuedTasks)
+	}
+	if len(result.Results) != 1 || result.Results[0].Status != QueuePerformerSceneStatusQueued || result.Results[0].ReasonCode != "QUEUED" {
+		t.Fatalf("unexpected result: %+v", result.Results)
+	}
+}
+
+func TestQueuePerformerScenesMapsDuplicateCodeToSkipped(t *testing.T) {
+	endpoint := "https://box.example/graphql"
+	sceneID := "scene-1"
+	code := "ABCD-123"
+
+	registry := newStashboxRegistry(stubFactory{
+		client: &fakeStashboxClient{
+			performer: &stashboxgraphql.PerformerFragment{ID: "sb-1", Name: "Rara"},
+			scenes: []*stashboxgraphql.SceneFragment{
+				{ID: sceneID, Code: &code},
+			},
+		},
+	})
+	registry.Replace([]stash.StashBoxEndpoint{{Name: "Preferred", Endpoint: endpoint, APIKey: "ignored"}})
+
+	service, err := NewService(&fakeStashClient{
+		performers: map[string]*stashgraphql.PerformerFragment{
+			"p1": {
+				ID:       "p1",
+				Name:     "Rara",
+				StashIds: []*stashgraphql.StashIDFragment{{Endpoint: endpoint, StashID: "sb-1"}},
+			},
+		},
+	}, registry, &fakeDownloader{}, NewMemoryStore())
+	if err != nil {
+		t.Fatalf("NewService failed: %v", err)
+	}
+	service.SetTaskCreator(&fakeTaskCreator{queueErr: downloader.ErrDuplicateCodeTask})
+
+	result, err := service.QueuePerformerScenes(context.Background(), "p1", []QueuePerformerSceneSelection{{
+		Key: "stashbox:" + endpointKey(endpoint) + ":" + sceneID,
+	}})
+	if err != nil {
+		t.Fatalf("QueuePerformerScenes failed: %v", err)
+	}
+	if len(result.Results) != 1 || result.Results[0].Status != QueuePerformerSceneStatusSkipped || result.Results[0].ReasonCode != "DUPLICATE_CODE_TASK" {
+		t.Fatalf("unexpected result: %+v", result.Results)
+	}
+	if result.Summary.SkippedCount != 1 || result.Summary.QueuedCount != 0 || result.Summary.FailedCount != 0 {
+		t.Fatalf("unexpected summary: %+v", result.Summary)
+	}
+}
+
+func TestQueuePerformerScenesReturnsSceneNotFound(t *testing.T) {
+	endpoint := "https://box.example/graphql"
+
+	registry := newStashboxRegistry(stubFactory{
+		client: &fakeStashboxClient{
+			performer: &stashboxgraphql.PerformerFragment{ID: "sb-1", Name: "Rara"},
+		},
+	})
+	registry.Replace([]stash.StashBoxEndpoint{{Name: "Preferred", Endpoint: endpoint, APIKey: "ignored"}})
+
+	service, err := NewService(&fakeStashClient{
+		performers: map[string]*stashgraphql.PerformerFragment{
+			"p1": {
+				ID:       "p1",
+				Name:     "Rara",
+				StashIds: []*stashgraphql.StashIDFragment{{Endpoint: endpoint, StashID: "sb-1"}},
+			},
+		},
+	}, registry, &fakeDownloader{}, NewMemoryStore())
+	if err != nil {
+		t.Fatalf("NewService failed: %v", err)
+	}
+	service.SetTaskCreator(&fakeTaskCreator{})
+
+	result, err := service.QueuePerformerScenes(context.Background(), "p1", []QueuePerformerSceneSelection{{
+		Key: "missing-key",
+	}})
+	if err != nil {
+		t.Fatalf("QueuePerformerScenes failed: %v", err)
+	}
+	if len(result.Results) != 1 || result.Results[0].Status != QueuePerformerSceneStatusFailed || result.Results[0].ReasonCode != "SCENE_NOT_FOUND" {
+		t.Fatalf("unexpected result: %+v", result.Results)
+	}
+	if result.Summary.FailedCount != 1 {
+		t.Fatalf("unexpected summary: %+v", result.Summary)
+	}
+}
+
+func TestQueuePerformerScenesReturnsMixedSummary(t *testing.T) {
+	endpoint := "https://box.example/graphql"
+	sceneID := "scene-1"
+	code := "ABCD-123"
+	inLibraryID := "stash-1"
+
+	registry := newStashboxRegistry(stubFactory{
+		client: &fakeStashboxClient{
+			performer: &stashboxgraphql.PerformerFragment{ID: "sb-1", Name: "Rara"},
+			scenes: []*stashboxgraphql.SceneFragment{
+				{ID: sceneID, Code: &code},
+			},
+		},
+	})
+	registry.Replace([]stash.StashBoxEndpoint{{Name: "Preferred", Endpoint: endpoint, APIKey: "ignored"}})
+
+	service, err := NewService(&fakeStashClient{
+		performers: map[string]*stashgraphql.PerformerFragment{
+			"p1": {
+				ID:       "p1",
+				Name:     "Rara",
+				StashIds: []*stashgraphql.StashIDFragment{{Endpoint: endpoint, StashID: "sb-1"}},
+			},
+		},
+		scenes: []*stashgraphql.SceneFragment{
+			{ID: inLibraryID, Code: &code},
+		},
+	}, registry, &fakeDownloader{}, NewMemoryStore())
+	if err != nil {
+		t.Fatalf("NewService failed: %v", err)
+	}
+	service.SetTaskCreator(&fakeTaskCreator{queueTask: &downloader.Task{ID: "task-1"}})
+
+	result, err := service.QueuePerformerScenes(context.Background(), "p1", []QueuePerformerSceneSelection{
+		{Key: "stashbox:" + endpointKey(endpoint) + ":" + sceneID},
+		{Key: "stash:" + inLibraryID},
+		{Key: "missing-key"},
+	})
+	if err != nil {
+		t.Fatalf("QueuePerformerScenes failed: %v", err)
+	}
+	if result.Summary.RequestedCount != 3 || result.Summary.QueuedCount != 1 || result.Summary.SkippedCount != 1 || result.Summary.FailedCount != 1 {
+		t.Fatalf("unexpected summary: %+v", result.Summary)
 	}
 }

@@ -1,6 +1,7 @@
 import { useMutation, useQuery } from "urql";
 import {
   type LibraryFilter,
+  QueuePerformerScenesDocument,
   RefreshSubscribedPerformerDocument,
   RefreshSubscriptionNowDocument,
   type SceneSourceFilter,
@@ -18,6 +19,8 @@ import {
   type RefreshSubscribedPerformerMutationVariables,
   type RefreshSubscriptionNowMutation,
   type RefreshSubscriptionNowMutationVariables,
+  type QueuePerformerScenesMutation,
+  type QueuePerformerScenesMutationVariables,
   type StashPerformersQuery,
   type StashPerformersQueryVariables,
   type SubscribePerformerMutation,
@@ -144,6 +147,11 @@ export function useSubscription({
     RefreshSubscriptionNowMutationVariables
   >(RefreshSubscriptionNowDocument);
 
+  const [{ fetching: queueingPerformerScenes }, queuePerformerScenes] = useMutation<
+    QueuePerformerScenesMutation,
+    QueuePerformerScenesMutationVariables
+  >(QueuePerformerScenesDocument);
+
   const stashPerformerPage = stashPerformersData?.stashPerformers ?? null;
 
   const reloadSubscription = async () => {
@@ -171,10 +179,12 @@ export function useSubscription({
     performerScenesError,
     subscriptionError,
     refreshingSubscriptionNow,
+    queueingPerformerScenes,
     subscribePerformer,
     unsubscribePerformer,
     refreshSubscribedPerformer,
     refreshSubscriptionsNow,
+    queuePerformerScenes,
     reloadSubscription
   };
 }

@@ -308,6 +308,43 @@ type QueueDiscoveredSceneInput struct {
 	StashBoxEndpoint string `json:"stashBoxEndpoint"`
 }
 
+type QueuePerformerSceneInput struct {
+	Key              string  `json:"key"`
+	SourceSceneID    string  `json:"sourceSceneId"`
+	StashBoxSceneID  *string `json:"stashBoxSceneId,omitempty"`
+	StashBoxEndpoint *string `json:"stashBoxEndpoint,omitempty"`
+	Code             *string `json:"code,omitempty"`
+	Title            *string `json:"title,omitempty"`
+	InLibrary        bool    `json:"inLibrary"`
+}
+
+type QueuePerformerSceneResult struct {
+	Key           string                    `json:"key"`
+	Status        QueuePerformerSceneStatus `json:"status"`
+	ReasonCode    string                    `json:"reasonCode"`
+	Message       string                    `json:"message"`
+	Task          *Task                     `json:"task,omitempty"`
+	ResolvedQuery *string                   `json:"resolvedQuery,omitempty"`
+}
+
+type QueuePerformerScenesInput struct {
+	PerformerID string                      `json:"performerId"`
+	Scenes      []*QueuePerformerSceneInput `json:"scenes"`
+}
+
+type QueuePerformerScenesPayload struct {
+	QueuedTasks []*Task                      `json:"queuedTasks"`
+	Results     []*QueuePerformerSceneResult `json:"results"`
+	Summary     *QueuePerformerScenesSummary `json:"summary"`
+}
+
+type QueuePerformerScenesSummary struct {
+	RequestedCount int `json:"requestedCount"`
+	QueuedCount    int `json:"queuedCount"`
+	SkippedCount   int `json:"skippedCount"`
+	FailedCount    int `json:"failedCount"`
+}
+
 type ServiceStatus struct {
 	// True iff the minimum connection fields are present, so the backend can attempt to talk to the upstream service.
 	Configured bool `json:"configured"`
@@ -926,6 +963,63 @@ func (e *LogLevel) UnmarshalJSON(b []byte) error {
 }
 
 func (e LogLevel) MarshalJSON() ([]byte, error) {
+	var buf bytes.Buffer
+	e.MarshalGQL(&buf)
+	return buf.Bytes(), nil
+}
+
+type QueuePerformerSceneStatus string
+
+const (
+	QueuePerformerSceneStatusQueued  QueuePerformerSceneStatus = "QUEUED"
+	QueuePerformerSceneStatusSkipped QueuePerformerSceneStatus = "SKIPPED"
+	QueuePerformerSceneStatusFailed  QueuePerformerSceneStatus = "FAILED"
+)
+
+var AllQueuePerformerSceneStatus = []QueuePerformerSceneStatus{
+	QueuePerformerSceneStatusQueued,
+	QueuePerformerSceneStatusSkipped,
+	QueuePerformerSceneStatusFailed,
+}
+
+func (e QueuePerformerSceneStatus) IsValid() bool {
+	switch e {
+	case QueuePerformerSceneStatusQueued, QueuePerformerSceneStatusSkipped, QueuePerformerSceneStatusFailed:
+		return true
+	}
+	return false
+}
+
+func (e QueuePerformerSceneStatus) String() string {
+	return string(e)
+}
+
+func (e *QueuePerformerSceneStatus) UnmarshalGQL(v any) error {
+	str, ok := v.(string)
+	if !ok {
+		return fmt.Errorf("enums must be strings")
+	}
+
+	*e = QueuePerformerSceneStatus(str)
+	if !e.IsValid() {
+		return fmt.Errorf("%s is not a valid QueuePerformerSceneStatus", str)
+	}
+	return nil
+}
+
+func (e QueuePerformerSceneStatus) MarshalGQL(w io.Writer) {
+	fmt.Fprint(w, strconv.Quote(e.String()))
+}
+
+func (e *QueuePerformerSceneStatus) UnmarshalJSON(b []byte) error {
+	s, err := strconv.Unquote(string(b))
+	if err != nil {
+		return err
+	}
+	return e.UnmarshalGQL(s)
+}
+
+func (e QueuePerformerSceneStatus) MarshalJSON() ([]byte, error) {
 	var buf bytes.Buffer
 	e.MarshalGQL(&buf)
 	return buf.Bytes(), nil

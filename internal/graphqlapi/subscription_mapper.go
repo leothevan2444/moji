@@ -182,6 +182,38 @@ func subscriptionReleaseToModel(release subscription.RecordedRelease) *model.Sub
 	}
 }
 
+func queuePerformerScenesResultToModel(result subscription.QueuePerformerScenesResult) *model.QueuePerformerScenesPayload {
+	queuedTasks := make([]*model.Task, 0, len(result.QueuedTasks))
+	for _, task := range result.QueuedTasks {
+		queuedTasks = append(queuedTasks, taskToModel(task))
+	}
+	results := make([]*model.QueuePerformerSceneResult, 0, len(result.Results))
+	for _, item := range result.Results {
+		results = append(results, queuePerformerSceneResultToModel(item))
+	}
+	return &model.QueuePerformerScenesPayload{
+		QueuedTasks: queuedTasks,
+		Results:     results,
+		Summary: &model.QueuePerformerScenesSummary{
+			RequestedCount: result.Summary.RequestedCount,
+			QueuedCount:    result.Summary.QueuedCount,
+			SkippedCount:   result.Summary.SkippedCount,
+			FailedCount:    result.Summary.FailedCount,
+		},
+	}
+}
+
+func queuePerformerSceneResultToModel(item subscription.QueuePerformerSceneResult) *model.QueuePerformerSceneResult {
+	return &model.QueuePerformerSceneResult{
+		Key:           item.Key,
+		Status:        model.QueuePerformerSceneStatus(item.Status),
+		ReasonCode:    item.ReasonCode,
+		Message:       item.Message,
+		Task:          taskToModel(item.Task),
+		ResolvedQuery: nilIfEmpty(item.ResolvedQuery),
+	}
+}
+
 func nilIfEmpty(value string) *string {
 	if value == "" {
 		return nil

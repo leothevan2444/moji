@@ -68,6 +68,32 @@ func (r *mutationResolver) RefreshSubscriptionsNow(ctx context.Context) ([]*mode
 	return out, nil
 }
 
+// QueuePerformerScenes is the resolver for the queuePerformerScenes field.
+func (r *mutationResolver) QueuePerformerScenes(ctx context.Context, input model.QueuePerformerScenesInput) (*model.QueuePerformerScenesPayload, error) {
+	if r.Subscription == nil {
+		return nil, errors.New("subscription service is not configured")
+	}
+
+	selections := make([]subscription.QueuePerformerSceneSelection, 0, len(input.Scenes))
+	for _, scene := range input.Scenes {
+		selections = append(selections, subscription.QueuePerformerSceneSelection{
+			Key:              scene.Key,
+			SourceSceneID:    scene.SourceSceneID,
+			StashBoxSceneID:  derefString(scene.StashBoxSceneID),
+			StashBoxEndpoint: derefString(scene.StashBoxEndpoint),
+			Code:             derefString(scene.Code),
+			Title:            derefString(scene.Title),
+			InLibrary:        scene.InLibrary,
+		})
+	}
+
+	result, err := r.Subscription.QueuePerformerScenes(ctx, input.PerformerID, selections)
+	if err != nil {
+		return nil, err
+	}
+	return queuePerformerScenesResultToModel(result), nil
+}
+
 // StashPerformers is the resolver for the stashPerformers field.
 func (r *queryResolver) StashPerformers(ctx context.Context, search *string, page *int, pageSize *int) (*model.StashPerformerConnection, error) {
 	if r.Subscription == nil {

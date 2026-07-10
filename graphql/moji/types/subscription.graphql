@@ -24,6 +24,9 @@ extend type Mutation {
 
   "Refresh all subscribed performers against the configured release source"
   refreshSubscriptionsNow: [SubscribedPerformer!]!
+
+  "Queue selected performer scenes into the standard Moji download workflow"
+  queuePerformerScenes(input: QueuePerformerScenesInput!): QueuePerformerScenesPayload!
 }
 
 type StashPerformer {
@@ -171,4 +174,47 @@ enum SubscriptionReleaseDecision {
   DOWNLOADED
   QUEUED
   BLOCKED
+}
+
+input QueuePerformerScenesInput {
+  performerId: ID!
+  scenes: [QueuePerformerSceneInput!]!
+}
+
+input QueuePerformerSceneInput {
+  key: ID!
+  sourceSceneId: ID!
+  stashBoxSceneId: ID
+  stashBoxEndpoint: String
+  code: String
+  title: String
+  inLibrary: Boolean!
+}
+
+type QueuePerformerScenesPayload {
+  queuedTasks: [Task!]!
+  results: [QueuePerformerSceneResult!]!
+  summary: QueuePerformerScenesSummary!
+}
+
+type QueuePerformerSceneResult {
+  key: ID!
+  status: QueuePerformerSceneStatus!
+  reasonCode: String!
+  message: String!
+  task: Task
+  resolvedQuery: String
+}
+
+type QueuePerformerScenesSummary {
+  requestedCount: Int!
+  queuedCount: Int!
+  skippedCount: Int!
+  failedCount: Int!
+}
+
+enum QueuePerformerSceneStatus {
+  QUEUED
+  SKIPPED
+  FAILED
 }

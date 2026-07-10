@@ -280,6 +280,8 @@ export type Mutation = {
   qbittorrentAdd: Scalars['Boolean']['output'];
   /** Queue a discovered StashBox scene into the standard download workflow */
   queueDiscoveredScene: Task;
+  /** Queue selected performer scenes into the standard Moji download workflow */
+  queuePerformerScenes: QueuePerformerScenesPayload;
   /** Refresh a subscribed performer against the configured release source */
   refreshSubscribedPerformer: SubscribedPerformer;
   /** Re-fetch the Stash-Box list from the configured Stash server. The updated list and load status are reflected in the returned Settings snapshot. */
@@ -337,6 +339,11 @@ export type MutationQbittorrentAddArgs = {
 
 export type MutationQueueDiscoveredSceneArgs = {
   input: QueueDiscoveredSceneInput;
+};
+
+
+export type MutationQueuePerformerScenesArgs = {
+  input: QueuePerformerScenesInput;
 };
 
 
@@ -586,6 +593,52 @@ export type QueryTaskArgs = {
 export type QueueDiscoveredSceneInput = {
   sceneId: Scalars['ID']['input'];
   stashBoxEndpoint: Scalars['String']['input'];
+};
+
+export type QueuePerformerSceneInput = {
+  code?: InputMaybe<Scalars['String']['input']>;
+  inLibrary: Scalars['Boolean']['input'];
+  key: Scalars['ID']['input'];
+  sourceSceneId: Scalars['ID']['input'];
+  stashBoxEndpoint?: InputMaybe<Scalars['String']['input']>;
+  stashBoxSceneId?: InputMaybe<Scalars['ID']['input']>;
+  title?: InputMaybe<Scalars['String']['input']>;
+};
+
+export type QueuePerformerSceneResult = {
+  __typename?: 'QueuePerformerSceneResult';
+  key: Scalars['ID']['output'];
+  message: Scalars['String']['output'];
+  reasonCode: Scalars['String']['output'];
+  resolvedQuery?: Maybe<Scalars['String']['output']>;
+  status: QueuePerformerSceneStatus;
+  task?: Maybe<Task>;
+};
+
+export enum QueuePerformerSceneStatus {
+  Failed = 'FAILED',
+  Queued = 'QUEUED',
+  Skipped = 'SKIPPED'
+}
+
+export type QueuePerformerScenesInput = {
+  performerId: Scalars['ID']['input'];
+  scenes: Array<QueuePerformerSceneInput>;
+};
+
+export type QueuePerformerScenesPayload = {
+  __typename?: 'QueuePerformerScenesPayload';
+  queuedTasks: Array<Task>;
+  results: Array<QueuePerformerSceneResult>;
+  summary: QueuePerformerScenesSummary;
+};
+
+export type QueuePerformerScenesSummary = {
+  __typename?: 'QueuePerformerScenesSummary';
+  failedCount: Scalars['Int']['output'];
+  queuedCount: Scalars['Int']['output'];
+  requestedCount: Scalars['Int']['output'];
+  skippedCount: Scalars['Int']['output'];
 };
 
 export enum SceneSource {
@@ -1249,6 +1302,13 @@ export type RefreshSubscriptionNowMutationVariables = Exact<{ [key: string]: nev
 
 export type RefreshSubscriptionNowMutation = { __typename?: 'Mutation', refreshSubscriptionsNow: Array<{ __typename?: 'SubscribedPerformer', performer: { __typename?: 'StashPerformer', id: string } }> };
 
+export type QueuePerformerScenesMutationVariables = Exact<{
+  input: QueuePerformerScenesInput;
+}>;
+
+
+export type QueuePerformerScenesMutation = { __typename?: 'Mutation', queuePerformerScenes: { __typename?: 'QueuePerformerScenesPayload', queuedTasks: Array<{ __typename?: 'Task', id: string, source: TaskSource, stage: TaskStage, stageStatus: TaskStageStatus, query: string, code: string, createdAt: string }>, results: Array<{ __typename?: 'QueuePerformerSceneResult', key: string, status: QueuePerformerSceneStatus, reasonCode: string, message: string, resolvedQuery?: string | null, task?: { __typename?: 'Task', id: string, stage: TaskStage, stageStatus: TaskStageStatus } | null }>, summary: { __typename?: 'QueuePerformerScenesSummary', requestedCount: number, queuedCount: number, skippedCount: number, failedCount: number } } };
+
 export type AddTorrentDocumentMutationVariables = Exact<{
   input: QBittorrentAddInput;
 }>;
@@ -1310,6 +1370,7 @@ export const SubscribePerformerDocument = {"kind":"Document","definitions":[{"ki
 export const UnsubscribePerformerDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"mutation","name":{"kind":"Name","value":"UnsubscribePerformer"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"stashPerformerID"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"ID"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"unsubscribePerformer"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"stashPerformerID"},"value":{"kind":"Variable","name":{"kind":"Name","value":"stashPerformerID"}}}]}]}}]} as unknown as DocumentNode<UnsubscribePerformerMutation, UnsubscribePerformerMutationVariables>;
 export const RefreshSubscribedPerformerDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"mutation","name":{"kind":"Name","value":"RefreshSubscribedPerformer"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"stashPerformerID"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"ID"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"refreshSubscribedPerformer"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"stashPerformerID"},"value":{"kind":"Variable","name":{"kind":"Name","value":"stashPerformerID"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"performer"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"subscribed"}}]}},{"kind":"Field","name":{"kind":"Name","value":"lastCheckedAt"}},{"kind":"Field","name":{"kind":"Name","value":"lastError"}},{"kind":"Field","name":{"kind":"Name","value":"pendingReleaseCount"}},{"kind":"Field","name":{"kind":"Name","value":"processedReleaseCount"}},{"kind":"Field","name":{"kind":"Name","value":"recentReleases"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"key"}},{"kind":"Field","name":{"kind":"Name","value":"title"}},{"kind":"Field","name":{"kind":"Name","value":"code"}},{"kind":"Field","name":{"kind":"Name","value":"date"}},{"kind":"Field","name":{"kind":"Name","value":"query"}},{"kind":"Field","name":{"kind":"Name","value":"taskID"}},{"kind":"Field","name":{"kind":"Name","value":"performerCount"}},{"kind":"Field","name":{"kind":"Name","value":"performerNames"}},{"kind":"Field","name":{"kind":"Name","value":"classification"}},{"kind":"Field","name":{"kind":"Name","value":"decision"}},{"kind":"Field","name":{"kind":"Name","value":"decisionReason"}},{"kind":"Field","name":{"kind":"Name","value":"seenAt"}}]}}]}}]}}]} as unknown as DocumentNode<RefreshSubscribedPerformerMutation, RefreshSubscribedPerformerMutationVariables>;
 export const RefreshSubscriptionNowDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"mutation","name":{"kind":"Name","value":"RefreshSubscriptionNow"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"refreshSubscriptionsNow"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"performer"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}}]}}]}}]}}]} as unknown as DocumentNode<RefreshSubscriptionNowMutation, RefreshSubscriptionNowMutationVariables>;
+export const QueuePerformerScenesDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"mutation","name":{"kind":"Name","value":"QueuePerformerScenes"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"input"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"QueuePerformerScenesInput"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"queuePerformerScenes"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"input"},"value":{"kind":"Variable","name":{"kind":"Name","value":"input"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"queuedTasks"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"source"}},{"kind":"Field","name":{"kind":"Name","value":"stage"}},{"kind":"Field","name":{"kind":"Name","value":"stageStatus"}},{"kind":"Field","name":{"kind":"Name","value":"query"}},{"kind":"Field","name":{"kind":"Name","value":"code"}},{"kind":"Field","name":{"kind":"Name","value":"createdAt"}}]}},{"kind":"Field","name":{"kind":"Name","value":"results"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"key"}},{"kind":"Field","name":{"kind":"Name","value":"status"}},{"kind":"Field","name":{"kind":"Name","value":"reasonCode"}},{"kind":"Field","name":{"kind":"Name","value":"message"}},{"kind":"Field","name":{"kind":"Name","value":"resolvedQuery"}},{"kind":"Field","name":{"kind":"Name","value":"task"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"stage"}},{"kind":"Field","name":{"kind":"Name","value":"stageStatus"}}]}}]}},{"kind":"Field","name":{"kind":"Name","value":"summary"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"requestedCount"}},{"kind":"Field","name":{"kind":"Name","value":"queuedCount"}},{"kind":"Field","name":{"kind":"Name","value":"skippedCount"}},{"kind":"Field","name":{"kind":"Name","value":"failedCount"}}]}}]}}]}}]} as unknown as DocumentNode<QueuePerformerScenesMutation, QueuePerformerScenesMutationVariables>;
 export const AddTorrentDocumentDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"mutation","name":{"kind":"Name","value":"AddTorrentDocument"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"input"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"QBittorrentAddInput"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"addTorrent"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"input"},"value":{"kind":"Variable","name":{"kind":"Name","value":"input"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"source"}},{"kind":"Field","name":{"kind":"Name","value":"stage"}},{"kind":"Field","name":{"kind":"Name","value":"stageStatus"}},{"kind":"Field","name":{"kind":"Name","value":"stageLabel"}},{"kind":"Field","name":{"kind":"Name","value":"stageStatusLabel"}},{"kind":"Field","name":{"kind":"Name","value":"stageErrorCode"}},{"kind":"Field","name":{"kind":"Name","value":"stageErrorMessage"}},{"kind":"Field","name":{"kind":"Name","value":"query"}},{"kind":"Field","name":{"kind":"Name","value":"code"}},{"kind":"Field","name":{"kind":"Name","value":"torrentName"}},{"kind":"Field","name":{"kind":"Name","value":"progress"}},{"kind":"Field","name":{"kind":"Name","value":"deliveryMode"}},{"kind":"Field","name":{"kind":"Name","value":"createdAt"}}]}}]}}]} as unknown as DocumentNode<AddTorrentDocumentMutation, AddTorrentDocumentMutationVariables>;
 export const SyncTaskProgressDocumentDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"mutation","name":{"kind":"Name","value":"SyncTaskProgressDocument"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"syncTaskProgress"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"source"}},{"kind":"Field","name":{"kind":"Name","value":"stage"}},{"kind":"Field","name":{"kind":"Name","value":"stageStatus"}},{"kind":"Field","name":{"kind":"Name","value":"stageLabel"}},{"kind":"Field","name":{"kind":"Name","value":"stageStatusLabel"}},{"kind":"Field","name":{"kind":"Name","value":"progress"}},{"kind":"Field","name":{"kind":"Name","value":"qbittorrentState"}},{"kind":"Field","name":{"kind":"Name","value":"updatedAt"}}]}}]}}]} as unknown as DocumentNode<SyncTaskProgressDocumentMutation, SyncTaskProgressDocumentMutationVariables>;
 export const TriggerStashScansDocumentDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"mutation","name":{"kind":"Name","value":"TriggerStashScansDocument"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"triggerStashScans"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"source"}},{"kind":"Field","name":{"kind":"Name","value":"deliveryMode"}},{"kind":"Field","name":{"kind":"Name","value":"transferError"}},{"kind":"Field","name":{"kind":"Name","value":"stashScanJobId"}},{"kind":"Field","name":{"kind":"Name","value":"stashScanPath"}},{"kind":"Field","name":{"kind":"Name","value":"stashScanError"}},{"kind":"Field","name":{"kind":"Name","value":"stashScanHint"}},{"kind":"Field","name":{"kind":"Name","value":"updatedAt"}}]}}]}}]} as unknown as DocumentNode<TriggerStashScansDocumentMutation, TriggerStashScansDocumentMutationVariables>;

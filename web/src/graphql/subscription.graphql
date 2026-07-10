@@ -167,3 +167,35 @@ mutation RefreshSubscriptionNow {
     }
   }
 }
+
+mutation QueuePerformerScenes($input: QueuePerformerScenesInput!) {
+  queuePerformerScenes(input: $input) {
+    queuedTasks {
+      id
+      source
+      stage
+      stageStatus
+      query
+      code
+      createdAt
+    }
+    results {
+      key
+      status
+      reasonCode
+      message
+      resolvedQuery
+      task {
+        id
+        stage
+        stageStatus
+      }
+    }
+    summary {
+      requestedCount
+      queuedCount
+      skippedCount
+      failedCount
+    }
+  }
+}

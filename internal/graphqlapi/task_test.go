@@ -273,6 +273,107 @@ func TestTasksQueryReturnsNullForUnsetOptionalFields(t *testing.T) {
 	}
 }
 
+func TestQueuePerformerScenesMutationMapsBatchResult(t *testing.T) {
+	subscriptionService := &fakeSubscriptionService{
+		queuePerformerResult: subscription.QueuePerformerScenesResult{
+			QueuedTasks: []*downloader.Task{
+				{ID: "task-1", Source: downloader.TaskSourceSearch, Stage: downloader.TaskStageDownloading, StageStatus: downloader.TaskStageStatusRunning},
+			},
+			Results: []subscription.QueuePerformerSceneResult{
+				{
+					Key:           "scene-a",
+					Status:        subscription.QueuePerformerSceneStatusQueued,
+					ReasonCode:    "QUEUED",
+					Message:       "已创建下载任务",
+					Task:          &downloader.Task{ID: "task-1", Stage: downloader.TaskStageDownloading, StageStatus: downloader.TaskStageStatusRunning},
+					ResolvedQuery: "ABCD-123",
+				},
+				{
+					Key:        "scene-b",
+					Status:     subscription.QueuePerformerSceneStatusSkipped,
+					ReasonCode: "ALREADY_IN_LIBRARY",
+					Message:    "作品已在库中，跳过创建任务",
+				},
+			},
+			Summary: subscription.QueuePerformerScenesSummary{
+				RequestedCount: 2,
+				QueuedCount:    1,
+				SkippedCount:   1,
+				FailedCount:    0,
+			},
+		},
+	}
+	resolver := NewResolver(nil, nil, nil, nil, "test-version")
+	resolver.Subscription = subscriptionService
+
+	var resp struct {
+		Data struct {
+			QueuePerformerScenes struct {
+				QueuedTasks []struct {
+					ID string `json:"id"`
+				} `json:"queuedTasks"`
+				Results []struct {
+					Key           string  `json:"key"`
+					Status        string  `json:"status"`
+					ReasonCode    string  `json:"reasonCode"`
+					Message       string  `json:"message"`
+					ResolvedQuery *string `json:"resolvedQuery"`
+					Task          *struct {
+						ID string `json:"id"`
+					} `json:"task"`
+				} `json:"results"`
+				Summary struct {
+					RequestedCount int `json:"requestedCount"`
+					QueuedCount    int `json:"queuedCount"`
+					SkippedCount   int `json:"skippedCount"`
+					FailedCount    int `json:"failedCount"`
+				} `json:"summary"`
+			} `json:"queuePerformerScenes"`
+		} `json:"data"`
+		Errors []struct {
+			Message string `json:"message"`
+		} `json:"errors"`
+	}
+	executeGraphQLInto(t, resolver, `mutation {
+		queuePerformerScenes(input: {
+			performerId: "p1"
+			scenes: [
+				{
+					key: "scene-a"
+					sourceSceneId: "scene-a"
+					stashBoxSceneId: "scene-a"
+					stashBoxEndpoint: "https://box.example/graphql"
+					code: "ABCD-123"
+					title: "Title A"
+					inLibrary: false
+				},
+				{
+					key: "scene-b"
+					sourceSceneId: "scene-b"
+					inLibrary: true
+				}
+			]
+		}) {
+			queuedTasks { id }
+			results { key status reasonCode message resolvedQuery task { id } }
+			summary { requestedCount queuedCount skippedCount failedCount }
+		}
+	}`, &resp)
+
+	if len(resp.Errors) > 0 {
+		t.Fatalf("expected no errors, got %+v", resp.Errors)
+	}
+	if subscriptionService.queuePerformerID != "p1" || len(subscriptionService.queueSelections) != 2 {
+		t.Fatalf("unexpected service call: performer=%q selections=%+v", subscriptionService.queuePerformerID, subscriptionService.queueSelections)
+	}
+	if resp.Data.QueuePerformerScenes.Summary.RequestedCount != 2 || resp.Data.QueuePerformerScenes.Summary.QueuedCount != 1 || resp.Data.QueuePerformerScenes.Summary.SkippedCount != 1 {
+		t.Fatalf("unexpected summary: %+v", resp.Data.QueuePerformerScenes.Summary)
+	}
+	if len(resp.Data.QueuePerformerScenes.Results) != 2 || resp.Data.QueuePerformerScenes.Results[0].Status != "QUEUED" || resp.Data.QueuePerformerScenes.Results[1].ReasonCode != "ALREADY_IN_LIBRARY" {
+		t.Fatalf("unexpected results: %+v", resp.Data.QueuePerformerScenes.Results)
+	}
+}
+
 func TestDeleteTaskMutation(t *testing.T) {
 	downloader := &fakeDownloader{
 		deleteTask: &downloader.Task{
@@ -1353,11 +1454,14 @@ func executeGraphQLInto(t *testing.T, resolver *Resolver, query string, target a
 type fakeStashService struct{}
 
 type fakeSubscriptionService struct {
-	performers    []subscription.Performer
-	discovered    subscription.DiscoverScenePage
-	detail        subscription.PerformerDetail
-	performerPage subscription.PerformerScenePage
-	queueTask     *downloader.Task
+	performers           []subscription.Performer
+	discovered           subscription.DiscoverScenePage
+	detail               subscription.PerformerDetail
+	performerPage        subscription.PerformerScenePage
+	queueTask            *downloader.Task
+	queuePerformerResult subscription.QueuePerformerScenesResult
+	queuePerformerID     string
+	queueSelections      []subscription.QueuePerformerSceneSelection
 }
 
 type fakeLogReader struct {
@@ -1381,6 +1485,12 @@ func (f *fakeSubscriptionService) SearchPreferredStashBoxScenes(context.Context,
 
 func (f *fakeSubscriptionService) QueueDiscoveredScene(context.Context, string, string) (*downloader.Task, error) {
 	return f.queueTask, nil
+}
+
+func (f *fakeSubscriptionService) QueuePerformerScenes(_ context.Context, performerID string, selections []subscription.QueuePerformerSceneSelection) (subscription.QueuePerformerScenesResult, error) {
+	f.queuePerformerID = performerID
+	f.queueSelections = append([]subscription.QueuePerformerSceneSelection(nil), selections...)
+	return f.queuePerformerResult, nil
 }
 
 func (f *fakeSubscriptionService) ListSubscribedPerformers(context.Context) ([]subscription.SubscribedPerformer, error) {

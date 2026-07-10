@@ -65,70 +65,9 @@ func (s *Service) ListPerformerScenes(ctx context.Context, performerID string, q
 func (s *Service) buildPerformerScenePage(ctx context.Context, performer *stashgraphql.PerformerFragment, query PerformerSceneQuery) (PerformerScenePage, error) {
 	query = normalizePerformerSceneQuery(query)
 
-	stashScenes, err := s.fetchStashScenes(ctx, performer.ID)
+	flat, stashSceneCount, stashBoxCount, err := s.loadPerformerScenes(ctx, performer)
 	if err != nil {
 		return PerformerScenePage{}, err
-	}
-
-	itemsByID := make(map[string]*PerformerScene, len(stashScenes))
-	ordered := make([]*PerformerScene, 0, len(stashScenes))
-	stashByEndpointAndID := make(map[string]*stashgraphql.SceneFragment, len(stashScenes))
-	for _, scene := range stashScenes {
-		item := stashSceneToPerformerScene(scene)
-		itemsByID[item.SourceSceneID] = &item
-		ordered = append(ordered, &item)
-		for _, stashID := range scene.StashIds {
-			if stashID == nil || strings.TrimSpace(stashID.StashID) == "" {
-				continue
-			}
-			key := sceneLookupKey(stashID.Endpoint, stashID.StashID)
-			if key == "" {
-				continue
-			}
-			if _, exists := stashByEndpointAndID[key]; !exists {
-				stashByEndpointAndID[key] = scene
-			}
-		}
-	}
-
-	stashBoxCount := 0
-	target, targetErr := s.resolveStashboxPerformer(ctx, performer)
-	if targetErr == nil && target != nil {
-		stashboxScenes, err := s.fetchStashBoxScenes(ctx, target)
-		if err != nil {
-			return PerformerScenePage{}, err
-		}
-		stashBoxCount = len(stashboxScenes)
-		for _, scene := range stashboxScenes {
-			if scene == nil {
-				continue
-			}
-			matched := stashByEndpointAndID[sceneLookupKey(target.Endpoint, scene.ID)]
-			if matched != nil {
-				if current, ok := itemsByID[matched.ID]; ok {
-					mergeStashBoxIntoStashScene(current, scene, target.Endpoint)
-					continue
-				}
-				item := stashSceneToPerformerScene(matched)
-				mergeStashBoxIntoStashScene(&item, scene, target.Endpoint)
-				itemsByID[item.SourceSceneID] = &item
-				ordered = append(ordered, &item)
-				continue
-			}
-
-			item := stashBoxSceneToPerformerScene(scene, target.Endpoint)
-			ordered = append(ordered, &item)
-		}
-	} else if targetErr != nil && !strings.Contains(targetErr.Error(), errNoMatchingStashBoxMapping.Error()) {
-		return PerformerScenePage{}, targetErr
-	}
-
-	flat := make([]PerformerScene, 0, len(ordered))
-	for _, item := range ordered {
-		if item == nil {
-			continue
-		}
-		flat = append(flat, *item)
 	}
 
 	filtered := make([]PerformerScene, 0, len(flat))
@@ -195,10 +134,83 @@ func (s *Service) buildPerformerScenePage(ctx context.Context, performer *stashg
 		TotalPages:      totalPages,
 		HasPrevPage:     query.Page > 1 && totalPages > 0,
 		HasNextPage:     query.Page < totalPages,
-		StashSceneCount: len(stashScenes),
+		StashSceneCount: stashSceneCount,
 		StashBoxCount:   stashBoxCount,
 		DedupedCount:    len(flat),
 	}, nil
+}
+
+func (s *Service) loadPerformerScenes(ctx context.Context, performer *stashgraphql.PerformerFragment) ([]PerformerScene, int, int, error) {
+	if performer == nil {
+		return nil, 0, 0, nil
+	}
+
+	stashScenes, err := s.fetchStashScenes(ctx, performer.ID)
+	if err != nil {
+		return nil, 0, 0, err
+	}
+
+	itemsByID := make(map[string]*PerformerScene, len(stashScenes))
+	ordered := make([]*PerformerScene, 0, len(stashScenes))
+	stashByEndpointAndID := make(map[string]*stashgraphql.SceneFragment, len(stashScenes))
+	for _, scene := range stashScenes {
+		item := stashSceneToPerformerScene(scene)
+		itemsByID[item.SourceSceneID] = &item
+		ordered = append(ordered, &item)
+		for _, stashID := range scene.StashIds {
+			if stashID == nil || strings.TrimSpace(stashID.StashID) == "" {
+				continue
+			}
+			key := sceneLookupKey(stashID.Endpoint, stashID.StashID)
+			if key == "" {
+				continue
+			}
+			if _, exists := stashByEndpointAndID[key]; !exists {
+				stashByEndpointAndID[key] = scene
+			}
+		}
+	}
+
+	stashBoxCount := 0
+	target, targetErr := s.resolveStashboxPerformer(ctx, performer)
+	if targetErr == nil && target != nil {
+		stashboxScenes, err := s.fetchStashBoxScenes(ctx, target)
+		if err != nil {
+			return nil, 0, 0, err
+		}
+		stashBoxCount = len(stashboxScenes)
+		for _, scene := range stashboxScenes {
+			if scene == nil {
+				continue
+			}
+			matched := stashByEndpointAndID[sceneLookupKey(target.Endpoint, scene.ID)]
+			if matched != nil {
+				if current, ok := itemsByID[matched.ID]; ok {
+					mergeStashBoxIntoStashScene(current, scene, target.Endpoint)
+					continue
+				}
+				item := stashSceneToPerformerScene(matched)
+				mergeStashBoxIntoStashScene(&item, scene, target.Endpoint)
+				itemsByID[item.SourceSceneID] = &item
+				ordered = append(ordered, &item)
+				continue
+			}
+
+			item := stashBoxSceneToPerformerScene(scene, target.Endpoint)
+			ordered = append(ordered, &item)
+		}
+	} else if targetErr != nil && !strings.Contains(targetErr.Error(), errNoMatchingStashBoxMapping.Error()) {
+		return nil, 0, 0, targetErr
+	}
+
+	flat := make([]PerformerScene, 0, len(ordered))
+	for _, item := range ordered {
+		if item == nil {
+			continue
+		}
+		flat = append(flat, *item)
+	}
+	return flat, len(stashScenes), stashBoxCount, nil
 }
 
 func (s *Service) fetchStashScenes(ctx context.Context, performerID string) ([]*stashgraphql.SceneFragment, error) {
@@ -224,10 +236,10 @@ func (s *Service) fetchStashBoxScenes(ctx context.Context, target *resolvedStash
 			Value:    []string{target.Performer.ID},
 			Modifier: stashboxgraphql.CriterionModifierIncludes,
 		},
-		Page:       1,
-		PerPage:    200,
-		Direction:  stashboxgraphql.SortDirectionEnumDesc,
-		Sort:       stashboxgraphql.SceneSortEnumDate,
+		Page:      1,
+		PerPage:   200,
+		Direction: stashboxgraphql.SortDirectionEnumDesc,
+		Sort:      stashboxgraphql.SceneSortEnumDate,
 	})
 }
 

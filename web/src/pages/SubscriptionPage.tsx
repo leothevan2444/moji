@@ -95,6 +95,7 @@ interface SubscriptionPageProps {
   fetchingPerformerScenes: boolean;
   fetchingSubscription: boolean;
   refreshingSubscriptionNow: boolean;
+  queueingPerformerScenes: boolean;
   subscriptionSearch: string;
   subscriptionPageSize: number;
   selectedPerformerId: string | null;
@@ -127,6 +128,7 @@ interface SubscriptionPageProps {
   onToggleSceneSelection: (key: string) => void;
   onSelectCurrentScenePage: (keys: string[]) => void;
   onClearSceneSelection: () => void;
+  onQueueSelectedScenes: () => void;
 }
 
 export function SubscriptionPage({
@@ -142,6 +144,7 @@ export function SubscriptionPage({
   fetchingPerformerScenes,
   fetchingSubscription,
   refreshingSubscriptionNow,
+  queueingPerformerScenes,
   subscriptionSearch,
   subscriptionPageSize,
   selectedPerformerId,
@@ -173,7 +176,8 @@ export function SubscriptionPage({
   onNextPerformerScenePage,
   onToggleSceneSelection,
   onSelectCurrentScenePage,
-  onClearSceneSelection
+  onClearSceneSelection,
+  onQueueSelectedScenes
 }: SubscriptionPageProps) {
   const subscribedByID = useMemo(() => {
     return new Map(subscribedPerformers.map((item) => [item.performer.id, item]));
@@ -339,6 +343,14 @@ export function SubscriptionPage({
               </button>
               <button type="button" className="ghost-button" onClick={onClearSceneSelection}>
                 清空选择
+              </button>
+              <button
+                type="button"
+                className="primary-button"
+                disabled={selectedSceneKeys.length === 0 || queueingPerformerScenes || fetchingPerformerScenes}
+                onClick={onQueueSelectedScenes}
+              >
+                {queueingPerformerScenes ? "批量下载中..." : "批量下载所选"}
               </button>
               <span className="status-chip tone-neutral">已选 {selectedSceneKeys.length}</span>
             </div>

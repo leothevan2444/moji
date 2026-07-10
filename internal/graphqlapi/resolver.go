@@ -285,6 +285,7 @@ type SubscriptionService interface {
 	ListStashPerformers(ctx context.Context, search string) ([]subscription.Performer, error)
 	SearchPreferredStashBoxScenes(ctx context.Context, query string, limit int, sortBy subscription.DiscoverSort) (subscription.DiscoverScenePage, error)
 	QueueDiscoveredScene(ctx context.Context, sceneID string, stashBoxEndpoint string) (*downloader.Task, error)
+	QueuePerformerScenes(ctx context.Context, performerID string, selections []subscription.QueuePerformerSceneSelection) (subscription.QueuePerformerScenesResult, error)
 	GetPerformerDetail(ctx context.Context, performerID string) (subscription.PerformerDetail, error)
 	ListPerformerScenes(ctx context.Context, performerID string, query subscription.PerformerSceneQuery) (subscription.PerformerScenePage, error)
 	ListSubscribedPerformers(ctx context.Context) ([]subscription.SubscribedPerformer, error)

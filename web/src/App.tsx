@@ -201,8 +201,10 @@ function App() {
     performerScenesError,
     subscriptionError,
     refreshingSubscriptionNow,
+    queueingPerformerScenes,
     subscribePerformer,
     unsubscribePerformer,
+    queuePerformerScenes,
     refreshSubscribedPerformer,
     refreshSubscriptionsNow,
     reloadSubscription
@@ -549,6 +551,59 @@ function App() {
     setSelectedSceneKeys([]);
   };
 
+  const handleQueueSelectedScenes = async () => {
+    if (!selectedPerformerId || selectedSceneKeys.length === 0) return;
+
+    const selectedScenes = performerScenes.filter((scene) => selectedSceneKeys.includes(scene.key));
+    if (selectedScenes.length === 0) {
+      pushToast("tone-danger", "当前没有可提交的已选作品，请刷新列表后重试。");
+      return;
+    }
+
+    const result = await queuePerformerScenes({
+      input: {
+        performerId: selectedPerformerId,
+        scenes: selectedScenes.map((scene) => ({
+          key: scene.key,
+          sourceSceneId: scene.sourceSceneId,
+          stashBoxSceneId: scene.stashBoxSceneId ?? undefined,
+          stashBoxEndpoint: scene.stashBoxEndpoint ?? undefined,
+          code: scene.code ?? undefined,
+          title: scene.title ?? undefined,
+          inLibrary: scene.inLibrary
+        }))
+      }
+    });
+    if (result.error) {
+      pushToast("tone-danger", describeQueryError(result.error));
+      return;
+    }
+
+    const payload = result.data?.queuePerformerScenes;
+    if (!payload) {
+      pushToast("tone-danger", "批量下载失败，后端没有返回结果。");
+      return;
+    }
+
+    const { summary, results } = payload;
+    if (summary.queuedCount > 0 && summary.skippedCount === 0 && summary.failedCount === 0) {
+      pushToast("tone-success", `已创建 ${summary.queuedCount} 个下载任务。`);
+    } else if (summary.queuedCount > 0) {
+      pushToast("tone-info", `已创建 ${summary.queuedCount} 个任务，跳过 ${summary.skippedCount} 个，失败 ${summary.failedCount} 个。`);
+    } else if (summary.skippedCount > 0 && summary.failedCount === 0) {
+      pushToast("tone-info", "没有创建新任务，所选影片均被跳过。");
+    } else {
+      pushToast("tone-danger", `没有创建新任务，失败 ${summary.failedCount} 个。`);
+    }
+
+    const queuedKeys = new Set(results.filter((item) => item.status === "QUEUED").map((item) => item.key));
+    if (queuedKeys.size > 0) {
+      setSelectedSceneKeys((current) => current.filter((key) => !queuedKeys.has(key)));
+    }
+
+    await reloadSubscription();
+  };
+
   const handleToggleGroup = (group: TaskGroupKey) => {
     setTaskGroupOpen((current) => ({ ...current, [group]: !current[group] }));
   };
@@ -678,6 +733,7 @@ function App() {
             fetchingPerformerDetail={fetchingPerformerDetail}
             fetchingPerformerScenes={fetchingPerformerScenes}
             refreshingSubscriptionNow={refreshingSubscriptionNow}
+            queueingPerformerScenes={queueingPerformerScenes}
             subscriptionSearch={subscriptionSearch}
             subscriptionPageSize={subscriptionPageSize}
             selectedPerformerId={selectedPerformerId}
@@ -710,6 +766,7 @@ function App() {
             onToggleSceneSelection={handleToggleSceneSelection}
             onSelectCurrentScenePage={handleSelectCurrentScenePage}
             onClearSceneSelection={handleClearSceneSelection}
+            onQueueSelectedScenes={() => void handleQueueSelectedScenes()}
           />
         ) : null}
       </main>

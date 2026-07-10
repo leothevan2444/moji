@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"github.com/leothevan2444/moji/internal/config"
+	"github.com/leothevan2444/moji/internal/downloader"
 )
 
 const DefaultCustomFieldKey = "moji_subscribed"
@@ -130,6 +131,46 @@ type PerformerScenePage struct {
 	DedupedCount    int
 }
 
+type QueuePerformerSceneSelection struct {
+	Key              string
+	SourceSceneID    string
+	StashBoxSceneID  string
+	StashBoxEndpoint string
+	Code             string
+	Title            string
+	InLibrary        bool
+}
+
+type QueuePerformerSceneStatus string
+
+const (
+	QueuePerformerSceneStatusQueued  QueuePerformerSceneStatus = "QUEUED"
+	QueuePerformerSceneStatusSkipped QueuePerformerSceneStatus = "SKIPPED"
+	QueuePerformerSceneStatusFailed  QueuePerformerSceneStatus = "FAILED"
+)
+
+type QueuePerformerSceneResult struct {
+	Key           string
+	Status        QueuePerformerSceneStatus
+	ReasonCode    string
+	Message       string
+	Task          *downloader.Task
+	ResolvedQuery string
+}
+
+type QueuePerformerScenesSummary struct {
+	RequestedCount int
+	QueuedCount    int
+	SkippedCount   int
+	FailedCount    int
+}
+
+type QueuePerformerScenesResult struct {
+	QueuedTasks []*downloader.Task
+	Results     []QueuePerformerSceneResult
+	Summary     QueuePerformerScenesSummary
+}
+
 type PerformerDetail struct {
 	Performer          Performer
 	Disambiguation     string
@@ -148,7 +189,7 @@ type PerformerDetail struct {
 }
 
 type Release struct {
-	SceneID         string
+	SceneID        string
 	Key            string
 	Source         string
 	Title          string
