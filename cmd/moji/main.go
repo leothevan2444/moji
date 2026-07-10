@@ -17,7 +17,6 @@ import (
 	"github.com/99designs/gqlgen/graphql/playground"
 	"github.com/leothevan2444/moji/internal/config"
 	"github.com/leothevan2444/moji/internal/controller/api"
-	"github.com/leothevan2444/moji/internal/downloader"
 	"github.com/leothevan2444/moji/internal/graphqlapi"
 	"github.com/leothevan2444/moji/internal/graphqlapi/generated"
 	"github.com/leothevan2444/moji/internal/logging"
@@ -25,6 +24,7 @@ import (
 	"github.com/leothevan2444/moji/internal/stats"
 	"github.com/leothevan2444/moji/internal/subscription"
 	"github.com/leothevan2444/moji/internal/taskflow"
+	"github.com/leothevan2444/moji/internal/taskruntime"
 	"github.com/leothevan2444/moji/internal/tracker"
 	"github.com/leothevan2444/moji/internal/webui"
 	"github.com/leothevan2444/moji/pkg/jackett"
@@ -82,7 +82,7 @@ func main() {
 	}
 
 	// Dependencies
-	mux, downloaderService, stashService, subscriptionService, statsCollector := newHTTPRuntime(cfg, "dev", configStore)
+	mux, taskRuntimeService, stashService, subscriptionService, statsCollector := newHTTPRuntime(cfg, "dev", configStore)
 
 	server := &http.Server{
 		Addr:              *addr,
@@ -102,7 +102,7 @@ func main() {
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
 
-	startTaskSyncWorker(ctx, downloaderService, stashService, configureProgressSyncIntervalProvider(configStore, cfg))
+	startTaskSyncWorker(ctx, taskRuntimeService, stashService, configureProgressSyncIntervalProvider(configStore, cfg))
 	startSubscriptionWorker(ctx, subscriptionService, configureSubscriptionPollIntervalProvider(configStore, cfg))
 	go statsCollector.Run(ctx)
 
@@ -125,7 +125,7 @@ func newHTTPHandler(cfg *config.Config, version string) http.Handler {
 	return handler
 }
 
-func newHTTPRuntime(cfg *config.Config, version string, configStore *config.Store) (http.Handler, graphqlapi.DownloaderService, graphqlapi.StashService, graphqlapi.SubscriptionService, *stats.Collector) {
+func newHTTPRuntime(cfg *config.Config, version string, configStore *config.Store) (http.Handler, graphqlapi.TaskRuntimeService, graphqlapi.StashService, graphqlapi.SubscriptionService, *stats.Collector) {
 	jackettTracker := tracker.NewJackettService(configureJackettConfigProvider(configStore, cfg))
 	{
 		current := storeJackett(cfg, configStore)
@@ -137,28 +137,28 @@ func newHTTPRuntime(cfg *config.Config, version string, configStore *config.Stor
 	apiHandler := api.NewHandler(jackettTracker, api.WithLogFilePath(cfg.EffectiveLogFilePath()))
 	qbittorrentClient, torrentClient := configureQBittorrent(cfg, configStore)
 	stashClient := configureStashClient(cfg, configStore)
-	downloaderService := configureDownloader(cfg, configStore, jackettTracker, torrentClient, stashClient)
-	taskFlowService := configureTaskFlow(downloaderService)
+	taskRuntimeService := configureTaskRuntime(cfg, configStore, jackettTracker, torrentClient, stashClient)
+	taskFlowService := configureTaskFlow(taskRuntimeService)
 	stashService := configureStashService(cfg, configStore, stashClient)
-	subscriptionService := configureSubscription(cfg, configStore, stashClient, downloaderService, taskFlowService)
+	subscriptionService := configureSubscription(cfg, configStore, stashClient, taskRuntimeService, taskFlowService)
 	applySubscriptionOrder(cfg, subscriptionService)
 
 	statsCollector := stats.NewCollector(
 		stashClient,
 		jackettClientOf(jackettTracker),
 		qbittorrentClient,
-		downloaderService,
+		taskRuntimeService,
 		logging.Default().Slog(),
 	)
-	resolver := graphqlapi.NewResolver(jackettTracker, torrentClient, downloaderService, stashService, version)
+	resolver := graphqlapi.NewResolver(jackettTracker, torrentClient, taskRuntimeService, stashService, version)
 	resolver.TaskFlow = taskFlowService
 	resolver.Subscription = subscriptionService
 	resolver.LogReader = logging.Default()
 	resolver.RuntimeSettings = buildSettingsSnapshot(cfg, version)
-	resolver.RuntimeStatus = buildSettingsStatusSnapshot(cfg, version, downloaderService != nil, stashService != nil, stashClient, subscriptionService)
+	resolver.RuntimeStatus = buildSettingsStatusSnapshot(cfg, version, taskRuntimeService != nil, stashService != nil, stashClient, subscriptionService)
 	resolver.Stats = statsCollector
 	if configStore != nil {
-		resolver.SettingsEditor = newRuntimeSettingsEditor(configStore, version, downloaderService != nil, stashService != nil, stashClient, subscriptionService)
+		resolver.SettingsEditor = newRuntimeSettingsEditor(configStore, version, taskRuntimeService != nil, stashService != nil, stashClient, subscriptionService)
 	}
 	graphqlHandler := handler.NewDefaultServer(generated.NewExecutableSchema(generated.Config{Resolvers: resolver}))
 
@@ -181,15 +181,15 @@ func newHTTPRuntime(cfg *config.Config, version string, configStore *config.Stor
 		}
 	})
 
-	return router, downloaderService, stashService, subscriptionService, statsCollector
+	return router, taskRuntimeService, stashService, subscriptionService, statsCollector
 }
 
-func configureTaskFlow(downloaderService graphqlapi.DownloaderService) *taskflow.Service {
-	if downloaderService == nil {
-		logging.Infof("runtime: taskflow service disabled because downloader is not available")
+func configureTaskFlow(taskRuntimeService graphqlapi.TaskRuntimeService) *taskflow.Service {
+	if taskRuntimeService == nil {
+		logging.Infof("runtime: taskflow service disabled because task runtime is not available")
 		return nil
 	}
-	return taskflow.NewService(downloaderService)
+	return taskflow.NewService(taskRuntimeService)
 }
 
 // configureJackettConfigProvider returns the latest JackettConfig on every
@@ -237,15 +237,15 @@ func configureQBittorrent(cfg *config.Config, store *config.Store) (*qbittorrent
 	}
 	logging.Infof("runtime: qBittorrent client connected to %s as %s", cfg.Connection.QBittorrent.URL, cfg.Connection.QBittorrent.Username)
 
-	defaultsProvider := func() downloader.TorrentDefaults {
+	defaultsProvider := func() taskruntime.TorrentDefaults {
 		current := storeQBittorrent(cfg, store)
-		return downloader.TorrentDefaults{
+		return taskruntime.TorrentDefaults{
 			SavePath: current.DefaultSavePath,
 			Category: current.Category,
 			Tags:     current.Tags,
 		}
 	}
-	wrapped := downloader.NewDefaultingTorrentClient(client, defaultsProvider)
+	wrapped := taskruntime.NewDefaultingTorrentClient(client, defaultsProvider)
 	return client, wrapped
 }
 
@@ -269,9 +269,9 @@ func jackettClientOf(tr tracker.Tracker) *jackett.Client {
 	return nil
 }
 
-func configureDownloader(cfg *config.Config, configStore *config.Store, tr tracker.Tracker, torrent graphqlapi.TorrentClient, stashClient *stash.Client) graphqlapi.DownloaderService {
+func configureTaskRuntime(cfg *config.Config, configStore *config.Store, tr tracker.Tracker, torrent graphqlapi.TorrentClient, stashClient *stash.Client) graphqlapi.TaskRuntimeService {
 	if torrent == nil {
-		logging.Infof("runtime: downloader disabled because qBittorrent client is not available")
+		logging.Infof("runtime: task runtime disabled because qBittorrent client is not available")
 		return nil
 	}
 
@@ -279,18 +279,18 @@ func configureDownloader(cfg *config.Config, configStore *config.Store, tr track
 	if err != nil {
 		logging.Fatalf("configure task store: %v", err)
 	}
-	service, err := downloader.NewService(
+	service, err := taskruntime.NewService(
 		tr,
 		torrent,
 		store,
-		downloader.WithCandidateSelectionProvider(configureTorrentSelectionProvider(configStore, cfg)),
-		downloader.WithTaskDeletePolicyProvider(configureTaskDeletePolicyProvider(configStore, cfg)),
-		downloader.WithLibraryCodeChecker(stashLibraryCodeChecker{client: stashClient}),
+		taskruntime.WithCandidateSelectionProvider(configureTorrentSelectionProvider(configStore, cfg)),
+		taskruntime.WithTaskDeletePolicyProvider(configureTaskDeletePolicyProvider(configStore, cfg)),
+		taskruntime.WithLibraryCodeChecker(stashLibraryCodeChecker{client: stashClient}),
 	)
 	if err != nil {
-		logging.Fatalf("configure downloader: %v", err)
+		logging.Fatalf("configure task runtime: %v", err)
 	}
-	logging.Infof("runtime: downloader service initialized")
+	logging.Infof("runtime: task runtime service initialized")
 	return service
 }
 
@@ -304,8 +304,8 @@ func configureTorrentSelectionProvider(store *config.Store, cfg *config.Config) 
 	}
 }
 
-func configureTaskStore(cfg *config.Config) (downloader.TaskStore, error) {
-	return downloader.NewSQLiteTaskStore(runtimeDatabasePath())
+func configureTaskStore(cfg *config.Config) (taskruntime.TaskStore, error) {
+	return taskruntime.NewSQLiteTaskStore(runtimeDatabasePath())
 }
 
 func configureProgressSyncInterval(cfg *config.Config) time.Duration {
@@ -594,10 +594,10 @@ func loadStashLibraries(stashConfigured bool, stashClient *stash.Client) ([]grap
 	return out, ""
 }
 
-func startTaskSyncWorker(ctx context.Context, service graphqlapi.DownloaderService, stash graphqlapi.StashService, intervalProvider func() time.Duration) {
+func startTaskSyncWorker(ctx context.Context, service graphqlapi.TaskRuntimeService, stash graphqlapi.StashService, intervalProvider func() time.Duration) {
 	if service == nil || intervalProvider == nil || intervalProvider() <= 0 {
 		if service == nil {
-			logging.Infof("runtime: task sync worker not started because downloader service is unavailable")
+			logging.Infof("runtime: task sync worker not started because task runtime service is unavailable")
 		} else {
 			logging.Infof("runtime: task sync worker disabled by sync interval")
 		}
@@ -760,7 +760,7 @@ func isIngestConfigured(cfg *config.Config) bool {
 	}
 }
 
-func configureSubscription(cfg *config.Config, configStore *config.Store, stashClient *stash.Client, downloaderService graphqlapi.DownloaderService, taskFlowService *taskflow.Service) graphqlapi.SubscriptionService {
+func configureSubscription(cfg *config.Config, configStore *config.Store, stashClient *stash.Client, taskRuntimeService graphqlapi.TaskRuntimeService, taskFlowService *taskflow.Service) graphqlapi.SubscriptionService {
 	if stashClient == nil {
 		logging.Infof("runtime: subscription service disabled because stash client is not available")
 		return nil
@@ -772,7 +772,7 @@ func configureSubscription(cfg *config.Config, configStore *config.Store, stashC
 	}
 
 	registry := subscription.NewDefaultStashboxRegistry()
-	service, err := subscription.NewService(stashClient, registry, downloaderService, store)
+	service, err := subscription.NewService(stashClient, registry, taskRuntimeService, store)
 	if err != nil {
 		logging.Fatalf("configure subscription: %v", err)
 	}

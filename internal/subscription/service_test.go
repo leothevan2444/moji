@@ -6,7 +6,7 @@ import (
 	"testing"
 
 	"github.com/leothevan2444/moji/internal/config"
-	"github.com/leothevan2444/moji/internal/downloader"
+	"github.com/leothevan2444/moji/internal/taskruntime"
 	"github.com/leothevan2444/moji/pkg/stash"
 	stashgraphql "github.com/leothevan2444/moji/pkg/stash/graphql"
 	stashboxgraphql "github.com/leothevan2444/moji/pkg/stashbox/graphql"
@@ -90,19 +90,19 @@ type fakeStashboxClient struct {
 	queryInputs  []stashboxgraphql.SceneQueryInput
 }
 
-type fakeDownloader struct {
-	tasks   []*downloader.Task
+type fakeTaskRuntime struct {
+	tasks   []*taskruntime.Task
 	err     error
 	calls   int
 	codes   []string
-	sources []downloader.TaskSource
+	sources []taskruntime.TaskSource
 }
 
 type fakeTaskCreator struct {
-	queueTask        *downloader.Task
+	queueTask        *taskruntime.Task
 	queueErr         error
 	queueCalls       []fakeQueuedSceneCall
-	subscriptionTask *downloader.Task
+	subscriptionTask *taskruntime.Task
 	subscriptionCode string
 	subscriptionErr  error
 }
@@ -112,7 +112,7 @@ type fakeQueuedSceneCall struct {
 	StashBoxEndpoint string
 }
 
-func (f *fakeDownloader) AddTorrentContext(_ context.Context, _ downloader.AddTorrentRequest) (*downloader.Task, error) {
+func (f *fakeTaskRuntime) AddTorrentContext(_ context.Context, _ taskruntime.AddTorrentRequest) (*taskruntime.Task, error) {
 	if f.err != nil {
 		return nil, f.err
 	}
@@ -179,7 +179,7 @@ func (f *fakeStashboxClient) QueryScenes(_ context.Context, input stashboxgraphq
 	return out, nil
 }
 
-func (f *fakeDownloader) DownloadMediaContext(_ context.Context, req downloader.DownloadRequest) (*downloader.Task, error) {
+func (f *fakeTaskRuntime) DownloadMediaContext(_ context.Context, req taskruntime.DownloadRequest) (*taskruntime.Task, error) {
 	f.calls++
 	f.codes = append(f.codes, req.Code)
 	f.sources = append(f.sources, req.Source)
@@ -194,12 +194,12 @@ func (f *fakeDownloader) DownloadMediaContext(_ context.Context, req downloader.
 	return task, nil
 }
 
-func (f *fakeTaskCreator) QueueDiscoveredScene(_ context.Context, sceneID string, stashBoxEndpoint string) (*downloader.Task, error) {
+func (f *fakeTaskCreator) QueueDiscoveredScene(_ context.Context, sceneID string, stashBoxEndpoint string) (*taskruntime.Task, error) {
 	f.queueCalls = append(f.queueCalls, fakeQueuedSceneCall{SceneID: sceneID, StashBoxEndpoint: stashBoxEndpoint})
 	return f.queueTask, f.queueErr
 }
 
-func (f *fakeTaskCreator) QueueSubscriptionRelease(_ context.Context, code, _ string) (*downloader.Task, error) {
+func (f *fakeTaskCreator) QueueSubscriptionRelease(_ context.Context, code, _ string) (*taskruntime.Task, error) {
 	if f.subscriptionCode != "" {
 		code = f.subscriptionCode
 	}
@@ -291,7 +291,7 @@ func TestSubscribeAndUnsubscribePerformerMutatesCustomFields(t *testing.T) {
 	}
 }
 
-func TestRefreshPerformerStoresPendingReleasesWithoutDownloader(t *testing.T) {
+func TestRefreshPerformerStoresPendingReleasesWithoutTaskRuntime(t *testing.T) {
 	endpoint := "https://javstash.example.org/graphql"
 	stashClient := &fakeStashClient{
 		performers: map[string]*stashgraphql.PerformerFragment{
@@ -904,8 +904,8 @@ func TestRefreshPerformerKeepsFailedAutoDownloadsPending(t *testing.T) {
 	})
 	registry.Replace([]stash.StashBoxEndpoint{{Name: "javstash", Endpoint: endpoint, APIKey: "ignored"}})
 
-	downloader := &fakeDownloader{err: errors.New("temporary add failure")}
-	service, err := NewService(stashClient, registry, downloader, NewMemoryStore())
+	taskRuntime := &fakeTaskRuntime{err: errors.New("temporary add failure")}
+	service, err := NewService(stashClient, registry, taskRuntime, NewMemoryStore())
 	if err != nil {
 		t.Fatalf("NewService failed: %v", err)
 	}
@@ -922,8 +922,8 @@ func TestRefreshPerformerKeepsFailedAutoDownloadsPending(t *testing.T) {
 	if first.PendingReleaseCount != 1 || second.PendingReleaseCount != 1 {
 		t.Fatalf("expected failed release to remain pending once, got first=%d second=%d", first.PendingReleaseCount, second.PendingReleaseCount)
 	}
-	if downloader.calls != 1 {
-		t.Fatalf("expected downloader to be called once for the new release, got %d", downloader.calls)
+	if taskRuntime.calls != 1 {
+		t.Fatalf("expected taskRuntime to be called once for the new release, got %d", taskRuntime.calls)
 	}
 	if second.LastError == "" {
 		t.Fatalf("expected last error to be preserved after auto-download failure")
@@ -1473,7 +1473,7 @@ func TestQueueDiscoveredSceneUsesSearchTaskSource(t *testing.T) {
 	endpoint := "https://box.example/graphql"
 	code := "ABCD-123"
 	sceneID := "scene-1"
-	downloaderTask := &downloader.Task{ID: "task-1", Source: downloader.TaskSourceSearch}
+	downloaderTask := &taskruntime.Task{ID: "task-1", Source: taskruntime.TaskSourceSearch}
 
 	registry := newStashboxRegistry(stubFactory{
 		client: &fakeStashboxClient{
@@ -1482,7 +1482,7 @@ func TestQueueDiscoveredSceneUsesSearchTaskSource(t *testing.T) {
 	})
 	registry.Replace([]stash.StashBoxEndpoint{{Name: "Preferred", Endpoint: endpoint, APIKey: "ignored"}})
 
-	fakeDL := &fakeDownloader{tasks: []*downloader.Task{downloaderTask}}
+	fakeDL := &fakeTaskRuntime{tasks: []*taskruntime.Task{downloaderTask}}
 	service, err := NewService(&fakeStashClient{performers: map[string]*stashgraphql.PerformerFragment{}}, registry, fakeDL, NewMemoryStore())
 	if err != nil {
 		t.Fatalf("NewService failed: %v", err)
@@ -1496,10 +1496,10 @@ func TestQueueDiscoveredSceneUsesSearchTaskSource(t *testing.T) {
 		t.Fatalf("unexpected queued task: %+v", task)
 	}
 	if len(fakeDL.codes) != 1 || fakeDL.codes[0] != code {
-		t.Fatalf("unexpected downloader codes: %+v", fakeDL.codes)
+		t.Fatalf("unexpected taskRuntime codes: %+v", fakeDL.codes)
 	}
-	if len(fakeDL.sources) != 1 || fakeDL.sources[0] != downloader.TaskSourceSearch {
-		t.Fatalf("unexpected downloader sources: %+v", fakeDL.sources)
+	if len(fakeDL.sources) != 1 || fakeDL.sources[0] != taskruntime.TaskSourceSearch {
+		t.Fatalf("unexpected taskRuntime sources: %+v", fakeDL.sources)
 	}
 }
 
@@ -1548,7 +1548,7 @@ func TestQueueDiscoveredSceneRejectsMissingCode(t *testing.T) {
 	})
 	registry.Replace([]stash.StashBoxEndpoint{{Name: "Preferred", Endpoint: endpoint, APIKey: "ignored"}})
 
-	service, err := NewService(&fakeStashClient{performers: map[string]*stashgraphql.PerformerFragment{}}, registry, &fakeDownloader{}, NewMemoryStore())
+	service, err := NewService(&fakeStashClient{performers: map[string]*stashgraphql.PerformerFragment{}}, registry, &fakeTaskRuntime{}, NewMemoryStore())
 	if err != nil {
 		t.Fatalf("NewService failed: %v", err)
 	}
@@ -1563,7 +1563,7 @@ func TestQueuePerformerScenesQueuesEligibleScene(t *testing.T) {
 	endpoint := "https://box.example/graphql"
 	sceneID := "scene-1"
 	code := "ABCD-123"
-	task := &downloader.Task{ID: "task-1", Source: downloader.TaskSourceSearch}
+	task := &taskruntime.Task{ID: "task-1", Source: taskruntime.TaskSourceSearch}
 
 	registry := newStashboxRegistry(stubFactory{
 		client: &fakeStashboxClient{
@@ -1583,7 +1583,7 @@ func TestQueuePerformerScenesQueuesEligibleScene(t *testing.T) {
 				StashIds: []*stashgraphql.StashIDFragment{{Endpoint: endpoint, StashID: "sb-1"}},
 			},
 		},
-	}, registry, &fakeDownloader{}, NewMemoryStore())
+	}, registry, &fakeTaskRuntime{}, NewMemoryStore())
 	if err != nil {
 		t.Fatalf("NewService failed: %v", err)
 	}
@@ -1639,11 +1639,11 @@ func TestQueuePerformerScenesMapsDuplicateCodeToSkipped(t *testing.T) {
 				StashIds: []*stashgraphql.StashIDFragment{{Endpoint: endpoint, StashID: "sb-1"}},
 			},
 		},
-	}, registry, &fakeDownloader{}, NewMemoryStore())
+	}, registry, &fakeTaskRuntime{}, NewMemoryStore())
 	if err != nil {
 		t.Fatalf("NewService failed: %v", err)
 	}
-	service.SetTaskCreator(&fakeTaskCreator{queueErr: downloader.ErrDuplicateCodeTask})
+	service.SetTaskCreator(&fakeTaskCreator{queueErr: taskruntime.ErrDuplicateCodeTask})
 
 	result, err := service.QueuePerformerScenes(context.Background(), "p1", []QueuePerformerSceneSelection{{
 		Key: "stashbox:" + endpointKey(endpoint) + ":" + sceneID,
@@ -1677,7 +1677,7 @@ func TestQueuePerformerScenesReturnsSceneNotFound(t *testing.T) {
 				StashIds: []*stashgraphql.StashIDFragment{{Endpoint: endpoint, StashID: "sb-1"}},
 			},
 		},
-	}, registry, &fakeDownloader{}, NewMemoryStore())
+	}, registry, &fakeTaskRuntime{}, NewMemoryStore())
 	if err != nil {
 		t.Fatalf("NewService failed: %v", err)
 	}
@@ -1724,11 +1724,11 @@ func TestQueuePerformerScenesReturnsMixedSummary(t *testing.T) {
 		scenes: []*stashgraphql.SceneFragment{
 			{ID: inLibraryID, Code: &code},
 		},
-	}, registry, &fakeDownloader{}, NewMemoryStore())
+	}, registry, &fakeTaskRuntime{}, NewMemoryStore())
 	if err != nil {
 		t.Fatalf("NewService failed: %v", err)
 	}
-	service.SetTaskCreator(&fakeTaskCreator{queueTask: &downloader.Task{ID: "task-1"}})
+	service.SetTaskCreator(&fakeTaskCreator{queueTask: &taskruntime.Task{ID: "task-1"}})
 
 	result, err := service.QueuePerformerScenes(context.Background(), "p1", []QueuePerformerSceneSelection{
 		{Key: "stashbox:" + endpointKey(endpoint) + ":" + sceneID},

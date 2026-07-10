@@ -7,17 +7,17 @@ package graphqlapi
 import (
 	"context"
 
-	"github.com/leothevan2444/moji/internal/downloader"
 	"github.com/leothevan2444/moji/internal/graphqlapi/model"
+	"github.com/leothevan2444/moji/internal/taskruntime"
 )
 
 // DashboardStats is the resolver for the dashboardStats field.
 func (r *queryResolver) DashboardStats(ctx context.Context) (*model.DashboardStats, error) {
-	if r.Downloader == nil {
+	if r.TaskRuntime == nil {
 		return &model.DashboardStats{}, nil
 	}
 
-	tasks, err := r.Downloader.ListTasks(ctx)
+	tasks, err := r.TaskRuntime.ListTasks(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -30,19 +30,19 @@ func (r *queryResolver) DashboardStats(ctx context.Context) (*model.DashboardSta
 			continue
 		}
 
-		if task.Stage != downloader.TaskStageCompleted {
+		if task.Stage != taskruntime.TaskStageCompleted {
 			stats.Active++
 		}
-		if task.Stage == downloader.TaskStageCompleted {
+		if task.Stage == taskruntime.TaskStageCompleted {
 			stats.Completed++
 		}
-		if task.Stage == downloader.TaskStageDownloading && task.StageStatus == downloader.TaskStageStatusRunning {
+		if task.Stage == taskruntime.TaskStageDownloading && task.StageStatus == taskruntime.TaskStageStatusRunning {
 			stats.Downloading++
 		}
-		if task.Stage == downloader.TaskStagePendingIngest || task.Stage == downloader.TaskStageTransferring || task.Stage == downloader.TaskStageScanning {
+		if task.Stage == taskruntime.TaskStagePendingIngest || task.Stage == taskruntime.TaskStageTransferring || task.Stage == taskruntime.TaskStageScanning {
 			stats.PendingScans++
 		}
-		if task.StageStatus == downloader.TaskStageStatusBlocked {
+		if task.StageStatus == taskruntime.TaskStageStatusBlocked {
 			stats.Failed++
 		}
 	}

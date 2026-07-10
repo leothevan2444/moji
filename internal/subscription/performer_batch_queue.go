@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/leothevan2444/moji/internal/downloader"
+	"github.com/leothevan2444/moji/internal/taskruntime"
 )
 
 func (s *Service) QueuePerformerScenes(ctx context.Context, performerID string, selections []QueuePerformerSceneSelection) (QueuePerformerScenesResult, error) {
@@ -18,7 +18,7 @@ func (s *Service) QueuePerformerScenes(ctx context.Context, performerID string, 
 		return QueuePerformerScenesResult{}, errors.New("subscription: at least one scene selection is required")
 	}
 	if s.taskCreator == nil {
-		return QueuePerformerScenesResult{}, errors.New("subscription: downloader is not configured")
+		return QueuePerformerScenesResult{}, errors.New("subscription: task runtime is not configured")
 	}
 
 	seenKeys := make(map[string]struct{}, len(selections))
@@ -51,7 +51,7 @@ func (s *Service) QueuePerformerScenes(ctx context.Context, performerID string, 
 	}
 
 	result := QueuePerformerScenesResult{
-		QueuedTasks: make([]*downloader.Task, 0, len(selections)),
+		QueuedTasks: make([]*taskruntime.Task, 0, len(selections)),
 		Results:     make([]QueuePerformerSceneResult, 0, len(selections)),
 		Summary: QueuePerformerScenesSummary{
 			RequestedCount: len(selections),
@@ -131,26 +131,26 @@ func (s *Service) queuePerformerSceneSelection(ctx context.Context, byKey map[st
 	return mapPerformerSceneQueueError(selection.Key, resolvedCode, task, err)
 }
 
-func mapPerformerSceneQueueError(key, resolvedCode string, task *downloader.Task, err error) QueuePerformerSceneResult {
+func mapPerformerSceneQueueError(key, resolvedCode string, task *taskruntime.Task, err error) QueuePerformerSceneResult {
 	result := QueuePerformerSceneResult{
 		Key:          key,
 		Task:         task,
 		ResolvedCode: resolvedCode,
 	}
 	switch {
-	case errors.Is(err, downloader.ErrDuplicateCodeTask):
+	case errors.Is(err, taskruntime.ErrDuplicateCodeTask):
 		result.Status = QueuePerformerSceneStatusSkipped
 		result.ReasonCode = "DUPLICATE_CODE_TASK"
 		result.Message = "同一番号已存在下载任务"
-	case errors.Is(err, downloader.ErrDuplicateTorrentTask):
+	case errors.Is(err, taskruntime.ErrDuplicateTorrentTask):
 		result.Status = QueuePerformerSceneStatusSkipped
 		result.ReasonCode = "DUPLICATE_TORRENT_TASK"
 		result.Message = "同一 torrent 或 magnet 已存在下载任务"
-	case errors.Is(err, downloader.ErrDuplicateLibraryCode):
+	case errors.Is(err, taskruntime.ErrDuplicateLibraryCode):
 		result.Status = QueuePerformerSceneStatusSkipped
 		result.ReasonCode = "ALREADY_IN_LIBRARY"
 		result.Message = "作品已在库中，跳过创建任务"
-	case errors.Is(err, downloader.ErrTaskCodeRequired):
+	case errors.Is(err, taskruntime.ErrTaskCodeRequired):
 		result.Status = QueuePerformerSceneStatusSkipped
 		result.ReasonCode = "MISSING_CODE"
 		result.Message = "作品缺少可稳定解析的番号"

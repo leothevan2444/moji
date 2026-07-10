@@ -9,8 +9,8 @@ import (
 	"errors"
 	"strings"
 
-	"github.com/leothevan2444/moji/internal/downloader"
 	"github.com/leothevan2444/moji/internal/graphqlapi/model"
+	"github.com/leothevan2444/moji/internal/taskruntime"
 	"github.com/leothevan2444/moji/internal/tracker"
 )
 
@@ -83,8 +83,8 @@ func (r *queryResolver) JackettSearch(ctx context.Context, input model.JackettSe
 
 // PreviewJackettSelection is the resolver for the previewJackettSelection field.
 func (r *queryResolver) PreviewJackettSelection(ctx context.Context, input model.PreviewJackettSelectionInput) (*model.PreviewJackettSelectionResult, error) {
-	if r.Downloader == nil {
-		return nil, errors.New("downloader is not configured")
+	if r.TaskRuntime == nil {
+		return nil, errors.New("task runtime is not configured")
 	}
 
 	query := strings.TrimSpace(input.Query)
@@ -102,7 +102,7 @@ func (r *queryResolver) PreviewJackettSelection(ctx context.Context, input model
 		inspectionCandidateLimit = *input.InspectionCandidateLimit
 	}
 
-	preview, err := r.Downloader.PreviewJackettSelectionContext(ctx, downloader.PreviewJackettSelectionRequest{
+	preview, err := r.TaskRuntime.PreviewJackettSelectionContext(ctx, taskruntime.PreviewJackettSelectionRequest{
 		Query:                    query,
 		Results:                  previewJackettSelectionCandidatesFromModel(input.Results),
 		ApplyFastRules:           input.ApplyFastRules,

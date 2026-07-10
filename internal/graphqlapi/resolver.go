@@ -7,12 +7,12 @@ package graphqlapi
 import (
 	"context"
 
-	"github.com/leothevan2444/moji/internal/downloader"
 	"github.com/leothevan2444/moji/internal/logging"
 	"github.com/leothevan2444/moji/internal/stashsync"
 	"github.com/leothevan2444/moji/internal/stats"
 	"github.com/leothevan2444/moji/internal/subscription"
 	"github.com/leothevan2444/moji/internal/taskflow"
+	"github.com/leothevan2444/moji/internal/taskruntime"
 	"github.com/leothevan2444/moji/internal/tracker"
 	"github.com/leothevan2444/moji/pkg/qbittorrent"
 )
@@ -29,25 +29,25 @@ type StashService interface {
 	CurrentConfig() stashsync.IntegrationConfig
 }
 
-type DownloaderService interface {
-	AddTorrentContext(ctx context.Context, req downloader.AddTorrentRequest) (*downloader.Task, error)
-	DownloadMediaContext(ctx context.Context, req downloader.DownloadRequest) (*downloader.Task, error)
-	PreviewJackettSelectionContext(ctx context.Context, req downloader.PreviewJackettSelectionRequest) (*downloader.CandidateSelectionPreview, error)
-	FindTask(ctx context.Context, id string) (*downloader.Task, error)
-	ListTasks(ctx context.Context) ([]*downloader.Task, error)
-	DeleteTask(ctx context.Context, id string) (*downloader.Task, error)
-	RetryTask(ctx context.Context, id string, scanner downloader.StashScanner) (*downloader.Task, error)
-	SyncProgress(ctx context.Context) ([]*downloader.Task, error)
-	TriggerTaskStashScan(ctx context.Context, id string, scanner downloader.StashScanner) (*downloader.Task, error)
-	TriggerStashScans(ctx context.Context, scanner downloader.StashScanner) ([]*downloader.Task, error)
+type TaskRuntimeService interface {
+	AddTorrentContext(ctx context.Context, req taskruntime.AddTorrentRequest) (*taskruntime.Task, error)
+	DownloadMediaContext(ctx context.Context, req taskruntime.DownloadRequest) (*taskruntime.Task, error)
+	PreviewJackettSelectionContext(ctx context.Context, req taskruntime.PreviewJackettSelectionRequest) (*taskruntime.CandidateSelectionPreview, error)
+	FindTask(ctx context.Context, id string) (*taskruntime.Task, error)
+	ListTasks(ctx context.Context) ([]*taskruntime.Task, error)
+	DeleteTask(ctx context.Context, id string) (*taskruntime.Task, error)
+	RetryTask(ctx context.Context, id string, scanner taskruntime.StashScanner) (*taskruntime.Task, error)
+	SyncProgress(ctx context.Context) ([]*taskruntime.Task, error)
+	TriggerTaskStashScan(ctx context.Context, id string, scanner taskruntime.StashScanner) (*taskruntime.Task, error)
+	TriggerStashScans(ctx context.Context, scanner taskruntime.StashScanner) ([]*taskruntime.Task, error)
 }
 
 // TaskFlowService is the only GraphQL seam allowed to create new tasks. Querying
 // existing tasks and advancing task execution stages still belongs to the
-// downloader execution service.
+// task runtime execution service.
 type TaskFlowService interface {
-	CreateFromManualTorrent(ctx context.Context, input taskflow.CreateFromManualTorrentInput) (*downloader.Task, error)
-	CreateFromSearchCode(ctx context.Context, input taskflow.CreateFromSearchCodeInput) (*downloader.Task, error)
+	CreateFromManualTorrent(ctx context.Context, input taskflow.CreateFromManualTorrentInput) (*taskruntime.Task, error)
+	CreateFromSearchCode(ctx context.Context, input taskflow.CreateFromSearchCodeInput) (*taskruntime.Task, error)
 }
 
 type SettingsEditor interface {
@@ -284,7 +284,7 @@ type StatsProvider interface {
 type SubscriptionService interface {
 	ListStashPerformers(ctx context.Context, search string) ([]subscription.Performer, error)
 	SearchPreferredStashBoxScenes(ctx context.Context, query string, limit int, sortBy subscription.DiscoverSort) (subscription.DiscoverScenePage, error)
-	QueueDiscoveredScene(ctx context.Context, sceneID string, stashBoxEndpoint string) (*downloader.Task, error)
+	QueueDiscoveredScene(ctx context.Context, sceneID string, stashBoxEndpoint string) (*taskruntime.Task, error)
 	QueuePerformerScenes(ctx context.Context, performerID string, selections []subscription.QueuePerformerSceneSelection) (subscription.QueuePerformerScenesResult, error)
 	GetPerformerDetail(ctx context.Context, performerID string) (subscription.PerformerDetail, error)
 	ListPerformerScenes(ctx context.Context, performerID string, query subscription.PerformerSceneQuery) (subscription.PerformerScenePage, error)
@@ -304,7 +304,7 @@ type LogReader interface {
 type Resolver struct {
 	Tracker         tracker.Tracker
 	Torrent         TorrentClient
-	Downloader      DownloaderService
+	TaskRuntime     TaskRuntimeService
 	TaskFlow        TaskFlowService
 	Stash           StashService
 	Subscription    SubscriptionService
@@ -316,16 +316,16 @@ type Resolver struct {
 	AppVersion      string
 }
 
-func NewResolver(tr tracker.Tracker, torrent TorrentClient, downloader DownloaderService, stash StashService, version string) *Resolver {
+func NewResolver(tr tracker.Tracker, torrent TorrentClient, taskRuntime TaskRuntimeService, stash StashService, version string) *Resolver {
 	resolver := &Resolver{
-		Tracker:    tr,
-		Torrent:    torrent,
-		Downloader: downloader,
-		Stash:      stash,
-		AppVersion: version,
+		Tracker:     tr,
+		Torrent:     torrent,
+		TaskRuntime: taskRuntime,
+		Stash:       stash,
+		AppVersion:  version,
 	}
-	if downloader != nil {
-		resolver.TaskFlow = taskflow.NewService(downloader)
+	if taskRuntime != nil {
+		resolver.TaskFlow = taskflow.NewService(taskRuntime)
 	}
 	return resolver
 }

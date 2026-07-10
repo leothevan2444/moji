@@ -8,7 +8,7 @@ import (
 	"time"
 
 	"github.com/jmoiron/sqlx"
-	"github.com/leothevan2444/moji/internal/downloader"
+	"github.com/leothevan2444/moji/internal/taskruntime"
 	_ "modernc.org/sqlite"
 )
 
@@ -148,7 +148,7 @@ INSERT INTO subscription_release_entities (
 func TestNewSQLiteStoreClearsDanglingTaskReferences(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "dangling-links.db")
 
-	db, err := downloader.OpenSQLiteDatabase(path)
+	db, err := taskruntime.OpenSQLiteDatabase(path)
 	if err != nil {
 		t.Fatalf("OpenSQLiteDatabase failed: %v", err)
 	}
@@ -258,8 +258,8 @@ func TestSQLiteStorePutWorksWithoutTasksTable(t *testing.T) {
 	}
 }
 
-func TestNewSQLiteStoreAndDownloaderCanInitializeInAnyOrder(t *testing.T) {
-	t.Run("subscription then downloader", func(t *testing.T) {
+func TestNewSQLiteStoreAndTaskRuntimeCanInitializeInAnyOrder(t *testing.T) {
+	t.Run("subscription then task runtime", func(t *testing.T) {
 		path := filepath.Join(t.TempDir(), "subscription-first.db")
 
 		store, err := NewSQLiteStore(path)
@@ -268,7 +268,7 @@ func TestNewSQLiteStoreAndDownloaderCanInitializeInAnyOrder(t *testing.T) {
 		}
 		_ = store.db.Close()
 
-		db, err := downloader.OpenSQLiteDatabase(path)
+		db, err := taskruntime.OpenSQLiteDatabase(path)
 		if err != nil {
 			t.Fatalf("OpenSQLiteDatabase failed: %v", err)
 		}
@@ -285,10 +285,10 @@ func TestNewSQLiteStoreAndDownloaderCanInitializeInAnyOrder(t *testing.T) {
 		}
 	})
 
-	t.Run("downloader then subscription", func(t *testing.T) {
-		path := filepath.Join(t.TempDir(), "downloader-first.db")
+	t.Run("task runtime then subscription", func(t *testing.T) {
+		path := filepath.Join(t.TempDir(), "taskruntime-first.db")
 
-		db, err := downloader.OpenSQLiteDatabase(path)
+		db, err := taskruntime.OpenSQLiteDatabase(path)
 		if err != nil {
 			t.Fatalf("OpenSQLiteDatabase failed: %v", err)
 		}

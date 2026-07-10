@@ -6,8 +6,8 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/leothevan2444/moji/internal/downloader"
 	"github.com/leothevan2444/moji/internal/logging"
+	"github.com/leothevan2444/moji/internal/taskruntime"
 	stashboxgraphql "github.com/leothevan2444/moji/pkg/stashbox/graphql"
 )
 
@@ -70,9 +70,9 @@ func (s *Service) SearchPreferredStashBoxScenes(ctx context.Context, query strin
 	return DiscoverScenePage{Items: []DiscoveredScene{}, SearchedQuery: query}, nil
 }
 
-func (s *Service) QueueDiscoveredScene(ctx context.Context, sceneID string, stashBoxEndpoint string) (*downloader.Task, error) {
+func (s *Service) QueueDiscoveredScene(ctx context.Context, sceneID string, stashBoxEndpoint string) (*taskruntime.Task, error) {
 	if s.taskCreator == nil {
-		return nil, errors.New("subscription: downloader is not configured")
+		return nil, errors.New("subscription: task runtime is not configured")
 	}
 	return s.taskCreator.QueueDiscoveredScene(ctx, sceneID, stashBoxEndpoint)
 }

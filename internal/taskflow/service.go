@@ -5,15 +5,15 @@ import (
 	"errors"
 	"strings"
 
-	"github.com/leothevan2444/moji/internal/downloader"
+	"github.com/leothevan2444/moji/internal/taskruntime"
 )
 
 // Service is Moji's application-layer task creation seam. Callers hand it
 // business intent such as "manual torrent", "known code", or "known scene",
-// and it translates that intent into standard downloader requests.
-type Downloader interface {
-	AddTorrentContext(ctx context.Context, req downloader.AddTorrentRequest) (*downloader.Task, error)
-	DownloadMediaContext(ctx context.Context, req downloader.DownloadRequest) (*downloader.Task, error)
+// and it translates that intent into standard taskruntime requests.
+type TaskRuntime interface {
+	AddTorrentContext(ctx context.Context, req taskruntime.AddTorrentRequest) (*taskruntime.Task, error)
+	DownloadMediaContext(ctx context.Context, req taskruntime.DownloadRequest) (*taskruntime.Task, error)
 }
 
 type DiscoveredSceneResolver interface {
@@ -26,7 +26,7 @@ type ResolvedScene struct {
 }
 
 type Service struct {
-	downloader              Downloader
+	taskRuntime             TaskRuntime
 	discoveredSceneResolver DiscoveredSceneResolver
 }
 
@@ -64,8 +64,8 @@ type CreateFromSubscriptionReleaseInput struct {
 	Title string
 }
 
-func NewService(downloader Downloader) *Service {
-	return &Service{downloader: downloader}
+func NewService(taskRuntime TaskRuntime) *Service {
+	return &Service{taskRuntime: taskRuntime}
 }
 
 func (s *Service) SetDiscoveredSceneResolver(resolver DiscoveredSceneResolver) {
@@ -75,13 +75,13 @@ func (s *Service) SetDiscoveredSceneResolver(resolver DiscoveredSceneResolver) {
 	s.discoveredSceneResolver = resolver
 }
 
-func (s *Service) CreateFromManualTorrent(ctx context.Context, input CreateFromManualTorrentInput) (*downloader.Task, error) {
-	if s == nil || s.downloader == nil {
-		return nil, errors.New("taskflow: downloader is not configured")
+func (s *Service) CreateFromManualTorrent(ctx context.Context, input CreateFromManualTorrentInput) (*taskruntime.Task, error) {
+	if s == nil || s.taskRuntime == nil {
+		return nil, errors.New("taskflow: task runtime is not configured")
 	}
 
-	return s.downloader.AddTorrentContext(ctx, downloader.AddTorrentRequest{
-		Source:   downloader.TaskSourceManual,
+	return s.taskRuntime.AddTorrentContext(ctx, taskruntime.AddTorrentRequest{
+		Source:   taskruntime.TaskSourceManual,
 		URL:      input.URL,
 		Paused:   input.Paused,
 		SavePath: input.SavePath,
@@ -90,13 +90,13 @@ func (s *Service) CreateFromManualTorrent(ctx context.Context, input CreateFromM
 	})
 }
 
-func (s *Service) CreateFromSearchCode(ctx context.Context, input CreateFromSearchCodeInput) (*downloader.Task, error) {
-	if s == nil || s.downloader == nil {
-		return nil, errors.New("taskflow: downloader is not configured")
+func (s *Service) CreateFromSearchCode(ctx context.Context, input CreateFromSearchCodeInput) (*taskruntime.Task, error) {
+	if s == nil || s.taskRuntime == nil {
+		return nil, errors.New("taskflow: task runtime is not configured")
 	}
 
-	return s.downloader.DownloadMediaContext(ctx, downloader.DownloadRequest{
-		Source:     downloader.TaskSourceManual,
+	return s.taskRuntime.DownloadMediaContext(ctx, taskruntime.DownloadRequest{
+		Source:     taskruntime.TaskSourceManual,
 		Code:       input.Code,
 		Trackers:   input.Trackers,
 		Categories: input.Categories,
@@ -108,13 +108,13 @@ func (s *Service) CreateFromSearchCode(ctx context.Context, input CreateFromSear
 	})
 }
 
-func (s *Service) CreateFromDiscoveredScene(ctx context.Context, input CreateFromDiscoveredSceneInput) (*downloader.Task, error) {
-	return s.createFromCode(ctx, downloader.TaskSourceSearch, input.Code, input.Title)
+func (s *Service) CreateFromDiscoveredScene(ctx context.Context, input CreateFromDiscoveredSceneInput) (*taskruntime.Task, error) {
+	return s.createFromCode(ctx, taskruntime.TaskSourceSearch, input.Code, input.Title)
 }
 
-func (s *Service) CreateFromDiscoveredSceneRef(ctx context.Context, input CreateFromDiscoveredSceneRefInput) (*downloader.Task, error) {
-	if s == nil || s.downloader == nil {
-		return nil, errors.New("taskflow: downloader is not configured")
+func (s *Service) CreateFromDiscoveredSceneRef(ctx context.Context, input CreateFromDiscoveredSceneRefInput) (*taskruntime.Task, error) {
+	if s == nil || s.taskRuntime == nil {
+		return nil, errors.New("taskflow: task runtime is not configured")
 	}
 	if s.discoveredSceneResolver == nil {
 		return nil, errors.New("taskflow: discovered scene resolver is not configured")
@@ -130,7 +130,7 @@ func (s *Service) CreateFromDiscoveredSceneRef(ctx context.Context, input Create
 	})
 }
 
-func (s *Service) QueueDiscoveredScene(ctx context.Context, sceneID string, stashBoxEndpoint string) (*downloader.Task, error) {
+func (s *Service) QueueDiscoveredScene(ctx context.Context, sceneID string, stashBoxEndpoint string) (*taskruntime.Task, error) {
 	task, err := s.CreateFromDiscoveredSceneRef(ctx, CreateFromDiscoveredSceneRefInput{
 		SceneID:          sceneID,
 		StashBoxEndpoint: stashBoxEndpoint,
@@ -138,20 +138,20 @@ func (s *Service) QueueDiscoveredScene(ctx context.Context, sceneID string, stas
 	return task, err
 }
 
-func (s *Service) CreateFromSubscriptionRelease(ctx context.Context, input CreateFromSubscriptionReleaseInput) (*downloader.Task, error) {
-	return s.createFromCode(ctx, downloader.TaskSourceSubscription, input.Code, input.Title)
+func (s *Service) CreateFromSubscriptionRelease(ctx context.Context, input CreateFromSubscriptionReleaseInput) (*taskruntime.Task, error) {
+	return s.createFromCode(ctx, taskruntime.TaskSourceSubscription, input.Code, input.Title)
 }
 
-func (s *Service) QueueSubscriptionRelease(ctx context.Context, code, title string) (*downloader.Task, error) {
+func (s *Service) QueueSubscriptionRelease(ctx context.Context, code, title string) (*taskruntime.Task, error) {
 	return s.CreateFromSubscriptionRelease(ctx, CreateFromSubscriptionReleaseInput{
 		Code:  code,
 		Title: title,
 	})
 }
 
-func (s *Service) createFromCode(ctx context.Context, source downloader.TaskSource, code, title string) (*downloader.Task, error) {
-	if s == nil || s.downloader == nil {
-		return nil, errors.New("taskflow: downloader is not configured")
+func (s *Service) createFromCode(ctx context.Context, source taskruntime.TaskSource, code, title string) (*taskruntime.Task, error) {
+	if s == nil || s.taskRuntime == nil {
+		return nil, errors.New("taskflow: task runtime is not configured")
 	}
 
 	resolvedCode := buildReleaseCode(code, title)
@@ -159,7 +159,7 @@ func (s *Service) createFromCode(ctx context.Context, source downloader.TaskSour
 		return nil, errors.New("task code is required")
 	}
 
-	task, err := s.downloader.DownloadMediaContext(ctx, downloader.DownloadRequest{
+	task, err := s.taskRuntime.DownloadMediaContext(ctx, taskruntime.DownloadRequest{
 		Source: source,
 		Code:   resolvedCode,
 	})

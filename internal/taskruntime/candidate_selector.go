@@ -1,4 +1,4 @@
-package downloader
+package taskruntime
 
 import (
 	"context"
@@ -38,7 +38,7 @@ func (s defaultCandidateSelector) Select(ctx context.Context, query string, resu
 			return result, nil
 		}
 	}
-	return jackett.SearchResult{}, errors.New("downloader: no downloadable torrent candidate found")
+	return jackett.SearchResult{}, errors.New("taskruntime: no downloadable torrent candidate found")
 }
 
 func (s defaultCandidateSelector) Preview(ctx context.Context, query string, results []jackett.SearchResult, cfg config.CandidateSelectionConfig, applyFastRules bool, applyFileRules bool) (CandidateSelectionPreview, error) {
@@ -364,7 +364,7 @@ func inspectTopTorrentCandidates(ctx context.Context, candidates []rankedCandida
 			defer func() { <-sem }()
 			inspection, err := inspector(ctx, torrentURL)
 			if err != nil {
-				logging.Infof("downloader: inspect torrent candidate %q failed: %v", candidate.result.Title, err)
+				logging.Infof("taskruntime: inspect torrent candidate %q failed: %v", candidate.result.Title, err)
 				return
 			}
 			outMu.Lock()

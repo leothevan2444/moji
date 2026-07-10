@@ -24,16 +24,16 @@ import (
 	"sync"
 	"time"
 
-	"github.com/leothevan2444/moji/internal/downloader"
+	"github.com/leothevan2444/moji/internal/taskruntime"
 	"github.com/leothevan2444/moji/pkg/jackett"
 	"github.com/leothevan2444/moji/pkg/qbittorrent"
 	"github.com/leothevan2444/moji/pkg/stash"
 )
 
-// TaskLister is the subset of *downloader.Service we depend on, kept narrow so
+// TaskLister is the subset of *taskruntime.Service we depend on, kept narrow so
 // tests can pass a fake without spinning up a SQLite store.
 type TaskLister interface {
-	ListTasks(ctx context.Context) ([]*downloader.Task, error)
+	ListTasks(ctx context.Context) ([]*taskruntime.Task, error)
 }
 
 // StashStats is the snapshot value exposed to the GraphQL layer. All fields
@@ -288,9 +288,9 @@ func (c *Collector) refreshMojiScanCount(ctx context.Context) {
 		if t == nil {
 			continue
 		}
-		if t.Stage == downloader.TaskStagePendingIngest ||
-			t.Stage == downloader.TaskStageTransferring ||
-			t.Stage == downloader.TaskStageScanning {
+		if t.Stage == taskruntime.TaskStagePendingIngest ||
+			t.Stage == taskruntime.TaskStageTransferring ||
+			t.Stage == taskruntime.TaskStageScanning {
 			count++
 		}
 	}

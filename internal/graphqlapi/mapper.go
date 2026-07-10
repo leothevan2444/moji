@@ -4,9 +4,9 @@ import (
 	"sort"
 	"time"
 
-	"github.com/leothevan2444/moji/internal/downloader"
 	"github.com/leothevan2444/moji/internal/graphqlapi/model"
 	"github.com/leothevan2444/moji/internal/stashsync"
+	"github.com/leothevan2444/moji/internal/taskruntime"
 	"github.com/leothevan2444/moji/pkg/jackett"
 	"github.com/leothevan2444/moji/pkg/qbittorrent"
 )
@@ -60,7 +60,7 @@ func previewJackettSelectionCandidatesFromModel(input []*model.PreviewJackettSel
 	return out
 }
 
-func candidateSelectionPreviewToModel(preview *downloader.CandidateSelectionPreview) *model.PreviewJackettSelectionResult {
+func candidateSelectionPreviewToModel(preview *taskruntime.CandidateSelectionPreview) *model.PreviewJackettSelectionResult {
 	if preview == nil {
 		return &model.PreviewJackettSelectionResult{
 			Results:     []*model.JackettSearchResult{},
@@ -135,13 +135,13 @@ func qbTorrentToModel(torrent qbittorrent.Torrent) *model.QBTorrent {
 	}
 }
 
-func taskToModel(task *downloader.Task) *model.Task {
+func taskToModel(task *taskruntime.Task) *model.Task {
 	if task == nil {
 		return nil
 	}
 	source := task.Source
 	if source == "" {
-		source = downloader.TaskSourceManual
+		source = taskruntime.TaskSourceManual
 	}
 
 	return &model.Task{
@@ -180,7 +180,7 @@ func taskToModel(task *downloader.Task) *model.Task {
 	}
 }
 
-func candidateToModel(candidate downloader.Candidate) *model.DownloadCandidate {
+func candidateToModel(candidate taskruntime.Candidate) *model.DownloadCandidate {
 	return &model.DownloadCandidate{
 		Title:     candidate.Title,
 		Tracker:   candidate.Tracker,

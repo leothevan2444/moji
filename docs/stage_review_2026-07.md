@@ -90,8 +90,8 @@ The backend runtime wires together:
 Relevant files:
 
 - [cmd/moji/main.go](/home/wangqi/services/moji/cmd/moji/main.go:127)
-- [internal/downloader/service.go](/home/wangqi/services/moji/internal/downloader/service.go:508)
-- [internal/downloader/stash_scan.go](/home/wangqi/services/moji/internal/downloader/stash_scan.go:29)
+- [internal/taskruntime/service.go](/home/wangqi/services/moji/internal/taskruntime/service.go:508)
+- [internal/taskruntime/stash_scan.go](/home/wangqi/services/moji/internal/taskruntime/stash_scan.go:29)
 - [internal/subscription/service.go](/home/wangqi/services/moji/internal/subscription/service.go:85)
 
 ### 2. The product surface is already synchronized across backend and web UI
@@ -127,7 +127,7 @@ The project has already switched from temporary JSON thinking to SQLite-backed s
 
 Relevant files:
 
-- [internal/downloader/sqlite_store.go](/home/wangqi/services/moji/internal/downloader/sqlite_store.go:13)
+- [internal/taskruntime/sqlite_store.go](/home/wangqi/services/moji/internal/taskruntime/sqlite_store.go:13)
 - [internal/subscription/sqlite_store.go](/home/wangqi/services/moji/internal/subscription/sqlite_store.go:15)
 - [docs/task_storage_sqlite_design.md](/home/wangqi/services/moji/docs/task_storage_sqlite_design.md:1)
 
@@ -241,8 +241,8 @@ Moji already records task state transitions and stores enough task snapshot data
 
 Relevant files:
 
-- [internal/downloader/sqlite_store.go](/home/wangqi/services/moji/internal/downloader/sqlite_store.go:21)
-- [internal/downloader/task_stage.go](/home/wangqi/services/moji/internal/downloader/task_stage.go:1)
+- [internal/taskruntime/sqlite_store.go](/home/wangqi/services/moji/internal/taskruntime/sqlite_store.go:21)
+- [internal/taskruntime/task_stage.go](/home/wangqi/services/moji/internal/taskruntime/task_stage.go:1)
 - [graphql/moji/types/task.graphql](/home/wangqi/services/moji/graphql/moji/types/task.graphql:1)
 
 #### Impact
@@ -397,7 +397,7 @@ Current status:
 
 Relevant files:
 
-- [internal/downloader/task_stage.go](/home/wangqi/services/moji/internal/downloader/task_stage.go:1)
+- [internal/taskruntime/task_stage.go](/home/wangqi/services/moji/internal/taskruntime/task_stage.go:1)
 - [internal/graphqlapi/task.resolvers.go](/home/wangqi/services/moji/internal/graphqlapi/task.resolvers.go:11)
 
 Main gap:
@@ -423,8 +423,8 @@ Main gap:
 
 Relevant files:
 
-- [internal/downloader/task_identity.go](/home/wangqi/services/moji/internal/downloader/task_identity.go:107)
-- [internal/downloader/task_stage.go](/home/wangqi/services/moji/internal/downloader/task_stage.go:5)
+- [internal/taskruntime/task_identity.go](/home/wangqi/services/moji/internal/taskruntime/task_identity.go:107)
+- [internal/taskruntime/task_stage.go](/home/wangqi/services/moji/internal/taskruntime/task_stage.go:5)
 - [internal/subscription/sqlite_store.go](/home/wangqi/services/moji/internal/subscription/sqlite_store.go:24)
 
 ### What is still weak
@@ -438,7 +438,7 @@ Relevant files:
 ### What is working well
 
 - module boundaries are mostly reasonable:
-  - `downloader` owns tasks and ingest flow;
+  - `taskruntime` owns tasks and ingest flow;
   - `subscription` owns performer/release logic;
   - `stashsync` owns Stash integration semantics;
   - `graphqlapi` maps runtime services to product contracts.
@@ -616,8 +616,8 @@ The long-term troubleshooting target should be:
 
 Relevant files:
 
-- [internal/downloader/task_stage.go](/home/wangqi/services/moji/internal/downloader/task_stage.go:18)
-- [internal/downloader/sqlite_store.go](/home/wangqi/services/moji/internal/downloader/sqlite_store.go:21)
+- [internal/taskruntime/task_stage.go](/home/wangqi/services/moji/internal/taskruntime/task_stage.go:18)
+- [internal/taskruntime/sqlite_store.go](/home/wangqi/services/moji/internal/taskruntime/sqlite_store.go:21)
 
 ### Next product step
 

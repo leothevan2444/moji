@@ -12,9 +12,9 @@ import (
 	"time"
 
 	"github.com/leothevan2444/moji/internal/config"
-	"github.com/leothevan2444/moji/internal/downloader"
 	"github.com/leothevan2444/moji/internal/graphqlapi"
 	"github.com/leothevan2444/moji/internal/stashsync"
+	"github.com/leothevan2444/moji/internal/taskruntime"
 )
 
 func TestHTTPHandlerServesRootAndGraphQLPlayground(t *testing.T) {
@@ -494,35 +494,35 @@ type fakeProgressSyncService struct {
 	stashCalled chan struct{}
 }
 
-func (f *fakeProgressSyncService) AddTorrentContext(context.Context, downloader.AddTorrentRequest) (*downloader.Task, error) {
+func (f *fakeProgressSyncService) AddTorrentContext(context.Context, taskruntime.AddTorrentRequest) (*taskruntime.Task, error) {
 	return nil, nil
 }
 
-func (f *fakeProgressSyncService) DownloadMediaContext(context.Context, downloader.DownloadRequest) (*downloader.Task, error) {
+func (f *fakeProgressSyncService) DownloadMediaContext(context.Context, taskruntime.DownloadRequest) (*taskruntime.Task, error) {
 	return nil, nil
 }
 
-func (f *fakeProgressSyncService) PreviewJackettSelectionContext(context.Context, downloader.PreviewJackettSelectionRequest) (*downloader.CandidateSelectionPreview, error) {
+func (f *fakeProgressSyncService) PreviewJackettSelectionContext(context.Context, taskruntime.PreviewJackettSelectionRequest) (*taskruntime.CandidateSelectionPreview, error) {
 	return nil, nil
 }
 
-func (f *fakeProgressSyncService) FindTask(context.Context, string) (*downloader.Task, error) {
+func (f *fakeProgressSyncService) FindTask(context.Context, string) (*taskruntime.Task, error) {
 	return nil, nil
 }
 
-func (f *fakeProgressSyncService) ListTasks(context.Context) ([]*downloader.Task, error) {
+func (f *fakeProgressSyncService) ListTasks(context.Context) ([]*taskruntime.Task, error) {
 	return nil, nil
 }
 
-func (f *fakeProgressSyncService) DeleteTask(context.Context, string) (*downloader.Task, error) {
+func (f *fakeProgressSyncService) DeleteTask(context.Context, string) (*taskruntime.Task, error) {
 	return nil, nil
 }
 
-func (f *fakeProgressSyncService) RetryTask(context.Context, string, downloader.StashScanner) (*downloader.Task, error) {
+func (f *fakeProgressSyncService) RetryTask(context.Context, string, taskruntime.StashScanner) (*taskruntime.Task, error) {
 	return nil, nil
 }
 
-func (f *fakeProgressSyncService) SyncProgress(context.Context) ([]*downloader.Task, error) {
+func (f *fakeProgressSyncService) SyncProgress(context.Context) ([]*taskruntime.Task, error) {
 	select {
 	case f.called <- struct{}{}:
 	default:
@@ -530,11 +530,11 @@ func (f *fakeProgressSyncService) SyncProgress(context.Context) ([]*downloader.T
 	return nil, nil
 }
 
-func (f *fakeProgressSyncService) TriggerTaskStashScan(context.Context, string, downloader.StashScanner) (*downloader.Task, error) {
+func (f *fakeProgressSyncService) TriggerTaskStashScan(context.Context, string, taskruntime.StashScanner) (*taskruntime.Task, error) {
 	return nil, nil
 }
 
-func (f *fakeProgressSyncService) TriggerStashScans(context.Context, downloader.StashScanner) ([]*downloader.Task, error) {
+func (f *fakeProgressSyncService) TriggerStashScans(context.Context, taskruntime.StashScanner) ([]*taskruntime.Task, error) {
 	select {
 	case f.stashCalled <- struct{}{}:
 	default:

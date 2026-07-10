@@ -6,8 +6,8 @@ import (
 
 // newDefaultTaskCreator keeps subscription's default wiring behind a small local
 // seam so the domain layer does not need to assemble taskflow inputs inline.
-func newDefaultTaskCreator(downloader Downloader, stashbox *stashboxRegistry) TaskCreator {
-	creator := taskflow.NewService(downloader)
+func newDefaultTaskCreator(taskRuntime TaskRuntime, stashbox *stashboxRegistry) TaskCreator {
+	creator := taskflow.NewService(taskRuntime)
 	creator.SetDiscoveredSceneResolver(NewDiscoveredSceneResolver(stashbox))
 	return creator
 }

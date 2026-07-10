@@ -1,4 +1,4 @@
-package downloader
+package taskruntime
 
 import (
 	"context"
@@ -218,10 +218,10 @@ func WithLibraryCodeChecker(checker LibraryCodeChecker) Option {
 
 func NewService(tr tracker.Tracker, qbt TorrentClient, store TaskStore, options ...Option) (*Service, error) {
 	if tr == nil {
-		return nil, errors.New("downloader: tracker is required")
+		return nil, errors.New("taskruntime: tracker is required")
 	}
 	if qbt == nil {
-		return nil, errors.New("downloader: qBittorrent client is required")
+		return nil, errors.New("taskruntime: qBittorrent client is required")
 	}
 	if store == nil {
 		store = NewMemoryTaskStore()
@@ -294,7 +294,7 @@ func (s *Service) DownloadMedia(code string) (*Task, error) {
 func (s *Service) PreviewJackettSelectionContext(ctx context.Context, req PreviewJackettSelectionRequest) (*CandidateSelectionPreview, error) {
 	query := strings.TrimSpace(req.Query)
 	if query == "" {
-		return nil, errors.New("downloader: query is required")
+		return nil, errors.New("taskruntime: query is required")
 	}
 	if !req.ApplyFastRules && !req.ApplyFileRules {
 		return &CandidateSelectionPreview{
@@ -324,7 +324,7 @@ func (s *Service) PreviewJackettSelectionContext(ctx context.Context, req Previe
 func (s *Service) FindTask(ctx context.Context, id string) (*Task, error) {
 	id = strings.TrimSpace(id)
 	if id == "" {
-		return nil, errors.New("downloader: task id is required")
+		return nil, errors.New("taskruntime: task id is required")
 	}
 	return s.store.Find(ctx, id)
 }
@@ -336,7 +336,7 @@ func (s *Service) ListTasks(ctx context.Context) ([]*Task, error) {
 func (s *Service) DeleteTask(ctx context.Context, id string) (*Task, error) {
 	id = strings.TrimSpace(id)
 	if id == "" {
-		return nil, errors.New("downloader: task id is required")
+		return nil, errors.New("taskruntime: task id is required")
 	}
 
 	task, err := s.store.Find(ctx, id)
@@ -362,7 +362,7 @@ func (s *Service) DeleteTask(ctx context.Context, id string) (*Task, error) {
 func (s *Service) RetryTask(ctx context.Context, id string, scanner StashScanner) (*Task, error) {
 	id = strings.TrimSpace(id)
 	if id == "" {
-		return nil, errors.New("downloader: task id is required")
+		return nil, errors.New("taskruntime: task id is required")
 	}
 
 	task, err := s.store.Find(ctx, id)
@@ -370,13 +370,13 @@ func (s *Service) RetryTask(ctx context.Context, id string, scanner StashScanner
 		return nil, err
 	}
 	if task == nil {
-		return nil, fmt.Errorf("downloader: task %q not found", id)
+		return nil, fmt.Errorf("taskruntime: task %q not found", id)
 	}
 	if task.Stage == TaskStageCompleted {
-		return nil, fmt.Errorf("downloader: task %q is already completed", id)
+		return nil, fmt.Errorf("taskruntime: task %q is already completed", id)
 	}
 	if task.StageStatus != TaskStageStatusBlocked {
-		return nil, fmt.Errorf("downloader: task %q is not blocked", id)
+		return nil, fmt.Errorf("taskruntime: task %q is not blocked", id)
 	}
 
 	switch task.Stage {
@@ -386,11 +386,11 @@ func (s *Service) RetryTask(ctx context.Context, id string, scanner StashScanner
 		return s.retryDownloadingTask(ctx, task)
 	case TaskStagePendingIngest, TaskStageTransferring, TaskStageScanning:
 		if scanner == nil {
-			return nil, errors.New("downloader: stash scanner is required")
+			return nil, errors.New("taskruntime: stash scanner is required")
 		}
 		return s.retryIngestTask(ctx, task, scanner)
 	default:
-		return nil, fmt.Errorf("downloader: task %q has unsupported retry stage %s", id, task.Stage)
+		return nil, fmt.Errorf("taskruntime: task %q has unsupported retry stage %s", id, task.Stage)
 	}
 }
 
@@ -436,7 +436,7 @@ func (s *Service) SyncProgress(ctx context.Context) ([]*Task, error) {
 		}
 		if next.Stage != prevStage || next.StageStatus != prevStageStatus {
 			logging.Infof(
-				"downloader: task %s stage %s/%s -> %s/%s (%s %.1f%%)",
+				"taskruntime: task %s stage %s/%s -> %s/%s (%s %.1f%%)",
 				next.ID,
 				prevStage,
 				prevStageStatus,
@@ -446,7 +446,7 @@ func (s *Service) SyncProgress(ctx context.Context) ([]*Task, error) {
 				next.Progress*100,
 			)
 		} else if next.Stage == TaskStagePendingIngest && next.Progress != prevProgress {
-			logging.Infof("downloader: task %s download completed with content path %s", next.ID, next.ContentPath)
+			logging.Infof("taskruntime: task %s download completed with content path %s", next.ID, next.ContentPath)
 		}
 		updated = append(updated, next)
 	}
@@ -531,10 +531,10 @@ func (s *Service) DownloadMediaContext(ctx context.Context, req DownloadRequest)
 	setTaskStage(task, TaskStageSourcing, TaskStageStatusRunning)
 
 	if err := s.store.Create(ctx, task); err != nil {
-		logging.Errorf("downloader: create task failed for code %q: %v", code, err)
+		logging.Errorf("taskruntime: create task failed for code %q: %v", code, err)
 		return nil, fmt.Errorf("create task: %w", err)
 	}
-	logging.Infof("downloader: created %s task %s for code %q", strings.ToLower(string(source)), task.ID, code)
+	logging.Infof("taskruntime: created %s task %s for code %q", strings.ToLower(string(source)), task.ID, code)
 
 	return s.runSourcingFlow(ctx, task, req)
 }
@@ -553,10 +553,10 @@ func (s *Service) runSourcingFlow(ctx context.Context, task *Task, req DownloadR
 	if err != nil {
 		blockTask(task, TaskStageErrorSearch, err.Error(), s.now().UTC())
 		_ = s.store.Update(ctx, task)
-		logging.Errorf("downloader: search failed for code %q: %v", code, err)
+		logging.Errorf("taskruntime: search failed for code %q: %v", code, err)
 		return task, fmt.Errorf("search torrents: %w", err)
 	}
-	logging.Infof("downloader: search returned %d results for code %q", len(results), code)
+	logging.Infof("taskruntime: search returned %d results for code %q", len(results), code)
 	if len(results) == 0 {
 		err = errors.New("no candidate found for the current code")
 		blockTask(task, TaskStageErrorNoCandidate, err.Error(), s.now().UTC())
@@ -580,7 +580,7 @@ func (s *Service) runSourcingFlow(ctx context.Context, task *Task, req DownloadR
 		}
 		blockTask(task, errorCode, err.Error(), s.now().UTC())
 		_ = s.store.Update(ctx, task)
-		logging.Errorf("downloader: select candidate failed for code %q: %v", code, err)
+		logging.Errorf("taskruntime: select candidate failed for code %q: %v", code, err)
 		return task, err
 	}
 
@@ -606,7 +606,7 @@ func (s *Service) runSourcingFlow(ctx context.Context, task *Task, req DownloadR
 	if err := s.submitTaskTorrent(ctx, task, torrentURL, req.SavePath, req.Category, req.Tags, req.Paused); err != nil {
 		return task, err
 	}
-	logging.Infof("downloader: %s task %s added to qBittorrent for code %q", strings.ToLower(string(task.Source)), task.ID, code)
+	logging.Infof("taskruntime: %s task %s added to qBittorrent for code %q", strings.ToLower(string(task.Source)), task.ID, code)
 
 	return task, nil
 }
@@ -614,7 +614,7 @@ func (s *Service) runSourcingFlow(ctx context.Context, task *Task, req DownloadR
 func (s *Service) AddTorrentContext(ctx context.Context, req AddTorrentRequest) (*Task, error) {
 	torrentURL := strings.TrimSpace(req.URL)
 	if torrentURL == "" {
-		return nil, errors.New("downloader: torrent url is required")
+		return nil, errors.New("taskruntime: torrent url is required")
 	}
 
 	candidate, code, identity, err := s.resolveManualTorrent(ctx, torrentURL)
@@ -649,15 +649,15 @@ func (s *Service) AddTorrentContext(ctx context.Context, req AddTorrentRequest) 
 	refreshTaskStageFields(task)
 
 	if err := s.store.Create(ctx, task); err != nil {
-		logging.Errorf("downloader: create manual task failed for url %q: %v", torrentURL, err)
+		logging.Errorf("taskruntime: create manual task failed for url %q: %v", torrentURL, err)
 		return nil, fmt.Errorf("create task: %w", err)
 	}
-	logging.Infof("downloader: created %s task %s for url %q", strings.ToLower(string(source)), task.ID, torrentURL)
+	logging.Infof("taskruntime: created %s task %s for url %q", strings.ToLower(string(source)), task.ID, torrentURL)
 
 	if err := s.submitTaskTorrent(ctx, task, torrentURL, req.SavePath, req.Category, req.Tags, req.Paused); err != nil {
 		return task, err
 	}
-	logging.Infof("downloader: %s task %s added to qBittorrent", strings.ToLower(string(source)), task.ID)
+	logging.Infof("taskruntime: %s task %s added to qBittorrent", strings.ToLower(string(source)), task.ID)
 
 	return task, nil
 }
@@ -680,7 +680,7 @@ func (s *Service) submitTaskTorrent(ctx context.Context, task *Task, torrentURL 
 	if err := s.qbt.AddNewTorrent(ctx, addOptions); err != nil {
 		blockTask(task, TaskStageErrorTorrentSubmit, err.Error(), s.now().UTC())
 		_ = s.store.Update(ctx, task)
-		logging.Errorf("downloader: add torrent failed for task %s: %v", task.ID, err)
+		logging.Errorf("taskruntime: add torrent failed for task %s: %v", task.ID, err)
 		return fmt.Errorf("add torrent: %w", err)
 	}
 
@@ -688,7 +688,7 @@ func (s *Service) submitTaskTorrent(ctx context.Context, task *Task, torrentURL 
 	clearTaskStageError(task)
 	task.UpdatedAt = s.now().UTC()
 	if err := s.store.Update(ctx, task); err != nil {
-		logging.Errorf("downloader: persist task %s failed after qB submit: %v", task.ID, err)
+		logging.Errorf("taskruntime: persist task %s failed after qB submit: %v", task.ID, err)
 		return fmt.Errorf("update task: %w", err)
 	}
 	return nil
@@ -860,12 +860,12 @@ func NewMemoryTaskStore() *MemoryTaskStore {
 
 func (s *MemoryTaskStore) Create(_ context.Context, task *Task) error {
 	if task == nil {
-		return errors.New("downloader: task is nil")
+		return errors.New("taskruntime: task is nil")
 	}
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	if _, exists := s.tasks[task.ID]; exists {
-		return fmt.Errorf("downloader: task %q already exists", task.ID)
+		return fmt.Errorf("taskruntime: task %q already exists", task.ID)
 	}
 	s.tasks[task.ID] = cloneTask(task)
 	return nil
@@ -873,12 +873,12 @@ func (s *MemoryTaskStore) Create(_ context.Context, task *Task) error {
 
 func (s *MemoryTaskStore) Update(_ context.Context, task *Task) error {
 	if task == nil {
-		return errors.New("downloader: task is nil")
+		return errors.New("taskruntime: task is nil")
 	}
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	if _, exists := s.tasks[task.ID]; !exists {
-		return fmt.Errorf("downloader: task %q not found", task.ID)
+		return fmt.Errorf("taskruntime: task %q not found", task.ID)
 	}
 	s.tasks[task.ID] = cloneTask(task)
 	return nil
@@ -889,7 +889,7 @@ func (s *MemoryTaskStore) Find(_ context.Context, id string) (*Task, error) {
 	defer s.mu.RUnlock()
 	task, exists := s.tasks[id]
 	if !exists {
-		return nil, fmt.Errorf("downloader: task %q not found", id)
+		return nil, fmt.Errorf("taskruntime: task %q not found", id)
 	}
 	return cloneTask(task), nil
 }
@@ -958,7 +958,7 @@ func (s *MemoryTaskStore) Delete(_ context.Context, id string) (*Task, error) {
 
 	task, exists := s.tasks[id]
 	if !exists {
-		return nil, fmt.Errorf("downloader: task %q not found", id)
+		return nil, fmt.Errorf("taskruntime: task %q not found", id)
 	}
 	delete(s.tasks, id)
 	return cloneTask(task), nil
@@ -1001,22 +1001,22 @@ func (osFileOperator) Transfer(ctx context.Context, sourcePath string, action st
 		return err
 	}
 	if strings.TrimSpace(sourcePath) == "" {
-		return errors.New("downloader: source path is required for file transfer")
+		return errors.New("taskruntime: source path is required for file transfer")
 	}
 	if strings.TrimSpace(targetPath) == "" {
-		return errors.New("downloader: target path is required for file transfer")
+		return errors.New("taskruntime: target path is required for file transfer")
 	}
 	if _, err := os.Stat(targetPath); err == nil {
-		return fmt.Errorf("downloader: transfer target already exists: %s", targetPath)
+		return fmt.Errorf("taskruntime: transfer target already exists: %s", targetPath)
 	} else if !errors.Is(err, os.ErrNotExist) {
-		return fmt.Errorf("downloader: stat transfer target %q: %w", targetPath, err)
+		return fmt.Errorf("taskruntime: stat transfer target %q: %w", targetPath, err)
 	}
 	if err := os.MkdirAll(filepath.Dir(targetPath), 0o755); err != nil {
-		return fmt.Errorf("downloader: create transfer target dir for %q: %w", targetPath, err)
+		return fmt.Errorf("taskruntime: create transfer target dir for %q: %w", targetPath, err)
 	}
 	sourceInfo, err := os.Stat(sourcePath)
 	if err != nil {
-		return fmt.Errorf("downloader: stat transfer source %q: %w", sourcePath, err)
+		return fmt.Errorf("taskruntime: stat transfer source %q: %w", sourcePath, err)
 	}
 
 	switch action {
@@ -1029,14 +1029,14 @@ func (osFileOperator) Transfer(ctx context.Context, sourcePath string, action st
 		if err := os.Rename(sourcePath, targetPath); err == nil {
 			return nil
 		} else if !isCrossDeviceError(err) {
-			return fmt.Errorf("downloader: move %q -> %q: %w", sourcePath, targetPath, err)
+			return fmt.Errorf("taskruntime: move %q -> %q: %w", sourcePath, targetPath, err)
 		}
 		if sourceInfo.IsDir() {
 			if err := copyDir(ctx, sourcePath, targetPath); err != nil {
 				return err
 			}
 			if err := os.RemoveAll(sourcePath); err != nil {
-				return fmt.Errorf("downloader: remove transferred source %q: %w", sourcePath, err)
+				return fmt.Errorf("taskruntime: remove transferred source %q: %w", sourcePath, err)
 			}
 			return nil
 		}
@@ -1044,22 +1044,22 @@ func (osFileOperator) Transfer(ctx context.Context, sourcePath string, action st
 			return err
 		}
 		if err := os.Remove(sourcePath); err != nil {
-			return fmt.Errorf("downloader: remove transferred source %q: %w", sourcePath, err)
+			return fmt.Errorf("taskruntime: remove transferred source %q: %w", sourcePath, err)
 		}
 		return nil
 	case stashsync.TransferActionSymlink:
 		if err := os.Symlink(sourcePath, targetPath); err != nil {
-			return fmt.Errorf("downloader: symlink %q -> %q: %w", targetPath, sourcePath, err)
+			return fmt.Errorf("taskruntime: symlink %q -> %q: %w", targetPath, sourcePath, err)
 		}
 		return nil
 	default:
-		return fmt.Errorf("downloader: unsupported transfer action %q", action)
+		return fmt.Errorf("taskruntime: unsupported transfer action %q", action)
 	}
 }
 
 func copyDir(ctx context.Context, sourcePath string, targetPath string) error {
 	if err := os.MkdirAll(targetPath, 0o755); err != nil {
-		return fmt.Errorf("downloader: create transfer target dir %q: %w", targetPath, err)
+		return fmt.Errorf("taskruntime: create transfer target dir %q: %w", targetPath, err)
 	}
 	return filepath.Walk(sourcePath, func(current string, info os.FileInfo, err error) error {
 		if err != nil {
@@ -1078,12 +1078,12 @@ func copyDir(ctx context.Context, sourcePath string, targetPath string) error {
 		destination := filepath.Join(targetPath, relative)
 		if info.IsDir() {
 			if err := os.MkdirAll(destination, info.Mode()); err != nil {
-				return fmt.Errorf("downloader: create transfer target dir %q: %w", destination, err)
+				return fmt.Errorf("taskruntime: create transfer target dir %q: %w", destination, err)
 			}
 			return nil
 		}
 		if err := os.MkdirAll(filepath.Dir(destination), 0o755); err != nil {
-			return fmt.Errorf("downloader: create transfer target dir for %q: %w", destination, err)
+			return fmt.Errorf("taskruntime: create transfer target dir for %q: %w", destination, err)
 		}
 		return copyFile(ctx, current, destination)
 	})
@@ -1092,21 +1092,21 @@ func copyDir(ctx context.Context, sourcePath string, targetPath string) error {
 func copyFile(ctx context.Context, sourcePath string, targetPath string) error {
 	source, err := os.Open(sourcePath)
 	if err != nil {
-		return fmt.Errorf("downloader: open transfer source %q: %w", sourcePath, err)
+		return fmt.Errorf("taskruntime: open transfer source %q: %w", sourcePath, err)
 	}
 	defer source.Close()
 
 	target, err := os.OpenFile(targetPath, os.O_CREATE|os.O_EXCL|os.O_WRONLY, 0o644)
 	if err != nil {
-		return fmt.Errorf("downloader: create transfer target %q: %w", targetPath, err)
+		return fmt.Errorf("taskruntime: create transfer target %q: %w", targetPath, err)
 	}
 	defer target.Close()
 
 	if _, err := io.Copy(target, &contextReader{ctx: ctx, reader: source}); err != nil {
-		return fmt.Errorf("downloader: copy %q -> %q: %w", sourcePath, targetPath, err)
+		return fmt.Errorf("taskruntime: copy %q -> %q: %w", sourcePath, targetPath, err)
 	}
 	if err := target.Close(); err != nil {
-		return fmt.Errorf("downloader: finalize transfer target %q: %w", targetPath, err)
+		return fmt.Errorf("taskruntime: finalize transfer target %q: %w", targetPath, err)
 	}
 	return nil
 }

@@ -5,14 +5,14 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/leothevan2444/moji/internal/downloader"
+	"github.com/leothevan2444/moji/internal/taskruntime"
 )
 
-type fakeDownloader struct {
-	addRequest      downloader.AddTorrentRequest
-	downloadRequest downloader.DownloadRequest
-	addTask         *downloader.Task
-	downloadTask    *downloader.Task
+type fakeTaskRuntime struct {
+	addRequest      taskruntime.AddTorrentRequest
+	downloadRequest taskruntime.DownloadRequest
+	addTask         *taskruntime.Task
+	downloadTask    *taskruntime.Task
 	err             error
 }
 
@@ -23,7 +23,7 @@ type fakeDiscoveredSceneResolver struct {
 	endpoint string
 }
 
-func (f *fakeDownloader) AddTorrentContext(_ context.Context, req downloader.AddTorrentRequest) (*downloader.Task, error) {
+func (f *fakeTaskRuntime) AddTorrentContext(_ context.Context, req taskruntime.AddTorrentRequest) (*taskruntime.Task, error) {
 	f.addRequest = req
 	if f.err != nil {
 		return nil, f.err
@@ -31,7 +31,7 @@ func (f *fakeDownloader) AddTorrentContext(_ context.Context, req downloader.Add
 	return f.addTask, nil
 }
 
-func (f *fakeDownloader) DownloadMediaContext(_ context.Context, req downloader.DownloadRequest) (*downloader.Task, error) {
+func (f *fakeTaskRuntime) DownloadMediaContext(_ context.Context, req taskruntime.DownloadRequest) (*taskruntime.Task, error) {
 	f.downloadRequest = req
 	if f.err != nil {
 		return nil, f.err
@@ -49,7 +49,7 @@ func (f *fakeDiscoveredSceneResolver) ResolveDiscoveredScene(_ context.Context, 
 }
 
 func TestCreateFromManualTorrentUsesManualSource(t *testing.T) {
-	dl := &fakeDownloader{addTask: &downloader.Task{ID: "task-1"}}
+	dl := &fakeTaskRuntime{addTask: &taskruntime.Task{ID: "task-1"}}
 	service := NewService(dl)
 	paused := true
 
@@ -66,7 +66,7 @@ func TestCreateFromManualTorrentUsesManualSource(t *testing.T) {
 	if task == nil || task.ID != "task-1" {
 		t.Fatalf("unexpected task: %+v", task)
 	}
-	if dl.addRequest.Source != downloader.TaskSourceManual {
+	if dl.addRequest.Source != taskruntime.TaskSourceManual {
 		t.Fatalf("unexpected source: %s", dl.addRequest.Source)
 	}
 	if dl.addRequest.URL != "magnet:?xt=urn:btih:test" {
@@ -78,7 +78,7 @@ func TestCreateFromManualTorrentUsesManualSource(t *testing.T) {
 }
 
 func TestCreateFromSearchCodeUsesManualSource(t *testing.T) {
-	dl := &fakeDownloader{downloadTask: &downloader.Task{ID: "task-2"}}
+	dl := &fakeTaskRuntime{downloadTask: &taskruntime.Task{ID: "task-2"}}
 	service := NewService(dl)
 	paused := true
 
@@ -98,7 +98,7 @@ func TestCreateFromSearchCodeUsesManualSource(t *testing.T) {
 	if task == nil || task.ID != "task-2" {
 		t.Fatalf("unexpected task: %+v", task)
 	}
-	if dl.downloadRequest.Source != downloader.TaskSourceManual {
+	if dl.downloadRequest.Source != taskruntime.TaskSourceManual {
 		t.Fatalf("unexpected source: %s", dl.downloadRequest.Source)
 	}
 	if dl.downloadRequest.Code != "ABCD-123" || dl.downloadRequest.Limit != 5 {
@@ -107,7 +107,7 @@ func TestCreateFromSearchCodeUsesManualSource(t *testing.T) {
 }
 
 func TestCreateFromDiscoveredSceneUsesSearchSource(t *testing.T) {
-	dl := &fakeDownloader{downloadTask: &downloader.Task{ID: "task-3"}}
+	dl := &fakeTaskRuntime{downloadTask: &taskruntime.Task{ID: "task-3"}}
 	service := NewService(dl)
 
 	task, err := service.CreateFromDiscoveredScene(context.Background(), CreateFromDiscoveredSceneInput{
@@ -120,7 +120,7 @@ func TestCreateFromDiscoveredSceneUsesSearchSource(t *testing.T) {
 	if task == nil || task.ID != "task-3" {
 		t.Fatalf("unexpected task: %+v", task)
 	}
-	if dl.downloadRequest.Source != downloader.TaskSourceSearch {
+	if dl.downloadRequest.Source != taskruntime.TaskSourceSearch {
 		t.Fatalf("unexpected source: %s", dl.downloadRequest.Source)
 	}
 	if dl.downloadRequest.Code != "ABCD-123" {
@@ -129,7 +129,7 @@ func TestCreateFromDiscoveredSceneUsesSearchSource(t *testing.T) {
 }
 
 func TestCreateFromDiscoveredSceneRefUsesResolver(t *testing.T) {
-	dl := &fakeDownloader{downloadTask: &downloader.Task{ID: "task-5"}}
+	dl := &fakeTaskRuntime{downloadTask: &taskruntime.Task{ID: "task-5"}}
 	resolver := &fakeDiscoveredSceneResolver{
 		resolved: ResolvedScene{Code: "ABCD-321", Title: "ignored"},
 	}
@@ -149,13 +149,13 @@ func TestCreateFromDiscoveredSceneRefUsesResolver(t *testing.T) {
 	if resolver.sceneID != "scene-1" || resolver.endpoint != "https://box.example/graphql" {
 		t.Fatalf("unexpected resolver call: %+v", resolver)
 	}
-	if dl.downloadRequest.Source != downloader.TaskSourceSearch || dl.downloadRequest.Code != "ABCD-321" {
+	if dl.downloadRequest.Source != taskruntime.TaskSourceSearch || dl.downloadRequest.Code != "ABCD-321" {
 		t.Fatalf("unexpected request: %+v", dl.downloadRequest)
 	}
 }
 
 func TestCreateFromSubscriptionReleaseUsesCode(t *testing.T) {
-	dl := &fakeDownloader{downloadTask: &downloader.Task{ID: "task-4"}}
+	dl := &fakeTaskRuntime{downloadTask: &taskruntime.Task{ID: "task-4"}}
 	service := NewService(dl)
 
 	task, err := service.CreateFromSubscriptionRelease(context.Background(), CreateFromSubscriptionReleaseInput{
@@ -167,7 +167,7 @@ func TestCreateFromSubscriptionReleaseUsesCode(t *testing.T) {
 	if task == nil || task.ID != "task-4" {
 		t.Fatalf("unexpected task: %+v", task)
 	}
-	if dl.downloadRequest.Source != downloader.TaskSourceSubscription {
+	if dl.downloadRequest.Source != taskruntime.TaskSourceSubscription {
 		t.Fatalf("unexpected source: %s", dl.downloadRequest.Source)
 	}
 	if dl.downloadRequest.Code != "SSIS-001" {
@@ -176,7 +176,7 @@ func TestCreateFromSubscriptionReleaseUsesCode(t *testing.T) {
 }
 
 func TestCreateFromSubscriptionReleaseRejectsMissingCode(t *testing.T) {
-	service := NewService(&fakeDownloader{})
+	service := NewService(&fakeTaskRuntime{})
 
 	task, err := service.CreateFromSubscriptionRelease(context.Background(), CreateFromSubscriptionReleaseInput{})
 	if err == nil || err.Error() != "task code is required" {
@@ -184,11 +184,11 @@ func TestCreateFromSubscriptionReleaseRejectsMissingCode(t *testing.T) {
 	}
 }
 
-func TestCreateFromSearchCodePropagatesDownloaderErrors(t *testing.T) {
-	service := NewService(&fakeDownloader{err: errors.New("boom")})
+func TestCreateFromSearchCodePropagatesTaskRuntimeErrors(t *testing.T) {
+	service := NewService(&fakeTaskRuntime{err: errors.New("boom")})
 
 	_, err := service.CreateFromSearchCode(context.Background(), CreateFromSearchCodeInput{Code: "ABCD-123"})
 	if err == nil || err.Error() != "boom" {
-		t.Fatalf("expected downloader error, got %v", err)
+		t.Fatalf("expected taskRuntime error, got %v", err)
 	}
 }

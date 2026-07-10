@@ -25,7 +25,7 @@ func (r *mutationResolver) QbittorrentAdd(ctx context.Context, input model.QBitt
 // AddTorrent is the resolver for the addTorrent field.
 func (r *mutationResolver) AddTorrent(ctx context.Context, input model.QBittorrentAddInput) (*model.Task, error) {
 	if r.TaskFlow == nil {
-		return nil, errors.New("downloader is not configured")
+		return nil, errors.New("task runtime is not configured")
 	}
 
 	req := taskflow.CreateFromManualTorrentInput{
@@ -52,7 +52,7 @@ func (r *mutationResolver) AddTorrent(ctx context.Context, input model.QBittorre
 // DownloadMedia is the resolver for the downloadMedia field.
 func (r *mutationResolver) DownloadMedia(ctx context.Context, input model.DownloadMediaInput) (*model.Task, error) {
 	if r.TaskFlow == nil {
-		return nil, errors.New("downloader is not configured")
+		return nil, errors.New("task runtime is not configured")
 	}
 
 	req := taskflow.CreateFromSearchCodeInput{
@@ -83,11 +83,11 @@ func (r *mutationResolver) DownloadMedia(ctx context.Context, input model.Downlo
 
 // SyncTaskProgress is the resolver for the syncTaskProgress field.
 func (r *mutationResolver) SyncTaskProgress(ctx context.Context) ([]*model.Task, error) {
-	if r.Downloader == nil {
-		return nil, errors.New("downloader is not configured")
+	if r.TaskRuntime == nil {
+		return nil, errors.New("task runtime is not configured")
 	}
 
-	tasks, err := r.Downloader.SyncProgress(ctx)
+	tasks, err := r.TaskRuntime.SyncProgress(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -100,14 +100,14 @@ func (r *mutationResolver) SyncTaskProgress(ctx context.Context) ([]*model.Task,
 
 // TriggerTaskStashScan is the resolver for the triggerTaskStashScan field.
 func (r *mutationResolver) TriggerTaskStashScan(ctx context.Context, id string) (*model.Task, error) {
-	if r.Downloader == nil {
-		return nil, errors.New("downloader is not configured")
+	if r.TaskRuntime == nil {
+		return nil, errors.New("task runtime is not configured")
 	}
 	if r.Stash == nil {
 		return nil, errors.New("stash client is not configured")
 	}
 
-	task, err := r.Downloader.TriggerTaskStashScan(ctx, id, r.Stash)
+	task, err := r.TaskRuntime.TriggerTaskStashScan(ctx, id, r.Stash)
 	if task != nil {
 		return taskToModel(task), err
 	}
@@ -116,14 +116,14 @@ func (r *mutationResolver) TriggerTaskStashScan(ctx context.Context, id string) 
 
 // TriggerStashScans is the resolver for the triggerStashScans field.
 func (r *mutationResolver) TriggerStashScans(ctx context.Context) ([]*model.Task, error) {
-	if r.Downloader == nil {
-		return nil, errors.New("downloader is not configured")
+	if r.TaskRuntime == nil {
+		return nil, errors.New("task runtime is not configured")
 	}
 	if r.Stash == nil {
 		return nil, errors.New("stash client is not configured")
 	}
 
-	tasks, err := r.Downloader.TriggerStashScans(ctx, r.Stash)
+	tasks, err := r.TaskRuntime.TriggerStashScans(ctx, r.Stash)
 	if err != nil {
 		return nil, err
 	}
@@ -136,10 +136,10 @@ func (r *mutationResolver) TriggerStashScans(ctx context.Context) ([]*model.Task
 
 // RetryTask is the resolver for the retryTask field.
 func (r *mutationResolver) RetryTask(ctx context.Context, id string) (*model.Task, error) {
-	if r.Downloader == nil {
-		return nil, errors.New("downloader is not configured")
+	if r.TaskRuntime == nil {
+		return nil, errors.New("task runtime is not configured")
 	}
-	task, err := r.Downloader.RetryTask(ctx, id, r.Stash)
+	task, err := r.TaskRuntime.RetryTask(ctx, id, r.Stash)
 	if task != nil {
 		return taskToModel(task), err
 	}
@@ -148,11 +148,11 @@ func (r *mutationResolver) RetryTask(ctx context.Context, id string) (*model.Tas
 
 // DeleteTask is the resolver for the deleteTask field.
 func (r *mutationResolver) DeleteTask(ctx context.Context, id string) (*model.Task, error) {
-	if r.Downloader == nil {
-		return nil, errors.New("downloader is not configured")
+	if r.TaskRuntime == nil {
+		return nil, errors.New("task runtime is not configured")
 	}
 
-	task, err := r.Downloader.DeleteTask(ctx, id)
+	task, err := r.TaskRuntime.DeleteTask(ctx, id)
 	if task != nil {
 		return taskToModel(task), err
 	}
@@ -184,11 +184,11 @@ func (r *queryResolver) QbittorrentTorrents(ctx context.Context, limit *int) ([]
 
 // Task is the resolver for the task field.
 func (r *queryResolver) Task(ctx context.Context, id string) (*model.Task, error) {
-	if r.Downloader == nil {
+	if r.TaskRuntime == nil {
 		return nil, nil
 	}
 
-	task, err := r.Downloader.FindTask(ctx, id)
+	task, err := r.TaskRuntime.FindTask(ctx, id)
 	if err != nil {
 		return nil, err
 	}
@@ -197,11 +197,11 @@ func (r *queryResolver) Task(ctx context.Context, id string) (*model.Task, error
 
 // Tasks is the resolver for the tasks field.
 func (r *queryResolver) Tasks(ctx context.Context) ([]*model.Task, error) {
-	if r.Downloader == nil {
+	if r.TaskRuntime == nil {
 		return []*model.Task{}, nil
 	}
 
-	tasks, err := r.Downloader.ListTasks(ctx)
+	tasks, err := r.TaskRuntime.ListTasks(ctx)
 	if err != nil {
 		return nil, err
 	}

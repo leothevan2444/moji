@@ -10,23 +10,23 @@ import (
 	"time"
 
 	"github.com/99designs/gqlgen/graphql/handler"
-	"github.com/leothevan2444/moji/internal/downloader"
 	"github.com/leothevan2444/moji/internal/graphqlapi/generated"
 	"github.com/leothevan2444/moji/internal/logging"
 	"github.com/leothevan2444/moji/internal/stashsync"
 	"github.com/leothevan2444/moji/internal/subscription"
+	"github.com/leothevan2444/moji/internal/taskruntime"
 	"github.com/leothevan2444/moji/pkg/jackett"
 )
 
 func TestDownloadMediaCreatesTask(t *testing.T) {
-	downloader := &fakeDownloader{
-		downloadTask: &downloader.Task{
+	taskRuntime := &fakeTaskRuntime{
+		downloadTask: &taskruntime.Task{
 			ID:          "task-1",
 			Code:        "ABCD-123",
-			Stage:       downloader.TaskStageDownloading,
-			StageStatus: downloader.TaskStageStatusRunning,
+			Stage:       taskruntime.TaskStageDownloading,
+			StageStatus: taskruntime.TaskStageStatusRunning,
 			TorrentURL:  "magnet:?xt=urn:btih:test",
-			Candidate: downloader.Candidate{
+			Candidate: taskruntime.Candidate{
 				Title:   "ABCD-123",
 				Tracker: "demo",
 				Seeders: 5,
@@ -35,7 +35,7 @@ func TestDownloadMediaCreatesTask(t *testing.T) {
 			UpdatedAt: time.Unix(200, 0).UTC(),
 		},
 	}
-	resolver := NewResolver(nil, nil, downloader, nil, "test-version")
+	resolver := NewResolver(nil, nil, taskRuntime, nil, "test-version")
 
 	resp := executeGraphQL(t, resolver, `mutation {
 		downloadMedia(input: { code: "ABCD-123", limit: 1 }) {
@@ -55,23 +55,23 @@ func TestDownloadMediaCreatesTask(t *testing.T) {
 	if task.ID != "task-1" || task.Code != "ABCD-123" || task.Stage != "DOWNLOADING" || task.StageStatus != "RUNNING" || task.Candidate.Title != "ABCD-123" {
 		t.Fatalf("unexpected download task response: %+v", task)
 	}
-	if downloader.downloadRequest.Code != "ABCD-123" || downloader.downloadRequest.Limit != 1 {
-		t.Fatalf("unexpected download request: %+v", downloader.downloadRequest)
+	if taskRuntime.downloadRequest.Code != "ABCD-123" || taskRuntime.downloadRequest.Limit != 1 {
+		t.Fatalf("unexpected download request: %+v", taskRuntime.downloadRequest)
 	}
-	if string(downloader.downloadRequest.Source) != "MANUAL" {
-		t.Fatalf("expected manual task source, got %+v", downloader.downloadRequest)
+	if string(taskRuntime.downloadRequest.Source) != "MANUAL" {
+		t.Fatalf("expected manual task source, got %+v", taskRuntime.downloadRequest)
 	}
 }
 
 func TestAddTorrentCreatesTask(t *testing.T) {
-	downloader := &fakeDownloader{
-		addTask: &downloader.Task{
+	taskRuntime := &fakeTaskRuntime{
+		addTask: &taskruntime.Task{
 			ID:          "task-manual",
 			Code:        "ABCD-123",
-			Stage:       downloader.TaskStageDownloading,
-			StageStatus: downloader.TaskStageStatusRunning,
+			Stage:       taskruntime.TaskStageDownloading,
+			StageStatus: taskruntime.TaskStageStatusRunning,
 			TorrentURL:  "magnet:?xt=urn:btih:manual",
-			Candidate: downloader.Candidate{
+			Candidate: taskruntime.Candidate{
 				Title:     "magnet:?xt=urn:btih:manual",
 				MagnetURI: "magnet:?xt=urn:btih:manual",
 			},
@@ -79,7 +79,7 @@ func TestAddTorrentCreatesTask(t *testing.T) {
 			UpdatedAt: time.Unix(200, 0).UTC(),
 		},
 	}
-	resolver := NewResolver(nil, nil, downloader, nil, "test-version")
+	resolver := NewResolver(nil, nil, taskRuntime, nil, "test-version")
 
 	resp := executeGraphQL(t, resolver, `mutation {
 		addTorrent(input: { url: "magnet:?xt=urn:btih:manual", category: "moji" }) {
@@ -97,22 +97,22 @@ func TestAddTorrentCreatesTask(t *testing.T) {
 	if resp.Data.AddTorrent.ID != "task-manual" || resp.Data.AddTorrent.Code != "ABCD-123" || resp.Data.AddTorrent.Stage != "DOWNLOADING" || resp.Data.AddTorrent.StageStatus != "RUNNING" {
 		t.Fatalf("unexpected add torrent response: %+v", resp.Data.AddTorrent)
 	}
-	if downloader.addRequest.URL != "magnet:?xt=urn:btih:manual" || downloader.addRequest.Category != "moji" {
-		t.Fatalf("unexpected add torrent request: %+v", downloader.addRequest)
+	if taskRuntime.addRequest.URL != "magnet:?xt=urn:btih:manual" || taskRuntime.addRequest.Category != "moji" {
+		t.Fatalf("unexpected add torrent request: %+v", taskRuntime.addRequest)
 	}
-	if string(downloader.addRequest.Source) != "MANUAL" {
-		t.Fatalf("expected manual task source, got %+v", downloader.addRequest)
+	if string(taskRuntime.addRequest.Source) != "MANUAL" {
+		t.Fatalf("expected manual task source, got %+v", taskRuntime.addRequest)
 	}
 }
 
 func TestPreviewJackettSelectionReturnsPreviewedResults(t *testing.T) {
-	downloader := &fakeDownloader{
-		previewSelection: &downloader.CandidateSelectionPreview{
+	taskRuntime := &fakeTaskRuntime{
+		previewSelection: &taskruntime.CandidateSelectionPreview{
 			Results: []jackett.SearchResult{
 				{Title: "preferred", TrackerID: "alpha", Link: "https://example.test/a.torrent"},
 				{Title: "fallback", TrackerID: "beta", Link: "https://example.test/b.torrent"},
 			},
-			Meta: downloader.CandidateSelectionPreviewMeta{
+			Meta: taskruntime.CandidateSelectionPreviewMeta{
 				AppliedFastRules: true,
 				AppliedFileRules: false,
 				InspectedCount:   0,
@@ -120,7 +120,7 @@ func TestPreviewJackettSelectionReturnsPreviewedResults(t *testing.T) {
 			},
 		},
 	}
-	resolver := NewResolver(nil, nil, downloader, nil, "test-version")
+	resolver := NewResolver(nil, nil, taskRuntime, nil, "test-version")
 
 	resp := executeGraphQL(t, resolver, `query {
 		previewJackettSelection(input: {
@@ -166,8 +166,8 @@ func TestPreviewJackettSelectionReturnsPreviewedResults(t *testing.T) {
 	if len(resp.Errors) > 0 {
 		t.Fatalf("expected no errors, got %+v", resp.Errors)
 	}
-	if downloader.previewRequest.Query != "ABCD-123" || !downloader.previewRequest.ApplyFastRules || downloader.previewRequest.ApplyFileRules {
-		t.Fatalf("unexpected preview request: %+v", downloader.previewRequest)
+	if taskRuntime.previewRequest.Query != "ABCD-123" || !taskRuntime.previewRequest.ApplyFastRules || taskRuntime.previewRequest.ApplyFileRules {
+		t.Fatalf("unexpected preview request: %+v", taskRuntime.previewRequest)
 	}
 	if len(resp.Data.PreviewJackettSelection.Results) != 2 || resp.Data.PreviewJackettSelection.Results[0].Title != "preferred" {
 		t.Fatalf("unexpected preview response: %+v", resp.Data.PreviewJackettSelection)
@@ -178,17 +178,17 @@ func TestPreviewJackettSelectionReturnsPreviewedResults(t *testing.T) {
 }
 
 func TestDeprecatedQBittorrentAddCreatesTask(t *testing.T) {
-	downloader := &fakeDownloader{
-		addTask: &downloader.Task{
+	taskRuntime := &fakeTaskRuntime{
+		addTask: &taskruntime.Task{
 			ID:          "task-manual",
-			Stage:       downloader.TaskStageDownloading,
-			StageStatus: downloader.TaskStageStatusRunning,
+			Stage:       taskruntime.TaskStageDownloading,
+			StageStatus: taskruntime.TaskStageStatusRunning,
 			TorrentURL:  "magnet:?xt=urn:btih:manual",
 			CreatedAt:   time.Unix(100, 0).UTC(),
 			UpdatedAt:   time.Unix(200, 0).UTC(),
 		},
 	}
-	resolver := NewResolver(nil, nil, downloader, nil, "test-version")
+	resolver := NewResolver(nil, nil, taskRuntime, nil, "test-version")
 
 	resp := executeGraphQL(t, resolver, `mutation {
 		qbittorrentAdd(input: { url: "magnet:?xt=urn:btih:manual" })
@@ -200,19 +200,19 @@ func TestDeprecatedQBittorrentAddCreatesTask(t *testing.T) {
 	if !resp.Data.QbittorrentAdd {
 		t.Fatal("expected qbittorrentAdd to return true")
 	}
-	if downloader.addRequest.URL != "magnet:?xt=urn:btih:manual" {
-		t.Fatalf("unexpected add torrent request: %+v", downloader.addRequest)
+	if taskRuntime.addRequest.URL != "magnet:?xt=urn:btih:manual" {
+		t.Fatalf("unexpected add torrent request: %+v", taskRuntime.addRequest)
 	}
 }
 
 func TestTasksQueryListsTasks(t *testing.T) {
-	downloader := &fakeDownloader{
-		listTasks: []*downloader.Task{
-			{ID: "task-2", Code: "BBBB-222", Stage: downloader.TaskStageDownloading, StageStatus: downloader.TaskStageStatusRunning, CreatedAt: time.Unix(200, 0).UTC(), UpdatedAt: time.Unix(200, 0).UTC()},
-			{ID: "task-1", Code: "AAAA-111", Stage: downloader.TaskStageDownloading, StageStatus: downloader.TaskStageStatusBlocked, CreatedAt: time.Unix(100, 0).UTC(), UpdatedAt: time.Unix(100, 0).UTC()},
+	taskRuntime := &fakeTaskRuntime{
+		listTasks: []*taskruntime.Task{
+			{ID: "task-2", Code: "BBBB-222", Stage: taskruntime.TaskStageDownloading, StageStatus: taskruntime.TaskStageStatusRunning, CreatedAt: time.Unix(200, 0).UTC(), UpdatedAt: time.Unix(200, 0).UTC()},
+			{ID: "task-1", Code: "AAAA-111", Stage: taskruntime.TaskStageDownloading, StageStatus: taskruntime.TaskStageStatusBlocked, CreatedAt: time.Unix(100, 0).UTC(), UpdatedAt: time.Unix(100, 0).UTC()},
 		},
 	}
-	resolver := NewResolver(nil, nil, downloader, nil, "test-version")
+	resolver := NewResolver(nil, nil, taskRuntime, nil, "test-version")
 
 	resp := executeGraphQL(t, resolver, `{ tasks { id code stage } }`)
 	if len(resp.Errors) > 0 {
@@ -223,7 +223,7 @@ func TestTasksQueryListsTasks(t *testing.T) {
 	}
 }
 
-func TestTasksQueryWithoutDownloaderReturnsEmptyList(t *testing.T) {
+func TestTasksQueryWithoutTaskRuntimeReturnsEmptyList(t *testing.T) {
 	resolver := NewResolver(nil, nil, nil, nil, "test-version")
 
 	resp := executeGraphQL(t, resolver, `{ tasks { id } }`)
@@ -239,12 +239,12 @@ func TestTasksQueryWithoutDownloaderReturnsEmptyList(t *testing.T) {
 }
 
 func TestTasksQueryReturnsNullForUnsetOptionalFields(t *testing.T) {
-	downloader := &fakeDownloader{
-		listTasks: []*downloader.Task{
-			{ID: "task-1", Code: "AAAA-111", Stage: downloader.TaskStageSourcing, StageStatus: downloader.TaskStageStatusRunning, CreatedAt: time.Unix(100, 0).UTC(), UpdatedAt: time.Unix(100, 0).UTC()},
+	taskRuntime := &fakeTaskRuntime{
+		listTasks: []*taskruntime.Task{
+			{ID: "task-1", Code: "AAAA-111", Stage: taskruntime.TaskStageSourcing, StageStatus: taskruntime.TaskStageStatusRunning, CreatedAt: time.Unix(100, 0).UTC(), UpdatedAt: time.Unix(100, 0).UTC()},
 		},
 	}
-	resolver := NewResolver(nil, nil, downloader, nil, "test-version")
+	resolver := NewResolver(nil, nil, taskRuntime, nil, "test-version")
 
 	var resp struct {
 		Data struct {
@@ -273,8 +273,8 @@ func TestTasksQueryReturnsNullForUnsetOptionalFields(t *testing.T) {
 func TestQueuePerformerScenesMutationMapsBatchResult(t *testing.T) {
 	subscriptionService := &fakeSubscriptionService{
 		queuePerformerResult: subscription.QueuePerformerScenesResult{
-			QueuedTasks: []*downloader.Task{
-				{ID: "task-1", Source: downloader.TaskSourceSearch, Stage: downloader.TaskStageDownloading, StageStatus: downloader.TaskStageStatusRunning},
+			QueuedTasks: []*taskruntime.Task{
+				{ID: "task-1", Source: taskruntime.TaskSourceSearch, Stage: taskruntime.TaskStageDownloading, StageStatus: taskruntime.TaskStageStatusRunning},
 			},
 			Results: []subscription.QueuePerformerSceneResult{
 				{
@@ -282,7 +282,7 @@ func TestQueuePerformerScenesMutationMapsBatchResult(t *testing.T) {
 					Status:       subscription.QueuePerformerSceneStatusQueued,
 					ReasonCode:   "QUEUED",
 					Message:      "已创建下载任务",
-					Task:         &downloader.Task{ID: "task-1", Stage: downloader.TaskStageDownloading, StageStatus: downloader.TaskStageStatusRunning},
+					Task:         &taskruntime.Task{ID: "task-1", Stage: taskruntime.TaskStageDownloading, StageStatus: taskruntime.TaskStageStatusRunning},
 					ResolvedCode: "ABCD-123",
 				},
 				{
@@ -372,16 +372,16 @@ func TestQueuePerformerScenesMutationMapsBatchResult(t *testing.T) {
 }
 
 func TestDeleteTaskMutation(t *testing.T) {
-	downloader := &fakeDownloader{
-		deleteTask: &downloader.Task{
+	taskRuntime := &fakeTaskRuntime{
+		deleteTask: &taskruntime.Task{
 			ID:          "task-delete",
-			Stage:       downloader.TaskStagePendingIngest,
-			StageStatus: downloader.TaskStageStatusPending,
+			Stage:       taskruntime.TaskStagePendingIngest,
+			StageStatus: taskruntime.TaskStageStatusPending,
 			CreatedAt:   time.Unix(100, 0).UTC(),
 			UpdatedAt:   time.Unix(200, 0).UTC(),
 		},
 	}
-	resolver := NewResolver(nil, nil, downloader, nil, "test-version")
+	resolver := NewResolver(nil, nil, taskRuntime, nil, "test-version")
 
 	resp := executeGraphQL(t, resolver, `mutation {
 		deleteTask(id: "task-delete") {
@@ -393,8 +393,8 @@ func TestDeleteTaskMutation(t *testing.T) {
 	if len(resp.Errors) > 0 {
 		t.Fatalf("expected no errors, got %+v", resp.Errors)
 	}
-	if downloader.deleteTaskID != "task-delete" {
-		t.Fatalf("expected delete request for task-delete, got %q", downloader.deleteTaskID)
+	if taskRuntime.deleteTaskID != "task-delete" {
+		t.Fatalf("expected delete request for task-delete, got %q", taskRuntime.deleteTaskID)
 	}
 	if resp.Data.DeleteTask.ID != "task-delete" || resp.Data.DeleteTask.Stage != "PENDING_INGEST" {
 		t.Fatalf("unexpected delete task response: %+v", resp.Data.DeleteTask)
@@ -465,7 +465,7 @@ func TestLogsQueryReturnsRecentEntries(t *testing.T) {
 	}
 }
 
-func TestTaskQueryWithoutDownloaderReturnsNull(t *testing.T) {
+func TestTaskQueryWithoutTaskRuntimeReturnsNull(t *testing.T) {
 	resolver := NewResolver(nil, nil, nil, nil, "test-version")
 
 	resp := executeGraphQL(t, resolver, `{ task(id: "task-1") { id } }`)
@@ -478,13 +478,13 @@ func TestTaskQueryWithoutDownloaderReturnsNull(t *testing.T) {
 }
 
 func TestSyncTaskProgress(t *testing.T) {
-	downloader := &fakeDownloader{
-		syncTasks: []*downloader.Task{
+	taskRuntime := &fakeTaskRuntime{
+		syncTasks: []*taskruntime.Task{
 			{
 				ID:               "task-sync",
 				Code:             "ABCD-123",
-				Stage:            downloader.TaskStageDownloading,
-				StageStatus:      downloader.TaskStageStatusRunning,
+				Stage:            taskruntime.TaskStageDownloading,
+				StageStatus:      taskruntime.TaskStageStatusRunning,
 				TorrentHash:      "hash-sync",
 				TorrentName:      "ABCD-123",
 				Progress:         0.5,
@@ -495,7 +495,7 @@ func TestSyncTaskProgress(t *testing.T) {
 			},
 		},
 	}
-	resolver := NewResolver(nil, nil, downloader, nil, "test-version")
+	resolver := NewResolver(nil, nil, taskRuntime, nil, "test-version")
 
 	resp := executeGraphQL(t, resolver, `mutation {
 		syncTaskProgress {
@@ -521,12 +521,12 @@ func TestSyncTaskProgress(t *testing.T) {
 }
 
 func TestTriggerStashScans(t *testing.T) {
-	dl := &fakeDownloader{
-		stashTasks: []*downloader.Task{
+	dl := &fakeTaskRuntime{
+		stashTasks: []*taskruntime.Task{
 			{
 				ID:                 "task-stash",
-				Stage:              downloader.TaskStagePendingIngest,
-				StageStatus:        downloader.TaskStageStatusPending,
+				Stage:              taskruntime.TaskStagePendingIngest,
+				StageStatus:        taskruntime.TaskStageStatusPending,
 				StashScanJobID:     "job-1",
 				StashScanStartedAt: ptrTime(time.Unix(300, 0).UTC()),
 				CreatedAt:          time.Unix(100, 0).UTC(),
@@ -558,11 +558,11 @@ func TestTriggerStashScans(t *testing.T) {
 }
 
 func TestTriggerTaskStashScan(t *testing.T) {
-	dl := &fakeDownloader{
-		triggerTaskScanTask: &downloader.Task{
+	dl := &fakeTaskRuntime{
+		triggerTaskScanTask: &taskruntime.Task{
 			ID:             "task-single",
-			Stage:          downloader.TaskStagePendingIngest,
-			StageStatus:    downloader.TaskStageStatusPending,
+			Stage:          taskruntime.TaskStagePendingIngest,
+			StageStatus:    taskruntime.TaskStageStatusPending,
 			StashScanJobID: "job-single",
 			CreatedAt:      time.Unix(100, 0).UTC(),
 			UpdatedAt:      time.Unix(300, 0).UTC(),
@@ -589,22 +589,22 @@ func TestTriggerTaskStashScan(t *testing.T) {
 	}
 }
 
-func TestDownloadMediaRequiresDownloader(t *testing.T) {
+func TestDownloadMediaRequiresTaskRuntime(t *testing.T) {
 	resolver := NewResolver(nil, nil, nil, nil, "test-version")
 
 	resp := executeGraphQL(t, resolver, `mutation {
 		downloadMedia(input: { code: "ABCD-123" }) { id }
 	}`)
 	if len(resp.Errors) == 0 {
-		t.Fatal("expected downloader configuration error")
+		t.Fatal("expected taskRuntime configuration error")
 	}
-	if got := resp.Errors[0].Message; got != "downloader is not configured" {
+	if got := resp.Errors[0].Message; got != "task runtime is not configured" {
 		t.Fatalf("unexpected error: %q", got)
 	}
 }
 
 func TestTriggerStashScansRequiresStash(t *testing.T) {
-	resolver := NewResolver(nil, nil, &fakeDownloader{}, nil, "test-version")
+	resolver := NewResolver(nil, nil, &fakeTaskRuntime{}, nil, "test-version")
 
 	resp := executeGraphQL(t, resolver, `mutation {
 		triggerStashScans { id }
@@ -749,15 +749,15 @@ func TestSettingsQueryReturnsRuntimeSnapshot(t *testing.T) {
 }
 
 func TestDashboardStatsQueryAggregatesTasks(t *testing.T) {
-	downloader := &fakeDownloader{
-		listTasks: []*downloader.Task{
-			{ID: "task-1", Stage: downloader.TaskStageDownloading, StageStatus: downloader.TaskStageStatusRunning},
-			{ID: "task-2", Stage: downloader.TaskStageScanning, StageStatus: downloader.TaskStageStatusRunning, StashScanJobID: "job-2"},
-			{ID: "task-3", Stage: downloader.TaskStageDownloading, StageStatus: downloader.TaskStageStatusBlocked},
-			{ID: "task-4", Stage: downloader.TaskStageCompleted, StageStatus: downloader.TaskStageStatusDone},
+	taskRuntime := &fakeTaskRuntime{
+		listTasks: []*taskruntime.Task{
+			{ID: "task-1", Stage: taskruntime.TaskStageDownloading, StageStatus: taskruntime.TaskStageStatusRunning},
+			{ID: "task-2", Stage: taskruntime.TaskStageScanning, StageStatus: taskruntime.TaskStageStatusRunning, StashScanJobID: "job-2"},
+			{ID: "task-3", Stage: taskruntime.TaskStageDownloading, StageStatus: taskruntime.TaskStageStatusBlocked},
+			{ID: "task-4", Stage: taskruntime.TaskStageCompleted, StageStatus: taskruntime.TaskStageStatusDone},
 		},
 	}
-	resolver := NewResolver(nil, nil, downloader, nil, "test-version")
+	resolver := NewResolver(nil, nil, taskRuntime, nil, "test-version")
 
 	resp := executeGraphQL(t, resolver, `{
 		dashboardStats {
@@ -1091,65 +1091,65 @@ func TestUpdateQBittorrentSettingsRequiresEditor(t *testing.T) {
 	}
 }
 
-type fakeDownloader struct {
-	addRequest          downloader.AddTorrentRequest
-	downloadRequest     downloader.DownloadRequest
-	previewRequest      downloader.PreviewJackettSelectionRequest
-	addTask             *downloader.Task
-	downloadTask        *downloader.Task
-	previewSelection    *downloader.CandidateSelectionPreview
-	findTask            *downloader.Task
-	listTasks           []*downloader.Task
+type fakeTaskRuntime struct {
+	addRequest          taskruntime.AddTorrentRequest
+	downloadRequest     taskruntime.DownloadRequest
+	previewRequest      taskruntime.PreviewJackettSelectionRequest
+	addTask             *taskruntime.Task
+	downloadTask        *taskruntime.Task
+	previewSelection    *taskruntime.CandidateSelectionPreview
+	findTask            *taskruntime.Task
+	listTasks           []*taskruntime.Task
 	deleteTaskID        string
-	deleteTask          *downloader.Task
-	syncTasks           []*downloader.Task
-	stashTasks          []*downloader.Task
+	deleteTask          *taskruntime.Task
+	syncTasks           []*taskruntime.Task
+	stashTasks          []*taskruntime.Task
 	triggerTaskScanID   string
-	triggerTaskScanTask *downloader.Task
+	triggerTaskScanTask *taskruntime.Task
 }
 
-func (f *fakeDownloader) AddTorrentContext(_ context.Context, req downloader.AddTorrentRequest) (*downloader.Task, error) {
+func (f *fakeTaskRuntime) AddTorrentContext(_ context.Context, req taskruntime.AddTorrentRequest) (*taskruntime.Task, error) {
 	f.addRequest = req
 	return f.addTask, nil
 }
 
-func (f *fakeDownloader) DownloadMediaContext(_ context.Context, req downloader.DownloadRequest) (*downloader.Task, error) {
+func (f *fakeTaskRuntime) DownloadMediaContext(_ context.Context, req taskruntime.DownloadRequest) (*taskruntime.Task, error) {
 	f.downloadRequest = req
 	return f.downloadTask, nil
 }
 
-func (f *fakeDownloader) PreviewJackettSelectionContext(_ context.Context, req downloader.PreviewJackettSelectionRequest) (*downloader.CandidateSelectionPreview, error) {
+func (f *fakeTaskRuntime) PreviewJackettSelectionContext(_ context.Context, req taskruntime.PreviewJackettSelectionRequest) (*taskruntime.CandidateSelectionPreview, error) {
 	f.previewRequest = req
 	return f.previewSelection, nil
 }
 
-func (f *fakeDownloader) FindTask(_ context.Context, _ string) (*downloader.Task, error) {
+func (f *fakeTaskRuntime) FindTask(_ context.Context, _ string) (*taskruntime.Task, error) {
 	return f.findTask, nil
 }
 
-func (f *fakeDownloader) ListTasks(_ context.Context) ([]*downloader.Task, error) {
+func (f *fakeTaskRuntime) ListTasks(_ context.Context) ([]*taskruntime.Task, error) {
 	return f.listTasks, nil
 }
 
-func (f *fakeDownloader) DeleteTask(_ context.Context, id string) (*downloader.Task, error) {
+func (f *fakeTaskRuntime) DeleteTask(_ context.Context, id string) (*taskruntime.Task, error) {
 	f.deleteTaskID = id
 	return f.deleteTask, nil
 }
 
-func (f *fakeDownloader) RetryTask(_ context.Context, _ string, _ downloader.StashScanner) (*downloader.Task, error) {
+func (f *fakeTaskRuntime) RetryTask(_ context.Context, _ string, _ taskruntime.StashScanner) (*taskruntime.Task, error) {
 	return nil, nil
 }
 
-func (f *fakeDownloader) SyncProgress(_ context.Context) ([]*downloader.Task, error) {
+func (f *fakeTaskRuntime) SyncProgress(_ context.Context) ([]*taskruntime.Task, error) {
 	return f.syncTasks, nil
 }
 
-func (f *fakeDownloader) TriggerTaskStashScan(_ context.Context, id string, _ downloader.StashScanner) (*downloader.Task, error) {
+func (f *fakeTaskRuntime) TriggerTaskStashScan(_ context.Context, id string, _ taskruntime.StashScanner) (*taskruntime.Task, error) {
 	f.triggerTaskScanID = id
 	return f.triggerTaskScanTask, nil
 }
 
-func (f *fakeDownloader) TriggerStashScans(_ context.Context, _ downloader.StashScanner) ([]*downloader.Task, error) {
+func (f *fakeTaskRuntime) TriggerStashScans(_ context.Context, _ taskruntime.StashScanner) ([]*taskruntime.Task, error) {
 	return f.stashTasks, nil
 }
 
@@ -1453,7 +1453,7 @@ type fakeSubscriptionService struct {
 	discovered           subscription.DiscoverScenePage
 	detail               subscription.PerformerDetail
 	performerPage        subscription.PerformerScenePage
-	queueTask            *downloader.Task
+	queueTask            *taskruntime.Task
 	queuePerformerResult subscription.QueuePerformerScenesResult
 	queuePerformerID     string
 	queueSelections      []subscription.QueuePerformerSceneSelection
@@ -1478,7 +1478,7 @@ func (f *fakeSubscriptionService) SearchPreferredStashBoxScenes(context.Context,
 	return f.discovered, nil
 }
 
-func (f *fakeSubscriptionService) QueueDiscoveredScene(context.Context, string, string) (*downloader.Task, error) {
+func (f *fakeSubscriptionService) QueueDiscoveredScene(context.Context, string, string) (*taskruntime.Task, error) {
 	return f.queueTask, nil
 }
 

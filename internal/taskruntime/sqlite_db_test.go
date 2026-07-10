@@ -1,4 +1,4 @@
-package downloader
+package taskruntime
 
 import (
 	"context"
@@ -135,7 +135,7 @@ func TestOpenSQLiteDatabaseInitializesNewSchemaVersion(t *testing.T) {
 			t.Fatalf("check %s absence: %v", table, err)
 		}
 		if exists {
-			t.Fatalf("expected %s to remain outside downloader schema ownership", table)
+			t.Fatalf("expected %s to remain outside taskruntime schema ownership", table)
 		}
 	}
 
@@ -322,10 +322,10 @@ INSERT INTO subscription_release_entities (
 	}
 	var releaseCount int
 	if err := opened.QueryRow(`SELECT COUNT(*) FROM subscription_release_entities`).Scan(&releaseCount); err != nil {
-		t.Fatalf("count subscription releases after downloader reset: %v", err)
+		t.Fatalf("count subscription releases after task runtime reset: %v", err)
 	}
 	if releaseCount != 1 {
-		t.Fatalf("expected downloader reset to preserve subscription rows, got %d", releaseCount)
+		t.Fatalf("expected task runtime reset to preserve subscription rows, got %d", releaseCount)
 	}
 }
 
@@ -377,7 +377,7 @@ INSERT INTO subscription_release_entities (
 
 	opened, err := OpenSQLiteDatabase(path)
 	if err != nil {
-		t.Fatalf("open sqlite db with downloader schema: %v", err)
+		t.Fatalf("open sqlite db with task runtime schema: %v", err)
 	}
 	defer opened.Close()
 
@@ -387,7 +387,7 @@ INSERT INTO subscription_release_entities (
 			t.Fatalf("check %s existence: %v", table, err)
 		}
 		if !exists {
-			t.Fatalf("expected %s to exist after downloader init", table)
+			t.Fatalf("expected %s to exist after task runtime init", table)
 		}
 	}
 
@@ -396,6 +396,6 @@ INSERT INTO subscription_release_entities (
 		t.Fatalf("count subscription releases: %v", err)
 	}
 	if releaseCount != 1 {
-		t.Fatalf("expected existing subscription rows to survive downloader init, got %d", releaseCount)
+		t.Fatalf("expected existing subscription rows to survive task runtime init, got %d", releaseCount)
 	}
 }

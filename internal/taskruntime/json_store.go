@@ -1,4 +1,4 @@
-package downloader
+package taskruntime
 
 import (
 	"context"
@@ -22,7 +22,7 @@ type jsonTaskFile struct {
 
 func NewJSONTaskStore(path string) (*JSONTaskStore, error) {
 	if path == "" {
-		return nil, errors.New("downloader: json task store path is required")
+		return nil, errors.New("taskruntime: json task store path is required")
 	}
 
 	store := &JSONTaskStore{
@@ -37,13 +37,13 @@ func NewJSONTaskStore(path string) (*JSONTaskStore, error) {
 
 func (s *JSONTaskStore) Create(ctx context.Context, task *Task) error {
 	if task == nil {
-		return errors.New("downloader: task is nil")
+		return errors.New("taskruntime: task is nil")
 	}
 
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	if _, exists := s.tasks[task.ID]; exists {
-		return fmt.Errorf("downloader: task %q already exists", task.ID)
+		return fmt.Errorf("taskruntime: task %q already exists", task.ID)
 	}
 	s.tasks[task.ID] = cloneTask(task)
 	return s.saveLocked(ctx)
@@ -51,13 +51,13 @@ func (s *JSONTaskStore) Create(ctx context.Context, task *Task) error {
 
 func (s *JSONTaskStore) Update(ctx context.Context, task *Task) error {
 	if task == nil {
-		return errors.New("downloader: task is nil")
+		return errors.New("taskruntime: task is nil")
 	}
 
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	if _, exists := s.tasks[task.ID]; !exists {
-		return fmt.Errorf("downloader: task %q not found", task.ID)
+		return fmt.Errorf("taskruntime: task %q not found", task.ID)
 	}
 	s.tasks[task.ID] = cloneTask(task)
 	return s.saveLocked(ctx)
@@ -69,7 +69,7 @@ func (s *JSONTaskStore) Find(_ context.Context, id string) (*Task, error) {
 
 	task, exists := s.tasks[id]
 	if !exists {
-		return nil, fmt.Errorf("downloader: task %q not found", id)
+		return nil, fmt.Errorf("taskruntime: task %q not found", id)
 	}
 	return cloneTask(task), nil
 }
@@ -92,7 +92,7 @@ func (s *JSONTaskStore) Delete(ctx context.Context, id string) (*Task, error) {
 
 	task, exists := s.tasks[id]
 	if !exists {
-		return nil, fmt.Errorf("downloader: task %q not found", id)
+		return nil, fmt.Errorf("taskruntime: task %q not found", id)
 	}
 	delete(s.tasks, id)
 	if err := s.saveLocked(ctx); err != nil {

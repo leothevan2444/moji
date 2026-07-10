@@ -9,8 +9,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/leothevan2444/moji/internal/downloader"
 	"github.com/leothevan2444/moji/internal/logging"
+	"github.com/leothevan2444/moji/internal/taskruntime"
 	"github.com/leothevan2444/moji/pkg/stash"
 	stashgraphql "github.com/leothevan2444/moji/pkg/stash/graphql"
 	stashboxgraphql "github.com/leothevan2444/moji/pkg/stashbox/graphql"
@@ -34,14 +34,14 @@ type StashboxClient interface {
 	QueryScenes(ctx context.Context, input stashboxgraphql.SceneQueryInput) ([]*stashboxgraphql.SceneFragment, error)
 }
 
-type Downloader interface {
-	AddTorrentContext(ctx context.Context, req downloader.AddTorrentRequest) (*downloader.Task, error)
-	DownloadMediaContext(ctx context.Context, req downloader.DownloadRequest) (*downloader.Task, error)
+type TaskRuntime interface {
+	AddTorrentContext(ctx context.Context, req taskruntime.AddTorrentRequest) (*taskruntime.Task, error)
+	DownloadMediaContext(ctx context.Context, req taskruntime.DownloadRequest) (*taskruntime.Task, error)
 }
 
 type TaskCreator interface {
-	QueueDiscoveredScene(ctx context.Context, sceneID string, stashBoxEndpoint string) (*downloader.Task, error)
-	QueueSubscriptionRelease(ctx context.Context, code, title string) (*downloader.Task, error)
+	QueueDiscoveredScene(ctx context.Context, sceneID string, stashBoxEndpoint string) (*taskruntime.Task, error)
+	QueueSubscriptionRelease(ctx context.Context, code, title string) (*taskruntime.Task, error)
 }
 
 type Service struct {
@@ -88,7 +88,7 @@ type releaseFetchStats struct {
 	stopReason      string
 }
 
-func NewService(stash StashClient, stashbox *stashboxRegistry, downloader Downloader, store Store) (*Service, error) {
+func NewService(stash StashClient, stashbox *stashboxRegistry, taskRuntime TaskRuntime, store Store) (*Service, error) {
 	if stash == nil {
 		return nil, errors.New("subscription: stash client is required")
 	}
@@ -98,7 +98,7 @@ func NewService(stash StashClient, stashbox *stashboxRegistry, downloader Downlo
 	if stashbox == nil {
 		stashbox = newStashboxRegistry(defaultStashboxClientFactory{})
 	}
-	creator := newDefaultTaskCreator(downloader, stashbox)
+	creator := newDefaultTaskCreator(taskRuntime, stashbox)
 
 	return &Service{
 		stash:          stash,

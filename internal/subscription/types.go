@@ -4,7 +4,7 @@ import (
 	"time"
 
 	"github.com/leothevan2444/moji/internal/config"
-	"github.com/leothevan2444/moji/internal/downloader"
+	"github.com/leothevan2444/moji/internal/taskruntime"
 )
 
 const DefaultCustomFieldKey = "moji_subscribed"
@@ -154,7 +154,7 @@ type QueuePerformerSceneResult struct {
 	Status       QueuePerformerSceneStatus
 	ReasonCode   string
 	Message      string
-	Task         *downloader.Task
+	Task         *taskruntime.Task
 	ResolvedCode string
 }
 
@@ -166,7 +166,7 @@ type QueuePerformerScenesSummary struct {
 }
 
 type QueuePerformerScenesResult struct {
-	QueuedTasks []*downloader.Task
+	QueuedTasks []*taskruntime.Task
 	Results     []QueuePerformerSceneResult
 	Summary     QueuePerformerScenesSummary
 }

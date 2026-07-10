@@ -19,7 +19,7 @@
 ## Table: `tasks`
 
 - `tasks` stores the latest state of each Moji task.
-- It maps directly to `internal/downloader.Task` and `Candidate`.
+- It maps directly to `internal/taskruntime.Task` and `Candidate`.
 - Candidate fields are flattened into the same row to keep reads simple and avoid unnecessary joins in the first implementation.
 
 ### Key Choices

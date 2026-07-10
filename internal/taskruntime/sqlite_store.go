@@ -1,4 +1,4 @@
-package downloader
+package taskruntime
 
 import (
 	"context"
@@ -25,12 +25,12 @@ func NewSQLiteTaskStore(path string) (*SQLiteTaskStore, error) {
 
 func (s *SQLiteTaskStore) Create(ctx context.Context, task *Task) error {
 	if task == nil {
-		return errors.New("downloader: task is nil")
+		return errors.New("taskruntime: task is nil")
 	}
 
 	tx, err := s.db.BeginTxx(ctx, nil)
 	if err != nil {
-		return fmt.Errorf("downloader: begin create task tx: %w", err)
+		return fmt.Errorf("taskruntime: begin create task tx: %w", err)
 	}
 	defer tx.Rollback()
 
@@ -42,28 +42,28 @@ func (s *SQLiteTaskStore) Create(ctx context.Context, task *Task) error {
 	}
 
 	if err := tx.Commit(); err != nil {
-		return fmt.Errorf("downloader: commit create task tx: %w", err)
+		return fmt.Errorf("taskruntime: commit create task tx: %w", err)
 	}
 	return nil
 }
 
 func (s *SQLiteTaskStore) Update(ctx context.Context, task *Task) error {
 	if task == nil {
-		return errors.New("downloader: task is nil")
+		return errors.New("taskruntime: task is nil")
 	}
 
 	tx, err := s.db.BeginTxx(ctx, nil)
 	if err != nil {
-		return fmt.Errorf("downloader: begin update task tx: %w", err)
+		return fmt.Errorf("taskruntime: begin update task tx: %w", err)
 	}
 	defer tx.Rollback()
 
 	var previousStage string
 	if err := tx.GetContext(ctx, &previousStage, `SELECT stage FROM tasks WHERE id = ?`, task.ID); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			return fmt.Errorf("downloader: task %q not found", task.ID)
+			return fmt.Errorf("taskruntime: task %q not found", task.ID)
 		}
-		return fmt.Errorf("downloader: load task %q before update: %w", task.ID, err)
+		return fmt.Errorf("taskruntime: load task %q before update: %w", task.ID, err)
 	}
 
 	if err := upsertTaskRow(ctx, tx, task, true); err != nil {
@@ -79,7 +79,7 @@ func (s *SQLiteTaskStore) Update(ctx context.Context, task *Task) error {
 	}
 
 	if err := tx.Commit(); err != nil {
-		return fmt.Errorf("downloader: commit update task tx: %w", err)
+		return fmt.Errorf("taskruntime: commit update task tx: %w", err)
 	}
 	return nil
 }
@@ -88,9 +88,9 @@ func (s *SQLiteTaskStore) Find(ctx context.Context, id string) (*Task, error) {
 	var row sqliteTaskRow
 	if err := s.db.GetContext(ctx, &row, taskSelectSQL+` WHERE id = ?`, id); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			return nil, fmt.Errorf("downloader: task %q not found", id)
+			return nil, fmt.Errorf("taskruntime: task %q not found", id)
 		}
-		return nil, fmt.Errorf("downloader: find task %q: %w", id, err)
+		return nil, fmt.Errorf("taskruntime: find task %q: %w", id, err)
 	}
 	return row.toTask()
 }
@@ -105,7 +105,7 @@ func (s *SQLiteTaskStore) FindByCode(ctx context.Context, code string) (*Task, e
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, nil
 		}
-		return nil, fmt.Errorf("downloader: find task by code %q: %w", code, err)
+		return nil, fmt.Errorf("taskruntime: find task by code %q: %w", code, err)
 	}
 	return row.toTask()
 }
@@ -138,7 +138,7 @@ func (s *SQLiteTaskStore) FindByTorrentIdentity(ctx context.Context, infoHash st
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, nil
 		}
-		return nil, fmt.Errorf("downloader: find task by torrent identity: %w", err)
+		return nil, fmt.Errorf("taskruntime: find task by torrent identity: %w", err)
 	}
 	return row.toTask()
 }
@@ -146,14 +146,14 @@ func (s *SQLiteTaskStore) FindByTorrentIdentity(ctx context.Context, infoHash st
 func (s *SQLiteTaskStore) List(ctx context.Context) ([]*Task, error) {
 	rows := make([]sqliteTaskRow, 0)
 	if err := s.db.SelectContext(ctx, &rows, taskSelectSQL+` ORDER BY created_at DESC, id ASC`); err != nil {
-		return nil, fmt.Errorf("downloader: list tasks: %w", err)
+		return nil, fmt.Errorf("taskruntime: list tasks: %w", err)
 	}
 
 	tasks := make([]*Task, 0, len(rows))
 	for _, row := range rows {
 		task, err := row.toTask()
 		if err != nil {
-			return nil, fmt.Errorf("downloader: scan listed task: %w", err)
+			return nil, fmt.Errorf("taskruntime: scan listed task: %w", err)
 		}
 		tasks = append(tasks, task)
 	}
@@ -165,28 +165,28 @@ func (s *SQLiteTaskStore) List(ctx context.Context) ([]*Task, error) {
 func (s *SQLiteTaskStore) Delete(ctx context.Context, id string) (*Task, error) {
 	tx, err := s.db.BeginTxx(ctx, nil)
 	if err != nil {
-		return nil, fmt.Errorf("downloader: begin delete task tx: %w", err)
+		return nil, fmt.Errorf("taskruntime: begin delete task tx: %w", err)
 	}
 	defer tx.Rollback()
 
 	var row sqliteTaskRow
 	if err := tx.GetContext(ctx, &row, taskSelectSQL+` WHERE id = ?`, id); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			return nil, fmt.Errorf("downloader: task %q not found", id)
+			return nil, fmt.Errorf("taskruntime: task %q not found", id)
 		}
-		return nil, fmt.Errorf("downloader: load task %q before delete: %w", id, err)
+		return nil, fmt.Errorf("taskruntime: load task %q before delete: %w", id, err)
 	}
 	task, err := row.toTask()
 	if err != nil {
-		return nil, fmt.Errorf("downloader: decode task %q before delete: %w", id, err)
+		return nil, fmt.Errorf("taskruntime: decode task %q before delete: %w", id, err)
 	}
 
 	if _, err := tx.ExecContext(ctx, `DELETE FROM tasks WHERE id = ?`, id); err != nil {
-		return nil, fmt.Errorf("downloader: delete task %q: %w", id, err)
+		return nil, fmt.Errorf("taskruntime: delete task %q: %w", id, err)
 	}
 
 	if err := tx.Commit(); err != nil {
-		return nil, fmt.Errorf("downloader: commit delete task tx: %w", err)
+		return nil, fmt.Errorf("taskruntime: commit delete task tx: %w", err)
 	}
 	return task, nil
 }
@@ -322,16 +322,16 @@ func (r sqliteTaskRow) toTask() (*Task, error) {
 
 	var err error
 	if task.DownloadCompletedAt, err = parseOptionalSQLiteTimestamp(r.DownloadCompletedAt); err != nil {
-		return nil, fmt.Errorf("downloader: parse download_completed_at for task %q: %w", task.ID, err)
+		return nil, fmt.Errorf("taskruntime: parse download_completed_at for task %q: %w", task.ID, err)
 	}
 	if task.StashScanStartedAt, err = parseOptionalSQLiteTimestamp(r.StashScanStartedAt); err != nil {
-		return nil, fmt.Errorf("downloader: parse stash_scan_started_at for task %q: %w", task.ID, err)
+		return nil, fmt.Errorf("taskruntime: parse stash_scan_started_at for task %q: %w", task.ID, err)
 	}
 	if task.CreatedAt, err = parseSQLiteTimestamp(r.CreatedAt); err != nil {
-		return nil, fmt.Errorf("downloader: parse created_at for task %q: %w", task.ID, err)
+		return nil, fmt.Errorf("taskruntime: parse created_at for task %q: %w", task.ID, err)
 	}
 	if task.UpdatedAt, err = parseSQLiteTimestamp(r.UpdatedAt); err != nil {
-		return nil, fmt.Errorf("downloader: parse updated_at for task %q: %w", task.ID, err)
+		return nil, fmt.Errorf("taskruntime: parse updated_at for task %q: %w", task.ID, err)
 	}
 	refreshTaskStageFields(task)
 	return task, nil
@@ -493,7 +493,7 @@ ON CONFLICT(id) DO UPDATE SET
 		if isUpdate {
 			op = "update"
 		}
-		return fmt.Errorf("downloader: %s task %q: %w", op, task.ID, translateTaskConstraintError(err))
+		return fmt.Errorf("taskruntime: %s task %q: %w", op, task.ID, translateTaskConstraintError(err))
 	}
 	return nil
 }
@@ -512,7 +512,7 @@ func insertTaskEvent(ctx context.Context, tx *sqlx.Tx, taskID, eventType, oldSta
 			"created_at": formatSQLiteTimestamp(nowUTC()),
 		},
 	); err != nil {
-		return fmt.Errorf("downloader: insert task event for %q: %w", taskID, err)
+		return fmt.Errorf("taskruntime: insert task event for %q: %w", taskID, err)
 	}
 	return nil
 }

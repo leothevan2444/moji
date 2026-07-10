@@ -11,7 +11,7 @@ import (
 	"time"
 
 	"github.com/jmoiron/sqlx"
-	"github.com/leothevan2444/moji/internal/downloader"
+	"github.com/leothevan2444/moji/internal/taskruntime"
 )
 
 type SQLiteStore struct {
@@ -19,7 +19,7 @@ type SQLiteStore struct {
 }
 
 func NewSQLiteStore(path string) (*SQLiteStore, error) {
-	db, err := downloader.OpenSQLiteDatabase(path)
+	db, err := taskruntime.OpenSQLiteDatabase(path)
 	if err != nil {
 		return nil, err
 	}

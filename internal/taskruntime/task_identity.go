@@ -1,4 +1,4 @@
-package downloader
+package taskruntime
 
 import (
 	"context"
@@ -213,23 +213,23 @@ func (s *Service) resolveManualTorrent(ctx context.Context, torrentURL string) (
 
 func (s *Service) fetchTorrentMetadata(ctx context.Context, torrentURL string) (downloadedTorrentMetadata, error) {
 	if s.httpClient == nil {
-		return downloadedTorrentMetadata{}, errors.New("downloader: http client is not configured")
+		return downloadedTorrentMetadata{}, errors.New("taskruntime: http client is not configured")
 	}
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, torrentURL, nil)
 	if err != nil {
-		return downloadedTorrentMetadata{}, fmt.Errorf("downloader: build torrent metadata request: %w", err)
+		return downloadedTorrentMetadata{}, fmt.Errorf("taskruntime: build torrent metadata request: %w", err)
 	}
 	resp, err := s.httpClient.Do(req)
 	if err != nil {
-		return downloadedTorrentMetadata{}, fmt.Errorf("downloader: fetch torrent metadata: %w", err)
+		return downloadedTorrentMetadata{}, fmt.Errorf("taskruntime: fetch torrent metadata: %w", err)
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		return downloadedTorrentMetadata{}, fmt.Errorf("downloader: fetch torrent metadata: unexpected status %d", resp.StatusCode)
+		return downloadedTorrentMetadata{}, fmt.Errorf("taskruntime: fetch torrent metadata: unexpected status %d", resp.StatusCode)
 	}
 	body, err := io.ReadAll(io.LimitReader(resp.Body, 8<<20))
 	if err != nil {
-		return downloadedTorrentMetadata{}, fmt.Errorf("downloader: read torrent metadata: %w", err)
+		return downloadedTorrentMetadata{}, fmt.Errorf("taskruntime: read torrent metadata: %w", err)
 	}
 	return parseTorrentMetadata(body)
 }
@@ -238,7 +238,7 @@ func parseTorrentMetadata(data []byte) (downloadedTorrentMetadata, error) {
 	parser := &bencodeParser{data: data}
 	root, infoBytes, err := parser.parseMetainfo()
 	if err != nil {
-		return downloadedTorrentMetadata{}, fmt.Errorf("downloader: parse .torrent metadata: %w", err)
+		return downloadedTorrentMetadata{}, fmt.Errorf("taskruntime: parse .torrent metadata: %w", err)
 	}
 	metadata := downloadedTorrentMetadata{
 		Name:     root.name,

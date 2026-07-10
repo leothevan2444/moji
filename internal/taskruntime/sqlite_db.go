@@ -1,4 +1,4 @@
-package downloader
+package taskruntime
 
 import (
 	"context"
@@ -22,19 +22,19 @@ const sqliteSchemaVersion = "7"
 func OpenSQLiteDatabase(path string) (*sqlx.DB, error) {
 	trimmed := strings.TrimSpace(path)
 	if trimmed == "" {
-		return nil, fmt.Errorf("downloader: sqlite db path is required")
+		return nil, fmt.Errorf("taskruntime: sqlite db path is required")
 	}
 
 	dir := filepath.Dir(trimmed)
 	if dir != "." && dir != "" {
 		if err := os.MkdirAll(dir, 0o755); err != nil {
-			return nil, fmt.Errorf("downloader: create sqlite dir %q: %w", dir, err)
+			return nil, fmt.Errorf("taskruntime: create sqlite dir %q: %w", dir, err)
 		}
 	}
 
 	db, err := sqlx.Open("sqlite", trimmed)
 	if err != nil {
-		return nil, fmt.Errorf("downloader: open sqlite db %q: %w", trimmed, err)
+		return nil, fmt.Errorf("taskruntime: open sqlite db %q: %w", trimmed, err)
 	}
 	db.SetMaxOpenConns(1)
 	db.SetMaxIdleConns(1)
@@ -57,7 +57,7 @@ func configureSQLiteDatabase(db *sqlx.DB) error {
 
 	for _, pragma := range pragmas {
 		if _, err := db.Exec(pragma); err != nil {
-			return fmt.Errorf("downloader: configure sqlite pragma %q: %w", pragma, err)
+			return fmt.Errorf("taskruntime: configure sqlite pragma %q: %w", pragma, err)
 		}
 	}
 
@@ -72,14 +72,14 @@ func configureSQLiteDatabase(db *sqlx.DB) error {
 
 	if !hadSchema || versionBeforeInit == sqliteSchemaVersion {
 		if _, err := db.Exec(sqliteSchema); err != nil {
-			return fmt.Errorf("downloader: initialize sqlite schema: %w", err)
+			return fmt.Errorf("taskruntime: initialize sqlite schema: %w", err)
 		}
 	} else {
 		if err := resetSQLiteDatabase(db); err != nil {
 			return err
 		}
 		if _, err := db.Exec(sqliteSchema); err != nil {
-			return fmt.Errorf("downloader: reinitialize sqlite schema: %w", err)
+			return fmt.Errorf("taskruntime: reinitialize sqlite schema: %w", err)
 		}
 	}
 	if err := ensureSQLiteRuntimeState(db); err != nil {
@@ -92,7 +92,7 @@ func configureSQLiteDatabase(db *sqlx.DB) error {
 func resetSQLiteDatabase(db *sqlx.DB) error {
 	tx, err := db.Beginx()
 	if err != nil {
-		return fmt.Errorf("downloader: begin sqlite schema reset: %w", err)
+		return fmt.Errorf("taskruntime: begin sqlite schema reset: %w", err)
 	}
 	defer tx.Rollback()
 
@@ -105,11 +105,11 @@ func resetSQLiteDatabase(db *sqlx.DB) error {
 	}
 	for _, statement := range statements {
 		if _, err := tx.Exec(statement); err != nil {
-			return fmt.Errorf("downloader: reset sqlite schema with %q: %w", statement, err)
+			return fmt.Errorf("taskruntime: reset sqlite schema with %q: %w", statement, err)
 		}
 	}
 	if err := tx.Commit(); err != nil {
-		return fmt.Errorf("downloader: commit sqlite schema reset: %w", err)
+		return fmt.Errorf("taskruntime: commit sqlite schema reset: %w", err)
 	}
 	return nil
 }
@@ -117,7 +117,7 @@ func resetSQLiteDatabase(db *sqlx.DB) error {
 func ensureSQLiteRuntimeState(db *sqlx.DB) error {
 	tx, err := db.Beginx()
 	if err != nil {
-		return fmt.Errorf("downloader: begin sqlite runtime state tx: %w", err)
+		return fmt.Errorf("taskruntime: begin sqlite runtime state tx: %w", err)
 	}
 	defer tx.Rollback()
 
@@ -126,10 +126,10 @@ func ensureSQLiteRuntimeState(db *sqlx.DB) error {
 	}
 	if _, err := tx.Exec(`INSERT INTO task_store_meta (key, value) VALUES ('schema_version', ?)
 		ON CONFLICT(key) DO UPDATE SET value = excluded.value`, sqliteSchemaVersion); err != nil {
-		return fmt.Errorf("downloader: persist sqlite schema version: %w", err)
+		return fmt.Errorf("taskruntime: persist sqlite schema version: %w", err)
 	}
 	if err := tx.Commit(); err != nil {
-		return fmt.Errorf("downloader: commit sqlite runtime state tx: %w", err)
+		return fmt.Errorf("taskruntime: commit sqlite runtime state tx: %w", err)
 	}
 	return nil
 }
@@ -165,7 +165,7 @@ func recreateSQLiteIndexes(tx *sqlx.Tx) error {
 		}
 		for _, query := range indexes {
 			if _, err := tx.Exec(query); err != nil {
-				return fmt.Errorf("downloader: create sqlite index: %w", err)
+				return fmt.Errorf("taskruntime: create sqlite index: %w", err)
 			}
 		}
 	}
@@ -175,7 +175,7 @@ func recreateSQLiteIndexes(tx *sqlx.Tx) error {
 func sqliteTableExists(db sqlx.ExtContext, table string) (bool, error) {
 	var count int
 	if err := sqlx.GetContext(context.Background(), db, &count, `SELECT COUNT(1) FROM sqlite_master WHERE type = 'table' AND name = ?`, table); err != nil {
-		return false, fmt.Errorf("downloader: inspect sqlite table %s: %w", table, err)
+		return false, fmt.Errorf("taskruntime: inspect sqlite table %s: %w", table, err)
 	}
 	return count > 0, nil
 }
@@ -183,7 +183,7 @@ func sqliteTableExists(db sqlx.ExtContext, table string) (bool, error) {
 func sqliteColumnExists(db *sqlx.DB, table string, column string) (bool, error) {
 	rows, err := db.Queryx(fmt.Sprintf("PRAGMA table_info(%s)", table))
 	if err != nil {
-		return false, fmt.Errorf("downloader: inspect sqlite table %s: %w", table, err)
+		return false, fmt.Errorf("taskruntime: inspect sqlite table %s: %w", table, err)
 	}
 	defer rows.Close()
 
@@ -197,14 +197,14 @@ func sqliteColumnExists(db *sqlx.DB, table string, column string) (bool, error) 
 			pk         int
 		)
 		if err := rows.Scan(&cid, &name, &dataType, &notNull, &defaultVal, &pk); err != nil {
-			return false, fmt.Errorf("downloader: scan sqlite table info for %s: %w", table, err)
+			return false, fmt.Errorf("taskruntime: scan sqlite table info for %s: %w", table, err)
 		}
 		if name == column {
 			return true, nil
 		}
 	}
 	if err := rows.Err(); err != nil {
-		return false, fmt.Errorf("downloader: iterate sqlite table info for %s: %w", table, err)
+		return false, fmt.Errorf("taskruntime: iterate sqlite table info for %s: %w", table, err)
 	}
 	return false, nil
 }
@@ -212,7 +212,7 @@ func sqliteColumnExists(db *sqlx.DB, table string, column string) (bool, error) 
 func sqliteTableExistsTx(tx *sqlx.Tx, table string) (bool, error) {
 	var count int
 	if err := tx.Get(&count, `SELECT COUNT(1) FROM sqlite_master WHERE type = 'table' AND name = ?`, table); err != nil {
-		return false, fmt.Errorf("downloader: inspect sqlite table %s in tx: %w", table, err)
+		return false, fmt.Errorf("taskruntime: inspect sqlite table %s in tx: %w", table, err)
 	}
 	return count > 0, nil
 }
@@ -235,7 +235,7 @@ func readSQLiteSchemaVersion(db *sqlx.DB) (string, error) {
 		return "", nil
 	}
 	if err != nil {
-		return "", fmt.Errorf("downloader: read sqlite schema version: %w", err)
+		return "", fmt.Errorf("taskruntime: read sqlite schema version: %w", err)
 	}
 	return version, nil
 }

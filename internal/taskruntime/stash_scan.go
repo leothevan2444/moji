@@ -1,4 +1,4 @@
-package downloader
+package taskruntime
 
 import (
 	"context"
@@ -33,7 +33,7 @@ type StashIntegrationPlan struct {
 
 func (s *Service) TriggerStashScans(ctx context.Context, scanner StashScanner) ([]*Task, error) {
 	if scanner == nil {
-		return nil, errors.New("downloader: stash scanner is required")
+		return nil, errors.New("taskruntime: stash scanner is required")
 	}
 
 	tasks, err := s.store.List(ctx)
@@ -51,7 +51,7 @@ func (s *Service) TriggerStashScans(ctx context.Context, scanner StashScanner) (
 		if task.Stage == TaskStageScanning && task.StageStatus == TaskStageStatusRunning {
 			next, pollErr := s.syncStashScanJob(ctx, cloneTask(task), scanner)
 			if persistErr := s.store.Update(ctx, next); persistErr != nil {
-				logging.Errorf("downloader: persist stash scan job state failed for task %s: %v", next.ID, persistErr)
+				logging.Errorf("taskruntime: persist stash scan job state failed for task %s: %v", next.ID, persistErr)
 				if firstErr == nil {
 					firstErr = fmt.Errorf("update task %q: %w", next.ID, persistErr)
 				}
@@ -69,7 +69,7 @@ func (s *Service) TriggerStashScans(ctx context.Context, scanner StashScanner) (
 
 		next, execErr := s.executeTaskStashIntegration(ctx, cloneTask(task), scanner)
 		if persistErr := s.store.Update(ctx, next); persistErr != nil {
-			logging.Errorf("downloader: persist stash integration state failed for task %s: %v", next.ID, persistErr)
+			logging.Errorf("taskruntime: persist stash integration state failed for task %s: %v", next.ID, persistErr)
 			if firstErr == nil {
 				firstErr = fmt.Errorf("update task %q: %w", next.ID, persistErr)
 			}
@@ -85,7 +85,7 @@ func (s *Service) TriggerStashScans(ctx context.Context, scanner StashScanner) (
 
 func (s *Service) TriggerTaskStashScan(ctx context.Context, id string, scanner StashScanner) (*Task, error) {
 	if scanner == nil {
-		return nil, errors.New("downloader: stash scanner is required")
+		return nil, errors.New("taskruntime: stash scanner is required")
 	}
 
 	task, err := s.store.Find(ctx, id)
@@ -93,15 +93,15 @@ func (s *Service) TriggerTaskStashScan(ctx context.Context, id string, scanner S
 		return nil, err
 	}
 	if task == nil {
-		return nil, fmt.Errorf("downloader: task %q not found", id)
+		return nil, fmt.Errorf("taskruntime: task %q not found", id)
 	}
 	if !shouldAllowManualStashScan(task) {
-		return nil, fmt.Errorf("downloader: task %q is not ready for stash scan", id)
+		return nil, fmt.Errorf("taskruntime: task %q is not ready for stash scan", id)
 	}
 
 	next, execErr := s.executeTaskStashIntegration(ctx, cloneTask(task), scanner)
 	if persistErr := s.store.Update(ctx, next); persistErr != nil {
-		logging.Errorf("downloader: persist manual stash integration state failed for task %s: %v", next.ID, persistErr)
+		logging.Errorf("taskruntime: persist manual stash integration state failed for task %s: %v", next.ID, persistErr)
 		return nil, fmt.Errorf("update task %q: %w", next.ID, persistErr)
 	}
 	if execErr != nil {
@@ -120,7 +120,7 @@ func (s *Service) executeTaskStashIntegration(ctx context.Context, task *Task, s
 	if plan.ValidationError != nil {
 		recordStashIntegrationFailure(task, plan, now, plan.ValidationError)
 		blockTask(task, TaskStageErrorTransferPlan, plan.ValidationError.Error(), now)
-		logging.Errorf("downloader: stash integration planning failed for task %s delivery_mode=%s: %v", task.ID, plan.DeliveryMode, plan.ValidationError)
+		logging.Errorf("taskruntime: stash integration planning failed for task %s delivery_mode=%s: %v", task.ID, plan.DeliveryMode, plan.ValidationError)
 		return task, fmt.Errorf("trigger stash scan for task %q: %w", task.ID, plan.ValidationError)
 	}
 
@@ -133,7 +133,7 @@ func (s *Service) executeTaskStashIntegration(ctx context.Context, task *Task, s
 	if err := s.executeDelivery(ctx, task, plan, now); err != nil {
 		recordTransferFailure(task, plan, s.now().UTC(), err)
 		blockTask(task, TaskStageErrorTransfer, err.Error(), s.now().UTC())
-		logging.Errorf("downloader: delivery failed for task %s qb_source=%s moji_source=%s target=%s: %v", task.ID, plan.QBSourcePath, plan.MojiSourcePath, plan.ResolvedTransferPath, err)
+		logging.Errorf("taskruntime: delivery failed for task %s qb_source=%s moji_source=%s target=%s: %v", task.ID, plan.QBSourcePath, plan.MojiSourcePath, plan.ResolvedTransferPath, err)
 		return task, fmt.Errorf("trigger stash scan for task %q: %w", task.ID, err)
 	}
 
@@ -145,14 +145,14 @@ func (s *Service) executeTaskStashIntegration(ctx context.Context, task *Task, s
 	if err != nil {
 		task.StashScanError = err.Error()
 		blockTask(task, TaskStageErrorScanTrigger, err.Error(), now)
-		logging.Errorf("downloader: stash scan trigger failed for task %s delivery_mode=%s path=%s: %v", task.ID, plan.DeliveryMode, plan.ResolvedScanPath, err)
+		logging.Errorf("taskruntime: stash scan trigger failed for task %s delivery_mode=%s path=%s: %v", task.ID, plan.DeliveryMode, plan.ResolvedScanPath, err)
 		return task, fmt.Errorf("trigger stash scan for task %q: %w", task.ID, err)
 	}
 
 	task.StashScanJobID = jobID
 	task.StashScanError = ""
 	clearTaskStageError(task)
-	logging.Infof("downloader: started stash scan for task %s delivery_mode=%s path=%s job=%s", task.ID, plan.DeliveryMode, plan.ResolvedScanPath, jobID)
+	logging.Infof("taskruntime: started stash scan for task %s delivery_mode=%s path=%s job=%s", task.ID, plan.DeliveryMode, plan.ResolvedScanPath, jobID)
 	return task, nil
 }
 
@@ -225,14 +225,14 @@ func planDelivery(cfg stashsync.IntegrationConfig, qbSourcePath string) StashInt
 	plan.UserHint = pathMappingHint(deliveryMode)
 
 	if plan.QBSourcePath == "" {
-		plan.ValidationError = errors.New("downloader: qB source path is required for stash integration")
+		plan.ValidationError = errors.New("taskruntime: qB source path is required for stash integration")
 		plan.UserHint = "任务缺少 qB 原始内容路径，无法开始路径映射。"
 		return plan
 	}
 
 	qbRoot := strings.TrimSpace(cfg.Downloads.QBRoot)
 	if qbRoot == "" {
-		plan.ValidationError = errors.New("downloader: qB downloads root is required")
+		plan.ValidationError = errors.New("taskruntime: qB downloads root is required")
 		plan.UserHint = "请先配置 qB 视角下的下载根目录。"
 		return plan
 	}
@@ -261,7 +261,7 @@ func planDelivery(cfg stashsync.IntegrationConfig, qbSourcePath string) StashInt
 		if cfg.Transfer.Action != stashsync.TransferActionCopy &&
 			cfg.Transfer.Action != stashsync.TransferActionMove &&
 			cfg.Transfer.Action != stashsync.TransferActionSymlink {
-			plan.ValidationError = errors.New("downloader: transfer delivery requires a transfer action of COPY, MOVE, or SYMLINK")
+			plan.ValidationError = errors.New("taskruntime: transfer delivery requires a transfer action of COPY, MOVE, or SYMLINK")
 			plan.UserHint = "请先选择交付动作：复制、移动或符号链接。"
 			return plan
 		}
@@ -283,7 +283,7 @@ func planDelivery(cfg stashsync.IntegrationConfig, qbSourcePath string) StashInt
 		plan.ResolvedTransferPath = transferPath
 		return plan
 	default:
-		plan.ValidationError = fmt.Errorf("downloader: unsupported ingest delivery mode %q", deliveryMode)
+		plan.ValidationError = fmt.Errorf("taskruntime: unsupported ingest delivery mode %q", deliveryMode)
 		plan.UserHint = "当前入库方式无效，请重新保存设置。"
 		return plan
 	}
