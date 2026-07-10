@@ -566,8 +566,8 @@ $task-status-tones: (
   &__body {
     min-width: 0;
     min-height: 0;
-    display: grid;
-    align-content: start;
+    display: flex;
+    flex-direction: column;
     gap: 6px;
     overflow: hidden;
   }
@@ -583,6 +583,14 @@ $task-status-tones: (
     display: flex;
     align-items: center;
     gap: $space-2;
+  }
+
+  &__footer {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: $space-2;
+    margin-top: auto;
   }
 }
 
@@ -698,17 +706,58 @@ button.profile-icon {
   overflow: hidden;
 }
 
+.profile-check-meta {
+  margin: 0;
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1;
+}
+
 .profile-actions {
   display: flex;
+  align-items: flex-end;
   flex-wrap: wrap;
-  gap: $space-2;
+  gap: 2px;
   margin-top: 0;
+  margin-left: auto;
+}
 
-  .ghost-button {
-    min-height: 30px;
-    padding: 0 10px;
-    font-size: 12px;
+.profile-action-icon {
+  @extend %icon-button-reset;
+  width: 26px;
+  height: 26px;
+  display: inline-flex;
+  align-items: flex-end;
+  justify-content: center;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+  transition: transform 160ms ease, color 160ms ease;
+
+  &:hover:not(:disabled) {
+    transform: translateY(-1px);
+    color: var(--text);
   }
+
+  &:disabled {
+    cursor: not-allowed;
+    opacity: 0.45;
+  }
+
+  .is-spinning {
+    animation: profile-action-spin 0.8s linear infinite;
+  }
+
+  svg {
+    display: block;
+    font-size: 14px;
+  }
+}
+
+@keyframes profile-action-spin {
+  to { transform: rotate(360deg); }
 }
 
 .pagination-bar {

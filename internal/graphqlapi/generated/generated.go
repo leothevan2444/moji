@@ -459,11 +459,8 @@ type ComplexityRoot struct {
 	}
 
 	SubscriptionRelease struct {
-		Classification func(childComplexity int) int
 		Code           func(childComplexity int) int
 		Date           func(childComplexity int) int
-		Decision       func(childComplexity int) int
-		DecisionReason func(childComplexity int) int
 		Key            func(childComplexity int) int
 		PerformerCount func(childComplexity int) int
 		PerformerNames func(childComplexity int) int
@@ -2746,13 +2743,6 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.SubscribedPerformer.RecentReleases(childComplexity), true
 
-	case "SubscriptionRelease.classification":
-		if e.complexity.SubscriptionRelease.Classification == nil {
-			break
-		}
-
-		return e.complexity.SubscriptionRelease.Classification(childComplexity), true
-
 	case "SubscriptionRelease.code":
 		if e.complexity.SubscriptionRelease.Code == nil {
 			break
@@ -2766,20 +2756,6 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.SubscriptionRelease.Date(childComplexity), true
-
-	case "SubscriptionRelease.decision":
-		if e.complexity.SubscriptionRelease.Decision == nil {
-			break
-		}
-
-		return e.complexity.SubscriptionRelease.Decision(childComplexity), true
-
-	case "SubscriptionRelease.decisionReason":
-		if e.complexity.SubscriptionRelease.DecisionReason == nil {
-			break
-		}
-
-		return e.complexity.SubscriptionRelease.DecisionReason(childComplexity), true
 
 	case "SubscriptionRelease.key":
 		if e.complexity.SubscriptionRelease.Key == nil {
@@ -4226,24 +4202,7 @@ type SubscriptionRelease {
   taskID: ID
   performerCount: Int!
   performerNames: [String!]!
-  classification: SubscriptionReleaseClassification!
-  decision: SubscriptionReleaseDecision!
-  decisionReason: String!
   seenAt: String!
-}
-
-enum SubscriptionReleaseClassification {
-  SOLO
-  SMALL_GROUP
-  LARGE_GROUP
-  COMPILATION_LIKE
-  UNKNOWN
-}
-
-enum SubscriptionReleaseDecision {
-  DOWNLOADED
-  QUEUED
-  BLOCKED
 }
 
 input QueuePerformerScenesInput {
@@ -19895,12 +19854,6 @@ func (ec *executionContext) fieldContext_SubscribedPerformer_recentReleases(_ co
 				return ec.fieldContext_SubscriptionRelease_performerCount(ctx, field)
 			case "performerNames":
 				return ec.fieldContext_SubscriptionRelease_performerNames(ctx, field)
-			case "classification":
-				return ec.fieldContext_SubscriptionRelease_classification(ctx, field)
-			case "decision":
-				return ec.fieldContext_SubscriptionRelease_decision(ctx, field)
-			case "decisionReason":
-				return ec.fieldContext_SubscriptionRelease_decisionReason(ctx, field)
 			case "seenAt":
 				return ec.fieldContext_SubscriptionRelease_seenAt(ctx, field)
 			}
@@ -20282,138 +20235,6 @@ func (ec *executionContext) _SubscriptionRelease_performerNames(ctx context.Cont
 }
 
 func (ec *executionContext) fieldContext_SubscriptionRelease_performerNames(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "SubscriptionRelease",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type String does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _SubscriptionRelease_classification(ctx context.Context, field graphql.CollectedField, obj *model.SubscriptionRelease) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_SubscriptionRelease_classification(ctx, field)
-	if err != nil {
-		return graphql.Null
-	}
-	ctx = graphql.WithFieldContext(ctx, fc)
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.Classification, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(model.SubscriptionReleaseClassification)
-	fc.Result = res
-	return ec.marshalNSubscriptionReleaseClassification2githubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐSubscriptionReleaseClassification(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) fieldContext_SubscriptionRelease_classification(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "SubscriptionRelease",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type SubscriptionReleaseClassification does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _SubscriptionRelease_decision(ctx context.Context, field graphql.CollectedField, obj *model.SubscriptionRelease) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_SubscriptionRelease_decision(ctx, field)
-	if err != nil {
-		return graphql.Null
-	}
-	ctx = graphql.WithFieldContext(ctx, fc)
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.Decision, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(model.SubscriptionReleaseDecision)
-	fc.Result = res
-	return ec.marshalNSubscriptionReleaseDecision2githubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐSubscriptionReleaseDecision(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) fieldContext_SubscriptionRelease_decision(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "SubscriptionRelease",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type SubscriptionReleaseDecision does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _SubscriptionRelease_decisionReason(ctx context.Context, field graphql.CollectedField, obj *model.SubscriptionRelease) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_SubscriptionRelease_decisionReason(ctx, field)
-	if err != nil {
-		return graphql.Null
-	}
-	ctx = graphql.WithFieldContext(ctx, fc)
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.DecisionReason, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(string)
-	fc.Result = res
-	return ec.marshalNString2string(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) fieldContext_SubscriptionRelease_decisionReason(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "SubscriptionRelease",
 		Field:      field,
@@ -29880,21 +29701,6 @@ func (ec *executionContext) _SubscriptionRelease(ctx context.Context, sel ast.Se
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
-		case "classification":
-			out.Values[i] = ec._SubscriptionRelease_classification(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
-		case "decision":
-			out.Values[i] = ec._SubscriptionRelease_decision(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
-		case "decisionReason":
-			out.Values[i] = ec._SubscriptionRelease_decisionReason(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
 		case "seenAt":
 			out.Values[i] = ec._SubscriptionRelease_seenAt(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
@@ -32171,16 +31977,6 @@ func (ec *executionContext) marshalNSubscriptionReleaseBehavior2githubᚗcomᚋl
 	return v
 }
 
-func (ec *executionContext) unmarshalNSubscriptionReleaseClassification2githubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐSubscriptionReleaseClassification(ctx context.Context, v any) (model.SubscriptionReleaseClassification, error) {
-	var res model.SubscriptionReleaseClassification
-	err := res.UnmarshalGQL(v)
-	return res, graphql.ErrorOnPath(ctx, err)
-}
-
-func (ec *executionContext) marshalNSubscriptionReleaseClassification2githubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐSubscriptionReleaseClassification(ctx context.Context, sel ast.SelectionSet, v model.SubscriptionReleaseClassification) graphql.Marshaler {
-	return v
-}
-
 func (ec *executionContext) unmarshalNSubscriptionReleaseDateRange2githubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐSubscriptionReleaseDateRange(ctx context.Context, v any) (model.SubscriptionReleaseDateRange, error) {
 	var res model.SubscriptionReleaseDateRange
 	err := res.UnmarshalGQL(v)
@@ -32188,16 +31984,6 @@ func (ec *executionContext) unmarshalNSubscriptionReleaseDateRange2githubᚗcom�
 }
 
 func (ec *executionContext) marshalNSubscriptionReleaseDateRange2githubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐSubscriptionReleaseDateRange(ctx context.Context, sel ast.SelectionSet, v model.SubscriptionReleaseDateRange) graphql.Marshaler {
-	return v
-}
-
-func (ec *executionContext) unmarshalNSubscriptionReleaseDecision2githubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐSubscriptionReleaseDecision(ctx context.Context, v any) (model.SubscriptionReleaseDecision, error) {
-	var res model.SubscriptionReleaseDecision
-	err := res.UnmarshalGQL(v)
-	return res, graphql.ErrorOnPath(ctx, err)
-}
-
-func (ec *executionContext) marshalNSubscriptionReleaseDecision2githubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐSubscriptionReleaseDecision(ctx context.Context, sel ast.SelectionSet, v model.SubscriptionReleaseDecision) graphql.Marshaler {
 	return v
 }
 

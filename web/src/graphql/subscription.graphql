@@ -103,17 +103,9 @@ query SubscribedPerformers {
     processedReleaseCount
     recentReleases {
       key
-      source
       title
       code
       date
-      url
-      taskID
-      performerCount
-      performerNames
-      classification
-      decision
-      decisionReason
       seenAt
     }
   }
@@ -140,21 +132,6 @@ mutation RefreshSubscribedPerformer($stashPerformerID: ID!) {
     }
     lastCheckedAt
     lastError
-    pendingReleaseCount
-    processedReleaseCount
-    recentReleases {
-      key
-      title
-      code
-      date
-      taskID
-      performerCount
-      performerNames
-      classification
-      decision
-      decisionReason
-      seenAt
-    }
   }
 }
 

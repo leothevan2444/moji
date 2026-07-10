@@ -538,19 +538,16 @@ type SubscribedPerformer struct {
 }
 
 type SubscriptionRelease struct {
-	Key            string                            `json:"key"`
-	Source         string                            `json:"source"`
-	Title          string                            `json:"title"`
-	Code           *string                           `json:"code,omitempty"`
-	Date           *string                           `json:"date,omitempty"`
-	URL            *string                           `json:"url,omitempty"`
-	TaskID         *string                           `json:"taskID,omitempty"`
-	PerformerCount int                               `json:"performerCount"`
-	PerformerNames []string                          `json:"performerNames"`
-	Classification SubscriptionReleaseClassification `json:"classification"`
-	Decision       SubscriptionReleaseDecision       `json:"decision"`
-	DecisionReason string                            `json:"decisionReason"`
-	SeenAt         string                            `json:"seenAt"`
+	Key            string   `json:"key"`
+	Source         string   `json:"source"`
+	Title          string   `json:"title"`
+	Code           *string  `json:"code,omitempty"`
+	Date           *string  `json:"date,omitempty"`
+	URL            *string  `json:"url,omitempty"`
+	TaskID         *string  `json:"taskID,omitempty"`
+	PerformerCount int      `json:"performerCount"`
+	PerformerNames []string `json:"performerNames"`
+	SeenAt         string   `json:"seenAt"`
 }
 
 type SubscriptionReleasePolicy struct {
@@ -1203,67 +1200,6 @@ func (e SubscriptionReleaseBehavior) MarshalJSON() ([]byte, error) {
 	return buf.Bytes(), nil
 }
 
-type SubscriptionReleaseClassification string
-
-const (
-	SubscriptionReleaseClassificationSolo            SubscriptionReleaseClassification = "SOLO"
-	SubscriptionReleaseClassificationSmallGroup      SubscriptionReleaseClassification = "SMALL_GROUP"
-	SubscriptionReleaseClassificationLargeGroup      SubscriptionReleaseClassification = "LARGE_GROUP"
-	SubscriptionReleaseClassificationCompilationLike SubscriptionReleaseClassification = "COMPILATION_LIKE"
-	SubscriptionReleaseClassificationUnknown         SubscriptionReleaseClassification = "UNKNOWN"
-)
-
-var AllSubscriptionReleaseClassification = []SubscriptionReleaseClassification{
-	SubscriptionReleaseClassificationSolo,
-	SubscriptionReleaseClassificationSmallGroup,
-	SubscriptionReleaseClassificationLargeGroup,
-	SubscriptionReleaseClassificationCompilationLike,
-	SubscriptionReleaseClassificationUnknown,
-}
-
-func (e SubscriptionReleaseClassification) IsValid() bool {
-	switch e {
-	case SubscriptionReleaseClassificationSolo, SubscriptionReleaseClassificationSmallGroup, SubscriptionReleaseClassificationLargeGroup, SubscriptionReleaseClassificationCompilationLike, SubscriptionReleaseClassificationUnknown:
-		return true
-	}
-	return false
-}
-
-func (e SubscriptionReleaseClassification) String() string {
-	return string(e)
-}
-
-func (e *SubscriptionReleaseClassification) UnmarshalGQL(v any) error {
-	str, ok := v.(string)
-	if !ok {
-		return fmt.Errorf("enums must be strings")
-	}
-
-	*e = SubscriptionReleaseClassification(str)
-	if !e.IsValid() {
-		return fmt.Errorf("%s is not a valid SubscriptionReleaseClassification", str)
-	}
-	return nil
-}
-
-func (e SubscriptionReleaseClassification) MarshalGQL(w io.Writer) {
-	fmt.Fprint(w, strconv.Quote(e.String()))
-}
-
-func (e *SubscriptionReleaseClassification) UnmarshalJSON(b []byte) error {
-	s, err := strconv.Unquote(string(b))
-	if err != nil {
-		return err
-	}
-	return e.UnmarshalGQL(s)
-}
-
-func (e SubscriptionReleaseClassification) MarshalJSON() ([]byte, error) {
-	var buf bytes.Buffer
-	e.MarshalGQL(&buf)
-	return buf.Bytes(), nil
-}
-
 type SubscriptionReleaseDateRange string
 
 const (
@@ -1320,63 +1256,6 @@ func (e *SubscriptionReleaseDateRange) UnmarshalJSON(b []byte) error {
 }
 
 func (e SubscriptionReleaseDateRange) MarshalJSON() ([]byte, error) {
-	var buf bytes.Buffer
-	e.MarshalGQL(&buf)
-	return buf.Bytes(), nil
-}
-
-type SubscriptionReleaseDecision string
-
-const (
-	SubscriptionReleaseDecisionDownloaded SubscriptionReleaseDecision = "DOWNLOADED"
-	SubscriptionReleaseDecisionQueued     SubscriptionReleaseDecision = "QUEUED"
-	SubscriptionReleaseDecisionBlocked    SubscriptionReleaseDecision = "BLOCKED"
-)
-
-var AllSubscriptionReleaseDecision = []SubscriptionReleaseDecision{
-	SubscriptionReleaseDecisionDownloaded,
-	SubscriptionReleaseDecisionQueued,
-	SubscriptionReleaseDecisionBlocked,
-}
-
-func (e SubscriptionReleaseDecision) IsValid() bool {
-	switch e {
-	case SubscriptionReleaseDecisionDownloaded, SubscriptionReleaseDecisionQueued, SubscriptionReleaseDecisionBlocked:
-		return true
-	}
-	return false
-}
-
-func (e SubscriptionReleaseDecision) String() string {
-	return string(e)
-}
-
-func (e *SubscriptionReleaseDecision) UnmarshalGQL(v any) error {
-	str, ok := v.(string)
-	if !ok {
-		return fmt.Errorf("enums must be strings")
-	}
-
-	*e = SubscriptionReleaseDecision(str)
-	if !e.IsValid() {
-		return fmt.Errorf("%s is not a valid SubscriptionReleaseDecision", str)
-	}
-	return nil
-}
-
-func (e SubscriptionReleaseDecision) MarshalGQL(w io.Writer) {
-	fmt.Fprint(w, strconv.Quote(e.String()))
-}
-
-func (e *SubscriptionReleaseDecision) UnmarshalJSON(b []byte) error {
-	s, err := strconv.Unquote(string(b))
-	if err != nil {
-		return err
-	}
-	return e.UnmarshalGQL(s)
-}
-
-func (e SubscriptionReleaseDecision) MarshalJSON() ([]byte, error) {
 	var buf bytes.Buffer
 	e.MarshalGQL(&buf)
 	return buf.Bytes(), nil

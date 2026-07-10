@@ -216,10 +216,6 @@ func (s *Service) RefreshSubscribedPerformer(ctx context.Context, performerID st
 	}
 
 	item := performerFromStash(performer, s.customFieldKey)
-	if !item.Subscribed {
-		return SubscribedPerformer{}, fmt.Errorf("subscription: performer %q is not subscribed", performerID)
-	}
-
 	state, err := s.store.Get(ctx, performerID)
 	if err != nil {
 		logging.Errorf("subscription: load state for performer %s failed: %v", performerID, err)

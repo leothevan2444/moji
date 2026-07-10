@@ -29,3 +29,18 @@ export function performerImageURL(imagePath?: string | null, stashURL?: string |
     return imagePath;
   }
 }
+
+/** Build the matching performer detail URL in the configured Stash instance. */
+export function stashPerformerURL(performerID: string, stashURL?: string | null) {
+  if (!stashURL) return null;
+  try {
+    const url = new URL(stashURL);
+    const basePath = url.pathname.replace(/\/$/, "");
+    url.pathname = `${basePath}/performers/${encodeURIComponent(performerID)}`;
+    url.search = "";
+    url.hash = "";
+    return url.toString();
+  } catch {
+    return null;
+  }
+}

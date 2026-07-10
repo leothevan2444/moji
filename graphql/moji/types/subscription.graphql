@@ -155,24 +155,7 @@ type SubscriptionRelease {
   taskID: ID
   performerCount: Int!
   performerNames: [String!]!
-  classification: SubscriptionReleaseClassification!
-  decision: SubscriptionReleaseDecision!
-  decisionReason: String!
   seenAt: String!
-}
-
-enum SubscriptionReleaseClassification {
-  SOLO
-  SMALL_GROUP
-  LARGE_GROUP
-  COMPILATION_LIKE
-  UNKNOWN
-}
-
-enum SubscriptionReleaseDecision {
-  DOWNLOADED
-  QUEUED
-  BLOCKED
 }
 
 input QueuePerformerScenesInput {

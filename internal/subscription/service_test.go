@@ -354,6 +354,52 @@ func TestRefreshPerformerStoresPendingReleasesWithoutTaskRuntime(t *testing.T) {
 	}
 }
 
+func TestRefreshPerformerAllowsUnsubscribedPerformer(t *testing.T) {
+	endpoint := "https://javstash.example.org/graphql"
+	stashClient := &fakeStashClient{
+		performers: map[string]*stashgraphql.PerformerFragment{
+			"p1": {
+				ID:       "p1",
+				Name:     "Unsubscribed Performer",
+				StashIds: []*stashgraphql.StashIDFragment{{Endpoint: endpoint, StashID: "js-1"}},
+			},
+		},
+	}
+	registry := newStashboxRegistry(stubFactory{
+		client: &fakeStashboxClient{
+			performer: &stashboxgraphql.PerformerFragment{ID: "js-1", Name: "Unsubscribed Performer"},
+		},
+	})
+	registry.Replace([]stash.StashBoxEndpoint{{
+		Name:     "javstash",
+		Endpoint: endpoint,
+		APIKey:   "ignored",
+	}})
+	store := NewMemoryStore()
+	service, err := NewService(stashClient, registry, nil, store)
+	if err != nil {
+		t.Fatalf("NewService failed: %v", err)
+	}
+
+	item, err := service.RefreshSubscribedPerformer(context.Background(), "p1")
+	if err != nil {
+		t.Fatalf("RefreshSubscribedPerformer failed: %v", err)
+	}
+	if item.Performer.Subscribed {
+		t.Fatalf("manual refresh must not subscribe the performer")
+	}
+	if item.LastCheckedAt == nil {
+		t.Fatalf("expected manual refresh to record its check time")
+	}
+	state, err := store.Get(context.Background(), "p1")
+	if err != nil {
+		t.Fatalf("load stored performer state: %v", err)
+	}
+	if state == nil || state.LastCheckedAt == nil {
+		t.Fatalf("expected manual refresh state to be persisted")
+	}
+}
+
 func TestRefreshPerformerDoesNotDuplicatePendingReleasesAcrossPolls(t *testing.T) {
 	endpoint := "https://javstash.example.org/graphql"
 	code := "ABCD-123"

@@ -174,9 +174,6 @@ func subscriptionReleaseToModel(release subscription.RecordedRelease) *model.Sub
 		TaskID:         nilIfEmpty(release.TaskID),
 		PerformerCount: release.PerformerCount,
 		PerformerNames: append([]string(nil), release.PerformerNames...),
-		Classification: model.SubscriptionReleaseClassification(release.Classification),
-		Decision:       model.SubscriptionReleaseDecision(release.Decision),
-		DecisionReason: release.DecisionReason,
 		SeenAt:         formatTime(release.SeenAt),
 	}
 }

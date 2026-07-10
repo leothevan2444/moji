@@ -44,5 +44,5 @@ export {
   type TaskPresentation,
   type TaskCardState
 } from "./taskUtils";
-export { performerInitials, performerImageURL } from "./performerUtils";
+export { performerInitials, performerImageURL, stashPerformerURL } from "./performerUtils";
 export { boolState, serviceStatus } from "./settingsUtils";
