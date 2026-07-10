@@ -16,7 +16,7 @@
   }
 
   .toolbar-inline {
-    grid-template-columns: minmax(200px, 1fr) repeat(2, minmax(130px, 160px)) auto auto auto;
+    grid-template-columns: minmax(200px, 1fr) repeat(2, minmax(130px, 160px)) repeat(4, auto);
 
     &--subscription {
       grid-template-columns: minmax(220px, 1.3fr) repeat(4, minmax(120px, 160px)) auto auto;

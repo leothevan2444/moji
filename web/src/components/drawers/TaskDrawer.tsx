@@ -4,10 +4,12 @@ import type { DashboardTask } from "../../utils";
 interface TaskDrawerProps {
   task: DashboardTask | null;
   pendingScan: boolean;
+  pendingRetry: boolean;
   pendingDelete: boolean;
   onCopy: (value: string, successMessage: string) => void | Promise<void>;
   onSyncAll: () => void;
   onScanTask: (taskId: string) => void;
+  onRetryTask: (taskId: string) => void;
   onScanAll: () => void;
   onDeleteTask: (taskId: string) => void;
 }
@@ -15,10 +17,12 @@ interface TaskDrawerProps {
 export function TaskDrawer({
   task,
   pendingScan,
+  pendingRetry,
   pendingDelete,
   onCopy,
   onSyncAll,
   onScanTask,
+  onRetryTask,
   onScanAll,
   onDeleteTask
 }: TaskDrawerProps) {
@@ -28,10 +32,12 @@ export function TaskDrawer({
         <TaskDetail
           task={task}
           pendingScan={pendingScan}
+          pendingRetry={pendingRetry}
           pendingDelete={pendingDelete}
           onCopy={onCopy}
           onSyncAll={onSyncAll}
           onScanTask={onScanTask}
+          onRetryTask={onRetryTask}
           onScanAll={onScanAll}
           onDeleteTask={onDeleteTask}
         />

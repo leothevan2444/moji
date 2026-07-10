@@ -87,6 +87,8 @@ function App() {
   });
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
   const [pendingTaskScanId, setPendingTaskScanId] = useState<string | null>(null);
+  const [pendingTaskRetryId, setPendingTaskRetryId] = useState<string | null>(null);
+  const [retryingBlockedTasks, setRetryingBlockedTasks] = useState(false);
   const [pendingTaskDeleteId, setPendingTaskDeleteId] = useState<string | null>(null);
   const [confirmDeleteTaskId, setConfirmDeleteTaskId] = useState<string | null>(null);
 
@@ -135,6 +137,7 @@ function App() {
     refreshDashboard,
     addTorrent,
     deleteTask,
+    retryTask,
     syncTaskProgress,
     triggerTaskStashScan,
     triggerStashScans
@@ -377,6 +380,59 @@ function App() {
       await refreshDashboard({ requestPolicy: "network-only" });
     } finally {
       setPendingTaskScanId(null);
+    }
+  };
+
+  const runRetryTask = async (taskId: string) => {
+    const task = tasks.find((entry) => entry.id === taskId);
+    setPendingTaskRetryId(taskId);
+    try {
+      const response = await retryTask({ id: taskId });
+      if (response.error) {
+        pushToast("tone-danger", describeQueryError(response.error));
+        return;
+      }
+      if (!response.data?.retryTask?.id) {
+        pushToast("tone-danger", "任务重试失败，后端没有返回任务记录。");
+        return;
+      }
+      pushToast("tone-success", `已重试任务：${task ? taskSummary(task) : taskId}。`);
+    } finally {
+      await refreshDashboard({ requestPolicy: "network-only" });
+      setPendingTaskRetryId(null);
+    }
+  };
+
+  const runRetryBlockedTasks = async () => {
+    const blockedTasks = tasks.filter((task) => task.stageStatus === "BLOCKED");
+    if (blockedTasks.length === 0) {
+      pushToast("tone-info", "当前没有受阻任务需要重试。");
+      return;
+    }
+
+    setRetryingBlockedTasks(true);
+    let succeeded = 0;
+    let failed = 0;
+    try {
+      for (const task of blockedTasks) {
+        setPendingTaskRetryId(task.id);
+        const response = await retryTask({ id: task.id });
+        if (response.error || !response.data?.retryTask?.id) {
+          failed += 1;
+        } else {
+          succeeded += 1;
+        }
+      }
+
+      if (failed === 0) {
+        pushToast("tone-success", `已重试 ${succeeded} 个受阻任务。`);
+      } else {
+        pushToast("tone-info", `受阻任务重试完成：成功 ${succeeded} 个，失败 ${failed} 个。`);
+      }
+    } finally {
+      setPendingTaskRetryId(null);
+      await refreshDashboard({ requestPolicy: "network-only" });
+      setRetryingBlockedTasks(false);
     }
   };
 
@@ -651,8 +707,10 @@ function App() {
             runtimeSettings={runtimeSettings}
             runtimeStatus={runtimeStatus}
             pendingTaskScanId={pendingTaskScanId}
+            pendingTaskRetryId={pendingTaskRetryId}
             onOpenTask={openTaskDetail}
             onScanTask={(id) => void runTaskScan(id)}
+            onRetryTask={(id) => void runRetryTask(id)}
             onOpenSettings={openSettings}
           />
         ) : null}
@@ -671,7 +729,9 @@ function App() {
             taskSort={taskSort}
             taskGroupOpen={taskGroupOpen}
             pendingTaskScanId={pendingTaskScanId}
+            pendingTaskRetryId={pendingTaskRetryId}
             pendingTaskDeleteId={pendingTaskDeleteId}
+            retryingBlockedTasks={retryingBlockedTasks}
             onSearchChange={setTaskSearch}
             onStatusChange={setTaskStatus}
             onSortChange={setTaskSort}
@@ -681,6 +741,8 @@ function App() {
             onScanAll={() => void runScan()}
             onOpenTask={openTaskDetail}
             onScanTask={(id) => void runTaskScan(id)}
+            onRetryTask={(id) => void runRetryTask(id)}
+            onRetryBlockedTasks={() => void runRetryBlockedTasks()}
             onDeleteTask={requestDeleteTask}
           />
         ) : null}
@@ -809,10 +871,12 @@ function App() {
             <TaskDrawer
               task={activeTask}
               pendingScan={activeTask ? pendingTaskScanId === activeTask.id : false}
+              pendingRetry={activeTask ? pendingTaskRetryId === activeTask.id : false}
               pendingDelete={activeTask ? pendingTaskDeleteId === activeTask.id : false}
               onCopy={copyText}
               onSyncAll={() => void runSync()}
               onScanTask={(id) => void runTaskScan(id)}
+              onRetryTask={(id) => void runRetryTask(id)}
               onScanAll={() => void runScan()}
               onDeleteTask={requestDeleteTask}
             />

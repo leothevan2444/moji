@@ -35,8 +35,10 @@ interface HomePageProps {
   runtimeSettings: RuntimeSettings | null;
   runtimeStatus: RuntimeStatus | null;
   pendingTaskScanId: string | null;
+  pendingTaskRetryId: string | null;
   onOpenTask: (taskId: string) => void;
   onScanTask: (taskId: string) => void;
+  onRetryTask: (taskId: string) => void;
   onOpenSettings: (tab: SettingsTab) => void;
 }
 
@@ -45,8 +47,10 @@ export function HomePage({
   runtimeSettings,
   runtimeStatus,
   pendingTaskScanId,
+  pendingTaskRetryId,
   onOpenTask,
   onScanTask,
+  onRetryTask,
   onOpenSettings
 }: HomePageProps) {
   const todoTasks = tasks.filter((task) => isStatus(task, "failed") || isScanPending(task)).slice(0, 4);
@@ -193,8 +197,10 @@ export function HomePage({
               task={task}
               compact
               pendingScanId={pendingTaskScanId}
+              pendingRetryId={pendingTaskRetryId}
               onOpen={onOpenTask}
               onScan={onScanTask}
+              onRetry={onRetryTask}
             />
           ))}
           {!hasTodos ? (

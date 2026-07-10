@@ -26,7 +26,9 @@ interface TasksPageProps {
   taskSort: TaskSortKey;
   taskGroupOpen: Record<TaskGroupKey, boolean>;
   pendingTaskScanId: string | null;
+  pendingTaskRetryId: string | null;
   pendingTaskDeleteId: string | null;
+  retryingBlockedTasks: boolean;
   onSearchChange: (value: string) => void;
   onStatusChange: (status: TaskStatusFilter) => void;
   onSortChange: (sort: TaskSortKey) => void;
@@ -36,6 +38,8 @@ interface TasksPageProps {
   onScanAll: () => void;
   onOpenTask: (taskId: string) => void;
   onScanTask: (taskId: string) => void;
+  onRetryTask: (taskId: string) => void;
+  onRetryBlockedTasks: () => void;
   onDeleteTask: (taskId: string) => void;
 }
 
@@ -47,7 +51,9 @@ export function TasksPage({
   taskSort,
   taskGroupOpen,
   pendingTaskScanId,
+  pendingTaskRetryId,
   pendingTaskDeleteId,
+  retryingBlockedTasks,
   onSearchChange,
   onStatusChange,
   onSortChange,
@@ -57,6 +63,8 @@ export function TasksPage({
   onScanAll,
   onOpenTask,
   onScanTask,
+  onRetryTask,
+  onRetryBlockedTasks,
   onDeleteTask
 }: TasksPageProps) {
   const deferredTaskSearch = useDeferredValue(taskSearch.trim().toLowerCase());
@@ -150,6 +158,14 @@ export function TasksPage({
         <button type="button" className="ghost-button" onClick={onScanAll}>
           触发扫描
         </button>
+        <button
+          type="button"
+          className="ghost-button"
+          onClick={onRetryBlockedTasks}
+          disabled={retryingBlockedTasks || metrics.failed === 0}
+        >
+          {retryingBlockedTasks ? "正在重试受阻任务..." : `重试受阻任务${metrics.failed > 0 ? ` (${metrics.failed})` : ""}`}
+        </button>
       </div>
 
       {!visibleTasks.length ? (
@@ -172,10 +188,12 @@ export function TasksPage({
             tasks={item.tasks}
             open={taskGroupOpen[item.group]}
             pendingTaskScanId={pendingTaskScanId}
+            pendingTaskRetryId={pendingTaskRetryId}
             pendingTaskDeleteId={pendingTaskDeleteId}
             onToggle={onToggleGroup}
             onOpenTask={onOpenTask}
             onScanTask={onScanTask}
+            onRetryTask={onRetryTask}
             onDeleteTask={onDeleteTask}
             onScanAll={onScanAll}
           />

@@ -13,9 +13,11 @@ interface TaskCardProps {
   task: DashboardTask;
   compact?: boolean;
   pendingScanId?: string | null;
+  pendingRetryId?: string | null;
   pendingDeleteId?: string | null;
   onOpen: (taskId: string) => void;
   onScan?: (taskId: string) => void;
+  onRetry?: (taskId: string) => void;
   onDelete?: (taskId: string) => void;
 }
 
@@ -23,15 +25,18 @@ export function TaskCard({
   task,
   compact = false,
   pendingScanId = null,
+  pendingRetryId = null,
   pendingDeleteId = null,
   onOpen,
   onScan,
+  onRetry,
   onDelete
 }: TaskCardProps) {
   const presentation = taskPresentation(task);
   const failure = taskFailureSummary(task);
   const state = taskCardState(presentation, failure);
   const isPendingScan = pendingScanId === task.id;
+  const isPendingRetry = pendingRetryId === task.id;
   const isPendingDelete = pendingDeleteId === task.id;
 
   return (
@@ -91,6 +96,21 @@ export function TaskCard({
         <span>{formatDateTime(task.updatedAt)}</span>
 
         <div className="task-card__right">
+          {task.stageStatus === "BLOCKED" && onRetry ? (
+            <button
+              type="button"
+              className="ghost-button task-card__action-button"
+              onClick={(event) => {
+                event.stopPropagation();
+                onRetry(task.id);
+              }}
+              onKeyDown={(event) => event.stopPropagation()}
+              disabled={isPendingRetry}
+              aria-label={`重试任务：${taskSummary(task)}`}
+            >
+              {isPendingRetry ? "重试中..." : "重试"}
+            </button>
+          ) : null}
           {canTriggerTaskStashScan(task) && onScan ? (
             <button
               type="button"

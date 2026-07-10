@@ -3,6 +3,7 @@ import {
   AddTorrentDocumentDocument,
   DashboardDocumentDocument,
   DeleteTaskDocumentDocument,
+  RetryTaskDocumentDocument,
   SyncTaskProgressDocumentDocument,
   TriggerStashScansDocumentDocument,
   TriggerTaskStashScanDocumentDocument,
@@ -12,6 +13,8 @@ import {
   type DashboardDocumentQueryVariables,
   type DeleteTaskDocumentMutation,
   type DeleteTaskDocumentMutationVariables,
+  type RetryTaskDocumentMutation,
+  type RetryTaskDocumentMutationVariables,
   type SyncTaskProgressDocumentMutation,
   type SyncTaskProgressDocumentMutationVariables,
   type TriggerStashScansDocumentMutation,
@@ -48,6 +51,11 @@ export function useDashboard() {
     DeleteTaskDocumentMutationVariables
   >(DeleteTaskDocumentDocument);
 
+  const [, retryTask] = useMutation<
+    RetryTaskDocumentMutation,
+    RetryTaskDocumentMutationVariables
+  >(RetryTaskDocumentDocument);
+
   const [, triggerTaskStashScan] = useMutation<
     TriggerTaskStashScanDocumentMutation,
     TriggerTaskStashScanDocumentMutationVariables
@@ -65,6 +73,7 @@ export function useDashboard() {
     refreshDashboard,
     addTorrent,
     deleteTask,
+    retryTask,
     syncTaskProgress,
     triggerTaskStashScan,
     triggerStashScans

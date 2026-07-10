@@ -23,10 +23,12 @@ import {
 interface TaskDetailProps {
   task: DashboardTask;
   pendingScan: boolean;
+  pendingRetry: boolean;
   pendingDelete: boolean;
   onCopy: (value: string, successMessage: string) => void | Promise<void>;
   onSyncAll: () => void;
   onScanTask: (taskId: string) => void;
+  onRetryTask: (taskId: string) => void;
   onScanAll: () => void;
   onDeleteTask: (taskId: string) => void;
 }
@@ -34,10 +36,12 @@ interface TaskDetailProps {
 export function TaskDetail({
   task,
   pendingScan,
+  pendingRetry,
   pendingDelete,
   onCopy,
   onSyncAll,
   onScanTask,
+  onRetryTask,
   onScanAll,
   onDeleteTask
 }: TaskDetailProps) {
@@ -258,6 +262,17 @@ export function TaskDetail({
           </div>
         </div>
         <div className="task-ops">
+          {task.stageStatus === "BLOCKED" ? (
+            <button
+              type="button"
+              className="ghost-button task-ops__button"
+              onClick={() => onRetryTask(task.id)}
+              disabled={pendingRetry}
+            >
+              <FontAwesomeIcon icon={faRotate} />
+              <span>{pendingRetry ? "正在重试当前任务" : "重试受阻任务"}</span>
+            </button>
+          ) : null}
           <button type="button" className="ghost-button task-ops__button" onClick={onSyncAll}>
             <FontAwesomeIcon icon={faRotate} />
             <span>同步全部任务进度</span>
