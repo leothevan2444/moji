@@ -5,7 +5,7 @@ GO_RUN = GOCACHE=$(GOCACHE) $(GO) run
 
 # Generate files
 .PHONY: generate
-generate: generate-graphql generate-sql
+generate: generate-graphql
 
 # Generates GraphQL files
 .PHONY: generate-graphql
@@ -27,14 +27,6 @@ generate-moji-graphql:
 		$(GO_RUN) github.com/99designs/gqlgen generate --config graphql/moji/gqlgen.yml; \
 	fi
 	npm --prefix web run codegen
-
-# Generates SQL files
-.PHONY: generate-sql
-generate-sql: generate-r18dev
-
-.PHONY: generate-r18dev
-generate-r18dev:
-	$(GO_RUN) github.com/sqlc-dev/sqlc/cmd/sqlc generate -f ./pkg/r18dev/pg/sqlc.yaml
 
 # Cleans up generated files
 .PHONY: clean-generated
