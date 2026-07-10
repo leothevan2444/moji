@@ -3,7 +3,6 @@ package subscription
 import (
 	"context"
 	"errors"
-	"fmt"
 	"sort"
 	"strings"
 
@@ -72,38 +71,10 @@ func (s *Service) SearchPreferredStashBoxScenes(ctx context.Context, query strin
 }
 
 func (s *Service) QueueDiscoveredScene(ctx context.Context, sceneID string, stashBoxEndpoint string) (*downloader.Task, error) {
-	if s.downloader == nil {
+	if s.taskCreator == nil {
 		return nil, errors.New("subscription: downloader is not configured")
 	}
-	sceneID = strings.TrimSpace(sceneID)
-	if sceneID == "" {
-		return nil, errors.New("subscription: scene id is required")
-	}
-	stashBoxEndpoint = strings.TrimSpace(stashBoxEndpoint)
-	if stashBoxEndpoint == "" {
-		return nil, errors.New("subscription: stash-box endpoint is required")
-	}
-	client, ok := s.stashbox.Get(stashBoxEndpoint)
-	if !ok || client == nil {
-		return nil, fmt.Errorf("subscription: stash-box endpoint %q is not available", stashBoxEndpoint)
-	}
-
-	scene, err := client.FindSceneByID(ctx, sceneID)
-	if err != nil {
-		return nil, fmt.Errorf("subscription: load scene %q from %q: %w", sceneID, stashBoxEndpoint, err)
-	}
-	if scene == nil {
-		return nil, fmt.Errorf("subscription: scene %q not found in %q", sceneID, stashBoxEndpoint)
-	}
-
-	query := buildReleaseQuery(stringValue(scene.Code), stringValue(scene.Title))
-	if query == "" {
-		return nil, fmt.Errorf("subscription: scene %q is missing code", sceneID)
-	}
-	return s.downloader.DownloadMediaContext(ctx, downloader.DownloadRequest{
-		Source: downloader.TaskSourceSearch,
-		Query:  query,
-	})
+	return s.taskCreator.QueueDiscoveredScene(ctx, sceneID, stashBoxEndpoint)
 }
 
 func discoveredSceneFromStashBox(scene *stashboxgraphql.SceneFragment, box StashBoxEndpoint) DiscoveredScene {

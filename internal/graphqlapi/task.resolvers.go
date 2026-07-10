@@ -8,9 +8,9 @@ import (
 	"context"
 	"errors"
 
-	"github.com/leothevan2444/moji/internal/downloader"
 	"github.com/leothevan2444/moji/internal/graphqlapi/generated"
 	"github.com/leothevan2444/moji/internal/graphqlapi/model"
+	"github.com/leothevan2444/moji/internal/taskflow"
 	"github.com/leothevan2444/moji/pkg/qbittorrent"
 )
 
@@ -24,12 +24,11 @@ func (r *mutationResolver) QbittorrentAdd(ctx context.Context, input model.QBitt
 
 // AddTorrent is the resolver for the addTorrent field.
 func (r *mutationResolver) AddTorrent(ctx context.Context, input model.QBittorrentAddInput) (*model.Task, error) {
-	if r.Downloader == nil {
+	if r.TaskFlow == nil {
 		return nil, errors.New("downloader is not configured")
 	}
 
-	req := downloader.AddTorrentRequest{
-		Source: downloader.TaskSourceManual,
+	req := taskflow.CreateFromManualTorrentInput{
 		URL:    input.URL,
 		Paused: input.Paused,
 	}
@@ -43,7 +42,7 @@ func (r *mutationResolver) AddTorrent(ctx context.Context, input model.QBittorre
 		req.Tags = *input.Tags
 	}
 
-	task, err := r.Downloader.AddTorrentContext(ctx, req)
+	task, err := r.TaskFlow.CreateFromManualTorrent(ctx, req)
 	if task != nil {
 		return taskToModel(task), err
 	}
@@ -52,12 +51,11 @@ func (r *mutationResolver) AddTorrent(ctx context.Context, input model.QBittorre
 
 // DownloadMedia is the resolver for the downloadMedia field.
 func (r *mutationResolver) DownloadMedia(ctx context.Context, input model.DownloadMediaInput) (*model.Task, error) {
-	if r.Downloader == nil {
+	if r.TaskFlow == nil {
 		return nil, errors.New("downloader is not configured")
 	}
 
-	req := downloader.DownloadRequest{
-		Source:     downloader.TaskSourceManual,
+	req := taskflow.CreateFromSearchQueryInput{
 		Query:      input.Query,
 		Trackers:   input.Trackers,
 		Categories: input.Categories,
@@ -76,7 +74,7 @@ func (r *mutationResolver) DownloadMedia(ctx context.Context, input model.Downlo
 		req.Tags = *input.Tags
 	}
 
-	task, err := r.Downloader.DownloadMediaContext(ctx, req)
+	task, err := r.TaskFlow.CreateFromSearchQuery(ctx, req)
 	if task != nil {
 		return taskToModel(task), err
 	}

@@ -35,13 +35,19 @@ type StashboxClient interface {
 }
 
 type Downloader interface {
+	AddTorrentContext(ctx context.Context, req downloader.AddTorrentRequest) (*downloader.Task, error)
 	DownloadMediaContext(ctx context.Context, req downloader.DownloadRequest) (*downloader.Task, error)
+}
+
+type TaskCreator interface {
+	QueueDiscoveredScene(ctx context.Context, sceneID string, stashBoxEndpoint string) (*downloader.Task, error)
+	QueueSubscriptionRelease(ctx context.Context, query, code, title string) (*downloader.Task, string, error)
 }
 
 type Service struct {
 	stash          StashClient
 	stashbox       *stashboxRegistry
-	downloader     Downloader
+	taskCreator    TaskCreator
 	store          Store
 	customFieldKey string
 	now            func() time.Time
@@ -58,9 +64,9 @@ type Service struct {
 }
 
 const (
-	releaseQueryPerPage            = 24
-	releaseQueryPollMaxPages       = 3
-	releaseQueryBackfillMaxPages   = 10
+	releaseQueryPerPage          = 24
+	releaseQueryPollMaxPages     = 3
+	releaseQueryBackfillMaxPages = 10
 )
 
 type releaseFetchMode string
@@ -92,16 +98,24 @@ func NewService(stash StashClient, stashbox *stashboxRegistry, downloader Downlo
 	if stashbox == nil {
 		stashbox = newStashboxRegistry(defaultStashboxClientFactory{})
 	}
+	creator := newDefaultTaskCreator(downloader, stashbox)
 
 	return &Service{
 		stash:          stash,
 		stashbox:       stashbox,
-		downloader:     downloader,
+		taskCreator:    creator,
 		store:          store,
 		customFieldKey: DefaultCustomFieldKey,
 		now:            time.Now,
 		releasePolicy:  DefaultReleasePolicyConfig(),
 	}, nil
+}
+
+func (s *Service) SetTaskCreator(creator TaskCreator) {
+	if s == nil {
+		return
+	}
+	s.taskCreator = creator
 }
 
 func (s *Service) ListStashPerformers(ctx context.Context, search string) ([]Performer, error) {
@@ -286,22 +300,22 @@ func (s *Service) RefreshSubscribedPerformer(ctx context.Context, performerID st
 		logging.Infof("subscription: detected %d new releases for performer %s (%s)", len(pending), performerID, performer.Name)
 	}
 
-	if s.downloader != nil {
+	if s.taskCreator != nil {
 		nextPending := append([]RecordedRelease(nil), existingPending...)
 		for i := range pending {
 			if pending[i].Decision != ReleaseDecisionDownloaded {
 				nextPending = append(nextPending, pending[i])
 				continue
 			}
-			task, err := s.downloader.DownloadMediaContext(ctx, downloader.DownloadRequest{
-				Source: downloader.TaskSourceSubscription,
-				Query:  pending[i].Query,
-			})
+			task, resolvedQuery, err := s.taskCreator.QueueSubscriptionRelease(ctx, pending[i].Query, pending[i].Code, pending[i].Title)
 			if err != nil {
 				state.LastError = err.Error()
 				logging.Errorf("subscription: auto-download failed for performer %s release %q: %v", performerID, pending[i].Query, err)
 				nextPending = append(nextPending, pending[i])
 				continue
+			}
+			if resolvedQuery != "" {
+				pending[i].Query = resolvedQuery
 			}
 			if task != nil {
 				pending[i].TaskID = task.ID
@@ -430,7 +444,7 @@ func (s *Service) fetchReleases(ctx context.Context, performer *stashgraphql.Per
 			}
 			pageReleaseCount++
 			release := Release{
-				SceneID:         scene.ID,
+				SceneID:        scene.ID,
 				Key:            keyPrefix + scene.ID,
 				Source:         source,
 				Title:          stringValue(scene.Title),

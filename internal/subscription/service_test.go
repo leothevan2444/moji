@@ -98,6 +98,18 @@ type fakeDownloader struct {
 	sources []downloader.TaskSource
 }
 
+func (f *fakeDownloader) AddTorrentContext(_ context.Context, _ downloader.AddTorrentRequest) (*downloader.Task, error) {
+	if f.err != nil {
+		return nil, f.err
+	}
+	if len(f.tasks) == 0 {
+		return nil, nil
+	}
+	task := f.tasks[0]
+	f.tasks = f.tasks[1:]
+	return task, nil
+}
+
 func (f *fakeStashboxClient) FindPerformerByID(_ context.Context, id string) (*stashboxgraphql.PerformerFragment, error) {
 	if f.performer != nil && f.performer.ID == id {
 		return f.performer, nil

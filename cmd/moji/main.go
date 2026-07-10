@@ -24,6 +24,7 @@ import (
 	"github.com/leothevan2444/moji/internal/stashsync"
 	"github.com/leothevan2444/moji/internal/stats"
 	"github.com/leothevan2444/moji/internal/subscription"
+	"github.com/leothevan2444/moji/internal/taskflow"
 	"github.com/leothevan2444/moji/internal/tracker"
 	"github.com/leothevan2444/moji/internal/webui"
 	"github.com/leothevan2444/moji/pkg/jackett"
@@ -137,8 +138,9 @@ func newHTTPRuntime(cfg *config.Config, version string, configStore *config.Stor
 	qbittorrentClient, torrentClient := configureQBittorrent(cfg, configStore)
 	stashClient := configureStashClient(cfg, configStore)
 	downloaderService := configureDownloader(cfg, configStore, jackettTracker, torrentClient, stashClient)
+	taskFlowService := configureTaskFlow(downloaderService)
 	stashService := configureStashService(cfg, configStore, stashClient)
-	subscriptionService := configureSubscription(cfg, configStore, stashClient, downloaderService)
+	subscriptionService := configureSubscription(cfg, configStore, stashClient, downloaderService, taskFlowService)
 	applySubscriptionOrder(cfg, subscriptionService)
 
 	statsCollector := stats.NewCollector(
@@ -149,6 +151,7 @@ func newHTTPRuntime(cfg *config.Config, version string, configStore *config.Stor
 		logging.Default().Slog(),
 	)
 	resolver := graphqlapi.NewResolver(jackettTracker, torrentClient, downloaderService, stashService, version)
+	resolver.TaskFlow = taskFlowService
 	resolver.Subscription = subscriptionService
 	resolver.LogReader = logging.Default()
 	resolver.RuntimeSettings = buildSettingsSnapshot(cfg, version)
@@ -179,6 +182,14 @@ func newHTTPRuntime(cfg *config.Config, version string, configStore *config.Stor
 	})
 
 	return router, downloaderService, stashService, subscriptionService, statsCollector
+}
+
+func configureTaskFlow(downloaderService graphqlapi.DownloaderService) *taskflow.Service {
+	if downloaderService == nil {
+		logging.Infof("runtime: taskflow service disabled because downloader is not available")
+		return nil
+	}
+	return taskflow.NewService(downloaderService)
 }
 
 // configureJackettConfigProvider returns the latest JackettConfig on every
@@ -749,7 +760,7 @@ func isIngestConfigured(cfg *config.Config) bool {
 	}
 }
 
-func configureSubscription(cfg *config.Config, configStore *config.Store, stashClient *stash.Client, downloaderService graphqlapi.DownloaderService) graphqlapi.SubscriptionService {
+func configureSubscription(cfg *config.Config, configStore *config.Store, stashClient *stash.Client, downloaderService graphqlapi.DownloaderService, taskFlowService *taskflow.Service) graphqlapi.SubscriptionService {
 	if stashClient == nil {
 		logging.Infof("runtime: subscription service disabled because stash client is not available")
 		return nil
@@ -764,6 +775,10 @@ func configureSubscription(cfg *config.Config, configStore *config.Store, stashC
 	service, err := subscription.NewService(stashClient, registry, downloaderService, store)
 	if err != nil {
 		logging.Fatalf("configure subscription: %v", err)
+	}
+	if taskFlowService != nil {
+		taskFlowService.SetDiscoveredSceneResolver(subscription.NewDiscoveredSceneResolver(registry))
+		service.SetTaskCreator(taskFlowService)
 	}
 
 	refreshCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)

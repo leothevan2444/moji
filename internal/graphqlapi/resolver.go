@@ -12,6 +12,7 @@ import (
 	"github.com/leothevan2444/moji/internal/stashsync"
 	"github.com/leothevan2444/moji/internal/stats"
 	"github.com/leothevan2444/moji/internal/subscription"
+	"github.com/leothevan2444/moji/internal/taskflow"
 	"github.com/leothevan2444/moji/internal/tracker"
 	"github.com/leothevan2444/moji/pkg/qbittorrent"
 )
@@ -39,6 +40,14 @@ type DownloaderService interface {
 	SyncProgress(ctx context.Context) ([]*downloader.Task, error)
 	TriggerTaskStashScan(ctx context.Context, id string, scanner downloader.StashScanner) (*downloader.Task, error)
 	TriggerStashScans(ctx context.Context, scanner downloader.StashScanner) ([]*downloader.Task, error)
+}
+
+// TaskFlowService is the only GraphQL seam allowed to create new tasks. Querying
+// existing tasks and advancing task execution stages still belongs to the
+// downloader execution service.
+type TaskFlowService interface {
+	CreateFromManualTorrent(ctx context.Context, input taskflow.CreateFromManualTorrentInput) (*downloader.Task, error)
+	CreateFromSearchQuery(ctx context.Context, input taskflow.CreateFromSearchQueryInput) (*downloader.Task, error)
 }
 
 type SettingsEditor interface {
@@ -295,6 +304,7 @@ type Resolver struct {
 	Tracker         tracker.Tracker
 	Torrent         TorrentClient
 	Downloader      DownloaderService
+	TaskFlow        TaskFlowService
 	Stash           StashService
 	Subscription    SubscriptionService
 	LogReader       LogReader
@@ -306,11 +316,15 @@ type Resolver struct {
 }
 
 func NewResolver(tr tracker.Tracker, torrent TorrentClient, downloader DownloaderService, stash StashService, version string) *Resolver {
-	return &Resolver{
+	resolver := &Resolver{
 		Tracker:    tr,
 		Torrent:    torrent,
 		Downloader: downloader,
 		Stash:      stash,
 		AppVersion: version,
 	}
+	if downloader != nil {
+		resolver.TaskFlow = taskflow.NewService(downloader)
+	}
+	return resolver
 }
