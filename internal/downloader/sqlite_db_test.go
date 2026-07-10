@@ -92,8 +92,8 @@ INSERT INTO task_store_meta (key, value) VALUES ('schema_version', '1');
 	if err != nil {
 		t.Fatalf("read schema version: %v", err)
 	}
-	if version != "6" {
-		t.Fatalf("expected schema version 6, got %q", version)
+	if version != "7" {
+		t.Fatalf("expected schema version 7, got %q", version)
 	}
 }
 
@@ -109,8 +109,8 @@ func TestOpenSQLiteDatabaseInitializesNewSchemaVersion(t *testing.T) {
 	if err != nil {
 		t.Fatalf("read schema version: %v", err)
 	}
-	if version != "6" {
-		t.Fatalf("expected schema version 6, got %q", version)
+	if version != "7" {
+		t.Fatalf("expected schema version 7, got %q", version)
 	}
 
 	if _, err := os.Stat(path); err != nil {
@@ -128,7 +128,6 @@ func TestSQLiteTaskStoreRejectsDuplicateBusinessKeys(t *testing.T) {
 	now := time.Unix(100, 0).UTC()
 	baseTask := &Task{
 		ID:                    "task-1",
-		Query:                 "SONE-000",
 		Code:                  "SONE-000",
 		Stage:                 TaskStageDownloading,
 		StageStatus:           TaskStageStatusRunning,
@@ -143,7 +142,6 @@ func TestSQLiteTaskStoreRejectsDuplicateBusinessKeys(t *testing.T) {
 
 	err = store.Create(context.Background(), &Task{
 		ID:                    "task-2",
-		Query:                 "SONE-000 duplicate",
 		Code:                  "SONE-000",
 		Stage:                 TaskStageDownloading,
 		StageStatus:           TaskStageStatusRunning,
@@ -158,7 +156,6 @@ func TestSQLiteTaskStoreRejectsDuplicateBusinessKeys(t *testing.T) {
 
 	err = store.Create(context.Background(), &Task{
 		ID:                    "task-3",
-		Query:                 "SONE-001",
 		Code:                  "SONE-001",
 		Stage:                 TaskStageDownloading,
 		StageStatus:           TaskStageStatusRunning,
@@ -340,8 +337,8 @@ func TestSubscriptionPerformerReleasesUsesCompositePrimaryKey(t *testing.T) {
 	}
 	if _, err := db.Exec(`
 INSERT INTO subscription_release_entities (
-  release_key, status, source, title, code, query, performer_count, performer_names, classification, decision, decision_reason, seen_at, created_at, updated_at
-) VALUES (?, 'pending', 'stash-box:test', 'Title', 'ABCD-123', 'ABCD-123', 1, '[]', 'UNKNOWN', 'QUEUED', '', ?, ?, ?)`,
+  release_key, status, source, title, code, performer_count, performer_names, classification, decision, decision_reason, seen_at, created_at, updated_at
+) VALUES (?, 'pending', 'stash-box:test', 'Title', 'ABCD-123', 1, '[]', 'UNKNOWN', 'QUEUED', '', ?, ?, ?)`,
 		"release-1", now, now, now,
 	); err != nil {
 		t.Fatalf("insert release entity: %v", err)

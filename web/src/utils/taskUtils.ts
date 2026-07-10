@@ -94,10 +94,10 @@ export function isMagnetLink(value?: string | null) {
 }
 
 export function taskQueryLabel(task: DashboardTask) {
-  if (isMagnetLink(task.query)) {
+  if (isMagnetLink(task.torrentUrl)) {
     return "手动磁链任务";
   }
-  return task.query || task.id;
+  return task.code || task.id;
 }
 
 export function isCopyableTaskValue(value?: string | null) {

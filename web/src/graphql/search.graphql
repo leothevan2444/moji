@@ -84,7 +84,7 @@ mutation QueueDiscoveredSceneDocument($input: QueueDiscoveredSceneInput!) {
     stageStatus
     stageLabel
     stageStatusLabel
-    query
+    code
     torrentName
     progress
     deliveryMode

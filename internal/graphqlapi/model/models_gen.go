@@ -83,7 +83,7 @@ type DownloadCandidate struct {
 }
 
 type DownloadMediaInput struct {
-	Query      string   `json:"query"`
+	Code       string   `json:"code"`
 	Trackers   []string `json:"trackers,omitempty"`
 	Categories []int    `json:"categories,omitempty"`
 	Limit      *int     `json:"limit,omitempty"`
@@ -319,12 +319,12 @@ type QueuePerformerSceneInput struct {
 }
 
 type QueuePerformerSceneResult struct {
-	Key           string                    `json:"key"`
-	Status        QueuePerformerSceneStatus `json:"status"`
-	ReasonCode    string                    `json:"reasonCode"`
-	Message       string                    `json:"message"`
-	Task          *Task                     `json:"task,omitempty"`
-	ResolvedQuery *string                   `json:"resolvedQuery,omitempty"`
+	Key          string                    `json:"key"`
+	Status       QueuePerformerSceneStatus `json:"status"`
+	ReasonCode   string                    `json:"reasonCode"`
+	Message      string                    `json:"message"`
+	Task         *Task                     `json:"task,omitempty"`
+	ResolvedCode *string                   `json:"resolvedCode,omitempty"`
 }
 
 type QueuePerformerScenesInput struct {
@@ -533,7 +533,6 @@ type SubscriptionRelease struct {
 	Code           *string                           `json:"code,omitempty"`
 	Date           *string                           `json:"date,omitempty"`
 	URL            *string                           `json:"url,omitempty"`
-	Query          string                            `json:"query"`
 	TaskID         *string                           `json:"taskID,omitempty"`
 	PerformerCount int                               `json:"performerCount"`
 	PerformerNames []string                          `json:"performerNames"`
@@ -575,7 +574,6 @@ type SystemSettings struct {
 type Task struct {
 	ID                  string             `json:"id"`
 	Source              TaskSource         `json:"source"`
-	Query               string             `json:"query"`
 	Code                string             `json:"code"`
 	Stage               TaskStage          `json:"stage"`
 	StageStatus         TaskStageStatus    `json:"stageStatus"`

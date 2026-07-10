@@ -195,7 +195,6 @@ const taskSelectSQL = `
 SELECT
   id,
   source,
-  query,
   code,
   stage,
   stage_status,
@@ -238,7 +237,6 @@ FROM tasks`
 type sqliteTaskRow struct {
 	ID                    string         `db:"id"`
 	Source                string         `db:"source"`
-	Query                 string         `db:"query"`
 	Code                  string         `db:"code"`
 	Stage                 string         `db:"stage"`
 	StageStatus           string         `db:"stage_status"`
@@ -282,7 +280,6 @@ func (r sqliteTaskRow) toTask() (*Task, error) {
 	task := &Task{
 		ID:                    r.ID,
 		Source:                TaskSource(r.Source),
-		Query:                 r.Query,
 		Code:                  r.Code,
 		Stage:                 TaskStage(r.Stage),
 		StageStatus:           TaskStageStatus(r.StageStatus),
@@ -343,7 +340,6 @@ func (r sqliteTaskRow) toTask() (*Task, error) {
 type sqliteTaskParams struct {
 	ID                    string  `db:"id"`
 	Source                string  `db:"source"`
-	Query                 string  `db:"query"`
 	Code                  string  `db:"code"`
 	Stage                 string  `db:"stage"`
 	StageStatus           string  `db:"stage_status"`
@@ -392,7 +388,6 @@ func taskToSQLiteParams(task *Task) sqliteTaskParams {
 	return sqliteTaskParams{
 		ID:                    task.ID,
 		Source:                string(source),
-		Query:                 task.Query,
 		Code:                  task.Code,
 		Stage:                 string(task.Stage),
 		StageStatus:           string(task.StageStatus),
@@ -437,14 +432,14 @@ func upsertTaskRow(ctx context.Context, tx *sqlx.Tx, task *Task, isUpdate bool) 
 	params := taskToSQLiteParams(task)
 	query := `
 INSERT INTO tasks (
-  id, source, query, code, stage, stage_status, stage_error_code, stage_error_message, torrent_url, save_path, category, tags,
+  id, source, code, stage, stage_status, stage_error_code, stage_error_message, torrent_url, save_path, category, tags,
   torrent_identity_hash, torrent_identity_magnet, torrent_hash, torrent_name, progress, qbittorrent_state, content_path,
   download_completed_at, delivery_mode, moji_source_path, transfer_action, moji_transfer_path,
   transfer_error, stash_scan_job_id, stash_scan_path, stash_scan_error, stash_scan_hint,
   stash_scan_started_at, selected_title, selected_tracker, selected_info_hash, selected_link, selected_magnet_uri,
   selected_size, selected_seeders, selected_peers, created_at, updated_at
 ) VALUES (
-  :id, :source, :query, :code, :stage, :stage_status, :stage_error_code, :stage_error_message, :torrent_url, :save_path, :category, :tags,
+  :id, :source, :code, :stage, :stage_status, :stage_error_code, :stage_error_message, :torrent_url, :save_path, :category, :tags,
   :torrent_identity_hash, :torrent_identity_magnet, :torrent_hash, :torrent_name, :progress, :qbittorrent_state, :content_path,
   :download_completed_at, :delivery_mode, :moji_source_path, :transfer_action, :moji_transfer_path,
   :transfer_error, :stash_scan_job_id, :stash_scan_path, :stash_scan_error, :stash_scan_hint,
@@ -455,7 +450,6 @@ INSERT INTO tasks (
 		query += `
 ON CONFLICT(id) DO UPDATE SET
   source = excluded.source,
-  query = excluded.query,
   code = excluded.code,
   stage = excluded.stage,
   stage_status = excluded.stage_status,

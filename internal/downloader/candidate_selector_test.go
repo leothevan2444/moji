@@ -372,7 +372,7 @@ func TestDownloadMediaContextUsesConfiguredCandidateSelection(t *testing.T) {
 		t.Fatalf("NewService failed: %v", err)
 	}
 
-	task, err := service.DownloadMediaContext(context.Background(), DownloadRequest{Query: "ABCD-123"})
+	task, err := service.DownloadMediaContext(context.Background(), DownloadRequest{Code: "ABCD-123"})
 	if err != nil {
 		t.Fatalf("DownloadMediaContext failed: %v", err)
 	}

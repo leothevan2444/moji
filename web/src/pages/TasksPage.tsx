@@ -75,7 +75,8 @@ export function TasksPage({
         task.stashScanJobId,
         task.torrentHash,
         task.contentPath,
-        task.query
+        task.code,
+        task.torrentUrl
       ]
         .join(" ")
         .toLowerCase();

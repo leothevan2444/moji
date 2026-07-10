@@ -41,7 +41,7 @@ type Downloader interface {
 
 type TaskCreator interface {
 	QueueDiscoveredScene(ctx context.Context, sceneID string, stashBoxEndpoint string) (*downloader.Task, error)
-	QueueSubscriptionRelease(ctx context.Context, query, code, title string) (*downloader.Task, string, error)
+	QueueSubscriptionRelease(ctx context.Context, code, title string) (*downloader.Task, error)
 }
 
 type Service struct {
@@ -286,7 +286,6 @@ func (s *Service) RefreshSubscribedPerformer(ctx context.Context, performerID st
 			Code:           release.Code,
 			Date:           release.Date,
 			URL:            release.URL,
-			Query:          release.Query,
 			SeenAt:         now,
 			PerformerCount: release.PerformerCount,
 			PerformerNames: append([]string(nil), release.PerformerNames...),
@@ -307,19 +306,16 @@ func (s *Service) RefreshSubscribedPerformer(ctx context.Context, performerID st
 				nextPending = append(nextPending, pending[i])
 				continue
 			}
-			task, resolvedQuery, err := s.taskCreator.QueueSubscriptionRelease(ctx, pending[i].Query, pending[i].Code, pending[i].Title)
+			task, err := s.taskCreator.QueueSubscriptionRelease(ctx, pending[i].Code, pending[i].Title)
 			if err != nil {
 				state.LastError = err.Error()
-				logging.Errorf("subscription: auto-download failed for performer %s release %q: %v", performerID, pending[i].Query, err)
+				logging.Errorf("subscription: auto-download failed for performer %s code %q: %v", performerID, pending[i].Code, err)
 				nextPending = append(nextPending, pending[i])
 				continue
 			}
-			if resolvedQuery != "" {
-				pending[i].Query = resolvedQuery
-			}
 			if task != nil {
 				pending[i].TaskID = task.ID
-				logging.Infof("subscription: auto-download created task %s for performer %s release %q", task.ID, performerID, pending[i].Query)
+				logging.Infof("subscription: auto-download created task %s for performer %s code %q", task.ID, performerID, pending[i].Code)
 			}
 			state.ProcessedReleases = append([]RecordedRelease{pending[i]}, state.ProcessedReleases...)
 		}
@@ -450,7 +446,6 @@ func (s *Service) fetchReleases(ctx context.Context, performer *stashgraphql.Per
 				Title:          stringValue(scene.Title),
 				Code:           code,
 				Date:           stringValue(scene.Date),
-				Query:          buildReleaseQuery(code, stringValue(scene.Title)),
 				PerformerCount: evaluation.PerformerCount,
 				PerformerNames: append([]string(nil), evaluation.PerformerNames...),
 				Classification: evaluation.Classification,
@@ -790,7 +785,7 @@ func normalize(value string) string {
 	return strings.ToLower(strings.TrimSpace(value))
 }
 
-func buildReleaseQuery(code, _ string) string {
+func buildReleaseCode(code, _ string) string {
 	return strings.TrimSpace(code)
 }
 

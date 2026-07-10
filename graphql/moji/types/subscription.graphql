@@ -152,7 +152,6 @@ type SubscriptionRelease {
   code: String
   date: String
   url: String
-  query: String!
   taskID: ID
   performerCount: Int!
   performerNames: [String!]!
@@ -203,7 +202,7 @@ type QueuePerformerSceneResult {
   reasonCode: String!
   message: String!
   task: Task
-  resolvedQuery: String
+  resolvedCode: String
 }
 
 type QueuePerformerScenesSummary {

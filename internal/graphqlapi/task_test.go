@@ -22,7 +22,6 @@ func TestDownloadMediaCreatesTask(t *testing.T) {
 	downloader := &fakeDownloader{
 		downloadTask: &downloader.Task{
 			ID:          "task-1",
-			Query:       "ABCD-123",
 			Code:        "ABCD-123",
 			Stage:       downloader.TaskStageDownloading,
 			StageStatus: downloader.TaskStageStatusRunning,
@@ -39,9 +38,8 @@ func TestDownloadMediaCreatesTask(t *testing.T) {
 	resolver := NewResolver(nil, nil, downloader, nil, "test-version")
 
 	resp := executeGraphQL(t, resolver, `mutation {
-		downloadMedia(input: { query: "ABCD-123", limit: 1 }) {
+		downloadMedia(input: { code: "ABCD-123", limit: 1 }) {
 			id
-			query
 			code
 			stage
 			stageStatus
@@ -57,7 +55,7 @@ func TestDownloadMediaCreatesTask(t *testing.T) {
 	if task.ID != "task-1" || task.Code != "ABCD-123" || task.Stage != "DOWNLOADING" || task.StageStatus != "RUNNING" || task.Candidate.Title != "ABCD-123" {
 		t.Fatalf("unexpected download task response: %+v", task)
 	}
-	if downloader.downloadRequest.Query != "ABCD-123" || downloader.downloadRequest.Limit != 1 {
+	if downloader.downloadRequest.Code != "ABCD-123" || downloader.downloadRequest.Limit != 1 {
 		t.Fatalf("unexpected download request: %+v", downloader.downloadRequest)
 	}
 	if string(downloader.downloadRequest.Source) != "MANUAL" {
@@ -69,7 +67,6 @@ func TestAddTorrentCreatesTask(t *testing.T) {
 	downloader := &fakeDownloader{
 		addTask: &downloader.Task{
 			ID:          "task-manual",
-			Query:       "magnet:?xt=urn:btih:manual",
 			Code:        "ABCD-123",
 			Stage:       downloader.TaskStageDownloading,
 			StageStatus: downloader.TaskStageStatusRunning,
@@ -211,13 +208,13 @@ func TestDeprecatedQBittorrentAddCreatesTask(t *testing.T) {
 func TestTasksQueryListsTasks(t *testing.T) {
 	downloader := &fakeDownloader{
 		listTasks: []*downloader.Task{
-			{ID: "task-2", Query: "BBBB-222", Stage: downloader.TaskStageDownloading, StageStatus: downloader.TaskStageStatusRunning, CreatedAt: time.Unix(200, 0).UTC(), UpdatedAt: time.Unix(200, 0).UTC()},
-			{ID: "task-1", Query: "AAAA-111", Stage: downloader.TaskStageDownloading, StageStatus: downloader.TaskStageStatusBlocked, CreatedAt: time.Unix(100, 0).UTC(), UpdatedAt: time.Unix(100, 0).UTC()},
+			{ID: "task-2", Code: "BBBB-222", Stage: downloader.TaskStageDownloading, StageStatus: downloader.TaskStageStatusRunning, CreatedAt: time.Unix(200, 0).UTC(), UpdatedAt: time.Unix(200, 0).UTC()},
+			{ID: "task-1", Code: "AAAA-111", Stage: downloader.TaskStageDownloading, StageStatus: downloader.TaskStageStatusBlocked, CreatedAt: time.Unix(100, 0).UTC(), UpdatedAt: time.Unix(100, 0).UTC()},
 		},
 	}
 	resolver := NewResolver(nil, nil, downloader, nil, "test-version")
 
-	resp := executeGraphQL(t, resolver, `{ tasks { id query code stage } }`)
+	resp := executeGraphQL(t, resolver, `{ tasks { id code stage } }`)
 	if len(resp.Errors) > 0 {
 		t.Fatalf("expected no errors, got %+v", resp.Errors)
 	}
@@ -244,7 +241,7 @@ func TestTasksQueryWithoutDownloaderReturnsEmptyList(t *testing.T) {
 func TestTasksQueryReturnsNullForUnsetOptionalFields(t *testing.T) {
 	downloader := &fakeDownloader{
 		listTasks: []*downloader.Task{
-			{ID: "task-1", Query: "AAAA-111", Stage: downloader.TaskStageSourcing, StageStatus: downloader.TaskStageStatusRunning, CreatedAt: time.Unix(100, 0).UTC(), UpdatedAt: time.Unix(100, 0).UTC()},
+			{ID: "task-1", Code: "AAAA-111", Stage: downloader.TaskStageSourcing, StageStatus: downloader.TaskStageStatusRunning, CreatedAt: time.Unix(100, 0).UTC(), UpdatedAt: time.Unix(100, 0).UTC()},
 		},
 	}
 	resolver := NewResolver(nil, nil, downloader, nil, "test-version")
@@ -281,12 +278,12 @@ func TestQueuePerformerScenesMutationMapsBatchResult(t *testing.T) {
 			},
 			Results: []subscription.QueuePerformerSceneResult{
 				{
-					Key:           "scene-a",
-					Status:        subscription.QueuePerformerSceneStatusQueued,
-					ReasonCode:    "QUEUED",
-					Message:       "已创建下载任务",
-					Task:          &downloader.Task{ID: "task-1", Stage: downloader.TaskStageDownloading, StageStatus: downloader.TaskStageStatusRunning},
-					ResolvedQuery: "ABCD-123",
+					Key:          "scene-a",
+					Status:       subscription.QueuePerformerSceneStatusQueued,
+					ReasonCode:   "QUEUED",
+					Message:      "已创建下载任务",
+					Task:         &downloader.Task{ID: "task-1", Stage: downloader.TaskStageDownloading, StageStatus: downloader.TaskStageStatusRunning},
+					ResolvedCode: "ABCD-123",
 				},
 				{
 					Key:        "scene-b",
@@ -313,12 +310,12 @@ func TestQueuePerformerScenesMutationMapsBatchResult(t *testing.T) {
 					ID string `json:"id"`
 				} `json:"queuedTasks"`
 				Results []struct {
-					Key           string  `json:"key"`
-					Status        string  `json:"status"`
-					ReasonCode    string  `json:"reasonCode"`
-					Message       string  `json:"message"`
-					ResolvedQuery *string `json:"resolvedQuery"`
-					Task          *struct {
+					Key          string  `json:"key"`
+					Status       string  `json:"status"`
+					ReasonCode   string  `json:"reasonCode"`
+					Message      string  `json:"message"`
+					ResolvedCode *string `json:"resolvedCode"`
+					Task         *struct {
 						ID string `json:"id"`
 					} `json:"task"`
 				} `json:"results"`
@@ -355,7 +352,7 @@ func TestQueuePerformerScenesMutationMapsBatchResult(t *testing.T) {
 			]
 		}) {
 			queuedTasks { id }
-			results { key status reasonCode message resolvedQuery task { id } }
+			results { key status reasonCode message resolvedCode task { id } }
 			summary { requestedCount queuedCount skippedCount failedCount }
 		}
 	}`, &resp)
@@ -485,7 +482,7 @@ func TestSyncTaskProgress(t *testing.T) {
 		syncTasks: []*downloader.Task{
 			{
 				ID:               "task-sync",
-				Query:            "ABCD-123",
+				Code:             "ABCD-123",
 				Stage:            downloader.TaskStageDownloading,
 				StageStatus:      downloader.TaskStageStatusRunning,
 				TorrentHash:      "hash-sync",
@@ -596,7 +593,7 @@ func TestDownloadMediaRequiresDownloader(t *testing.T) {
 	resolver := NewResolver(nil, nil, nil, nil, "test-version")
 
 	resp := executeGraphQL(t, resolver, `mutation {
-		downloadMedia(input: { query: "ABCD-123" }) { id }
+		downloadMedia(input: { code: "ABCD-123" }) { id }
 	}`)
 	if len(resp.Errors) == 0 {
 		t.Fatal("expected downloader configuration error")
@@ -1167,7 +1164,6 @@ type graphQLTaskResponse struct {
 		} `json:"addTorrent"`
 		DownloadMedia struct {
 			ID          string `json:"id"`
-			Query       string `json:"query"`
 			Code        string `json:"code"`
 			Stage       string `json:"stage"`
 			StageStatus string `json:"stageStatus"`
@@ -1192,7 +1188,6 @@ type graphQLTaskResponse struct {
 		} `json:"previewJackettSelection"`
 		Tasks []struct {
 			ID    string `json:"id"`
-			Query string `json:"query"`
 			Code  string `json:"code"`
 			Stage string `json:"stage"`
 		} `json:"tasks"`

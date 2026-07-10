@@ -106,13 +106,13 @@ export function TaskDetail({
         </div>
         <dl className="settings-grid">
           <div>
-            <dt className={isMagnetLink(task.query) ? "task-inline-label" : undefined}>
-              <span>{isMagnetLink(task.query) ? "磁力链接" : "查询文本"}</span>
-              {isMagnetLink(task.query) && task.query ? (
+            <dt className={isMagnetLink(task.torrentUrl) ? "task-inline-label" : undefined}>
+              <span>{isMagnetLink(task.torrentUrl) ? "磁力链接" : "任务番号"}</span>
+              {isMagnetLink(task.torrentUrl) && task.torrentUrl ? (
                 <button
                   type="button"
                   className="task-icon-button"
-                  onClick={() => void onCopy(task.query || "", "磁力链接已复制")}
+                  onClick={() => void onCopy(task.torrentUrl || "", "磁力链接已复制")}
                   aria-label="复制磁力链接"
                   title="复制磁力链接"
                 >
@@ -120,14 +120,14 @@ export function TaskDetail({
                 </button>
               ) : null}
             </dt>
-            {isMagnetLink(task.query) && task.query ? (
+            {isMagnetLink(task.torrentUrl) && task.torrentUrl ? (
               <dd>
-                <span className="task-inline-value task-inline-value--truncate" title={task.query}>
-                  {task.query}
+                <span className="task-inline-value task-inline-value--truncate" title={task.torrentUrl}>
+                  {task.torrentUrl}
                 </span>
               </dd>
             ) : (
-              <dd title={task.query || undefined}>{task.query || "—"}</dd>
+              <dd title={task.code || undefined}>{task.code || "—"}</dd>
             )}
           </div>
           <div>

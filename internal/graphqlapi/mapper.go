@@ -147,7 +147,6 @@ func taskToModel(task *downloader.Task) *model.Task {
 	return &model.Task{
 		ID:                  task.ID,
 		Source:              model.TaskSource(source),
-		Query:               task.Query,
 		Code:                task.Code,
 		Stage:               model.TaskStage(task.Stage),
 		StageStatus:         model.TaskStageStatus(task.StageStatus),

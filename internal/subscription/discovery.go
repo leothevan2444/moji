@@ -102,7 +102,7 @@ func discoveredSceneFromStashBox(scene *stashboxgraphql.SceneFragment, box Stash
 		ImageURL:         stashBoxSceneImageURL(scene),
 		URL:              stashBoxSceneURL(scene),
 		PerformerNames:   performerNames,
-		DerivedQuery:     buildReleaseQuery(stringValue(scene.Code), stringValue(scene.Title)),
+		DerivedQuery:     buildReleaseCode(stringValue(scene.Code), stringValue(scene.Title)),
 	}
 }
 

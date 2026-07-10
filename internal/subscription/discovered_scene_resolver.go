@@ -47,7 +47,7 @@ func (r discoveredSceneResolver) ResolveDiscoveredScene(ctx context.Context, sce
 	}
 
 	code := stringValue(scene.Code)
-	if buildReleaseQuery(code, stringValue(scene.Title)) == "" {
+	if buildReleaseCode(code, stringValue(scene.Title)) == "" {
 		return taskflow.ResolvedScene{}, fmt.Errorf("subscription: scene %q is missing code", sceneID)
 	}
 

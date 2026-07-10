@@ -77,13 +77,13 @@ func TestCreateFromManualTorrentUsesManualSource(t *testing.T) {
 	}
 }
 
-func TestCreateFromSearchQueryUsesManualSource(t *testing.T) {
+func TestCreateFromSearchCodeUsesManualSource(t *testing.T) {
 	dl := &fakeDownloader{downloadTask: &downloader.Task{ID: "task-2"}}
 	service := NewService(dl)
 	paused := true
 
-	task, err := service.CreateFromSearchQuery(context.Background(), CreateFromSearchQueryInput{
-		Query:      "ABCD-123",
+	task, err := service.CreateFromSearchCode(context.Background(), CreateFromSearchCodeInput{
+		Code:       "ABCD-123",
 		Trackers:   []string{"t1"},
 		Categories: []int{1},
 		Limit:      5,
@@ -93,7 +93,7 @@ func TestCreateFromSearchQueryUsesManualSource(t *testing.T) {
 		Tags:       "tag",
 	})
 	if err != nil {
-		t.Fatalf("CreateFromSearchQuery failed: %v", err)
+		t.Fatalf("CreateFromSearchCode failed: %v", err)
 	}
 	if task == nil || task.ID != "task-2" {
 		t.Fatalf("unexpected task: %+v", task)
@@ -101,7 +101,7 @@ func TestCreateFromSearchQueryUsesManualSource(t *testing.T) {
 	if dl.downloadRequest.Source != downloader.TaskSourceManual {
 		t.Fatalf("unexpected source: %s", dl.downloadRequest.Source)
 	}
-	if dl.downloadRequest.Query != "ABCD-123" || dl.downloadRequest.Limit != 5 {
+	if dl.downloadRequest.Code != "ABCD-123" || dl.downloadRequest.Limit != 5 {
 		t.Fatalf("unexpected request: %+v", dl.downloadRequest)
 	}
 }
@@ -110,7 +110,7 @@ func TestCreateFromDiscoveredSceneUsesSearchSource(t *testing.T) {
 	dl := &fakeDownloader{downloadTask: &downloader.Task{ID: "task-3"}}
 	service := NewService(dl)
 
-	task, query, err := service.CreateFromDiscoveredScene(context.Background(), CreateFromDiscoveredSceneInput{
+	task, err := service.CreateFromDiscoveredScene(context.Background(), CreateFromDiscoveredSceneInput{
 		Code:  "ABCD-123",
 		Title: "ignored",
 	})
@@ -120,11 +120,11 @@ func TestCreateFromDiscoveredSceneUsesSearchSource(t *testing.T) {
 	if task == nil || task.ID != "task-3" {
 		t.Fatalf("unexpected task: %+v", task)
 	}
-	if query != "ABCD-123" {
-		t.Fatalf("unexpected query: %q", query)
-	}
 	if dl.downloadRequest.Source != downloader.TaskSourceSearch {
 		t.Fatalf("unexpected source: %s", dl.downloadRequest.Source)
+	}
+	if dl.downloadRequest.Code != "ABCD-123" {
+		t.Fatalf("unexpected request: %+v", dl.downloadRequest)
 	}
 }
 
@@ -136,7 +136,7 @@ func TestCreateFromDiscoveredSceneRefUsesResolver(t *testing.T) {
 	service := NewService(dl)
 	service.SetDiscoveredSceneResolver(resolver)
 
-	task, query, err := service.CreateFromDiscoveredSceneRef(context.Background(), CreateFromDiscoveredSceneRefInput{
+	task, err := service.CreateFromDiscoveredSceneRef(context.Background(), CreateFromDiscoveredSceneRefInput{
 		SceneID:          "scene-1",
 		StashBoxEndpoint: "https://box.example/graphql",
 	})
@@ -146,24 +146,20 @@ func TestCreateFromDiscoveredSceneRefUsesResolver(t *testing.T) {
 	if task == nil || task.ID != "task-5" {
 		t.Fatalf("unexpected task: %+v", task)
 	}
-	if query != "ABCD-321" {
-		t.Fatalf("unexpected query: %q", query)
-	}
 	if resolver.sceneID != "scene-1" || resolver.endpoint != "https://box.example/graphql" {
 		t.Fatalf("unexpected resolver call: %+v", resolver)
 	}
-	if dl.downloadRequest.Source != downloader.TaskSourceSearch || dl.downloadRequest.Query != "ABCD-321" {
+	if dl.downloadRequest.Source != downloader.TaskSourceSearch || dl.downloadRequest.Code != "ABCD-321" {
 		t.Fatalf("unexpected request: %+v", dl.downloadRequest)
 	}
 }
 
-func TestCreateFromSubscriptionReleaseUsesExplicitQuery(t *testing.T) {
+func TestCreateFromSubscriptionReleaseUsesCode(t *testing.T) {
 	dl := &fakeDownloader{downloadTask: &downloader.Task{ID: "task-4"}}
 	service := NewService(dl)
 
-	task, query, err := service.CreateFromSubscriptionRelease(context.Background(), CreateFromSubscriptionReleaseInput{
-		Query: "SSIS-001",
-		Code:  "ignored",
+	task, err := service.CreateFromSubscriptionRelease(context.Background(), CreateFromSubscriptionReleaseInput{
+		Code: "SSIS-001",
 	})
 	if err != nil {
 		t.Fatalf("CreateFromSubscriptionRelease failed: %v", err)
@@ -171,13 +167,10 @@ func TestCreateFromSubscriptionReleaseUsesExplicitQuery(t *testing.T) {
 	if task == nil || task.ID != "task-4" {
 		t.Fatalf("unexpected task: %+v", task)
 	}
-	if query != "SSIS-001" {
-		t.Fatalf("unexpected query: %q", query)
-	}
 	if dl.downloadRequest.Source != downloader.TaskSourceSubscription {
 		t.Fatalf("unexpected source: %s", dl.downloadRequest.Source)
 	}
-	if dl.downloadRequest.Query != "SSIS-001" {
+	if dl.downloadRequest.Code != "SSIS-001" {
 		t.Fatalf("unexpected request: %+v", dl.downloadRequest)
 	}
 }
@@ -185,16 +178,16 @@ func TestCreateFromSubscriptionReleaseUsesExplicitQuery(t *testing.T) {
 func TestCreateFromSubscriptionReleaseRejectsMissingCode(t *testing.T) {
 	service := NewService(&fakeDownloader{})
 
-	task, query, err := service.CreateFromSubscriptionRelease(context.Background(), CreateFromSubscriptionReleaseInput{})
+	task, err := service.CreateFromSubscriptionRelease(context.Background(), CreateFromSubscriptionReleaseInput{})
 	if err == nil || err.Error() != "task code is required" {
-		t.Fatalf("expected missing code error, got task=%+v query=%q err=%v", task, query, err)
+		t.Fatalf("expected missing code error, got task=%+v err=%v", task, err)
 	}
 }
 
-func TestCreateFromSearchQueryPropagatesDownloaderErrors(t *testing.T) {
+func TestCreateFromSearchCodePropagatesDownloaderErrors(t *testing.T) {
 	service := NewService(&fakeDownloader{err: errors.New("boom")})
 
-	_, err := service.CreateFromSearchQuery(context.Background(), CreateFromSearchQueryInput{Query: "ABCD-123"})
+	_, err := service.CreateFromSearchCode(context.Background(), CreateFromSearchCodeInput{Code: "ABCD-123"})
 	if err == nil || err.Error() != "boom" {
 		t.Fatalf("expected downloader error, got %v", err)
 	}

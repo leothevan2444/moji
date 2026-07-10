@@ -171,7 +171,6 @@ func subscriptionReleaseToModel(release subscription.RecordedRelease) *model.Sub
 		Code:           nilIfEmpty(release.Code),
 		Date:           nilIfEmpty(release.Date),
 		URL:            nilIfEmpty(release.URL),
-		Query:          release.Query,
 		TaskID:         nilIfEmpty(release.TaskID),
 		PerformerCount: release.PerformerCount,
 		PerformerNames: append([]string(nil), release.PerformerNames...),
@@ -205,12 +204,12 @@ func queuePerformerScenesResultToModel(result subscription.QueuePerformerScenesR
 
 func queuePerformerSceneResultToModel(item subscription.QueuePerformerSceneResult) *model.QueuePerformerSceneResult {
 	return &model.QueuePerformerSceneResult{
-		Key:           item.Key,
-		Status:        model.QueuePerformerSceneStatus(item.Status),
-		ReasonCode:    item.ReasonCode,
-		Message:       item.Message,
-		Task:          taskToModel(item.Task),
-		ResolvedQuery: nilIfEmpty(item.ResolvedQuery),
+		Key:          item.Key,
+		Status:       model.QueuePerformerSceneStatus(item.Status),
+		ReasonCode:   item.ReasonCode,
+		Message:      item.Message,
+		Task:         taskToModel(item.Task),
+		ResolvedCode: nilIfEmpty(item.ResolvedCode),
 	}
 }
 

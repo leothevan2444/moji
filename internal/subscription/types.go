@@ -150,12 +150,12 @@ const (
 )
 
 type QueuePerformerSceneResult struct {
-	Key           string
-	Status        QueuePerformerSceneStatus
-	ReasonCode    string
-	Message       string
-	Task          *downloader.Task
-	ResolvedQuery string
+	Key          string
+	Status       QueuePerformerSceneStatus
+	ReasonCode   string
+	Message      string
+	Task         *downloader.Task
+	ResolvedCode string
 }
 
 type QueuePerformerScenesSummary struct {
@@ -196,7 +196,6 @@ type Release struct {
 	Code           string
 	Date           string
 	URL            string
-	Query          string
 	PerformerCount int
 	PerformerNames []string
 	Classification ReleaseClassification
@@ -211,7 +210,6 @@ type RecordedRelease struct {
 	Code           string                `json:"code,omitempty"`
 	Date           string                `json:"date,omitempty"`
 	URL            string                `json:"url,omitempty"`
-	Query          string                `json:"query"`
 	TaskID         string                `json:"task_id,omitempty"`
 	SeenAt         time.Time             `json:"seen_at"`
 	PerformerCount int                   `json:"performer_count,omitempty"`

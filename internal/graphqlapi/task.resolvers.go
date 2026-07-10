@@ -55,8 +55,8 @@ func (r *mutationResolver) DownloadMedia(ctx context.Context, input model.Downlo
 		return nil, errors.New("downloader is not configured")
 	}
 
-	req := taskflow.CreateFromSearchQueryInput{
-		Query:      input.Query,
+	req := taskflow.CreateFromSearchCodeInput{
+		Code:       input.Code,
 		Trackers:   input.Trackers,
 		Categories: input.Categories,
 		Paused:     input.Paused,
@@ -74,7 +74,7 @@ func (r *mutationResolver) DownloadMedia(ctx context.Context, input model.Downlo
 		req.Tags = *input.Tags
 	}
 
-	task, err := r.TaskFlow.CreateFromSearchQuery(ctx, req)
+	task, err := r.TaskFlow.CreateFromSearchCode(ctx, req)
 	if task != nil {
 		return taskToModel(task), err
 	}

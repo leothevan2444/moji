@@ -94,17 +94,17 @@ type fakeDownloader struct {
 	tasks   []*downloader.Task
 	err     error
 	calls   int
-	queries []string
+	codes   []string
 	sources []downloader.TaskSource
 }
 
 type fakeTaskCreator struct {
-	queueTask         *downloader.Task
-	queueErr          error
-	queueCalls        []fakeQueuedSceneCall
-	subscriptionTask  *downloader.Task
-	subscriptionQuery string
-	subscriptionErr   error
+	queueTask        *downloader.Task
+	queueErr         error
+	queueCalls       []fakeQueuedSceneCall
+	subscriptionTask *downloader.Task
+	subscriptionCode string
+	subscriptionErr  error
 }
 
 type fakeQueuedSceneCall struct {
@@ -181,7 +181,7 @@ func (f *fakeStashboxClient) QueryScenes(_ context.Context, input stashboxgraphq
 
 func (f *fakeDownloader) DownloadMediaContext(_ context.Context, req downloader.DownloadRequest) (*downloader.Task, error) {
 	f.calls++
-	f.queries = append(f.queries, req.Query)
+	f.codes = append(f.codes, req.Code)
 	f.sources = append(f.sources, req.Source)
 	if f.err != nil {
 		return nil, f.err
@@ -199,11 +199,12 @@ func (f *fakeTaskCreator) QueueDiscoveredScene(_ context.Context, sceneID string
 	return f.queueTask, f.queueErr
 }
 
-func (f *fakeTaskCreator) QueueSubscriptionRelease(_ context.Context, query, _, _ string) (*downloader.Task, string, error) {
-	if f.subscriptionQuery != "" {
-		query = f.subscriptionQuery
+func (f *fakeTaskCreator) QueueSubscriptionRelease(_ context.Context, code, _ string) (*downloader.Task, error) {
+	if f.subscriptionCode != "" {
+		code = f.subscriptionCode
 	}
-	return f.subscriptionTask, query, f.subscriptionErr
+	_ = code
+	return f.subscriptionTask, f.subscriptionErr
 }
 
 // stubFactory is a StashboxClientFactory that always returns the same client
@@ -345,8 +346,8 @@ func TestRefreshPerformerStoresPendingReleasesWithoutDownloader(t *testing.T) {
 	if len(item.RecentReleases) != 1 {
 		t.Fatalf("expected 1 recent release, got %d", len(item.RecentReleases))
 	}
-	if item.RecentReleases[0].Query != code {
-		t.Fatalf("expected query %q, got %q", code, item.RecentReleases[0].Query)
+	if item.RecentReleases[0].Code != code {
+		t.Fatalf("expected code %q, got %q", code, item.RecentReleases[0].Code)
 	}
 	if got, want := item.RecentReleases[0].Source, "stash-box:"+endpoint; got != want {
 		t.Fatalf("unexpected source %q, want %q", got, want)
@@ -529,8 +530,8 @@ func TestRefreshPerformerSkipsStashLookupForKnownRelease(t *testing.T) {
 	if err := store.Put(context.Background(), &PerformerState{
 		PerformerID: "p1",
 		PendingReleases: []RecordedRelease{{
-			Key:   "stashbox:https___javstash.example.org_graphql:js-scene-1",
-			Query: code,
+			Key:  "stashbox:https___javstash.example.org_graphql:js-scene-1",
+			Code: code,
 		}},
 	}); err != nil {
 		t.Fatalf("seed state failed: %v", err)
@@ -700,8 +701,8 @@ func TestRefreshPerformerPollFindsNewReleaseOnLaterPage(t *testing.T) {
 	if err := store.Put(context.Background(), &PerformerState{
 		PerformerID: "p1",
 		PendingReleases: []RecordedRelease{{
-			Key:   "stashbox:https___javstash.example.org_graphql:js-scene-1",
-			Query: "ABCD-001",
+			Key:  "stashbox:https___javstash.example.org_graphql:js-scene-1",
+			Code: "ABCD-001",
 		}},
 	}); err != nil {
 		t.Fatalf("seed state failed: %v", err)
@@ -751,8 +752,8 @@ func TestRefreshPerformerPollStopsAtKnownReleaseBoundary(t *testing.T) {
 	if err := store.Put(context.Background(), &PerformerState{
 		PerformerID: "p1",
 		PendingReleases: []RecordedRelease{{
-			Key:   "stashbox:https___javstash.example.org_graphql:js-scene-2",
-			Query: "ABCD-002",
+			Key:  "stashbox:https___javstash.example.org_graphql:js-scene-2",
+			Code: "ABCD-002",
 		}},
 	}); err != nil {
 		t.Fatalf("seed state failed: %v", err)
@@ -795,7 +796,7 @@ func TestRefreshPerformerPollStopsAtReleaseDateBoundary(t *testing.T) {
 	store := NewMemoryStore()
 	if err := store.Put(context.Background(), &PerformerState{
 		PerformerID:       "p1",
-		ProcessedReleases: []RecordedRelease{{Key: "existing", Query: "EXISTING-001"}},
+		ProcessedReleases: []RecordedRelease{{Key: "existing", Code: "EXISTING-001"}},
 	}); err != nil {
 		t.Fatalf("seed state failed: %v", err)
 	}
@@ -1494,8 +1495,8 @@ func TestQueueDiscoveredSceneUsesSearchTaskSource(t *testing.T) {
 	if task == nil || task.ID != "task-1" {
 		t.Fatalf("unexpected queued task: %+v", task)
 	}
-	if len(fakeDL.queries) != 1 || fakeDL.queries[0] != code {
-		t.Fatalf("unexpected downloader queries: %+v", fakeDL.queries)
+	if len(fakeDL.codes) != 1 || fakeDL.codes[0] != code {
+		t.Fatalf("unexpected downloader codes: %+v", fakeDL.codes)
 	}
 	if len(fakeDL.sources) != 1 || fakeDL.sources[0] != downloader.TaskSourceSearch {
 		t.Fatalf("unexpected downloader sources: %+v", fakeDL.sources)

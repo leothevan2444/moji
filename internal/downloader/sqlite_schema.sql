@@ -8,7 +8,6 @@ CREATE TABLE IF NOT EXISTS task_store_meta (
 CREATE TABLE IF NOT EXISTS tasks (
   id TEXT PRIMARY KEY,
   source TEXT NOT NULL DEFAULT 'MANUAL' CHECK (source IN ('MANUAL', 'SEARCH', 'SUBSCRIPTION')),
-  query TEXT NOT NULL,
   code TEXT NOT NULL DEFAULT '',
   stage TEXT NOT NULL CHECK (stage IN ('SOURCING', 'DOWNLOADING', 'PENDING_INGEST', 'TRANSFERRING', 'SCANNING', 'COMPLETED')),
   stage_status TEXT NOT NULL DEFAULT 'PENDING' CHECK (stage_status IN ('PENDING', 'RUNNING', 'BLOCKED', 'DONE')),
@@ -94,7 +93,7 @@ CREATE INDEX IF NOT EXISTS idx_task_events_created_at
   ON task_events (created_at DESC);
 
 INSERT INTO task_store_meta (key, value)
-VALUES ('schema_version', '6')
+VALUES ('schema_version', '7')
 ON CONFLICT(key) DO UPDATE SET value = excluded.value;
 
 CREATE TABLE IF NOT EXISTS subscription_performer_state (
@@ -120,7 +119,6 @@ CREATE TABLE IF NOT EXISTS subscription_release_entities (
   code TEXT NOT NULL DEFAULT '',
   release_date TEXT,
   url TEXT,
-  query TEXT NOT NULL DEFAULT '',
   task_id TEXT,
   performer_count INTEGER NOT NULL DEFAULT 0,
   performer_names TEXT NOT NULL DEFAULT '[]',

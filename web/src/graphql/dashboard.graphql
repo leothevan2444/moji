@@ -196,7 +196,6 @@ query DashboardDocument {
   tasks {
     id
     source
-    query
     code
     stage
     stageStatus
@@ -204,6 +203,7 @@ query DashboardDocument {
     stageStatusLabel
     stageErrorCode
     stageErrorMessage
+    torrentUrl
     torrentName
     progress
     qbittorrentState

@@ -17,7 +17,7 @@ import (
 //go:embed sqlite_schema.sql
 var sqliteSchema string
 
-const sqliteSchemaVersion = "6"
+const sqliteSchemaVersion = "7"
 
 func OpenSQLiteDatabase(path string) (*sqlx.DB, error) {
 	trimmed := strings.TrimSpace(path)

@@ -18,7 +18,7 @@ func TestJSONTaskStorePersistsTasksAcrossRestart(t *testing.T) {
 	}
 	task := &Task{
 		ID:          "task-json",
-		Query:       "ABCD-123",
+		Code:        "ABCD-123",
 		Stage:       TaskStageDownloading,
 		StageStatus: TaskStageStatusRunning,
 		TorrentURL:  "magnet:?xt=urn:btih:test",
@@ -42,7 +42,7 @@ func TestJSONTaskStorePersistsTasksAcrossRestart(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Find failed: %v", err)
 	}
-	if stored.Query != task.Query || stored.Stage != TaskStageDownloading || stored.StageStatus != TaskStageStatusRunning || stored.Candidate.Title != task.Candidate.Title {
+	if stored.Code != task.Code || stored.Stage != TaskStageDownloading || stored.StageStatus != TaskStageStatusRunning || stored.Candidate.Title != task.Candidate.Title {
 		t.Fatalf("unexpected restored task: %+v", stored)
 	}
 	if !stored.CreatedAt.Equal(createdAt) || !stored.UpdatedAt.Equal(updatedAt) {
@@ -83,7 +83,7 @@ func TestJSONTaskStoreDeleteRemovesPersistedTask(t *testing.T) {
 
 	task := &Task{
 		ID:          "task-delete",
-		Query:       "ABCD-123",
+		Code:        "ABCD-123",
 		Stage:       TaskStageCompleted,
 		StageStatus: TaskStageStatusDone,
 		CreatedAt:   time.Unix(100, 0).UTC(),

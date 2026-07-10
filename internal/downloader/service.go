@@ -67,7 +67,6 @@ const (
 type Task struct {
 	ID                    string
 	Source                TaskSource
-	Query                 string
 	Code                  string
 	Stage                 TaskStage
 	StageStatus           TaskStageStatus
@@ -115,7 +114,7 @@ type Candidate struct {
 
 type DownloadRequest struct {
 	Source     TaskSource
-	Query      string
+	Code       string
 	Trackers   []string
 	Categories []int
 	Limit      int
@@ -288,8 +287,8 @@ func WithTaskDeletePolicyProvider(provider func() config.TaskDeletePolicy) Optio
 	}
 }
 
-func (s *Service) DownloadMedia(query string) (*Task, error) {
-	return s.DownloadMediaContext(context.Background(), DownloadRequest{Query: query})
+func (s *Service) DownloadMedia(code string) (*Task, error) {
+	return s.DownloadMediaContext(context.Background(), DownloadRequest{Code: code})
 }
 
 func (s *Service) PreviewJackettSelectionContext(ctx context.Context, req PreviewJackettSelectionRequest) (*CandidateSelectionPreview, error) {
@@ -465,7 +464,7 @@ func (s *Service) retrySourcingTask(ctx context.Context, task *Task) (*Task, err
 	}
 	return s.runSourcingFlow(ctx, next, DownloadRequest{
 		Source:   next.Source,
-		Query:    next.Query,
+		Code:     next.Code,
 		SavePath: next.SavePath,
 		Category: next.Category,
 		Tags:     next.Tags,
@@ -506,11 +505,7 @@ func (s *Service) retryIngestTask(ctx context.Context, task *Task, scanner Stash
 }
 
 func (s *Service) DownloadMediaContext(ctx context.Context, req DownloadRequest) (*Task, error) {
-	query := strings.TrimSpace(req.Query)
-	if query == "" {
-		return nil, errors.New("downloader: query is required")
-	}
-	code := extractCode(query)
+	code := extractCode(req.Code)
 	if code == "" {
 		return nil, ErrTaskCodeRequired
 	}
@@ -526,7 +521,6 @@ func (s *Service) DownloadMediaContext(ctx context.Context, req DownloadRequest)
 	task := &Task{
 		ID:        s.newID(),
 		Source:    source,
-		Query:     query,
 		Code:      code,
 		SavePath:  req.SavePath,
 		Category:  req.Category,
@@ -537,16 +531,16 @@ func (s *Service) DownloadMediaContext(ctx context.Context, req DownloadRequest)
 	setTaskStage(task, TaskStageSourcing, TaskStageStatusRunning)
 
 	if err := s.store.Create(ctx, task); err != nil {
-		logging.Errorf("downloader: create task failed for query %q: %v", query, err)
+		logging.Errorf("downloader: create task failed for code %q: %v", code, err)
 		return nil, fmt.Errorf("create task: %w", err)
 	}
-	logging.Infof("downloader: created %s task %s for query %q", strings.ToLower(string(source)), task.ID, query)
+	logging.Infof("downloader: created %s task %s for code %q", strings.ToLower(string(source)), task.ID, code)
 
 	return s.runSourcingFlow(ctx, task, req)
 }
 
 func (s *Service) runSourcingFlow(ctx context.Context, task *Task, req DownloadRequest) (*Task, error) {
-	query := strings.TrimSpace(task.Query)
+	code := strings.TrimSpace(task.Code)
 	searchOptions := []tracker.SearchOption{
 		tracker.WithTrackers(req.Trackers),
 		tracker.WithCategories(req.Categories),
@@ -555,16 +549,16 @@ func (s *Service) runSourcingFlow(ctx context.Context, task *Task, req DownloadR
 		searchOptions = append(searchOptions, tracker.WithLimit(req.Limit))
 	}
 
-	results, err := s.tracker.Search(query, searchOptions...)
+	results, err := s.tracker.Search(code, searchOptions...)
 	if err != nil {
 		blockTask(task, TaskStageErrorSearch, err.Error(), s.now().UTC())
 		_ = s.store.Update(ctx, task)
-		logging.Errorf("downloader: search failed for query %q: %v", query, err)
+		logging.Errorf("downloader: search failed for code %q: %v", code, err)
 		return task, fmt.Errorf("search torrents: %w", err)
 	}
-	logging.Infof("downloader: search returned %d results for query %q", len(results), query)
+	logging.Infof("downloader: search returned %d results for code %q", len(results), code)
 	if len(results) == 0 {
-		err = errors.New("no candidate found for the current query")
+		err = errors.New("no candidate found for the current code")
 		blockTask(task, TaskStageErrorNoCandidate, err.Error(), s.now().UTC())
 		_ = s.store.Update(ctx, task)
 		return task, err
@@ -578,7 +572,7 @@ func (s *Service) runSourcingFlow(ctx context.Context, task *Task, req DownloadR
 	if selector == nil {
 		selector = defaultCandidateSelector{inspectTorrent: s.inspectSearchResultTorrent}
 	}
-	result, err := selector.Select(ctx, query, results, selectionConfig)
+	result, err := selector.Select(ctx, code, results, selectionConfig)
 	if err != nil {
 		errorCode := TaskStageErrorSearch
 		if strings.Contains(err.Error(), "no downloadable torrent candidate found") {
@@ -586,7 +580,7 @@ func (s *Service) runSourcingFlow(ctx context.Context, task *Task, req DownloadR
 		}
 		blockTask(task, errorCode, err.Error(), s.now().UTC())
 		_ = s.store.Update(ctx, task)
-		logging.Errorf("downloader: select candidate failed for query %q: %v", query, err)
+		logging.Errorf("downloader: select candidate failed for code %q: %v", code, err)
 		return task, err
 	}
 
@@ -612,7 +606,7 @@ func (s *Service) runSourcingFlow(ctx context.Context, task *Task, req DownloadR
 	if err := s.submitTaskTorrent(ctx, task, torrentURL, req.SavePath, req.Category, req.Tags, req.Paused); err != nil {
 		return task, err
 	}
-	logging.Infof("downloader: %s task %s added to qBittorrent for query %q", strings.ToLower(string(task.Source)), task.ID, query)
+	logging.Infof("downloader: %s task %s added to qBittorrent for code %q", strings.ToLower(string(task.Source)), task.ID, code)
 
 	return task, nil
 }
@@ -639,7 +633,6 @@ func (s *Service) AddTorrentContext(ctx context.Context, req AddTorrentRequest) 
 	task := &Task{
 		ID:                    s.newID(),
 		Source:                source,
-		Query:                 torrentURL,
 		Code:                  code,
 		Stage:                 TaskStageDownloading,
 		StageStatus:           TaskStageStatusRunning,

@@ -53,7 +53,6 @@ SELECT
   sre.code,
   sre.release_date,
   sre.url,
-  sre.query,
   sre.task_id,
   sre.performer_count,
   sre.performer_names,
@@ -227,7 +226,6 @@ type sqliteReleaseRow struct {
 	Code           string         `db:"code"`
 	Date           sql.NullString `db:"release_date"`
 	URL            sql.NullString `db:"url"`
-	Query          string         `db:"query"`
 	TaskID         sql.NullString `db:"task_id"`
 	PerformerCount int            `db:"performer_count"`
 	PerformerNames string         `db:"performer_names"`
@@ -245,7 +243,6 @@ func (r sqliteReleaseRow) toRecordedRelease() (string, RecordedRelease, error) {
 		Code:           r.Code,
 		Date:           nullableStringValue(r.Date),
 		URL:            nullableStringValue(r.URL),
-		Query:          r.Query,
 		TaskID:         nullableStringValue(r.TaskID),
 		PerformerCount: r.PerformerCount,
 		Classification: ReleaseClassification(r.Classification),
@@ -281,7 +278,6 @@ func upsertReleaseEntity(ctx context.Context, tx *sqlx.Tx, status string, releas
 		"code":            release.Code,
 		"release_date":    nullableStringParam(release.Date),
 		"url":             nullableStringParam(release.URL),
-		"query":           release.Query,
 		"task_id":         taskID,
 		"performer_count": release.PerformerCount,
 		"performer_names": marshalPerformerNames(release.PerformerNames),
@@ -295,9 +291,9 @@ func upsertReleaseEntity(ctx context.Context, tx *sqlx.Tx, status string, releas
 
 	rows, err := sqlx.NamedQueryContext(ctx, tx, `
 INSERT INTO subscription_release_entities (
-  release_key, status, source, title, code, release_date, url, query, task_id, performer_count, performer_names, classification, decision, decision_reason, seen_at, created_at, updated_at
+  release_key, status, source, title, code, release_date, url, task_id, performer_count, performer_names, classification, decision, decision_reason, seen_at, created_at, updated_at
 ) VALUES (
-  :release_key, :status, :source, :title, :code, :release_date, :url, :query, :task_id, :performer_count, :performer_names, :classification, :decision, :decision_reason, :seen_at, :created_at, :updated_at
+  :release_key, :status, :source, :title, :code, :release_date, :url, :task_id, :performer_count, :performer_names, :classification, :decision, :decision_reason, :seen_at, :created_at, :updated_at
 )
 ON CONFLICT(release_key) DO UPDATE SET
   status = excluded.status,
@@ -306,7 +302,6 @@ ON CONFLICT(release_key) DO UPDATE SET
   code = excluded.code,
   release_date = excluded.release_date,
   url = excluded.url,
-  query = excluded.query,
   task_id = COALESCE(excluded.task_id, subscription_release_entities.task_id),
   performer_count = excluded.performer_count,
   performer_names = excluded.performer_names,

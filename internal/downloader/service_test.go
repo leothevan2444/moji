@@ -79,7 +79,7 @@ func TestDownloadMediaContextAddsBestTorrent(t *testing.T) {
 	}
 
 	task, err := service.DownloadMediaContext(context.Background(), DownloadRequest{
-		Query:    "SONE-000",
+		Code:     "SONE-000",
 		SavePath: "/downloads/stash",
 		Category: "moji",
 		Tags:     "moji,stash",
@@ -127,7 +127,7 @@ func TestDownloadMediaContextRecordsAddFailure(t *testing.T) {
 		t.Fatalf("NewService failed: %v", err)
 	}
 
-	task, err := service.DownloadMediaContext(context.Background(), DownloadRequest{Query: "SONE-000"})
+	task, err := service.DownloadMediaContext(context.Background(), DownloadRequest{Code: "SONE-000"})
 	if err == nil {
 		t.Fatal("expected add torrent error")
 	}
@@ -198,7 +198,6 @@ func TestDownloadMediaContextRejectsDuplicateCodeTask(t *testing.T) {
 	store := NewMemoryTaskStore()
 	if err := store.Create(context.Background(), &Task{
 		ID:          "existing-task",
-		Query:       "SONE-000",
 		Code:        "SONE-000",
 		Stage:       TaskStageDownloading,
 		StageStatus: TaskStageStatusRunning,
@@ -219,7 +218,7 @@ func TestDownloadMediaContextRejectsDuplicateCodeTask(t *testing.T) {
 		t.Fatalf("NewService failed: %v", err)
 	}
 
-	task, err := service.DownloadMediaContext(context.Background(), DownloadRequest{Query: "SONE-000"})
+	task, err := service.DownloadMediaContext(context.Background(), DownloadRequest{Code: "SONE-000"})
 	if !errors.Is(err, ErrDuplicateCodeTask) {
 		t.Fatalf("expected duplicate code error, got task=%+v err=%v", task, err)
 	}
@@ -243,7 +242,7 @@ func TestDownloadMediaContextRejectsExistingStashLibraryCode(t *testing.T) {
 		t.Fatalf("NewService failed: %v", err)
 	}
 
-	task, err := service.DownloadMediaContext(context.Background(), DownloadRequest{Query: "SONE-000"})
+	task, err := service.DownloadMediaContext(context.Background(), DownloadRequest{Code: "SONE-000"})
 	if !errors.Is(err, ErrDuplicateLibraryCode) {
 		t.Fatalf("expected duplicate library code error, got task=%+v err=%v", task, err)
 	}
@@ -256,7 +255,6 @@ func TestAddTorrentContextRejectsDuplicateTorrentTask(t *testing.T) {
 	store := NewMemoryTaskStore()
 	if err := store.Create(context.Background(), &Task{
 		ID:                    "existing-task",
-		Query:                 "magnet:?xt=urn:btih:manual123&dn=SONE-000",
 		Code:                  "SONE-000",
 		Stage:                 TaskStageDownloading,
 		StageStatus:           TaskStageStatusRunning,
@@ -296,7 +294,7 @@ func TestDownloadMediaContextRequiresCode(t *testing.T) {
 		t.Fatalf("NewService failed: %v", err)
 	}
 
-	task, err := service.DownloadMediaContext(context.Background(), DownloadRequest{Query: "plain title"})
+	task, err := service.DownloadMediaContext(context.Background(), DownloadRequest{Code: "plain title"})
 	if !errors.Is(err, ErrTaskCodeRequired) {
 		t.Fatalf("expected code required error, got task=%+v err=%v", task, err)
 	}
@@ -409,7 +407,7 @@ func TestDeleteTaskRemovesPersistedTask(t *testing.T) {
 	store := NewMemoryTaskStore()
 	if err := store.Create(context.Background(), &Task{
 		ID:          "task-delete",
-		Query:       "ABCD-123",
+		Code:        "ABCD-123",
 		Stage:       TaskStageCompleted,
 		StageStatus: TaskStageStatusDone,
 		TorrentHash: "hash-delete",
@@ -444,7 +442,7 @@ func TestDeleteTaskRemovesQBittorrentTorrentWhenPolicyRequestsIt(t *testing.T) {
 	store := NewMemoryTaskStore()
 	if err := store.Create(context.Background(), &Task{
 		ID:          "task-delete-qbt",
-		Query:       "ABCD-123",
+		Code:        "ABCD-123",
 		Stage:       TaskStageCompleted,
 		StageStatus: TaskStageStatusDone,
 		TorrentHash: "hash-delete-qbt",
@@ -482,7 +480,7 @@ func TestDeleteTaskDeletesDownloadedFilesWhenPolicyRequestsIt(t *testing.T) {
 	store := NewMemoryTaskStore()
 	if err := store.Create(context.Background(), &Task{
 		ID:          "task-delete-files",
-		Query:       "ABCD-123",
+		Code:        "ABCD-123",
 		Stage:       TaskStageCompleted,
 		StageStatus: TaskStageStatusDone,
 		TorrentHash: "hash-delete-files",
@@ -517,7 +515,7 @@ func TestDeleteTaskKeepsPersistedTaskWhenQBittorrentDeleteFails(t *testing.T) {
 	store := NewMemoryTaskStore()
 	if err := store.Create(context.Background(), &Task{
 		ID:          "task-delete-fail",
-		Query:       "ABCD-123",
+		Code:        "ABCD-123",
 		Stage:       TaskStageCompleted,
 		StageStatus: TaskStageStatusDone,
 		TorrentHash: "hash-delete-fail",
@@ -556,7 +554,7 @@ func TestSyncProgressUpdatesTaskFromTorrentList(t *testing.T) {
 	store := NewMemoryTaskStore()
 	if err := store.Create(context.Background(), &Task{
 		ID:          "task-sync",
-		Query:       "ABCD-123",
+		Code:        "ABCD-123",
 		Stage:       TaskStageDownloading,
 		StageStatus: TaskStageStatusRunning,
 		TorrentURL:  "magnet:?xt=urn:btih:sync",
@@ -608,7 +606,7 @@ func TestSyncProgressMarksCompletedTask(t *testing.T) {
 	store := NewMemoryTaskStore()
 	if err := store.Create(context.Background(), &Task{
 		ID:          "task-complete",
-		Query:       "ABCD-123",
+		Code:        "ABCD-123",
 		Stage:       TaskStageDownloading,
 		StageStatus: TaskStageStatusRunning,
 		TorrentHash: "hash-complete",

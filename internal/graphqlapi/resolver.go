@@ -47,7 +47,7 @@ type DownloaderService interface {
 // downloader execution service.
 type TaskFlowService interface {
 	CreateFromManualTorrent(ctx context.Context, input taskflow.CreateFromManualTorrentInput) (*downloader.Task, error)
-	CreateFromSearchQuery(ctx context.Context, input taskflow.CreateFromSearchQueryInput) (*downloader.Task, error)
+	CreateFromSearchCode(ctx context.Context, input taskflow.CreateFromSearchCodeInput) (*downloader.Task, error)
 }
 
 type SettingsEditor interface {

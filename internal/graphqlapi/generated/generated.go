@@ -286,12 +286,12 @@ type ComplexityRoot struct {
 	}
 
 	QueuePerformerSceneResult struct {
-		Key           func(childComplexity int) int
-		Message       func(childComplexity int) int
-		ReasonCode    func(childComplexity int) int
-		ResolvedQuery func(childComplexity int) int
-		Status        func(childComplexity int) int
-		Task          func(childComplexity int) int
+		Key          func(childComplexity int) int
+		Message      func(childComplexity int) int
+		ReasonCode   func(childComplexity int) int
+		ResolvedCode func(childComplexity int) int
+		Status       func(childComplexity int) int
+		Task         func(childComplexity int) int
 	}
 
 	QueuePerformerScenesPayload struct {
@@ -465,7 +465,6 @@ type ComplexityRoot struct {
 		Key            func(childComplexity int) int
 		PerformerCount func(childComplexity int) int
 		PerformerNames func(childComplexity int) int
-		Query          func(childComplexity int) int
 		SeenAt         func(childComplexity int) int
 		Source         func(childComplexity int) int
 		TaskID         func(childComplexity int) int
@@ -504,7 +503,6 @@ type ComplexityRoot struct {
 		MojiTransferPath    func(childComplexity int) int
 		Progress            func(childComplexity int) int
 		QbittorrentState    func(childComplexity int) int
-		Query               func(childComplexity int) int
 		SavePath            func(childComplexity int) int
 		Source              func(childComplexity int) int
 		Stage               func(childComplexity int) int
@@ -1922,12 +1920,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.QueuePerformerSceneResult.ReasonCode(childComplexity), true
 
-	case "QueuePerformerSceneResult.resolvedQuery":
-		if e.complexity.QueuePerformerSceneResult.ResolvedQuery == nil {
+	case "QueuePerformerSceneResult.resolvedCode":
+		if e.complexity.QueuePerformerSceneResult.ResolvedCode == nil {
 			break
 		}
 
-		return e.complexity.QueuePerformerSceneResult.ResolvedQuery(childComplexity), true
+		return e.complexity.QueuePerformerSceneResult.ResolvedCode(childComplexity), true
 
 	case "QueuePerformerSceneResult.status":
 		if e.complexity.QueuePerformerSceneResult.Status == nil {
@@ -2776,13 +2774,6 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.SubscriptionRelease.PerformerNames(childComplexity), true
 
-	case "SubscriptionRelease.query":
-		if e.complexity.SubscriptionRelease.Query == nil {
-			break
-		}
-
-		return e.complexity.SubscriptionRelease.Query(childComplexity), true
-
 	case "SubscriptionRelease.seenAt":
 		if e.complexity.SubscriptionRelease.SeenAt == nil {
 			break
@@ -2964,13 +2955,6 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.Task.QbittorrentState(childComplexity), true
-
-	case "Task.query":
-		if e.complexity.Task.Query == nil {
-			break
-		}
-
-		return e.complexity.Task.Query(childComplexity), true
 
 	case "Task.savePath":
 		if e.complexity.Task.SavePath == nil {
@@ -4207,7 +4191,6 @@ type SubscriptionRelease {
   code: String
   date: String
   url: String
-  query: String!
   taskID: ID
   performerCount: Int!
   performerNames: [String!]!
@@ -4258,7 +4241,7 @@ type QueuePerformerSceneResult {
   reasonCode: String!
   message: String!
   task: Task
-  resolvedQuery: String
+  resolvedCode: String
 }
 
 type QueuePerformerScenesSummary {
@@ -4334,7 +4317,7 @@ input QBittorrentAddInput {
 }
 
 input DownloadMediaInput {
-  query: String!
+  code: String!
   trackers: [String!]
   categories: [Int!]
   limit: Int
@@ -4353,7 +4336,6 @@ enum TaskSource {
 type Task {
   id: ID!
   source: TaskSource!
-  query: String!
   code: String!
   stage: TaskStage!
   stageStatus: TaskStageStatus!
@@ -9457,8 +9439,6 @@ func (ec *executionContext) fieldContext_Mutation_addTorrent(ctx context.Context
 				return ec.fieldContext_Task_id(ctx, field)
 			case "source":
 				return ec.fieldContext_Task_source(ctx, field)
-			case "query":
-				return ec.fieldContext_Task_query(ctx, field)
 			case "code":
 				return ec.fieldContext_Task_code(ctx, field)
 			case "stage":
@@ -9580,8 +9560,6 @@ func (ec *executionContext) fieldContext_Mutation_downloadMedia(ctx context.Cont
 				return ec.fieldContext_Task_id(ctx, field)
 			case "source":
 				return ec.fieldContext_Task_source(ctx, field)
-			case "query":
-				return ec.fieldContext_Task_query(ctx, field)
 			case "code":
 				return ec.fieldContext_Task_code(ctx, field)
 			case "stage":
@@ -9703,8 +9681,6 @@ func (ec *executionContext) fieldContext_Mutation_syncTaskProgress(_ context.Con
 				return ec.fieldContext_Task_id(ctx, field)
 			case "source":
 				return ec.fieldContext_Task_source(ctx, field)
-			case "query":
-				return ec.fieldContext_Task_query(ctx, field)
 			case "code":
 				return ec.fieldContext_Task_code(ctx, field)
 			case "stage":
@@ -9815,8 +9791,6 @@ func (ec *executionContext) fieldContext_Mutation_triggerTaskStashScan(ctx conte
 				return ec.fieldContext_Task_id(ctx, field)
 			case "source":
 				return ec.fieldContext_Task_source(ctx, field)
-			case "query":
-				return ec.fieldContext_Task_query(ctx, field)
 			case "code":
 				return ec.fieldContext_Task_code(ctx, field)
 			case "stage":
@@ -9938,8 +9912,6 @@ func (ec *executionContext) fieldContext_Mutation_triggerStashScans(_ context.Co
 				return ec.fieldContext_Task_id(ctx, field)
 			case "source":
 				return ec.fieldContext_Task_source(ctx, field)
-			case "query":
-				return ec.fieldContext_Task_query(ctx, field)
 			case "code":
 				return ec.fieldContext_Task_code(ctx, field)
 			case "stage":
@@ -10050,8 +10022,6 @@ func (ec *executionContext) fieldContext_Mutation_retryTask(ctx context.Context,
 				return ec.fieldContext_Task_id(ctx, field)
 			case "source":
 				return ec.fieldContext_Task_source(ctx, field)
-			case "query":
-				return ec.fieldContext_Task_query(ctx, field)
 			case "code":
 				return ec.fieldContext_Task_code(ctx, field)
 			case "stage":
@@ -10173,8 +10143,6 @@ func (ec *executionContext) fieldContext_Mutation_deleteTask(ctx context.Context
 				return ec.fieldContext_Task_id(ctx, field)
 			case "source":
 				return ec.fieldContext_Task_source(ctx, field)
-			case "query":
-				return ec.fieldContext_Task_query(ctx, field)
 			case "code":
 				return ec.fieldContext_Task_code(ctx, field)
 			case "stage":
@@ -10296,8 +10264,6 @@ func (ec *executionContext) fieldContext_Mutation_queueDiscoveredScene(ctx conte
 				return ec.fieldContext_Task_id(ctx, field)
 			case "source":
 				return ec.fieldContext_Task_source(ctx, field)
-			case "query":
-				return ec.fieldContext_Task_query(ctx, field)
 			case "code":
 				return ec.fieldContext_Task_code(ctx, field)
 			case "stage":
@@ -13781,8 +13747,6 @@ func (ec *executionContext) fieldContext_Query_task(ctx context.Context, field g
 				return ec.fieldContext_Task_id(ctx, field)
 			case "source":
 				return ec.fieldContext_Task_source(ctx, field)
-			case "query":
-				return ec.fieldContext_Task_query(ctx, field)
 			case "code":
 				return ec.fieldContext_Task_code(ctx, field)
 			case "stage":
@@ -13904,8 +13868,6 @@ func (ec *executionContext) fieldContext_Query_tasks(_ context.Context, field gr
 				return ec.fieldContext_Task_id(ctx, field)
 			case "source":
 				return ec.fieldContext_Task_source(ctx, field)
-			case "query":
-				return ec.fieldContext_Task_query(ctx, field)
 			case "code":
 				return ec.fieldContext_Task_code(ctx, field)
 			case "stage":
@@ -14320,8 +14282,6 @@ func (ec *executionContext) fieldContext_QueuePerformerSceneResult_task(_ contex
 				return ec.fieldContext_Task_id(ctx, field)
 			case "source":
 				return ec.fieldContext_Task_source(ctx, field)
-			case "query":
-				return ec.fieldContext_Task_query(ctx, field)
 			case "code":
 				return ec.fieldContext_Task_code(ctx, field)
 			case "stage":
@@ -14389,8 +14349,8 @@ func (ec *executionContext) fieldContext_QueuePerformerSceneResult_task(_ contex
 	return fc, nil
 }
 
-func (ec *executionContext) _QueuePerformerSceneResult_resolvedQuery(ctx context.Context, field graphql.CollectedField, obj *model.QueuePerformerSceneResult) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_QueuePerformerSceneResult_resolvedQuery(ctx, field)
+func (ec *executionContext) _QueuePerformerSceneResult_resolvedCode(ctx context.Context, field graphql.CollectedField, obj *model.QueuePerformerSceneResult) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_QueuePerformerSceneResult_resolvedCode(ctx, field)
 	if err != nil {
 		return graphql.Null
 	}
@@ -14403,7 +14363,7 @@ func (ec *executionContext) _QueuePerformerSceneResult_resolvedQuery(ctx context
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
 		ctx = rctx // use context from middleware stack in children
-		return obj.ResolvedQuery, nil
+		return obj.ResolvedCode, nil
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -14417,7 +14377,7 @@ func (ec *executionContext) _QueuePerformerSceneResult_resolvedQuery(ctx context
 	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_QueuePerformerSceneResult_resolvedQuery(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_QueuePerformerSceneResult_resolvedCode(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "QueuePerformerSceneResult",
 		Field:      field,
@@ -14473,8 +14433,6 @@ func (ec *executionContext) fieldContext_QueuePerformerScenesPayload_queuedTasks
 				return ec.fieldContext_Task_id(ctx, field)
 			case "source":
 				return ec.fieldContext_Task_source(ctx, field)
-			case "query":
-				return ec.fieldContext_Task_query(ctx, field)
 			case "code":
 				return ec.fieldContext_Task_code(ctx, field)
 			case "stage":
@@ -14591,8 +14549,8 @@ func (ec *executionContext) fieldContext_QueuePerformerScenesPayload_results(_ c
 				return ec.fieldContext_QueuePerformerSceneResult_message(ctx, field)
 			case "task":
 				return ec.fieldContext_QueuePerformerSceneResult_task(ctx, field)
-			case "resolvedQuery":
-				return ec.fieldContext_QueuePerformerSceneResult_resolvedQuery(ctx, field)
+			case "resolvedCode":
+				return ec.fieldContext_QueuePerformerSceneResult_resolvedCode(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type QueuePerformerSceneResult", field.Name)
 		},
@@ -19581,8 +19539,6 @@ func (ec *executionContext) fieldContext_SubscribedPerformer_recentReleases(_ co
 				return ec.fieldContext_SubscriptionRelease_date(ctx, field)
 			case "url":
 				return ec.fieldContext_SubscriptionRelease_url(ctx, field)
-			case "query":
-				return ec.fieldContext_SubscriptionRelease_query(ctx, field)
 			case "taskID":
 				return ec.fieldContext_SubscriptionRelease_taskID(ctx, field)
 			case "performerCount":
@@ -19847,50 +19803,6 @@ func (ec *executionContext) _SubscriptionRelease_url(ctx context.Context, field 
 }
 
 func (ec *executionContext) fieldContext_SubscriptionRelease_url(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "SubscriptionRelease",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type String does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _SubscriptionRelease_query(ctx context.Context, field graphql.CollectedField, obj *model.SubscriptionRelease) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_SubscriptionRelease_query(ctx, field)
-	if err != nil {
-		return graphql.Null
-	}
-	ctx = graphql.WithFieldContext(ctx, fc)
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.Query, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(string)
-	fc.Result = res
-	return ec.marshalNString2string(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) fieldContext_SubscriptionRelease_query(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "SubscriptionRelease",
 		Field:      field,
@@ -20692,50 +20604,6 @@ func (ec *executionContext) fieldContext_Task_source(_ context.Context, field gr
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("field of type TaskSource does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _Task_query(ctx context.Context, field graphql.CollectedField, obj *model.Task) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_Task_query(ctx, field)
-	if err != nil {
-		return graphql.Null
-	}
-	ctx = graphql.WithFieldContext(ctx, fc)
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.Query, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(string)
-	fc.Result = res
-	return ec.marshalNString2string(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) fieldContext_Task_query(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "Task",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type String does not have child fields")
 		},
 	}
 	return fc, nil
@@ -25052,20 +24920,20 @@ func (ec *executionContext) unmarshalInputDownloadMediaInput(ctx context.Context
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"query", "trackers", "categories", "limit", "savePath", "category", "tags", "paused"}
+	fieldsInOrder := [...]string{"code", "trackers", "categories", "limit", "savePath", "category", "tags", "paused"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
 			continue
 		}
 		switch k {
-		case "query":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("query"))
+		case "code":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("code"))
 			data, err := ec.unmarshalNString2string(ctx, v)
 			if err != nil {
 				return it, err
 			}
-			it.Query = data
+			it.Code = data
 		case "trackers":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("trackers"))
 			data, err := ec.unmarshalOString2ᚕstringᚄ(ctx, v)
@@ -28445,8 +28313,8 @@ func (ec *executionContext) _QueuePerformerSceneResult(ctx context.Context, sel 
 			}
 		case "task":
 			out.Values[i] = ec._QueuePerformerSceneResult_task(ctx, field, obj)
-		case "resolvedQuery":
-			out.Values[i] = ec._QueuePerformerSceneResult_resolvedQuery(ctx, field, obj)
+		case "resolvedCode":
+			out.Values[i] = ec._QueuePerformerSceneResult_resolvedCode(ctx, field, obj)
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -29545,11 +29413,6 @@ func (ec *executionContext) _SubscriptionRelease(ctx context.Context, sel ast.Se
 			out.Values[i] = ec._SubscriptionRelease_date(ctx, field, obj)
 		case "url":
 			out.Values[i] = ec._SubscriptionRelease_url(ctx, field, obj)
-		case "query":
-			out.Values[i] = ec._SubscriptionRelease_query(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
 		case "taskID":
 			out.Values[i] = ec._SubscriptionRelease_taskID(ctx, field, obj)
 		case "performerCount":
@@ -29767,11 +29630,6 @@ func (ec *executionContext) _Task(ctx context.Context, sel ast.SelectionSet, obj
 			}
 		case "source":
 			out.Values[i] = ec._Task_source(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
-		case "query":
-			out.Values[i] = ec._Task_query(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}

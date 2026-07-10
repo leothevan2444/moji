@@ -58,7 +58,7 @@ input QBittorrentAddInput {
 }
 
 input DownloadMediaInput {
-  query: String!
+  code: String!
   trackers: [String!]
   categories: [Int!]
   limit: Int
@@ -77,7 +77,6 @@ enum TaskSource {
 type Task {
   id: ID!
   source: TaskSource!
-  query: String!
   code: String!
   stage: TaskStage!
   stageStatus: TaskStageStatus!

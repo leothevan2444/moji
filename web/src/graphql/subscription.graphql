@@ -108,7 +108,6 @@ query SubscribedPerformers {
       code
       date
       url
-      query
       taskID
       performerCount
       performerNames
@@ -148,7 +147,6 @@ mutation RefreshSubscribedPerformer($stashPerformerID: ID!) {
       title
       code
       date
-      query
       taskID
       performerCount
       performerNames
@@ -175,7 +173,6 @@ mutation QueuePerformerScenes($input: QueuePerformerScenesInput!) {
       source
       stage
       stageStatus
-      query
       code
       createdAt
     }
@@ -184,7 +181,7 @@ mutation QueuePerformerScenes($input: QueuePerformerScenesInput!) {
       status
       reasonCode
       message
-      resolvedQuery
+      resolvedCode
       task {
         id
         stage

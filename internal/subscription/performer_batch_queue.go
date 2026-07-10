@@ -90,26 +90,26 @@ func (s *Service) queuePerformerSceneSelection(ctx context.Context, byKey map[st
 
 	if current.InLibrary {
 		return QueuePerformerSceneResult{
-			Key:           selection.Key,
-			Status:        QueuePerformerSceneStatusSkipped,
-			ReasonCode:    "ALREADY_IN_LIBRARY",
-			Message:       "作品已在库中，跳过创建任务",
-			ResolvedQuery: buildReleaseQuery(current.Code, current.Title),
+			Key:          selection.Key,
+			Status:       QueuePerformerSceneStatusSkipped,
+			ReasonCode:   "ALREADY_IN_LIBRARY",
+			Message:      "作品已在库中，跳过创建任务",
+			ResolvedCode: buildReleaseCode(current.Code, current.Title),
 		}
 	}
 
 	if !current.HasStashBoxSource || current.StashBoxSceneID == "" || current.StashBoxEndpoint == "" {
 		return QueuePerformerSceneResult{
-			Key:           selection.Key,
-			Status:        QueuePerformerSceneStatusSkipped,
-			ReasonCode:    "NO_STASHBOX_SOURCE",
-			Message:       "缺少可用于下载的 StashBox 场景来源",
-			ResolvedQuery: buildReleaseQuery(current.Code, current.Title),
+			Key:          selection.Key,
+			Status:       QueuePerformerSceneStatusSkipped,
+			ReasonCode:   "NO_STASHBOX_SOURCE",
+			Message:      "缺少可用于下载的 StashBox 场景来源",
+			ResolvedCode: buildReleaseCode(current.Code, current.Title),
 		}
 	}
 
-	resolvedQuery := buildReleaseQuery(current.Code, current.Title)
-	if resolvedQuery == "" {
+	resolvedCode := buildReleaseCode(current.Code, current.Title)
+	if resolvedCode == "" {
 		return QueuePerformerSceneResult{
 			Key:        selection.Key,
 			Status:     QueuePerformerSceneStatusSkipped,
@@ -120,22 +120,22 @@ func (s *Service) queuePerformerSceneSelection(ctx context.Context, byKey map[st
 	task, err := s.taskCreator.QueueDiscoveredScene(ctx, current.StashBoxSceneID, current.StashBoxEndpoint)
 	if err == nil {
 		return QueuePerformerSceneResult{
-			Key:           selection.Key,
-			Status:        QueuePerformerSceneStatusQueued,
-			ReasonCode:    "QUEUED",
-			Message:       "已创建下载任务",
-			Task:          task,
-			ResolvedQuery: resolvedQuery,
+			Key:          selection.Key,
+			Status:       QueuePerformerSceneStatusQueued,
+			ReasonCode:   "QUEUED",
+			Message:      "已创建下载任务",
+			Task:         task,
+			ResolvedCode: resolvedCode,
 		}
 	}
-	return mapPerformerSceneQueueError(selection.Key, resolvedQuery, task, err)
+	return mapPerformerSceneQueueError(selection.Key, resolvedCode, task, err)
 }
 
-func mapPerformerSceneQueueError(key, resolvedQuery string, task *downloader.Task, err error) QueuePerformerSceneResult {
+func mapPerformerSceneQueueError(key, resolvedCode string, task *downloader.Task, err error) QueuePerformerSceneResult {
 	result := QueuePerformerSceneResult{
-		Key:           key,
-		Task:          task,
-		ResolvedQuery: resolvedQuery,
+		Key:          key,
+		Task:         task,
+		ResolvedCode: resolvedCode,
 	}
 	switch {
 	case errors.Is(err, downloader.ErrDuplicateCodeTask):
