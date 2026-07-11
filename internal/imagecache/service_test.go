@@ -81,6 +81,73 @@ func TestCleanupUsesObjectMTimeAsTTL(t *testing.T) {
 	}
 }
 
+func TestCacheHitTouchesMTimeAtMostHourly(t *testing.T) {
+	s := newTestService(t, Config{Enabled: true, MaxSizeMB: 64, RetentionDays: 30})
+	key := strings.Repeat("c", 64)
+	path := filepath.Join(s.objectsDir, key+".png")
+	if err := os.WriteFile(path, tinyPNG, 0o600); err != nil {
+		t.Fatal(err)
+	}
+	now := time.Now().Truncate(time.Second)
+	old := now.Add(-2 * time.Hour)
+	if err := os.Chtimes(path, old, old); err != nil {
+		t.Fatal(err)
+	}
+	s.now = func() time.Time { return now }
+	if _, err := s.load(context.Background(), key); err != nil {
+		t.Fatal(err)
+	}
+	first, _ := os.Stat(path)
+	if !first.ModTime().Equal(now) {
+		t.Fatalf("expected mtime %v, got %v", now, first.ModTime())
+	}
+	s.now = func() time.Time { return now.Add(30 * time.Minute) }
+	if _, err := s.load(context.Background(), key); err != nil {
+		t.Fatal(err)
+	}
+	second, _ := os.Stat(path)
+	if !second.ModTime().Equal(first.ModTime()) {
+		t.Fatalf("mtime was updated before touch interval: %v -> %v", first.ModTime(), second.ModTime())
+	}
+}
+
+func TestCleanupEvictsOldestObjectsToNinetyPercentCapacity(t *testing.T) {
+	s := newTestService(t, Config{Enabled: true, MaxSizeMB: 1, RetentionDays: 30})
+	oldKey := strings.Repeat("d", 64)
+	newKey := strings.Repeat("e", 64)
+	oldPath := filepath.Join(s.objectsDir, oldKey+".png")
+	newPath := filepath.Join(s.objectsDir, newKey+".png")
+	if err := os.WriteFile(oldPath, bytes.Repeat([]byte{1}, 400<<10), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(newPath, bytes.Repeat([]byte{2}, 700<<10), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	now := time.Now()
+	if err := os.Chtimes(oldPath, now.Add(-2*time.Hour), now.Add(-2*time.Hour)); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Chtimes(newPath, now.Add(-time.Hour), now.Add(-time.Hour)); err != nil {
+		t.Fatal(err)
+	}
+	registrationPath := filepath.Join(s.registrationsDir, oldKey+".json")
+	if err := os.WriteFile(registrationPath, []byte(`{"kind":"stash"}`), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if err := s.Cleanup(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := os.Stat(oldPath); !errors.Is(err, os.ErrNotExist) {
+		t.Fatalf("oldest object was not evicted: %v", err)
+	}
+	if _, err := os.Stat(newPath); err != nil {
+		t.Fatalf("newer object was unexpectedly evicted: %v", err)
+	}
+	if _, err := os.Stat(registrationPath); err != nil {
+		t.Fatalf("registration was removed during eviction: %v", err)
+	}
+}
+
 func TestProxyCachesAndForwardsStashAPIKey(t *testing.T) {
 	var calls atomic.Int32
 	s := newTestService(t, DefaultConfig())

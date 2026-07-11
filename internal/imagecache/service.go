@@ -13,6 +13,7 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
+	"sort"
 	"strconv"
 	"strings"
 	"sync"
@@ -80,6 +81,7 @@ type Service struct {
 	config           ConfigProvider
 	client           *http.Client
 	group            singleflight.Group
+	cleanupCh        chan struct{}
 	credentialMu     sync.RWMutex
 	credentials      map[string]string
 	statusMu         sync.RWMutex
@@ -104,6 +106,7 @@ func New(cacheDir string, provider ConfigProvider) (*Service, error) {
 		objectsDir:       filepath.Join(cacheDir, "objects"),
 		config:           provider,
 		credentials:      map[string]string{},
+		cleanupCh:        make(chan struct{}, 1),
 		now:              time.Now,
 	}
 	for _, dir := range []string{s.registrationsDir, s.objectsDir} {
@@ -241,6 +244,7 @@ func validKey(key string) bool {
 
 func (s *Service) load(ctx context.Context, key string) (imageResponse, error) {
 	if path, contentType, ok := s.findObject(key); ok {
+		s.touchIfStale(path)
 		return imageResponse{Path: path, ContentType: contentType}, nil
 	}
 	reg, err := s.readRegistration(key)
@@ -338,7 +342,24 @@ func (s *Service) fetch(ctx context.Context, key string, reg registration) (imag
 	if err := os.Rename(tmpName, path); err != nil {
 		return imageResponse{}, err
 	}
+	s.requestCleanup()
 	return imageResponse{Path: path, ContentType: contentType}, nil
+}
+
+func (s *Service) touchIfStale(path string) {
+	info, err := os.Stat(path)
+	if err != nil || s.now().Sub(info.ModTime()) < time.Hour {
+		return
+	}
+	now := s.now()
+	_ = os.Chtimes(path, now, now)
+}
+
+func (s *Service) requestCleanup() {
+	select {
+	case s.cleanupCh <- struct{}{}:
+	default:
+	}
 }
 
 var contentTypeExtensions = map[string]string{
@@ -379,7 +400,7 @@ func serveImage(w http.ResponseWriter, r *http.Request, key string, result image
 	if err != nil {
 		return err
 	}
-	etag := fmt.Sprintf("\"%s-%x-%x\"", key, info.Size(), info.ModTime().UnixNano())
+	etag := fmt.Sprintf("\"%s-%x\"", key, info.Size())
 	w.Header().Set("Content-Type", result.ContentType)
 	w.Header().Set("Content-Length", strconv.FormatInt(info.Size(), 10))
 	w.Header().Set("Cache-Control", "private, max-age=86400")
@@ -427,6 +448,13 @@ func (s *Service) validateTargetURL(ctx context.Context, u *url.URL, source requ
 func (s *Service) Cleanup(_ context.Context) error {
 	cfg := normalizeConfig(s.config())
 	cutoff := s.now().UTC().Add(-time.Duration(cfg.RetentionDays) * 24 * time.Hour)
+	type cacheObject struct {
+		path    string
+		size    int64
+		modTime time.Time
+	}
+	var objects []cacheObject
+	var total int64
 	entries, err := os.ReadDir(s.objectsDir)
 	if err != nil {
 		return err
@@ -443,8 +471,27 @@ func (s *Service) Cleanup(_ context.Context) error {
 			}
 			continue
 		}
-		if info.Mode().IsRegular() && info.ModTime().Before(cutoff) {
+		if !info.Mode().IsRegular() {
+			continue
+		}
+		if info.ModTime().Before(cutoff) {
 			_ = os.Remove(path)
+			continue
+		}
+		objects = append(objects, cacheObject{path: path, size: info.Size(), modTime: info.ModTime()})
+		total += info.Size()
+	}
+	maxBytes := int64(cfg.MaxSizeMB) << 20
+	if maxBytes > 0 && total > maxBytes {
+		targetBytes := maxBytes * 9 / 10
+		sort.Slice(objects, func(i, j int) bool { return objects[i].modTime.Before(objects[j].modTime) })
+		for _, object := range objects {
+			if total <= targetBytes {
+				break
+			}
+			if err := os.Remove(object.path); err == nil || errors.Is(err, os.ErrNotExist) {
+				total -= object.size
+			}
 		}
 	}
 	registrationEntries, _ := os.ReadDir(s.registrationsDir)
@@ -521,6 +568,8 @@ func (s *Service) StartCleanup(ctx context.Context) {
 			select {
 			case <-ctx.Done():
 				return
+			case <-s.cleanupCh:
+				_ = s.Cleanup(ctx)
 			case <-ticker.C:
 				_ = s.Cleanup(ctx)
 			}
