@@ -56,7 +56,6 @@ const SubscriptionPage = lazy(() => import("./pages/SubscriptionPage").then((mod
 const ConfirmDeleteDrawer = lazy(() => import("./components/drawers/ConfirmDeleteDrawer").then((module) => ({ default: module.ConfirmDeleteDrawer })));
 const DiscoveryDrawer = lazy(() => import("./components/drawers/DiscoveryDrawer").then((module) => ({ default: module.DiscoveryDrawer })));
 const HelpDrawer = lazy(() => import("./components/drawers/HelpDrawer").then((module) => ({ default: module.HelpDrawer })));
-const SettingsDrawer = lazy(() => import("./components/drawers/SettingsDrawer").then((module) => ({ default: module.SettingsDrawer })));
 const SourcingResolutionDrawer = lazy(() => import("./components/drawers/SourcingResolutionDrawer").then((module) => ({ default: module.SourcingResolutionDrawer })));
 const TaskDrawer = lazy(() => import("./components/drawers/TaskDrawer").then((module) => ({ default: module.TaskDrawer })));
 
@@ -97,7 +96,6 @@ function App() {
         : "主页";
   // ── UI state ────────────────────────────────────────────────────────
   const [drawer, setDrawer] = useState<DrawerKey>(null);
-  const [settingsTab, setSettingsTab] = useState<SettingsTab>("连接");
   const openSettings = useCallback((tab: SettingsTab) => {
     const slug: Record<SettingsTab, string> = { 连接: "connections", 入库: "ingest", 自动化: "automation", 系统: "system", 日志: "logs", 关于: "about" };
     navigate(`/settings/${slug[tab]}`);
@@ -197,14 +195,6 @@ function App() {
   }, [pathname, urlSearchParams, setURLSearchParams]);
 
   useEffect(() => {
-    if (pathname.startsWith("/settings/")) {
-      const sectionToTab: Record<string, SettingsTab> = {
-        connections: "连接", ingest: "入库", automation: "自动化",
-        system: "系统", logs: "日志", about: "关于"
-      };
-      setSettingsTab(sectionToTab[params.section ?? ""] ?? "连接");
-      if (!sectionToTab[params.section ?? ""]) navigate("/settings/connections", { replace: true });
-    }
     if (pathname === "/discover" && urlSearchParams.get("q")) {
       setDrawer("discovery");
     } else if (drawer === "discovery" && !pathname.startsWith("/discover")) {
@@ -885,7 +875,6 @@ function App() {
 
   // ── Drawer metadata ─────────────────────────────────────────────────
   const drawerTitle = (() => {
-    if (displayedDrawer === "settings") return "配置与系统";
     if (displayedDrawer === "help") return "Markdown 帮助";
     if (displayedDrawer === "discovery") return discoveryMode === "stashbox" ? "StashBox 搜索结果" : "Jackett 搜索结果";
     if (displayedDrawer === "task-resolution") return activeTask ? `人工处理：${taskSummary(activeTask)}` : "人工处理受阻任务";
@@ -1057,23 +1046,6 @@ function App() {
           />
         ) : null}
 
-        {pathname.startsWith("/settings/") ? (
-          <section className="section-band">
-            <div className="band-head"><div><h2 tabIndex={-1}>配置与系统</h2></div></div>
-            <SettingsDrawer
-              settingsTab={settingsTab}
-              onSettingsTabChange={(next) => openSettings(next)}
-              runtimeSettings={runtimeSettings}
-              runtimeStatus={runtimeStatus}
-              appVersion={data?.version ?? ""}
-              drawer="settings"
-              renderedDrawer="settings"
-              pushToast={pushToast}
-              refreshDashboard={refreshDashboard}
-            />
-          </section>
-        ) : null}
-
       </main>
 
       {displayedDrawer ? (
@@ -1083,20 +1055,6 @@ function App() {
           title={drawerTitle}
           onClose={closeDisplayedDrawer}
         >
-          {displayedDrawer === "settings" ? (
-            <SettingsDrawer
-              settingsTab={settingsTab}
-              onSettingsTabChange={setSettingsTab}
-              runtimeSettings={runtimeSettings}
-              runtimeStatus={runtimeStatus}
-              appVersion={data?.version ?? ""}
-              drawer={drawer}
-              renderedDrawer={renderedDrawer}
-              pushToast={pushToast}
-              refreshDashboard={refreshDashboard}
-            />
-          ) : null}
-
           {displayedDrawer === "help" ? (
             <HelpDrawer topicId={helpTopicId} onTopicChange={setHelpTopicId} />
           ) : null}

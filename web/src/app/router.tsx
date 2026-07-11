@@ -12,11 +12,11 @@ export const router = createBrowserRouter([
   { path: "/performers/:performerId", element: <AppShell /> },
   { path: "/discover", element: <AppShell /> },
   { path: "/settings", element: <Navigate replace to="/settings/connections" /> },
-  { path: "/settings/:section", element: <AppShell /> },
   {
     element: <AppLayout />,
     children: [
-      { path: "/stats", lazy: () => import("./routes/StatsRoute") }
+      { path: "/stats", lazy: () => import("./routes/StatsRoute") },
+      { path: "/settings/:section", lazy: () => import("./routes/SettingsRoute") }
     ]
   },
   { path: "*", element: <NotFoundPage /> }
