@@ -3,13 +3,16 @@ package imagecache
 import (
 	"bytes"
 	"context"
+	"errors"
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"path/filepath"
 	"strings"
 	"sync/atomic"
 	"testing"
+	"time"
 )
 
 var tinyPNG = []byte{0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a}
@@ -33,12 +36,49 @@ func imageTransport(contentType string, body []byte, calls *atomic.Int32, check 
 func newTestService(t *testing.T, cfg Config) *Service {
 	t.Helper()
 	dir := t.TempDir()
-	s, err := New(filepath.Join(dir, "moji.db"), filepath.Join(dir, "images"), func() Config { return cfg })
+	s, err := New(filepath.Join(dir, "images"), func() Config { return cfg })
 	if err != nil {
 		t.Fatal(err)
 	}
 	t.Cleanup(func() { _ = s.Close() })
 	return s
+}
+
+func TestRegistrationPersistsSeparatelyFromCachedImage(t *testing.T) {
+	dir := filepath.Join(t.TempDir(), "images")
+	s, err := New(dir, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	proxy, err := s.Register(context.Background(), Descriptor{Kind: SourceStash, InstanceURL: "http://stash.test", ImageURL: "/poster.png"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	key := strings.TrimPrefix(proxy, "/api/images/")
+	if _, err := os.Stat(filepath.Join(dir, "registrations", key+".json")); err != nil {
+		t.Fatalf("registration was not persisted: %v", err)
+	}
+	if entries, err := os.ReadDir(filepath.Join(dir, "objects")); err != nil || len(entries) != 0 {
+		t.Fatalf("registration unexpectedly created an image: entries=%d err=%v", len(entries), err)
+	}
+}
+
+func TestCleanupUsesObjectMTimeAsTTL(t *testing.T) {
+	s := newTestService(t, Config{Enabled: true, MaxSizeMB: 64, RetentionDays: 1})
+	path := filepath.Join(s.objectsDir, strings.Repeat("a", 64)+".png")
+	if err := os.WriteFile(path, tinyPNG, 0o600); err != nil {
+		t.Fatal(err)
+	}
+	old := time.Now().Add(-48 * time.Hour)
+	if err := os.Chtimes(path, old, old); err != nil {
+		t.Fatal(err)
+	}
+	if err := s.Cleanup(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := os.Stat(path); !errors.Is(err, os.ErrNotExist) {
+		t.Fatalf("expired object still exists: %v", err)
+	}
 }
 
 func TestProxyCachesAndForwardsStashAPIKey(t *testing.T) {

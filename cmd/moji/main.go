@@ -127,7 +127,7 @@ func newHTTPHandler(cfg *config.Config, version string) http.Handler {
 }
 
 func newHTTPRuntime(cfg *config.Config, version string, configStore *config.Store) (http.Handler, graphqlapi.TaskRuntimeService, graphqlapi.StashService, graphqlapi.SubscriptionService, *stats.Collector) {
-	imageService, err := imagecache.New(runtimeDatabasePath(), "image-cache", func() imagecache.Config {
+	imageService, err := imagecache.New("cache/image", func() imagecache.Config {
 		current := cfg.System.ImageCache.Normalize()
 		if configStore != nil {
 			current = configStore.Config().System.ImageCache.Normalize()

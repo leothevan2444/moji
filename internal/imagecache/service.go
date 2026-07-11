@@ -3,8 +3,8 @@ package imagecache
 import (
 	"context"
 	"crypto/sha256"
-	"database/sql"
 	"encoding/hex"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -19,7 +19,6 @@ import (
 	"time"
 
 	"golang.org/x/sync/singleflight"
-	_ "modernc.org/sqlite"
 )
 
 const (
@@ -62,63 +61,65 @@ type Status struct {
 	LastError      string
 }
 
-type entry struct {
-	Key, Kind, InstanceURL, OriginURL, FileName, ContentType, ETag, LastModified string
-	Size                                                                         int64
-	FetchedAt, ExpiresAt, LastAccessed                                           time.Time
+type registration struct {
+	Kind        SourceKind `json:"kind"`
+	InstanceURL string     `json:"instanceUrl"`
+	OriginURL   string     `json:"originUrl"`
 }
+
 type imageResponse struct {
-	Entry entry
-	Data  []byte
+	Path        string
+	ContentType string
+	Data        []byte
 }
 
 type Service struct {
-	db            *sql.DB
-	dir           string
-	config        ConfigProvider
-	client        *http.Client
-	group         singleflight.Group
-	credentialMu  sync.RWMutex
-	credentials   map[string]string
-	statusMu      sync.RWMutex
-	lastCleanupAt *time.Time
-	lastError     string
-	now           func() time.Time
+	dir              string
+	registrationsDir string
+	objectsDir       string
+	config           ConfigProvider
+	client           *http.Client
+	group            singleflight.Group
+	credentialMu     sync.RWMutex
+	credentials      map[string]string
+	statusMu         sync.RWMutex
+	lastCleanupAt    *time.Time
+	lastError        string
+	now              func() time.Time
 }
+
 type requestSourceKey struct{}
 type requestSource struct {
 	Kind     SourceKind
 	Instance string
 }
 
-func New(dbPath, cacheDir string, provider ConfigProvider) (*Service, error) {
+func New(cacheDir string, provider ConfigProvider) (*Service, error) {
 	if provider == nil {
 		provider = func() Config { return DefaultConfig() }
 	}
-	if err := os.MkdirAll(cacheDir, 0o755); err != nil {
-		return nil, fmt.Errorf("imagecache: create cache dir: %w", err)
+	s := &Service{
+		dir:              cacheDir,
+		registrationsDir: filepath.Join(cacheDir, "registrations"),
+		objectsDir:       filepath.Join(cacheDir, "objects"),
+		config:           provider,
+		credentials:      map[string]string{},
+		now:              time.Now,
 	}
-	db, err := sql.Open("sqlite", dbPath)
-	if err != nil {
-		return nil, err
-	}
-	db.SetMaxOpenConns(1)
-	for _, q := range []string{"PRAGMA journal_mode=WAL", "PRAGMA busy_timeout=5000", `CREATE TABLE IF NOT EXISTS image_cache_entries (
-		cache_key TEXT PRIMARY KEY, source_kind TEXT NOT NULL, instance_url TEXT NOT NULL, origin_url TEXT NOT NULL,
-		file_name TEXT NOT NULL DEFAULT '', content_type TEXT NOT NULL DEFAULT '', etag TEXT NOT NULL DEFAULT '',
-		last_modified TEXT NOT NULL DEFAULT '', size_bytes INTEGER NOT NULL DEFAULT 0, fetched_at TEXT,
-		expires_at TEXT, last_accessed_at TEXT NOT NULL)`} {
-		if _, err := db.Exec(q); err != nil {
-			_ = db.Close()
-			return nil, fmt.Errorf("imagecache: init db: %w", err)
+	for _, dir := range []string{s.registrationsDir, s.objectsDir} {
+		if err := os.MkdirAll(dir, 0o755); err != nil {
+			return nil, fmt.Errorf("imagecache: create cache directory: %w", err)
 		}
 	}
-	s := &Service{db: db, dir: cacheDir, config: provider, credentials: map[string]string{}, now: time.Now}
-	s.client = &http.Client{Timeout: 10 * time.Second, CheckRedirect: s.checkRedirect, Transport: &http.Transport{Proxy: nil, DialContext: s.safeDialContext}}
+	s.client = &http.Client{
+		Timeout:       10 * time.Second,
+		CheckRedirect: s.checkRedirect,
+		Transport:     &http.Transport{Proxy: nil, DialContext: s.safeDialContext},
+	}
 	return s, nil
 }
 
-func (s *Service) Close() error { return s.db.Close() }
+func (s *Service) Close() error { return nil }
 
 func normalizeConfig(c Config) Config {
 	if c.MaxSizeMB == 0 {
@@ -137,11 +138,17 @@ func (s *Service) Register(ctx context.Context, d Descriptor) (string, error) {
 	}
 	sum := sha256.Sum256([]byte(string(d.Kind) + "\n" + instance + "\n" + resolved))
 	key := hex.EncodeToString(sum[:])
-	now := s.now().UTC().Format(time.RFC3339Nano)
-	_, err = s.db.ExecContext(ctx, `INSERT INTO image_cache_entries(cache_key,source_kind,instance_url,origin_url,last_accessed_at)
-		VALUES(?,?,?,?,?) ON CONFLICT(cache_key) DO UPDATE SET origin_url=excluded.origin_url,last_accessed_at=excluded.last_accessed_at`, key, d.Kind, instance, resolved, now)
+	reg := registration{Kind: d.Kind, InstanceURL: instance, OriginURL: resolved}
+	data, err := json.Marshal(reg)
 	if err != nil {
-		return "", fmt.Errorf("imagecache: register: %w", err)
+		return "", fmt.Errorf("imagecache: encode registration: %w", err)
+	}
+	registrationPath := s.registrationPath(key)
+	current, readErr := os.ReadFile(registrationPath)
+	if readErr != nil || string(current) != string(data) {
+		if err := writeAtomic(registrationPath, data, 0o600); err != nil {
+			return "", fmt.Errorf("imagecache: register: %w", err)
+		}
 	}
 	if strings.TrimSpace(d.APIKey) != "" {
 		s.credentialMu.Lock()
@@ -149,6 +156,31 @@ func (s *Service) Register(ctx context.Context, d Descriptor) (string, error) {
 		s.credentialMu.Unlock()
 	}
 	return "/api/images/" + key, nil
+}
+
+func writeAtomic(path string, data []byte, mode os.FileMode) error {
+	tmp, err := os.CreateTemp(filepath.Dir(path), ".tmp-*")
+	if err != nil {
+		return err
+	}
+	tmpName := tmp.Name()
+	defer os.Remove(tmpName)
+	if err := tmp.Chmod(mode); err != nil {
+		_ = tmp.Close()
+		return err
+	}
+	if _, err := tmp.Write(data); err != nil {
+		_ = tmp.Close()
+		return err
+	}
+	if err := tmp.Sync(); err != nil {
+		_ = tmp.Close()
+		return err
+	}
+	if err := tmp.Close(); err != nil {
+		return err
+	}
+	return os.Rename(tmpName, path)
 }
 
 func resolveDescriptor(d Descriptor) (string, string, error) {
@@ -170,13 +202,17 @@ func resolveDescriptor(d Descriptor) (string, string, error) {
 
 func credentialKey(kind SourceKind, instance string) string { return string(kind) + "\n" + instance }
 
+func (s *Service) registrationPath(key string) string {
+	return filepath.Join(s.registrationsDir, key+".json")
+}
+
 func (s *Service) RegisterHandler(mux *http.ServeMux) {
 	mux.HandleFunc("GET /api/images/{key}", s.ServeHTTP)
 }
 
 func (s *Service) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	key := r.PathValue("key")
-	if len(key) != 64 {
+	if !validKey(key) {
 		http.NotFound(w, r)
 		return
 	}
@@ -186,89 +222,79 @@ func (s *Service) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			http.NotFound(w, r)
 			return
 		}
-		s.statusMu.Lock()
-		s.lastError = err.Error()
-		s.statusMu.Unlock()
+		s.setError(err)
 		http.Error(w, http.StatusText(http.StatusBadGateway), http.StatusBadGateway)
 		return
 	}
-	result := v.(imageResponse)
-	if err := serveEntry(w, r, s.dir, result); err != nil {
+	if err := serveImage(w, r, key, v.(imageResponse)); err != nil {
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 	}
 }
 
-func (s *Service) load(ctx context.Context, key string) (imageResponse, error) {
-	e, err := s.get(ctx, key)
-	if errors.Is(err, sql.ErrNoRows) {
-		return imageResponse{}, os.ErrNotExist
+func validKey(key string) bool {
+	if len(key) != sha256.Size*2 {
+		return false
 	}
+	_, err := hex.DecodeString(key)
+	return err == nil
+}
+
+func (s *Service) load(ctx context.Context, key string) (imageResponse, error) {
+	if path, contentType, ok := s.findObject(key); ok {
+		return imageResponse{Path: path, ContentType: contentType}, nil
+	}
+	reg, err := s.readRegistration(key)
 	if err != nil {
 		return imageResponse{}, err
 	}
-	now := s.now().UTC()
-	if e.FileName != "" {
-		if _, statErr := os.Stat(filepath.Join(s.dir, e.FileName)); statErr != nil {
-			e.FileName = ""
-			e.Size = 0
-			e.ETag = ""
-			e.LastModified = ""
+	result, err := s.fetch(ctx, key, reg)
+	if err == nil {
+		s.setError(nil)
+	}
+	return result, err
+}
+
+func (s *Service) readRegistration(key string) (registration, error) {
+	data, err := os.ReadFile(s.registrationPath(key))
+	if err != nil {
+		return registration{}, err
+	}
+	var reg registration
+	if err := json.Unmarshal(data, &reg); err != nil {
+		return registration{}, fmt.Errorf("imagecache: decode registration: %w", err)
+	}
+	if reg.Kind != SourceStash && reg.Kind != SourceStashBox {
+		return registration{}, errors.New("imagecache: invalid registered source")
+	}
+	return reg, nil
+}
+
+func (s *Service) findObject(key string) (string, string, bool) {
+	for contentType, ext := range contentTypeExtensions {
+		path := filepath.Join(s.objectsDir, key+ext)
+		if info, err := os.Stat(path); err == nil && info.Mode().IsRegular() {
+			return path, contentType, true
 		}
 	}
-	if e.FileName != "" && now.Before(e.ExpiresAt) {
-		_, _ = s.db.ExecContext(ctx, "UPDATE image_cache_entries SET last_accessed_at=? WHERE cache_key=?", now.Format(time.RFC3339Nano), key)
-		return imageResponse{Entry: e}, nil
-	}
-	fresh, err := s.fetch(ctx, e)
-	if err != nil && e.FileName != "" {
-		s.statusMu.Lock()
-		s.lastError = err.Error()
-		s.statusMu.Unlock()
-		return imageResponse{Entry: e}, nil
-	}
-	if err == nil {
-		s.statusMu.Lock()
-		s.lastError = ""
-		s.statusMu.Unlock()
-	}
-	return fresh, err
+	return "", "", false
 }
 
-func (s *Service) get(ctx context.Context, key string) (entry, error) {
-	var e entry
-	var fetched, expires, accessed sql.NullString
-	err := s.db.QueryRowContext(ctx, `SELECT cache_key,source_kind,instance_url,origin_url,file_name,content_type,etag,last_modified,size_bytes,fetched_at,expires_at,last_accessed_at FROM image_cache_entries WHERE cache_key=?`, key).
-		Scan(&e.Key, &e.Kind, &e.InstanceURL, &e.OriginURL, &e.FileName, &e.ContentType, &e.ETag, &e.LastModified, &e.Size, &fetched, &expires, &accessed)
+func (s *Service) fetch(ctx context.Context, key string, reg registration) (imageResponse, error) {
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, reg.OriginURL, nil)
 	if err != nil {
-		return e, err
+		return imageResponse{}, err
 	}
-	e.FetchedAt = parseTime(fetched.String)
-	e.ExpiresAt = parseTime(expires.String)
-	e.LastAccessed = parseTime(accessed.String)
-	return e, nil
-}
-
-func parseTime(v string) time.Time { t, _ := time.Parse(time.RFC3339Nano, v); return t }
-
-func (s *Service) fetch(ctx context.Context, e entry) (imageResponse, error) {
-	req, _ := http.NewRequestWithContext(ctx, http.MethodGet, e.OriginURL, nil)
-	source := requestSource{Kind: SourceKind(e.Kind), Instance: e.InstanceURL}
+	source := requestSource{Kind: reg.Kind, Instance: reg.InstanceURL}
 	if err := s.validateTargetURL(ctx, req.URL, source); err != nil {
 		return imageResponse{}, err
 	}
 	req = req.WithContext(context.WithValue(req.Context(), requestSourceKey{}, source))
-	if e.ETag != "" {
-		req.Header.Set("If-None-Match", e.ETag)
-	}
-	if e.LastModified != "" {
-		req.Header.Set("If-Modified-Since", e.LastModified)
-	}
-	if sameOrigin(e.OriginURL, e.InstanceURL) {
+	if sameOrigin(reg.OriginURL, reg.InstanceURL) {
 		s.credentialMu.RLock()
-		key := s.credentials[credentialKey(SourceKind(e.Kind), e.InstanceURL)]
+		apiKey := s.credentials[credentialKey(reg.Kind, reg.InstanceURL)]
 		s.credentialMu.RUnlock()
-		if key != "" {
-			req.Header.Set("ApiKey", key)
+		if apiKey != "" {
+			req.Header.Set("ApiKey", apiKey)
 		}
 	}
 	resp, err := s.client.Do(req)
@@ -276,13 +302,6 @@ func (s *Service) fetch(ctx context.Context, e entry) (imageResponse, error) {
 		return imageResponse{}, err
 	}
 	defer resp.Body.Close()
-	now := s.now().UTC()
-	expires := expiryFromHeaders(resp.Header, now)
-	if resp.StatusCode == http.StatusNotModified && e.FileName != "" {
-		_, err = s.db.ExecContext(ctx, "UPDATE image_cache_entries SET fetched_at=?,expires_at=?,last_accessed_at=? WHERE cache_key=?", now.Format(time.RFC3339Nano), expires.Format(time.RFC3339Nano), now.Format(time.RFC3339Nano), e.Key)
-		e.ExpiresAt = expires
-		return imageResponse{Entry: e}, err
-	}
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
 		return imageResponse{}, fmt.Errorf("imagecache: upstream status %d", resp.StatusCode)
 	}
@@ -290,111 +309,86 @@ func (s *Service) fetch(ctx context.Context, e entry) (imageResponse, error) {
 	if !allowedContentType(contentType) {
 		return imageResponse{}, fmt.Errorf("imagecache: rejected content type %q", contentType)
 	}
-	tmp, err := os.CreateTemp(s.dir, ".image-*")
+	tmp, err := os.CreateTemp(s.objectsDir, ".tmp-*")
 	if err != nil {
 		return imageResponse{}, err
 	}
 	tmpName := tmp.Name()
 	defer os.Remove(tmpName)
 	n, copyErr := io.Copy(tmp, io.LimitReader(resp.Body, maxImageBytes+1))
-	closeErr := tmp.Close()
 	if copyErr != nil {
+		_ = tmp.Close()
 		return imageResponse{}, copyErr
 	}
-	if closeErr != nil {
-		return imageResponse{}, closeErr
+	if err := tmp.Sync(); err != nil {
+		_ = tmp.Close()
+		return imageResponse{}, err
+	}
+	if err := tmp.Close(); err != nil {
+		return imageResponse{}, err
 	}
 	if n > maxImageBytes {
 		return imageResponse{}, errors.New("imagecache: image exceeds 10 MB")
 	}
-	cfg := normalizeConfig(s.config())
-	fileName := ""
-	if cfg.Enabled {
-		fileName = e.Key + extensionFor(contentType)
-		if err := os.Rename(tmpName, filepath.Join(s.dir, fileName)); err != nil {
-			return imageResponse{}, err
-		}
+	if !normalizeConfig(s.config()).Enabled {
+		data, err := os.ReadFile(tmpName)
+		return imageResponse{ContentType: contentType, Data: data}, err
 	}
-	_, err = s.db.ExecContext(ctx, `UPDATE image_cache_entries SET file_name=?,content_type=?,etag=?,last_modified=?,size_bytes=?,fetched_at=?,expires_at=?,last_accessed_at=? WHERE cache_key=?`, fileName, contentType, resp.Header.Get("ETag"), resp.Header.Get("Last-Modified"), n, now.Format(time.RFC3339Nano), expires.Format(time.RFC3339Nano), now.Format(time.RFC3339Nano), e.Key)
-	if err != nil {
+	path := filepath.Join(s.objectsDir, key+extensionFor(contentType))
+	if err := os.Rename(tmpName, path); err != nil {
 		return imageResponse{}, err
 	}
-	if !cfg.Enabled {
-		data, readErr := os.ReadFile(tmpName)
-		if readErr != nil {
-			return imageResponse{}, readErr
-		}
-		e.ContentType = contentType
-		e.Size = n
-		return imageResponse{Entry: e, Data: data}, nil
-	}
-	e.FileName = fileName
-	e.ContentType = contentType
-	e.Size = n
-	e.ETag = resp.Header.Get("ETag")
-	e.LastModified = resp.Header.Get("Last-Modified")
-	e.ExpiresAt = expires
-	_ = s.Cleanup(ctx)
-	return imageResponse{Entry: e}, nil
+	return imageResponse{Path: path, ContentType: contentType}, nil
 }
 
-func allowedContentType(v string) bool {
-	switch v {
-	case "image/jpeg", "image/png", "image/webp", "image/gif", "image/avif":
-		return true
-	}
-	return false
+var contentTypeExtensions = map[string]string{
+	"image/jpeg": ".jpg",
+	"image/png":  ".png",
+	"image/webp": ".webp",
+	"image/gif":  ".gif",
+	"image/avif": ".avif",
 }
-func extensionFor(v string) string {
-	return map[string]string{"image/jpeg": ".jpg", "image/png": ".png", "image/webp": ".webp", "image/gif": ".gif", "image/avif": ".avif"}[v]
+
+func allowedContentType(value string) bool {
+	_, ok := contentTypeExtensions[value]
+	return ok
 }
-func expiryFromHeaders(h http.Header, now time.Time) time.Time {
-	for _, p := range strings.Split(h.Get("Cache-Control"), ",") {
-		p = strings.TrimSpace(p)
-		if strings.HasPrefix(p, "max-age=") {
-			if n, err := strconv.Atoi(strings.TrimPrefix(p, "max-age=")); err == nil && n >= 0 {
-				if n > 86400 {
-					n = 86400
-				}
-				return now.Add(time.Duration(n) * time.Second)
-			}
-		}
-	}
-	return now.Add(24 * time.Hour)
-}
+
+func extensionFor(contentType string) string { return contentTypeExtensions[contentType] }
+
 func sameOrigin(a, b string) bool {
 	ua, _ := url.Parse(a)
 	ub, _ := url.Parse(b)
 	return strings.EqualFold(ua.Scheme, ub.Scheme) && strings.EqualFold(ua.Host, ub.Host)
 }
 
-func serveEntry(w http.ResponseWriter, r *http.Request, dir string, result imageResponse) error {
-	e := result.Entry
-	if e.ETag != "" {
-		w.Header().Set("ETag", e.ETag)
-	}
-	if e.LastModified != "" {
-		w.Header().Set("Last-Modified", e.LastModified)
-	}
-	if e.ETag != "" && r.Header.Get("If-None-Match") == e.ETag {
-		w.WriteHeader(http.StatusNotModified)
-		return nil
-	}
+func serveImage(w http.ResponseWriter, r *http.Request, key string, result imageResponse) error {
 	if result.Data != nil {
-		w.Header().Set("Content-Type", e.ContentType)
+		w.Header().Set("Content-Type", result.ContentType)
 		w.Header().Set("Content-Length", strconv.Itoa(len(result.Data)))
 		w.Header().Set("Cache-Control", "private, no-store")
 		_, err := w.Write(result.Data)
 		return err
 	}
-	f, err := os.Open(filepath.Join(dir, e.FileName))
+	f, err := os.Open(result.Path)
 	if err != nil {
 		return err
 	}
 	defer f.Close()
-	w.Header().Set("Content-Type", e.ContentType)
-	w.Header().Set("Content-Length", strconv.FormatInt(e.Size, 10))
+	info, err := f.Stat()
+	if err != nil {
+		return err
+	}
+	etag := fmt.Sprintf("\"%s-%x-%x\"", key, info.Size(), info.ModTime().UnixNano())
+	w.Header().Set("Content-Type", result.ContentType)
+	w.Header().Set("Content-Length", strconv.FormatInt(info.Size(), 10))
 	w.Header().Set("Cache-Control", "private, max-age=86400")
+	w.Header().Set("ETag", etag)
+	w.Header().Set("Last-Modified", info.ModTime().UTC().Format(http.TimeFormat))
+	if r.Header.Get("If-None-Match") == etag {
+		w.WriteHeader(http.StatusNotModified)
+		return nil
+	}
 	_, err = io.Copy(w, f)
 	return err
 }
@@ -406,9 +400,11 @@ func (s *Service) checkRedirect(req *http.Request, via []*http.Request) error {
 	source, _ := req.Context().Value(requestSourceKey{}).(requestSource)
 	return s.validateTargetURL(req.Context(), req.URL, source)
 }
+
 func (s *Service) safeDialContext(ctx context.Context, network, address string) (net.Conn, error) {
 	return (&net.Dialer{Timeout: 5 * time.Second}).DialContext(ctx, network, address)
 }
+
 func (s *Service) validateTargetURL(ctx context.Context, u *url.URL, source requestSource) error {
 	if u.Scheme != "http" && u.Scheme != "https" {
 		return errors.New("imagecache: unsafe redirect")
@@ -428,44 +424,35 @@ func (s *Service) validateTargetURL(ctx context.Context, u *url.URL, source requ
 	return nil
 }
 
-func (s *Service) Cleanup(ctx context.Context) error {
+func (s *Service) Cleanup(_ context.Context) error {
 	cfg := normalizeConfig(s.config())
 	cutoff := s.now().UTC().Add(-time.Duration(cfg.RetentionDays) * 24 * time.Hour)
-	max := int64(cfg.MaxSizeMB) << 20
-	rows, err := s.db.QueryContext(ctx, `SELECT cache_key,file_name,size_bytes,last_accessed_at FROM image_cache_entries WHERE file_name<>'' ORDER BY last_accessed_at DESC`)
+	entries, err := os.ReadDir(s.objectsDir)
 	if err != nil {
 		return err
 	}
-	defer rows.Close()
-	type item struct {
-		k, f string
-		s    int64
-		t    time.Time
-	}
-	var items []item
-	var total int64
-	for rows.Next() {
-		var x item
-		var ts string
-		if err := rows.Scan(&x.k, &x.f, &x.s, &ts); err != nil {
-			return err
+	for _, item := range entries {
+		path := filepath.Join(s.objectsDir, item.Name())
+		info, statErr := item.Info()
+		if statErr != nil {
+			continue
 		}
-		x.t = parseTime(ts)
-		items = append(items, x)
-		total += x.s
-	}
-	for i := len(items) - 1; i >= 0; i-- {
-		x := items[i]
-		if x.t.Before(cutoff) || total > max {
-			_ = os.Remove(filepath.Join(s.dir, x.f))
-			_, _ = s.db.ExecContext(ctx, `UPDATE image_cache_entries SET file_name='',content_type='',etag='',last_modified='',size_bytes=0,fetched_at=NULL,expires_at=NULL WHERE cache_key=?`, x.k)
-			total -= x.s
+		if strings.HasPrefix(item.Name(), ".tmp-") {
+			if s.now().Sub(info.ModTime()) > time.Hour {
+				_ = os.Remove(path)
+			}
+			continue
+		}
+		if info.Mode().IsRegular() && info.ModTime().Before(cutoff) {
+			_ = os.Remove(path)
 		}
 	}
-	temps, _ := filepath.Glob(filepath.Join(s.dir, ".image-*"))
-	for _, name := range temps {
-		if info, err := os.Stat(name); err == nil && s.now().Sub(info.ModTime()) > time.Hour {
-			_ = os.Remove(name)
+	registrationEntries, _ := os.ReadDir(s.registrationsDir)
+	for _, item := range registrationEntries {
+		if strings.HasPrefix(item.Name(), ".tmp-") {
+			if info, err := item.Info(); err == nil && s.now().Sub(info.ModTime()) > time.Hour {
+				_ = os.Remove(filepath.Join(s.registrationsDir, item.Name()))
+			}
 		}
 	}
 	now := s.now().UTC()
@@ -476,36 +463,53 @@ func (s *Service) Cleanup(ctx context.Context) error {
 	return nil
 }
 
-func (s *Service) Clear(ctx context.Context) (Status, error) {
-	rows, err := s.db.QueryContext(ctx, "SELECT file_name FROM image_cache_entries WHERE file_name<>''")
+func (s *Service) Clear(_ context.Context) (Status, error) {
+	entries, err := os.ReadDir(s.objectsDir)
 	if err != nil {
 		return Status{}, err
 	}
-	var files []string
-	for rows.Next() {
-		var f string
-		_ = rows.Scan(&f)
-		files = append(files, f)
+	for _, item := range entries {
+		if item.Type().IsRegular() {
+			if err := os.Remove(filepath.Join(s.objectsDir, item.Name())); err != nil && !errors.Is(err, os.ErrNotExist) {
+				return Status{}, err
+			}
+		}
 	}
-	rows.Close()
-	for _, f := range files {
-		_ = os.Remove(filepath.Join(s.dir, f))
-	}
-	_, err = s.db.ExecContext(ctx, `UPDATE image_cache_entries SET file_name='',content_type='',etag='',last_modified='',size_bytes=0,fetched_at=NULL,expires_at=NULL`)
-	if err != nil {
-		return Status{}, err
-	}
-	return s.Status(ctx)
+	return s.Status(context.Background())
 }
-func (s *Service) Status(ctx context.Context) (Status, error) {
-	var st Status
-	st.CacheDirectory = s.dir
-	err := s.db.QueryRowContext(ctx, "SELECT COALESCE(SUM(size_bytes),0),COUNT(*) FROM image_cache_entries WHERE file_name<>''").Scan(&st.UsedBytes, &st.EntryCount)
+
+func (s *Service) Status(_ context.Context) (Status, error) {
+	st := Status{CacheDirectory: s.dir}
+	entries, err := os.ReadDir(s.objectsDir)
+	if err != nil {
+		return st, err
+	}
+	for _, item := range entries {
+		if strings.HasPrefix(item.Name(), ".tmp-") {
+			continue
+		}
+		info, statErr := item.Info()
+		if statErr != nil || !info.Mode().IsRegular() {
+			continue
+		}
+		st.EntryCount++
+		st.UsedBytes += info.Size()
+	}
 	s.statusMu.RLock()
 	st.LastCleanupAt = s.lastCleanupAt
 	st.LastError = s.lastError
 	s.statusMu.RUnlock()
-	return st, err
+	return st, nil
+}
+
+func (s *Service) setError(err error) {
+	s.statusMu.Lock()
+	defer s.statusMu.Unlock()
+	if err == nil {
+		s.lastError = ""
+		return
+	}
+	s.lastError = err.Error()
 }
 
 func (s *Service) StartCleanup(ctx context.Context) {
