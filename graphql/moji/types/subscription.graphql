@@ -119,6 +119,10 @@ type StashPerformerScene {
   code: String
   date: String
   studioName: String
+  performerCount: Int!
+  tagCount: Int!
+  performers: [PerformerScenePerson!]!
+  tags: [PerformerSceneTag!]!
   imageUrl: String
   url: String
   inLibrary: Boolean!
@@ -129,6 +133,26 @@ type StashPerformerScene {
   stashBoxEndpoint: String
   sourceLabels: [String!]!
   stashIds: [StashSceneID!]!
+  mojiTask: PerformerSceneTask
+}
+
+type PerformerScenePerson {
+  id: ID!
+  name: String!
+}
+
+type PerformerSceneTag {
+  id: ID!
+  name: String!
+}
+
+type PerformerSceneTask {
+  id: ID!
+  stage: TaskStage!
+  stageStatus: TaskStageStatus!
+  stageLabel: String!
+  stageStatusLabel: String!
+  progress: Float!
 }
 
 type StashSceneID {

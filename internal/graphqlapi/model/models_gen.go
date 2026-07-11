@@ -213,6 +213,25 @@ type MatchedStashBox struct {
 type Mutation struct {
 }
 
+type PerformerScenePerson struct {
+	ID   string `json:"id"`
+	Name string `json:"name"`
+}
+
+type PerformerSceneTag struct {
+	ID   string `json:"id"`
+	Name string `json:"name"`
+}
+
+type PerformerSceneTask struct {
+	ID               string          `json:"id"`
+	Stage            TaskStage       `json:"stage"`
+	StageStatus      TaskStageStatus `json:"stageStatus"`
+	StageLabel       string          `json:"stageLabel"`
+	StageStatusLabel string          `json:"stageStatusLabel"`
+	Progress         float64         `json:"progress"`
+}
+
 type PreviewJackettSelectionCandidateInput struct {
 	Title        string `json:"title"`
 	Size         int64  `json:"size"`
@@ -461,23 +480,28 @@ type StashPerformerDetail struct {
 }
 
 type StashPerformerScene struct {
-	Key                 string          `json:"key"`
-	PrimarySource       SceneSource     `json:"primarySource"`
-	SourceSceneID       string          `json:"sourceSceneId"`
-	Title               *string         `json:"title,omitempty"`
-	Code                *string         `json:"code,omitempty"`
-	Date                *string         `json:"date,omitempty"`
-	StudioName          *string         `json:"studioName,omitempty"`
-	ImageURL            *string         `json:"imageUrl,omitempty"`
-	URL                 *string         `json:"url,omitempty"`
-	InLibrary           bool            `json:"inLibrary"`
-	MatchedStashSceneID *string         `json:"matchedStashSceneId,omitempty"`
-	HasStashSource      bool            `json:"hasStashSource"`
-	HasStashBoxSource   bool            `json:"hasStashBoxSource"`
-	StashBoxSceneID     *string         `json:"stashBoxSceneId,omitempty"`
-	StashBoxEndpoint    *string         `json:"stashBoxEndpoint,omitempty"`
-	SourceLabels        []string        `json:"sourceLabels"`
-	StashIds            []*StashSceneID `json:"stashIds"`
+	Key                 string                  `json:"key"`
+	PrimarySource       SceneSource             `json:"primarySource"`
+	SourceSceneID       string                  `json:"sourceSceneId"`
+	Title               *string                 `json:"title,omitempty"`
+	Code                *string                 `json:"code,omitempty"`
+	Date                *string                 `json:"date,omitempty"`
+	StudioName          *string                 `json:"studioName,omitempty"`
+	PerformerCount      int                     `json:"performerCount"`
+	TagCount            int                     `json:"tagCount"`
+	Performers          []*PerformerScenePerson `json:"performers"`
+	Tags                []*PerformerSceneTag    `json:"tags"`
+	ImageURL            *string                 `json:"imageUrl,omitempty"`
+	URL                 *string                 `json:"url,omitempty"`
+	InLibrary           bool                    `json:"inLibrary"`
+	MatchedStashSceneID *string                 `json:"matchedStashSceneId,omitempty"`
+	HasStashSource      bool                    `json:"hasStashSource"`
+	HasStashBoxSource   bool                    `json:"hasStashBoxSource"`
+	StashBoxSceneID     *string                 `json:"stashBoxSceneId,omitempty"`
+	StashBoxEndpoint    *string                 `json:"stashBoxEndpoint,omitempty"`
+	SourceLabels        []string                `json:"sourceLabels"`
+	StashIds            []*StashSceneID         `json:"stashIds"`
+	MojiTask            *PerformerSceneTask     `json:"mojiTask,omitempty"`
 }
 
 type StashPerformerSceneConnection struct {

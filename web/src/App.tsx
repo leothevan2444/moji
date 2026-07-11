@@ -120,6 +120,7 @@ function App() {
   const [performerScenePageIndex, setPerformerScenePageIndex] = useState(1);
   const [performerScenePageSize, setPerformerScenePageSize] = useState<number>(24);
   const [selectedSceneKeys, setSelectedSceneKeys] = useState<string[]>([]);
+  const [pendingPerformerSceneKeys, setPendingPerformerSceneKeys] = useState<string[]>([]);
 
   // ── Data hooks ──────────────────────────────────────────────────────
   const { toasts, pushToast, dismissToast, copyText } = useToast();
@@ -208,6 +209,7 @@ function App() {
     subscribePerformer,
     unsubscribePerformer,
     queuePerformerScenes,
+    queueSinglePerformerScene,
     refreshSubscribedPerformer,
     refreshSubscriptionsNow,
     reloadSubscription
@@ -670,6 +672,50 @@ function App() {
     await reloadSubscription();
   };
 
+  const handleQueueSinglePerformerScene = async (scene: (typeof performerScenes)[number]) => {
+    if (!selectedPerformerId || scene.inLibrary || scene.mojiTask || pendingPerformerSceneKeys.includes(scene.key)) return;
+
+    setPendingPerformerSceneKeys((current) => [...current, scene.key]);
+    try {
+      const result = await queueSinglePerformerScene({
+        input: {
+          performerId: selectedPerformerId,
+          scenes: [{
+            key: scene.key,
+            sourceSceneId: scene.sourceSceneId,
+            stashBoxSceneId: scene.stashBoxSceneId ?? undefined,
+            stashBoxEndpoint: scene.stashBoxEndpoint ?? undefined,
+            code: scene.code ?? undefined,
+            title: scene.title ?? undefined,
+            inLibrary: scene.inLibrary
+          }]
+        }
+      });
+      if (result.error) {
+        pushToast("tone-danger", describeQueryError(result.error));
+        return;
+      }
+
+      const item = result.data?.queuePerformerScenes.results[0];
+      if (!item) {
+        pushToast("tone-danger", "创建任务失败，后端没有返回结果。");
+        return;
+      }
+      if (item.status === "QUEUED") {
+        pushToast("tone-success", `已为 ${item.resolvedCode || scene.code || scene.title || "影片"} 创建下载任务。`);
+        setSelectedSceneKeys((current) => current.filter((key) => key !== scene.key));
+      } else if (item.status === "SKIPPED") {
+        pushToast("tone-info", item.message);
+        setSelectedSceneKeys((current) => current.filter((key) => key !== scene.key));
+      } else {
+        pushToast("tone-danger", item.message);
+      }
+      await reloadSubscription();
+    } finally {
+      setPendingPerformerSceneKeys((current) => current.filter((key) => key !== scene.key));
+    }
+  };
+
   const handleToggleGroup = (group: TaskGroupKey) => {
     setTaskGroupOpen((current) => ({ ...current, [group]: !current[group] }));
   };
@@ -817,6 +863,7 @@ function App() {
             performerSceneLibraryFilter={performerSceneLibraryFilter}
             performerScenePageSize={performerScenePageSize}
             selectedSceneKeys={selectedSceneKeys}
+            pendingSceneKeys={pendingPerformerSceneKeys}
             pendingSubscriptionID={pendingSubscriptionID}
             subscriptionError={subscriptionError ?? null}
             stashPerformersError={stashPerformersError ?? null}
@@ -831,6 +878,7 @@ function App() {
             onPrevPage={() => setSubscriptionPage((current) => Math.max(1, current - 1))}
             onNextPage={() => setSubscriptionPage((current) => current + 1)}
             onOpenPerformer={handleOpenPerformer}
+            onOpenTask={openTaskDetail}
             onBackToList={handleBackToPerformers}
             onPerformerSceneSearchChange={setPerformerSceneSearch}
             onPerformerSceneSourceChange={setPerformerSceneSourceFilter}
@@ -842,6 +890,7 @@ function App() {
             onSelectCurrentScenePage={handleSelectCurrentScenePage}
             onClearSceneSelection={handleClearSceneSelection}
             onQueueSelectedScenes={() => void handleQueueSelectedScenes()}
+            onQueueScene={(scene) => void handleQueueSinglePerformerScene(scene)}
           />
         ) : null}
       </main>

@@ -46,6 +46,14 @@ fragment SceneFragment on Scene {
   stash_ids {
     ...StashIdFragment
   }
+  performers {
+    id
+    name
+  }
+  tags {
+    id
+    name
+  }
 }
 
 query FindPerformerByID($id: ID!) {

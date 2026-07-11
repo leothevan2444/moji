@@ -194,6 +194,13 @@ func (f *fakeTaskRuntime) DownloadMediaContext(_ context.Context, req taskruntim
 	return task, nil
 }
 
+func (f *fakeTaskRuntime) ListTasks(_ context.Context) ([]*taskruntime.Task, error) {
+	if f.err != nil {
+		return nil, f.err
+	}
+	return append([]*taskruntime.Task(nil), f.tasks...), nil
+}
+
 func (f *fakeTaskCreator) QueueDiscoveredScene(_ context.Context, sceneID string, stashBoxEndpoint string) (*taskruntime.Task, error) {
 	f.queueCalls = append(f.queueCalls, fakeQueuedSceneCall{SceneID: sceneID, StashBoxEndpoint: stashBoxEndpoint})
 	return f.queueTask, f.queueErr
@@ -1420,6 +1427,8 @@ func TestListPerformerScenesDeduplicatesMatchedStashBoxScenes(t *testing.T) {
 				StashIds: []*stashgraphql.StashIDFragment{
 					{Endpoint: endpoint, StashID: "box-scene-1"},
 				},
+				Performers: []*stashgraphql.SceneFragment_Performers{{ID: "performer-1", Name: "Actor One"}, {ID: "performer-2", Name: "Actor Two"}},
+				Tags:       []*stashgraphql.SceneFragment_Tags{{ID: "tag-1", Name: "Featured"}},
 			},
 		},
 	}
@@ -1444,7 +1453,16 @@ func TestListPerformerScenesDeduplicatesMatchedStashBoxScenes(t *testing.T) {
 	})
 	registry.Replace([]stash.StashBoxEndpoint{{Name: "Preferred", Endpoint: endpoint, APIKey: "ignored"}})
 
-	service, err := NewService(stashClient, registry, nil, NewMemoryStore())
+	taskRuntime := &fakeTaskRuntime{tasks: []*taskruntime.Task{{
+		ID:               "task-abp-123",
+		Code:             "ABP-123",
+		Stage:            taskruntime.TaskStageDownloading,
+		StageStatus:      taskruntime.TaskStageStatusRunning,
+		StageLabel:       "下载",
+		StageStatusLabel: "进行中",
+		Progress:         0.42,
+	}}}
+	service, err := NewService(stashClient, registry, taskRuntime, NewMemoryStore())
 	if err != nil {
 		t.Fatalf("NewService failed: %v", err)
 	}
@@ -1474,6 +1492,15 @@ func TestListPerformerScenesDeduplicatesMatchedStashBoxScenes(t *testing.T) {
 	}
 	if len(item.SourceLabels) != 2 || item.SourceLabels[0] != "Stash" || item.SourceLabels[1] != "StashBox" {
 		t.Fatalf("unexpected source labels: %+v", item.SourceLabels)
+	}
+	if item.PerformerCount != 2 || item.TagCount != 1 {
+		t.Fatalf("expected Stash-local counts 2 performers / 1 tag, got %d / %d", item.PerformerCount, item.TagCount)
+	}
+	if len(item.Performers) != 2 || item.Performers[0].Name != "Actor One" || len(item.Tags) != 1 || item.Tags[0].Name != "Featured" {
+		t.Fatalf("expected Stash-local performer and tag summaries, got %+v / %+v", item.Performers, item.Tags)
+	}
+	if item.MojiTask == nil || item.MojiTask.ID != "task-abp-123" || item.MojiTask.Progress != 0.42 {
+		t.Fatalf("expected matching Moji task summary, got %+v", item.MojiTask)
 	}
 }
 

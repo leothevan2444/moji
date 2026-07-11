@@ -98,6 +98,10 @@ type PerformerScene struct {
 	Code                string
 	Date                string
 	StudioName          string
+	PerformerCount      int
+	TagCount            int
+	Performers          []PerformerScenePerson
+	Tags                []PerformerSceneTag
 	ImageURL            string
 	URL                 string
 	InLibrary           bool
@@ -108,6 +112,26 @@ type PerformerScene struct {
 	StashBoxEndpoint    string
 	SourceLabels        []string
 	StashIDs            []StashSceneID
+	MojiTask            *PerformerSceneTask
+}
+
+type PerformerScenePerson struct {
+	ID   string
+	Name string
+}
+
+type PerformerSceneTag struct {
+	ID   string
+	Name string
+}
+
+type PerformerSceneTask struct {
+	ID               string
+	Stage            taskruntime.TaskStage
+	StageStatus      taskruntime.TaskStageStatus
+	StageLabel       string
+	StageStatusLabel string
+	Progress         float64
 }
 
 type PerformerSceneQuery struct {

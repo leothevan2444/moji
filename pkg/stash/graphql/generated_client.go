@@ -197,14 +197,16 @@ func (t *StudioNameFragment) GetName() string {
 }
 
 type SceneFragment struct {
-	ID       string              "json:\"id\" graphql:\"id\""
-	Title    *string             "json:\"title,omitempty\" graphql:\"title\""
-	Code     *string             "json:\"code,omitempty\" graphql:\"code\""
-	Date     *string             "json:\"date,omitempty\" graphql:\"date\""
-	Urls     []string            "json:\"urls\" graphql:\"urls\""
-	Studio   *StudioNameFragment "json:\"studio,omitempty\" graphql:\"studio\""
-	Paths    SceneFragment_Paths "json:\"paths\" graphql:\"paths\""
-	StashIds []*StashIDFragment  "json:\"stash_ids\" graphql:\"stash_ids\""
+	ID         string                      "json:\"id\" graphql:\"id\""
+	Title      *string                     "json:\"title,omitempty\" graphql:\"title\""
+	Code       *string                     "json:\"code,omitempty\" graphql:\"code\""
+	Date       *string                     "json:\"date,omitempty\" graphql:\"date\""
+	Urls       []string                    "json:\"urls\" graphql:\"urls\""
+	Studio     *StudioNameFragment         "json:\"studio,omitempty\" graphql:\"studio\""
+	Paths      SceneFragment_Paths         "json:\"paths\" graphql:\"paths\""
+	StashIds   []*StashIDFragment          "json:\"stash_ids\" graphql:\"stash_ids\""
+	Performers []*SceneFragment_Performers "json:\"performers\" graphql:\"performers\""
+	Tags       []*SceneFragment_Tags       "json:\"tags\" graphql:\"tags\""
 }
 
 func (t *SceneFragment) GetID() string {
@@ -255,6 +257,18 @@ func (t *SceneFragment) GetStashIds() []*StashIDFragment {
 	}
 	return t.StashIds
 }
+func (t *SceneFragment) GetPerformers() []*SceneFragment_Performers {
+	if t == nil {
+		t = &SceneFragment{}
+	}
+	return t.Performers
+}
+func (t *SceneFragment) GetTags() []*SceneFragment_Tags {
+	if t == nil {
+		t = &SceneFragment{}
+	}
+	return t.Tags
+}
 
 type StashBoxFragment struct {
 	Endpoint             string "json:\"endpoint\" graphql:\"endpoint\""
@@ -299,6 +313,42 @@ func (t *SceneFragment_Paths) GetScreenshot() *string {
 	return t.Screenshot
 }
 
+type SceneFragment_Performers struct {
+	ID   string "json:\"id\" graphql:\"id\""
+	Name string "json:\"name\" graphql:\"name\""
+}
+
+func (t *SceneFragment_Performers) GetID() string {
+	if t == nil {
+		t = &SceneFragment_Performers{}
+	}
+	return t.ID
+}
+func (t *SceneFragment_Performers) GetName() string {
+	if t == nil {
+		t = &SceneFragment_Performers{}
+	}
+	return t.Name
+}
+
+type SceneFragment_Tags struct {
+	ID   string "json:\"id\" graphql:\"id\""
+	Name string "json:\"name\" graphql:\"name\""
+}
+
+func (t *SceneFragment_Tags) GetID() string {
+	if t == nil {
+		t = &SceneFragment_Tags{}
+	}
+	return t.ID
+}
+func (t *SceneFragment_Tags) GetName() string {
+	if t == nil {
+		t = &SceneFragment_Tags{}
+	}
+	return t.Name
+}
+
 type FindPerformers_FindPerformers struct {
 	Count      int                  "json:\"count\" graphql:\"count\""
 	Performers []*PerformerFragment "json:\"performers\" graphql:\"performers\""
@@ -326,6 +376,42 @@ func (t *FindScenes_FindScenes_Scenes_SceneFragment_Paths) GetScreenshot() *stri
 		t = &FindScenes_FindScenes_Scenes_SceneFragment_Paths{}
 	}
 	return t.Screenshot
+}
+
+type FindScenes_FindScenes_Scenes_SceneFragment_Performers struct {
+	ID   string "json:\"id\" graphql:\"id\""
+	Name string "json:\"name\" graphql:\"name\""
+}
+
+func (t *FindScenes_FindScenes_Scenes_SceneFragment_Performers) GetID() string {
+	if t == nil {
+		t = &FindScenes_FindScenes_Scenes_SceneFragment_Performers{}
+	}
+	return t.ID
+}
+func (t *FindScenes_FindScenes_Scenes_SceneFragment_Performers) GetName() string {
+	if t == nil {
+		t = &FindScenes_FindScenes_Scenes_SceneFragment_Performers{}
+	}
+	return t.Name
+}
+
+type FindScenes_FindScenes_Scenes_SceneFragment_Tags struct {
+	ID   string "json:\"id\" graphql:\"id\""
+	Name string "json:\"name\" graphql:\"name\""
+}
+
+func (t *FindScenes_FindScenes_Scenes_SceneFragment_Tags) GetID() string {
+	if t == nil {
+		t = &FindScenes_FindScenes_Scenes_SceneFragment_Tags{}
+	}
+	return t.ID
+}
+func (t *FindScenes_FindScenes_Scenes_SceneFragment_Tags) GetName() string {
+	if t == nil {
+		t = &FindScenes_FindScenes_Scenes_SceneFragment_Tags{}
+	}
+	return t.Name
 }
 
 type FindScenes_FindScenes struct {
@@ -775,6 +861,14 @@ fragment SceneFragment on Scene {
 	}
 	stash_ids {
 		... StashIdFragment
+	}
+	performers {
+		id
+		name
+	}
+	tags {
+		id
+		name
 	}
 }
 fragment StudioNameFragment on Studio {

@@ -126,6 +126,25 @@ func performerSceneToModel(item subscription.PerformerScene) *model.StashPerform
 			StashID:  stashID.StashID,
 		})
 	}
+	performers := make([]*model.PerformerScenePerson, 0, len(item.Performers))
+	for _, performer := range item.Performers {
+		performers = append(performers, &model.PerformerScenePerson{ID: performer.ID, Name: performer.Name})
+	}
+	tags := make([]*model.PerformerSceneTag, 0, len(item.Tags))
+	for _, tag := range item.Tags {
+		tags = append(tags, &model.PerformerSceneTag{ID: tag.ID, Name: tag.Name})
+	}
+	var mojiTask *model.PerformerSceneTask
+	if item.MojiTask != nil {
+		mojiTask = &model.PerformerSceneTask{
+			ID:               item.MojiTask.ID,
+			Stage:            model.TaskStage(item.MojiTask.Stage),
+			StageStatus:      model.TaskStageStatus(item.MojiTask.StageStatus),
+			StageLabel:       item.MojiTask.StageLabel,
+			StageStatusLabel: item.MojiTask.StageStatusLabel,
+			Progress:         item.MojiTask.Progress,
+		}
+	}
 	return &model.StashPerformerScene{
 		Key:                 item.Key,
 		PrimarySource:       model.SceneSource(item.PrimarySource),
@@ -134,6 +153,10 @@ func performerSceneToModel(item subscription.PerformerScene) *model.StashPerform
 		Code:                nilIfEmpty(item.Code),
 		Date:                nilIfEmpty(item.Date),
 		StudioName:          nilIfEmpty(item.StudioName),
+		PerformerCount:      item.PerformerCount,
+		TagCount:            item.TagCount,
+		Performers:          performers,
+		Tags:                tags,
 		ImageURL:            nilIfEmpty(item.ImageURL),
 		URL:                 nilIfEmpty(item.URL),
 		InLibrary:           item.InLibrary,
@@ -144,6 +167,7 @@ func performerSceneToModel(item subscription.PerformerScene) *model.StashPerform
 		StashBoxEndpoint:    nilIfEmpty(item.StashBoxEndpoint),
 		SourceLabels:        append([]string(nil), item.SourceLabels...),
 		StashIds:            stashIDs,
+		MojiTask:            mojiTask,
 	}
 }
 

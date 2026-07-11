@@ -39,6 +39,10 @@ type TaskRuntime interface {
 	DownloadMediaContext(ctx context.Context, req taskruntime.DownloadRequest) (*taskruntime.Task, error)
 }
 
+type TaskLister interface {
+	ListTasks(ctx context.Context) ([]*taskruntime.Task, error)
+}
+
 type TaskCreator interface {
 	QueueDiscoveredScene(ctx context.Context, sceneID string, stashBoxEndpoint string) (*taskruntime.Task, error)
 	QueueSubscriptionRelease(ctx context.Context, code, title string) (*taskruntime.Task, error)
@@ -48,6 +52,7 @@ type Service struct {
 	stash          StashClient
 	stashbox       *stashboxRegistry
 	taskCreator    TaskCreator
+	taskLister     TaskLister
 	store          Store
 	customFieldKey string
 	now            func() time.Time
@@ -99,16 +104,28 @@ func NewService(stash StashClient, stashbox *stashboxRegistry, taskRuntime TaskR
 		stashbox = newStashboxRegistry(defaultStashboxClientFactory{})
 	}
 	creator := newDefaultTaskCreator(taskRuntime, stashbox)
+	var taskLister TaskLister
+	if candidate, ok := taskRuntime.(TaskLister); ok {
+		taskLister = candidate
+	}
 
 	return &Service{
 		stash:          stash,
 		stashbox:       stashbox,
 		taskCreator:    creator,
+		taskLister:     taskLister,
 		store:          store,
 		customFieldKey: DefaultCustomFieldKey,
 		now:            time.Now,
 		releasePolicy:  DefaultReleasePolicyConfig(),
 	}, nil
+}
+
+func (s *Service) SetTaskLister(lister TaskLister) {
+	if s == nil {
+		return
+	}
+	s.taskLister = lister
 }
 
 func (s *Service) SetTaskCreator(creator TaskCreator) {

@@ -217,6 +217,25 @@ type ComplexityRoot struct {
 		UpdateSystemSettings          func(childComplexity int, input model.UpdateSystemSettingsInput) int
 	}
 
+	PerformerScenePerson struct {
+		ID   func(childComplexity int) int
+		Name func(childComplexity int) int
+	}
+
+	PerformerSceneTag struct {
+		ID   func(childComplexity int) int
+		Name func(childComplexity int) int
+	}
+
+	PerformerSceneTask struct {
+		ID               func(childComplexity int) int
+		Progress         func(childComplexity int) int
+		Stage            func(childComplexity int) int
+		StageLabel       func(childComplexity int) int
+		StageStatus      func(childComplexity int) int
+		StageStatusLabel func(childComplexity int) int
+	}
+
 	PreviewJackettSelectionMeta struct {
 		AppliedFastRules func(childComplexity int) int
 		AppliedFileRules func(childComplexity int) int
@@ -405,6 +424,9 @@ type ComplexityRoot struct {
 		InLibrary           func(childComplexity int) int
 		Key                 func(childComplexity int) int
 		MatchedStashSceneID func(childComplexity int) int
+		MojiTask            func(childComplexity int) int
+		PerformerCount      func(childComplexity int) int
+		Performers          func(childComplexity int) int
 		PrimarySource       func(childComplexity int) int
 		SourceLabels        func(childComplexity int) int
 		SourceSceneID       func(childComplexity int) int
@@ -412,6 +434,8 @@ type ComplexityRoot struct {
 		StashBoxSceneID     func(childComplexity int) int
 		StashIds            func(childComplexity int) int
 		StudioName          func(childComplexity int) int
+		TagCount            func(childComplexity int) int
+		Tags                func(childComplexity int) int
 		Title               func(childComplexity int) int
 		URL                 func(childComplexity int) int
 	}
@@ -1505,6 +1529,76 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.Mutation.UpdateSystemSettings(childComplexity, args["input"].(model.UpdateSystemSettingsInput)), true
 
+	case "PerformerScenePerson.id":
+		if e.complexity.PerformerScenePerson.ID == nil {
+			break
+		}
+
+		return e.complexity.PerformerScenePerson.ID(childComplexity), true
+
+	case "PerformerScenePerson.name":
+		if e.complexity.PerformerScenePerson.Name == nil {
+			break
+		}
+
+		return e.complexity.PerformerScenePerson.Name(childComplexity), true
+
+	case "PerformerSceneTag.id":
+		if e.complexity.PerformerSceneTag.ID == nil {
+			break
+		}
+
+		return e.complexity.PerformerSceneTag.ID(childComplexity), true
+
+	case "PerformerSceneTag.name":
+		if e.complexity.PerformerSceneTag.Name == nil {
+			break
+		}
+
+		return e.complexity.PerformerSceneTag.Name(childComplexity), true
+
+	case "PerformerSceneTask.id":
+		if e.complexity.PerformerSceneTask.ID == nil {
+			break
+		}
+
+		return e.complexity.PerformerSceneTask.ID(childComplexity), true
+
+	case "PerformerSceneTask.progress":
+		if e.complexity.PerformerSceneTask.Progress == nil {
+			break
+		}
+
+		return e.complexity.PerformerSceneTask.Progress(childComplexity), true
+
+	case "PerformerSceneTask.stage":
+		if e.complexity.PerformerSceneTask.Stage == nil {
+			break
+		}
+
+		return e.complexity.PerformerSceneTask.Stage(childComplexity), true
+
+	case "PerformerSceneTask.stageLabel":
+		if e.complexity.PerformerSceneTask.StageLabel == nil {
+			break
+		}
+
+		return e.complexity.PerformerSceneTask.StageLabel(childComplexity), true
+
+	case "PerformerSceneTask.stageStatus":
+		if e.complexity.PerformerSceneTask.StageStatus == nil {
+			break
+		}
+
+		return e.complexity.PerformerSceneTask.StageStatus(childComplexity), true
+
+	case "PerformerSceneTask.stageStatusLabel":
+		if e.complexity.PerformerSceneTask.StageStatusLabel == nil {
+			break
+		}
+
+		return e.complexity.PerformerSceneTask.StageStatusLabel(childComplexity), true
+
 	case "PreviewJackettSelectionMeta.appliedFastRules":
 		if e.complexity.PreviewJackettSelectionMeta.AppliedFastRules == nil {
 			break
@@ -2491,6 +2585,27 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.StashPerformerScene.MatchedStashSceneID(childComplexity), true
 
+	case "StashPerformerScene.mojiTask":
+		if e.complexity.StashPerformerScene.MojiTask == nil {
+			break
+		}
+
+		return e.complexity.StashPerformerScene.MojiTask(childComplexity), true
+
+	case "StashPerformerScene.performerCount":
+		if e.complexity.StashPerformerScene.PerformerCount == nil {
+			break
+		}
+
+		return e.complexity.StashPerformerScene.PerformerCount(childComplexity), true
+
+	case "StashPerformerScene.performers":
+		if e.complexity.StashPerformerScene.Performers == nil {
+			break
+		}
+
+		return e.complexity.StashPerformerScene.Performers(childComplexity), true
+
 	case "StashPerformerScene.primarySource":
 		if e.complexity.StashPerformerScene.PrimarySource == nil {
 			break
@@ -2539,6 +2654,20 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.StashPerformerScene.StudioName(childComplexity), true
+
+	case "StashPerformerScene.tagCount":
+		if e.complexity.StashPerformerScene.TagCount == nil {
+			break
+		}
+
+		return e.complexity.StashPerformerScene.TagCount(childComplexity), true
+
+	case "StashPerformerScene.tags":
+		if e.complexity.StashPerformerScene.Tags == nil {
+			break
+		}
+
+		return e.complexity.StashPerformerScene.Tags(childComplexity), true
 
 	case "StashPerformerScene.title":
 		if e.complexity.StashPerformerScene.Title == nil {
@@ -4166,6 +4295,10 @@ type StashPerformerScene {
   code: String
   date: String
   studioName: String
+  performerCount: Int!
+  tagCount: Int!
+  performers: [PerformerScenePerson!]!
+  tags: [PerformerSceneTag!]!
   imageUrl: String
   url: String
   inLibrary: Boolean!
@@ -4176,6 +4309,26 @@ type StashPerformerScene {
   stashBoxEndpoint: String
   sourceLabels: [String!]!
   stashIds: [StashSceneID!]!
+  mojiTask: PerformerSceneTask
+}
+
+type PerformerScenePerson {
+  id: ID!
+  name: String!
+}
+
+type PerformerSceneTag {
+  id: ID!
+  name: String!
+}
+
+type PerformerSceneTask {
+  id: ID!
+  stage: TaskStage!
+  stageStatus: TaskStageStatus!
+  stageLabel: String!
+  stageStatusLabel: String!
+  progress: Float!
 }
 
 type StashSceneID {
@@ -11411,6 +11564,446 @@ func (ec *executionContext) fieldContext_Mutation_queuePerformerScenes(ctx conte
 	return fc, nil
 }
 
+func (ec *executionContext) _PerformerScenePerson_id(ctx context.Context, field graphql.CollectedField, obj *model.PerformerScenePerson) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_PerformerScenePerson_id(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.ID, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNID2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_PerformerScenePerson_id(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "PerformerScenePerson",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type ID does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _PerformerScenePerson_name(ctx context.Context, field graphql.CollectedField, obj *model.PerformerScenePerson) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_PerformerScenePerson_name(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Name, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_PerformerScenePerson_name(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "PerformerScenePerson",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _PerformerSceneTag_id(ctx context.Context, field graphql.CollectedField, obj *model.PerformerSceneTag) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_PerformerSceneTag_id(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.ID, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNID2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_PerformerSceneTag_id(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "PerformerSceneTag",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type ID does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _PerformerSceneTag_name(ctx context.Context, field graphql.CollectedField, obj *model.PerformerSceneTag) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_PerformerSceneTag_name(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Name, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_PerformerSceneTag_name(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "PerformerSceneTag",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _PerformerSceneTask_id(ctx context.Context, field graphql.CollectedField, obj *model.PerformerSceneTask) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_PerformerSceneTask_id(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.ID, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNID2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_PerformerSceneTask_id(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "PerformerSceneTask",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type ID does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _PerformerSceneTask_stage(ctx context.Context, field graphql.CollectedField, obj *model.PerformerSceneTask) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_PerformerSceneTask_stage(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Stage, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(model.TaskStage)
+	fc.Result = res
+	return ec.marshalNTaskStage2githubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐTaskStage(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_PerformerSceneTask_stage(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "PerformerSceneTask",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type TaskStage does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _PerformerSceneTask_stageStatus(ctx context.Context, field graphql.CollectedField, obj *model.PerformerSceneTask) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_PerformerSceneTask_stageStatus(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.StageStatus, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(model.TaskStageStatus)
+	fc.Result = res
+	return ec.marshalNTaskStageStatus2githubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐTaskStageStatus(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_PerformerSceneTask_stageStatus(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "PerformerSceneTask",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type TaskStageStatus does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _PerformerSceneTask_stageLabel(ctx context.Context, field graphql.CollectedField, obj *model.PerformerSceneTask) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_PerformerSceneTask_stageLabel(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.StageLabel, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_PerformerSceneTask_stageLabel(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "PerformerSceneTask",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _PerformerSceneTask_stageStatusLabel(ctx context.Context, field graphql.CollectedField, obj *model.PerformerSceneTask) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_PerformerSceneTask_stageStatusLabel(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.StageStatusLabel, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_PerformerSceneTask_stageStatusLabel(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "PerformerSceneTask",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _PerformerSceneTask_progress(ctx context.Context, field graphql.CollectedField, obj *model.PerformerSceneTask) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_PerformerSceneTask_progress(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Progress, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(float64)
+	fc.Result = res
+	return ec.marshalNFloat2float64(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_PerformerSceneTask_progress(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "PerformerSceneTask",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Float does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _PreviewJackettSelectionMeta_appliedFastRules(ctx context.Context, field graphql.CollectedField, obj *model.PreviewJackettSelectionMeta) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_PreviewJackettSelectionMeta_appliedFastRules(ctx, field)
 	if err != nil {
@@ -18188,6 +18781,194 @@ func (ec *executionContext) fieldContext_StashPerformerScene_studioName(_ contex
 	return fc, nil
 }
 
+func (ec *executionContext) _StashPerformerScene_performerCount(ctx context.Context, field graphql.CollectedField, obj *model.StashPerformerScene) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_StashPerformerScene_performerCount(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.PerformerCount, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int)
+	fc.Result = res
+	return ec.marshalNInt2int(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_StashPerformerScene_performerCount(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "StashPerformerScene",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _StashPerformerScene_tagCount(ctx context.Context, field graphql.CollectedField, obj *model.StashPerformerScene) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_StashPerformerScene_tagCount(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.TagCount, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int)
+	fc.Result = res
+	return ec.marshalNInt2int(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_StashPerformerScene_tagCount(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "StashPerformerScene",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _StashPerformerScene_performers(ctx context.Context, field graphql.CollectedField, obj *model.StashPerformerScene) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_StashPerformerScene_performers(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Performers, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]*model.PerformerScenePerson)
+	fc.Result = res
+	return ec.marshalNPerformerScenePerson2ᚕᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐPerformerScenePersonᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_StashPerformerScene_performers(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "StashPerformerScene",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_PerformerScenePerson_id(ctx, field)
+			case "name":
+				return ec.fieldContext_PerformerScenePerson_name(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type PerformerScenePerson", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _StashPerformerScene_tags(ctx context.Context, field graphql.CollectedField, obj *model.StashPerformerScene) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_StashPerformerScene_tags(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Tags, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]*model.PerformerSceneTag)
+	fc.Result = res
+	return ec.marshalNPerformerSceneTag2ᚕᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐPerformerSceneTagᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_StashPerformerScene_tags(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "StashPerformerScene",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_PerformerSceneTag_id(ctx, field)
+			case "name":
+				return ec.fieldContext_PerformerSceneTag_name(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type PerformerSceneTag", field.Name)
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _StashPerformerScene_imageUrl(ctx context.Context, field graphql.CollectedField, obj *model.StashPerformerScene) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_StashPerformerScene_imageUrl(ctx, field)
 	if err != nil {
@@ -18619,6 +19400,61 @@ func (ec *executionContext) fieldContext_StashPerformerScene_stashIds(_ context.
 	return fc, nil
 }
 
+func (ec *executionContext) _StashPerformerScene_mojiTask(ctx context.Context, field graphql.CollectedField, obj *model.StashPerformerScene) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_StashPerformerScene_mojiTask(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.MojiTask, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*model.PerformerSceneTask)
+	fc.Result = res
+	return ec.marshalOPerformerSceneTask2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐPerformerSceneTask(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_StashPerformerScene_mojiTask(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "StashPerformerScene",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_PerformerSceneTask_id(ctx, field)
+			case "stage":
+				return ec.fieldContext_PerformerSceneTask_stage(ctx, field)
+			case "stageStatus":
+				return ec.fieldContext_PerformerSceneTask_stageStatus(ctx, field)
+			case "stageLabel":
+				return ec.fieldContext_PerformerSceneTask_stageLabel(ctx, field)
+			case "stageStatusLabel":
+				return ec.fieldContext_PerformerSceneTask_stageStatusLabel(ctx, field)
+			case "progress":
+				return ec.fieldContext_PerformerSceneTask_progress(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type PerformerSceneTask", field.Name)
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _StashPerformerSceneConnection_items(ctx context.Context, field graphql.CollectedField, obj *model.StashPerformerSceneConnection) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_StashPerformerSceneConnection_items(ctx, field)
 	if err != nil {
@@ -18672,6 +19508,14 @@ func (ec *executionContext) fieldContext_StashPerformerSceneConnection_items(_ c
 				return ec.fieldContext_StashPerformerScene_date(ctx, field)
 			case "studioName":
 				return ec.fieldContext_StashPerformerScene_studioName(ctx, field)
+			case "performerCount":
+				return ec.fieldContext_StashPerformerScene_performerCount(ctx, field)
+			case "tagCount":
+				return ec.fieldContext_StashPerformerScene_tagCount(ctx, field)
+			case "performers":
+				return ec.fieldContext_StashPerformerScene_performers(ctx, field)
+			case "tags":
+				return ec.fieldContext_StashPerformerScene_tags(ctx, field)
 			case "imageUrl":
 				return ec.fieldContext_StashPerformerScene_imageUrl(ctx, field)
 			case "url":
@@ -18692,6 +19536,8 @@ func (ec *executionContext) fieldContext_StashPerformerSceneConnection_items(_ c
 				return ec.fieldContext_StashPerformerScene_sourceLabels(ctx, field)
 			case "stashIds":
 				return ec.fieldContext_StashPerformerScene_stashIds(ctx, field)
+			case "mojiTask":
+				return ec.fieldContext_StashPerformerScene_mojiTask(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type StashPerformerScene", field.Name)
 		},
@@ -27765,6 +28611,158 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 	return out
 }
 
+var performerScenePersonImplementors = []string{"PerformerScenePerson"}
+
+func (ec *executionContext) _PerformerScenePerson(ctx context.Context, sel ast.SelectionSet, obj *model.PerformerScenePerson) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, performerScenePersonImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("PerformerScenePerson")
+		case "id":
+			out.Values[i] = ec._PerformerScenePerson_id(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "name":
+			out.Values[i] = ec._PerformerScenePerson_name(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var performerSceneTagImplementors = []string{"PerformerSceneTag"}
+
+func (ec *executionContext) _PerformerSceneTag(ctx context.Context, sel ast.SelectionSet, obj *model.PerformerSceneTag) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, performerSceneTagImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("PerformerSceneTag")
+		case "id":
+			out.Values[i] = ec._PerformerSceneTag_id(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "name":
+			out.Values[i] = ec._PerformerSceneTag_name(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var performerSceneTaskImplementors = []string{"PerformerSceneTask"}
+
+func (ec *executionContext) _PerformerSceneTask(ctx context.Context, sel ast.SelectionSet, obj *model.PerformerSceneTask) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, performerSceneTaskImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("PerformerSceneTask")
+		case "id":
+			out.Values[i] = ec._PerformerSceneTask_id(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "stage":
+			out.Values[i] = ec._PerformerSceneTask_stage(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "stageStatus":
+			out.Values[i] = ec._PerformerSceneTask_stageStatus(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "stageLabel":
+			out.Values[i] = ec._PerformerSceneTask_stageLabel(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "stageStatusLabel":
+			out.Values[i] = ec._PerformerSceneTask_stageStatusLabel(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "progress":
+			out.Values[i] = ec._PerformerSceneTask_progress(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
 var previewJackettSelectionMetaImplementors = []string{"PreviewJackettSelectionMeta"}
 
 func (ec *executionContext) _PreviewJackettSelectionMeta(ctx context.Context, sel ast.SelectionSet, obj *model.PreviewJackettSelectionMeta) graphql.Marshaler {
@@ -29312,6 +30310,26 @@ func (ec *executionContext) _StashPerformerScene(ctx context.Context, sel ast.Se
 			out.Values[i] = ec._StashPerformerScene_date(ctx, field, obj)
 		case "studioName":
 			out.Values[i] = ec._StashPerformerScene_studioName(ctx, field, obj)
+		case "performerCount":
+			out.Values[i] = ec._StashPerformerScene_performerCount(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "tagCount":
+			out.Values[i] = ec._StashPerformerScene_tagCount(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "performers":
+			out.Values[i] = ec._StashPerformerScene_performers(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "tags":
+			out.Values[i] = ec._StashPerformerScene_tags(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
 		case "imageUrl":
 			out.Values[i] = ec._StashPerformerScene_imageUrl(ctx, field, obj)
 		case "url":
@@ -29347,6 +30365,8 @@ func (ec *executionContext) _StashPerformerScene(ctx context.Context, sel ast.Se
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
+		case "mojiTask":
+			out.Values[i] = ec._StashPerformerScene_mojiTask(ctx, field, obj)
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -31168,6 +32188,114 @@ func (ec *executionContext) marshalNLong2int64(ctx context.Context, sel ast.Sele
 	return res
 }
 
+func (ec *executionContext) marshalNPerformerScenePerson2ᚕᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐPerformerScenePersonᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.PerformerScenePerson) graphql.Marshaler {
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalNPerformerScenePerson2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐPerformerScenePerson(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
+}
+
+func (ec *executionContext) marshalNPerformerScenePerson2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐPerformerScenePerson(ctx context.Context, sel ast.SelectionSet, v *model.PerformerScenePerson) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._PerformerScenePerson(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNPerformerSceneTag2ᚕᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐPerformerSceneTagᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.PerformerSceneTag) graphql.Marshaler {
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalNPerformerSceneTag2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐPerformerSceneTag(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
+}
+
+func (ec *executionContext) marshalNPerformerSceneTag2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐPerformerSceneTag(ctx context.Context, sel ast.SelectionSet, v *model.PerformerSceneTag) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._PerformerSceneTag(ctx, sel, v)
+}
+
 func (ec *executionContext) unmarshalNPreviewJackettSelectionCandidateInput2ᚕᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐPreviewJackettSelectionCandidateInputᚄ(ctx context.Context, v any) ([]*model.PreviewJackettSelectionCandidateInput, error) {
 	var vSlice []any
 	vSlice = graphql.CoerceList(v)
@@ -32932,6 +34060,13 @@ func (ec *executionContext) marshalOMatchedStashBox2ᚖgithubᚗcomᚋleothevan2
 		return graphql.Null
 	}
 	return ec._MatchedStashBox(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalOPerformerSceneTask2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐPerformerSceneTask(ctx context.Context, sel ast.SelectionSet, v *model.PerformerSceneTask) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return ec._PerformerSceneTask(ctx, sel, v)
 }
 
 func (ec *executionContext) unmarshalOSceneSourceFilter2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐSceneSourceFilter(ctx context.Context, v any) (*model.SceneSourceFilter, error) {

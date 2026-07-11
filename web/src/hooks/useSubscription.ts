@@ -152,6 +152,11 @@ export function useSubscription({
     QueuePerformerScenesMutationVariables
   >(QueuePerformerScenesDocument);
 
+  const [, queueSinglePerformerScene] = useMutation<
+    QueuePerformerScenesMutation,
+    QueuePerformerScenesMutationVariables
+  >(QueuePerformerScenesDocument);
+
   const stashPerformerPage = stashPerformersData?.stashPerformers ?? null;
 
   const reloadSubscription = async () => {
@@ -185,6 +190,7 @@ export function useSubscription({
     refreshSubscribedPerformer,
     refreshSubscriptionsNow,
     queuePerformerScenes,
+    queueSinglePerformerScene,
     reloadSubscription
   };
 }

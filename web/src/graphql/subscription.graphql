@@ -60,6 +60,16 @@ query StashPerformerScenes($id: ID!, $input: StashPerformerScenesInput!) {
       code
       date
       studioName
+      performerCount
+      tagCount
+      performers {
+        id
+        name
+      }
+      tags {
+        id
+        name
+      }
       imageUrl
       url
       inLibrary
@@ -72,6 +82,14 @@ query StashPerformerScenes($id: ID!, $input: StashPerformerScenesInput!) {
       stashIds {
         endpoint
         stashId
+      }
+      mojiTask {
+        id
+        stage
+        stageStatus
+        stageLabel
+        stageStatusLabel
+        progress
       }
     }
     page

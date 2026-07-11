@@ -1,12 +1,33 @@
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faArrowLeft, faBookmark, faHeart, faPlayCircle, faRotate } from "@fortawesome/free-solid-svg-icons";
+import {
+  faArrowLeft,
+  faArrowUpRightFromSquare,
+  faBookmark,
+  faCheck,
+  faFilm,
+  faHeart,
+  faPlus,
+  faPlayCircle,
+  faRotate,
+  faTags,
+  faUsers
+} from "@fortawesome/free-solid-svg-icons";
 import { useMemo } from "react";
 import { SUBSCRIPTION_PAGE_SIZE_OPTIONS } from "../constants";
 import { describeQueryError } from "../services/queryError";
-import { formatDateTime, formatRelativeDate, performerImageURL, performerInitials, stashPerformerURL } from "../utils";
+import {
+  formatDateTime,
+  formatRelative,
+  formatRelativeDate,
+  performerImageURL,
+  performerInitials,
+  stashPerformerURL
+} from "../utils";
 import {
   LibraryFilter,
   SceneSourceFilter,
+  TaskStage,
+  TaskStageStatus,
   type DashboardDocumentQuery,
   type StashPerformerDetailQuery,
   type StashPerformerScenesQuery,
@@ -21,6 +42,28 @@ type StashPerformerScenePage = StashPerformerScenesQuery["stashPerformerScenes"]
 type StashPerformerSceneEntry = StashPerformerScenePage["items"][number];
 type SubscribedPerformerEntry = SubscribedPerformersQuery["subscribedPerformers"][number];
 type RuntimeSettings = NonNullable<DashboardDocumentQuery["settings"]>;
+
+function performerSceneTaskLabel(task: NonNullable<StashPerformerSceneEntry["mojiTask"]>) {
+  if (task.stage === TaskStage.Downloading && task.progress > 0) {
+    return `下载 ${Math.round(task.progress * 100)}%`;
+  }
+  if (task.stageStatus === TaskStageStatus.Blocked) {
+    return task.stageStatusLabel;
+  }
+  return task.stageLabel;
+}
+
+function performerSceneTaskTone(task: NonNullable<StashPerformerSceneEntry["mojiTask"]>) {
+  if (task.stageStatus === TaskStageStatus.Blocked) return "tone-danger";
+  if (task.stage === TaskStage.Completed) return "tone-success";
+  return "tone-info";
+}
+
+function performerSceneSourceLabel(scene: StashPerformerSceneEntry) {
+  if (scene.hasStashSource && scene.hasStashBoxSource) return "双源";
+  if (scene.hasStashBoxSource) return "StashBox";
+  return "Stash";
+}
 
 interface SubscriptionPageProps {
   runtimeSettings: RuntimeSettings | null;
@@ -44,6 +87,7 @@ interface SubscriptionPageProps {
   performerSceneLibraryFilter: LibraryFilter;
   performerScenePageSize: number;
   selectedSceneKeys: string[];
+  pendingSceneKeys: string[];
   pendingSubscriptionID: string | null;
   subscriptionError: Error | null;
   stashPerformersError: Error | null;
@@ -58,6 +102,7 @@ interface SubscriptionPageProps {
   onPrevPage: () => void;
   onNextPage: () => void;
   onOpenPerformer: (performerId: string) => void;
+  onOpenTask: (taskId: string) => void;
   onBackToList: () => void;
   onPerformerSceneSearchChange: (value: string) => void;
   onPerformerSceneSourceChange: (value: SceneSourceFilter) => void;
@@ -69,6 +114,7 @@ interface SubscriptionPageProps {
   onSelectCurrentScenePage: (keys: string[]) => void;
   onClearSceneSelection: () => void;
   onQueueSelectedScenes: () => void;
+  onQueueScene: (scene: StashPerformerSceneEntry) => void;
 }
 
 export function SubscriptionPage({
@@ -93,6 +139,7 @@ export function SubscriptionPage({
   performerSceneLibraryFilter,
   performerScenePageSize,
   selectedSceneKeys,
+  pendingSceneKeys,
   pendingSubscriptionID,
   subscriptionError,
   stashPerformersError,
@@ -107,6 +154,7 @@ export function SubscriptionPage({
   onPrevPage,
   onNextPage,
   onOpenPerformer,
+  onOpenTask,
   onBackToList,
   onPerformerSceneSearchChange,
   onPerformerSceneSourceChange,
@@ -117,14 +165,21 @@ export function SubscriptionPage({
   onToggleSceneSelection,
   onSelectCurrentScenePage,
   onClearSceneSelection,
-  onQueueSelectedScenes
+  onQueueSelectedScenes,
+  onQueueScene
 }: SubscriptionPageProps) {
   const subscribedByID = useMemo(() => {
     return new Map(subscribedPerformers.map((item) => [item.performer.id, item]));
   }, [subscribedPerformers]);
 
   const performerSubscription = performerDetail ? (subscribedByID.get(performerDetail.performer.id) ?? null) : null;
-  const currentPageKeys = performerScenes.map((scene) => scene.key);
+  const currentPageKeys = performerScenes
+    .filter((scene) => !scene.inLibrary && !scene.mojiTask && !pendingSceneKeys.includes(scene.key))
+    .map((scene) => scene.key);
+  const detailStashURL = performerDetail
+    ? stashPerformerURL(performerDetail.performer.id, runtimeSettings?.stash.url)
+    : null;
+  const latestRelease = performerSubscription?.recentReleases[0] ?? null;
 
   if (selectedPerformerId) {
     return (
@@ -146,105 +201,134 @@ export function SubscriptionPage({
 
         {performerDetail ? (
           <>
-            <article className="performer-detail-card" style={{ marginBottom: 16 }}>
-              <div className="task-detail-hero">
-                <div className="performer-detail-hero__main">
-                  {performerImageURL(performerDetail.performer.imagePath, runtimeSettings?.stash.url) ? (
-                    <img
-                      className="avatar avatar--image performer-detail-hero__avatar"
-                      src={performerImageURL(performerDetail.performer.imagePath, runtimeSettings?.stash.url) ?? ""}
-                      alt={performerDetail.performer.name}
-                      loading="lazy"
-                    />
-                  ) : (
-                    <div className="avatar avatar--placeholder performer-detail-hero__avatar">
-                      {performerInitials(performerDetail.performer.name)}
-                    </div>
-                  )}
-                  <div className="task-detail-hero__copy performer-detail-hero__copy">
-                    <strong className="performer-detail-hero__name">{performerDetail.performer.name}</strong>
-                    <div className="performer-detail-hero__meta">
+            <article className="performer-detail-card">
+              <div className="performer-detail-hero">
+                {performerImageURL(performerDetail.performer.imagePath, runtimeSettings?.stash.url) ? (
+                  <img
+                    className="avatar avatar--image performer-detail-hero__avatar"
+                    src={performerImageURL(performerDetail.performer.imagePath, runtimeSettings?.stash.url) ?? ""}
+                    alt={performerDetail.performer.name}
+                    loading="lazy"
+                  />
+                ) : (
+                  <div className="avatar avatar--placeholder performer-detail-hero__avatar">
+                    {performerInitials(performerDetail.performer.name)}
+                  </div>
+                )}
+
+                <div className="performer-detail-hero__copy">
+                  <div className="performer-detail-hero__topline">
+                    <div className="performer-detail-hero__identity">
+                      <strong className="performer-detail-hero__name">{performerDetail.performer.name}</strong>
                       <span
-                        className={`status-chip ${performerDetail.matchedStashBox ? "tone-info" : "tone-warn"}`}
+                        className={`performer-detail-hero__state ${performerDetail.performer.favorite ? "is-favorite" : ""}`}
+                        title={performerDetail.performer.favorite ? "Stash 已收藏" : "Stash 未收藏"}
                       >
-                        {performerDetail.matchedStashBox
-                          ? `首选 StashBox: ${performerDetail.matchedStashBox.name}`
-                          : "未匹配到首选 StashBox"}
+                        <FontAwesomeIcon icon={faHeart} />
+                        Stash {performerDetail.performer.favorite ? "已收藏" : "未收藏"}
+                      </span>
+                      <button
+                        type="button"
+                        className={`performer-detail-hero__state performer-detail-hero__subscription ${performerDetail.performer.subscribed ? "is-subscribed" : ""}`}
+                        title={performerDetail.performer.subscribed ? "取消 Moji 订阅" : "添加 Moji 订阅"}
+                        aria-label={performerDetail.performer.subscribed ? `取消订阅 ${performerDetail.performer.name}` : `订阅 ${performerDetail.performer.name}`}
+                        disabled={pendingSubscriptionID === performerDetail.performer.id}
+                        onClick={() => onToggle(performerDetail.performer)}
+                      >
+                        <FontAwesomeIcon icon={faBookmark} />
+                        Moji {performerDetail.performer.subscribed ? "已订阅" : "未订阅"}
+                      </button>
+                      <span className="performer-detail-hero__stashbox" title={performerDetail.matchedStashBox?.name ?? "未匹配到首选 StashBox"}>
+                        <span>首选 StashBox</span>
+                        <strong>{performerDetail.matchedStashBox?.name ?? "未匹配"}</strong>
                       </span>
                     </div>
-                    <div className="performer-detail-hero__section">
-                      <span className="performer-detail-hero__label">别名</span>
-                      <p>
-                        {performerDetail.performer.aliasList.length > 0
-                          ? performerDetail.performer.aliasList.join(" / ")
-                          : "暂无别名"}
-                      </p>
-                    </div>
-                    <div className="performer-detail-hero__section">
-                      <span className="performer-detail-hero__label">说明</span>
-                      <p>{performerDetail.disambiguation || "无补充说明"}</p>
+
+                    <div className="performer-detail-card__icons">
+                      <button
+                        type="button"
+                        className="profile-action-icon"
+                        title="立即检查"
+                        aria-label={`立即检查 ${performerDetail.performer.name}`}
+                        disabled={pendingSubscriptionID === performerDetail.performer.id}
+                        onClick={() => onRefreshOne(performerDetail.performer)}
+                      >
+                        <FontAwesomeIcon icon={faRotate} className={pendingSubscriptionID === performerDetail.performer.id ? "is-spinning" : undefined} />
+                      </button>
+                      {detailStashURL ? (
+                        <a
+                          className="profile-action-icon"
+                          href={detailStashURL}
+                          target="_blank"
+                          rel="noreferrer"
+                          title="前往 Stash 主页"
+                          aria-label={`前往 ${performerDetail.performer.name} 的 Stash 主页`}
+                        >
+                          <FontAwesomeIcon icon={faPlayCircle} />
+                        </a>
+                      ) : null}
                     </div>
                   </div>
-                </div>
-                <div className="performer-detail-card__icons">
-                  {performerDetail.performer.favorite ? (
-                    <span className="profile-icon profile-icon--favorite is-active" title="Stash 已收藏">
-                      <FontAwesomeIcon icon={faHeart} />
-                    </span>
-                  ) : null}
-                  <button
-                    type="button"
-                    className={`profile-icon profile-icon--subscribe ${performerDetail.performer.subscribed ? "is-active" : ""}`}
-                    disabled={pendingSubscriptionID === performerDetail.performer.id}
-                    onClick={() => onToggle(performerDetail.performer)}
-                  >
-                    <FontAwesomeIcon icon={faBookmark} />
-                  </button>
+
+                  <div className="performer-detail-hero__description">
+                    <p title={performerDetail.performer.aliasList.join(" / ")}>
+                      <span>别名</span>
+                      {performerDetail.performer.aliasList.length > 0 ? performerDetail.performer.aliasList.join(" / ") : "暂无"}
+                    </p>
+                    <p title={performerDetail.disambiguation ?? ""}>
+                      <span>说明</span>
+                      {performerDetail.disambiguation || "无补充说明"}
+                    </p>
+                    <p>
+                      <span>资料</span>
+                      {[performerDetail.birthdate, performerDetail.country, performerDetail.heightCm ? `${performerDetail.heightCm} cm` : null]
+                        .filter(Boolean)
+                        .join(" · ") || "暂无"}
+                    </p>
+                    {latestRelease ? (
+                      <p title={latestRelease.title}>
+                        <span>最近发行</span>
+                        {latestRelease.code || latestRelease.title} · {formatRelativeDate(latestRelease.date || latestRelease.seenAt)}
+                      </p>
+                    ) : null}
+                  </div>
+
+                  <dl className="performer-detail-metrics">
+                    <div>
+                      <dt>上次检查</dt>
+                      <dd title={formatDateTime(performerSubscription?.lastCheckedAt)}>
+                        {formatRelative(performerSubscription?.lastCheckedAt) ?? "尚未检查"}
+                      </dd>
+                    </div>
+                    <div className={performerSubscription?.lastError ? "tone-danger" : undefined}>
+                      <dt>检查状态</dt>
+                      <dd title={performerSubscription?.lastError ?? ""}>
+                        {performerSubscription?.lastError ? "检查失败" : performerDetail.performer.subscribed ? "正常" : "未订阅"}
+                      </dd>
+                    </div>
+                    <div>
+                      <dt>待处理发行</dt>
+                      <dd>{performerSubscription?.pendingReleaseCount ?? 0}</dd>
+                    </div>
+                    <div>
+                      <dt>已处理发行</dt>
+                      <dd>{performerSubscription?.processedReleaseCount ?? 0}</dd>
+                    </div>
+                    <div>
+                      <dt>Stash</dt>
+                      <dd>{performerScenePage?.stashSceneCount ?? performerDetail.stashSceneCount}</dd>
+                    </div>
+                    <div>
+                      <dt>StashBox</dt>
+                      <dd>{performerScenePage?.stashBoxCount ?? performerDetail.stashBoxSceneCount}</dd>
+                    </div>
+                    <div>
+                      <dt>去重后</dt>
+                      <dd>{performerScenePage?.dedupedCount ?? performerDetail.dedupedSceneCount}</dd>
+                    </div>
+                  </dl>
                 </div>
               </div>
-
-              <div className="settings-meta" style={{ marginTop: 16 }}>
-                <span>Stash 作品: {performerScenePage?.stashSceneCount ?? performerDetail.stashSceneCount}</span>
-                <span>StashBox 作品: {performerScenePage?.stashBoxCount ?? performerDetail.stashBoxSceneCount}</span>
-                <span>去重后: {performerScenePage?.dedupedCount ?? performerDetail.dedupedSceneCount}</span>
-                <span>最近检查: {formatDateTime(performerSubscription?.lastCheckedAt)}</span>
-              </div>
-
-              <div className="profile-facts" style={{ marginTop: 16 }}>
-                <div>
-                  <dt>生日</dt>
-                  <dd>{performerDetail.birthdate || "-"}</dd>
-                </div>
-                <div>
-                  <dt>国家</dt>
-                  <dd>{performerDetail.country || "-"}</dd>
-                </div>
-                <div>
-                  <dt>眼睛</dt>
-                  <dd>{performerDetail.eyeColor || "-"}</dd>
-                </div>
-                <div>
-                  <dt>身高</dt>
-                  <dd>{performerDetail.heightCm ? `${performerDetail.heightCm} cm` : "-"}</dd>
-                </div>
-              </div>
-
-              {performerSubscription?.recentReleases.length ? (
-                <div style={{ marginTop: 16, display: "grid", gap: 10 }}>
-                  <strong>最近发行记录</strong>
-                  {performerSubscription.recentReleases.map((release) => (
-                    <article key={release.key} className="candidate-card" style={{ padding: 12 }}>
-                      <div className="candidate-card__head">
-                        <div>
-                          <h3>{release.code || release.title}</h3>
-                          <p>{release.title || "无标题"}</p>
-                        </div>
-                      </div>
-                      <p style={{ marginTop: 10 }}>{release.date || formatDateTime(release.seenAt)}</p>
-                    </article>
-                  ))}
-                </div>
-              ) : null}
             </article>
 
             <div className="toolbar-inline toolbar-inline--subscription">
@@ -270,10 +354,20 @@ export function SubscriptionPage({
                   </option>
                 ))}
               </select>
-              <button type="button" className="ghost-button" onClick={() => onSelectCurrentScenePage(currentPageKeys)}>
-                全选本页
+              <button
+                type="button"
+                className="ghost-button"
+                disabled={currentPageKeys.length === 0 || fetchingPerformerScenes}
+                onClick={() => onSelectCurrentScenePage(currentPageKeys)}
+              >
+                全选本页（{currentPageKeys.length}）
               </button>
-              <button type="button" className="ghost-button" onClick={onClearSceneSelection}>
+              <button
+                type="button"
+                className="ghost-button"
+                disabled={selectedSceneKeys.length === 0 || queueingPerformerScenes}
+                onClick={onClearSceneSelection}
+              >
                 清空选择
               </button>
               <button
@@ -282,9 +376,12 @@ export function SubscriptionPage({
                 disabled={selectedSceneKeys.length === 0 || queueingPerformerScenes || fetchingPerformerScenes}
                 onClick={onQueueSelectedScenes}
               >
-                {queueingPerformerScenes ? "批量下载中..." : "批量下载所选"}
+                {queueingPerformerScenes
+                  ? `正在创建 ${selectedSceneKeys.length} 个任务…`
+                  : selectedSceneKeys.length > 0
+                    ? `创建下载任务（${selectedSceneKeys.length}）`
+                    : "创建下载任务"}
               </button>
-              <span className="status-chip tone-neutral">已选 {selectedSceneKeys.length}</span>
             </div>
 
             <div className="settings-meta">
@@ -295,42 +392,134 @@ export function SubscriptionPage({
 
             <div
               className="card-grid"
-              style={{ gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", marginTop: 16 }}
+              style={{ marginTop: 16 }}
             >
               {performerScenes.map((scene) => {
                 const selected = selectedSceneKeys.includes(scene.key);
+                const pendingSingleQueue = pendingSceneKeys.includes(scene.key);
+                const selectable = !scene.inLibrary && !scene.mojiTask && !pendingSingleQueue;
                 return (
-                  <article key={scene.key} className="candidate-card">
-                    {scene.imageUrl ? (
-                      <img
-                        src={scene.imageUrl}
-                        alt={scene.title || scene.code || "scene"}
-                        loading="lazy"
-                        style={{ width: "100%", aspectRatio: "16 / 9", objectFit: "cover", borderRadius: 10, marginBottom: 12 }}
-                      />
-                    ) : null}
-                    <div className="candidate-card__head">
-                      <div>
-                        <h3>{scene.code || scene.title || scene.sourceSceneId}</h3>
-                        <p>{scene.title || "无标题"}</p>
-                      </div>
-                      <input type="checkbox" checked={selected} onChange={() => onToggleSceneSelection(scene.key)} />
+                  <article
+                    key={scene.key}
+                    className={`candidate-card performer-scene-card has-media ${selected ? "is-selected" : ""} ${selectable ? "" : "is-unselectable"}`}
+                    onClick={() => {
+                      if (selectable) onToggleSceneSelection(scene.key);
+                    }}
+                  >
+                    <div className="performer-scene-card__media">
+                      {scene.imageUrl ? (
+                        <img
+                          src={scene.imageUrl}
+                          alt={scene.title || scene.code || "scene"}
+                          loading="lazy"
+                          className="performer-scene-card__image"
+                        />
+                      ) : (
+                        <div className="performer-scene-card__image-placeholder" aria-hidden="true">
+                          <FontAwesomeIcon icon={faFilm} />
+                        </div>
+                      )}
+                      <span
+                        className="performer-scene-card__source-badge"
+                        title={`来源：${scene.sourceLabels.join(" + ")}`}
+                      >
+                        {performerSceneSourceLabel(scene)}
+                      </span>
                     </div>
-                    <p style={{ marginTop: 10 }}>{scene.studioName || "未知片商"} · {scene.date || "无日期"}</p>
-                    <div className="candidate-card__foot">
-                      <div className="chip-row">
-                        <span className="status-chip tone-info">{scene.sourceLabels.join(" + ")}</span>
-                        <span className={`status-chip ${scene.inLibrary ? "tone-success" : "tone-warn"}`}>
-                          {scene.inLibrary ? "已入库" : "未入库"}
+                    {selectable ? (
+                      <button
+                        type="button"
+                        className="performer-scene-card__selector"
+                        aria-pressed={selected}
+                        aria-label={`${selected ? "取消选择" : "选择"} ${scene.code || scene.title || scene.sourceSceneId}`}
+                        title={selected ? "取消选择" : "选择影片"}
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          onToggleSceneSelection(scene.key);
+                        }}
+                      >
+                        {selected ? <FontAwesomeIcon icon={faCheck} /> : null}
+                      </button>
+                    ) : null}
+                    <div className="performer-scene-card__content">
+                      <div className="performer-scene-card__status-row">
+                        <h3 title={scene.code || scene.title || scene.sourceSceneId}>{scene.code || scene.title || scene.sourceSceneId}</h3>
+                        <time className="performer-scene-card__date" dateTime={scene.date ?? undefined}>
+                          {scene.date || "无日期"}
+                        </time>
+                      </div>
+                      <p className="performer-scene-card__meta" title={scene.studioName || "未知工作室"}>
+                        {scene.studioName || "未知工作室"}
+                      </p>
+                      <p className="performer-scene-card__title" title={scene.title || "无标题"}>{scene.title || "无标题"}</p>
+                      <div className="performer-scene-card__counts">
+                        <span
+                          title={scene.performers.length > 0 ? `参演演员：${scene.performers.map((item) => item.name).join(" / ")}` : `${scene.performerCount} 位参演演员`}
+                          aria-label={`${scene.performerCount} 位参演演员`}
+                        >
+                          <FontAwesomeIcon icon={faUsers} />
+                          {scene.performerCount}
+                        </span>
+                        <span
+                          title={scene.tags.length > 0 ? `标签：${scene.tags.map((item) => item.name).join(" / ")}` : `${scene.tagCount} 个标签`}
+                          aria-label={`${scene.tagCount} 个标签`}
+                        >
+                          <FontAwesomeIcon icon={faTags} />
+                          {scene.tagCount}
                         </span>
                       </div>
-                      {scene.url ? (
-                        <a href={scene.url} target="_blank" rel="noreferrer">
-                          查看原始页
-                        </a>
-                      ) : (
-                        <span>{scene.hasStashBoxSource && !scene.inLibrary ? "等待入库" : "已归并"}</span>
-                      )}
+                      <div className="performer-scene-card__bottom-actions">
+                        {scene.inLibrary ? (
+                          <span className="status-chip performer-scene-card__business-state tone-success" title="影片已入库">
+                            已入库
+                          </span>
+                        ) : scene.mojiTask ? (
+                          <button
+                            type="button"
+                            className={`status-chip performer-scene-card__business-state performer-scene-card__task ${performerSceneTaskTone(scene.mojiTask)}`}
+                            title={`${scene.mojiTask.stageLabel} · ${scene.mojiTask.stageStatusLabel}，点击查看任务`}
+                            onClick={(event) => {
+                              event.stopPropagation();
+                              onOpenTask(scene.mojiTask!.id);
+                            }}
+                          >
+                            {performerSceneTaskLabel(scene.mojiTask)}
+                          </button>
+                        ) : (
+                          <button
+                            type="button"
+                            className="status-chip performer-scene-card__business-state performer-scene-card__create-task tone-warn"
+                            title="为当前影片创建下载任务"
+                            disabled={pendingSingleQueue}
+                            onClick={(event) => {
+                              event.stopPropagation();
+                              onQueueScene(scene);
+                            }}
+                          >
+                            {pendingSingleQueue ? (
+                              "创建中…"
+                            ) : (
+                              <>
+                                <FontAwesomeIcon icon={faPlus} />
+                                创建任务
+                              </>
+                            )}
+                          </button>
+                        )}
+                        {scene.url ? (
+                          <a
+                            className="profile-action-icon performer-scene-card__source-link"
+                            href={scene.url}
+                            target="_blank"
+                            rel="noreferrer"
+                            title="查看原始页"
+                            aria-label={`查看 ${scene.code || scene.title || scene.sourceSceneId} 的原始页`}
+                            onClick={(event) => event.stopPropagation()}
+                          >
+                            <FontAwesomeIcon icon={faArrowUpRightFromSquare} />
+                          </a>
+                        ) : null}
+                      </div>
                     </div>
                   </article>
                 );

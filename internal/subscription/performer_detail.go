@@ -6,6 +6,7 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/leothevan2444/moji/internal/taskruntime"
 	stashgraphql "github.com/leothevan2444/moji/pkg/stash/graphql"
 	stashboxgraphql "github.com/leothevan2444/moji/pkg/stashbox/graphql"
 )
@@ -126,8 +127,13 @@ func (s *Service) buildPerformerScenePage(ctx context.Context, performer *stashg
 		}
 	}
 
+	pageItems := append([]PerformerScene(nil), filtered[start:end]...)
+	if err := s.attachPerformerSceneTasks(ctx, pageItems); err != nil {
+		return PerformerScenePage{}, err
+	}
+
 	return PerformerScenePage{
-		Items:           filtered[start:end],
+		Items:           pageItems,
 		Page:            query.Page,
 		PageSize:        query.PageSize,
 		TotalCount:      totalCount,
@@ -138,6 +144,42 @@ func (s *Service) buildPerformerScenePage(ctx context.Context, performer *stashg
 		StashBoxCount:   stashBoxCount,
 		DedupedCount:    len(flat),
 	}, nil
+}
+
+func (s *Service) attachPerformerSceneTasks(ctx context.Context, scenes []PerformerScene) error {
+	if s.taskLister == nil || len(scenes) == 0 {
+		return nil
+	}
+	tasks, err := s.taskLister.ListTasks(ctx)
+	if err != nil {
+		return fmt.Errorf("subscription: list tasks for performer scenes: %w", err)
+	}
+	byCode := make(map[string]*taskruntime.Task, len(tasks))
+	for _, task := range tasks {
+		if task == nil {
+			continue
+		}
+		code := normalize(task.Code)
+		if code != "" {
+			byCode[code] = task
+		}
+	}
+	for index := range scenes {
+		code := normalize(buildReleaseCode(scenes[index].Code, scenes[index].Title))
+		task := byCode[code]
+		if task == nil {
+			continue
+		}
+		scenes[index].MojiTask = &PerformerSceneTask{
+			ID:               task.ID,
+			Stage:            task.Stage,
+			StageStatus:      task.StageStatus,
+			StageLabel:       task.StageLabel,
+			StageStatusLabel: task.StageStatusLabel,
+			Progress:         task.Progress,
+		}
+	}
+	return nil
 }
 
 func (s *Service) loadPerformerScenes(ctx context.Context, performer *stashgraphql.PerformerFragment) ([]PerformerScene, int, int, error) {
@@ -306,6 +348,10 @@ func stashSceneToPerformerScene(scene *stashgraphql.SceneFragment) PerformerScen
 		Title:             stringValue(scene.Title),
 		Code:              stringValue(scene.Code),
 		Date:              stringValue(scene.Date),
+		PerformerCount:    len(scene.Performers),
+		TagCount:          len(scene.Tags),
+		Performers:        stashScenePerformers(scene.Performers),
+		Tags:              stashSceneTags(scene.Tags),
 		ImageURL:          stashSceneImageURL(scene),
 		URL:               stashSceneURL(scene),
 		InLibrary:         true,
@@ -328,6 +374,10 @@ func stashBoxSceneToPerformerScene(scene *stashboxgraphql.SceneFragment, endpoin
 		Title:             stringValue(scene.Title),
 		Code:              stringValue(scene.Code),
 		Date:              stringValue(scene.Date),
+		PerformerCount:    len(scene.Performers),
+		TagCount:          len(scene.Tags),
+		Performers:        stashBoxScenePerformers(scene.Performers),
+		Tags:              stashBoxSceneTags(scene.Tags),
 		ImageURL:          stashBoxSceneImageURL(scene),
 		URL:               stashBoxSceneURL(scene),
 		InLibrary:         false,
@@ -341,6 +391,50 @@ func stashBoxSceneToPerformerScene(scene *stashboxgraphql.SceneFragment, endpoin
 		item.StudioName = scene.Studio.Name
 	}
 	return item
+}
+
+func stashScenePerformers(items []*stashgraphql.SceneFragment_Performers) []PerformerScenePerson {
+	out := make([]PerformerScenePerson, 0, len(items))
+	for _, item := range items {
+		if item == nil {
+			continue
+		}
+		out = append(out, PerformerScenePerson{ID: item.ID, Name: item.Name})
+	}
+	return out
+}
+
+func stashSceneTags(items []*stashgraphql.SceneFragment_Tags) []PerformerSceneTag {
+	out := make([]PerformerSceneTag, 0, len(items))
+	for _, item := range items {
+		if item == nil {
+			continue
+		}
+		out = append(out, PerformerSceneTag{ID: item.ID, Name: item.Name})
+	}
+	return out
+}
+
+func stashBoxScenePerformers(items []*stashboxgraphql.PerformerAppearanceFragment) []PerformerScenePerson {
+	out := make([]PerformerScenePerson, 0, len(items))
+	for _, item := range items {
+		if item == nil || item.Performer == nil {
+			continue
+		}
+		out = append(out, PerformerScenePerson{ID: item.Performer.ID, Name: item.Performer.Name})
+	}
+	return out
+}
+
+func stashBoxSceneTags(items []*stashboxgraphql.TagFragment) []PerformerSceneTag {
+	out := make([]PerformerSceneTag, 0, len(items))
+	for _, item := range items {
+		if item == nil {
+			continue
+		}
+		out = append(out, PerformerSceneTag{ID: item.ID, Name: item.Name})
+	}
+	return out
 }
 
 func mergeStashBoxIntoStashScene(item *PerformerScene, scene *stashboxgraphql.SceneFragment, endpoint string) {
