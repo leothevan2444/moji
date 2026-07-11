@@ -11,7 +11,8 @@ export default defineConfig(({ mode }) => {
       port: 5173,
       proxy: {
         "/graphql": apiTarget,
-        "/healthz": apiTarget
+        "/healthz": apiTarget,
+        "/api": apiTarget
       }
     }
   };

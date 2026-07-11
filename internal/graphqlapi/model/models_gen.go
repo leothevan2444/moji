@@ -109,6 +109,26 @@ type Health struct {
 	Message string `json:"message"`
 }
 
+type ImageCacheSettings struct {
+	Enabled       bool `json:"enabled"`
+	MaxSizeMb     int  `json:"maxSizeMb"`
+	RetentionDays int  `json:"retentionDays"`
+}
+
+type ImageCacheSettingsInput struct {
+	Enabled       bool `json:"enabled"`
+	MaxSizeMb     int  `json:"maxSizeMb"`
+	RetentionDays int  `json:"retentionDays"`
+}
+
+type ImageCacheStatus struct {
+	UsedBytes      int64   `json:"usedBytes"`
+	EntryCount     int     `json:"entryCount"`
+	CacheDirectory string  `json:"cacheDirectory"`
+	LastCleanupAt  *string `json:"lastCleanupAt,omitempty"`
+	LastError      *string `json:"lastError,omitempty"`
+}
+
 type IndexerPreferenceRule struct {
 	TrackerIds []string `json:"trackerIds"`
 }
@@ -398,6 +418,7 @@ type SettingsStatus struct {
 	Automation              *AutomationStatus   `json:"automation"`
 	Subscription            *SubscriptionStatus `json:"subscription"`
 	Ingest                  *IngestStatus       `json:"ingest"`
+	ImageCache              *ImageCacheStatus   `json:"imageCache"`
 	StashLibraries          []*StashLibrary     `json:"stashLibraries"`
 	StashLibrariesLoadError *string             `json:"stashLibrariesLoadError,omitempty"`
 	// Runtime stats for the Stash server. Refreshed by the stats collector.
@@ -600,7 +621,8 @@ type SubscriptionStatus struct {
 }
 
 type SystemSettings struct {
-	TaskDeletePolicy TaskDeletePolicy `json:"taskDeletePolicy"`
+	TaskDeletePolicy TaskDeletePolicy    `json:"taskDeletePolicy"`
+	ImageCache       *ImageCacheSettings `json:"imageCache"`
 }
 
 type Task struct {
@@ -759,7 +781,8 @@ type UpdateStashSettingsInput struct {
 }
 
 type UpdateSystemSettingsInput struct {
-	TaskDeletePolicy TaskDeletePolicy `json:"taskDeletePolicy"`
+	TaskDeletePolicy TaskDeletePolicy         `json:"taskDeletePolicy"`
+	ImageCache       *ImageCacheSettingsInput `json:"imageCache,omitempty"`
 }
 
 type DiscoverSortBy string

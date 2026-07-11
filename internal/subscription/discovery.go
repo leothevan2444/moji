@@ -55,7 +55,9 @@ func (s *Service) SearchPreferredStashBoxScenes(ctx context.Context, query strin
 			if scene == nil {
 				continue
 			}
-			page.Items = append(page.Items, discoveredSceneFromStashBox(scene, box))
+			item := discoveredSceneFromStashBox(scene, box)
+			item.ImageURL = s.proxyStashBoxImage(ctx, box.Endpoint, item.ImageURL)
+			page.Items = append(page.Items, item)
 			if len(page.Items) >= limit {
 				break
 			}

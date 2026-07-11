@@ -15,6 +15,7 @@ import {
 } from "@fortawesome/free-solid-svg-icons";
 import {
   JackettIndexersDocumentDocument,
+  ClearImageCacheDocumentDocument,
   LogLevel,
   LogsDocumentDocument,
   RefreshSubscriptionStashBoxesDocumentDocument,
@@ -32,6 +33,7 @@ import {
   UpdateStashSettingsDocumentDocument,
   UpdateSystemSettingsDocumentDocument,
   type DashboardDocumentQuery,
+  type ClearImageCacheDocumentMutation,
   type JackettIndexersDocumentQuery,
   type JackettIndexersDocumentQueryVariables,
   type LogsDocumentQuery,
@@ -66,6 +68,7 @@ import {
 import { serviceStatus } from "../../utils";
 import { describeQueryError } from "../../services/queryError";
 import { formatDateTime, formatLogEntries } from "../../utils";
+import { formatBytes } from "../../utils";
 
 type RuntimeSettings = NonNullable<DashboardDocumentQuery["settings"]>;
 type RuntimeSettingsStatus = NonNullable<DashboardDocumentQuery["settingsStatus"]>;
@@ -498,6 +501,7 @@ export function SettingsPanel({
     UpdateSystemSettingsDocumentMutation,
     UpdateSystemSettingsDocumentMutationVariables
   >(UpdateSystemSettingsDocumentDocument);
+  const [{ fetching: clearingImageCache }, clearImageCache] = useMutation<ClearImageCacheDocumentMutation>(ClearImageCacheDocumentDocument);
   const [{ fetching: refreshingStashBoxes }, refreshStashBoxesMutation] = useMutation<
     RefreshSubscriptionStashBoxesDocumentMutation
   >(RefreshSubscriptionStashBoxesDocumentDocument);
@@ -550,7 +554,10 @@ export function SettingsPanel({
       torrentSelection: torrentSelectionFromRuntime(runtimeSettings)
     });
     setSystemForm({
-      taskDeletePolicy: runtimeSettings.system.taskDeletePolicy || TaskDeletePolicy.KeepOnly
+      taskDeletePolicy: runtimeSettings.system.taskDeletePolicy || TaskDeletePolicy.KeepOnly,
+      imageCacheEnabled: runtimeSettings.system.imageCache.enabled,
+      imageCacheMaxSizeMb: String(runtimeSettings.system.imageCache.maxSizeMb),
+      imageCacheRetentionDays: String(runtimeSettings.system.imageCache.retentionDays)
     });
   }, [runtimeSettings]);
 
@@ -795,7 +802,8 @@ export function SettingsPanel({
     event.preventDefault();
     const result = await updateSystemSettings({
       input: {
-        taskDeletePolicy: systemForm.taskDeletePolicy as TaskDeletePolicy
+        taskDeletePolicy: systemForm.taskDeletePolicy as TaskDeletePolicy,
+        imageCache: { enabled: systemForm.imageCacheEnabled, maxSizeMb: Number(systemForm.imageCacheMaxSizeMb), retentionDays: Number(systemForm.imageCacheRetentionDays) }
       }
     });
     if (result.error) {
@@ -804,6 +812,11 @@ export function SettingsPanel({
     }
     pushToast("tone-success", "系统设置已保存。");
     await refreshDashboard({ requestPolicy: "network-only" });
+  };
+
+  const handleClearImageCache = async () => {
+    if (!window.confirm("确定清空本地图片缓存？代理地址会保留，图片将在下次访问时重新下载。")) return;
+    const result=await clearImageCache({}); if(result.error){pushToast("tone-danger",describeQueryError(result.error));return}; pushToast("tone-success","图片缓存已清空。"); await refreshDashboard({requestPolicy:"network-only"});
   };
 
   const refreshSubscriptionStashBoxes = async () => {
@@ -2126,13 +2139,22 @@ export function SettingsPanel({
             <FieldLabel text="删除任务策略" info={deletePolicyInfo} />
             <select
               value={systemForm.taskDeletePolicy}
-              onChange={(event) => setSystemForm({ taskDeletePolicy: event.target.value })}
+              onChange={(event) => setSystemForm((current) => ({ ...current, taskDeletePolicy: event.target.value }))}
             >
               <option value={TaskDeletePolicy.KeepOnly}>仅删除 Moji 任务记录</option>
               <option value={TaskDeletePolicy.RemoveTorrent}>同时删除 qBittorrent 下载任务</option>
               <option value={TaskDeletePolicy.RemoveTorrentAndFiles}>同时删除 qBittorrent 下载任务和文件</option>
             </select>
           </label>
+          <div className="settings-field">
+            <FieldLabel text="图片缓存" info="图片始终由 Moji 代理；此开关仅控制是否在磁盘持久化缓存。" />
+            <label className="settings-toggle"><input type="checkbox" checked={systemForm.imageCacheEnabled} onChange={(event)=>setSystemForm((current)=>({...current,imageCacheEnabled:event.target.checked}))}/><span>启用磁盘缓存</span></label>
+          </div>
+          <label className="settings-field"><FieldLabel text="缓存容量上限（MB）" info="允许 64–20480 MB。" /><input type="number" min="64" max="20480" value={systemForm.imageCacheMaxSizeMb} onChange={(event)=>setSystemForm((current)=>({...current,imageCacheMaxSizeMb:event.target.value}))}/></label>
+          <label className="settings-field"><FieldLabel text="缓存保留天数" info="允许 1–365 天；长期未访问的图片会被清理。" /><input type="number" min="1" max="365" value={systemForm.imageCacheRetentionDays} onChange={(event)=>setSystemForm((current)=>({...current,imageCacheRetentionDays:event.target.value}))}/></label>
+          <div className="settings-meta"><span>当前占用：{formatBytes(Number(runtimeStatus.imageCache.usedBytes ?? 0))}</span><span>条目：{runtimeStatus.imageCache.entryCount ?? 0}</span><span>最近清理：{formatDateTime(runtimeStatus.imageCache.lastCleanupAt)}</span></div>
+          {runtimeStatus.imageCache.lastError ? <p className="settings-feedback tone-danger">{runtimeStatus.imageCache.lastError}</p> : null}
+          <button type="button" className="ghost-button" disabled={clearingImageCache} onClick={()=>void handleClearImageCache()}>{clearingImageCache?"清理中...":"清空图片缓存"}</button>
           <div className="settings-actions">
             <button type="submit" disabled={updatingSystem}>
               {updatingSystem ? "保存中..." : "保存系统设置"}

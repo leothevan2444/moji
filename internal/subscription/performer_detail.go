@@ -21,6 +21,7 @@ func (s *Service) GetPerformerDetail(ctx context.Context, performerID string) (P
 	}
 
 	item := performerFromStash(performer, s.customFieldKey)
+	item.ImagePath = s.proxyStashImage(ctx, item.ImagePath)
 	detail := PerformerDetail{
 		Performer:      item,
 		Disambiguation: stringValue(performer.Disambiguation),
@@ -250,7 +251,13 @@ func (s *Service) loadPerformerScenes(ctx context.Context, performer *stashgraph
 		if item == nil {
 			continue
 		}
-		flat = append(flat, *item)
+		copy := *item
+		if copy.ImageSource == SceneSourceStash {
+			copy.ImageURL = s.proxyStashImage(ctx, copy.ImageURL)
+		} else {
+			copy.ImageURL = s.proxyStashBoxImage(ctx, copy.StashBoxEndpoint, copy.ImageURL)
+		}
+		flat = append(flat, copy)
 	}
 	return flat, len(stashScenes), stashBoxCount, nil
 }
@@ -353,6 +360,7 @@ func stashSceneToPerformerScene(scene *stashgraphql.SceneFragment) PerformerScen
 		Performers:        stashScenePerformers(scene.Performers),
 		Tags:              stashSceneTags(scene.Tags),
 		ImageURL:          stashSceneImageURL(scene),
+		ImageSource:       SceneSourceStash,
 		URL:               stashSceneURL(scene),
 		InLibrary:         true,
 		HasStashSource:    true,
@@ -379,6 +387,7 @@ func stashBoxSceneToPerformerScene(scene *stashboxgraphql.SceneFragment, endpoin
 		Performers:        stashBoxScenePerformers(scene.Performers),
 		Tags:              stashBoxSceneTags(scene.Tags),
 		ImageURL:          stashBoxSceneImageURL(scene),
+		ImageSource:       SceneSourceStashBox,
 		URL:               stashBoxSceneURL(scene),
 		InLibrary:         false,
 		HasStashSource:    false,
@@ -450,6 +459,7 @@ func mergeStashBoxIntoStashScene(item *PerformerScene, scene *stashboxgraphql.Sc
 	item.SourceLabels = []string{"Stash", "StashBox"}
 	if item.ImageURL == "" {
 		item.ImageURL = stashBoxSceneImageURL(scene)
+		item.ImageSource = SceneSourceStashBox
 	}
 	if item.URL == "" {
 		item.URL = stashBoxSceneURL(scene)

@@ -137,7 +137,22 @@ mutation UpdateSystemSettingsDocument($input: UpdateSystemSettingsInput!) {
   updateSystemSettings(input: $input) {
     system {
       taskDeletePolicy
+      imageCache {
+        enabled
+        maxSizeMb
+        retentionDays
+      }
     }
+  }
+}
+
+mutation ClearImageCacheDocument {
+  clearImageCache {
+    usedBytes
+    entryCount
+    cacheDirectory
+    lastCleanupAt
+    lastError
   }
 }
 

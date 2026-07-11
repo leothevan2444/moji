@@ -157,11 +157,14 @@ func (s *Store) UpdateAutomation(taskProgressSyncIntervalSeconds, subscriptionPo
 	return &clone, nil
 }
 
-func (s *Store) UpdateSystem(taskDeletePolicy TaskDeletePolicy) (*Config, error) {
+func (s *Store) UpdateSystem(taskDeletePolicy TaskDeletePolicy, imageCache ...ImageCacheConfig) (*Config, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
 	s.cfg.System.TaskDeletePolicy = NormalizeTaskDeletePolicy(string(taskDeletePolicy))
+	if len(imageCache) > 0 {
+		s.cfg.System.ImageCache = imageCache[0].Normalize()
+	}
 
 	if err := s.updateConfigNode(); err != nil {
 		return nil, err
@@ -212,7 +215,12 @@ func (s *Store) updateConfigNode() error {
 	setStringList(mapValue(top, "automation"), "selected_stash_box_endpoints", s.cfg.Automation.StashBoxEndpoints)
 	setNodeValue(mapValue(top, "automation"), "subscription_release_policy", s.cfg.Automation.SubscriptionReleasePolicy.Effective())
 	setNodeValue(mapValue(top, "automation"), "torrent_selection", s.cfg.Automation.TorrentSelection.Effective())
-	setScalar(mapValue(top, "system"), "task_delete_policy", string(s.cfg.System.EffectiveTaskDeletePolicy()))
+	system := mapValue(top, "system")
+	setScalar(system, "task_delete_policy", string(s.cfg.System.EffectiveTaskDeletePolicy()))
+	imageCache := mapValue(system, "image_cache")
+	setBoolScalar(imageCache, "enabled", s.cfg.System.ImageCache.EffectiveEnabled())
+	setIntScalar(imageCache, "max_size_mb", s.cfg.System.ImageCache.Normalize().MaxSizeMB)
+	setIntScalar(imageCache, "retention_days", s.cfg.System.ImageCache.Normalize().RetentionDays)
 	deleteMapKey(top, "stash")
 	deleteMapKey(top, "jackett")
 	deleteMapKey(top, "qbittorrent")
@@ -348,6 +356,15 @@ func setIntScalar(parent *yaml.Node, key string, value int) {
 	target.Kind = yaml.ScalarNode
 	target.Tag = "!!int"
 	target.Value = strconv.Itoa(value)
+	target.Style = 0
+}
+
+func setBoolScalar(parent *yaml.Node, key string, value bool) {
+	ensureMapValue(parent)
+	target := mapValue(parent, key)
+	target.Kind = yaml.ScalarNode
+	target.Tag = "!!bool"
+	target.Value = strconv.FormatBool(value)
 	target.Style = 0
 }
 

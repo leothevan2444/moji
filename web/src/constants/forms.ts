@@ -111,7 +111,10 @@ export const EMPTY_AUTOMATION_FORM = {
 };
 
 export const EMPTY_SYSTEM_FORM = {
-  taskDeletePolicy: "KEEP_ONLY"
+  taskDeletePolicy: "KEEP_ONLY",
+  imageCacheEnabled: true,
+  imageCacheMaxSizeMb: "1024",
+  imageCacheRetentionDays: "30"
 };
 
 export const SUBSCRIPTION_PAGE_SIZE_OPTIONS = [12, 24, 48, 96] as const;

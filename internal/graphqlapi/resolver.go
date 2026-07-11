@@ -7,6 +7,7 @@ package graphqlapi
 import (
 	"context"
 
+	"github.com/leothevan2444/moji/internal/imagecache"
 	"github.com/leothevan2444/moji/internal/logging"
 	"github.com/leothevan2444/moji/internal/stashsync"
 	"github.com/leothevan2444/moji/internal/stats"
@@ -62,6 +63,12 @@ type SettingsEditor interface {
 	UpdateSystemSettings(input UpdateSystemSettingsInput) (*SettingsSnapshot, error)
 }
 
+type ImageCacheService interface {
+	Status(context.Context) (imagecache.Status, error)
+	Clear(context.Context) (imagecache.Status, error)
+	Cleanup(context.Context) error
+}
+
 type UpdateStashSettingsInput struct {
 	URL    string
 	APIKey string
@@ -99,6 +106,13 @@ type UpdateAutomationSettingsInput struct {
 
 type UpdateSystemSettingsInput struct {
 	TaskDeletePolicy string
+	ImageCache       ImageCacheSettingsSnapshot
+}
+
+type ImageCacheSettingsSnapshot struct {
+	Enabled       bool
+	MaxSizeMB     int
+	RetentionDays int
 }
 
 type SettingsSnapshot struct {
@@ -223,6 +237,7 @@ type SubscriptionReleasePolicySnapshot struct {
 
 type SystemSettingsSnapshot struct {
 	TaskDeletePolicy string
+	ImageCache       ImageCacheSettingsSnapshot
 }
 
 type StashLibrarySnapshot struct {
@@ -314,6 +329,7 @@ type Resolver struct {
 	RuntimeSettings *SettingsSnapshot
 	RuntimeStatus   *SettingsStatusSnapshot
 	Stats           StatsProvider
+	ImageCache      ImageCacheService
 	AppVersion      string
 }
 

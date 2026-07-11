@@ -194,7 +194,8 @@ automation:
 		t.Fatalf("open store: %v", err)
 	}
 
-	cfg, err := store.UpdateSystem(TaskDeletePolicyRemoveTorrentAndFiles)
+	enabled := false
+	cfg, err := store.UpdateSystem(TaskDeletePolicyRemoveTorrentAndFiles, ImageCacheConfig{Enabled: &enabled, MaxSizeMB: 512, RetentionDays: 14})
 	if err != nil {
 		t.Fatalf("update system: %v", err)
 	}
@@ -208,5 +209,8 @@ automation:
 	}
 	if reloaded.System.EffectiveTaskDeletePolicy() != TaskDeletePolicyRemoveTorrentAndFiles {
 		t.Fatalf("expected persisted task delete policy, got %q", reloaded.System.EffectiveTaskDeletePolicy())
+	}
+	if reloaded.System.ImageCache.EffectiveEnabled() || reloaded.System.ImageCache.MaxSizeMB != 512 || reloaded.System.ImageCache.RetentionDays != 14 {
+		t.Fatalf("expected persisted image cache settings, got %+v", reloaded.System.ImageCache)
 	}
 }

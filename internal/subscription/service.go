@@ -9,6 +9,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/leothevan2444/moji/internal/imagecache"
 	"github.com/leothevan2444/moji/internal/logging"
 	"github.com/leothevan2444/moji/internal/taskruntime"
 	"github.com/leothevan2444/moji/pkg/stash"
@@ -49,13 +50,15 @@ type TaskCreator interface {
 }
 
 type Service struct {
-	stash          StashClient
-	stashbox       *stashboxRegistry
-	taskCreator    TaskCreator
-	taskLister     TaskLister
-	store          Store
-	customFieldKey string
-	now            func() time.Time
+	stash            StashClient
+	stashbox         *stashboxRegistry
+	taskCreator      TaskCreator
+	taskLister       TaskLister
+	imageProxy       *imagecache.Service
+	stashImageConfig func() (string, string)
+	store            Store
+	customFieldKey   string
+	now              func() time.Time
 
 	loadMu       sync.RWMutex
 	loaded       bool
@@ -66,6 +69,35 @@ type Service struct {
 
 	policyMu      sync.RWMutex
 	releasePolicy ReleasePolicyConfig
+}
+
+func (s *Service) SetImageProxy(proxy *imagecache.Service, stashConfig func() (string, string)) {
+	s.imageProxy = proxy
+	s.stashImageConfig = stashConfig
+}
+
+func (s *Service) proxyImage(ctx context.Context, kind imagecache.SourceKind, instance, raw, apiKey string) string {
+	if s.imageProxy == nil || strings.TrimSpace(raw) == "" {
+		return raw
+	}
+	value, err := s.imageProxy.Register(ctx, imagecache.Descriptor{Kind: kind, InstanceURL: instance, ImageURL: raw, APIKey: apiKey})
+	if err != nil {
+		logging.Warnf("subscription: register image proxy: %v", err)
+		return ""
+	}
+	return value
+}
+
+func (s *Service) proxyStashImage(ctx context.Context, raw string) string {
+	if s.stashImageConfig == nil {
+		return raw
+	}
+	base, key := s.stashImageConfig()
+	return s.proxyImage(ctx, imagecache.SourceStash, base, raw, key)
+}
+func (s *Service) proxyStashBoxImage(ctx context.Context, endpoint, raw string) string {
+	key := s.stashbox.APIKey(endpoint)
+	return s.proxyImage(ctx, imagecache.SourceStashBox, endpoint, raw, key)
 }
 
 const (
@@ -145,6 +177,7 @@ func (s *Service) ListStashPerformers(ctx context.Context, search string) ([]Per
 	out := make([]Performer, 0, len(performers))
 	for _, performer := range performers {
 		item := performerFromStash(performer, s.customFieldKey)
+		item.ImagePath = s.proxyStashImage(ctx, item.ImagePath)
 		if needle != "" && !performerMatches(item, needle) {
 			continue
 		}
@@ -169,6 +202,7 @@ func (s *Service) ListSubscribedPerformers(ctx context.Context) ([]SubscribedPer
 	out := make([]SubscribedPerformer, 0)
 	for _, performer := range performers {
 		item := performerFromStash(performer, s.customFieldKey)
+		item.ImagePath = s.proxyStashImage(ctx, item.ImagePath)
 		if !item.Subscribed {
 			continue
 		}
@@ -198,6 +232,7 @@ func (s *Service) SubscribePerformer(ctx context.Context, performerID string) (S
 	}
 
 	item := performerFromStash(performer, s.customFieldKey)
+	item.ImagePath = s.proxyStashImage(ctx, item.ImagePath)
 	state, err := s.store.Get(ctx, item.ID)
 	if err != nil {
 		logging.Errorf("subscription: load state for performer %s after subscribe failed: %v", item.ID, err)
@@ -233,6 +268,7 @@ func (s *Service) RefreshSubscribedPerformer(ctx context.Context, performerID st
 	}
 
 	item := performerFromStash(performer, s.customFieldKey)
+	item.ImagePath = s.proxyStashImage(ctx, item.ImagePath)
 	state, err := s.store.Get(ctx, performerID)
 	if err != nil {
 		logging.Errorf("subscription: load state for performer %s failed: %v", performerID, err)

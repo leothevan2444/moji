@@ -27,7 +27,6 @@ func (r *mutationResolver) UpdateStashSettings(ctx context.Context, input model.
 	if err != nil {
 		return nil, err
 	}
-
 	return settingsSnapshotToModel(snapshot, r.AppVersion), nil
 }
 
@@ -134,11 +133,19 @@ func (r *mutationResolver) UpdateSystemSettings(ctx context.Context, input model
 		return nil, errors.New("settings editor is not configured")
 	}
 
-	snapshot, err := r.SettingsEditor.UpdateSystemSettings(UpdateSystemSettingsInput{
-		TaskDeletePolicy: string(input.TaskDeletePolicy),
-	})
+	cacheSettings := ImageCacheSettingsSnapshot{Enabled: true, MaxSizeMB: 1024, RetentionDays: 30}
+	if current := r.SettingsEditor.Snapshot(); current != nil {
+		cacheSettings = current.System.ImageCache
+	}
+	if input.ImageCache != nil {
+		cacheSettings = ImageCacheSettingsSnapshot{Enabled: input.ImageCache.Enabled, MaxSizeMB: input.ImageCache.MaxSizeMb, RetentionDays: input.ImageCache.RetentionDays}
+	}
+	snapshot, err := r.SettingsEditor.UpdateSystemSettings(UpdateSystemSettingsInput{TaskDeletePolicy: string(input.TaskDeletePolicy), ImageCache: cacheSettings})
 	if err != nil {
 		return nil, err
+	}
+	if r.ImageCache != nil {
+		_ = r.ImageCache.Cleanup(ctx)
 	}
 
 	return settingsSnapshotToModel(snapshot, r.AppVersion), nil
@@ -159,6 +166,18 @@ func (r *mutationResolver) RefreshSubscriptionStashBoxes(ctx context.Context) (*
 		return settingsSnapshotToModel(r.SettingsEditor.Snapshot(), r.AppVersion), nil
 	}
 	return settingsSnapshotToModel(r.RuntimeSettings, r.AppVersion), nil
+}
+
+// ClearImageCache is the resolver for the clearImageCache field.
+func (r *mutationResolver) ClearImageCache(ctx context.Context) (*model.ImageCacheStatus, error) {
+	if r.ImageCache == nil {
+		return nil, errors.New("image cache is not configured")
+	}
+	status, err := r.ImageCache.Clear(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return imageCacheStatusToModel(status), nil
 }
 
 // Settings is the resolver for the settings field.
@@ -185,5 +204,15 @@ func (r *queryResolver) SettingsStatus(ctx context.Context) (*model.SettingsStat
 		statsSnap = &s
 	}
 
-	return SettingsStatusWithStats(snap, statsSnap), nil
+	out := SettingsStatusWithStats(snap, statsSnap)
+	if r.ImageCache != nil {
+		status, err := r.ImageCache.Status(ctx)
+		if err == nil {
+			out.ImageCache = imageCacheStatusToModel(status)
+		}
+	}
+	if out.ImageCache == nil {
+		out.ImageCache = &model.ImageCacheStatus{}
+	}
+	return out, nil
 }

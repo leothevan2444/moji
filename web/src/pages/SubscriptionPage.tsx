@@ -209,6 +209,7 @@ export function SubscriptionPage({
                     src={performerImageURL(performerDetail.performer.imagePath, runtimeSettings?.stash.url) ?? ""}
                     alt={performerDetail.performer.name}
                     loading="lazy"
+                    onError={(event) => { event.currentTarget.style.display = "none"; }}
                   />
                 ) : (
                   <div className="avatar avatar--placeholder performer-detail-hero__avatar">
@@ -412,6 +413,7 @@ export function SubscriptionPage({
                           src={scene.imageUrl}
                           alt={scene.title || scene.code || "scene"}
                           loading="lazy"
+                          onError={(event) => { event.currentTarget.style.display = "none"; }}
                           className="performer-scene-card__image"
                         />
                       ) : (
@@ -634,7 +636,7 @@ export function SubscriptionPage({
               onClick={() => onOpenPerformer(performer.id)}
             >
               {imageURL ? (
-                <img className="avatar avatar--image" src={imageURL} alt={performer.name} loading="lazy" />
+                <img className="avatar avatar--image" src={imageURL} alt={performer.name} loading="lazy" onError={(event) => { event.currentTarget.style.display = "none"; }} />
               ) : (
                 <div className="avatar avatar--placeholder">{performerInitials(performer.name)}</div>
               )}

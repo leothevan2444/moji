@@ -20,6 +20,7 @@ export function performerInitials(name: string) {
 export function performerImageURL(imagePath?: string | null, stashURL?: string | null) {
   if (!imagePath) return null;
   try {
+    if (imagePath.startsWith("/api/images/")) return imagePath;
     if (/^https?:\/\//i.test(imagePath)) {
       return imagePath;
     }

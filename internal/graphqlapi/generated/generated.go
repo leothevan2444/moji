@@ -118,6 +118,20 @@ type ComplexityRoot struct {
 		Ok      func(childComplexity int) int
 	}
 
+	ImageCacheSettings struct {
+		Enabled       func(childComplexity int) int
+		MaxSizeMb     func(childComplexity int) int
+		RetentionDays func(childComplexity int) int
+	}
+
+	ImageCacheStatus struct {
+		CacheDirectory func(childComplexity int) int
+		EntryCount     func(childComplexity int) int
+		LastCleanupAt  func(childComplexity int) int
+		LastError      func(childComplexity int) int
+		UsedBytes      func(childComplexity int) int
+	}
+
 	IndexerPreferenceRule struct {
 		TrackerIds func(childComplexity int) int
 	}
@@ -193,6 +207,7 @@ type ComplexityRoot struct {
 
 	Mutation struct {
 		AddTorrent                    func(childComplexity int, input model.QBittorrentAddInput) int
+		ClearImageCache               func(childComplexity int) int
 		DeleteTask                    func(childComplexity int, id string) int
 		DownloadMedia                 func(childComplexity int, input model.DownloadMediaInput) int
 		QbittorrentAdd                func(childComplexity int, input model.QBittorrentAddInput) int
@@ -344,6 +359,7 @@ type ComplexityRoot struct {
 
 	SettingsStatus struct {
 		Automation              func(childComplexity int) int
+		ImageCache              func(childComplexity int) int
 		Ingest                  func(childComplexity int) int
 		Jackett                 func(childComplexity int) int
 		JackettStats            func(childComplexity int) int
@@ -510,6 +526,7 @@ type ComplexityRoot struct {
 	}
 
 	SystemSettings struct {
+		ImageCache       func(childComplexity int) int
 		TaskDeletePolicy func(childComplexity int) int
 	}
 
@@ -609,6 +626,7 @@ type MutationResolver interface {
 	UpdateAutomationSettings(ctx context.Context, input model.UpdateAutomationSettingsInput) (*model.Settings, error)
 	UpdateSystemSettings(ctx context.Context, input model.UpdateSystemSettingsInput) (*model.Settings, error)
 	RefreshSubscriptionStashBoxes(ctx context.Context) (*model.Settings, error)
+	ClearImageCache(ctx context.Context) (*model.ImageCacheStatus, error)
 	StashMetadataScan(ctx context.Context, input model.StashMetadataScanInput) (string, error)
 	SubscribePerformer(ctx context.Context, stashPerformerID string) (*model.SubscribedPerformer, error)
 	UnsubscribePerformer(ctx context.Context, stashPerformerID string) (bool, error)
@@ -972,6 +990,62 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.Health.Ok(childComplexity), true
 
+	case "ImageCacheSettings.enabled":
+		if e.complexity.ImageCacheSettings.Enabled == nil {
+			break
+		}
+
+		return e.complexity.ImageCacheSettings.Enabled(childComplexity), true
+
+	case "ImageCacheSettings.maxSizeMb":
+		if e.complexity.ImageCacheSettings.MaxSizeMb == nil {
+			break
+		}
+
+		return e.complexity.ImageCacheSettings.MaxSizeMb(childComplexity), true
+
+	case "ImageCacheSettings.retentionDays":
+		if e.complexity.ImageCacheSettings.RetentionDays == nil {
+			break
+		}
+
+		return e.complexity.ImageCacheSettings.RetentionDays(childComplexity), true
+
+	case "ImageCacheStatus.cacheDirectory":
+		if e.complexity.ImageCacheStatus.CacheDirectory == nil {
+			break
+		}
+
+		return e.complexity.ImageCacheStatus.CacheDirectory(childComplexity), true
+
+	case "ImageCacheStatus.entryCount":
+		if e.complexity.ImageCacheStatus.EntryCount == nil {
+			break
+		}
+
+		return e.complexity.ImageCacheStatus.EntryCount(childComplexity), true
+
+	case "ImageCacheStatus.lastCleanupAt":
+		if e.complexity.ImageCacheStatus.LastCleanupAt == nil {
+			break
+		}
+
+		return e.complexity.ImageCacheStatus.LastCleanupAt(childComplexity), true
+
+	case "ImageCacheStatus.lastError":
+		if e.complexity.ImageCacheStatus.LastError == nil {
+			break
+		}
+
+		return e.complexity.ImageCacheStatus.LastError(childComplexity), true
+
+	case "ImageCacheStatus.usedBytes":
+		if e.complexity.ImageCacheStatus.UsedBytes == nil {
+			break
+		}
+
+		return e.complexity.ImageCacheStatus.UsedBytes(childComplexity), true
+
 	case "IndexerPreferenceRule.trackerIds":
 		if e.complexity.IndexerPreferenceRule.TrackerIds == nil {
 			break
@@ -1284,6 +1358,13 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.Mutation.AddTorrent(childComplexity, args["input"].(model.QBittorrentAddInput)), true
+
+	case "Mutation.clearImageCache":
+		if e.complexity.Mutation.ClearImageCache == nil {
+			break
+		}
+
+		return e.complexity.Mutation.ClearImageCache(childComplexity), true
 
 	case "Mutation.deleteTask":
 		if e.complexity.Mutation.DeleteTask == nil {
@@ -2172,6 +2253,13 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.SettingsStatus.Automation(childComplexity), true
 
+	case "SettingsStatus.imageCache":
+		if e.complexity.SettingsStatus.ImageCache == nil {
+			break
+		}
+
+		return e.complexity.SettingsStatus.ImageCache(childComplexity), true
+
 	case "SettingsStatus.ingest":
 		if e.complexity.SettingsStatus.Ingest == nil {
 			break
@@ -2998,6 +3086,13 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.SubscriptionStatus.StashBoxesLoaded(childComplexity), true
 
+	case "SystemSettings.imageCache":
+		if e.complexity.SystemSettings.ImageCache == nil {
+			break
+		}
+
+		return e.complexity.SystemSettings.ImageCache(childComplexity), true
+
 	case "SystemSettings.taskDeletePolicy":
 		if e.complexity.SystemSettings.TaskDeletePolicy == nil {
 			break
@@ -3388,6 +3483,7 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 		ec.unmarshalInputDiscoverScenesInput,
 		ec.unmarshalInputDownloadMediaInput,
 		ec.unmarshalInputDownloadsIngestSettingsInput,
+		ec.unmarshalInputImageCacheSettingsInput,
 		ec.unmarshalInputIndexerPreferenceRuleInput,
 		ec.unmarshalInputJackettSearchInput,
 		ec.unmarshalInputLibraryIngestSettingsInput,
@@ -3712,6 +3808,9 @@ extend type Mutation {
 
   "Re-fetch the Stash-Box list from the configured Stash server. The updated list and load status are reflected in the returned Settings snapshot."
   refreshSubscriptionStashBoxes: Settings!
+
+  "Delete cached image files while preserving registered proxy keys"
+  clearImageCache: ImageCacheStatus!
 }
 
 type Settings {
@@ -3730,6 +3829,7 @@ type SettingsStatus {
   automation: AutomationStatus!
   subscription: SubscriptionStatus!
   ingest: IngestStatus!
+  imageCache: ImageCacheStatus!
   stashLibraries: [StashLibrary!]!
   stashLibrariesLoadError: String
 
@@ -3986,6 +4086,21 @@ enum TaskDeletePolicy {
 
 type SystemSettings {
   taskDeletePolicy: TaskDeletePolicy!
+  imageCache: ImageCacheSettings!
+}
+
+type ImageCacheSettings {
+  enabled: Boolean!
+  maxSizeMb: Int!
+  retentionDays: Int!
+}
+
+type ImageCacheStatus {
+  usedBytes: Long!
+  entryCount: Int!
+  cacheDirectory: String!
+  lastCleanupAt: String
+  lastError: String
 }
 
 type ServiceStatus {
@@ -4124,6 +4239,13 @@ input SubscriptionReleasePolicyInput {
 
 input UpdateSystemSettingsInput {
   taskDeletePolicy: TaskDeletePolicy!
+  imageCache: ImageCacheSettingsInput
+}
+
+input ImageCacheSettingsInput {
+  enabled: Boolean!
+  maxSizeMb: Int!
+  retentionDays: Int!
 }
 `, BuiltIn: false},
 	{Name: "../../../graphql/moji/types/stash.graphql", Input: `extend type Query {
@@ -7705,6 +7827,352 @@ func (ec *executionContext) fieldContext_Health_message(_ context.Context, field
 	return fc, nil
 }
 
+func (ec *executionContext) _ImageCacheSettings_enabled(ctx context.Context, field graphql.CollectedField, obj *model.ImageCacheSettings) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_ImageCacheSettings_enabled(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Enabled, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(bool)
+	fc.Result = res
+	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_ImageCacheSettings_enabled(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ImageCacheSettings",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ImageCacheSettings_maxSizeMb(ctx context.Context, field graphql.CollectedField, obj *model.ImageCacheSettings) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_ImageCacheSettings_maxSizeMb(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.MaxSizeMb, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int)
+	fc.Result = res
+	return ec.marshalNInt2int(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_ImageCacheSettings_maxSizeMb(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ImageCacheSettings",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ImageCacheSettings_retentionDays(ctx context.Context, field graphql.CollectedField, obj *model.ImageCacheSettings) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_ImageCacheSettings_retentionDays(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.RetentionDays, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int)
+	fc.Result = res
+	return ec.marshalNInt2int(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_ImageCacheSettings_retentionDays(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ImageCacheSettings",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ImageCacheStatus_usedBytes(ctx context.Context, field graphql.CollectedField, obj *model.ImageCacheStatus) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_ImageCacheStatus_usedBytes(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.UsedBytes, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int64)
+	fc.Result = res
+	return ec.marshalNLong2int64(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_ImageCacheStatus_usedBytes(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ImageCacheStatus",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Long does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ImageCacheStatus_entryCount(ctx context.Context, field graphql.CollectedField, obj *model.ImageCacheStatus) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_ImageCacheStatus_entryCount(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.EntryCount, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int)
+	fc.Result = res
+	return ec.marshalNInt2int(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_ImageCacheStatus_entryCount(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ImageCacheStatus",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ImageCacheStatus_cacheDirectory(ctx context.Context, field graphql.CollectedField, obj *model.ImageCacheStatus) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_ImageCacheStatus_cacheDirectory(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.CacheDirectory, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_ImageCacheStatus_cacheDirectory(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ImageCacheStatus",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ImageCacheStatus_lastCleanupAt(ctx context.Context, field graphql.CollectedField, obj *model.ImageCacheStatus) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_ImageCacheStatus_lastCleanupAt(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.LastCleanupAt, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*string)
+	fc.Result = res
+	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_ImageCacheStatus_lastCleanupAt(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ImageCacheStatus",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ImageCacheStatus_lastError(ctx context.Context, field graphql.CollectedField, obj *model.ImageCacheStatus) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_ImageCacheStatus_lastError(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.LastError, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*string)
+	fc.Result = res
+	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_ImageCacheStatus_lastError(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ImageCacheStatus",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _IndexerPreferenceRule_trackerIds(ctx context.Context, field graphql.CollectedField, obj *model.IndexerPreferenceRule) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_IndexerPreferenceRule_trackerIds(ctx, field)
 	if err != nil {
@@ -11195,6 +11663,62 @@ func (ec *executionContext) fieldContext_Mutation_refreshSubscriptionStashBoxes(
 	return fc, nil
 }
 
+func (ec *executionContext) _Mutation_clearImageCache(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Mutation_clearImageCache(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().ClearImageCache(rctx)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*model.ImageCacheStatus)
+	fc.Result = res
+	return ec.marshalNImageCacheStatus2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐImageCacheStatus(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Mutation_clearImageCache(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "usedBytes":
+				return ec.fieldContext_ImageCacheStatus_usedBytes(ctx, field)
+			case "entryCount":
+				return ec.fieldContext_ImageCacheStatus_entryCount(ctx, field)
+			case "cacheDirectory":
+				return ec.fieldContext_ImageCacheStatus_cacheDirectory(ctx, field)
+			case "lastCleanupAt":
+				return ec.fieldContext_ImageCacheStatus_lastCleanupAt(ctx, field)
+			case "lastError":
+				return ec.fieldContext_ImageCacheStatus_lastError(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type ImageCacheStatus", field.Name)
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _Mutation_stashMetadataScan(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_Mutation_stashMetadataScan(ctx, field)
 	if err != nil {
@@ -14092,6 +14616,8 @@ func (ec *executionContext) fieldContext_Query_settingsStatus(_ context.Context,
 				return ec.fieldContext_SettingsStatus_subscription(ctx, field)
 			case "ingest":
 				return ec.fieldContext_SettingsStatus_ingest(ctx, field)
+			case "imageCache":
+				return ec.fieldContext_SettingsStatus_imageCache(ctx, field)
 			case "stashLibraries":
 				return ec.fieldContext_SettingsStatus_stashLibraries(ctx, field)
 			case "stashLibrariesLoadError":
@@ -16105,6 +16631,8 @@ func (ec *executionContext) fieldContext_Settings_system(_ context.Context, fiel
 			switch field.Name {
 			case "taskDeletePolicy":
 				return ec.fieldContext_SystemSettings_taskDeletePolicy(ctx, field)
+			case "imageCache":
+				return ec.fieldContext_SystemSettings_imageCache(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type SystemSettings", field.Name)
 		},
@@ -16411,6 +16939,62 @@ func (ec *executionContext) fieldContext_SettingsStatus_ingest(_ context.Context
 				return ec.fieldContext_IngestStatus_configured(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type IngestStatus", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _SettingsStatus_imageCache(ctx context.Context, field graphql.CollectedField, obj *model.SettingsStatus) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_SettingsStatus_imageCache(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.ImageCache, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*model.ImageCacheStatus)
+	fc.Result = res
+	return ec.marshalNImageCacheStatus2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐImageCacheStatus(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_SettingsStatus_imageCache(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "SettingsStatus",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "usedBytes":
+				return ec.fieldContext_ImageCacheStatus_usedBytes(ctx, field)
+			case "entryCount":
+				return ec.fieldContext_ImageCacheStatus_entryCount(ctx, field)
+			case "cacheDirectory":
+				return ec.fieldContext_ImageCacheStatus_cacheDirectory(ctx, field)
+			case "lastCleanupAt":
+				return ec.fieldContext_ImageCacheStatus_lastCleanupAt(ctx, field)
+			case "lastError":
+				return ec.fieldContext_ImageCacheStatus_lastError(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type ImageCacheStatus", field.Name)
 		},
 	}
 	return fc, nil
@@ -21538,6 +22122,58 @@ func (ec *executionContext) fieldContext_SystemSettings_taskDeletePolicy(_ conte
 	return fc, nil
 }
 
+func (ec *executionContext) _SystemSettings_imageCache(ctx context.Context, field graphql.CollectedField, obj *model.SystemSettings) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_SystemSettings_imageCache(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.ImageCache, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*model.ImageCacheSettings)
+	fc.Result = res
+	return ec.marshalNImageCacheSettings2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐImageCacheSettings(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_SystemSettings_imageCache(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "SystemSettings",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "enabled":
+				return ec.fieldContext_ImageCacheSettings_enabled(ctx, field)
+			case "maxSizeMb":
+				return ec.fieldContext_ImageCacheSettings_maxSizeMb(ctx, field)
+			case "retentionDays":
+				return ec.fieldContext_ImageCacheSettings_retentionDays(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type ImageCacheSettings", field.Name)
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _Task_id(ctx context.Context, field graphql.CollectedField, obj *model.Task) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_Task_id(ctx, field)
 	if err != nil {
@@ -26040,6 +26676,47 @@ func (ec *executionContext) unmarshalInputDownloadsIngestSettingsInput(ctx conte
 	return it, nil
 }
 
+func (ec *executionContext) unmarshalInputImageCacheSettingsInput(ctx context.Context, obj any) (model.ImageCacheSettingsInput, error) {
+	var it model.ImageCacheSettingsInput
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"enabled", "maxSizeMb", "retentionDays"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "enabled":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("enabled"))
+			data, err := ec.unmarshalNBoolean2bool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Enabled = data
+		case "maxSizeMb":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("maxSizeMb"))
+			data, err := ec.unmarshalNInt2int(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.MaxSizeMb = data
+		case "retentionDays":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("retentionDays"))
+			data, err := ec.unmarshalNInt2int(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.RetentionDays = data
+		}
+	}
+
+	return it, nil
+}
+
 func (ec *executionContext) unmarshalInputIndexerPreferenceRuleInput(ctx context.Context, obj any) (model.IndexerPreferenceRuleInput, error) {
 	var it model.IndexerPreferenceRuleInput
 	asMap := map[string]any{}
@@ -27327,7 +28004,7 @@ func (ec *executionContext) unmarshalInputUpdateSystemSettingsInput(ctx context.
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"taskDeletePolicy"}
+	fieldsInOrder := [...]string{"taskDeletePolicy", "imageCache"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -27341,6 +28018,13 @@ func (ec *executionContext) unmarshalInputUpdateSystemSettingsInput(ctx context.
 				return it, err
 			}
 			it.TaskDeletePolicy = data
+		case "imageCache":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("imageCache"))
+			data, err := ec.unmarshalOImageCacheSettingsInput2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐImageCacheSettingsInput(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ImageCache = data
 		}
 	}
 
@@ -27842,6 +28526,108 @@ func (ec *executionContext) _Health(ctx context.Context, sel ast.SelectionSet, o
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var imageCacheSettingsImplementors = []string{"ImageCacheSettings"}
+
+func (ec *executionContext) _ImageCacheSettings(ctx context.Context, sel ast.SelectionSet, obj *model.ImageCacheSettings) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, imageCacheSettingsImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("ImageCacheSettings")
+		case "enabled":
+			out.Values[i] = ec._ImageCacheSettings_enabled(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "maxSizeMb":
+			out.Values[i] = ec._ImageCacheSettings_maxSizeMb(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "retentionDays":
+			out.Values[i] = ec._ImageCacheSettings_retentionDays(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var imageCacheStatusImplementors = []string{"ImageCacheStatus"}
+
+func (ec *executionContext) _ImageCacheStatus(ctx context.Context, sel ast.SelectionSet, obj *model.ImageCacheStatus) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, imageCacheStatusImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("ImageCacheStatus")
+		case "usedBytes":
+			out.Values[i] = ec._ImageCacheStatus_usedBytes(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "entryCount":
+			out.Values[i] = ec._ImageCacheStatus_entryCount(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "cacheDirectory":
+			out.Values[i] = ec._ImageCacheStatus_cacheDirectory(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "lastCleanupAt":
+			out.Values[i] = ec._ImageCacheStatus_lastCleanupAt(ctx, field, obj)
+		case "lastError":
+			out.Values[i] = ec._ImageCacheStatus_lastError(ctx, field, obj)
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -28542,6 +29328,13 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 		case "refreshSubscriptionStashBoxes":
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
 				return ec._Mutation_refreshSubscriptionStashBoxes(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "clearImageCache":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_clearImageCache(ctx, field)
 			})
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
@@ -29864,6 +30657,11 @@ func (ec *executionContext) _SettingsStatus(ctx context.Context, sel ast.Selecti
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
+		case "imageCache":
+			out.Values[i] = ec._SettingsStatus_imageCache(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
 		case "stashLibraries":
 			out.Values[i] = ec._SettingsStatus_stashLibraries(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
@@ -30867,6 +31665,11 @@ func (ec *executionContext) _SystemSettings(ctx context.Context, sel ast.Selecti
 			out.Values[i] = graphql.MarshalString("SystemSettings")
 		case "taskDeletePolicy":
 			out.Values[i] = ec._SystemSettings_taskDeletePolicy(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "imageCache":
+			out.Values[i] = ec._SystemSettings_imageCache(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
@@ -31912,6 +32715,30 @@ func (ec *executionContext) marshalNID2string(ctx context.Context, sel ast.Selec
 		}
 	}
 	return res
+}
+
+func (ec *executionContext) marshalNImageCacheSettings2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐImageCacheSettings(ctx context.Context, sel ast.SelectionSet, v *model.ImageCacheSettings) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._ImageCacheSettings(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNImageCacheStatus2githubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐImageCacheStatus(ctx context.Context, sel ast.SelectionSet, v model.ImageCacheStatus) graphql.Marshaler {
+	return ec._ImageCacheStatus(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNImageCacheStatus2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐImageCacheStatus(ctx context.Context, sel ast.SelectionSet, v *model.ImageCacheStatus) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._ImageCacheStatus(ctx, sel, v)
 }
 
 func (ec *executionContext) marshalNIndexerPreferenceRule2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐIndexerPreferenceRule(ctx context.Context, sel ast.SelectionSet, v *model.IndexerPreferenceRule) graphql.Marshaler {
@@ -33925,6 +34752,14 @@ func (ec *executionContext) marshalOID2ᚖstring(ctx context.Context, sel ast.Se
 	_ = ctx
 	res := graphql.MarshalID(*v)
 	return res
+}
+
+func (ec *executionContext) unmarshalOImageCacheSettingsInput2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐImageCacheSettingsInput(ctx context.Context, v any) (*model.ImageCacheSettingsInput, error) {
+	if v == nil {
+		return nil, nil
+	}
+	res, err := ec.unmarshalInputImageCacheSettingsInput(ctx, v)
+	return &res, graphql.ErrorOnPath(ctx, err)
 }
 
 func (ec *executionContext) unmarshalOIndexerPreferenceRuleInput2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐIndexerPreferenceRuleInput(ctx context.Context, v any) (*model.IndexerPreferenceRuleInput, error) {

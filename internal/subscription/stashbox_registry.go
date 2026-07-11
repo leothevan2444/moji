@@ -152,6 +152,16 @@ func (r *stashboxRegistry) Endpoints() []StashBoxEndpoint {
 	return out
 }
 
+func (r *stashboxRegistry) APIKey(endpoint string) string {
+	if r == nil {
+		return ""
+	}
+	key := normalizeStashBoxEndpoint(endpoint)
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+	return r.specs[key].APIKey
+}
+
 // normalizeStashBoxEndpoint trims surrounding whitespace and lowercases the
 // endpoint so equivalent URLs (different trailing slashes, case in the host,
 // etc.) map to the same registry entry.

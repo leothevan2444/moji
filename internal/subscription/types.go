@@ -103,6 +103,7 @@ type PerformerScene struct {
 	Performers          []PerformerScenePerson
 	Tags                []PerformerSceneTag
 	ImageURL            string
+	ImageSource         SceneSource
 	URL                 string
 	InLibrary           bool
 	MatchedStashSceneID string

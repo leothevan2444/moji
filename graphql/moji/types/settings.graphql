@@ -27,6 +27,9 @@ extend type Mutation {
 
   "Re-fetch the Stash-Box list from the configured Stash server. The updated list and load status are reflected in the returned Settings snapshot."
   refreshSubscriptionStashBoxes: Settings!
+
+  "Delete cached image files while preserving registered proxy keys"
+  clearImageCache: ImageCacheStatus!
 }
 
 type Settings {
@@ -45,6 +48,7 @@ type SettingsStatus {
   automation: AutomationStatus!
   subscription: SubscriptionStatus!
   ingest: IngestStatus!
+  imageCache: ImageCacheStatus!
   stashLibraries: [StashLibrary!]!
   stashLibrariesLoadError: String
 
@@ -301,6 +305,21 @@ enum TaskDeletePolicy {
 
 type SystemSettings {
   taskDeletePolicy: TaskDeletePolicy!
+  imageCache: ImageCacheSettings!
+}
+
+type ImageCacheSettings {
+  enabled: Boolean!
+  maxSizeMb: Int!
+  retentionDays: Int!
+}
+
+type ImageCacheStatus {
+  usedBytes: Long!
+  entryCount: Int!
+  cacheDirectory: String!
+  lastCleanupAt: String
+  lastError: String
 }
 
 type ServiceStatus {
@@ -439,4 +458,11 @@ input SubscriptionReleasePolicyInput {
 
 input UpdateSystemSettingsInput {
   taskDeletePolicy: TaskDeletePolicy!
+  imageCache: ImageCacheSettingsInput
+}
+
+input ImageCacheSettingsInput {
+  enabled: Boolean!
+  maxSizeMb: Int!
+  retentionDays: Int!
 }

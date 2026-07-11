@@ -12,6 +12,7 @@ docs/agent_guidence
 moji.log
 moji.log.*
 moji.db*
+image-cache/
 web/node_modules/
 web/dist/
 web/*.tsbuildinfo

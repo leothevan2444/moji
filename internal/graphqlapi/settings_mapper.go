@@ -4,8 +4,23 @@ import (
 	"time"
 
 	"github.com/leothevan2444/moji/internal/graphqlapi/model"
+	"github.com/leothevan2444/moji/internal/imagecache"
 	"github.com/leothevan2444/moji/internal/stats"
 )
+
+func imageCacheStatusToModel(status imagecache.Status) *model.ImageCacheStatus {
+	var cleanup *string
+	if status.LastCleanupAt != nil {
+		v := status.LastCleanupAt.UTC().Format(time.RFC3339)
+		cleanup = &v
+	}
+	var lastErr *string
+	if status.LastError != "" {
+		v := status.LastError
+		lastErr = &v
+	}
+	return &model.ImageCacheStatus{UsedBytes: status.UsedBytes, EntryCount: status.EntryCount, CacheDirectory: status.CacheDirectory, LastCleanupAt: cleanup, LastError: lastErr}
+}
 
 func subscriptionStashBoxesToModel(items []StashBoxEndpointSnapshot) []*model.StashBoxEndpoint {
 	if len(items) == 0 {
@@ -53,7 +68,7 @@ func settingsSnapshotToModel(snapshot *SettingsSnapshot, appVersion string) *mod
 			Jackett:     &model.JackettSettings{},
 			Qbittorrent: &model.QBittorrentSettings{},
 			Automation:  &model.AutomationSettings{},
-			System:      &model.SystemSettings{},
+			System:      &model.SystemSettings{ImageCache: &model.ImageCacheSettings{}},
 		}
 	}
 
@@ -106,6 +121,7 @@ func settingsSnapshotToModel(snapshot *SettingsSnapshot, appVersion string) *mod
 		},
 		System: &model.SystemSettings{
 			TaskDeletePolicy: model.TaskDeletePolicy(snapshot.System.TaskDeletePolicy),
+			ImageCache:       &model.ImageCacheSettings{Enabled: snapshot.System.ImageCache.Enabled, MaxSizeMb: snapshot.System.ImageCache.MaxSizeMB, RetentionDays: snapshot.System.ImageCache.RetentionDays},
 		},
 	}
 }

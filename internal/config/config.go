@@ -207,6 +207,44 @@ func NormalizeTaskDeletePolicy(value string) TaskDeletePolicy {
 
 type SystemConfig struct {
 	TaskDeletePolicy TaskDeletePolicy `yaml:"task_delete_policy"`
+	ImageCache       ImageCacheConfig `yaml:"image_cache"`
+}
+
+type ImageCacheConfig struct {
+	Enabled       *bool `yaml:"enabled,omitempty"`
+	MaxSizeMB     int   `yaml:"max_size_mb"`
+	RetentionDays int   `yaml:"retention_days"`
+}
+
+func DefaultImageCacheConfig() ImageCacheConfig {
+	enabled := true
+	return ImageCacheConfig{Enabled: &enabled, MaxSizeMB: 1024, RetentionDays: 30}
+}
+func (c ImageCacheConfig) EffectiveEnabled() bool { return c.Enabled == nil || *c.Enabled }
+func (c ImageCacheConfig) Normalize() ImageCacheConfig {
+	if c.Enabled == nil {
+		v := true
+		c.Enabled = &v
+	}
+	if c.MaxSizeMB == 0 {
+		c.MaxSizeMB = 1024
+	}
+	if c.MaxSizeMB < 64 {
+		c.MaxSizeMB = 64
+	}
+	if c.MaxSizeMB > 20480 {
+		c.MaxSizeMB = 20480
+	}
+	if c.RetentionDays == 0 {
+		c.RetentionDays = 30
+	}
+	if c.RetentionDays < 1 {
+		c.RetentionDays = 1
+	}
+	if c.RetentionDays > 365 {
+		c.RetentionDays = 365
+	}
+	return c
 }
 
 func (s SystemConfig) EffectiveTaskDeletePolicy() TaskDeletePolicy {
@@ -849,6 +887,7 @@ func LoadFromPath(path string) (*Config, error) {
 	}
 	config.Connection.Stash.normalize()
 	config.System.TaskDeletePolicy = config.System.EffectiveTaskDeletePolicy()
+	config.System.ImageCache = config.System.ImageCache.Normalize()
 	config.Automation.StashBoxEndpoints = cleanStrings(config.Automation.StashBoxEndpoints)
 	config.Automation.SubscriptionReleasePolicy = config.Automation.SubscriptionReleasePolicy.Effective()
 	if err := config.Automation.TorrentSelection.Validate(); err != nil {

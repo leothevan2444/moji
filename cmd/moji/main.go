@@ -19,6 +19,7 @@ import (
 	"github.com/leothevan2444/moji/internal/controller/api"
 	"github.com/leothevan2444/moji/internal/graphqlapi"
 	"github.com/leothevan2444/moji/internal/graphqlapi/generated"
+	"github.com/leothevan2444/moji/internal/imagecache"
 	"github.com/leothevan2444/moji/internal/logging"
 	"github.com/leothevan2444/moji/internal/stashsync"
 	"github.com/leothevan2444/moji/internal/stats"
@@ -126,6 +127,17 @@ func newHTTPHandler(cfg *config.Config, version string) http.Handler {
 }
 
 func newHTTPRuntime(cfg *config.Config, version string, configStore *config.Store) (http.Handler, graphqlapi.TaskRuntimeService, graphqlapi.StashService, graphqlapi.SubscriptionService, *stats.Collector) {
+	imageService, err := imagecache.New(runtimeDatabasePath(), "image-cache", func() imagecache.Config {
+		current := cfg.System.ImageCache.Normalize()
+		if configStore != nil {
+			current = configStore.Config().System.ImageCache.Normalize()
+		}
+		return imagecache.Config{Enabled: current.EffectiveEnabled(), MaxSizeMB: current.MaxSizeMB, RetentionDays: current.RetentionDays}
+	})
+	if err != nil {
+		logging.Fatalf("configure image cache: %v", err)
+	}
+	imageService.StartCleanup(context.Background())
 	jackettTracker := tracker.NewJackettService(configureJackettConfigProvider(configStore, cfg))
 	{
 		current := storeJackett(cfg, configStore)
@@ -140,7 +152,7 @@ func newHTTPRuntime(cfg *config.Config, version string, configStore *config.Stor
 	taskRuntimeService := configureTaskRuntime(cfg, configStore, jackettTracker, torrentClient, stashClient)
 	taskFlowService := configureTaskFlow(taskRuntimeService)
 	stashService := configureStashService(cfg, configStore, stashClient)
-	subscriptionService := configureSubscription(cfg, configStore, stashClient, taskRuntimeService, taskFlowService)
+	subscriptionService := configureSubscription(cfg, configStore, stashClient, taskRuntimeService, taskFlowService, imageService)
 	applySubscriptionOrder(cfg, subscriptionService)
 
 	statsCollector := stats.NewCollector(
@@ -157,6 +169,7 @@ func newHTTPRuntime(cfg *config.Config, version string, configStore *config.Stor
 	resolver.RuntimeSettings = buildSettingsSnapshot(cfg, version)
 	resolver.RuntimeStatus = buildSettingsStatusSnapshot(cfg, version, taskRuntimeService != nil, stashService != nil, stashClient, subscriptionService)
 	resolver.Stats = statsCollector
+	resolver.ImageCache = imageService
 	if configStore != nil {
 		resolver.SettingsEditor = newRuntimeSettingsEditor(configStore, version, taskRuntimeService != nil, stashService != nil, stashClient, subscriptionService)
 	}
@@ -164,6 +177,7 @@ func newHTTPRuntime(cfg *config.Config, version string, configStore *config.Stor
 
 	apiMux := http.NewServeMux()
 	apiHandler.Register(apiMux)
+	imageService.RegisterHandler(apiMux)
 	webHandler := webui.NewHandler("web/dist")
 
 	router := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -452,6 +466,7 @@ func buildSettingsSnapshot(cfg *config.Config, version string) *graphqlapi.Setti
 		},
 		System: graphqlapi.SystemSettingsSnapshot{
 			TaskDeletePolicy: string(cfg.System.EffectiveTaskDeletePolicy()),
+			ImageCache:       graphqlapi.ImageCacheSettingsSnapshot{Enabled: cfg.System.ImageCache.EffectiveEnabled(), MaxSizeMB: cfg.System.ImageCache.Normalize().MaxSizeMB, RetentionDays: cfg.System.ImageCache.Normalize().RetentionDays},
 		},
 	}
 }
@@ -760,7 +775,7 @@ func isIngestConfigured(cfg *config.Config) bool {
 	}
 }
 
-func configureSubscription(cfg *config.Config, configStore *config.Store, stashClient *stash.Client, taskRuntimeService graphqlapi.TaskRuntimeService, taskFlowService *taskflow.Service) graphqlapi.SubscriptionService {
+func configureSubscription(cfg *config.Config, configStore *config.Store, stashClient *stash.Client, taskRuntimeService graphqlapi.TaskRuntimeService, taskFlowService *taskflow.Service, imageService *imagecache.Service) graphqlapi.SubscriptionService {
 	if stashClient == nil {
 		logging.Infof("runtime: subscription service disabled because stash client is not available")
 		return nil
@@ -780,6 +795,7 @@ func configureSubscription(cfg *config.Config, configStore *config.Store, stashC
 		taskFlowService.SetDiscoveredSceneResolver(subscription.NewDiscoveredSceneResolver(registry))
 		service.SetTaskCreator(taskFlowService)
 	}
+	service.SetImageProxy(imageService, func() (string, string) { current := storeStash(cfg, configStore); return current.URL, current.APIKey })
 
 	refreshCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()

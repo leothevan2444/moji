@@ -130,9 +130,21 @@ query DashboardDocument {
     }
     system {
       taskDeletePolicy
+      imageCache {
+        enabled
+        maxSizeMb
+        retentionDays
+      }
     }
   }
   settingsStatus {
+    imageCache {
+      usedBytes
+      entryCount
+      cacheDirectory
+      lastCleanupAt
+      lastError
+    }
     stash {
       configured
       ready
