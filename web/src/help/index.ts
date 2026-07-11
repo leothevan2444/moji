@@ -19,18 +19,8 @@ import automationZh from "./zh/automation.md?raw";
 import systemZh from "./zh/system.md?raw";
 import troubleshootingZh from "./zh/troubleshooting.md?raw";
 
-export type HelpLanguage = "en" | "zh";
-export type HelpTopicId =
-  | "introduction"
-  | "first-setup"
-  | "home"
-  | "discover"
-  | "performers"
-  | "tasks"
-  | "connections-ingest"
-  | "automation"
-  | "system"
-  | "troubleshooting";
+import type { HelpLanguage, HelpTopicId } from "./types";
+export type { HelpLanguage, HelpTopicId } from "./types";
 
 export interface HelpTopic {
   id: HelpTopicId;

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { parseDiscoverSearchParams, parsePerformerSearchParams, parseTaskSearchParams, serializeTaskSearchParams } from "./searchParams";
+import { parseDiscoverSearchParams, parsePerformerSearchParams, parseTaskSearchParams, serializeDiscoverSearchParams, serializePerformerSearchParams, serializeTaskSearchParams } from "./searchParams";
 
 describe("task search params", () => {
   it("uses stable defaults and omits them when serializing", () => {
@@ -21,6 +21,11 @@ describe("performer search params", () => {
     expect(state.pageSize).toBe(24);
     expect(state.source).toBe("all");
   });
+
+  it("round trips shareable list and scene state", () => {
+    const state = parsePerformerSearchParams(new URLSearchParams("q=a&page=2&sceneQ=b&source=stashbox&library=not-in-library&scenePage=3"));
+    expect(parsePerformerSearchParams(serializePerformerSearchParams(state))).toEqual(state);
+  });
 });
 
 describe("discover search params", () => {
@@ -29,5 +34,10 @@ describe("discover search params", () => {
     expect(state.sort).toBe("relevance");
     expect(state.trackers).toEqual(["a", "b"]);
     expect(state.fastRules).toBe(true);
+  });
+
+  it("round trips canonical discovery state", () => {
+    const state = parseDiscoverSearchParams(new URLSearchParams("q=abc&source=jackett&sort=seeders-desc&page=2&trackers=b,a&fastRules=1&fileRules=0"));
+    expect(parseDiscoverSearchParams(serializeDiscoverSearchParams(state))).toEqual(state);
   });
 });

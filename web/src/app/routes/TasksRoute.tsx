@@ -19,6 +19,11 @@ const TaskDrawer = lazy(() => import("../../components/drawers/TaskDrawer").then
 const ConfirmDeleteDrawer = lazy(() => import("../../components/drawers/ConfirmDeleteDrawer").then((m) => ({ default: m.ConfirmDeleteDrawer })));
 const SourcingResolutionDrawer = lazy(() => import("../../components/drawers/SourcingResolutionDrawer").then((m) => ({ default: m.SourcingResolutionDrawer })));
 
+export function taskCloseTarget(state: unknown, searchParams: URLSearchParams) {
+  const background = (state as { backgroundLocation?: { pathname: string; search?: string } } | null)?.backgroundLocation;
+  return background ? `${background.pathname}${background.search ?? ""}` : `/tasks${searchParams.size ? `?${searchParams}` : ""}`;
+}
+
 export function Component() {
   const { taskId } = useParams();
   const location = useLocation();
@@ -50,8 +55,7 @@ export function Component() {
   const requery = () => refresh({ requestPolicy: "network-only" });
   const openTask = (id: string, resolve = false) => navigate(`/tasks/${encodeURIComponent(id)}${resolve ? "/resolve" : ""}`, { state: { backgroundLocation: location } });
   const closeTask = () => {
-    const background = (location.state as { backgroundLocation?: { pathname: string; search?: string } } | null)?.backgroundLocation;
-    navigate(background ? `${background.pathname}${background.search ?? ""}` : `/tasks${searchParams.size ? `?${searchParams}` : ""}`);
+    navigate(taskCloseTarget(location.state, searchParams));
   };
   const updateFilter = (patch: Partial<{ q: string; status: TaskStatusFilter; sort: TaskSortKey }>) => {
     setSearchParams(serializeTaskSearchParams({ ...filter, ...patch }));

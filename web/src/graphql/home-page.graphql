@@ -1,10 +1,7 @@
 query HomePageDocument {
   settings {
     stash {
-      configured
       url
-      apiKeyConfigured
-      apiKey
     }
     ingest {
       deliveryMode
@@ -21,117 +18,15 @@ query HomePageDocument {
       }
     }
     jackett {
-      configured
       url
-      apiKeyConfigured
-      apiKey
-      passwordConfigured
-      password
     }
     qbittorrent {
-      configured
       url
       username
-      usernameConfigured
-      passwordConfigured
-      password
       defaultSavePath
-      category
-      tags
-    }
-    automation {
-      taskProgressSyncIntervalSeconds
-      subscriptionPollIntervalHours
-      stashBoxEndpoints
-      subscriptionReleasePolicy {
-        soloBehavior
-        groupBehavior
-        compilationBehavior
-        maxGroupPerformerCount
-        releaseDateRange
-      }
-      torrentSelection {
-        enabled
-        inspectionCandidateLimit
-        fastRules {
-          type
-          enabled
-          publishDate {
-            direction
-          }
-          seeders {
-            direction
-          }
-          size {
-            direction
-          }
-          indexerPreference {
-            trackerIds
-          }
-          titleMatch {
-            clauses {
-              pattern
-              patternMode
-              effect
-            }
-          }
-          torrentFileNameMatch {
-            clauses {
-              pattern
-              patternMode
-              effect
-            }
-          }
-        }
-        torrentRules {
-          type
-          enabled
-          publishDate {
-            direction
-          }
-          seeders {
-            direction
-          }
-          size {
-            direction
-          }
-          indexerPreference {
-            trackerIds
-          }
-          titleMatch {
-            clauses {
-              pattern
-              patternMode
-              effect
-            }
-          }
-          torrentFileNameMatch {
-            clauses {
-              pattern
-              patternMode
-              effect
-            }
-          }
-        }
-      }
-    }
-    system {
-      taskDeletePolicy
-      imageCache {
-        enabled
-        maxSizeMb
-        retentionDays
-      }
     }
   }
   settingsStatus {
-    imageCache {
-      usedBytes
-      entryCount
-      cacheDirectory
-      lastCleanupAt
-      lastError
-    }
     stash {
       configured
       ready
@@ -144,25 +39,6 @@ query HomePageDocument {
       configured
       ready
     }
-    automation {
-      taskProgressSyncIntervalSeconds
-      taskProgressSyncEnabled
-      subscriptionPollIntervalHours
-      subscriptionPollEnabled
-    }
-    subscription {
-      stashBoxes {
-        name
-        endpoint
-        apiKeyConfigured
-      }
-      stashBoxesLoaded
-      stashBoxesLoadError
-    }
-    stashLibraries {
-      path
-    }
-    stashLibrariesLoadError
     ingest {
       configured
     }

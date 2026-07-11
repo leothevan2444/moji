@@ -5,8 +5,7 @@ import { Header } from "../components/layout/Header";
 import { ToastStack } from "../components/layout/ToastStack";
 import { useTheme } from "../hooks/useTheme";
 import { useToast } from "../hooks/useToast";
-import type { HelpTopicId } from "../help";
-import { HELP_TOPICS } from "../help";
+import type { HelpTopicId } from "../help/types";
 
 const HelpDrawer = lazy(() => import("../components/drawers/HelpDrawer").then((module) => ({ default: module.HelpDrawer })));
 
@@ -21,7 +20,7 @@ export function AppLayout() {
   const theme = useTheme();
   const { toasts, pushToast, dismissToast, copyText } = useToast();
   const [helpOpen, setHelpOpen] = useState(false);
-  const [helpTopicId, setHelpTopicId] = useState<HelpTopicId>(HELP_TOPICS[0].id);
+  const [helpTopicId, setHelpTopicId] = useState<HelpTopicId>("introduction");
   useEffect(() => {
     const path = location.pathname;
     document.title = path.startsWith("/tasks") ? "任务 · Moji" : path.startsWith("/performers") ? "演员 · Moji" : path.startsWith("/discover") ? "发现 · Moji" : path.startsWith("/settings") ? "设置 · Moji" : path === "/stats" ? "统计 · Moji" : "Moji";
