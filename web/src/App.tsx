@@ -58,7 +58,6 @@ const DiscoveryDrawer = lazy(() => import("./components/drawers/DiscoveryDrawer"
 const HelpDrawer = lazy(() => import("./components/drawers/HelpDrawer").then((module) => ({ default: module.HelpDrawer })));
 const SettingsDrawer = lazy(() => import("./components/drawers/SettingsDrawer").then((module) => ({ default: module.SettingsDrawer })));
 const SourcingResolutionDrawer = lazy(() => import("./components/drawers/SourcingResolutionDrawer").then((module) => ({ default: module.SourcingResolutionDrawer })));
-const StatsDrawer = lazy(() => import("./components/drawers/StatsDrawer").then((module) => ({ default: module.StatsDrawer })));
 const TaskDrawer = lazy(() => import("./components/drawers/TaskDrawer").then((module) => ({ default: module.TaskDrawer })));
 
 function RouteFallback() {
@@ -886,7 +885,6 @@ function App() {
 
   // ── Drawer metadata ─────────────────────────────────────────────────
   const drawerTitle = (() => {
-    if (displayedDrawer === "stats") return "运行概览";
     if (displayedDrawer === "settings") return "配置与系统";
     if (displayedDrawer === "help") return "Markdown 帮助";
     if (displayedDrawer === "discovery") return discoveryMode === "stashbox" ? "StashBox 搜索结果" : "Jackett 搜索结果";
@@ -1076,13 +1074,6 @@ function App() {
           </section>
         ) : null}
 
-        {pathname === "/stats" ? (
-          <section className="section-band">
-            <div className="band-head"><div><h2 tabIndex={-1}>运行概览</h2></div></div>
-            <StatsDrawer active={metrics.active} completed={metrics.completed} pendingScans={metrics.pendingScans} failed={metrics.failed} />
-          </section>
-        ) : null}
-
       </main>
 
       {displayedDrawer ? (
@@ -1092,15 +1083,6 @@ function App() {
           title={drawerTitle}
           onClose={closeDisplayedDrawer}
         >
-          {displayedDrawer === "stats" ? (
-            <StatsDrawer
-              active={metrics.active}
-              completed={metrics.completed}
-              pendingScans={metrics.pendingScans}
-              failed={metrics.failed}
-            />
-          ) : null}
-
           {displayedDrawer === "settings" ? (
             <SettingsDrawer
               settingsTab={settingsTab}

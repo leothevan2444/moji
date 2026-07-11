@@ -1,6 +1,7 @@
 import { Navigate, createBrowserRouter } from "react-router";
 import { AppShell } from "./AppShell";
 import { NotFoundPage } from "./NotFoundPage";
+import { AppLayout } from "./AppLayout";
 
 export const router = createBrowserRouter([
   { path: "/", element: <AppShell /> },
@@ -12,6 +13,11 @@ export const router = createBrowserRouter([
   { path: "/discover", element: <AppShell /> },
   { path: "/settings", element: <Navigate replace to="/settings/connections" /> },
   { path: "/settings/:section", element: <AppShell /> },
-  { path: "/stats", element: <AppShell /> },
+  {
+    element: <AppLayout />,
+    children: [
+      { path: "/stats", lazy: () => import("./routes/StatsRoute") }
+    ]
+  },
   { path: "*", element: <NotFoundPage /> }
 ]);
