@@ -5,6 +5,7 @@ import { SettingsDrawer } from "../../components/drawers/SettingsDrawer";
 import { SettingsPageDocumentDocument } from "../../graphql/generated/graphql";
 import type { SettingsTab } from "../../types";
 import type { AppOutletContext } from "../AppLayout";
+import "../../styles/settings.scss";
 
 const sectionToTab: Record<string, SettingsTab> = {
   connections: "连接",

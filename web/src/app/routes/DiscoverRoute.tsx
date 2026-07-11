@@ -17,6 +17,8 @@ import { DISCOVERY_PAGE_SIZE, DISCOVER_SORT_OPTIONS, JACKETT_SORT_OPTIONS } from
 import { DiscoverConfigDocumentDocument, DiscoverSortBy, JackettSortBy, type DiscoverScenesDocumentQuery, type SearchDocumentQuery } from "../../graphql/generated/graphql";
 import { describeQueryError } from "../../services/queryError";
 import type { AppOutletContext } from "../AppLayout";
+import "../../styles/filter-panel.scss";
+import "../../styles/discovery-toolbar.scss";
 
 const FAST_KEY = "moji.discovery.previewFastRules";
 const FILE_KEY = "moji.discovery.previewFileRules";
