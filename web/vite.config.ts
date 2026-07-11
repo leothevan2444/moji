@@ -7,6 +7,15 @@ export default defineConfig(({ mode }) => {
 
   return {
     plugins: [react()],
+    build: {
+      rollupOptions: {
+        output: {
+          manualChunks(id) {
+            if (id.includes("node_modules")) return "vendor";
+          }
+        }
+      }
+    },
     server: {
       port: 5173,
       proxy: {

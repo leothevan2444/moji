@@ -27,13 +27,14 @@ import {
  * Hook bundling all dashboard-level queries and the mutations that mutate
  * task state (add torrent, sync progress, trigger stash scans).
  */
-export function useDashboard() {
+export function useDashboard(enabled = true) {
   const [{ data, fetching, error }, refreshDashboard] = useQuery<
     DashboardDocumentQuery,
     DashboardDocumentQueryVariables
   >({
     query: DashboardDocumentDocument,
-    requestPolicy: "cache-and-network"
+    requestPolicy: "cache-and-network",
+    pause: !enabled
   });
 
   const [, addTorrent] = useMutation<

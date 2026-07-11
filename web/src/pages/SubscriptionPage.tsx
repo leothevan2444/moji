@@ -28,7 +28,6 @@ import {
   SceneSourceFilter,
   TaskStage,
   TaskStageStatus,
-  type DashboardDocumentQuery,
   type StashPerformerDetailQuery,
   type StashPerformerScenesQuery,
   type StashPerformersQuery,
@@ -41,8 +40,6 @@ type StashPerformerDetail = StashPerformerDetailQuery["stashPerformerDetail"];
 type StashPerformerScenePage = StashPerformerScenesQuery["stashPerformerScenes"];
 type StashPerformerSceneEntry = StashPerformerScenePage["items"][number];
 type SubscribedPerformerEntry = SubscribedPerformersQuery["subscribedPerformers"][number];
-type RuntimeSettings = NonNullable<DashboardDocumentQuery["settings"]>;
-
 function performerSceneTaskLabel(task: NonNullable<StashPerformerSceneEntry["mojiTask"]>) {
   if (task.stage === TaskStage.Downloading && task.progress > 0) {
     return `下载 ${Math.round(task.progress * 100)}%`;
@@ -66,7 +63,7 @@ function performerSceneSourceLabel(scene: StashPerformerSceneEntry) {
 }
 
 interface SubscriptionPageProps {
-  runtimeSettings: RuntimeSettings | null;
+  stashBaseURL: string | null;
   stashPerformerPage: StashPerformerPage | null;
   stashPerformers: StashPerformerEntry[];
   performerDetail: StashPerformerDetail | null;
@@ -118,7 +115,7 @@ interface SubscriptionPageProps {
 }
 
 export function SubscriptionPage({
-  runtimeSettings,
+  stashBaseURL,
   stashPerformerPage,
   stashPerformers,
   performerDetail,
@@ -177,7 +174,7 @@ export function SubscriptionPage({
     .filter((scene) => !scene.inLibrary && !scene.mojiTask && !pendingSceneKeys.includes(scene.key))
     .map((scene) => scene.key);
   const detailStashURL = performerDetail
-    ? stashPerformerURL(performerDetail.performer.id, runtimeSettings?.stash.url)
+    ? stashPerformerURL(performerDetail.performer.id, stashBaseURL)
     : null;
   const latestRelease = performerSubscription?.recentReleases[0] ?? null;
 
@@ -203,10 +200,10 @@ export function SubscriptionPage({
           <>
             <article className="performer-detail-card">
               <div className="performer-detail-hero">
-                {performerImageURL(performerDetail.performer.imagePath, runtimeSettings?.stash.url) ? (
+                {performerImageURL(performerDetail.performer.imagePath, stashBaseURL) ? (
                   <img
                     className="avatar avatar--image performer-detail-hero__avatar"
-                    src={performerImageURL(performerDetail.performer.imagePath, runtimeSettings?.stash.url) ?? ""}
+                    src={performerImageURL(performerDetail.performer.imagePath, stashBaseURL) ?? ""}
                     alt={performerDetail.performer.name}
                     loading="lazy"
                     onError={(event) => { event.currentTarget.style.display = "none"; }}
@@ -625,8 +622,8 @@ export function SubscriptionPage({
         {stashPerformers.map((performer, index) => {
           const subscriptionEntry = subscribedByID.get(performer.id) ?? null;
           const latestRelease = subscriptionEntry?.recentReleases[0] ?? null;
-          const imageURL = performerImageURL(performer.imagePath, runtimeSettings?.stash.url);
-          const stashURL = stashPerformerURL(performer.id, runtimeSettings?.stash.url);
+          const imageURL = performerImageURL(performer.imagePath, stashBaseURL);
+          const stashURL = stashPerformerURL(performer.id, stashBaseURL);
 
           return (
             <article

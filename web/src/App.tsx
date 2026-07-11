@@ -38,6 +38,8 @@ import {
   DiscoverSortBy,
   JackettSortBy,
   TaskDeletePolicy,
+  DiscoverConfigDocumentDocument,
+  PerformersConfigDocumentDocument,
   TaskDetailDocumentDocument,
   type TaskDetailDocumentQuery,
   type TaskDetailDocumentQueryVariables
@@ -243,7 +245,18 @@ function App() {
     syncTaskProgress,
     triggerTaskStashScan,
     triggerStashScans
-  } = useDashboard();
+  } = useDashboard(tab !== "演员" && tab !== "发现");
+
+  const [{ data: discoverConfigData }] = useQuery({
+    query: DiscoverConfigDocumentDocument,
+    pause: tab !== "发现",
+    requestPolicy: "cache-and-network"
+  });
+  const [{ data: performersConfigData }] = useQuery({
+    query: PerformersConfigDocumentDocument,
+    pause: tab !== "演员",
+    requestPolicy: "cache-and-network"
+  });
 
   const [{ data: taskDetailData, fetching: taskDetailFetching, error: taskDetailError }, refreshTaskDetail] = useQuery<
     TaskDetailDocumentQuery,
@@ -279,7 +292,7 @@ function App() {
   });
 
   const inspectionCandidateLimit = Number.parseInt(
-    String(data?.settings?.automation.torrentSelection.inspectionCandidateLimit ?? 5),
+    String(discoverConfigData?.settings.automation.torrentSelection.inspectionCandidateLimit ?? 5),
     10
   );
 
@@ -994,7 +1007,7 @@ function App() {
 
         {tab === "演员" ? (
           <SubscriptionPage
-            runtimeSettings={runtimeSettings}
+            stashBaseURL={performersConfigData?.settings.stash.url ?? null}
             stashPerformerPage={stashPerformerPage}
             stashPerformers={stashPerformers}
             subscribedPerformers={subscribedPerformers}

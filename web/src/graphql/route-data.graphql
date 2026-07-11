@@ -1,0 +1,17 @@
+query DiscoverConfigDocument {
+  settings {
+    automation {
+      torrentSelection {
+        inspectionCandidateLimit
+      }
+    }
+  }
+}
+
+query PerformersConfigDocument {
+  settings {
+    stash {
+      url
+    }
+  }
+}
