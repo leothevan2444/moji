@@ -3,7 +3,7 @@ import { useLocation, useNavigate, useOutletContext, useParams, useSearchParams 
 import { useQuery } from "urql";
 import { Drawer } from "../../components/layout/Drawer";
 import { TasksPage } from "../../pages/TasksPage";
-import { useDashboard } from "../../hooks/useDashboard";
+import { useTaskMutations } from "../../hooks/useTaskMutations";
 import { describeQueryError } from "../../services/queryError";
 import { parseTaskSearchParams, serializeTaskSearchParams } from "../searchParams";
 import { taskSummary, type TaskGroupKey } from "../../utils/taskUtils";
@@ -40,7 +40,7 @@ export function Component() {
     pause: !taskId,
     requestPolicy: "cache-and-network"
   });
-  const { deleteTask, retryTask, syncTaskProgress, triggerTaskStashScan, triggerStashScans } = useDashboard(false);
+  const { deleteTask, retryTask, syncTaskProgress, triggerTaskStashScan, triggerStashScans } = useTaskMutations();
   const tasks = data?.tasks ?? [];
   const activeTask = detailData?.task ?? (taskId ? tasks.find((task) => task.id === taskId) ?? null : null);
   const deleteTarget = confirmDelete ? tasks.find((task) => task.id === confirmDelete) ?? null : null;

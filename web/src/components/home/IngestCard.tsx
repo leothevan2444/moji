@@ -2,11 +2,11 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faArrowUpRightFromSquare } from "@fortawesome/free-solid-svg-icons";
 import { INGEST_BLOCKERS, deliveryModeGuide, deliveryModeLabel, transferActionLabel } from "../../utils";
 import type { SettingsTab } from "../../types";
-import type { DashboardDocumentQuery } from "../../graphql/generated/graphql";
+import type { HomePageDocumentQuery } from "../../graphql/generated/graphql";
 
-type Settings = NonNullable<DashboardDocumentQuery["settings"]>;
+type Settings = NonNullable<HomePageDocumentQuery["settings"]>;
 type IngestSettings = NonNullable<Settings["ingest"]>;
-type IngestStatus = NonNullable<DashboardDocumentQuery["settingsStatus"]["ingest"]>;
+type IngestStatus = NonNullable<HomePageDocumentQuery["settingsStatus"]["ingest"]>;
 
 interface IngestCardProps {
   ingest: IngestSettings | null;

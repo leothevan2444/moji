@@ -1,5 +1,3 @@
-import type { DashboardDocumentQuery } from "../graphql/generated/graphql";
-
 export function boolState(value: boolean, positive = "已配置", negative = "未配置") {
   return value ? positive : negative;
 }

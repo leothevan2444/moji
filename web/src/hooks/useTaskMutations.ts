@@ -1,7 +1,6 @@
-import { useMutation, useQuery } from "urql";
+import { useMutation } from "urql";
 import {
   AddTorrentDocumentDocument,
-  DashboardDocumentDocument,
   DeleteTaskDocumentDocument,
   RetryTaskDocumentDocument,
   SyncTaskProgressDocumentDocument,
@@ -9,8 +8,6 @@ import {
   TriggerTaskStashScanDocumentDocument,
   type AddTorrentDocumentMutation,
   type AddTorrentDocumentMutationVariables,
-  type DashboardDocumentQuery,
-  type DashboardDocumentQueryVariables,
   type DeleteTaskDocumentMutation,
   type DeleteTaskDocumentMutationVariables,
   type RetryTaskDocumentMutation,
@@ -27,16 +24,7 @@ import {
  * Hook bundling all dashboard-level queries and the mutations that mutate
  * task state (add torrent, sync progress, trigger stash scans).
  */
-export function useDashboard(enabled = true) {
-  const [{ data, fetching, error }, refreshDashboard] = useQuery<
-    DashboardDocumentQuery,
-    DashboardDocumentQueryVariables
-  >({
-    query: DashboardDocumentDocument,
-    requestPolicy: "cache-and-network",
-    pause: !enabled
-  });
-
+export function useTaskMutations() {
   const [, addTorrent] = useMutation<
     AddTorrentDocumentMutation,
     AddTorrentDocumentMutationVariables
@@ -68,10 +56,6 @@ export function useDashboard(enabled = true) {
   >(TriggerStashScansDocumentDocument);
 
   return {
-    data,
-    fetching,
-    error,
-    refreshDashboard,
     addTorrent,
     deleteTask,
     retryTask,

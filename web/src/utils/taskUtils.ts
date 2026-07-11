@@ -2,12 +2,12 @@
  * Task-related utility functions and types.
  */
 
-import type { DashboardDocumentQuery } from "../graphql/generated/graphql";
+import type { TasksOverviewDocumentQuery } from "../graphql/generated/graphql";
 import { deliveryModeLabel, transferActionLabel } from "./ingestUtils";
 
 // ── Re-usable type aliases ──────────────────────────────────────────
 
-export type DashboardTask = DashboardDocumentQuery["tasks"][number];
+export type DashboardTask = TasksOverviewDocumentQuery["tasks"][number];
 
 export type TaskGroupKey = "需处理" | "运行中" | "待入库" | "已完成";
 

@@ -1,5 +1,5 @@
 export { useToast } from "./useToast";
-export { useDashboard } from "./useDashboard";
+export { useTaskMutations } from "./useTaskMutations";
 export { useDiscoverScenes } from "./useDiscoverScenes";
 export { useJackettSearch } from "./useJackettSearch";
 export { usePreviewJackettSelection } from "./usePreviewJackettSelection";

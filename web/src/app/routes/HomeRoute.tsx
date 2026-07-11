@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useLocation, useNavigate, useOutletContext } from "react-router";
 import { useQuery } from "urql";
 import { HomePage } from "../../pages/HomePage";
-import { useDashboard } from "../../hooks/useDashboard";
+import { useTaskMutations } from "../../hooks/useTaskMutations";
 import { describeQueryError } from "../../services/queryError";
 import { taskSummary } from "../../utils/taskUtils";
 import type { SettingsTab } from "../../types";
@@ -24,7 +24,7 @@ export function Component() {
     query: HomePageDocumentDocument,
     requestPolicy: "cache-and-network"
   });
-  const { retryTask, triggerTaskStashScan } = useDashboard(false);
+  const { retryTask, triggerTaskStashScan } = useTaskMutations();
   const tasks = data?.tasks ?? [];
 
   const runTaskScan = async (taskId: string) => {

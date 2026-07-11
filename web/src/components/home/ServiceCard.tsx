@@ -3,14 +3,14 @@ import { faArrowUpRightFromSquare } from "@fortawesome/free-solid-svg-icons";
 import { formatBytesRate, formatDateTime, formatRelative } from "../../utils";
 import type { SettingsTab } from "../../types";
 import type {
-  DashboardDocumentQuery,
+  HomePageDocumentQuery,
   JackettStats,
   QBittorrentStats,
   StashStats
 } from "../../graphql/generated/graphql";
 
-type RuntimeSettings = NonNullable<DashboardDocumentQuery["settings"]>;
-type RuntimeStatus = NonNullable<DashboardDocumentQuery["settingsStatus"]>;
+type RuntimeSettings = NonNullable<HomePageDocumentQuery["settings"]>;
+type RuntimeStatus = NonNullable<HomePageDocumentQuery["settingsStatus"]>;
 
 interface ServiceCardProps {
   service: "stash" | "jackett" | "qbittorrent";

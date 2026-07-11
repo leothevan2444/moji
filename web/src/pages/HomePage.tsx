@@ -10,7 +10,7 @@ import type { SettingsTab } from "../types";
 
 // Stash 卡片的 KV 列表——只显示 URL（与服务可达性直接相关）。
 // ingest 模式/路径由新的 IngestCard 承载，避免数据源分散。
-function buildStashConfig(runtime: NonNullable<DashboardDocumentQuery["settings"]>) {
+function buildStashConfig(runtime: NonNullable<HomePageDocumentQuery["settings"]>) {
   return [{ key: "URL", value: runtime.stash.url }];
 }
 
@@ -25,10 +25,10 @@ function blockersFor(
       return ["任务无法启动下载", "下载完成后无客户端落地"];
   }
 }
-import type { DashboardDocumentQuery } from "../graphql/generated/graphql";
+import type { HomePageDocumentQuery } from "../graphql/generated/graphql";
 
-type RuntimeSettings = NonNullable<DashboardDocumentQuery["settings"]>;
-type RuntimeStatus = NonNullable<DashboardDocumentQuery["settingsStatus"]>;
+type RuntimeSettings = NonNullable<HomePageDocumentQuery["settings"]>;
+type RuntimeStatus = NonNullable<HomePageDocumentQuery["settingsStatus"]>;
 
 interface HomePageProps {
   tasks: DashboardTask[];

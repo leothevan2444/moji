@@ -1,5 +1,5 @@
-import { lazy, Suspense, useState } from "react";
-import { Outlet } from "react-router";
+import { lazy, Suspense, useEffect, useState } from "react";
+import { Outlet, useLocation } from "react-router";
 import { Drawer } from "../components/layout/Drawer";
 import { Header } from "../components/layout/Header";
 import { ToastStack } from "../components/layout/ToastStack";
@@ -17,10 +17,15 @@ export interface AppOutletContext {
 }
 
 export function AppLayout() {
+  const location = useLocation();
   const theme = useTheme();
   const { toasts, pushToast, dismissToast, copyText } = useToast();
   const [helpOpen, setHelpOpen] = useState(false);
   const [helpTopicId, setHelpTopicId] = useState<HelpTopicId>(HELP_TOPICS[0].id);
+  useEffect(() => {
+    const path = location.pathname;
+    document.title = path.startsWith("/tasks") ? "任务 · Moji" : path.startsWith("/performers") ? "演员 · Moji" : path.startsWith("/discover") ? "发现 · Moji" : path.startsWith("/settings") ? "设置 · Moji" : path === "/stats" ? "统计 · Moji" : "Moji";
+  }, [location.pathname]);
 
   return (
     <div className="app-shell">

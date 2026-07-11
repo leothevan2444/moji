@@ -11,7 +11,7 @@ import { useJackettSearch } from "../../hooks/useJackettSearch";
 import { useJackettIndexers } from "../../hooks/useJackettIndexers";
 import { usePreviewJackettSelection } from "../../hooks/usePreviewJackettSelection";
 import { useSearchHistory } from "../../hooks/useSearchHistory";
-import { useDashboard } from "../../hooks/useDashboard";
+import { useTaskMutations } from "../../hooks/useTaskMutations";
 import { parseDiscoverSearchParams, serializeDiscoverSearchParams } from "../searchParams";
 import { DISCOVERY_PAGE_SIZE, DISCOVER_SORT_OPTIONS, JACKETT_SORT_OPTIONS } from "../../constants";
 import { DiscoverConfigDocumentDocument, DiscoverSortBy, JackettSortBy, type DiscoverScenesDocumentQuery, type SearchDocumentQuery } from "../../graphql/generated/graphql";
@@ -51,7 +51,7 @@ export function Component() {
   const { results: jackett, fetching: searching, error: searchError } = useJackettSearch(query, { enabled: mode === "jackett", trackers: state.trackers, sortBy: jackettSort });
   const { results: preview, previewMeta, fetching: previewing, error: previewError } = usePreviewJackettSelection(query, jackett, { enabled: mode === "jackett", applyFastRules: fastRules, applyFileRules: fileRules, inspectionCandidateLimit: config?.settings.automation.torrentSelection.inspectionCandidateLimit ?? 5 });
   const { indexers, fetching: fetchingIndexers } = useJackettIndexers(mode === "jackett");
-  const { addTorrent } = useDashboard(false);
+  const { addTorrent } = useTaskMutations();
   const activeJackett = useMemo(() => (!fastRules && !fileRules) || preview.length === 0 ? jackett : preview, [fastRules, fileRules, jackett, preview]);
   const visible = mode === "stashbox" ? discovered : activeJackett;
   const pages = Math.max(1, Math.ceil(visible.length / DISCOVERY_PAGE_SIZE));
