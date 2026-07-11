@@ -6,7 +6,6 @@ import { AppLayout } from "./AppLayout";
 export const router = createBrowserRouter([
   { path: "/performers", element: <AppShell /> },
   { path: "/performers/:performerId", element: <AppShell /> },
-  { path: "/discover", element: <AppShell /> },
   { path: "/settings", element: <Navigate replace to="/settings/connections" /> },
   {
     element: <AppLayout />,
@@ -15,6 +14,7 @@ export const router = createBrowserRouter([
       { path: "/tasks", lazy: () => import("./routes/TasksRoute") },
       { path: "/tasks/:taskId", lazy: () => import("./routes/TasksRoute") },
       { path: "/tasks/:taskId/resolve", lazy: () => import("./routes/TasksRoute") },
+      { path: "/discover", lazy: () => import("./routes/DiscoverRoute") },
       { path: "/stats", lazy: () => import("./routes/StatsRoute") },
       { path: "/settings/:section", lazy: () => import("./routes/SettingsRoute") }
     ]

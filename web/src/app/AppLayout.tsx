@@ -13,6 +13,7 @@ const HelpDrawer = lazy(() => import("../components/drawers/HelpDrawer").then((m
 export interface AppOutletContext {
   pushToast: ReturnType<typeof useToast>["pushToast"];
   copyText: ReturnType<typeof useToast>["copyText"];
+  openHelp: () => void;
 }
 
 export function AppLayout() {
@@ -30,7 +31,7 @@ export function AppLayout() {
       <Header onOpenHelp={() => setHelpOpen(true)} theme={theme} />
       <main className="content">
         <Suspense fallback={<div className="skeleton skeleton-card" aria-label="页面加载中" />}>
-          <Outlet context={{ pushToast, copyText } satisfies AppOutletContext} />
+          <Outlet context={{ pushToast, copyText, openHelp: () => setHelpOpen(true) } satisfies AppOutletContext} />
         </Suspense>
       </main>
       {helpOpen ? (
