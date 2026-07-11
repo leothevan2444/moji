@@ -1,4 +1,4 @@
-import { FormEvent, useCallback, useDeferredValue, useEffect, useMemo, useState } from "react";
+import { FormEvent, lazy, Suspense, useCallback, useDeferredValue, useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate, useParams, useSearchParams } from "react-router";
 import { useQuery } from "urql";
 import { HELP_TOPICS, type HelpTopicId } from "./help";
@@ -18,16 +18,11 @@ import {
 } from "./hooks";
 import { taskSummary, type TaskGroupKey } from "./utils";
 import type { DrawerKey, SettingsTab } from "./types";
-import { Drawer, Header, ToastStack } from "./components/layout";
-import { ConfirmDeleteDrawer, DiscoveryDrawer, HelpDrawer, SettingsDrawer, SourcingResolutionDrawer, StatsDrawer, TaskDrawer } from "./components/drawers";
+import { Drawer } from "./components/layout/Drawer";
+import { Header } from "./components/layout/Header";
+import { ToastStack } from "./components/layout/ToastStack";
 import { JackettFilterPanel } from "./components/drawers/JackettFilterPanel";
 import { SortAndPagination } from "./components/drawers/SortAndPagination";
-import {
-  DiscoveryPage,
-  HomePage,
-  SubscriptionPage,
-  TasksPage
-} from "./pages";
 import type { TaskSortKey, TaskStatusFilter } from "./types";
 import {
   DISCOVERY_PAGE_SIZE,
@@ -51,6 +46,22 @@ import { parseDiscoverSearchParams, parsePerformerSearchParams, parseTaskSearchP
 
 const PREVIEW_FAST_RULES_STORAGE_KEY = "moji.discovery.previewFastRules";
 const PREVIEW_FILE_RULES_STORAGE_KEY = "moji.discovery.previewFileRules";
+
+const HomePage = lazy(() => import("./pages/HomePage").then((module) => ({ default: module.HomePage })));
+const TasksPage = lazy(() => import("./pages/TasksPage").then((module) => ({ default: module.TasksPage })));
+const DiscoveryPage = lazy(() => import("./pages/DiscoveryPage").then((module) => ({ default: module.DiscoveryPage })));
+const SubscriptionPage = lazy(() => import("./pages/SubscriptionPage").then((module) => ({ default: module.SubscriptionPage })));
+const ConfirmDeleteDrawer = lazy(() => import("./components/drawers/ConfirmDeleteDrawer").then((module) => ({ default: module.ConfirmDeleteDrawer })));
+const DiscoveryDrawer = lazy(() => import("./components/drawers/DiscoveryDrawer").then((module) => ({ default: module.DiscoveryDrawer })));
+const HelpDrawer = lazy(() => import("./components/drawers/HelpDrawer").then((module) => ({ default: module.HelpDrawer })));
+const SettingsDrawer = lazy(() => import("./components/drawers/SettingsDrawer").then((module) => ({ default: module.SettingsDrawer })));
+const SourcingResolutionDrawer = lazy(() => import("./components/drawers/SourcingResolutionDrawer").then((module) => ({ default: module.SourcingResolutionDrawer })));
+const StatsDrawer = lazy(() => import("./components/drawers/StatsDrawer").then((module) => ({ default: module.StatsDrawer })));
+const TaskDrawer = lazy(() => import("./components/drawers/TaskDrawer").then((module) => ({ default: module.TaskDrawer })));
+
+function RouteFallback() {
+  return <div className="skeleton skeleton-card" aria-label="页面加载中" />;
+}
 
 function readStoredBoolean(key: string): boolean {
   if (typeof window === "undefined") return false;
@@ -872,7 +883,8 @@ function App() {
 
   // ── Render ──────────────────────────────────────────────────────────
   return (
-    <div className="app-shell">
+    <Suspense fallback={<RouteFallback />}>
+      <div className="app-shell">
       <ToastStack toasts={toasts} onDismiss={dismissToast} />
       <div className="ambient ambient-a" />
       <div className="ambient ambient-b" />
@@ -1242,7 +1254,8 @@ function App() {
         </Drawer>
       ) : null}
 
-    </div>
+      </div>
+    </Suspense>
   );
 }
 
