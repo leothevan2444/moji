@@ -17,7 +17,7 @@ import {
   useToast
 } from "./hooks";
 import { taskSummary, type TaskGroupKey } from "./utils";
-import type { DrawerKey, SettingsTab } from "./types";
+import type { DrawerKey } from "./types";
 import { Drawer } from "./components/layout/Drawer";
 import { Header } from "./components/layout/Header";
 import { ToastStack } from "./components/layout/ToastStack";
@@ -49,7 +49,6 @@ import { parseDiscoverSearchParams, parsePerformerSearchParams, parseTaskSearchP
 const PREVIEW_FAST_RULES_STORAGE_KEY = "moji.discovery.previewFastRules";
 const PREVIEW_FILE_RULES_STORAGE_KEY = "moji.discovery.previewFileRules";
 
-const HomePage = lazy(() => import("./pages/HomePage").then((module) => ({ default: module.HomePage })));
 const TasksPage = lazy(() => import("./pages/TasksPage").then((module) => ({ default: module.TasksPage })));
 const DiscoveryPage = lazy(() => import("./pages/DiscoveryPage").then((module) => ({ default: module.DiscoveryPage })));
 const SubscriptionPage = lazy(() => import("./pages/SubscriptionPage").then((module) => ({ default: module.SubscriptionPage })));
@@ -96,10 +95,6 @@ function App() {
         : "主页";
   // ── UI state ────────────────────────────────────────────────────────
   const [drawer, setDrawer] = useState<DrawerKey>(null);
-  const openSettings = useCallback((tab: SettingsTab) => {
-    const slug: Record<SettingsTab, string> = { 连接: "connections", 入库: "ingest", 自动化: "automation", 系统: "system", 日志: "logs", 关于: "about" };
-    navigate(`/settings/${slug[tab]}`);
-  }, [navigate]);
   const [helpTopicId, setHelpTopicId] = useState<HelpTopicId>(HELP_TOPICS[0].id);
 
   // Tasks page state
@@ -910,21 +905,6 @@ function App() {
       ) : null}
 
       <main className="content">
-        {pathname === "/" ? (
-          <HomePage
-            tasks={tasks}
-            runtimeSettings={runtimeSettings}
-            runtimeStatus={runtimeStatus}
-            pendingTaskScanId={pendingTaskScanId}
-            pendingTaskRetryId={pendingTaskRetryId}
-            onOpenTask={openTaskDetail}
-            onScanTask={(id) => void runTaskScan(id)}
-            onRetryTask={(id) => void runRetryTask(id)}
-            onResolveTask={openTaskResolution}
-            onOpenSettings={openSettings}
-          />
-        ) : null}
-
         {tab === "任务" ? (
           <TasksPage
             tasks={tasks}
