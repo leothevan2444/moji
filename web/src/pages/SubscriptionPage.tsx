@@ -636,7 +636,16 @@ export function SubscriptionPage({
               onClick={() => onOpenPerformer(performer.id)}
             >
               {imageURL ? (
-                <img className="avatar avatar--image" src={imageURL} alt={performer.name} loading="lazy" onError={(event) => { event.currentTarget.style.display = "none"; }} />
+                <div className="avatar avatar--frame">
+                  <span className="avatar__fallback" aria-hidden="true">{performerInitials(performer.name)}</span>
+                  <img
+                    className="avatar__image"
+                    src={imageURL}
+                    alt={performer.name}
+                    loading="lazy"
+                    onError={(event) => { event.currentTarget.style.display = "none"; }}
+                  />
+                </div>
               ) : (
                 <div className="avatar avatar--placeholder">{performerInitials(performer.name)}</div>
               )}

@@ -600,12 +600,36 @@ $task-status-tones: (
   border-radius: $radius-md;
   display: grid;
   place-items: center;
+  overflow: hidden;
   color: #fff7f1;
   font-family: inherit;
   font-size: 20px;
   letter-spacing: 0.08em;
   background: linear-gradient(160deg, rgba(37, 99, 235, 0.9), rgba(15, 118, 110, 0.88));
   box-shadow: inset 0 0 0 1px var(--inset-light);
+
+  &--frame {
+    position: relative;
+  }
+
+  &__fallback {
+    position: absolute;
+    inset: 0;
+    display: grid;
+    place-items: center;
+  }
+
+  &__image {
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: center top;
+    background: rgba(148, 163, 184, 0.14);
+  }
 
   &--image {
     object-fit: cover;
@@ -614,6 +638,13 @@ $task-status-tones: (
     background: rgba(148, 163, 184, 0.14);
     box-shadow: inset 0 0 0 1px var(--inset-dark);
   }
+}
+
+.profile-card > .avatar {
+  min-width: calc(var(--profile-avatar-height) * 3 / 5);
+  min-height: var(--profile-avatar-height);
+  max-width: calc(var(--profile-avatar-height) * 3 / 5);
+  max-height: var(--profile-avatar-height);
 }
 
 .performer-detail-card {
