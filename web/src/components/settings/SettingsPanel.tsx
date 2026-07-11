@@ -2147,10 +2147,10 @@ export function SettingsPanel({
             </select>
           </label>
           <div className="settings-field">
-            <FieldLabel text="图片缓存" info="图片始终由 Moji 代理；此开关仅控制是否在磁盘持久化缓存。" />
-            <label className="settings-toggle"><input type="checkbox" checked={systemForm.imageCacheEnabled} onChange={(event)=>setSystemForm((current)=>({...current,imageCacheEnabled:event.target.checked}))}/><span>启用磁盘缓存</span></label>
+            <FieldLabel text="图片缓存" info="图片始终由 Moji 代理。关闭后仍会读取已有缓存，但新下载的图片不再写入磁盘。" />
+            <label className="settings-toggle"><input type="checkbox" checked={systemForm.imageCacheEnabled} onChange={(event)=>setSystemForm((current)=>({...current,imageCacheEnabled:event.target.checked}))}/><span>持久化新下载的图片</span></label>
           </div>
-          <label className="settings-field"><FieldLabel text="缓存容量上限（MB）" info="允许 64–20480 MB。" /><input type="number" min="64" max="20480" value={systemForm.imageCacheMaxSizeMb} onChange={(event)=>setSystemForm((current)=>({...current,imageCacheMaxSizeMb:event.target.value}))}/></label>
+          <label className="settings-field"><FieldLabel text="缓存容量上限（MB）" info="允许 64–20480 MB；超过上限后按最近访问时间淘汰至上限的 90%。" /><input type="number" min="64" max="20480" value={systemForm.imageCacheMaxSizeMb} onChange={(event)=>setSystemForm((current)=>({...current,imageCacheMaxSizeMb:event.target.value}))}/></label>
           <label className="settings-field"><FieldLabel text="缓存保留天数" info="允许 1–365 天；长期未访问的图片会被清理。" /><input type="number" min="1" max="365" value={systemForm.imageCacheRetentionDays} onChange={(event)=>setSystemForm((current)=>({...current,imageCacheRetentionDays:event.target.value}))}/></label>
           <div className="settings-meta"><span>当前占用：{formatBytes(Number(runtimeStatus.imageCache.usedBytes ?? 0))}</span><span>条目：{runtimeStatus.imageCache.entryCount ?? 0}</span><span>最近清理：{formatDateTime(runtimeStatus.imageCache.lastCleanupAt)}</span></div>
           {runtimeStatus.imageCache.lastError ? <p className="settings-feedback tone-danger">{runtimeStatus.imageCache.lastError}</p> : null}

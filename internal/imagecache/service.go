@@ -26,6 +26,8 @@ const (
 	DefaultMaxSizeMB     = 1024
 	DefaultRetentionDays = 30
 	maxImageBytes        = 10 << 20
+	registrationMinTTL   = 90 * 24 * time.Hour
+	registrationTouchAge = 24 * time.Hour
 )
 
 type SourceKind string
@@ -152,6 +154,8 @@ func (s *Service) Register(ctx context.Context, d Descriptor) (string, error) {
 		if err := writeAtomic(registrationPath, data, 0o600); err != nil {
 			return "", fmt.Errorf("imagecache: register: %w", err)
 		}
+	} else {
+		s.touchRegistrationIfStale(registrationPath)
 	}
 	if strings.TrimSpace(d.APIKey) != "" {
 		s.credentialMu.Lock()
@@ -159,6 +163,15 @@ func (s *Service) Register(ctx context.Context, d Descriptor) (string, error) {
 		s.credentialMu.Unlock()
 	}
 	return "/api/images/" + key, nil
+}
+
+func (s *Service) touchRegistrationIfStale(path string) {
+	info, err := os.Stat(path)
+	if err != nil || s.now().Sub(info.ModTime()) < registrationTouchAge {
+		return
+	}
+	now := s.now()
+	_ = os.Chtimes(path, now, now)
 }
 
 func writeAtomic(path string, data []byte, mode os.FileMode) error {
@@ -495,11 +508,25 @@ func (s *Service) Cleanup(_ context.Context) error {
 		}
 	}
 	registrationEntries, _ := os.ReadDir(s.registrationsDir)
+	registrationTTL := time.Duration(cfg.RetentionDays*3) * 24 * time.Hour
+	if registrationTTL < registrationMinTTL {
+		registrationTTL = registrationMinTTL
+	}
+	registrationCutoff := s.now().UTC().Add(-registrationTTL)
 	for _, item := range registrationEntries {
+		path := filepath.Join(s.registrationsDir, item.Name())
 		if strings.HasPrefix(item.Name(), ".tmp-") {
 			if info, err := item.Info(); err == nil && s.now().Sub(info.ModTime()) > time.Hour {
-				_ = os.Remove(filepath.Join(s.registrationsDir, item.Name()))
+				_ = os.Remove(path)
 			}
+			continue
+		}
+		key := strings.TrimSuffix(item.Name(), ".json")
+		if filepath.Ext(item.Name()) != ".json" || !validKey(key) || s.hasObject(key) {
+			continue
+		}
+		if info, err := item.Info(); err == nil && info.ModTime().Before(registrationCutoff) {
+			_ = os.Remove(path)
 		}
 	}
 	now := s.now().UTC()
@@ -508,6 +535,11 @@ func (s *Service) Cleanup(_ context.Context) error {
 	s.lastError = ""
 	s.statusMu.Unlock()
 	return nil
+}
+
+func (s *Service) hasObject(key string) bool {
+	_, _, ok := s.findObject(key)
+	return ok
 }
 
 func (s *Service) Clear(_ context.Context) (Status, error) {

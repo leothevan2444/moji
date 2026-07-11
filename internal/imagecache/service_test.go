@@ -63,6 +63,67 @@ func TestRegistrationPersistsSeparatelyFromCachedImage(t *testing.T) {
 	}
 }
 
+func TestRegistrationTouchIsThrottledDaily(t *testing.T) {
+	s := newTestService(t, DefaultConfig())
+	descriptor := Descriptor{Kind: SourceStash, InstanceURL: "http://stash.test", ImageURL: "/poster.png"}
+	proxy, err := s.Register(context.Background(), descriptor)
+	if err != nil {
+		t.Fatal(err)
+	}
+	path := s.registrationPath(strings.TrimPrefix(proxy, "/api/images/"))
+	now := time.Now().Truncate(time.Second)
+	old := now.Add(-25 * time.Hour)
+	if err := os.Chtimes(path, old, old); err != nil {
+		t.Fatal(err)
+	}
+	s.now = func() time.Time { return now }
+	if _, err := s.Register(context.Background(), descriptor); err != nil {
+		t.Fatal(err)
+	}
+	first, _ := os.Stat(path)
+	if !first.ModTime().Equal(now) {
+		t.Fatalf("expected registration mtime %v, got %v", now, first.ModTime())
+	}
+	s.now = func() time.Time { return now.Add(12 * time.Hour) }
+	if _, err := s.Register(context.Background(), descriptor); err != nil {
+		t.Fatal(err)
+	}
+	second, _ := os.Stat(path)
+	if !second.ModTime().Equal(first.ModTime()) {
+		t.Fatalf("registration was touched before daily interval: %v -> %v", first.ModTime(), second.ModTime())
+	}
+}
+
+func TestCleanupRemovesOnlyStaleOrphanRegistrations(t *testing.T) {
+	s := newTestService(t, Config{Enabled: true, MaxSizeMB: 64, RetentionDays: 30})
+	now := time.Now().Truncate(time.Second)
+	s.now = func() time.Time { return now }
+	orphanKey := strings.Repeat("1", 64)
+	usedKey := strings.Repeat("2", 64)
+	for _, key := range []string{orphanKey, usedKey} {
+		path := s.registrationPath(key)
+		if err := os.WriteFile(path, []byte(`{"kind":"stash"}`), 0o600); err != nil {
+			t.Fatal(err)
+		}
+		old := now.Add(-91 * 24 * time.Hour)
+		if err := os.Chtimes(path, old, old); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if err := os.WriteFile(filepath.Join(s.objectsDir, usedKey+".png"), tinyPNG, 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if err := s.Cleanup(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := os.Stat(s.registrationPath(orphanKey)); !errors.Is(err, os.ErrNotExist) {
+		t.Fatalf("stale orphan registration still exists: %v", err)
+	}
+	if _, err := os.Stat(s.registrationPath(usedKey)); err != nil {
+		t.Fatalf("registration with cached object was removed: %v", err)
+	}
+}
+
 func TestCleanupUsesObjectMTimeAsTTL(t *testing.T) {
 	s := newTestService(t, Config{Enabled: true, MaxSizeMB: 64, RetentionDays: 1})
 	path := filepath.Join(s.objectsDir, strings.Repeat("a", 64)+".png")

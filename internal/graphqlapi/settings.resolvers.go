@@ -138,6 +138,12 @@ func (r *mutationResolver) UpdateSystemSettings(ctx context.Context, input model
 		cacheSettings = current.System.ImageCache
 	}
 	if input.ImageCache != nil {
+		if input.ImageCache.MaxSizeMb < 64 || input.ImageCache.MaxSizeMb > 20480 {
+			return nil, errors.New("image cache maxSizeMb must be between 64 and 20480")
+		}
+		if input.ImageCache.RetentionDays < 1 || input.ImageCache.RetentionDays > 365 {
+			return nil, errors.New("image cache retentionDays must be between 1 and 365")
+		}
 		cacheSettings = ImageCacheSettingsSnapshot{Enabled: input.ImageCache.Enabled, MaxSizeMB: input.ImageCache.MaxSizeMb, RetentionDays: input.ImageCache.RetentionDays}
 	}
 	snapshot, err := r.SettingsEditor.UpdateSystemSettings(UpdateSystemSettingsInput{TaskDeletePolicy: string(input.TaskDeletePolicy), ImageCache: cacheSettings})

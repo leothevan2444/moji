@@ -1117,6 +1117,25 @@ func TestUpdateSystemSettingsMutation(t *testing.T) {
 	}
 }
 
+func TestUpdateSystemSettingsRejectsInvalidImageCacheBounds(t *testing.T) {
+	for _, imageCache := range []string{
+		`{ enabled: true, maxSizeMb: 63, retentionDays: 30 }`,
+		`{ enabled: true, maxSizeMb: 1024, retentionDays: 366 }`,
+	} {
+		resolver := NewResolver(nil, nil, nil, nil, "test-version")
+		resolver.SettingsEditor = &fakeSettingsEditor{}
+		resp := executeGraphQL(t, resolver, `mutation {
+			updateSystemSettings(input: {
+				taskDeletePolicy: KEEP_ONLY
+				imageCache: `+imageCache+`
+			}) { system { taskDeletePolicy } }
+		}`)
+		if len(resp.Errors) == 0 {
+			t.Fatalf("expected image cache validation error for %s", imageCache)
+		}
+	}
+}
+
 func TestUpdateQBittorrentSettingsRequiresEditor(t *testing.T) {
 	resolver := NewResolver(nil, nil, nil, nil, "test-version")
 
