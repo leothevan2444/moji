@@ -4,9 +4,6 @@ import { NotFoundPage } from "./NotFoundPage";
 import { AppLayout } from "./AppLayout";
 
 export const router = createBrowserRouter([
-  { path: "/tasks", element: <AppShell /> },
-  { path: "/tasks/:taskId", element: <AppShell /> },
-  { path: "/tasks/:taskId/resolve", element: <AppShell /> },
   { path: "/performers", element: <AppShell /> },
   { path: "/performers/:performerId", element: <AppShell /> },
   { path: "/discover", element: <AppShell /> },
@@ -15,6 +12,9 @@ export const router = createBrowserRouter([
     element: <AppLayout />,
     children: [
       { index: true, lazy: () => import("./routes/HomeRoute") },
+      { path: "/tasks", lazy: () => import("./routes/TasksRoute") },
+      { path: "/tasks/:taskId", lazy: () => import("./routes/TasksRoute") },
+      { path: "/tasks/:taskId/resolve", lazy: () => import("./routes/TasksRoute") },
       { path: "/stats", lazy: () => import("./routes/StatsRoute") },
       { path: "/settings/:section", lazy: () => import("./routes/SettingsRoute") }
     ]

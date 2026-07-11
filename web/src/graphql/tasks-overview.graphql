@@ -1,0 +1,44 @@
+query TasksOverviewDocument {
+  dashboardStats {
+    total
+    active
+    completed
+    downloading
+    pendingScans
+    failed
+  }
+  tasks {
+    id
+    source
+    code
+    stage
+    stageStatus
+    stageLabel
+    stageStatusLabel
+    stageErrorCode
+    stageErrorMessage
+    torrentUrl
+    torrentName
+    progress
+    qbittorrentState
+    contentPath
+    torrentHash
+    savePath
+    category
+    tags
+    downloadCompletedAt
+    deliveryMode
+    mojiSourcePath
+    transferAction
+    mojiTransferPath
+    transferError
+    stashScanJobId
+    stashScanPath
+    stashScanError
+    stashScanHint
+    stashScanStartedAt
+    createdAt
+    updatedAt
+  }
+  settings { system { taskDeletePolicy } }
+}
