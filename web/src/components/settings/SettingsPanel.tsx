@@ -423,6 +423,8 @@ export function SettingsPanel({
   const [draggedIndexerId, setDraggedIndexerId] = useState<string | null>(null);
   const [dragOverIndexerId, setDragOverIndexerId] = useState<string | null>(null);
   const [systemForm, setSystemForm] = useState(EMPTY_SYSTEM_FORM);
+  const [confirmingImageCacheClear, setConfirmingImageCacheClear] = useState(false);
+  const [imageCacheClearError, setImageCacheClearError] = useState<string | null>(null);
   const [pendingIngestQBRootInitialization, setPendingIngestQBRootInitialization] = useState<string | null>(null);
 
   const toggleSecret = (key: "stashApiKey" | "jackettApiKey" | "jackettPassword" | "qbittorrentPassword") => {
@@ -815,8 +817,18 @@ export function SettingsPanel({
   };
 
   const handleClearImageCache = async () => {
-    if (!window.confirm("确定清空本地图片缓存？代理地址会保留，图片将在下次访问时重新下载。")) return;
-    const result=await clearImageCache({}); if(result.error){pushToast("tone-danger",describeQueryError(result.error));return}; pushToast("tone-success","图片缓存已清空。"); await refreshDashboard({requestPolicy:"network-only"});
+    const releasedBytes = Number(runtimeStatus?.imageCache.usedBytes ?? 0);
+    setImageCacheClearError(null);
+    const result = await clearImageCache({});
+    if (result.error) {
+      const message = describeQueryError(result.error);
+      setImageCacheClearError(message);
+      pushToast("tone-danger", message);
+      return;
+    }
+    setConfirmingImageCacheClear(false);
+    pushToast("tone-success", releasedBytes > 0 ? `图片缓存已清空，释放 ${formatBytes(releasedBytes)}。` : "图片缓存已清空。");
+    await refreshDashboard({ requestPolicy: "network-only" });
   };
 
   const refreshSubscriptionStashBoxes = async () => {
@@ -2148,13 +2160,78 @@ export function SettingsPanel({
           </label>
           <div className="settings-field">
             <FieldLabel text="图片缓存" info="图片始终由 Moji 代理。关闭后仍会读取已有缓存，但新下载的图片不再写入磁盘。" />
-            <label className="settings-toggle"><input type="checkbox" checked={systemForm.imageCacheEnabled} onChange={(event)=>setSystemForm((current)=>({...current,imageCacheEnabled:event.target.checked}))}/><span>持久化新下载的图片</span></label>
+            <label className="switch-row image-cache-switch">
+              <span className="switch-row__label">启用图片缓存</span>
+              <span className="switch" role="switch" aria-checked={systemForm.imageCacheEnabled}>
+                <input
+                  type="checkbox"
+                  checked={systemForm.imageCacheEnabled}
+                  aria-label="启用图片缓存"
+                  onChange={(event) => setSystemForm((current) => ({ ...current, imageCacheEnabled: event.target.checked }))}
+                />
+                <span className="switch__track" aria-hidden="true" />
+                <span className="switch__thumb" aria-hidden="true" />
+              </span>
+            </label>
           </div>
-          <label className="settings-field"><FieldLabel text="缓存容量上限（MB）" info="允许 64–20480 MB；超过上限后按最近访问时间淘汰至上限的 90%。" /><input type="number" min="64" max="20480" value={systemForm.imageCacheMaxSizeMb} onChange={(event)=>setSystemForm((current)=>({...current,imageCacheMaxSizeMb:event.target.value}))}/></label>
-          <label className="settings-field"><FieldLabel text="缓存保留天数" info="允许 1–365 天；长期未访问的图片会被清理。" /><input type="number" min="1" max="365" value={systemForm.imageCacheRetentionDays} onChange={(event)=>setSystemForm((current)=>({...current,imageCacheRetentionDays:event.target.value}))}/></label>
-          <div className="settings-meta"><span>当前占用：{formatBytes(Number(runtimeStatus.imageCache.usedBytes ?? 0))}</span><span>条目：{runtimeStatus.imageCache.entryCount ?? 0}</span><span>最近清理：{formatDateTime(runtimeStatus.imageCache.lastCleanupAt)}</span></div>
+          <div className={`image-cache-config${systemForm.imageCacheEnabled ? "" : " is-disabled"}`} aria-disabled={!systemForm.imageCacheEnabled}>
+            <label className="settings-field">
+              <FieldLabel text="缓存容量上限（MB）" info="允许 64–20480 MB；超过上限后按最近访问时间淘汰至上限的 90%。" />
+              <input
+                type="number"
+                min="64"
+                max="20480"
+                disabled={!systemForm.imageCacheEnabled}
+                value={systemForm.imageCacheMaxSizeMb}
+                onChange={(event) => setSystemForm((current) => ({ ...current, imageCacheMaxSizeMb: event.target.value }))}
+              />
+            </label>
+            <label className="settings-field">
+              <FieldLabel text="缓存保留天数" info="允许 1–365 天；长期未访问的图片会被清理。" />
+              <input
+                type="number"
+                min="1"
+                max="365"
+                disabled={!systemForm.imageCacheEnabled}
+                value={systemForm.imageCacheRetentionDays}
+                onChange={(event) => setSystemForm((current) => ({ ...current, imageCacheRetentionDays: event.target.value }))}
+              />
+            </label>
+            {!systemForm.imageCacheEnabled ? <p className="image-cache-config__note">磁盘持久化已关闭，以上配置暂不生效。</p> : null}
+          </div>
+          <div className="image-cache-management">
+            <div>
+              <div className="settings-meta"><span>当前占用：{formatBytes(Number(runtimeStatus.imageCache.usedBytes ?? 0))}</span><span>图片：{runtimeStatus.imageCache.entryCount ?? 0} 张</span><span>最近清理：{formatDateTime(runtimeStatus.imageCache.lastCleanupAt)}</span></div>
+              <p className="image-cache-management__hint">清空后保留图片来源登记，图片将在下次访问时自动重新下载。</p>
+            </div>
+            <button
+              type="button"
+              className="image-cache-management__clear"
+              disabled={clearingImageCache || Number(runtimeStatus.imageCache.entryCount ?? 0) === 0}
+              onClick={() => {
+                setImageCacheClearError(null);
+                setConfirmingImageCacheClear(true);
+              }}
+            >
+              {clearingImageCache ? "清理中..." : Number(runtimeStatus.imageCache.entryCount ?? 0) === 0 ? "暂无缓存" : "清空图片缓存"}
+            </button>
+          </div>
+          {confirmingImageCacheClear ? (
+            <div className="image-cache-confirm" role="alertdialog" aria-labelledby="image-cache-confirm-title" aria-describedby="image-cache-confirm-description">
+              <div>
+                <strong id="image-cache-confirm-title">清空图片缓存？</strong>
+                <p id="image-cache-confirm-description">
+                  将删除 {runtimeStatus.imageCache.entryCount ?? 0} 张本地图片并释放 {formatBytes(Number(runtimeStatus.imageCache.usedBytes ?? 0))}。来源登记会保留。
+                </p>
+                {imageCacheClearError ? <p className="image-cache-confirm__error">{imageCacheClearError}</p> : null}
+              </div>
+              <div className="image-cache-confirm__actions">
+                <button type="button" className="ghost-button" disabled={clearingImageCache} onClick={() => setConfirmingImageCacheClear(false)}>取消</button>
+                <button type="button" className="image-cache-confirm__submit" disabled={clearingImageCache} onClick={() => void handleClearImageCache()}>{clearingImageCache ? "清理中..." : "确认清空"}</button>
+              </div>
+            </div>
+          ) : null}
           {runtimeStatus.imageCache.lastError ? <p className="settings-feedback tone-danger">{runtimeStatus.imageCache.lastError}</p> : null}
-          <button type="button" className="ghost-button" disabled={clearingImageCache} onClick={()=>void handleClearImageCache()}>{clearingImageCache?"清理中...":"清空图片缓存"}</button>
           <div className="settings-actions">
             <button type="submit" disabled={updatingSystem}>
               {updatingSystem ? "保存中..." : "保存系统设置"}
