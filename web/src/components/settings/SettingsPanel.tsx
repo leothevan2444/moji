@@ -32,7 +32,7 @@ import {
   UpdateQBittorrentSettingsDocumentDocument,
   UpdateStashSettingsDocumentDocument,
   UpdateSystemSettingsDocumentDocument,
-  type DashboardDocumentQuery,
+  type SettingsPageDocumentQuery,
   type ClearImageCacheDocumentMutation,
   type JackettIndexersDocumentQuery,
   type JackettIndexersDocumentQueryVariables,
@@ -70,8 +70,8 @@ import { describeQueryError } from "../../services/queryError";
 import { formatDateTime, formatLogEntries } from "../../utils";
 import { formatBytes } from "../../utils";
 
-type RuntimeSettings = NonNullable<DashboardDocumentQuery["settings"]>;
-type RuntimeSettingsStatus = NonNullable<DashboardDocumentQuery["settingsStatus"]>;
+type RuntimeSettings = NonNullable<SettingsPageDocumentQuery["settings"]>;
+type RuntimeSettingsStatus = NonNullable<SettingsPageDocumentQuery["settingsStatus"]>;
 type JackettIndexer = JackettIndexersDocumentQuery["jackettIndexers"][number];
 
 const TORRENT_SELECTION_RULE_LABELS: Record<TorrentSelectionRuleType, string> = {

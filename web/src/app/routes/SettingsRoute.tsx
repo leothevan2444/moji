@@ -2,7 +2,7 @@ import { useMemo } from "react";
 import { Navigate, useNavigate, useOutletContext, useParams } from "react-router";
 import { useQuery } from "urql";
 import { SettingsDrawer } from "../../components/drawers/SettingsDrawer";
-import { DashboardDocumentDocument } from "../../graphql/generated/graphql";
+import { SettingsPageDocumentDocument } from "../../graphql/generated/graphql";
 import type { SettingsTab } from "../../types";
 import type { AppOutletContext } from "../AppLayout";
 
@@ -29,7 +29,7 @@ export function Component() {
   const { pushToast } = useOutletContext<AppOutletContext>();
   const settingsTab = useMemo(() => sectionToTab[section] ?? "连接", [section]);
   const [{ data }, refresh] = useQuery({
-    query: DashboardDocumentDocument,
+    query: SettingsPageDocumentDocument,
     requestPolicy: "cache-and-network"
   });
 

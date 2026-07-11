@@ -2,10 +2,10 @@ import type { OperationContext } from "urql";
 import { SETTINGS_TABS } from "../../constants";
 import type { DrawerKey, SettingsTab, ToastTone } from "../../types";
 import { SettingsPanel } from "../settings/SettingsPanel";
-import type { DashboardDocumentQuery } from "../../graphql/generated/graphql";
+import type { SettingsPageDocumentQuery } from "../../graphql/generated/graphql";
 
-type RuntimeSettings = NonNullable<DashboardDocumentQuery["settings"]>;
-type RuntimeSettingsStatus = NonNullable<DashboardDocumentQuery["settingsStatus"]>;
+type RuntimeSettings = NonNullable<SettingsPageDocumentQuery["settings"]>;
+type RuntimeSettingsStatus = NonNullable<SettingsPageDocumentQuery["settingsStatus"]>;
 
 interface SettingsDrawerProps {
   settingsTab: SettingsTab;
