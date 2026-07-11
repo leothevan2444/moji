@@ -38,10 +38,12 @@ func TestHandlerServesBuiltIndexAndAssets(t *testing.T) {
 
 	handler := NewHandler(dist)
 
-	indexRec := httptest.NewRecorder()
-	handler.ServeHTTP(indexRec, httptest.NewRequest(http.MethodGet, "/tasks", nil))
-	if body := indexRec.Body.String(); !strings.Contains(body, "root") {
-		t.Fatalf("expected SPA fallback index, got %q", body)
+	for _, route := range []string{"/tasks", "/tasks/123", "/performers/123", "/settings/automation"} {
+		indexRec := httptest.NewRecorder()
+		handler.ServeHTTP(indexRec, httptest.NewRequest(http.MethodGet, route, nil))
+		if body := indexRec.Body.String(); !strings.Contains(body, "root") {
+			t.Fatalf("expected SPA fallback index for %s, got %q", route, body)
+		}
 	}
 
 	assetRec := httptest.NewRecorder()

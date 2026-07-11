@@ -4,16 +4,14 @@ import {
   faCircleQuestion,
   faGear
 } from "@fortawesome/free-solid-svg-icons";
-import { NAV_TABS } from "../../constants";
-import type { DrawerKey, TabKey } from "../../types";
+import { NAV_ITEMS } from "../../constants/navigation";
+import { NavLink, useNavigate } from "react-router";
 import { ThemeMenu } from "./ThemeMenu";
 import type { ThemePreference } from "../../hooks/useTheme";
 import type { RefObject } from "react";
 
 interface HeaderProps {
-  tab: TabKey;
-  onTabChange: (tab: TabKey) => void;
-  onOpenDrawer: (drawer: Exclude<DrawerKey, null>) => void;
+  onOpenHelp: () => void;
   theme: {
     preference: ThemePreference;
     resolved: "light" | "dark";
@@ -25,7 +23,8 @@ interface HeaderProps {
   };
 }
 
-export function Header({ tab, onTabChange, onOpenDrawer, theme }: HeaderProps) {
+export function Header({ onOpenHelp, theme }: HeaderProps) {
+  const navigate = useNavigate();
   return (
     <header className="masthead">
       <div className="masthead__brand">
@@ -36,15 +35,15 @@ export function Header({ tab, onTabChange, onOpenDrawer, theme }: HeaderProps) {
       <div className="masthead__actions" aria-label="主导航">
         <div className="masthead__navgroup">
           <div className="tab-group">
-            {NAV_TABS.map((item) => (
-              <button
-                key={item}
-                type="button"
-                className={`nav-tab ${tab === item ? "is-active" : ""}`}
-                onClick={() => onTabChange(item)}
+            {NAV_ITEMS.map((item) => (
+              <NavLink
+                key={item.to}
+                to={item.to}
+                end={item.end}
+                className={({ isActive }) => `nav-tab ${isActive ? "is-active" : ""}`}
               >
-                {item}
-              </button>
+                {item.label}
+              </NavLink>
             ))}
           </div>
         </div>
@@ -54,7 +53,7 @@ export function Header({ tab, onTabChange, onOpenDrawer, theme }: HeaderProps) {
             <button
               type="button"
               className="utility-button utility-icon-button"
-              onClick={() => onOpenDrawer("stats")}
+              onClick={() => navigate("/stats")}
               aria-label="统计"
               title="统计"
             >
@@ -63,7 +62,7 @@ export function Header({ tab, onTabChange, onOpenDrawer, theme }: HeaderProps) {
             <button
               type="button"
               className="utility-button utility-icon-button"
-              onClick={() => onOpenDrawer("settings")}
+              onClick={() => navigate("/settings/connections")}
               aria-label="设置"
               title="设置"
             >
@@ -72,7 +71,7 @@ export function Header({ tab, onTabChange, onOpenDrawer, theme }: HeaderProps) {
             <button
               type="button"
               className="utility-button utility-icon-button"
-              onClick={() => onOpenDrawer("help")}
+              onClick={onOpenHelp}
               aria-label="帮助"
               title="帮助"
             >

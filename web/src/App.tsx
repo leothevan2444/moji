@@ -1,4 +1,6 @@
 import { FormEvent, useCallback, useDeferredValue, useEffect, useMemo, useState } from "react";
+import { useLocation, useNavigate, useParams, useSearchParams } from "react-router";
+import { useQuery } from "urql";
 import { HELP_TOPICS, type HelpTopicId } from "./help";
 import { describeQueryError } from "./services/queryError";
 import {
@@ -15,7 +17,7 @@ import {
   useToast
 } from "./hooks";
 import { taskSummary, type TaskGroupKey } from "./utils";
-import type { DrawerKey, SettingsTab, TabKey } from "./types";
+import type { DrawerKey, SettingsTab } from "./types";
 import { Drawer, Header, ToastStack } from "./components/layout";
 import { ConfirmDeleteDrawer, DiscoveryDrawer, HelpDrawer, SettingsDrawer, SourcingResolutionDrawer, StatsDrawer, TaskDrawer } from "./components/drawers";
 import { JackettFilterPanel } from "./components/drawers/JackettFilterPanel";
@@ -40,8 +42,12 @@ import {
   type SearchDocumentQuery,
   DiscoverSortBy,
   JackettSortBy,
-  TaskDeletePolicy
+  TaskDeletePolicy,
+  TaskDetailDocumentDocument,
+  type TaskDetailDocumentQuery,
+  type TaskDetailDocumentQueryVariables
 } from "./graphql/generated/graphql";
+import { parseDiscoverSearchParams, parsePerformerSearchParams, parseTaskSearchParams, serializeDiscoverSearchParams, serializePerformerSearchParams, serializeTaskSearchParams } from "./app/searchParams";
 
 const PREVIEW_FAST_RULES_STORAGE_KEY = "moji.discovery.previewFastRules";
 const PREVIEW_FILE_RULES_STORAGE_KEY = "moji.discovery.previewFileRules";
@@ -65,14 +71,25 @@ function writeStoredBoolean(key: string, value: boolean) {
 }
 
 function App() {
+  const location = useLocation();
+  const navigate = useNavigate();
+  const params = useParams();
+  const [urlSearchParams, setURLSearchParams] = useSearchParams();
+  const pathname = location.pathname;
+  const tab = pathname.startsWith("/tasks")
+    ? "任务"
+    : pathname.startsWith("/performers")
+      ? "演员"
+      : pathname.startsWith("/discover")
+        ? "发现"
+        : "主页";
   // ── UI state ────────────────────────────────────────────────────────
-  const [tab, setTab] = useState<TabKey>("主页");
   const [drawer, setDrawer] = useState<DrawerKey>(null);
   const [settingsTab, setSettingsTab] = useState<SettingsTab>("连接");
   const openSettings = useCallback((tab: SettingsTab) => {
-    setSettingsTab(tab);
-    setDrawer("settings");
-  }, []);
+    const slug: Record<SettingsTab, string> = { 连接: "connections", 入库: "ingest", 自动化: "automation", 系统: "system", 日志: "logs", 关于: "about" };
+    navigate(`/settings/${slug[tab]}`);
+  }, [navigate]);
   const [helpTopicId, setHelpTopicId] = useState<HelpTopicId>(HELP_TOPICS[0].id);
 
   // Tasks page state
@@ -85,7 +102,7 @@ function App() {
     待入库: false,
     已完成: false
   });
-  const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
+  const [selectedTaskId, setSelectedTaskId] = useState<string | null>(params.taskId ?? null);
   const [pendingTaskScanId, setPendingTaskScanId] = useState<string | null>(null);
   const [pendingTaskRetryId, setPendingTaskRetryId] = useState<string | null>(null);
   const [retryingBlockedTasks, setRetryingBlockedTasks] = useState(false);
@@ -113,7 +130,7 @@ function App() {
   const [subscriptionPage, setSubscriptionPage] = useState(1);
   const [subscriptionPageSize, setSubscriptionPageSize] = useState<number>(24);
   const [pendingSubscriptionID, setPendingSubscriptionID] = useState<string | null>(null);
-  const [selectedPerformerId, setSelectedPerformerId] = useState<string | null>(null);
+  const [selectedPerformerId, setSelectedPerformerId] = useState<string | null>(params.performerId ?? null);
   const [performerSceneSearch, setPerformerSceneSearch] = useState("");
   const [performerSceneSourceFilter, setPerformerSceneSourceFilter] = useState<SceneSourceFilter>(SceneSourceFilter.All);
   const [performerSceneLibraryFilter, setPerformerSceneLibraryFilter] = useState<LibraryFilter>(LibraryFilter.All);
@@ -121,6 +138,79 @@ function App() {
   const [performerScenePageSize, setPerformerScenePageSize] = useState<number>(24);
   const [selectedSceneKeys, setSelectedSceneKeys] = useState<string[]>([]);
   const [pendingPerformerSceneKeys, setPendingPerformerSceneKeys] = useState<string[]>([]);
+
+  useEffect(() => {
+    if (pathname.startsWith("/tasks")) {
+      const state = parseTaskSearchParams(urlSearchParams);
+      setTaskSearch(state.q);
+      setTaskStatus(state.status);
+      setTaskSort(state.sort);
+      setSelectedTaskId(params.taskId ?? null);
+    }
+    if (pathname.startsWith("/performers")) {
+      const state = parsePerformerSearchParams(urlSearchParams);
+      setSubscriptionSearch(state.q);
+      setSubscriptionPage(state.page);
+      setSubscriptionPageSize(state.pageSize);
+      setSelectedPerformerId(params.performerId ?? null);
+      setPerformerSceneSearch(state.sceneQ);
+      setPerformerSceneSourceFilter(state.source === "stash" ? SceneSourceFilter.Stash : state.source === "stashbox" ? SceneSourceFilter.Stashbox : SceneSourceFilter.All);
+      setPerformerSceneLibraryFilter(state.library === "in-library" ? LibraryFilter.InLibrary : state.library === "not-in-library" ? LibraryFilter.NotInLibrary : LibraryFilter.All);
+      setPerformerScenePageIndex(state.scenePage);
+      setPerformerScenePageSize(state.scenePageSize);
+    }
+    if (pathname.startsWith("/discover")) {
+      const state = parseDiscoverSearchParams(urlSearchParams);
+      setDiscoveryQuery(state.q);
+      setSubmittedDiscoveryQuery(state.q);
+      setDiscoveryMode(state.source);
+      setDiscoveryPage(state.page);
+      setSelectedTrackerIDs(state.trackers);
+      const sortToken = state.sort.toUpperCase().replaceAll("-", "_");
+      if (state.source === "stashbox") setDiscoveryStashboxSort(sortToken as DiscoverSortBy);
+      else setDiscoveryJackettSort(sortToken as JackettSortBy);
+      if (state.fastRules !== undefined) setPreviewFastRules(state.fastRules);
+      if (state.fileRules !== undefined) setPreviewFileRules(state.fileRules);
+    }
+  }, [pathname, params.taskId, params.performerId, urlSearchParams]);
+
+  useEffect(() => {
+    let canonical: URLSearchParams | null = null;
+    if (pathname.startsWith("/tasks")) canonical = serializeTaskSearchParams(parseTaskSearchParams(urlSearchParams));
+    if (pathname.startsWith("/performers")) canonical = serializePerformerSearchParams(parsePerformerSearchParams(urlSearchParams));
+    if (pathname === "/discover") canonical = serializeDiscoverSearchParams(parseDiscoverSearchParams(urlSearchParams));
+    if (canonical && canonical.toString() !== urlSearchParams.toString()) {
+      setURLSearchParams(canonical, { replace: true });
+    }
+  }, [pathname, urlSearchParams, setURLSearchParams]);
+
+  useEffect(() => {
+    if (pathname.startsWith("/settings/")) {
+      const sectionToTab: Record<string, SettingsTab> = {
+        connections: "连接", ingest: "入库", automation: "自动化",
+        system: "系统", logs: "日志", about: "关于"
+      };
+      setSettingsTab(sectionToTab[params.section ?? ""] ?? "连接");
+      if (!sectionToTab[params.section ?? ""]) navigate("/settings/connections", { replace: true });
+    }
+    if (pathname === "/discover" && urlSearchParams.get("q")) {
+      setDrawer("discovery");
+    } else if (drawer === "discovery" && !pathname.startsWith("/discover")) {
+      setDrawer(null);
+    }
+  }, [pathname, params.section, urlSearchParams]);
+
+  useEffect(() => {
+    const titles: Array<[boolean, string]> = [
+      [pathname.startsWith("/tasks"), "任务 · Moji"],
+      [pathname.startsWith("/performers"), "演员 · Moji"],
+      [pathname.startsWith("/discover"), "发现 · Moji"],
+      [pathname.startsWith("/settings"), "设置 · Moji"],
+      [pathname === "/stats", "统计 · Moji"],
+      [pathname.startsWith("/help"), "帮助 · Moji"]
+    ];
+    document.title = titles.find(([matches]) => matches)?.[1] ?? "Moji";
+  }, [pathname]);
 
   // ── Data hooks ──────────────────────────────────────────────────────
   const { toasts, pushToast, dismissToast, copyText } = useToast();
@@ -143,6 +233,16 @@ function App() {
     triggerTaskStashScan,
     triggerStashScans
   } = useDashboard();
+
+  const [{ data: taskDetailData, fetching: taskDetailFetching, error: taskDetailError }, refreshTaskDetail] = useQuery<
+    TaskDetailDocumentQuery,
+    TaskDetailDocumentQueryVariables
+  >({
+    query: TaskDetailDocumentDocument,
+    variables: { id: params.taskId ?? "" },
+    pause: !params.taskId,
+    requestPolicy: "cache-and-network"
+  });
 
   const discoveryDrawerOpen = drawer === "discovery";
 
@@ -230,7 +330,7 @@ function App() {
   const tasks = data?.tasks ?? [];
   const runtimeSettings = data?.settings ?? null;
   const runtimeStatus = data?.settingsStatus ?? null;
-  const activeTask = selectedTaskId ? tasks.find((task) => task.id === selectedTaskId) ?? null : null;
+  const activeTask = taskDetailData?.task ?? (selectedTaskId ? tasks.find((task) => task.id === selectedTaskId) ?? null : null);
   const confirmDeleteTask = confirmDeleteTaskId ? tasks.find((task) => task.id === confirmDeleteTaskId) ?? null : null;
   const deletePolicy = runtimeSettings?.system.taskDeletePolicy ?? TaskDeletePolicy.KeepOnly;
 
@@ -301,17 +401,17 @@ function App() {
   // ── Action handlers ─────────────────────────────────────────────────
   const openTaskDetail = (taskId: string) => {
     setSelectedTaskId(taskId);
-    setDrawer("task");
+    navigate(`/tasks/${encodeURIComponent(taskId)}`, { state: { backgroundLocation: location } });
   };
 
   const openTaskResolution = (taskId: string) => {
     setSelectedTaskId(taskId);
-    setDrawer("task-resolution");
+    navigate(`/tasks/${encodeURIComponent(taskId)}/resolve`, { state: { backgroundLocation: location } });
   };
 
   const handleSourcingResolved = async () => {
     await refreshDashboard({ requestPolicy: "network-only" });
-    setDrawer("task");
+    if (selectedTaskId) navigate(`/tasks/${encodeURIComponent(selectedTaskId)}`);
   };
 
   const handleSubmitDiscoverSearch = (event: FormEvent<HTMLFormElement>) => {
@@ -321,16 +421,21 @@ function App() {
     searchHistory.push(trimmed);
     setSubmittedDiscoveryQuery(trimmed);
     setHistoryVisible(false);
-    setDrawer("discovery");
-    setTab("发现");
+    const next = new URLSearchParams(urlSearchParams);
+    next.set("q", trimmed);
+    if (discoveryMode !== "stashbox") next.set("source", discoveryMode);
+    next.delete("page");
+    navigate(`/discover?${next.toString()}`);
   };
 
   const handlePickHistory = (entry: string) => {
     setDiscoveryQuery(entry);
     setSubmittedDiscoveryQuery(entry);
     setHistoryVisible(false);
-    setDrawer("discovery");
-    setTab("发现");
+    const next = new URLSearchParams(urlSearchParams);
+    next.set("q", entry);
+    next.delete("page");
+    navigate(`/discover?${next.toString()}`);
   };
 
   const handleRemoveHistory = (entry: string) => {
@@ -342,37 +447,43 @@ function App() {
   };
 
   const handleToggleTracker = (id: string) => {
-    setSelectedTrackerIDs((current) =>
-      current.includes(id) ? current.filter((entry) => entry !== id) : [...current, id]
-    );
+    const trackers = selectedTrackerIDs.includes(id) ? selectedTrackerIDs.filter((entry) => entry !== id) : [...selectedTrackerIDs, id];
+    updateDiscoverURL({ trackers, page: 1 });
   };
 
   const handleClearTrackers = () => {
-    setSelectedTrackerIDs([]);
+    updateDiscoverURL({ trackers: [], page: 1 });
   };
 
   const handleSwitchMode = (next: DiscoveryMode) => {
     setDiscoveryMode(next);
+    const search = new URLSearchParams(urlSearchParams);
+    if (next === "stashbox") search.delete("source"); else search.set("source", next);
+    search.delete("sort");
+    search.delete("page");
+    setURLSearchParams(search);
   };
 
   const handleChangeStashboxSort = (next: DiscoverSortBy) => {
     setDiscoveryStashboxSort(next);
+    updateDiscoverURL({ sort: String(next).toLowerCase().replaceAll("_", "-"), page: 1 });
   };
 
   const handleChangeJackettSort = (next: JackettSortBy) => {
     setDiscoveryJackettSort(next);
+    updateDiscoverURL({ sort: String(next).toLowerCase().replaceAll("_", "-"), page: 1 });
   };
 
   const handlePrevPage = () => {
-    setDiscoveryPage((current) => Math.max(1, current - 1));
+    updateDiscoverURL({ page: Math.max(1, discoveryPage - 1) });
   };
 
   const handleNextPage = () => {
-    setDiscoveryPage((current) => Math.min(totalPages, current + 1));
+    updateDiscoverURL({ page: Math.min(totalPages, discoveryPage + 1) });
   };
 
   const handleSwitchToJackettFromEmpty = () => {
-    setDiscoveryMode("jackett");
+    handleSwitchMode("jackett");
   };
 
   const runSync = async () => {
@@ -467,6 +578,7 @@ function App() {
       if (selectedTaskId === taskId) {
         setSelectedTaskId(null);
         setDrawer(null);
+        navigate("/tasks", { replace: true });
       }
 
       setConfirmDeleteTaskId(null);
@@ -504,7 +616,7 @@ function App() {
 
       setSelectedTaskId(response.data.addTorrent.id);
       await refreshDashboard({ requestPolicy: "network-only" });
-      setDrawer("task");
+      navigate(`/tasks/${encodeURIComponent(response.data.addTorrent.id)}`);
     } finally {
       setPendingAddId(null);
     }
@@ -536,7 +648,7 @@ function App() {
       pushToast("tone-success", `已将 ${result.title} 加入任务队列。`);
       setSelectedTaskId(response.data.queueDiscoveredScene.id);
       await refreshDashboard({ requestPolicy: "network-only" });
-      setDrawer("task");
+      navigate(`/tasks/${encodeURIComponent(response.data.queueDiscoveredScene.id)}`);
     } finally {
       setPendingAddId(null);
     }
@@ -593,6 +705,7 @@ function App() {
 
   const handleOpenPerformer = (performerId: string) => {
     setSelectedPerformerId(performerId);
+    navigate(`/performers/${encodeURIComponent(performerId)}?${urlSearchParams.toString()}`, { state: { backgroundLocation: location } });
   };
 
   const handleBackToPerformers = () => {
@@ -603,6 +716,7 @@ function App() {
     setPerformerScenePageIndex(1);
     setPerformerScenePageSize(24);
     setSelectedSceneKeys([]);
+    navigate(`/performers?${urlSearchParams.toString()}`);
   };
 
   const handleToggleSceneSelection = (key: string) => {
@@ -720,13 +834,39 @@ function App() {
     setTaskGroupOpen((current) => ({ ...current, [group]: !current[group] }));
   };
 
+  const updatePerformerURL = (patch: Partial<ReturnType<typeof parsePerformerSearchParams>>) => {
+    const current = parsePerformerSearchParams(urlSearchParams);
+    const next = serializePerformerSearchParams({ ...current, ...patch });
+    const base = params.performerId ? `/performers/${encodeURIComponent(params.performerId)}` : "/performers";
+    navigate(`${base}${next.size ? `?${next}` : ""}`, { replace: true });
+  };
+
+  const updateDiscoverURL = (patch: Partial<ReturnType<typeof parseDiscoverSearchParams>>) => {
+    const current = parseDiscoverSearchParams(urlSearchParams);
+    const next = serializeDiscoverSearchParams({ ...current, ...patch });
+    navigate(`/discover${next.size ? `?${next}` : ""}`, { replace: true });
+  };
+
+  const routeDrawer: DrawerKey = params.taskId
+    ? pathname.endsWith("/resolve") ? "task-resolution" : "task"
+    : null;
+  const displayedDrawer = routeDrawer ?? visibleDrawer;
+  const closeDisplayedDrawer = () => {
+    if (routeDrawer) {
+      const background = (location.state as { backgroundLocation?: { pathname: string; search?: string } } | null)?.backgroundLocation;
+      navigate(background ? `${background.pathname}${background.search ?? ""}` : "/tasks");
+      return;
+    }
+    setDrawer(null);
+  };
+
   // ── Drawer metadata ─────────────────────────────────────────────────
   const drawerTitle = (() => {
-    if (visibleDrawer === "stats") return "运行概览";
-    if (visibleDrawer === "settings") return "配置与系统";
-    if (visibleDrawer === "help") return "Markdown 帮助";
-    if (visibleDrawer === "discovery") return discoveryMode === "stashbox" ? "StashBox 搜索结果" : "Jackett 搜索结果";
-    if (visibleDrawer === "task-resolution") return activeTask ? `人工处理：${taskSummary(activeTask)}` : "人工处理受阻任务";
+    if (displayedDrawer === "stats") return "运行概览";
+    if (displayedDrawer === "settings") return "配置与系统";
+    if (displayedDrawer === "help") return "Markdown 帮助";
+    if (displayedDrawer === "discovery") return discoveryMode === "stashbox" ? "StashBox 搜索结果" : "Jackett 搜索结果";
+    if (displayedDrawer === "task-resolution") return activeTask ? `人工处理：${taskSummary(activeTask)}` : "人工处理受阻任务";
     return activeTask ? taskSummary(activeTask) : "任务详情";
   })();
 
@@ -738,7 +878,7 @@ function App() {
       <div className="ambient ambient-b" />
       <div className="ambient ambient-c" />
 
-      <Header tab={tab} onTabChange={setTab} onOpenDrawer={setDrawer} theme={theme} />
+      <Header onOpenHelp={() => setDrawer("help")} theme={theme} />
 
       {error ? (
         <section className="surface surface--alert">
@@ -758,7 +898,7 @@ function App() {
       ) : null}
 
       <main className="content">
-        {tab === "主页" ? (
+        {pathname === "/" ? (
           <HomePage
             tasks={tasks}
             runtimeSettings={runtimeSettings}
@@ -790,9 +930,9 @@ function App() {
             pendingTaskRetryId={pendingTaskRetryId}
             pendingTaskDeleteId={pendingTaskDeleteId}
             retryingBlockedTasks={retryingBlockedTasks}
-            onSearchChange={setTaskSearch}
-            onStatusChange={setTaskStatus}
-            onSortChange={setTaskSort}
+            onSearchChange={(q) => setURLSearchParams(serializeTaskSearchParams({ q, status: taskStatus, sort: taskSort }))}
+            onStatusChange={(status) => setURLSearchParams(serializeTaskSearchParams({ q: taskSearch, status, sort: taskSort }))}
+            onSortChange={(sort) => setURLSearchParams(serializeTaskSearchParams({ q: taskSearch, status: taskStatus, sort }))}
             onToggleGroup={handleToggleGroup}
             onRefresh={() => void refreshDashboard({ requestPolicy: "network-only" })}
             onSync={() => void runSync()}
@@ -869,23 +1009,23 @@ function App() {
             stashPerformersError={stashPerformersError ?? null}
             performerDetailError={performerDetailError ?? null}
             performerScenesError={performerScenesError ?? null}
-            onSearchChange={setSubscriptionSearch}
-            onPageSizeChange={setSubscriptionPageSize}
+            onSearchChange={(q) => updatePerformerURL({ q, page: 1 })}
+            onPageSizeChange={(pageSize) => updatePerformerURL({ pageSize, page: 1 })}
             onReload={() => void reloadSubscription()}
             onRefreshAll={() => void handleRefreshAllSubscription()}
             onToggle={(performer) => void handleSubscriptionToggle(performer)}
             onRefreshOne={(performer) => void handleRefreshSubscribedPerformer(performer)}
-            onPrevPage={() => setSubscriptionPage((current) => Math.max(1, current - 1))}
-            onNextPage={() => setSubscriptionPage((current) => current + 1)}
+            onPrevPage={() => updatePerformerURL({ page: Math.max(1, subscriptionPage - 1) })}
+            onNextPage={() => updatePerformerURL({ page: subscriptionPage + 1 })}
             onOpenPerformer={handleOpenPerformer}
             onOpenTask={openTaskDetail}
             onBackToList={handleBackToPerformers}
-            onPerformerSceneSearchChange={setPerformerSceneSearch}
-            onPerformerSceneSourceChange={setPerformerSceneSourceFilter}
-            onPerformerSceneLibraryChange={setPerformerSceneLibraryFilter}
-            onPerformerScenePageSizeChange={setPerformerScenePageSize}
-            onPrevPerformerScenePage={() => setPerformerScenePageIndex((current) => Math.max(1, current - 1))}
-            onNextPerformerScenePage={() => setPerformerScenePageIndex((current) => current + 1)}
+            onPerformerSceneSearchChange={(sceneQ) => updatePerformerURL({ sceneQ, scenePage: 1 })}
+            onPerformerSceneSourceChange={(source) => updatePerformerURL({ source: source === SceneSourceFilter.Stash ? "stash" : source === SceneSourceFilter.Stashbox ? "stashbox" : "all", scenePage: 1 })}
+            onPerformerSceneLibraryChange={(library) => updatePerformerURL({ library: library === LibraryFilter.InLibrary ? "in-library" : library === LibraryFilter.NotInLibrary ? "not-in-library" : "all", scenePage: 1 })}
+            onPerformerScenePageSizeChange={(scenePageSize) => updatePerformerURL({ scenePageSize, scenePage: 1 })}
+            onPrevPerformerScenePage={() => updatePerformerURL({ scenePage: Math.max(1, performerScenePageIndex - 1) })}
+            onNextPerformerScenePage={() => updatePerformerURL({ scenePage: performerScenePageIndex + 1 })}
             onToggleSceneSelection={handleToggleSceneSelection}
             onSelectCurrentScenePage={handleSelectCurrentScenePage}
             onClearSceneSelection={handleClearSceneSelection}
@@ -893,16 +1033,41 @@ function App() {
             onQueueScene={(scene) => void handleQueueSinglePerformerScene(scene)}
           />
         ) : null}
+
+        {pathname.startsWith("/settings/") ? (
+          <section className="section-band">
+            <div className="band-head"><div><h2 tabIndex={-1}>配置与系统</h2></div></div>
+            <SettingsDrawer
+              settingsTab={settingsTab}
+              onSettingsTabChange={(next) => openSettings(next)}
+              runtimeSettings={runtimeSettings}
+              runtimeStatus={runtimeStatus}
+              appVersion={data?.version ?? ""}
+              drawer="settings"
+              renderedDrawer="settings"
+              pushToast={pushToast}
+              refreshDashboard={refreshDashboard}
+            />
+          </section>
+        ) : null}
+
+        {pathname === "/stats" ? (
+          <section className="section-band">
+            <div className="band-head"><div><h2 tabIndex={-1}>运行概览</h2></div></div>
+            <StatsDrawer active={metrics.active} completed={metrics.completed} pendingScans={metrics.pendingScans} failed={metrics.failed} />
+          </section>
+        ) : null}
+
       </main>
 
-      {visibleDrawer ? (
+      {displayedDrawer ? (
         <Drawer
-          visibleDrawer={visibleDrawer}
-          closing={drawerClosing}
+          visibleDrawer={displayedDrawer}
+          closing={routeDrawer ? false : drawerClosing}
           title={drawerTitle}
-          onClose={() => setDrawer(null)}
+          onClose={closeDisplayedDrawer}
         >
-          {visibleDrawer === "stats" ? (
+          {displayedDrawer === "stats" ? (
             <StatsDrawer
               active={metrics.active}
               completed={metrics.completed}
@@ -911,7 +1076,7 @@ function App() {
             />
           ) : null}
 
-          {visibleDrawer === "settings" ? (
+          {displayedDrawer === "settings" ? (
             <SettingsDrawer
               settingsTab={settingsTab}
               onSettingsTabChange={setSettingsTab}
@@ -925,12 +1090,16 @@ function App() {
             />
           ) : null}
 
-          {visibleDrawer === "help" ? (
+          {displayedDrawer === "help" ? (
             <HelpDrawer topicId={helpTopicId} onTopicChange={setHelpTopicId} />
           ) : null}
 
-          {visibleDrawer === "task" ? (
-            <TaskDrawer
+          {displayedDrawer === "task" ? (
+            taskDetailFetching && !activeTask ? <p>正在加载任务...</p> : taskDetailError ? (
+              <div className="empty-card"><h3>任务加载失败</h3><p>{describeQueryError(taskDetailError)}</p><button type="button" onClick={() => refreshTaskDetail({ requestPolicy: "network-only" })}>重试</button></div>
+            ) : !activeTask ? (
+              <div className="empty-card"><h3>任务不存在</h3><p>该任务可能已被删除。</p></div>
+            ) : <TaskDrawer
               task={activeTask}
               pendingScan={activeTask ? pendingTaskScanId === activeTask.id : false}
               pendingRetry={activeTask ? pendingTaskRetryId === activeTask.id : false}
@@ -944,11 +1113,11 @@ function App() {
             />
           ) : null}
 
-          {visibleDrawer === "task-resolution" ? (
+          {displayedDrawer === "task-resolution" ? (
             <SourcingResolutionDrawer task={activeTask} onResolved={handleSourcingResolved} />
           ) : null}
 
-          {visibleDrawer === "discovery" ? (
+          {displayedDrawer === "discovery" ? (
             <div className="drawer-stack">
               <article className="drawer-card">
                 <div className="drawer-card__head">
@@ -994,7 +1163,7 @@ function App() {
                           <input
                             type="checkbox"
                             checked={previewFastRules}
-                            onChange={(event) => setPreviewFastRules(event.target.checked)}
+                            onChange={(event) => updateDiscoverURL({ fastRules: event.target.checked, page: 1 })}
                           />
                           <span className="switch__track" aria-hidden="true" />
                           <span className="switch__thumb" aria-hidden="true" />
@@ -1006,7 +1175,7 @@ function App() {
                           <input
                             type="checkbox"
                             checked={previewFileRules}
-                            onChange={(event) => setPreviewFileRules(event.target.checked)}
+                            onChange={(event) => updateDiscoverURL({ fileRules: event.target.checked, page: 1 })}
                           />
                           <span className="switch__track" aria-hidden="true" />
                           <span className="switch__thumb" aria-hidden="true" />

@@ -1,4 +1,4 @@
-export { NAV_TABS, SETTINGS_TABS } from "./navigation";
+export { NAV_ITEMS, SETTINGS_TABS } from "./navigation";
 export {
   DEFAULT_TORRENT_FILE_INSPECTION_RULES,
   DEFAULT_TORRENT_SELECTION_RULES,
