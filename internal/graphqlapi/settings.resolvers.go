@@ -157,15 +157,12 @@ func (r *mutationResolver) UpdateSystemSettings(ctx context.Context, input model
 	return settingsSnapshotToModel(snapshot, r.AppVersion), nil
 }
 
-// RefreshSubscriptionStashBoxes is the resolver for the
-// refreshSubscriptionStashBoxes field. It re-queries the configured Stash
-// server for the Stash-Box list so the UI can pick up additions/removals
-// without restarting Moji.
-func (r *mutationResolver) RefreshSubscriptionStashBoxes(ctx context.Context) (*model.Settings, error) {
-	if r.Subscription == nil {
-		return nil, errors.New("subscription service is not configured")
+// RefreshStashBoxes is the resolver for the refreshStashBoxes field.
+func (r *mutationResolver) RefreshStashBoxes(ctx context.Context) (*model.Settings, error) {
+	if r.StashBox == nil {
+		return nil, errors.New("stash-box service is not configured")
 	}
-	if err := r.Subscription.RefreshStashBoxes(ctx); err != nil {
+	if err := r.StashBox.RefreshStashBoxes(ctx); err != nil {
 		return nil, err
 	}
 	if r.SettingsEditor != nil {

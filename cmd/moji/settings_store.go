@@ -15,10 +15,10 @@ type runtimeSettingsEditor struct {
 	downloaderEnabled   bool
 	stashEnabled        bool
 	stashClient         *stash.Client
-	subscriptionService graphqlapi.SubscriptionService
+	subscriptionService graphqlapi.RuntimeSubscriptionServices
 }
 
-func newRuntimeSettingsEditor(store *config.Store, version string, downloaderEnabled bool, stashEnabled bool, stashClient *stash.Client, subscriptionService graphqlapi.SubscriptionService) *runtimeSettingsEditor {
+func newRuntimeSettingsEditor(store *config.Store, version string, downloaderEnabled bool, stashEnabled bool, stashClient *stash.Client, subscriptionService graphqlapi.RuntimeSubscriptionServices) *runtimeSettingsEditor {
 	return &runtimeSettingsEditor{
 		store:               store,
 		version:             version,

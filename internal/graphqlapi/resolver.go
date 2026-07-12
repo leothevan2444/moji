@@ -255,7 +255,7 @@ type SettingsStatusSnapshot struct {
 	Jackett                 ServiceStatusSnapshot
 	QBittorrent             ServiceStatusSnapshot
 	Automation              AutomationStatusSnapshot
-	Subscription            SubscriptionStatusSnapshot
+	StashBox                StashBoxStatusSnapshot
 	Ingest                  IngestStatusSnapshot
 	StashLibraries          []StashLibrarySnapshot
 	StashLibrariesLoadError string
@@ -277,7 +277,7 @@ type AutomationStatusSnapshot struct {
 	SubscriptionPollEnabled         bool
 }
 
-type SubscriptionStatusSnapshot struct {
+type StashBoxStatusSnapshot struct {
 	StashBoxes          []StashBoxEndpointSnapshot
 	StashBoxesLoaded    bool
 	StashBoxesLoadError string
@@ -297,20 +297,36 @@ type StatsProvider interface {
 	SnapshotView() stats.Snapshot
 }
 
-type SubscriptionService interface {
+type PerformerCatalogService interface {
 	ListStashPerformers(ctx context.Context, search string) ([]subscription.Performer, error)
-	SearchPreferredStashBoxScenes(ctx context.Context, query string, limit int, sortBy subscription.DiscoverSort) (subscription.DiscoverScenePage, error)
-	QueueDiscoveredScene(ctx context.Context, sceneID string, stashBoxEndpoint string) (*taskruntime.Task, error)
 	QueuePerformerScenes(ctx context.Context, performerID string, selections []subscription.QueuePerformerSceneSelection) (subscription.QueuePerformerScenesResult, error)
 	GetPerformerDetail(ctx context.Context, performerID string) (subscription.PerformerDetail, error)
 	ListPerformerScenes(ctx context.Context, performerID string, query subscription.PerformerSceneQuery) (subscription.PerformerScenePage, error)
+}
+
+type DiscoveryService interface {
+	SearchPreferredStashBoxScenes(ctx context.Context, query string, limit int, sortBy subscription.DiscoverSort) (subscription.DiscoverScenePage, error)
+	QueueDiscoveredScene(ctx context.Context, sceneID string, stashBoxEndpoint string) (*taskruntime.Task, error)
+}
+
+type SubscriptionService interface {
 	ListSubscribedPerformers(ctx context.Context) ([]subscription.SubscribedPerformer, error)
 	SubscribePerformer(ctx context.Context, performerID string) (subscription.SubscribedPerformer, error)
 	UnsubscribePerformer(ctx context.Context, performerID string) error
 	RefreshSubscribedPerformer(ctx context.Context, performerID string) (subscription.SubscribedPerformer, error)
 	RefreshAll(ctx context.Context) ([]subscription.SubscribedPerformer, error)
+}
+
+type StashBoxService interface {
 	RefreshStashBoxes(ctx context.Context) error
 	SnapshotState() (endpoints []subscription.StashBoxEndpoint, state subscription.LoadState)
+}
+
+type RuntimeSubscriptionServices interface {
+	PerformerCatalogService
+	DiscoveryService
+	SubscriptionService
+	StashBoxService
 }
 
 type LogReader interface {
@@ -318,19 +334,22 @@ type LogReader interface {
 }
 
 type Resolver struct {
-	Tracker         tracker.Tracker
-	Torrent         TorrentClient
-	TaskRuntime     TaskRuntimeService
-	TaskFlow        TaskFlowService
-	Stash           StashService
-	Subscription    SubscriptionService
-	LogReader       LogReader
-	SettingsEditor  SettingsEditor
-	RuntimeSettings *SettingsSnapshot
-	RuntimeStatus   *SettingsStatusSnapshot
-	Stats           StatsProvider
-	ImageCache      ImageCacheService
-	AppVersion      string
+	Tracker          tracker.Tracker
+	Torrent          TorrentClient
+	TaskRuntime      TaskRuntimeService
+	TaskFlow         TaskFlowService
+	Stash            StashService
+	PerformerCatalog PerformerCatalogService
+	Discovery        DiscoveryService
+	Subscription     SubscriptionService
+	StashBox         StashBoxService
+	LogReader        LogReader
+	SettingsEditor   SettingsEditor
+	RuntimeSettings  *SettingsSnapshot
+	RuntimeStatus    *SettingsStatusSnapshot
+	Stats            StatsProvider
+	ImageCache       ImageCacheService
+	AppVersion       string
 }
 
 func NewResolver(tr tracker.Tracker, torrent TorrentClient, taskRuntime TaskRuntimeService, stash StashService, version string) *Resolver {

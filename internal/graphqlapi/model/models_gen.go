@@ -412,15 +412,15 @@ type Settings struct {
 }
 
 type SettingsStatus struct {
-	Stash                   *ServiceStatus      `json:"stash"`
-	Jackett                 *ServiceStatus      `json:"jackett"`
-	Qbittorrent             *ServiceStatus      `json:"qbittorrent"`
-	Automation              *AutomationStatus   `json:"automation"`
-	Subscription            *SubscriptionStatus `json:"subscription"`
-	Ingest                  *IngestStatus       `json:"ingest"`
-	ImageCache              *ImageCacheStatus   `json:"imageCache"`
-	StashLibraries          []*StashLibrary     `json:"stashLibraries"`
-	StashLibrariesLoadError *string             `json:"stashLibrariesLoadError,omitempty"`
+	Stash                   *ServiceStatus    `json:"stash"`
+	Jackett                 *ServiceStatus    `json:"jackett"`
+	Qbittorrent             *ServiceStatus    `json:"qbittorrent"`
+	Automation              *AutomationStatus `json:"automation"`
+	StashBox                *StashBoxStatus   `json:"stashBox"`
+	Ingest                  *IngestStatus     `json:"ingest"`
+	ImageCache              *ImageCacheStatus `json:"imageCache"`
+	StashLibraries          []*StashLibrary   `json:"stashLibraries"`
+	StashLibrariesLoadError *string           `json:"stashLibrariesLoadError,omitempty"`
 	// Runtime stats for the Stash server. Refreshed by the stats collector.
 	StashStats *StashStats `json:"stashStats"`
 	// Runtime stats for the Jackett indexer aggregator. Refreshed by the stats collector.
@@ -433,6 +433,15 @@ type StashBoxEndpoint struct {
 	Name             string `json:"name"`
 	Endpoint         string `json:"endpoint"`
 	APIKeyConfigured bool   `json:"apiKeyConfigured"`
+}
+
+type StashBoxStatus struct {
+	// Stash Box instances currently configured inside the Stash server.
+	StashBoxes []*StashBoxEndpoint `json:"stashBoxes"`
+	// Whether the last attempt to load Stash Box endpoints from Stash succeeded.
+	StashBoxesLoaded bool `json:"stashBoxesLoaded"`
+	// Reason for the most recent Stash Box load failure. Null when stashBoxesLoaded is true.
+	StashBoxesLoadError *string `json:"stashBoxesLoadError,omitempty"`
 }
 
 type StashJob struct {
@@ -609,15 +618,6 @@ type SubscriptionReleasePolicyInput struct {
 	CompilationBehavior    SubscriptionReleaseBehavior  `json:"compilationBehavior"`
 	MaxGroupPerformerCount int                          `json:"maxGroupPerformerCount"`
 	ReleaseDateRange       SubscriptionReleaseDateRange `json:"releaseDateRange"`
-}
-
-type SubscriptionStatus struct {
-	// Stash Box instances currently configured inside the Stash server.
-	StashBoxes []*StashBoxEndpoint `json:"stashBoxes"`
-	// Whether the last attempt to load Stash Box endpoints from Stash succeeded.
-	StashBoxesLoaded bool `json:"stashBoxesLoaded"`
-	// Reason for the most recent Stash Box load failure. Null when stashBoxesLoaded is true.
-	StashBoxesLoadError *string `json:"stashBoxesLoadError,omitempty"`
 }
 
 type SystemSettings struct {

@@ -14,6 +14,7 @@ import {
 } from "@fortawesome/free-solid-svg-icons";
 import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
+import { PerformerDetailView, PerformerListView } from "../components/performers/PerformerViews";
 import i18n from "../i18n/i18n";
 import { SUBSCRIPTION_PAGE_SIZE_OPTIONS } from "../constants";
 import { describeQueryError } from "../services/queryError";
@@ -65,7 +66,7 @@ function performerSceneSourceLabel(scene: StashPerformerSceneEntry) {
   return "Stash";
 }
 
-interface SubscriptionPageProps {
+interface PerformersPageProps {
   stashBaseURL: string | null;
   stashPerformerPage: StashPerformerPage | null;
   stashPerformers: StashPerformerEntry[];
@@ -117,7 +118,7 @@ interface SubscriptionPageProps {
   onQueueScene: (scene: StashPerformerSceneEntry) => void;
 }
 
-export function SubscriptionPage({
+export function PerformersPage({
   stashBaseURL,
   stashPerformerPage,
   stashPerformers,
@@ -167,7 +168,7 @@ export function SubscriptionPage({
   onClearSceneSelection,
   onQueueSelectedScenes,
   onQueueScene
-}: SubscriptionPageProps) {
+}: PerformersPageProps) {
   const { t } = useTranslation();
   const subscribedByID = useMemo(() => {
     return new Map(subscribedPerformers.map((item) => [item.performer.id, item]));
@@ -183,7 +184,7 @@ export function SubscriptionPage({
   const latestRelease = performerSubscription?.recentReleases[0] ?? null;
 
   if (selectedPerformerId) {
-    return (
+    return <PerformerDetailView>{(
       <section className="section-band">
         <div className="band-head">
           <div>
@@ -557,10 +558,10 @@ export function SubscriptionPage({
           </article>
         )}
       </section>
-    );
+    )}</PerformerDetailView>;
   }
 
-  return (
+  return <PerformerListView>{(
     <section className="section-band">
       <div className="band-head">
         <div>
@@ -733,5 +734,5 @@ export function SubscriptionPage({
         </div>
       ) : null}
     </section>
-  );
+  )}</PerformerListView>;
 }

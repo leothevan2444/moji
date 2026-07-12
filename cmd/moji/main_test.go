@@ -103,7 +103,7 @@ func TestHTTPHandlerServesSettingsSnapshot(t *testing.T) {
 			jackett { configured ready }
 			qbittorrent { configured ready }
 			automation { taskProgressSyncEnabled subscriptionPollEnabled }
-			subscription { stashBoxes { name endpoint apiKeyConfigured } stashBoxesLoaded }
+				stashBox { stashBoxes { name endpoint apiKeyConfigured } stashBoxesLoaded }
 		}
 	}`)
 	if len(resp.Errors) > 0 {
@@ -124,7 +124,7 @@ func TestHTTPHandlerServesSettingsSnapshot(t *testing.T) {
 	if resp.Data.SettingsStatus.Automation.SubscriptionPollEnabled || resp.Data.SettingsStatus.Automation.TaskProgressSyncEnabled {
 		t.Fatalf("expected automation workers to be disabled in bare handler test config, got %+v", resp.Data.SettingsStatus.Automation)
 	}
-	if len(resp.Data.SettingsStatus.Subscription.StashBoxes) != 0 || len(resp.Data.Settings.Automation.StashBoxEndpoints) != 0 {
+	if len(resp.Data.SettingsStatus.StashBox.StashBoxes) != 0 || len(resp.Data.Settings.Automation.StashBoxEndpoints) != 0 {
 		t.Fatalf("expected empty stash box selection in snapshot, got %+v", resp.Data.Settings.Automation)
 	}
 	if resp.Data.Version != "test-version" {
@@ -435,20 +435,20 @@ type graphQLResponse struct {
 				TaskProgressSyncEnabled bool `json:"taskProgressSyncEnabled"`
 				SubscriptionPollEnabled bool `json:"subscriptionPollEnabled"`
 			} `json:"automation"`
-			Subscription struct {
+			StashBox struct {
 				StashBoxes []struct {
 					Name             string `json:"name"`
 					Endpoint         string `json:"endpoint"`
 					APIKeyConfigured bool   `json:"apiKeyConfigured"`
 				} `json:"stashBoxes"`
 				StashBoxesLoaded bool `json:"stashBoxesLoaded"`
-			} `json:"subscription"`
+			} `json:"stashBox"`
 		} `json:"settingsStatus"`
 	} `json:"data"`
 	Errors []struct {
-		Message string `json:"message"`
+		Message    string `json:"message"`
 		Extensions struct {
-			Code string `json:"code"`
+			Code          string `json:"code"`
 			CorrelationID string `json:"correlationId"`
 		} `json:"extensions"`
 	} `json:"errors"`

@@ -70,7 +70,7 @@ func (r *mutationResolver) RefreshSubscriptionsNow(ctx context.Context) ([]*mode
 
 // QueuePerformerScenes is the resolver for the queuePerformerScenes field.
 func (r *mutationResolver) QueuePerformerScenes(ctx context.Context, input model.QueuePerformerScenesInput) (*model.QueuePerformerScenesPayload, error) {
-	if r.Subscription == nil {
+	if r.PerformerCatalog == nil {
 		return nil, errors.New("subscription service is not configured")
 	}
 
@@ -87,7 +87,7 @@ func (r *mutationResolver) QueuePerformerScenes(ctx context.Context, input model
 		})
 	}
 
-	result, err := r.Subscription.QueuePerformerScenes(ctx, input.PerformerID, selections)
+	result, err := r.PerformerCatalog.QueuePerformerScenes(ctx, input.PerformerID, selections)
 	if err != nil {
 		return nil, err
 	}
@@ -96,7 +96,7 @@ func (r *mutationResolver) QueuePerformerScenes(ctx context.Context, input model
 
 // StashPerformers is the resolver for the stashPerformers field.
 func (r *queryResolver) StashPerformers(ctx context.Context, search *string, page *int, pageSize *int) (*model.StashPerformerConnection, error) {
-	if r.Subscription == nil {
+	if r.PerformerCatalog == nil {
 		return stashPerformerPageToModel(StashPerformerPage{
 			Items:       nil,
 			Page:        1,
@@ -113,7 +113,7 @@ func (r *queryResolver) StashPerformers(ctx context.Context, search *string, pag
 		needle = *search
 	}
 
-	items, err := r.Subscription.ListStashPerformers(ctx, needle)
+	items, err := r.PerformerCatalog.ListStashPerformers(ctx, needle)
 	if err != nil {
 		return nil, err
 	}
@@ -158,11 +158,11 @@ func (r *queryResolver) StashPerformers(ctx context.Context, search *string, pag
 
 // StashPerformerDetail is the resolver for the stashPerformerDetail field.
 func (r *queryResolver) StashPerformerDetail(ctx context.Context, id string) (*model.StashPerformerDetail, error) {
-	if r.Subscription == nil {
+	if r.PerformerCatalog == nil {
 		return nil, errors.New("subscription service is not configured")
 	}
 
-	item, err := r.Subscription.GetPerformerDetail(ctx, id)
+	item, err := r.PerformerCatalog.GetPerformerDetail(ctx, id)
 	if err != nil {
 		return nil, err
 	}
@@ -171,7 +171,7 @@ func (r *queryResolver) StashPerformerDetail(ctx context.Context, id string) (*m
 
 // StashPerformerScenes is the resolver for the stashPerformerScenes field.
 func (r *queryResolver) StashPerformerScenes(ctx context.Context, id string, input model.StashPerformerScenesInput) (*model.StashPerformerSceneConnection, error) {
-	if r.Subscription == nil {
+	if r.PerformerCatalog == nil {
 		return performerScenePageToModel(subscription.PerformerScenePage{
 			Page:     normalizePage(input.Page),
 			PageSize: normalizePageSize(input.PageSize),
@@ -190,7 +190,7 @@ func (r *queryResolver) StashPerformerScenes(ctx context.Context, id string, inp
 		query.InLibrary = subscription.LibraryFilter(*input.InLibrary)
 	}
 
-	page, err := r.Subscription.ListPerformerScenes(ctx, id, query)
+	page, err := r.PerformerCatalog.ListPerformerScenes(ctx, id, query)
 	if err != nil {
 		return nil, err
 	}

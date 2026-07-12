@@ -349,7 +349,10 @@ func TestQueuePerformerScenesMutationMapsBatchResult(t *testing.T) {
 		},
 	}
 	resolver := NewResolver(nil, nil, nil, nil, "test-version")
+	resolver.PerformerCatalog = subscriptionService
+	resolver.Discovery = subscriptionService
 	resolver.Subscription = subscriptionService
+	resolver.StashBox = subscriptionService
 
 	var resp struct {
 		Data struct {
@@ -451,13 +454,17 @@ func TestDeleteTaskMutation(t *testing.T) {
 
 func TestStashPerformersQueryPaginatesResults(t *testing.T) {
 	resolver := NewResolver(nil, nil, nil, nil, "test-version")
-	resolver.Subscription = &fakeSubscriptionService{
+	service := &fakeSubscriptionService{
 		performers: []subscription.Performer{
 			{ID: "performer-1", Name: "Alice", Subscribed: true},
 			{ID: "performer-2", Name: "Beth", Subscribed: false},
 			{ID: "performer-3", Name: "Clara", Subscribed: false},
 		},
 	}
+	resolver.PerformerCatalog = service
+	resolver.Discovery = service
+	resolver.Subscription = service
+	resolver.StashBox = service
 
 	resp := executeGraphQL(t, resolver, `{
 		stashPerformers(page: 2, pageSize: 2) {

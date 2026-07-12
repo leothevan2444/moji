@@ -17,10 +17,12 @@ import (
 	"github.com/99designs/gqlgen/graphql/playground"
 	"github.com/leothevan2444/moji/internal/config"
 	"github.com/leothevan2444/moji/internal/controller/api"
+	"github.com/leothevan2444/moji/internal/discovery"
 	"github.com/leothevan2444/moji/internal/graphqlapi"
 	"github.com/leothevan2444/moji/internal/graphqlapi/generated"
 	"github.com/leothevan2444/moji/internal/imagecache"
 	"github.com/leothevan2444/moji/internal/logging"
+	"github.com/leothevan2444/moji/internal/performer"
 	"github.com/leothevan2444/moji/internal/stashsync"
 	"github.com/leothevan2444/moji/internal/stats"
 	"github.com/leothevan2444/moji/internal/subscription"
@@ -126,7 +128,7 @@ func newHTTPHandler(cfg *config.Config, version string) http.Handler {
 	return handler
 }
 
-func newHTTPRuntime(cfg *config.Config, version string, configStore *config.Store) (http.Handler, graphqlapi.TaskRuntimeService, graphqlapi.StashService, graphqlapi.SubscriptionService, *stats.Collector) {
+func newHTTPRuntime(cfg *config.Config, version string, configStore *config.Store) (http.Handler, graphqlapi.TaskRuntimeService, graphqlapi.StashService, graphqlapi.RuntimeSubscriptionServices, *stats.Collector) {
 	imageService, err := imagecache.New("cache/image", func() imagecache.Config {
 		current := cfg.System.ImageCache.Normalize()
 		if configStore != nil {
@@ -164,7 +166,10 @@ func newHTTPRuntime(cfg *config.Config, version string, configStore *config.Stor
 	)
 	resolver := graphqlapi.NewResolver(jackettTracker, torrentClient, taskRuntimeService, stashService, version)
 	resolver.TaskFlow = taskFlowService
+	resolver.PerformerCatalog = performer.NewService(subscriptionService)
+	resolver.Discovery = discovery.NewService(subscriptionService)
 	resolver.Subscription = subscriptionService
+	resolver.StashBox = subscriptionService
 	resolver.LogReader = logging.Default()
 	resolver.RuntimeSettings = buildSettingsSnapshot(cfg, version)
 	resolver.RuntimeStatus = buildSettingsStatusSnapshot(cfg, version, taskRuntimeService != nil, stashService != nil, stashClient, subscriptionService)
@@ -396,7 +401,7 @@ func configureQBittorrentConfigProvider(store *config.Store, cfg *config.Config)
 	}
 }
 
-func applySubscriptionOrder(cfg *config.Config, service graphqlapi.SubscriptionService) {
+func applySubscriptionOrder(cfg *config.Config, service graphqlapi.RuntimeSubscriptionServices) {
 	if service == nil || cfg == nil {
 		return
 	}
@@ -531,24 +536,24 @@ func torrentSelectionSnapshot(cfg config.TorrentSelectionConfig) graphqlapi.Torr
 	return out
 }
 
-func buildSettingsStatusSnapshot(cfg *config.Config, version string, downloaderEnabled bool, stashEnabled bool, stashClient *stash.Client, subscriptionService graphqlapi.SubscriptionService) *graphqlapi.SettingsStatusSnapshot {
+func buildSettingsStatusSnapshot(cfg *config.Config, version string, downloaderEnabled bool, stashEnabled bool, stashClient *stash.Client, subscriptionService graphqlapi.StashBoxService) *graphqlapi.SettingsStatusSnapshot {
 	_ = version
 	jackettConfigured := cfg.Connection.Jackett.URL != "" && cfg.Connection.Jackett.APIKey != ""
 	stashConfigured := isStashConfigured(cfg)
 	ingestConfigured := isIngestConfigured(cfg)
 	qbittorrentConfigured := cfg.Connection.QBittorrent.URL != "" && cfg.Connection.QBittorrent.Username != "" && cfg.Connection.QBittorrent.Password != ""
 
-	subscriptionStatus := graphqlapi.SubscriptionStatusSnapshot{
+	stashBoxStatus := graphqlapi.StashBoxStatusSnapshot{
 		StashBoxes:          []graphqlapi.StashBoxEndpointSnapshot{},
 		StashBoxesLoaded:    false,
 		StashBoxesLoadError: "",
 	}
 	if subscriptionService != nil {
 		endpoints, state := subscriptionService.SnapshotState()
-		subscriptionStatus.StashBoxesLoaded = state.Loaded
-		subscriptionStatus.StashBoxesLoadError = state.ErrorMsg
+		stashBoxStatus.StashBoxesLoaded = state.Loaded
+		stashBoxStatus.StashBoxesLoadError = state.ErrorMsg
 		for _, box := range endpoints {
-			subscriptionStatus.StashBoxes = append(subscriptionStatus.StashBoxes, graphqlapi.StashBoxEndpointSnapshot{
+			stashBoxStatus.StashBoxes = append(stashBoxStatus.StashBoxes, graphqlapi.StashBoxEndpointSnapshot{
 				Name:             box.Name,
 				Endpoint:         box.Endpoint,
 				APIKeyConfigured: box.APIKeyConfigured,
@@ -580,7 +585,7 @@ func buildSettingsStatusSnapshot(cfg *config.Config, version string, downloaderE
 			SubscriptionPollIntervalHours:   effectiveSubscriptionPollIntervalHours(cfg),
 			SubscriptionPollEnabled:         cfg.Automation.SubscriptionPollIntervalHours >= 0 && stashEnabled,
 		},
-		Subscription:            subscriptionStatus,
+		StashBox:                stashBoxStatus,
 		StashLibraries:          stashLibraries,
 		StashLibrariesLoadError: stashLibrariesLoadError,
 	}
@@ -776,7 +781,7 @@ func isIngestConfigured(cfg *config.Config) bool {
 	}
 }
 
-func configureSubscription(cfg *config.Config, configStore *config.Store, stashClient *stash.Client, taskRuntimeService graphqlapi.TaskRuntimeService, taskFlowService *taskflow.Service, imageService *imagecache.Service) graphqlapi.SubscriptionService {
+func configureSubscription(cfg *config.Config, configStore *config.Store, stashClient *stash.Client, taskRuntimeService graphqlapi.TaskRuntimeService, taskFlowService *taskflow.Service, imageService *imagecache.Service) graphqlapi.RuntimeSubscriptionServices {
 	if stashClient == nil {
 		logging.Infof("runtime: subscription service disabled because stash client is not available")
 		return nil

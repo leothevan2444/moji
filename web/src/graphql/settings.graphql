@@ -156,8 +156,8 @@ mutation ClearImageCacheDocument {
   }
 }
 
-mutation RefreshSubscriptionStashBoxesDocument {
-  refreshSubscriptionStashBoxes {
+mutation RefreshStashBoxes {
+  refreshStashBoxes {
     automation {
       stashBoxEndpoints
     }

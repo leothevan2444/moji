@@ -26,7 +26,7 @@ extend type Mutation {
   updateSystemSettings(input: UpdateSystemSettingsInput!): Settings!
 
   "Re-fetch the Stash-Box list from the configured Stash server. The updated list and load status are reflected in the returned Settings snapshot."
-  refreshSubscriptionStashBoxes: Settings!
+  refreshStashBoxes: Settings!
 
   "Delete cached image files while preserving registered proxy keys"
   clearImageCache: ImageCacheStatus!
@@ -46,7 +46,7 @@ type SettingsStatus {
   jackett: ServiceStatus!
   qbittorrent: ServiceStatus!
   automation: AutomationStatus!
-  subscription: SubscriptionStatus!
+  stashBox: StashBoxStatus!
   ingest: IngestStatus!
   imageCache: ImageCacheStatus!
   stashLibraries: [StashLibrary!]!
@@ -337,7 +337,7 @@ type AutomationStatus {
   subscriptionPollEnabled: Boolean!
 }
 
-type SubscriptionStatus {
+type StashBoxStatus {
   "Stash Box instances currently configured inside the Stash server."
   stashBoxes: [StashBoxEndpoint!]!
   "Whether the last attempt to load Stash Box endpoints from Stash succeeded."

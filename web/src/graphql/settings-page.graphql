@@ -151,7 +151,7 @@ query SettingsPageDocument {
       subscriptionPollIntervalHours
       subscriptionPollEnabled
     }
-    subscription {
+    stashBox {
       stashBoxes {
         name
         endpoint

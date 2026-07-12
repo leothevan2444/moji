@@ -18,7 +18,7 @@ import {
   ClearImageCacheDocumentDocument,
   LogLevel,
   LogsDocumentDocument,
-  RefreshSubscriptionStashBoxesDocumentDocument,
+  RefreshStashBoxesDocument,
   SubscriptionReleaseBehavior,
   SubscriptionReleaseDateRange,
   TorrentFileMatchEffect,
@@ -38,7 +38,7 @@ import {
   type JackettIndexersDocumentQueryVariables,
   type LogsDocumentQuery,
   type LogsDocumentQueryVariables,
-  type RefreshSubscriptionStashBoxesDocumentMutation,
+  type RefreshStashBoxesMutation,
   type UpdateAutomationSettingsDocumentMutation,
   type UpdateAutomationSettingsDocumentMutationVariables,
   type UpdateIngestSettingsDocumentMutation,
@@ -502,8 +502,8 @@ export function SettingsPanel({
   >(UpdateSystemSettingsDocumentDocument);
   const [{ fetching: clearingImageCache }, clearImageCache] = useMutation<ClearImageCacheDocumentMutation>(ClearImageCacheDocumentDocument);
   const [{ fetching: refreshingStashBoxes }, refreshStashBoxesMutation] = useMutation<
-    RefreshSubscriptionStashBoxesDocumentMutation
-  >(RefreshSubscriptionStashBoxesDocumentDocument);
+    RefreshStashBoxesMutation
+  >(RefreshStashBoxesDocument);
 
   useEffect(() => {
     if (!runtimeSettings) return;
@@ -828,7 +828,7 @@ export function SettingsPanel({
     await refreshDashboard({ requestPolicy: "network-only" });
   };
 
-  const refreshSubscriptionStashBoxes = async () => {
+  const refreshStashBoxes = async () => {
     const result = await refreshStashBoxesMutation({});
     if (result.error) {
       pushToast("tone-danger", t("automationUi.stashBoxes.loadFailed", { error: describeQueryError(result.error) }));
@@ -1266,9 +1266,9 @@ export function SettingsPanel({
   }
 
   if (settingsTab === "automation") {
-    const stashBoxes = runtimeStatus.subscription.stashBoxes ?? [];
-    const loaded = runtimeStatus.subscription.stashBoxesLoaded;
-    const loadError = runtimeStatus.subscription.stashBoxesLoadError;
+    const stashBoxes = runtimeStatus.stashBox.stashBoxes ?? [];
+    const loaded = runtimeStatus.stashBox.stashBoxesLoaded;
+    const loadError = runtimeStatus.stashBox.stashBoxesLoadError;
     const order = automationForm.stashBoxEndpoints;
     const byEndpoint = new Map(stashBoxes.map((box) => [box.endpoint, box]));
     const display: { endpoint: string; box: typeof stashBoxes[number] | null }[] = [];
@@ -1438,7 +1438,7 @@ export function SettingsPanel({
                   type="button"
                   className="ghost-button stashbox-source__refresh"
                   disabled={refreshingStashBoxes}
-                  onClick={() => void refreshSubscriptionStashBoxes()}
+                  onClick={() => void refreshStashBoxes()}
                 >
                   <FontAwesomeIcon icon={faRotate} className={refreshingStashBoxes ? "is-spinning" : undefined} />
                   <span>{refreshingStashBoxes ? t("automationUi.stashBoxes.refreshing") : t("automationUi.stashBoxes.refresh")}</span>

@@ -1,8 +1,8 @@
 import { useDeferredValue, useEffect, useState } from "react";
 import { useLocation, useNavigate, useOutletContext, useParams, useSearchParams } from "react-router";
 import { useQuery } from "urql";
-import { SubscriptionPage } from "../../pages/SubscriptionPage";
-import { useSubscription } from "../../hooks/useSubscription";
+import { PerformersPage } from "../../pages/PerformersPage";
+import { usePerformersWorkspace } from "../../hooks/usePerformersWorkspace";
 import { parsePerformerSearchParams, serializePerformerSearchParams } from "../searchParams";
 import { LibraryFilter, PerformersConfigDocumentDocument, SceneSourceFilter } from "../../graphql/generated/graphql";
 import { describeQueryError } from "../../services/queryError";
@@ -26,7 +26,7 @@ export function Component() {
   const source = state.source === "stash" ? SceneSourceFilter.Stash : state.source === "stashbox" ? SceneSourceFilter.Stashbox : SceneSourceFilter.All;
   const library = state.library === "in-library" ? LibraryFilter.InLibrary : state.library === "not-in-library" ? LibraryFilter.NotInLibrary : LibraryFilter.All;
   const [{ data: config }] = useQuery({ query: PerformersConfigDocumentDocument, requestPolicy: "cache-and-network" });
-  const subscription = useSubscription({ enabled: true, search: deferredSearch || null, page: state.page, pageSize: state.pageSize, performerId: performerId ?? null, performerSceneSearch: deferredSceneSearch || null, performerSceneSource: source, performerSceneLibrary: library, performerScenePage: state.scenePage, performerScenePageSize: state.scenePageSize });
+  const subscription = usePerformersWorkspace({ enabled: true, search: deferredSearch || null, page: state.page, pageSize: state.pageSize, performerId: performerId ?? null, performerSceneSearch: deferredSceneSearch || null, performerSceneSource: source, performerSceneLibrary: library, performerScenePage: state.scenePage, performerScenePageSize: state.scenePageSize });
   const update = (patch: Partial<typeof state>) => {
     const next = serializePerformerSearchParams({ ...state, ...patch });
     const base = performerId ? `/performers/${encodeURIComponent(performerId)}` : "/performers";
@@ -59,7 +59,7 @@ export function Component() {
     finally { setPendingKeys((current) => current.filter((key) => key !== scene.key)); }
   };
 
-  return <SubscriptionPage stashBaseURL={config?.settings.stash.url ?? null} stashPerformerPage={subscription.stashPerformerPage} stashPerformers={subscription.stashPerformers} subscribedPerformers={subscription.subscribedPerformers}
+  return <PerformersPage stashBaseURL={config?.settings.stash.url ?? null} stashPerformerPage={subscription.stashPerformerPage} stashPerformers={subscription.stashPerformers} subscribedPerformers={subscription.subscribedPerformers}
     fetchingStashPerformers={subscription.fetchingStashPerformers} fetchingSubscription={subscription.fetchingSubscription} performerDetail={subscription.performerDetail} performerScenePage={subscription.performerScenePage} performerScenes={subscription.performerScenes}
     fetchingPerformerDetail={subscription.fetchingPerformerDetail} fetchingPerformerScenes={subscription.fetchingPerformerScenes} refreshingSubscriptionNow={subscription.refreshingSubscriptionNow} queueingPerformerScenes={subscription.queueingPerformerScenes}
     subscriptionSearch={state.q} subscriptionPageSize={state.pageSize} selectedPerformerId={performerId ?? null} performerSceneSearch={state.sceneQ} performerSceneSourceFilter={source} performerSceneLibraryFilter={library} performerScenePageSize={state.scenePageSize}
