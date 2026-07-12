@@ -2,7 +2,7 @@ export const resources = {
   "zh-CN": { translation: {
     common: { auto: "跟随浏览器", language: "语言", loading: "页面加载中", helpLoading: "帮助加载中", collapse: "收起", expand: "展开", close: "关闭", retry: "重试", reload: "重新加载", items: "{{count}} 项", refresh: "刷新" },
     navigation: { label: "主导航", home: "主页", tasks: "任务", performers: "演员", discover: "发现", stats: "统计", settings: "设置", help: "帮助" },
-    settings: { title: "配置与系统", tabs: { connections: "连接", ingest: "入库", automation: "自动化", system: "系统", logs: "日志", about: "关于" } },
+    settings: { title: "配置与系统", state: "当前状态", waiting: "等待后端返回设置数据", saving: "保存中...", tabs: { connections: "连接", ingest: "入库", automation: "自动化", system: "系统", logs: "日志", about: "关于" }, connections: { save: "保存 {{service}} 连接", saved: "{{service}} 设置已保存。", dashboardPassword: "Dashboard 密码", dashboardPasswordPlaceholder: "Jackett 管理界面登录密码", username: "用户名", password: "密码", defaultSavePath: "默认保存路径", defaultCategory: "默认分类", defaultTags: "默认标签" } },
     help: { title: "Markdown 帮助", navigation: "帮助文档" },
     errors: { notFoundTitle: "页面不存在", notFoundDetail: "这个地址没有对应的 Moji 页面。", returnHome: "返回主页", routeTitle: "页面加载失败", moduleLoad: "页面模块加载失败" },
     theme: { label: "主题：{{theme}}", choose: "选择主题", light: "浅色", dark: "深色", auto: "自动", resolved: "（当前显示：{{theme}}）" },
@@ -40,7 +40,7 @@ export const resources = {
   en: { translation: {
     common: { auto: "Use browser language", language: "Language", loading: "Loading page", helpLoading: "Loading help", collapse: "Collapse", expand: "Expand", close: "Close", retry: "Retry", reload: "Reload", items: "{{count}} item", items_other: "{{count}} items", refresh: "Refresh" },
     navigation: { label: "Main navigation", home: "Home", tasks: "Tasks", performers: "Performers", discover: "Discover", stats: "Statistics", settings: "Settings", help: "Help" },
-    settings: { title: "Configuration & system", tabs: { connections: "Connections", ingest: "Ingest", automation: "Automation", system: "System", logs: "Logs", about: "About" } },
+    settings: { title: "Configuration & system", state: "Current status", waiting: "Waiting for settings data from the server", saving: "Saving...", tabs: { connections: "Connections", ingest: "Ingest", automation: "Automation", system: "System", logs: "Logs", about: "About" }, connections: { save: "Save {{service}} connection", saved: "{{service}} settings saved.", dashboardPassword: "Dashboard password", dashboardPasswordPlaceholder: "Jackett administration password", username: "Username", password: "Password", defaultSavePath: "Default save path", defaultCategory: "Default category", defaultTags: "Default tags" } },
     help: { title: "Markdown help", navigation: "Help documentation" },
     errors: { notFoundTitle: "Page not found", notFoundDetail: "There is no Moji page at this address.", returnHome: "Return home", routeTitle: "Page failed to load", moduleLoad: "Page module failed to load" },
     theme: { label: "Theme: {{theme}}", choose: "Choose theme", light: "Light", dark: "Dark", auto: "Automatic", resolved: "(Currently showing: {{theme}})" },

@@ -17,9 +17,9 @@ export function serviceStatus(
   lastError: string | null,
   okAt?: string | null
 ) {
-  if (!configured) return { label: "未配置", tone: "tone-neutral" as const };
-  if (ready) return { label: "已启用", tone: "tone-success" as const };
-  if (lastError) return { label: "运行异常", tone: "tone-danger" as const };
-  if (!okAt) return { label: "待检测", tone: "tone-warn" as const };
-  return { label: "数据陈旧", tone: "tone-warn" as const };
+  if (!configured) return { labelKey: "home.status.unconfigured", tone: "tone-neutral" as const };
+  if (ready) return { labelKey: "home.status.enabled", tone: "tone-success" as const };
+  if (lastError) return { labelKey: "home.status.error", tone: "tone-danger" as const };
+  if (!okAt) return { labelKey: "home.status.pending", tone: "tone-warn" as const };
+  return { labelKey: "home.status.stale", tone: "tone-warn" as const };
 }

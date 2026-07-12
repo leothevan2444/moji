@@ -69,6 +69,7 @@ import { serviceStatus } from "../../utils";
 import { describeQueryError } from "../../services/queryError";
 import { formatDateTime, formatLogEntries } from "../../utils";
 import { formatBytes } from "../../utils";
+import { useTranslation } from "react-i18next";
 
 type RuntimeSettings = NonNullable<SettingsPageDocumentQuery["settings"]>;
 type RuntimeSettingsStatus = NonNullable<SettingsPageDocumentQuery["settingsStatus"]>;
@@ -402,6 +403,7 @@ export function SettingsPanel({
   pushToast,
   refreshDashboard
 }: SettingsPanelProps) {
+  const { t } = useTranslation();
   const [logsLevel, setLogsLevel] = useState<LogLevel>(LogLevel.Info);
   const [downloadingLogFile, setDownloadingLogFile] = useState(false);
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
@@ -575,7 +577,7 @@ export function SettingsPanel({
       pushToast("tone-danger", describeQueryError(result.error));
       return;
     }
-    pushToast("tone-success", "Stash 设置已保存。");
+    pushToast("tone-success", t("settings.connections.saved", { service: "Stash" }));
     await refreshDashboard({ requestPolicy: "network-only" });
   };
 
@@ -629,7 +631,7 @@ export function SettingsPanel({
       pushToast("tone-danger", describeQueryError(result.error));
       return;
     }
-    pushToast("tone-success", "Jackett 设置已保存。");
+    pushToast("tone-success", t("settings.connections.saved", { service: "Jackett" }));
     // Mirror qBittorrent's pattern: clear the password field after a
     // successful save so the plaintext doesn't linger in component state.
     setJackettForm((current) => ({ ...current, password: "" }));
@@ -652,7 +654,7 @@ export function SettingsPanel({
       pushToast("tone-danger", describeQueryError(result.error));
       return;
     }
-    pushToast("tone-success", "qBittorrent 设置已保存。");
+    pushToast("tone-success", t("settings.connections.saved", { service: "qBittorrent" }));
     await refreshDashboard({ requestPolicy: "network-only" });
   };
 
@@ -872,12 +874,12 @@ export function SettingsPanel({
     return (
       <article className="drawer-card">
         <div className="drawer-card__head">
-          <h3>{settingsTab}</h3>
+          <h3>{t(`settings.tabs.${settingsTab}`)}</h3>
         </div>
         <dl className="settings-grid">
           <div>
-            <dt>当前状态</dt>
-            <dd>等待后端返回设置数据</dd>
+            <dt>{t("settings.state")}</dt>
+            <dd>{t("settings.waiting")}</dd>
           </div>
         </dl>
       </article>
@@ -907,13 +909,13 @@ export function SettingsPanel({
     return (
       <article className="drawer-card">
         <div className="drawer-card__head">
-          <h3>连接</h3>
+          <h3>{t("settings.tabs.connections")}</h3>
         </div>
 
         <form className="settings-form" onSubmit={(event) => void saveStashSettings(event)}>
           <div className="settings-meta">
             <span>Stash</span>
-            <span className={`status-chip ${stashStatus.tone}`}>{stashStatus.label}</span>
+            <span className={`status-chip ${stashStatus.tone}`}>{t(stashStatus.labelKey)}</span>
           </div>
           <label className="settings-field">
             <span>Stash URL</span>
@@ -941,7 +943,7 @@ export function SettingsPanel({
           </label>
           <div className="settings-actions">
             <button type="submit" disabled={updatingStash}>
-              {updatingStash ? "保存中..." : "保存 Stash 连接"}
+              {updatingStash ? t("settings.saving") : t("settings.connections.save", { service: "Stash" })}
             </button>
           </div>
         </form>
@@ -949,7 +951,7 @@ export function SettingsPanel({
         <form className="settings-form" onSubmit={(event) => void saveJackettSettings(event)}>
           <div className="settings-meta">
             <span>Jackett</span>
-            <span className={`status-chip ${jackettStatus.tone}`}>{jackettStatus.label}</span>
+            <span className={`status-chip ${jackettStatus.tone}`}>{t(jackettStatus.labelKey)}</span>
           </div>
           <label className="settings-field">
             <span>Jackett URL</span>
@@ -977,7 +979,7 @@ export function SettingsPanel({
           </label>
           <label className="settings-field">
             <span>
-              Dashboard 密码
+              {t("settings.connections.dashboardPassword")}
             </span>
             <div className="secret-input">
               <input
@@ -985,7 +987,7 @@ export function SettingsPanel({
                 type={visibleSecrets.jackettPassword ? "text" : "password"}
                 value={jackettForm.password}
                 onChange={(event) => setJackettForm((current) => ({ ...current, password: event.target.value }))}
-                placeholder="Jackett 管理界面登录密码"
+                placeholder={t("settings.connections.dashboardPasswordPlaceholder")}
                 autoComplete="off"
                 spellCheck={false}
               />
@@ -996,7 +998,7 @@ export function SettingsPanel({
           </label>
           <div className="settings-actions">
             <button type="submit" disabled={updatingJackett}>
-              {updatingJackett ? "保存中..." : "保存 Jackett 连接"}
+              {updatingJackett ? t("settings.saving") : t("settings.connections.save", { service: "Jackett" })}
             </button>
           </div>
         </form>
@@ -1004,7 +1006,7 @@ export function SettingsPanel({
         <form className="settings-form" onSubmit={(event) => void saveQBittorrentSettings(event)}>
           <div className="settings-meta">
             <span>qBittorrent</span>
-            <span className={`status-chip ${qbittorrentStatus.tone}`}>{qbittorrentStatus.label}</span>
+            <span className={`status-chip ${qbittorrentStatus.tone}`}>{t(qbittorrentStatus.labelKey)}</span>
           </div>
           <label className="settings-field">
             <span>qBittorrent URL</span>
@@ -1015,7 +1017,7 @@ export function SettingsPanel({
             />
           </label>
           <label className="settings-field">
-            <span>用户名</span>
+            <span>{t("settings.connections.username")}</span>
             <input
               value={qbittorrentForm.username}
               onChange={(event) => setQBittorrentForm((current) => ({ ...current, username: event.target.value }))}
@@ -1023,7 +1025,7 @@ export function SettingsPanel({
             />
           </label>
           <label className="settings-field">
-            <span>密码</span>
+            <span>{t("settings.connections.password")}</span>
             <div className="secret-input">
               <input
                 className="secret-input__field"
@@ -1039,7 +1041,7 @@ export function SettingsPanel({
             </div>
           </label>
           <label className="settings-field">
-            <span>默认保存路径</span>
+            <span>{t("settings.connections.defaultSavePath")}</span>
             <input
               value={qbittorrentForm.defaultSavePath}
               onChange={(event) => setQBittorrentForm((current) => ({ ...current, defaultSavePath: event.target.value }))}
@@ -1047,7 +1049,7 @@ export function SettingsPanel({
             />
           </label>
           <label className="settings-field">
-            <span>默认分类</span>
+            <span>{t("settings.connections.defaultCategory")}</span>
             <input
               value={qbittorrentForm.category}
               onChange={(event) => setQBittorrentForm((current) => ({ ...current, category: event.target.value }))}
@@ -1055,7 +1057,7 @@ export function SettingsPanel({
             />
           </label>
           <label className="settings-field">
-            <span>默认标签</span>
+            <span>{t("settings.connections.defaultTags")}</span>
             <input
               value={qbittorrentForm.tags}
               onChange={(event) => setQBittorrentForm((current) => ({ ...current, tags: event.target.value }))}
@@ -1064,7 +1066,7 @@ export function SettingsPanel({
           </label>
           <div className="settings-actions">
             <button type="submit" disabled={updatingQBittorrent}>
-              {updatingQBittorrent ? "保存中..." : "保存 qBittorrent 连接"}
+              {updatingQBittorrent ? t("settings.saving") : t("settings.connections.save", { service: "qBittorrent" })}
             </button>
           </div>
         </form>
