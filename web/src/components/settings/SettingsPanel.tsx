@@ -671,7 +671,7 @@ export function SettingsPanel({
 
   const saveTorrentSelectionSettings = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    await saveAutomationSettingsSection("自动选种规则已保存。");
+    await saveAutomationSettingsSection(t("ruleUi.saved"));
   };
 
   const saveStashBoxPrioritySettings = async (event: FormEvent<HTMLFormElement>) => {
@@ -1554,21 +1554,21 @@ export function SettingsPanel({
           <section className="torrent-rules">
             <header className="torrent-rules__head">
               <div>
-                <h4>自动选种规则</h4>
+                <h4>{t("ruleUi.title")}</h4>
                 <p className="torrent-rules__sub">
-                  默认仅影响后端自动挑选下载候选，规则按从上到下顺序依次比较。
+                  {t("ruleUi.detail")}
                 </p>
               </div>
               <div className="torrent-rules__save">
                 <button type="submit" disabled={updatingAutomation}>
-                  {updatingAutomation ? "保存中..." : "保存自动选种规则"}
+                  {updatingAutomation ? t("settings.saving") : t("ruleUi.save")}
                 </button>
               </div>
             </header>
 
             <div className="torrent-rules__toolbar">
               <label className="switch-row">
-                <span className="switch-row__label">启用规则链</span>
+                <span className="switch-row__label">{t("ruleUi.enableChain")}</span>
                 <span className="switch" role="switch" aria-checked={automationForm.torrentSelection.enabled}>
                   <input
                     type="checkbox"
@@ -1599,13 +1599,13 @@ export function SettingsPanel({
                 onClick={() => setRulesExpanded((current) => !current)}
               >
                 <FontAwesomeIcon icon={rulesExpanded ? faChevronUp : faChevronDown} />
-                <span>{rulesExpanded ? "收起" : "展开"}</span>
+                <span>{t(rulesExpanded ? "common.collapse" : "common.expand")}</span>
               </button>
             </div>
 
             {!rulesExpanded && totalRuleCount > 0 ? (
               <p className="torrent-rules__hint">
-                当前已配置 {totalRuleCount} 条规则，启用后才会生效。
+                {t("ruleUi.configured", { count: totalRuleCount })}
               </p>
             ) : null}
 
@@ -1653,7 +1653,7 @@ export function SettingsPanel({
                     }}
                   >
                     <header className="torrent-rule__head">
-                    <span className="torrent-rule__handle" aria-hidden="true" title="拖动以重新排序">
+                    <span className="torrent-rule__handle" aria-hidden="true" title={t("ruleUi.drag")}>
                       <FontAwesomeIcon icon={faGripVertical} />
                     </span>
                     <span className="torrent-rule__order">{ruleIndex + 1}</span>
@@ -1683,7 +1683,7 @@ export function SettingsPanel({
                         <span className="switch__track" aria-hidden="true" />
                         <span className="switch__thumb" aria-hidden="true" />
                       </label>
-                      <button type="button" className="ghost-button ghost-button--icon" onClick={() => moveCandidateRuleInSection("fast", ruleIndex, ruleIndex - 1)} disabled={ruleIndex === 0} aria-label="上移">
+                      <button type="button" className="ghost-button ghost-button--icon" onClick={() => moveCandidateRuleInSection("fast", ruleIndex, ruleIndex - 1)} disabled={ruleIndex === 0} aria-label={t("common.moveUp")}>
                         <FontAwesomeIcon icon={faArrowUp} />
                       </button>
                       <button
@@ -1691,7 +1691,7 @@ export function SettingsPanel({
                         className="ghost-button ghost-button--icon"
                         onClick={() => moveCandidateRuleInSection("fast", ruleIndex, ruleIndex + 1)}
                         disabled={ruleIndex === fastRules.length - 1}
-                        aria-label="下移"
+                        aria-label={t("common.moveDown")}
                       >
                         <FontAwesomeIcon icon={faArrowDown} />
                       </button>
@@ -1704,7 +1704,7 @@ export function SettingsPanel({
                         <div className="torrent-rule__body">
                           {usesRuleDirection(rule.type) ? (
                             <label className="torrent-rule__inline-field">
-                              <span className="torrent-rule__inline-label">方向</span>
+                              <span className="torrent-rule__inline-label">{t("ruleUi.direction")}</span>
                               <select
                                 value={getRuleDirection(rule)}
                                 onChange={(event) =>
@@ -1730,14 +1730,14 @@ export function SettingsPanel({
                           ) : null}
 
                           {rule.type === TorrentSelectionRuleType.TitleSimilarity ? (
-                            <p className="torrent-rule__hint">按查询词与标题的归一化相似度进行排序，不提供额外参数。</p>
+                            <p className="torrent-rule__hint">{t("ruleUi.similarityHint")}</p>
                           ) : null}
 
                           {rule.type === TorrentSelectionRuleType.IndexerPreference ? (
                             <>
-                              {fetchingJackettIndexers ? <span className="torrent-rule__hint">加载索引器中…</span> : null}
+                              {fetchingJackettIndexers ? <span className="torrent-rule__hint">{t("ruleUi.loadingIndexers")}</span> : null}
                               {!fetchingJackettIndexers && jackettIndexers.length === 0 ? (
-                                <span className="torrent-rule__hint">当前没有可用的 Jackett 索引器。</span>
+                                <span className="torrent-rule__hint">{t("ruleUi.noIndexers")}</span>
                               ) : null}
                               {!fetchingJackettIndexers && jackettIndexers.length > 0 ? (
                                 <ol className="torrent-rule__indexer-list">
@@ -1791,7 +1791,7 @@ export function SettingsPanel({
                                         }}
                                       >
                                         <div className="torrent-rule__indexer-main">
-                                          <span className="torrent-rule__indexer-handle" aria-hidden="true" title="拖动以调整优先级">
+                                          <span className="torrent-rule__indexer-handle" aria-hidden="true" title={t("ruleUi.dragPriority")}>
                                             <FontAwesomeIcon icon={faGripVertical} />
                                           </span>
                                           <div className="torrent-rule__indexer-copy">
@@ -1813,18 +1813,18 @@ export function SettingsPanel({
                             <>
                               <div className="torrent-rule__section-head">
                                 <div>
-                                  <p className="torrent-rule__hint">按顺序匹配标题；PLAIN 为纯文本，REGEX 为正则，PREFER/AVOID 决定排序倾向。</p>
+                                  <p className="torrent-rule__hint">{t("ruleUi.titleHint")}</p>
                                 </div>
                                 <button
                                   type="button"
                                   className="ghost-button"
                                   onClick={() => addTitleMatchClause(rule.type)}
                                 >
-                                  添加规则
+                                  {t("common.add")}
                                 </button>
                               </div>
                               {rule.titleMatch.clauses.length === 0 ? (
-                                <p className="torrent-rule__hint">尚未添加标题匹配规则。</p>
+                                <p className="torrent-rule__hint">{t("ruleUi.noTitleRules")}</p>
                               ) : (
                                 <div className="torrent-rule__clauses">
                                   {rule.titleMatch.clauses.map((clause, clauseIndex) => (
@@ -1838,8 +1838,8 @@ export function SettingsPanel({
                                             pattern: event.target.value
                                           }))
                                         }
-                                        placeholder="Pattern：uncensored 或 /\\b4k\\b/i"
-                                        aria-label="标题 Pattern"
+                                        placeholder="uncensored or /\\b4k\\b/i"
+                                        aria-label={t("ruleUi.titlePattern")}
                                       />
                                       <select
                                         className="torrent-rule__clause-mode"
@@ -1850,7 +1850,7 @@ export function SettingsPanel({
                                             patternMode: event.target.value as TitleMatchPatternMode
                                           }))
                                         }
-                                        aria-label="匹配模式"
+                                        aria-label={t("ruleUi.patternMode")}
                                       >
                                         <option value={TitleMatchPatternMode.Plain}>PLAIN</option>
                                         <option value={TitleMatchPatternMode.Regex}>REGEX</option>
@@ -1864,7 +1864,7 @@ export function SettingsPanel({
                                             effect: event.target.value as TitleMatchEffect
                                           }))
                                         }
-                                        aria-label="效果"
+                                        aria-label={t("ruleUi.effect")}
                                       >
                                         <option value={TitleMatchEffect.Prefer}>PREFER</option>
                                         <option value={TitleMatchEffect.Avoid}>AVOID</option>
@@ -1875,7 +1875,7 @@ export function SettingsPanel({
                                           className="ghost-button ghost-button--icon"
                                           onClick={() => moveTitleMatchClause(rule.type, clauseIndex, clauseIndex - 1)}
                                           disabled={clauseIndex === 0}
-                                          aria-label="上移"
+                                          aria-label={t("common.moveUp")}
                                         >
                                           <FontAwesomeIcon icon={faArrowUp} />
                                         </button>
@@ -1884,7 +1884,7 @@ export function SettingsPanel({
                                           className="ghost-button ghost-button--icon"
                                           onClick={() => moveTitleMatchClause(rule.type, clauseIndex, clauseIndex + 1)}
                                           disabled={clauseIndex === rule.titleMatch.clauses.length - 1}
-                                          aria-label="下移"
+                                          aria-label={t("common.moveDown")}
                                         >
                                           <FontAwesomeIcon icon={faArrowDown} />
                                         </button>
@@ -1892,7 +1892,7 @@ export function SettingsPanel({
                                           type="button"
                                           className="ghost-button ghost-button--icon"
                                           onClick={() => removeTitleMatchClause(rule.type, clauseIndex)}
-                                          aria-label="删除"
+                                          aria-label={t("common.delete")}
                                         >
                                           <FontAwesomeIcon icon={faTrash} />
                                         </button>
@@ -1913,10 +1913,10 @@ export function SettingsPanel({
               <div className="torrent-rules__divider" aria-hidden="true" />
               <div className="torrent-rules__inspection-row">
                 <p className="torrent-rules__note">
-                  Torrent 文件结构精排固定在快速规则之后执行，只检查首轮排序后的前 {automationForm.torrentSelection.inspectionCandidateLimit || "5"} 个且带 `.torrent` 链接的候选。
+                  {t("ruleUi.inspectionIntro", { count: automationForm.torrentSelection.inspectionCandidateLimit || "5" })}
                 </p>
                 <label className="torrent-rules__limit-inline">
-                  <FieldLabel text="检查范围" info="仅作用于下方两条文件结构规则。值越大，第二阶段额外下载并解析种子文件的成本越高。" />
+                  <FieldLabel text={t("ruleUi.inspectionScope")} info={t("ruleUi.inspectionInfo")} />
                   <input
                     type="number"
                     min="1"
@@ -1977,7 +1977,7 @@ export function SettingsPanel({
                         <div className="settings-form">
                           {rule.type === TorrentSelectionRuleType.TorrentSingleVideo ? (
                             <p className="torrent-rule__hint">
-                              只检查首轮排序后的前 {automationForm.torrentSelection.inspectionCandidateLimit || "5"} 个且带 `.torrent` 链接的候选；命中“单个视频文件”结构时优先。`magnet` 不参与文件结构检查。
+                              {t("ruleUi.singleVideoHint", { count: automationForm.torrentSelection.inspectionCandidateLimit || "5" })}
                             </p>
                           ) : null}
 
@@ -1985,19 +1985,19 @@ export function SettingsPanel({
                             <>
                               <div className="drawer-card__head">
                                 <div>
-                                  <p className="torrent-rule__hint">按顺序匹配 torrent 内部文件路径或文件名</p>
-                                  <p className="torrent-rule__hint">PLAIN 为纯文本，REGEX 为正则，LOCK 命中后直接选中。</p>
+                                  <p className="torrent-rule__hint">{t("ruleUi.fileHint")}</p>
+                                  <p className="torrent-rule__hint">{t("ruleUi.fileModeHint")}</p>
                                 </div>
                                 <button
                                   type="button"
                                   className="ghost-button"
                                   onClick={() => addTorrentFileNameMatchClause(rule.type)}
                                 >
-                                  添加规则
+                                  {t("common.add")}
                                 </button>
                               </div>
                               {rule.torrentFileNameMatch.clauses.length === 0 ? (
-                                <p className="torrent-rule__hint">尚未添加文件名匹配规则。</p>
+                                <p className="torrent-rule__hint">{t("ruleUi.noFileRules")}</p>
                               ) : (
                                 <div className="torrent-rule__clauses">
                                   {rule.torrentFileNameMatch.clauses.map((clause, clauseIndex) => (
@@ -2011,8 +2011,8 @@ export function SettingsPanel({
                                             pattern: event.target.value
                                           }))
                                         }
-                                        placeholder="Pattern：hhd800.com 或 /sample/i"
-                                        aria-label="Torrent 文件名 Pattern"
+                                        placeholder="hhd800.com or /sample/i"
+                                        aria-label={t("ruleUi.filePattern")}
                                       />
                                       <select
                                         className="torrent-rule__clause-mode"
@@ -2023,7 +2023,7 @@ export function SettingsPanel({
                                             patternMode: event.target.value as TitleMatchPatternMode
                                           }))
                                         }
-                                        aria-label="匹配模式"
+                                        aria-label={t("ruleUi.patternMode")}
                                       >
                                         <option value={TitleMatchPatternMode.Plain}>PLAIN</option>
                                         <option value={TitleMatchPatternMode.Regex}>REGEX</option>
@@ -2037,7 +2037,7 @@ export function SettingsPanel({
                                             effect: event.target.value as TorrentFileMatchEffect
                                           }))
                                         }
-                                        aria-label="效果"
+                                        aria-label={t("ruleUi.effect")}
                                       >
                                         <option value={TorrentFileMatchEffect.Prefer}>PREFER</option>
                                         <option value={TorrentFileMatchEffect.Avoid}>AVOID</option>
@@ -2049,7 +2049,7 @@ export function SettingsPanel({
                                           className="ghost-button"
                                           onClick={() => removeTorrentFileNameMatchClause(rule.type, clauseIndex)}
                                         >
-                                          删除
+                                          {t("common.delete")}
                                         </button>
                                       </div>
                                     </div>
