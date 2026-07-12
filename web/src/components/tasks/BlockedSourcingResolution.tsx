@@ -10,6 +10,7 @@ import {
   type ResolveBlockedSourcingTaskDocumentMutationVariables
 } from "../../graphql/generated/graphql";
 import { formatBytes, type DashboardTask } from "../../utils";
+import { useTranslation } from "react-i18next";
 
 interface BlockedSourcingResolutionProps {
   task: DashboardTask;
@@ -19,6 +20,7 @@ interface BlockedSourcingResolutionProps {
 type Candidate = BlockedTaskTorrentCandidatesDocumentQuery["blockedTaskTorrentCandidates"][number];
 
 export function BlockedSourcingResolution({ task, onResolved }: BlockedSourcingResolutionProps) {
+  const { t } = useTranslation();
   const [searchEnabled, setSearchEnabled] = useState(false);
   const [magnetURL, setMagnetURL] = useState("");
   const [resolvingKey, setResolvingKey] = useState<string | null>(null);
@@ -61,7 +63,7 @@ export function BlockedSourcingResolution({ task, onResolved }: BlockedSourcingR
         return;
       }
       if (!result.data?.resolveBlockedSourcingTask?.id) {
-        setSubmitError("后端没有返回已恢复的任务记录。");
+        setSubmitError(t("taskUi.resolution.noResult"));
         return;
       }
       await onResolved();
@@ -81,8 +83,8 @@ export function BlockedSourcingResolution({ task, onResolved }: BlockedSourcingR
     <article className="drawer-card sourcing-resolution">
       <div className="drawer-card__head">
         <div>
-          <h3>人工解决选种受阻</h3>
-          <p>为 {task.code} 重新搜索候选，或直接提供磁力链接以继续原任务。</p>
+          <h3>{t("taskUi.resolution.title")}</h3>
+          <p>{t("taskUi.resolution.detail", { code: task.code })}</p>
         </div>
       </div>
 
@@ -90,11 +92,11 @@ export function BlockedSourcingResolution({ task, onResolved }: BlockedSourcingR
         <input
           value={magnetURL}
           onChange={(event) => setMagnetURL(event.target.value)}
-          placeholder="粘贴 magnet:?xt=urn:btih:..."
-          aria-label="磁力链接"
+          placeholder={t("taskUi.resolution.magnetPlaceholder")}
+          aria-label={t("taskUi.resolution.magnetLabel")}
         />
         <button type="submit" disabled={!magnetURL.trim() || resolvingKey !== null}>
-          {resolvingKey === "manual-magnet" ? "提交中..." : "使用磁力链接"}
+          {resolvingKey === "manual-magnet" ? t("taskUi.resolution.submitting") : t("taskUi.resolution.useMagnet")}
         </button>
       </form>
 
@@ -112,16 +114,16 @@ export function BlockedSourcingResolution({ task, onResolved }: BlockedSourcingR
             }
           }}
         >
-          {fetching ? "正在搜索..." : searchEnabled ? "重新搜索候选" : "搜索候选"}
+          {fetching ? t("taskUi.resolution.searching") : searchEnabled ? t("taskUi.resolution.searchAgain") : t("taskUi.resolution.search")}
         </button>
-        {searchEnabled && !fetching && !error ? <span>找到 {candidates.length} 个候选</span> : null}
+        {searchEnabled && !fetching && !error ? <span>{t("taskUi.resolution.found", { count: candidates.length })}</span> : null}
       </div>
 
       {error ? <div className="task-issue tone-danger"><span>{describeQueryError(error)}</span></div> : null}
       {submitError ? <div className="task-issue tone-danger"><span>{submitError}</span></div> : null}
 
       {searchEnabled && !fetching && !error && candidates.length === 0 ? (
-        <div className="task-issue tone-warn"><span>没有找到候选，可以修改 Jackett 配置后重搜，或直接粘贴磁力链接。</span></div>
+        <div className="task-issue tone-warn"><span>{t("taskUi.resolution.none")}</span></div>
       ) : null}
 
       {candidates.length > 0 ? (
@@ -140,7 +142,7 @@ export function BlockedSourcingResolution({ task, onResolved }: BlockedSourcingR
                   disabled={!torrentURL || resolvingKey !== null}
                   onClick={() => void resolve(torrentURL, candidate)}
                 >
-                  {resolvingKey === key ? "选用中..." : "选用"}
+                  {resolvingKey === key ? t("taskUi.resolution.selecting") : t("taskUi.resolution.select")}
                 </button>
               </div>
             );

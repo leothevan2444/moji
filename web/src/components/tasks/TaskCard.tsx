@@ -8,6 +8,7 @@ import {
   taskSummary,
   type DashboardTask
 } from "../../utils";
+import { useTranslation } from "react-i18next";
 
 interface TaskCardProps {
   task: DashboardTask;
@@ -34,6 +35,7 @@ export function TaskCard({
   onResolve,
   onDelete
 }: TaskCardProps) {
+  const { t } = useTranslation();
   const presentation = taskPresentation(task);
   const failure = taskFailureSummary(task);
   const state = taskCardState(presentation, failure);
@@ -53,7 +55,7 @@ export function TaskCard({
       }}
       role="button"
       tabIndex={0}
-      aria-label={`${taskSummary(task)}，状态：${presentation.label}，点击查看详情`}
+      aria-label={t("taskUi.card.aria", { task: taskSummary(task), status: presentation.label })}
     >
       <div className="task-card__head">
         <div>
@@ -107,9 +109,9 @@ export function TaskCard({
                 onResolve(task.id);
               }}
               onKeyDown={(event) => event.stopPropagation()}
-              aria-label={`人工处理任务：${taskSummary(task)}`}
+              aria-label={t("taskUi.card.resolveLabel", { task: taskSummary(task) })}
             >
-              人工处理
+              {t("taskUi.card.resolve")}
             </button>
           ) : null}
           {task.stageStatus === "BLOCKED" && onRetry ? (
@@ -122,9 +124,9 @@ export function TaskCard({
               }}
               onKeyDown={(event) => event.stopPropagation()}
               disabled={isPendingRetry}
-              aria-label={`重试任务：${taskSummary(task)}`}
+              aria-label={t("taskUi.card.retryLabel", { task: taskSummary(task) })}
             >
-              {isPendingRetry ? "重试中..." : "重试"}
+              {isPendingRetry ? t("taskUi.card.retrying") : t("taskUi.card.retry")}
             </button>
           ) : null}
           {canTriggerTaskStashScan(task) && onScan ? (
@@ -136,9 +138,9 @@ export function TaskCard({
                 onScan(task.id);
               }}
               disabled={isPendingScan}
-              aria-label={`重扫任务：${taskSummary(task)}`}
+              aria-label={t("taskUi.card.scanLabel", { task: taskSummary(task) })}
             >
-              {isPendingScan ? "扫描中..." : "重扫"}
+              {isPendingScan ? t("taskUi.card.scanning") : t("taskUi.card.scan")}
             </button>
           ) : null}
           {onDelete ? (
@@ -150,9 +152,9 @@ export function TaskCard({
                 onDelete(task.id);
               }}
               disabled={isPendingDelete}
-              aria-label={`删除任务：${taskSummary(task)}`}
+              aria-label={t("taskUi.card.deleteLabel", { task: taskSummary(task) })}
             >
-              {isPendingDelete ? "删除中..." : "删除"}
+              {isPendingDelete ? t("taskUi.card.deleting") : t("taskUi.card.delete")}
             </button>
           ) : null}
         </div>

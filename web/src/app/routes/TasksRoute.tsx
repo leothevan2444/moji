@@ -14,6 +14,7 @@ import {
 } from "../../graphql/generated/graphql";
 import type { TaskSortKey, TaskStatusFilter } from "../../types";
 import type { AppOutletContext } from "../AppLayout";
+import { useTranslation } from "react-i18next";
 
 const TaskDrawer = lazy(() => import("../../components/drawers/TaskDrawer").then((m) => ({ default: m.TaskDrawer })));
 const ConfirmDeleteDrawer = lazy(() => import("../../components/drawers/ConfirmDeleteDrawer").then((m) => ({ default: m.ConfirmDeleteDrawer })));
@@ -25,6 +26,7 @@ export function taskCloseTarget(state: unknown, searchParams: URLSearchParams) {
 }
 
 export function Component() {
+  const { t } = useTranslation();
   const { taskId } = useParams();
   const location = useLocation();
   const navigate = useNavigate();
@@ -73,16 +75,16 @@ export function Component() {
     try {
       const result = await retryTask({ id });
       if (result.error) pushToast("tone-danger", describeQueryError(result.error));
-      else if (!result.data?.retryTask?.id) pushToast("tone-danger", "任务重试失败，后端没有返回任务记录。");
-      else pushToast("tone-success", `已重试任务：${tasks.find((task) => task.id === id) ? taskSummary(tasks.find((task) => task.id === id)!) : id}。`);
+      else if (!result.data?.retryTask?.id) pushToast("tone-danger", t("taskRoute.retryNoResult"));
+      else pushToast("tone-success", t("taskRoute.retried", { task: tasks.find((task) => task.id === id) ? taskSummary(tasks.find((task) => task.id === id)!) : id }));
       await requery(); if (taskId === id) await refreshDetail({ requestPolicy: "network-only" });
     } finally { setPendingRetry(null); }
   };
   const retryBlocked = async () => {
     const blocked = tasks.filter((task) => task.stageStatus === "BLOCKED");
-    if (!blocked.length) { pushToast("tone-info", "当前没有受阻任务需要重试。"); return; }
+    if (!blocked.length) { pushToast("tone-info", t("taskRoute.noneBlocked")); return; }
     setRetryingBlocked(true); let succeeded = 0;
-    try { for (const task of blocked) { setPendingRetry(task.id); const result = await retryTask({ id: task.id }); if (!result.error && result.data?.retryTask?.id) succeeded += 1; } await requery(); pushToast("tone-info", `受阻任务重试完成：成功 ${succeeded} 个，失败 ${blocked.length - succeeded} 个。`); }
+    try { for (const task of blocked) { setPendingRetry(task.id); const result = await retryTask({ id: task.id }); if (!result.error && result.data?.retryTask?.id) succeeded += 1; } await requery(); pushToast("tone-info", t("taskRoute.retrySummary", { succeeded, failed: blocked.length - succeeded })); }
     finally { setPendingRetry(null); setRetryingBlocked(false); }
   };
   const runDelete = async (id: string) => {
@@ -90,13 +92,13 @@ export function Component() {
     try {
       const result = await deleteTask({ id });
       if (result.error) { pushToast("tone-danger", describeQueryError(result.error)); return; }
-      if (!result.data?.deleteTask?.id) { pushToast("tone-danger", "任务删除失败，后端没有返回已删除的任务记录。"); return; }
-      pushToast("tone-success", `已删除任务：${deleteTarget ? taskSummary(deleteTarget) : id}。`);
+      if (!result.data?.deleteTask?.id) { pushToast("tone-danger", t("taskRoute.deleteNoResult")); return; }
+      pushToast("tone-success", t("taskRoute.deleted", { task: deleteTarget ? taskSummary(deleteTarget) : id }));
       setConfirmDelete(null); await requery(); if (taskId === id) navigate("/tasks", { replace: true });
     } finally { setPendingDelete(null); }
   };
 
-  if (error && !data) return <div className="empty-card"><h3>任务加载失败</h3><p>{describeQueryError(error)}</p><button type="button" onClick={requery}>重试</button></div>;
+  if (error && !data) return <div className="empty-card"><h3>{t("taskRoute.loadFailed")}</h3><p>{describeQueryError(error)}</p><button type="button" onClick={requery}>{t("common.retry")}</button></div>;
   const metrics = data?.dashboardStats;
   return <>
     <TasksPage tasks={tasks} metrics={{ active: metrics?.active ?? 0, completed: metrics?.completed ?? 0, pendingScans: metrics?.pendingScans ?? 0, failed: metrics?.failed ?? 0 }}
@@ -107,13 +109,13 @@ export function Component() {
       onRefresh={requery} onSync={() => void runSync()} onScanAll={() => void runScanAll()} onOpenTask={(id) => openTask(id)}
       onScanTask={(id) => void runScan(id)} onRetryTask={(id) => void runRetry(id)} onResolveTask={(id) => openTask(id, true)}
       onRetryBlockedTasks={() => void retryBlocked()} onDeleteTask={setConfirmDelete} />
-    {taskId ? <Drawer visibleDrawer={isResolution ? "task-resolution" : "task"} closing={false} title={isResolution ? `人工处理：${activeTask ? taskSummary(activeTask) : "任务"}` : activeTask ? taskSummary(activeTask) : "任务详情"} onClose={closeTask}>
+    {taskId ? <Drawer visibleDrawer={isResolution ? "task-resolution" : "task"} closing={false} title={isResolution ? t("taskRoute.resolutionTitle", { task: activeTask ? taskSummary(activeTask) : t("taskRoute.task") }) : activeTask ? taskSummary(activeTask) : t("taskRoute.details")} onClose={closeTask}>
       <Suspense fallback={<div className="skeleton skeleton-card" />}>
-        {detailFetching && !activeTask ? <p>正在加载任务...</p> : detailError ? <div className="empty-card"><h3>任务加载失败</h3><p>{describeQueryError(detailError)}</p></div> : !activeTask ? <div className="empty-card"><h3>任务不存在</h3></div> : isResolution ?
+        {detailFetching && !activeTask ? <p>{t("taskRoute.loading")}</p> : detailError ? <div className="empty-card"><h3>{t("taskRoute.loadFailed")}</h3><p>{describeQueryError(detailError)}</p></div> : !activeTask ? <div className="empty-card"><h3>{t("taskRoute.notFound")}</h3></div> : isResolution ?
           <SourcingResolutionDrawer task={activeTask} onResolved={async () => { await requery(); await refreshDetail({ requestPolicy: "network-only" }); navigate(`/tasks/${encodeURIComponent(taskId)}`); }} /> :
           <TaskDrawer task={activeTask} pendingScan={pendingScan === taskId} pendingRetry={pendingRetry === taskId} pendingDelete={pendingDelete === taskId} onCopy={copyText} onSyncAll={() => void runSync()} onScanTask={(id) => void runScan(id)} onRetryTask={(id) => void runRetry(id)} onScanAll={() => void runScanAll()} onDeleteTask={setConfirmDelete} />}
       </Suspense>
     </Drawer> : null}
-    {confirmDelete ? <Drawer visibleDrawer="confirm" closing={false} title="删除确认" onClose={() => { if (!pendingDelete) setConfirmDelete(null); }}><Suspense fallback={null}><ConfirmDeleteDrawer taskLabel={deleteTarget ? taskSummary(deleteTarget) : confirmDelete} destructive={deletePolicy === TaskDeletePolicy.RemoveTorrentAndFiles} pending={pendingDelete === confirmDelete} onConfirm={() => void runDelete(confirmDelete)} onCancel={() => { if (!pendingDelete) setConfirmDelete(null); }} /></Suspense></Drawer> : null}
+    {confirmDelete ? <Drawer visibleDrawer="confirm" closing={false} title={t("taskRoute.deleteTitle")} onClose={() => { if (!pendingDelete) setConfirmDelete(null); }}><Suspense fallback={null}><ConfirmDeleteDrawer taskLabel={deleteTarget ? taskSummary(deleteTarget) : confirmDelete} destructive={deletePolicy === TaskDeletePolicy.RemoveTorrentAndFiles} pending={pendingDelete === confirmDelete} onConfirm={() => void runDelete(confirmDelete)} onCancel={() => { if (!pendingDelete) setConfirmDelete(null); }} /></Suspense></Drawer> : null}
   </>;
 }

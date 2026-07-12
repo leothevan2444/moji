@@ -5,6 +5,7 @@ interface ConfirmDeleteDrawerProps {
   onConfirm: () => void;
   onCancel: () => void;
 }
+import { useTranslation } from "react-i18next";
 
 export function ConfirmDeleteDrawer({
   taskLabel,
@@ -13,12 +14,13 @@ export function ConfirmDeleteDrawer({
   onConfirm,
   onCancel
 }: ConfirmDeleteDrawerProps) {
+  const { t } = useTranslation();
   return (
     <div className="drawer-stack">
       <article className="drawer-card">
         <div className="drawer-card__head">
           <div>
-            <h3>确认删除任务</h3>
+            <h3>{t("taskRoute.confirmDelete")}</h3>
             <p>{taskLabel}</p>
           </div>
         </div>
@@ -29,7 +31,7 @@ export function ConfirmDeleteDrawer({
             onClick={onCancel}
             disabled={pending}
           >
-            取消
+            {t("taskRoute.cancel")}
           </button>
           <button
             type="button"
@@ -37,7 +39,7 @@ export function ConfirmDeleteDrawer({
             onClick={onConfirm}
             disabled={pending}
           >
-            {pending ? "删除中..." : "确认删除"}
+            {pending ? t("taskRoute.deleting") : t("taskRoute.confirm")}
           </button>
         </div>
       </article>

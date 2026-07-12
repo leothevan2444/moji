@@ -1,5 +1,6 @@
 import { TaskDetail } from "../tasks";
 import type { DashboardTask } from "../../utils";
+import { useTranslation } from "react-i18next";
 
 interface TaskDrawerProps {
   task: DashboardTask | null;
@@ -26,6 +27,7 @@ export function TaskDrawer({
   onScanAll,
   onDeleteTask
 }: TaskDrawerProps) {
+  const { t } = useTranslation();
   return (
     <div className="drawer-stack">
       {task ? (
@@ -43,8 +45,8 @@ export function TaskDrawer({
         />
       ) : (
         <article className="drawer-card">
-          <h3>还没有选中任务</h3>
-          <p>点击任务卡片后，这里会显示详细信息和操作。</p>
+          <h3>{t("taskUi.noneSelected")}</h3>
+          <p>{t("taskUi.noneSelectedDetail")}</p>
         </article>
       )}
     </div>

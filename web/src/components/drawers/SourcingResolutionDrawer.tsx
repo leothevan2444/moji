@@ -1,5 +1,6 @@
 import { BlockedSourcingResolution } from "../tasks/BlockedSourcingResolution";
 import type { DashboardTask } from "../../utils";
+import { useTranslation } from "react-i18next";
 
 interface SourcingResolutionDrawerProps {
   task: DashboardTask | null;
@@ -7,11 +8,12 @@ interface SourcingResolutionDrawerProps {
 }
 
 export function SourcingResolutionDrawer({ task, onResolved }: SourcingResolutionDrawerProps) {
+  const { t } = useTranslation();
   if (!task || task.stage !== "SOURCING" || task.stageStatus !== "BLOCKED") {
     return (
       <article className="drawer-card">
-        <h3>任务当前无法人工处理</h3>
-        <p>任务可能已经离开选种受阻阶段，请关闭后刷新任务列表。</p>
+        <h3>{t("taskUi.cannotResolve")}</h3>
+        <p>{t("taskUi.cannotResolveDetail")}</p>
       </article>
     );
   }
