@@ -809,7 +809,7 @@ export function SettingsPanel({
       pushToast("tone-danger", describeQueryError(result.error));
       return;
     }
-    pushToast("tone-success", "系统设置已保存。");
+    pushToast("tone-success", t("systemUi.saved"));
     await refreshDashboard({ requestPolicy: "network-only" });
   };
 
@@ -824,17 +824,17 @@ export function SettingsPanel({
       return;
     }
     setConfirmingImageCacheClear(false);
-    pushToast("tone-success", releasedBytes > 0 ? `图片缓存已清空，释放 ${formatBytes(releasedBytes)}。` : "图片缓存已清空。");
+    pushToast("tone-success", releasedBytes > 0 ? t("systemUi.clearedBytes", { size: formatBytes(releasedBytes) }) : t("systemUi.cleared"));
     await refreshDashboard({ requestPolicy: "network-only" });
   };
 
   const refreshSubscriptionStashBoxes = async () => {
     const result = await refreshStashBoxesMutation({});
     if (result.error) {
-      pushToast("tone-danger", `刷新 Stash-Box 失败：${describeQueryError(result.error)}`);
+      pushToast("tone-danger", t("automationUi.stashBoxes.loadFailed", { error: describeQueryError(result.error) }));
       return;
     }
-    pushToast("tone-success", "Stash-Box 列表已刷新。");
+    pushToast("tone-success", t("automationUi.stashBoxes.refresh"));
     await refreshDashboard({ requestPolicy: "network-only" });
   };
 
@@ -846,7 +846,7 @@ export function SettingsPanel({
     setDownloadingLogFile(true);
     try {
       const response = await fetch("/api/logs/current");
-      if (!response.ok) throw new Error(`下载失败：HTTP ${response.status}`);
+      if (!response.ok) throw new Error(t("logsUi.downloadHttpError", { status: response.status }));
       const blob = await response.blob();
       const url = URL.createObjectURL(blob);
       const link = document.createElement("a");
@@ -855,7 +855,7 @@ export function SettingsPanel({
       link.click();
       URL.revokeObjectURL(url);
     } catch (error) {
-      pushToast("tone-danger", error instanceof Error ? error.message : "下载当前日志文件失败。");
+      pushToast("tone-danger", error instanceof Error ? error.message : t("logsUi.downloadFailed"));
     } finally {
       setDownloadingLogFile(false);
     }
@@ -2076,7 +2076,7 @@ export function SettingsPanel({
     return (
       <article className="drawer-card">
         <div className="drawer-card__head">
-          <h3>日志</h3>
+          <h3>{t("settings.tabs.logs")}</h3>
         </div>
         <div className="toolbar-inline toolbar-inline--logs">
           <select value={logsLevel} onChange={(event) => setLogsLevel(event.target.value as LogLevel)}>
@@ -2087,26 +2087,26 @@ export function SettingsPanel({
             ))}
           </select>
           <button type="button" className="ghost-button" onClick={() => void refreshLogs({ requestPolicy: "network-only" })}>
-            <FontAwesomeIcon icon={faRotate} /> {fetchingLogs ? "刷新中..." : "刷新日志"}
+            <FontAwesomeIcon icon={faRotate} /> {fetchingLogs ? t("logsUi.refreshing") : t("logsUi.refresh")}
           </button>
           <button type="button" className="ghost-button" onClick={() => void handleCopyLogs()}>
-            复制当前列表
+            {t("logsUi.copy")}
           </button>
           <button type="button" className="ghost-button" disabled={downloadingLogFile} onClick={() => void handleDownloadCurrentLogFile()}>
-            {downloadingLogFile ? "下载中..." : "下载当前日志"}
+            {downloadingLogFile ? t("logsUi.downloading") : t("logsUi.download")}
           </button>
         </div>
         <div className="settings-meta">
-          <span>级别过滤: {logsLevel}</span>
-          <span>已加载: {logs.length}</span>
-          <span>状态: {fetchingLogs ? "同步中" : "已就绪"}</span>
-          <span>来源: 当前日志文件</span>
+          <span>{t("logsUi.filter", { level: logsLevel })}</span>
+          <span>{t("logsUi.loaded", { count: logs.length })}</span>
+          <span>{t("logsUi.state", { state: t(fetchingLogs ? "logsUi.syncing" : "logsUi.ready") })}</span>
+          <span>{t("logsUi.source")}</span>
         </div>
         {logsError ? <p className="settings-feedback tone-danger">{describeQueryError(logsError)}</p> : null}
         {!logs.length && !fetchingLogs ? (
           <article className="empty-card empty-card--wide">
-            <h3>暂无日志</h3>
-            <p>当前过滤条件下没有最近日志记录。</p>
+            <h3>{t("logsUi.empty")}</h3>
+            <p>{t("logsUi.emptyDetail")}</p>
           </article>
         ) : (
           <div className="log-stream" role="log" aria-live="polite">
@@ -2135,34 +2135,34 @@ export function SettingsPanel({
   }
 
   if (settingsTab === "system") {
-    const deletePolicyInfo = "控制删除 Moji 任务时，是否联动删除 qBittorrent 里的对应下载项，以及是否同时删除下载文件。";
+    const deletePolicyInfo = t("systemUi.deleteInfo");
 
     return (
       <article className="drawer-card">
         <div className="drawer-card__head">
-          <h3>系统</h3>
+          <h3>{t("systemUi.title")}</h3>
         </div>
         <form className="settings-form" onSubmit={(event) => void saveSystemSettings(event)}>
           <label className="settings-field">
-            <FieldLabel text="删除任务策略" info={deletePolicyInfo} />
+            <FieldLabel text={t("systemUi.deletePolicy")} info={deletePolicyInfo} />
             <select
               value={systemForm.taskDeletePolicy}
               onChange={(event) => setSystemForm((current) => ({ ...current, taskDeletePolicy: event.target.value }))}
             >
-              <option value={TaskDeletePolicy.KeepOnly}>仅删除 Moji 任务记录</option>
-              <option value={TaskDeletePolicy.RemoveTorrent}>同时删除 qBittorrent 下载任务</option>
-              <option value={TaskDeletePolicy.RemoveTorrentAndFiles}>同时删除 qBittorrent 下载任务和文件</option>
+              <option value={TaskDeletePolicy.KeepOnly}>{t("systemUi.keep")}</option>
+              <option value={TaskDeletePolicy.RemoveTorrent}>{t("systemUi.removeTorrent")}</option>
+              <option value={TaskDeletePolicy.RemoveTorrentAndFiles}>{t("systemUi.removeFiles")}</option>
             </select>
           </label>
           <div className="settings-field">
-            <FieldLabel text="图片缓存" info="图片始终由 Moji 代理。关闭后仍会读取已有缓存，但新下载的图片不再写入磁盘。" />
+            <FieldLabel text={t("systemUi.cache")} info={t("systemUi.cacheInfo")} />
             <label className="switch-row image-cache-switch">
-              <span className="switch-row__label">启用图片缓存</span>
+              <span className="switch-row__label">{t("systemUi.enableCache")}</span>
               <span className="switch" role="switch" aria-checked={systemForm.imageCacheEnabled}>
                 <input
                   type="checkbox"
                   checked={systemForm.imageCacheEnabled}
-                  aria-label="启用图片缓存"
+                  aria-label={t("systemUi.enableCache")}
                   onChange={(event) => setSystemForm((current) => ({ ...current, imageCacheEnabled: event.target.checked }))}
                 />
                 <span className="switch__track" aria-hidden="true" />
@@ -2172,7 +2172,7 @@ export function SettingsPanel({
           </div>
           <div className={`image-cache-config${systemForm.imageCacheEnabled ? "" : " is-disabled"}`} aria-disabled={!systemForm.imageCacheEnabled}>
             <label className="settings-field">
-              <FieldLabel text="缓存容量上限（MB）" info="允许 64–20480 MB；超过上限后按最近访问时间淘汰至上限的 90%。" />
+              <FieldLabel text={t("systemUi.maxSize")} info={t("systemUi.maxSizeInfo")} />
               <input
                 type="number"
                 min="64"
@@ -2183,7 +2183,7 @@ export function SettingsPanel({
               />
             </label>
             <label className="settings-field">
-              <FieldLabel text="缓存保留天数" info="允许 1–365 天；长期未访问的图片会被清理。" />
+              <FieldLabel text={t("systemUi.retention")} info={t("systemUi.retentionInfo")} />
               <input
                 type="number"
                 min="1"
@@ -2193,12 +2193,12 @@ export function SettingsPanel({
                 onChange={(event) => setSystemForm((current) => ({ ...current, imageCacheRetentionDays: event.target.value }))}
               />
             </label>
-            {!systemForm.imageCacheEnabled ? <p className="image-cache-config__note">磁盘持久化已关闭，以上配置暂不生效。</p> : null}
+            {!systemForm.imageCacheEnabled ? <p className="image-cache-config__note">{t("systemUi.disabled")}</p> : null}
           </div>
           <div className="image-cache-management">
             <div>
-              <div className="settings-meta"><span>当前占用：{formatBytes(Number(runtimeStatus.imageCache.usedBytes ?? 0))}</span><span>图片：{runtimeStatus.imageCache.entryCount ?? 0} 张</span><span>最近清理：{formatDateTime(runtimeStatus.imageCache.lastCleanupAt)}</span></div>
-              <p className="image-cache-management__hint">清空后保留图片来源登记，图片将在下次访问时自动重新下载。</p>
+              <div className="settings-meta"><span>{t("systemUi.usage", { size: formatBytes(Number(runtimeStatus.imageCache.usedBytes ?? 0)) })}</span><span>{t("systemUi.images", { count: runtimeStatus.imageCache.entryCount ?? 0 })}</span><span>{t("systemUi.cleanup", { time: formatDateTime(runtimeStatus.imageCache.lastCleanupAt) })}</span></div>
+              <p className="image-cache-management__hint">{t("systemUi.clearHint")}</p>
             </div>
             <button
               type="button"
@@ -2209,28 +2209,28 @@ export function SettingsPanel({
                 setConfirmingImageCacheClear(true);
               }}
             >
-              {clearingImageCache ? "清理中..." : Number(runtimeStatus.imageCache.entryCount ?? 0) === 0 ? "暂无缓存" : "清空图片缓存"}
+              {clearingImageCache ? t("systemUi.clearing") : Number(runtimeStatus.imageCache.entryCount ?? 0) === 0 ? t("systemUi.noCache") : t("systemUi.clear")}
             </button>
           </div>
           {confirmingImageCacheClear ? (
             <div className="image-cache-confirm" role="alertdialog" aria-labelledby="image-cache-confirm-title" aria-describedby="image-cache-confirm-description">
               <div>
-                <strong id="image-cache-confirm-title">清空图片缓存？</strong>
+                <strong id="image-cache-confirm-title">{t("systemUi.clearTitle")}</strong>
                 <p id="image-cache-confirm-description">
-                  将删除 {runtimeStatus.imageCache.entryCount ?? 0} 张本地图片并释放 {formatBytes(Number(runtimeStatus.imageCache.usedBytes ?? 0))}。来源登记会保留。
+                  {t("systemUi.clearDescription", { count: runtimeStatus.imageCache.entryCount ?? 0, size: formatBytes(Number(runtimeStatus.imageCache.usedBytes ?? 0)) })}
                 </p>
                 {imageCacheClearError ? <p className="image-cache-confirm__error">{imageCacheClearError}</p> : null}
               </div>
               <div className="image-cache-confirm__actions">
-                <button type="button" className="ghost-button" disabled={clearingImageCache} onClick={() => setConfirmingImageCacheClear(false)}>取消</button>
-                <button type="button" className="image-cache-confirm__submit" disabled={clearingImageCache} onClick={() => void handleClearImageCache()}>{clearingImageCache ? "清理中..." : "确认清空"}</button>
+                <button type="button" className="ghost-button" disabled={clearingImageCache} onClick={() => setConfirmingImageCacheClear(false)}>{t("systemUi.cancel")}</button>
+                <button type="button" className="image-cache-confirm__submit" disabled={clearingImageCache} onClick={() => void handleClearImageCache()}>{clearingImageCache ? t("systemUi.clearing") : t("systemUi.confirm")}</button>
               </div>
             </div>
           ) : null}
           {runtimeStatus.imageCache.lastError ? <p className="settings-feedback tone-danger">{runtimeStatus.imageCache.lastError}</p> : null}
           <div className="settings-actions">
             <button type="submit" disabled={updatingSystem}>
-              {updatingSystem ? "保存中..." : "保存系统设置"}
+              {updatingSystem ? t("settings.saving") : t("systemUi.save")}
             </button>
           </div>
         </form>
@@ -2241,11 +2241,11 @@ export function SettingsPanel({
   return (
     <article className="drawer-card">
       <div className="drawer-card__head">
-        <h3>关于</h3>
+        <h3>{t("systemUi.about")}</h3>
       </div>
       <dl className="settings-grid">
         <div>
-          <dt>版本</dt>
+          <dt>{t("systemUi.version")}</dt>
           <dd>{appVersion || "dev"}</dd>
         </div>
       </dl>
