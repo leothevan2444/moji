@@ -7,6 +7,7 @@ import {
 } from "@fortawesome/free-solid-svg-icons";
 import type { RefObject } from "react";
 import type { ThemePreference } from "../../hooks/useTheme";
+import { useTranslation } from "react-i18next";
 
 interface ThemeMenuProps {
   preference: ThemePreference;
@@ -17,12 +18,6 @@ interface ThemeMenuProps {
   buttonRef: RefObject<HTMLButtonElement | null>;
   menuRef: RefObject<HTMLDivElement | null>;
 }
-
-const PREFERENCE_LABELS: Record<ThemePreference, string> = {
-  light: "浅色",
-  dark: "深色",
-  auto: "自动"
-};
 
 // 按钮图标按 preference 映射——而不是 resolved。
 // 这样 auto 模式下用户看到的依然是「半圆」图标，明确表达「跟随系统」语义。
@@ -43,8 +38,10 @@ export function ThemeMenu({
   buttonRef,
   menuRef
 }: ThemeMenuProps) {
+  const { t } = useTranslation();
   const ButtonIcon = PREFERENCE_ICONS[preference];
-  const buttonLabel = `主题：${PREFERENCE_LABELS[preference]}`;
+  const label = (value: ThemePreference | "light" | "dark") => t(`theme.${value}`);
+  const buttonLabel = t("theme.label", { theme: label(preference) });
 
   return (
     <div className="theme-menu">
@@ -66,7 +63,7 @@ export function ThemeMenu({
           ref={menuRef}
           className="theme-menu__panel"
           role="menu"
-          aria-label="选择主题"
+          aria-label={t("theme.choose")}
         >
           {OPTIONS.map((option) => {
             const Icon = PREFERENCE_ICONS[option];
@@ -81,12 +78,12 @@ export function ThemeMenu({
                 onClick={() => onSelect(option)}
               >
                 <FontAwesomeIcon icon={Icon} aria-hidden="true" />
-                <span>{PREFERENCE_LABELS[option]}</span>
+                <span>{label(option)}</span>
                 {isActive ? (
                   <FontAwesomeIcon icon={faCheck} className="theme-menu__check" aria-hidden="true" />
                 ) : null}
                 <span className="theme-menu__sr">
-                  {option === "auto" ? `（当前显示：${PREFERENCE_LABELS[resolved]}）` : ""}
+                  {option === "auto" ? t("theme.resolved", { theme: label(resolved) }) : ""}
                 </span>
               </button>
             );

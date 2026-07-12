@@ -1,9 +1,12 @@
 export const resources = {
   "zh-CN": { translation: {
-    common: { auto: "跟随浏览器", language: "语言", loading: "页面加载中", helpLoading: "帮助加载中", collapse: "收起", expand: "展开", items: "{{count}} 项", refresh: "刷新" },
+    common: { auto: "跟随浏览器", language: "语言", loading: "页面加载中", helpLoading: "帮助加载中", collapse: "收起", expand: "展开", close: "关闭", retry: "重试", reload: "重新加载", items: "{{count}} 项", refresh: "刷新" },
     navigation: { label: "主导航", home: "主页", tasks: "任务", performers: "演员", discover: "发现", stats: "统计", settings: "设置", help: "帮助" },
     settings: { title: "配置与系统", tabs: { connections: "连接", ingest: "入库", automation: "自动化", system: "系统", logs: "日志", about: "关于" } },
     help: { title: "Markdown 帮助", navigation: "帮助文档" },
+    errors: { notFoundTitle: "页面不存在", notFoundDetail: "这个地址没有对应的 Moji 页面。", returnHome: "返回主页", routeTitle: "页面加载失败", moduleLoad: "页面模块加载失败" },
+    theme: { label: "主题：{{theme}}", choose: "选择主题", light: "浅色", dark: "深色", auto: "自动", resolved: "（当前显示：{{theme}}）" },
+    stats: { title: "运行概览", loadFailed: "统计加载失败" },
     tasks: {
       title: "工作台", metrics: "活跃 {{active}} · 完成 {{completed}} · 待扫 {{pendingScans}} · 失败 {{failed}}",
       searchPlaceholder: "搜索任务、番号、tracker、状态",
@@ -21,10 +24,13 @@ export const resources = {
     titles: { tasks: "任务 · Moji", performers: "演员 · Moji", discover: "发现 · Moji", settings: "设置 · Moji", stats: "统计 · Moji", home: "Moji" }
   } },
   en: { translation: {
-    common: { auto: "Use browser language", language: "Language", loading: "Loading page", helpLoading: "Loading help", collapse: "Collapse", expand: "Expand", items: "{{count}} item", items_other: "{{count}} items", refresh: "Refresh" },
+    common: { auto: "Use browser language", language: "Language", loading: "Loading page", helpLoading: "Loading help", collapse: "Collapse", expand: "Expand", close: "Close", retry: "Retry", reload: "Reload", items: "{{count}} item", items_other: "{{count}} items", refresh: "Refresh" },
     navigation: { label: "Main navigation", home: "Home", tasks: "Tasks", performers: "Performers", discover: "Discover", stats: "Statistics", settings: "Settings", help: "Help" },
     settings: { title: "Configuration & system", tabs: { connections: "Connections", ingest: "Ingest", automation: "Automation", system: "System", logs: "Logs", about: "About" } },
     help: { title: "Markdown help", navigation: "Help documentation" },
+    errors: { notFoundTitle: "Page not found", notFoundDetail: "There is no Moji page at this address.", returnHome: "Return home", routeTitle: "Page failed to load", moduleLoad: "Page module failed to load" },
+    theme: { label: "Theme: {{theme}}", choose: "Choose theme", light: "Light", dark: "Dark", auto: "Automatic", resolved: "(Currently showing: {{theme}})" },
+    stats: { title: "Runtime overview", loadFailed: "Statistics failed to load" },
     tasks: {
       title: "Workspace", metrics: "Active {{active}} · Completed {{completed}} · Pending scans {{pendingScans}} · Failed {{failed}}",
       searchPlaceholder: "Search tasks, codes, trackers, or statuses",

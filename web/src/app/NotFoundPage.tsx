@@ -1,12 +1,14 @@
 import { Link } from "react-router";
+import { useTranslation } from "react-i18next";
 
 export function NotFoundPage() {
+  const { t } = useTranslation();
   return (
     <main className="content">
       <section className="empty-card empty-card--wide">
-        <h2 tabIndex={-1}>页面不存在</h2>
-        <p>这个地址没有对应的 Moji 页面。</p>
-        <Link className="ghost-button" to="/">返回主页</Link>
+        <h2 tabIndex={-1}>{t("errors.notFoundTitle")}</h2>
+        <p>{t("errors.notFoundDetail")}</p>
+        <Link className="ghost-button" to="/">{t("errors.returnHome")}</Link>
       </section>
     </main>
   );

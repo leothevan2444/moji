@@ -1,5 +1,6 @@
 import { ReactNode } from "react";
 import type { DrawerKey } from "../../types";
+import { useTranslation } from "react-i18next";
 
 interface DrawerProps {
   visibleDrawer: Exclude<DrawerKey, null>;
@@ -10,6 +11,7 @@ interface DrawerProps {
 }
 
 export function Drawer({ visibleDrawer, closing, title, onClose, children }: DrawerProps) {
+  const { t } = useTranslation();
   const isTaskDrawer = visibleDrawer === "task" || visibleDrawer === "task-resolution";
   return (
     <div
@@ -25,7 +27,7 @@ export function Drawer({ visibleDrawer, closing, title, onClose, children }: Dra
             <h2>{title}</h2>
           </div>
           <button type="button" className="ghost-button" onClick={onClose}>
-            关闭
+            {t("common.close")}
           </button>
         </div>
 
