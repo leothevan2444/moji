@@ -17,8 +17,11 @@ import {
   taskProgressPercent,
   taskSourceLabel,
   taskSummary,
+  deliveryModeLabel,
+  transferActionLabel,
   type DashboardTask
 } from "../../utils";
+import { useTranslation } from "react-i18next";
 
 interface TaskDetailProps {
   task: DashboardTask;
@@ -45,6 +48,7 @@ export function TaskDetail({
   onScanAll,
   onDeleteTask
 }: TaskDetailProps) {
+  const { t } = useTranslation();
   const presentation = taskPresentation(task);
   const failure = taskFailureSummary(task);
 
@@ -75,19 +79,19 @@ export function TaskDetail({
         </div>
         <dl className="settings-grid">
           <div>
-            <dt>创建时间</dt>
+            <dt>{t("taskDetail.created")}</dt>
             <dd>{formatDateTime(task.createdAt)}</dd>
           </div>
           <div>
-            <dt>最近更新</dt>
+            <dt>{t("taskDetail.updated")}</dt>
             <dd>{formatDateTime(task.updatedAt)}</dd>
           </div>
           <div>
-            <dt>完成时间</dt>
+            <dt>{t("taskDetail.completedAt")}</dt>
             <dd>{formatDateTime(task.downloadCompletedAt)}</dd>
           </div>
           <div>
-            <dt>当前进度</dt>
+            <dt>{t("taskDetail.currentProgress")}</dt>
             <dd>{taskProgressPercent(task)}%</dd>
           </div>
         </dl>
@@ -96,7 +100,7 @@ export function TaskDetail({
       <article className="drawer-card">
         <div className="drawer-card__head">
           <div>
-            <h3>生命周期</h3>
+            <h3>{t("taskDetail.lifecycle")}</h3>
           </div>
         </div>
         <TaskTimeline steps={presentation.lifecycle} />
@@ -105,20 +109,20 @@ export function TaskDetail({
       <article className="drawer-card">
         <div className="drawer-card__head">
           <div>
-            <h3>任务数据</h3>
+            <h3>{t("taskDetail.data")}</h3>
           </div>
         </div>
         <dl className="settings-grid">
           <div>
             <dt className={isMagnetLink(task.torrentUrl) ? "task-inline-label" : undefined}>
-              <span>{isMagnetLink(task.torrentUrl) ? "磁力链接" : "任务番号"}</span>
+              <span>{t(isMagnetLink(task.torrentUrl) ? "taskDetail.magnet" : "taskDetail.taskCode")}</span>
               {isMagnetLink(task.torrentUrl) && task.torrentUrl ? (
                 <button
                   type="button"
                   className="task-icon-button"
-                  onClick={() => void onCopy(task.torrentUrl || "", "磁力链接已复制")}
-                  aria-label="复制磁力链接"
-                  title="复制磁力链接"
+                  onClick={() => void onCopy(task.torrentUrl || "", t("taskDetail.copiedMagnet"))}
+                  aria-label={t("taskDetail.copyMagnet")}
+                  title={t("taskDetail.copyMagnet")}
                 >
                   <FontAwesomeIcon icon={faCopy} />
                 </button>
@@ -135,39 +139,39 @@ export function TaskDetail({
             )}
           </div>
           <div>
-            <dt>番号</dt>
+            <dt>{t("taskDetail.code")}</dt>
             <dd>{task.code || "—"}</dd>
           </div>
           <div>
-            <dt>任务来源</dt>
+            <dt>{t("taskDetail.source")}</dt>
             <dd>{taskSourceLabel(task.source)}</dd>
           </div>
           <div>
-            <dt>qB 保存目录</dt>
+            <dt>{t("taskDetail.savePath")}</dt>
             <dd>{task.savePath || "—"}</dd>
           </div>
           <div>
-            <dt>分类</dt>
+            <dt>{t("taskDetail.category")}</dt>
             <dd>{task.category || "—"}</dd>
           </div>
           <div>
-            <dt>标签</dt>
+            <dt>{t("taskDetail.tags")}</dt>
             <dd>{task.tags || "—"}</dd>
           </div>
           <div>
-            <dt>qB 内容路径</dt>
+            <dt>{t("taskDetail.contentPath")}</dt>
             <dd>{task.contentPath || "—"}</dd>
           </div>
           <div>
             <dt className={isCopyableTaskValue(task.torrentName) ? "task-inline-label" : undefined}>
-              <span>Torrent 名称</span>
+              <span>{t("taskDetail.torrentName")}</span>
               {isCopyableTaskValue(task.torrentName) ? (
                 <button
                   type="button"
                   className="task-icon-button"
-                  onClick={() => void onCopy(task.torrentName || "", "Torrent 名称已复制")}
-                  aria-label="复制 Torrent 名称"
-                  title="复制 Torrent 名称"
+                  onClick={() => void onCopy(task.torrentName || "", t("taskDetail.copiedName"))}
+                  aria-label={t("taskDetail.copyName")}
+                  title={t("taskDetail.copyName")}
                 >
                   <FontAwesomeIcon icon={faCopy} />
                 </button>
@@ -181,14 +185,14 @@ export function TaskDetail({
           </div>
           <div>
             <dt className={isCopyableTaskValue(task.torrentHash) ? "task-inline-label" : undefined}>
-              <span>Torrent Hash</span>
+              <span>{t("taskDetail.torrentHash")}</span>
               {isCopyableTaskValue(task.torrentHash) ? (
                 <button
                   type="button"
                   className="task-icon-button"
-                  onClick={() => void onCopy(task.torrentHash || "", "Torrent Hash 已复制")}
-                  aria-label="复制 Torrent Hash"
-                  title="复制 Torrent Hash"
+                  onClick={() => void onCopy(task.torrentHash || "", t("taskDetail.copiedHash"))}
+                  aria-label={t("taskDetail.copyHash")}
+                  title={t("taskDetail.copyHash")}
                 >
                   <FontAwesomeIcon icon={faCopy} />
                 </button>
@@ -202,10 +206,10 @@ export function TaskDetail({
           </div>
           <div>
             <dt>qBittorrent</dt>
-            <dd>{task.qbittorrentState || "待同步"}</dd>
+            <dd>{task.qbittorrentState || t("taskDetail.waitingSync")}</dd>
           </div>
           <div>
-            <dt>进度</dt>
+            <dt>{t("taskDetail.progress")}</dt>
             <dd>{Math.round(task.progress * 100)}%</dd>
           </div>
           <div>
@@ -213,39 +217,39 @@ export function TaskDetail({
             <dd>{task.stashScanJobId || "—"}</dd>
           </div>
           <div>
-            <dt>入库方式</dt>
-            <dd>{task.deliveryMode || "—"}</dd>
+            <dt>{t("taskDetail.ingestMode")}</dt>
+            <dd>{task.deliveryMode ? deliveryModeLabel(task.deliveryMode) : "—"}</dd>
           </div>
           <div>
-            <dt>Moji 搬运源路径</dt>
+            <dt>{t("taskDetail.sourcePath")}</dt>
             <dd>{task.mojiSourcePath || "—"}</dd>
           </div>
           <div>
-            <dt>交付动作</dt>
-            <dd>{task.transferAction || "—"}</dd>
+            <dt>{t("taskDetail.action")}</dt>
+            <dd>{task.transferAction ? transferActionLabel(task.transferAction) : "—"}</dd>
           </div>
           <div>
-            <dt>Moji 交付目标路径</dt>
+            <dt>{t("taskDetail.targetPath")}</dt>
             <dd>{task.mojiTransferPath || "—"}</dd>
           </div>
           <div>
-            <dt>交付结果</dt>
-            <dd>{task.stage === "TRANSFERRING" ? task.stageStatusLabel : (task.mojiTransferPath ? "已完成" : "未触发")}</dd>
+            <dt>{t("taskDetail.result")}</dt>
+            <dd>{task.mojiTransferPath ? t("taskDetail.resultDone") : t("taskDetail.notTriggered")}</dd>
           </div>
           <div>
-            <dt>交付错误</dt>
+            <dt>{t("taskDetail.error")}</dt>
             <dd>{task.transferError || "—"}</dd>
           </div>
           <div>
-            <dt>Stash 扫描路径</dt>
+            <dt>{t("taskDetail.scanPath")}</dt>
             <dd>{task.stashScanPath || "—"}</dd>
           </div>
           <div>
-            <dt>扫描阶段</dt>
-            <dd>{task.stage === "SCANNING" || task.stage === "COMPLETED" ? task.stageStatusLabel : "未开始"}</dd>
+            <dt>{t("taskDetail.scanStage")}</dt>
+            <dd>{task.stage === "SCANNING" ? t("taskModel.states.scanning") : task.stage === "COMPLETED" ? t("taskModel.states.completed") : t("taskDetail.notStarted")}</dd>
           </div>
           <div>
-            <dt>扫描提示</dt>
+            <dt>{t("taskDetail.scanHint")}</dt>
             <dd>{task.stashScanHint || "—"}</dd>
           </div>
         </dl>
@@ -258,7 +262,7 @@ export function TaskDetail({
       <article className="drawer-card">
         <div className="drawer-card__head">
           <div>
-            <h3>操作</h3>
+            <h3>{t("taskDetail.actions")}</h3>
           </div>
         </div>
         <div className="task-ops">
@@ -270,12 +274,12 @@ export function TaskDetail({
               disabled={pendingRetry}
             >
               <FontAwesomeIcon icon={faRotate} />
-              <span>{pendingRetry ? "正在重试当前任务" : "重试受阻任务"}</span>
+              <span>{pendingRetry ? t("taskDetail.retrying") : t("taskDetail.retryBlocked")}</span>
             </button>
           ) : null}
           <button type="button" className="ghost-button task-ops__button" onClick={onSyncAll}>
             <FontAwesomeIcon icon={faRotate} />
-            <span>同步全部任务进度</span>
+            <span>{t("taskDetail.syncAll")}</span>
           </button>
           {canTriggerTaskStashScan(task) ? (
             <button
@@ -285,12 +289,12 @@ export function TaskDetail({
               disabled={pendingScan}
             >
               <FontAwesomeIcon icon={faWandMagicSparkles} />
-              <span>{pendingScan ? "正在触发当前任务扫描" : "触发当前任务扫描"}</span>
+              <span>{pendingScan ? t("taskDetail.triggering") : t("taskDetail.trigger")}</span>
             </button>
           ) : null}
           <button type="button" className="ghost-button task-ops__button" onClick={onScanAll}>
             <FontAwesomeIcon icon={faDownload} />
-            <span>触发待入库任务扫描</span>
+            <span>{t("taskDetail.scanPending")}</span>
           </button>
           <button
             type="button"
@@ -299,7 +303,7 @@ export function TaskDetail({
             disabled={pendingDelete}
           >
             <FontAwesomeIcon icon={faTrashCan} />
-            <span>{pendingDelete ? "正在删除当前任务" : "删除当前任务"}</span>
+            <span>{pendingDelete ? t("taskDetail.deleting") : t("taskDetail.delete")}</span>
           </button>
         </div>
       </article>
