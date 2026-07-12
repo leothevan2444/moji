@@ -11,7 +11,15 @@
       (function () {
         try {
           var p = localStorage.getItem("moji:locale");
-          var l = p === "en" ? "en" : p === "zh-CN" ? "zh-CN" : ((navigator.languages && navigator.languages[0]) || navigator.language || "").toLowerCase().indexOf("en") === 0 ? "en" : "zh-CN";
+          var l = p === "en" ? "en" : p === "zh-CN" ? "zh-CN" : "zh-CN";
+          if (p !== "en" && p !== "zh-CN") {
+            var languages = (navigator.languages && navigator.languages.length ? navigator.languages : [navigator.language || ""]);
+            for (var i = 0; i < languages.length; i += 1) {
+              var candidate = String(languages[i]).toLowerCase().replace(/_/g, "-");
+              if (candidate === "zh" || candidate.indexOf("zh-") === 0) { l = "zh-CN"; break; }
+              if (candidate === "en" || candidate.indexOf("en-") === 0) { l = "en"; break; }
+            }
+          }
           document.documentElement.lang = l;
           document.documentElement.dir = "ltr";
         } catch (e) { /* default HTML attributes remain valid */ }

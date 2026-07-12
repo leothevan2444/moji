@@ -1,0 +1,17 @@
+[dir="rtl"] {
+  .discovery-shell__submit svg,
+  .fa-arrow-left,
+  .fa-arrow-right,
+  .fa-arrow-up-right-from-square {
+    transform: scaleX(-1);
+  }
+
+  .task-timeline,
+  .log-stream,
+  code,
+  pre,
+  input[type="url"] {
+    direction: ltr;
+    text-align: start;
+  }
+}

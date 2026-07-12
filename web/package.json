@@ -9,8 +9,10 @@
     "test": "vitest run",
     "i18n:audit": "node scripts/i18n-audit.mjs",
     "i18n:audit:strict": "node scripts/i18n-audit.mjs --strict",
+    "i18n:check": "npm run i18n:audit:strict && node scripts/export-locales.mjs --check && vitest run src/i18n/integrity.test.ts src/i18n/locales.test.ts src/i18n/LocaleProvider.test.tsx src/services/queryError.test.ts",
     "preview": "vite preview",
-    "codegen": "graphql-codegen --config codegen.ts"
+    "codegen": "graphql-codegen --config codegen.ts",
+    "i18n:export": "node scripts/export-locales.mjs"
   },
   "dependencies": {
     "@fortawesome/free-solid-svg-icons": "^7.2.0",

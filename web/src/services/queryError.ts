@@ -38,7 +38,7 @@ function describeCodedBackendError(error: { extensions?: Record<string, unknown>
   const correlationId = typeof error.extensions?.correlationId === "string" ? error.extensions.correlationId : "";
   const key = i18n.exists(`errors.backend.${code}`) ? `errors.backend.${code}` : i18n.exists(`errorExtra.${code}`) ? `errorExtra.${code}` : i18n.exists(`errorSpecial.${code}`) ? `errorSpecial.${code}` : "errors.unknown";
   const translated = i18n.t(key, (error.extensions?.params as Record<string, unknown>) ?? {});
-  return correlationId ? `${translated} (${i18n.t("errors.withId", { id: correlationId })})` : translated;
+  return correlationId ? `${translated} (${i18n.t("errorCorrelation", { id: correlationId })})` : translated;
 }
 
 function describeKnownBackendError(message?: string) {

@@ -1,11 +1,13 @@
-import { createContext, useContext, useEffect, useMemo, useState, type PropsWithChildren } from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type PropsWithChildren } from "react";
 import i18n from "./i18n";
-import { isLocalePreference, LOCALE_STORAGE_KEY, resolveLocale, SUPPORTED_LOCALES, type LocalePreference, type SupportedLocale } from "./locales";
+import { applyDocumentLocale, isLocalePreference, LOCALE_STORAGE_KEY, resolveLocale, type LocalePreference, type SupportedLocale } from "./locales";
 
 export interface LocaleContextValue {
   preference: LocalePreference;
   locale: SupportedLocale;
+  loadError: boolean;
   setPreference(value: LocalePreference): void;
+  retry(): void;
 }
 
 const LocaleContext = createContext<LocaleContextValue | null>(null);
@@ -19,22 +21,43 @@ function storedPreference(): LocalePreference {
 
 export function LocaleProvider({ children }: PropsWithChildren) {
   const [preference, setPreferenceState] = useState<LocalePreference>(storedPreference);
+  const initialLocale = resolveLocale("auto", typeof navigator === "undefined" ? [] : navigator.languages);
+  const [locale, setLocale] = useState<SupportedLocale>(initialLocale);
+  const activeLocale = useRef(initialLocale);
+  const [loadError, setLoadError] = useState(false);
+  const [retryVersion, setRetryVersion] = useState(0);
   const browserLanguages = typeof navigator === "undefined" ? [] : navigator.languages;
-  const locale = resolveLocale(preference, browserLanguages);
+  const requestedLocale = resolveLocale(preference, browserLanguages);
 
   useEffect(() => {
-    void i18n.changeLanguage(locale);
-    document.documentElement.lang = locale;
-    document.documentElement.dir = SUPPORTED_LOCALES[locale].dir;
-  }, [locale]);
+    let cancelled = false;
+    void i18n.changeLanguage(requestedLocale).then(() => {
+      if (cancelled) return;
+      if (!i18n.hasResourceBundle(requestedLocale, "translation")) {
+        setLoadError(true);
+        void i18n.changeLanguage(activeLocale.current);
+        return;
+      }
+      setLoadError(false);
+      setLocale(requestedLocale);
+      activeLocale.current = requestedLocale;
+      applyDocumentLocale(requestedLocale);
+    });
+    return () => { cancelled = true; };
+  }, [requestedLocale, retryVersion]);
+
+  const retry = useCallback(() => {
+    i18n.removeResourceBundle(requestedLocale, "translation");
+    setRetryVersion((value) => value + 1);
+  }, [requestedLocale]);
 
   const value = useMemo<LocaleContextValue>(() => ({
-    preference, locale,
+    preference, locale, loadError, retry,
     setPreference(next) {
       setPreferenceState(next);
       try { localStorage.setItem(LOCALE_STORAGE_KEY, next); } catch { /* storage is optional */ }
     }
-  }), [locale, preference]);
+  }), [loadError, locale, preference, retry]);
 
   return <LocaleContext.Provider value={value}>{children}</LocaleContext.Provider>;
 }

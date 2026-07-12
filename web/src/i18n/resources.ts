@@ -13,7 +13,9 @@ export const resources = {
     theme: { label: "主题：{{theme}}", choose: "选择主题", light: "浅色", dark: "深色", auto: "自动", resolved: "（当前显示：{{theme}}）" },
     stats: { title: "运行概览", loadFailed: "统计加载失败", active: "活跃任务", completed: "完成任务", pending: "待扫描", failed: "失败", placeholder: "指标占位", placeholderDetail: "后续可在这里接入速度、队列、成功率和时段趋势图。" },
     toast: { success: "成功", error: "错误", info: "提示", close: "关闭消息", copyFailed: "复制失败，请检查浏览器剪贴板权限。" },
+    localeUi: { loadFailed: "语言资源加载失败，已保留当前语言。", retry: "重试" },
     errorSpecial: { STASH_NOT_CONFIGURED: "Stash 未配置，请检查连接设置。" },
+    errorCorrelation: "关联 ID：{{id}}",
     errorExtra: { TRANSFER_PATH_FAILED: "入库路径映射失败，请检查 qB、Moji 与 Stash 根路径配置。", STASH_SCAN_FAILED: "Stash 扫描失败，请检查连接和扫描路径。", NO_TORRENT_CANDIDATE: "没有找到可下载的 torrent 候选。", TORRENT_URL_REQUIRED: "缺少有效的 torrent 或 magnet 地址。", ADD_TORRENT_FAILED: "提交下载任务失败。" },
     home: {
       services: "外部服务", ingestPolicy: "入库策略", todos: "待办任务", todosNote: "失败项、待扫描项和长时间停滞项都放在这里。",
@@ -66,7 +68,9 @@ export const resources = {
     theme: { label: "Theme: {{theme}}", choose: "Choose theme", light: "Light", dark: "Dark", auto: "Automatic", resolved: "(Currently showing: {{theme}})" },
     stats: { title: "Runtime overview", loadFailed: "Statistics failed to load", active: "Active tasks", completed: "Completed tasks", pending: "Pending scans", failed: "Failed", placeholder: "Metrics placeholder", placeholderDetail: "Speed, queue, success-rate, and time-series charts can be added here later." },
     toast: { success: "Success", error: "Error", info: "Notice", close: "Dismiss message", copyFailed: "Copy failed. Check the browser's clipboard permission." },
+    localeUi: { loadFailed: "The language resource failed to load. The current language was kept.", retry: "Retry" },
     errorSpecial: { STASH_NOT_CONFIGURED: "Stash is not configured. Check the connection settings." },
+    errorCorrelation: "Correlation ID: {{id}}",
     errorExtra: { TRANSFER_PATH_FAILED: "Ingest path mapping failed. Check the qB, Moji, and Stash root paths.", STASH_SCAN_FAILED: "The Stash scan failed. Check the connection and scan path.", NO_TORRENT_CANDIDATE: "No downloadable torrent candidate was found.", TORRENT_URL_REQUIRED: "A valid torrent or magnet URL is required.", ADD_TORRENT_FAILED: "The download task could not be submitted." },
     home: {
       services: "External services", ingestPolicy: "Ingest policy", todos: "Tasks requiring attention", todosNote: "Failed, pending-scan, and stalled tasks appear here.",

@@ -1787,4 +1787,6 @@
   color: var(--text-muted);
 
   select { min-width: 10rem; }
+
+  > label { display: flex; align-items: center; gap: 0.75rem; }
 }

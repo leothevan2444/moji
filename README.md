@@ -5,6 +5,10 @@
 The web UI uses stable, language-neutral domain values and `i18next` resources for user-facing copy. The current locales are Simplified Chinese (`zh-CN`) and English (`en`); the saved preference may also be `auto` to follow the browser.
 
 Run `npm run i18n:audit` in `web/` to report possible hard-coded CJK UI strings. New UI copy should use semantic translation keys grouped by feature rather than source text as keys. Run `npm run i18n:audit:strict` once the reported migration backlog reaches zero.
+
+The CI gate uses `npm run i18n:check` to enforce zero hard-coded UI strings, matching official locale key sets, non-empty values, and matching interpolation variables. `qps-ploc` and `ar-XB` are development-only test resources for expansion and RTL checks; they are not user-facing locales. New locales must provide the complete key set, pass pseudo/RTL visual review, and be reviewed by a fluent speaker before being added to `SUPPORTED_LOCALES`.
+
+GraphQL user-visible failures use `extensions.code`, `params`, and `correlationId`. UI code must translate the stable code and must not display the server diagnostic message. Unknown codes show a generic localized message while the correlation ID links the UI report to server logs.
 ### **Moji is a self-hosted service for automatically downloading JAV and cooperating with [Stash](https://github.com/stashapp/stash).**
 - Moji integrate with Stash to fetch and manage your JAV collection.
 - Moji helps you to build a personal JAV library from scratch.
