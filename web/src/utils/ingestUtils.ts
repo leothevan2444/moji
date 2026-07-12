@@ -39,22 +39,22 @@ export function deliveryModeGuide(mode: string): IngestModeGuide {
 export function deliveryModeLabel(mode: string) {
   switch (mode) {
     case "PATH_MAP":
-      return "路径映射";
+      return i18n.t("home.ingest.pathMap");
     case "TRANSFER":
-      return "文件交付";
+      return i18n.t("home.ingest.transfer");
     default:
-      return mode || "未选择";
+      return mode || i18n.t("home.ingest.none");
   }
 }
 
 export function transferActionLabel(action: string) {
   switch (action) {
     case "COPY":
-      return "复制";
+      return i18n.t("home.ingest.copy");
     case "MOVE":
-      return "移动";
+      return i18n.t("home.ingest.move");
     case "SYMLINK":
-      return "符号链接";
+      return i18n.t("home.ingest.symlink");
     default:
       return action || "—";
   }
@@ -65,3 +65,4 @@ export const INGEST_BLOCKERS = [
   "Stash 媒体库根路径未映射",
   "任务完成后无法闭环换算扫描路径"
 ];
+import i18n from "../i18n/i18n";

@@ -4,6 +4,9 @@
 
 import type { TasksOverviewDocumentQuery } from "../graphql/generated/graphql";
 import { deliveryModeLabel, transferActionLabel } from "./ingestUtils";
+import i18n from "../i18n/i18n";
+
+const tr = (key: string, options?: Record<string, unknown>) => i18n.t(key, options);
 
 // ── Re-usable type aliases ──────────────────────────────────────────
 
@@ -95,7 +98,7 @@ export function isMagnetLink(value?: string | null) {
 
 export function taskQueryLabel(task: DashboardTask) {
   if (isMagnetLink(task.torrentUrl)) {
-    return "手动磁链任务";
+    return tr("taskModel.manualMagnet");
   }
   return task.code || task.id;
 }
@@ -110,9 +113,9 @@ export function taskSummary(task: DashboardTask) {
 
 export function taskSourceLabel(source: string) {
   const normalized = source.trim().toUpperCase();
-  if (normalized === "SEARCH") return "搜索";
-  if (normalized === "SUBSCRIPTION") return "订阅";
-  return "手动";
+  if (normalized === "SEARCH") return tr("taskModel.sources.search");
+  if (normalized === "SUBSCRIPTION") return tr("taskModel.sources.subscription");
+  return tr("taskModel.sources.manual");
 }
 
 // ── Task grouping ───────────────────────────────────────────────────
@@ -161,31 +164,31 @@ export function taskFailureSummary(task: DashboardTask): TaskFailureSummary {
 
   if (stageStatusValue(task) === "blocked") {
     return {
-      title: "当前阶段受阻",
-      detail: task.stageErrorMessage || "任务被阻塞，但没有更多错误上下文。",
+      title: tr("taskModel.failure.blocked"),
+      detail: task.stageErrorMessage || tr("taskModel.failure.blockedDetail"),
       tone: "tone-danger"
     };
   }
 
   if (task.stashScanJobId || task.stashScanStartedAt) {
     return {
-      title: "等待扫描收口",
-      detail: task.stashScanHint || "下载已完成，等待 Stash 扫描继续推进。",
+      title: tr("taskModel.failure.scanPending"),
+      detail: task.stashScanHint || tr("taskModel.failure.scanPendingDetail"),
       tone: "tone-warn"
     };
   }
 
   if (qbtState) {
     return {
-      title: "下载进行中",
-      detail: task.qbittorrentState || "任务仍在等待下载状态变化。",
+      title: tr("taskModel.failure.downloading"),
+      detail: task.qbittorrentState || tr("taskModel.failure.downloadingDetail"),
       tone: "tone-info"
     };
   }
 
   return {
-    title: "状态正常",
-    detail: "当前任务没有显式错误，等待下一次同步。",
+    title: tr("taskModel.failure.healthy"),
+    detail: tr("taskModel.failure.healthyDetail"),
     tone: "tone-neutral"
   };
 }
@@ -194,27 +197,27 @@ function describeTransferFailure(transferError: string): TaskFailureSummary | nu
   if (!transferError) return null;
   if (transferError.includes("resolve qB relative path failed")) {
     return {
-      title: "qB 路径映射失败",
+      title: tr("taskModel.failure.qbPath"),
       detail: transferError,
       tone: "tone-danger"
     };
   }
   if (transferError.includes("build Moji transfer source path failed")) {
     return {
-      title: "Moji 源路径构建失败",
+      title: tr("taskModel.failure.sourcePath"),
       detail: transferError,
       tone: "tone-danger"
     };
   }
   if (transferError.includes("build Moji transfer target path failed")) {
     return {
-      title: "Moji 目标路径构建失败",
+      title: tr("taskModel.failure.targetPath"),
       detail: transferError,
       tone: "tone-danger"
     };
   }
   return {
-    title: "文件搬运失败",
+    title: tr("taskModel.failure.transfer"),
     detail: transferError,
     tone: "tone-danger"
   };
@@ -224,27 +227,27 @@ function describeScanFailure(stashError: string): TaskFailureSummary | null {
   if (!stashError) return null;
   if (stashError.includes("build Stash scan path failed")) {
     return {
-      title: "Stash 扫描路径构建失败",
+      title: tr("taskModel.failure.scanPath"),
       detail: stashError,
       tone: "tone-danger"
     };
   }
   if (stashError.includes("at least one scan path is required")) {
     return {
-      title: "缺少扫描路径",
-      detail: "任务没有可用于 Stash 扫描的内容路径或保存路径。",
+      title: tr("taskModel.failure.missingScanPath"),
+      detail: tr("taskModel.failure.missingScanPathDetail"),
       tone: "tone-danger"
     };
   }
   if (stashError.includes("not configured")) {
     return {
-      title: "Stash 未配置",
-      detail: "当前任务需要触发 Stash 扫描，但后端未启用对应连接。",
+      title: tr("taskModel.failure.stashMissing"),
+      detail: tr("taskModel.failure.stashMissingDetail"),
       tone: "tone-danger"
     };
   }
   return {
-    title: "Stash 扫描失败",
+    title: tr("taskModel.failure.scan"),
     detail: stashError,
     tone: "tone-danger"
   };
@@ -254,62 +257,62 @@ function describeTaskFailure(taskError: string): TaskFailureSummary | null {
   if (!taskError) return null;
   if (taskError.includes("no downloadable torrent candidate found")) {
     return {
-      title: "没有可下载候选",
-      detail: "搜索返回了结果，但没有可直接提交的 magnet 或种子链接。",
+      title: tr("taskModel.failure.noCandidate"),
+      detail: tr("taskModel.failure.noCandidateDetail"),
       tone: "tone-warn"
     };
   }
   if (taskError.includes("tracker is not configured")) {
     return {
-      title: "索引器未配置",
-      detail: "当前下载链路无法访问 Jackett 或其他搜索后端。",
+      title: tr("taskModel.failure.trackerMissing"),
+      detail: tr("taskModel.failure.trackerMissingDetail"),
       tone: "tone-danger"
     };
   }
   if (taskError.includes("torrent url is required")) {
     return {
-      title: "缺少种子地址",
-      detail: "手动添加任务时没有提供有效的磁链或下载地址。",
+      title: tr("taskModel.failure.torrentMissing"),
+      detail: tr("taskModel.failure.torrentMissingDetail"),
       tone: "tone-warn"
     };
   }
   if (taskError.includes("duplicate torrent task")) {
     return {
-      title: "重复种子任务",
-      detail: "同一个 torrent 或 magnet 已存在对应的 Moji 任务。",
+      title: tr("taskModel.failure.duplicateTorrent"),
+      detail: tr("taskModel.failure.duplicateTorrentDetail"),
       tone: "tone-warn"
     };
   }
   if (taskError.includes("duplicate code task")) {
     return {
-      title: "重复番号任务",
-      detail: "同一个番号已经存在 Moji 任务，当前请求被严格去重拦截。",
+      title: tr("taskModel.failure.duplicateCode"),
+      detail: tr("taskModel.failure.duplicateCodeDetail"),
       tone: "tone-warn"
     };
   }
   if (taskError.includes("task code is required")) {
     return {
-      title: "无法提取番号",
-      detail: "任务创建前必须解析出影片番号，但当前输入无法稳定提取 code。",
+      title: tr("taskModel.failure.codeMissing"),
+      detail: tr("taskModel.failure.codeMissingDetail"),
       tone: "tone-warn"
     };
   }
   if (taskError.includes("qBittorrent client is required") || taskError.includes("qBittorrent client is not configured")) {
     return {
-      title: "下载器未启用",
-      detail: "任务无法提交到 qBittorrent，需先补齐下载器配置。",
+      title: tr("taskModel.failure.downloaderMissing"),
+      detail: tr("taskModel.failure.downloaderMissingDetail"),
       tone: "tone-danger"
     };
   }
   if (taskError.includes("add torrent")) {
     return {
-      title: "提交下载失败",
+      title: tr("taskModel.failure.submit"),
       detail: taskError,
       tone: "tone-danger"
     };
   }
   return {
-    title: "任务执行失败",
+    title: tr("taskModel.failure.generic"),
     detail: taskError,
     tone: "tone-danger"
   };
@@ -322,34 +325,34 @@ export function taskProgressPercent(task: DashboardTask) {
 
 export function taskPrimaryState(task: DashboardTask): Pick<TaskPresentation, "phase" | "label" | "tone"> {
   if (stageStatusValue(task) === "blocked") {
-    return { phase: "failed", label: `${task.stageLabel}受阻`, tone: "tone-danger" as const };
+    return { phase: "failed", label: tr("taskModel.states.blocked"), tone: "tone-danger" as const };
   }
 
   if (stageValue(task) === "transferring") {
-    return { phase: "transferRunning", label: "搬运中", tone: "tone-info" as const };
+    return { phase: "transferRunning", label: tr("taskModel.states.transferring"), tone: "tone-info" as const };
   }
 
   if (stageValue(task) === "scanning" && stageStatusValue(task) === "running") {
-    return { phase: "scanRunning", label: "扫描中", tone: "tone-info" as const };
+    return { phase: "scanRunning", label: tr("taskModel.states.scanning"), tone: "tone-info" as const };
   }
 
   if (stageValue(task) === "pending_ingest" || (stageValue(task) === "scanning" && stageStatusValue(task) === "pending")) {
-    return { phase: "scanPending", label: "待入库", tone: "tone-warn" as const };
+    return { phase: "scanPending", label: tr("taskModel.states.pendingIngest"), tone: "tone-warn" as const };
   }
 
   if (stageValue(task) === "completed") {
-    return { phase: "completed", label: "已完成", tone: "tone-success" as const };
+    return { phase: "completed", label: tr("taskModel.states.completed"), tone: "tone-success" as const };
   }
 
   if (stageValue(task) === "downloading" || isTaskActive(task)) {
-    return { phase: "downloading", label: "下载中", tone: "tone-info" as const };
+    return { phase: "downloading", label: tr("taskModel.states.downloading"), tone: "tone-info" as const };
   }
 
-  return { phase: "queued", label: "待下载", tone: "tone-neutral" as const };
+  return { phase: "queued", label: tr("taskModel.states.queued"), tone: "tone-neutral" as const };
 }
 
 export function taskMetaLine(task: DashboardTask) {
-  const parts = [taskQueryLabel(task), `来源 ${taskSourceLabel(task.source)}`];
+  const parts = [taskQueryLabel(task), tr("taskModel.source", { source: taskSourceLabel(task.source) })];
   if (task.torrentHash) {
     parts.push(`Hash ${task.torrentHash.slice(0, 8)}`);
   }
@@ -368,12 +371,7 @@ function taskStageIndex(task: DashboardTask) {
 }
 
 function lifecycleLabel(stage: TaskStageKey) {
-  if (stage === "sourcing") return "待选种";
-  if (stage === "downloading") return "下载中";
-  if (stage === "pending_ingest") return "待入库";
-  if (stage === "transferring") return "搬运中";
-  if (stage === "scanning") return "扫描中";
-  return "已完成";
+  return tr(`taskModel.lifecycle.${stage}`);
 }
 
 function lifecycleTime(task: DashboardTask, stage: TaskStageKey) {
@@ -404,63 +402,63 @@ function lifecycleDetail(task: DashboardTask, stage: TaskStageKey, failure: Task
 
   if (stage === "sourcing") {
     if (isBlocked) return failure.detail;
-    if (isCurrent) return "Moji 已创建正式任务，正在搜索并筛选可用资源。";
-    return "等待创建正式任务后开始搜索资源。";
+    if (isCurrent) return tr("taskModel.lifecycle.sourcingCurrent");
+    return tr("taskModel.lifecycle.sourcingUpcoming");
   }
 
   if (stage === "downloading") {
     if (isBlocked) return failure.detail;
-    if (currentStage === "sourcing") return "选种完成并提交到 qBittorrent 后进入此阶段。";
+    if (currentStage === "sourcing") return tr("taskModel.lifecycle.downloadUpcoming");
     if (isCurrent) {
       return task.qbittorrentState
         ? `${task.qbittorrentState} · ${progress}%`
-        : `已提交到 qBittorrent，当前进度 ${progress}%。`;
+        : tr("taskModel.lifecycle.downloadProgress", { progress });
     }
-    if (task.contentPath) return `内容已落地：${task.contentPath}`;
-    return "下载已完成。";
+    if (task.contentPath) return tr("taskModel.lifecycle.landed", { path: task.contentPath });
+    return tr("taskModel.lifecycle.downloadDone");
   }
 
   if (stage === "pending_ingest") {
     if (isBlocked) return failure.detail;
-    if (currentStage === "sourcing" || currentStage === "downloading") return "qB 下载完成后，任务会进入待入库阶段。";
-    if (isCurrent) return task.stashScanHint || "下载已完成，等待开始入库处理。";
-    return task.stashScanHint || "下载已完成，已进入入库链路。";
+    if (currentStage === "sourcing" || currentStage === "downloading") return tr("taskModel.lifecycle.ingestUpcoming");
+    if (isCurrent) return task.stashScanHint || tr("taskModel.lifecycle.ingestCurrent");
+    return task.stashScanHint || tr("taskModel.lifecycle.ingestDone");
   }
 
   if (stage === "transferring") {
     if (task.deliveryMode === "PATH_MAP") {
-      return isCurrent ? "当前入库方式无需搬运文件，Moji 会直接进入扫描阶段。" : "当前入库方式无需搬运文件。";
+      return tr(isCurrent ? "taskModel.lifecycle.noTransferCurrent" : "taskModel.lifecycle.noTransfer");
     }
     if (isBlocked) return failure.detail;
     if (currentStage === "sourcing" || currentStage === "downloading" || currentStage === "pending_ingest") {
-      return "需要搬运时，Moji 会在这里执行复制、移动或符号链接。";
+      return tr("taskModel.lifecycle.transferUpcoming");
     }
     if (isCurrent) {
       return task.mojiTransferPath
-        ? `${transferActionLabel(task.transferAction ?? "") || "交付"} -> ${task.mojiTransferPath}`
-        : "Moji 正在准备搬运目标路径。";
+        ? `${transferActionLabel(task.transferAction ?? "") || tr("taskModel.lifecycle.delivery")} -> ${task.mojiTransferPath}`
+        : tr("taskModel.lifecycle.preparingTarget");
     }
-    if (task.mojiTransferPath) return `搬运已完成：${task.mojiTransferPath}`;
-    return "搬运已完成。";
+    if (task.mojiTransferPath) return tr("taskModel.lifecycle.transferDonePath", { path: task.mojiTransferPath });
+    return tr("taskModel.lifecycle.transferDone");
   }
 
   if (stage === "scanning") {
     if (isBlocked) return failure.detail;
     if (currentStage === "sourcing" || currentStage === "downloading" || currentStage === "pending_ingest") {
-      return "入库准备完成后，Moji 会触发 Stash 扫描。";
+      return tr("taskModel.lifecycle.scanUpcoming");
     }
     if (isCurrent) {
       return task.stashScanJobId
-        ? `Stash job ${task.stashScanJobId} 正在执行。`
-        : task.stashScanHint || "等待 Stash 接手当前扫描。";
+        ? tr("taskModel.lifecycle.jobRunning", { job: task.stashScanJobId })
+        : task.stashScanHint || tr("taskModel.lifecycle.scanWaiting");
     }
-    if (task.stashScanPath) return `扫描路径：${task.stashScanPath}`;
-    return "扫描已完成。";
+    if (task.stashScanPath) return tr("taskModel.lifecycle.scanPath", { path: task.stashScanPath });
+    return tr("taskModel.lifecycle.scanDone");
   }
 
-  if (isCurrent && currentStatus === "done") return task.stashScanPath || task.contentPath || "任务已完成闭环。";
-  if (currentStage === "completed") return task.stashScanPath || task.contentPath || "任务已完成闭环。";
-  return "扫描完成并收口后，任务会进入最终完成态。";
+  if (isCurrent && currentStatus === "done") return task.stashScanPath || task.contentPath || tr("taskModel.lifecycle.closed");
+  if (currentStage === "completed") return task.stashScanPath || task.contentPath || tr("taskModel.lifecycle.closed");
+  return tr("taskModel.lifecycle.completeUpcoming");
 }
 
 export function taskLifecycle(task: DashboardTask, failure: TaskFailureSummary): TaskLifecycleStep[] {
@@ -515,23 +513,23 @@ export function taskPresentation(task: DashboardTask): TaskPresentation {
     summary = failure.title;
     detail = failure.detail;
   } else if (primary.phase === "transferRunning") {
-    summary = "下载已完成，Moji 正在准备文件搬运。";
-    detail = task.mojiTransferPath ? `${transferActionLabel(task.transferAction ?? "") || "交付"} -> ${task.mojiTransferPath}` : "正在准备交付目标路径。";
+    summary = tr("taskModel.presentation.transfer");
+    detail = task.mojiTransferPath ? `${transferActionLabel(task.transferAction ?? "") || tr("taskModel.lifecycle.delivery")} -> ${task.mojiTransferPath}` : tr("taskModel.presentation.target");
   } else if (primary.phase === "scanRunning") {
-    summary = "已完成下载，正在等待 Stash 收口。";
-    detail = task.stashScanJobId ? `Stash job ${task.stashScanJobId} 正在执行。` : "Stash 已接手当前任务。";
+    summary = tr("taskModel.presentation.scan");
+    detail = task.stashScanJobId ? tr("taskModel.lifecycle.jobRunning", { job: task.stashScanJobId }) : tr("taskModel.presentation.stashAccepted");
   } else if (primary.phase === "scanPending") {
-    summary = "下载已结束，等待触发或完成 Stash 扫描。";
-    detail = task.stashScanHint || task.stageLabel || "当前尚未有扫描结果。";
+    summary = tr("taskModel.presentation.pending");
+    detail = task.stashScanHint || tr("taskModel.presentation.noScan");
   } else if (primary.phase === "completed") {
-    summary = "下载与入库链路已完成。";
-    detail = task.stashScanPath || task.contentPath || "任务已闭环。";
+    summary = tr("taskModel.presentation.completed");
+    detail = task.stashScanPath || task.contentPath || tr("taskModel.presentation.closed");
   } else if (primary.phase === "downloading") {
-    summary = task.qbittorrentState ? `qBittorrent: ${task.qbittorrentState}` : "任务正在等待下载器推进。";
-    detail = `当前进度 ${progress}%`;
+    summary = task.qbittorrentState ? `qBittorrent: ${task.qbittorrentState}` : tr("taskModel.presentation.downloaderWaiting");
+    detail = tr("taskModel.presentation.progress", { progress });
   } else {
-    summary = "任务已创建，正在搜寻资源。";
-    detail = task.stageLabel || "当前阶段等待继续推进。";
+    summary = tr("taskModel.presentation.queued");
+    detail = tr("taskModel.presentation.stageWaiting");
   }
 
   return {
@@ -541,7 +539,7 @@ export function taskPresentation(task: DashboardTask): TaskPresentation {
     summary,
     detail,
     progressPercent: progress,
-    progressLabel: primary.phase === "completed" ? "已闭环" : `${progress}%`,
+    progressLabel: primary.phase === "completed" ? tr("taskModel.states.closed") : `${progress}%`,
     metaLine: taskMetaLine(task),
     lifecycle: taskLifecycle(task, failure)
   };
