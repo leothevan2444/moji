@@ -6,7 +6,8 @@ import lazyBackend from "./lazyBackend";
 void i18n.use(lazyBackend).use(initReactI18next).init({
   lng: DEFAULT_LOCALE,
   fallbackLng: ["en", DEFAULT_LOCALE],
-  supportedLngs: [...Object.keys(SUPPORTED_LOCALES), ...Object.keys(TEST_LOCALES)],
+  // `en-XA` is the internal BCP 47 test locale used for the public `qps-ploc` mode.
+  supportedLngs: [...Object.keys(SUPPORTED_LOCALES), ...Object.keys(TEST_LOCALES).filter((locale) => locale !== "qps-ploc"), "en-XA"],
   ns: ["translation"],
   defaultNS: "translation",
   interpolation: { escapeValue: false },

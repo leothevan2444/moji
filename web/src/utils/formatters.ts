@@ -2,7 +2,7 @@ import type { LogsDocumentQuery } from "../graphql/generated/graphql";
 import i18n from "../i18n/i18n";
 
 function activeLocale() {
-  return i18n.resolvedLanguage === "en" ? "en" : "zh-CN";
+  return i18n.resolvedLanguage?.toLowerCase().startsWith("zh") ? "zh-CN" : "en";
 }
 
 export function formatBytes(size: number) {

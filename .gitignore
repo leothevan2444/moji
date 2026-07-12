@@ -16,5 +16,7 @@ cache/
 web/node_modules/
 web/dist/
 web/*.tsbuildinfo
+web/test-results/
+web/playwright-report/
 .log
 gitstats/

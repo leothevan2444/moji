@@ -12,7 +12,9 @@
     "i18n:check": "npm run i18n:audit:strict && node scripts/export-locales.mjs --check && vitest run src/i18n/integrity.test.ts src/i18n/locales.test.ts src/i18n/LocaleProvider.test.tsx src/services/queryError.test.ts",
     "preview": "vite preview",
     "codegen": "graphql-codegen --config codegen.ts",
-    "i18n:export": "node scripts/export-locales.mjs"
+    "i18n:export": "node scripts/export-locales.mjs",
+    "test:visual": "playwright test",
+    "test:visual:update": "playwright test --update-snapshots"
   },
   "dependencies": {
     "@fortawesome/free-solid-svg-icons": "^7.2.0",
@@ -29,6 +31,7 @@
   "devDependencies": {
     "@graphql-codegen/cli": "^5.0.5",
     "@graphql-codegen/client-preset": "^4.8.3",
+    "@playwright/test": "^1.61.1",
     "@testing-library/react": "^16.3.2",
     "@testing-library/user-event": "^14.6.1",
     "@types/react": "^19.1.8",

@@ -1,16 +1,20 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type PropsWithChildren } from "react";
 import i18n from "./i18n";
-import { applyDocumentLocale, isLocalePreference, LOCALE_STORAGE_KEY, resolveLocale, type LocalePreference, type SupportedLocale } from "./locales";
+import { applyDocumentLocale, isLocalePreference, LOCALE_STORAGE_KEY, resolveLocale, TEST_LOCALES, type LocaleCode, type LocalePreference, type TestLocale } from "./locales";
 
 export interface LocaleContextValue {
   preference: LocalePreference;
-  locale: SupportedLocale;
+  locale: LocaleCode;
   loadError: boolean;
   setPreference(value: LocalePreference): void;
   retry(): void;
 }
 
 const LocaleContext = createContext<LocaleContextValue | null>(null);
+
+function resourceLocale(locale: LocaleCode) {
+  return locale === "qps-ploc" ? "en-XA" : locale;
+}
 
 function storedPreference(): LocalePreference {
   try {
@@ -21,21 +25,26 @@ function storedPreference(): LocalePreference {
 
 export function LocaleProvider({ children }: PropsWithChildren) {
   const [preference, setPreferenceState] = useState<LocalePreference>(storedPreference);
-  const initialLocale = resolveLocale("auto", typeof navigator === "undefined" ? [] : navigator.languages);
-  const [locale, setLocale] = useState<SupportedLocale>(initialLocale);
+  const developmentLocale = import.meta.env.DEV && typeof window !== "undefined"
+    ? new URLSearchParams(window.location.search).get("__locale") as TestLocale | null
+    : null;
+  const testLocale = developmentLocale && developmentLocale in TEST_LOCALES ? developmentLocale : null;
+  const initialLocale: LocaleCode = testLocale ?? resolveLocale("auto", typeof navigator === "undefined" ? [] : navigator.languages);
+  const [locale, setLocale] = useState<LocaleCode>(initialLocale);
   const activeLocale = useRef(initialLocale);
   const [loadError, setLoadError] = useState(false);
   const [retryVersion, setRetryVersion] = useState(0);
   const browserLanguages = typeof navigator === "undefined" ? [] : navigator.languages;
-  const requestedLocale = resolveLocale(preference, browserLanguages);
+  const requestedLocale: LocaleCode = testLocale ?? resolveLocale(preference, browserLanguages);
 
   useEffect(() => {
     let cancelled = false;
-    void i18n.changeLanguage(requestedLocale).then(() => {
+    const language = resourceLocale(requestedLocale);
+    void i18n.changeLanguage(language).then(() => {
       if (cancelled) return;
-      if (!i18n.hasResourceBundle(requestedLocale, "translation")) {
+      if (!i18n.hasResourceBundle(language, "translation")) {
         setLoadError(true);
-        void i18n.changeLanguage(activeLocale.current);
+        void i18n.changeLanguage(resourceLocale(activeLocale.current));
         return;
       }
       setLoadError(false);
@@ -47,7 +56,7 @@ export function LocaleProvider({ children }: PropsWithChildren) {
   }, [requestedLocale, retryVersion]);
 
   const retry = useCallback(() => {
-    i18n.removeResourceBundle(requestedLocale, "translation");
+    i18n.removeResourceBundle(resourceLocale(requestedLocale), "translation");
     setRetryVersion((value) => value + 1);
   }, [requestedLocale]);
 
