@@ -7,8 +7,10 @@ import { parsePerformerSearchParams, serializePerformerSearchParams } from "../s
 import { LibraryFilter, PerformersConfigDocumentDocument, SceneSourceFilter } from "../../graphql/generated/graphql";
 import { describeQueryError } from "../../services/queryError";
 import type { AppOutletContext } from "../AppLayout";
+import { useTranslation } from "react-i18next";
 
 export function Component() {
+  const { t } = useTranslation();
   const { performerId } = useParams();
   const [params] = useSearchParams();
   const state = parsePerformerSearchParams(params);
@@ -33,27 +35,27 @@ export function Component() {
   const reload = subscription.reloadSubscription;
   const toggle = async (performer: { id: string; name: string; subscribed: boolean }) => {
     setPendingSubscription(performer.id);
-    try { const result = performer.subscribed ? await subscription.unsubscribePerformer({ stashPerformerID: performer.id }) : await subscription.subscribePerformer({ stashPerformerID: performer.id }); if (result.error) pushToast("tone-danger", describeQueryError(result.error)); else { pushToast("tone-success", performer.subscribed ? `已取消订阅 ${performer.name}。` : `已订阅 ${performer.name}，Moji 会通过 custom_fields 记录状态。`); await reload(); } }
+    try { const result = performer.subscribed ? await subscription.unsubscribePerformer({ stashPerformerID: performer.id }) : await subscription.subscribePerformer({ stashPerformerID: performer.id }); if (result.error) pushToast("tone-danger", describeQueryError(result.error)); else { pushToast("tone-success", t(performer.subscribed ? "performerRoute.unsubscribed" : "performerRoute.subscribed", { name: performer.name })); await reload(); } }
     finally { setPendingSubscription(null); }
   };
-  const refreshOne = async (performer: { id: string; name: string }) => { setPendingSubscription(performer.id); try { const result = await subscription.refreshSubscribedPerformer({ stashPerformerID: performer.id }); if (result.error) pushToast("tone-danger", describeQueryError(result.error)); else { pushToast("tone-info", `已检查 ${performer.name} 的最新发行信息。`); await reload(); } } finally { setPendingSubscription(null); } };
-  const refreshAll = async () => { const result = await subscription.refreshSubscriptionsNow({}); if (result.error) pushToast("tone-danger", describeQueryError(result.error)); else { pushToast("tone-info", "已触发全部演员的更新检查。"); await reload(); } };
+  const refreshOne = async (performer: { id: string; name: string }) => { setPendingSubscription(performer.id); try { const result = await subscription.refreshSubscribedPerformer({ stashPerformerID: performer.id }); if (result.error) pushToast("tone-danger", describeQueryError(result.error)); else { pushToast("tone-info", t("performerRoute.checked", { name: performer.name })); await reload(); } } finally { setPendingSubscription(null); } };
+  const refreshAll = async () => { const result = await subscription.refreshSubscriptionsNow({}); if (result.error) pushToast("tone-danger", describeQueryError(result.error)); else { pushToast("tone-info", t("performerRoute.checkedAll")); await reload(); } };
   const sceneInput = (scene: (typeof subscription.performerScenes)[number]) => ({ key: scene.key, sourceSceneId: scene.sourceSceneId, stashBoxSceneId: scene.stashBoxSceneId ?? undefined, stashBoxEndpoint: scene.stashBoxEndpoint ?? undefined, code: scene.code ?? undefined, title: scene.title ?? undefined, inLibrary: scene.inLibrary });
   const queueSelected = async () => {
     if (!performerId || !selectedKeys.length) return;
     const scenes = subscription.performerScenes.filter((scene) => selectedKeys.includes(scene.key));
-    if (!scenes.length) { pushToast("tone-danger", "当前没有可提交的已选作品，请刷新列表后重试。"); return; }
+    if (!scenes.length) { pushToast("tone-danger", t("performerRoute.noSelection")); return; }
     const result = await subscription.queuePerformerScenes({ input: { performerId, scenes: scenes.map(sceneInput) } });
     if (result.error) { pushToast("tone-danger", describeQueryError(result.error)); return; }
-    const payload = result.data?.queuePerformerScenes; if (!payload) { pushToast("tone-danger", "批量下载失败，后端没有返回结果。"); return; }
+    const payload = result.data?.queuePerformerScenes; if (!payload) { pushToast("tone-danger", t("performerRoute.batchNoResult")); return; }
     const { summary, results } = payload;
-    pushToast(summary.queuedCount ? (summary.failedCount ? "tone-info" : "tone-success") : summary.failedCount ? "tone-danger" : "tone-info", `已创建 ${summary.queuedCount} 个任务，跳过 ${summary.skippedCount} 个，失败 ${summary.failedCount} 个。`);
+    pushToast(summary.queuedCount ? (summary.failedCount ? "tone-info" : "tone-success") : summary.failedCount ? "tone-danger" : "tone-info", t("performerRoute.batchSummary", { queued: summary.queuedCount, skipped: summary.skippedCount, failed: summary.failedCount }));
     const queued = new Set(results.filter((item) => item.status === "QUEUED").map((item) => item.key)); setSelectedKeys((current) => current.filter((key) => !queued.has(key))); await reload();
   };
   const queueOne = async (scene: (typeof subscription.performerScenes)[number]) => {
     if (!performerId || scene.inLibrary || scene.mojiTask || pendingKeys.includes(scene.key)) return;
     setPendingKeys((current) => [...current, scene.key]);
-    try { const result = await subscription.queueSinglePerformerScene({ input: { performerId, scenes: [sceneInput(scene)] } }); if (result.error) { pushToast("tone-danger", describeQueryError(result.error)); return; } const item = result.data?.queuePerformerScenes.results[0]; if (!item) pushToast("tone-danger", "创建任务失败，后端没有返回结果。"); else { pushToast(item.status === "QUEUED" ? "tone-success" : item.status === "SKIPPED" ? "tone-info" : "tone-danger", item.status === "QUEUED" ? `已为 ${item.resolvedCode || scene.code || scene.title || "影片"} 创建下载任务。` : item.message); if (item.status !== "FAILED") setSelectedKeys((current) => current.filter((key) => key !== scene.key)); await reload(); } }
+    try { const result = await subscription.queueSinglePerformerScene({ input: { performerId, scenes: [sceneInput(scene)] } }); if (result.error) { pushToast("tone-danger", describeQueryError(result.error)); return; } const item = result.data?.queuePerformerScenes.results[0]; if (!item) pushToast("tone-danger", t("performerRoute.createNoResult")); else { pushToast(item.status === "QUEUED" ? "tone-success" : item.status === "SKIPPED" ? "tone-info" : "tone-danger", item.status === "QUEUED" ? t("performerRoute.created", { scene: item.resolvedCode || scene.code || scene.title || t("performerRoute.scene") }) : item.message); if (item.status !== "FAILED") setSelectedKeys((current) => current.filter((key) => key !== scene.key)); await reload(); } }
     finally { setPendingKeys((current) => current.filter((key) => key !== scene.key)); }
   };
 

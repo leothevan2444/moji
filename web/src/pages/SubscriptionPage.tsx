@@ -13,6 +13,8 @@ import {
   faUsers
 } from "@fortawesome/free-solid-svg-icons";
 import { useMemo } from "react";
+import { useTranslation } from "react-i18next";
+import i18n from "../i18n/i18n";
 import { SUBSCRIPTION_PAGE_SIZE_OPTIONS } from "../constants";
 import { describeQueryError } from "../services/queryError";
 import {
@@ -42,12 +44,13 @@ type StashPerformerSceneEntry = StashPerformerScenePage["items"][number];
 type SubscribedPerformerEntry = SubscribedPerformersQuery["subscribedPerformers"][number];
 function performerSceneTaskLabel(task: NonNullable<StashPerformerSceneEntry["mojiTask"]>) {
   if (task.stage === TaskStage.Downloading && task.progress > 0) {
-    return `下载 ${Math.round(task.progress * 100)}%`;
+    return i18n.t("performerUi.downloadProgress", { progress: Math.round(task.progress * 100) });
   }
   if (task.stageStatus === TaskStageStatus.Blocked) {
-    return task.stageStatusLabel;
+    return i18n.t("taskModel.states.blocked");
   }
-  return task.stageLabel;
+  if (task.stage === TaskStage.Completed) return i18n.t("taskModel.states.completed");
+  return i18n.t("taskModel.states.queued");
 }
 
 function performerSceneTaskTone(task: NonNullable<StashPerformerSceneEntry["mojiTask"]>) {
@@ -57,7 +60,7 @@ function performerSceneTaskTone(task: NonNullable<StashPerformerSceneEntry["moji
 }
 
 function performerSceneSourceLabel(scene: StashPerformerSceneEntry) {
-  if (scene.hasStashSource && scene.hasStashBoxSource) return "双源";
+  if (scene.hasStashSource && scene.hasStashBoxSource) return i18n.t("performerUi.dualSource");
   if (scene.hasStashBoxSource) return "StashBox";
   return "Stash";
 }
@@ -165,6 +168,7 @@ export function SubscriptionPage({
   onQueueSelectedScenes,
   onQueueScene
 }: SubscriptionPageProps) {
+  const { t } = useTranslation();
   const subscribedByID = useMemo(() => {
     return new Map(subscribedPerformers.map((item) => [item.performer.id, item]));
   }, [subscribedPerformers]);
@@ -183,10 +187,10 @@ export function SubscriptionPage({
       <section className="section-band">
         <div className="band-head">
           <div>
-            <h2>演员详情</h2>
+            <h2>{t("performerUi.detail")}</h2>
           </div>
           <button type="button" className="ghost-button" onClick={onBackToList}>
-            <FontAwesomeIcon icon={faArrowLeft} /> 返回列表
+            <FontAwesomeIcon icon={faArrowLeft} /> {t("performerUi.back")}
           </button>
         </div>
 
@@ -220,25 +224,25 @@ export function SubscriptionPage({
                       <strong className="performer-detail-hero__name">{performerDetail.performer.name}</strong>
                       <span
                         className={`performer-detail-hero__state ${performerDetail.performer.favorite ? "is-favorite" : ""}`}
-                        title={performerDetail.performer.favorite ? "Stash 已收藏" : "Stash 未收藏"}
+                        title={t(performerDetail.performer.favorite ? "performerUi.favorite" : "performerUi.notFavorite")}
                       >
                         <FontAwesomeIcon icon={faHeart} />
-                        Stash {performerDetail.performer.favorite ? "已收藏" : "未收藏"}
+                        {t(performerDetail.performer.favorite ? "performerUi.favorite" : "performerUi.notFavorite")}
                       </span>
                       <button
                         type="button"
                         className={`performer-detail-hero__state performer-detail-hero__subscription ${performerDetail.performer.subscribed ? "is-subscribed" : ""}`}
-                        title={performerDetail.performer.subscribed ? "取消 Moji 订阅" : "添加 Moji 订阅"}
-                        aria-label={performerDetail.performer.subscribed ? `取消订阅 ${performerDetail.performer.name}` : `订阅 ${performerDetail.performer.name}`}
+                        title={t(performerDetail.performer.subscribed ? "performerUi.removeSubscription" : "performerUi.addSubscription")}
+                        aria-label={t(performerDetail.performer.subscribed ? "performerUi.unsubscribeName" : "performerUi.subscribeName", { name: performerDetail.performer.name })}
                         disabled={pendingSubscriptionID === performerDetail.performer.id}
                         onClick={() => onToggle(performerDetail.performer)}
                       >
                         <FontAwesomeIcon icon={faBookmark} />
-                        Moji {performerDetail.performer.subscribed ? "已订阅" : "未订阅"}
+                        Moji {t(performerDetail.performer.subscribed ? "performerUi.subscribed" : "performerUi.unsubscribed")}
                       </button>
-                      <span className="performer-detail-hero__stashbox" title={performerDetail.matchedStashBox?.name ?? "未匹配到首选 StashBox"}>
-                        <span>首选 StashBox</span>
-                        <strong>{performerDetail.matchedStashBox?.name ?? "未匹配"}</strong>
+                      <span className="performer-detail-hero__stashbox" title={performerDetail.matchedStashBox?.name ?? t("performerUi.noPreferredBox")}>
+                        <span>{t("performerUi.preferredBox")}</span>
+                        <strong>{performerDetail.matchedStashBox?.name ?? t("performerUi.unmatched")}</strong>
                       </span>
                     </div>
 
@@ -246,8 +250,8 @@ export function SubscriptionPage({
                       <button
                         type="button"
                         className="profile-action-icon"
-                        title="立即检查"
-                        aria-label={`立即检查 ${performerDetail.performer.name}`}
+                        title={t("performerUi.checkNow")}
+                        aria-label={t("performerUi.checkName", { name: performerDetail.performer.name })}
                         disabled={pendingSubscriptionID === performerDetail.performer.id}
                         onClick={() => onRefreshOne(performerDetail.performer)}
                       >
@@ -259,8 +263,8 @@ export function SubscriptionPage({
                           href={detailStashURL}
                           target="_blank"
                           rel="noreferrer"
-                          title="前往 Stash 主页"
-                          aria-label={`前往 ${performerDetail.performer.name} 的 Stash 主页`}
+                          title={t("performerUi.stashHome")}
+                          aria-label={t("performerUi.stashHomeName", { name: performerDetail.performer.name })}
                         >
                           <FontAwesomeIcon icon={faPlayCircle} />
                         </a>
@@ -270,22 +274,22 @@ export function SubscriptionPage({
 
                   <div className="performer-detail-hero__description">
                     <p title={performerDetail.performer.aliasList.join(" / ")}>
-                      <span>别名</span>
-                      {performerDetail.performer.aliasList.length > 0 ? performerDetail.performer.aliasList.join(" / ") : "暂无"}
+                      <span>{t("performerUi.aliases")}</span>
+                      {performerDetail.performer.aliasList.length > 0 ? performerDetail.performer.aliasList.join(" / ") : t("performerUi.none")}
                     </p>
                     <p title={performerDetail.disambiguation ?? ""}>
-                      <span>说明</span>
-                      {performerDetail.disambiguation || "无补充说明"}
+                      <span>{t("performerUi.description")}</span>
+                      {performerDetail.disambiguation || t("performerUi.noDescription")}
                     </p>
                     <p>
-                      <span>资料</span>
+                      <span>{t("performerUi.profile")}</span>
                       {[performerDetail.birthdate, performerDetail.country, performerDetail.heightCm ? `${performerDetail.heightCm} cm` : null]
                         .filter(Boolean)
-                        .join(" · ") || "暂无"}
+                        .join(" · ") || t("performerUi.none")}
                     </p>
                     {latestRelease ? (
                       <p title={latestRelease.title}>
-                        <span>最近发行</span>
+                        <span>{t("performerUi.latest")}</span>
                         {latestRelease.code || latestRelease.title} · {formatRelativeDate(latestRelease.date || latestRelease.seenAt)}
                       </p>
                     ) : null}
@@ -293,23 +297,23 @@ export function SubscriptionPage({
 
                   <dl className="performer-detail-metrics">
                     <div>
-                      <dt>上次检查</dt>
+                      <dt>{t("performerUi.lastCheck")}</dt>
                       <dd title={formatDateTime(performerSubscription?.lastCheckedAt)}>
-                        {formatRelative(performerSubscription?.lastCheckedAt) ?? "尚未检查"}
+                        {formatRelative(performerSubscription?.lastCheckedAt) ?? t("performerUi.neverChecked")}
                       </dd>
                     </div>
                     <div className={performerSubscription?.lastError ? "tone-danger" : undefined}>
-                      <dt>检查状态</dt>
+                      <dt>{t("performerUi.checkStatus")}</dt>
                       <dd title={performerSubscription?.lastError ?? ""}>
-                        {performerSubscription?.lastError ? "检查失败" : performerDetail.performer.subscribed ? "正常" : "未订阅"}
+                        {t(performerSubscription?.lastError ? "performerUi.failed" : performerDetail.performer.subscribed ? "performerUi.normal" : "performerUi.unsubscribed")}
                       </dd>
                     </div>
                     <div>
-                      <dt>待处理发行</dt>
+                      <dt>{t("performerUi.pendingReleases")}</dt>
                       <dd>{performerSubscription?.pendingReleaseCount ?? 0}</dd>
                     </div>
                     <div>
-                      <dt>已处理发行</dt>
+                      <dt>{t("performerUi.processedReleases")}</dt>
                       <dd>{performerSubscription?.processedReleaseCount ?? 0}</dd>
                     </div>
                     <div>
@@ -321,7 +325,7 @@ export function SubscriptionPage({
                       <dd>{performerScenePage?.stashBoxCount ?? performerDetail.stashBoxSceneCount}</dd>
                     </div>
                     <div>
-                      <dt>去重后</dt>
+                      <dt>{t("performerUi.deduped")}</dt>
                       <dd>{performerScenePage?.dedupedCount ?? performerDetail.dedupedSceneCount}</dd>
                     </div>
                   </dl>
@@ -331,24 +335,24 @@ export function SubscriptionPage({
 
             <div className="toolbar-inline toolbar-inline--subscription">
               <input
-                placeholder="搜索影片标题、番号、片商"
+                placeholder={t("performerUi.sceneSearch")}
                 value={performerSceneSearch}
                 onChange={(event) => onPerformerSceneSearchChange(event.target.value)}
               />
               <select value={performerSceneSourceFilter} onChange={(event) => onPerformerSceneSourceChange(event.target.value as SceneSourceFilter)}>
-                <option value={SceneSourceFilter.All}>全部来源</option>
+                <option value={SceneSourceFilter.All}>{t("performerUi.allSources")}</option>
                 <option value={SceneSourceFilter.Stash}>Stash</option>
                 <option value={SceneSourceFilter.Stashbox}>StashBox</option>
               </select>
               <select value={performerSceneLibraryFilter} onChange={(event) => onPerformerSceneLibraryChange(event.target.value as LibraryFilter)}>
-                <option value={LibraryFilter.All}>全部状态</option>
-                <option value={LibraryFilter.InLibrary}>已入库</option>
-                <option value={LibraryFilter.NotInLibrary}>未入库</option>
+                <option value={LibraryFilter.All}>{t("performerUi.allStates")}</option>
+                <option value={LibraryFilter.InLibrary}>{t("performerUi.inLibrary")}</option>
+                <option value={LibraryFilter.NotInLibrary}>{t("performerUi.notInLibrary")}</option>
               </select>
               <select value={performerScenePageSize} onChange={(event) => onPerformerScenePageSizeChange(Number(event.target.value))}>
                 {SUBSCRIPTION_PAGE_SIZE_OPTIONS.map((size) => (
                   <option key={size} value={size}>
-                    每页 {size}
+                    {t("performerUi.pageSize", { size })}
                   </option>
                 ))}
               </select>
@@ -358,7 +362,7 @@ export function SubscriptionPage({
                 disabled={currentPageKeys.length === 0 || fetchingPerformerScenes}
                 onClick={() => onSelectCurrentScenePage(currentPageKeys)}
               >
-                全选本页（{currentPageKeys.length}）
+                {t("performerUi.selectPage", { count: currentPageKeys.length })}
               </button>
               <button
                 type="button"
@@ -366,7 +370,7 @@ export function SubscriptionPage({
                 disabled={selectedSceneKeys.length === 0 || queueingPerformerScenes}
                 onClick={onClearSceneSelection}
               >
-                清空选择
+                {t("performerUi.clearSelection")}
               </button>
               <button
                 type="button"
@@ -375,17 +379,17 @@ export function SubscriptionPage({
                 onClick={onQueueSelectedScenes}
               >
                 {queueingPerformerScenes
-                  ? `正在创建 ${selectedSceneKeys.length} 个任务…`
+                  ? t("performerUi.creatingMany", { count: selectedSceneKeys.length })
                   : selectedSceneKeys.length > 0
-                    ? `创建下载任务（${selectedSceneKeys.length}）`
-                    : "创建下载任务"}
+                    ? t("performerUi.createMany", { count: selectedSceneKeys.length })
+                    : t("performerUi.createDownload")}
               </button>
             </div>
 
             <div className="settings-meta">
-              <span>当前页条目: {performerScenePage?.totalCount ?? 0}</span>
-              <span>分页: {performerScenePage?.page ?? 1} / {performerScenePage?.totalPages ?? 0}</span>
-              <span>状态: {fetchingPerformerDetail || fetchingPerformerScenes ? "加载中" : "已就绪"}</span>
+              <span>{t("performerUi.pageItems", { count: performerScenePage?.totalCount ?? 0 })}</span>
+              <span>{t("performerUi.pagination", { page: performerScenePage?.page ?? 1, pages: performerScenePage?.totalPages ?? 0 })}</span>
+              <span>{t("performerUi.state", { state: t(fetchingPerformerDetail || fetchingPerformerScenes ? "performerUi.loading" : "performerUi.ready") })}</span>
             </div>
 
             <div
@@ -420,7 +424,7 @@ export function SubscriptionPage({
                       )}
                       <span
                         className="performer-scene-card__source-badge"
-                        title={`来源：${scene.sourceLabels.join(" + ")}`}
+                        title={t("performerUi.source", { sources: scene.sourceLabels.join(" + ") })}
                       >
                         {performerSceneSourceLabel(scene)}
                       </span>
@@ -430,8 +434,8 @@ export function SubscriptionPage({
                         type="button"
                         className="performer-scene-card__selector"
                         aria-pressed={selected}
-                        aria-label={`${selected ? "取消选择" : "选择"} ${scene.code || scene.title || scene.sourceSceneId}`}
-                        title={selected ? "取消选择" : "选择影片"}
+                        aria-label={t(selected ? "performerUi.deselectName" : "performerUi.selectName", { name: scene.code || scene.title || scene.sourceSceneId })}
+                        title={t(selected ? "performerUi.deselect" : "performerUi.selectScene")}
                         onClick={(event) => {
                           event.stopPropagation();
                           onToggleSceneSelection(scene.key);
@@ -444,24 +448,24 @@ export function SubscriptionPage({
                       <div className="performer-scene-card__status-row">
                         <h3 title={scene.code || scene.title || scene.sourceSceneId}>{scene.code || scene.title || scene.sourceSceneId}</h3>
                         <time className="performer-scene-card__date" dateTime={scene.date ?? undefined}>
-                          {scene.date || "无日期"}
+                          {scene.date || t("performerUi.noDate")}
                         </time>
                       </div>
-                      <p className="performer-scene-card__meta" title={scene.studioName || "未知工作室"}>
-                        {scene.studioName || "未知工作室"}
+                      <p className="performer-scene-card__meta" title={scene.studioName || t("performerUi.unknownStudio")}>
+                        {scene.studioName || t("performerUi.unknownStudio")}
                       </p>
-                      <p className="performer-scene-card__title" title={scene.title || "无标题"}>{scene.title || "无标题"}</p>
+                      <p className="performer-scene-card__title" title={scene.title || t("performerUi.noTitle")}>{scene.title || t("performerUi.noTitle")}</p>
                       <div className="performer-scene-card__counts">
                         <span
-                          title={scene.performers.length > 0 ? `参演演员：${scene.performers.map((item) => item.name).join(" / ")}` : `${scene.performerCount} 位参演演员`}
-                          aria-label={`${scene.performerCount} 位参演演员`}
+                          title={scene.performers.length > 0 ? t("performerUi.cast", { names: scene.performers.map((item) => item.name).join(" / ") }) : t("performerUi.castCount", { count: scene.performerCount })}
+                          aria-label={t("performerUi.castCount", { count: scene.performerCount })}
                         >
                           <FontAwesomeIcon icon={faUsers} />
                           {scene.performerCount}
                         </span>
                         <span
-                          title={scene.tags.length > 0 ? `标签：${scene.tags.map((item) => item.name).join(" / ")}` : `${scene.tagCount} 个标签`}
-                          aria-label={`${scene.tagCount} 个标签`}
+                          title={scene.tags.length > 0 ? t("performerUi.tags", { names: scene.tags.map((item) => item.name).join(" / ") }) : t("performerUi.tagCount", { count: scene.tagCount })}
+                          aria-label={t("performerUi.tagCount", { count: scene.tagCount })}
                         >
                           <FontAwesomeIcon icon={faTags} />
                           {scene.tagCount}
@@ -469,14 +473,14 @@ export function SubscriptionPage({
                       </div>
                       <div className="performer-scene-card__bottom-actions">
                         {scene.inLibrary ? (
-                          <span className="status-chip performer-scene-card__business-state tone-success" title="影片已入库">
-                            已入库
+                          <span className="status-chip performer-scene-card__business-state tone-success" title={t("performerUi.sceneInLibrary")}>
+                            {t("performerUi.inLibrary")}
                           </span>
                         ) : scene.mojiTask ? (
                           <button
                             type="button"
                             className={`status-chip performer-scene-card__business-state performer-scene-card__task ${performerSceneTaskTone(scene.mojiTask)}`}
-                            title={`${scene.mojiTask.stageLabel} · ${scene.mojiTask.stageStatusLabel}，点击查看任务`}
+                            title={t("performerUi.taskTitle", { stage: performerSceneTaskLabel(scene.mojiTask), status: scene.mojiTask.stageStatus === TaskStageStatus.Blocked ? t("taskModel.states.blocked") : t("performerUi.normal") })}
                             onClick={(event) => {
                               event.stopPropagation();
                               onOpenTask(scene.mojiTask!.id);
@@ -488,7 +492,7 @@ export function SubscriptionPage({
                           <button
                             type="button"
                             className="status-chip performer-scene-card__business-state performer-scene-card__create-task tone-warn"
-                            title="为当前影片创建下载任务"
+                            title={t("performerUi.createScene")}
                             disabled={pendingSingleQueue}
                             onClick={(event) => {
                               event.stopPropagation();
@@ -496,11 +500,11 @@ export function SubscriptionPage({
                             }}
                           >
                             {pendingSingleQueue ? (
-                              "创建中…"
+                              t("performerUi.creating")
                             ) : (
                               <>
                                 <FontAwesomeIcon icon={faPlus} />
-                                创建任务
+                                {t("performerUi.createTask")}
                               </>
                             )}
                           </button>
@@ -511,8 +515,8 @@ export function SubscriptionPage({
                             href={scene.url}
                             target="_blank"
                             rel="noreferrer"
-                            title="查看原始页"
-                            aria-label={`查看 ${scene.code || scene.title || scene.sourceSceneId} 的原始页`}
+                            title={t("performerUi.original")}
+                            aria-label={t("performerUi.originalName", { name: scene.code || scene.title || scene.sourceSceneId })}
                             onClick={(event) => event.stopPropagation()}
                           >
                             <FontAwesomeIcon icon={faArrowUpRightFromSquare} />
@@ -526,8 +530,8 @@ export function SubscriptionPage({
 
               {!fetchingPerformerScenes && performerScenes.length === 0 ? (
                 <article className="empty-card empty-card--wide">
-                  <h3>没有匹配影片</h3>
-                  <p>调整搜索词或筛选条件后再试。</p>
+                  <h3>{t("performerUi.noScenes")}</h3>
+                  <p>{t("performerUi.noScenesDetail")}</p>
                 </article>
               ) : null}
             </div>
@@ -535,21 +539,21 @@ export function SubscriptionPage({
             {performerScenePage && performerScenePage.totalPages > 1 ? (
               <div className="pagination-bar">
                 <button type="button" className="ghost-button" disabled={!performerScenePage.hasPrevPage || fetchingPerformerScenes} onClick={onPrevPerformerScenePage}>
-                  上一页
+                  {t("performerUi.previous")}
                 </button>
                 <span className="status-chip tone-neutral">
-                  第 {performerScenePage.page} / {performerScenePage.totalPages} 页
+                  {t("performerUi.page", { page: performerScenePage.page, pages: performerScenePage.totalPages })}
                 </span>
                 <button type="button" className="ghost-button" disabled={!performerScenePage.hasNextPage || fetchingPerformerScenes} onClick={onNextPerformerScenePage}>
-                  下一页
+                  {t("performerUi.next")}
                 </button>
               </div>
             ) : null}
           </>
         ) : (
           <article className="empty-card empty-card--wide">
-            <h3>{fetchingPerformerDetail ? "演员详情加载中" : "未找到演员详情"}</h3>
-            <p>可以返回列表后重新选择演员。</p>
+            <h3>{t(fetchingPerformerDetail ? "performerUi.detailLoading" : "performerUi.detailMissing")}</h3>
+            <p>{t("performerUi.detailMissingHelp")}</p>
           </article>
         )}
       </section>
@@ -560,28 +564,28 @@ export function SubscriptionPage({
     <section className="section-band">
       <div className="band-head">
         <div>
-          <h2>演员列表</h2>
+          <h2>{t("performerUi.list")}</h2>
         </div>
         <p className="band-note">
-          演员数 {stashPerformerPage?.totalCount ?? 0} · 已订阅 {subscribedPerformers.length}{fetchingStashPerformers || fetchingSubscription ? " · 加载中" : ""}
+          {t("performerUi.listSummary", { count: stashPerformerPage?.totalCount ?? 0, subscribed: subscribedPerformers.length, loading: fetchingStashPerformers || fetchingSubscription ? t("performerUi.loadingSuffix") : "" })}
         </p>
       </div>
 
       <div className="toolbar-inline toolbar-inline--subscription">
         <input
-          placeholder="按名称或别名搜索 Stash 演员"
+          placeholder={t("performerUi.search")}
           value={subscriptionSearch}
           onChange={(event) => onSearchChange(event.target.value)}
         />
         <select value={subscriptionPageSize} onChange={(event) => onPageSizeChange(Number(event.target.value))}>
           {SUBSCRIPTION_PAGE_SIZE_OPTIONS.map((size) => (
             <option key={size} value={size}>
-              每页 {size} 条
+              {t("performerUi.pageSizeRows", { size })}
             </option>
           ))}
         </select>
         <button type="button" className="ghost-button" onClick={onReload}>
-          刷新列表
+          {t("performerUi.refresh")}
         </button>
         <button
           type="button"
@@ -589,20 +593,20 @@ export function SubscriptionPage({
           disabled={refreshingSubscriptionNow || subscribedPerformers.length === 0}
           onClick={onRefreshAll}
         >
-          {refreshingSubscriptionNow ? "检查中..." : "检查全部演员"}
+          {refreshingSubscriptionNow ? t("performerUi.checking") : t("performerUi.checkAll")}
         </button>
       </div>
 
       {stashPerformerPage && stashPerformerPage.totalPages > 1 ? (
         <div className="pagination-bar">
           <button type="button" className="ghost-button" disabled={!stashPerformerPage.hasPrevPage || fetchingStashPerformers} onClick={onPrevPage}>
-            上一页
+            {t("performerUi.previous")}
           </button>
           <span className="status-chip tone-neutral">
-            第 {stashPerformerPage.page} / {stashPerformerPage.totalPages} 页
+            {t("performerUi.page", { page: stashPerformerPage.page, pages: stashPerformerPage.totalPages })}
           </span>
           <button type="button" className="ghost-button" disabled={!stashPerformerPage.hasNextPage || fetchingStashPerformers} onClick={onNextPage}>
-            下一页
+            {t("performerUi.next")}
           </button>
         </div>
       ) : null}
@@ -615,8 +619,8 @@ export function SubscriptionPage({
       <div className="profile-grid">
         {stashPerformers.length === 0 && !fetchingStashPerformers ? (
           <article className="empty-card empty-card--wide">
-            <h3>没有找到匹配的演员</h3>
-            <p>可以尝试修改关键词，或先确认 Stash 已正确返回演员数据。</p>
+            <h3>{t("performerUi.noPerformers")}</h3>
+            <p>{t("performerUi.noPerformersDetail")}</p>
           </article>
         ) : null}
         {stashPerformers.map((performer, index) => {
@@ -653,15 +657,15 @@ export function SubscriptionPage({
                   </div>
                   <div className="profile-card__icons" onClick={(event) => event.stopPropagation()}>
                     {performer.favorite ? (
-                      <span className="profile-icon profile-icon--favorite is-active" title="Stash 已收藏" aria-label="Stash 已收藏">
+                      <span className="profile-icon profile-icon--favorite is-active" title={t("performerUi.favorite")} aria-label={t("performerUi.favorite")}>
                         <FontAwesomeIcon icon={faHeart} />
                       </span>
                     ) : null}
                     <button
                       type="button"
                       className={`profile-icon profile-icon--subscribe ${performer.subscribed ? "is-active" : ""}`}
-                      title={performer.subscribed ? "取消订阅" : "订阅"}
-                      aria-label={performer.subscribed ? "取消订阅" : "订阅"}
+                      title={t(performer.subscribed ? "performerUi.unsubscribe" : "performerUi.subscribe")}
+                      aria-label={t(performer.subscribed ? "performerUi.unsubscribe" : "performerUi.subscribe")}
                       disabled={pendingSubscriptionID === performer.id}
                       onClick={() => onToggle(performer)}
                     >
@@ -671,25 +675,25 @@ export function SubscriptionPage({
                 </div>
                 <dl className="profile-facts">
                   <div>
-                    <dt>作品</dt>
+                    <dt>{t("performerUi.works")}</dt>
                     <dd>{performer.sceneCount}</dd>
                   </div>
                 </dl>
                 <p className="profile-note">
                   {latestRelease
-                    ? `最近记录: ${latestRelease.code || latestRelease.title} · ${formatRelativeDate(latestRelease.date || latestRelease.seenAt)}`
+                    ? t("performerUi.recent", { release: latestRelease.code || latestRelease.title, date: formatRelativeDate(latestRelease.date || latestRelease.seenAt) })
                     : performer.subscribed
-                      ? "已订阅，等待首次检查结果。"
-                      : "尚未订阅。"}
+                      ? t("performerUi.waitingFirst")
+                      : t("performerUi.notSubscribed")}
                 </p>
                 <div className="profile-card__footer">
-                  <p className="profile-check-meta">最近检查：{formatDateTime(subscriptionEntry?.lastCheckedAt)}</p>
+                  <p className="profile-check-meta">{t("performerUi.lastChecked", { time: formatDateTime(subscriptionEntry?.lastCheckedAt) })}</p>
                   <div className="profile-actions" onClick={(event) => event.stopPropagation()}>
                     <button
                       type="button"
                       className="profile-action-icon"
-                      title="立即检查"
-                      aria-label={`立即检查 ${performer.name}`}
+                      title={t("performerUi.checkNow")}
+                      aria-label={t("performerUi.checkName", { name: performer.name })}
                       disabled={pendingSubscriptionID === performer.id}
                       onClick={() => onRefreshOne(performer)}
                     >
@@ -701,8 +705,8 @@ export function SubscriptionPage({
                         href={stashURL}
                         target="_blank"
                         rel="noreferrer"
-                        title="前往 Stash 主页"
-                        aria-label={`前往 ${performer.name} 的 Stash 主页`}
+                        title={t("performerUi.stashHome")}
+                        aria-label={t("performerUi.stashHomeName", { name: performer.name })}
                       >
                         <FontAwesomeIcon icon={faPlayCircle} />
                       </a>
@@ -718,13 +722,13 @@ export function SubscriptionPage({
       {stashPerformerPage && stashPerformerPage.totalPages > 1 ? (
         <div className="pagination-bar">
           <button type="button" className="ghost-button" disabled={!stashPerformerPage.hasPrevPage || fetchingStashPerformers} onClick={onPrevPage}>
-            上一页
+            {t("performerUi.previous")}
           </button>
           <span className="status-chip tone-neutral">
-            第 {stashPerformerPage.page} / {stashPerformerPage.totalPages} 页
+            {t("performerUi.page", { page: stashPerformerPage.page, pages: stashPerformerPage.totalPages })}
           </span>
           <button type="button" className="ghost-button" disabled={!stashPerformerPage.hasNextPage || fetchingStashPerformers} onClick={onNextPage}>
-            下一页
+            {t("performerUi.next")}
           </button>
         </div>
       ) : null}
