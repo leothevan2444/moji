@@ -4,7 +4,7 @@ import { parseDiscoverSearchParams, parsePerformerSearchParams, parseTaskSearchP
 describe("task search params", () => {
   it("uses stable defaults and omits them when serializing", () => {
     const state = parseTaskSearchParams(new URLSearchParams("status=unknown&sort=unknown"));
-    expect(state).toEqual({ q: "", status: "全部", sort: "最新" });
+    expect(state).toEqual({ q: "", status: "all", sort: "createdAt" });
     expect(serializeTaskSearchParams(state).toString()).toBe("");
   });
 

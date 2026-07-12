@@ -27,7 +27,6 @@ export {
   taskSourceLabel,
   taskGroup,
   taskGroupTone,
-  taskGroupDescription,
   canTriggerTaskStashScan,
   taskFailureSummary,
   taskProgressPercent,

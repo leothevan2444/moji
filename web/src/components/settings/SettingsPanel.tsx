@@ -439,7 +439,7 @@ export function SettingsPanel({
     variables: {
       minLevel: logsLevel
     },
-    pause: settingsTab !== "日志" || (drawer !== "settings" && renderedDrawer !== "settings")
+    pause: settingsTab !== "logs" || (drawer !== "settings" && renderedDrawer !== "settings")
   });
   const logs = logsData?.logs ?? [];
 
@@ -448,7 +448,7 @@ export function SettingsPanel({
     JackettIndexersDocumentQueryVariables
   >({
     query: JackettIndexersDocumentDocument,
-    pause: (settingsTab !== "连接" && settingsTab !== "自动化") || (drawer !== "settings" && renderedDrawer !== "settings")
+    pause: (settingsTab !== "connections" && settingsTab !== "automation") || (drawer !== "settings" && renderedDrawer !== "settings")
   });
   const jackettIndexers = (jackettIndexersData?.jackettIndexers ?? []).filter((indexer: JackettIndexer) => indexer.enabled);
 
@@ -884,7 +884,7 @@ export function SettingsPanel({
     );
   }
 
-  if (settingsTab === "连接") {
+  if (settingsTab === "connections") {
     const stashStatus = serviceStatus(
       runtimeStatus.stash.configured,
       runtimeStatus.stash.ready,
@@ -1072,7 +1072,7 @@ export function SettingsPanel({
     );
   }
 
-  if (settingsTab === "入库") {
+  if (settingsTab === "ingest") {
     const stashLibraries = runtimeStatus.stashLibraries ?? [];
     const stashLibrariesLoadError = runtimeStatus.stashLibrariesLoadError ?? null;
     const qbDefaultSavePath = qbittorrentForm.defaultSavePath.trim();
@@ -1269,7 +1269,7 @@ export function SettingsPanel({
     );
   }
 
-  if (settingsTab === "自动化") {
+  if (settingsTab === "automation") {
     const stashBoxes = runtimeStatus.subscription.stashBoxes ?? [];
     const loaded = runtimeStatus.subscription.stashBoxesLoaded;
     const loadError = runtimeStatus.subscription.stashBoxesLoadError;
@@ -2076,7 +2076,7 @@ export function SettingsPanel({
     );
   }
 
-  if (settingsTab === "日志") {
+  if (settingsTab === "logs") {
     return (
       <article className="drawer-card">
         <div className="drawer-card__head">
@@ -2138,7 +2138,7 @@ export function SettingsPanel({
     );
   }
 
-  if (settingsTab === "系统") {
+  if (settingsTab === "system") {
     const deletePolicyInfo = "控制删除 Moji 任务时，是否联动删除 qBittorrent 里的对应下载项，以及是否同时删除下载文件。";
 
     return (

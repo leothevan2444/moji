@@ -31,7 +31,7 @@ export function Component() {
   const [searchParams, setSearchParams] = useSearchParams();
   const { pushToast, copyText } = useOutletContext<AppOutletContext>();
   const filter = parseTaskSearchParams(searchParams);
-  const [groups, setGroups] = useState<Record<TaskGroupKey, boolean>>({ 需处理: true, 运行中: true, 待入库: false, 已完成: false });
+  const [groups, setGroups] = useState<Record<TaskGroupKey, boolean>>({ attention: true, active: true, ingestPending: false, completed: false });
   const [pendingScan, setPendingScan] = useState<string | null>(null);
   const [pendingRetry, setPendingRetry] = useState<string | null>(null);
   const [pendingDelete, setPendingDelete] = useState<string | null>(null);

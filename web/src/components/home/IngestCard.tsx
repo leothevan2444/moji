@@ -65,7 +65,7 @@ export function IngestCard({ ingest, ingestStatus, onOpenSettings }: IngestCardP
   let tone: "tone-neutral" | "tone-warn" | "tone-success";
   let label: string;
   let ctaLabel: string | null = null;
-  const ctaTab: SettingsTab = "入库";
+  const ctaTab: SettingsTab = "ingest";
 
   if (!ingest || !hasMode) {
     tone = "tone-neutral";

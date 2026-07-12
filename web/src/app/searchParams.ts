@@ -4,20 +4,14 @@ export type TaskStatusParam = "all" | "active" | "completed" | "failed" | "pendi
 export type TaskSortParam = "newest" | "updated" | "progress";
 
 const taskStatusFromParam: Record<TaskStatusParam, TaskStatusFilter> = {
-  all: "全部",
-  active: "运行中",
-  completed: "完成",
-  failed: "失败",
-  "pending-scan": "待扫描"
+  all: "all", active: "running", completed: "completed", failed: "failed", "pending-scan": "scanPending"
 };
 const taskStatusToParam = Object.fromEntries(
   Object.entries(taskStatusFromParam).map(([key, value]) => [value, key])
 ) as Record<TaskStatusFilter, TaskStatusParam>;
 
 const taskSortFromParam: Record<TaskSortParam, TaskSortKey> = {
-  newest: "最新",
-  updated: "更新时间",
-  progress: "进度"
+  newest: "createdAt", updated: "updatedAt", progress: "progress"
 };
 const taskSortToParam = Object.fromEntries(
   Object.entries(taskSortFromParam).map(([key, value]) => [value, key])
@@ -34,16 +28,16 @@ export function parseTaskSearchParams(params: URLSearchParams): TaskSearchState 
   const sort = params.get("sort") as TaskSortParam | null;
   return {
     q: params.get("q")?.trim() ?? "",
-    status: status && taskStatusFromParam[status] ? taskStatusFromParam[status] : "全部",
-    sort: sort && taskSortFromParam[sort] ? taskSortFromParam[sort] : "最新"
+    status: status && taskStatusFromParam[status] ? taskStatusFromParam[status] : "all",
+    sort: sort && taskSortFromParam[sort] ? taskSortFromParam[sort] : "createdAt"
   };
 }
 
 export function serializeTaskSearchParams(state: TaskSearchState): URLSearchParams {
   const params = new URLSearchParams();
   if (state.q.trim()) params.set("q", state.q.trim());
-  if (state.status !== "全部") params.set("status", taskStatusToParam[state.status]);
-  if (state.sort !== "最新") params.set("sort", taskSortToParam[state.sort]);
+  if (state.status !== "all") params.set("status", taskStatusToParam[state.status]);
+  if (state.sort !== "createdAt") params.set("sort", taskSortToParam[state.sort]);
   return params;
 }
 

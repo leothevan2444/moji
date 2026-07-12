@@ -3,6 +3,8 @@ import { SETTINGS_TABS } from "../../constants";
 import type { DrawerKey, SettingsTab, ToastTone } from "../../types";
 import { SettingsPanel } from "../settings/SettingsPanel";
 import type { SettingsPageDocumentQuery } from "../../graphql/generated/graphql";
+import { LocaleSelect } from "../common/LocaleSelect";
+import { useTranslation } from "react-i18next";
 
 type RuntimeSettings = NonNullable<SettingsPageDocumentQuery["settings"]>;
 type RuntimeSettingsStatus = NonNullable<SettingsPageDocumentQuery["settingsStatus"]>;
@@ -30,8 +32,10 @@ export function SettingsDrawer({
   pushToast,
   refreshDashboard
 }: SettingsDrawerProps) {
+  const { t } = useTranslation();
   return (
     <div className="drawer-stack">
+      <LocaleSelect />
       <div className="settings-tabs">
         {SETTINGS_TABS.map((item) => (
           <button
@@ -40,7 +44,7 @@ export function SettingsDrawer({
             className={`chip ${settingsTab === item ? "is-active" : ""}`}
             onClick={() => onSettingsTabChange(item)}
           >
-            {item}
+            {t(`settings.tabs.${item}`)}
           </button>
         ))}
       </div>

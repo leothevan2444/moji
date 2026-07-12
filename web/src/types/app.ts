@@ -16,13 +16,7 @@ export type ToastItem = {
   lifetimeMs?: number;
 };
 
-export type SettingsTab =
-  | "连接"
-  | "入库"
-  | "自动化"
-  | "系统"
-  | "日志"
-  | "关于";
+export type SettingsTab = "connections" | "ingest" | "automation" | "system" | "logs" | "about";
 
-export type TaskStatusFilter = "全部" | "运行中" | "完成" | "失败" | "待扫描";
-export type TaskSortKey = "最新" | "更新时间" | "进度";
+export type TaskStatusFilter = "all" | "running" | "completed" | "failed" | "scanPending";
+export type TaskSortKey = "createdAt" | "updatedAt" | "progress";

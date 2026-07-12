@@ -89,7 +89,7 @@ export function HomePage({
                 }
                 cta={
                   !runtimeStatus.stash.configured
-                    ? { kind: "open-settings", label: "去配置", tab: "连接" }
+                    ? { kind: "open-settings", label: "去配置", tab: "connections" }
                     : null
                 }
                 onOpenSettings={onOpenSettings}
@@ -126,7 +126,7 @@ export function HomePage({
                 }
                 cta={
                   !runtimeStatus.jackett.configured
-                    ? { kind: "open-settings", label: "去配置", tab: "连接" }
+                    ? { kind: "open-settings", label: "去配置", tab: "connections" }
                     : null
                 }
                 onOpenSettings={onOpenSettings}
@@ -161,7 +161,7 @@ export function HomePage({
                 }
                 cta={
                   !runtimeStatus.qbittorrent.configured
-                    ? { kind: "open-settings", label: "去配置", tab: "连接" }
+                    ? { kind: "open-settings", label: "去配置", tab: "connections" }
                     : null
                 }
                 onOpenSettings={onOpenSettings}

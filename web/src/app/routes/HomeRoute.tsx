@@ -10,8 +10,8 @@ import type { AppOutletContext } from "../AppLayout";
 import { HomePageDocumentDocument } from "../../graphql/generated/graphql";
 
 const settingsSlugs: Record<SettingsTab, string> = {
-  连接: "connections", 入库: "ingest", 自动化: "automation",
-  系统: "system", 日志: "logs", 关于: "about"
+  connections: "connections", ingest: "ingest", automation: "automation",
+  system: "system", logs: "logs", about: "about"
 };
 
 export function Component() {

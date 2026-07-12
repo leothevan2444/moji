@@ -1,6 +1,6 @@
-import { useState } from "react";
 import { HELP_CATEGORIES, HELP_TOPICS, type HelpLanguage, type HelpTopicId } from "../../help";
 import { MarkdownBlock } from "../MarkdownBlock";
+import { useLocale } from "../../i18n/LocaleProvider";
 
 interface HelpDrawerProps {
   topicId: HelpTopicId;
@@ -8,19 +8,13 @@ interface HelpDrawerProps {
 }
 
 export function HelpDrawer({ topicId, onTopicChange }: HelpDrawerProps) {
-  const [language, setLanguage] = useState<HelpLanguage>(() => {
-    if (typeof navigator !== "undefined" && navigator.language.toLowerCase().startsWith("zh")) return "zh";
-    return "en";
-  });
+  const { locale } = useLocale();
+  const language: HelpLanguage = locale === "zh-CN" ? "zh" : "en";
   const selectedTopic = HELP_TOPICS.find((topic) => topic.id === topicId) ?? HELP_TOPICS[0];
 
   return (
     <div className="help__layout">
       <div className="help__tabs">
-        <div className="help__languages" role="group" aria-label="Help language">
-          <button type="button" className={language === "en" ? "is-active" : ""} onClick={() => setLanguage("en")}>EN</button>
-          <button type="button" className={language === "zh" ? "is-active" : ""} onClick={() => setLanguage("zh")}>中文</button>
-        </div>
         <nav className="help__navigation" aria-label={language === "zh" ? "帮助文档" : "Help documentation"}>
           {HELP_CATEGORIES.map((category) => (
             <details key={category.id} className="help__category" open>

@@ -9,6 +9,7 @@ import { NavLink, useNavigate } from "react-router";
 import { ThemeMenu } from "./ThemeMenu";
 import type { ThemePreference } from "../../hooks/useTheme";
 import type { RefObject } from "react";
+import { useTranslation } from "react-i18next";
 
 interface HeaderProps {
   onOpenHelp: () => void;
@@ -25,6 +26,7 @@ interface HeaderProps {
 
 export function Header({ onOpenHelp, theme }: HeaderProps) {
   const navigate = useNavigate();
+  const { t } = useTranslation();
   return (
     <header className="masthead">
       <div className="masthead__brand">
@@ -32,7 +34,7 @@ export function Header({ onOpenHelp, theme }: HeaderProps) {
           <h1>Moji</h1>
         </div>
       </div>
-      <div className="masthead__actions" aria-label="主导航">
+      <div className="masthead__actions" aria-label={t("navigation.label")}>
         <div className="masthead__navgroup">
           <div className="tab-group">
             {NAV_ITEMS.map((item) => (
@@ -42,7 +44,7 @@ export function Header({ onOpenHelp, theme }: HeaderProps) {
                 end={item.end}
                 className={({ isActive }) => `nav-tab ${isActive ? "is-active" : ""}`}
               >
-                {item.label}
+                {t(item.labelKey)}
               </NavLink>
             ))}
           </div>
@@ -54,8 +56,8 @@ export function Header({ onOpenHelp, theme }: HeaderProps) {
               type="button"
               className="utility-button utility-icon-button"
               onClick={() => navigate("/stats")}
-              aria-label="统计"
-              title="统计"
+              aria-label={t("navigation.stats")}
+              title={t("navigation.stats")}
             >
               <FontAwesomeIcon icon={faChartColumn} aria-hidden="true" />
             </button>
@@ -63,8 +65,8 @@ export function Header({ onOpenHelp, theme }: HeaderProps) {
               type="button"
               className="utility-button utility-icon-button"
               onClick={() => navigate("/settings/connections")}
-              aria-label="设置"
-              title="设置"
+              aria-label={t("navigation.settings")}
+              title={t("navigation.settings")}
             >
               <FontAwesomeIcon icon={faGear} aria-hidden="true" />
             </button>
@@ -72,8 +74,8 @@ export function Header({ onOpenHelp, theme }: HeaderProps) {
               type="button"
               className="utility-button utility-icon-button"
               onClick={onOpenHelp}
-              aria-label="帮助"
-              title="帮助"
+              aria-label={t("navigation.help")}
+              title={t("navigation.help")}
             >
               <FontAwesomeIcon icon={faCircleQuestion} aria-hidden="true" />
             </button>

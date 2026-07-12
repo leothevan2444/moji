@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en">
+<html lang="zh-CN" dir="ltr">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -7,6 +7,15 @@
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <title>Moji Web UI</title>
     <script>
+      // Apply the persisted locale before React mounts to keep lang/dir stable.
+      (function () {
+        try {
+          var p = localStorage.getItem("moji:locale");
+          var l = p === "en" ? "en" : p === "zh-CN" ? "zh-CN" : ((navigator.languages && navigator.languages[0]) || navigator.language || "").toLowerCase().indexOf("en") === 0 ? "en" : "zh-CN";
+          document.documentElement.lang = l;
+          document.documentElement.dir = "ltr";
+        } catch (e) { /* default HTML attributes remain valid */ }
+      })();
       // 防 FOUC：在 React 挂载前同步设置 data-theme。
       // 逻辑与 src/hooks/useTheme.ts 保持一致：只接受 "light" / "dark"，
       // 其余情况（含 auto / 异常 / 无值）移除属性，让 prefers-color-scheme 媒体查询接管。

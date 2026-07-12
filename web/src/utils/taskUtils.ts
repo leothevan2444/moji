@@ -9,7 +9,7 @@ import { deliveryModeLabel, transferActionLabel } from "./ingestUtils";
 
 export type DashboardTask = TasksOverviewDocumentQuery["tasks"][number];
 
-export type TaskGroupKey = "需处理" | "运行中" | "待入库" | "已完成";
+export type TaskGroupKey = "attention" | "active" | "ingestPending" | "completed";
 
 export type TaskFailureSummary = {
   title: string;
@@ -118,25 +118,19 @@ export function taskSourceLabel(source: string) {
 // ── Task grouping ───────────────────────────────────────────────────
 
 export function taskGroup(task: DashboardTask): TaskGroupKey {
-  if (stageStatusValue(task) === "blocked") return "需处理";
-  if (isTaskActive(task)) return "运行中";
-  if (isScanPending(task)) return "待入库";
-  return "已完成";
+  if (stageStatusValue(task) === "blocked") return "attention";
+  if (isTaskActive(task)) return "active";
+  if (isScanPending(task)) return "ingestPending";
+  return "completed";
 }
 
 export function taskGroupTone(group: TaskGroupKey) {
-  if (group === "需处理") return "tone-danger";
-  if (group === "运行中") return "tone-info";
-  if (group === "待入库") return "tone-warn";
+  if (group === "attention") return "tone-danger";
+  if (group === "active") return "tone-info";
+  if (group === "ingestPending") return "tone-warn";
   return "tone-success";
 }
 
-export function taskGroupDescription(group: TaskGroupKey) {
-  if (group === "需处理") return "失败、扫描报错或需要人工回看的任务。";
-  if (group === "运行中") return "仍在下载、同步或等待外部状态推进。";
-  if (group === "待入库") return "下载已完成，但 Stash 扫描尚未收口。";
-  return "流程已闭环的任务。";
-}
 
 // ── Task actions ────────────────────────────────────────────────────
 

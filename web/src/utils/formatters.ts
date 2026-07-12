@@ -1,4 +1,9 @@
 import type { LogsDocumentQuery } from "../graphql/generated/graphql";
+import i18n from "../i18n/i18n";
+
+function activeLocale() {
+  return i18n.resolvedLanguage === "en" ? "en" : "zh-CN";
+}
 
 export function formatBytes(size: number) {
   if (!size) return "0 B";
@@ -21,7 +26,7 @@ export function formatDateTime(value?: string | null) {
   if (!value) return "—";
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return value;
-  return new Intl.DateTimeFormat("zh-CN", {
+  return new Intl.DateTimeFormat(activeLocale(), {
     year: "numeric",
     month: "short",
     day: "numeric",
@@ -41,7 +46,7 @@ export function formatRelativeDate(value?: string | null) {
   if (!value) return "—";
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return value;
-  return new Intl.DateTimeFormat("zh-CN", {
+  return new Intl.DateTimeFormat(activeLocale(), {
     month: "short",
     day: "numeric"
   }).format(date);
@@ -89,14 +94,15 @@ export function formatRelative(iso?: string | null): string | null {
   const then = new Date(iso).getTime();
   if (Number.isNaN(then)) return null;
   const diffMs = Date.now() - then;
-  if (diffMs < 0) return "刚刚";
+  const formatter = new Intl.RelativeTimeFormat(activeLocale(), { numeric: "auto" });
+  if (diffMs < 0) return formatter.format(0, "second");
   const sec = Math.floor(diffMs / 1000);
-  if (sec < 10) return "刚刚";
-  if (sec < 60) return `${sec}s 前`;
+  if (sec < 10) return formatter.format(0, "second");
+  if (sec < 60) return formatter.format(-sec, "second");
   const min = Math.floor(sec / 60);
-  if (min < 60) return `${min}m 前`;
+  if (min < 60) return formatter.format(-min, "minute");
   const hr = Math.floor(min / 60);
-  if (hr < 24) return `${hr}h 前`;
+  if (hr < 24) return formatter.format(-hr, "hour");
   const day = Math.floor(hr / 24);
-  return `${day}d 前`;
+  return formatter.format(-day, "day");
 }

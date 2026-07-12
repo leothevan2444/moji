@@ -1,5 +1,6 @@
 import { TaskCard } from "./TaskCard";
 import type { DashboardTask, TaskGroupKey } from "../../utils";
+import { useTranslation } from "react-i18next";
 
 interface TaskGroupSectionProps {
   group: TaskGroupKey;
@@ -36,26 +37,27 @@ export function TaskGroupSection({
   onDeleteTask,
   onScanAll
 }: TaskGroupSectionProps) {
+  const { t } = useTranslation();
   return (
     <section className="task-group-section">
       <div className="task-group-section__head">
         <div>
-          <h3>{group}</h3>
+          <h3>{t(`tasks.groups.${group}.label`)}</h3>
           <p>{description}</p>
         </div>
         <div className="task-group-section__actions">
-          {group === "待入库" ? (
+          {group === "ingestPending" ? (
             <button type="button" className="ghost-button" onClick={onScanAll}>
-              全部触发扫描
+              {t("tasks.actions.scanGroup")}
             </button>
           ) : null}
-          <span className={`status-chip ${tone}`}>{tasks.length} 项</span>
+          <span className={`status-chip ${tone}`}>{t("common.items", { count: tasks.length })}</span>
           <button
             type="button"
             className="ghost-button"
             onClick={() => onToggle(group)}
           >
-            {open ? "收起" : "展开"}
+            {open ? t("common.collapse") : t("common.expand")}
           </button>
         </div>
       </div>

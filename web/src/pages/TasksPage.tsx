@@ -4,7 +4,6 @@ import {
   isStatus,
   isTaskActive,
   taskGroup,
-  taskGroupDescription,
   taskGroupTone,
   taskSummary,
   type DashboardTask,
@@ -12,6 +11,7 @@ import {
 } from "../utils";
 import { useDeferredValue, useMemo } from "react";
 import type { TaskSortKey, TaskStatusFilter } from "../types";
+import { useTranslation } from "react-i18next";
 
 interface TasksPageProps {
   tasks: DashboardTask[];
@@ -69,6 +69,7 @@ export function TasksPage({
   onRetryBlockedTasks,
   onDeleteTask
 }: TasksPageProps) {
+  const { t } = useTranslation();
   const deferredTaskSearch = useDeferredValue(taskSearch.trim().toLowerCase());
 
   const visibleTasks = useMemo(() => {
@@ -93,43 +94,43 @@ export function TasksPage({
       return haystack.includes(search);
     });
 
-    if (taskStatus === "运行中") {
+    if (taskStatus === "running") {
       next = next.filter(isTaskActive);
-    } else if (taskStatus === "完成") {
+    } else if (taskStatus === "completed") {
       next = next.filter((task) => isStatus(task, "completed"));
-    } else if (taskStatus === "失败") {
+    } else if (taskStatus === "failed") {
       next = next.filter((task) => task.stageStatus === "BLOCKED");
-    } else if (taskStatus === "待扫描") {
+    } else if (taskStatus === "scanPending") {
       next = next.filter(isScanPending);
     }
 
     const sorters: Record<TaskSortKey, (a: DashboardTask, b: DashboardTask) => number> = {
-      最新: (a, b) => Date.parse(b.createdAt) - Date.parse(a.createdAt),
-      更新时间: (a, b) => Date.parse(b.updatedAt) - Date.parse(a.updatedAt),
-      进度: (a, b) => b.progress - a.progress
+      createdAt: (a, b) => Date.parse(b.createdAt) - Date.parse(a.createdAt),
+      updatedAt: (a, b) => Date.parse(b.updatedAt) - Date.parse(a.updatedAt),
+      progress: (a, b) => b.progress - a.progress
     };
 
     return [...next].sort(sorters[taskSort]);
   }, [deferredTaskSearch, taskSort, taskStatus, tasks]);
 
   const taskGroups = useMemo(() => {
-    const order: TaskGroupKey[] = ["需处理", "运行中", "待入库", "已完成"];
+    const order: TaskGroupKey[] = ["attention", "active", "ingestPending", "completed"];
     return order.map((group) => ({
       group,
       tone: taskGroupTone(group),
-      description: taskGroupDescription(group),
+      description: t(`tasks.groups.${group}.description`),
       tasks: visibleTasks.filter((task) => taskGroup(task) === group)
     }));
-  }, [visibleTasks]);
+  }, [t, visibleTasks]);
 
   return (
     <section className="section-band">
       <div className="band-head">
         <div>
-          <h2>工作台</h2>
+          <h2>{t("tasks.title")}</h2>
         </div>
         <p className="band-note">
-          活跃 {metrics.active} · 完成 {metrics.completed} · 待扫 {metrics.pendingScans} · 失败 {metrics.failed}
+          {t("tasks.metrics", metrics)}
         </p>
       </div>
 
@@ -137,28 +138,22 @@ export function TasksPage({
         <input
           value={taskSearch}
           onChange={(event) => onSearchChange(event.target.value)}
-          placeholder="搜索任务、番号、tracker、状态"
+          placeholder={t("tasks.searchPlaceholder")}
         />
         <select value={taskStatus} onChange={(event) => onStatusChange(event.target.value as TaskStatusFilter)}>
-          <option value="全部">全部</option>
-          <option value="运行中">运行中</option>
-          <option value="完成">完成</option>
-          <option value="失败">失败</option>
-          <option value="待扫描">待扫描</option>
+          {(["all", "running", "completed", "failed", "scanPending"] as const).map((value) => <option key={value} value={value}>{t(`tasks.filters.${value}`)}</option>)}
         </select>
         <select value={taskSort} onChange={(event) => onSortChange(event.target.value as TaskSortKey)}>
-          <option value="最新">最新</option>
-          <option value="更新时间">更新时间</option>
-          <option value="进度">进度</option>
+          {(["createdAt", "updatedAt", "progress"] as const).map((value) => <option key={value} value={value}>{t(`tasks.sorts.${value}`)}</option>)}
         </select>
         <button type="button" className="ghost-button" onClick={onRefresh}>
-          刷新
+          {t("common.refresh")}
         </button>
         <button type="button" className="ghost-button" onClick={onSync}>
-          同步进度
+          {t("tasks.actions.sync")}
         </button>
         <button type="button" className="ghost-button" onClick={onScanAll}>
-          触发扫描
+          {t("tasks.actions.scanAll")}
         </button>
         <button
           type="button"
@@ -166,15 +161,15 @@ export function TasksPage({
           onClick={onRetryBlockedTasks}
           disabled={retryingBlockedTasks || metrics.failed === 0}
         >
-          {retryingBlockedTasks ? "正在重试受阻任务..." : `重试受阻任务${metrics.failed > 0 ? ` (${metrics.failed})` : ""}`}
+          {retryingBlockedTasks ? t("tasks.actions.retryingBlocked") : `${t("tasks.actions.retryBlocked")}${metrics.failed > 0 ? ` (${metrics.failed})` : ""}`}
         </button>
       </div>
 
       {!visibleTasks.length ? (
         <div className="task-grid">
           <article className="empty-card empty-card--wide">
-            <h3>没有匹配的任务</h3>
-            <p>换个过滤条件，或者先去发现区创建任务。</p>
+            <h3>{t("tasks.empty.title")}</h3>
+            <p>{t("tasks.empty.detail")}</p>
           </article>
         </div>
       ) : null}

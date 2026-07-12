@@ -6,29 +6,16 @@ import { SettingsPageDocumentDocument } from "../../graphql/generated/graphql";
 import type { SettingsTab } from "../../types";
 import type { AppOutletContext } from "../AppLayout";
 import "../../styles/settings.scss";
+import { useTranslation } from "react-i18next";
 
-const sectionToTab: Record<string, SettingsTab> = {
-  connections: "连接",
-  ingest: "入库",
-  automation: "自动化",
-  system: "系统",
-  logs: "日志",
-  about: "关于"
-};
-const tabToSection: Record<SettingsTab, string> = {
-  连接: "connections",
-  入库: "ingest",
-  自动化: "automation",
-  系统: "system",
-  日志: "logs",
-  关于: "about"
-};
+const sectionToTab: Record<string, SettingsTab> = { connections: "connections", ingest: "ingest", automation: "automation", system: "system", logs: "logs", about: "about" };
 
 export function Component() {
+  const { t } = useTranslation();
   const { section = "connections" } = useParams();
   const navigate = useNavigate();
   const { pushToast } = useOutletContext<AppOutletContext>();
-  const settingsTab = useMemo(() => sectionToTab[section] ?? "连接", [section]);
+  const settingsTab = useMemo(() => sectionToTab[section] ?? "connections", [section]);
   const [{ data }, refresh] = useQuery({
     query: SettingsPageDocumentDocument,
     requestPolicy: "cache-and-network"
@@ -40,10 +27,10 @@ export function Component() {
 
   return (
     <section className="section-band">
-      <div className="band-head"><div><h2 tabIndex={-1}>配置与系统</h2></div></div>
+      <div className="band-head"><div><h2 tabIndex={-1}>{t("settings.title")}</h2></div></div>
       <SettingsDrawer
         settingsTab={settingsTab}
-        onSettingsTabChange={(tab) => navigate(`/settings/${tabToSection[tab]}`)}
+        onSettingsTabChange={(tab) => navigate(`/settings/${tab}`)}
         runtimeSettings={data?.settings ?? null}
         runtimeStatus={data?.settingsStatus ?? null}
         appVersion={data?.version ?? ""}
