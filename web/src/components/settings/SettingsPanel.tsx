@@ -70,26 +70,21 @@ import { describeQueryError } from "../../services/queryError";
 import { formatDateTime, formatLogEntries } from "../../utils";
 import { formatBytes } from "../../utils";
 import { useTranslation } from "react-i18next";
+import type { TFunction } from "i18next";
 
 type RuntimeSettings = NonNullable<SettingsPageDocumentQuery["settings"]>;
 type RuntimeSettingsStatus = NonNullable<SettingsPageDocumentQuery["settingsStatus"]>;
 type JackettIndexer = JackettIndexersDocumentQuery["jackettIndexers"][number];
 
-const TORRENT_SELECTION_RULE_LABELS: Record<TorrentSelectionRuleType, string> = {
-  [TorrentSelectionRuleType.IndexerPreference]: "索引器偏好",
-  [TorrentSelectionRuleType.TitleMatch]: "标题匹配",
-  [TorrentSelectionRuleType.PublishDate]: "发布时间",
-  [TorrentSelectionRuleType.TitleSimilarity]: "标题相似度",
-  [TorrentSelectionRuleType.Seeders]: "Seeders",
-  [TorrentSelectionRuleType.Size]: "Size",
-  [TorrentSelectionRuleType.TorrentSingleVideo]: "Torrent 单视频优先",
-  [TorrentSelectionRuleType.TorrentFileNameMatch]: "Torrent 文件名匹配"
+const TORRENT_SELECTION_RULE_KEYS: Record<TorrentSelectionRuleType, string> = {
+  [TorrentSelectionRuleType.IndexerPreference]: "indexerPreference", [TorrentSelectionRuleType.TitleMatch]: "titleMatch",
+  [TorrentSelectionRuleType.PublishDate]: "publishDate", [TorrentSelectionRuleType.TitleSimilarity]: "titleSimilarity",
+  [TorrentSelectionRuleType.Seeders]: "seeders", [TorrentSelectionRuleType.Size]: "size",
+  [TorrentSelectionRuleType.TorrentSingleVideo]: "singleVideo", [TorrentSelectionRuleType.TorrentFileNameMatch]: "fileNameMatch"
 };
 
-const SUBSCRIPTION_RELEASE_BEHAVIOR_LABELS: Record<SubscriptionReleaseBehavior, string> = {
-  [SubscriptionReleaseBehavior.Download]: "下载",
-  [SubscriptionReleaseBehavior.Review]: "记录供复核",
-  [SubscriptionReleaseBehavior.Block]: "拦截",
+const SUBSCRIPTION_RELEASE_BEHAVIOR_KEYS: Record<SubscriptionReleaseBehavior, string> = {
+  [SubscriptionReleaseBehavior.Download]: "download", [SubscriptionReleaseBehavior.Review]: "review", [SubscriptionReleaseBehavior.Block]: "block",
 };
 
 const SUBSCRIPTION_RELEASE_BEHAVIOR_OPTIONS = [
@@ -98,12 +93,9 @@ const SUBSCRIPTION_RELEASE_BEHAVIOR_OPTIONS = [
   SubscriptionReleaseBehavior.Block
 ] as const;
 
-const SUBSCRIPTION_RELEASE_DATE_RANGE_LABELS: Record<SubscriptionReleaseDateRange, string> = {
-  [SubscriptionReleaseDateRange.All]: "所有",
-  [SubscriptionReleaseDateRange.OneYear]: "一年内",
-  [SubscriptionReleaseDateRange.TwoYears]: "两年内",
-  [SubscriptionReleaseDateRange.ThreeYears]: "三年内",
-  [SubscriptionReleaseDateRange.FiveYears]: "五年内",
+const SUBSCRIPTION_RELEASE_DATE_RANGE_KEYS: Record<SubscriptionReleaseDateRange, string> = {
+  [SubscriptionReleaseDateRange.All]: "all", [SubscriptionReleaseDateRange.OneYear]: "oneYear",
+  [SubscriptionReleaseDateRange.TwoYears]: "twoYears", [SubscriptionReleaseDateRange.ThreeYears]: "threeYears", [SubscriptionReleaseDateRange.FiveYears]: "fiveYears",
 };
 
 const SUBSCRIPTION_RELEASE_DATE_RANGE_OPTIONS = [
@@ -233,19 +225,22 @@ function buildAutomationSettingsPayload(form: AutomationFormShape) {
   };
 }
 
-function releasePolicySummary(form: AutomationFormShape["subscriptionReleasePolicy"]) {
+function releasePolicySummary(form: AutomationFormShape["subscriptionReleasePolicy"], t: TFunction) {
   const max = Number.parseInt(form.maxGroupPerformerCount.trim(), 10);
   const safeMax = Number.isNaN(max) ? 3 : max;
-  const dateRange = form.releaseDateRange === SubscriptionReleaseDateRange.All
-    ? "自动下载不限制发行时间"
-    : `自动下载仅限${SUBSCRIPTION_RELEASE_DATE_RANGE_LABELS[form.releaseDateRange]}发行`;
-  return `独演${SUBSCRIPTION_RELEASE_BEHAVIOR_LABELS[form.soloBehavior]}；2-${safeMax} 人共演${SUBSCRIPTION_RELEASE_BEHAVIOR_LABELS[form.groupBehavior]}；总集${SUBSCRIPTION_RELEASE_BEHAVIOR_LABELS[form.compilationBehavior]}；${dateRange}；无法可靠判断或日期不明确时仅记录。`;
+  return t("automation.policy.summary", {
+    max: safeMax,
+    solo: t(`automation.behaviors.${SUBSCRIPTION_RELEASE_BEHAVIOR_KEYS[form.soloBehavior]}`),
+    group: t(`automation.behaviors.${SUBSCRIPTION_RELEASE_BEHAVIOR_KEYS[form.groupBehavior]}`),
+    compilation: t(`automation.behaviors.${SUBSCRIPTION_RELEASE_BEHAVIOR_KEYS[form.compilationBehavior]}`),
+    range: t(`automation.ranges.${SUBSCRIPTION_RELEASE_DATE_RANGE_KEYS[form.releaseDateRange]}`)
+  });
 }
 
-function renderSubscriptionReleaseBehaviorOptions() {
+function renderSubscriptionReleaseBehaviorOptions(t: TFunction) {
   return SUBSCRIPTION_RELEASE_BEHAVIOR_OPTIONS.map((behavior) => (
     <option key={behavior} value={behavior}>
-      {SUBSCRIPTION_RELEASE_BEHAVIOR_LABELS[behavior]}
+      {t(`automation.behaviors.${SUBSCRIPTION_RELEASE_BEHAVIOR_KEYS[behavior]}`)}
     </option>
   ));
 }
@@ -253,40 +248,40 @@ function renderSubscriptionReleaseBehaviorOptions() {
 /**
  * 单条规则的只读摘要：按 type 反映关键配置，紧凑展示给列表页。
  */
-function buildRuleSummary(rule: TorrentSelectionRuleDraft): string {
+function buildRuleSummary(rule: TorrentSelectionRuleDraft, t: TFunction): string {
   if (rule.type === TorrentSelectionRuleType.IndexerPreference) {
     const order = rule.indexerPreference.trackerIds.map((id) => id.trim()).filter(Boolean);
     return order.length === 0
-      ? "未配置索引器"
+      ? t("automation.rules.summary.noIndexers")
       : order.join(" > ");
   }
   if (rule.type === TorrentSelectionRuleType.TitleMatch) {
     const count = rule.titleMatch.clauses.length;
     return count === 0
-      ? "未配置标题规则"
-      : `${count} 条标题匹配规则`;
+      ? t("automation.rules.summary.noTitleRules")
+      : t("automation.rules.summary.titleRules", { count });
   }
   if (rule.type === TorrentSelectionRuleType.PublishDate) {
-    return rule.publishDate.direction === TorrentSelectionDirection.Asc ? "按发布时间从旧到新" : "按发布时间从新到旧";
+    return t(rule.publishDate.direction === TorrentSelectionDirection.Asc ? "automation.rules.summary.dateAsc" : "automation.rules.summary.dateDesc");
   }
   if (rule.type === TorrentSelectionRuleType.TitleSimilarity) {
-    return "按标题相似度优先";
+    return t("automation.rules.summary.similarity");
   }
   if (rule.type === TorrentSelectionRuleType.Seeders) {
-    return rule.seeders.direction === TorrentSelectionDirection.Asc ? "按 Seeders 从少到多" : "按 Seeders 从多到少";
+    return t(rule.seeders.direction === TorrentSelectionDirection.Asc ? "automation.rules.summary.seedersAsc" : "automation.rules.summary.seedersDesc");
   }
   if (rule.type === TorrentSelectionRuleType.Size) {
-    return rule.size.direction === TorrentSelectionDirection.Asc ? "按 Size 从小到大" : "按 Size 从大到小";
+    return t(rule.size.direction === TorrentSelectionDirection.Asc ? "automation.rules.summary.sizeAsc" : "automation.rules.summary.sizeDesc");
   }
   if (rule.type === TorrentSelectionRuleType.TorrentSingleVideo) {
-    return "命中单视频结构时优先";
+    return t("automation.rules.summary.singleVideo");
   }
   if (rule.type === TorrentSelectionRuleType.TorrentFileNameMatch) {
     const count = rule.torrentFileNameMatch.clauses.length;
     const hasLock = rule.torrentFileNameMatch.clauses.some((clause) => clause.effect === TorrentFileMatchEffect.Lock);
     return count === 0
-      ? "未配置文件名规则"
-      : `${count} 条文件名规则${hasLock ? " · 含 LOCK" : ""}`;
+      ? t("automation.rules.summary.noFileRules")
+      : t("automation.rules.summary.fileRules", { count, lock: hasLock ? " · LOCK" : "" });
   }
   return "";
 }
@@ -671,7 +666,7 @@ export function SettingsPanel({
 
   const saveAutomationSettings = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    await saveAutomationSettingsSection("自动化设置已保存。新的订阅发现将按此策略决定是否自动下载；已记录发行不回溯重判。");
+    await saveAutomationSettingsSection(t("automationUi.saved"));
   };
 
   const saveTorrentSelectionSettings = async (event: FormEvent<HTMLFormElement>) => {
@@ -681,7 +676,7 @@ export function SettingsPanel({
 
   const saveStashBoxPrioritySettings = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    await saveAutomationSettingsSection("Stash-Box 优先级已保存。");
+    await saveAutomationSettingsSection(t("automationUi.stashBoxes.saved"));
   };
 
   const moveCandidateRuleInSection = (section: "fast" | "file", from: number, to: number) => {
@@ -1302,12 +1297,12 @@ export function SettingsPanel({
     return (
       <article className="drawer-card">
         <div className="drawer-card__head">
-          <h3>自动化</h3>
+          <h3>{t("settings.tabs.automation")}</h3>
         </div>
 
         <form className="settings-form" onSubmit={(event) => void saveAutomationSettings(event)}>
           <label className="settings-field">
-            <span>任务进度同步间隔（秒）</span>
+            <span>{t("automationUi.syncInterval")}</span>
             <input
               value={automationForm.taskProgressSyncIntervalSeconds}
               onChange={(event) => setAutomationForm((current) => ({ ...current, taskProgressSyncIntervalSeconds: event.target.value }))}
@@ -1315,7 +1310,7 @@ export function SettingsPanel({
             />
           </label>
           <label className="settings-field">
-            <span>订阅轮询间隔（小时）</span>
+            <span>{t("automationUi.pollInterval")}</span>
             <input
               value={automationForm.subscriptionPollIntervalHours}
               onChange={(event) => setAutomationForm((current) => ({ ...current, subscriptionPollIntervalHours: event.target.value }))}
@@ -1323,18 +1318,18 @@ export function SettingsPanel({
             />
           </label>
           <div className="settings-meta">
-            <span>任务同步: {runtimeStatus.automation.taskProgressSyncEnabled ? "已启用" : "未启用"}</span>
-            <span>订阅轮询: {runtimeStatus.automation.subscriptionPollEnabled ? "已启用" : "未启用"}</span>
+            <span>{t("automationUi.taskSync", { state: t(runtimeStatus.automation.taskProgressSyncEnabled ? "automationUi.enabled" : "automationUi.disabled") })}</span>
+            <span>{t("automationUi.poll", { state: t(runtimeStatus.automation.subscriptionPollEnabled ? "automationUi.enabled" : "automationUi.disabled") })}</span>
           </div>
           <section className="settings-section settings-section--nested">
             <header className="settings-section__head">
               <div>
-                <h4>新发行下载策略</h4>
-                <p className="settings-section__hint">{releasePolicySummary(automationForm.subscriptionReleasePolicy)}</p>
+                <h4>{t("automationUi.policyTitle")}</h4>
+                <p className="settings-section__hint">{releasePolicySummary(automationForm.subscriptionReleasePolicy, t)}</p>
               </div>
             </header>
             <label className="settings-field">
-              <FieldLabel text="独演" info="演员数为 1 时按这里的行为处理。" />
+              <FieldLabel text={t("automationUi.solo")} info={t("automationUi.soloInfo")} />
               <select
                 value={automationForm.subscriptionReleasePolicy.soloBehavior}
                 onChange={(event) =>
@@ -1347,11 +1342,11 @@ export function SettingsPanel({
                   }))
                 }
               >
-                {renderSubscriptionReleaseBehaviorOptions()}
+                {renderSubscriptionReleaseBehaviorOptions(t)}
               </select>
             </label>
             <label className="settings-field">
-              <FieldLabel text="共演" info="演员数 2 到上限 N 的影片，以及超过 N 但未命中总集规则的影片，都按这里处理。" />
+              <FieldLabel text={t("automationUi.group")} info={t("automationUi.groupInfo")} />
               <select
                 value={automationForm.subscriptionReleasePolicy.groupBehavior}
                 onChange={(event) =>
@@ -1364,11 +1359,11 @@ export function SettingsPanel({
                   }))
                 }
               >
-                {renderSubscriptionReleaseBehaviorOptions()}
+                {renderSubscriptionReleaseBehaviorOptions(t)}
               </select>
             </label>
             <label className="settings-field">
-              <FieldLabel text="总集" info="总集优先于独演和共演分类，优先根据标题、详情、标签和异常大的演员数判断。" />
+              <FieldLabel text={t("automationUi.compilation")} info={t("automationUi.compilationInfo")} />
               <select
                 value={automationForm.subscriptionReleasePolicy.compilationBehavior}
                 onChange={(event) =>
@@ -1381,11 +1376,11 @@ export function SettingsPanel({
                   }))
                 }
               >
-                {renderSubscriptionReleaseBehaviorOptions()}
+                {renderSubscriptionReleaseBehaviorOptions(t)}
               </select>
             </label>
             <label className="settings-field">
-              <FieldLabel text="共演人数上限" info="共演指演员数 2 到 N；超过 N 但未命中总集规则的影片，仍按共演处理。" />
+              <FieldLabel text={t("automationUi.groupMax")} info={t("automationUi.groupMaxInfo")} />
               <input
                 value={automationForm.subscriptionReleasePolicy.maxGroupPerformerCount}
                 onChange={(event) =>
@@ -1401,7 +1396,7 @@ export function SettingsPanel({
               />
             </label>
             <label className="settings-field">
-              <FieldLabel text="自动下载时间范围" info="只在策略本来会自动下载时生效。超出范围或发行日期缺失的影片会改为记录供复核。" />
+              <FieldLabel text={t("automationUi.dateRange")} info={t("automationUi.dateRangeInfo")} />
               <select
                 value={automationForm.subscriptionReleasePolicy.releaseDateRange}
                 onChange={(event) =>
@@ -1416,7 +1411,7 @@ export function SettingsPanel({
               >
                 {SUBSCRIPTION_RELEASE_DATE_RANGE_OPTIONS.map((dateRange) => (
                   <option key={dateRange} value={dateRange}>
-                    {SUBSCRIPTION_RELEASE_DATE_RANGE_LABELS[dateRange]}
+                    {t(`automation.ranges.${SUBSCRIPTION_RELEASE_DATE_RANGE_KEYS[dateRange]}`)}
                   </option>
                 ))}
               </select>
@@ -1424,7 +1419,7 @@ export function SettingsPanel({
           </section>
           <div className="settings-actions">
             <button type="submit" disabled={updatingAutomation}>
-              {updatingAutomation ? "保存中..." : "保存自动化设置"}
+              {updatingAutomation ? t("settings.saving") : t("automationUi.save")}
             </button>
           </div>
         </form>
@@ -1433,9 +1428,9 @@ export function SettingsPanel({
           <section className="stashbox-source">
             <header className="stashbox-source__head">
               <div>
-                <h4>Stash-Box 数据源优先级</h4>
+                <h4>{t("automationUi.stashBoxes.title")}</h4>
                 <p className="stashbox-source__sub">
-                  在 Stash 中配置的 Stash-Box 会出现在这里。所有端点都会参与订阅查询，拖动卡片即可调整优先级。
+                  {t("automationUi.stashBoxes.detail")}
                 </p>
               </div>
               <div className="stashbox-source__stats">
@@ -1446,10 +1441,10 @@ export function SettingsPanel({
                   onClick={() => void refreshSubscriptionStashBoxes()}
                 >
                   <FontAwesomeIcon icon={faRotate} className={refreshingStashBoxes ? "is-spinning" : undefined} />
-                  <span>{refreshingStashBoxes ? "刷新中..." : "刷新"}</span>
+                  <span>{refreshingStashBoxes ? t("automationUi.stashBoxes.refreshing") : t("automationUi.stashBoxes.refresh")}</span>
                 </button>
                 <button type="submit" disabled={updatingAutomation}>
-                  {updatingAutomation ? "保存中..." : "保存优先级"}
+                  {updatingAutomation ? t("settings.saving") : t("automationUi.stashBoxes.save")}
                 </button>
               </div>
             </header>
@@ -1458,17 +1453,17 @@ export function SettingsPanel({
               <div className="stashbox-source__empty stashbox-source__empty--loading">
                 <div className="stashbox-source__spinner" aria-hidden="true" />
                 <div>
-                  <strong>正在从 Stash 拉取 Stash-Box 端点…</strong>
-                  <p>这一过程由后端在启动时自动完成，请稍候。</p>
+                  <strong>{t("automationUi.stashBoxes.loading")}</strong>
+                  <p>{t("automationUi.stashBoxes.loadingDetail")}</p>
                 </div>
               </div>
             ) : display.length === 0 ? (
               <div className="stashbox-source__empty stashbox-source__empty--danger">
                 <div className="stashbox-source__icon" aria-hidden="true">!</div>
                 <div>
-                  <strong>Stash 中尚未配置任何 Stash-Box</strong>
-                  <p>请先在 Stash 中添加至少一个端点，再回到这里刷新列表。</p>
-                  {loadError ? <p className="stashbox-source__error">拉取失败：{loadError}</p> : null}
+                  <strong>{t("automationUi.stashBoxes.empty")}</strong>
+                  <p>{t("automationUi.stashBoxes.emptyDetail")}</p>
+                  {loadError ? <p className="stashbox-source__error">{t("automationUi.stashBoxes.loadFailed", { error: loadError })}</p> : null}
                 </div>
               </div>
             ) : (
@@ -1510,7 +1505,7 @@ export function SettingsPanel({
                         setDragOverIndex(null);
                       }}
                     >
-                      <span className="stashbox-card__handle" aria-hidden="true" title="拖动以重新排序">
+                      <span className="stashbox-card__handle" aria-hidden="true" title={t("automationUi.stashBoxes.drag")}>
                         <FontAwesomeIcon icon={faGripVertical} />
                       </span>
                       <span className="stashbox-card__body">
@@ -1521,7 +1516,7 @@ export function SettingsPanel({
                               item.box?.apiKeyConfigured ? "stashbox-card__chip--ok" : "stashbox-card__chip--warn"
                             }`}
                           >
-                            {item.box?.apiKeyConfigured ? "API key 已配置" : "未配置 API key"}
+                            {t(item.box?.apiKeyConfigured ? "automationUi.stashBoxes.keyReady" : "automationUi.stashBoxes.keyMissing")}
                           </span>
                         </span>
                         <code className="stashbox-card__endpoint">{item.endpoint}</code>
@@ -1532,7 +1527,7 @@ export function SettingsPanel({
                           className="ghost-button ghost-button--icon"
                           disabled={index === 0}
                           onClick={() => move(index, index - 1)}
-                          aria-label="上移"
+                          aria-label={t("automationUi.stashBoxes.up")}
                         >
                           <FontAwesomeIcon icon={faArrowUp} />
                         </button>
@@ -1541,7 +1536,7 @@ export function SettingsPanel({
                           className="ghost-button ghost-button--icon"
                           disabled={index === display.length - 1}
                           onClick={() => move(index, index + 1)}
-                          aria-label="下移"
+                          aria-label={t("automationUi.stashBoxes.down")}
                         >
                           <FontAwesomeIcon icon={faArrowDown} />
                         </button>
@@ -1662,10 +1657,10 @@ export function SettingsPanel({
                       <FontAwesomeIcon icon={faGripVertical} />
                     </span>
                     <span className="torrent-rule__order">{ruleIndex + 1}</span>
-                    <h3 className="torrent-rule__name">{TORRENT_SELECTION_RULE_LABELS[rule.type]}</h3>
+                    <h3 className="torrent-rule__name">{t(`automation.rules.names.${TORRENT_SELECTION_RULE_KEYS[rule.type]}`)}</h3>
                     <div className="torrent-rule__inline-readonly" aria-hidden="true">
                       <span className="torrent-rule__badge torrent-rule__badge--type">
-                        {TORRENT_SELECTION_RULE_LABELS[rule.type]}
+                        {t(`automation.rules.names.${TORRENT_SELECTION_RULE_KEYS[rule.type]}`)}
                       </span>
                       {usesRuleDirection(rule.type) ? (
                         <span className="torrent-rule__badge torrent-rule__badge--dir">
@@ -1674,7 +1669,7 @@ export function SettingsPanel({
                       ) : null}
                     </div>
                     <div className="torrent-rule__actions">
-                      <label className="switch switch--sm" role="switch" aria-checked={rule.enabled} aria-label={`${TORRENT_SELECTION_RULE_LABELS[rule.type]}启用开关`}>
+                      <label className="switch switch--sm" role="switch" aria-checked={rule.enabled} aria-label={t("automation.rules.enableLabel", { rule: t(`automation.rules.names.${TORRENT_SELECTION_RULE_KEYS[rule.type]}`) })}>
                         <input
                           type="checkbox"
                           checked={rule.enabled}
@@ -1705,7 +1700,7 @@ export function SettingsPanel({
 
                     {rule.enabled ? (
                       <>
-                        <p className="torrent-rule__summary">{buildRuleSummary(rule)}</p>
+                        <p className="torrent-rule__summary">{buildRuleSummary(rule, t)}</p>
                         <div className="torrent-rule__body">
                           {usesRuleDirection(rule.type) ? (
                             <label className="torrent-rule__inline-field">
@@ -1947,10 +1942,10 @@ export function SettingsPanel({
                   <article key={rule.type} className={`torrent-rule${rule.enabled ? "" : " is-disabled"}`}>
                     <header className="torrent-rule__head">
                       <span className="torrent-rule__order">{displayIndex}</span>
-                      <h3 className="torrent-rule__name">{TORRENT_SELECTION_RULE_LABELS[rule.type]}</h3>
+                      <h3 className="torrent-rule__name">{t(`automation.rules.names.${TORRENT_SELECTION_RULE_KEYS[rule.type]}`)}</h3>
                       <div className="torrent-rule__inline-readonly" aria-hidden="true">
                         <span className="torrent-rule__badge torrent-rule__badge--type">
-                          {TORRENT_SELECTION_RULE_LABELS[rule.type]}
+                          {t(`automation.rules.names.${TORRENT_SELECTION_RULE_KEYS[rule.type]}`)}
                         </span>
                         {usesRuleDirection(rule.type) ? (
                           <span className="torrent-rule__badge torrent-rule__badge--dir">
@@ -1959,7 +1954,7 @@ export function SettingsPanel({
                         ) : null}
                       </div>
                       <div className="torrent-rule__actions">
-                        <label className="switch switch--sm" role="switch" aria-checked={rule.enabled} aria-label={`${TORRENT_SELECTION_RULE_LABELS[rule.type]}启用开关`}>
+                        <label className="switch switch--sm" role="switch" aria-checked={rule.enabled} aria-label={t("automation.rules.enableLabel", { rule: t(`automation.rules.names.${TORRENT_SELECTION_RULE_KEYS[rule.type]}`) })}>
                           <input
                             type="checkbox"
                             checked={rule.enabled}
@@ -1978,7 +1973,7 @@ export function SettingsPanel({
 
                     {rule.enabled ? (
                       <>
-                        <p className="torrent-rule__summary">{buildRuleSummary(rule)}</p>
+                        <p className="torrent-rule__summary">{buildRuleSummary(rule, t)}</p>
                         <div className="settings-form">
                           {rule.type === TorrentSelectionRuleType.TorrentSingleVideo ? (
                             <p className="torrent-rule__hint">
