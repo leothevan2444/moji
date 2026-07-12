@@ -174,6 +174,7 @@ func newHTTPRuntime(cfg *config.Config, version string, configStore *config.Stor
 		resolver.SettingsEditor = newRuntimeSettingsEditor(configStore, version, taskRuntimeService != nil, stashService != nil, stashClient, subscriptionService)
 	}
 	graphqlHandler := handler.NewDefaultServer(generated.NewExecutableSchema(generated.Config{Resolvers: resolver}))
+	graphqlapi.ConfigureGraphQLServer(graphqlHandler)
 
 	apiMux := http.NewServeMux()
 	apiHandler.Register(apiMux)

@@ -4,32 +4,34 @@ interface StatsDrawerProps {
   pendingScans: number;
   failed: number;
 }
+import { useTranslation } from "react-i18next";
 
 export function StatsDrawer({ active, completed, pendingScans, failed }: StatsDrawerProps) {
+  const { t } = useTranslation();
   return (
     <div className="drawer-stack">
       <div className="stat-strip">
         <article className="stat-card">
-          <span>活跃任务</span>
+          <span>{t("stats.active")}</span>
           <strong>{active}</strong>
         </article>
         <article className="stat-card">
-          <span>完成任务</span>
+          <span>{t("stats.completed")}</span>
           <strong>{completed}</strong>
         </article>
         <article className="stat-card">
-          <span>待扫描</span>
+          <span>{t("stats.pending")}</span>
           <strong>{pendingScans}</strong>
         </article>
         <article className="stat-card">
-          <span>失败</span>
+          <span>{t("stats.failed")}</span>
           <strong>{failed}</strong>
         </article>
       </div>
 
       <article className="drawer-card">
-        <h3>指标占位</h3>
-        <p>后续可在这里接入速度、队列、成功率和时段趋势图。</p>
+        <h3>{t("stats.placeholder")}</h3>
+        <p>{t("stats.placeholderDetail")}</p>
         <div className="mini-bars" aria-hidden="true">
           <span style={{ height: "35%" }} />
           <span style={{ height: "65%" }} />

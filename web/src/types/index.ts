@@ -1,5 +1,4 @@
 export type {
-  TabKey,
   DrawerKey,
   ToastTone,
   ToastPhase,

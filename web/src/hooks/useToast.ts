@@ -1,12 +1,14 @@
 import { useEffect, useRef, useState } from "react";
 import type { ToastItem, ToastTone } from "../types";
 import { TOAST_LIFETIME_MS, TOAST_EXIT_MS } from "../constants";
+import { useTranslation } from "react-i18next";
 
 // 模块级单调计数器：避免连续 1ms 内 pushToast 时 Date.now() 相同，
 // 同时去掉 Math.random 引入的潜在重复。
 let nextToastId = 0;
 
 export function useToast() {
+  const { t } = useTranslation();
   const [toasts, setToasts] = useState<ToastItem[]>([]);
   const toastTimersRef = useRef(new Map<number, { exit: number; remove: number }>());
 
@@ -53,7 +55,7 @@ export function useToast() {
       await navigator.clipboard.writeText(value);
       pushToast("tone-success", successMessage);
     } catch {
-      pushToast("tone-danger", "复制失败，请检查浏览器剪贴板权限。");
+      pushToast("tone-danger", t("toast.copyFailed"));
     }
   };
 

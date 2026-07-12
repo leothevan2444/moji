@@ -1,7 +1,3 @@
-export function boolState(value: boolean, positive = "已配置", negative = "未配置") {
-  return value ? positive : negative;
-}
-
 /**
  * Map a service's runtime readiness to a chip-friendly label and tone.
  *

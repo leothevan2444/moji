@@ -9,11 +9,8 @@ export {
   formatRelativeDate
 } from "./formatters";
 export {
-  deliveryModeGuide,
   deliveryModeLabel,
-  transferActionLabel,
-  INGEST_BLOCKERS,
-  type IngestModeGuide
+  transferActionLabel
 } from "./ingestUtils";
 export {
   normalizeStatus,
@@ -44,4 +41,4 @@ export {
   type TaskCardState
 } from "./taskUtils";
 export { performerInitials, performerImageURL, stashPerformerURL } from "./performerUtils";
-export { boolState, serviceStatus } from "./settingsUtils";
+export { serviceStatus } from "./settingsUtils";

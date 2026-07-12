@@ -2,7 +2,9 @@ import { readFileSync, readdirSync, statSync } from "node:fs";
 import { join, relative } from "node:path";
 
 const root = new URL("../src/", import.meta.url).pathname;
-const ignored = new Set(["i18n/resources.ts"]);
+// Resource catalogs and locale self-names are the only intentional CJK
+// sources outside localized help content.
+const ignored = new Set(["i18n/resources.ts", "i18n/locales.ts"]);
 const findings = [];
 
 function visit(path) {
@@ -16,7 +18,8 @@ function visit(path) {
     const short = relative(root, target);
     if (ignored.has(short)) continue;
     readFileSync(target, "utf8").split("\n").forEach((line, index) => {
-      if (/[\u3400-\u9fff]/u.test(line) && !line.trimStart().startsWith("//") && !line.trimStart().startsWith("*")) {
+      const trimmed = line.trimStart();
+      if (/[\u3400-\u9fff]/u.test(line) && !trimmed.startsWith("//") && !trimmed.startsWith("/*") && !trimmed.startsWith("*")) {
         findings.push(`${short}:${index + 1}: ${line.trim()}`);
       }
     });

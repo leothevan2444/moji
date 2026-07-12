@@ -142,8 +142,8 @@ func TestIncompleteQBittorrentConfigDisablesResolver(t *testing.T) {
 	if len(resp.Errors) == 0 {
 		t.Fatalf("expected GraphQL error when qBittorrent is disabled")
 	}
-	if got := resp.Errors[0].Message; got != "qBittorrent client is not configured" {
-		t.Fatalf("unexpected GraphQL error: %q", got)
+	if got := resp.Errors[0].Extensions.Code; got != graphqlapi.ErrorDownloaderDisabled {
+		t.Fatalf("unexpected GraphQL error code: %q", got)
 	}
 }
 
@@ -156,8 +156,8 @@ func TestMissingStashConfigDisablesStashResolvers(t *testing.T) {
 	if len(jobResp.Errors) == 0 {
 		t.Fatalf("expected GraphQL error when Stash is disabled")
 	}
-	if got := jobResp.Errors[0].Message; got != "stash client is not configured" {
-		t.Fatalf("unexpected stashJob GraphQL error: %q", got)
+	if got := jobResp.Errors[0].Extensions.Code; got != graphqlapi.ErrorStashNotConfigured {
+		t.Fatalf("unexpected stashJob GraphQL error code: %q", got)
 	}
 
 	scanResp := postGraphQL(t, handler, `mutation {
@@ -166,8 +166,8 @@ func TestMissingStashConfigDisablesStashResolvers(t *testing.T) {
 	if len(scanResp.Errors) == 0 {
 		t.Fatalf("expected GraphQL error when Stash is disabled")
 	}
-	if got := scanResp.Errors[0].Message; got != "stash client is not configured" {
-		t.Fatalf("unexpected stashMetadataScan GraphQL error: %q", got)
+	if got := scanResp.Errors[0].Extensions.Code; got != graphqlapi.ErrorStashNotConfigured {
+		t.Fatalf("unexpected stashMetadataScan GraphQL error code: %q", got)
 	}
 }
 
@@ -447,6 +447,10 @@ type graphQLResponse struct {
 	} `json:"data"`
 	Errors []struct {
 		Message string `json:"message"`
+		Extensions struct {
+			Code string `json:"code"`
+			CorrelationID string `json:"correlationId"`
+		} `json:"extensions"`
 	} `json:"errors"`
 }
 
