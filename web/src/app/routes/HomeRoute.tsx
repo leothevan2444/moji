@@ -8,6 +8,7 @@ import { taskSummary } from "../../utils/taskUtils";
 import type { SettingsTab } from "../../types";
 import type { AppOutletContext } from "../AppLayout";
 import { HomePageDocumentDocument } from "../../graphql/generated/graphql";
+import { useTranslation } from "react-i18next";
 
 const settingsSlugs: Record<SettingsTab, string> = {
   connections: "connections", ingest: "ingest", automation: "automation",
@@ -15,6 +16,7 @@ const settingsSlugs: Record<SettingsTab, string> = {
 };
 
 export function Component() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const location = useLocation();
   const { pushToast } = useOutletContext<AppOutletContext>();
@@ -44,8 +46,8 @@ export function Component() {
     try {
       const result = await retryTask({ id: taskId });
       if (result.error) pushToast("tone-danger", describeQueryError(result.error));
-      else if (!result.data?.retryTask?.id) pushToast("tone-danger", "任务重试失败，后端没有返回任务记录。");
-      else pushToast("tone-success", `已重试任务：${task ? taskSummary(task) : taskId}。`);
+      else if (!result.data?.retryTask?.id) pushToast("tone-danger", t("home.retryNoResult"));
+      else pushToast("tone-success", t("home.retried", { task: task ? taskSummary(task) : taskId }));
     } finally {
       await refreshDashboard({ requestPolicy: "network-only" });
       setPendingTaskRetryId(null);
@@ -53,7 +55,7 @@ export function Component() {
   };
 
   if (error && !data) {
-    return <div className="empty-card"><h3>首页加载失败</h3><p>{describeQueryError(error)}</p><button type="button" disabled={fetching} onClick={() => refreshDashboard({ requestPolicy: "network-only" })}>重试</button></div>;
+    return <div className="empty-card"><h3>{t("home.loadFailed")}</h3><p>{describeQueryError(error)}</p><button type="button" disabled={fetching} onClick={() => refreshDashboard({ requestPolicy: "network-only" })}>{t("common.retry")}</button></div>;
   }
 
   return <HomePage

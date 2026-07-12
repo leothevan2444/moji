@@ -7,6 +7,7 @@ import {
 } from "../components/home";
 import { isScanPending, isStatus, type DashboardTask } from "../utils";
 import type { SettingsTab } from "../types";
+import { useTranslation } from "react-i18next";
 
 // Stash 卡片的 KV 列表——只显示 URL（与服务可达性直接相关）。
 // ingest 模式/路径由新的 IngestCard 承载，避免数据源分散。
@@ -15,14 +16,12 @@ function buildStashConfig(runtime: NonNullable<HomePageDocumentQuery["settings"]
 }
 
 // Jackett 与 qBittorrent 的 blocker 与 ingest 无关，保留在 HomePage。
-function blockersFor(
-  service: "jackett" | "qbittorrent"
-): string[] {
+function blockerKeysFor(service: "jackett" | "qbittorrent"): string[] {
   switch (service) {
     case "jackett":
-      return ["任务搜索无索引源", "演员更新无上游数据"];
+      return ["jackettSearch", "jackettPerformers"];
     case "qbittorrent":
-      return ["任务无法启动下载", "下载完成后无客户端落地"];
+      return ["qbDownload", "qbLanding"];
   }
 }
 import type { HomePageDocumentQuery } from "../graphql/generated/graphql";
@@ -55,6 +54,8 @@ export function HomePage({
   onResolveTask,
   onOpenSettings
 }: HomePageProps) {
+  const { t } = useTranslation();
+  const blockersFor = (service: "jackett" | "qbittorrent") => blockerKeysFor(service).map((key) => t(`home.blockers.${key}`));
   const todoTasks = tasks.filter((task) => isStatus(task, "failed") || isScanPending(task)).slice(0, 4);
   const hasTodos = tasks.some((task) => isStatus(task, "failed") || isScanPending(task));
 
@@ -63,7 +64,7 @@ export function HomePage({
       <section className="section-band section-band--hero">
         <div className="band-head">
           <div>
-            <h2>外部服务</h2>
+            <h2>{t("home.services")}</h2>
           </div>
         </div>
 
@@ -80,16 +81,16 @@ export function HomePage({
                 lastError={runtimeStatus.stashStats?.lastError ?? null}
                 diagnostics={
                   runtimeStatus.stash.configured && !runtimeStatus.stash.ready && runtimeStatus.stashStats?.lastError
-                    ? "已配置但最近未联通，请检查 Stash 服务状态。"
+                    ? t("home.diagnostics.stashError")
                     : !runtimeStatus.stash.configured
-                      ? "Stash 必须先配置，否则入库与演员更新流程无法展开。"
+                      ? t("home.diagnostics.stashMissing")
                       : !runtimeStatus.stash.ready
-                        ? "Stash 已配置，等待首次探测或最近状态已过期。"
+                        ? t("home.diagnostics.stashPending")
                       : undefined
                 }
                 cta={
                   !runtimeStatus.stash.configured
-                    ? { kind: "open-settings", label: "去配置", tab: "connections" }
+                    ? { kind: "open-settings", label: t("home.configure"), tab: "connections" }
                     : null
                 }
                 onOpenSettings={onOpenSettings}
@@ -117,16 +118,16 @@ export function HomePage({
                 }
                 diagnostics={
                   runtimeStatus.jackett.configured && !runtimeStatus.jackett.ready && runtimeStatus.jackettStats?.lastError
-                    ? "已配置但最近未联通，请检查 Jackett 服务状态。"
+                    ? t("home.diagnostics.jackettError")
                     : !runtimeStatus.jackett.configured
-                      ? "Jackett 必须先配置，否则任务搜索与演员更新没有上游数据。"
+                      ? t("home.diagnostics.jackettMissing")
                       : !runtimeStatus.jackett.ready
-                        ? "Jackett 已配置，等待首次探测或最近状态已过期。"
+                        ? t("home.diagnostics.jackettPending")
                       : undefined
                 }
                 cta={
                   !runtimeStatus.jackett.configured
-                    ? { kind: "open-settings", label: "去配置", tab: "connections" }
+                    ? { kind: "open-settings", label: t("home.configure"), tab: "connections" }
                     : null
                 }
                 onOpenSettings={onOpenSettings}
@@ -152,16 +153,16 @@ export function HomePage({
                   runtimeStatus.qbittorrent.configured &&
                   !runtimeStatus.qbittorrent.ready &&
                   runtimeStatus.qbittorrentStats?.lastError
-                    ? "已配置但最近未联通，请检查 qBittorrent 服务状态。"
+                    ? t("home.diagnostics.qbError")
                     : !runtimeStatus.qbittorrent.configured
-                      ? "qBittorrent 必须先配置，否则下载与落地流程无法展开。"
+                      ? t("home.diagnostics.qbMissing")
                       : !runtimeStatus.qbittorrent.ready
-                        ? "qBittorrent 已配置，等待首次探测或最近状态已过期。"
+                        ? t("home.diagnostics.qbPending")
                       : undefined
                 }
                 cta={
                   !runtimeStatus.qbittorrent.configured
-                    ? { kind: "open-settings", label: "去配置", tab: "connections" }
+                    ? { kind: "open-settings", label: t("home.configure"), tab: "connections" }
                     : null
                 }
                 onOpenSettings={onOpenSettings}
@@ -174,7 +175,7 @@ export function HomePage({
       <section className="section-band">
         <div className="band-head">
           <div>
-            <h2>入库策略</h2>
+            <h2>{t("home.ingestPolicy")}</h2>
           </div>
         </div>
         <IngestCard
@@ -187,9 +188,9 @@ export function HomePage({
       <section className="section-band">
         <div className="band-head">
           <div>
-            <h2>待办任务</h2>
+            <h2>{t("home.todos")}</h2>
           </div>
-          <p className="band-note">失败项、待扫描项和长时间停滞项都放在这里。</p>
+          <p className="band-note">{t("home.todosNote")}</p>
         </div>
 
         <div className="card-grid">
@@ -208,8 +209,8 @@ export function HomePage({
           ))}
           {!hasTodos ? (
             <article className="empty-card">
-              <h3>暂无待处理项</h3>
-              <p>这里会优先显示失败、待扫和异常任务。</p>
+              <h3>{t("home.noTodos")}</h3>
+              <p>{t("home.noTodosDetail")}</p>
             </article>
           ) : null}
         </div>

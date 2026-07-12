@@ -8,6 +8,8 @@ import type {
   QBittorrentStats,
   StashStats
 } from "../../graphql/generated/graphql";
+import { useTranslation } from "react-i18next";
+import type { TFunction } from "i18next";
 
 type RuntimeSettings = NonNullable<HomePageDocumentQuery["settings"]>;
 type RuntimeStatus = NonNullable<HomePageDocumentQuery["settingsStatus"]>;
@@ -41,26 +43,26 @@ function toneFor(
   okAt: string | null,
   lastError: string | null,
   now: number
-): { tone: "tone-success" | "tone-warn" | "tone-neutral" | "tone-danger"; label: string } {
+): { tone: "tone-success" | "tone-warn" | "tone-neutral" | "tone-danger"; labelKey: string } {
   if (!status.configured) {
-    return { tone: "tone-neutral", label: "未配置" };
+    return { tone: "tone-neutral", labelKey: "home.status.unconfigured" };
   }
   if (status.ready) {
     if (okAt) {
       const thenMs = new Date(okAt).getTime();
       if (!Number.isNaN(thenMs) && now - thenMs > 5 * 60 * 1000) {
-        return { tone: "tone-warn", label: "数据陈旧" };
+        return { tone: "tone-warn", labelKey: "home.status.stale" };
       }
     }
-    return { tone: "tone-success", label: "已启用" };
+    return { tone: "tone-success", labelKey: "home.status.enabled" };
   }
   if (lastError) {
-    return { tone: "tone-danger", label: "运行异常" };
+    return { tone: "tone-danger", labelKey: "home.status.error" };
   }
   if (!okAt) {
-    return { tone: "tone-warn", label: "待检测" };
+    return { tone: "tone-warn", labelKey: "home.status.pending" };
   }
-  return { tone: "tone-warn", label: "数据陈旧" };
+  return { tone: "tone-warn", labelKey: "home.status.stale" };
 }
 
 export function ServiceCard({
@@ -75,7 +77,8 @@ export function ServiceCard({
   stats,
   onOpenSettings
 }: ServiceCardProps) {
-  const { tone, label } = toneFor(status, okAt, lastError, Date.now());
+  const { t } = useTranslation();
+  const { tone, labelKey } = toneFor(status, okAt, lastError, Date.now());
   const okRel = formatRelative(okAt);
 
   return (
@@ -84,14 +87,14 @@ export function ServiceCard({
         <div>
           <h3>{title}</h3>
         </div>
-        <span className={`status-chip ${tone}`}>{label}</span>
+        <span className={`status-chip ${tone}`}>{t(labelKey)}</span>
       </div>
 
       {config.length > 0 ? (
         <dl className="service-card__meta">
           {config.map((row) => (
             <div key={row.key} className="service-card__meta-row">
-              <dt>{row.key}</dt>
+              <dt>{row.key.startsWith("home.") ? t(row.key) : row.key}</dt>
               <dd>{row.value || "—"}</dd>
             </div>
           ))}
@@ -99,7 +102,7 @@ export function ServiceCard({
       ) : null}
 
       {stats ? (
-        <div className="service-card__stats">{renderStats(stats)}</div>
+        <div className="service-card__stats">{renderStats(stats, t)}</div>
       ) : null}
 
       {diagnostics ? <p className="service-card__diagnostics">{diagnostics}</p> : null}
@@ -127,7 +130,7 @@ export function ServiceCard({
               {okRel ? ` · ${okRel}` : ""}
             </span>
           ) : (
-            <span>暂无数据</span>
+            <span>{t("home.noData")}</span>
           )}
         </div>
         {cta ? (
@@ -155,19 +158,19 @@ function renderStats(
     | (StashStats & { hasIndexerSearch?: false })
     | (JackettStats & { hasIndexerSearch: true })
     | (QBittorrentStats & { hasIndexerSearch?: false })
-) {
+  , t: TFunction) {
   if ("pendingMojiScanCount" in stats) {
     return (
       <>
         {stats.version ? (
           <span>
             Stash <strong>v{stats.version}</strong>
-            {stats.sceneCount != null ? ` · ${stats.sceneCount.toLocaleString()} 部影片` : ""}
+            {stats.sceneCount != null ? ` · ${t("home.stats.scenes", { count: stats.sceneCount })}` : ""}
           </span>
         ) : (
-          <span>Stash 尚未回报数据</span>
+          <span>{t("home.stats.stashMissing")}</span>
         )}
-        <span>Moji 待扫任务 <strong>{stats.pendingMojiScanCount}</strong> 项</span>
+        <span>{t("home.stats.pendingScans", { count: stats.pendingMojiScanCount })}</span>
       </>
     );
   }
@@ -176,10 +179,10 @@ function renderStats(
     return (
       <>
         <span>
-          索引器 <strong>{idx.configuredIndexerCount}</strong> / {idx.indexerCount} 已配置
+          {t("home.stats.indexers", { configured: idx.configuredIndexerCount, total: idx.indexerCount })}
         </span>
         <span>
-          上次搜索最慢 <strong>{idx.lastIndexerLatencyMs} ms</strong>
+          {t("home.stats.slowest", { latency: idx.lastIndexerLatencyMs })}
           {idx.lastIndexerSearchAt ? `（${formatRelative(idx.lastIndexerSearchAt)}）` : ""}
         </span>
         {idx.lastIndexerError ? (
@@ -192,11 +195,10 @@ function renderStats(
   return (
     <>
       <span>
-        下载 <strong>{formatBytesRate(q.downloadSpeed)}</strong> · 上传{" "}
-        <strong>{formatBytesRate(q.uploadSpeed)}</strong>
+        {t("home.stats.transfer", { download: formatBytesRate(q.downloadSpeed), upload: formatBytesRate(q.uploadSpeed) })}
       </span>
       <span>
-        活跃任务 <strong>{q.activeTorrentCount}</strong> · 连接 {q.connectionStatus}
+        {t("home.stats.active", { count: q.activeTorrentCount, status: q.connectionStatus })}
       </span>
     </>
   );
@@ -217,7 +219,7 @@ export function buildQBittorrentConfig(runtime: RuntimeSettings): Array<{ key: s
   const q = runtime.qbittorrent;
   return [
     { key: "URL", value: q.url },
-    { key: "用户", value: q.username },
-    { key: "保存路径", value: q.defaultSavePath }
+    { key: "home.config.user", value: q.username },
+    { key: "home.config.savePath", value: q.defaultSavePath }
   ];
 }
