@@ -1,4 +1,5 @@
 import type { JackettIndexersDocumentQuery } from "../../graphql/generated/graphql";
+import { useTranslation } from "react-i18next";
 
 type Indexer = JackettIndexersDocumentQuery["jackettIndexers"][number];
 
@@ -21,18 +22,19 @@ export function JackettFilterPanel({
   onToggle,
   onClear
 }: JackettFilterPanelProps) {
+  const { t } = useTranslation();
   const selectedCount = enabledIds.length;
 
   if (!fetching && indexers.length === 0) {
     return (
       <details className="filter-panel" open>
         <summary>
-          <span>索引器筛选</span>
-          <span className="filter-panel__count">未连接 Jackett</span>
+          <span>{t("discoverUi.filters.title")}</span>
+          <span className="filter-panel__count">{t("discoverUi.filters.disconnected")}</span>
         </summary>
         <div className="filter-panel__body">
           <p className="filter-panel__hint">
-            当前没有可用的 Jackett 索引器。请到设置里检查 Jackett URL / API Key。
+            {t("discoverUi.filters.disconnectedDetail")}
           </p>
         </div>
       </details>
@@ -42,12 +44,12 @@ export function JackettFilterPanel({
   return (
     <details className="filter-panel">
       <summary>
-        <span>索引器筛选</span>
-        <span className="filter-panel__count">已选 {selectedCount} 个</span>
+        <span>{t("discoverUi.filters.title")}</span>
+        <span className="filter-panel__count">{t("discoverUi.filters.selected", { count: selectedCount })}</span>
       </summary>
       <div className="filter-panel__body">
         {fetching ? (
-          <p className="filter-panel__hint">正在加载索引器列表…</p>
+          <p className="filter-panel__hint">{t("discoverUi.filters.loading")}</p>
         ) : (
           <>
             <div className="filter-panel__chips">
@@ -69,7 +71,7 @@ export function JackettFilterPanel({
                     disabled={disabled}
                     aria-pressed={active}
                     onClick={() => !disabled && onToggle(indexer.id)}
-                    title={disabled ? "Jackett 端未配置此索引器" : indexer.name}
+                    title={disabled ? t("discoverUi.filters.disabled") : indexer.name}
                   >
                     {indexer.name}
                   </button>
@@ -82,7 +84,7 @@ export function JackettFilterPanel({
                 className="filter-panel__clear"
                 onClick={onClear}
               >
-                清空筛选
+                {t("discoverUi.filters.clear")}
               </button>
             )}
           </>

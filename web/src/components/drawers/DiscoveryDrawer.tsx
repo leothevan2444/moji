@@ -11,6 +11,7 @@ import type {
   SearchDocumentQuery
 } from "../../graphql/generated/graphql";
 import type { DiscoveryMode } from "../../constants";
+import { useTranslation } from "react-i18next";
 
 type DiscoverResult = DiscoverScenesDocumentQuery["discoverScenes"]["items"][number];
 type DiscoverConnection = DiscoverScenesDocumentQuery["discoverScenes"];
@@ -50,6 +51,7 @@ export function DiscoveryDrawer({
   onClearTrackers,
   hasActiveTrackers
 }: DiscoveryDrawerProps) {
+  const { t } = useTranslation();
   const isStashBox = mode === "stashbox";
 
   // 首屏 loading 渲染骨架；翻页过程中 searching=true 但已有数据时不渲染骨架，
@@ -93,7 +95,7 @@ export function DiscoveryDrawer({
                         ) : null}
                       </h3>
                       {usedStashBoxName ? (
-                        <span className="status-chip tone-info" title="数据来源">
+                        <span className="status-chip tone-info" title={t("discoverUi.result.source")}>
                           {usedStashBoxName}
                         </span>
                       ) : null}
@@ -101,17 +103,17 @@ export function DiscoveryDrawer({
                     <div className="candidate-card__meta">
                       {result.code ? (
                         <span className="candidate-card__meta-line" title={result.code}>
-                          番号 · {result.code}
+                          {t("discoverUi.result.code", { code: result.code })}
                         </span>
                       ) : null}
                       {result.studioName ? (
                         <span className="candidate-card__meta-line" title={result.studioName}>
-                          片商 · {result.studioName}
+                          {t("discoverUi.result.studio", { studio: result.studioName })}
                         </span>
                       ) : null}
                       {result.performerNames.length > 0 ? (
                         <span className="candidate-card__meta-line" title={result.performerNames.join(" / ")}>
-                          演员 · {result.performerNames.slice(0, 3).join(" / ")}
+                          {t("discoverUi.result.performers", { performers: result.performerNames.slice(0, 3).join(" / ") })}
                           {result.performerNames.length > 3 ? " …" : ""}
                         </span>
                       ) : null}
@@ -119,7 +121,7 @@ export function DiscoveryDrawer({
                   </div>
                 </div>
                 <div className="candidate-card__foot">
-                  <span>{result.date || "无日期"}</span>
+                  <span>{result.date || t("discoverUi.result.noDate")}</span>
                   <div className="inline-actions">
                     {result.url ? (
                       <a
@@ -127,8 +129,8 @@ export function DiscoveryDrawer({
                         target="_blank"
                         rel="noreferrer"
                         className="icon-button"
-                        title="原始页面"
-                        aria-label="原始页面"
+                        title={t("discoverUi.result.original")}
+                        aria-label={t("discoverUi.result.original")}
                       >
                         <FontAwesomeIcon icon={faArrowUpRightFromSquare} />
                       </a>
@@ -138,7 +140,7 @@ export function DiscoveryDrawer({
                       onClick={() => onQueueDiscovered(result)}
                       disabled={pendingAddId === result.key}
                     >
-                      {pendingAddId === result.key ? "加入中" : "加入任务队列"}
+                      {pendingAddId === result.key ? t("discoverUi.result.queueing") : t("discoverUi.result.queue")}
                     </button>
                   </div>
                 </div>
@@ -167,8 +169,8 @@ export function DiscoveryDrawer({
                       <a
                         href={result.magnetUri}
                         className="icon-button"
-                        title="磁力链接"
-                        aria-label="磁力链接"
+                        title={t("discoverUi.result.magnet")}
+                        aria-label={t("discoverUi.result.magnet")}
                       >
                         <FontAwesomeIcon icon={faMagnet} />
                       </a>
@@ -178,8 +180,8 @@ export function DiscoveryDrawer({
                       target="_blank"
                       rel="noreferrer"
                       className="icon-button"
-                      title="原始下载"
-                      aria-label="原始下载"
+                      title={t("discoverUi.result.originalDownload")}
+                      aria-label={t("discoverUi.result.originalDownload")}
                     >
                       <FontAwesomeIcon icon={faDownload} />
                     </a>
@@ -188,7 +190,7 @@ export function DiscoveryDrawer({
                       onClick={() => onAddJackett(result)}
                       disabled={pendingAddId === result.link}
                     >
-                      {pendingAddId === result.link ? "添加中" : "创建任务"}
+                      {pendingAddId === result.link ? t("discoverUi.result.adding") : t("discoverUi.result.create")}
                     </button>
                   </div>
                 </div>
@@ -216,11 +218,12 @@ function EmptyState({
   onTryJackett,
   onClearTrackers
 }: EmptyStateProps) {
+  const { t } = useTranslation();
   if (!hasQuery) {
     return (
       <div className="empty-card empty-card--wide">
-        <h3>输入关键词开始搜索</h3>
-        <p>支持番号、标题、演员名或任意关键词。按 / 可快速聚焦搜索框。</p>
+        <h3>{t("discoverUi.result.enter")}</h3>
+        <p>{t("discoverUi.result.enterDetail")}</p>
       </div>
     );
   }
@@ -228,10 +231,10 @@ function EmptyState({
   if (isStashBox) {
     return (
       <div className="empty-card empty-card--wide">
-        <h3>StashBox 没有匹配结果</h3>
-        <p>试试切到 Jackett 备用搜索，索引更广。</p>
+        <h3>{t("discoverUi.result.noStash")}</h3>
+        <p>{t("discoverUi.result.tryJackettDetail")}</p>
         <button type="button" className="ghost-button" onClick={onTryJackett} style={{ marginTop: 12 }}>
-          试试 Jackett →
+          {t("discoverUi.result.tryJackett")}
         </button>
       </div>
     );
@@ -240,10 +243,10 @@ function EmptyState({
   if (hasActiveTrackers) {
     return (
       <div className="empty-card empty-card--wide">
-        <h3>当前筛选下没有结果</h3>
-        <p>取消部分索引器限制后再试一次。</p>
+        <h3>{t("discoverUi.result.noFiltered")}</h3>
+        <p>{t("discoverUi.result.noFilteredDetail")}</p>
         <button type="button" className="ghost-button" onClick={onClearTrackers} style={{ marginTop: 12 }}>
-          清空筛选
+          {t("discoverUi.filters.clear")}
         </button>
       </div>
     );
@@ -251,8 +254,8 @@ function EmptyState({
 
   return (
     <div className="empty-card empty-card--wide">
-      <h3>没有结果</h3>
-      <p>Jackett 没有返回可用候选。</p>
+      <h3>{t("discoverUi.result.noResults")}</h3>
+      <p>{t("discoverUi.result.noJackett")}</p>
     </div>
   );
 }

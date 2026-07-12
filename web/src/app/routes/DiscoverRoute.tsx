@@ -19,12 +19,14 @@ import { describeQueryError } from "../../services/queryError";
 import type { AppOutletContext } from "../AppLayout";
 import "../../styles/filter-panel.scss";
 import "../../styles/discovery-toolbar.scss";
+import { useTranslation } from "react-i18next";
 
 const FAST_KEY = "moji.discovery.previewFastRules";
 const FILE_KEY = "moji.discovery.previewFileRules";
 const stored = (key: string) => { try { return localStorage.getItem(key) === "true"; } catch { return false; } };
 
 export function Component() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const location = useLocation();
   const [params, setParams] = useSearchParams();
@@ -68,7 +70,7 @@ export function Component() {
   };
   const queueScene = async (item: DiscoverScenesDocumentQuery["discoverScenes"]["items"][number]) => {
     setPendingAdd(item.key);
-    try { const result = await queueDiscoveredScene({ input: { sceneId: item.sceneId, stashBoxEndpoint: item.stashBoxEndpoint } }); if (result.error) pushToast("tone-danger", describeQueryError(result.error)); else if (result.data?.queueDiscoveredScene.id) { pushToast("tone-success", `已将 ${item.title} 加入任务队列。`); navigate(`/tasks/${encodeURIComponent(result.data.queueDiscoveredScene.id)}`, { state: { backgroundLocation: location } }); } }
+    try { const result = await queueDiscoveredScene({ input: { sceneId: item.sceneId, stashBoxEndpoint: item.stashBoxEndpoint } }); if (result.error) pushToast("tone-danger", describeQueryError(result.error)); else if (result.data?.queueDiscoveredScene.id) { pushToast("tone-success", t("discoverUi.queued", { title: item.title })); navigate(`/tasks/${encodeURIComponent(result.data.queueDiscoveredScene.id)}`, { state: { backgroundLocation: location } }); } }
     finally { setPendingAdd(null); }
   };
 
@@ -79,13 +81,13 @@ export function Component() {
       onSubmit={submit} onModeChange={(source) => update({ source, sort: "relevance", page: 1 })}
       onPickHistory={(q) => { setDraft(q); history.push(q); setHistoryVisible(false); update({ q, page: 1 }, false); }}
       onRemoveHistory={history.remove} onClearHistory={history.clear} onDismissHistory={() => setHistoryVisible(false)} onOpenHelp={openHelp} />
-    {state.q ? <Drawer visibleDrawer="discovery" closing={false} title={mode === "stashbox" ? "StashBox 搜索结果" : "Jackett 搜索结果"} onClose={() => update({ q: "", page: 1 })}>
-      <div className="drawer-stack"><article className="drawer-card"><div className="drawer-card__head"><h3>搜索词：{query}</h3></div>
+    {state.q ? <Drawer visibleDrawer="discovery" closing={false} title={t(mode === "stashbox" ? "discoverUi.stashResults" : "discoverUi.jackettResults")} onClose={() => update({ q: "", page: 1 })}>
+      <div className="drawer-stack"><article className="drawer-card"><div className="drawer-card__head"><h3>{t("discoverUi.query", { query })}</h3></div>
         {mode === "jackett" ? <JackettFilterPanel indexers={indexers} fetching={fetchingIndexers} enabledIds={state.trackers} onToggle={(id) => update({ trackers: state.trackers.includes(id) ? state.trackers.filter((x) => x !== id) : [...state.trackers, id], page: 1 })} onClear={() => update({ trackers: [], page: 1 })} /> : null}
         <SortAndPagination sortValue={mode === "stashbox" ? stashSort : jackettSort} sortOptions={mode === "stashbox" ? DISCOVER_SORT_OPTIONS : JACKETT_SORT_OPTIONS}
           onSortChange={(value) => update({ sort: String(value).toLowerCase().replaceAll("_", "-"), page: 1 })} page={page} totalPages={pages} total={visible.length}
           onPrevPage={() => update({ page: Math.max(1, page - 1) })} onNextPage={() => update({ page: Math.min(pages, page + 1) })}
-          extraContent={mode === "jackett" ? <div className="discovery-toolbar__preview"><label className="switch-row"><span>快速规则预览</span><input type="checkbox" checked={fastRules} onChange={(e) => update({ fastRules: e.target.checked, page: 1 })} /></label><label className="switch-row"><span>文件结构规则预览</span><input type="checkbox" checked={fileRules} onChange={(e) => update({ fileRules: e.target.checked, page: 1 })} /></label>{fileRules ? <span>{previewing ? "正在检查文件结构..." : `已检查 ${previewMeta?.inspectedCount ?? 0} / ${previewMeta?.inspectableCount ?? 0} 条可检查候选`}</span> : null}</div> : null} />
+          extraContent={mode === "jackett" ? <div className="discovery-toolbar__preview"><label className="switch-row"><span>{t("discoverUi.fastPreview")}</span><input type="checkbox" checked={fastRules} onChange={(e) => update({ fastRules: e.target.checked, page: 1 })} /></label><label className="switch-row"><span>{t("discoverUi.filePreview")}</span><input type="checkbox" checked={fileRules} onChange={(e) => update({ fileRules: e.target.checked, page: 1 })} /></label>{fileRules ? <span>{previewing ? t("discoverUi.inspecting") : t("discoverUi.inspected", { inspected: previewMeta?.inspectedCount ?? 0, total: previewMeta?.inspectableCount ?? 0 })}</span> : null}</div> : null} />
         <DiscoveryDrawer mode={mode} query={query} searching={mode === "stashbox" ? discovering : searching || previewing} error={(mode === "stashbox" ? discoverError : previewError ?? searchError) ?? null} pendingAddId={pendingAdd}
           discoverResult={discoveredResult} discoverItems={slice(discovered)} jackettItems={slice(activeJackett)} hasAnyResults={visible.length > 0} usedStashBoxName={discoveredResult?.usedStashBox?.name ?? null}
           onQueueDiscovered={(item) => void queueScene(item)} onAddJackett={(item) => void addJackett(item)} onTryJackett={() => update({ source: "jackett", sort: "relevance", page: 1 })} onClearTrackers={() => update({ trackers: [], page: 1 })} hasActiveTrackers={state.trackers.length > 0} />

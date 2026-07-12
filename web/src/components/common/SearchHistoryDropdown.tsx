@@ -1,5 +1,6 @@
 import { useRef } from "react";
 import { useClickOutside } from "../../hooks/useClickOutside";
+import { useTranslation } from "react-i18next";
 
 interface SearchHistoryDropdownProps {
   history: string[];
@@ -24,6 +25,7 @@ export function SearchHistoryDropdown({
   onClear,
   onDismiss
 }: SearchHistoryDropdownProps) {
+  const { t } = useTranslation();
   const rootRef = useRef<HTMLDivElement>(null);
 
   useClickOutside([rootRef], onDismiss, visible);
@@ -31,11 +33,11 @@ export function SearchHistoryDropdown({
   if (!visible || history.length === 0) return null;
 
   return (
-    <div ref={rootRef} className="search-history" role="listbox" aria-label="搜索历史">
+    <div ref={rootRef} className="search-history" role="listbox" aria-label={t("discoverUi.history.aria")}>
       <div className="search-history__head">
-        <span>最近搜索</span>
+        <span>{t("discoverUi.history.recent")}</span>
         <button type="button" className="search-history__clear" onClick={onClear}>
-          清空
+          {t("discoverUi.history.clear")}
         </button>
       </div>
       <ul className="search-history__list">
@@ -51,7 +53,7 @@ export function SearchHistoryDropdown({
             <button
               type="button"
               className="search-history__remove"
-              aria-label={`删除历史 ${entry}`}
+              aria-label={t("discoverUi.history.remove", { entry })}
               onClick={(event) => {
                 event.stopPropagation();
                 onRemove(entry);

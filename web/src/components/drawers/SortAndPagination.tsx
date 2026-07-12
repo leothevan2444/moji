@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { useTranslation } from "react-i18next";
 
 interface SortOption<V extends string> {
   value: V;
@@ -30,24 +31,25 @@ export function SortAndPagination<V extends string>({
   total,
   onPrevPage,
   onNextPage,
-  label = "结果",
+  label,
   extraContent
 }: SortAndPaginationProps<V>) {
+  const { t } = useTranslation();
   const hasResults = total > 0;
   const safeTotalPages = Math.max(totalPages, 1);
 
   return (
     <div className="discovery-toolbar">
       <div className="discovery-toolbar__sort">
-        <span>排序</span>
+        <span>{t("discoverUi.toolbar.sort")}</span>
         <select
           value={sortValue}
           onChange={(event) => onSortChange(event.target.value as V)}
-          aria-label="排序方式"
+          aria-label={t("discoverUi.toolbar.sortAria")}
         >
           {sortOptions.map((option) => (
             <option key={option.value} value={option.value}>
-              {option.label}
+              {t(option.label)}
             </option>
           ))}
         </select>
@@ -60,14 +62,14 @@ export function SortAndPagination<V extends string>({
       {hasResults && (
         <div className="discovery-toolbar__page">
           <span className="discovery-toolbar__page-summary">
-            {label} · 第 {page} / {safeTotalPages} 页 · 共 {total} 条
+            {t("discoverUi.toolbar.summary", { label: label ?? t("discoverUi.toolbar.results"), page, pages: safeTotalPages, total })}
           </span>
           <button
             type="button"
             className="discovery-toolbar__page-btn"
             onClick={onPrevPage}
             disabled={page <= 1}
-            aria-label="上一页"
+            aria-label={t("discoverUi.toolbar.previous")}
           >
             ‹
           </button>
@@ -76,7 +78,7 @@ export function SortAndPagination<V extends string>({
             className="discovery-toolbar__page-btn"
             onClick={onNextPage}
             disabled={page >= safeTotalPages}
-            aria-label="下一页"
+            aria-label={t("discoverUi.toolbar.next")}
           >
             ›
           </button>

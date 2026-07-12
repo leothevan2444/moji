@@ -1,4 +1,4 @@
-import { FormEvent, useRef } from "react";
+import { FormEvent, useMemo, useRef } from "react";
 import { SegmentedTab } from "../components/common/SegmentedTab";
 import { SearchHistoryDropdown } from "../components/common/SearchHistoryDropdown";
 import { useGlobalSlashShortcut, useRotatingPlaceholder } from "../hooks";
@@ -7,6 +7,7 @@ import {
   SEARCH_PLACEHOLDERS,
   type DiscoveryMode
 } from "../constants";
+import { useTranslation } from "react-i18next";
 
 interface DiscoveryPageProps {
   query: string;
@@ -45,13 +46,15 @@ export function DiscoveryPage({
   onDismissHistory,
   onOpenHelp
 }: DiscoveryPageProps) {
+  const { t } = useTranslation();
   const inputRef = useRef<HTMLInputElement>(null);
-  const rawPlaceholder = useRotatingPlaceholder(SEARCH_PLACEHOLDERS, 4500, inputFocused);
+  const placeholders = useMemo(() => SEARCH_PLACEHOLDERS.map((key) => t(key)), [t]);
+  const rawPlaceholder = useRotatingPlaceholder(placeholders, 4500, inputFocused);
   useGlobalSlashShortcut(inputRef);
 
   // placeholder 反映当前 mode，但 tab 已经在左侧 prefix 显示，故不再重复
   const placeholder = rawPlaceholder;
-  const submitTitle = mode === "stashbox" ? "搜索 StashBox" : "搜索 Jackett";
+  const submitTitle = t(mode === "stashbox" ? "discoverUi.searchStashBox" : "discoverUi.searchJackett");
 
   const canSubmit = !searching && query.trim() !== "";
 
@@ -60,7 +63,7 @@ export function DiscoveryPage({
       <section className="section-band">
         <div className="band-head">
           <div>
-            <h2>搜索</h2>
+            <h2>{t("discoverUi.search")}</h2>
           </div>
         </div>
 
@@ -71,7 +74,7 @@ export function DiscoveryPage({
               options={DISCOVERY_MODE_OPTIONS}
               onChange={onModeChange}
               size="sm"
-              ariaLabel="搜索模式"
+              ariaLabel={t("discoverUi.searchMode")}
             />
           </div>
           <div className="discovery-shell__field">
@@ -82,7 +85,7 @@ export function DiscoveryPage({
               onFocus={onInputFocus}
               onBlur={onInputBlur}
               placeholder={placeholder}
-              aria-label="搜索关键词"
+              aria-label={t("discoverUi.keyword")}
               spellCheck={false}
               autoComplete="off"
             />
@@ -124,17 +127,17 @@ export function DiscoveryPage({
       <section className="section-band section-band--preview">
         <div className="band-head">
           <div>
-            <h2>推荐系统占位区</h2>
+            <h2>{t("discoverUi.recommendation")}</h2>
           </div>
-          <p className="band-note">后续可接入推荐、通知和批量操作。</p>
+          <p className="band-note">{t("discoverUi.recommendationNote")}</p>
         </div>
         <div className="preview-panel">
           <div>
-            <h3>推荐系统未启用</h3>
-            <p>先把健康、任务和扫描闭环跑顺，再把推荐位接进来。</p>
+            <h3>{t("discoverUi.recommendationDisabled")}</h3>
+            <p>{t("discoverUi.recommendationDetail")}</p>
           </div>
           <button type="button" className="ghost-button" onClick={onOpenHelp}>
-            看帮助
+            {t("discoverUi.viewHelp")}
           </button>
         </div>
       </section>
