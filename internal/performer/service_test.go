@@ -28,7 +28,7 @@ func TestServiceListsPerformersWithOnlyPerformerDependencies(t *testing.T) {
 	service, err := NewService(
 		testStashClient{performers: []*stashgraphql.PerformerFragment{
 			{ID: "2", Name: "Beth"},
-			{ID: "1", Name: "Alice", AliasList: []string{"A"}, CustomFields: map[string]any{DefaultCustomFieldKey: true}},
+			{ID: "1", Name: "Alice", AliasList: []string{"A"}, CustomFields: map[string]any{DefaultCustomFieldKey: float64(1)}},
 		}},
 		metadata.NewService(nil, metadata.NewRegistry(nil)),
 		nil,

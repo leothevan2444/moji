@@ -319,7 +319,7 @@ func TestSubscribeAndUnsubscribePerformerMutatesCustomFields(t *testing.T) {
 	if err := service.UnsubscribePerformer(context.Background(), "p1"); err != nil {
 		t.Fatalf("UnsubscribePerformer failed: %v", err)
 	}
-	if customFieldTruthy(stashClient.performers["p1"].CustomFields, DefaultCustomFieldKey) {
+	if performerdomain.IsSubscribed(stashClient.performers["p1"].CustomFields, DefaultCustomFieldKey) {
 		t.Fatalf("expected custom field to be removed")
 	}
 }

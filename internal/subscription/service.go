@@ -518,7 +518,7 @@ func performerFromStash(raw *stashgraphql.PerformerFragment, customFieldKey stri
 		Favorite:   raw.Favorite,
 		ImagePath:  derefString(raw.ImagePath),
 		SceneCount: raw.SceneCount,
-		Subscribed: customFieldTruthy(raw.CustomFields, customFieldKey),
+		Subscribed: performer.IsSubscribed(raw.CustomFields, customFieldKey),
 	}
 }
 
@@ -545,27 +545,6 @@ func derefString(value *string) string {
 		return ""
 	}
 	return *value
-}
-
-func customFieldTruthy(fields map[string]any, key string) bool {
-	value, ok := fields[key]
-	if !ok {
-		return false
-	}
-
-	switch typed := value.(type) {
-	case bool:
-		return typed
-	case string:
-		switch strings.ToLower(strings.TrimSpace(typed)) {
-		case "1", "true", "yes", "on":
-			return true
-		}
-	case float64:
-		return typed != 0
-	}
-
-	return false
 }
 
 func normalize(value string) string {

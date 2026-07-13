@@ -90,7 +90,7 @@ func performerFromStash(item *stashgraphql.PerformerFragment, key string) Perfor
 			aliases = append(aliases, v)
 		}
 	}
-	return Performer{ID: item.ID, Name: item.Name, AliasList: aliases, Favorite: item.Favorite, ImagePath: stringValue(item.ImagePath), SceneCount: item.SceneCount, Subscribed: customFieldTruthy(item.CustomFields, key)}
+	return Performer{ID: item.ID, Name: item.Name, AliasList: aliases, Favorite: item.Favorite, ImagePath: stringValue(item.ImagePath), SceneCount: item.SceneCount, Subscribed: IsSubscribed(item.CustomFields, key)}
 }
 func performerMatches(item Performer, needle string) bool {
 	if strings.Contains(normalize(item.Name), needle) {
@@ -98,22 +98,6 @@ func performerMatches(item Performer, needle string) bool {
 	}
 	for _, alias := range item.AliasList {
 		if strings.Contains(normalize(alias), needle) {
-			return true
-		}
-	}
-	return false
-}
-func customFieldTruthy(fields map[string]any, key string) bool {
-	value, ok := fields[key]
-	if !ok {
-		return false
-	}
-	switch v := value.(type) {
-	case bool:
-		return v
-	case string:
-		switch strings.ToLower(strings.TrimSpace(v)) {
-		case "1", "true", "yes", "on":
 			return true
 		}
 	}
