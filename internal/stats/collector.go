@@ -102,16 +102,21 @@ func (s *Snapshot) Clone() Snapshot {
 type Collector struct {
 	Snapshot *Snapshot
 
-	stashClient   *stash.Client
-	jackettClient *jackett.Client
-	qbittClient   *qbittorrent.Client
-	taskLister    TaskLister
-	intervalFast  time.Duration
-	intervalSlow  time.Duration
-	logger        *slog.Logger
+	stashClient    *stash.Client
+	jackettClient  *jackett.Client
+	qbittClient    *qbittorrent.Client
+	taskLister     TaskLister
+	intervalFast   time.Duration
+	intervalSlow   time.Duration
+	logger         *slog.Logger
+	eventPublisher ServiceStatusEventPublisher
 
 	// searchHookInstalled guards against double-install.
 	hookOnce sync.Once
+}
+
+func (c *Collector) SetEventPublisher(publisher ServiceStatusEventPublisher) {
+	c.eventPublisher = publisher
 }
 
 // NewCollector wires a collector with the given clients. Any client may be nil
@@ -204,22 +209,87 @@ func (c *Collector) SnapshotView() Snapshot {
 }
 
 func (c *Collector) refreshFast(ctx context.Context) error {
+	before := c.SnapshotView()
 	if c.qbittClient != nil {
 		c.refreshQBittorrent(ctx)
 	}
 	c.refreshMojiScanCount(ctx)
 	c.refreshJackettSearchLatency()
+	c.publishSnapshotChanges(before, c.SnapshotView(), []ExternalService{
+		ExternalServiceQBittorrent,
+		ExternalServiceStash,
+		ExternalServiceJackett,
+	})
 	return nil
 }
 
 func (c *Collector) refreshSlow(ctx context.Context) error {
+	before := c.SnapshotView()
 	if c.stashClient != nil {
 		c.refreshStash(ctx)
 	}
 	if c.jackettClient != nil {
 		c.refreshJackettIndexers(ctx)
 	}
+	c.publishSnapshotChanges(before, c.SnapshotView(), []ExternalService{
+		ExternalServiceStash,
+		ExternalServiceJackett,
+	})
 	return nil
+}
+
+func (c *Collector) publishSnapshotChanges(before, after Snapshot, candidates []ExternalService) {
+	if c.eventPublisher == nil {
+		return
+	}
+	changed := make([]ExternalService, 0, len(candidates))
+	for _, service := range candidates {
+		switch service {
+		case ExternalServiceStash:
+			if !stashStatsEqual(before.Stash, after.Stash) {
+				changed = append(changed, service)
+			}
+		case ExternalServiceJackett:
+			if !jackettStatsEqual(before.Jackett, after.Jackett) {
+				changed = append(changed, service)
+			}
+		case ExternalServiceQBittorrent:
+			if before.QBitt != after.QBitt {
+				changed = append(changed, service)
+			}
+		}
+	}
+	if len(changed) > 0 {
+		c.eventPublisher.Publish(&ServiceStatusEvent{Services: changed, ObservedAt: time.Now().UTC()})
+	}
+}
+
+func stashStatsEqual(left, right StashStats) bool {
+	if left.Version != right.Version ||
+		left.PendingMojiScanCount != right.PendingMojiScanCount ||
+		left.LastError != right.LastError ||
+		!left.OKAt.Equal(right.OKAt) {
+		return false
+	}
+	if left.SceneCount == nil || right.SceneCount == nil {
+		return left.SceneCount == right.SceneCount
+	}
+	return *left.SceneCount == *right.SceneCount
+}
+
+func jackettStatsEqual(left, right JackettStats) bool {
+	if left.IndexerCount != right.IndexerCount ||
+		left.ConfiguredIndexerCount != right.ConfiguredIndexerCount ||
+		left.LastIndexerLatencyMs != right.LastIndexerLatencyMs ||
+		left.LastIndexerError != right.LastIndexerError ||
+		left.LastError != right.LastError ||
+		!left.OKAt.Equal(right.OKAt) {
+		return false
+	}
+	if left.LastIndexerSearchAt == nil || right.LastIndexerSearchAt == nil {
+		return left.LastIndexerSearchAt == right.LastIndexerSearchAt
+	}
+	return left.LastIndexerSearchAt.Equal(*right.LastIndexerSearchAt)
 }
 
 func (c *Collector) refreshStash(ctx context.Context) {

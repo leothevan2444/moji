@@ -24,10 +24,10 @@ function blockerKeysFor(service: "jackett" | "qbittorrent"): string[] {
       return ["qbDownload", "qbLanding"];
   }
 }
-import type { HomePageDocumentQuery } from "../graphql/generated/graphql";
+import type { HomePageDocumentQuery, HomeServiceStatusQuery } from "../graphql/generated/graphql";
 
 type RuntimeSettings = NonNullable<HomePageDocumentQuery["settings"]>;
-type RuntimeStatus = NonNullable<HomePageDocumentQuery["settingsStatus"]>;
+type RuntimeStatus = NonNullable<HomeServiceStatusQuery["settingsStatus"]>;
 
 interface HomePageProps {
   tasks: DashboardTask[];

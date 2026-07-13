@@ -3,11 +3,12 @@ import { useLocation, useNavigate, useOutletContext } from "react-router";
 import { useQuery } from "urql";
 import { HomePage } from "../../pages/HomePage";
 import { useTaskMutations } from "../../hooks/useTaskMutations";
+import { useServiceStatusEvents } from "../../hooks/useServiceStatusEvents";
 import { describeQueryError } from "../../services/queryError";
 import { taskSummary } from "../../utils/taskUtils";
 import type { SettingsTab } from "../../types";
 import type { AppOutletContext } from "../AppLayout";
-import { HomePageDocumentDocument } from "../../graphql/generated/graphql";
+import { HomePageDocumentDocument, HomeServiceStatusDocument } from "../../graphql/generated/graphql";
 import { useTranslation } from "react-i18next";
 
 const settingsSlugs: Record<SettingsTab, string> = {
@@ -25,6 +26,13 @@ export function Component() {
   const [{ data, error, fetching }, refreshDashboard] = useQuery({
     query: HomePageDocumentDocument,
     requestPolicy: "cache-and-network"
+  });
+  const [{ data: serviceStatusData, error: serviceStatusError, fetching: serviceStatusFetching }, refreshServiceStatus] = useQuery({
+    query: HomeServiceStatusDocument,
+    requestPolicy: "cache-and-network"
+  });
+  useServiceStatusEvents({
+    onRefresh: () => refreshServiceStatus({ requestPolicy: "network-only" })
   });
   const { retryTask, triggerTaskStashScan } = useTaskMutations();
   const tasks = data?.tasks ?? [];
@@ -54,14 +62,15 @@ export function Component() {
     }
   };
 
-  if (error && !data) {
-    return <div className="empty-card"><h3>{t("home.loadFailed")}</h3><p>{describeQueryError(error)}</p><button type="button" disabled={fetching} onClick={() => refreshDashboard({ requestPolicy: "network-only" })}>{t("common.retry")}</button></div>;
+  const pageError = error && !data ? error : serviceStatusError && !serviceStatusData ? serviceStatusError : null;
+  if (pageError) {
+    return <div className="empty-card"><h3>{t("home.loadFailed")}</h3><p>{describeQueryError(pageError)}</p><button type="button" disabled={fetching || serviceStatusFetching} onClick={() => { refreshDashboard({ requestPolicy: "network-only" }); refreshServiceStatus({ requestPolicy: "network-only" }); }}>{t("common.retry")}</button></div>;
   }
 
   return <HomePage
     tasks={tasks}
     runtimeSettings={data?.settings ?? null}
-    runtimeStatus={data?.settingsStatus ?? null}
+    runtimeStatus={serviceStatusData?.settingsStatus ?? null}
     pendingTaskScanId={pendingTaskScanId}
     pendingTaskRetryId={pendingTaskRetryId}
     onOpenTask={(id) => navigate(`/tasks/${encodeURIComponent(id)}`, { state: { backgroundLocation: location } })}

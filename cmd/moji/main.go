@@ -86,7 +86,7 @@ func main() {
 	}
 
 	// Dependencies
-	mux, taskRuntimeService, stashService, subscriptionService, statsCollector, taskEventBus := newHTTPRuntime(cfg, "dev", configStore)
+	mux, taskRuntimeService, stashService, subscriptionService, statsCollector, taskEventBus, serviceStatusEventBus := newHTTPRuntime(cfg, "dev", configStore)
 
 	server := &http.Server{
 		Addr:              *addr,
@@ -113,6 +113,7 @@ func main() {
 	go func() {
 		<-ctx.Done()
 		taskEventBus.Close()
+		serviceStatusEventBus.Close()
 		shutdownCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 		defer cancel()
 		if err := server.Shutdown(shutdownCtx); err != nil {
@@ -126,11 +127,11 @@ func main() {
 }
 
 func newHTTPHandler(cfg *config.Config, version string) http.Handler {
-	handler, _, _, _, _, _ := newHTTPRuntime(cfg, version, nil)
+	handler, _, _, _, _, _, _ := newHTTPRuntime(cfg, version, nil)
 	return handler
 }
 
-func newHTTPRuntime(cfg *config.Config, version string, configStore *config.Store) (http.Handler, graphqlapi.TaskRuntimeService, graphqlapi.StashService, graphqlapi.SubscriptionService, *stats.Collector, *taskruntime.TaskEventBus) {
+func newHTTPRuntime(cfg *config.Config, version string, configStore *config.Store) (http.Handler, graphqlapi.TaskRuntimeService, graphqlapi.StashService, graphqlapi.SubscriptionService, *stats.Collector, *taskruntime.TaskEventBus, *stats.ServiceStatusEventBus) {
 	imageService, err := imagecache.New("cache/image", func() imagecache.Config {
 		current := cfg.System.ImageCache.Normalize()
 		if configStore != nil {
@@ -171,6 +172,8 @@ func newHTTPRuntime(cfg *config.Config, version string, configStore *config.Stor
 		taskRuntimeService,
 		logging.Default().Slog(),
 	)
+	serviceStatusEventBus := stats.NewServiceStatusEventBus(8)
+	statsCollector.SetEventPublisher(serviceStatusEventBus)
 	resolver := graphqlapi.NewResolver(jackettTracker, torrentClient, taskRuntimeService, stashService, version)
 	resolver.TaskFlow = taskFlowService
 	if metadataService != nil {
@@ -205,6 +208,7 @@ func newHTTPRuntime(cfg *config.Config, version string, configStore *config.Stor
 	}
 	resolver.PerformerSubscription = subscriptionService
 	resolver.TaskEventSource = taskEventBus
+	resolver.ServiceStatusEventSource = serviceStatusEventBus
 	resolver.StashBox = metadataService
 	resolver.LogReader = logging.Default()
 	resolver.RuntimeSettings = buildSettingsSnapshot(cfg, version)
@@ -236,7 +240,7 @@ func newHTTPRuntime(cfg *config.Config, version string, configStore *config.Stor
 		}
 	})
 
-	return router, taskRuntimeService, stashService, subscriptionService, statsCollector, taskEventBus
+	return router, taskRuntimeService, stashService, subscriptionService, statsCollector, taskEventBus, serviceStatusEventBus
 }
 
 func configureTaskFlow(taskRuntimeService graphqlapi.TaskRuntimeService) *taskflow.Service {

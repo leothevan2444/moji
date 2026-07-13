@@ -330,23 +330,24 @@ type LogReader interface {
 }
 
 type Resolver struct {
-	Tracker               tracker.Tracker
-	Torrent               TorrentClient
-	TaskRuntime           TaskRuntimeService
-	TaskFlow              TaskFlowService
-	Stash                 StashService
-	Performer             PerformerService
-	Discovery             DiscoveryService
-	PerformerSubscription SubscriptionService
-	TaskEventSource       taskruntime.TaskEventSource
-	StashBox              StashBoxService
-	LogReader             LogReader
-	SettingsEditor        SettingsEditor
-	RuntimeSettings       *SettingsSnapshot
-	RuntimeStatus         *SettingsStatusSnapshot
-	Stats                 StatsProvider
-	ImageCache            ImageCacheService
-	AppVersion            string
+	Tracker                  tracker.Tracker
+	Torrent                  TorrentClient
+	TaskRuntime              TaskRuntimeService
+	TaskFlow                 TaskFlowService
+	Stash                    StashService
+	Performer                PerformerService
+	Discovery                DiscoveryService
+	PerformerSubscription    SubscriptionService
+	TaskEventSource          taskruntime.TaskEventSource
+	ServiceStatusEventSource stats.ServiceStatusEventSource
+	StashBox                 StashBoxService
+	LogReader                LogReader
+	SettingsEditor           SettingsEditor
+	RuntimeSettings          *SettingsSnapshot
+	RuntimeStatus            *SettingsStatusSnapshot
+	Stats                    StatsProvider
+	ImageCache               ImageCacheService
+	AppVersion               string
 }
 
 func NewResolver(tr tracker.Tracker, torrent TorrentClient, taskRuntime TaskRuntimeService, stash StashService, version string) *Resolver {

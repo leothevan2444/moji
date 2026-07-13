@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   DiscoverConfigDocumentDocument,
   HomePageDocumentDocument,
+  HomeServiceStatusDocument,
   PerformersConfigDocumentDocument,
   SettingsPageDocumentDocument,
   StatsPageDocumentDocument,
@@ -15,7 +16,8 @@ function rootFields(document: { definitions: readonly unknown[] }) {
 
 describe("route-owned GraphQL operations", () => {
   it("keeps each route query scoped to its surface", () => {
-    expect(rootFields(HomePageDocumentDocument)).toEqual(["settings", "settingsStatus", "tasks"]);
+    expect(rootFields(HomePageDocumentDocument)).toEqual(["settings", "tasks"]);
+    expect(rootFields(HomeServiceStatusDocument)).toEqual(["settingsStatus"]);
     expect(rootFields(TasksOverviewDocumentDocument)).toEqual(["dashboardStats", "settings", "tasks"]);
     expect(rootFields(SettingsPageDocumentDocument)).toEqual(["settings", "settingsStatus", "version"]);
     expect(rootFields(StatsPageDocumentDocument)).toEqual(["dashboardStats"]);

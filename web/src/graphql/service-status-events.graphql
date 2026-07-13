@@ -1,0 +1,7 @@
+subscription ServiceStatusEvents {
+  serviceStatusEvents {
+    sequence
+    services
+    observedAt
+  }
+}

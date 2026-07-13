@@ -402,6 +402,12 @@ type ServiceStatus struct {
 	Ready bool `json:"ready"`
 }
 
+type ServiceStatusEvent struct {
+	Sequence   int               `json:"sequence"`
+	Services   []ExternalService `json:"services"`
+	ObservedAt string            `json:"observedAt"`
+}
+
 type Settings struct {
 	Stash       *StashSettings       `json:"stash"`
 	Ingest      *IngestSettings      `json:"ingest"`
@@ -852,6 +858,63 @@ func (e *DiscoverSortBy) UnmarshalJSON(b []byte) error {
 }
 
 func (e DiscoverSortBy) MarshalJSON() ([]byte, error) {
+	var buf bytes.Buffer
+	e.MarshalGQL(&buf)
+	return buf.Bytes(), nil
+}
+
+type ExternalService string
+
+const (
+	ExternalServiceStash       ExternalService = "STASH"
+	ExternalServiceJackett     ExternalService = "JACKETT"
+	ExternalServiceQbittorrent ExternalService = "QBITTORRENT"
+)
+
+var AllExternalService = []ExternalService{
+	ExternalServiceStash,
+	ExternalServiceJackett,
+	ExternalServiceQbittorrent,
+}
+
+func (e ExternalService) IsValid() bool {
+	switch e {
+	case ExternalServiceStash, ExternalServiceJackett, ExternalServiceQbittorrent:
+		return true
+	}
+	return false
+}
+
+func (e ExternalService) String() string {
+	return string(e)
+}
+
+func (e *ExternalService) UnmarshalGQL(v any) error {
+	str, ok := v.(string)
+	if !ok {
+		return fmt.Errorf("enums must be strings")
+	}
+
+	*e = ExternalService(str)
+	if !e.IsValid() {
+		return fmt.Errorf("%s is not a valid ExternalService", str)
+	}
+	return nil
+}
+
+func (e ExternalService) MarshalGQL(w io.Writer) {
+	fmt.Fprint(w, strconv.Quote(e.String()))
+}
+
+func (e *ExternalService) UnmarshalJSON(b []byte) error {
+	s, err := strconv.Unquote(string(b))
+	if err != nil {
+		return err
+	}
+	return e.UnmarshalGQL(s)
+}
+
+func (e ExternalService) MarshalJSON() ([]byte, error) {
 	var buf bytes.Buffer
 	e.MarshalGQL(&buf)
 	return buf.Bytes(), nil

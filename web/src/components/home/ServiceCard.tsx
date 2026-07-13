@@ -4,6 +4,7 @@ import { formatBytesRate, formatDateTime, formatRelative } from "../../utils";
 import type { SettingsTab } from "../../types";
 import type {
   HomePageDocumentQuery,
+  HomeServiceStatusQuery,
   JackettStats,
   QBittorrentStats,
   StashStats
@@ -12,7 +13,7 @@ import { useTranslation } from "react-i18next";
 import type { TFunction } from "i18next";
 
 type RuntimeSettings = NonNullable<HomePageDocumentQuery["settings"]>;
-type RuntimeStatus = NonNullable<HomePageDocumentQuery["settingsStatus"]>;
+type RuntimeStatus = NonNullable<HomeServiceStatusQuery["settingsStatus"]>;
 
 interface ServiceCardProps {
   service: "stash" | "jackett" | "qbittorrent";

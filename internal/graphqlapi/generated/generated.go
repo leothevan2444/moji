@@ -350,6 +350,12 @@ type ComplexityRoot struct {
 		Ready      func(childComplexity int) int
 	}
 
+	ServiceStatusEvent struct {
+		ObservedAt func(childComplexity int) int
+		Sequence   func(childComplexity int) int
+		Services   func(childComplexity int) int
+	}
+
 	Settings struct {
 		Automation  func(childComplexity int) int
 		Ingest      func(childComplexity int) int
@@ -507,7 +513,8 @@ type ComplexityRoot struct {
 	}
 
 	Subscription struct {
-		TaskEvents func(childComplexity int) int
+		ServiceStatusEvents func(childComplexity int) int
+		TaskEvents          func(childComplexity int) int
 	}
 
 	SubscriptionRelease struct {
@@ -671,6 +678,7 @@ type QueryResolver interface {
 }
 type SubscriptionResolver interface {
 	TaskEvents(ctx context.Context) (<-chan *model.TaskEvent, error)
+	ServiceStatusEvents(ctx context.Context) (<-chan *model.ServiceStatusEvent, error)
 }
 
 type executableSchema struct {
@@ -2221,6 +2229,27 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.ServiceStatus.Ready(childComplexity), true
 
+	case "ServiceStatusEvent.observedAt":
+		if e.complexity.ServiceStatusEvent.ObservedAt == nil {
+			break
+		}
+
+		return e.complexity.ServiceStatusEvent.ObservedAt(childComplexity), true
+
+	case "ServiceStatusEvent.sequence":
+		if e.complexity.ServiceStatusEvent.Sequence == nil {
+			break
+		}
+
+		return e.complexity.ServiceStatusEvent.Sequence(childComplexity), true
+
+	case "ServiceStatusEvent.services":
+		if e.complexity.ServiceStatusEvent.Services == nil {
+			break
+		}
+
+		return e.complexity.ServiceStatusEvent.Services(childComplexity), true
+
 	case "Settings.automation":
 		if e.complexity.Settings.Automation == nil {
 			break
@@ -2997,6 +3026,13 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.SubscribedPerformer.RecentReleases(childComplexity), true
+
+	case "Subscription.serviceStatusEvents":
+		if e.complexity.Subscription.ServiceStatusEvents == nil {
+			break
+		}
+
+		return e.complexity.Subscription.ServiceStatusEvents(childComplexity), true
 
 	case "Subscription.taskEvents":
 		if e.complexity.Subscription.TaskEvents == nil {
@@ -3854,6 +3890,22 @@ type PreviewJackettSelectionMeta {
   appliedFileRules: Boolean!
   inspectedCount: Int!
   inspectableCount: Int!
+}
+`, BuiltIn: false},
+	{Name: "../../../graphql/moji/types/service_status_events.graphql", Input: `enum ExternalService {
+  STASH
+  JACKETT
+  QBITTORRENT
+}
+
+type ServiceStatusEvent {
+  sequence: Int!
+  services: [ExternalService!]!
+  observedAt: String!
+}
+
+extend type Subscription {
+  serviceStatusEvents: ServiceStatusEvent!
 }
 `, BuiltIn: false},
 	{Name: "../../../graphql/moji/types/settings.graphql", Input: `extend type Query {
@@ -16399,6 +16451,138 @@ func (ec *executionContext) fieldContext_ServiceStatus_ready(_ context.Context, 
 	return fc, nil
 }
 
+func (ec *executionContext) _ServiceStatusEvent_sequence(ctx context.Context, field graphql.CollectedField, obj *model.ServiceStatusEvent) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_ServiceStatusEvent_sequence(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Sequence, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int)
+	fc.Result = res
+	return ec.marshalNInt2int(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_ServiceStatusEvent_sequence(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ServiceStatusEvent",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ServiceStatusEvent_services(ctx context.Context, field graphql.CollectedField, obj *model.ServiceStatusEvent) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_ServiceStatusEvent_services(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Services, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]model.ExternalService)
+	fc.Result = res
+	return ec.marshalNExternalService2ᚕgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐExternalServiceᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_ServiceStatusEvent_services(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ServiceStatusEvent",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type ExternalService does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ServiceStatusEvent_observedAt(ctx context.Context, field graphql.CollectedField, obj *model.ServiceStatusEvent) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_ServiceStatusEvent_observedAt(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.ObservedAt, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_ServiceStatusEvent_observedAt(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ServiceStatusEvent",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _Settings_stash(ctx context.Context, field graphql.CollectedField, obj *model.Settings) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_Settings_stash(ctx, field)
 	if err != nil {
@@ -21590,6 +21774,72 @@ func (ec *executionContext) fieldContext_Subscription_taskEvents(_ context.Conte
 				return ec.fieldContext_TaskEvent_dashboardStats(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type TaskEvent", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Subscription_serviceStatusEvents(ctx context.Context, field graphql.CollectedField) (ret func(ctx context.Context) graphql.Marshaler) {
+	fc, err := ec.fieldContext_Subscription_serviceStatusEvents(ctx, field)
+	if err != nil {
+		return nil
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = nil
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Subscription().ServiceStatusEvents(rctx)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return nil
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return nil
+	}
+	return func(ctx context.Context) graphql.Marshaler {
+		select {
+		case res, ok := <-resTmp.(<-chan *model.ServiceStatusEvent):
+			if !ok {
+				return nil
+			}
+			return graphql.WriterFunc(func(w io.Writer) {
+				w.Write([]byte{'{'})
+				graphql.MarshalString(field.Alias).MarshalGQL(w)
+				w.Write([]byte{':'})
+				ec.marshalNServiceStatusEvent2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐServiceStatusEvent(ctx, field.Selections, res).MarshalGQL(w)
+				w.Write([]byte{'}'})
+			})
+		case <-ctx.Done():
+			return nil
+		}
+	}
+}
+
+func (ec *executionContext) fieldContext_Subscription_serviceStatusEvents(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Subscription",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "sequence":
+				return ec.fieldContext_ServiceStatusEvent_sequence(ctx, field)
+			case "services":
+				return ec.fieldContext_ServiceStatusEvent_services(ctx, field)
+			case "observedAt":
+				return ec.fieldContext_ServiceStatusEvent_observedAt(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type ServiceStatusEvent", field.Name)
 		},
 	}
 	return fc, nil
@@ -31014,6 +31264,55 @@ func (ec *executionContext) _ServiceStatus(ctx context.Context, sel ast.Selectio
 	return out
 }
 
+var serviceStatusEventImplementors = []string{"ServiceStatusEvent"}
+
+func (ec *executionContext) _ServiceStatusEvent(ctx context.Context, sel ast.SelectionSet, obj *model.ServiceStatusEvent) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, serviceStatusEventImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("ServiceStatusEvent")
+		case "sequence":
+			out.Values[i] = ec._ServiceStatusEvent_sequence(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "services":
+			out.Values[i] = ec._ServiceStatusEvent_services(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "observedAt":
+			out.Values[i] = ec._ServiceStatusEvent_observedAt(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
 var settingsImplementors = []string{"Settings"}
 
 func (ec *executionContext) _Settings(ctx context.Context, sel ast.SelectionSet, obj *model.Settings) graphql.Marshaler {
@@ -31998,6 +32297,8 @@ func (ec *executionContext) _Subscription(ctx context.Context, sel ast.Selection
 	switch fields[0].Name {
 	case "taskEvents":
 		return ec._Subscription_taskEvents(ctx, fields[0])
+	case "serviceStatusEvents":
+		return ec._Subscription_serviceStatusEvents(ctx, fields[0])
 	default:
 		panic("unknown field " + strconv.Quote(fields[0].Name))
 	}
@@ -33209,6 +33510,75 @@ func (ec *executionContext) unmarshalNDownloadsIngestSettingsInput2ᚖgithubᚗc
 	return &res, graphql.ErrorOnPath(ctx, err)
 }
 
+func (ec *executionContext) unmarshalNExternalService2githubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐExternalService(ctx context.Context, v any) (model.ExternalService, error) {
+	var res model.ExternalService
+	err := res.UnmarshalGQL(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNExternalService2githubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐExternalService(ctx context.Context, sel ast.SelectionSet, v model.ExternalService) graphql.Marshaler {
+	return v
+}
+
+func (ec *executionContext) unmarshalNExternalService2ᚕgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐExternalServiceᚄ(ctx context.Context, v any) ([]model.ExternalService, error) {
+	var vSlice []any
+	vSlice = graphql.CoerceList(v)
+	var err error
+	res := make([]model.ExternalService, len(vSlice))
+	for i := range vSlice {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithIndex(i))
+		res[i], err = ec.unmarshalNExternalService2githubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐExternalService(ctx, vSlice[i])
+		if err != nil {
+			return nil, err
+		}
+	}
+	return res, nil
+}
+
+func (ec *executionContext) marshalNExternalService2ᚕgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐExternalServiceᚄ(ctx context.Context, sel ast.SelectionSet, v []model.ExternalService) graphql.Marshaler {
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalNExternalService2githubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐExternalService(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
+}
+
 func (ec *executionContext) unmarshalNFloat2float64(ctx context.Context, v any) (float64, error) {
 	res, err := graphql.UnmarshalFloatContext(ctx, v)
 	return res, graphql.ErrorOnPath(ctx, err)
@@ -33930,6 +34300,20 @@ func (ec *executionContext) marshalNServiceStatus2ᚖgithubᚗcomᚋleothevan244
 		return graphql.Null
 	}
 	return ec._ServiceStatus(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNServiceStatusEvent2githubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐServiceStatusEvent(ctx context.Context, sel ast.SelectionSet, v model.ServiceStatusEvent) graphql.Marshaler {
+	return ec._ServiceStatusEvent(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNServiceStatusEvent2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐServiceStatusEvent(ctx context.Context, sel ast.SelectionSet, v *model.ServiceStatusEvent) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._ServiceStatusEvent(ctx, sel, v)
 }
 
 func (ec *executionContext) marshalNSettings2githubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐSettings(ctx context.Context, sel ast.SelectionSet, v model.Settings) graphql.Marshaler {

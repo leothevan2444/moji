@@ -1,0 +1,15 @@
+enum ExternalService {
+  STASH
+  JACKETT
+  QBITTORRENT
+}
+
+type ServiceStatusEvent {
+  sequence: Int!
+  services: [ExternalService!]!
+  observedAt: String!
+}
+
+extend type Subscription {
+  serviceStatusEvents: ServiceStatusEvent!
+}
