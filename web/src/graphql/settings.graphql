@@ -4,6 +4,7 @@ mutation UpdateStashSettingsDocument($input: UpdateStashSettingsInput!) {
       configured
       url
       apiKeyConfigured
+      apiKey
     }
   }
 }
@@ -33,6 +34,9 @@ mutation UpdateJackettSettingsDocument($input: UpdateJackettSettingsInput!) {
       configured
       url
       apiKeyConfigured
+      apiKey
+      passwordConfigured
+      password
     }
   }
 }
@@ -45,6 +49,7 @@ mutation UpdateQBittorrentSettingsDocument($input: UpdateQBittorrentSettingsInpu
       username
       usernameConfigured
       passwordConfigured
+      password
       defaultSavePath
       category
       tags

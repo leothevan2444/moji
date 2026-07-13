@@ -13,14 +13,27 @@ subscription TaskEvents {
       stageStatusLabel
       stageErrorCode
       stageErrorMessage
+      torrentUrl
+      torrentName
       progress
       qbittorrentState
+      contentPath
+      torrentHash
+      savePath
+      category
+      tags
+      downloadCompletedAt
       deliveryMode
+      mojiSourcePath
+      transferAction
+      mojiTransferPath
       transferError
       stashScanJobId
       stashScanPath
       stashScanError
       stashScanHint
+      stashScanStartedAt
+      createdAt
       updatedAt
     }
     dashboardStats {

@@ -35,11 +35,11 @@ export function Component() {
   const reload = subscription.reloadSubscription;
   const toggle = async (performer: { id: string; name: string; subscribed: boolean }) => {
     setPendingSubscription(performer.id);
-    try { const result = performer.subscribed ? await subscription.unsubscribePerformer({ stashPerformerID: performer.id }) : await subscription.subscribePerformer({ stashPerformerID: performer.id }); if (result.error) pushToast("tone-danger", describeQueryError(result.error)); else { pushToast("tone-success", t(performer.subscribed ? "performerRoute.unsubscribed" : "performerRoute.subscribed", { name: performer.name })); await reload(); } }
+    try { const result = performer.subscribed ? await subscription.unsubscribePerformer({ stashPerformerID: performer.id }) : await subscription.subscribePerformer({ stashPerformerID: performer.id }); if (result.error) pushToast("tone-danger", describeQueryError(result.error)); else { pushToast("tone-success", t(performer.subscribed ? "performerRoute.unsubscribed" : "performerRoute.subscribed", { name: performer.name })); } }
     finally { setPendingSubscription(null); }
   };
-  const refreshOne = async (performer: { id: string; name: string }) => { setPendingSubscription(performer.id); try { const result = await subscription.refreshSubscribedPerformer({ stashPerformerID: performer.id }); if (result.error) pushToast("tone-danger", describeQueryError(result.error)); else { pushToast("tone-info", t("performerRoute.checked", { name: performer.name })); await reload(); } } finally { setPendingSubscription(null); } };
-  const refreshAll = async () => { const result = await subscription.refreshSubscriptionsNow({}); if (result.error) pushToast("tone-danger", describeQueryError(result.error)); else { pushToast("tone-info", t("performerRoute.checkedAll")); await reload(); } };
+  const refreshOne = async (performer: { id: string; name: string }) => { setPendingSubscription(performer.id); try { const result = await subscription.refreshSubscribedPerformer({ stashPerformerID: performer.id }); if (result.error) pushToast("tone-danger", describeQueryError(result.error)); else { pushToast("tone-info", t("performerRoute.checked", { name: performer.name })); } } finally { setPendingSubscription(null); } };
+  const refreshAll = async () => { const result = await subscription.refreshSubscriptionsNow({}); if (result.error) pushToast("tone-danger", describeQueryError(result.error)); else { pushToast("tone-info", t("performerRoute.checkedAll")); } };
   const sceneInput = (scene: (typeof subscription.performerScenes)[number]) => ({ key: scene.key, sourceSceneId: scene.sourceSceneId, stashBoxSceneId: scene.stashBoxSceneId ?? undefined, stashBoxEndpoint: scene.stashBoxEndpoint ?? undefined, code: scene.code ?? undefined, title: scene.title ?? undefined, inLibrary: scene.inLibrary });
   const queueSelected = async () => {
     if (!performerId || !selectedKeys.length) return;
@@ -50,12 +50,12 @@ export function Component() {
     const payload = result.data?.queuePerformerScenes; if (!payload) { pushToast("tone-danger", t("performerRoute.batchNoResult")); return; }
     const { summary, results } = payload;
     pushToast(summary.queuedCount ? (summary.failedCount ? "tone-info" : "tone-success") : summary.failedCount ? "tone-danger" : "tone-info", t("performerRoute.batchSummary", { queued: summary.queuedCount, skipped: summary.skippedCount, failed: summary.failedCount }));
-    const queued = new Set(results.filter((item) => item.status === "QUEUED").map((item) => item.key)); setSelectedKeys((current) => current.filter((key) => !queued.has(key))); await reload();
+    const queued = new Set(results.filter((item) => item.status === "QUEUED").map((item) => item.key)); setSelectedKeys((current) => current.filter((key) => !queued.has(key)));
   };
   const queueOne = async (scene: (typeof subscription.performerScenes)[number]) => {
     if (!performerId || scene.inLibrary || scene.mojiTask || pendingKeys.includes(scene.key)) return;
     setPendingKeys((current) => [...current, scene.key]);
-    try { const result = await subscription.queueSinglePerformerScene({ input: { performerId, scenes: [sceneInput(scene)] } }); if (result.error) { pushToast("tone-danger", describeQueryError(result.error)); return; } const item = result.data?.queuePerformerScenes.results[0]; if (!item) pushToast("tone-danger", t("performerRoute.createNoResult")); else { pushToast(item.status === "QUEUED" ? "tone-success" : item.status === "SKIPPED" ? "tone-info" : "tone-danger", item.status === "QUEUED" ? t("performerRoute.created", { scene: item.resolvedCode || scene.code || scene.title || t("performerRoute.scene") }) : item.message); if (item.status !== "FAILED") setSelectedKeys((current) => current.filter((key) => key !== scene.key)); await reload(); } }
+    try { const result = await subscription.queueSinglePerformerScene({ input: { performerId, scenes: [sceneInput(scene)] } }); if (result.error) { pushToast("tone-danger", describeQueryError(result.error)); return; } const item = result.data?.queuePerformerScenes.results[0]; if (!item) pushToast("tone-danger", t("performerRoute.createNoResult")); else { pushToast(item.status === "QUEUED" ? "tone-success" : item.status === "SKIPPED" ? "tone-info" : "tone-danger", item.status === "QUEUED" ? t("performerRoute.created", { scene: item.resolvedCode || scene.code || scene.title || t("performerRoute.scene") }) : item.message); if (item.status !== "FAILED") setSelectedKeys((current) => current.filter((key) => key !== scene.key)); } }
     finally { setPendingKeys((current) => current.filter((key) => key !== scene.key)); }
   };
 

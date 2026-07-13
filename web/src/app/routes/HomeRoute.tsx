@@ -42,7 +42,6 @@ export function Component() {
     try {
       const result = await triggerTaskStashScan({ id: taskId });
       if (result.error) pushToast("tone-danger", describeQueryError(result.error));
-      await refreshDashboard({ requestPolicy: "network-only" });
     } finally {
       setPendingTaskScanId(null);
     }
@@ -57,7 +56,6 @@ export function Component() {
       else if (!result.data?.retryTask?.id) pushToast("tone-danger", t("home.retryNoResult"));
       else pushToast("tone-success", t("home.retried", { task: task ? taskSummary(task) : taskId }));
     } finally {
-      await refreshDashboard({ requestPolicy: "network-only" });
       setPendingTaskRetryId(null);
     }
   };

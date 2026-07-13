@@ -133,7 +133,23 @@ mutation SubscribePerformer($stashPerformerID: ID!) {
   subscribePerformer(stashPerformerID: $stashPerformerID) {
     performer {
       id
+      name
+      aliasList
+      favorite
+      imagePath
+      sceneCount
       subscribed
+    }
+    lastCheckedAt
+    lastError
+    pendingReleaseCount
+    processedReleaseCount
+    recentReleases {
+      key
+      title
+      code
+      date
+      seenAt
     }
   }
 }
@@ -146,10 +162,24 @@ mutation RefreshSubscribedPerformer($stashPerformerID: ID!) {
   refreshSubscribedPerformer(stashPerformerID: $stashPerformerID) {
     performer {
       id
+      name
+      aliasList
+      favorite
+      imagePath
+      sceneCount
       subscribed
     }
     lastCheckedAt
     lastError
+    pendingReleaseCount
+    processedReleaseCount
+    recentReleases {
+      key
+      title
+      code
+      date
+      seenAt
+    }
   }
 }
 
@@ -157,6 +187,23 @@ mutation RefreshSubscriptionsNow {
   refreshSubscriptionsNow {
     performer {
       id
+      name
+      aliasList
+      favorite
+      imagePath
+      sceneCount
+      subscribed
+    }
+    lastCheckedAt
+    lastError
+    pendingReleaseCount
+    processedReleaseCount
+    recentReleases {
+      key
+      title
+      code
+      date
+      seenAt
     }
   }
 }

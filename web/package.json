@@ -19,7 +19,8 @@
   "dependencies": {
     "@fortawesome/free-solid-svg-icons": "^7.2.0",
     "@fortawesome/react-fontawesome": "^3.3.1",
-    "@urql/core": "^5.0.8",
+    "@urql/core": "^6.0.3",
+    "@urql/exchange-graphcache": "^9.0.1",
     "graphql": "^16.11.0",
     "graphql-ws": "^6.0.8",
     "i18next": "^26.3.6",
@@ -27,7 +28,7 @@
     "react-dom": "^19.1.0",
     "react-i18next": "^17.0.9",
     "react-router": "^7.9.1",
-    "urql": "^5.0.1"
+    "urql": "^5.0.3"
   },
   "devDependencies": {
     "@graphql-codegen/cli": "^5.0.5",

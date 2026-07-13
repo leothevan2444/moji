@@ -4,7 +4,6 @@ import { useQuery } from "urql";
 import { Drawer } from "../../components/layout/Drawer";
 import { TasksPage } from "../../pages/TasksPage";
 import { useTaskMutations } from "../../hooks/useTaskMutations";
-import { useTaskEventRefresh } from "../../hooks/useTaskEventRefresh";
 import { useTaskEvents } from "../../hooks/useTaskEvents";
 import { describeQueryError } from "../../services/queryError";
 import { parseTaskSearchParams, serializeTaskSearchParams } from "../searchParams";
@@ -57,15 +56,13 @@ export function Component() {
   const isResolution = Boolean(taskId && location.pathname.endsWith("/resolve"));
 
   const requery = () => refresh({ requestPolicy: "network-only" });
-  const { onEvent: onTaskEvent, onFullRefresh: onTaskEventFullRefresh } = useTaskEventRefresh({
-    taskId,
-    refreshOverview: requery,
-    refreshDetail: () => refreshDetail({ requestPolicy: "network-only" })
-  });
+  const recalibrateTaskSnapshots = () => {
+    void requery();
+    if (taskId) void refreshDetail({ requestPolicy: "network-only" });
+  };
   useTaskEvents({
-    onEvent: onTaskEvent,
-    onSequenceGap: onTaskEventFullRefresh,
-    onReconnect: onTaskEventFullRefresh
+    onSequenceGap: recalibrateTaskSnapshots,
+    onReconnect: recalibrateTaskSnapshots
   });
   const openTask = (id: string, resolve = false) => navigate(`/tasks/${encodeURIComponent(id)}${resolve ? "/resolve" : ""}`, { state: { backgroundLocation: location } });
   const closeTask = () => {
@@ -75,11 +72,11 @@ export function Component() {
     setSearchParams(serializeTaskSearchParams({ ...filter, ...patch }));
   };
 
-  const runSync = async () => { await syncTaskProgress({}); await requery(); if (taskId) await refreshDetail({ requestPolicy: "network-only" }); };
-  const runScanAll = async () => { await triggerStashScans({}); await requery(); if (taskId) await refreshDetail({ requestPolicy: "network-only" }); };
+  const runSync = async () => { await syncTaskProgress({}); };
+  const runScanAll = async () => { await triggerStashScans({}); };
   const runScan = async (id: string) => {
     setPendingScan(id);
-    try { const result = await triggerTaskStashScan({ id }); if (result.error) pushToast("tone-danger", describeQueryError(result.error)); await requery(); if (taskId === id) await refreshDetail({ requestPolicy: "network-only" }); }
+    try { const result = await triggerTaskStashScan({ id }); if (result.error) pushToast("tone-danger", describeQueryError(result.error)); }
     finally { setPendingScan(null); }
   };
   const runRetry = async (id: string) => {
@@ -89,14 +86,13 @@ export function Component() {
       if (result.error) pushToast("tone-danger", describeQueryError(result.error));
       else if (!result.data?.retryTask?.id) pushToast("tone-danger", t("taskRoute.retryNoResult"));
       else pushToast("tone-success", t("taskRoute.retried", { task: tasks.find((task) => task.id === id) ? taskSummary(tasks.find((task) => task.id === id)!) : id }));
-      await requery(); if (taskId === id) await refreshDetail({ requestPolicy: "network-only" });
     } finally { setPendingRetry(null); }
   };
   const retryBlocked = async () => {
     const blocked = tasks.filter((task) => task.stageStatus === "BLOCKED");
     if (!blocked.length) { pushToast("tone-info", t("taskRoute.noneBlocked")); return; }
     setRetryingBlocked(true); let succeeded = 0;
-    try { for (const task of blocked) { setPendingRetry(task.id); const result = await retryTask({ id: task.id }); if (!result.error && result.data?.retryTask?.id) succeeded += 1; } await requery(); pushToast("tone-info", t("taskRoute.retrySummary", { succeeded, failed: blocked.length - succeeded })); }
+    try { for (const task of blocked) { setPendingRetry(task.id); const result = await retryTask({ id: task.id }); if (!result.error && result.data?.retryTask?.id) succeeded += 1; } pushToast("tone-info", t("taskRoute.retrySummary", { succeeded, failed: blocked.length - succeeded })); }
     finally { setPendingRetry(null); setRetryingBlocked(false); }
   };
   const runDelete = async (id: string) => {
@@ -106,7 +102,7 @@ export function Component() {
       if (result.error) { pushToast("tone-danger", describeQueryError(result.error)); return; }
       if (!result.data?.deleteTask?.id) { pushToast("tone-danger", t("taskRoute.deleteNoResult")); return; }
       pushToast("tone-success", t("taskRoute.deleted", { task: deleteTarget ? taskSummary(deleteTarget) : id }));
-      setConfirmDelete(null); await requery(); if (taskId === id) navigate("/tasks", { replace: true });
+      setConfirmDelete(null); if (taskId === id) navigate("/tasks", { replace: true });
     } finally { setPendingDelete(null); }
   };
 
@@ -124,7 +120,7 @@ export function Component() {
     {taskId ? <Drawer visibleDrawer={isResolution ? "task-resolution" : "task"} closing={false} title={isResolution ? t("taskRoute.resolutionTitle", { task: activeTask ? taskSummary(activeTask) : t("taskRoute.task") }) : activeTask ? taskSummary(activeTask) : t("taskRoute.details")} onClose={closeTask}>
       <Suspense fallback={<div className="skeleton skeleton-card" />}>
         {detailFetching && !activeTask ? <p>{t("taskRoute.loading")}</p> : detailError ? <div className="empty-card"><h3>{t("taskRoute.loadFailed")}</h3><p>{describeQueryError(detailError)}</p></div> : !activeTask ? <div className="empty-card"><h3>{t("taskRoute.notFound")}</h3></div> : isResolution ?
-          <SourcingResolutionDrawer task={activeTask} onResolved={async () => { await requery(); await refreshDetail({ requestPolicy: "network-only" }); navigate(`/tasks/${encodeURIComponent(taskId)}`); }} /> :
+          <SourcingResolutionDrawer task={activeTask} onResolved={async () => { navigate(`/tasks/${encodeURIComponent(taskId)}`); }} /> :
           <TaskDrawer task={activeTask} pendingScan={pendingScan === taskId} pendingRetry={pendingRetry === taskId} pendingDelete={pendingDelete === taskId} onCopy={copyText} onSyncAll={() => void runSync()} onScanTask={(id) => void runScan(id)} onRetryTask={(id) => void runRetry(id)} onScanAll={() => void runScanAll()} onDeleteTask={setConfirmDelete} />}
       </Suspense>
     </Drawer> : null}

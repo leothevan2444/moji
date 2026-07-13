@@ -1,5 +1,6 @@
 import { createClient as createWSClient } from "graphql-ws";
-import { cacheExchange, createClient, fetchExchange, subscriptionExchange } from "urql";
+import { createClient, fetchExchange, subscriptionExchange } from "urql";
+import { graphcacheExchange } from "./cache";
 
 export type GraphQLConnectionStatus = "idle" | "connecting" | "connected" | "disconnected" | "error";
 
@@ -50,7 +51,7 @@ export const client = createClient({
   url: "/graphql",
   preferGetMethod: false,
   exchanges: [
-    cacheExchange,
+    graphcacheExchange,
     subscriptionExchange({
       forwardSubscription(request) {
         if (!request.query) throw new Error("GraphQL subscription query is missing");
