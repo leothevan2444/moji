@@ -1,0 +1,78 @@
+query ConnectionsSettings {
+  settings {
+    stash { configured url apiKeyConfigured apiKey }
+    jackett { configured url apiKeyConfigured apiKey passwordConfigured password }
+    qbittorrent { configured url username usernameConfigured passwordConfigured password defaultSavePath category tags }
+  }
+}
+
+query ConnectionsStatus {
+  settingsStatus {
+    stash { configured ready }
+    jackett { configured ready }
+    qbittorrent { configured ready }
+    stashStats { lastError okAt }
+    jackettStats { lastError okAt }
+    qbittorrentStats { lastError okAt }
+  }
+}
+
+query IngestSettingsTab {
+  settings {
+    ingest {
+      deliveryMode
+      downloads { qbRoot mojiRoot }
+      library { mojiRoot stashRoot }
+      transfer { action }
+    }
+    qbittorrent { defaultSavePath }
+  }
+  settingsStatus {
+    stashLibraries { path }
+    stashLibrariesLoadError
+  }
+}
+
+query AutomationSettingsTab {
+  settings {
+    automation {
+      taskProgressSyncIntervalSeconds
+      subscriptionPollIntervalHours
+      stashBoxEndpoints
+      subscriptionReleasePolicy { soloBehavior groupBehavior compilationBehavior maxGroupPerformerCount releaseDateRange }
+      torrentSelection {
+        enabled
+        inspectionCandidateLimit
+        fastRules {
+          type enabled publishDate { direction } seeders { direction } size { direction }
+          indexerPreference { trackerIds }
+          titleMatch { clauses { pattern patternMode effect } }
+          torrentFileNameMatch { clauses { pattern patternMode effect } }
+        }
+        torrentRules {
+          type enabled publishDate { direction } seeders { direction } size { direction }
+          indexerPreference { trackerIds }
+          titleMatch { clauses { pattern patternMode effect } }
+          torrentFileNameMatch { clauses { pattern patternMode effect } }
+        }
+      }
+    }
+  }
+  settingsStatus {
+    automation { taskProgressSyncIntervalSeconds taskProgressSyncEnabled subscriptionPollIntervalHours subscriptionPollEnabled }
+    stashBox { stashBoxes { name endpoint apiKeyConfigured } stashBoxesLoaded stashBoxesLoadError }
+  }
+}
+
+query SystemSettingsTab {
+  settings {
+    system { taskDeletePolicy imageCache { enabled maxSizeMb retentionDays } }
+  }
+  settingsStatus {
+    imageCache { usedBytes entryCount cacheDirectory lastCleanupAt lastError }
+  }
+}
+
+query AboutSettingsTab {
+  version
+}

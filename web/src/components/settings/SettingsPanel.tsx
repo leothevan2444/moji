@@ -32,7 +32,8 @@ import {
   UpdateQBittorrentSettingsDocumentDocument,
   UpdateStashSettingsDocumentDocument,
   UpdateSystemSettingsDocumentDocument,
-  type SettingsPageDocumentQuery,
+  type Settings,
+  type SettingsStatus,
   type ClearImageCacheDocumentMutation,
   type JackettIndexersDocumentQuery,
   type JackettIndexersDocumentQueryVariables,
@@ -73,9 +74,10 @@ import { mergeLogEntries, type StreamedLogEntry } from "../../hooks/useLogEvents
 import { LogEventStream } from "./LogEventStream";
 import { useTranslation } from "react-i18next";
 import type { TFunction } from "i18next";
+import { useSettingsDraft } from "./SettingsDraftStore";
 
-type RuntimeSettings = NonNullable<SettingsPageDocumentQuery["settings"]>;
-type RuntimeSettingsStatus = NonNullable<SettingsPageDocumentQuery["settingsStatus"]>;
+type RuntimeSettings = Settings;
+type RuntimeSettingsStatus = SettingsStatus;
 type JackettIndexer = JackettIndexersDocumentQuery["jackettIndexers"][number];
 
 const TORRENT_SELECTION_RULE_KEYS: Record<TorrentSelectionRuleType, string> = {
@@ -358,15 +360,14 @@ function torrentSelectionFromRuntime(runtimeSettings: RuntimeSettings) {
   };
 }
 
-interface SettingsPanelProps {
-  settingsTab: SettingsTab;
+interface AutomationSettingsEditorProps {
   runtimeSettings: RuntimeSettings | null;
   runtimeStatus: RuntimeSettingsStatus | null;
   appVersion: string;
   drawer: string | null;
   renderedDrawer: string | null;
   pushToast: (tone: ToastTone, message: string) => void;
-  refreshDashboard: (opts?: Record<string, unknown>) => unknown;
+  refreshAutomation: (opts?: Record<string, unknown>) => unknown;
 }
 
 interface FieldLabelProps {
@@ -390,16 +391,16 @@ function FieldLabel({ text, info }: FieldLabelProps) {
   );
 }
 
-export function SettingsPanel({
-  settingsTab,
+export function AutomationSettingsEditor({
   runtimeSettings,
   runtimeStatus,
   appVersion,
   drawer,
   renderedDrawer,
   pushToast,
-  refreshDashboard
-}: SettingsPanelProps) {
+  refreshAutomation
+}: AutomationSettingsEditorProps) {
+  const settingsTab = "automation" as SettingsTab;
   const { t } = useTranslation();
   const [logsLevel, setLogsLevel] = useState<LogLevel>(LogLevel.Info);
   const [streamedLogs, setStreamedLogs] = useState<StreamedLogEntry[]>([]);
@@ -416,7 +417,7 @@ export function SettingsPanel({
   const [ingestForm, setIngestForm] = useState(EMPTY_INGEST_FORM);
   const [jackettForm, setJackettForm] = useState(EMPTY_JACKETT_FORM);
   const [qbittorrentForm, setQBittorrentForm] = useState(EMPTY_QBITTORRENT_FORM);
-  const [automationForm, setAutomationForm] = useState(EMPTY_AUTOMATION_FORM);
+  const [automationForm, setAutomationForm, automationDirty, markAutomationSaved] = useSettingsDraft("automation", EMPTY_AUTOMATION_FORM);
   // 规则列表的展开/收起是 UI 偏好：默认按「启用规则链」决定首屏可见性，
   // 之后用户的展开/收起操作与开关状态相互独立，不被开关重置。
   const [rulesExpanded, setRulesExpanded] = useState(() => automationForm.torrentSelection.enabled);
@@ -554,7 +555,7 @@ export function SettingsPanel({
       category: runtimeSettings.qbittorrent.category || "",
       tags: runtimeSettings.qbittorrent.tags || ""
     });
-    setAutomationForm({
+    if (!automationDirty) markAutomationSaved({
       taskProgressSyncIntervalSeconds: String(runtimeSettings.automation.taskProgressSyncIntervalSeconds || 60),
       subscriptionPollIntervalHours: String(runtimeSettings.automation.subscriptionPollIntervalHours || 1),
       stashBoxEndpoints: [...(runtimeSettings.automation.stashBoxEndpoints ?? [])],
@@ -573,7 +574,7 @@ export function SettingsPanel({
       imageCacheMaxSizeMb: String(runtimeSettings.system.imageCache.maxSizeMb),
       imageCacheRetentionDays: String(runtimeSettings.system.imageCache.retentionDays)
     });
-  }, [runtimeSettings]);
+  }, [automationDirty, markAutomationSaved, runtimeSettings]);
 
   const saveStashSettings = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -588,7 +589,7 @@ export function SettingsPanel({
       return;
     }
     pushToast("tone-success", t("settings.connections.saved", { service: "Stash" }));
-    await refreshDashboard({ requestPolicy: "network-only" });
+    await refreshAutomation({ requestPolicy: "network-only" });
   };
 
   const submitIngestSettings = async (qbRoot: string) => {
@@ -613,7 +614,7 @@ export function SettingsPanel({
       return;
     }
     pushToast("tone-success", t("settings.ingest.saved"));
-    await refreshDashboard({ requestPolicy: "network-only" });
+    await refreshAutomation({ requestPolicy: "network-only" });
   };
 
   const saveIngestSettings = async (event: FormEvent<HTMLFormElement>) => {
@@ -645,7 +646,7 @@ export function SettingsPanel({
     // Mirror qBittorrent's pattern: clear the password field after a
     // successful save so the plaintext doesn't linger in component state.
     setJackettForm((current) => ({ ...current, password: "" }));
-    await refreshDashboard({ requestPolicy: "network-only" });
+    await refreshAutomation({ requestPolicy: "network-only" });
   };
 
   const saveQBittorrentSettings = async (event: FormEvent<HTMLFormElement>) => {
@@ -665,7 +666,7 @@ export function SettingsPanel({
       return;
     }
     pushToast("tone-success", t("settings.connections.saved", { service: "qBittorrent" }));
-    await refreshDashboard({ requestPolicy: "network-only" });
+    await refreshAutomation({ requestPolicy: "network-only" });
   };
 
   const saveAutomationSettingsSection = async (successMessage: string) => {
@@ -675,8 +676,9 @@ export function SettingsPanel({
       pushToast("tone-danger", describeQueryError(result.error));
       return;
     }
+    markAutomationSaved(automationForm);
     pushToast("tone-success", successMessage);
-    await refreshDashboard({ requestPolicy: "network-only" });
+    await refreshAutomation({ requestPolicy: "network-only" });
   };
 
   const saveAutomationSettings = async (event: FormEvent<HTMLFormElement>) => {
@@ -825,7 +827,7 @@ export function SettingsPanel({
       return;
     }
     pushToast("tone-success", t("systemUi.saved"));
-    await refreshDashboard({ requestPolicy: "network-only" });
+    await refreshAutomation({ requestPolicy: "network-only" });
   };
 
   const handleClearImageCache = async () => {
@@ -840,7 +842,7 @@ export function SettingsPanel({
     }
     setConfirmingImageCacheClear(false);
     pushToast("tone-success", releasedBytes > 0 ? t("systemUi.clearedBytes", { size: formatBytes(releasedBytes) }) : t("systemUi.cleared"));
-    await refreshDashboard({ requestPolicy: "network-only" });
+    await refreshAutomation({ requestPolicy: "network-only" });
   };
 
   const refreshStashBoxes = async () => {
@@ -850,7 +852,7 @@ export function SettingsPanel({
       return;
     }
     pushToast("tone-success", t("automationUi.stashBoxes.refresh"));
-    await refreshDashboard({ requestPolicy: "network-only" });
+    await refreshAutomation({ requestPolicy: "network-only" });
   };
 
   const handleCopyLogs = async () => {

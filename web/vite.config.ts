@@ -8,6 +8,20 @@ export default defineConfig(({ mode }) => {
 
   return {
     plugins: [react()],
+    build: {
+      rollupOptions: {
+        output: {
+          manualChunks(id) {
+            if (!id.includes("node_modules")) return undefined;
+            if (id.includes("i18next")) return "vendor-i18n";
+            if (id.includes("fontawesome")) return "vendor-icons";
+            if (id.includes("urql") || id.includes("wonka") || id.includes("graphql")) return "vendor-graphql";
+            if (id.includes("/react/") || id.includes("react-dom") || id.includes("react-router") || id.includes("scheduler")) return "vendor-react";
+            return undefined;
+          }
+        }
+      }
+    },
     test: {
       exclude: [...configDefaults.exclude, "tests/visual/**"]
     },

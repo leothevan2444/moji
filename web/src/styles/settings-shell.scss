@@ -1,0 +1,67 @@
+@use "tokens" as *;
+@use "mixins" as *;
+
+.settings-tabs,
+.settings-actions,
+.settings-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: $space-2;
+}
+
+.settings-actions { justify-content: flex-end; }
+.settings-meta { color: var(--muted); font-size: 12px; }
+.settings-form { display: grid; gap: $space-3; }
+
+.settings-field {
+  display: grid;
+  gap: 6px;
+  span { color: var(--muted); font-size: 12px; font-weight: 700; }
+  &__label { display: inline-flex; align-items: center; gap: $space-2; width: fit-content; }
+}
+
+.settings-info {
+  position: relative;
+  display: inline-flex;
+  cursor: help;
+  color: var(--muted-2);
+  &:hover &__tooltip, &:focus-visible &__tooltip { display: block; }
+  &__tooltip { display: none; position: absolute; z-index: $z-tooltip; left: calc(100% + 10px); top: 50%; width: min(320px, calc(100vw - 48px)); padding: 10px $space-3; transform: translateY(-50%); border: 1px solid var(--line-strong); border-radius: $radius-lg; background: var(--surface-strong); box-shadow: var(--shadow-soft); color: var(--text); font-size: 12px; font-weight: 500; line-height: 1.55; pointer-events: none; }
+}
+
+.secret-input {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  &__field { border-radius: $radius-lg 0 0 $radius-lg !important; }
+  &__toggle { min-width: 42px; border-radius: 0 $radius-lg $radius-lg 0; border-left: 0; background: var(--surface-strong); color: var(--muted); }
+}
+
+.settings-feedback { margin: 0; font-size: 13px; padding: 10px $space-3; border-radius: $radius-lg; }
+
+.image-cache-management,
+.image-cache-confirm {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: $space-3;
+  padding: $space-3;
+  border: 1px solid var(--line);
+  border-radius: $radius-lg;
+  background: color-mix(in srgb, var(--surface-strong) 88%, transparent);
+  p { margin: 4px 0 0; color: var(--muted); font-size: 12px; }
+  &__actions { display: flex; gap: $space-2; }
+}
+
+.image-cache-management__clear,
+.image-cache-confirm__submit { @include danger-action-surface; }
+
+.log-list { display: grid; gap: $space-2; margin-top: $space-3; }
+.log-row { display: grid; grid-template-columns: auto auto minmax(0, 1fr); gap: $space-2; padding: 10px $space-3; border: 1px solid var(--line); border-radius: $radius-lg; font-size: 12px; time { color: var(--muted); } code { white-space: pre-wrap; overflow-wrap: anywhere; } }
+
+.locale-select { display: flex; justify-content: flex-end; align-items: center; gap: $space-2; label { color: var(--muted); font-size: 12px; font-weight: 700; } }
+
+@media (max-width: 640px) {
+  .image-cache-management, .image-cache-confirm { align-items: stretch; flex-direction: column; }
+  .image-cache-confirm__actions, .image-cache-confirm__actions button { width: 100%; }
+  .log-row { grid-template-columns: 1fr; }
+}
