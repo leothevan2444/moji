@@ -7,7 +7,8 @@ import { ClearImageCacheDocumentDocument, SystemSettingsTabDocument, TaskDeleteP
 import { describeQueryError } from "../../services/queryError";
 import { formatBytes, formatDateTime } from "../../utils";
 import { useSettingsDraft } from "./SettingsDraftStore";
-import { SettingsCard, SettingsError, SettingsLoading } from "./SettingsTabCommon";
+import { FieldLabel, SettingsCard, SettingsError, SettingsLoading } from "./SettingsTabCommon";
+import "../../styles/settings-system.scss";
 
 interface SystemDraft { taskDeletePolicy: TaskDeletePolicy; enabled: boolean; maxSizeMb: string; retentionDays: string }
 
@@ -39,10 +40,13 @@ export default function SystemSettingsTab() {
   };
 
   return <SettingsCard title={t("settings.tabs.system")}><form className="settings-form" onSubmit={(event) => void save(event)}>
-    <label className="settings-field"><span>{t("systemUi.deletePolicy")}</span><select value={form.taskDeletePolicy} onChange={(event) => setForm((current) => ({ ...current, taskDeletePolicy: event.target.value as TaskDeletePolicy }))}><option value={TaskDeletePolicy.KeepOnly}>{t("systemUi.keep")}</option><option value={TaskDeletePolicy.RemoveTorrent}>{t("systemUi.removeTorrent")}</option><option value={TaskDeletePolicy.RemoveTorrentAndFiles}>{t("systemUi.removeFiles")}</option></select></label>
-    <label className="settings-field settings-field--switch"><span>{t("systemUi.cache")}</span><input type="checkbox" checked={form.enabled} onChange={(event) => setForm((current) => ({ ...current, enabled: event.target.checked }))} /></label>
-    <label className="settings-field"><span>{t("systemUi.maxSize")}</span><input type="number" value={form.maxSizeMb} onChange={(event) => setForm((current) => ({ ...current, maxSizeMb: event.target.value }))} /></label>
-    <label className="settings-field"><span>{t("systemUi.retention")}</span><input type="number" value={form.retentionDays} onChange={(event) => setForm((current) => ({ ...current, retentionDays: event.target.value }))} /></label>
+    <label className="settings-field"><FieldLabel text={t("systemUi.deletePolicy")} info={t("systemUi.deleteInfo")} /><select value={form.taskDeletePolicy} onChange={(event) => setForm((current) => ({ ...current, taskDeletePolicy: event.target.value as TaskDeletePolicy }))}><option value={TaskDeletePolicy.KeepOnly}>{t("systemUi.keep")}</option><option value={TaskDeletePolicy.RemoveTorrent}>{t("systemUi.removeTorrent")}</option><option value={TaskDeletePolicy.RemoveTorrentAndFiles}>{t("systemUi.removeFiles")}</option></select></label>
+    <div className="settings-field"><FieldLabel text={t("systemUi.cache")} info={t("systemUi.cacheInfo")} /><label className="switch-row image-cache-switch"><span className="switch-row__label">{t("systemUi.enableCache")}</span><span className="switch" role="switch" aria-checked={form.enabled}><input type="checkbox" checked={form.enabled} aria-label={t("systemUi.enableCache")} onChange={(event) => setForm((current) => ({ ...current, enabled: event.target.checked }))} /><span className="switch__track" aria-hidden="true" /><span className="switch__thumb" aria-hidden="true" /></span></label></div>
+    <div className={`image-cache-config${form.enabled ? "" : " is-disabled"}`} aria-disabled={!form.enabled}>
+      <label className="settings-field"><FieldLabel text={t("systemUi.maxSize")} info={t("systemUi.maxSizeInfo")} /><input type="number" min="64" max="20480" disabled={!form.enabled} value={form.maxSizeMb} onChange={(event) => setForm((current) => ({ ...current, maxSizeMb: event.target.value }))} /></label>
+      <label className="settings-field"><FieldLabel text={t("systemUi.retention")} info={t("systemUi.retentionInfo")} /><input type="number" min="1" max="365" disabled={!form.enabled} value={form.retentionDays} onChange={(event) => setForm((current) => ({ ...current, retentionDays: event.target.value }))} /></label>
+      {!form.enabled ? <p className="image-cache-config__note">{t("systemUi.disabled")}</p> : null}
+    </div>
     <div className="image-cache-management"><div><div className="settings-meta"><span>{t("systemUi.usage", { size: formatBytes(Number(image?.usedBytes ?? 0)) })}</span><span>{t("systemUi.images", { count: image?.entryCount ?? 0 })}</span><span>{t("systemUi.cleanup", { time: formatDateTime(image?.lastCleanupAt) })}</span></div><p className="image-cache-management__hint">{t("systemUi.clearHint")}</p></div><button type="button" className="image-cache-management__clear" disabled={clearing || !image?.entryCount} onClick={() => setConfirming(true)}>{clearing ? t("systemUi.clearing") : image?.entryCount ? t("systemUi.clear") : t("systemUi.noCache")}</button></div>
     {confirming ? <div className="image-cache-confirm" role="alertdialog"><div><strong>{t("systemUi.clearTitle")}</strong><p>{t("systemUi.clearDescription", { count: image?.entryCount ?? 0, size: formatBytes(Number(image?.usedBytes ?? 0)) })}</p></div><div className="image-cache-confirm__actions"><button type="button" className="ghost-button" onClick={() => setConfirming(false)}>{t("systemUi.cancel")}</button><button type="button" className="image-cache-confirm__submit" onClick={() => void clear()}>{t("systemUi.confirm")}</button></div></div> : null}
     {image?.lastError ? <p className="settings-feedback tone-danger">{image.lastError}</p> : null}

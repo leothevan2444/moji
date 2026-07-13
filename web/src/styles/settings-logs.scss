@@ -1,0 +1,16 @@
+@use "tokens" as *;
+
+.toolbar-inline--logs { display: flex; flex-wrap: wrap; gap: $space-2; align-items: center; }
+.log-stream { display: flex; flex-direction: column; max-height: 52vh; overflow: auto; margin-top: 14px; padding: $space-3 14px; border-radius: $radius-xl; border: 1px solid var(--line); background: linear-gradient(180deg, var(--surface-strong), var(--surface)); box-shadow: inset 0 1px 0 var(--inset-light); }
+.log-line {
+  display: flex; align-items: baseline; gap: 10px; color: #1f2937; font-size: 12px; line-height: 1.45; font-family: "SFMono-Regular", Consolas, monospace; white-space: pre-wrap; word-break: break-word;
+  + .log-line { margin-top: $space-1; }
+  &__time { flex: 0 0 auto; color: #64748b; }
+  &__level { flex: 0 0 auto; font-weight: 700; }
+  &__message { min-width: 0; flex: 1 1 auto; }
+  &--info &__level, &--info &__message { color: #1f2937; }
+  &--debug &__level, &--debug &__message { color: #0f766e; }
+  &--warn &__level, &--warn &__message { color: #b45309; }
+  &--error &__level, &--error &__message { color: #b91c1c; }
+}
+@media (max-width: 720px) { .log-line { display: grid; grid-template-columns: auto 1fr; &__message { grid-column: 1 / -1; } } }
