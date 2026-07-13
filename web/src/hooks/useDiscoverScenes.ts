@@ -32,6 +32,7 @@ export function useDiscoverScenes(deferredQuery: string, options: UseDiscoverSce
         ...(sortBy ? { sortBy } : {})
       } satisfies DiscoverScenesInput
     },
+    requestPolicy: "cache-and-network",
     pause: !enabled || deferredQuery.length === 0
   });
 

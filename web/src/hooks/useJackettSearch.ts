@@ -38,6 +38,7 @@ export function useJackettSearch(deferredQuery: string, options: UseJackettSearc
         ...(sortBy ? { sortBy } : {})
       } satisfies JackettSearchInput
     },
+    requestPolicy: "network-only",
     pause: !enabled || deferredQuery.length === 0
   });
 

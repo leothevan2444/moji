@@ -41,7 +41,7 @@ export function usePerformerSubscriptionEvents({ enabled, onRefresh, delay = 200
     refreshRef.current = onRefresh;
   }, [onRefresh]);
 
-  const scheduleRefresh = useCallback((reason: "initial" | "reconnect" | "sequence-gap" | "error-recovery") => {
+  const scheduleRefresh = useCallback((reason: "reconnect" | "sequence-gap" | "error-recovery") => {
     if (timer.current !== null) window.clearTimeout(timer.current);
     timer.current = window.setTimeout(() => {
       timer.current = null;
@@ -63,7 +63,6 @@ export function usePerformerSubscriptionEvents({ enabled, onRefresh, delay = 200
     if (connection.status !== "connected") return;
     if (connectionGeneration.current === null) {
       connectionGeneration.current = connection.generation;
-      scheduleRefresh("initial");
       return;
     }
     if (connection.generation !== connectionGeneration.current) {

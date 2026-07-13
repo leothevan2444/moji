@@ -42,16 +42,33 @@ describe("usePerformerSubscriptionEvents", () => {
   });
   afterEach(() => vi.useRealTimers());
 
-  it("calibrates on initial connection and coalesces a sequence gap", () => {
+  it("does not refresh on initial connection or consecutive events", () => {
     const onRefresh = vi.fn();
     const { rerender } = renderHook(() => usePerformerSubscriptionEvents({ enabled: true, onRefresh }));
     act(() => {
       mocks.subscriptionResult = { data: { performerSubscriptionEvents: { sequence: 3 } }, error: undefined, fetching: false };
       rerender();
+    });
+    act(() => {
+      mocks.subscriptionResult = { data: { performerSubscriptionEvents: { sequence: 4 } }, error: undefined, fetching: false };
+      rerender();
+    });
+    act(() => vi.advanceTimersByTime(200));
+    expect(onRefresh).not.toHaveBeenCalled();
+  });
+
+  it("refreshes after a sequence gap", () => {
+    const onRefresh = vi.fn();
+    const { rerender } = renderHook(() => usePerformerSubscriptionEvents({ enabled: true, onRefresh }));
+    act(() => {
+      mocks.subscriptionResult = { data: { performerSubscriptionEvents: { sequence: 3 } }, error: undefined, fetching: false };
+      rerender();
+    });
+    act(() => {
       mocks.subscriptionResult = { data: { performerSubscriptionEvents: { sequence: 6 } }, error: undefined, fetching: false };
       rerender();
-      vi.advanceTimersByTime(200);
     });
+    act(() => vi.advanceTimersByTime(200));
     expect(onRefresh).toHaveBeenCalledTimes(1);
   });
 
@@ -59,12 +76,38 @@ describe("usePerformerSubscriptionEvents", () => {
     const onRefresh = vi.fn();
     const view = renderHook(() => usePerformerSubscriptionEvents({ enabled: true, onRefresh }));
     act(() => vi.advanceTimersByTime(200));
-    expect(onRefresh).toHaveBeenCalledTimes(1);
+    expect(onRefresh).not.toHaveBeenCalled();
     act(() => {
       mocks.connection = { status: "connected", generation: 2, error: null };
       mocks.listeners.forEach((listener) => listener());
     });
     view.unmount();
+    act(() => vi.advanceTimersByTime(200));
+    expect(onRefresh).not.toHaveBeenCalled();
+  });
+
+  it("refreshes after reconnect", () => {
+    const onRefresh = vi.fn();
+    renderHook(() => usePerformerSubscriptionEvents({ enabled: true, onRefresh }));
+    act(() => {
+      mocks.connection = { status: "connected", generation: 2, error: null };
+      mocks.listeners.forEach((listener) => listener());
+    });
+    act(() => vi.advanceTimersByTime(200));
+    expect(onRefresh).toHaveBeenCalledTimes(1);
+  });
+
+  it("refreshes when events resume after a subscription error", () => {
+    const onRefresh = vi.fn();
+    const { rerender } = renderHook(() => usePerformerSubscriptionEvents({ enabled: true, onRefresh }));
+    act(() => {
+      mocks.subscriptionResult = { data: undefined, error: new Error("disconnected"), fetching: false };
+      rerender();
+    });
+    act(() => {
+      mocks.subscriptionResult = { data: { performerSubscriptionEvents: { sequence: 9 } }, error: undefined, fetching: false };
+      rerender();
+    });
     act(() => vi.advanceTimersByTime(200));
     expect(onRefresh).toHaveBeenCalledTimes(1);
   });
