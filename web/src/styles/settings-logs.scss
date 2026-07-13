@@ -1,6 +1,15 @@
 @use "tokens" as *;
 
-.toolbar-inline--logs { display: flex; flex-wrap: wrap; gap: $space-2; align-items: center; }
+.toolbar-inline--logs {
+  display: flex;
+  flex-wrap: nowrap;
+  gap: $space-2;
+  align-items: center;
+  overflow-x: auto;
+
+  select { width: 140px; min-width: 140px; flex: 0 0 140px; }
+  .ghost-button { flex: 0 0 auto; white-space: nowrap; }
+}
 .log-stream { display: flex; flex-direction: column; max-height: 52vh; overflow: auto; margin-top: 14px; padding: $space-3 14px; border-radius: $radius-xl; border: 1px solid var(--line); background: linear-gradient(180deg, var(--surface-strong), var(--surface)); box-shadow: inset 0 1px 0 var(--inset-light); }
 .log-line {
   display: flex; align-items: baseline; gap: 10px; color: #1f2937; font-size: 12px; line-height: 1.45; font-family: "SFMono-Regular", Consolas, monospace; white-space: pre-wrap; word-break: break-word;
