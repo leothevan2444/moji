@@ -210,6 +210,102 @@ func TestPerformerTTLStatusClearAndCleanup(t *testing.T) {
 	}
 }
 
+func TestCacheHitsThrottleAccessWritesAndRetainScenesThroughSnapshots(t *testing.T) {
+	now := time.Date(2026, 7, 14, 0, 0, 0, 0, time.UTC)
+	service := newTestService(t, &now)
+	client := &fakeClient{scenes: testScenes(2), performer: &stashboxgraphql.PerformerFragment{ID: "p1", Name: "Alice"}}
+	ctx := context.Background()
+
+	if _, _, err := service.ResolvePerformer(ctx, client, "https://box", "p1", CachePreferred); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := service.Load(ctx, client, "https://box", "p1", 2, CachePreferred); err != nil {
+		t.Fatal(err)
+	}
+	initialChanges := totalChanges(t, service)
+
+	now = now.Add(59 * time.Minute)
+	if _, _, err := service.ResolvePerformer(ctx, client, "https://box", "p1", CachePreferred); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := service.Load(ctx, client, "https://box", "p1", 2, CachePreferred); err != nil {
+		t.Fatal(err)
+	}
+	if changes := totalChanges(t, service); changes != initialChanges {
+		t.Fatalf("cache hits inside touch interval wrote to SQLite: before=%d after=%d", initialChanges, changes)
+	}
+
+	now = now.Add(time.Minute)
+	if _, _, err := service.ResolvePerformer(ctx, client, "https://box", "p1", CachePreferred); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := service.Load(ctx, client, "https://box", "p1", 2, CachePreferred); err != nil {
+		t.Fatal(err)
+	}
+	if changes := totalChanges(t, service); changes != initialChanges+2 {
+		t.Fatalf("expected one performer and one snapshot touch after an hour: before=%d after=%d", initialChanges, changes)
+	}
+	if client.performerCalls != 1 || len(client.queryCalls) != 1 {
+		t.Fatalf("cache hits reached upstream: performer=%d scenes=%d", client.performerCalls, len(client.queryCalls))
+	}
+
+	now = now.Add(30*24*time.Hour - 30*time.Minute)
+	if err := service.Cleanup(ctx); err != nil {
+		t.Fatal(err)
+	}
+	status, err := service.Status(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if status.SceneCount != 2 || status.PerformerCount != 1 || status.SnapshotCount != 1 {
+		t.Fatalf("recent snapshot data was removed: %+v", status)
+	}
+
+	now = now.Add(time.Hour)
+	if err := service.Cleanup(ctx); err != nil {
+		t.Fatal(err)
+	}
+	status, err = service.Status(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if status.SceneCount != 0 || status.PerformerCount != 0 || status.SnapshotCount != 0 {
+		t.Fatalf("expired snapshot data was retained: %+v", status)
+	}
+}
+
+func TestSceneSchemaContainsOnlyEntityData(t *testing.T) {
+	now := time.Date(2026, 7, 14, 0, 0, 0, 0, time.UTC)
+	service := newTestService(t, &now)
+	var columns []struct {
+		Name string `db:"name"`
+	}
+	if err := service.store.db.Select(&columns, `SELECT name FROM pragma_table_info('stashbox_cache_scenes')`); err != nil {
+		t.Fatal(err)
+	}
+	names := make(map[string]bool, len(columns))
+	for _, column := range columns {
+		names[column.Name] = true
+	}
+	if names["fetched_at"] || names["last_accessed_at"] {
+		t.Fatalf("scene schema retains redundant timestamps: %+v", names)
+	}
+	for _, required := range []string{"endpoint", "scene_id", "payload_json"} {
+		if !names[required] {
+			t.Fatalf("scene schema missing %s: %+v", required, names)
+		}
+	}
+}
+
+func totalChanges(t *testing.T, service *Service) int64 {
+	t.Helper()
+	var changes int64
+	if err := service.store.db.Get(&changes, `SELECT total_changes()`); err != nil {
+		t.Fatal(err)
+	}
+	return changes
+}
+
 func testScenes(count int) []*stashboxgraphql.SceneFragment {
 	out := make([]*stashboxgraphql.SceneFragment, count)
 	for index := range out {

@@ -12,6 +12,7 @@ const (
 	PageSize              = 40
 	DefaultTTL            = 24 * time.Hour
 	DefaultStaleRetention = 30 * 24 * time.Hour
+	accessTouchInterval   = time.Hour
 )
 
 type Config struct {

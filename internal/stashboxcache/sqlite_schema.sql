@@ -16,8 +16,6 @@ CREATE TABLE IF NOT EXISTS stashbox_cache_scenes (
     endpoint TEXT NOT NULL,
     scene_id TEXT NOT NULL,
     payload_json BLOB NOT NULL,
-    fetched_at TEXT NOT NULL,
-    last_accessed_at TEXT NOT NULL,
     PRIMARY KEY (endpoint, scene_id)
 );
 

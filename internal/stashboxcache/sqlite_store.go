@@ -19,7 +19,7 @@ import (
 //go:embed sqlite_schema.sql
 var sqliteSchema string
 
-const sqliteSchemaVersion = "1"
+const sqliteSchemaVersion = "2"
 
 type sqliteStore struct {
 	db   *sqlx.DB
@@ -86,27 +86,32 @@ func (s *sqliteStore) reset() error {
 	return nil
 }
 
-func (s *sqliteStore) getPerformer(ctx context.Context, key PerformerKey) (performerDTO, time.Time, bool, error) {
+func (s *sqliteStore) getPerformer(ctx context.Context, key PerformerKey) (performerDTO, time.Time, time.Time, bool, error) {
 	var row struct {
-		Payload   []byte `db:"payload_json"`
-		FetchedAt string `db:"fetched_at"`
+		Payload      []byte `db:"payload_json"`
+		FetchedAt    string `db:"fetched_at"`
+		LastAccessed string `db:"last_accessed_at"`
 	}
-	err := s.db.GetContext(ctx, &row, `SELECT payload_json,fetched_at FROM stashbox_cache_performers WHERE endpoint=? AND performer_id=?`, key.Endpoint, key.PerformerID)
+	err := s.db.GetContext(ctx, &row, `SELECT payload_json,fetched_at,last_accessed_at FROM stashbox_cache_performers WHERE endpoint=? AND performer_id=?`, key.Endpoint, key.PerformerID)
 	if errors.Is(err, sql.ErrNoRows) {
-		return performerDTO{}, time.Time{}, false, nil
+		return performerDTO{}, time.Time{}, time.Time{}, false, nil
 	}
 	if err != nil {
-		return performerDTO{}, time.Time{}, false, err
+		return performerDTO{}, time.Time{}, time.Time{}, false, err
 	}
 	var value performerDTO
 	if err := json.Unmarshal(row.Payload, &value); err != nil {
-		return performerDTO{}, time.Time{}, false, err
+		return performerDTO{}, time.Time{}, time.Time{}, false, err
 	}
 	fetchedAt, err := time.Parse(time.RFC3339Nano, row.FetchedAt)
 	if err != nil {
-		return performerDTO{}, time.Time{}, false, err
+		return performerDTO{}, time.Time{}, time.Time{}, false, err
 	}
-	return value, fetchedAt, true, nil
+	lastAccessed, err := time.Parse(time.RFC3339Nano, row.LastAccessed)
+	if err != nil {
+		return performerDTO{}, time.Time{}, time.Time{}, false, err
+	}
+	return value, fetchedAt, lastAccessed, true, nil
 }
 
 func (s *sqliteStore) touchPerformer(ctx context.Context, key PerformerKey, now time.Time) {
@@ -187,7 +192,6 @@ func (s *sqliteStore) getSnapshot(ctx context.Context, key PerformerKey, active 
 
 func (s *sqliteStore) touchSnapshot(ctx context.Context, value *snapshot, now time.Time) {
 	_, _ = s.db.ExecContext(ctx, `UPDATE stashbox_cache_snapshots SET last_accessed_at=? WHERE endpoint=? AND performer_id=? AND generation=?`, formatTime(now), value.Key.Endpoint, value.Key.PerformerID, value.Generation)
-	_, _ = s.db.ExecContext(ctx, `UPDATE stashbox_cache_scenes SET last_accessed_at=? WHERE endpoint=? AND scene_id IN (SELECT scene_id FROM stashbox_cache_snapshot_items WHERE endpoint=? AND performer_id=? AND generation=?)`, formatTime(now), value.Key.Endpoint, value.Key.Endpoint, value.Key.PerformerID, value.Generation)
 }
 
 func (s *sqliteStore) putSnapshot(ctx context.Context, value *snapshot, scenes []sceneDTO, activate bool) error {
@@ -215,7 +219,7 @@ func (s *sqliteStore) putSnapshot(ctx context.Context, value *snapshot, scenes [
 		if err != nil {
 			return err
 		}
-		if _, err := tx.ExecContext(ctx, `INSERT INTO stashbox_cache_scenes(endpoint,scene_id,payload_json,fetched_at,last_accessed_at) VALUES(?,?,?,?,?) ON CONFLICT(endpoint,scene_id) DO UPDATE SET payload_json=excluded.payload_json,fetched_at=excluded.fetched_at,last_accessed_at=excluded.last_accessed_at`, value.Key.Endpoint, scene.ID, payload, nowText, nowText); err != nil {
+		if _, err := tx.ExecContext(ctx, `INSERT INTO stashbox_cache_scenes(endpoint,scene_id,payload_json) VALUES(?,?,?) ON CONFLICT(endpoint,scene_id) DO UPDATE SET payload_json=excluded.payload_json`, value.Key.Endpoint, scene.ID, payload); err != nil {
 			return err
 		}
 	}
@@ -253,7 +257,7 @@ func (s *sqliteStore) cleanup(ctx context.Context, cutoff time.Time) error {
 	if _, err := tx.ExecContext(ctx, `DELETE FROM stashbox_cache_performers WHERE last_accessed_at < ?`, cutoffText); err != nil {
 		return err
 	}
-	if _, err := tx.ExecContext(ctx, `DELETE FROM stashbox_cache_scenes WHERE last_accessed_at < ? AND NOT EXISTS (SELECT 1 FROM stashbox_cache_snapshot_items i WHERE i.endpoint=stashbox_cache_scenes.endpoint AND i.scene_id=stashbox_cache_scenes.scene_id)`, cutoffText); err != nil {
+	if _, err := tx.ExecContext(ctx, `DELETE FROM stashbox_cache_scenes WHERE NOT EXISTS (SELECT 1 FROM stashbox_cache_snapshot_items i WHERE i.endpoint=stashbox_cache_scenes.endpoint AND i.scene_id=stashbox_cache_scenes.scene_id)`); err != nil {
 		return err
 	}
 	return tx.Commit()

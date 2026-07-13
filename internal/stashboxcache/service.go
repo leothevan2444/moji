@@ -66,12 +66,14 @@ func (s *Service) ResolvePerformer(ctx context.Context, client Client, endpoint,
 	defer mutex.Unlock()
 	now := s.now().UTC()
 	cfg := s.config().normalize()
-	cached, fetchedAt, found, err := s.store.getPerformer(ctx, key)
+	cached, fetchedAt, lastAccessed, found, err := s.store.getPerformer(ctx, key)
 	if err != nil {
 		return nil, false, err
 	}
 	if found && policy != ForceRefresh && now.Sub(fetchedAt) < cfg.TTL {
-		s.store.touchPerformer(ctx, key, now)
+		if shouldTouch(lastAccessed, now) {
+			s.store.touchPerformer(ctx, key, now)
+		}
 		return cached.toGraphQL(), false, nil
 	}
 	value, err := client.FindPerformerByID(ctx, key.PerformerID)
@@ -125,7 +127,7 @@ func (s *Service) loadLocked(ctx context.Context, client Client, key PerformerKe
 		return Result{}, err
 	}
 	fallback := preferredFallback(current, previous, minimum)
-	if current != nil {
+	if current != nil && shouldTouch(current.LastAccessed, now) {
 		s.store.touchSnapshot(ctx, current, now)
 		current.LastAccessed = now
 	}
@@ -154,7 +156,10 @@ func (s *Service) loadLocked(ctx context.Context, client Client, key PerformerKe
 		})
 		if fetchErr != nil {
 			if policy == CachePreferred && fallback != nil {
-				s.store.touchSnapshot(ctx, fallback, now)
+				if shouldTouch(fallback.LastAccessed, now) {
+					s.store.touchSnapshot(ctx, fallback, now)
+					fallback.LastAccessed = now
+				}
 				return resultFromSnapshot(fallback, true), nil
 			}
 			return Result{}, fetchErr
@@ -203,6 +208,10 @@ func (s *Service) loadLocked(ctx context.Context, client Client, key PerformerKe
 		return Result{}, errors.New("stashboxcache: no scene snapshot available")
 	}
 	return resultFromSnapshot(current, false), nil
+}
+
+func shouldTouch(lastAccessed, now time.Time) bool {
+	return lastAccessed.IsZero() || !now.Before(lastAccessed.Add(accessTouchInterval))
 }
 
 func pageAt(value *snapshot, number int) *cachedPage {
