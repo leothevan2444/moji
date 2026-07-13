@@ -1125,7 +1125,7 @@ func TestUpdateSystemSettingsMutation(t *testing.T) {
 }
 
 func TestUpdateSystemSettingsRejectsInvalidStashBoxCacheTTL(t *testing.T) {
-	for _, ttl := range []int{0, 721} {
+	for _, ttl := range []int{11, 361} {
 		resolver := NewResolver(nil, nil, nil, nil, "test-version")
 		resolver.SettingsEditor = &fakeSettingsEditor{}
 		resp := executeGraphQL(t, resolver, fmt.Sprintf(`mutation {

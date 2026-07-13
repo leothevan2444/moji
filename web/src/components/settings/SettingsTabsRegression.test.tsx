@@ -31,6 +31,9 @@ describe("settings tab visual contracts", () => {
     fireEvent.click(toggle);
     expect((screen.getByDisplayValue("1024") as HTMLInputElement).disabled).toBe(true);
     expect((screen.getByDisplayValue("30") as HTMLInputElement).disabled).toBe(true);
+    const stashBoxTtl = screen.getByDisplayValue("24") as HTMLInputElement;
+    expect(stashBoxTtl.min).toBe("12");
+    expect(stashBoxTtl.max).toBe("360");
     expect(view.container.querySelector(".image-cache-config.is-disabled")).toBeTruthy();
     expect(screen.getByText("systemUi.disabled")).toBeTruthy();
   });

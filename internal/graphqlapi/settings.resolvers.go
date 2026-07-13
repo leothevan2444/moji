@@ -149,8 +149,8 @@ func (r *mutationResolver) UpdateSystemSettings(ctx context.Context, input model
 		cacheSettings = ImageCacheSettingsSnapshot{Enabled: input.ImageCache.Enabled, MaxSizeMB: input.ImageCache.MaxSizeMb, RetentionDays: input.ImageCache.RetentionDays}
 	}
 	if input.StashBoxDataCache != nil {
-		if input.StashBoxDataCache.TTLHours < 1 || input.StashBoxDataCache.TTLHours > 720 {
-			return nil, errors.New("StashBox data cache ttlHours must be between 1 and 720")
+		if input.StashBoxDataCache.TTLHours < 12 || input.StashBoxDataCache.TTLHours > 360 {
+			return nil, errors.New("StashBox data cache ttlHours must be between 12 and 360")
 		}
 		stashBoxCacheSettings = StashBoxDataCacheSettingsSnapshot{TTLHours: input.StashBoxDataCache.TTLHours}
 	}

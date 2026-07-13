@@ -219,11 +219,11 @@ func (c StashBoxDataCacheConfig) Normalize() StashBoxDataCacheConfig {
 	if c.TTLHours == 0 {
 		c.TTLHours = 24
 	}
-	if c.TTLHours < 1 {
-		c.TTLHours = 1
+	if c.TTLHours < 12 {
+		c.TTLHours = 12
 	}
-	if c.TTLHours > 720 {
-		c.TTLHours = 720
+	if c.TTLHours > 360 {
+		c.TTLHours = 360
 	}
 	return c
 }

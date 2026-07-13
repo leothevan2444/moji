@@ -236,3 +236,14 @@ func TestStoreUpdateSystemPersistsStashBoxCacheTTL(t *testing.T) {
 		t.Fatalf("TTL hours = %d, want 36", reloaded.System.StashBoxDataCache.TTLHours)
 	}
 }
+
+func TestStashBoxDataCacheConfigNormalizeBounds(t *testing.T) {
+	for _, test := range []struct {
+		input int
+		want  int
+	}{{0, 24}, {11, 12}, {12, 12}, {360, 360}, {361, 360}} {
+		if got := (StashBoxDataCacheConfig{TTLHours: test.input}).Normalize().TTLHours; got != test.want {
+			t.Errorf("Normalize(%d) = %d, want %d", test.input, got, test.want)
+		}
+	}
+}
