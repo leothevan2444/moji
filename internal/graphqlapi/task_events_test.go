@@ -2,14 +2,10 @@ package graphqlapi
 
 import (
 	"context"
-	"encoding/json"
 	"net/http/httptest"
-	"strings"
 	"testing"
 	"time"
 
-	"github.com/gorilla/websocket"
-	"github.com/leothevan2444/moji/internal/graphqlapi/generated"
 	"github.com/leothevan2444/moji/internal/taskruntime"
 )
 
@@ -79,53 +75,9 @@ func TestSameOriginWebSocketRequest(t *testing.T) {
 func TestTaskEventsOverGraphQLTransportWebSocket(t *testing.T) {
 	bus := taskruntime.NewTaskEventBus(2)
 	defer bus.Close()
-	resolver := &Resolver{TaskEventSource: bus}
-	server := httptest.NewServer(NewGraphQLServer(generated.NewExecutableSchema(generated.Config{Resolvers: resolver})))
-	defer server.Close()
-
-	dialer := websocket.Dialer{Subprotocols: []string{"graphql-transport-ws"}}
-	headers := map[string][]string{"Origin": {server.URL}}
-	connection, response, err := dialer.Dial("ws"+strings.TrimPrefix(server.URL, "http")+"/graphql", headers)
-	if err != nil {
-		status := 0
-		if response != nil {
-			status = response.StatusCode
-		}
-		t.Fatalf("dial GraphQL websocket (status %d): %v", status, err)
-	}
-	defer connection.Close()
-
-	if err := connection.WriteJSON(map[string]any{"type": "connection_init"}); err != nil {
-		t.Fatalf("write connection_init: %v", err)
-	}
-	var message struct {
-		ID      string          `json:"id"`
-		Type    string          `json:"type"`
-		Payload json.RawMessage `json:"payload"`
-	}
-	if err := connection.ReadJSON(&message); err != nil {
-		t.Fatalf("read connection_ack: %v", err)
-	}
-	if message.Type != "connection_ack" {
-		t.Fatalf("expected connection_ack, got %#v", message)
-	}
-
-	if err := connection.WriteJSON(map[string]any{
-		"id":   "task-events",
-		"type": "subscribe",
-		"payload": map[string]any{
-			"query": "subscription { taskEvents { sequence type taskId task { id } dashboardStats { total active } } }",
-		},
-	}); err != nil {
-		t.Fatalf("write subscribe: %v", err)
-	}
-	deadline := time.Now().Add(time.Second)
-	for bus.SubscriberCount() != 1 && time.Now().Before(deadline) {
-		time.Sleep(time.Millisecond)
-	}
-	if bus.SubscriberCount() != 1 {
-		t.Fatal("GraphQL subscription did not register with the task event bus")
-	}
+	client := newGraphQLWebSocketTestClient(t, &Resolver{TaskEventSource: bus})
+	client.subscribe(t, "task-events", `subscription { taskEvents { sequence type taskId task { id } dashboardStats { total active } } }`)
+	waitForSubscriber(t, bus.SubscriberCount)
 	bus.Publish(&taskruntime.TaskEvent{
 		Type:           taskruntime.TaskEventCreated,
 		TaskID:         "task-1",
@@ -133,15 +85,6 @@ func TestTaskEventsOverGraphQLTransportWebSocket(t *testing.T) {
 		DashboardStats: taskruntime.TaskStats{Total: 1, Active: 1},
 	})
 
-	if err := connection.SetReadDeadline(time.Now().Add(time.Second)); err != nil {
-		t.Fatalf("set read deadline: %v", err)
-	}
-	if err := connection.ReadJSON(&message); err != nil {
-		t.Fatalf("read subscription event: %v", err)
-	}
-	if message.Type != "next" || message.ID != "task-events" {
-		t.Fatalf("expected next task event, got %#v", message)
-	}
 	var payload struct {
 		Data struct {
 			TaskEvents struct {
@@ -151,9 +94,7 @@ func TestTaskEventsOverGraphQLTransportWebSocket(t *testing.T) {
 			} `json:"taskEvents"`
 		} `json:"data"`
 	}
-	if err := json.Unmarshal(message.Payload, &payload); err != nil {
-		t.Fatalf("decode subscription payload: %v", err)
-	}
+	client.readNext(t, "task-events", &payload)
 	if payload.Data.TaskEvents.Sequence != 1 || payload.Data.TaskEvents.Type != "CREATED" || payload.Data.TaskEvents.TaskID != "task-1" {
 		t.Fatalf("unexpected subscription payload: %#v", payload)
 	}

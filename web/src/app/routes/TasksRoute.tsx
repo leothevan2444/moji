@@ -1,10 +1,10 @@
-import { lazy, Suspense, useState } from "react";
+import { lazy, Suspense, useEffect, useRef, useState } from "react";
 import { useLocation, useNavigate, useOutletContext, useParams, useSearchParams } from "react-router";
 import { useQuery } from "urql";
 import { Drawer } from "../../components/layout/Drawer";
 import { TasksPage } from "../../pages/TasksPage";
 import { useTaskMutations } from "../../hooks/useTaskMutations";
-import { useTaskEvents } from "../../hooks/useTaskEvents";
+import { useTaskSnapshotRecoveryGeneration } from "../../graphql/taskRecovery";
 import { describeQueryError } from "../../services/queryError";
 import { parseTaskSearchParams, serializeTaskSearchParams } from "../searchParams";
 import { taskSummary, type TaskGroupKey } from "../../utils/taskUtils";
@@ -33,6 +33,8 @@ export function Component() {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const { pushToast, copyText } = useOutletContext<AppOutletContext>();
+  const recoveryGeneration = useTaskSnapshotRecoveryGeneration();
+  const observedRecoveryGeneration = useRef(recoveryGeneration);
   const filter = parseTaskSearchParams(searchParams);
   const [groups, setGroups] = useState<Record<TaskGroupKey, boolean>>({ attention: true, active: true, ingestPending: false, completed: false });
   const [pendingScan, setPendingScan] = useState<string | null>(null);
@@ -56,14 +58,11 @@ export function Component() {
   const isResolution = Boolean(taskId && location.pathname.endsWith("/resolve"));
 
   const requery = () => refresh({ requestPolicy: "network-only" });
-  const recalibrateTaskSnapshots = () => {
-    void requery();
+  useEffect(() => {
+    if (observedRecoveryGeneration.current === recoveryGeneration) return;
+    observedRecoveryGeneration.current = recoveryGeneration;
     if (taskId) void refreshDetail({ requestPolicy: "network-only" });
-  };
-  useTaskEvents({
-    onSequenceGap: recalibrateTaskSnapshots,
-    onReconnect: recalibrateTaskSnapshots
-  });
+  }, [recoveryGeneration, refreshDetail, taskId]);
   const openTask = (id: string, resolve = false) => navigate(`/tasks/${encodeURIComponent(id)}${resolve ? "/resolve" : ""}`, { state: { backgroundLocation: location } });
   const closeTask = () => {
     navigate(taskCloseTarget(location.state, searchParams));

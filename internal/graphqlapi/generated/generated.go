@@ -259,6 +259,13 @@ type ComplexityRoot struct {
 		StageStatusLabel func(childComplexity int) int
 	}
 
+	PerformerSubscriptionEvent struct {
+		PerformerID func(childComplexity int) int
+		Sequence    func(childComplexity int) int
+		State       func(childComplexity int) int
+		Type        func(childComplexity int) int
+	}
+
 	PreviewJackettSelectionMeta struct {
 		AppliedFastRules func(childComplexity int) int
 		AppliedFileRules func(childComplexity int) int
@@ -519,9 +526,10 @@ type ComplexityRoot struct {
 	}
 
 	Subscription struct {
-		LogEvents           func(childComplexity int) int
-		ServiceStatusEvents func(childComplexity int) int
-		TaskEvents          func(childComplexity int) int
+		LogEvents                   func(childComplexity int) int
+		PerformerSubscriptionEvents func(childComplexity int) int
+		ServiceStatusEvents         func(childComplexity int) int
+		TaskEvents                  func(childComplexity int) int
 	}
 
 	SubscriptionRelease struct {
@@ -686,6 +694,7 @@ type QueryResolver interface {
 type SubscriptionResolver interface {
 	TaskEvents(ctx context.Context) (<-chan *model.TaskEvent, error)
 	LogEvents(ctx context.Context) (<-chan *model.LogEvent, error)
+	PerformerSubscriptionEvents(ctx context.Context) (<-chan *model.PerformerSubscriptionEvent, error)
 	ServiceStatusEvents(ctx context.Context) (<-chan *model.ServiceStatusEvent, error)
 }
 
@@ -1733,6 +1742,34 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.PerformerSceneTask.StageStatusLabel(childComplexity), true
+
+	case "PerformerSubscriptionEvent.performerId":
+		if e.complexity.PerformerSubscriptionEvent.PerformerID == nil {
+			break
+		}
+
+		return e.complexity.PerformerSubscriptionEvent.PerformerID(childComplexity), true
+
+	case "PerformerSubscriptionEvent.sequence":
+		if e.complexity.PerformerSubscriptionEvent.Sequence == nil {
+			break
+		}
+
+		return e.complexity.PerformerSubscriptionEvent.Sequence(childComplexity), true
+
+	case "PerformerSubscriptionEvent.state":
+		if e.complexity.PerformerSubscriptionEvent.State == nil {
+			break
+		}
+
+		return e.complexity.PerformerSubscriptionEvent.State(childComplexity), true
+
+	case "PerformerSubscriptionEvent.type":
+		if e.complexity.PerformerSubscriptionEvent.Type == nil {
+			break
+		}
+
+		return e.complexity.PerformerSubscriptionEvent.Type(childComplexity), true
 
 	case "PreviewJackettSelectionMeta.appliedFastRules":
 		if e.complexity.PreviewJackettSelectionMeta.AppliedFastRules == nil {
@@ -3063,6 +3100,13 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.Subscription.LogEvents(childComplexity), true
 
+	case "Subscription.performerSubscriptionEvents":
+		if e.complexity.Subscription.PerformerSubscriptionEvents == nil {
+			break
+		}
+
+		return e.complexity.Subscription.PerformerSubscriptionEvents(childComplexity), true
+
 	case "Subscription.serviceStatusEvents":
 		if e.complexity.Subscription.ServiceStatusEvents == nil {
 			break
@@ -3785,7 +3829,7 @@ enum LogLevel {
 }
 
 type LogEntry {
-	sequence: Int!
+  sequence: Int!
   time: String!
   level: LogLevel!
   message: String!
@@ -3799,6 +3843,23 @@ type LogEvent {
 extend type Subscription {
   "Stream new in-memory Moji log entries"
   logEvents: LogEvent!
+}
+`, BuiltIn: false},
+	{Name: "../../../graphql/moji/types/performer_subscription_events.graphql", Input: `enum PerformerSubscriptionEventType {
+  CREATED
+  UPDATED
+  DELETED
+}
+
+type PerformerSubscriptionEvent {
+  sequence: Int!
+  type: PerformerSubscriptionEventType!
+  performerId: ID!
+  state: SubscribedPerformer
+}
+
+extend type Subscription {
+  performerSubscriptionEvents: PerformerSubscriptionEvent!
 }
 `, BuiltIn: false},
 	{Name: "../../../graphql/moji/types/scalars.graphql", Input: `scalar Long
@@ -12859,6 +12920,193 @@ func (ec *executionContext) fieldContext_PerformerSceneTask_progress(_ context.C
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("field of type Float does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _PerformerSubscriptionEvent_sequence(ctx context.Context, field graphql.CollectedField, obj *model.PerformerSubscriptionEvent) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_PerformerSubscriptionEvent_sequence(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Sequence, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int)
+	fc.Result = res
+	return ec.marshalNInt2int(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_PerformerSubscriptionEvent_sequence(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "PerformerSubscriptionEvent",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _PerformerSubscriptionEvent_type(ctx context.Context, field graphql.CollectedField, obj *model.PerformerSubscriptionEvent) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_PerformerSubscriptionEvent_type(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Type, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(model.PerformerSubscriptionEventType)
+	fc.Result = res
+	return ec.marshalNPerformerSubscriptionEventType2githubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐPerformerSubscriptionEventType(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_PerformerSubscriptionEvent_type(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "PerformerSubscriptionEvent",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type PerformerSubscriptionEventType does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _PerformerSubscriptionEvent_performerId(ctx context.Context, field graphql.CollectedField, obj *model.PerformerSubscriptionEvent) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_PerformerSubscriptionEvent_performerId(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.PerformerID, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNID2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_PerformerSubscriptionEvent_performerId(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "PerformerSubscriptionEvent",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type ID does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _PerformerSubscriptionEvent_state(ctx context.Context, field graphql.CollectedField, obj *model.PerformerSubscriptionEvent) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_PerformerSubscriptionEvent_state(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.State, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*model.SubscribedPerformer)
+	fc.Result = res
+	return ec.marshalOSubscribedPerformer2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐSubscribedPerformer(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_PerformerSubscriptionEvent_state(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "PerformerSubscriptionEvent",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "performer":
+				return ec.fieldContext_SubscribedPerformer_performer(ctx, field)
+			case "lastCheckedAt":
+				return ec.fieldContext_SubscribedPerformer_lastCheckedAt(ctx, field)
+			case "lastError":
+				return ec.fieldContext_SubscribedPerformer_lastError(ctx, field)
+			case "pendingReleaseCount":
+				return ec.fieldContext_SubscribedPerformer_pendingReleaseCount(ctx, field)
+			case "processedReleaseCount":
+				return ec.fieldContext_SubscribedPerformer_processedReleaseCount(ctx, field)
+			case "recentReleases":
+				return ec.fieldContext_SubscribedPerformer_recentReleases(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type SubscribedPerformer", field.Name)
 		},
 	}
 	return fc, nil
@@ -22034,6 +22282,74 @@ func (ec *executionContext) fieldContext_Subscription_logEvents(_ context.Contex
 	return fc, nil
 }
 
+func (ec *executionContext) _Subscription_performerSubscriptionEvents(ctx context.Context, field graphql.CollectedField) (ret func(ctx context.Context) graphql.Marshaler) {
+	fc, err := ec.fieldContext_Subscription_performerSubscriptionEvents(ctx, field)
+	if err != nil {
+		return nil
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = nil
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Subscription().PerformerSubscriptionEvents(rctx)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return nil
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return nil
+	}
+	return func(ctx context.Context) graphql.Marshaler {
+		select {
+		case res, ok := <-resTmp.(<-chan *model.PerformerSubscriptionEvent):
+			if !ok {
+				return nil
+			}
+			return graphql.WriterFunc(func(w io.Writer) {
+				w.Write([]byte{'{'})
+				graphql.MarshalString(field.Alias).MarshalGQL(w)
+				w.Write([]byte{':'})
+				ec.marshalNPerformerSubscriptionEvent2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐPerformerSubscriptionEvent(ctx, field.Selections, res).MarshalGQL(w)
+				w.Write([]byte{'}'})
+			})
+		case <-ctx.Done():
+			return nil
+		}
+	}
+}
+
+func (ec *executionContext) fieldContext_Subscription_performerSubscriptionEvents(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Subscription",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "sequence":
+				return ec.fieldContext_PerformerSubscriptionEvent_sequence(ctx, field)
+			case "type":
+				return ec.fieldContext_PerformerSubscriptionEvent_type(ctx, field)
+			case "performerId":
+				return ec.fieldContext_PerformerSubscriptionEvent_performerId(ctx, field)
+			case "state":
+				return ec.fieldContext_PerformerSubscriptionEvent_state(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type PerformerSubscriptionEvent", field.Name)
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _Subscription_serviceStatusEvents(ctx context.Context, field graphql.CollectedField) (ret func(ctx context.Context) graphql.Marshaler) {
 	fc, err := ec.fieldContext_Subscription_serviceStatusEvents(ctx, field)
 	if err != nil {
@@ -30572,6 +30888,57 @@ func (ec *executionContext) _PerformerSceneTask(ctx context.Context, sel ast.Sel
 	return out
 }
 
+var performerSubscriptionEventImplementors = []string{"PerformerSubscriptionEvent"}
+
+func (ec *executionContext) _PerformerSubscriptionEvent(ctx context.Context, sel ast.SelectionSet, obj *model.PerformerSubscriptionEvent) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, performerSubscriptionEventImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("PerformerSubscriptionEvent")
+		case "sequence":
+			out.Values[i] = ec._PerformerSubscriptionEvent_sequence(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "type":
+			out.Values[i] = ec._PerformerSubscriptionEvent_type(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "performerId":
+			out.Values[i] = ec._PerformerSubscriptionEvent_performerId(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "state":
+			out.Values[i] = ec._PerformerSubscriptionEvent_state(ctx, field, obj)
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
 var previewJackettSelectionMetaImplementors = []string{"PreviewJackettSelectionMeta"}
 
 func (ec *executionContext) _PreviewJackettSelectionMeta(ctx context.Context, sel ast.SelectionSet, obj *model.PreviewJackettSelectionMeta) graphql.Marshaler {
@@ -32603,6 +32970,8 @@ func (ec *executionContext) _Subscription(ctx context.Context, sel ast.Selection
 		return ec._Subscription_taskEvents(ctx, fields[0])
 	case "logEvents":
 		return ec._Subscription_logEvents(ctx, fields[0])
+	case "performerSubscriptionEvents":
+		return ec._Subscription_performerSubscriptionEvents(ctx, fields[0])
 	case "serviceStatusEvents":
 		return ec._Subscription_serviceStatusEvents(ctx, fields[0])
 	default:
@@ -34349,6 +34718,30 @@ func (ec *executionContext) marshalNPerformerSceneTag2ᚖgithubᚗcomᚋleotheva
 		return graphql.Null
 	}
 	return ec._PerformerSceneTag(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNPerformerSubscriptionEvent2githubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐPerformerSubscriptionEvent(ctx context.Context, sel ast.SelectionSet, v model.PerformerSubscriptionEvent) graphql.Marshaler {
+	return ec._PerformerSubscriptionEvent(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNPerformerSubscriptionEvent2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐPerformerSubscriptionEvent(ctx context.Context, sel ast.SelectionSet, v *model.PerformerSubscriptionEvent) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._PerformerSubscriptionEvent(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalNPerformerSubscriptionEventType2githubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐPerformerSubscriptionEventType(ctx context.Context, v any) (model.PerformerSubscriptionEventType, error) {
+	var res model.PerformerSubscriptionEventType
+	err := res.UnmarshalGQL(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNPerformerSubscriptionEventType2githubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐPerformerSubscriptionEventType(ctx context.Context, sel ast.SelectionSet, v model.PerformerSubscriptionEventType) graphql.Marshaler {
+	return v
 }
 
 func (ec *executionContext) unmarshalNPreviewJackettSelectionCandidateInput2ᚕᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐPreviewJackettSelectionCandidateInputᚄ(ctx context.Context, v any) ([]*model.PreviewJackettSelectionCandidateInput, error) {
@@ -36245,6 +36638,13 @@ func (ec *executionContext) marshalOString2ᚖstring(ctx context.Context, sel as
 	_ = ctx
 	res := graphql.MarshalString(*v)
 	return res
+}
+
+func (ec *executionContext) marshalOSubscribedPerformer2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐSubscribedPerformer(ctx context.Context, sel ast.SelectionSet, v *model.SubscribedPerformer) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return ec._SubscribedPerformer(ctx, sel, v)
 }
 
 func (ec *executionContext) marshalOTask2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐTask(ctx context.Context, sel ast.SelectionSet, v *model.Task) graphql.Marshaler {

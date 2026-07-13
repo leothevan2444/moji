@@ -23,6 +23,9 @@ func TestServiceStatusEventBusPublishesToAllSubscribers(t *testing.T) {
 			t.Fatalf("subscriber %d did not receive event", index)
 		}
 	}
+	if stats := bus.Stats(); stats.Subscribers != 2 || stats.Published != 1 || stats.Dropped != 0 || stats.Sequence != 1 {
+		t.Fatalf("unexpected event bus stats: %+v", stats)
+	}
 }
 
 func TestServiceStatusEventBusCancellationAndSlowSubscriber(t *testing.T) {
@@ -47,6 +50,9 @@ func TestServiceStatusEventBusCancellationAndSlowSubscriber(t *testing.T) {
 	third := <-channel
 	if first.Sequence != 1 || third.Sequence != 3 {
 		t.Fatalf("expected dropped event to produce a sequence gap, got %d then %d", first.Sequence, third.Sequence)
+	}
+	if bus.Stats().Dropped != 1 {
+		t.Fatalf("expected one dropped delivery, got %+v", bus.Stats())
 	}
 
 	cancel()

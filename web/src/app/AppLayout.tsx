@@ -7,6 +7,7 @@ import { useTheme } from "../hooks/useTheme";
 import { useToast } from "../hooks/useToast";
 import type { HelpTopicId } from "../help/types";
 import { useTranslation } from "react-i18next";
+import { TaskEventBridge } from "../components/events/TaskEventBridge";
 
 const HelpDrawer = lazy(() => import("../components/drawers/HelpDrawer").then((module) => ({ default: module.HelpDrawer })));
 
@@ -31,6 +32,7 @@ export function AppLayout() {
 
   return (
     <div className="app-shell">
+      <TaskEventBridge />
       <ToastStack toasts={toasts} onDismiss={dismissToast} />
       <div className="ambient ambient-a" />
       <div className="ambient ambient-b" />

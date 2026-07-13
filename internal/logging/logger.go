@@ -49,6 +49,7 @@ type Logger struct {
 	eventMu          sync.RWMutex
 	eventSubscribers map[uint64]logEventSubscriber
 	nextSubscriberID atomic.Uint64
+	publishedEvents  atomic.Uint64
 	droppedEvents    atomic.Uint64
 	eventsClosed     bool
 }

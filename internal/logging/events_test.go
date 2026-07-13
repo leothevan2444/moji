@@ -35,6 +35,9 @@ func TestLogEventsReachMultipleSubscribersInSequence(t *testing.T) {
 			t.Fatalf("%s subscriber received unexpected second event: %+v", name, two)
 		}
 	}
+	if stats := logger.EventStats(); stats.Subscribers != 2 || stats.Published != 2 || stats.Dropped != 0 || stats.Sequence != 2 {
+		t.Fatalf("unexpected event stats: %+v", stats)
+	}
 }
 
 func TestLogEventSubscriberIsRemovedAfterContextCancellation(t *testing.T) {

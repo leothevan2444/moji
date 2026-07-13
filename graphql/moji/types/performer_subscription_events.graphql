@@ -1,0 +1,16 @@
+enum PerformerSubscriptionEventType {
+  CREATED
+  UPDATED
+  DELETED
+}
+
+type PerformerSubscriptionEvent {
+  sequence: Int!
+  type: PerformerSubscriptionEventType!
+  performerId: ID!
+  state: SubscribedPerformer
+}
+
+extend type Subscription {
+  performerSubscriptionEvents: PerformerSubscriptionEvent!
+}

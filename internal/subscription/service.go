@@ -40,6 +40,7 @@ type Service struct {
 	store            Store
 	customFieldKey   string
 	now              func() time.Time
+	eventPublisher   PerformerSubscriptionEventPublisher
 
 	policyMu      sync.RWMutex
 	releasePolicy ReleasePolicyConfig
@@ -123,6 +124,20 @@ func (s *Service) SetTaskCreator(creator TaskCreator) {
 	s.taskCreator = creator
 }
 
+func (s *Service) SetEventPublisher(publisher PerformerSubscriptionEventPublisher) {
+	if s == nil {
+		return
+	}
+	s.eventPublisher = publisher
+}
+
+func (s *Service) publishEvent(eventType PerformerSubscriptionEventType, performerID string, state *SubscribedPerformer) {
+	if s == nil || s.eventPublisher == nil {
+		return
+	}
+	s.eventPublisher.Publish(&PerformerSubscriptionEvent{Type: eventType, PerformerID: performerID, State: state})
+}
+
 func (s *Service) ListSubscribedPerformers(ctx context.Context) ([]SubscribedPerformer, error) {
 	performers, err := s.stash.AllPerformers(ctx)
 	if err != nil {
@@ -170,7 +185,9 @@ func (s *Service) SubscribePerformer(ctx context.Context, performerID string) (S
 	}
 	logging.Infof("subscription: subscribed performer %s (%s)", item.ID, item.Name)
 
-	return buildSubscribedPerformer(item, state), nil
+	result := buildSubscribedPerformer(item, state)
+	s.publishEvent(PerformerSubscriptionEventCreated, item.ID, &result)
+	return result, nil
 }
 
 func (s *Service) UnsubscribePerformer(ctx context.Context, performerID string) error {
@@ -182,6 +199,7 @@ func (s *Service) UnsubscribePerformer(ctx context.Context, performerID string) 
 		logging.Errorf("subscription: delete state for performer %s failed: %v", performerID, err)
 		return err
 	}
+	s.publishEvent(PerformerSubscriptionEventDeleted, performerID, nil)
 	logging.Infof("subscription: unsubscribed performer %s", performerID)
 	return nil
 }
@@ -220,11 +238,13 @@ func (s *Service) RefreshSubscribedPerformer(ctx context.Context, performerID st
 			logging.Errorf("subscription: persist error state for performer %s failed: %v", performerID, putErr)
 			return SubscribedPerformer{}, putErr
 		}
+		result := buildSubscribedPerformer(item, state)
+		s.publishEvent(PerformerSubscriptionEventUpdated, performerID, &result)
 		logging.Errorf("subscription: refresh failed for performer %s (%s): %v", performerID, performer.Name, err)
 		if errors.Is(err, errNoMatchingStashBoxMapping) {
-			return buildSubscribedPerformer(item, state), nil
+			return result, nil
 		}
-		return buildSubscribedPerformer(item, state), err
+		return result, err
 	}
 	logging.Infof("subscription: refresh fetched %d releases for performer %s (%s)", len(releases), performerID, performer.Name)
 
@@ -323,8 +343,9 @@ func (s *Service) RefreshSubscribedPerformer(ctx context.Context, performerID st
 		len(state.PendingReleases),
 		skippedInLibrary,
 	)
-
-	return buildSubscribedPerformer(item, state), nil
+	result := buildSubscribedPerformer(item, state)
+	s.publishEvent(PerformerSubscriptionEventUpdated, performerID, &result)
+	return result, nil
 }
 
 func (s *Service) RefreshAll(ctx context.Context) ([]SubscribedPerformer, error) {

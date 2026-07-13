@@ -1,0 +1,29 @@
+subscription PerformerSubscriptionEvents {
+  performerSubscriptionEvents {
+    sequence
+    type
+    performerId
+    state {
+      performer {
+        id
+        name
+        aliasList
+        favorite
+        imagePath
+        sceneCount
+        subscribed
+      }
+      lastCheckedAt
+      lastError
+      pendingReleaseCount
+      processedReleaseCount
+      recentReleases {
+        key
+        title
+        code
+        date
+        seenAt
+      }
+    }
+  }
+}

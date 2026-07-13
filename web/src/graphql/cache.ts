@@ -8,6 +8,17 @@ const PERFORMER_SUBSCRIBED_FRAGMENT = gql`
   }
 `;
 
+const PERFORMER_SCENE_TASK_FRAGMENT = gql`
+  fragment PerformerSceneTaskEventValue on PerformerSceneTask {
+    id
+    stage
+    stageStatus
+    stageLabel
+    stageStatusLabel
+    progress
+  }
+`;
+
 type Entity = Data & { __typename: string };
 
 function existingLinks(cache: Cache, fieldName: string): string[] | null {
@@ -29,6 +40,25 @@ function unlinkTask(cache: Cache, id: string) {
   const links = existingLinks(cache, "tasks");
   if (taskKey && links) cache.link("Query", "tasks", links.filter((key) => key !== taskKey));
   if (taskKey) cache.invalidate(taskKey);
+}
+
+function updatePerformerSceneTask(cache: Cache, task: any) {
+  if (!task?.id) return;
+  cache.writeFragment(PERFORMER_SCENE_TASK_FRAGMENT, {
+    __typename: "PerformerSceneTask",
+    id: task.id,
+    stage: task.stage,
+    stageStatus: task.stageStatus,
+    stageLabel: task.stageLabel,
+    stageStatusLabel: task.stageStatusLabel,
+    progress: task.progress
+  });
+}
+
+function invalidatePerformerSceneQueries(cache: Cache) {
+  for (const field of cache.inspectFields("Query")) {
+    if (field.fieldName === "stashPerformerScenes") cache.invalidate("Query", field.fieldName, field.arguments ?? {});
+  }
 }
 
 function subscribedPerformerID(cache: Cache, link: string): string | null {
@@ -124,7 +154,17 @@ export const graphcacheUpdates: UpdatesConfig = {
       const event = result.taskEvents;
       if (!event) return;
       if (event.type === "DELETED") unlinkTask(cache, event.taskId);
-      else linkTask(cache, event.task, event.type === "CREATED");
+      else {
+        linkTask(cache, event.task, event.type === "CREATED");
+        updatePerformerSceneTask(cache, event.task);
+      }
+      if (event.type === "CREATED" || event.type === "DELETED") invalidatePerformerSceneQueries(cache);
+    },
+    performerSubscriptionEvents(result: any, _args, cache) {
+      const event = result.performerSubscriptionEvents;
+      if (!event) return;
+      if (event.type === "DELETED") removeSubscribedPerformer(cache, event.performerId);
+      else upsertSubscribedPerformer(cache, event.state);
     }
   },
   Mutation: {

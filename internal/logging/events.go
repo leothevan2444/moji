@@ -9,6 +9,13 @@ type LogEvent struct {
 	Entry    Entry
 }
 
+type LogEventBusStats struct {
+	Subscribers int
+	Published   uint64
+	Dropped     uint64
+	Sequence    uint64
+}
+
 type LogEventSource interface {
 	Subscribe(ctx context.Context) <-chan *LogEvent
 }
@@ -34,6 +41,7 @@ func (l *Logger) Subscribe(ctx context.Context) <-chan *LogEvent {
 		l.eventMu.Unlock()
 		return channel
 	}
+	l.publishedEvents.Add(1)
 	id := l.nextSubscriberID.Add(1)
 	subscriber := logEventSubscriber{channel: channel, done: make(chan struct{})}
 	l.eventSubscribers[id] = subscriber
@@ -111,4 +119,17 @@ func (l *Logger) DroppedEventCount() uint64 {
 		return 0
 	}
 	return l.droppedEvents.Load()
+}
+
+func (l *Logger) EventStats() LogEventBusStats {
+	if l == nil {
+		return LogEventBusStats{}
+	}
+	l.eventMu.RLock()
+	subscribers := len(l.eventSubscribers)
+	l.eventMu.RUnlock()
+	l.mu.RLock()
+	sequence := l.sequence
+	l.mu.RUnlock()
+	return LogEventBusStats{Subscribers: subscribers, Published: l.publishedEvents.Load(), Dropped: l.droppedEvents.Load(), Sequence: sequence}
 }

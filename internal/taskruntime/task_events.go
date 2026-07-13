@@ -3,6 +3,7 @@ package taskruntime
 import (
 	"context"
 	"errors"
+	"log/slog"
 	"reflect"
 	"sync"
 	"sync/atomic"
@@ -49,8 +50,17 @@ type TaskEventBus struct {
 	subscribers map[uint64]taskEventSubscriber
 	nextID      atomic.Uint64
 	sequence    atomic.Uint64
+	published   atomic.Uint64
+	dropped     atomic.Uint64
 	closed      bool
 	bufferSize  int
+}
+
+type TaskEventBusStats struct {
+	Subscribers int
+	Published   uint64
+	Dropped     uint64
+	Sequence    uint64
 }
 
 type taskEventSubscriber struct {
@@ -84,7 +94,7 @@ func (b *TaskEventBus) Subscribe(ctx context.Context) <-chan *TaskEvent {
 	subscriber := taskEventSubscriber{channel: channel, done: make(chan struct{})}
 	b.subscribers[id] = subscriber
 	b.mu.Unlock()
-	logging.Infof("task events: subscriber connected id=%d", id)
+	slog.Info("task events: subscriber connected", "subscriber_id", id)
 
 	go func() {
 		select {
@@ -106,7 +116,7 @@ func (b *TaskEventBus) unsubscribe(id uint64) {
 	}
 	b.mu.Unlock()
 	if ok {
-		logging.Infof("task events: subscriber disconnected id=%d", id)
+		slog.Info("task events: subscriber disconnected", "subscriber_id", id)
 	}
 }
 
@@ -114,27 +124,28 @@ func (b *TaskEventBus) Publish(event *TaskEvent) {
 	if event == nil {
 		return
 	}
-	next := cloneTaskEvent(event)
-	next.Sequence = int(b.sequence.Add(1))
-
 	b.mu.RLock()
 	if b.closed {
 		b.mu.RUnlock()
 		return
 	}
+	next := cloneTaskEvent(event)
+	next.Sequence = int(b.sequence.Add(1))
+	b.published.Add(1)
 	for id, subscriber := range b.subscribers {
 		select {
 		case subscriber.channel <- cloneTaskEvent(next):
 		default:
-			logging.Warnf("task events: event dropped because subscriber buffer is full id=%d sequence=%d task_id=%s", id, next.Sequence, next.TaskID)
+			b.dropped.Add(1)
+			slog.Warn("task events: event dropped because subscriber buffer is full", "subscriber_id", id, "sequence", next.Sequence, "task_id", next.TaskID)
 		}
 	}
 	b.mu.RUnlock()
 
 	if next.Type == TaskEventUpdated {
-		logging.Debugf("task events: event published sequence=%d type=%s task_id=%s", next.Sequence, next.Type, next.TaskID)
+		slog.Debug("task events: event published", "sequence", next.Sequence, "type", next.Type, "task_id", next.TaskID)
 	} else {
-		logging.Infof("task events: event published sequence=%d type=%s task_id=%s", next.Sequence, next.Type, next.TaskID)
+		slog.Info("task events: event published", "sequence", next.Sequence, "type", next.Type, "task_id", next.TaskID)
 	}
 }
 
@@ -152,15 +163,21 @@ func (b *TaskEventBus) Close() {
 		close(subscriber.channel)
 	}
 	b.mu.Unlock()
-	if disconnected > 0 {
-		logging.Infof("task events: disconnected %d subscribers during shutdown", disconnected)
-	}
+	stats := b.Stats()
+	slog.Info("task events: shutdown summary", "published", stats.Published, "dropped", stats.Dropped, "sequence", stats.Sequence, "disconnected", disconnected)
 }
 
 func (b *TaskEventBus) SubscriberCount() int {
 	b.mu.RLock()
 	defer b.mu.RUnlock()
 	return len(b.subscribers)
+}
+
+func (b *TaskEventBus) Stats() TaskEventBusStats {
+	b.mu.RLock()
+	subscribers := len(b.subscribers)
+	b.mu.RUnlock()
+	return TaskEventBusStats{Subscribers: subscribers, Published: b.published.Load(), Dropped: b.dropped.Load(), Sequence: b.sequence.Load()}
 }
 
 func cloneTaskEvent(event *TaskEvent) *TaskEvent {

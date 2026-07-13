@@ -258,6 +258,13 @@ type PerformerSceneTask struct {
 	Progress         float64         `json:"progress"`
 }
 
+type PerformerSubscriptionEvent struct {
+	Sequence    int                            `json:"sequence"`
+	Type        PerformerSubscriptionEventType `json:"type"`
+	PerformerID string                         `json:"performerId"`
+	State       *SubscribedPerformer           `json:"state,omitempty"`
+}
+
 type PreviewJackettSelectionCandidateInput struct {
 	Title        string `json:"title"`
 	Size         int64  `json:"size"`
@@ -1096,6 +1103,63 @@ func (e *LogLevel) UnmarshalJSON(b []byte) error {
 }
 
 func (e LogLevel) MarshalJSON() ([]byte, error) {
+	var buf bytes.Buffer
+	e.MarshalGQL(&buf)
+	return buf.Bytes(), nil
+}
+
+type PerformerSubscriptionEventType string
+
+const (
+	PerformerSubscriptionEventTypeCreated PerformerSubscriptionEventType = "CREATED"
+	PerformerSubscriptionEventTypeUpdated PerformerSubscriptionEventType = "UPDATED"
+	PerformerSubscriptionEventTypeDeleted PerformerSubscriptionEventType = "DELETED"
+)
+
+var AllPerformerSubscriptionEventType = []PerformerSubscriptionEventType{
+	PerformerSubscriptionEventTypeCreated,
+	PerformerSubscriptionEventTypeUpdated,
+	PerformerSubscriptionEventTypeDeleted,
+}
+
+func (e PerformerSubscriptionEventType) IsValid() bool {
+	switch e {
+	case PerformerSubscriptionEventTypeCreated, PerformerSubscriptionEventTypeUpdated, PerformerSubscriptionEventTypeDeleted:
+		return true
+	}
+	return false
+}
+
+func (e PerformerSubscriptionEventType) String() string {
+	return string(e)
+}
+
+func (e *PerformerSubscriptionEventType) UnmarshalGQL(v any) error {
+	str, ok := v.(string)
+	if !ok {
+		return fmt.Errorf("enums must be strings")
+	}
+
+	*e = PerformerSubscriptionEventType(str)
+	if !e.IsValid() {
+		return fmt.Errorf("%s is not a valid PerformerSubscriptionEventType", str)
+	}
+	return nil
+}
+
+func (e PerformerSubscriptionEventType) MarshalGQL(w io.Writer) {
+	fmt.Fprint(w, strconv.Quote(e.String()))
+}
+
+func (e *PerformerSubscriptionEventType) UnmarshalJSON(b []byte) error {
+	s, err := strconv.Unquote(string(b))
+	if err != nil {
+		return err
+	}
+	return e.UnmarshalGQL(s)
+}
+
+func (e PerformerSubscriptionEventType) MarshalJSON() ([]byte, error) {
 	var buf bytes.Buffer
 	e.MarshalGQL(&buf)
 	return buf.Bytes(), nil
