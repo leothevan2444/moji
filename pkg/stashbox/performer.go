@@ -7,7 +7,7 @@ import (
 )
 
 func (c *Client) FindPerformerByID(ctx context.Context, id string) (*graphql.PerformerFragment, error) {
-	performer, err := c.graphql.FindPerformerByID(context.Background(), id)
+	performer, err := c.graphql.FindPerformerByID(ctx, id)
 	if err != nil {
 		return nil, err
 	}
@@ -15,7 +15,7 @@ func (c *Client) FindPerformerByID(ctx context.Context, id string) (*graphql.Per
 }
 
 func (c *Client) SearchPerformer(ctx context.Context, term string) ([]*graphql.PerformerFragment, error) {
-	performers, err := c.graphql.SearchPerformer(context.Background(), term)
+	performers, err := c.graphql.SearchPerformer(ctx, term)
 	if err != nil {
 		return nil, err
 	}
@@ -23,7 +23,7 @@ func (c *Client) SearchPerformer(ctx context.Context, term string) ([]*graphql.P
 }
 
 func (c *Client) QueryPerformers(ctx context.Context, input graphql.PerformerQueryInput) ([]*graphql.PerformerFragment, error) {
-	performers, err := c.graphql.QueryPerformers(context.Background(), input)
+	performers, err := c.graphql.QueryPerformers(ctx, input)
 	if err != nil {
 		return nil, err
 	}

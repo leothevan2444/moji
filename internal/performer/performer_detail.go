@@ -282,16 +282,28 @@ func (s *Service) fetchStashBoxScenes(ctx context.Context, target *metadata.Matc
 	if target == nil {
 		return nil, nil
 	}
-	return target.Client.QueryScenes(ctx, stashboxgraphql.SceneQueryInput{
-		Performers: &stashboxgraphql.MultiIDCriterionInput{
-			Value:    []string{target.Performer.ID},
-			Modifier: stashboxgraphql.CriterionModifierIncludes,
-		},
-		Page:      1,
-		PerPage:   200,
-		Direction: stashboxgraphql.SortDirectionEnumDesc,
-		Sort:      stashboxgraphql.SceneSortEnumDate,
-	})
+
+	const perPage = 40
+	scenes := make([]*stashboxgraphql.SceneFragment, 0, perPage)
+	for page := 1; ; page++ {
+		batch, err := target.Client.QueryScenes(ctx, stashboxgraphql.SceneQueryInput{
+			Performers: &stashboxgraphql.MultiIDCriterionInput{
+				Value:    []string{target.Performer.ID},
+				Modifier: stashboxgraphql.CriterionModifierIncludes,
+			},
+			Page:      page,
+			PerPage:   perPage,
+			Direction: stashboxgraphql.SortDirectionEnumDesc,
+			Sort:      stashboxgraphql.SceneSortEnumDate,
+		})
+		if err != nil {
+			return nil, err
+		}
+		scenes = append(scenes, batch...)
+		if len(batch) < perPage {
+			return scenes, nil
+		}
+	}
 }
 
 func normalizePerformerSceneQuery(query SceneQuery) SceneQuery {

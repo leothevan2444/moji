@@ -7,7 +7,7 @@ import (
 )
 
 func (c *Client) QueryScenes(ctx context.Context, input graphql.SceneQueryInput) ([]*graphql.SceneFragment, error) {
-	scenes, err := c.graphql.QueryScenes(context.Background(), input)
+	scenes, err := c.graphql.QueryScenes(ctx, input)
 	if err != nil {
 		return nil, err
 	}
