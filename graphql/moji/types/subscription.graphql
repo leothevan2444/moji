@@ -27,6 +27,9 @@ extend type Mutation {
 
   "Queue selected performer scenes into the standard Moji download workflow"
   queuePerformerScenes(input: QueuePerformerScenesInput!): QueuePerformerScenesPayload!
+
+  "Force-refresh one performer StashBox cache and return the requested page"
+  refreshStashPerformerScenes(id: ID!, input: StashPerformerScenesInput!): StashPerformerSceneConnection!
 }
 
 type StashPerformer {
@@ -103,12 +106,18 @@ type StashPerformerSceneConnection {
   page: Int!
   pageSize: Int!
   totalCount: Int!
-  totalPages: Int!
+  totalPages: Int
   hasPrevPage: Boolean!
   hasNextPage: Boolean!
   stashSceneCount: Int!
   stashBoxCount: Int!
   dedupedCount: Int!
+  totalCountExact: Boolean!
+  stashBoxRemoteCount: Int!
+  stashBoxLoadedCount: Int!
+  cacheComplete: Boolean!
+  cacheUpdatedAt: String
+  cacheStale: Boolean!
 }
 
 type StashPerformerScene {

@@ -206,8 +206,26 @@ func NormalizeTaskDeletePolicy(value string) TaskDeletePolicy {
 }
 
 type SystemConfig struct {
-	TaskDeletePolicy TaskDeletePolicy `yaml:"task_delete_policy"`
-	ImageCache       ImageCacheConfig `yaml:"image_cache"`
+	TaskDeletePolicy  TaskDeletePolicy        `yaml:"task_delete_policy"`
+	ImageCache        ImageCacheConfig        `yaml:"image_cache"`
+	StashBoxDataCache StashBoxDataCacheConfig `yaml:"stash_box_data_cache"`
+}
+
+type StashBoxDataCacheConfig struct {
+	TTLHours int `yaml:"ttl_hours"`
+}
+
+func (c StashBoxDataCacheConfig) Normalize() StashBoxDataCacheConfig {
+	if c.TTLHours == 0 {
+		c.TTLHours = 24
+	}
+	if c.TTLHours < 1 {
+		c.TTLHours = 1
+	}
+	if c.TTLHours > 720 {
+		c.TTLHours = 720
+	}
+	return c
 }
 
 type ImageCacheConfig struct {
@@ -888,6 +906,7 @@ func LoadFromPath(path string) (*Config, error) {
 	config.Connection.Stash.normalize()
 	config.System.TaskDeletePolicy = config.System.EffectiveTaskDeletePolicy()
 	config.System.ImageCache = config.System.ImageCache.Normalize()
+	config.System.StashBoxDataCache = config.System.StashBoxDataCache.Normalize()
 	config.Automation.StashBoxEndpoints = cleanStrings(config.Automation.StashBoxEndpoints)
 	config.Automation.SubscriptionReleasePolicy = config.Automation.SubscriptionReleasePolicy.Effective()
 	if err := config.Automation.TorrentSelection.Validate(); err != nil {

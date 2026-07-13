@@ -5,6 +5,7 @@ import (
 
 	"github.com/leothevan2444/moji/internal/graphqlapi/model"
 	"github.com/leothevan2444/moji/internal/imagecache"
+	"github.com/leothevan2444/moji/internal/stashboxcache"
 	"github.com/leothevan2444/moji/internal/stats"
 )
 
@@ -68,7 +69,7 @@ func settingsSnapshotToModel(snapshot *SettingsSnapshot, appVersion string) *mod
 			Jackett:     &model.JackettSettings{},
 			Qbittorrent: &model.QBittorrentSettings{},
 			Automation:  &model.AutomationSettings{},
-			System:      &model.SystemSettings{ImageCache: &model.ImageCacheSettings{}},
+			System:      &model.SystemSettings{ImageCache: &model.ImageCacheSettings{}, StashBoxDataCache: &model.StashBoxDataCacheSettings{TTLHours: 24}},
 		}
 	}
 
@@ -120,8 +121,9 @@ func settingsSnapshotToModel(snapshot *SettingsSnapshot, appVersion string) *mod
 			TorrentSelection:                torrentSelectionSettingsToModel(snapshot.Automation.TorrentSelection),
 		},
 		System: &model.SystemSettings{
-			TaskDeletePolicy: model.TaskDeletePolicy(snapshot.System.TaskDeletePolicy),
-			ImageCache:       &model.ImageCacheSettings{Enabled: snapshot.System.ImageCache.Enabled, MaxSizeMb: snapshot.System.ImageCache.MaxSizeMB, RetentionDays: snapshot.System.ImageCache.RetentionDays},
+			TaskDeletePolicy:  model.TaskDeletePolicy(snapshot.System.TaskDeletePolicy),
+			ImageCache:        &model.ImageCacheSettings{Enabled: snapshot.System.ImageCache.Enabled, MaxSizeMb: snapshot.System.ImageCache.MaxSizeMB, RetentionDays: snapshot.System.ImageCache.RetentionDays},
+			StashBoxDataCache: &model.StashBoxDataCacheSettings{TTLHours: snapshot.System.StashBoxDataCache.TTLHours},
 		},
 	}
 }
@@ -195,16 +197,17 @@ func torrentSelectionRuleToModel(rule TorrentSelectionRuleSnapshot) *model.Torre
 func settingsStatusSnapshotToModel(snapshot *SettingsStatusSnapshot) *model.SettingsStatus {
 	if snapshot == nil {
 		return &model.SettingsStatus{
-			Stash:            &model.ServiceStatus{},
-			Jackett:          &model.ServiceStatus{},
-			Qbittorrent:      &model.ServiceStatus{},
-			Automation:       &model.AutomationStatus{},
-			StashBox:         &model.StashBoxStatus{},
-			Ingest:           &model.IngestStatus{},
-			StashLibraries:   []*model.StashLibrary{},
-			StashStats:       emptyStashStatsModel(),
-			JackettStats:     emptyJackettStatsModel(),
-			QbittorrentStats: emptyQBittorrentStatsModel(),
+			Stash:             &model.ServiceStatus{},
+			Jackett:           &model.ServiceStatus{},
+			Qbittorrent:       &model.ServiceStatus{},
+			Automation:        &model.AutomationStatus{},
+			StashBox:          &model.StashBoxStatus{},
+			Ingest:            &model.IngestStatus{},
+			StashLibraries:    []*model.StashLibrary{},
+			StashStats:        emptyStashStatsModel(),
+			StashBoxDataCache: &model.StashBoxDataCacheStatus{},
+			JackettStats:      emptyJackettStatsModel(),
+			QbittorrentStats:  emptyQBittorrentStatsModel(),
 		}
 	}
 
@@ -241,6 +244,10 @@ func settingsStatusSnapshotToModel(snapshot *SettingsStatusSnapshot) *model.Sett
 		JackettStats:            emptyJackettStatsModel(),
 		QbittorrentStats:        emptyQBittorrentStatsModel(),
 	}
+}
+
+func stashBoxDataCacheStatusToModel(status stashboxcache.Status) *model.StashBoxDataCacheStatus {
+	return &model.StashBoxDataCacheStatus{UsedBytes: status.UsedBytes, SceneCount: status.SceneCount, PerformerCount: status.PerformerCount, SnapshotCount: status.SnapshotCount, DatabasePath: status.DatabasePath, LastCleanupAt: formatTimePointer(status.LastCleanupAt), LastError: nilIfEmpty(status.LastError)}
 }
 
 // SettingsStatusWithStats is settingsStatusSnapshotToModel combined with the

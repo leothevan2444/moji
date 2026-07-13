@@ -1,6 +1,10 @@
 package performer
 
-import "github.com/leothevan2444/moji/internal/taskruntime"
+import (
+	"time"
+
+	"github.com/leothevan2444/moji/internal/taskruntime"
+)
 
 const DefaultCustomFieldKey = "moji_subscribed"
 
@@ -75,6 +79,9 @@ type ScenePage struct {
 	Page, PageSize, TotalCount, TotalPages       int
 	HasPrevPage, HasNextPage                     bool
 	StashSceneCount, StashBoxCount, DedupedCount int
+	TotalCountExact, CacheComplete, CacheStale   bool
+	StashBoxLoadedCount                          int
+	CacheUpdatedAt                               *time.Time
 }
 
 type QueueSceneSelection struct {

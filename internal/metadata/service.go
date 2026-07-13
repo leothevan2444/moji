@@ -7,6 +7,7 @@ import (
 	"sync"
 
 	"github.com/leothevan2444/moji/internal/logging"
+	"github.com/leothevan2444/moji/internal/stashboxcache"
 	"github.com/leothevan2444/moji/pkg/stash"
 	stashgraphql "github.com/leothevan2444/moji/pkg/stash/graphql"
 	stashboxgraphql "github.com/leothevan2444/moji/pkg/stashbox/graphql"
@@ -38,7 +39,20 @@ type Service struct {
 	loadError string
 	orderMu   sync.RWMutex
 	order     []string
+	cache     *stashboxcache.Service
 }
+
+func (s *Service) SetCache(cache *stashboxcache.Service) { s.cache = cache }
+func (s *Service) HasCache() bool                        { return s != nil && s.cache != nil }
+
+type CachePolicy = stashboxcache.FreshnessPolicy
+
+const (
+	CachePreferred = stashboxcache.CachePreferred
+	RequireFresh   = stashboxcache.RequireFresh
+	ForceRefresh   = stashboxcache.ForceRefresh
+	RefreshHead    = stashboxcache.RefreshHead
+)
 
 func NewService(loader EndpointLoader, registry *Registry) *Service {
 	if registry == nil {
@@ -133,6 +147,10 @@ func (s *Service) Endpoints() []StashBoxEndpoint {
 }
 
 func (s *Service) ResolvePerformer(ctx context.Context, performer *stashgraphql.PerformerFragment) (*MatchedPerformer, error) {
+	return s.ResolvePerformerWithPolicy(ctx, performer, CachePreferred)
+}
+
+func (s *Service) ResolvePerformerWithPolicy(ctx context.Context, performer *stashgraphql.PerformerFragment, policy CachePolicy) (*MatchedPerformer, error) {
 	if performer == nil {
 		return nil, nil
 	}
@@ -159,7 +177,13 @@ func (s *Service) ResolvePerformer(ctx context.Context, performer *stashgraphql.
 		if !ok {
 			continue
 		}
-		matched, err := client.FindPerformerByID(ctx, id.StashID)
+		var matched *stashboxgraphql.PerformerFragment
+		var err error
+		if s.cache != nil {
+			matched, _, err = s.cache.ResolvePerformer(ctx, client, box.Endpoint, id.StashID, policy)
+		} else {
+			matched, err = client.FindPerformerByID(ctx, id.StashID)
+		}
 		if err != nil {
 			if firstErr == nil {
 				firstErr = err
@@ -175,4 +199,30 @@ func (s *Service) ResolvePerformer(ctx context.Context, performer *stashgraphql.
 		return nil, firstErr
 	}
 	return nil, ErrNoPerformerMapping
+}
+
+func (s *Service) LoadPerformerScenes(ctx context.Context, target *MatchedPerformer, minimum int, policy CachePolicy) (stashboxcache.Result, error) {
+	if target == nil || target.Performer == nil {
+		return stashboxcache.Result{Complete: true}, nil
+	}
+	if s.cache == nil {
+		result := stashboxcache.Result{}
+		for pageNumber := 1; ; pageNumber++ {
+			page, err := target.Client.QueryScenesPage(ctx, stashboxgraphql.SceneQueryInput{
+				Performers: &stashboxgraphql.MultiIDCriterionInput{Value: []string{target.Performer.ID}, Modifier: stashboxgraphql.CriterionModifierIncludes},
+				Page:       pageNumber, PerPage: stashboxcache.PageSize, Direction: stashboxgraphql.SortDirectionEnumDesc, Sort: stashboxgraphql.SceneSortEnumDate,
+			})
+			if err != nil {
+				return stashboxcache.Result{}, err
+			}
+			result.Scenes = append(result.Scenes, page.Scenes...)
+			result.RemoteCount = page.Count
+			result.LoadedCount = len(result.Scenes)
+			result.Complete = result.LoadedCount >= result.RemoteCount || len(page.Scenes) == 0
+			if result.Complete || result.LoadedCount >= minimum {
+				return result, nil
+			}
+		}
+	}
+	return s.cache.Load(ctx, target.Client, target.Endpoint, target.Performer.ID, minimum, policy)
 }

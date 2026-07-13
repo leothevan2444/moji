@@ -30,6 +30,9 @@ extend type Mutation {
 
   "Delete cached image files while preserving registered proxy keys"
   clearImageCache: ImageCacheStatus!
+
+  "Delete all cached StashBox metadata snapshots and entities"
+  clearStashBoxDataCache: StashBoxDataCacheStatus!
 }
 
 type Settings {
@@ -49,6 +52,7 @@ type SettingsStatus {
   stashBox: StashBoxStatus!
   ingest: IngestStatus!
   imageCache: ImageCacheStatus!
+  stashBoxDataCache: StashBoxDataCacheStatus!
   stashLibraries: [StashLibrary!]!
   stashLibrariesLoadError: String
 
@@ -306,6 +310,21 @@ enum TaskDeletePolicy {
 type SystemSettings {
   taskDeletePolicy: TaskDeletePolicy!
   imageCache: ImageCacheSettings!
+  stashBoxDataCache: StashBoxDataCacheSettings!
+}
+
+type StashBoxDataCacheSettings {
+  ttlHours: Int!
+}
+
+type StashBoxDataCacheStatus {
+  usedBytes: Long!
+  sceneCount: Int!
+  performerCount: Int!
+  snapshotCount: Int!
+  databasePath: String!
+  lastCleanupAt: String
+  lastError: String
 }
 
 type ImageCacheSettings {
@@ -459,6 +478,11 @@ input SubscriptionReleasePolicyInput {
 input UpdateSystemSettingsInput {
   taskDeletePolicy: TaskDeletePolicy!
   imageCache: ImageCacheSettingsInput
+  stashBoxDataCache: StashBoxDataCacheSettingsInput
+}
+
+input StashBoxDataCacheSettingsInput {
+  ttlHours: Int!
 }
 
 input ImageCacheSettingsInput {

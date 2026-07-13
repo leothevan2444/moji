@@ -386,10 +386,11 @@ export function PerformersPage({
             </div>
 
             <div className="settings-meta">
-              <span>{t("performerUi.pageItems", { count: performerScenePage?.totalCount ?? 0 })}</span>
-              <span>{t("performerUi.pagination", { page: performerScenePage?.page ?? 1, pages: performerScenePage?.totalPages ?? 0 })}</span>
+              <span>{t(performerScenePage?.totalCountExact ? "performerUi.pageItems" : "performerCacheUi.loadedItems", { count: performerScenePage?.totalCount ?? 0 })}</span>
+              <span>{performerScenePage?.totalPages != null ? t("performerUi.pagination", { page: performerScenePage.page, pages: performerScenePage.totalPages }) : t("performerCacheUi.loadingMorePages", { page: performerScenePage?.page ?? 1 })}</span>
               <span>{t("performerUi.state", { state: t(fetchingPerformerDetail || fetchingPerformerScenes ? "performerUi.loading" : "performerUi.ready") })}</span>
             </div>
+            {performerScenePage?.cacheStale ? <p className="settings-feedback tone-warn">{t("performerCacheUi.stale")}</p> : null}
 
             <div
               className="card-grid"
@@ -535,13 +536,13 @@ export function PerformersPage({
               ) : null}
             </div>
 
-            {performerScenePage && performerScenePage.totalPages > 1 ? (
+            {performerScenePage && (performerScenePage.hasPrevPage || performerScenePage.hasNextPage) ? (
               <div className="pagination-bar">
                 <button type="button" className="ghost-button" disabled={!performerScenePage.hasPrevPage || fetchingPerformerScenes} onClick={onPrevPerformerScenePage}>
                   {t("performerUi.previous")}
                 </button>
                 <span className="status-chip tone-neutral">
-                  {t("performerUi.page", { page: performerScenePage.page, pages: performerScenePage.totalPages })}
+                  {performerScenePage.totalPages != null ? t("performerUi.page", { page: performerScenePage.page, pages: performerScenePage.totalPages }) : t("performerCacheUi.pageUnknownTotal", { page: performerScenePage.page })}
                 </span>
                 <button type="button" className="ghost-button" disabled={!performerScenePage.hasNextPage || fetchingPerformerScenes} onClick={onNextPerformerScenePage}>
                   {t("performerUi.next")}

@@ -10,18 +10,20 @@ import (
 
 type testStashClient struct {
 	performers []*stashgraphql.PerformerFragment
+	performer  *stashgraphql.PerformerFragment
+	scenes     []*stashgraphql.SceneFragment
 }
 
 func (s testStashClient) AllPerformers(context.Context) ([]*stashgraphql.PerformerFragment, error) {
 	return s.performers, nil
 }
 
-func (testStashClient) FindPerformerByID(context.Context, string) (*stashgraphql.PerformerFragment, error) {
-	return nil, nil
+func (s testStashClient) FindPerformerByID(context.Context, string) (*stashgraphql.PerformerFragment, error) {
+	return s.performer, nil
 }
 
-func (testStashClient) FindScenes(context.Context, *stashgraphql.SceneFilterType, *stashgraphql.FindFilterType) ([]*stashgraphql.SceneFragment, error) {
-	return nil, nil
+func (s testStashClient) FindScenes(context.Context, *stashgraphql.SceneFilterType, *stashgraphql.FindFilterType) ([]*stashgraphql.SceneFragment, error) {
+	return s.scenes, nil
 }
 
 func TestServiceListsPerformersWithOnlyPerformerDependencies(t *testing.T) {

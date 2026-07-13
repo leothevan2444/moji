@@ -12,6 +12,7 @@ import (
 	"github.com/leothevan2444/moji/internal/logging"
 	"github.com/leothevan2444/moji/internal/metadata"
 	"github.com/leothevan2444/moji/internal/performer"
+	"github.com/leothevan2444/moji/internal/stashboxcache"
 	"github.com/leothevan2444/moji/internal/stashsync"
 	"github.com/leothevan2444/moji/internal/stats"
 	"github.com/leothevan2444/moji/internal/subscription"
@@ -72,6 +73,12 @@ type ImageCacheService interface {
 	Cleanup(context.Context) error
 }
 
+type StashBoxDataCacheService interface {
+	Status(context.Context) (stashboxcache.Status, error)
+	Clear(context.Context) (stashboxcache.Status, error)
+	Cleanup(context.Context) error
+}
+
 type UpdateStashSettingsInput struct {
 	URL    string
 	APIKey string
@@ -108,9 +115,12 @@ type UpdateAutomationSettingsInput struct {
 }
 
 type UpdateSystemSettingsInput struct {
-	TaskDeletePolicy string
-	ImageCache       ImageCacheSettingsSnapshot
+	TaskDeletePolicy  string
+	ImageCache        ImageCacheSettingsSnapshot
+	StashBoxDataCache StashBoxDataCacheSettingsSnapshot
 }
+
+type StashBoxDataCacheSettingsSnapshot struct{ TTLHours int }
 
 type ImageCacheSettingsSnapshot struct {
 	Enabled       bool
@@ -239,8 +249,9 @@ type SubscriptionReleasePolicySnapshot struct {
 }
 
 type SystemSettingsSnapshot struct {
-	TaskDeletePolicy string
-	ImageCache       ImageCacheSettingsSnapshot
+	TaskDeletePolicy  string
+	ImageCache        ImageCacheSettingsSnapshot
+	StashBoxDataCache StashBoxDataCacheSettingsSnapshot
 }
 
 type StashLibrarySnapshot struct {
@@ -305,6 +316,7 @@ type PerformerService interface {
 	QueuePerformerScenes(ctx context.Context, performerID string, selections []performer.QueueSceneSelection) (performer.QueueScenesResult, error)
 	GetPerformerDetail(ctx context.Context, performerID string) (performer.Detail, error)
 	ListPerformerScenes(ctx context.Context, performerID string, query performer.SceneQuery) (performer.ScenePage, error)
+	RefreshPerformerScenes(ctx context.Context, performerID string, query performer.SceneQuery) (performer.ScenePage, error)
 }
 
 type DiscoveryService interface {
@@ -349,6 +361,7 @@ type Resolver struct {
 	RuntimeStatus                    *SettingsStatusSnapshot
 	Stats                            StatsProvider
 	ImageCache                       ImageCacheService
+	StashBoxDataCache                StashBoxDataCacheService
 	AppVersion                       string
 }
 

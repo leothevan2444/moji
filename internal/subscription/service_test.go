@@ -13,6 +13,7 @@ import (
 	"github.com/leothevan2444/moji/internal/taskruntime"
 	"github.com/leothevan2444/moji/pkg/stash"
 	stashgraphql "github.com/leothevan2444/moji/pkg/stash/graphql"
+	stashboxpkg "github.com/leothevan2444/moji/pkg/stashbox"
 	stashboxgraphql "github.com/leothevan2444/moji/pkg/stashbox/graphql"
 )
 
@@ -203,6 +204,18 @@ func (f *fakeStashboxClient) QueryScenes(_ context.Context, input stashboxgraphq
 		out = append(out, &cloned)
 	}
 	return out, nil
+}
+
+func (f *fakeStashboxClient) QueryScenesPage(ctx context.Context, input stashboxgraphql.SceneQueryInput) (stashboxpkg.ScenePage, error) {
+	scenes, err := f.QueryScenes(ctx, input)
+	count := len(f.scenes)
+	if f.scenesByPage != nil {
+		count = 0
+		for _, page := range f.scenesByPage {
+			count += len(page)
+		}
+	}
+	return stashboxpkg.ScenePage{Scenes: scenes, Count: count}, err
 }
 
 func (f *fakeTaskRuntime) DownloadMediaContext(_ context.Context, req taskruntime.DownloadRequest) (*taskruntime.Task, error) {
@@ -817,10 +830,10 @@ func TestRefreshPerformerPollFindsNewReleaseOnLaterPage(t *testing.T) {
 	if item.PendingReleaseCount != 2 {
 		t.Fatalf("expected existing + new pending release, got %d", item.PendingReleaseCount)
 	}
-	if len(client.queryInputs) != 3 {
-		t.Fatalf("expected poll to reach page 3 empty boundary, got %d calls", len(client.queryInputs))
+	if len(client.queryInputs) != 2 {
+		t.Fatalf("expected poll to inspect two 40-item batches, got %d calls", len(client.queryInputs))
 	}
-	if client.queryInputs[0].PerPage != releaseQueryPerPage || client.queryInputs[2].Page != 3 {
+	if client.queryInputs[0].PerPage != releaseQueryPerPage || client.queryInputs[1].Page != 2 {
 		t.Fatalf("unexpected query inputs: %+v", client.queryInputs)
 	}
 }

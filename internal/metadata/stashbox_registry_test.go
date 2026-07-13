@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/leothevan2444/moji/pkg/stash"
+	stashboxpkg "github.com/leothevan2444/moji/pkg/stashbox"
 	stashboxgraphql "github.com/leothevan2444/moji/pkg/stashbox/graphql"
 )
 
@@ -171,4 +172,8 @@ func (*registryTestClient) SearchScene(context.Context, string) ([]*stashboxgrap
 
 func (*registryTestClient) QueryScenes(context.Context, stashboxgraphql.SceneQueryInput) ([]*stashboxgraphql.SceneFragment, error) {
 	return nil, nil
+}
+
+func (*registryTestClient) QueryScenesPage(context.Context, stashboxgraphql.SceneQueryInput) (stashboxpkg.ScenePage, error) {
+	return stashboxpkg.ScenePage{}, nil
 }

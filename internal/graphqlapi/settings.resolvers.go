@@ -134,8 +134,10 @@ func (r *mutationResolver) UpdateSystemSettings(ctx context.Context, input model
 	}
 
 	cacheSettings := ImageCacheSettingsSnapshot{Enabled: true, MaxSizeMB: 1024, RetentionDays: 30}
+	stashBoxCacheSettings := StashBoxDataCacheSettingsSnapshot{TTLHours: 24}
 	if current := r.SettingsEditor.Snapshot(); current != nil {
 		cacheSettings = current.System.ImageCache
+		stashBoxCacheSettings = current.System.StashBoxDataCache
 	}
 	if input.ImageCache != nil {
 		if input.ImageCache.MaxSizeMb < 64 || input.ImageCache.MaxSizeMb > 20480 {
@@ -146,12 +148,21 @@ func (r *mutationResolver) UpdateSystemSettings(ctx context.Context, input model
 		}
 		cacheSettings = ImageCacheSettingsSnapshot{Enabled: input.ImageCache.Enabled, MaxSizeMB: input.ImageCache.MaxSizeMb, RetentionDays: input.ImageCache.RetentionDays}
 	}
-	snapshot, err := r.SettingsEditor.UpdateSystemSettings(UpdateSystemSettingsInput{TaskDeletePolicy: string(input.TaskDeletePolicy), ImageCache: cacheSettings})
+	if input.StashBoxDataCache != nil {
+		if input.StashBoxDataCache.TTLHours < 1 || input.StashBoxDataCache.TTLHours > 720 {
+			return nil, errors.New("StashBox data cache ttlHours must be between 1 and 720")
+		}
+		stashBoxCacheSettings = StashBoxDataCacheSettingsSnapshot{TTLHours: input.StashBoxDataCache.TTLHours}
+	}
+	snapshot, err := r.SettingsEditor.UpdateSystemSettings(UpdateSystemSettingsInput{TaskDeletePolicy: string(input.TaskDeletePolicy), ImageCache: cacheSettings, StashBoxDataCache: stashBoxCacheSettings})
 	if err != nil {
 		return nil, err
 	}
 	if r.ImageCache != nil {
 		_ = r.ImageCache.Cleanup(ctx)
+	}
+	if r.StashBoxDataCache != nil {
+		_ = r.StashBoxDataCache.Cleanup(ctx)
 	}
 
 	return settingsSnapshotToModel(snapshot, r.AppVersion), nil
@@ -181,6 +192,18 @@ func (r *mutationResolver) ClearImageCache(ctx context.Context) (*model.ImageCac
 		return nil, err
 	}
 	return imageCacheStatusToModel(status), nil
+}
+
+// ClearStashBoxDataCache is the resolver for the clearStashBoxDataCache field.
+func (r *mutationResolver) ClearStashBoxDataCache(ctx context.Context) (*model.StashBoxDataCacheStatus, error) {
+	if r.StashBoxDataCache == nil {
+		return nil, errors.New("StashBox data cache is not configured")
+	}
+	status, err := r.StashBoxDataCache.Clear(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return stashBoxDataCacheStatusToModel(status), nil
 }
 
 // Settings is the resolver for the settings field.
@@ -216,6 +239,15 @@ func (r *queryResolver) SettingsStatus(ctx context.Context) (*model.SettingsStat
 	}
 	if out.ImageCache == nil {
 		out.ImageCache = &model.ImageCacheStatus{}
+	}
+	if r.StashBoxDataCache != nil {
+		status, err := r.StashBoxDataCache.Status(ctx)
+		if err == nil {
+			out.StashBoxDataCache = stashBoxDataCacheStatusToModel(status)
+		}
+	}
+	if out.StashBoxDataCache == nil {
+		out.StashBoxDataCache = &model.StashBoxDataCacheStatus{}
 	}
 	return out, nil
 }

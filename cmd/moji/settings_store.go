@@ -213,7 +213,7 @@ func (s *runtimeSettingsEditor) UpdateAutomationSettings(input graphqlapi.Update
 func (s *runtimeSettingsEditor) UpdateSystemSettings(input graphqlapi.UpdateSystemSettingsInput) (*graphqlapi.SettingsSnapshot, error) {
 	policy := config.NormalizeTaskDeletePolicy(input.TaskDeletePolicy)
 	enabled := input.ImageCache.Enabled
-	cfg, err := s.store.UpdateSystem(policy, config.ImageCacheConfig{Enabled: &enabled, MaxSizeMB: input.ImageCache.MaxSizeMB, RetentionDays: input.ImageCache.RetentionDays})
+	cfg, err := s.store.UpdateSystemWithDataCache(policy, config.ImageCacheConfig{Enabled: &enabled, MaxSizeMB: input.ImageCache.MaxSizeMB, RetentionDays: input.ImageCache.RetentionDays}, config.StashBoxDataCacheConfig{TTLHours: input.StashBoxDataCache.TTLHours})
 	if err != nil {
 		logging.Errorf("settings: save system settings failed: %v", err)
 		return nil, err

@@ -66,10 +66,11 @@ query AutomationSettingsTab {
 
 query SystemSettingsTab {
   settings {
-    system { taskDeletePolicy imageCache { enabled maxSizeMb retentionDays } }
+    system { taskDeletePolicy imageCache { enabled maxSizeMb retentionDays } stashBoxDataCache { ttlHours } }
   }
   settingsStatus {
     imageCache { usedBytes entryCount cacheDirectory lastCleanupAt lastError }
+    stashBoxDataCache { usedBytes sceneCount performerCount snapshotCount databasePath lastCleanupAt lastError }
   }
 }
 

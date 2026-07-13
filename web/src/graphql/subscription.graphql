@@ -101,6 +101,33 @@ query StashPerformerScenes($id: ID!, $input: StashPerformerScenesInput!) {
     stashSceneCount
     stashBoxCount
     dedupedCount
+    totalCountExact
+    stashBoxRemoteCount
+    stashBoxLoadedCount
+    cacheComplete
+    cacheUpdatedAt
+    cacheStale
+  }
+}
+
+mutation RefreshStashPerformerScenes($id: ID!, $input: StashPerformerScenesInput!) {
+  refreshStashPerformerScenes(id: $id, input: $input) {
+    items { key }
+    page
+    pageSize
+    totalCount
+    totalPages
+    hasPrevPage
+    hasNextPage
+    stashSceneCount
+    stashBoxCount
+    dedupedCount
+    totalCountExact
+    stashBoxRemoteCount
+    stashBoxLoadedCount
+    cacheComplete
+    cacheUpdatedAt
+    cacheStale
   }
 }
 

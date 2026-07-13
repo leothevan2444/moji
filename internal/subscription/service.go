@@ -72,9 +72,9 @@ func (s *Service) proxyStashImage(ctx context.Context, raw string) string {
 }
 
 const (
-	releaseQueryPerPage          = 24
-	releaseQueryPollMaxPages     = 3
-	releaseQueryBackfillMaxPages = 10
+	releaseQueryPerPage          = 40
+	releaseQueryPollMaxPages     = 2
+	releaseQueryBackfillMaxPages = 6
 )
 
 type releaseFetchMode string
@@ -374,7 +374,7 @@ func (s *Service) fetchReleases(ctx context.Context, performer *stashgraphql.Per
 		return nil, errors.New("subscription: no stash-box endpoints configured in Stash")
 	}
 
-	target, err := s.metadata.ResolvePerformer(ctx, performer)
+	target, err := s.metadata.ResolvePerformerWithPolicy(ctx, performer, metadata.RequireFresh)
 	if err != nil {
 		if errors.Is(err, metadata.ErrNoPerformerMapping) {
 			return nil, errNoMatchingStashBoxMapping
@@ -398,18 +398,28 @@ func (s *Service) fetchReleases(ctx context.Context, performer *stashgraphql.Per
 
 	for page := 1; page <= strategy.maxPages; page++ {
 		stats.pagesRequested++
-		scenes, err := target.Client.QueryScenes(ctx, stashboxgraphql.SceneQueryInput{
-			Performers: &stashboxgraphql.MultiIDCriterionInput{
-				Value:    []string{target.Performer.ID},
-				Modifier: stashboxgraphql.CriterionModifierIncludes,
-			},
-			Page:      page,
-			PerPage:   strategy.perPage,
-			Direction: stashboxgraphql.SortDirectionEnumDesc,
-			Sort:      stashboxgraphql.SceneSortEnumDate,
-		})
-		if err != nil {
-			return nil, err
+		var scenes []*stashboxgraphql.SceneFragment
+		if s.metadata.HasCache() {
+			cachePolicy := metadata.RequireFresh
+			if page == 1 {
+				cachePolicy = metadata.RefreshHead
+			}
+			cached, err := s.metadata.LoadPerformerScenes(ctx, target, page*strategy.perPage, cachePolicy)
+			if err != nil {
+				return nil, err
+			}
+			start := min((page-1)*strategy.perPage, len(cached.Scenes))
+			end := min(start+strategy.perPage, len(cached.Scenes))
+			scenes = cached.Scenes[start:end]
+		} else {
+			var err error
+			scenes, err = target.Client.QueryScenes(ctx, stashboxgraphql.SceneQueryInput{
+				Performers: &stashboxgraphql.MultiIDCriterionInput{Value: []string{target.Performer.ID}, Modifier: stashboxgraphql.CriterionModifierIncludes},
+				Page:       page, PerPage: strategy.perPage, Direction: stashboxgraphql.SortDirectionEnumDesc, Sort: stashboxgraphql.SceneSortEnumDate,
+			})
+			if err != nil {
+				return nil, err
+			}
 		}
 		if len(scenes) == 0 {
 			stats.stopReason = "empty_page"

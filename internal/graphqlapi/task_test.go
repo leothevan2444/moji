@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -13,6 +14,7 @@ import (
 	"github.com/leothevan2444/moji/internal/graphqlapi/generated"
 	"github.com/leothevan2444/moji/internal/logging"
 	performerdomain "github.com/leothevan2444/moji/internal/performer"
+	"github.com/leothevan2444/moji/internal/stashboxcache"
 	"github.com/leothevan2444/moji/internal/stashsync"
 	"github.com/leothevan2444/moji/internal/taskruntime"
 	"github.com/leothevan2444/moji/internal/tracker"
@@ -1101,6 +1103,7 @@ func TestUpdateSystemSettingsMutation(t *testing.T) {
 	resp := executeGraphQL(t, resolver, `mutation {
 		updateSystemSettings(input: {
 			taskDeletePolicy: REMOVE_TORRENT_AND_FILES
+			stashBoxDataCache: { ttlHours: 36 }
 		}) {
 			system {
 				taskDeletePolicy
@@ -1113,8 +1116,70 @@ func TestUpdateSystemSettingsMutation(t *testing.T) {
 	if editor.systemInput.TaskDeletePolicy != "REMOVE_TORRENT_AND_FILES" {
 		t.Fatalf("unexpected system input: %+v", editor.systemInput)
 	}
+	if editor.systemInput.StashBoxDataCache.TTLHours != 36 {
+		t.Fatalf("unexpected StashBox cache input: %+v", editor.systemInput.StashBoxDataCache)
+	}
 	if resp.Data.UpdateSystemSettings.System.TaskDeletePolicy != "REMOVE_TORRENT_AND_FILES" {
 		t.Fatalf("unexpected system response: %+v", resp.Data.UpdateSystemSettings.System)
+	}
+}
+
+func TestUpdateSystemSettingsRejectsInvalidStashBoxCacheTTL(t *testing.T) {
+	for _, ttl := range []int{0, 721} {
+		resolver := NewResolver(nil, nil, nil, nil, "test-version")
+		resolver.SettingsEditor = &fakeSettingsEditor{}
+		resp := executeGraphQL(t, resolver, fmt.Sprintf(`mutation {
+			updateSystemSettings(input: {
+				taskDeletePolicy: KEEP_ONLY
+				stashBoxDataCache: { ttlHours: %d }
+			}) { system { taskDeletePolicy } }
+		}`, ttl))
+		if len(resp.Errors) == 0 {
+			t.Fatalf("expected StashBox cache TTL validation error for %d", ttl)
+		}
+	}
+}
+
+func TestStashBoxDataCacheStatusAndClearGraphQLContract(t *testing.T) {
+	cache := &fakeStashBoxDataCache{status: stashboxcache.Status{UsedBytes: 1234, SceneCount: 3, PerformerCount: 2, SnapshotCount: 4, DatabasePath: "cache/stashbox/cache.db"}}
+	resolver := NewResolver(nil, nil, nil, nil, "test-version")
+	resolver.RuntimeStatus = &SettingsStatusSnapshot{}
+	resolver.StashBoxDataCache = cache
+
+	var statusResponse struct {
+		Data struct {
+			SettingsStatus struct {
+				StashBoxDataCache struct {
+					UsedBytes      int64  `json:"usedBytes"`
+					SceneCount     int    `json:"sceneCount"`
+					PerformerCount int    `json:"performerCount"`
+					SnapshotCount  int    `json:"snapshotCount"`
+					DatabasePath   string `json:"databasePath"`
+				} `json:"stashBoxDataCache"`
+			} `json:"settingsStatus"`
+		} `json:"data"`
+		Errors []struct {
+			Message string `json:"message"`
+		} `json:"errors"`
+	}
+	executeGraphQLInto(t, resolver, `{ settingsStatus { stashBoxDataCache { usedBytes sceneCount performerCount snapshotCount databasePath } } }`, &statusResponse)
+	if len(statusResponse.Errors) != 0 || statusResponse.Data.SettingsStatus.StashBoxDataCache.SceneCount != 3 || statusResponse.Data.SettingsStatus.StashBoxDataCache.UsedBytes != 1234 {
+		t.Fatalf("unexpected cache status response: %+v", statusResponse)
+	}
+
+	var clearResponse struct {
+		Data struct {
+			Clear struct {
+				SceneCount int `json:"sceneCount"`
+			} `json:"clearStashBoxDataCache"`
+		} `json:"data"`
+		Errors []struct {
+			Message string `json:"message"`
+		} `json:"errors"`
+	}
+	executeGraphQLInto(t, resolver, `mutation { clearStashBoxDataCache { sceneCount } }`, &clearResponse)
+	if len(clearResponse.Errors) != 0 || !cache.cleared || clearResponse.Data.Clear.SceneCount != 0 {
+		t.Fatalf("unexpected cache clear response: %+v cleared=%v", clearResponse, cache.cleared)
 	}
 }
 
@@ -1475,6 +1540,25 @@ type fakeSettingsEditor struct {
 	updateSystemSnapshot      *SettingsSnapshot
 }
 
+type fakeStashBoxDataCache struct {
+	status  stashboxcache.Status
+	cleared bool
+}
+
+func (f *fakeStashBoxDataCache) Status(context.Context) (stashboxcache.Status, error) {
+	return f.status, nil
+}
+
+func (f *fakeStashBoxDataCache) Clear(context.Context) (stashboxcache.Status, error) {
+	f.cleared = true
+	f.status.SceneCount = 0
+	f.status.PerformerCount = 0
+	f.status.SnapshotCount = 0
+	return f.status, nil
+}
+
+func (*fakeStashBoxDataCache) Cleanup(context.Context) error { return nil }
+
 func (f *fakeSettingsEditor) Snapshot() *SettingsSnapshot {
 	return f.snapshot
 }
@@ -1581,6 +1665,10 @@ func (f *fakePerformerService) GetPerformerDetail(context.Context, string) (perf
 }
 
 func (f *fakePerformerService) ListPerformerScenes(context.Context, string, performerdomain.SceneQuery) (performerdomain.ScenePage, error) {
+	return f.performerPage, nil
+}
+
+func (f *fakePerformerService) RefreshPerformerScenes(context.Context, string, performerdomain.SceneQuery) (performerdomain.ScenePage, error) {
 	return f.performerPage, nil
 }
 

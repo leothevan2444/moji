@@ -431,21 +431,40 @@ type Settings struct {
 }
 
 type SettingsStatus struct {
-	Stash                   *ServiceStatus    `json:"stash"`
-	Jackett                 *ServiceStatus    `json:"jackett"`
-	Qbittorrent             *ServiceStatus    `json:"qbittorrent"`
-	Automation              *AutomationStatus `json:"automation"`
-	StashBox                *StashBoxStatus   `json:"stashBox"`
-	Ingest                  *IngestStatus     `json:"ingest"`
-	ImageCache              *ImageCacheStatus `json:"imageCache"`
-	StashLibraries          []*StashLibrary   `json:"stashLibraries"`
-	StashLibrariesLoadError *string           `json:"stashLibrariesLoadError,omitempty"`
+	Stash                   *ServiceStatus           `json:"stash"`
+	Jackett                 *ServiceStatus           `json:"jackett"`
+	Qbittorrent             *ServiceStatus           `json:"qbittorrent"`
+	Automation              *AutomationStatus        `json:"automation"`
+	StashBox                *StashBoxStatus          `json:"stashBox"`
+	Ingest                  *IngestStatus            `json:"ingest"`
+	ImageCache              *ImageCacheStatus        `json:"imageCache"`
+	StashBoxDataCache       *StashBoxDataCacheStatus `json:"stashBoxDataCache"`
+	StashLibraries          []*StashLibrary          `json:"stashLibraries"`
+	StashLibrariesLoadError *string                  `json:"stashLibrariesLoadError,omitempty"`
 	// Runtime stats for the Stash server. Refreshed by the stats collector.
 	StashStats *StashStats `json:"stashStats"`
 	// Runtime stats for the Jackett indexer aggregator. Refreshed by the stats collector.
 	JackettStats *JackettStats `json:"jackettStats"`
 	// Runtime stats for the qBittorrent download client. Refreshed by the stats collector.
 	QbittorrentStats *QBittorrentStats `json:"qbittorrentStats"`
+}
+
+type StashBoxDataCacheSettings struct {
+	TTLHours int `json:"ttlHours"`
+}
+
+type StashBoxDataCacheSettingsInput struct {
+	TTLHours int `json:"ttlHours"`
+}
+
+type StashBoxDataCacheStatus struct {
+	UsedBytes      int64   `json:"usedBytes"`
+	SceneCount     int     `json:"sceneCount"`
+	PerformerCount int     `json:"performerCount"`
+	SnapshotCount  int     `json:"snapshotCount"`
+	DatabasePath   string  `json:"databasePath"`
+	LastCleanupAt  *string `json:"lastCleanupAt,omitempty"`
+	LastError      *string `json:"lastError,omitempty"`
 }
 
 type StashBoxEndpoint struct {
@@ -554,16 +573,22 @@ type StashPerformerScene struct {
 }
 
 type StashPerformerSceneConnection struct {
-	Items           []*StashPerformerScene `json:"items"`
-	Page            int                    `json:"page"`
-	PageSize        int                    `json:"pageSize"`
-	TotalCount      int                    `json:"totalCount"`
-	TotalPages      int                    `json:"totalPages"`
-	HasPrevPage     bool                   `json:"hasPrevPage"`
-	HasNextPage     bool                   `json:"hasNextPage"`
-	StashSceneCount int                    `json:"stashSceneCount"`
-	StashBoxCount   int                    `json:"stashBoxCount"`
-	DedupedCount    int                    `json:"dedupedCount"`
+	Items               []*StashPerformerScene `json:"items"`
+	Page                int                    `json:"page"`
+	PageSize            int                    `json:"pageSize"`
+	TotalCount          int                    `json:"totalCount"`
+	TotalPages          *int                   `json:"totalPages,omitempty"`
+	HasPrevPage         bool                   `json:"hasPrevPage"`
+	HasNextPage         bool                   `json:"hasNextPage"`
+	StashSceneCount     int                    `json:"stashSceneCount"`
+	StashBoxCount       int                    `json:"stashBoxCount"`
+	DedupedCount        int                    `json:"dedupedCount"`
+	TotalCountExact     bool                   `json:"totalCountExact"`
+	StashBoxRemoteCount int                    `json:"stashBoxRemoteCount"`
+	StashBoxLoadedCount int                    `json:"stashBoxLoadedCount"`
+	CacheComplete       bool                   `json:"cacheComplete"`
+	CacheUpdatedAt      *string                `json:"cacheUpdatedAt,omitempty"`
+	CacheStale          bool                   `json:"cacheStale"`
 }
 
 type StashPerformerScenesInput struct {
@@ -643,8 +668,9 @@ type SubscriptionReleasePolicyInput struct {
 }
 
 type SystemSettings struct {
-	TaskDeletePolicy TaskDeletePolicy    `json:"taskDeletePolicy"`
-	ImageCache       *ImageCacheSettings `json:"imageCache"`
+	TaskDeletePolicy  TaskDeletePolicy           `json:"taskDeletePolicy"`
+	ImageCache        *ImageCacheSettings        `json:"imageCache"`
+	StashBoxDataCache *StashBoxDataCacheSettings `json:"stashBoxDataCache"`
 }
 
 type Task struct {
@@ -811,8 +837,9 @@ type UpdateStashSettingsInput struct {
 }
 
 type UpdateSystemSettingsInput struct {
-	TaskDeletePolicy TaskDeletePolicy         `json:"taskDeletePolicy"`
-	ImageCache       *ImageCacheSettingsInput `json:"imageCache,omitempty"`
+	TaskDeletePolicy  TaskDeletePolicy                `json:"taskDeletePolicy"`
+	ImageCache        *ImageCacheSettingsInput        `json:"imageCache,omitempty"`
+	StashBoxDataCache *StashBoxDataCacheSettingsInput `json:"stashBoxDataCache,omitempty"`
 }
 
 type DiscoverSortBy string

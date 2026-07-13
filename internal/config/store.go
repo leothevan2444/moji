@@ -161,10 +161,27 @@ func (s *Store) UpdateSystem(taskDeletePolicy TaskDeletePolicy, imageCache ...Im
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	s.cfg.System.TaskDeletePolicy = NormalizeTaskDeletePolicy(string(taskDeletePolicy))
-	if len(imageCache) > 0 {
-		s.cfg.System.ImageCache = imageCache[0].Normalize()
+	stashBoxCache := s.cfg.System.StashBoxDataCache.Normalize()
+	return s.updateSystemLocked(taskDeletePolicy, firstImageCache(s.cfg.System.ImageCache, imageCache), stashBoxCache)
+}
+
+func firstImageCache(current ImageCacheConfig, values []ImageCacheConfig) ImageCacheConfig {
+	if len(values) > 0 {
+		return values[0]
 	}
+	return current
+}
+
+func (s *Store) UpdateSystemWithDataCache(taskDeletePolicy TaskDeletePolicy, imageCache ImageCacheConfig, stashBoxCache StashBoxDataCacheConfig) (*Config, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return s.updateSystemLocked(taskDeletePolicy, imageCache, stashBoxCache)
+}
+
+func (s *Store) updateSystemLocked(taskDeletePolicy TaskDeletePolicy, imageCache ImageCacheConfig, stashBoxCache StashBoxDataCacheConfig) (*Config, error) {
+	s.cfg.System.TaskDeletePolicy = NormalizeTaskDeletePolicy(string(taskDeletePolicy))
+	s.cfg.System.ImageCache = imageCache.Normalize()
+	s.cfg.System.StashBoxDataCache = stashBoxCache.Normalize()
 
 	if err := s.updateConfigNode(); err != nil {
 		return nil, err
@@ -221,6 +238,8 @@ func (s *Store) updateConfigNode() error {
 	setBoolScalar(imageCache, "enabled", s.cfg.System.ImageCache.EffectiveEnabled())
 	setIntScalar(imageCache, "max_size_mb", s.cfg.System.ImageCache.Normalize().MaxSizeMB)
 	setIntScalar(imageCache, "retention_days", s.cfg.System.ImageCache.Normalize().RetentionDays)
+	stashBoxDataCache := mapValue(system, "stash_box_data_cache")
+	setIntScalar(stashBoxDataCache, "ttl_hours", s.cfg.System.StashBoxDataCache.Normalize().TTLHours)
 	deleteMapKey(top, "stash")
 	deleteMapKey(top, "jackett")
 	deleteMapKey(top, "qbittorrent")

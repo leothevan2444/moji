@@ -94,6 +94,25 @@ func (r *mutationResolver) QueuePerformerScenes(ctx context.Context, input model
 	return queuePerformerScenesResultToModel(result), nil
 }
 
+// RefreshStashPerformerScenes is the resolver for the refreshStashPerformerScenes field.
+func (r *mutationResolver) RefreshStashPerformerScenes(ctx context.Context, id string, input model.StashPerformerScenesInput) (*model.StashPerformerSceneConnection, error) {
+	if r.Performer == nil {
+		return nil, errors.New("performer service is not configured")
+	}
+	query := performer.SceneQuery{Search: derefString(input.Search), Page: normalizePage(input.Page), PageSize: normalizePageSize(input.PageSize)}
+	if input.Source != nil {
+		query.Source = performer.SceneSourceFilter(*input.Source)
+	}
+	if input.InLibrary != nil {
+		query.InLibrary = performer.LibraryFilter(*input.InLibrary)
+	}
+	page, err := r.Performer.RefreshPerformerScenes(ctx, id, query)
+	if err != nil {
+		return nil, err
+	}
+	return performerScenePageToModel(page), nil
+}
+
 // StashPerformers is the resolver for the stashPerformers field.
 func (r *queryResolver) StashPerformers(ctx context.Context, search *string, page *int, pageSize *int) (*model.StashPerformerConnection, error) {
 	if r.Performer == nil {

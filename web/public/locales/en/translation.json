@@ -1,4 +1,23 @@
 {
+  "stashBoxCacheUi": {
+    "title": "StashBox data cache",
+    "info": "Performer and scene metadata is cached on demand in local SQLite. Browsing can fall back to stale data when refreshes fail.",
+    "ttl": "Data TTL (hours)",
+    "ttlInfo": "Allowed range: 1–720 hours; default: 24. Subscription checks always refresh the newest batch.",
+    "scenes": "Scenes: {{count}}",
+    "performers": "Performers: {{count}}",
+    "snapshots": "Snapshots: {{count}}",
+    "clear": "Clear data cache",
+    "clearTitle": "Clear StashBox data cache?",
+    "clearDescription": "Delete all performer and scene metadata snapshots. Future access will fetch them again on demand.",
+    "cleared": "StashBox data cache cleared."
+  },
+  "performerCacheUi": {
+    "loadedItems": "Discovered items: {{count}}",
+    "loadingMorePages": "Page {{page}} · Loading on demand",
+    "pageUnknownTotal": "Page {{page}}",
+    "stale": "StashBox refresh failed. Showing the last cached data."
+  },
   "common": {
     "auto": "Use browser language",
     "language": "Language",

@@ -1,4 +1,23 @@
 {
+  "stashBoxCacheUi": {
+    "title": "StashBox 数据缓存",
+    "info": "演员和影片元数据按需缓存在本地 SQLite；过期刷新失败时，浏览页面可继续显示旧数据。",
+    "ttl": "数据有效期（小时）",
+    "ttlInfo": "允许 1–720 小时，默认 24 小时。订阅检查始终刷新最新一批数据。",
+    "scenes": "影片：{{count}}",
+    "performers": "演员：{{count}}",
+    "snapshots": "快照：{{count}}",
+    "clear": "清空数据缓存",
+    "clearTitle": "清空 StashBox 数据缓存？",
+    "clearDescription": "将删除所有演员和影片元数据快照；后续访问会按需重新获取。",
+    "cleared": "StashBox 数据缓存已清空。"
+  },
+  "performerCacheUi": {
+    "loadedItems": "已发现条目：{{count}}",
+    "loadingMorePages": "第 {{page}} 页 · 数据按需加载中",
+    "pageUnknownTotal": "第 {{page}} 页",
+    "stale": "StashBox 刷新失败，当前显示上次缓存的数据。"
+  },
   "common": {
     "auto": "跟随浏览器",
     "language": "语言",

@@ -113,17 +113,27 @@ func performerScenePageToModel(page performerdomain.ScenePage) *model.StashPerfo
 	for _, item := range page.Items {
 		items = append(items, performerSceneToModel(item))
 	}
+	var totalPages *int
+	if page.TotalCountExact {
+		totalPages = &page.TotalPages
+	}
 	return &model.StashPerformerSceneConnection{
-		Items:           items,
-		Page:            page.Page,
-		PageSize:        page.PageSize,
-		TotalCount:      page.TotalCount,
-		TotalPages:      page.TotalPages,
-		HasPrevPage:     page.HasPrevPage,
-		HasNextPage:     page.HasNextPage,
-		StashSceneCount: page.StashSceneCount,
-		StashBoxCount:   page.StashBoxCount,
-		DedupedCount:    page.DedupedCount,
+		Items:               items,
+		Page:                page.Page,
+		PageSize:            page.PageSize,
+		TotalCount:          page.TotalCount,
+		TotalPages:          totalPages,
+		HasPrevPage:         page.HasPrevPage,
+		HasNextPage:         page.HasNextPage,
+		StashSceneCount:     page.StashSceneCount,
+		StashBoxCount:       page.StashBoxCount,
+		DedupedCount:        page.DedupedCount,
+		TotalCountExact:     page.TotalCountExact,
+		StashBoxRemoteCount: page.StashBoxCount,
+		StashBoxLoadedCount: page.StashBoxLoadedCount,
+		CacheComplete:       page.CacheComplete,
+		CacheUpdatedAt:      formatTimePointer(page.CacheUpdatedAt),
+		CacheStale:          page.CacheStale,
 	}
 }
 

@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/leothevan2444/moji/internal/metadata"
 	"github.com/leothevan2444/moji/internal/taskruntime"
 )
 
@@ -41,7 +42,7 @@ func (s *Service) QueuePerformerScenes(ctx context.Context, performerID string, 
 		return QueueScenesResult{}, fmt.Errorf("performer: performer %q not found", performerID)
 	}
 
-	scenes, _, _, err := s.loadPerformerScenes(ctx, performer)
+	scenes, _, _, _, _, _, _, err := s.loadPerformerScenes(ctx, performer, SceneQuery{Page: 1, PageSize: 100}, true, metadata.CachePreferred)
 	if err != nil {
 		return QueueScenesResult{}, err
 	}

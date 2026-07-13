@@ -11,6 +11,7 @@ import (
 	"os"
 	"os/signal"
 	"strings"
+	"sync/atomic"
 	"syscall"
 	"time"
 
@@ -25,6 +26,7 @@ import (
 	"github.com/leothevan2444/moji/internal/logging"
 	"github.com/leothevan2444/moji/internal/metadata"
 	"github.com/leothevan2444/moji/internal/performer"
+	"github.com/leothevan2444/moji/internal/stashboxcache"
 	"github.com/leothevan2444/moji/internal/stashsync"
 	"github.com/leothevan2444/moji/internal/stats"
 	"github.com/leothevan2444/moji/internal/subscription"
@@ -37,6 +39,8 @@ import (
 	"github.com/leothevan2444/moji/pkg/stash"
 	stashgraphql "github.com/leothevan2444/moji/pkg/stash/graphql"
 )
+
+var runtimeCacheSequence atomic.Uint64
 
 func main() {
 	var (
@@ -88,6 +92,7 @@ func main() {
 
 	// Dependencies
 	runtime := newHTTPRuntime(cfg, "dev", configStore)
+	defer runtime.stashBoxCacheService.Close()
 
 	server := &http.Server{
 		Addr:              *addr,
@@ -109,6 +114,9 @@ func main() {
 
 	startTaskSyncWorker(ctx, runtime.taskRuntimeService, runtime.stashService, configureProgressSyncIntervalProvider(configStore, cfg))
 	startSubscriptionWorker(ctx, runtime.subscriptionService, configureSubscriptionPollIntervalProvider(configStore, cfg))
+	if runtime.stashBoxCacheService != nil {
+		runtime.stashBoxCacheService.StartCleanup(ctx)
+	}
 	go runtime.statsCollector.Run(ctx)
 
 	go func() {
@@ -145,6 +153,7 @@ type httpRuntime struct {
 	taskEventBus                  *taskruntime.TaskEventBus
 	serviceStatusEventBus         *stats.ServiceStatusEventBus
 	performerSubscriptionEventBus *subscription.PerformerSubscriptionEventBus
+	stashBoxCacheService          *stashboxcache.Service
 }
 
 func newHTTPRuntime(cfg *config.Config, version string, configStore *config.Store) *httpRuntime {
@@ -159,6 +168,20 @@ func newHTTPRuntime(cfg *config.Config, version string, configStore *config.Stor
 		logging.Fatalf("configure image cache: %v", err)
 	}
 	imageService.StartCleanup(context.Background())
+	cachePath := fmt.Sprintf("file:moji-stashbox-cache-%d?mode=memory&cache=shared", runtimeCacheSequence.Add(1))
+	if configStore != nil {
+		cachePath = stashBoxCacheDatabasePath()
+	}
+	stashBoxCacheService, err := stashboxcache.New(cachePath, func() stashboxcache.Config {
+		current := cfg.System.StashBoxDataCache.Normalize()
+		if configStore != nil {
+			current = configStore.Config().System.StashBoxDataCache.Normalize()
+		}
+		return stashboxcache.Config{TTL: time.Duration(current.TTLHours) * time.Hour, StaleRetention: stashboxcache.DefaultStaleRetention}
+	})
+	if err != nil {
+		logging.Fatalf("configure StashBox data cache: %v", err)
+	}
 	jackettTracker := tracker.NewJackettService(configureJackettConfigProvider(configStore, cfg))
 	{
 		current := storeJackett(cfg, configStore)
@@ -175,6 +198,9 @@ func newHTTPRuntime(cfg *config.Config, version string, configStore *config.Stor
 	taskFlowService := configureTaskFlow(taskRuntimeService)
 	stashService := configureStashService(cfg, configStore, stashClient)
 	metadataService := configureMetadata(stashClient)
+	if metadataService != nil {
+		metadataService.SetCache(stashBoxCacheService)
+	}
 	performerSubscriptionEventBus := subscription.NewPerformerSubscriptionEventBus(16)
 	subscriptionService := configureSubscription(cfg, configStore, stashClient, metadataService, taskFlowService, imageService)
 	if subscriptionService != nil {
@@ -237,6 +263,7 @@ func newHTTPRuntime(cfg *config.Config, version string, configStore *config.Stor
 	resolver.RuntimeStatus = buildSettingsStatusSnapshot(cfg, version, taskRuntimeService != nil, stashService != nil, stashClient, metadataService)
 	resolver.Stats = statsCollector
 	resolver.ImageCache = imageService
+	resolver.StashBoxDataCache = stashBoxCacheService
 	if configStore != nil {
 		resolver.SettingsEditor = newRuntimeSettingsEditor(configStore, version, taskRuntimeService != nil, stashService != nil, stashClient, subscriptionService, metadataService)
 	}
@@ -271,6 +298,7 @@ func newHTTPRuntime(cfg *config.Config, version string, configStore *config.Stor
 		taskEventBus:                  taskEventBus,
 		serviceStatusEventBus:         serviceStatusEventBus,
 		performerSubscriptionEventBus: performerSubscriptionEventBus,
+		stashBoxCacheService:          stashBoxCacheService,
 	}
 }
 
@@ -547,8 +575,9 @@ func buildSettingsSnapshot(cfg *config.Config, version string) *graphqlapi.Setti
 			TorrentSelection: torrentSelectionSnapshot(cfg.Automation.TorrentSelection.Effective()),
 		},
 		System: graphqlapi.SystemSettingsSnapshot{
-			TaskDeletePolicy: string(cfg.System.EffectiveTaskDeletePolicy()),
-			ImageCache:       graphqlapi.ImageCacheSettingsSnapshot{Enabled: cfg.System.ImageCache.EffectiveEnabled(), MaxSizeMB: cfg.System.ImageCache.Normalize().MaxSizeMB, RetentionDays: cfg.System.ImageCache.Normalize().RetentionDays},
+			TaskDeletePolicy:  string(cfg.System.EffectiveTaskDeletePolicy()),
+			ImageCache:        graphqlapi.ImageCacheSettingsSnapshot{Enabled: cfg.System.ImageCache.EffectiveEnabled(), MaxSizeMB: cfg.System.ImageCache.Normalize().MaxSizeMB, RetentionDays: cfg.System.ImageCache.Normalize().RetentionDays},
+			StashBoxDataCache: graphqlapi.StashBoxDataCacheSettingsSnapshot{TTLHours: cfg.System.StashBoxDataCache.Normalize().TTLHours},
 		},
 	}
 }
@@ -977,6 +1006,8 @@ func startSubscriptionWorker(ctx context.Context, service graphqlapi.Subscriptio
 func runtimeDatabasePath() string {
 	return "moji.db"
 }
+
+func stashBoxCacheDatabasePath() string { return "cache/stashbox/cache.db" }
 
 func effectiveTaskProgressSyncIntervalSeconds(cfg *config.Config) int {
 	seconds := cfg.Automation.TaskProgressSyncIntervalSeconds

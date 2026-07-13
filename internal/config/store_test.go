@@ -214,3 +214,25 @@ automation:
 		t.Fatalf("expected persisted image cache settings, got %+v", reloaded.System.ImageCache)
 	}
 }
+
+func TestStoreUpdateSystemPersistsStashBoxCacheTTL(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "config.yaml")
+	if err := os.WriteFile(path, []byte("system:\n  task_delete_policy: KEEP_ONLY\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	store, err := OpenStore(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	enabled := true
+	if _, err := store.UpdateSystemWithDataCache(TaskDeletePolicyKeepOnly, ImageCacheConfig{Enabled: &enabled, MaxSizeMB: 1024, RetentionDays: 30}, StashBoxDataCacheConfig{TTLHours: 36}); err != nil {
+		t.Fatal(err)
+	}
+	reloaded, err := LoadFromPath(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if reloaded.System.StashBoxDataCache.TTLHours != 36 {
+		t.Fatalf("TTL hours = %d, want 36", reloaded.System.StashBoxDataCache.TTLHours)
+	}
+}

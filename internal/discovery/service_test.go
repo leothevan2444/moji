@@ -7,6 +7,7 @@ import (
 	"github.com/leothevan2444/moji/internal/metadata"
 	"github.com/leothevan2444/moji/internal/taskruntime"
 	"github.com/leothevan2444/moji/pkg/stash"
+	stashboxpkg "github.com/leothevan2444/moji/pkg/stashbox"
 	stashboxgraphql "github.com/leothevan2444/moji/pkg/stashbox/graphql"
 )
 
@@ -38,6 +39,10 @@ func (c testStashBoxClient) SearchScene(context.Context, string) ([]*stashboxgra
 
 func (testStashBoxClient) QueryScenes(context.Context, stashboxgraphql.SceneQueryInput) ([]*stashboxgraphql.SceneFragment, error) {
 	return nil, nil
+}
+
+func (testStashBoxClient) QueryScenesPage(context.Context, stashboxgraphql.SceneQueryInput) (stashboxpkg.ScenePage, error) {
+	return stashboxpkg.ScenePage{}, nil
 }
 
 type testTaskCreator struct {

@@ -16,6 +16,7 @@ type Client interface {
 	SearchPerformer(context.Context, string) ([]*stashboxgraphql.PerformerFragment, error)
 	SearchScene(context.Context, string) ([]*stashboxgraphql.SceneFragment, error)
 	QueryScenes(context.Context, stashboxgraphql.SceneQueryInput) ([]*stashboxgraphql.SceneFragment, error)
+	QueryScenesPage(context.Context, stashboxgraphql.SceneQueryInput) (stashboxpkg.ScenePage, error)
 }
 
 // StashBoxEndpoint is the public description of a Stash-Box instance. The API

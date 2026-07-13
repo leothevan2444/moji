@@ -147,6 +147,7 @@ mutation UpdateSystemSettingsDocument($input: UpdateSystemSettingsInput!) {
         maxSizeMb
         retentionDays
       }
+      stashBoxDataCache { ttlHours }
     }
   }
 }
@@ -156,6 +157,18 @@ mutation ClearImageCacheDocument {
     usedBytes
     entryCount
     cacheDirectory
+    lastCleanupAt
+    lastError
+  }
+}
+
+mutation ClearStashBoxDataCacheDocument {
+  clearStashBoxDataCache {
+    usedBytes
+    sceneCount
+    performerCount
+    snapshotCount
+    databasePath
     lastCleanupAt
     lastError
   }
