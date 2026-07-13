@@ -1,9 +1,7 @@
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import {
-  faChartColumn,
-  faCircleQuestion,
-  faGear
-} from "@fortawesome/free-solid-svg-icons";
+import { faChartColumn } from "@fortawesome/free-solid-svg-icons/faChartColumn";
+import { faCircleQuestion } from "@fortawesome/free-solid-svg-icons/faCircleQuestion";
+import { faGear } from "@fortawesome/free-solid-svg-icons/faGear";
 import { NAV_ITEMS } from "../../constants/navigation";
 import { NavLink, useNavigate } from "react-router";
 import { ThemeMenu } from "./ThemeMenu";

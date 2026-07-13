@@ -1,5 +1,5 @@
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faArrowUpRightFromSquare } from "@fortawesome/free-solid-svg-icons";
+import { faArrowUpRightFromSquare } from "@fortawesome/free-solid-svg-icons/faArrowUpRightFromSquare";
 import type { SettingsTab } from "../../types";
 import type { HomePageDocumentQuery, HomeServiceStatusQuery } from "../../graphql/generated/graphql";
 import { useTranslation } from "react-i18next";

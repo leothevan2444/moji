@@ -1,11 +1,9 @@
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import {
-  faCopy,
-  faDownload,
-  faRotate,
-  faTrashCan,
-  faWandMagicSparkles
-} from "@fortawesome/free-solid-svg-icons";
+import { faCopy } from "@fortawesome/free-solid-svg-icons/faCopy";
+import { faDownload } from "@fortawesome/free-solid-svg-icons/faDownload";
+import { faRotate } from "@fortawesome/free-solid-svg-icons/faRotate";
+import { faTrashCan } from "@fortawesome/free-solid-svg-icons/faTrashCan";
+import { faWandMagicSparkles } from "@fortawesome/free-solid-svg-icons/faWandMagicSparkles";
 import { TaskTimeline } from "./TaskTimeline";
 import {
   canTriggerTaskStashScan,

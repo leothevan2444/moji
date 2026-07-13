@@ -1,18 +1,16 @@
 import { FormEvent, useEffect, useState } from "react";
 import { useMutation, useQuery } from "urql";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import {
-  faArrowDown,
-  faArrowUp,
-  faChevronDown,
-  faChevronUp,
-  faCircleInfo,
-  faEye,
-  faEyeSlash,
-  faGripVertical,
-  faRotate,
-  faTrash
-} from "@fortawesome/free-solid-svg-icons";
+import { faArrowDown } from "@fortawesome/free-solid-svg-icons/faArrowDown";
+import { faArrowUp } from "@fortawesome/free-solid-svg-icons/faArrowUp";
+import { faChevronDown } from "@fortawesome/free-solid-svg-icons/faChevronDown";
+import { faChevronUp } from "@fortawesome/free-solid-svg-icons/faChevronUp";
+import { faCircleInfo } from "@fortawesome/free-solid-svg-icons/faCircleInfo";
+import { faEye } from "@fortawesome/free-solid-svg-icons/faEye";
+import { faEyeSlash } from "@fortawesome/free-solid-svg-icons/faEyeSlash";
+import { faGripVertical } from "@fortawesome/free-solid-svg-icons/faGripVertical";
+import { faRotate } from "@fortawesome/free-solid-svg-icons/faRotate";
+import { faTrash } from "@fortawesome/free-solid-svg-icons/faTrash";
 import {
   JackettIndexersDocumentDocument,
   ClearImageCacheDocumentDocument,

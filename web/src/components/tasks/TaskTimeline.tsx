@@ -1,10 +1,8 @@
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import {
-  faCircleCheck,
-  faClock,
-  faRotate,
-  faTriangleExclamation
-} from "@fortawesome/free-solid-svg-icons";
+import { faCircleCheck } from "@fortawesome/free-solid-svg-icons/faCircleCheck";
+import { faClock } from "@fortawesome/free-solid-svg-icons/faClock";
+import { faRotate } from "@fortawesome/free-solid-svg-icons/faRotate";
+import { faTriangleExclamation } from "@fortawesome/free-solid-svg-icons/faTriangleExclamation";
 import { formatDateTime, type TaskLifecycleStep } from "../../utils";
 
 interface TaskTimelineProps {

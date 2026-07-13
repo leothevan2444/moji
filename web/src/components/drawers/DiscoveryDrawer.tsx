@@ -1,11 +1,9 @@
 import { formatBytes, formatDurationSeconds, formatPublishDate } from "../../utils";
 import { SkeletonCardList } from "../common/Skeleton";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import {
-  faArrowUpRightFromSquare,
-  faDownload,
-  faMagnet
-} from "@fortawesome/free-solid-svg-icons";
+import { faArrowUpRightFromSquare } from "@fortawesome/free-solid-svg-icons/faArrowUpRightFromSquare";
+import { faDownload } from "@fortawesome/free-solid-svg-icons/faDownload";
+import { faMagnet } from "@fortawesome/free-solid-svg-icons/faMagnet";
 import type {
   DiscoverScenesDocumentQuery,
   SearchDocumentQuery

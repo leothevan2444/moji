@@ -1,5 +1,7 @@
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faCircleInfo, faEye, faEyeSlash } from "@fortawesome/free-solid-svg-icons";
+import { faCircleInfo } from "@fortawesome/free-solid-svg-icons/faCircleInfo";
+import { faEye } from "@fortawesome/free-solid-svg-icons/faEye";
+import { faEyeSlash } from "@fortawesome/free-solid-svg-icons/faEyeSlash";
 import { useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { describeQueryError } from "../../services/queryError";

@@ -1,17 +1,15 @@
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import {
-  faArrowLeft,
-  faArrowUpRightFromSquare,
-  faBookmark,
-  faCheck,
-  faFilm,
-  faHeart,
-  faPlus,
-  faPlayCircle,
-  faRotate,
-  faTags,
-  faUsers
-} from "@fortawesome/free-solid-svg-icons";
+import { faArrowLeft } from "@fortawesome/free-solid-svg-icons/faArrowLeft";
+import { faArrowUpRightFromSquare } from "@fortawesome/free-solid-svg-icons/faArrowUpRightFromSquare";
+import { faBookmark } from "@fortawesome/free-solid-svg-icons/faBookmark";
+import { faCheck } from "@fortawesome/free-solid-svg-icons/faCheck";
+import { faFilm } from "@fortawesome/free-solid-svg-icons/faFilm";
+import { faHeart } from "@fortawesome/free-solid-svg-icons/faHeart";
+import { faPlus } from "@fortawesome/free-solid-svg-icons/faPlus";
+import { faPlayCircle } from "@fortawesome/free-solid-svg-icons/faPlayCircle";
+import { faRotate } from "@fortawesome/free-solid-svg-icons/faRotate";
+import { faTags } from "@fortawesome/free-solid-svg-icons/faTags";
+import { faUsers } from "@fortawesome/free-solid-svg-icons/faUsers";
 import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { PerformerDetailView, PerformerListView } from "../components/performers/PerformerViews";
