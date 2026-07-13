@@ -9,6 +9,7 @@ import (
 	"path/filepath"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 )
 
@@ -20,9 +21,10 @@ const (
 )
 
 type Entry struct {
-	Time    time.Time
-	Level   string
-	Message string
+	Sequence int
+	Time     time.Time
+	Level    string
+	Message  string
 }
 
 type Options struct {
@@ -42,6 +44,13 @@ type Logger struct {
 	mu         sync.RWMutex
 	cache      []Entry
 	maxEntries int
+	sequence   uint64
+
+	eventMu          sync.RWMutex
+	eventSubscribers map[uint64]logEventSubscriber
+	nextSubscriberID atomic.Uint64
+	droppedEvents    atomic.Uint64
+	eventsClosed     bool
 }
 
 var (
@@ -75,9 +84,10 @@ func New(opts Options) (*Logger, error) {
 	}
 
 	l := &Logger{
-		levelVar:   levelVar,
-		cache:      make([]Entry, 0, maxEntries),
-		maxEntries: maxEntries,
+		levelVar:         levelVar,
+		cache:            make([]Entry, 0, maxEntries),
+		maxEntries:       maxEntries,
+		eventSubscribers: make(map[uint64]logEventSubscriber),
 	}
 
 	handlers := []slog.Handler{
@@ -143,6 +153,7 @@ func (l *Logger) Close() error {
 	if l == nil {
 		return nil
 	}
+	l.closeEventSubscribers()
 	var firstErr error
 	for _, closer := range l.closers {
 		if closer == nil {
@@ -187,12 +198,14 @@ func (l *Logger) Entries(limit int, minLevel string) []Entry {
 
 func (l *Logger) record(entry Entry) {
 	l.mu.Lock()
-	defer l.mu.Unlock()
-
+	l.sequence++
+	entry.Sequence = int(l.sequence)
 	l.cache = append([]Entry{entry}, l.cache...)
 	if len(l.cache) > l.maxEntries {
 		l.cache = l.cache[:l.maxEntries]
 	}
+	l.publishEvent(&LogEvent{Sequence: entry.Sequence, Entry: entry})
+	l.mu.Unlock()
 }
 
 func (l *Logger) logf(level slog.Level, format string, args ...any) {

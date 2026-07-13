@@ -166,6 +166,7 @@ mutation RefreshStashBoxes {
 
 query LogsDocument($limit: Int, $minLevel: LogLevel) {
   logs(limit: $limit, minLevel: $minLevel) {
+    sequence
     time
     level
     message

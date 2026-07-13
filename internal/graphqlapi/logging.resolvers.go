@@ -30,10 +30,49 @@ func (r *queryResolver) Logs(ctx context.Context, limit *int, minLevel *model.Lo
 	out := make([]*model.LogEntry, 0, len(entries))
 	for _, entry := range entries {
 		out = append(out, &model.LogEntry{
-			Time:    formatTime(entry.Time),
-			Level:   parseGraphQLLogLevel(entry.Level),
-			Message: entry.Message,
+			Sequence: entry.Sequence,
+			Time:     formatTime(entry.Time),
+			Level:    parseGraphQLLogLevel(entry.Level),
+			Message:  entry.Message,
 		})
 	}
+	return out, nil
+}
+
+// LogEvents is the resolver for the logEvents field.
+func (r *subscriptionResolver) LogEvents(ctx context.Context) (<-chan *model.LogEvent, error) {
+	out := make(chan *model.LogEvent, 1)
+	if r.LogEventSource == nil {
+		close(out)
+		return out, nil
+	}
+	events := r.LogEventSource.Subscribe(ctx)
+	go func() {
+		defer close(out)
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			case event, ok := <-events:
+				if !ok {
+					return
+				}
+				mapped := &model.LogEvent{
+					Sequence: event.Sequence,
+					Entry: &model.LogEntry{
+						Sequence: event.Entry.Sequence,
+						Time:     formatTime(event.Entry.Time),
+						Level:    parseGraphQLLogLevel(event.Entry.Level),
+						Message:  event.Entry.Message,
+					},
+				}
+				select {
+				case <-ctx.Done():
+					return
+				case out <- mapped:
+				}
+			}
+		}
+	}()
 	return out, nil
 }

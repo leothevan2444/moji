@@ -195,9 +195,15 @@ type ComplexityRoot struct {
 	}
 
 	LogEntry struct {
-		Level   func(childComplexity int) int
-		Message func(childComplexity int) int
-		Time    func(childComplexity int) int
+		Level    func(childComplexity int) int
+		Message  func(childComplexity int) int
+		Sequence func(childComplexity int) int
+		Time     func(childComplexity int) int
+	}
+
+	LogEvent struct {
+		Entry    func(childComplexity int) int
+		Sequence func(childComplexity int) int
 	}
 
 	MatchedStashBox struct {
@@ -513,6 +519,7 @@ type ComplexityRoot struct {
 	}
 
 	Subscription struct {
+		LogEvents           func(childComplexity int) int
 		ServiceStatusEvents func(childComplexity int) int
 		TaskEvents          func(childComplexity int) int
 	}
@@ -678,6 +685,7 @@ type QueryResolver interface {
 }
 type SubscriptionResolver interface {
 	TaskEvents(ctx context.Context) (<-chan *model.TaskEvent, error)
+	LogEvents(ctx context.Context) (<-chan *model.LogEvent, error)
 	ServiceStatusEvents(ctx context.Context) (<-chan *model.ServiceStatusEvent, error)
 }
 
@@ -1337,12 +1345,33 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.LogEntry.Message(childComplexity), true
 
+	case "LogEntry.sequence":
+		if e.complexity.LogEntry.Sequence == nil {
+			break
+		}
+
+		return e.complexity.LogEntry.Sequence(childComplexity), true
+
 	case "LogEntry.time":
 		if e.complexity.LogEntry.Time == nil {
 			break
 		}
 
 		return e.complexity.LogEntry.Time(childComplexity), true
+
+	case "LogEvent.entry":
+		if e.complexity.LogEvent.Entry == nil {
+			break
+		}
+
+		return e.complexity.LogEvent.Entry(childComplexity), true
+
+	case "LogEvent.sequence":
+		if e.complexity.LogEvent.Sequence == nil {
+			break
+		}
+
+		return e.complexity.LogEvent.Sequence(childComplexity), true
 
 	case "MatchedStashBox.endpoint":
 		if e.complexity.MatchedStashBox.Endpoint == nil {
@@ -3027,6 +3056,13 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.SubscribedPerformer.RecentReleases(childComplexity), true
 
+	case "Subscription.logEvents":
+		if e.complexity.Subscription.LogEvents == nil {
+			break
+		}
+
+		return e.complexity.Subscription.LogEvents(childComplexity), true
+
 	case "Subscription.serviceStatusEvents":
 		if e.complexity.Subscription.ServiceStatusEvents == nil {
 			break
@@ -3749,9 +3785,20 @@ enum LogLevel {
 }
 
 type LogEntry {
+	sequence: Int!
   time: String!
   level: LogLevel!
   message: String!
+}
+
+type LogEvent {
+  sequence: Int!
+  entry: LogEntry!
+}
+
+extend type Subscription {
+  "Stream new in-memory Moji log entries"
+  logEvents: LogEvent!
 }
 `, BuiltIn: false},
 	{Name: "../../../graphql/moji/types/scalars.graphql", Input: `scalar Long
@@ -9908,6 +9955,50 @@ func (ec *executionContext) fieldContext_LibraryIngestSettings_stashRoot(_ conte
 	return fc, nil
 }
 
+func (ec *executionContext) _LogEntry_sequence(ctx context.Context, field graphql.CollectedField, obj *model.LogEntry) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_LogEntry_sequence(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Sequence, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int)
+	fc.Result = res
+	return ec.marshalNInt2int(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_LogEntry_sequence(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "LogEntry",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _LogEntry_time(ctx context.Context, field graphql.CollectedField, obj *model.LogEntry) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_LogEntry_time(ctx, field)
 	if err != nil {
@@ -10035,6 +10126,104 @@ func (ec *executionContext) fieldContext_LogEntry_message(_ context.Context, fie
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _LogEvent_sequence(ctx context.Context, field graphql.CollectedField, obj *model.LogEvent) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_LogEvent_sequence(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Sequence, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int)
+	fc.Result = res
+	return ec.marshalNInt2int(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_LogEvent_sequence(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "LogEvent",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _LogEvent_entry(ctx context.Context, field graphql.CollectedField, obj *model.LogEvent) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_LogEvent_entry(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Entry, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*model.LogEntry)
+	fc.Result = res
+	return ec.marshalNLogEntry2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐLogEntry(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_LogEvent_entry(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "LogEvent",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "sequence":
+				return ec.fieldContext_LogEntry_sequence(ctx, field)
+			case "time":
+				return ec.fieldContext_LogEntry_time(ctx, field)
+			case "level":
+				return ec.fieldContext_LogEntry_level(ctx, field)
+			case "message":
+				return ec.fieldContext_LogEntry_message(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type LogEntry", field.Name)
 		},
 	}
 	return fc, nil
@@ -14290,6 +14479,8 @@ func (ec *executionContext) fieldContext_Query_logs(ctx context.Context, field g
 		IsResolver: true,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			switch field.Name {
+			case "sequence":
+				return ec.fieldContext_LogEntry_sequence(ctx, field)
 			case "time":
 				return ec.fieldContext_LogEntry_time(ctx, field)
 			case "level":
@@ -21774,6 +21965,70 @@ func (ec *executionContext) fieldContext_Subscription_taskEvents(_ context.Conte
 				return ec.fieldContext_TaskEvent_dashboardStats(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type TaskEvent", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Subscription_logEvents(ctx context.Context, field graphql.CollectedField) (ret func(ctx context.Context) graphql.Marshaler) {
+	fc, err := ec.fieldContext_Subscription_logEvents(ctx, field)
+	if err != nil {
+		return nil
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = nil
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Subscription().LogEvents(rctx)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return nil
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return nil
+	}
+	return func(ctx context.Context) graphql.Marshaler {
+		select {
+		case res, ok := <-resTmp.(<-chan *model.LogEvent):
+			if !ok {
+				return nil
+			}
+			return graphql.WriterFunc(func(w io.Writer) {
+				w.Write([]byte{'{'})
+				graphql.MarshalString(field.Alias).MarshalGQL(w)
+				w.Write([]byte{':'})
+				ec.marshalNLogEvent2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐLogEvent(ctx, field.Selections, res).MarshalGQL(w)
+				w.Write([]byte{'}'})
+			})
+		case <-ctx.Done():
+			return nil
+		}
+	}
+}
+
+func (ec *executionContext) fieldContext_Subscription_logEvents(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Subscription",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "sequence":
+				return ec.fieldContext_LogEvent_sequence(ctx, field)
+			case "entry":
+				return ec.fieldContext_LogEvent_entry(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type LogEvent", field.Name)
 		},
 	}
 	return fc, nil
@@ -29814,6 +30069,11 @@ func (ec *executionContext) _LogEntry(ctx context.Context, sel ast.SelectionSet,
 		switch field.Name {
 		case "__typename":
 			out.Values[i] = graphql.MarshalString("LogEntry")
+		case "sequence":
+			out.Values[i] = ec._LogEntry_sequence(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
 		case "time":
 			out.Values[i] = ec._LogEntry_time(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
@@ -29826,6 +30086,50 @@ func (ec *executionContext) _LogEntry(ctx context.Context, sel ast.SelectionSet,
 			}
 		case "message":
 			out.Values[i] = ec._LogEntry_message(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var logEventImplementors = []string{"LogEvent"}
+
+func (ec *executionContext) _LogEvent(ctx context.Context, sel ast.SelectionSet, obj *model.LogEvent) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, logEventImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("LogEvent")
+		case "sequence":
+			out.Values[i] = ec._LogEvent_sequence(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "entry":
+			out.Values[i] = ec._LogEvent_entry(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
@@ -32297,6 +32601,8 @@ func (ec *executionContext) _Subscription(ctx context.Context, sel ast.Selection
 	switch fields[0].Name {
 	case "taskEvents":
 		return ec._Subscription_taskEvents(ctx, fields[0])
+	case "logEvents":
+		return ec._Subscription_logEvents(ctx, fields[0])
 	case "serviceStatusEvents":
 		return ec._Subscription_serviceStatusEvents(ctx, fields[0])
 	default:
@@ -33895,6 +34201,20 @@ func (ec *executionContext) marshalNLogEntry2ᚖgithubᚗcomᚋleothevan2444ᚋm
 		return graphql.Null
 	}
 	return ec._LogEntry(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNLogEvent2githubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐLogEvent(ctx context.Context, sel ast.SelectionSet, v model.LogEvent) graphql.Marshaler {
+	return ec._LogEvent(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNLogEvent2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐLogEvent(ctx context.Context, sel ast.SelectionSet, v *model.LogEvent) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._LogEvent(ctx, sel, v)
 }
 
 func (ec *executionContext) unmarshalNLogLevel2githubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐLogLevel(ctx context.Context, v any) (model.LogLevel, error) {

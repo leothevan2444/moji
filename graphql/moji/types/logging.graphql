@@ -11,7 +11,18 @@ enum LogLevel {
 }
 
 type LogEntry {
+  sequence: Int!
   time: String!
   level: LogLevel!
   message: String!
+}
+
+type LogEvent {
+  sequence: Int!
+  entry: LogEntry!
+}
+
+extend type Subscription {
+  "Stream new in-memory Moji log entries"
+  logEvents: LogEvent!
 }

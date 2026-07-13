@@ -1,0 +1,11 @@
+subscription LogEventsDocument {
+  logEvents {
+    sequence
+    entry {
+      sequence
+      time
+      level
+      message
+    }
+  }
+}

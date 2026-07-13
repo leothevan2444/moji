@@ -340,6 +340,7 @@ type Resolver struct {
 	PerformerSubscription    SubscriptionService
 	TaskEventSource          taskruntime.TaskEventSource
 	ServiceStatusEventSource stats.ServiceStatusEventSource
+	LogEventSource           logging.LogEventSource
 	StashBox                 StashBoxService
 	LogReader                LogReader
 	SettingsEditor           SettingsEditor

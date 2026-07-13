@@ -209,6 +209,7 @@ func newHTTPRuntime(cfg *config.Config, version string, configStore *config.Stor
 	resolver.PerformerSubscription = subscriptionService
 	resolver.TaskEventSource = taskEventBus
 	resolver.ServiceStatusEventSource = serviceStatusEventBus
+	resolver.LogEventSource = logging.Default()
 	resolver.StashBox = metadataService
 	resolver.LogReader = logging.Default()
 	resolver.RuntimeSettings = buildSettingsSnapshot(cfg, version)

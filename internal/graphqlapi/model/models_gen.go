@@ -218,9 +218,15 @@ type LibraryIngestSettingsInput struct {
 }
 
 type LogEntry struct {
-	Time    string   `json:"time"`
-	Level   LogLevel `json:"level"`
-	Message string   `json:"message"`
+	Sequence int      `json:"sequence"`
+	Time     string   `json:"time"`
+	Level    LogLevel `json:"level"`
+	Message  string   `json:"message"`
+}
+
+type LogEvent struct {
+	Sequence int       `json:"sequence"`
+	Entry    *LogEntry `json:"entry"`
 }
 
 type MatchedStashBox struct {

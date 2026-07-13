@@ -69,6 +69,8 @@ import { serviceStatus } from "../../utils";
 import { describeQueryError } from "../../services/queryError";
 import { formatDateTime, formatLogEntries } from "../../utils";
 import { formatBytes } from "../../utils";
+import { mergeLogEntries, type StreamedLogEntry } from "../../hooks/useLogEvents";
+import { LogEventStream } from "./LogEventStream";
 import { useTranslation } from "react-i18next";
 import type { TFunction } from "i18next";
 
@@ -400,6 +402,7 @@ export function SettingsPanel({
 }: SettingsPanelProps) {
   const { t } = useTranslation();
   const [logsLevel, setLogsLevel] = useState<LogLevel>(LogLevel.Info);
+  const [streamedLogs, setStreamedLogs] = useState<StreamedLogEntry[]>([]);
   const [downloadingLogFile, setDownloadingLogFile] = useState(false);
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
@@ -428,6 +431,10 @@ export function SettingsPanel({
     setVisibleSecrets((current) => ({ ...current, [key]: !current[key] }));
   };
 
+  const logsVisible = settingsTab === "logs" && (drawer === "settings" || renderedDrawer === "settings");
+  useEffect(() => {
+    if (!logsVisible) setStreamedLogs([]);
+  }, [logsVisible]);
   const [{ data: logsData, fetching: fetchingLogs, error: logsError }, refreshLogs] = useQuery<
     LogsDocumentQuery,
     LogsDocumentQueryVariables
@@ -436,9 +443,17 @@ export function SettingsPanel({
     variables: {
       minLevel: logsLevel
     },
-    pause: settingsTab !== "logs" || (drawer !== "settings" && renderedDrawer !== "settings")
+    requestPolicy: "network-only",
+    pause: !logsVisible
   });
-  const logs = logsData?.logs ?? [];
+  const levelRank: Record<LogLevel, number> = {
+    [LogLevel.Debug]: 0,
+    [LogLevel.Info]: 1,
+    [LogLevel.Warning]: 2,
+    [LogLevel.Error]: 3
+  };
+  const visibleStreamedLogs = streamedLogs.filter((entry) => levelRank[entry.level] >= levelRank[logsLevel]);
+  const logs = mergeLogEntries(logsData?.logs ?? [], visibleStreamedLogs);
 
   const [{ data: jackettIndexersData, fetching: fetchingJackettIndexers }] = useQuery<
     JackettIndexersDocumentQuery,
@@ -2075,6 +2090,14 @@ export function SettingsPanel({
   if (settingsTab === "logs") {
     return (
       <article className="drawer-card">
+        <LogEventStream
+          pause={!logsVisible}
+          onEntries={(entries) => setStreamedLogs((current) => mergeLogEntries([], [...entries, ...current]))}
+          onResync={() => {
+            setStreamedLogs([]);
+            void refreshLogs({ requestPolicy: "network-only" });
+          }}
+        />
         <div className="drawer-card__head">
           <h3>{t("settings.tabs.logs")}</h3>
         </div>
@@ -2110,9 +2133,9 @@ export function SettingsPanel({
           </article>
         ) : (
           <div className="log-stream" role="log" aria-live="polite">
-            {logs.map((entry, index) => (
+            {logs.map((entry) => (
               <div
-                key={`${entry.time}-${index}`}
+                key={entry.sequence}
                 className={`log-line ${
                   entry.level === LogLevel.Error
                     ? "log-line--error"
