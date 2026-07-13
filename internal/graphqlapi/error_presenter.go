@@ -4,12 +4,20 @@ import (
 	"context"
 	"errors"
 	"log/slog"
+	"net/http"
+	"net/url"
 	"strings"
+	"time"
 
 	"github.com/99designs/gqlgen/graphql"
 	"github.com/99designs/gqlgen/graphql/handler"
+	"github.com/99designs/gqlgen/graphql/handler/extension"
+	"github.com/99designs/gqlgen/graphql/handler/lru"
+	"github.com/99designs/gqlgen/graphql/handler/transport"
 	"github.com/google/uuid"
+	"github.com/gorilla/websocket"
 	"github.com/leothevan2444/moji/internal/taskruntime"
+	"github.com/vektah/gqlparser/v2/ast"
 	"github.com/vektah/gqlparser/v2/gqlerror"
 )
 
@@ -22,17 +30,52 @@ const (
 	ErrorDownloaderDisabled   = "DOWNLOADER_NOT_CONFIGURED"
 	ErrorStashNotConfigured   = "STASH_NOT_CONFIGURED"
 	ErrorScanPathRequired     = "SCAN_PATH_REQUIRED"
-	ErrorTransferPathFailed  = "TRANSFER_PATH_FAILED"
-	ErrorStashScanFailed     = "STASH_SCAN_FAILED"
-	ErrorNoTorrentCandidate  = "NO_TORRENT_CANDIDATE"
-	ErrorTorrentURLRequired  = "TORRENT_URL_REQUIRED"
-	ErrorAddTorrentFailed    = "ADD_TORRENT_FAILED"
+	ErrorTransferPathFailed   = "TRANSFER_PATH_FAILED"
+	ErrorStashScanFailed      = "STASH_SCAN_FAILED"
+	ErrorNoTorrentCandidate   = "NO_TORRENT_CANDIDATE"
+	ErrorTorrentURLRequired   = "TORRENT_URL_REQUIRED"
+	ErrorAddTorrentFailed     = "ADD_TORRENT_FAILED"
 	ErrorInternal             = "INTERNAL_ERROR"
 )
 
 // ConfigureGraphQLServer installs the production error contract in one place.
 func ConfigureGraphQLServer(server *handler.Server) {
 	server.SetErrorPresenter(ErrorPresenter)
+}
+
+func NewGraphQLServer(schema graphql.ExecutableSchema) *handler.Server {
+	server := handler.New(schema)
+	server.AddTransport(transport.Websocket{
+		KeepAlivePingInterval: 10 * time.Second,
+		Upgrader:              websocket.Upgrader{CheckOrigin: SameOriginWebSocketRequest},
+		ErrorFunc: func(_ context.Context, err error) {
+			slog.Warn("graphql websocket transport error", "error", err)
+		},
+		CloseFunc: func(_ context.Context, code int) {
+			slog.Info("graphql websocket connection closed", "code", code)
+		},
+	})
+	server.AddTransport(transport.Options{})
+	server.AddTransport(transport.GET{})
+	server.AddTransport(transport.POST{})
+	server.AddTransport(transport.MultipartForm{})
+	server.SetQueryCache(lru.New[*ast.QueryDocument](1000))
+	server.Use(extension.Introspection{})
+	server.Use(extension.AutomaticPersistedQuery{Cache: lru.New[string](100)})
+	ConfigureGraphQLServer(server)
+	return server
+}
+
+func SameOriginWebSocketRequest(request *http.Request) bool {
+	origin := strings.TrimSpace(request.Header.Get("Origin"))
+	if origin == "" {
+		return true
+	}
+	parsed, err := url.Parse(origin)
+	if err != nil || parsed.Host == "" {
+		return false
+	}
+	return strings.EqualFold(parsed.Host, request.Host)
 }
 
 // ErrorPresenter exposes stable machine-readable codes while keeping root

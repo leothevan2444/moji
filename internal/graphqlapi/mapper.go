@@ -28,6 +28,26 @@ func jackettSearchResultToModel(result jackett.SearchResult) *model.JackettSearc
 	}
 }
 
+func taskEventToModel(event *taskruntime.TaskEvent) *model.TaskEvent {
+	if event == nil {
+		return nil
+	}
+	return &model.TaskEvent{
+		Sequence: event.Sequence,
+		Type:     model.TaskEventType(event.Type),
+		TaskID:   event.TaskID,
+		Task:     taskToModel(event.Task),
+		DashboardStats: &model.DashboardStats{
+			Total:        event.DashboardStats.Total,
+			Active:       event.DashboardStats.Active,
+			Completed:    event.DashboardStats.Completed,
+			Downloading:  event.DashboardStats.Downloading,
+			PendingScans: event.DashboardStats.PendingScans,
+			Failed:       event.DashboardStats.Failed,
+		},
+	}
+}
+
 func jackettSearchResultsToModel(results []jackett.SearchResult) []*model.JackettSearchResult {
 	out := make([]*model.JackettSearchResult, 0, len(results))
 	for _, result := range results {

@@ -7,6 +7,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
 	"strconv"
 	"sync"
 	"sync/atomic"
@@ -40,6 +41,7 @@ type Config struct {
 type ResolverRoot interface {
 	Mutation() MutationResolver
 	Query() QueryResolver
+	Subscription() SubscriptionResolver
 }
 
 type DirectiveRoot struct {
@@ -504,6 +506,10 @@ type ComplexityRoot struct {
 		RecentReleases        func(childComplexity int) int
 	}
 
+	Subscription struct {
+		TaskEvents func(childComplexity int) int
+	}
+
 	SubscriptionRelease struct {
 		Code           func(childComplexity int) int
 		Date           func(childComplexity int) int
@@ -563,6 +569,14 @@ type ComplexityRoot struct {
 		TransferAction      func(childComplexity int) int
 		TransferError       func(childComplexity int) int
 		UpdatedAt           func(childComplexity int) int
+	}
+
+	TaskEvent struct {
+		DashboardStats func(childComplexity int) int
+		Sequence       func(childComplexity int) int
+		Task           func(childComplexity int) int
+		TaskID         func(childComplexity int) int
+		Type           func(childComplexity int) int
 	}
 
 	TitleMatchClause struct {
@@ -654,6 +668,9 @@ type QueryResolver interface {
 	QbittorrentTorrents(ctx context.Context, limit *int) ([]*model.QBTorrent, error)
 	Task(ctx context.Context, id string) (*model.Task, error)
 	Tasks(ctx context.Context) ([]*model.Task, error)
+}
+type SubscriptionResolver interface {
+	TaskEvents(ctx context.Context) (<-chan *model.TaskEvent, error)
 }
 
 type executableSchema struct {
@@ -2981,6 +2998,13 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.SubscribedPerformer.RecentReleases(childComplexity), true
 
+	case "Subscription.taskEvents":
+		if e.complexity.Subscription.TaskEvents == nil {
+			break
+		}
+
+		return e.complexity.Subscription.TaskEvents(childComplexity), true
+
 	case "SubscriptionRelease.code":
 		if e.complexity.SubscriptionRelease.Code == nil {
 			break
@@ -3324,6 +3348,41 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.Task.UpdatedAt(childComplexity), true
 
+	case "TaskEvent.dashboardStats":
+		if e.complexity.TaskEvent.DashboardStats == nil {
+			break
+		}
+
+		return e.complexity.TaskEvent.DashboardStats(childComplexity), true
+
+	case "TaskEvent.sequence":
+		if e.complexity.TaskEvent.Sequence == nil {
+			break
+		}
+
+		return e.complexity.TaskEvent.Sequence(childComplexity), true
+
+	case "TaskEvent.task":
+		if e.complexity.TaskEvent.Task == nil {
+			break
+		}
+
+		return e.complexity.TaskEvent.Task(childComplexity), true
+
+	case "TaskEvent.taskId":
+		if e.complexity.TaskEvent.TaskID == nil {
+			break
+		}
+
+		return e.complexity.TaskEvent.TaskID(childComplexity), true
+
+	case "TaskEvent.type":
+		if e.complexity.TaskEvent.Type == nil {
+			break
+		}
+
+		return e.complexity.TaskEvent.Type(childComplexity), true
+
 	case "TitleMatchClause.effect":
 		if e.complexity.TitleMatchClause.Effect == nil {
 			break
@@ -3559,6 +3618,23 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 				Data: buf.Bytes(),
 			}
 		}
+	case ast.Subscription:
+		next := ec._Subscription(ctx, opCtx.Operation.SelectionSet)
+
+		var buf bytes.Buffer
+		return func(ctx context.Context) *graphql.Response {
+			buf.Reset()
+			data := next(ctx)
+
+			if data == nil {
+				return nil
+			}
+			data.MarshalGQL(&buf)
+
+			return &graphql.Response{
+				Data: buf.Bytes(),
+			}
+		}
 
 	default:
 		return graphql.OneShot(graphql.ErrorResponse(ctx, "unsupported GraphQL operation"))
@@ -3610,6 +3686,7 @@ var sources = []*ast.Source{
 	{Name: "../../../graphql/moji/schema.graphql", Input: `schema {
   query: Query
   mutation: Mutation
+  subscription: Subscription
 }
 `, BuiltIn: false},
 	{Name: "../../../graphql/moji/types/health.graphql", Input: `"Basic service health"
@@ -4673,6 +4750,24 @@ type DownloadCandidate {
   size: Long!
   seeders: Int!
   peers: Int!
+}
+`, BuiltIn: false},
+	{Name: "../../../graphql/moji/types/task_events.graphql", Input: `enum TaskEventType {
+  CREATED
+  UPDATED
+  DELETED
+}
+
+type TaskEvent {
+  sequence: Int!
+  type: TaskEventType!
+  taskId: ID!
+  task: Task
+  dashboardStats: DashboardStats!
+}
+
+type Subscription {
+  taskEvents: TaskEvent!
 }
 `, BuiltIn: false},
 }
@@ -21430,6 +21525,76 @@ func (ec *executionContext) fieldContext_SubscribedPerformer_recentReleases(_ co
 	return fc, nil
 }
 
+func (ec *executionContext) _Subscription_taskEvents(ctx context.Context, field graphql.CollectedField) (ret func(ctx context.Context) graphql.Marshaler) {
+	fc, err := ec.fieldContext_Subscription_taskEvents(ctx, field)
+	if err != nil {
+		return nil
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = nil
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Subscription().TaskEvents(rctx)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return nil
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return nil
+	}
+	return func(ctx context.Context) graphql.Marshaler {
+		select {
+		case res, ok := <-resTmp.(<-chan *model.TaskEvent):
+			if !ok {
+				return nil
+			}
+			return graphql.WriterFunc(func(w io.Writer) {
+				w.Write([]byte{'{'})
+				graphql.MarshalString(field.Alias).MarshalGQL(w)
+				w.Write([]byte{':'})
+				ec.marshalNTaskEvent2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐTaskEvent(ctx, field.Selections, res).MarshalGQL(w)
+				w.Write([]byte{'}'})
+			})
+		case <-ctx.Done():
+			return nil
+		}
+	}
+}
+
+func (ec *executionContext) fieldContext_Subscription_taskEvents(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Subscription",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "sequence":
+				return ec.fieldContext_TaskEvent_sequence(ctx, field)
+			case "type":
+				return ec.fieldContext_TaskEvent_type(ctx, field)
+			case "taskId":
+				return ec.fieldContext_TaskEvent_taskId(ctx, field)
+			case "task":
+				return ec.fieldContext_TaskEvent_task(ctx, field)
+			case "dashboardStats":
+				return ec.fieldContext_TaskEvent_dashboardStats(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type TaskEvent", field.Name)
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _SubscriptionRelease_key(ctx context.Context, field graphql.CollectedField, obj *model.SubscriptionRelease) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_SubscriptionRelease_key(ctx, field)
 	if err != nil {
@@ -23535,6 +23700,303 @@ func (ec *executionContext) fieldContext_Task_updatedAt(_ context.Context, field
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _TaskEvent_sequence(ctx context.Context, field graphql.CollectedField, obj *model.TaskEvent) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_TaskEvent_sequence(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Sequence, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int)
+	fc.Result = res
+	return ec.marshalNInt2int(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_TaskEvent_sequence(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "TaskEvent",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _TaskEvent_type(ctx context.Context, field graphql.CollectedField, obj *model.TaskEvent) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_TaskEvent_type(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Type, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(model.TaskEventType)
+	fc.Result = res
+	return ec.marshalNTaskEventType2githubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐTaskEventType(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_TaskEvent_type(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "TaskEvent",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type TaskEventType does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _TaskEvent_taskId(ctx context.Context, field graphql.CollectedField, obj *model.TaskEvent) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_TaskEvent_taskId(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.TaskID, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNID2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_TaskEvent_taskId(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "TaskEvent",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type ID does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _TaskEvent_task(ctx context.Context, field graphql.CollectedField, obj *model.TaskEvent) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_TaskEvent_task(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Task, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*model.Task)
+	fc.Result = res
+	return ec.marshalOTask2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐTask(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_TaskEvent_task(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "TaskEvent",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_Task_id(ctx, field)
+			case "source":
+				return ec.fieldContext_Task_source(ctx, field)
+			case "code":
+				return ec.fieldContext_Task_code(ctx, field)
+			case "stage":
+				return ec.fieldContext_Task_stage(ctx, field)
+			case "stageStatus":
+				return ec.fieldContext_Task_stageStatus(ctx, field)
+			case "stageLabel":
+				return ec.fieldContext_Task_stageLabel(ctx, field)
+			case "stageStatusLabel":
+				return ec.fieldContext_Task_stageStatusLabel(ctx, field)
+			case "stageErrorCode":
+				return ec.fieldContext_Task_stageErrorCode(ctx, field)
+			case "stageErrorMessage":
+				return ec.fieldContext_Task_stageErrorMessage(ctx, field)
+			case "candidate":
+				return ec.fieldContext_Task_candidate(ctx, field)
+			case "torrentUrl":
+				return ec.fieldContext_Task_torrentUrl(ctx, field)
+			case "savePath":
+				return ec.fieldContext_Task_savePath(ctx, field)
+			case "category":
+				return ec.fieldContext_Task_category(ctx, field)
+			case "tags":
+				return ec.fieldContext_Task_tags(ctx, field)
+			case "torrentHash":
+				return ec.fieldContext_Task_torrentHash(ctx, field)
+			case "torrentName":
+				return ec.fieldContext_Task_torrentName(ctx, field)
+			case "progress":
+				return ec.fieldContext_Task_progress(ctx, field)
+			case "qbittorrentState":
+				return ec.fieldContext_Task_qbittorrentState(ctx, field)
+			case "contentPath":
+				return ec.fieldContext_Task_contentPath(ctx, field)
+			case "downloadCompletedAt":
+				return ec.fieldContext_Task_downloadCompletedAt(ctx, field)
+			case "deliveryMode":
+				return ec.fieldContext_Task_deliveryMode(ctx, field)
+			case "mojiSourcePath":
+				return ec.fieldContext_Task_mojiSourcePath(ctx, field)
+			case "transferAction":
+				return ec.fieldContext_Task_transferAction(ctx, field)
+			case "mojiTransferPath":
+				return ec.fieldContext_Task_mojiTransferPath(ctx, field)
+			case "transferError":
+				return ec.fieldContext_Task_transferError(ctx, field)
+			case "stashScanJobId":
+				return ec.fieldContext_Task_stashScanJobId(ctx, field)
+			case "stashScanPath":
+				return ec.fieldContext_Task_stashScanPath(ctx, field)
+			case "stashScanError":
+				return ec.fieldContext_Task_stashScanError(ctx, field)
+			case "stashScanHint":
+				return ec.fieldContext_Task_stashScanHint(ctx, field)
+			case "stashScanStartedAt":
+				return ec.fieldContext_Task_stashScanStartedAt(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_Task_createdAt(ctx, field)
+			case "updatedAt":
+				return ec.fieldContext_Task_updatedAt(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type Task", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _TaskEvent_dashboardStats(ctx context.Context, field graphql.CollectedField, obj *model.TaskEvent) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_TaskEvent_dashboardStats(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.DashboardStats, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*model.DashboardStats)
+	fc.Result = res
+	return ec.marshalNDashboardStats2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐDashboardStats(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_TaskEvent_dashboardStats(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "TaskEvent",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "total":
+				return ec.fieldContext_DashboardStats_total(ctx, field)
+			case "active":
+				return ec.fieldContext_DashboardStats_active(ctx, field)
+			case "completed":
+				return ec.fieldContext_DashboardStats_completed(ctx, field)
+			case "downloading":
+				return ec.fieldContext_DashboardStats_downloading(ctx, field)
+			case "pendingScans":
+				return ec.fieldContext_DashboardStats_pendingScans(ctx, field)
+			case "failed":
+				return ec.fieldContext_DashboardStats_failed(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type DashboardStats", field.Name)
 		},
 	}
 	return fc, nil
@@ -31521,6 +31983,26 @@ func (ec *executionContext) _SubscribedPerformer(ctx context.Context, sel ast.Se
 	return out
 }
 
+var subscriptionImplementors = []string{"Subscription"}
+
+func (ec *executionContext) _Subscription(ctx context.Context, sel ast.SelectionSet) func(ctx context.Context) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, subscriptionImplementors)
+	ctx = graphql.WithFieldContext(ctx, &graphql.FieldContext{
+		Object: "Subscription",
+	})
+	if len(fields) != 1 {
+		ec.Errorf(ctx, "must subscribe to exactly one stream")
+		return nil
+	}
+
+	switch fields[0].Name {
+	case "taskEvents":
+		return ec._Subscription_taskEvents(ctx, fields[0])
+	default:
+		panic("unknown field " + strconv.Quote(fields[0].Name))
+	}
+}
+
 var subscriptionReleaseImplementors = []string{"SubscriptionRelease"}
 
 func (ec *executionContext) _SubscriptionRelease(ctx context.Context, sel ast.SelectionSet, obj *model.SubscriptionRelease) graphql.Marshaler {
@@ -31804,6 +32286,62 @@ func (ec *executionContext) _Task(ctx context.Context, sel ast.SelectionSet, obj
 			}
 		case "updatedAt":
 			out.Values[i] = ec._Task_updatedAt(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var taskEventImplementors = []string{"TaskEvent"}
+
+func (ec *executionContext) _TaskEvent(ctx context.Context, sel ast.SelectionSet, obj *model.TaskEvent) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, taskEventImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("TaskEvent")
+		case "sequence":
+			out.Values[i] = ec._TaskEvent_sequence(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "type":
+			out.Values[i] = ec._TaskEvent_type(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "taskId":
+			out.Values[i] = ec._TaskEvent_taskId(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "task":
+			out.Values[i] = ec._TaskEvent_task(ctx, field, obj)
+		case "dashboardStats":
+			out.Values[i] = ec._TaskEvent_dashboardStats(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
@@ -34042,6 +34580,30 @@ func (ec *executionContext) unmarshalNTaskDeletePolicy2githubᚗcomᚋleothevan2
 }
 
 func (ec *executionContext) marshalNTaskDeletePolicy2githubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐTaskDeletePolicy(ctx context.Context, sel ast.SelectionSet, v model.TaskDeletePolicy) graphql.Marshaler {
+	return v
+}
+
+func (ec *executionContext) marshalNTaskEvent2githubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐTaskEvent(ctx context.Context, sel ast.SelectionSet, v model.TaskEvent) graphql.Marshaler {
+	return ec._TaskEvent(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNTaskEvent2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐTaskEvent(ctx context.Context, sel ast.SelectionSet, v *model.TaskEvent) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._TaskEvent(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalNTaskEventType2githubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐTaskEventType(ctx context.Context, v any) (model.TaskEventType, error) {
+	var res model.TaskEventType
+	err := res.UnmarshalGQL(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNTaskEventType2githubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐTaskEventType(ctx context.Context, sel ast.SelectionSet, v model.TaskEventType) graphql.Marshaler {
 	return v
 }
 

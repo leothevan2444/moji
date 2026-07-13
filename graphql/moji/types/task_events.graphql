@@ -1,0 +1,17 @@
+enum TaskEventType {
+  CREATED
+  UPDATED
+  DELETED
+}
+
+type TaskEvent {
+  sequence: Int!
+  type: TaskEventType!
+  taskId: ID!
+  task: Task
+  dashboardStats: DashboardStats!
+}
+
+type Subscription {
+  taskEvents: TaskEvent!
+}

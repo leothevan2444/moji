@@ -1,0 +1,35 @@
+subscription TaskEvents {
+  taskEvents {
+    sequence
+    type
+    taskId
+    task {
+      id
+      source
+      code
+      stage
+      stageStatus
+      stageLabel
+      stageStatusLabel
+      stageErrorCode
+      stageErrorMessage
+      progress
+      qbittorrentState
+      deliveryMode
+      transferError
+      stashScanJobId
+      stashScanPath
+      stashScanError
+      stashScanHint
+      updatedAt
+    }
+    dashboardStats {
+      total
+      active
+      completed
+      downloading
+      pendingScans
+      failed
+    }
+  }
+}

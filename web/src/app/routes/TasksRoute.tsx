@@ -4,6 +4,8 @@ import { useQuery } from "urql";
 import { Drawer } from "../../components/layout/Drawer";
 import { TasksPage } from "../../pages/TasksPage";
 import { useTaskMutations } from "../../hooks/useTaskMutations";
+import { useTaskEventRefresh } from "../../hooks/useTaskEventRefresh";
+import { useTaskEvents } from "../../hooks/useTaskEvents";
 import { describeQueryError } from "../../services/queryError";
 import { parseTaskSearchParams, serializeTaskSearchParams } from "../searchParams";
 import { taskSummary, type TaskGroupKey } from "../../utils/taskUtils";
@@ -55,6 +57,16 @@ export function Component() {
   const isResolution = Boolean(taskId && location.pathname.endsWith("/resolve"));
 
   const requery = () => refresh({ requestPolicy: "network-only" });
+  const { onEvent: onTaskEvent, onFullRefresh: onTaskEventFullRefresh } = useTaskEventRefresh({
+    taskId,
+    refreshOverview: requery,
+    refreshDetail: () => refreshDetail({ requestPolicy: "network-only" })
+  });
+  useTaskEvents({
+    onEvent: onTaskEvent,
+    onSequenceGap: onTaskEventFullRefresh,
+    onReconnect: onTaskEventFullRefresh
+  });
   const openTask = (id: string, resolve = false) => navigate(`/tasks/${encodeURIComponent(id)}${resolve ? "/resolve" : ""}`, { state: { backgroundLocation: location } });
   const closeTask = () => {
     navigate(taskCloseTarget(location.state, searchParams));

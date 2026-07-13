@@ -13,8 +13,8 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/99designs/gqlgen/graphql/handler"
 	"github.com/99designs/gqlgen/graphql/playground"
+	"github.com/gorilla/websocket"
 	"github.com/leothevan2444/moji/internal/config"
 	"github.com/leothevan2444/moji/internal/controller/api"
 	"github.com/leothevan2444/moji/internal/discovery"
@@ -86,7 +86,7 @@ func main() {
 	}
 
 	// Dependencies
-	mux, taskRuntimeService, stashService, subscriptionService, statsCollector := newHTTPRuntime(cfg, "dev", configStore)
+	mux, taskRuntimeService, stashService, subscriptionService, statsCollector, taskEventBus := newHTTPRuntime(cfg, "dev", configStore)
 
 	server := &http.Server{
 		Addr:              *addr,
@@ -112,6 +112,7 @@ func main() {
 
 	go func() {
 		<-ctx.Done()
+		taskEventBus.Close()
 		shutdownCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 		defer cancel()
 		if err := server.Shutdown(shutdownCtx); err != nil {
@@ -125,11 +126,11 @@ func main() {
 }
 
 func newHTTPHandler(cfg *config.Config, version string) http.Handler {
-	handler, _, _, _, _ := newHTTPRuntime(cfg, version, nil)
+	handler, _, _, _, _, _ := newHTTPRuntime(cfg, version, nil)
 	return handler
 }
 
-func newHTTPRuntime(cfg *config.Config, version string, configStore *config.Store) (http.Handler, graphqlapi.TaskRuntimeService, graphqlapi.StashService, graphqlapi.SubscriptionService, *stats.Collector) {
+func newHTTPRuntime(cfg *config.Config, version string, configStore *config.Store) (http.Handler, graphqlapi.TaskRuntimeService, graphqlapi.StashService, graphqlapi.SubscriptionService, *stats.Collector, *taskruntime.TaskEventBus) {
 	imageService, err := imagecache.New("cache/image", func() imagecache.Config {
 		current := cfg.System.ImageCache.Normalize()
 		if configStore != nil {
@@ -152,7 +153,8 @@ func newHTTPRuntime(cfg *config.Config, version string, configStore *config.Stor
 	apiHandler := api.NewHandler(jackettTracker, api.WithLogFilePath(cfg.EffectiveLogFilePath()))
 	qbittorrentClient, torrentClient := configureQBittorrent(cfg, configStore)
 	stashClient := configureStashClient(cfg, configStore)
-	taskRuntimeService := configureTaskRuntime(cfg, configStore, jackettTracker, torrentClient, stashClient)
+	taskEventBus := taskruntime.NewTaskEventBus(32)
+	taskRuntimeService := configureTaskRuntime(cfg, configStore, jackettTracker, torrentClient, stashClient, taskEventBus)
 	taskFlowService := configureTaskFlow(taskRuntimeService)
 	stashService := configureStashService(cfg, configStore, stashClient)
 	metadataService := configureMetadata(stashClient)
@@ -201,7 +203,8 @@ func newHTTPRuntime(cfg *config.Config, version string, configStore *config.Stor
 		resolver.Performer = performerService
 		resolver.Discovery = discovery.NewService(metadataService, taskFlowService, stashBoxImage)
 	}
-	resolver.Subscription = subscriptionService
+	resolver.PerformerSubscription = subscriptionService
+	resolver.TaskEventSource = taskEventBus
 	resolver.StashBox = metadataService
 	resolver.LogReader = logging.Default()
 	resolver.RuntimeSettings = buildSettingsSnapshot(cfg, version)
@@ -211,8 +214,7 @@ func newHTTPRuntime(cfg *config.Config, version string, configStore *config.Stor
 	if configStore != nil {
 		resolver.SettingsEditor = newRuntimeSettingsEditor(configStore, version, taskRuntimeService != nil, stashService != nil, stashClient, subscriptionService, metadataService)
 	}
-	graphqlHandler := handler.NewDefaultServer(generated.NewExecutableSchema(generated.Config{Resolvers: resolver}))
-	graphqlapi.ConfigureGraphQLServer(graphqlHandler)
+	graphqlHandler := graphqlapi.NewGraphQLServer(generated.NewExecutableSchema(generated.Config{Resolvers: resolver}))
 
 	apiMux := http.NewServeMux()
 	apiHandler.Register(apiMux)
@@ -221,7 +223,7 @@ func newHTTPRuntime(cfg *config.Config, version string, configStore *config.Stor
 
 	router := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch {
-		case r.Method == http.MethodPost && r.URL.Path == "/graphql":
+		case r.URL.Path == "/graphql" && (r.Method == http.MethodPost || (r.Method == http.MethodGet && websocket.IsWebSocketUpgrade(r))):
 			graphqlHandler.ServeHTTP(w, r)
 		case r.Method == http.MethodGet && r.URL.Path == "/playground":
 			playground.Handler("Moji GraphQL Playground", "/graphql").ServeHTTP(w, r)
@@ -234,7 +236,7 @@ func newHTTPRuntime(cfg *config.Config, version string, configStore *config.Stor
 		}
 	})
 
-	return router, taskRuntimeService, stashService, subscriptionService, statsCollector
+	return router, taskRuntimeService, stashService, subscriptionService, statsCollector, taskEventBus
 }
 
 func configureTaskFlow(taskRuntimeService graphqlapi.TaskRuntimeService) *taskflow.Service {
@@ -322,7 +324,7 @@ func jackettClientOf(tr tracker.Tracker) *jackett.Client {
 	return nil
 }
 
-func configureTaskRuntime(cfg *config.Config, configStore *config.Store, tr tracker.Tracker, torrent graphqlapi.TorrentClient, stashClient *stash.Client) graphqlapi.TaskRuntimeService {
+func configureTaskRuntime(cfg *config.Config, configStore *config.Store, tr tracker.Tracker, torrent graphqlapi.TorrentClient, stashClient *stash.Client, taskEvents *taskruntime.TaskEventBus) graphqlapi.TaskRuntimeService {
 	if torrent == nil {
 		logging.Infof("runtime: task runtime disabled because qBittorrent client is not available")
 		return nil
@@ -332,10 +334,14 @@ func configureTaskRuntime(cfg *config.Config, configStore *config.Store, tr trac
 	if err != nil {
 		logging.Fatalf("configure task store: %v", err)
 	}
+	eventingStore, err := taskruntime.NewEventingTaskStore(store, taskEvents)
+	if err != nil {
+		logging.Fatalf("configure task event store: %v", err)
+	}
 	service, err := taskruntime.NewService(
 		tr,
 		torrent,
-		store,
+		eventingStore,
 		taskruntime.WithCandidateSelectionProvider(configureTorrentSelectionProvider(configStore, cfg)),
 		taskruntime.WithTaskDeletePolicyProvider(configureTaskDeletePolicyProvider(configStore, cfg)),
 		taskruntime.WithLibraryCodeChecker(stashLibraryCodeChecker{client: stashClient}),

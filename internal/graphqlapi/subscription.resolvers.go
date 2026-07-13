@@ -15,11 +15,11 @@ import (
 
 // SubscribePerformer is the resolver for the subscribePerformer field.
 func (r *mutationResolver) SubscribePerformer(ctx context.Context, stashPerformerID string) (*model.SubscribedPerformer, error) {
-	if r.Subscription == nil {
+	if r.PerformerSubscription == nil {
 		return nil, errors.New("subscription service is not configured")
 	}
 
-	item, err := r.Subscription.SubscribePerformer(ctx, stashPerformerID)
+	item, err := r.PerformerSubscription.SubscribePerformer(ctx, stashPerformerID)
 	if err != nil {
 		return nil, err
 	}
@@ -28,11 +28,11 @@ func (r *mutationResolver) SubscribePerformer(ctx context.Context, stashPerforme
 
 // UnsubscribePerformer is the resolver for the unsubscribePerformer field.
 func (r *mutationResolver) UnsubscribePerformer(ctx context.Context, stashPerformerID string) (bool, error) {
-	if r.Subscription == nil {
+	if r.PerformerSubscription == nil {
 		return false, errors.New("subscription service is not configured")
 	}
 
-	if err := r.Subscription.UnsubscribePerformer(ctx, stashPerformerID); err != nil {
+	if err := r.PerformerSubscription.UnsubscribePerformer(ctx, stashPerformerID); err != nil {
 		return false, err
 	}
 	return true, nil
@@ -40,11 +40,11 @@ func (r *mutationResolver) UnsubscribePerformer(ctx context.Context, stashPerfor
 
 // RefreshSubscribedPerformer is the resolver for the refreshSubscribedPerformer field.
 func (r *mutationResolver) RefreshSubscribedPerformer(ctx context.Context, stashPerformerID string) (*model.SubscribedPerformer, error) {
-	if r.Subscription == nil {
+	if r.PerformerSubscription == nil {
 		return nil, errors.New("subscription service is not configured")
 	}
 
-	item, err := r.Subscription.RefreshSubscribedPerformer(ctx, stashPerformerID)
+	item, err := r.PerformerSubscription.RefreshSubscribedPerformer(ctx, stashPerformerID)
 	if err != nil {
 		return subscriptionPerformerToModel(item), err
 	}
@@ -53,11 +53,11 @@ func (r *mutationResolver) RefreshSubscribedPerformer(ctx context.Context, stash
 
 // RefreshSubscriptionsNow is the resolver for the refreshSubscriptionsNow field.
 func (r *mutationResolver) RefreshSubscriptionsNow(ctx context.Context) ([]*model.SubscribedPerformer, error) {
-	if r.Subscription == nil {
+	if r.PerformerSubscription == nil {
 		return []*model.SubscribedPerformer{}, nil
 	}
 
-	items, err := r.Subscription.RefreshAll(ctx)
+	items, err := r.PerformerSubscription.RefreshAll(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -199,11 +199,11 @@ func (r *queryResolver) StashPerformerScenes(ctx context.Context, id string, inp
 
 // SubscribedPerformers is the resolver for the subscribedPerformers field.
 func (r *queryResolver) SubscribedPerformers(ctx context.Context) ([]*model.SubscribedPerformer, error) {
-	if r.Subscription == nil {
+	if r.PerformerSubscription == nil {
 		return []*model.SubscribedPerformer{}, nil
 	}
 
-	items, err := r.Subscription.ListSubscribedPerformers(ctx)
+	items, err := r.PerformerSubscription.ListSubscribedPerformers(ctx)
 	if err != nil {
 		return nil, err
 	}

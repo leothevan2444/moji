@@ -591,6 +591,9 @@ type SubscribedPerformer struct {
 	RecentReleases        []*SubscriptionRelease `json:"recentReleases"`
 }
 
+type Subscription struct {
+}
+
 type SubscriptionRelease struct {
 	Key            string   `json:"key"`
 	Source         string   `json:"source"`
@@ -658,6 +661,14 @@ type Task struct {
 	StashScanStartedAt  *string            `json:"stashScanStartedAt,omitempty"`
 	CreatedAt           string             `json:"createdAt"`
 	UpdatedAt           string             `json:"updatedAt"`
+}
+
+type TaskEvent struct {
+	Sequence       int             `json:"sequence"`
+	Type           TaskEventType   `json:"type"`
+	TaskID         string          `json:"taskId"`
+	Task           *Task           `json:"task,omitempty"`
+	DashboardStats *DashboardStats `json:"dashboardStats"`
 }
 
 type TitleMatchClause struct {
@@ -1360,6 +1371,63 @@ func (e *TaskDeletePolicy) UnmarshalJSON(b []byte) error {
 }
 
 func (e TaskDeletePolicy) MarshalJSON() ([]byte, error) {
+	var buf bytes.Buffer
+	e.MarshalGQL(&buf)
+	return buf.Bytes(), nil
+}
+
+type TaskEventType string
+
+const (
+	TaskEventTypeCreated TaskEventType = "CREATED"
+	TaskEventTypeUpdated TaskEventType = "UPDATED"
+	TaskEventTypeDeleted TaskEventType = "DELETED"
+)
+
+var AllTaskEventType = []TaskEventType{
+	TaskEventTypeCreated,
+	TaskEventTypeUpdated,
+	TaskEventTypeDeleted,
+}
+
+func (e TaskEventType) IsValid() bool {
+	switch e {
+	case TaskEventTypeCreated, TaskEventTypeUpdated, TaskEventTypeDeleted:
+		return true
+	}
+	return false
+}
+
+func (e TaskEventType) String() string {
+	return string(e)
+}
+
+func (e *TaskEventType) UnmarshalGQL(v any) error {
+	str, ok := v.(string)
+	if !ok {
+		return fmt.Errorf("enums must be strings")
+	}
+
+	*e = TaskEventType(str)
+	if !e.IsValid() {
+		return fmt.Errorf("%s is not a valid TaskEventType", str)
+	}
+	return nil
+}
+
+func (e TaskEventType) MarshalGQL(w io.Writer) {
+	fmt.Fprint(w, strconv.Quote(e.String()))
+}
+
+func (e *TaskEventType) UnmarshalJSON(b []byte) error {
+	s, err := strconv.Unquote(string(b))
+	if err != nil {
+		return err
+	}
+	return e.UnmarshalGQL(s)
+}
+
+func (e TaskEventType) MarshalJSON() ([]byte, error) {
 	var buf bytes.Buffer
 	e.MarshalGQL(&buf)
 	return buf.Bytes(), nil
