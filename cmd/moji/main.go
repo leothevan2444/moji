@@ -22,6 +22,7 @@ import (
 	"github.com/leothevan2444/moji/internal/graphqlapi/generated"
 	"github.com/leothevan2444/moji/internal/imagecache"
 	"github.com/leothevan2444/moji/internal/logging"
+	"github.com/leothevan2444/moji/internal/metadata"
 	"github.com/leothevan2444/moji/internal/performer"
 	"github.com/leothevan2444/moji/internal/stashsync"
 	"github.com/leothevan2444/moji/internal/stats"
@@ -128,7 +129,7 @@ func newHTTPHandler(cfg *config.Config, version string) http.Handler {
 	return handler
 }
 
-func newHTTPRuntime(cfg *config.Config, version string, configStore *config.Store) (http.Handler, graphqlapi.TaskRuntimeService, graphqlapi.StashService, graphqlapi.RuntimeSubscriptionServices, *stats.Collector) {
+func newHTTPRuntime(cfg *config.Config, version string, configStore *config.Store) (http.Handler, graphqlapi.TaskRuntimeService, graphqlapi.StashService, graphqlapi.SubscriptionService, *stats.Collector) {
 	imageService, err := imagecache.New("cache/image", func() imagecache.Config {
 		current := cfg.System.ImageCache.Normalize()
 		if configStore != nil {
@@ -154,8 +155,12 @@ func newHTTPRuntime(cfg *config.Config, version string, configStore *config.Stor
 	taskRuntimeService := configureTaskRuntime(cfg, configStore, jackettTracker, torrentClient, stashClient)
 	taskFlowService := configureTaskFlow(taskRuntimeService)
 	stashService := configureStashService(cfg, configStore, stashClient)
-	subscriptionService := configureSubscription(cfg, configStore, stashClient, taskRuntimeService, taskFlowService, imageService)
-	applySubscriptionOrder(cfg, subscriptionService)
+	metadataService := configureMetadata(stashClient)
+	subscriptionService := configureSubscription(cfg, configStore, stashClient, metadataService, taskFlowService, imageService)
+	applyAutomationSettings(cfg, subscriptionService, metadataService)
+	if taskFlowService != nil && metadataService != nil {
+		taskFlowService.SetDiscoveredSceneResolver(discovery.NewDiscoveredSceneResolver(metadataService.Registry()))
+	}
 
 	statsCollector := stats.NewCollector(
 		stashClient,
@@ -166,17 +171,45 @@ func newHTTPRuntime(cfg *config.Config, version string, configStore *config.Stor
 	)
 	resolver := graphqlapi.NewResolver(jackettTracker, torrentClient, taskRuntimeService, stashService, version)
 	resolver.TaskFlow = taskFlowService
-	resolver.PerformerCatalog = performer.NewService(subscriptionService)
-	resolver.Discovery = discovery.NewService(subscriptionService)
+	if metadataService != nil {
+		stashImage := func(ctx context.Context, raw string) string {
+			if imageService == nil || strings.TrimSpace(raw) == "" {
+				return raw
+			}
+			current := storeStash(cfg, configStore)
+			value, err := imageService.Register(ctx, imagecache.Descriptor{Kind: imagecache.SourceStash, InstanceURL: current.URL, ImageURL: raw, APIKey: current.APIKey})
+			if err != nil {
+				return ""
+			}
+			return value
+		}
+		stashBoxImage := func(ctx context.Context, endpoint, raw string) string {
+			if imageService == nil || strings.TrimSpace(raw) == "" {
+				return raw
+			}
+			value, err := imageService.Register(ctx, imagecache.Descriptor{Kind: imagecache.SourceStashBox, InstanceURL: endpoint, ImageURL: raw, APIKey: metadataService.APIKey(endpoint)})
+			if err != nil {
+				logging.Warnf("discovery: register image proxy: %v", err)
+				return ""
+			}
+			return value
+		}
+		performerService, err := performer.NewService(stashClient, metadataService, taskFlowService, taskRuntimeService, stashImage, stashBoxImage)
+		if err != nil {
+			logging.Fatalf("configure performer: %v", err)
+		}
+		resolver.Performer = performerService
+		resolver.Discovery = discovery.NewService(metadataService, taskFlowService, stashBoxImage)
+	}
 	resolver.Subscription = subscriptionService
-	resolver.StashBox = subscriptionService
+	resolver.StashBox = metadataService
 	resolver.LogReader = logging.Default()
 	resolver.RuntimeSettings = buildSettingsSnapshot(cfg, version)
-	resolver.RuntimeStatus = buildSettingsStatusSnapshot(cfg, version, taskRuntimeService != nil, stashService != nil, stashClient, subscriptionService)
+	resolver.RuntimeStatus = buildSettingsStatusSnapshot(cfg, version, taskRuntimeService != nil, stashService != nil, stashClient, metadataService)
 	resolver.Stats = statsCollector
 	resolver.ImageCache = imageService
 	if configStore != nil {
-		resolver.SettingsEditor = newRuntimeSettingsEditor(configStore, version, taskRuntimeService != nil, stashService != nil, stashClient, subscriptionService)
+		resolver.SettingsEditor = newRuntimeSettingsEditor(configStore, version, taskRuntimeService != nil, stashService != nil, stashClient, subscriptionService, metadataService)
 	}
 	graphqlHandler := handler.NewDefaultServer(generated.NewExecutableSchema(generated.Config{Resolvers: resolver}))
 	graphqlapi.ConfigureGraphQLServer(graphqlHandler)
@@ -401,13 +434,15 @@ func configureQBittorrentConfigProvider(store *config.Store, cfg *config.Config)
 	}
 }
 
-func applySubscriptionOrder(cfg *config.Config, service graphqlapi.RuntimeSubscriptionServices) {
-	if service == nil || cfg == nil {
+func applyAutomationSettings(cfg *config.Config, subscriptions *subscription.Service, metadataService *metadata.Service) {
+	if cfg == nil {
 		return
 	}
-	if concrete, ok := service.(*subscription.Service); ok {
-		concrete.SetEndpointOrder(cfg.Automation.StashBoxEndpoints)
-		concrete.SetReleasePolicy(cfg.Automation.SubscriptionReleasePolicy.Effective())
+	if metadataService != nil {
+		metadataService.SetEndpointOrder(cfg.Automation.StashBoxEndpoints)
+	}
+	if subscriptions != nil {
+		subscriptions.SetReleasePolicy(cfg.Automation.SubscriptionReleasePolicy.Effective())
 	}
 }
 
@@ -536,7 +571,7 @@ func torrentSelectionSnapshot(cfg config.TorrentSelectionConfig) graphqlapi.Torr
 	return out
 }
 
-func buildSettingsStatusSnapshot(cfg *config.Config, version string, downloaderEnabled bool, stashEnabled bool, stashClient *stash.Client, subscriptionService graphqlapi.StashBoxService) *graphqlapi.SettingsStatusSnapshot {
+func buildSettingsStatusSnapshot(cfg *config.Config, version string, downloaderEnabled bool, stashEnabled bool, stashClient *stash.Client, stashBoxService graphqlapi.StashBoxService) *graphqlapi.SettingsStatusSnapshot {
 	_ = version
 	jackettConfigured := cfg.Connection.Jackett.URL != "" && cfg.Connection.Jackett.APIKey != ""
 	stashConfigured := isStashConfigured(cfg)
@@ -548,8 +583,8 @@ func buildSettingsStatusSnapshot(cfg *config.Config, version string, downloaderE
 		StashBoxesLoaded:    false,
 		StashBoxesLoadError: "",
 	}
-	if subscriptionService != nil {
-		endpoints, state := subscriptionService.SnapshotState()
+	if stashBoxService != nil {
+		endpoints, state := stashBoxService.SnapshotState()
 		stashBoxStatus.StashBoxesLoaded = state.Loaded
 		stashBoxStatus.StashBoxesLoadError = state.ErrorMsg
 		for _, box := range endpoints {
@@ -781,9 +816,27 @@ func isIngestConfigured(cfg *config.Config) bool {
 	}
 }
 
-func configureSubscription(cfg *config.Config, configStore *config.Store, stashClient *stash.Client, taskRuntimeService graphqlapi.TaskRuntimeService, taskFlowService *taskflow.Service, imageService *imagecache.Service) graphqlapi.RuntimeSubscriptionServices {
+func configureMetadata(stashClient *stash.Client) *metadata.Service {
 	if stashClient == nil {
-		logging.Infof("runtime: subscription service disabled because stash client is not available")
+		logging.Infof("runtime: StashBox metadata service disabled because stash client is not available")
+		return nil
+	}
+
+	registry := metadata.NewDefaultRegistry()
+	service := metadata.NewService(stashClient, registry)
+	refreshCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	if err := service.RefreshStashBoxes(refreshCtx); err != nil {
+		logging.Warnf("runtime: failed to refresh stash-box endpoints at startup: %v", err)
+	} else {
+		logging.Infof("runtime: StashBox metadata service initialized with %d endpoint(s) from Stash", len(registry.Endpoints()))
+	}
+	return service
+}
+
+func configureSubscription(cfg *config.Config, configStore *config.Store, stashClient *stash.Client, metadataService *metadata.Service, taskFlowService *taskflow.Service, imageService *imagecache.Service) *subscription.Service {
+	if stashClient == nil || metadataService == nil {
+		logging.Infof("runtime: subscription service disabled because required metadata services are not available")
 		return nil
 	}
 
@@ -792,24 +845,11 @@ func configureSubscription(cfg *config.Config, configStore *config.Store, stashC
 		logging.Fatalf("configure subscription store: %v", err)
 	}
 
-	registry := subscription.NewDefaultStashboxRegistry()
-	service, err := subscription.NewService(stashClient, registry, taskRuntimeService, store)
+	service, err := subscription.NewService(stashClient, metadataService, taskFlowService, store)
 	if err != nil {
 		logging.Fatalf("configure subscription: %v", err)
 	}
-	if taskFlowService != nil {
-		taskFlowService.SetDiscoveredSceneResolver(subscription.NewDiscoveredSceneResolver(registry))
-		service.SetTaskCreator(taskFlowService)
-	}
 	service.SetImageProxy(imageService, func() (string, string) { current := storeStash(cfg, configStore); return current.URL, current.APIKey })
-
-	refreshCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
-	if err := service.RefreshStashBoxes(refreshCtx); err != nil {
-		logging.Warnf("runtime: failed to refresh stash-box endpoints at startup: %v", err)
-	} else {
-		logging.Infof("runtime: subscription service initialized with %d stash-box endpoint(s) from Stash", len(registry.Endpoints()))
-	}
 	return service
 }
 

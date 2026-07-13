@@ -7,8 +7,11 @@ package graphqlapi
 import (
 	"context"
 
+	"github.com/leothevan2444/moji/internal/discovery"
 	"github.com/leothevan2444/moji/internal/imagecache"
 	"github.com/leothevan2444/moji/internal/logging"
+	"github.com/leothevan2444/moji/internal/metadata"
+	"github.com/leothevan2444/moji/internal/performer"
 	"github.com/leothevan2444/moji/internal/stashsync"
 	"github.com/leothevan2444/moji/internal/stats"
 	"github.com/leothevan2444/moji/internal/subscription"
@@ -284,7 +287,7 @@ type StashBoxStatusSnapshot struct {
 }
 
 type StashPerformerPage struct {
-	Items       []subscription.Performer
+	Items       []performer.Performer
 	Page        int
 	PageSize    int
 	TotalCount  int
@@ -297,16 +300,16 @@ type StatsProvider interface {
 	SnapshotView() stats.Snapshot
 }
 
-type PerformerCatalogService interface {
-	ListStashPerformers(ctx context.Context, search string) ([]subscription.Performer, error)
-	QueuePerformerScenes(ctx context.Context, performerID string, selections []subscription.QueuePerformerSceneSelection) (subscription.QueuePerformerScenesResult, error)
-	GetPerformerDetail(ctx context.Context, performerID string) (subscription.PerformerDetail, error)
-	ListPerformerScenes(ctx context.Context, performerID string, query subscription.PerformerSceneQuery) (subscription.PerformerScenePage, error)
+type PerformerService interface {
+	List(ctx context.Context, search string) ([]performer.Performer, error)
+	QueuePerformerScenes(ctx context.Context, performerID string, selections []performer.QueueSceneSelection) (performer.QueueScenesResult, error)
+	GetPerformerDetail(ctx context.Context, performerID string) (performer.Detail, error)
+	ListPerformerScenes(ctx context.Context, performerID string, query performer.SceneQuery) (performer.ScenePage, error)
 }
 
 type DiscoveryService interface {
-	SearchPreferredStashBoxScenes(ctx context.Context, query string, limit int, sortBy subscription.DiscoverSort) (subscription.DiscoverScenePage, error)
-	QueueDiscoveredScene(ctx context.Context, sceneID string, stashBoxEndpoint string) (*taskruntime.Task, error)
+	Search(ctx context.Context, query string, limit int, sortBy discovery.Sort) (discovery.Page, error)
+	Queue(ctx context.Context, sceneID string, stashBoxEndpoint string) (*taskruntime.Task, error)
 }
 
 type SubscriptionService interface {
@@ -319,14 +322,7 @@ type SubscriptionService interface {
 
 type StashBoxService interface {
 	RefreshStashBoxes(ctx context.Context) error
-	SnapshotState() (endpoints []subscription.StashBoxEndpoint, state subscription.LoadState)
-}
-
-type RuntimeSubscriptionServices interface {
-	PerformerCatalogService
-	DiscoveryService
-	SubscriptionService
-	StashBoxService
+	SnapshotState() (endpoints []metadata.StashBoxEndpoint, state metadata.LoadState)
 }
 
 type LogReader interface {
@@ -334,22 +330,22 @@ type LogReader interface {
 }
 
 type Resolver struct {
-	Tracker          tracker.Tracker
-	Torrent          TorrentClient
-	TaskRuntime      TaskRuntimeService
-	TaskFlow         TaskFlowService
-	Stash            StashService
-	PerformerCatalog PerformerCatalogService
-	Discovery        DiscoveryService
-	Subscription     SubscriptionService
-	StashBox         StashBoxService
-	LogReader        LogReader
-	SettingsEditor   SettingsEditor
-	RuntimeSettings  *SettingsSnapshot
-	RuntimeStatus    *SettingsStatusSnapshot
-	Stats            StatsProvider
-	ImageCache       ImageCacheService
-	AppVersion       string
+	Tracker         tracker.Tracker
+	Torrent         TorrentClient
+	TaskRuntime     TaskRuntimeService
+	TaskFlow        TaskFlowService
+	Stash           StashService
+	Performer       PerformerService
+	Discovery       DiscoveryService
+	Subscription    SubscriptionService
+	StashBox        StashBoxService
+	LogReader       LogReader
+	SettingsEditor  SettingsEditor
+	RuntimeSettings *SettingsSnapshot
+	RuntimeStatus   *SettingsStatusSnapshot
+	Stats           StatsProvider
+	ImageCache      ImageCacheService
+	AppVersion      string
 }
 
 func NewResolver(tr tracker.Tracker, torrent TorrentClient, taskRuntime TaskRuntimeService, stash StashService, version string) *Resolver {

@@ -12,8 +12,8 @@ import (
 	"github.com/99designs/gqlgen/graphql/handler"
 	"github.com/leothevan2444/moji/internal/graphqlapi/generated"
 	"github.com/leothevan2444/moji/internal/logging"
+	performerdomain "github.com/leothevan2444/moji/internal/performer"
 	"github.com/leothevan2444/moji/internal/stashsync"
-	"github.com/leothevan2444/moji/internal/subscription"
 	"github.com/leothevan2444/moji/internal/taskruntime"
 	"github.com/leothevan2444/moji/internal/tracker"
 	"github.com/leothevan2444/moji/pkg/jackett"
@@ -319,15 +319,15 @@ func TestTasksQueryReturnsNullForUnsetOptionalFields(t *testing.T) {
 }
 
 func TestQueuePerformerScenesMutationMapsBatchResult(t *testing.T) {
-	subscriptionService := &fakeSubscriptionService{
-		queuePerformerResult: subscription.QueuePerformerScenesResult{
+	performerService := &fakePerformerService{
+		queuePerformerResult: performerdomain.QueueScenesResult{
 			QueuedTasks: []*taskruntime.Task{
 				{ID: "task-1", Source: taskruntime.TaskSourceSearch, Stage: taskruntime.TaskStageDownloading, StageStatus: taskruntime.TaskStageStatusRunning},
 			},
-			Results: []subscription.QueuePerformerSceneResult{
+			Results: []performerdomain.QueueSceneResult{
 				{
 					Key:          "scene-a",
-					Status:       subscription.QueuePerformerSceneStatusQueued,
+					Status:       performerdomain.QueueSceneStatusQueued,
 					ReasonCode:   "QUEUED",
 					Message:      "已创建下载任务",
 					Task:         &taskruntime.Task{ID: "task-1", Stage: taskruntime.TaskStageDownloading, StageStatus: taskruntime.TaskStageStatusRunning},
@@ -335,12 +335,12 @@ func TestQueuePerformerScenesMutationMapsBatchResult(t *testing.T) {
 				},
 				{
 					Key:        "scene-b",
-					Status:     subscription.QueuePerformerSceneStatusSkipped,
+					Status:     performerdomain.QueueSceneStatusSkipped,
 					ReasonCode: "ALREADY_IN_LIBRARY",
 					Message:    "作品已在库中，跳过创建任务",
 				},
 			},
-			Summary: subscription.QueuePerformerScenesSummary{
+			Summary: performerdomain.QueueScenesSummary{
 				RequestedCount: 2,
 				QueuedCount:    1,
 				SkippedCount:   1,
@@ -349,10 +349,7 @@ func TestQueuePerformerScenesMutationMapsBatchResult(t *testing.T) {
 		},
 	}
 	resolver := NewResolver(nil, nil, nil, nil, "test-version")
-	resolver.PerformerCatalog = subscriptionService
-	resolver.Discovery = subscriptionService
-	resolver.Subscription = subscriptionService
-	resolver.StashBox = subscriptionService
+	resolver.Performer = performerService
 
 	var resp struct {
 		Data struct {
@@ -411,8 +408,8 @@ func TestQueuePerformerScenesMutationMapsBatchResult(t *testing.T) {
 	if len(resp.Errors) > 0 {
 		t.Fatalf("expected no errors, got %+v", resp.Errors)
 	}
-	if subscriptionService.queuePerformerID != "p1" || len(subscriptionService.queueSelections) != 2 {
-		t.Fatalf("unexpected service call: performer=%q selections=%+v", subscriptionService.queuePerformerID, subscriptionService.queueSelections)
+	if performerService.queuePerformerID != "p1" || len(performerService.queueSelections) != 2 {
+		t.Fatalf("unexpected service call: performer=%q selections=%+v", performerService.queuePerformerID, performerService.queueSelections)
 	}
 	if resp.Data.QueuePerformerScenes.Summary.RequestedCount != 2 || resp.Data.QueuePerformerScenes.Summary.QueuedCount != 1 || resp.Data.QueuePerformerScenes.Summary.SkippedCount != 1 {
 		t.Fatalf("unexpected summary: %+v", resp.Data.QueuePerformerScenes.Summary)
@@ -454,17 +451,14 @@ func TestDeleteTaskMutation(t *testing.T) {
 
 func TestStashPerformersQueryPaginatesResults(t *testing.T) {
 	resolver := NewResolver(nil, nil, nil, nil, "test-version")
-	service := &fakeSubscriptionService{
-		performers: []subscription.Performer{
+	service := &fakePerformerService{
+		performers: []performerdomain.Performer{
 			{ID: "performer-1", Name: "Alice", Subscribed: true},
 			{ID: "performer-2", Name: "Beth", Subscribed: false},
 			{ID: "performer-3", Name: "Clara", Subscribed: false},
 		},
 	}
-	resolver.PerformerCatalog = service
-	resolver.Discovery = service
-	resolver.Subscription = service
-	resolver.StashBox = service
+	resolver.Performer = service
 
 	resp := executeGraphQL(t, resolver, `{
 		stashPerformers(page: 2, pageSize: 2) {
@@ -1552,15 +1546,13 @@ func executeGraphQLInto(t *testing.T, resolver *Resolver, query string, target a
 
 type fakeStashService struct{}
 
-type fakeSubscriptionService struct {
-	performers           []subscription.Performer
-	discovered           subscription.DiscoverScenePage
-	detail               subscription.PerformerDetail
-	performerPage        subscription.PerformerScenePage
-	queueTask            *taskruntime.Task
-	queuePerformerResult subscription.QueuePerformerScenesResult
+type fakePerformerService struct {
+	performers           []performerdomain.Performer
+	detail               performerdomain.Detail
+	performerPage        performerdomain.ScenePage
+	queuePerformerResult performerdomain.QueueScenesResult
 	queuePerformerID     string
-	queueSelections      []subscription.QueuePerformerSceneSelection
+	queueSelections      []performerdomain.QueueSceneSelection
 }
 
 type fakeLogReader struct {
@@ -1574,58 +1566,22 @@ func (f *fakeLogReader) Entries(limit int, _ string) []logging.Entry {
 	return append([]logging.Entry(nil), f.entries[:limit]...)
 }
 
-func (f *fakeSubscriptionService) ListStashPerformers(_ context.Context, _ string) ([]subscription.Performer, error) {
+func (f *fakePerformerService) List(_ context.Context, _ string) ([]performerdomain.Performer, error) {
 	return f.performers, nil
 }
 
-func (f *fakeSubscriptionService) SearchPreferredStashBoxScenes(context.Context, string, int, subscription.DiscoverSort) (subscription.DiscoverScenePage, error) {
-	return f.discovered, nil
-}
-
-func (f *fakeSubscriptionService) QueueDiscoveredScene(context.Context, string, string) (*taskruntime.Task, error) {
-	return f.queueTask, nil
-}
-
-func (f *fakeSubscriptionService) QueuePerformerScenes(_ context.Context, performerID string, selections []subscription.QueuePerformerSceneSelection) (subscription.QueuePerformerScenesResult, error) {
+func (f *fakePerformerService) QueuePerformerScenes(_ context.Context, performerID string, selections []performerdomain.QueueSceneSelection) (performerdomain.QueueScenesResult, error) {
 	f.queuePerformerID = performerID
-	f.queueSelections = append([]subscription.QueuePerformerSceneSelection(nil), selections...)
+	f.queueSelections = append([]performerdomain.QueueSceneSelection(nil), selections...)
 	return f.queuePerformerResult, nil
 }
 
-func (f *fakeSubscriptionService) ListSubscribedPerformers(context.Context) ([]subscription.SubscribedPerformer, error) {
-	return nil, nil
-}
-
-func (f *fakeSubscriptionService) GetPerformerDetail(context.Context, string) (subscription.PerformerDetail, error) {
+func (f *fakePerformerService) GetPerformerDetail(context.Context, string) (performerdomain.Detail, error) {
 	return f.detail, nil
 }
 
-func (f *fakeSubscriptionService) ListPerformerScenes(context.Context, string, subscription.PerformerSceneQuery) (subscription.PerformerScenePage, error) {
+func (f *fakePerformerService) ListPerformerScenes(context.Context, string, performerdomain.SceneQuery) (performerdomain.ScenePage, error) {
 	return f.performerPage, nil
-}
-
-func (f *fakeSubscriptionService) SubscribePerformer(context.Context, string) (subscription.SubscribedPerformer, error) {
-	return subscription.SubscribedPerformer{}, nil
-}
-
-func (f *fakeSubscriptionService) UnsubscribePerformer(context.Context, string) error {
-	return nil
-}
-
-func (f *fakeSubscriptionService) RefreshSubscribedPerformer(context.Context, string) (subscription.SubscribedPerformer, error) {
-	return subscription.SubscribedPerformer{}, nil
-}
-
-func (f *fakeSubscriptionService) RefreshAll(context.Context) ([]subscription.SubscribedPerformer, error) {
-	return nil, nil
-}
-
-func (f *fakeSubscriptionService) RefreshStashBoxes(context.Context) error {
-	return nil
-}
-
-func (f *fakeSubscriptionService) SnapshotState() ([]subscription.StashBoxEndpoint, subscription.LoadState) {
-	return nil, subscription.LoadState{}
 }
 
 func (fakeStashService) MetadataScan(context.Context, stashsync.ScanRequest) (string, error) {

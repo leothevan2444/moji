@@ -6,6 +6,10 @@ import (
 	"testing"
 
 	"github.com/leothevan2444/moji/internal/config"
+	"github.com/leothevan2444/moji/internal/discovery"
+	"github.com/leothevan2444/moji/internal/metadata"
+	performerdomain "github.com/leothevan2444/moji/internal/performer"
+	"github.com/leothevan2444/moji/internal/taskflow"
 	"github.com/leothevan2444/moji/internal/taskruntime"
 	"github.com/leothevan2444/moji/pkg/stash"
 	stashgraphql "github.com/leothevan2444/moji/pkg/stash/graphql"
@@ -17,6 +21,28 @@ type fakeStashClient struct {
 	scenes          []*stashgraphql.SceneFragment
 	boxes           []stash.StashBoxEndpoint
 	findScenesCalls []fakeFindScenesCall
+}
+
+func performerServiceForTest(t *testing.T, service *Service) *performerdomain.Service {
+	t.Helper()
+	creator, _ := service.taskCreator.(performerdomain.TaskCreator)
+	var lister performerdomain.TaskLister
+	if candidate, ok := any(service.taskCreator).(performerdomain.TaskLister); ok {
+		lister = candidate
+	}
+	result, err := performerdomain.NewService(service.stash, service.metadata, creator, lister, nil, nil)
+	if err != nil {
+		t.Fatalf("New performer service: %v", err)
+	}
+	return result
+}
+
+func discoveryServiceForTest(service *Service) *discovery.Service {
+	if flow, ok := service.taskCreator.(*taskflow.Service); ok {
+		flow.SetDiscoveredSceneResolver(discovery.NewDiscoveredSceneResolver(service.metadata.Registry()))
+	}
+	creator, _ := service.taskCreator.(discovery.TaskCreator)
+	return discovery.NewService(service.metadata, creator, nil)
 }
 
 type fakeFindScenesCall struct {
@@ -52,7 +78,7 @@ func (f *fakeStashClient) FindScenes(_ context.Context, sceneFilter *stashgraphq
 				if sceneFilter.StashIDEndpoint.Endpoint != nil {
 					endpoint = *sceneFilter.StashIDEndpoint.Endpoint
 				}
-				if stashID.StashID == *sceneFilter.StashIDEndpoint.StashID && normalizeStashBoxEndpoint(stashID.Endpoint) == normalizeStashBoxEndpoint(endpoint) {
+				if stashID.StashID == *sceneFilter.StashIDEndpoint.StashID && metadata.NormalizeEndpoint(stashID.Endpoint) == metadata.NormalizeEndpoint(endpoint) {
 					out = append(out, scene)
 					break
 				}
@@ -218,20 +244,20 @@ func (f *fakeTaskCreator) QueueSubscriptionRelease(_ context.Context, code, _ st
 // regardless of the endpoint. Tests that need per-endpoint dispatch should
 // use perEndpointFactory instead.
 type stubFactory struct {
-	client StashboxClient
+	client metadata.Client
 }
 
-func (s stubFactory) NewClient(stash.StashBoxEndpoint) StashboxClient { return s.client }
+func (s stubFactory) NewClient(stash.StashBoxEndpoint) metadata.Client { return s.client }
 
 // perEndpointFactory returns a different fakeStashboxClient for each
 // endpoint. The client assigned to an unknown endpoint panics so tests catch
 // accidental mis-routing.
 type perEndpointFactory struct {
-	clients map[string]StashboxClient
+	clients map[string]metadata.Client
 }
 
-func (f perEndpointFactory) NewClient(box stash.StashBoxEndpoint) StashboxClient {
-	client, ok := f.clients[normalizeStashBoxEndpoint(box.Endpoint)]
+func (f perEndpointFactory) NewClient(box stash.StashBoxEndpoint) metadata.Client {
+	client, ok := f.clients[metadata.NormalizeEndpoint(box.Endpoint)]
 	if !ok {
 		panic("perEndpointFactory: no client registered for " + box.Endpoint)
 	}
@@ -239,7 +265,7 @@ func (f perEndpointFactory) NewClient(box stash.StashBoxEndpoint) StashboxClient
 }
 
 func TestListStashPerformersMarksCustomFieldSubscribers(t *testing.T) {
-	service, err := NewService(&fakeStashClient{
+	service, err := newServiceForTest(&fakeStashClient{
 		performers: map[string]*stashgraphql.PerformerFragment{
 			"p1": {
 				ID:           "p1",
@@ -258,7 +284,7 @@ func TestListStashPerformersMarksCustomFieldSubscribers(t *testing.T) {
 		t.Fatalf("NewService failed: %v", err)
 	}
 
-	items, err := service.ListStashPerformers(context.Background(), "mik")
+	items, err := performerServiceForTest(t, service).List(context.Background(), "mik")
 	if err != nil {
 		t.Fatalf("ListStashPerformers failed: %v", err)
 	}
@@ -277,7 +303,7 @@ func TestSubscribeAndUnsubscribePerformerMutatesCustomFields(t *testing.T) {
 		},
 	}
 
-	service, err := NewService(stashClient, nil, nil, NewMemoryStore())
+	service, err := newServiceForTest(stashClient, nil, nil, NewMemoryStore())
 	if err != nil {
 		t.Fatalf("NewService failed: %v", err)
 	}
@@ -318,7 +344,7 @@ func TestRefreshPerformerStoresPendingReleasesWithoutTaskRuntime(t *testing.T) {
 	date := "2026-06-01"
 	url := "https://javstash.example.org/scenes/js-scene-1"
 
-	registry := newStashboxRegistry(stubFactory{
+	registry := metadata.NewRegistry(stubFactory{
 		client: &fakeStashboxClient{
 			performer: &stashboxgraphql.PerformerFragment{ID: "js-1", Name: "Rara Anzai"},
 			scenes: []*stashboxgraphql.SceneFragment{
@@ -338,7 +364,7 @@ func TestRefreshPerformerStoresPendingReleasesWithoutTaskRuntime(t *testing.T) {
 		APIKey:   "ignored",
 	}})
 
-	service, err := NewService(stashClient, registry, nil, NewMemoryStore())
+	service, err := newServiceForTest(stashClient, registry, nil, NewMemoryStore())
 	if err != nil {
 		t.Fatalf("NewService failed: %v", err)
 	}
@@ -372,7 +398,7 @@ func TestRefreshPerformerAllowsUnsubscribedPerformer(t *testing.T) {
 			},
 		},
 	}
-	registry := newStashboxRegistry(stubFactory{
+	registry := metadata.NewRegistry(stubFactory{
 		client: &fakeStashboxClient{
 			performer: &stashboxgraphql.PerformerFragment{ID: "js-1", Name: "Unsubscribed Performer"},
 		},
@@ -383,7 +409,7 @@ func TestRefreshPerformerAllowsUnsubscribedPerformer(t *testing.T) {
 		APIKey:   "ignored",
 	}})
 	store := NewMemoryStore()
-	service, err := NewService(stashClient, registry, nil, store)
+	service, err := newServiceForTest(stashClient, registry, nil, store)
 	if err != nil {
 		t.Fatalf("NewService failed: %v", err)
 	}
@@ -422,7 +448,7 @@ func TestRefreshPerformerDoesNotDuplicatePendingReleasesAcrossPolls(t *testing.T
 			},
 		},
 	}
-	registry := newStashboxRegistry(stubFactory{
+	registry := metadata.NewRegistry(stubFactory{
 		client: &fakeStashboxClient{
 			performer: &stashboxgraphql.PerformerFragment{ID: "js-1", Name: "Rara Anzai"},
 			scenes: []*stashboxgraphql.SceneFragment{{
@@ -434,7 +460,7 @@ func TestRefreshPerformerDoesNotDuplicatePendingReleasesAcrossPolls(t *testing.T
 	})
 	registry.Replace([]stash.StashBoxEndpoint{{Name: "javstash", Endpoint: endpoint, APIKey: "ignored"}})
 
-	service, err := NewService(stashClient, registry, nil, NewMemoryStore())
+	service, err := newServiceForTest(stashClient, registry, nil, NewMemoryStore())
 	if err != nil {
 		t.Fatalf("NewService failed: %v", err)
 	}
@@ -480,7 +506,7 @@ func TestRefreshPerformerSkipsReleaseAlreadyInStashLibrary(t *testing.T) {
 			},
 		}},
 	}
-	registry := newStashboxRegistry(stubFactory{
+	registry := metadata.NewRegistry(stubFactory{
 		client: &fakeStashboxClient{
 			performer: &stashboxgraphql.PerformerFragment{ID: "js-1", Name: "Rara Anzai"},
 			scenes: []*stashboxgraphql.SceneFragment{{
@@ -491,7 +517,7 @@ func TestRefreshPerformerSkipsReleaseAlreadyInStashLibrary(t *testing.T) {
 		},
 	})
 	registry.Replace([]stash.StashBoxEndpoint{{Name: "javstash", Endpoint: endpoint, APIKey: "ignored"}})
-	service, err := NewService(stashClient, registry, nil, NewMemoryStore())
+	service, err := newServiceForTest(stashClient, registry, nil, NewMemoryStore())
 	if err != nil {
 		t.Fatalf("NewService failed: %v", err)
 	}
@@ -526,7 +552,7 @@ func TestRefreshPerformerKeepsReleaseWhenNotFoundInStashLibrary(t *testing.T) {
 			},
 		},
 	}
-	registry := newStashboxRegistry(stubFactory{
+	registry := metadata.NewRegistry(stubFactory{
 		client: &fakeStashboxClient{
 			performer: &stashboxgraphql.PerformerFragment{ID: "js-1", Name: "Rara Anzai"},
 			scenes: []*stashboxgraphql.SceneFragment{{
@@ -537,7 +563,7 @@ func TestRefreshPerformerKeepsReleaseWhenNotFoundInStashLibrary(t *testing.T) {
 		},
 	})
 	registry.Replace([]stash.StashBoxEndpoint{{Name: "javstash", Endpoint: endpoint, APIKey: "ignored"}})
-	service, err := NewService(stashClient, registry, nil, NewMemoryStore())
+	service, err := newServiceForTest(stashClient, registry, nil, NewMemoryStore())
 	if err != nil {
 		t.Fatalf("NewService failed: %v", err)
 	}
@@ -568,7 +594,7 @@ func TestRefreshPerformerSkipsStashLookupForKnownRelease(t *testing.T) {
 			},
 		},
 	}
-	registry := newStashboxRegistry(stubFactory{
+	registry := metadata.NewRegistry(stubFactory{
 		client: &fakeStashboxClient{
 			performer: &stashboxgraphql.PerformerFragment{ID: "js-1", Name: "Rara Anzai"},
 			scenes: []*stashboxgraphql.SceneFragment{{
@@ -589,7 +615,7 @@ func TestRefreshPerformerSkipsStashLookupForKnownRelease(t *testing.T) {
 	}); err != nil {
 		t.Fatalf("seed state failed: %v", err)
 	}
-	service, err := NewService(stashClient, registry, nil, store)
+	service, err := newServiceForTest(stashClient, registry, nil, store)
 	if err != nil {
 		t.Fatalf("NewService failed: %v", err)
 	}
@@ -624,7 +650,7 @@ func TestRefreshPerformerMixedLibraryAndNewReleases(t *testing.T) {
 			},
 		}},
 	}
-	registry := newStashboxRegistry(stubFactory{
+	registry := metadata.NewRegistry(stubFactory{
 		client: &fakeStashboxClient{
 			performer: &stashboxgraphql.PerformerFragment{ID: "js-1", Name: "Rara Anzai"},
 			scenesByPage: map[int][]*stashboxgraphql.SceneFragment{
@@ -637,7 +663,7 @@ func TestRefreshPerformerMixedLibraryAndNewReleases(t *testing.T) {
 		},
 	})
 	registry.Replace([]stash.StashBoxEndpoint{{Name: "javstash", Endpoint: endpoint, APIKey: "ignored"}})
-	service, err := NewService(stashClient, registry, nil, NewMemoryStore())
+	service, err := newServiceForTest(stashClient, registry, nil, NewMemoryStore())
 	if err != nil {
 		t.Fatalf("NewService failed: %v", err)
 	}
@@ -676,7 +702,7 @@ func TestRefreshPerformerInLibraryReleaseIsCheckedAgainOnNextPoll(t *testing.T) 
 			},
 		}},
 	}
-	registry := newStashboxRegistry(stubFactory{
+	registry := metadata.NewRegistry(stubFactory{
 		client: &fakeStashboxClient{
 			performer: &stashboxgraphql.PerformerFragment{ID: "js-1", Name: "Rara Anzai"},
 			scenes: []*stashboxgraphql.SceneFragment{{
@@ -686,7 +712,7 @@ func TestRefreshPerformerInLibraryReleaseIsCheckedAgainOnNextPoll(t *testing.T) 
 		},
 	})
 	registry.Replace([]stash.StashBoxEndpoint{{Name: "javstash", Endpoint: endpoint, APIKey: "ignored"}})
-	service, err := NewService(stashClient, registry, nil, NewMemoryStore())
+	service, err := newServiceForTest(stashClient, registry, nil, NewMemoryStore())
 	if err != nil {
 		t.Fatalf("NewService failed: %v", err)
 	}
@@ -717,9 +743,9 @@ func TestRefreshPerformerBackfillsAcrossMultiplePages(t *testing.T) {
 			3: {},
 		},
 	}
-	registry := newStashboxRegistry(stubFactory{client: client})
+	registry := metadata.NewRegistry(stubFactory{client: client})
 	registry.Replace([]stash.StashBoxEndpoint{{Name: "javstash", Endpoint: endpoint, APIKey: "ignored"}})
-	service, err := NewService(&fakeStashClient{
+	service, err := newServiceForTest(&fakeStashClient{
 		performers: map[string]*stashgraphql.PerformerFragment{
 			"p1": {
 				ID:           "p1",
@@ -768,9 +794,9 @@ func TestRefreshPerformerPollFindsNewReleaseOnLaterPage(t *testing.T) {
 			3: {},
 		},
 	}
-	registry := newStashboxRegistry(stubFactory{client: client})
+	registry := metadata.NewRegistry(stubFactory{client: client})
 	registry.Replace([]stash.StashBoxEndpoint{{Name: "javstash", Endpoint: endpoint, APIKey: "ignored"}})
-	service, err := NewService(&fakeStashClient{
+	service, err := newServiceForTest(&fakeStashClient{
 		performers: map[string]*stashgraphql.PerformerFragment{
 			"p1": {
 				ID:           "p1",
@@ -819,9 +845,9 @@ func TestRefreshPerformerPollStopsAtKnownReleaseBoundary(t *testing.T) {
 			3: {{ID: "js-scene-3", Code: stringPtr("ABCD-003"), Date: stringPtr("2026-04-01")}},
 		},
 	}
-	registry := newStashboxRegistry(stubFactory{client: client})
+	registry := metadata.NewRegistry(stubFactory{client: client})
 	registry.Replace([]stash.StashBoxEndpoint{{Name: "javstash", Endpoint: endpoint, APIKey: "ignored"}})
-	service, err := NewService(&fakeStashClient{
+	service, err := newServiceForTest(&fakeStashClient{
 		performers: map[string]*stashgraphql.PerformerFragment{
 			"p1": {
 				ID:           "p1",
@@ -860,9 +886,9 @@ func TestRefreshPerformerPollStopsAtReleaseDateBoundary(t *testing.T) {
 			2: {{ID: "js-scene-2", Code: stringPtr("ABCD-002"), Date: stringPtr("2019-01-01")}},
 		},
 	}
-	registry := newStashboxRegistry(stubFactory{client: client})
+	registry := metadata.NewRegistry(stubFactory{client: client})
 	registry.Replace([]stash.StashBoxEndpoint{{Name: "javstash", Endpoint: endpoint, APIKey: "ignored"}})
-	service, err := NewService(&fakeStashClient{
+	service, err := newServiceForTest(&fakeStashClient{
 		performers: map[string]*stashgraphql.PerformerFragment{
 			"p1": {
 				ID:           "p1",
@@ -902,9 +928,9 @@ func TestRefreshPerformerDeduplicatesScenesAcrossPages(t *testing.T) {
 			2: {{ID: "js-scene-1", Code: stringPtr("ABCD-001"), Date: stringPtr("2026-06-01")}},
 		},
 	}
-	registry := newStashboxRegistry(stubFactory{client: client})
+	registry := metadata.NewRegistry(stubFactory{client: client})
 	registry.Replace([]stash.StashBoxEndpoint{{Name: "javstash", Endpoint: endpoint, APIKey: "ignored"}})
-	service, err := NewService(&fakeStashClient{
+	service, err := newServiceForTest(&fakeStashClient{
 		performers: map[string]*stashgraphql.PerformerFragment{
 			"p1": {
 				ID:           "p1",
@@ -945,7 +971,7 @@ func TestRefreshPerformerKeepsFailedAutoDownloadsPending(t *testing.T) {
 			},
 		},
 	}
-	registry := newStashboxRegistry(stubFactory{
+	registry := metadata.NewRegistry(stubFactory{
 		client: &fakeStashboxClient{
 			performer: &stashboxgraphql.PerformerFragment{ID: "js-1", Name: "Rara Anzai"},
 			scenes: []*stashboxgraphql.SceneFragment{{
@@ -958,7 +984,7 @@ func TestRefreshPerformerKeepsFailedAutoDownloadsPending(t *testing.T) {
 	registry.Replace([]stash.StashBoxEndpoint{{Name: "javstash", Endpoint: endpoint, APIKey: "ignored"}})
 
 	taskRuntime := &fakeTaskRuntime{err: errors.New("temporary add failure")}
-	service, err := NewService(stashClient, registry, taskRuntime, NewMemoryStore())
+	service, err := newServiceForTest(stashClient, registry, taskRuntime, NewMemoryStore())
 	if err != nil {
 		t.Fatalf("NewService failed: %v", err)
 	}
@@ -1002,10 +1028,10 @@ func TestFetchReleasesUsesMultipleStashBoxes(t *testing.T) {
 		}},
 	}
 
-	registry := newStashboxRegistry(perEndpointFactory{
-		clients: map[string]StashboxClient{
-			normalizeStashBoxEndpoint(endpointA): clientA,
-			normalizeStashBoxEndpoint(endpointB): clientB,
+	registry := metadata.NewRegistry(perEndpointFactory{
+		clients: map[string]metadata.Client{
+			metadata.NormalizeEndpoint(endpointA): clientA,
+			metadata.NormalizeEndpoint(endpointB): clientB,
 		},
 	})
 	registry.Replace([]stash.StashBoxEndpoint{
@@ -1030,7 +1056,7 @@ func TestFetchReleasesUsesMultipleStashBoxes(t *testing.T) {
 		},
 	}
 
-	service, err := NewService(stashClient, registry, nil, NewMemoryStore())
+	service, err := newServiceForTest(stashClient, registry, nil, NewMemoryStore())
 	if err != nil {
 		t.Fatalf("NewService failed: %v", err)
 	}
@@ -1065,13 +1091,13 @@ func TestRefreshStashBoxesReplacesRegistry(t *testing.T) {
 			{Name: "stashbox-b", Endpoint: endpointB, APIKey: "k-b"},
 		},
 	}
-	registry := NewDefaultStashboxRegistry()
-	service, err := NewService(stashClient, registry, nil, NewMemoryStore())
+	registry := metadata.NewDefaultRegistry()
+	service, err := newServiceForTest(stashClient, registry, nil, NewMemoryStore())
 	if err != nil {
 		t.Fatalf("NewService failed: %v", err)
 	}
 
-	if err := service.RefreshStashBoxes(context.Background()); err != nil {
+	if err := service.metadata.RefreshStashBoxes(context.Background()); err != nil {
 		t.Fatalf("RefreshStashBoxes failed: %v", err)
 	}
 
@@ -1094,8 +1120,8 @@ func TestRefreshWithEmptyRegistrySurfacesError(t *testing.T) {
 			},
 		},
 	}
-	registry := NewDefaultStashboxRegistry() // no Replace called
-	service, err := NewService(stashClient, registry, nil, NewMemoryStore())
+	registry := metadata.NewDefaultRegistry() // no Replace called
+	service, err := newServiceForTest(stashClient, registry, nil, NewMemoryStore())
 	if err != nil {
 		t.Fatalf("NewService failed: %v", err)
 	}
@@ -1117,7 +1143,7 @@ func TestOrderedEndpointsMergesUserAndRegistry(t *testing.T) {
 	endpointC := "https://stashbox-c.example.org/graphql"
 	endpointD := "https://stashbox-d.example.org/graphql"
 
-	registry := newStashboxRegistry(stubFactory{client: &fakeStashboxClient{}})
+	registry := metadata.NewRegistry(stubFactory{client: &fakeStashboxClient{}})
 	registry.Replace([]stash.StashBoxEndpoint{
 		{Name: "A", Endpoint: endpointA, APIKey: "k"},
 		{Name: "B", Endpoint: endpointB, APIKey: "k"},
@@ -1125,14 +1151,14 @@ func TestOrderedEndpointsMergesUserAndRegistry(t *testing.T) {
 		{Name: "D", Endpoint: endpointD, APIKey: "k"},
 	})
 
-	service, err := NewService(&fakeStashClient{}, registry, nil, NewMemoryStore())
+	service, err := newServiceForTest(&fakeStashClient{}, registry, nil, NewMemoryStore())
 	if err != nil {
 		t.Fatalf("NewService failed: %v", err)
 	}
 
-	service.SetEndpointOrder([]string{endpointC, endpointA})
+	service.metadata.SetEndpointOrder([]string{endpointC, endpointA})
 
-	got := service.orderedEndpoints()
+	got := service.metadata.Endpoints()
 	want := []string{endpointC, endpointA, endpointB, endpointD}
 	if len(got) != len(want) {
 		t.Fatalf("expected %d endpoints, got %d: %+v", len(want), len(got), got)
@@ -1149,21 +1175,21 @@ func TestOrderedEndpointsDropsUnknown(t *testing.T) {
 	endpointB := "https://stashbox-b.example.org/graphql"
 	endpointC := "https://stashbox-c.example.org/graphql"
 
-	registry := newStashboxRegistry(stubFactory{client: &fakeStashboxClient{}})
+	registry := metadata.NewRegistry(stubFactory{client: &fakeStashboxClient{}})
 	registry.Replace([]stash.StashBoxEndpoint{
 		{Name: "A", Endpoint: endpointA, APIKey: "k"},
 		{Name: "B", Endpoint: endpointB, APIKey: "k"},
 		{Name: "C", Endpoint: endpointC, APIKey: "k"},
 	})
 
-	service, err := NewService(&fakeStashClient{}, registry, nil, NewMemoryStore())
+	service, err := newServiceForTest(&fakeStashClient{}, registry, nil, NewMemoryStore())
 	if err != nil {
 		t.Fatalf("NewService failed: %v", err)
 	}
 
-	service.SetEndpointOrder([]string{endpointA, "https://removed.example.org/graphql", endpointB})
+	service.metadata.SetEndpointOrder([]string{endpointA, "https://removed.example.org/graphql", endpointB})
 
-	got := service.orderedEndpoints()
+	got := service.metadata.Endpoints()
 	want := []string{endpointA, endpointB, endpointC}
 	if len(got) != len(want) {
 		t.Fatalf("expected %d endpoints, got %d: %+v", len(want), len(got), got)
@@ -1180,19 +1206,19 @@ func TestOrderedEndpointsEmptyUserFallsBackToRegistry(t *testing.T) {
 	endpointB := "https://stashbox-b.example.org/graphql"
 	endpointC := "https://stashbox-c.example.org/graphql"
 
-	registry := newStashboxRegistry(stubFactory{client: &fakeStashboxClient{}})
+	registry := metadata.NewRegistry(stubFactory{client: &fakeStashboxClient{}})
 	registry.Replace([]stash.StashBoxEndpoint{
 		{Name: "A", Endpoint: endpointA, APIKey: "k"},
 		{Name: "B", Endpoint: endpointB, APIKey: "k"},
 		{Name: "C", Endpoint: endpointC, APIKey: "k"},
 	})
 
-	service, err := NewService(&fakeStashClient{}, registry, nil, NewMemoryStore())
+	service, err := newServiceForTest(&fakeStashClient{}, registry, nil, NewMemoryStore())
 	if err != nil {
 		t.Fatalf("NewService failed: %v", err)
 	}
 
-	got := service.orderedEndpoints()
+	got := service.metadata.Endpoints()
 	if len(got) != 3 {
 		t.Fatalf("expected 3 endpoints, got %d", len(got))
 	}
@@ -1212,10 +1238,10 @@ func TestResolveStashboxPerformerFollowsUserOrder(t *testing.T) {
 		performer: &stashboxgraphql.PerformerFragment{ID: "b-1", Name: "Shared Performer"},
 	}
 
-	registry := newStashboxRegistry(perEndpointFactory{
-		clients: map[string]StashboxClient{
-			normalizeStashBoxEndpoint(endpointA): clientA,
-			normalizeStashBoxEndpoint(endpointB): clientB,
+	registry := metadata.NewRegistry(perEndpointFactory{
+		clients: map[string]metadata.Client{
+			metadata.NormalizeEndpoint(endpointA): clientA,
+			metadata.NormalizeEndpoint(endpointB): clientB,
 		},
 	})
 	registry.Replace([]stash.StashBoxEndpoint{
@@ -1237,15 +1263,15 @@ func TestResolveStashboxPerformerFollowsUserOrder(t *testing.T) {
 		},
 	}
 
-	service, err := NewService(stashClient, registry, nil, NewMemoryStore())
+	service, err := newServiceForTest(stashClient, registry, nil, NewMemoryStore())
 	if err != nil {
 		t.Fatalf("NewService failed: %v", err)
 	}
 
 	// User places B before A — the first stash_id-backed hit must be B.
-	service.SetEndpointOrder([]string{endpointB, endpointA})
+	service.metadata.SetEndpointOrder([]string{endpointB, endpointA})
 
-	target, err := service.resolveStashboxPerformer(context.Background(), stashClient.performers["p1"])
+	target, err := service.metadata.ResolvePerformer(context.Background(), stashClient.performers["p1"])
 	if err != nil {
 		t.Fatalf("resolveStashboxPerformer failed: %v", err)
 	}
@@ -1268,10 +1294,10 @@ func TestResolveStashboxPerformerPrefersHighestPriorityMatchingStashID(t *testin
 		performer: &stashboxgraphql.PerformerFragment{ID: "b-1", Name: "Shared Performer"},
 	}
 
-	registry := newStashboxRegistry(perEndpointFactory{
-		clients: map[string]StashboxClient{
-			normalizeStashBoxEndpoint(endpointA): clientA,
-			normalizeStashBoxEndpoint(endpointB): clientB,
+	registry := metadata.NewRegistry(perEndpointFactory{
+		clients: map[string]metadata.Client{
+			metadata.NormalizeEndpoint(endpointA): clientA,
+			metadata.NormalizeEndpoint(endpointB): clientB,
 		},
 	})
 	registry.Replace([]stash.StashBoxEndpoint{
@@ -1293,14 +1319,14 @@ func TestResolveStashboxPerformerPrefersHighestPriorityMatchingStashID(t *testin
 		},
 	}
 
-	service, err := NewService(stashClient, registry, nil, NewMemoryStore())
+	service, err := newServiceForTest(stashClient, registry, nil, NewMemoryStore())
 	if err != nil {
 		t.Fatalf("NewService failed: %v", err)
 	}
 
-	service.SetEndpointOrder([]string{endpointB, endpointA})
+	service.metadata.SetEndpointOrder([]string{endpointB, endpointA})
 
-	target, err := service.resolveStashboxPerformer(context.Background(), stashClient.performers["p1"])
+	target, err := service.metadata.ResolvePerformer(context.Background(), stashClient.performers["p1"])
 	if err != nil {
 		t.Fatalf("resolveStashboxPerformer failed: %v", err)
 	}
@@ -1315,9 +1341,9 @@ func TestResolveStashboxPerformerPrefersHighestPriorityMatchingStashID(t *testin
 func TestResolveStashboxPerformerDoesNotFallBackToNameSearch(t *testing.T) {
 	endpointA := "https://stashbox-a.example.org/graphql"
 
-	registry := newStashboxRegistry(perEndpointFactory{
-		clients: map[string]StashboxClient{
-			normalizeStashBoxEndpoint(endpointA): &fakeStashboxClient{
+	registry := metadata.NewRegistry(perEndpointFactory{
+		clients: map[string]metadata.Client{
+			metadata.NormalizeEndpoint(endpointA): &fakeStashboxClient{
 				performer: &stashboxgraphql.PerformerFragment{ID: "a-1", Name: "Name Match Only"},
 			},
 		},
@@ -1336,13 +1362,13 @@ func TestResolveStashboxPerformerDoesNotFallBackToNameSearch(t *testing.T) {
 		},
 	}
 
-	service, err := NewService(stashClient, registry, nil, NewMemoryStore())
+	service, err := newServiceForTest(stashClient, registry, nil, NewMemoryStore())
 	if err != nil {
 		t.Fatalf("NewService failed: %v", err)
 	}
 
-	target, err := service.resolveStashboxPerformer(context.Background(), stashClient.performers["p1"])
-	if !errors.Is(err, errNoMatchingStashBoxMapping) {
+	target, err := service.metadata.ResolvePerformer(context.Background(), stashClient.performers["p1"])
+	if !errors.Is(err, metadata.ErrNoPerformerMapping) {
 		t.Fatalf("expected no-mapping sentinel, got %v", err)
 	}
 	if target != nil {
@@ -1353,9 +1379,9 @@ func TestResolveStashboxPerformerDoesNotFallBackToNameSearch(t *testing.T) {
 func TestRefreshPerformerWithoutMatchingStashIDReturnsStateNotError(t *testing.T) {
 	endpointA := "https://stashbox-a.example.org/graphql"
 
-	registry := newStashboxRegistry(perEndpointFactory{
-		clients: map[string]StashboxClient{
-			normalizeStashBoxEndpoint(endpointA): &fakeStashboxClient{
+	registry := metadata.NewRegistry(perEndpointFactory{
+		clients: map[string]metadata.Client{
+			metadata.NormalizeEndpoint(endpointA): &fakeStashboxClient{
 				performer: &stashboxgraphql.PerformerFragment{ID: "a-1", Name: "Name Match Only"},
 			},
 		},
@@ -1374,7 +1400,7 @@ func TestRefreshPerformerWithoutMatchingStashIDReturnsStateNotError(t *testing.T
 		},
 	}
 
-	service, err := NewService(stashClient, registry, nil, NewMemoryStore())
+	service, err := newServiceForTest(stashClient, registry, nil, NewMemoryStore())
 	if err != nil {
 		t.Fatalf("NewService failed: %v", err)
 	}
@@ -1433,7 +1459,7 @@ func TestListPerformerScenesDeduplicatesMatchedStashBoxScenes(t *testing.T) {
 		},
 	}
 
-	registry := newStashboxRegistry(stubFactory{
+	registry := metadata.NewRegistry(stubFactory{
 		client: &fakeStashboxClient{
 			performer: &stashboxgraphql.PerformerFragment{ID: "box-performer-1", Name: "Actor"},
 			scenes: []*stashboxgraphql.SceneFragment{
@@ -1462,12 +1488,17 @@ func TestListPerformerScenesDeduplicatesMatchedStashBoxScenes(t *testing.T) {
 		StageStatusLabel: "进行中",
 		Progress:         0.42,
 	}}}
-	service, err := NewService(stashClient, registry, taskRuntime, NewMemoryStore())
+	service, err := newServiceForTest(stashClient, registry, taskRuntime, NewMemoryStore())
 	if err != nil {
 		t.Fatalf("NewService failed: %v", err)
 	}
 
-	page, err := service.ListPerformerScenes(context.Background(), "p1", PerformerSceneQuery{})
+	creator, _ := service.taskCreator.(performerdomain.TaskCreator)
+	catalog, err := performerdomain.NewService(stashClient, service.metadata, creator, taskRuntime, nil, nil)
+	if err != nil {
+		t.Fatalf("New performer service: %v", err)
+	}
+	page, err := catalog.ListPerformerScenes(context.Background(), "p1", performerdomain.SceneQuery{})
 	if err != nil {
 		t.Fatalf("ListPerformerScenes failed: %v", err)
 	}
@@ -1510,10 +1541,10 @@ func TestSearchPreferredStashBoxScenesFallsBackByConfiguredOrder(t *testing.T) {
 	code := "ABCD-123"
 	title := "Fallback Hit"
 
-	registry := newStashboxRegistry(perEndpointFactory{
-		clients: map[string]StashboxClient{
-			normalizeStashBoxEndpoint(firstEndpoint):  &fakeStashboxClient{scenes: nil},
-			normalizeStashBoxEndpoint(secondEndpoint): &fakeStashboxClient{scenes: []*stashboxgraphql.SceneFragment{{ID: "scene-2", Title: &title, Code: &code}}},
+	registry := metadata.NewRegistry(perEndpointFactory{
+		clients: map[string]metadata.Client{
+			metadata.NormalizeEndpoint(firstEndpoint):  &fakeStashboxClient{scenes: nil},
+			metadata.NormalizeEndpoint(secondEndpoint): &fakeStashboxClient{scenes: []*stashboxgraphql.SceneFragment{{ID: "scene-2", Title: &title, Code: &code}}},
 		},
 	})
 	registry.Replace([]stash.StashBoxEndpoint{
@@ -1521,13 +1552,13 @@ func TestSearchPreferredStashBoxScenesFallsBackByConfiguredOrder(t *testing.T) {
 		{Name: "Second", Endpoint: secondEndpoint, APIKey: "ignored"},
 	})
 
-	service, err := NewService(&fakeStashClient{performers: map[string]*stashgraphql.PerformerFragment{}}, registry, nil, NewMemoryStore())
+	service, err := newServiceForTest(&fakeStashClient{performers: map[string]*stashgraphql.PerformerFragment{}}, registry, nil, NewMemoryStore())
 	if err != nil {
 		t.Fatalf("NewService failed: %v", err)
 	}
-	service.endpointOrder = []string{normalizeStashBoxEndpoint(firstEndpoint), normalizeStashBoxEndpoint(secondEndpoint)}
+	service.metadata.SetEndpointOrder([]string{firstEndpoint, secondEndpoint})
 
-	page, err := service.SearchPreferredStashBoxScenes(context.Background(), "ABCD", 24, DiscoverSortRelevance)
+	page, err := discoveryServiceForTest(service).Search(context.Background(), "ABCD", 24, discovery.SortRelevance)
 	if err != nil {
 		t.Fatalf("SearchPreferredStashBoxScenes failed: %v", err)
 	}
@@ -1548,7 +1579,7 @@ func TestQueueDiscoveredSceneUsesSearchTaskSource(t *testing.T) {
 	sceneID := "scene-1"
 	downloaderTask := &taskruntime.Task{ID: "task-1", Source: taskruntime.TaskSourceSearch}
 
-	registry := newStashboxRegistry(stubFactory{
+	registry := metadata.NewRegistry(stubFactory{
 		client: &fakeStashboxClient{
 			scenes: []*stashboxgraphql.SceneFragment{{ID: sceneID, Code: &code}},
 		},
@@ -1556,12 +1587,12 @@ func TestQueueDiscoveredSceneUsesSearchTaskSource(t *testing.T) {
 	registry.Replace([]stash.StashBoxEndpoint{{Name: "Preferred", Endpoint: endpoint, APIKey: "ignored"}})
 
 	fakeDL := &fakeTaskRuntime{tasks: []*taskruntime.Task{downloaderTask}}
-	service, err := NewService(&fakeStashClient{performers: map[string]*stashgraphql.PerformerFragment{}}, registry, fakeDL, NewMemoryStore())
+	service, err := newServiceForTest(&fakeStashClient{performers: map[string]*stashgraphql.PerformerFragment{}}, registry, fakeDL, NewMemoryStore())
 	if err != nil {
 		t.Fatalf("NewService failed: %v", err)
 	}
 
-	task, err := service.QueueDiscoveredScene(context.Background(), sceneID, endpoint)
+	task, err := discoveryServiceForTest(service).Queue(context.Background(), sceneID, endpoint)
 	if err != nil {
 		t.Fatalf("QueueDiscoveredScene failed: %v", err)
 	}
@@ -1580,7 +1611,7 @@ func TestRefreshSubscribedPerformerFailsWhenStashBoxSceneCodeMissing(t *testing.
 	endpoint := "https://javstash.example.org/graphql"
 	title := "Release Without Code"
 
-	registry := newStashboxRegistry(stubFactory{
+	registry := metadata.NewRegistry(stubFactory{
 		client: &fakeStashboxClient{
 			performer: &stashboxgraphql.PerformerFragment{ID: "js-1", Name: "Rara Anzai"},
 			scenes: []*stashboxgraphql.SceneFragment{
@@ -1590,7 +1621,7 @@ func TestRefreshSubscribedPerformerFailsWhenStashBoxSceneCodeMissing(t *testing.
 	})
 	registry.Replace([]stash.StashBoxEndpoint{{Name: "JavStash", Endpoint: endpoint, APIKey: "ignored"}})
 
-	service, err := NewService(&fakeStashClient{
+	service, err := newServiceForTest(&fakeStashClient{
 		performers: map[string]*stashgraphql.PerformerFragment{
 			"p1": {
 				ID:           "p1",
@@ -1614,20 +1645,20 @@ func TestQueueDiscoveredSceneRejectsMissingCode(t *testing.T) {
 	endpoint := "https://box.example/graphql"
 	sceneID := "scene-1"
 
-	registry := newStashboxRegistry(stubFactory{
+	registry := metadata.NewRegistry(stubFactory{
 		client: &fakeStashboxClient{
 			scenes: []*stashboxgraphql.SceneFragment{{ID: sceneID}},
 		},
 	})
 	registry.Replace([]stash.StashBoxEndpoint{{Name: "Preferred", Endpoint: endpoint, APIKey: "ignored"}})
 
-	service, err := NewService(&fakeStashClient{performers: map[string]*stashgraphql.PerformerFragment{}}, registry, &fakeTaskRuntime{}, NewMemoryStore())
+	service, err := newServiceForTest(&fakeStashClient{performers: map[string]*stashgraphql.PerformerFragment{}}, registry, &fakeTaskRuntime{}, NewMemoryStore())
 	if err != nil {
 		t.Fatalf("NewService failed: %v", err)
 	}
 
-	task, err := service.QueueDiscoveredScene(context.Background(), sceneID, endpoint)
-	if err == nil || err.Error() != `subscription: scene "scene-1" is missing code` {
+	task, err := discoveryServiceForTest(service).Queue(context.Background(), sceneID, endpoint)
+	if err == nil || err.Error() != `discovery: scene "scene-1" is missing code` {
 		t.Fatalf("expected missing code error, got task=%+v err=%v", task, err)
 	}
 }
@@ -1638,7 +1669,7 @@ func TestQueuePerformerScenesQueuesEligibleScene(t *testing.T) {
 	code := "ABCD-123"
 	task := &taskruntime.Task{ID: "task-1", Source: taskruntime.TaskSourceSearch}
 
-	registry := newStashboxRegistry(stubFactory{
+	registry := metadata.NewRegistry(stubFactory{
 		client: &fakeStashboxClient{
 			performer: &stashboxgraphql.PerformerFragment{ID: "sb-1", Name: "Rara"},
 			scenes: []*stashboxgraphql.SceneFragment{
@@ -1648,7 +1679,7 @@ func TestQueuePerformerScenesQueuesEligibleScene(t *testing.T) {
 	})
 	registry.Replace([]stash.StashBoxEndpoint{{Name: "Preferred", Endpoint: endpoint, APIKey: "ignored"}})
 
-	service, err := NewService(&fakeStashClient{
+	service, err := newServiceForTest(&fakeStashClient{
 		performers: map[string]*stashgraphql.PerformerFragment{
 			"p1": {
 				ID:       "p1",
@@ -1663,7 +1694,7 @@ func TestQueuePerformerScenesQueuesEligibleScene(t *testing.T) {
 	creator := &fakeTaskCreator{queueTask: task}
 	service.SetTaskCreator(creator)
 
-	result, err := service.QueuePerformerScenes(context.Background(), "p1", []QueuePerformerSceneSelection{{
+	result, err := performerServiceForTest(t, service).QueuePerformerScenes(context.Background(), "p1", []performerdomain.QueueSceneSelection{{
 		Key:              "stashbox:" + endpointKey(endpoint) + ":" + sceneID,
 		SourceSceneID:    sceneID,
 		StashBoxSceneID:  sceneID,
@@ -1684,7 +1715,7 @@ func TestQueuePerformerScenesQueuesEligibleScene(t *testing.T) {
 	if len(result.QueuedTasks) != 1 || result.QueuedTasks[0].ID != "task-1" {
 		t.Fatalf("unexpected queued tasks: %+v", result.QueuedTasks)
 	}
-	if len(result.Results) != 1 || result.Results[0].Status != QueuePerformerSceneStatusQueued || result.Results[0].ReasonCode != "QUEUED" {
+	if len(result.Results) != 1 || result.Results[0].Status != performerdomain.QueueSceneStatusQueued || result.Results[0].ReasonCode != "QUEUED" {
 		t.Fatalf("unexpected result: %+v", result.Results)
 	}
 }
@@ -1694,7 +1725,7 @@ func TestQueuePerformerScenesMapsDuplicateCodeToSkipped(t *testing.T) {
 	sceneID := "scene-1"
 	code := "ABCD-123"
 
-	registry := newStashboxRegistry(stubFactory{
+	registry := metadata.NewRegistry(stubFactory{
 		client: &fakeStashboxClient{
 			performer: &stashboxgraphql.PerformerFragment{ID: "sb-1", Name: "Rara"},
 			scenes: []*stashboxgraphql.SceneFragment{
@@ -1704,7 +1735,7 @@ func TestQueuePerformerScenesMapsDuplicateCodeToSkipped(t *testing.T) {
 	})
 	registry.Replace([]stash.StashBoxEndpoint{{Name: "Preferred", Endpoint: endpoint, APIKey: "ignored"}})
 
-	service, err := NewService(&fakeStashClient{
+	service, err := newServiceForTest(&fakeStashClient{
 		performers: map[string]*stashgraphql.PerformerFragment{
 			"p1": {
 				ID:       "p1",
@@ -1718,13 +1749,13 @@ func TestQueuePerformerScenesMapsDuplicateCodeToSkipped(t *testing.T) {
 	}
 	service.SetTaskCreator(&fakeTaskCreator{queueErr: taskruntime.ErrDuplicateCodeTask})
 
-	result, err := service.QueuePerformerScenes(context.Background(), "p1", []QueuePerformerSceneSelection{{
+	result, err := performerServiceForTest(t, service).QueuePerformerScenes(context.Background(), "p1", []performerdomain.QueueSceneSelection{{
 		Key: "stashbox:" + endpointKey(endpoint) + ":" + sceneID,
 	}})
 	if err != nil {
 		t.Fatalf("QueuePerformerScenes failed: %v", err)
 	}
-	if len(result.Results) != 1 || result.Results[0].Status != QueuePerformerSceneStatusSkipped || result.Results[0].ReasonCode != "DUPLICATE_CODE_TASK" {
+	if len(result.Results) != 1 || result.Results[0].Status != performerdomain.QueueSceneStatusSkipped || result.Results[0].ReasonCode != "DUPLICATE_CODE_TASK" {
 		t.Fatalf("unexpected result: %+v", result.Results)
 	}
 	if result.Summary.SkippedCount != 1 || result.Summary.QueuedCount != 0 || result.Summary.FailedCount != 0 {
@@ -1735,14 +1766,14 @@ func TestQueuePerformerScenesMapsDuplicateCodeToSkipped(t *testing.T) {
 func TestQueuePerformerScenesReturnsSceneNotFound(t *testing.T) {
 	endpoint := "https://box.example/graphql"
 
-	registry := newStashboxRegistry(stubFactory{
+	registry := metadata.NewRegistry(stubFactory{
 		client: &fakeStashboxClient{
 			performer: &stashboxgraphql.PerformerFragment{ID: "sb-1", Name: "Rara"},
 		},
 	})
 	registry.Replace([]stash.StashBoxEndpoint{{Name: "Preferred", Endpoint: endpoint, APIKey: "ignored"}})
 
-	service, err := NewService(&fakeStashClient{
+	service, err := newServiceForTest(&fakeStashClient{
 		performers: map[string]*stashgraphql.PerformerFragment{
 			"p1": {
 				ID:       "p1",
@@ -1756,13 +1787,13 @@ func TestQueuePerformerScenesReturnsSceneNotFound(t *testing.T) {
 	}
 	service.SetTaskCreator(&fakeTaskCreator{})
 
-	result, err := service.QueuePerformerScenes(context.Background(), "p1", []QueuePerformerSceneSelection{{
+	result, err := performerServiceForTest(t, service).QueuePerformerScenes(context.Background(), "p1", []performerdomain.QueueSceneSelection{{
 		Key: "missing-key",
 	}})
 	if err != nil {
 		t.Fatalf("QueuePerformerScenes failed: %v", err)
 	}
-	if len(result.Results) != 1 || result.Results[0].Status != QueuePerformerSceneStatusFailed || result.Results[0].ReasonCode != "SCENE_NOT_FOUND" {
+	if len(result.Results) != 1 || result.Results[0].Status != performerdomain.QueueSceneStatusFailed || result.Results[0].ReasonCode != "SCENE_NOT_FOUND" {
 		t.Fatalf("unexpected result: %+v", result.Results)
 	}
 	if result.Summary.FailedCount != 1 {
@@ -1776,7 +1807,7 @@ func TestQueuePerformerScenesReturnsMixedSummary(t *testing.T) {
 	code := "ABCD-123"
 	inLibraryID := "stash-1"
 
-	registry := newStashboxRegistry(stubFactory{
+	registry := metadata.NewRegistry(stubFactory{
 		client: &fakeStashboxClient{
 			performer: &stashboxgraphql.PerformerFragment{ID: "sb-1", Name: "Rara"},
 			scenes: []*stashboxgraphql.SceneFragment{
@@ -1786,7 +1817,7 @@ func TestQueuePerformerScenesReturnsMixedSummary(t *testing.T) {
 	})
 	registry.Replace([]stash.StashBoxEndpoint{{Name: "Preferred", Endpoint: endpoint, APIKey: "ignored"}})
 
-	service, err := NewService(&fakeStashClient{
+	service, err := newServiceForTest(&fakeStashClient{
 		performers: map[string]*stashgraphql.PerformerFragment{
 			"p1": {
 				ID:       "p1",
@@ -1803,7 +1834,7 @@ func TestQueuePerformerScenesReturnsMixedSummary(t *testing.T) {
 	}
 	service.SetTaskCreator(&fakeTaskCreator{queueTask: &taskruntime.Task{ID: "task-1"}})
 
-	result, err := service.QueuePerformerScenes(context.Background(), "p1", []QueuePerformerSceneSelection{
+	result, err := performerServiceForTest(t, service).QueuePerformerScenes(context.Background(), "p1", []performerdomain.QueueSceneSelection{
 		{Key: "stashbox:" + endpointKey(endpoint) + ":" + sceneID},
 		{Key: "stash:" + inLibraryID},
 		{Key: "missing-key"},

@@ -1,6 +1,7 @@
-package subscription
+package metadata
 
 import (
+	"context"
 	"reflect"
 	"testing"
 
@@ -9,19 +10,19 @@ import (
 )
 
 func TestRegistryReplacesByEndpoint(t *testing.T) {
-	clientA := &fakeStashboxClient{performer: &stashboxgraphql.PerformerFragment{ID: "a"}}
-	clientB := &fakeStashboxClient{performer: &stashboxgraphql.PerformerFragment{ID: "b"}}
+	clientA := &registryTestClient{performer: &stashboxgraphql.PerformerFragment{ID: "a"}}
+	clientB := &registryTestClient{performer: &stashboxgraphql.PerformerFragment{ID: "b"}}
 
 	var built []string
 	factory := endpointRecordingFactory{
-		clients: map[string]StashboxClient{
+		clients: map[string]Client{
 			"https://a.example.org/graphql": clientA,
 			"https://b.example.org/graphql": clientB,
 		},
 		record: &built,
 	}
 
-	registry := newStashboxRegistry(factory)
+	registry := NewRegistry(factory)
 
 	registry.Replace([]stash.StashBoxEndpoint{
 		{Name: "a", Endpoint: "https://a.example.org/graphql", APIKey: "k-a"},
@@ -52,7 +53,7 @@ func TestRegistryReplacesByEndpoint(t *testing.T) {
 }
 
 func TestRegistryGetMissingEndpoint(t *testing.T) {
-	registry := newStashboxRegistry(stubFactory{client: &fakeStashboxClient{}})
+	registry := NewRegistry(registryTestFactory{client: &registryTestClient{}})
 	registry.Replace([]stash.StashBoxEndpoint{
 		{Name: "a", Endpoint: "https://a.example.org/graphql", APIKey: "k-a"},
 	})
@@ -69,7 +70,7 @@ func TestRegistryGetMissingEndpoint(t *testing.T) {
 }
 
 func TestRegistryEndpointsOrder(t *testing.T) {
-	registry := newStashboxRegistry(stubFactory{client: &fakeStashboxClient{}})
+	registry := NewRegistry(registryTestFactory{client: &registryTestClient{}})
 	registry.Replace([]stash.StashBoxEndpoint{
 		{Name: "a", Endpoint: "https://a.example.org/graphql", APIKey: "k-a"},
 		{Name: "b", Endpoint: "https://b.example.org/graphql", APIKey: ""},
@@ -86,7 +87,7 @@ func TestRegistryEndpointsOrder(t *testing.T) {
 }
 
 func TestRegistryNilSafety(t *testing.T) {
-	var registry *stashboxRegistry
+	var registry *Registry
 	registry.Replace(nil)
 	if got := registry.Endpoints(); got != nil {
 		t.Fatalf("expected nil endpoints on nil registry, got %+v", got)
@@ -99,28 +100,28 @@ func TestRegistryNilSafety(t *testing.T) {
 // endpointRecordingFactory returns a prebuilt client and records every
 // endpoint it was asked to build, so tests can assert on construction calls.
 type endpointRecordingFactory struct {
-	clients map[string]StashboxClient
+	clients map[string]Client
 	record  *[]string
 }
 
-func (f endpointRecordingFactory) NewClient(box stash.StashBoxEndpoint) StashboxClient {
+func (f endpointRecordingFactory) NewClient(box stash.StashBoxEndpoint) Client {
 	*f.record = append(*f.record, box.Endpoint)
-	return f.clients[normalizeStashBoxEndpoint(box.Endpoint)]
+	return f.clients[NormalizeEndpoint(box.Endpoint)]
 }
 
 func TestRegistryRebuildsClientWhenConfigChanges(t *testing.T) {
-	clientA := &fakeStashboxClient{performer: &stashboxgraphql.PerformerFragment{ID: "a"}}
-	clientB := &fakeStashboxClient{performer: &stashboxgraphql.PerformerFragment{ID: "b"}}
+	clientA := &registryTestClient{performer: &stashboxgraphql.PerformerFragment{ID: "a"}}
+	clientB := &registryTestClient{performer: &stashboxgraphql.PerformerFragment{ID: "b"}}
 
 	var built []string
 	factory := endpointRecordingFactory{
-		clients: map[string]StashboxClient{
+		clients: map[string]Client{
 			"https://a.example.org/graphql": clientA,
 		},
 		record: &built,
 	}
 
-	registry := newStashboxRegistry(factory)
+	registry := NewRegistry(factory)
 	registry.Replace([]stash.StashBoxEndpoint{
 		{Name: "a", Endpoint: "https://a.example.org/graphql", APIKey: "k-a", MaxRequestsPerMinute: 60},
 	})
@@ -129,7 +130,7 @@ func TestRegistryRebuildsClientWhenConfigChanges(t *testing.T) {
 	}
 
 	factory.clients["https://a.example.org/graphql"] = clientB
-	registry.factory = factory
+	registry.SetFactory(factory)
 	registry.Replace([]stash.StashBoxEndpoint{
 		{Name: "a", Endpoint: "https://a.example.org/graphql", APIKey: "k-b", MaxRequestsPerMinute: 60},
 	})
@@ -140,4 +141,34 @@ func TestRegistryRebuildsClientWhenConfigChanges(t *testing.T) {
 	if !ok || got != clientB {
 		t.Fatalf("expected rebuilt client after config change, got ok=%v client=%v", ok, got)
 	}
+}
+
+type registryTestFactory struct {
+	client Client
+}
+
+func (f registryTestFactory) NewClient(stash.StashBoxEndpoint) Client { return f.client }
+
+type registryTestClient struct {
+	performer *stashboxgraphql.PerformerFragment
+}
+
+func (c *registryTestClient) FindPerformerByID(context.Context, string) (*stashboxgraphql.PerformerFragment, error) {
+	return c.performer, nil
+}
+
+func (*registryTestClient) FindSceneByID(context.Context, string) (*stashboxgraphql.SceneFragment, error) {
+	return nil, nil
+}
+
+func (*registryTestClient) SearchPerformer(context.Context, string) ([]*stashboxgraphql.PerformerFragment, error) {
+	return nil, nil
+}
+
+func (*registryTestClient) SearchScene(context.Context, string) ([]*stashboxgraphql.SceneFragment, error) {
+	return nil, nil
+}
+
+func (*registryTestClient) QueryScenes(context.Context, stashboxgraphql.SceneQueryInput) ([]*stashboxgraphql.SceneFragment, error) {
+	return nil, nil
 }

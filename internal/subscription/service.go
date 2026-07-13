@@ -11,8 +11,9 @@ import (
 
 	"github.com/leothevan2444/moji/internal/imagecache"
 	"github.com/leothevan2444/moji/internal/logging"
+	"github.com/leothevan2444/moji/internal/metadata"
+	"github.com/leothevan2444/moji/internal/performer"
 	"github.com/leothevan2444/moji/internal/taskruntime"
-	"github.com/leothevan2444/moji/pkg/stash"
 	stashgraphql "github.com/leothevan2444/moji/pkg/stash/graphql"
 	stashboxgraphql "github.com/leothevan2444/moji/pkg/stashbox/graphql"
 )
@@ -24,48 +25,21 @@ type StashClient interface {
 	FindPerformerByID(ctx context.Context, id string) (*stashgraphql.PerformerFragment, error)
 	FindScenes(ctx context.Context, sceneFilter *stashgraphql.SceneFilterType, filter *stashgraphql.FindFilterType) ([]*stashgraphql.SceneFragment, error)
 	UpdatePerformerCustomFields(ctx context.Context, id string, partial map[string]any, remove []string) (*stashgraphql.PerformerFragment, error)
-	GetStashBoxes(ctx context.Context) ([]stash.StashBoxEndpoint, error)
-}
-
-type StashboxClient interface {
-	FindPerformerByID(ctx context.Context, id string) (*stashboxgraphql.PerformerFragment, error)
-	FindSceneByID(ctx context.Context, id string) (*stashboxgraphql.SceneFragment, error)
-	SearchPerformer(ctx context.Context, term string) ([]*stashboxgraphql.PerformerFragment, error)
-	SearchScene(ctx context.Context, term string) ([]*stashboxgraphql.SceneFragment, error)
-	QueryScenes(ctx context.Context, input stashboxgraphql.SceneQueryInput) ([]*stashboxgraphql.SceneFragment, error)
-}
-
-type TaskRuntime interface {
-	AddTorrentContext(ctx context.Context, req taskruntime.AddTorrentRequest) (*taskruntime.Task, error)
-	DownloadMediaContext(ctx context.Context, req taskruntime.DownloadRequest) (*taskruntime.Task, error)
-}
-
-type TaskLister interface {
-	ListTasks(ctx context.Context) ([]*taskruntime.Task, error)
 }
 
 type TaskCreator interface {
-	QueueDiscoveredScene(ctx context.Context, sceneID string, stashBoxEndpoint string) (*taskruntime.Task, error)
 	QueueSubscriptionRelease(ctx context.Context, code, title string) (*taskruntime.Task, error)
 }
 
 type Service struct {
 	stash            StashClient
-	stashbox         *stashboxRegistry
+	metadata         *metadata.Service
 	taskCreator      TaskCreator
-	taskLister       TaskLister
 	imageProxy       *imagecache.Service
 	stashImageConfig func() (string, string)
 	store            Store
 	customFieldKey   string
 	now              func() time.Time
-
-	loadMu       sync.RWMutex
-	loaded       bool
-	loadErrorMsg string
-
-	orderMu       sync.RWMutex
-	endpointOrder []string
 
 	policyMu      sync.RWMutex
 	releasePolicy ReleasePolicyConfig
@@ -95,10 +69,6 @@ func (s *Service) proxyStashImage(ctx context.Context, raw string) string {
 	base, key := s.stashImageConfig()
 	return s.proxyImage(ctx, imagecache.SourceStash, base, raw, key)
 }
-func (s *Service) proxyStashBoxImage(ctx context.Context, endpoint, raw string) string {
-	key := s.stashbox.APIKey(endpoint)
-	return s.proxyImage(ctx, imagecache.SourceStashBox, endpoint, raw, key)
-}
 
 const (
 	releaseQueryPerPage          = 24
@@ -125,27 +95,20 @@ type releaseFetchStats struct {
 	stopReason      string
 }
 
-func NewService(stash StashClient, stashbox *stashboxRegistry, taskRuntime TaskRuntime, store Store) (*Service, error) {
+func NewService(stash StashClient, source *metadata.Service, taskCreator TaskCreator, store Store) (*Service, error) {
 	if stash == nil {
 		return nil, errors.New("subscription: stash client is required")
 	}
 	if store == nil {
 		store = NewMemoryStore()
 	}
-	if stashbox == nil {
-		stashbox = newStashboxRegistry(defaultStashboxClientFactory{})
+	if source == nil {
+		return nil, errors.New("subscription: metadata source is required")
 	}
-	creator := newDefaultTaskCreator(taskRuntime, stashbox)
-	var taskLister TaskLister
-	if candidate, ok := taskRuntime.(TaskLister); ok {
-		taskLister = candidate
-	}
-
 	return &Service{
 		stash:          stash,
-		stashbox:       stashbox,
-		taskCreator:    creator,
-		taskLister:     taskLister,
+		metadata:       source,
+		taskCreator:    taskCreator,
 		store:          store,
 		customFieldKey: DefaultCustomFieldKey,
 		now:            time.Now,
@@ -153,44 +116,11 @@ func NewService(stash StashClient, stashbox *stashboxRegistry, taskRuntime TaskR
 	}, nil
 }
 
-func (s *Service) SetTaskLister(lister TaskLister) {
-	if s == nil {
-		return
-	}
-	s.taskLister = lister
-}
-
 func (s *Service) SetTaskCreator(creator TaskCreator) {
 	if s == nil {
 		return
 	}
 	s.taskCreator = creator
-}
-
-func (s *Service) ListStashPerformers(ctx context.Context, search string) ([]Performer, error) {
-	performers, err := s.stash.AllPerformers(ctx)
-	if err != nil {
-		return nil, err
-	}
-
-	needle := normalize(search)
-	out := make([]Performer, 0, len(performers))
-	for _, performer := range performers {
-		item := performerFromStash(performer, s.customFieldKey)
-		item.ImagePath = s.proxyStashImage(ctx, item.ImagePath)
-		if needle != "" && !performerMatches(item, needle) {
-			continue
-		}
-		out = append(out, item)
-	}
-
-	sort.Slice(out, func(i, j int) bool {
-		if out[i].Subscribed != out[j].Subscribed {
-			return out[i].Subscribed
-		}
-		return strings.ToLower(out[i].Name) < strings.ToLower(out[j].Name)
-	})
-	return out, nil
 }
 
 func (s *Service) ListSubscribedPerformers(ctx context.Context) ([]SubscribedPerformer, error) {
@@ -419,12 +349,15 @@ func (s *Service) RefreshAll(ctx context.Context) ([]SubscribedPerformer, error)
 }
 
 func (s *Service) fetchReleases(ctx context.Context, performer *stashgraphql.PerformerFragment, state *PerformerState) ([]Release, error) {
-	if s.stashbox == nil || len(s.stashbox.Endpoints()) == 0 {
+	if s.metadata == nil || len(s.metadata.Endpoints()) == 0 {
 		return nil, errors.New("subscription: no stash-box endpoints configured in Stash")
 	}
 
-	target, err := s.resolveStashboxPerformer(ctx, performer)
+	target, err := s.metadata.ResolvePerformer(ctx, performer)
 	if err != nil {
+		if errors.Is(err, metadata.ErrNoPerformerMapping) {
+			return nil, errNoMatchingStashBoxMapping
+		}
 		return nil, err
 	}
 	if target == nil {
@@ -550,145 +483,6 @@ func (s *Service) fetchReleases(ctx context.Context, performer *stashgraphql.Per
 	return releases, nil
 }
 
-// resolvedStashbox pairs a Stash-Box client with the performer fragment it
-// returned and the endpoint that produced the match.
-type resolvedStashbox struct {
-	Client    StashboxClient
-	Performer *stashboxgraphql.PerformerFragment
-	Endpoint  string
-	Name      string
-}
-
-func (s *Service) resolveStashboxPerformer(ctx context.Context, performer *stashgraphql.PerformerFragment) (*resolvedStashbox, error) {
-	if performer == nil {
-		return nil, nil
-	}
-
-	// Only use explicit stash_ids. We intentionally do not fall back to name
-	// search because a false-positive performer match is more dangerous than a
-	// visible "no mapping" state.
-	stashIDsByEndpoint := make(map[string]*stashgraphql.StashIDFragment, len(performer.StashIds))
-	for _, stashID := range performer.StashIds {
-		if stashID == nil || strings.TrimSpace(stashID.StashID) == "" {
-			continue
-		}
-		endpoint := normalizeStashBoxEndpoint(stashID.Endpoint)
-		if endpoint == "" {
-			continue
-		}
-		if _, exists := stashIDsByEndpoint[endpoint]; exists {
-			continue
-		}
-		stashIDsByEndpoint[endpoint] = stashID
-	}
-
-	var firstLookupErr error
-	for _, box := range s.orderedEndpoints() {
-		stashID, ok := stashIDsByEndpoint[normalizeStashBoxEndpoint(box.Endpoint)]
-		if !ok {
-			continue
-		}
-		client, ok := s.stashbox.Get(box.Endpoint)
-		if !ok {
-			continue
-		}
-		matched, err := client.FindPerformerByID(ctx, stashID.StashID)
-		if err != nil {
-			if firstLookupErr == nil {
-				firstLookupErr = err
-			}
-			logging.Warnf("subscription: stash-box lookup failed for endpoint=%s performer=%s: %v", box.Endpoint, stashID.StashID, err)
-			continue
-		}
-		if matched == nil {
-			continue
-		}
-		return &resolvedStashbox{
-			Client:    client,
-			Performer: matched,
-			Endpoint:  normalizeStashBoxEndpoint(box.Endpoint),
-			Name:      box.Name,
-		}, nil
-	}
-
-	if firstLookupErr != nil {
-		return nil, firstLookupErr
-	}
-	return nil, errNoMatchingStashBoxMapping
-}
-
-// RefreshStashBoxes asks the Stash server for the current Stash-Box list and
-// replaces the registry. Endpoints that the user no longer has selected are
-// still cached so subsequent reads don't rebuild clients; this call is the
-// single source of truth for which endpoints are available.
-func (s *Service) RefreshStashBoxes(ctx context.Context) error {
-	if s == nil || s.stash == nil {
-		return errors.New("subscription: stash client is not configured")
-	}
-	boxes, err := s.stash.GetStashBoxes(ctx)
-	s.loadMu.Lock()
-	if err != nil {
-		s.loadErrorMsg = err.Error()
-	} else {
-		s.loadErrorMsg = ""
-		s.loaded = true
-	}
-	s.loadMu.Unlock()
-	if err != nil {
-		return err
-	}
-	s.stashbox.Replace(boxes)
-	return nil
-}
-
-// SnapshotState returns the Stash-Box endpoints currently cached in the
-// registry together with the outcome of the most recent load attempt.
-type LoadState struct {
-	Loaded   bool
-	ErrorMsg string
-}
-
-// SnapshotState returns the currently configured Stash-Box endpoints and the
-// outcome of the last refresh. Returns nil when the service is not running
-// (e.g. in tests that don't exercise the worker).
-func (s *Service) SnapshotState() (endpoints []StashBoxEndpoint, state LoadState) {
-	if s == nil || s.stashbox == nil {
-		return nil, LoadState{}
-	}
-	s.loadMu.RLock()
-	state = LoadState{Loaded: s.loaded, ErrorMsg: s.loadErrorMsg}
-	s.loadMu.RUnlock()
-	return s.stashbox.Endpoints(), state
-}
-
-// SetEndpointOrder records the user's preferred Stash-Box lookup order.
-// The order is the priority queue consumed by resolveStashboxPerformer's
-// name-search branch. Endpoints present in the registry but missing from
-// `order` are queried after the listed ones (in registry order). An empty
-// `order` falls back to the registry order entirely.
-func (s *Service) SetEndpointOrder(order []string) {
-	if s == nil {
-		return
-	}
-	cleaned := make([]string, 0, len(order))
-	seen := make(map[string]struct{}, len(order))
-	for _, ep := range order {
-		ep = strings.TrimSpace(ep)
-		if ep == "" {
-			continue
-		}
-		key := normalizeStashBoxEndpoint(ep)
-		if _, dup := seen[key]; dup {
-			continue
-		}
-		seen[key] = struct{}{}
-		cleaned = append(cleaned, key)
-	}
-	s.orderMu.Lock()
-	s.endpointOrder = cleaned
-	s.orderMu.Unlock()
-}
-
 func (s *Service) SetReleasePolicy(policy ReleasePolicyConfig) {
 	if s == nil {
 		return
@@ -708,71 +502,27 @@ func (s *Service) currentReleasePolicy() ReleasePolicyConfig {
 	return policy.Effective()
 }
 
-// orderedEndpoints merges the user-defined order with the registry order:
-// endpoints present in the user list come first (in user order), endpoints
-// missing from the user list are appended (in registry order). When the
-// user list is empty the registry order is returned unchanged.
-func (s *Service) orderedEndpoints() []StashBoxEndpoint {
-	if s == nil || s.stashbox == nil {
-		return nil
-	}
-	registry := s.stashbox.Endpoints()
-	s.orderMu.RLock()
-	userOrder := append([]string(nil), s.endpointOrder...)
-	s.orderMu.RUnlock()
-
-	if len(userOrder) == 0 {
-		return registry
-	}
-	byKey := make(map[string]StashBoxEndpoint, len(registry))
-	for _, box := range registry {
-		byKey[normalizeStashBoxEndpoint(box.Endpoint)] = box
-	}
-	out := make([]StashBoxEndpoint, 0, len(registry))
-	seen := make(map[string]struct{}, len(registry))
-	for _, key := range userOrder {
-		box, ok := byKey[key]
-		if !ok {
-			continue
-		}
-		if _, dup := seen[key]; dup {
-			continue
-		}
-		out = append(out, box)
-		seen[key] = struct{}{}
-	}
-	for _, box := range registry {
-		key := normalizeStashBoxEndpoint(box.Endpoint)
-		if _, dup := seen[key]; dup {
-			continue
-		}
-		out = append(out, box)
-		seen[key] = struct{}{}
-	}
-	return out
-}
-
 func endpointKey(endpoint string) string {
 	return strings.ReplaceAll(strings.ReplaceAll(strings.TrimSpace(strings.ToLower(endpoint)), "/", "_"), ":", "_")
 }
 
-func performerFromStash(performer *stashgraphql.PerformerFragment, customFieldKey string) Performer {
-	if performer == nil {
-		return Performer{}
+func performerFromStash(raw *stashgraphql.PerformerFragment, customFieldKey string) performer.Performer {
+	if raw == nil {
+		return performer.Performer{}
 	}
 
-	return Performer{
-		ID:         performer.ID,
-		Name:       performer.Name,
-		AliasList:  append([]string(nil), performer.AliasList...),
-		Favorite:   performer.Favorite,
-		ImagePath:  derefString(performer.ImagePath),
-		SceneCount: performer.SceneCount,
-		Subscribed: customFieldTruthy(performer.CustomFields, customFieldKey),
+	return performer.Performer{
+		ID:         raw.ID,
+		Name:       raw.Name,
+		AliasList:  append([]string(nil), raw.AliasList...),
+		Favorite:   raw.Favorite,
+		ImagePath:  derefString(raw.ImagePath),
+		SceneCount: raw.SceneCount,
+		Subscribed: customFieldTruthy(raw.CustomFields, customFieldKey),
 	}
 }
 
-func buildSubscribedPerformer(performer Performer, state *PerformerState) SubscribedPerformer {
+func buildSubscribedPerformer(performer performer.Performer, state *PerformerState) SubscribedPerformer {
 	item := SubscribedPerformer{
 		Performer: performer,
 	}
@@ -795,18 +545,6 @@ func derefString(value *string) string {
 		return ""
 	}
 	return *value
-}
-
-func performerMatches(performer Performer, needle string) bool {
-	if strings.Contains(normalize(performer.Name), needle) {
-		return true
-	}
-	for _, alias := range performer.AliasList {
-		if strings.Contains(normalize(alias), needle) {
-			return true
-		}
-	}
-	return false
 }
 
 func customFieldTruthy(fields map[string]any, key string) bool {
@@ -903,3 +641,6 @@ func stringValue(value *string) string {
 	}
 	return *value
 }
+
+func stringPointer(value string) *string { return &value }
+func intPointer(value int) *int          { return &value }

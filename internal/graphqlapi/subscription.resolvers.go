@@ -10,7 +10,7 @@ import (
 	"math"
 
 	"github.com/leothevan2444/moji/internal/graphqlapi/model"
-	"github.com/leothevan2444/moji/internal/subscription"
+	"github.com/leothevan2444/moji/internal/performer"
 )
 
 // SubscribePerformer is the resolver for the subscribePerformer field.
@@ -70,13 +70,13 @@ func (r *mutationResolver) RefreshSubscriptionsNow(ctx context.Context) ([]*mode
 
 // QueuePerformerScenes is the resolver for the queuePerformerScenes field.
 func (r *mutationResolver) QueuePerformerScenes(ctx context.Context, input model.QueuePerformerScenesInput) (*model.QueuePerformerScenesPayload, error) {
-	if r.PerformerCatalog == nil {
-		return nil, errors.New("subscription service is not configured")
+	if r.Performer == nil {
+		return nil, errors.New("performer service is not configured")
 	}
 
-	selections := make([]subscription.QueuePerformerSceneSelection, 0, len(input.Scenes))
+	selections := make([]performer.QueueSceneSelection, 0, len(input.Scenes))
 	for _, scene := range input.Scenes {
-		selections = append(selections, subscription.QueuePerformerSceneSelection{
+		selections = append(selections, performer.QueueSceneSelection{
 			Key:              scene.Key,
 			SourceSceneID:    scene.SourceSceneID,
 			StashBoxSceneID:  derefString(scene.StashBoxSceneID),
@@ -87,7 +87,7 @@ func (r *mutationResolver) QueuePerformerScenes(ctx context.Context, input model
 		})
 	}
 
-	result, err := r.PerformerCatalog.QueuePerformerScenes(ctx, input.PerformerID, selections)
+	result, err := r.Performer.QueuePerformerScenes(ctx, input.PerformerID, selections)
 	if err != nil {
 		return nil, err
 	}
@@ -96,7 +96,7 @@ func (r *mutationResolver) QueuePerformerScenes(ctx context.Context, input model
 
 // StashPerformers is the resolver for the stashPerformers field.
 func (r *queryResolver) StashPerformers(ctx context.Context, search *string, page *int, pageSize *int) (*model.StashPerformerConnection, error) {
-	if r.PerformerCatalog == nil {
+	if r.Performer == nil {
 		return stashPerformerPageToModel(StashPerformerPage{
 			Items:       nil,
 			Page:        1,
@@ -113,7 +113,7 @@ func (r *queryResolver) StashPerformers(ctx context.Context, search *string, pag
 		needle = *search
 	}
 
-	items, err := r.PerformerCatalog.ListStashPerformers(ctx, needle)
+	items, err := r.Performer.List(ctx, needle)
 	if err != nil {
 		return nil, err
 	}
@@ -158,11 +158,11 @@ func (r *queryResolver) StashPerformers(ctx context.Context, search *string, pag
 
 // StashPerformerDetail is the resolver for the stashPerformerDetail field.
 func (r *queryResolver) StashPerformerDetail(ctx context.Context, id string) (*model.StashPerformerDetail, error) {
-	if r.PerformerCatalog == nil {
-		return nil, errors.New("subscription service is not configured")
+	if r.Performer == nil {
+		return nil, errors.New("performer service is not configured")
 	}
 
-	item, err := r.PerformerCatalog.GetPerformerDetail(ctx, id)
+	item, err := r.Performer.GetPerformerDetail(ctx, id)
 	if err != nil {
 		return nil, err
 	}
@@ -171,26 +171,26 @@ func (r *queryResolver) StashPerformerDetail(ctx context.Context, id string) (*m
 
 // StashPerformerScenes is the resolver for the stashPerformerScenes field.
 func (r *queryResolver) StashPerformerScenes(ctx context.Context, id string, input model.StashPerformerScenesInput) (*model.StashPerformerSceneConnection, error) {
-	if r.PerformerCatalog == nil {
-		return performerScenePageToModel(subscription.PerformerScenePage{
+	if r.Performer == nil {
+		return performerScenePageToModel(performer.ScenePage{
 			Page:     normalizePage(input.Page),
 			PageSize: normalizePageSize(input.PageSize),
 		}), nil
 	}
 
-	query := subscription.PerformerSceneQuery{
+	query := performer.SceneQuery{
 		Search:   derefString(input.Search),
 		Page:     normalizePage(input.Page),
 		PageSize: normalizePageSize(input.PageSize),
 	}
 	if input.Source != nil {
-		query.Source = subscription.SceneSourceFilter(*input.Source)
+		query.Source = performer.SceneSourceFilter(*input.Source)
 	}
 	if input.InLibrary != nil {
-		query.InLibrary = subscription.LibraryFilter(*input.InLibrary)
+		query.InLibrary = performer.LibraryFilter(*input.InLibrary)
 	}
 
-	page, err := r.PerformerCatalog.ListPerformerScenes(ctx, id, query)
+	page, err := r.Performer.ListPerformerScenes(ctx, id, query)
 	if err != nil {
 		return nil, err
 	}

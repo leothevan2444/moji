@@ -6,6 +6,8 @@ import (
 	"github.com/leothevan2444/moji/internal/config"
 	"github.com/leothevan2444/moji/internal/graphqlapi"
 	"github.com/leothevan2444/moji/internal/logging"
+	"github.com/leothevan2444/moji/internal/metadata"
+	"github.com/leothevan2444/moji/internal/subscription"
 	"github.com/leothevan2444/moji/pkg/stash"
 )
 
@@ -15,10 +17,11 @@ type runtimeSettingsEditor struct {
 	downloaderEnabled   bool
 	stashEnabled        bool
 	stashClient         *stash.Client
-	subscriptionService graphqlapi.RuntimeSubscriptionServices
+	subscriptionService *subscription.Service
+	metadataService     *metadata.Service
 }
 
-func newRuntimeSettingsEditor(store *config.Store, version string, downloaderEnabled bool, stashEnabled bool, stashClient *stash.Client, subscriptionService graphqlapi.RuntimeSubscriptionServices) *runtimeSettingsEditor {
+func newRuntimeSettingsEditor(store *config.Store, version string, downloaderEnabled bool, stashEnabled bool, stashClient *stash.Client, subscriptionService *subscription.Service, metadataService *metadata.Service) *runtimeSettingsEditor {
 	return &runtimeSettingsEditor{
 		store:               store,
 		version:             version,
@@ -26,19 +29,20 @@ func newRuntimeSettingsEditor(store *config.Store, version string, downloaderEna
 		stashEnabled:        stashEnabled,
 		stashClient:         stashClient,
 		subscriptionService: subscriptionService,
+		metadataService:     metadataService,
 	}
 }
 
 func (s *runtimeSettingsEditor) Snapshot() *graphqlapi.SettingsSnapshot {
 	cfg := s.store.Config()
-	applySubscriptionOrder(cfg, s.subscriptionService)
+	applyAutomationSettings(cfg, s.subscriptionService, s.metadataService)
 	return buildSettingsSnapshot(cfg, s.version)
 }
 
 func (s *runtimeSettingsEditor) StatusSnapshot() *graphqlapi.SettingsStatusSnapshot {
 	cfg := s.store.Config()
-	applySubscriptionOrder(cfg, s.subscriptionService)
-	return buildSettingsStatusSnapshot(cfg, s.version, s.downloaderEnabled, s.stashEnabled, s.stashClient, s.subscriptionService)
+	applyAutomationSettings(cfg, s.subscriptionService, s.metadataService)
+	return buildSettingsStatusSnapshot(cfg, s.version, s.downloaderEnabled, s.stashEnabled, s.stashClient, s.metadataService)
 }
 
 func (s *runtimeSettingsEditor) UpdateStashSettings(input graphqlapi.UpdateStashSettingsInput) (*graphqlapi.SettingsSnapshot, error) {
@@ -202,7 +206,7 @@ func (s *runtimeSettingsEditor) UpdateAutomationSettings(input graphqlapi.Update
 		cfg.Automation.SubscriptionPollIntervalHours,
 		len(cfg.Automation.StashBoxEndpoints),
 	)
-	applySubscriptionOrder(cfg, s.subscriptionService)
+	applyAutomationSettings(cfg, s.subscriptionService, s.metadataService)
 	return buildSettingsSnapshot(cfg, s.version), nil
 }
 

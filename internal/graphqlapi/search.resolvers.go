@@ -17,9 +17,9 @@ import (
 // QueueDiscoveredScene is the resolver for the queueDiscoveredScene field.
 func (r *mutationResolver) QueueDiscoveredScene(ctx context.Context, input model.QueueDiscoveredSceneInput) (*model.Task, error) {
 	if r.Discovery == nil {
-		return nil, errors.New("subscription service is not configured")
+		return nil, errors.New("discovery service is not configured")
 	}
-	task, err := r.Discovery.QueueDiscoveredScene(ctx, input.SceneID, input.StashBoxEndpoint)
+	task, err := r.Discovery.Queue(ctx, input.SceneID, input.StashBoxEndpoint)
 	if task != nil {
 		return taskToModel(task), err
 	}
@@ -29,7 +29,7 @@ func (r *mutationResolver) QueueDiscoveredScene(ctx context.Context, input model
 // DiscoverScenes is the resolver for the discoverScenes field.
 func (r *queryResolver) DiscoverScenes(ctx context.Context, input model.DiscoverScenesInput) (*model.DiscoverSceneConnection, error) {
 	if r.Discovery == nil {
-		return nil, errors.New("subscription service is not configured")
+		return nil, errors.New("discovery service is not configured")
 	}
 
 	query := strings.TrimSpace(input.Query)
@@ -42,7 +42,7 @@ func (r *queryResolver) DiscoverScenes(ctx context.Context, input model.Discover
 	}
 	sortBy := mapDiscoverSortBy(input.SortBy)
 
-	page, err := r.Discovery.SearchPreferredStashBoxScenes(ctx, query, limit, sortBy)
+	page, err := r.Discovery.Search(ctx, query, limit, sortBy)
 	if err != nil {
 		return nil, err
 	}

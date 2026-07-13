@@ -1,12 +1,22 @@
-package subscription
+package metadata
 
 import (
+	"context"
 	"strings"
 	"sync"
 
 	"github.com/leothevan2444/moji/pkg/stash"
 	stashboxpkg "github.com/leothevan2444/moji/pkg/stashbox"
+	stashboxgraphql "github.com/leothevan2444/moji/pkg/stashbox/graphql"
 )
+
+type Client interface {
+	FindPerformerByID(context.Context, string) (*stashboxgraphql.PerformerFragment, error)
+	FindSceneByID(context.Context, string) (*stashboxgraphql.SceneFragment, error)
+	SearchPerformer(context.Context, string) ([]*stashboxgraphql.PerformerFragment, error)
+	SearchScene(context.Context, string) ([]*stashboxgraphql.SceneFragment, error)
+	QueryScenes(context.Context, stashboxgraphql.SceneQueryInput) ([]*stashboxgraphql.SceneFragment, error)
+}
 
 // StashBoxEndpoint is the public description of a Stash-Box instance. The API
 // key is intentionally hidden from the GraphQL surface; callers that need to
@@ -19,14 +29,14 @@ type StashBoxEndpoint struct {
 
 // StashboxClientFactory constructs a Stash-Box client bound to a specific
 // endpoint. The default implementation wraps `pkg/stashbox.NewClient`.
-type StashboxClientFactory interface {
-	NewClient(box stash.StashBoxEndpoint) StashboxClient
+type ClientFactory interface {
+	NewClient(box stash.StashBoxEndpoint) Client
 }
 
 // defaultStashboxClientFactory uses the real pkg/stashbox client builder.
-type defaultStashboxClientFactory struct{}
+type defaultClientFactory struct{}
 
-func (defaultStashboxClientFactory) NewClient(box stash.StashBoxEndpoint) StashboxClient {
+func (defaultClientFactory) NewClient(box stash.StashBoxEndpoint) Client {
 	return stashboxpkg.NewClient(
 		box.Endpoint,
 		box.APIKey,
@@ -34,43 +44,48 @@ func (defaultStashboxClientFactory) NewClient(box stash.StashBoxEndpoint) Stashb
 	)
 }
 
-// NewDefaultStashboxRegistry returns a registry backed by the real Stash-Box
+// NewDefaultRegistry returns a registry backed by the real Stash-Box
 // client builder.
-func NewDefaultStashboxRegistry() *stashboxRegistry {
-	return newStashboxRegistry(defaultStashboxClientFactory{})
+func NewDefaultRegistry() *Registry {
+	return NewRegistry(defaultClientFactory{})
 }
 
-// stashboxRegistry caches Stash-Box clients keyed by their endpoint URL so
-// the subscription service can dispatch a single performer lookup to the
-// correct backend.
-type stashboxRegistry struct {
+// Registry caches Stash-Box clients keyed by endpoint URL so application
+// services can dispatch lookups to the correct backend.
+type Registry struct {
 	mu      sync.RWMutex
-	clients map[string]StashboxClient
+	clients map[string]Client
 	specs   map[string]stash.StashBoxEndpoint
-	factory StashboxClientFactory
+	factory ClientFactory
 	order   []string
 	keys    map[string]StashBoxEndpoint
 }
 
-func newStashboxRegistry(factory StashboxClientFactory) *stashboxRegistry {
-	return &stashboxRegistry{
-		clients: map[string]StashboxClient{},
+func NewRegistry(factory ClientFactory) *Registry {
+	return &Registry{
+		clients: map[string]Client{},
 		specs:   map[string]stash.StashBoxEndpoint{},
 		factory: factory,
 		keys:    map[string]StashBoxEndpoint{},
 	}
 }
 
+func (r *Registry) SetFactory(factory ClientFactory) {
+	r.mu.Lock()
+	r.factory = factory
+	r.mu.Unlock()
+}
+
 // Replace rebuilds the registry from the given Stash-Box list. Existing
 // clients for endpoints that no longer exist are dropped; new endpoints get
 // fresh clients built via the factory.
-func (r *stashboxRegistry) Replace(boxes []stash.StashBoxEndpoint) {
+func (r *Registry) Replace(boxes []stash.StashBoxEndpoint) {
 	if r == nil {
 		return
 	}
 
 	r.mu.RLock()
-	existingClients := make(map[string]StashboxClient, len(r.clients))
+	existingClients := make(map[string]Client, len(r.clients))
 	for key, client := range r.clients {
 		existingClients[key] = client
 	}
@@ -80,12 +95,12 @@ func (r *stashboxRegistry) Replace(boxes []stash.StashBoxEndpoint) {
 	}
 	r.mu.RUnlock()
 
-	next := make(map[string]StashboxClient, len(boxes))
+	next := make(map[string]Client, len(boxes))
 	nextSpecs := make(map[string]stash.StashBoxEndpoint, len(boxes))
 	nextKeys := make(map[string]StashBoxEndpoint, len(boxes))
 	order := make([]string, 0, len(boxes))
 	for _, box := range boxes {
-		key := normalizeStashBoxEndpoint(box.Endpoint)
+		key := NormalizeEndpoint(box.Endpoint)
 		if key == "" {
 			continue
 		}
@@ -117,18 +132,18 @@ func (r *stashboxRegistry) Replace(boxes []stash.StashBoxEndpoint) {
 }
 
 func sameClientConfig(left, right stash.StashBoxEndpoint) bool {
-	return normalizeStashBoxEndpoint(left.Endpoint) == normalizeStashBoxEndpoint(right.Endpoint) &&
+	return NormalizeEndpoint(left.Endpoint) == NormalizeEndpoint(right.Endpoint) &&
 		left.APIKey == right.APIKey &&
 		left.MaxRequestsPerMinute == right.MaxRequestsPerMinute
 }
 
 // Get returns the client for a normalized endpoint, or false if none is
 // configured.
-func (r *stashboxRegistry) Get(endpoint string) (StashboxClient, bool) {
+func (r *Registry) Get(endpoint string) (Client, bool) {
 	if r == nil {
 		return nil, false
 	}
-	key := normalizeStashBoxEndpoint(endpoint)
+	key := NormalizeEndpoint(endpoint)
 	r.mu.RLock()
 	defer r.mu.RUnlock()
 	client, ok := r.clients[key]
@@ -137,7 +152,7 @@ func (r *stashboxRegistry) Get(endpoint string) (StashboxClient, bool) {
 
 // Endpoints returns a snapshot of the currently configured Stash-Box
 // endpoints, in the order they were last received from Stash.
-func (r *stashboxRegistry) Endpoints() []StashBoxEndpoint {
+func (r *Registry) Endpoints() []StashBoxEndpoint {
 	if r == nil {
 		return nil
 	}
@@ -152,11 +167,11 @@ func (r *stashboxRegistry) Endpoints() []StashBoxEndpoint {
 	return out
 }
 
-func (r *stashboxRegistry) APIKey(endpoint string) string {
+func (r *Registry) APIKey(endpoint string) string {
 	if r == nil {
 		return ""
 	}
-	key := normalizeStashBoxEndpoint(endpoint)
+	key := NormalizeEndpoint(endpoint)
 	r.mu.RLock()
 	defer r.mu.RUnlock()
 	return r.specs[key].APIKey
@@ -165,6 +180,6 @@ func (r *stashboxRegistry) APIKey(endpoint string) string {
 // normalizeStashBoxEndpoint trims surrounding whitespace and lowercases the
 // endpoint so equivalent URLs (different trailing slashes, case in the host,
 // etc.) map to the same registry entry.
-func normalizeStashBoxEndpoint(endpoint string) string {
+func NormalizeEndpoint(endpoint string) string {
 	return strings.ToLower(strings.TrimSpace(endpoint))
 }

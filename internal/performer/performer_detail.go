@@ -1,28 +1,30 @@
-package subscription
+package performer
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"sort"
 	"strings"
 
+	"github.com/leothevan2444/moji/internal/metadata"
 	"github.com/leothevan2444/moji/internal/taskruntime"
 	stashgraphql "github.com/leothevan2444/moji/pkg/stash/graphql"
 	stashboxgraphql "github.com/leothevan2444/moji/pkg/stashbox/graphql"
 )
 
-func (s *Service) GetPerformerDetail(ctx context.Context, performerID string) (PerformerDetail, error) {
+func (s *Service) GetPerformerDetail(ctx context.Context, performerID string) (Detail, error) {
 	performer, err := s.stash.FindPerformerByID(ctx, performerID)
 	if err != nil {
-		return PerformerDetail{}, err
+		return Detail{}, err
 	}
 	if performer == nil {
-		return PerformerDetail{}, fmt.Errorf("subscription: performer %q not found", performerID)
+		return Detail{}, fmt.Errorf("performer: performer %q not found", performerID)
 	}
 
 	item := performerFromStash(performer, s.customFieldKey)
 	item.ImagePath = s.proxyStashImage(ctx, item.ImagePath)
-	detail := PerformerDetail{
+	detail := Detail{
 		Performer:      item,
 		Disambiguation: stringValue(performer.Disambiguation),
 		Birthdate:      stringValue(performer.Birthdate),
@@ -34,9 +36,9 @@ func (s *Service) GetPerformerDetail(ctx context.Context, performerID string) (P
 		URLs:           append([]string(nil), performerURLs(performer)...),
 	}
 
-	target, err := s.resolveStashboxPerformer(ctx, performer)
-	if err != nil && !strings.Contains(err.Error(), errNoMatchingStashBoxMapping.Error()) {
-		return PerformerDetail{}, err
+	target, err := s.metadata.ResolvePerformer(ctx, performer)
+	if err != nil && !errors.Is(err, metadata.ErrNoPerformerMapping) {
+		return Detail{}, err
 	}
 	if target != nil {
 		detail.MatchedStashBox = &MatchedStashBox{
@@ -53,26 +55,26 @@ func (s *Service) GetPerformerDetail(ctx context.Context, performerID string) (P
 	return detail, nil
 }
 
-func (s *Service) ListPerformerScenes(ctx context.Context, performerID string, query PerformerSceneQuery) (PerformerScenePage, error) {
+func (s *Service) ListPerformerScenes(ctx context.Context, performerID string, query SceneQuery) (ScenePage, error) {
 	performer, err := s.stash.FindPerformerByID(ctx, performerID)
 	if err != nil {
-		return PerformerScenePage{}, err
+		return ScenePage{}, err
 	}
 	if performer == nil {
-		return PerformerScenePage{}, fmt.Errorf("subscription: performer %q not found", performerID)
+		return ScenePage{}, fmt.Errorf("performer: performer %q not found", performerID)
 	}
 	return s.buildPerformerScenePage(ctx, performer, query)
 }
 
-func (s *Service) buildPerformerScenePage(ctx context.Context, performer *stashgraphql.PerformerFragment, query PerformerSceneQuery) (PerformerScenePage, error) {
+func (s *Service) buildPerformerScenePage(ctx context.Context, performer *stashgraphql.PerformerFragment, query SceneQuery) (ScenePage, error) {
 	query = normalizePerformerSceneQuery(query)
 
 	flat, stashSceneCount, stashBoxCount, err := s.loadPerformerScenes(ctx, performer)
 	if err != nil {
-		return PerformerScenePage{}, err
+		return ScenePage{}, err
 	}
 
-	filtered := make([]PerformerScene, 0, len(flat))
+	filtered := make([]Scene, 0, len(flat))
 	for _, item := range flat {
 		if !matchesPerformerSceneSearch(item, query.Search) {
 			continue
@@ -128,12 +130,12 @@ func (s *Service) buildPerformerScenePage(ctx context.Context, performer *stashg
 		}
 	}
 
-	pageItems := append([]PerformerScene(nil), filtered[start:end]...)
+	pageItems := append([]Scene(nil), filtered[start:end]...)
 	if err := s.attachPerformerSceneTasks(ctx, pageItems); err != nil {
-		return PerformerScenePage{}, err
+		return ScenePage{}, err
 	}
 
-	return PerformerScenePage{
+	return ScenePage{
 		Items:           pageItems,
 		Page:            query.Page,
 		PageSize:        query.PageSize,
@@ -147,13 +149,13 @@ func (s *Service) buildPerformerScenePage(ctx context.Context, performer *stashg
 	}, nil
 }
 
-func (s *Service) attachPerformerSceneTasks(ctx context.Context, scenes []PerformerScene) error {
+func (s *Service) attachPerformerSceneTasks(ctx context.Context, scenes []Scene) error {
 	if s.taskLister == nil || len(scenes) == 0 {
 		return nil
 	}
 	tasks, err := s.taskLister.ListTasks(ctx)
 	if err != nil {
-		return fmt.Errorf("subscription: list tasks for performer scenes: %w", err)
+		return fmt.Errorf("performer: list tasks for performer scenes: %w", err)
 	}
 	byCode := make(map[string]*taskruntime.Task, len(tasks))
 	for _, task := range tasks {
@@ -171,7 +173,7 @@ func (s *Service) attachPerformerSceneTasks(ctx context.Context, scenes []Perfor
 		if task == nil {
 			continue
 		}
-		scenes[index].MojiTask = &PerformerSceneTask{
+		scenes[index].MojiTask = &SceneTask{
 			ID:               task.ID,
 			Stage:            task.Stage,
 			StageStatus:      task.StageStatus,
@@ -183,7 +185,7 @@ func (s *Service) attachPerformerSceneTasks(ctx context.Context, scenes []Perfor
 	return nil
 }
 
-func (s *Service) loadPerformerScenes(ctx context.Context, performer *stashgraphql.PerformerFragment) ([]PerformerScene, int, int, error) {
+func (s *Service) loadPerformerScenes(ctx context.Context, performer *stashgraphql.PerformerFragment) ([]Scene, int, int, error) {
 	if performer == nil {
 		return nil, 0, 0, nil
 	}
@@ -193,8 +195,8 @@ func (s *Service) loadPerformerScenes(ctx context.Context, performer *stashgraph
 		return nil, 0, 0, err
 	}
 
-	itemsByID := make(map[string]*PerformerScene, len(stashScenes))
-	ordered := make([]*PerformerScene, 0, len(stashScenes))
+	itemsByID := make(map[string]*Scene, len(stashScenes))
+	ordered := make([]*Scene, 0, len(stashScenes))
 	stashByEndpointAndID := make(map[string]*stashgraphql.SceneFragment, len(stashScenes))
 	for _, scene := range stashScenes {
 		item := stashSceneToPerformerScene(scene)
@@ -215,7 +217,7 @@ func (s *Service) loadPerformerScenes(ctx context.Context, performer *stashgraph
 	}
 
 	stashBoxCount := 0
-	target, targetErr := s.resolveStashboxPerformer(ctx, performer)
+	target, targetErr := s.metadata.ResolvePerformer(ctx, performer)
 	if targetErr == nil && target != nil {
 		stashboxScenes, err := s.fetchStashBoxScenes(ctx, target)
 		if err != nil {
@@ -242,11 +244,11 @@ func (s *Service) loadPerformerScenes(ctx context.Context, performer *stashgraph
 			item := stashBoxSceneToPerformerScene(scene, target.Endpoint)
 			ordered = append(ordered, &item)
 		}
-	} else if targetErr != nil && !strings.Contains(targetErr.Error(), errNoMatchingStashBoxMapping.Error()) {
+	} else if targetErr != nil && !errors.Is(targetErr, metadata.ErrNoPerformerMapping) {
 		return nil, 0, 0, targetErr
 	}
 
-	flat := make([]PerformerScene, 0, len(ordered))
+	flat := make([]Scene, 0, len(ordered))
 	for _, item := range ordered {
 		if item == nil {
 			continue
@@ -276,7 +278,7 @@ func (s *Service) fetchStashScenes(ctx context.Context, performerID string) ([]*
 	})
 }
 
-func (s *Service) fetchStashBoxScenes(ctx context.Context, target *resolvedStashbox) ([]*stashboxgraphql.SceneFragment, error) {
+func (s *Service) fetchStashBoxScenes(ctx context.Context, target *metadata.MatchedPerformer) ([]*stashboxgraphql.SceneFragment, error) {
 	if target == nil {
 		return nil, nil
 	}
@@ -292,7 +294,7 @@ func (s *Service) fetchStashBoxScenes(ctx context.Context, target *resolvedStash
 	})
 }
 
-func normalizePerformerSceneQuery(query PerformerSceneQuery) PerformerSceneQuery {
+func normalizePerformerSceneQuery(query SceneQuery) SceneQuery {
 	query.Search = strings.TrimSpace(query.Search)
 	if query.Source == "" {
 		query.Source = SceneSourceFilterAll
@@ -312,7 +314,7 @@ func normalizePerformerSceneQuery(query PerformerSceneQuery) PerformerSceneQuery
 	return query
 }
 
-func matchesPerformerSceneSearch(item PerformerScene, search string) bool {
+func matchesPerformerSceneSearch(item Scene, search string) bool {
 	if search == "" {
 		return true
 	}
@@ -322,7 +324,7 @@ func matchesPerformerSceneSearch(item PerformerScene, search string) bool {
 		strings.Contains(normalize(item.StudioName), needle)
 }
 
-func matchesPerformerSceneSource(item PerformerScene, filter SceneSourceFilter) bool {
+func matchesPerformerSceneSource(item Scene, filter SceneSourceFilter) bool {
 	switch filter {
 	case SceneSourceFilterStash:
 		return item.HasStashSource
@@ -333,7 +335,7 @@ func matchesPerformerSceneSource(item PerformerScene, filter SceneSourceFilter) 
 	}
 }
 
-func matchesPerformerSceneLibrary(item PerformerScene, filter LibraryFilter) bool {
+func matchesPerformerSceneLibrary(item Scene, filter LibraryFilter) bool {
 	switch filter {
 	case LibraryFilterInLibrary:
 		return item.InLibrary
@@ -344,11 +346,11 @@ func matchesPerformerSceneLibrary(item PerformerScene, filter LibraryFilter) boo
 	}
 }
 
-func stashSceneToPerformerScene(scene *stashgraphql.SceneFragment) PerformerScene {
+func stashSceneToPerformerScene(scene *stashgraphql.SceneFragment) Scene {
 	if scene == nil {
-		return PerformerScene{}
+		return Scene{}
 	}
-	item := PerformerScene{
+	item := Scene{
 		Key:               "stash:" + scene.ID,
 		PrimarySource:     SceneSourceStash,
 		SourceSceneID:     scene.ID,
@@ -374,8 +376,8 @@ func stashSceneToPerformerScene(scene *stashgraphql.SceneFragment) PerformerScen
 	return item
 }
 
-func stashBoxSceneToPerformerScene(scene *stashboxgraphql.SceneFragment, endpoint string) PerformerScene {
-	item := PerformerScene{
+func stashBoxSceneToPerformerScene(scene *stashboxgraphql.SceneFragment, endpoint string) Scene {
+	item := Scene{
 		Key:               "stashbox:" + endpointKey(endpoint) + ":" + scene.ID,
 		PrimarySource:     SceneSourceStashBox,
 		SourceSceneID:     scene.ID,
@@ -402,51 +404,51 @@ func stashBoxSceneToPerformerScene(scene *stashboxgraphql.SceneFragment, endpoin
 	return item
 }
 
-func stashScenePerformers(items []*stashgraphql.SceneFragment_Performers) []PerformerScenePerson {
-	out := make([]PerformerScenePerson, 0, len(items))
+func stashScenePerformers(items []*stashgraphql.SceneFragment_Performers) []ScenePerson {
+	out := make([]ScenePerson, 0, len(items))
 	for _, item := range items {
 		if item == nil {
 			continue
 		}
-		out = append(out, PerformerScenePerson{ID: item.ID, Name: item.Name})
+		out = append(out, ScenePerson{ID: item.ID, Name: item.Name})
 	}
 	return out
 }
 
-func stashSceneTags(items []*stashgraphql.SceneFragment_Tags) []PerformerSceneTag {
-	out := make([]PerformerSceneTag, 0, len(items))
+func stashSceneTags(items []*stashgraphql.SceneFragment_Tags) []SceneTag {
+	out := make([]SceneTag, 0, len(items))
 	for _, item := range items {
 		if item == nil {
 			continue
 		}
-		out = append(out, PerformerSceneTag{ID: item.ID, Name: item.Name})
+		out = append(out, SceneTag{ID: item.ID, Name: item.Name})
 	}
 	return out
 }
 
-func stashBoxScenePerformers(items []*stashboxgraphql.PerformerAppearanceFragment) []PerformerScenePerson {
-	out := make([]PerformerScenePerson, 0, len(items))
+func stashBoxScenePerformers(items []*stashboxgraphql.PerformerAppearanceFragment) []ScenePerson {
+	out := make([]ScenePerson, 0, len(items))
 	for _, item := range items {
 		if item == nil || item.Performer == nil {
 			continue
 		}
-		out = append(out, PerformerScenePerson{ID: item.Performer.ID, Name: item.Performer.Name})
+		out = append(out, ScenePerson{ID: item.Performer.ID, Name: item.Performer.Name})
 	}
 	return out
 }
 
-func stashBoxSceneTags(items []*stashboxgraphql.TagFragment) []PerformerSceneTag {
-	out := make([]PerformerSceneTag, 0, len(items))
+func stashBoxSceneTags(items []*stashboxgraphql.TagFragment) []SceneTag {
+	out := make([]SceneTag, 0, len(items))
 	for _, item := range items {
 		if item == nil {
 			continue
 		}
-		out = append(out, PerformerSceneTag{ID: item.ID, Name: item.Name})
+		out = append(out, SceneTag{ID: item.ID, Name: item.Name})
 	}
 	return out
 }
 
-func mergeStashBoxIntoStashScene(item *PerformerScene, scene *stashboxgraphql.SceneFragment, endpoint string) {
+func mergeStashBoxIntoStashScene(item *Scene, scene *stashboxgraphql.SceneFragment, endpoint string) {
 	if item == nil || scene == nil {
 		return
 	}
@@ -540,7 +542,7 @@ func sortDirectionPointer(value stashgraphql.SortDirectionEnum) *stashgraphql.So
 }
 
 func sceneLookupKey(endpoint, stashID string) string {
-	endpoint = normalizeStashBoxEndpoint(endpoint)
+	endpoint = metadata.NormalizeEndpoint(endpoint)
 	stashID = strings.TrimSpace(stashID)
 	if endpoint == "" || stashID == "" {
 		return ""

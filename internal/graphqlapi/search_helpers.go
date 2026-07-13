@@ -1,28 +1,28 @@
 package graphqlapi
 
 import (
+	"github.com/leothevan2444/moji/internal/discovery"
 	"github.com/leothevan2444/moji/internal/graphqlapi/model"
-	"github.com/leothevan2444/moji/internal/subscription"
 )
 
-// mapDiscoverSortBy translates the GraphQL enum into the subscription-domain
+// mapDiscoverSortBy translates the GraphQL enum into the discovery-domain
 // enum so resolver code doesn't depend on gqlgen-generated types directly.
-func mapDiscoverSortBy(value *model.DiscoverSortBy) subscription.DiscoverSort {
+func mapDiscoverSortBy(value *model.DiscoverSortBy) discovery.Sort {
 	if value == nil {
-		return subscription.DiscoverSortRelevance
+		return discovery.SortRelevance
 	}
 	switch *value {
 	case model.DiscoverSortByRelevance:
-		return subscription.DiscoverSortRelevance
+		return discovery.SortRelevance
 	case model.DiscoverSortByDateDesc:
-		return subscription.DiscoverSortDateDesc
+		return discovery.SortDateDesc
 	case model.DiscoverSortByDateAsc:
-		return subscription.DiscoverSortDateAsc
+		return discovery.SortDateAsc
 	case model.DiscoverSortByDurationDesc:
-		return subscription.DiscoverSortDurationDesc
+		return discovery.SortDurationDesc
 	case model.DiscoverSortByTitleAsc:
-		return subscription.DiscoverSortTitleAsc
+		return discovery.SortTitleAsc
 	default:
-		return subscription.DiscoverSortRelevance
+		return discovery.SortRelevance
 	}
 }

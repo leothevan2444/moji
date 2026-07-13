@@ -3,11 +3,13 @@ package graphqlapi
 import (
 	"time"
 
+	"github.com/leothevan2444/moji/internal/discovery"
 	"github.com/leothevan2444/moji/internal/graphqlapi/model"
+	performerdomain "github.com/leothevan2444/moji/internal/performer"
 	"github.com/leothevan2444/moji/internal/subscription"
 )
 
-func stashPerformerToModel(performer subscription.Performer) *model.StashPerformer {
+func stashPerformerToModel(performer performerdomain.Performer) *model.StashPerformer {
 	aliases := append([]string(nil), performer.AliasList...)
 	return &model.StashPerformer{
 		ID:         performer.ID,
@@ -37,7 +39,7 @@ func stashPerformerPageToModel(page StashPerformerPage) *model.StashPerformerCon
 	}
 }
 
-func stashPerformerDetailToModel(detail subscription.PerformerDetail) *model.StashPerformerDetail {
+func stashPerformerDetailToModel(detail performerdomain.Detail) *model.StashPerformerDetail {
 	return &model.StashPerformerDetail{
 		Performer:          stashPerformerToModel(detail.Performer),
 		Disambiguation:     nilIfEmpty(detail.Disambiguation),
@@ -56,7 +58,7 @@ func stashPerformerDetailToModel(detail subscription.PerformerDetail) *model.Sta
 	}
 }
 
-func matchedStashBoxToModel(item *subscription.MatchedStashBox) *model.MatchedStashBox {
+func matchedStashBoxToModel(item *performerdomain.MatchedStashBox) *model.MatchedStashBox {
 	if item == nil {
 		return nil
 	}
@@ -68,20 +70,27 @@ func matchedStashBoxToModel(item *subscription.MatchedStashBox) *model.MatchedSt
 	}
 }
 
-func discoveredScenePageToModel(page subscription.DiscoverScenePage) *model.DiscoverSceneConnection {
+func discoveredScenePageToModel(page discovery.Page) *model.DiscoverSceneConnection {
 	items := make([]*model.DiscoveredScene, 0, len(page.Items))
 	for _, item := range page.Items {
 		items = append(items, discoveredSceneToModel(item))
 	}
 	return &model.DiscoverSceneConnection{
 		Items:         items,
-		UsedStashBox:  matchedStashBoxToModel(page.UsedStashBox),
+		UsedStashBox:  discoveredSourceToModel(page.UsedStashBox),
 		FallbackCount: page.FallbackCount,
 		SearchedQuery: page.SearchedQuery,
 	}
 }
 
-func discoveredSceneToModel(item subscription.DiscoveredScene) *model.DiscoveredScene {
+func discoveredSourceToModel(item *discovery.MatchedSource) *model.MatchedStashBox {
+	if item == nil {
+		return nil
+	}
+	return &model.MatchedStashBox{Name: item.Name, Endpoint: item.Endpoint, PerformerID: item.PerformerID, PerformerName: item.PerformerName}
+}
+
+func discoveredSceneToModel(item discovery.Scene) *model.DiscoveredScene {
 	return &model.DiscoveredScene{
 		Key:              item.Key,
 		SceneID:          item.SceneID,
@@ -99,7 +108,7 @@ func discoveredSceneToModel(item subscription.DiscoveredScene) *model.Discovered
 	}
 }
 
-func performerScenePageToModel(page subscription.PerformerScenePage) *model.StashPerformerSceneConnection {
+func performerScenePageToModel(page performerdomain.ScenePage) *model.StashPerformerSceneConnection {
 	items := make([]*model.StashPerformerScene, 0, len(page.Items))
 	for _, item := range page.Items {
 		items = append(items, performerSceneToModel(item))
@@ -118,7 +127,7 @@ func performerScenePageToModel(page subscription.PerformerScenePage) *model.Stas
 	}
 }
 
-func performerSceneToModel(item subscription.PerformerScene) *model.StashPerformerScene {
+func performerSceneToModel(item performerdomain.Scene) *model.StashPerformerScene {
 	stashIDs := make([]*model.StashSceneID, 0, len(item.StashIDs))
 	for _, stashID := range item.StashIDs {
 		stashIDs = append(stashIDs, &model.StashSceneID{
@@ -202,7 +211,7 @@ func subscriptionReleaseToModel(release subscription.RecordedRelease) *model.Sub
 	}
 }
 
-func queuePerformerScenesResultToModel(result subscription.QueuePerformerScenesResult) *model.QueuePerformerScenesPayload {
+func queuePerformerScenesResultToModel(result performerdomain.QueueScenesResult) *model.QueuePerformerScenesPayload {
 	queuedTasks := make([]*model.Task, 0, len(result.QueuedTasks))
 	for _, task := range result.QueuedTasks {
 		queuedTasks = append(queuedTasks, taskToModel(task))
@@ -223,7 +232,7 @@ func queuePerformerScenesResultToModel(result subscription.QueuePerformerScenesR
 	}
 }
 
-func queuePerformerSceneResultToModel(item subscription.QueuePerformerSceneResult) *model.QueuePerformerSceneResult {
+func queuePerformerSceneResultToModel(item performerdomain.QueueSceneResult) *model.QueuePerformerSceneResult {
 	return &model.QueuePerformerSceneResult{
 		Key:          item.Key,
 		Status:       model.QueuePerformerSceneStatus(item.Status),
