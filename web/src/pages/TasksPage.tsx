@@ -10,7 +10,7 @@ import {
   type DashboardTask,
   type TaskGroupKey
 } from "../utils";
-import { useDeferredValue, useMemo } from "react";
+import { useDeferredValue, useEffect, useMemo, useState } from "react";
 import type { TaskSortKey, TaskStatusFilter } from "../types";
 import { useTranslation } from "react-i18next";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
@@ -20,7 +20,7 @@ import { faRotate } from "@fortawesome/free-solid-svg-icons/faRotate";
 import { faTrashCan } from "@fortawesome/free-solid-svg-icons/faTrashCan";
 import { faXmark } from "@fortawesome/free-solid-svg-icons/faXmark";
 import { faBoxArchive } from "@fortawesome/free-solid-svg-icons/faBoxArchive";
-import { Menu } from "../components/common/Menu";
+import { faListCheck } from "@fortawesome/free-solid-svg-icons/faListCheck";
 
 interface TasksPageProps {
   tasks: DashboardTask[];
@@ -100,6 +100,17 @@ export function TasksPage({
 }: TasksPageProps) {
   const { t } = useTranslation();
   const deferredTaskSearch = useDeferredValue(taskSearch.trim().toLowerCase());
+  const [moreActionsOpen, setMoreActionsOpen] = useState(false);
+  const [selectionMode, setSelectionMode] = useState(false);
+
+  useEffect(() => {
+    if (!moreActionsOpen) return;
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setMoreActionsOpen(false);
+    };
+    window.addEventListener("keydown", closeOnEscape);
+    return () => window.removeEventListener("keydown", closeOnEscape);
+  }, [moreActionsOpen]);
 
   const visibleTasks = useMemo(() => {
     const search = deferredTaskSearch;
@@ -182,21 +193,45 @@ export function TasksPage({
           {t(autoSyncEnabled ? "taskBatch.autoSyncOn" : "taskBatch.autoSyncOff", { seconds: autoSyncIntervalSeconds })}
           {lastRefreshedAt ? ` · ${t("taskBatch.updatedAt", { time: lastRefreshedAt.toLocaleTimeString() })}` : ""}
         </span>
-        <button type="button" className="ghost-button task-icon-button" onClick={onRefresh} disabled={refreshing} aria-label={t("common.refresh")} title={t("common.refresh")}>
-          <FontAwesomeIcon icon={faRotate} className={refreshing ? "is-spinning" : undefined} />
+        <div className="task-toolbar-actions">
+          <button
+            type="button"
+            className={`ghost-button task-icon-button task-icon-button--bordered${selectionMode ? " is-active" : ""}`}
+            onClick={() => {
+              if (selectionMode) onClearTaskSelection();
+              setSelectionMode((current) => !current);
+            }}
+            aria-pressed={selectionMode}
+            aria-label={selectionMode ? t("taskBatch.exitMultiSelect") : t("taskBatch.multiSelect")}
+            title={selectionMode ? t("taskBatch.exitMultiSelect") : t("taskBatch.multiSelect")}
+          >
+            <FontAwesomeIcon icon={faListCheck} />
+          </button>
+          <button type="button" className="ghost-button task-icon-button task-icon-button--bordered" onClick={onRefresh} disabled={refreshing} aria-label={t("common.refresh")} title={t("common.refresh")}>
+            <FontAwesomeIcon icon={faRotate} className={refreshing ? "is-spinning" : undefined} />
+          </button>
+        </div>
+        <button
+          type="button"
+          className="ghost-button task-icon-button task-icon-button--bordered"
+          onClick={() => setMoreActionsOpen(true)}
+          aria-haspopup="dialog"
+          aria-expanded={moreActionsOpen}
+          aria-label={t("taskBatch.more")}
+          title={t("taskBatch.more")}
+        >
+          <FontAwesomeIcon icon={faEllipsis} />
         </button>
-        <Menu triggerLabel={<FontAwesomeIcon icon={faEllipsis} />} triggerAriaLabel={t("taskBatch.more")} ariaLabel={t("taskBatch.more")}
-          items={[{ key: "sync", disabled: syncing, onSelect: onSync, label: <><FontAwesomeIcon icon={faArrowsRotate} /> {syncing ? t("taskBatch.syncing") : t("taskBatch.syncNow")}</> }]} />
       </div>
 
-      {selectedTaskIds.length > 0 ? <div className="task-selection-bar" role="region" aria-label={t("taskBatch.selectionActions")}>
+      {selectionMode ? <div className="task-selection-bar" role="region" aria-label={t("taskBatch.selectionActions")}>
         <strong>{t("taskBatch.selected", { count: selectedTaskIds.length })}</strong>
         {hiddenSelectedCount ? <span>{t("taskBatch.hidden", { count: hiddenSelectedCount })}</span> : null}
         <button type="button" className="ghost-button" disabled={batchPending || visibleTasks.length === 0} onClick={() => onSelectVisibleTasks(visibleTasks.map((task) => task.id))}>{t("taskBatch.selectVisible", { count: visibleTasks.length })}</button>
         <button type="button" className="ghost-button" disabled={batchPending || retryableIds.length === 0} onClick={() => onBatchRetry(retryableIds)}><FontAwesomeIcon icon={faArrowsRotate} /> {t("taskBatch.retry", { count: retryableIds.length })}</button>
         <button type="button" className="ghost-button" disabled={batchPending || ingestIds.length === 0} onClick={() => onBatchIngest(ingestIds)}><FontAwesomeIcon icon={faBoxArchive} /> {t("taskBatch.ingest", { count: ingestIds.length })}</button>
-        <button type="button" className="ghost-button task-ops__button--danger" disabled={batchPending} onClick={() => onBatchDelete(selectedTaskIds)}><FontAwesomeIcon icon={faTrashCan} /> {t("taskBatch.delete", { count: selectedTaskIds.length })}</button>
-        <button type="button" className="ghost-button" disabled={batchPending} onClick={onClearTaskSelection} aria-label={t("taskBatch.clear")}><FontAwesomeIcon icon={faXmark} /> {t("taskBatch.clear")}</button>
+        <button type="button" className="ghost-button task-ops__button--danger" disabled={batchPending || selectedTaskIds.length === 0} onClick={() => onBatchDelete(selectedTaskIds)}><FontAwesomeIcon icon={faTrashCan} /> {t("taskBatch.delete", { count: selectedTaskIds.length })}</button>
+        <button type="button" className="ghost-button" disabled={batchPending || selectedTaskIds.length === 0} onClick={onClearTaskSelection} aria-label={t("taskBatch.clear")}><FontAwesomeIcon icon={faXmark} /> {t("taskBatch.clear")}</button>
       </div> : null}
 
       {!visibleTasks.length ? (
@@ -229,10 +264,44 @@ export function TasksPage({
             onDeleteTask={onDeleteTask}
             onProcessIngest={onBatchIngest}
             batchPending={batchPending}
+            selectionMode={selectionMode}
             selectedTaskIds={selectedTaskIds}
             onToggleTaskSelection={onToggleTaskSelection}
           />
         ))}
+
+      {moreActionsOpen ? (
+        <div className="task-actions-dialog__scrim" onClick={() => setMoreActionsOpen(false)}>
+          <section
+            className="task-actions-dialog"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="task-actions-dialog-title"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className="task-actions-dialog__head">
+              <h3 id="task-actions-dialog-title">{t("taskBatch.more")}</h3>
+              <button type="button" className="ghost-button" onClick={() => setMoreActionsOpen(false)} aria-label={t("common.close")} autoFocus>
+                <FontAwesomeIcon icon={faXmark} />
+              </button>
+            </div>
+            <div className="task-actions-dialog__body">
+              <button
+                type="button"
+                className="ghost-button task-actions-dialog__action"
+                disabled={syncing}
+                onClick={() => {
+                  onSync();
+                  setMoreActionsOpen(false);
+                }}
+              >
+                <FontAwesomeIcon icon={faArrowsRotate} />
+                <span>{syncing ? t("taskBatch.syncing") : t("taskBatch.syncNow")}</span>
+              </button>
+            </div>
+          </section>
+        </div>
+      ) : null}
     </section>
   );
 }

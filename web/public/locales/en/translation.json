@@ -482,6 +482,9 @@
   "taskBatch": {
     "more": "More task actions",
     "moreActions": "More actions for {{task}}",
+    "multiSelect": "Enter multi-select mode",
+    "exitMultiSelect": "Exit multi-select mode",
+    "deselectTask": "Deselect task: {{task}}",
     "syncNow": "Sync qBittorrent now",
     "syncing": "Syncing qBittorrent…",
     "syncComplete": "qBittorrent task progress synchronized.",

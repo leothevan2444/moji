@@ -475,6 +475,9 @@
   "taskBatch": {
     "more": "更多任务操作",
     "moreActions": "{{task}} 的更多操作",
+    "multiSelect": "进入多选模式",
+    "exitMultiSelect": "退出多选模式",
+    "deselectTask": "取消选择任务：{{task}}",
     "syncNow": "立即同步 qBittorrent",
     "syncing": "正在同步 qBittorrent…",
     "syncComplete": "qBittorrent 任务进度已同步。",

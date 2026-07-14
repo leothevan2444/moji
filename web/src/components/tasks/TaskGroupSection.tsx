@@ -21,6 +21,7 @@ interface TaskGroupSectionProps {
   onDeleteTask: (taskId: string) => void;
   onProcessIngest: (ids: string[]) => void;
   batchPending: boolean;
+  selectionMode: boolean;
   selectedTaskIds: string[];
   onToggleTaskSelection: (taskId: string) => void;
 }
@@ -42,6 +43,7 @@ export function TaskGroupSection({
   onDeleteTask,
   onProcessIngest,
   batchPending,
+  selectionMode,
   selectedTaskIds,
   onToggleTaskSelection
 }: TaskGroupSectionProps) {
@@ -90,6 +92,7 @@ export function TaskGroupSection({
               onRetry={onRetryTask}
               onResolve={onResolveTask}
               onDelete={onDeleteTask}
+              selectionMode={selectionMode}
               selected={selectedTaskIds.includes(task.id)}
               onToggleSelection={onToggleTaskSelection}
             />

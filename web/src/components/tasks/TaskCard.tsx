@@ -25,6 +25,7 @@ interface TaskCardProps {
   onRetry?: (taskId: string) => void;
   onResolve?: (taskId: string) => void;
   onDelete?: (taskId: string) => void;
+  selectionMode?: boolean;
   selected?: boolean;
   onToggleSelection?: (taskId: string) => void;
 }
@@ -40,6 +41,7 @@ export function TaskCard({
   onRetry,
   onResolve,
   onDelete,
+  selectionMode = false,
   selected = false,
   onToggleSelection
 }: TaskCardProps) {
@@ -50,33 +52,29 @@ export function TaskCard({
   const isPendingScan = pendingScanId === task.id;
   const isPendingRetry = pendingRetryId === task.id;
   const isPendingDelete = pendingDeleteId === task.id;
+  const activateCard = () => {
+    if (selectionMode && onToggleSelection) onToggleSelection(task.id);
+    else onOpen(task.id);
+  };
 
   return (
     <article
-      className={`task-card ${presentation.tone} ${compact ? "task-card--compact" : ""} ${selected ? "is-selected" : ""}`}
-      onClick={() => onOpen(task.id)}
+      className={`task-card ${presentation.tone} ${compact ? "task-card--compact" : ""} ${selectionMode ? "is-selection-mode" : ""} ${selected ? "is-selected" : ""}`}
+      onClick={activateCard}
       onKeyDown={(event) => {
         if (event.key === "Enter" || event.key === " ") {
           event.preventDefault();
-          onOpen(task.id);
+          activateCard();
         }
       }}
       role="button"
       tabIndex={0}
-      aria-label={t("taskUi.card.aria", { task: taskSummary(task), status: presentation.label })}
+      aria-pressed={selectionMode ? selected : undefined}
+      aria-label={selectionMode
+        ? t(selected ? "taskBatch.deselectTask" : "taskBatch.selectTask", { task: taskSummary(task) })
+        : t("taskUi.card.aria", { task: taskSummary(task), status: presentation.label })}
     >
       <div className="task-card__head">
-        {onToggleSelection ? (
-          <input
-            type="checkbox"
-            className="task-card__checkbox"
-            checked={selected}
-            onChange={() => onToggleSelection(task.id)}
-            onClick={(event) => event.stopPropagation()}
-            onKeyDown={(event) => event.stopPropagation()}
-            aria-label={t("taskBatch.selectTask", { task: taskSummary(task) })}
-          />
-        ) : null}
         <div>
           <h3>{taskSummary(task)}</h3>
           <p>{presentation.metaLine}</p>
