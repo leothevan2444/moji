@@ -159,7 +159,8 @@ $task-status-tones: (
   text-align: left;
 }
 
-.task-selection-bar {
+.task-selection-bar,
+.performer-selection-bar {
   position: sticky;
   top: 8px;
   z-index: 8;
@@ -628,6 +629,7 @@ $task-status-tones: (
   --profile-card-height: 166px;
   --profile-card-padding: 10px;
   --profile-avatar-height: calc(var(--profile-card-height) - var(--profile-card-padding) * 2);
+  position: relative;
   display: grid;
   height: var(--profile-card-height);
   padding: var(--profile-card-padding);
@@ -635,6 +637,34 @@ $task-status-tones: (
   gap: 10px;
   align-items: stretch;
   @include interactive-surface;
+
+  &.is-selected {
+    border-color: color-mix(in srgb, var(--accent) 68%, var(--line));
+    box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 18%, transparent), var(--shadow-sm);
+  }
+
+  &__selector {
+    position: absolute;
+    z-index: 3;
+    top: 16px;
+    left: 16px;
+    display: grid;
+    place-items: center;
+    width: 28px;
+    height: 28px;
+    padding: 0;
+    border: 1px solid var(--line-strong);
+    border-radius: 50%;
+    background: color-mix(in srgb, var(--surface-strong) 92%, transparent);
+    color: var(--accent);
+    box-shadow: var(--shadow-sm);
+  }
+
+  &__selector[aria-pressed="true"] {
+    border-color: var(--accent);
+    background: var(--accent);
+    color: #fff;
+  }
 
   &__body {
     min-width: 0;

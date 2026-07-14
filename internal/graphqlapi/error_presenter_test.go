@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/leothevan2444/moji/internal/subscription"
 	"github.com/leothevan2444/moji/internal/taskruntime"
 )
 
@@ -17,6 +18,8 @@ func TestErrorPresenterContract(t *testing.T) {
 		{taskruntime.ErrDuplicateTorrentTask, ErrorDuplicateTorrentTask},
 		{taskruntime.ErrDuplicateLibraryCode, ErrorDuplicateLibraryCode},
 		{taskruntime.ErrTaskCodeRequired, ErrorTaskCodeRequired},
+		{subscription.ErrPerformerBatchEmpty, ErrorPerformerBatchEmpty},
+		{subscription.ErrPerformerBatchTooLarge, ErrorPerformerBatchTooLarge},
 		{fmt.Errorf("tracker is not configured"), ErrorTrackerNotConfigured},
 		{fmt.Errorf("stash client is not configured"), ErrorStashNotConfigured},
 		{fmt.Errorf("resolve qB relative path failed: outside root"), ErrorTransferPathFailed},
@@ -26,9 +29,17 @@ func TestErrorPresenterContract(t *testing.T) {
 	}
 	for _, tt := range tests {
 		got := ErrorPresenter(context.Background(), tt.err)
-		if got.Message != "request failed" { t.Fatalf("message leaked: %q", got.Message) }
-		if got.Extensions["code"] != tt.code { t.Fatalf("code = %v, want %s", got.Extensions["code"], tt.code) }
-		if got.Extensions["correlationId"] == "" { t.Fatal("missing correlation id") }
-		if _, ok := got.Extensions["params"].(map[string]any); !ok { t.Fatal("missing params object") }
+		if got.Message != "request failed" {
+			t.Fatalf("message leaked: %q", got.Message)
+		}
+		if got.Extensions["code"] != tt.code {
+			t.Fatalf("code = %v, want %s", got.Extensions["code"], tt.code)
+		}
+		if got.Extensions["correlationId"] == "" {
+			t.Fatal("missing correlation id")
+		}
+		if _, ok := got.Extensions["params"].(map[string]any); !ok {
+			t.Fatal("missing params object")
+		}
 	}
 }

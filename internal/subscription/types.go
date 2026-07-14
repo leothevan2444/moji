@@ -46,6 +46,47 @@ type SubscribedPerformer struct {
 	PendingReleaseCount, ProcessedReleaseCount int
 	RecentReleases                             []RecordedRelease
 }
+
+type PerformerBatchStatus string
+
+const (
+	PerformerBatchStatusSucceeded PerformerBatchStatus = "SUCCEEDED"
+	PerformerBatchStatusSkipped   PerformerBatchStatus = "SKIPPED"
+	PerformerBatchStatusFailed    PerformerBatchStatus = "FAILED"
+)
+
+const (
+	PerformerBatchReasonSubscribed        = "SUBSCRIBED"
+	PerformerBatchReasonUnsubscribed      = "UNSUBSCRIBED"
+	PerformerBatchReasonRefreshed         = "REFRESHED"
+	PerformerBatchReasonAlreadySubscribed = "ALREADY_SUBSCRIBED"
+	PerformerBatchReasonNotSubscribed     = "NOT_SUBSCRIBED"
+	PerformerBatchReasonPerformerNotFound = "PERFORMER_NOT_FOUND"
+	PerformerBatchReasonStashUpdateFailed = "STASH_UPDATE_FAILED"
+	PerformerBatchReasonRefreshFailed     = "REFRESH_FAILED"
+	PerformerBatchReasonCancelled         = "CANCELLED"
+)
+
+type PerformerBatchResult struct {
+	PerformerID string
+	Status      PerformerBatchStatus
+	ReasonCode  string
+	Performer   *performer.Performer
+	State       *SubscribedPerformer
+}
+
+type PerformerBatchSummary struct {
+	RequestedCount int
+	SucceededCount int
+	SkippedCount   int
+	FailedCount    int
+}
+
+type PerformerBatchPayload struct {
+	BatchID string
+	Summary PerformerBatchSummary
+	Results []PerformerBatchResult
+}
 type ReleaseClassification string
 
 const (

@@ -5,11 +5,14 @@ import { faBookmark } from "@fortawesome/free-solid-svg-icons/faBookmark";
 import { faCheck } from "@fortawesome/free-solid-svg-icons/faCheck";
 import { faFilm } from "@fortawesome/free-solid-svg-icons/faFilm";
 import { faHeart } from "@fortawesome/free-solid-svg-icons/faHeart";
+import { faListCheck } from "@fortawesome/free-solid-svg-icons/faListCheck";
 import { faPlus } from "@fortawesome/free-solid-svg-icons/faPlus";
 import { faPlayCircle } from "@fortawesome/free-solid-svg-icons/faPlayCircle";
 import { faRotate } from "@fortawesome/free-solid-svg-icons/faRotate";
 import { faTags } from "@fortawesome/free-solid-svg-icons/faTags";
 import { faUsers } from "@fortawesome/free-solid-svg-icons/faUsers";
+import { faArrowsRotate } from "@fortawesome/free-solid-svg-icons/faArrowsRotate";
+import { faXmark } from "@fortawesome/free-solid-svg-icons/faXmark";
 import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { PerformerDetailView, PerformerListView } from "../components/performers/PerformerViews";
@@ -20,27 +23,27 @@ import {
   formatDateTime,
   formatRelative,
   formatRelativeDate,
+  performerBatchEligibility,
   performerImageURL,
   performerInitials,
   stashPerformerURL
 } from "../utils";
 import {
   LibraryFilter,
+  type PerformerWorkspaceQuery,
   SceneSourceFilter,
   TaskStage,
   TaskStageStatus,
   type StashPerformerDetailQuery,
   type StashPerformerScenesQuery,
-  type StashPerformersQuery,
-  type SubscribedPerformersQuery
 } from "../graphql/generated/graphql";
 
-type StashPerformerEntry = StashPerformersQuery["stashPerformers"]["items"][number];
-type StashPerformerPage = StashPerformersQuery["stashPerformers"];
+type StashPerformerEntry = PerformerWorkspaceQuery["performerWorkspace"]["performers"]["items"][number];
+type StashPerformerPage = PerformerWorkspaceQuery["performerWorkspace"]["performers"];
 type StashPerformerDetail = StashPerformerDetailQuery["stashPerformerDetail"];
 type StashPerformerScenePage = StashPerformerScenesQuery["stashPerformerScenes"];
 type StashPerformerSceneEntry = StashPerformerScenePage["items"][number];
-type SubscribedPerformerEntry = SubscribedPerformersQuery["subscribedPerformers"][number];
+type SubscribedPerformerEntry = PerformerWorkspaceQuery["performerWorkspace"]["subscribedPerformers"][number];
 function performerSceneTaskLabel(task: NonNullable<StashPerformerSceneEntry["mojiTask"]>) {
   if (task.stage === TaskStage.Downloading && task.progress > 0) {
     return i18n.t("performerUi.downloadProgress", { progress: Math.round(task.progress * 100) });
@@ -77,6 +80,8 @@ interface PerformersPageProps {
   fetchingPerformerScenes: boolean;
   fetchingSubscription: boolean;
   refreshingSubscriptionNow: boolean;
+  refreshingList: boolean;
+  performerBatchPending: boolean;
   queueingPerformerScenes: boolean;
   subscriptionSearch: string;
   subscriptionPageSize: number;
@@ -86,6 +91,9 @@ interface PerformersPageProps {
   performerSceneLibraryFilter: LibraryFilter;
   performerScenePageSize: number;
   selectedSceneKeys: string[];
+  selectedPerformerIds: string[];
+  performerSelectionMode: boolean;
+  lastRefreshedAt: string | null;
   pendingSceneKeys: string[];
   pendingSubscriptionID: string | null;
   subscriptionError: Error | null;
@@ -96,6 +104,13 @@ interface PerformersPageProps {
   onPageSizeChange: (size: number) => void;
   onReload: () => void;
   onRefreshAll: () => void;
+  onTogglePerformerSelectionMode: () => void;
+  onTogglePerformerSelection: (performerId: string) => void;
+  onSelectVisiblePerformers: (performerIds: string[]) => void;
+  onClearPerformerSelection: () => void;
+  onBatchSubscribePerformers: (performerIds: string[]) => void;
+  onBatchUnsubscribePerformers: (performerIds: string[]) => void;
+  onBatchRefreshPerformers: (performerIds: string[]) => void;
   onToggle: (performer: StashPerformerEntry) => void;
   onRefreshOne: (performer: StashPerformerEntry) => void;
   onPrevPage: () => void;
@@ -129,6 +144,8 @@ export function PerformersPage({
   fetchingPerformerScenes,
   fetchingSubscription,
   refreshingSubscriptionNow,
+  refreshingList,
+  performerBatchPending,
   queueingPerformerScenes,
   subscriptionSearch,
   subscriptionPageSize,
@@ -138,6 +155,9 @@ export function PerformersPage({
   performerSceneLibraryFilter,
   performerScenePageSize,
   selectedSceneKeys,
+  selectedPerformerIds,
+  performerSelectionMode,
+  lastRefreshedAt,
   pendingSceneKeys,
   pendingSubscriptionID,
   subscriptionError,
@@ -148,6 +168,13 @@ export function PerformersPage({
   onPageSizeChange,
   onReload,
   onRefreshAll,
+  onTogglePerformerSelectionMode,
+  onTogglePerformerSelection,
+  onSelectVisiblePerformers,
+  onClearPerformerSelection,
+  onBatchSubscribePerformers,
+  onBatchUnsubscribePerformers,
+  onBatchRefreshPerformers,
   onToggle,
   onRefreshOne,
   onPrevPage,
@@ -173,6 +200,8 @@ export function PerformersPage({
   }, [subscribedPerformers]);
 
   const performerSubscription = performerDetail ? (subscribedByID.get(performerDetail.performer.id) ?? null) : null;
+  const { subscribedIDs: selectedSubscribedIds, unsubscribedIDs: selectedUnsubscribedIds } = performerBatchEligibility(selectedPerformerIds, subscribedPerformers.map((item) => item.performer.id));
+  const hiddenSelectedPerformerCount = selectedPerformerIds.filter((id) => !stashPerformers.some((performer) => performer.id === id)).length;
   const currentPageKeys = performerScenes
     .filter((scene) => !scene.inLibrary && !scene.mojiTask && !pendingSceneKeys.includes(scene.key))
     .map((scene) => scene.key);
@@ -584,8 +613,18 @@ export function PerformersPage({
             </option>
           ))}
         </select>
-        <button type="button" className="ghost-button" onClick={onReload}>
-          {t("performerUi.refresh")}
+        <button
+          type="button"
+          className={`ghost-button task-icon-button task-icon-button--bordered${performerSelectionMode ? " is-active" : ""}`}
+          onClick={onTogglePerformerSelectionMode}
+          aria-pressed={performerSelectionMode}
+          aria-label={t(performerSelectionMode ? "performerBatch.exitMultiSelect" : "performerBatch.multiSelect")}
+          title={t(performerSelectionMode ? "performerBatch.exitMultiSelect" : "performerBatch.multiSelect")}
+        >
+          <FontAwesomeIcon icon={faListCheck} />
+        </button>
+        <button type="button" className="ghost-button" onClick={onReload} disabled={refreshingList} title={t("performerUi.reloadHint")}>
+          <FontAwesomeIcon icon={faRotate} className={refreshingList ? "is-spinning" : undefined} /> {t("performerUi.reloadFromStash")}
         </button>
         <button
           type="button"
@@ -593,9 +632,21 @@ export function PerformersPage({
           disabled={refreshingSubscriptionNow || subscribedPerformers.length === 0}
           onClick={onRefreshAll}
         >
-          {refreshingSubscriptionNow ? t("performerUi.checking") : t("performerUi.checkAll")}
+          <FontAwesomeIcon icon={faArrowsRotate} className={refreshingSubscriptionNow ? "is-spinning" : undefined} /> {refreshingSubscriptionNow ? t("performerUi.checking") : t("performerUi.checkAllSubscribed")}
         </button>
       </div>
+
+      {lastRefreshedAt ? <p className="task-sync-meta">{t("performerUi.updatedAt", { time: formatDateTime(lastRefreshedAt) })}</p> : null}
+
+      {performerSelectionMode ? <div className="task-selection-bar performer-selection-bar" role="region" aria-label={t("performerBatch.selectionActions")}>
+        <strong>{t("performerBatch.selected", { count: selectedPerformerIds.length })}</strong>
+        {hiddenSelectedPerformerCount ? <span>{t("performerBatch.hidden", { count: hiddenSelectedPerformerCount })}</span> : null}
+        <button type="button" className="ghost-button" disabled={performerBatchPending || stashPerformers.length === 0} onClick={() => onSelectVisiblePerformers(stashPerformers.map((performer) => performer.id))}>{t("performerBatch.selectVisible", { count: stashPerformers.length })}</button>
+        <button type="button" className="ghost-button" disabled={performerBatchPending || selectedUnsubscribedIds.length === 0} onClick={() => onBatchSubscribePerformers(selectedUnsubscribedIds)}><FontAwesomeIcon icon={faBookmark} /> {t("performerBatch.subscribe", { count: selectedUnsubscribedIds.length })}</button>
+        <button type="button" className="ghost-button" disabled={performerBatchPending || selectedSubscribedIds.length === 0} onClick={() => onBatchRefreshPerformers(selectedSubscribedIds)}><FontAwesomeIcon icon={faArrowsRotate} /> {t("performerBatch.refresh", { count: selectedSubscribedIds.length })}</button>
+        <button type="button" className="ghost-button task-ops__button--danger" disabled={performerBatchPending || selectedSubscribedIds.length === 0} onClick={() => onBatchUnsubscribePerformers(selectedSubscribedIds)}><FontAwesomeIcon icon={faBookmark} /> {t("performerBatch.unsubscribe", { count: selectedSubscribedIds.length })}</button>
+        <button type="button" className="ghost-button" disabled={performerBatchPending || selectedPerformerIds.length === 0} onClick={onClearPerformerSelection}><FontAwesomeIcon icon={faXmark} /> {t("performerBatch.clear")}</button>
+      </div> : null}
 
       {stashPerformerPage && stashPerformerPage.totalPages > 1 ? (
         <div className="pagination-bar">
@@ -632,10 +683,21 @@ export function PerformersPage({
           return (
             <article
               key={performer.id}
-              className="profile-card"
+              className={`profile-card${performerSelectionMode ? " profile-card--selectable" : ""}${selectedPerformerIds.includes(performer.id) ? " is-selected" : ""}`}
               style={{ animationDelay: `${index * 80}ms`, cursor: "pointer" }}
-              onClick={() => onOpenPerformer(performer.id)}
+              onClick={() => performerSelectionMode ? onTogglePerformerSelection(performer.id) : onOpenPerformer(performer.id)}
+              onKeyDown={(event) => {
+                if (event.key !== "Enter" && event.key !== " ") return;
+                event.preventDefault();
+                if (performerSelectionMode) onTogglePerformerSelection(performer.id);
+                else onOpenPerformer(performer.id);
+              }}
+              role="button"
+              tabIndex={0}
             >
+              {performerSelectionMode ? <button type="button" className="profile-card__selector" aria-pressed={selectedPerformerIds.includes(performer.id)} aria-label={t(selectedPerformerIds.includes(performer.id) ? "performerBatch.deselectName" : "performerBatch.selectName", { name: performer.name })} onClick={(event) => { event.stopPropagation(); onTogglePerformerSelection(performer.id); }}>
+                {selectedPerformerIds.includes(performer.id) ? <FontAwesomeIcon icon={faCheck} /> : null}
+              </button> : null}
               {imageURL ? (
                 <div className="avatar avatar--frame">
                   <span className="avatar__fallback" aria-hidden="true">{performerInitials(performer.name)}</span>

@@ -1,13 +1,17 @@
-import { useMutation, useQuery } from "urql";
-import { RefreshSubscribedPerformerDocument, RefreshSubscriptionsNowDocument, SubscribePerformerDocument, SubscribedPerformersDocument, UnsubscribePerformerDocument, type RefreshSubscribedPerformerMutation, type RefreshSubscribedPerformerMutationVariables, type RefreshSubscriptionsNowMutation, type RefreshSubscriptionsNowMutationVariables, type SubscribePerformerMutation, type SubscribePerformerMutationVariables, type SubscribedPerformersQuery, type UnsubscribePerformerMutation, type UnsubscribePerformerMutationVariables } from "../graphql/generated/graphql";
+import { useMutation } from "urql";
+import { RefreshSubscribedPerformerDocument, RefreshSubscribedPerformersDocument, RefreshSubscriptionsNowDocument, SubscribePerformerDocument, SubscribePerformersDocument, UnsubscribePerformerDocument, UnsubscribePerformersDocument, type PerformerWorkspaceQuery, type RefreshSubscribedPerformerMutation, type RefreshSubscribedPerformerMutationVariables, type RefreshSubscribedPerformersMutation, type RefreshSubscribedPerformersMutationVariables, type RefreshSubscriptionsNowMutation, type RefreshSubscriptionsNowMutationVariables, type SubscribePerformerMutation, type SubscribePerformerMutationVariables, type SubscribePerformersMutation, type SubscribePerformersMutationVariables, type UnsubscribePerformerMutation, type UnsubscribePerformerMutationVariables, type UnsubscribePerformersMutation, type UnsubscribePerformersMutationVariables } from "../graphql/generated/graphql";
 import { usePerformerSubscriptionEvents } from "./usePerformerSubscriptionEvents";
 
-export function useSubscriptions(enabled: boolean) {
-  const [{ data, fetching: fetchingSubscription, error: subscriptionError }, refreshSubscription] = useQuery<SubscribedPerformersQuery, Record<string, never>>({ query: SubscribedPerformersDocument, requestPolicy: "cache-and-network", pause: !enabled });
-  usePerformerSubscriptionEvents({ enabled, onRefresh: () => refreshSubscription({ requestPolicy: "network-only" }) });
+type SubscribedPerformer = PerformerWorkspaceQuery["performerWorkspace"]["subscribedPerformers"][number];
+
+export function useSubscriptions(enabled: boolean, subscribedPerformers: SubscribedPerformer[], refreshSubscription: () => void | Promise<unknown>) {
+  usePerformerSubscriptionEvents({ enabled, onRefresh: refreshSubscription });
   const [, subscribePerformer] = useMutation<SubscribePerformerMutation, SubscribePerformerMutationVariables>(SubscribePerformerDocument);
   const [, unsubscribePerformer] = useMutation<UnsubscribePerformerMutation, UnsubscribePerformerMutationVariables>(UnsubscribePerformerDocument);
   const [, refreshSubscribedPerformer] = useMutation<RefreshSubscribedPerformerMutation, RefreshSubscribedPerformerMutationVariables>(RefreshSubscribedPerformerDocument);
   const [{ fetching: refreshingSubscriptionNow }, refreshSubscriptionsNow] = useMutation<RefreshSubscriptionsNowMutation, RefreshSubscriptionsNowMutationVariables>(RefreshSubscriptionsNowDocument);
-  return { subscribedPerformers: data?.subscribedPerformers ?? [], fetchingSubscription, subscriptionError, refreshSubscription, subscribePerformer, unsubscribePerformer, refreshSubscribedPerformer, refreshingSubscriptionNow, refreshSubscriptionsNow };
+  const [{ fetching: subscribingPerformers }, subscribePerformers] = useMutation<SubscribePerformersMutation, SubscribePerformersMutationVariables>(SubscribePerformersDocument);
+  const [{ fetching: unsubscribingPerformers }, unsubscribePerformers] = useMutation<UnsubscribePerformersMutation, UnsubscribePerformersMutationVariables>(UnsubscribePerformersDocument);
+  const [{ fetching: refreshingSubscribedPerformers }, refreshSubscribedPerformers] = useMutation<RefreshSubscribedPerformersMutation, RefreshSubscribedPerformersMutationVariables>(RefreshSubscribedPerformersDocument);
+  return { subscribedPerformers, fetchingSubscription: false, subscriptionError: null, refreshSubscription, subscribePerformer, unsubscribePerformer, refreshSubscribedPerformer, refreshingSubscriptionNow, refreshSubscriptionsNow, subscribingPerformers, subscribePerformers, unsubscribingPerformers, unsubscribePerformers, refreshingSubscribedPerformers, refreshSubscribedPerformers };
 }

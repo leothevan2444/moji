@@ -18,6 +18,50 @@ query StashPerformers($search: String, $page: Int, $pageSize: Int) {
   }
 }
 
+query PerformerWorkspace($search: String, $page: Int, $pageSize: Int) {
+  performerWorkspace(search: $search, page: $page, pageSize: $pageSize) {
+    performers {
+      items {
+        id
+        name
+        aliasList
+        favorite
+        imagePath
+        sceneCount
+        subscribed
+      }
+      page
+      pageSize
+      totalCount
+      totalPages
+      hasPrevPage
+      hasNextPage
+    }
+    subscribedPerformers {
+      performer {
+        id
+        name
+        aliasList
+        favorite
+        imagePath
+        sceneCount
+        subscribed
+      }
+      lastCheckedAt
+      lastError
+      pendingReleaseCount
+      processedReleaseCount
+      recentReleases {
+        key
+        title
+        code
+        date
+        seenAt
+      }
+    }
+  }
+}
+
 query StashPerformerDetail($id: ID!) {
   stashPerformerDetail(id: $id) {
     performer {
@@ -231,6 +275,70 @@ mutation RefreshSubscriptionsNow {
       code
       date
       seenAt
+    }
+  }
+}
+
+mutation SubscribePerformers($ids: [ID!]!) {
+  subscribePerformers(ids: $ids) {
+    ...PerformerBatchFields
+  }
+}
+
+mutation UnsubscribePerformers($ids: [ID!]!) {
+  unsubscribePerformers(ids: $ids) {
+    ...PerformerBatchFields
+  }
+}
+
+mutation RefreshSubscribedPerformers($ids: [ID!]!) {
+  refreshSubscribedPerformers(ids: $ids) {
+    ...PerformerBatchFields
+  }
+}
+
+fragment PerformerBatchFields on PerformerBatchPayload {
+  batchId
+  summary {
+    requestedCount
+    succeededCount
+    skippedCount
+    failedCount
+  }
+  results {
+    performerId
+    status
+    reasonCode
+    performer {
+      id
+      name
+      aliasList
+      favorite
+      imagePath
+      sceneCount
+      subscribed
+    }
+    state {
+      performer {
+        id
+        name
+        aliasList
+        favorite
+        imagePath
+        sceneCount
+        subscribed
+      }
+      lastCheckedAt
+      lastError
+      pendingReleaseCount
+      processedReleaseCount
+      recentReleases {
+        key
+        title
+        code
+        date
+        seenAt
+      }
     }
   }
 }

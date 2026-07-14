@@ -329,10 +329,14 @@ type DiscoveryService interface {
 
 type SubscriptionService interface {
 	ListSubscribedPerformers(ctx context.Context) ([]subscription.SubscribedPerformer, error)
+	BuildSubscribedPerformers(ctx context.Context, performers []performer.Performer) ([]subscription.SubscribedPerformer, error)
 	SubscribePerformer(ctx context.Context, performerID string) (subscription.SubscribedPerformer, error)
 	UnsubscribePerformer(ctx context.Context, performerID string) error
 	RefreshSubscribedPerformer(ctx context.Context, performerID string) (subscription.SubscribedPerformer, error)
 	RefreshAll(ctx context.Context) ([]subscription.SubscribedPerformer, error)
+	SubscribePerformers(ctx context.Context, ids []string) (subscription.PerformerBatchPayload, error)
+	UnsubscribePerformers(ctx context.Context, ids []string) (subscription.PerformerBatchPayload, error)
+	RefreshSubscribedPerformers(ctx context.Context, ids []string) (subscription.PerformerBatchPayload, error)
 }
 
 type StashBoxService interface {

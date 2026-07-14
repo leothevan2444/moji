@@ -206,6 +206,22 @@ func subscriptionPerformerToModel(item subscription.SubscribedPerformer) *model.
 	}
 }
 
+func performerBatchPayloadToModel(payload subscription.PerformerBatchPayload) *model.PerformerBatchPayload {
+	results := make([]*model.PerformerBatchResult, 0, len(payload.Results))
+	for _, item := range payload.Results {
+		var performerModel *model.StashPerformer
+		if item.Performer != nil {
+			performerModel = stashPerformerToModel(*item.Performer)
+		}
+		var stateModel *model.SubscribedPerformer
+		if item.State != nil {
+			stateModel = subscriptionPerformerToModel(*item.State)
+		}
+		results = append(results, &model.PerformerBatchResult{PerformerID: item.PerformerID, Status: model.PerformerBatchStatus(item.Status), ReasonCode: item.ReasonCode, Performer: performerModel, State: stateModel})
+	}
+	return &model.PerformerBatchPayload{BatchID: payload.BatchID, Summary: &model.PerformerBatchSummary{RequestedCount: payload.Summary.RequestedCount, SucceededCount: payload.Summary.SucceededCount, SkippedCount: payload.Summary.SkippedCount, FailedCount: payload.Summary.FailedCount}, Results: results}
+}
+
 func subscriptionReleaseToModel(release subscription.RecordedRelease) *model.SubscriptionRelease {
 	return &model.SubscriptionRelease{
 		Key:            release.Key,

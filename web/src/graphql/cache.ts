@@ -26,6 +26,13 @@ function existingLinks(cache: Cache, fieldName: string): string[] | null {
   return Array.isArray(value) ? value.filter((item): item is string => typeof item === "string") : null;
 }
 
+const subscriptionParents = ["Query", "PerformerWorkspaceSnapshot:singleton"];
+
+function subscriptionLinks(cache: Cache, parent: string): string[] | null {
+  const value = cache.resolve(parent, "subscribedPerformers");
+  return Array.isArray(value) ? value.filter((item): item is string => typeof item === "string") : null;
+}
+
 function linkTask(cache: Cache, task: Entity | null | undefined, prepend = false) {
   if (!task) return;
   const taskKey = cache.keyOfEntity(task);
@@ -69,24 +76,36 @@ function subscribedPerformerID(cache: Cache, link: string): string | null {
 }
 
 function replaceSubscribedPerformers(cache: Cache, performers: Entity[]) {
-  const current = existingLinks(cache, "subscribedPerformers");
-  if (!current) return;
   const links = performers.map((item) => cache.keyOfEntity(item)).filter((key): key is string => Boolean(key));
-  cache.link("Query", "subscribedPerformers", links);
+  for (const parent of subscriptionParents) {
+    if (subscriptionLinks(cache, parent)) cache.link(parent, "subscribedPerformers", links);
+  }
 }
 
 function upsertSubscribedPerformer(cache: Cache, performer: Entity | null | undefined) {
   if (!performer) return;
   const key = cache.keyOfEntity(performer);
-  const links = existingLinks(cache, "subscribedPerformers");
-  if (!key || !links) return;
-  cache.link("Query", "subscribedPerformers", [key, ...links.filter((item) => item !== key)]);
+  if (!key) return;
+  for (const parent of subscriptionParents) {
+    const links = subscriptionLinks(cache, parent);
+    if (links) cache.link(parent, "subscribedPerformers", [key, ...links.filter((item) => item !== key)]);
+  }
 }
 
 function removeSubscribedPerformer(cache: Cache, id: string) {
-  const links = existingLinks(cache, "subscribedPerformers");
-  if (links) cache.link("Query", "subscribedPerformers", links.filter((link) => subscribedPerformerID(cache, link) !== id));
+  for (const parent of subscriptionParents) {
+    const links = subscriptionLinks(cache, parent);
+    if (links) cache.link(parent, "subscribedPerformers", links.filter((link) => subscribedPerformerID(cache, link) !== id));
+  }
   cache.writeFragment(PERFORMER_SUBSCRIBED_FRAGMENT, { __typename: "StashPerformer", id, subscribed: false });
+}
+
+function applyPerformerBatch(cache: Cache, payload: any, action: "subscribe" | "unsubscribe" | "refresh") {
+  for (const item of payload?.results ?? []) {
+    if (item?.status !== "SUCCEEDED") continue;
+    if (action === "unsubscribe") removeSubscribedPerformer(cache, item.performerId);
+    else upsertSubscribedPerformer(cache, item.state);
+  }
 }
 
 function linkQueuedSceneTasks(cache: Cache, payload: any) {
@@ -132,6 +151,7 @@ export const graphcacheKeys: KeyingConfig = {
   StashBoxStatus: singleton,
   ImageCacheStatus: singleton,
   DashboardStats: singleton,
+  PerformerWorkspaceSnapshot: singleton,
   StashPerformerScene: (data) => typeof data.key === "string" ? data.key : null,
   DiscoveredScene: (data) => typeof data.key === "string" ? data.key : null,
   SubscriptionRelease: (data) => typeof data.key === "string" ? data.key : null,
@@ -189,6 +209,9 @@ export const graphcacheUpdates: UpdatesConfig = {
     unsubscribePerformer(_result: any, args: any, cache) { removeSubscribedPerformer(cache, args.stashPerformerID); },
     refreshSubscribedPerformer(result: any, _args, cache) { upsertSubscribedPerformer(cache, result.refreshSubscribedPerformer); },
     refreshSubscriptionsNow(result: any, _args, cache) { replaceSubscribedPerformers(cache, result.refreshSubscriptionsNow ?? []); },
+    subscribePerformers(result: any, _args, cache) { applyPerformerBatch(cache, result.subscribePerformers, "subscribe"); },
+    unsubscribePerformers(result: any, _args, cache) { applyPerformerBatch(cache, result.unsubscribePerformers, "unsubscribe"); },
+    refreshSubscribedPerformers(result: any, _args, cache) { applyPerformerBatch(cache, result.refreshSubscribedPerformers, "refresh"); },
     queuePerformerScenes(result: any, _args, cache) { linkQueuedSceneTasks(cache, result.queuePerformerScenes); }
   }
 };

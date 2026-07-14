@@ -45,3 +45,15 @@ export function stashPerformerURL(performerID: string, stashURL?: string | null)
     return null;
   }
 }
+
+export function mergePerformerSelection(current: string[], added: string[], limit = 100) {
+  return [...new Set([...current, ...added])].slice(0, limit);
+}
+
+export function performerBatchEligibility(selectedIDs: string[], subscribedIDs: string[]) {
+  const subscribed = new Set(subscribedIDs);
+  return {
+    subscribedIDs: selectedIDs.filter((id) => subscribed.has(id)),
+    unsubscribedIDs: selectedIDs.filter((id) => !subscribed.has(id))
+  };
+}

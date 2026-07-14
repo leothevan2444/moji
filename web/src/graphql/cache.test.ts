@@ -79,6 +79,19 @@ describe("graphcache configuration", () => {
     expect(fields.get("Query.subscribedPerformers")).toEqual([]);
   });
 
+  it("updates performer workspace membership for batch mutations", () => {
+    const parent = "PerformerWorkspaceSnapshot:singleton.subscribedPerformers";
+    const { cache, fields } = fakeCache({ [parent]: [] });
+    const state = { __typename: "SubscribedPerformer", performer: { id: "p1" } };
+    updates.Mutation.subscribePerformers({ subscribePerformers: { results: [{ status: "SUCCEEDED", performerId: "p1", state }] } }, {}, cache);
+    expect(fields.get(parent)).toEqual(["SubscribedPerformer:p1"]);
+
+    fields.set("SubscribedPerformer:p1.performer", "StashPerformer:p1");
+    fields.set("StashPerformer:p1.id", "p1");
+    updates.Mutation.unsubscribePerformers({ unsubscribePerformers: { results: [{ status: "SUCCEEDED", performerId: "p1" }] } }, {}, cache);
+    expect(fields.get(parent)).toEqual([]);
+  });
+
   it("links queued scene results to normalized tasks", () => {
     const { cache, links } = fakeCache({ "Query.tasks": [] });
     updates.Mutation.queuePerformerScenes({

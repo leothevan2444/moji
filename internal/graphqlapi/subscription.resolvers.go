@@ -68,6 +68,42 @@ func (r *mutationResolver) RefreshSubscriptionsNow(ctx context.Context) ([]*mode
 	return out, nil
 }
 
+// SubscribePerformers is the resolver for the subscribePerformers field.
+func (r *mutationResolver) SubscribePerformers(ctx context.Context, ids []string) (*model.PerformerBatchPayload, error) {
+	if r.PerformerSubscription == nil {
+		return nil, errors.New("subscription service is not configured")
+	}
+	payload, err := r.PerformerSubscription.SubscribePerformers(ctx, ids)
+	if err != nil {
+		return nil, err
+	}
+	return performerBatchPayloadToModel(payload), nil
+}
+
+// UnsubscribePerformers is the resolver for the unsubscribePerformers field.
+func (r *mutationResolver) UnsubscribePerformers(ctx context.Context, ids []string) (*model.PerformerBatchPayload, error) {
+	if r.PerformerSubscription == nil {
+		return nil, errors.New("subscription service is not configured")
+	}
+	payload, err := r.PerformerSubscription.UnsubscribePerformers(ctx, ids)
+	if err != nil {
+		return nil, err
+	}
+	return performerBatchPayloadToModel(payload), nil
+}
+
+// RefreshSubscribedPerformers is the resolver for the refreshSubscribedPerformers field.
+func (r *mutationResolver) RefreshSubscribedPerformers(ctx context.Context, ids []string) (*model.PerformerBatchPayload, error) {
+	if r.PerformerSubscription == nil {
+		return nil, errors.New("subscription service is not configured")
+	}
+	payload, err := r.PerformerSubscription.RefreshSubscribedPerformers(ctx, ids)
+	if err != nil {
+		return nil, err
+	}
+	return performerBatchPayloadToModel(payload), nil
+}
+
 // QueuePerformerScenes is the resolver for the queuePerformerScenes field.
 func (r *mutationResolver) QueuePerformerScenes(ctx context.Context, input model.QueuePerformerScenesInput) (*model.QueuePerformerScenesPayload, error) {
 	if r.Performer == nil {
@@ -173,6 +209,32 @@ func (r *queryResolver) StashPerformers(ctx context.Context, search *string, pag
 		HasPrevPage: currentPage > 1 && totalPages > 0,
 		HasNextPage: currentPage < totalPages,
 	}), nil
+}
+
+// PerformerWorkspace is the resolver for the performerWorkspace field.
+func (r *queryResolver) PerformerWorkspace(ctx context.Context, search *string, page *int, pageSize *int) (*model.PerformerWorkspaceSnapshot, error) {
+	if r.Performer == nil {
+		return &model.PerformerWorkspaceSnapshot{Performers: stashPerformerPageToModel(buildStashPerformerPage(nil, "", page, pageSize)), SubscribedPerformers: []*model.SubscribedPerformer{}}, nil
+	}
+	items, err := r.Performer.List(ctx, "")
+	if err != nil {
+		return nil, err
+	}
+	subscribed := make([]*model.SubscribedPerformer, 0)
+	if r.PerformerSubscription != nil {
+		states, stateErr := r.PerformerSubscription.BuildSubscribedPerformers(ctx, items)
+		if stateErr != nil {
+			return nil, stateErr
+		}
+		for _, state := range states {
+			subscribed = append(subscribed, subscriptionPerformerToModel(state))
+		}
+	}
+	needle := ""
+	if search != nil {
+		needle = *search
+	}
+	return &model.PerformerWorkspaceSnapshot{Performers: stashPerformerPageToModel(buildStashPerformerPage(items, needle, page, pageSize)), SubscribedPerformers: subscribed}, nil
 }
 
 // StashPerformerDetail is the resolver for the stashPerformerDetail field.

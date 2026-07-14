@@ -239,6 +239,27 @@ type MatchedStashBox struct {
 type Mutation struct {
 }
 
+type PerformerBatchPayload struct {
+	BatchID string                  `json:"batchId"`
+	Summary *PerformerBatchSummary  `json:"summary"`
+	Results []*PerformerBatchResult `json:"results"`
+}
+
+type PerformerBatchResult struct {
+	PerformerID string               `json:"performerId"`
+	Status      PerformerBatchStatus `json:"status"`
+	ReasonCode  string               `json:"reasonCode"`
+	Performer   *StashPerformer      `json:"performer,omitempty"`
+	State       *SubscribedPerformer `json:"state,omitempty"`
+}
+
+type PerformerBatchSummary struct {
+	RequestedCount int `json:"requestedCount"`
+	SucceededCount int `json:"succeededCount"`
+	SkippedCount   int `json:"skippedCount"`
+	FailedCount    int `json:"failedCount"`
+}
+
 type PerformerScenePerson struct {
 	ID   string `json:"id"`
 	Name string `json:"name"`
@@ -263,6 +284,11 @@ type PerformerSubscriptionEvent struct {
 	Type        PerformerSubscriptionEventType `json:"type"`
 	PerformerID string                         `json:"performerId"`
 	State       *SubscribedPerformer           `json:"state,omitempty"`
+}
+
+type PerformerWorkspaceSnapshot struct {
+	Performers           *StashPerformerConnection `json:"performers"`
+	SubscribedPerformers []*SubscribedPerformer    `json:"subscribedPerformers"`
 }
 
 type PreviewJackettSelectionCandidateInput struct {
@@ -1150,6 +1176,63 @@ func (e *LogLevel) UnmarshalJSON(b []byte) error {
 }
 
 func (e LogLevel) MarshalJSON() ([]byte, error) {
+	var buf bytes.Buffer
+	e.MarshalGQL(&buf)
+	return buf.Bytes(), nil
+}
+
+type PerformerBatchStatus string
+
+const (
+	PerformerBatchStatusSucceeded PerformerBatchStatus = "SUCCEEDED"
+	PerformerBatchStatusSkipped   PerformerBatchStatus = "SKIPPED"
+	PerformerBatchStatusFailed    PerformerBatchStatus = "FAILED"
+)
+
+var AllPerformerBatchStatus = []PerformerBatchStatus{
+	PerformerBatchStatusSucceeded,
+	PerformerBatchStatusSkipped,
+	PerformerBatchStatusFailed,
+}
+
+func (e PerformerBatchStatus) IsValid() bool {
+	switch e {
+	case PerformerBatchStatusSucceeded, PerformerBatchStatusSkipped, PerformerBatchStatusFailed:
+		return true
+	}
+	return false
+}
+
+func (e PerformerBatchStatus) String() string {
+	return string(e)
+}
+
+func (e *PerformerBatchStatus) UnmarshalGQL(v any) error {
+	str, ok := v.(string)
+	if !ok {
+		return fmt.Errorf("enums must be strings")
+	}
+
+	*e = PerformerBatchStatus(str)
+	if !e.IsValid() {
+		return fmt.Errorf("%s is not a valid PerformerBatchStatus", str)
+	}
+	return nil
+}
+
+func (e PerformerBatchStatus) MarshalGQL(w io.Writer) {
+	fmt.Fprint(w, strconv.Quote(e.String()))
+}
+
+func (e *PerformerBatchStatus) UnmarshalJSON(b []byte) error {
+	s, err := strconv.Unquote(string(b))
+	if err != nil {
+		return err
+	}
+	return e.UnmarshalGQL(s)
+}
+
+func (e PerformerBatchStatus) MarshalJSON() ([]byte, error) {
 	var buf bytes.Buffer
 	e.MarshalGQL(&buf)
 	return buf.Bytes(), nil

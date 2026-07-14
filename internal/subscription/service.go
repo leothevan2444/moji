@@ -44,6 +44,8 @@ type Service struct {
 
 	policyMu      sync.RWMutex
 	releasePolicy ReleasePolicyConfig
+	operationMu   sync.Mutex
+	operations    map[string]*performerOperationLock
 }
 
 func (s *Service) SetImageProxy(proxy *imagecache.Service, stashConfig func() (string, string)) {
@@ -114,6 +116,7 @@ func NewService(stash StashClient, source *metadata.Service, taskCreator TaskCre
 		customFieldKey: DefaultCustomFieldKey,
 		now:            time.Now,
 		releasePolicy:  DefaultReleasePolicyConfig(),
+		operations:     make(map[string]*performerOperationLock),
 	}, nil
 }
 
@@ -144,10 +147,18 @@ func (s *Service) ListSubscribedPerformers(ctx context.Context) ([]SubscribedPer
 		return nil, err
 	}
 
-	out := make([]SubscribedPerformer, 0)
+	items := make([]performer.Performer, 0, len(performers))
 	for _, performer := range performers {
 		item := performerFromStash(performer, s.customFieldKey)
 		item.ImagePath = s.proxyStashImage(ctx, item.ImagePath)
+		items = append(items, item)
+	}
+	return s.BuildSubscribedPerformers(ctx, items)
+}
+
+func (s *Service) BuildSubscribedPerformers(ctx context.Context, performers []performer.Performer) ([]SubscribedPerformer, error) {
+	out := make([]SubscribedPerformer, 0)
+	for _, item := range performers {
 		if !item.Subscribed {
 			continue
 		}
@@ -170,6 +181,12 @@ func (s *Service) ListSubscribedPerformers(ctx context.Context) ([]SubscribedPer
 }
 
 func (s *Service) SubscribePerformer(ctx context.Context, performerID string) (SubscribedPerformer, error) {
+	unlock := s.lockPerformerOperation(performerID)
+	defer unlock()
+	return s.subscribePerformer(ctx, performerID)
+}
+
+func (s *Service) subscribePerformer(ctx context.Context, performerID string) (SubscribedPerformer, error) {
 	performer, err := s.stash.UpdatePerformerCustomFields(ctx, performerID, map[string]any{s.customFieldKey: true}, nil)
 	if err != nil {
 		logging.Errorf("subscription: subscribe performer %s failed: %v", performerID, err)
@@ -191,6 +208,12 @@ func (s *Service) SubscribePerformer(ctx context.Context, performerID string) (S
 }
 
 func (s *Service) UnsubscribePerformer(ctx context.Context, performerID string) error {
+	unlock := s.lockPerformerOperation(performerID)
+	defer unlock()
+	return s.unsubscribePerformer(ctx, performerID)
+}
+
+func (s *Service) unsubscribePerformer(ctx context.Context, performerID string) error {
 	if _, err := s.stash.UpdatePerformerCustomFields(ctx, performerID, nil, []string{s.customFieldKey}); err != nil {
 		logging.Errorf("subscription: unsubscribe performer %s failed: %v", performerID, err)
 		return err
@@ -205,6 +228,12 @@ func (s *Service) UnsubscribePerformer(ctx context.Context, performerID string) 
 }
 
 func (s *Service) RefreshSubscribedPerformer(ctx context.Context, performerID string) (SubscribedPerformer, error) {
+	unlock := s.lockPerformerOperation(performerID)
+	defer unlock()
+	return s.refreshSubscribedPerformer(ctx, performerID)
+}
+
+func (s *Service) refreshSubscribedPerformer(ctx context.Context, performerID string) (SubscribedPerformer, error) {
 	logging.Infof("subscription: refresh started for performer %s", performerID)
 	performer, err := s.stash.FindPerformerByID(ctx, performerID)
 	if err != nil {

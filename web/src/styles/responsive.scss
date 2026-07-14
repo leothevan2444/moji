@@ -65,7 +65,8 @@
     grid-template-columns: 1fr;
   }
 
-  .task-selection-bar {
+  .task-selection-bar,
+  .performer-selection-bar {
     position: fixed;
     inset: auto 12px 12px;
     z-index: 40;

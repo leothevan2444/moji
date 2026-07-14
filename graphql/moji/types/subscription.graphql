@@ -2,6 +2,9 @@ extend type Query {
   "List Stash performers with current Moji subscription state"
   stashPerformers(search: String, page: Int = 1, pageSize: Int = 24): StashPerformerConnection!
 
+  "Load the actor list and subscription state from one Stash snapshot"
+  performerWorkspace(search: String, page: Int = 1, pageSize: Int = 24): PerformerWorkspaceSnapshot!
+
   "Fetch Stash performer detail with Moji / StashBox context"
   stashPerformerDetail(id: ID!): StashPerformerDetail!
 
@@ -24,6 +27,15 @@ extend type Mutation {
 
   "Refresh all subscribed performers against the configured release source"
   refreshSubscriptionsNow: [SubscribedPerformer!]!
+
+  "Subscribe selected Stash performers"
+  subscribePerformers(ids: [ID!]!): PerformerBatchPayload!
+
+  "Unsubscribe selected Stash performers"
+  unsubscribePerformers(ids: [ID!]!): PerformerBatchPayload!
+
+  "Refresh selected subscribed performers against the configured release source"
+  refreshSubscribedPerformers(ids: [ID!]!): PerformerBatchPayload!
 
   "Queue selected performer scenes into the standard Moji download workflow"
   queuePerformerScenes(input: QueuePerformerScenesInput!): QueuePerformerScenesPayload!
@@ -74,6 +86,11 @@ type StashPerformerConnection {
   totalPages: Int!
   hasPrevPage: Boolean!
   hasNextPage: Boolean!
+}
+
+type PerformerWorkspaceSnapshot {
+  performers: StashPerformerConnection!
+  subscribedPerformers: [SubscribedPerformer!]!
 }
 
 input StashPerformerScenesInput {
@@ -232,4 +249,31 @@ enum QueuePerformerSceneStatus {
   QUEUED
   SKIPPED
   FAILED
+}
+
+enum PerformerBatchStatus {
+  SUCCEEDED
+  SKIPPED
+  FAILED
+}
+
+type PerformerBatchResult {
+  performerId: ID!
+  status: PerformerBatchStatus!
+  reasonCode: String!
+  performer: StashPerformer
+  state: SubscribedPerformer
+}
+
+type PerformerBatchSummary {
+  requestedCount: Int!
+  succeededCount: Int!
+  skippedCount: Int!
+  failedCount: Int!
+}
+
+type PerformerBatchPayload {
+  batchId: ID!
+  summary: PerformerBatchSummary!
+  results: [PerformerBatchResult!]!
 }

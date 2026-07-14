@@ -30,21 +30,19 @@ export function usePerformersWorkspace(options: Options) {
     page: options.performerScenePage,
     pageSize: options.performerScenePageSize
   });
-  const subscriptions = useSubscriptions(options.enabled);
+  const subscriptions = useSubscriptions(options.enabled, performers.subscribedPerformers, performers.reloadStashPerformers);
   const queue = useQueuePerformerScenes();
   const [{ fetching: refreshingPerformerCache }, refreshPerformerCache] = useMutation(RefreshStashPerformerScenesDocument);
 
   const reloadSubscription = async () => {
     if (options.performerId) {
-      await refreshPerformerCache({ id: options.performerId, input: { search: options.performerSceneSearch, source: options.performerSceneSource, inLibrary: options.performerSceneLibrary, page: options.performerScenePage, pageSize: options.performerScenePageSize } });
+      const cacheResult = await refreshPerformerCache({ id: options.performerId, input: { search: options.performerSceneSearch, source: options.performerSceneSource, inLibrary: options.performerSceneLibrary, page: options.performerScenePage, pageSize: options.performerScenePageSize } });
+      performers.refreshPerformerDetail({ requestPolicy: "network-only" });
+      scenes.refreshPerformerScenes({ requestPolicy: "network-only" });
+      return [cacheResult];
     }
-    await Promise.all([
-      subscriptions.refreshSubscription({ requestPolicy: "network-only" }),
-      performers.refreshStashPerformers({ requestPolicy: "network-only" }),
-      performers.refreshPerformerDetail({ requestPolicy: "network-only" }),
-      scenes.refreshPerformerScenes({ requestPolicy: "network-only" })
-    ]);
+    return [await performers.reloadStashPerformers()];
   };
 
-  return { ...performers, ...scenes, ...subscriptions, ...queue, refreshingPerformerCache, reloadSubscription };
+  return { ...performers, ...scenes, ...subscriptions, ...queue, fetchingSubscription: performers.fetchingStashPerformers, subscriptionError: performers.stashPerformersError, refreshingPerformerCache, reloadSubscription };
 }
