@@ -9,6 +9,10 @@ import {
   type DashboardTask
 } from "../../utils";
 import { useTranslation } from "react-i18next";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { faEllipsis } from "@fortawesome/free-solid-svg-icons/faEllipsis";
+import { faTrashCan } from "@fortawesome/free-solid-svg-icons/faTrashCan";
+import { Menu } from "../common/Menu";
 
 interface TaskCardProps {
   task: DashboardTask;
@@ -21,6 +25,8 @@ interface TaskCardProps {
   onRetry?: (taskId: string) => void;
   onResolve?: (taskId: string) => void;
   onDelete?: (taskId: string) => void;
+  selected?: boolean;
+  onToggleSelection?: (taskId: string) => void;
 }
 
 export function TaskCard({
@@ -33,7 +39,9 @@ export function TaskCard({
   onScan,
   onRetry,
   onResolve,
-  onDelete
+  onDelete,
+  selected = false,
+  onToggleSelection
 }: TaskCardProps) {
   const { t } = useTranslation();
   const presentation = taskPresentation(task);
@@ -45,7 +53,7 @@ export function TaskCard({
 
   return (
     <article
-      className={`task-card ${presentation.tone} ${compact ? "task-card--compact" : ""}`}
+      className={`task-card ${presentation.tone} ${compact ? "task-card--compact" : ""} ${selected ? "is-selected" : ""}`}
       onClick={() => onOpen(task.id)}
       onKeyDown={(event) => {
         if (event.key === "Enter" || event.key === " ") {
@@ -58,6 +66,17 @@ export function TaskCard({
       aria-label={t("taskUi.card.aria", { task: taskSummary(task), status: presentation.label })}
     >
       <div className="task-card__head">
+        {onToggleSelection ? (
+          <input
+            type="checkbox"
+            className="task-card__checkbox"
+            checked={selected}
+            onChange={() => onToggleSelection(task.id)}
+            onClick={(event) => event.stopPropagation()}
+            onKeyDown={(event) => event.stopPropagation()}
+            aria-label={t("taskBatch.selectTask", { task: taskSummary(task) })}
+          />
+        ) : null}
         <div>
           <h3>{taskSummary(task)}</h3>
           <p>{presentation.metaLine}</p>
@@ -113,8 +132,7 @@ export function TaskCard({
             >
               {t("taskUi.card.resolve")}
             </button>
-          ) : null}
-          {task.stageStatus === "BLOCKED" && onRetry ? (
+          ) : task.stageStatus === "BLOCKED" && onRetry ? (
             <button
               type="button"
               className="ghost-button task-card__action-button"
@@ -143,20 +161,14 @@ export function TaskCard({
               {isPendingScan ? t("taskUi.card.scanning") : t("taskUi.card.scan")}
             </button>
           ) : null}
-          {onDelete ? (
-            <button
-              type="button"
-              className="ghost-button task-card__action-button task-card__action-button--danger"
-              onClick={(event) => {
-                event.stopPropagation();
-                onDelete(task.id);
-              }}
-              disabled={isPendingDelete}
-              aria-label={t("taskUi.card.deleteLabel", { task: taskSummary(task) })}
-            >
-              {isPendingDelete ? t("taskUi.card.deleting") : t("taskUi.card.delete")}
-            </button>
-          ) : null}
+          {onDelete ? <div onClick={(event) => event.stopPropagation()} onKeyDown={(event) => event.stopPropagation()}>
+            <Menu
+              triggerLabel={<FontAwesomeIcon icon={faEllipsis} />}
+              triggerAriaLabel={t("taskBatch.moreActions", { task: taskSummary(task) })}
+              ariaLabel={t("taskBatch.moreActions", { task: taskSummary(task) })}
+              items={[{ key: "delete", disabled: isPendingDelete, onSelect: () => onDelete(task.id), label: <><FontAwesomeIcon icon={faTrashCan} /> {isPendingDelete ? t("taskUi.card.deleting") : t("taskUi.card.delete")}</> }]}
+            />
+          </div> : null}
         </div>
       </div>
     </article>

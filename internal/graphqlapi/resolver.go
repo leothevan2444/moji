@@ -46,6 +46,9 @@ type TaskRuntimeService interface {
 	SyncProgress(ctx context.Context) ([]*taskruntime.Task, error)
 	TriggerTaskStashScan(ctx context.Context, id string, scanner taskruntime.StashScanner) (*taskruntime.Task, error)
 	TriggerStashScans(ctx context.Context, scanner taskruntime.StashScanner) ([]*taskruntime.Task, error)
+	RetryTasks(ctx context.Context, ids []string, scanner taskruntime.StashScanner) (taskruntime.TaskBatchPayload, error)
+	ProcessTaskIngest(ctx context.Context, ids []string, scanner taskruntime.StashScanner) (taskruntime.TaskBatchPayload, error)
+	DeleteTasks(ctx context.Context, ids []string) (taskruntime.TaskBatchPayload, error)
 }
 
 // TaskFlowService is the only GraphQL seam allowed to create new tasks. Querying

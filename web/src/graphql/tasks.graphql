@@ -125,6 +125,36 @@ mutation RetryTaskDocument($id: ID!) {
   }
 }
 
+mutation RetryTasksDocument($ids: [ID!]!) {
+  retryTasks(ids: $ids) {
+    batchId
+    summary { requestedCount succeededCount skippedCount failedCount }
+    results {
+      taskId status reasonCode
+      task { id source code stage stageStatus stageLabel stageStatusLabel progress qbittorrentState updatedAt }
+    }
+  }
+}
+
+mutation ProcessTaskIngestDocument($ids: [ID!]!) {
+  processTaskIngest(ids: $ids) {
+    batchId
+    summary { requestedCount succeededCount skippedCount failedCount }
+    results {
+      taskId status reasonCode
+      task { id source code stage stageStatus stageLabel stageStatusLabel progress deliveryMode transferError stashScanJobId stashScanPath stashScanError stashScanHint updatedAt }
+    }
+  }
+}
+
+mutation DeleteTasksDocument($ids: [ID!]!) {
+  deleteTasks(ids: $ids) {
+    batchId
+    summary { requestedCount succeededCount skippedCount failedCount }
+    results { taskId status reasonCode task { id code stage stageStatus updatedAt } }
+  }
+}
+
 mutation ResolveBlockedSourcingTaskDocument($id: ID!, $input: ResolveBlockedSourcingTaskInput!) {
   resolveBlockedSourcingTask(id: $id, input: $input) {
     id

@@ -2,7 +2,10 @@ import { useMutation } from "urql";
 import {
   AddTorrentDocumentDocument,
   DeleteTaskDocumentDocument,
+  DeleteTasksDocumentDocument,
+  ProcessTaskIngestDocumentDocument,
   RetryTaskDocumentDocument,
+  RetryTasksDocumentDocument,
   SyncTaskProgressDocumentDocument,
   TriggerStashScansDocumentDocument,
   TriggerTaskStashScanDocumentDocument,
@@ -10,8 +13,14 @@ import {
   type AddTorrentDocumentMutationVariables,
   type DeleteTaskDocumentMutation,
   type DeleteTaskDocumentMutationVariables,
+  type DeleteTasksDocumentMutation,
+  type DeleteTasksDocumentMutationVariables,
+  type ProcessTaskIngestDocumentMutation,
+  type ProcessTaskIngestDocumentMutationVariables,
   type RetryTaskDocumentMutation,
   type RetryTaskDocumentMutationVariables,
+  type RetryTasksDocumentMutation,
+  type RetryTasksDocumentMutationVariables,
   type SyncTaskProgressDocumentMutation,
   type SyncTaskProgressDocumentMutationVariables,
   type TriggerStashScansDocumentMutation,
@@ -30,7 +39,7 @@ export function useTaskMutations() {
     AddTorrentDocumentMutationVariables
   >(AddTorrentDocumentDocument);
 
-  const [, syncTaskProgress] = useMutation<
+  const [{ fetching: syncingTaskProgress }, syncTaskProgress] = useMutation<
     SyncTaskProgressDocumentMutation,
     SyncTaskProgressDocumentMutationVariables
   >(SyncTaskProgressDocumentDocument);
@@ -45,12 +54,16 @@ export function useTaskMutations() {
     RetryTaskDocumentMutationVariables
   >(RetryTaskDocumentDocument);
 
+  const [{ fetching: retryingTasks }, retryTasks] = useMutation<RetryTasksDocumentMutation, RetryTasksDocumentMutationVariables>(RetryTasksDocumentDocument);
+  const [{ fetching: processingTaskIngest }, processTaskIngest] = useMutation<ProcessTaskIngestDocumentMutation, ProcessTaskIngestDocumentMutationVariables>(ProcessTaskIngestDocumentDocument);
+  const [{ fetching: deletingTasks }, deleteTasks] = useMutation<DeleteTasksDocumentMutation, DeleteTasksDocumentMutationVariables>(DeleteTasksDocumentDocument);
+
   const [, triggerTaskStashScan] = useMutation<
     TriggerTaskStashScanDocumentMutation,
     TriggerTaskStashScanDocumentMutationVariables
   >(TriggerTaskStashScanDocumentDocument);
 
-  const [, triggerStashScans] = useMutation<
+  const [{ fetching: triggeringStashScans }, triggerStashScans] = useMutation<
     TriggerStashScansDocumentMutation,
     TriggerStashScansDocumentMutationVariables
   >(TriggerStashScansDocumentDocument);
@@ -59,8 +72,16 @@ export function useTaskMutations() {
     addTorrent,
     deleteTask,
     retryTask,
+    retryTasks,
+    retryingTasks,
+    processTaskIngest,
+    processingTaskIngest,
+    deleteTasks,
+    deletingTasks,
     syncTaskProgress,
+    syncingTaskProgress,
     triggerTaskStashScan,
-    triggerStashScans
+    triggerStashScans,
+    triggeringStashScans
   };
 }

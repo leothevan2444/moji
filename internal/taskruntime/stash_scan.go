@@ -48,6 +48,20 @@ func (s *Service) TriggerStashScans(ctx context.Context, scanner StashScanner) (
 			updated = append(updated, task)
 			continue
 		}
+		unlock := s.lockTask(task.ID)
+		latest, findErr := s.store.Find(ctx, task.ID)
+		if findErr != nil {
+			if !strings.Contains(strings.ToLower(findErr.Error()), "not found") && firstErr == nil {
+				firstErr = fmt.Errorf("refresh task %q: %w", task.ID, findErr)
+			}
+			unlock()
+			continue
+		}
+		if latest == nil {
+			unlock()
+			continue
+		}
+		task = latest
 		if task.Stage == TaskStageScanning && task.StageStatus == TaskStageStatusRunning {
 			next, pollErr := s.syncStashScanJob(ctx, cloneTask(task), scanner)
 			if persistErr := s.store.Update(ctx, next); persistErr != nil {
@@ -60,10 +74,12 @@ func (s *Service) TriggerStashScans(ctx context.Context, scanner StashScanner) (
 				firstErr = pollErr
 			}
 			updated = append(updated, next)
+			unlock()
 			continue
 		}
 		if !shouldTriggerStashScan(task) {
 			updated = append(updated, task)
+			unlock()
 			continue
 		}
 
@@ -78,6 +94,7 @@ func (s *Service) TriggerStashScans(ctx context.Context, scanner StashScanner) (
 			firstErr = execErr
 		}
 		updated = append(updated, next)
+		unlock()
 	}
 
 	return updated, firstErr
@@ -87,6 +104,8 @@ func (s *Service) TriggerTaskStashScan(ctx context.Context, id string, scanner S
 	if scanner == nil {
 		return nil, errors.New("taskruntime: stash scanner is required")
 	}
+	unlock := s.lockTask(id)
+	defer unlock()
 
 	task, err := s.store.Find(ctx, id)
 	if err != nil {

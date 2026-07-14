@@ -708,6 +708,26 @@ type Task struct {
 	UpdatedAt           string             `json:"updatedAt"`
 }
 
+type TaskBatchPayload struct {
+	BatchID string             `json:"batchId"`
+	Summary *TaskBatchSummary  `json:"summary"`
+	Results []*TaskBatchResult `json:"results"`
+}
+
+type TaskBatchResult struct {
+	TaskID     string          `json:"taskId"`
+	Status     TaskBatchStatus `json:"status"`
+	ReasonCode string          `json:"reasonCode"`
+	Task       *Task           `json:"task,omitempty"`
+}
+
+type TaskBatchSummary struct {
+	RequestedCount int `json:"requestedCount"`
+	SucceededCount int `json:"succeededCount"`
+	SkippedCount   int `json:"skippedCount"`
+	FailedCount    int `json:"failedCount"`
+}
+
 type TaskEvent struct {
 	Sequence       int             `json:"sequence"`
 	Type           TaskEventType   `json:"type"`
@@ -1474,6 +1494,63 @@ func (e *SubscriptionReleaseDateRange) UnmarshalJSON(b []byte) error {
 }
 
 func (e SubscriptionReleaseDateRange) MarshalJSON() ([]byte, error) {
+	var buf bytes.Buffer
+	e.MarshalGQL(&buf)
+	return buf.Bytes(), nil
+}
+
+type TaskBatchStatus string
+
+const (
+	TaskBatchStatusSucceeded TaskBatchStatus = "SUCCEEDED"
+	TaskBatchStatusSkipped   TaskBatchStatus = "SKIPPED"
+	TaskBatchStatusFailed    TaskBatchStatus = "FAILED"
+)
+
+var AllTaskBatchStatus = []TaskBatchStatus{
+	TaskBatchStatusSucceeded,
+	TaskBatchStatusSkipped,
+	TaskBatchStatusFailed,
+}
+
+func (e TaskBatchStatus) IsValid() bool {
+	switch e {
+	case TaskBatchStatusSucceeded, TaskBatchStatusSkipped, TaskBatchStatusFailed:
+		return true
+	}
+	return false
+}
+
+func (e TaskBatchStatus) String() string {
+	return string(e)
+}
+
+func (e *TaskBatchStatus) UnmarshalGQL(v any) error {
+	str, ok := v.(string)
+	if !ok {
+		return fmt.Errorf("enums must be strings")
+	}
+
+	*e = TaskBatchStatus(str)
+	if !e.IsValid() {
+		return fmt.Errorf("%s is not a valid TaskBatchStatus", str)
+	}
+	return nil
+}
+
+func (e TaskBatchStatus) MarshalGQL(w io.Writer) {
+	fmt.Fprint(w, strconv.Quote(e.String()))
+}
+
+func (e *TaskBatchStatus) UnmarshalJSON(b []byte) error {
+	s, err := strconv.Unquote(string(b))
+	if err != nil {
+		return err
+	}
+	return e.UnmarshalGQL(s)
+}
+
+func (e TaskBatchStatus) MarshalJSON() ([]byte, error) {
 	var buf bytes.Buffer
 	e.MarshalGQL(&buf)
 	return buf.Bytes(), nil

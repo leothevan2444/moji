@@ -165,6 +165,8 @@ type Service struct {
 	newID              func() string
 	inspectionCacheMu  sync.Mutex
 	inspectionCache    map[string]cachedTorrentInspection
+	taskLocksMu        sync.Mutex
+	taskLocks          map[string]*taskOperationLock
 }
 
 type Option func(*Service)
@@ -251,6 +253,7 @@ func NewService(tr tracker.Tracker, qbt TorrentClient, store TaskStore, options 
 		now:             time.Now,
 		newID:           newTaskID,
 		inspectionCache: make(map[string]cachedTorrentInspection),
+		taskLocks:       make(map[string]*taskOperationLock),
 	}
 	for _, option := range options {
 		option(s)
@@ -349,6 +352,8 @@ func (s *Service) DeleteTask(ctx context.Context, id string) (*Task, error) {
 	if id == "" {
 		return nil, errors.New("taskruntime: task id is required")
 	}
+	unlock := s.lockTask(id)
+	defer unlock()
 
 	task, err := s.store.Find(ctx, id)
 	if err != nil {
@@ -375,6 +380,8 @@ func (s *Service) RetryTask(ctx context.Context, id string, scanner StashScanner
 	if id == "" {
 		return nil, errors.New("taskruntime: task id is required")
 	}
+	unlock := s.lockTask(id)
+	defer unlock()
 
 	task, err := s.store.Find(ctx, id)
 	if err != nil {
@@ -410,6 +417,8 @@ func (s *Service) ResolveBlockedSourcingTask(ctx context.Context, id string, req
 	if id == "" {
 		return nil, errors.New("taskruntime: task id is required")
 	}
+	unlock := s.lockTask(id)
+	defer unlock()
 	task, err := s.store.Find(ctx, id)
 	if err != nil {
 		return nil, err
@@ -478,51 +487,57 @@ func (s *Service) SyncProgress(ctx context.Context) ([]*Task, error) {
 
 	updated := make([]*Task, 0, len(tasks))
 	for _, task := range tasks {
-		if task == nil || task.Stage == TaskStageCompleted {
-			updated = append(updated, task)
-			continue
-		}
-		if task.Stage == TaskStageScanning && task.StageStatus == TaskStageStatusRunning {
-			updated = append(updated, task)
-			continue
-		}
-		if task.Stage == TaskStagePendingIngest || task.Stage == TaskStageTransferring {
-			updated = append(updated, task)
-			continue
-		}
-
-		torrent, ok := matchTaskTorrent(task, torrents)
-		if !ok {
-			updated = append(updated, task)
-			continue
-		}
-
-		next := cloneTask(task)
-		prevStage := next.Stage
-		prevStageStatus := next.StageStatus
-		prevProgress := next.Progress
-		applyTorrentProgress(next, torrent, s.now().UTC())
-		if err := s.store.Update(ctx, next); err != nil {
-			return updated, fmt.Errorf("update task %q: %w", next.ID, err)
-		}
-		if next.Stage != prevStage || next.StageStatus != prevStageStatus {
-			logging.Infof(
-				"taskruntime: task %s stage %s/%s -> %s/%s (%s %.1f%%)",
-				next.ID,
-				prevStage,
-				prevStageStatus,
-				next.Stage,
-				next.StageStatus,
-				next.Candidate.Title,
-				next.Progress*100,
-			)
-		} else if next.Stage == TaskStagePendingIngest && next.Progress != prevProgress {
-			logging.Infof("taskruntime: task %s download completed with content path %s", next.ID, next.ContentPath)
+		next, syncErr := s.syncTaskProgress(ctx, task, torrents)
+		if syncErr != nil {
+			return updated, syncErr
 		}
 		updated = append(updated, next)
 	}
 
 	return updated, nil
+}
+
+func (s *Service) syncTaskProgress(ctx context.Context, snapshot *Task, torrents []qbittorrent.Torrent) (*Task, error) {
+	if snapshot == nil {
+		return nil, nil
+	}
+	unlock := s.lockTask(snapshot.ID)
+	defer unlock()
+	task, err := s.store.Find(ctx, snapshot.ID)
+	if err != nil {
+		return snapshot, nil
+	}
+	if task.Stage == TaskStageCompleted || (task.Stage == TaskStageScanning && task.StageStatus == TaskStageStatusRunning) || task.Stage == TaskStagePendingIngest || task.Stage == TaskStageTransferring {
+		return task, nil
+	}
+	torrent, ok := matchTaskTorrent(task, torrents)
+	if !ok {
+		return task, nil
+	}
+
+	next := cloneTask(task)
+	prevStage := next.Stage
+	prevStageStatus := next.StageStatus
+	prevProgress := next.Progress
+	applyTorrentProgress(next, torrent, s.now().UTC())
+	if err := s.store.Update(ctx, next); err != nil {
+		return task, fmt.Errorf("update task %q: %w", next.ID, err)
+	}
+	if next.Stage != prevStage || next.StageStatus != prevStageStatus {
+		logging.Infof(
+			"taskruntime: task %s stage %s/%s -> %s/%s (%s %.1f%%)",
+			next.ID,
+			prevStage,
+			prevStageStatus,
+			next.Stage,
+			next.StageStatus,
+			next.Candidate.Title,
+			next.Progress*100,
+		)
+	} else if next.Stage == TaskStagePendingIngest && next.Progress != prevProgress {
+		logging.Infof("taskruntime: task %s download completed with content path %s", next.ID, next.ContentPath)
+	}
+	return next, nil
 }
 
 func (s *Service) retrySourcingTask(ctx context.Context, task *Task) (*Task, error) {

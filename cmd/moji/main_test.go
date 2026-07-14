@@ -550,6 +550,18 @@ func (f *fakeProgressSyncService) TriggerStashScans(context.Context, taskruntime
 	return nil, nil
 }
 
+func (f *fakeProgressSyncService) RetryTasks(context.Context, []string, taskruntime.StashScanner) (taskruntime.TaskBatchPayload, error) {
+	return taskruntime.TaskBatchPayload{}, nil
+}
+
+func (f *fakeProgressSyncService) ProcessTaskIngest(context.Context, []string, taskruntime.StashScanner) (taskruntime.TaskBatchPayload, error) {
+	return taskruntime.TaskBatchPayload{}, nil
+}
+
+func (f *fakeProgressSyncService) DeleteTasks(context.Context, []string) (taskruntime.TaskBatchPayload, error) {
+	return taskruntime.TaskBatchPayload{}, nil
+}
+
 type fakeConfiguredStashService struct{}
 
 func (fakeConfiguredStashService) MetadataScan(context.Context, stashsync.ScanRequest) (string, error) {

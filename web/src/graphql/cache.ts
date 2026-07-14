@@ -99,6 +99,14 @@ function linkQueuedSceneTasks(cache: Cache, payload: any) {
   }
 }
 
+function applyTaskBatch(cache: Cache, payload: any, deleting = false) {
+  for (const item of payload?.results ?? []) {
+    if (item?.status !== "SUCCEEDED") continue;
+    if (deleting) unlinkTask(cache, item.taskId);
+    else linkTask(cache, item.task);
+  }
+}
+
 const singleton = () => "singleton";
 
 export const graphcacheKeys: KeyingConfig = {
@@ -174,6 +182,9 @@ export const graphcacheUpdates: UpdatesConfig = {
     retryTask(result: any, _args, cache) { linkTask(cache, result.retryTask); },
     resolveBlockedSourcingTask(result: any, _args, cache) { linkTask(cache, result.resolveBlockedSourcingTask); },
     deleteTask(result: any, args: any, cache) { unlinkTask(cache, result.deleteTask?.id ?? args.id); },
+    retryTasks(result: any, _args, cache) { applyTaskBatch(cache, result.retryTasks); },
+    processTaskIngest(result: any, _args, cache) { applyTaskBatch(cache, result.processTaskIngest); },
+    deleteTasks(result: any, _args, cache) { applyTaskBatch(cache, result.deleteTasks, true); },
     subscribePerformer(result: any, _args, cache) { upsertSubscribedPerformer(cache, result.subscribePerformer); },
     unsubscribePerformer(_result: any, args: any, cache) { removeSubscribedPerformer(cache, args.stashPerformerID); },
     refreshSubscribedPerformer(result: any, _args, cache) { upsertSubscribedPerformer(cache, result.refreshSubscribedPerformer); },

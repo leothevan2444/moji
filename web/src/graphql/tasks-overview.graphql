@@ -41,4 +41,7 @@ query TasksOverviewDocument {
     updatedAt
   }
   settings { system { taskDeletePolicy } }
+  settingsStatus {
+    automation { taskProgressSyncIntervalSeconds taskProgressSyncEnabled }
+  }
 }

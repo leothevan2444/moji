@@ -1,6 +1,8 @@
 import { TaskCard } from "./TaskCard";
 import type { DashboardTask, TaskGroupKey } from "../../utils";
 import { useTranslation } from "react-i18next";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { faBoxArchive } from "@fortawesome/free-solid-svg-icons/faBoxArchive";
 
 interface TaskGroupSectionProps {
   group: TaskGroupKey;
@@ -17,7 +19,10 @@ interface TaskGroupSectionProps {
   onRetryTask: (taskId: string) => void;
   onResolveTask: (taskId: string) => void;
   onDeleteTask: (taskId: string) => void;
-  onScanAll: () => void;
+  onProcessIngest: (ids: string[]) => void;
+  batchPending: boolean;
+  selectedTaskIds: string[];
+  onToggleTaskSelection: (taskId: string) => void;
 }
 
 export function TaskGroupSection({
@@ -35,7 +40,10 @@ export function TaskGroupSection({
   onRetryTask,
   onResolveTask,
   onDeleteTask,
-  onScanAll
+  onProcessIngest,
+  batchPending,
+  selectedTaskIds,
+  onToggleTaskSelection
 }: TaskGroupSectionProps) {
   const { t } = useTranslation();
   return (
@@ -47,8 +55,14 @@ export function TaskGroupSection({
         </div>
         <div className="task-group-section__actions">
           {group === "ingestPending" ? (
-            <button type="button" className="ghost-button" onClick={onScanAll}>
-              {t("tasks.actions.scanGroup")}
+            <button
+              type="button"
+              className="ghost-button"
+              disabled={batchPending || tasks.length > 100}
+              title={tasks.length > 100 ? t("taskBatch.groupLimit", { count: 100 }) : undefined}
+              onClick={() => onProcessIngest(tasks.map((task) => task.id))}
+            >
+              <FontAwesomeIcon icon={faBoxArchive} /> {t("tasks.actions.scanGroup")}
             </button>
           ) : null}
           <span className={`status-chip ${tone}`}>{t("common.items", { count: tasks.length })}</span>
@@ -76,6 +90,8 @@ export function TaskGroupSection({
               onRetry={onRetryTask}
               onResolve={onResolveTask}
               onDelete={onDeleteTask}
+              selected={selectedTaskIds.includes(task.id)}
+              onToggleSelection={onToggleTaskSelection}
             />
           ))}
         </div>

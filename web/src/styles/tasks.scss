@@ -20,6 +20,20 @@ $task-status-tones: (
   padding: 14px;
   @include interactive-surface;
 
+  &.is-selected {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 14%, transparent);
+  }
+
+  &__checkbox {
+    flex: 0 0 auto;
+    width: 17px;
+    height: 17px;
+    margin: 2px 0 0 6px;
+    accent-color: var(--accent);
+    cursor: pointer;
+  }
+
   &::before {
     content: "";
     position: absolute;
@@ -89,6 +103,12 @@ $task-status-tones: (
     gap: 6px;
   }
 
+  .menu__trigger {
+    min-width: 30px;
+    min-height: 28px;
+    padding: 0 8px;
+  }
+
   &__chip {
     align-self: flex-start;
     min-height: 24px;
@@ -130,6 +150,57 @@ $task-status-tones: (
     }
   }
 }
+
+.task-sync-status {
+  color: var(--muted);
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.task-selection-bar {
+  position: sticky;
+  top: 8px;
+  z-index: 8;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 12px;
+  padding: 10px 12px;
+  border: 1px solid color-mix(in srgb, var(--accent) 28%, var(--line));
+  border-radius: $radius-lg;
+  background: color-mix(in srgb, var(--surface-strong) 94%, var(--accent));
+  box-shadow: var(--shadow-sm);
+
+  strong { margin-right: 2px; }
+  span { color: var(--muted); font-size: 12px; }
+}
+
+.task-batch-summary { margin-top: 14px; }
+
+.task-batch-results {
+  display: grid;
+  gap: 8px;
+}
+
+.task-batch-result {
+  display: grid;
+  grid-template-columns: 24px minmax(0, 1fr);
+  gap: 10px;
+  align-items: center;
+  width: 100%;
+  padding: 10px;
+  border: 1px solid var(--line);
+  border-radius: $radius-md;
+  background: var(--surface);
+  color: var(--text);
+  text-align: left;
+
+  span, small { display: block; }
+  small { margin-top: 3px; color: var(--muted); }
+}
+
+.is-spinning { animation: profile-action-spin 0.8s linear infinite; }
 
 .task-status-progress {
   @extend %stack-panel;

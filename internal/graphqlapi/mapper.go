@@ -200,6 +200,28 @@ func taskToModel(task *taskruntime.Task) *model.Task {
 	}
 }
 
+func taskBatchPayloadToModel(payload taskruntime.TaskBatchPayload) *model.TaskBatchPayload {
+	results := make([]*model.TaskBatchResult, 0, len(payload.Results))
+	for _, result := range payload.Results {
+		results = append(results, &model.TaskBatchResult{
+			TaskID:     result.TaskID,
+			Status:     model.TaskBatchStatus(result.Status),
+			ReasonCode: result.ReasonCode,
+			Task:       taskToModel(result.Task),
+		})
+	}
+	return &model.TaskBatchPayload{
+		BatchID: payload.BatchID,
+		Summary: &model.TaskBatchSummary{
+			RequestedCount: payload.Summary.RequestedCount,
+			SucceededCount: payload.Summary.SucceededCount,
+			SkippedCount:   payload.Summary.SkippedCount,
+			FailedCount:    payload.Summary.FailedCount,
+		},
+		Results: results,
+	}
+}
+
 func candidateToModel(candidate taskruntime.Candidate) *model.DownloadCandidate {
 	return &model.DownloadCandidate{
 		Title:     candidate.Title,

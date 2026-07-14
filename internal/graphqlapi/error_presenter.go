@@ -36,6 +36,8 @@ const (
 	ErrorTorrentURLRequired   = "TORRENT_URL_REQUIRED"
 	ErrorAddTorrentFailed     = "ADD_TORRENT_FAILED"
 	ErrorInternal             = "INTERNAL_ERROR"
+	ErrorTaskBatchEmpty       = "TASK_BATCH_EMPTY"
+	ErrorTaskBatchTooLarge    = "TASK_BATCH_TOO_LARGE"
 )
 
 // ConfigureGraphQLServer installs the production error contract in one place.
@@ -105,6 +107,10 @@ func classifyError(err error) string {
 		return ErrorDuplicateLibraryCode
 	case errors.Is(err, taskruntime.ErrTaskCodeRequired):
 		return ErrorTaskCodeRequired
+	case errors.Is(err, taskruntime.ErrTaskBatchEmpty):
+		return ErrorTaskBatchEmpty
+	case errors.Is(err, taskruntime.ErrTaskBatchTooLarge):
+		return ErrorTaskBatchTooLarge
 	}
 	message := strings.ToLower(err.Error())
 	switch {

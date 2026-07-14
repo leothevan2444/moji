@@ -36,6 +36,15 @@ type Mutation {
 
   "Delete a persisted Moji task record"
   deleteTask(id: ID!): Task!
+
+  "Retry blocked tasks with per-task results"
+  retryTasks(ids: [ID!]!): TaskBatchPayload!
+
+  "Advance selected tasks through transfer and Stash ingest"
+  processTaskIngest(ids: [ID!]!): TaskBatchPayload!
+
+  "Delete selected tasks using the configured deletion policy"
+  deleteTasks(ids: [ID!]!): TaskBatchPayload!
 }
 
 type QBTorrent {
@@ -148,4 +157,30 @@ type DownloadCandidate {
   size: Long!
   seeders: Int!
   peers: Int!
+}
+
+enum TaskBatchStatus {
+  SUCCEEDED
+  SKIPPED
+  FAILED
+}
+
+type TaskBatchResult {
+  taskId: ID!
+  status: TaskBatchStatus!
+  reasonCode: String!
+  task: Task
+}
+
+type TaskBatchSummary {
+  requestedCount: Int!
+  succeededCount: Int!
+  skippedCount: Int!
+  failedCount: Int!
+}
+
+type TaskBatchPayload {
+  batchId: ID!
+  summary: TaskBatchSummary!
+  results: [TaskBatchResult!]!
 }

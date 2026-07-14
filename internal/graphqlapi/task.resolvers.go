@@ -194,6 +194,45 @@ func (r *mutationResolver) DeleteTask(ctx context.Context, id string) (*model.Ta
 	return nil, err
 }
 
+// RetryTasks is the resolver for the retryTasks field.
+func (r *mutationResolver) RetryTasks(ctx context.Context, ids []string) (*model.TaskBatchPayload, error) {
+	if r.TaskRuntime == nil {
+		return nil, errors.New("task runtime is not configured")
+	}
+	payload, err := r.TaskRuntime.RetryTasks(ctx, ids, r.Stash)
+	if err != nil {
+		return nil, err
+	}
+	return taskBatchPayloadToModel(payload), nil
+}
+
+// ProcessTaskIngest is the resolver for the processTaskIngest field.
+func (r *mutationResolver) ProcessTaskIngest(ctx context.Context, ids []string) (*model.TaskBatchPayload, error) {
+	if r.TaskRuntime == nil {
+		return nil, errors.New("task runtime is not configured")
+	}
+	if r.Stash == nil {
+		return nil, errors.New("stash client is not configured")
+	}
+	payload, err := r.TaskRuntime.ProcessTaskIngest(ctx, ids, r.Stash)
+	if err != nil {
+		return nil, err
+	}
+	return taskBatchPayloadToModel(payload), nil
+}
+
+// DeleteTasks is the resolver for the deleteTasks field.
+func (r *mutationResolver) DeleteTasks(ctx context.Context, ids []string) (*model.TaskBatchPayload, error) {
+	if r.TaskRuntime == nil {
+		return nil, errors.New("task runtime is not configured")
+	}
+	payload, err := r.TaskRuntime.DeleteTasks(ctx, ids)
+	if err != nil {
+		return nil, err
+	}
+	return taskBatchPayloadToModel(payload), nil
+}
+
 // QbittorrentTorrents is the resolver for the qbittorrentTorrents field.
 func (r *queryResolver) QbittorrentTorrents(ctx context.Context, limit *int) ([]*model.QBTorrent, error) {
 	if r.Torrent == nil {

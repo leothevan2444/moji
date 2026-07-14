@@ -141,6 +141,17 @@ export function canTriggerTaskStashScan(task: DashboardTask) {
   return stageValue(task) === "pending_ingest" && !task.stashScanJobId;
 }
 
+export function taskBatchEligibility(tasks: DashboardTask[]) {
+  return {
+    retryIds: tasks.filter((task) => task.stageStatus === "BLOCKED" && task.stage !== "COMPLETED").map((task) => task.id),
+    ingestIds: tasks.filter((task) => ["PENDING_INGEST", "TRANSFERRING", "SCANNING"].includes(task.stage) && !(task.stage === "SCANNING" && task.stageStatus === "RUNNING")).map((task) => task.id)
+  };
+}
+
+export function mergeTaskSelection(current: string[], added: string[], limit = 100) {
+  return [...new Set([...current, ...added])].slice(0, limit);
+}
+
 // ── Task presentation helpers ───────────────────────────────────────
 
 function simplifyMessage(message: string) {

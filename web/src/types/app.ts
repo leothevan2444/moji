@@ -2,7 +2,7 @@
  * Application-level type definitions shared across components.
  */
 
-export type DrawerKey = "stats" | "settings" | "help" | "task" | "task-resolution" | "discovery" | "confirm" | null;
+export type DrawerKey = "stats" | "settings" | "help" | "task" | "task-resolution" | "task-batch-result" | "discovery" | "confirm" | null;
 
 export type ToastTone = "tone-success" | "tone-danger" | "tone-info";
 export type ToastPhase = "entering" | "leaving";

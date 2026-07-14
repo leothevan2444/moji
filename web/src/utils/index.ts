@@ -25,6 +25,8 @@ export {
   taskGroup,
   taskGroupTone,
   canTriggerTaskStashScan,
+  taskBatchEligibility,
+  mergeTaskSelection,
   taskFailureSummary,
   taskProgressPercent,
   taskPrimaryState,

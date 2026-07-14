@@ -1,15 +1,19 @@
 interface ConfirmDeleteDrawerProps {
-  taskLabel: string;
-  destructive: boolean;
+  taskLabel?: string;
+  count?: number;
+  deletePolicy: "KEEP_ONLY" | "REMOVE_TORRENT" | "REMOVE_TORRENT_AND_FILES";
   pending: boolean;
   onConfirm: () => void;
   onCancel: () => void;
 }
 import { useTranslation } from "react-i18next";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { faTriangleExclamation } from "@fortawesome/free-solid-svg-icons/faTriangleExclamation";
 
 export function ConfirmDeleteDrawer({
   taskLabel,
-  destructive,
+  count,
+  deletePolicy,
   pending,
   onConfirm,
   onCancel
@@ -21,7 +25,10 @@ export function ConfirmDeleteDrawer({
         <div className="drawer-card__head">
           <div>
             <h3>{t("taskRoute.confirmDelete")}</h3>
-            <p>{taskLabel}</p>
+            <p>{count ? t("taskBatch.confirmDeleteCount", { count }) : taskLabel}</p>
+            <p className={deletePolicy === "KEEP_ONLY" ? undefined : "tone-danger"}>
+              {deletePolicy !== "KEEP_ONLY" ? <FontAwesomeIcon icon={faTriangleExclamation} /> : null} {t(`taskBatch.deletePolicies.${deletePolicy}`)}
+            </p>
           </div>
         </div>
         <div className="settings-actions">

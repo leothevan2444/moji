@@ -640,6 +640,28 @@ func TestTriggerTaskStashScan(t *testing.T) {
 	}
 }
 
+func TestRetryTasksMapsBatchPayload(t *testing.T) {
+	runtime := &fakeTaskRuntime{batchPayload: taskruntime.TaskBatchPayload{
+		BatchID: "batch-1",
+		Summary: taskruntime.TaskBatchSummary{RequestedCount: 2, SucceededCount: 1, SkippedCount: 1},
+		Results: []taskruntime.TaskBatchResult{
+			{TaskID: "task-1", Status: taskruntime.TaskBatchStatusSucceeded, ReasonCode: taskruntime.TaskBatchReasonRetried, Task: &taskruntime.Task{ID: "task-1", Stage: taskruntime.TaskStageDownloading, StageStatus: taskruntime.TaskStageStatusRunning}},
+			{TaskID: "task-2", Status: taskruntime.TaskBatchStatusSkipped, ReasonCode: taskruntime.TaskBatchReasonNotRetryable},
+		},
+	}}
+	resolver := &mutationResolver{Resolver: &Resolver{TaskRuntime: runtime}}
+	payload, err := resolver.RetryTasks(context.Background(), []string{"task-1", "task-2"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if payload.BatchID != "batch-1" || payload.Summary.SucceededCount != 1 || len(payload.Results) != 2 {
+		t.Fatalf("unexpected payload: %+v", payload)
+	}
+	if payload.Results[0].ReasonCode != taskruntime.TaskBatchReasonRetried || payload.Results[0].Task.ID != "task-1" {
+		t.Fatalf("unexpected result mapping: %+v", payload.Results[0])
+	}
+}
+
 func TestDownloadMediaRequiresTaskRuntime(t *testing.T) {
 	resolver := NewResolver(nil, nil, nil, nil, "test-version")
 
@@ -1242,6 +1264,7 @@ type fakeTaskRuntime struct {
 	resolveSourcingID   string
 	resolveSourcingReq  taskruntime.ResolveBlockedSourcingRequest
 	resolveSourcingTask *taskruntime.Task
+	batchPayload        taskruntime.TaskBatchPayload
 }
 
 type fakeGraphQLTracker struct {
@@ -1303,6 +1326,18 @@ func (f *fakeTaskRuntime) TriggerTaskStashScan(_ context.Context, id string, _ t
 
 func (f *fakeTaskRuntime) TriggerStashScans(_ context.Context, _ taskruntime.StashScanner) ([]*taskruntime.Task, error) {
 	return f.stashTasks, nil
+}
+
+func (f *fakeTaskRuntime) RetryTasks(_ context.Context, _ []string, _ taskruntime.StashScanner) (taskruntime.TaskBatchPayload, error) {
+	return f.batchPayload, nil
+}
+
+func (f *fakeTaskRuntime) ProcessTaskIngest(_ context.Context, _ []string, _ taskruntime.StashScanner) (taskruntime.TaskBatchPayload, error) {
+	return f.batchPayload, nil
+}
+
+func (f *fakeTaskRuntime) DeleteTasks(_ context.Context, _ []string) (taskruntime.TaskBatchPayload, error) {
+	return f.batchPayload, nil
 }
 
 type graphQLTaskResponse struct {

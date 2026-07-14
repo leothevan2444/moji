@@ -5,6 +5,7 @@ import {
   isTaskActive,
   taskGroup,
   taskGroupTone,
+  taskBatchEligibility,
   taskSummary,
   type DashboardTask,
   type TaskGroupKey
@@ -12,6 +13,14 @@ import {
 import { useDeferredValue, useMemo } from "react";
 import type { TaskSortKey, TaskStatusFilter } from "../types";
 import { useTranslation } from "react-i18next";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { faArrowsRotate } from "@fortawesome/free-solid-svg-icons/faArrowsRotate";
+import { faEllipsis } from "@fortawesome/free-solid-svg-icons/faEllipsis";
+import { faRotate } from "@fortawesome/free-solid-svg-icons/faRotate";
+import { faTrashCan } from "@fortawesome/free-solid-svg-icons/faTrashCan";
+import { faXmark } from "@fortawesome/free-solid-svg-icons/faXmark";
+import { faBoxArchive } from "@fortawesome/free-solid-svg-icons/faBoxArchive";
+import { Menu } from "../components/common/Menu";
 
 interface TasksPageProps {
   tasks: DashboardTask[];
@@ -28,20 +37,30 @@ interface TasksPageProps {
   pendingTaskScanId: string | null;
   pendingTaskRetryId: string | null;
   pendingTaskDeleteId: string | null;
-  retryingBlockedTasks: boolean;
+  selectedTaskIds: string[];
+  batchPending: boolean;
+  refreshing: boolean;
+  syncing: boolean;
+  autoSyncEnabled: boolean;
+  autoSyncIntervalSeconds: number;
+  lastRefreshedAt: Date | null;
   onSearchChange: (value: string) => void;
   onStatusChange: (status: TaskStatusFilter) => void;
   onSortChange: (sort: TaskSortKey) => void;
   onToggleGroup: (group: TaskGroupKey) => void;
   onRefresh: () => void;
   onSync: () => void;
-  onScanAll: () => void;
   onOpenTask: (taskId: string) => void;
   onScanTask: (taskId: string) => void;
   onRetryTask: (taskId: string) => void;
   onResolveTask: (taskId: string) => void;
-  onRetryBlockedTasks: () => void;
   onDeleteTask: (taskId: string) => void;
+  onToggleTaskSelection: (taskId: string) => void;
+  onSelectVisibleTasks: (taskIds: string[]) => void;
+  onClearTaskSelection: () => void;
+  onBatchRetry: (taskIds: string[]) => void;
+  onBatchIngest: (taskIds: string[]) => void;
+  onBatchDelete: (taskIds: string[]) => void;
 }
 
 export function TasksPage({
@@ -54,20 +73,30 @@ export function TasksPage({
   pendingTaskScanId,
   pendingTaskRetryId,
   pendingTaskDeleteId,
-  retryingBlockedTasks,
+  selectedTaskIds,
+  batchPending,
+  refreshing,
+  syncing,
+  autoSyncEnabled,
+  autoSyncIntervalSeconds,
+  lastRefreshedAt,
   onSearchChange,
   onStatusChange,
   onSortChange,
   onToggleGroup,
   onRefresh,
   onSync,
-  onScanAll,
   onOpenTask,
   onScanTask,
   onRetryTask,
   onResolveTask,
-  onRetryBlockedTasks,
-  onDeleteTask
+  onDeleteTask,
+  onToggleTaskSelection,
+  onSelectVisibleTasks,
+  onClearTaskSelection,
+  onBatchRetry,
+  onBatchIngest,
+  onBatchDelete
 }: TasksPageProps) {
   const { t } = useTranslation();
   const deferredTaskSearch = useDeferredValue(taskSearch.trim().toLowerCase());
@@ -122,6 +151,9 @@ export function TasksPage({
       tasks: visibleTasks.filter((task) => taskGroup(task) === group)
     }));
   }, [t, visibleTasks]);
+  const selectedTasks = tasks.filter((task) => selectedTaskIds.includes(task.id));
+  const { retryIds: retryableIds, ingestIds } = taskBatchEligibility(selectedTasks);
+  const hiddenSelectedCount = selectedTaskIds.filter((id) => !visibleTasks.some((task) => task.id === id)).length;
 
   return (
     <section className="section-band">
@@ -146,24 +178,26 @@ export function TasksPage({
         <select value={taskSort} onChange={(event) => onSortChange(event.target.value as TaskSortKey)}>
           {(["createdAt", "updatedAt", "progress"] as const).map((value) => <option key={value} value={value}>{t(`tasks.sorts.${value}`)}</option>)}
         </select>
-        <button type="button" className="ghost-button" onClick={onRefresh}>
-          {t("common.refresh")}
+        <span className="task-sync-status">
+          {t(autoSyncEnabled ? "taskBatch.autoSyncOn" : "taskBatch.autoSyncOff", { seconds: autoSyncIntervalSeconds })}
+          {lastRefreshedAt ? ` · ${t("taskBatch.updatedAt", { time: lastRefreshedAt.toLocaleTimeString() })}` : ""}
+        </span>
+        <button type="button" className="ghost-button task-icon-button" onClick={onRefresh} disabled={refreshing} aria-label={t("common.refresh")} title={t("common.refresh")}>
+          <FontAwesomeIcon icon={faRotate} className={refreshing ? "is-spinning" : undefined} />
         </button>
-        <button type="button" className="ghost-button" onClick={onSync}>
-          {t("tasks.actions.sync")}
-        </button>
-        <button type="button" className="ghost-button" onClick={onScanAll}>
-          {t("tasks.actions.scanAll")}
-        </button>
-        <button
-          type="button"
-          className="ghost-button"
-          onClick={onRetryBlockedTasks}
-          disabled={retryingBlockedTasks || metrics.failed === 0}
-        >
-          {retryingBlockedTasks ? t("tasks.actions.retryingBlocked") : `${t("tasks.actions.retryBlocked")}${metrics.failed > 0 ? ` (${metrics.failed})` : ""}`}
-        </button>
+        <Menu triggerLabel={<FontAwesomeIcon icon={faEllipsis} />} triggerAriaLabel={t("taskBatch.more")} ariaLabel={t("taskBatch.more")}
+          items={[{ key: "sync", disabled: syncing, onSelect: onSync, label: <><FontAwesomeIcon icon={faArrowsRotate} /> {syncing ? t("taskBatch.syncing") : t("taskBatch.syncNow")}</> }]} />
       </div>
+
+      {selectedTaskIds.length > 0 ? <div className="task-selection-bar" role="region" aria-label={t("taskBatch.selectionActions")}>
+        <strong>{t("taskBatch.selected", { count: selectedTaskIds.length })}</strong>
+        {hiddenSelectedCount ? <span>{t("taskBatch.hidden", { count: hiddenSelectedCount })}</span> : null}
+        <button type="button" className="ghost-button" disabled={batchPending || visibleTasks.length === 0} onClick={() => onSelectVisibleTasks(visibleTasks.map((task) => task.id))}>{t("taskBatch.selectVisible", { count: visibleTasks.length })}</button>
+        <button type="button" className="ghost-button" disabled={batchPending || retryableIds.length === 0} onClick={() => onBatchRetry(retryableIds)}><FontAwesomeIcon icon={faArrowsRotate} /> {t("taskBatch.retry", { count: retryableIds.length })}</button>
+        <button type="button" className="ghost-button" disabled={batchPending || ingestIds.length === 0} onClick={() => onBatchIngest(ingestIds)}><FontAwesomeIcon icon={faBoxArchive} /> {t("taskBatch.ingest", { count: ingestIds.length })}</button>
+        <button type="button" className="ghost-button task-ops__button--danger" disabled={batchPending} onClick={() => onBatchDelete(selectedTaskIds)}><FontAwesomeIcon icon={faTrashCan} /> {t("taskBatch.delete", { count: selectedTaskIds.length })}</button>
+        <button type="button" className="ghost-button" disabled={batchPending} onClick={onClearTaskSelection} aria-label={t("taskBatch.clear")}><FontAwesomeIcon icon={faXmark} /> {t("taskBatch.clear")}</button>
+      </div> : null}
 
       {!visibleTasks.length ? (
         <div className="task-grid">
@@ -193,7 +227,10 @@ export function TasksPage({
             onRetryTask={onRetryTask}
             onResolveTask={onResolveTask}
             onDeleteTask={onDeleteTask}
-            onScanAll={onScanAll}
+            onProcessIngest={onBatchIngest}
+            batchPending={batchPending}
+            selectedTaskIds={selectedTaskIds}
+            onToggleTaskSelection={onToggleTaskSelection}
           />
         ))}
     </section>

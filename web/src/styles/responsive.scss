@@ -65,6 +65,14 @@
     grid-template-columns: 1fr;
   }
 
+  .task-selection-bar {
+    position: fixed;
+    inset: auto 12px 12px;
+    z-index: 40;
+    max-height: 45vh;
+    overflow: auto;
+  }
+
   .drawer-scrim {
     padding: 0;
   }
