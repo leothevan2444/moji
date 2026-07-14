@@ -511,7 +511,7 @@
 }
 
 .toolbar-inline:not(.toolbar-inline--subscription):not(.toolbar-inline--logs) {
-  grid-template-columns: minmax(220px, 1.3fr) repeat(2, minmax(130px, 180px)) minmax(150px, auto) repeat(2, auto);
+  grid-template-columns: minmax(220px, 1.3fr) repeat(2, minmax(130px, 180px)) repeat(2, auto);
 }
 
 .chip-row {

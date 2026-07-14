@@ -151,10 +151,12 @@ $task-status-tones: (
   }
 }
 
-.task-sync-status {
-  color: var(--muted);
-  font-size: 12px;
-  white-space: nowrap;
+.task-sync-meta {
+  margin: 14px 0 0;
+  color: var(--muted-2);
+  font-size: 11px;
+  line-height: 1.4;
+  text-align: left;
 }
 
 .task-selection-bar {

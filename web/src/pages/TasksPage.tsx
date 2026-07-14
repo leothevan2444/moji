@@ -189,10 +189,6 @@ export function TasksPage({
         <select value={taskSort} onChange={(event) => onSortChange(event.target.value as TaskSortKey)}>
           {(["createdAt", "updatedAt", "progress"] as const).map((value) => <option key={value} value={value}>{t(`tasks.sorts.${value}`)}</option>)}
         </select>
-        <span className="task-sync-status">
-          {t(autoSyncEnabled ? "taskBatch.autoSyncOn" : "taskBatch.autoSyncOff", { seconds: autoSyncIntervalSeconds })}
-          {lastRefreshedAt ? ` · ${t("taskBatch.updatedAt", { time: lastRefreshedAt.toLocaleTimeString() })}` : ""}
-        </span>
         <div className="task-toolbar-actions">
           <button
             type="button"
@@ -269,6 +265,11 @@ export function TasksPage({
             onToggleTaskSelection={onToggleTaskSelection}
           />
         ))}
+
+      <p className="task-sync-meta">
+        {t(autoSyncEnabled ? "taskBatch.autoSyncOn" : "taskBatch.autoSyncOff", { seconds: autoSyncIntervalSeconds })}
+        {lastRefreshedAt ? ` · ${t("taskBatch.updatedAt", { time: lastRefreshedAt.toLocaleTimeString() })}` : ""}
+      </p>
 
       {moreActionsOpen ? (
         <div className="task-actions-dialog__scrim" onClick={() => setMoreActionsOpen(false)}>

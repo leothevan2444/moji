@@ -73,6 +73,7 @@ describe("TasksPage task controls", () => {
   it("opens more actions in a dialog and keeps refresh visibly bordered", async () => {
     const user = userEvent.setup();
     const callbacks = renderPage();
+    expect(screen.getByText("Auto sync disabled").classList.contains("task-sync-meta")).toBe(true);
     expect(screen.getByRole("button", { name: "Refresh" }).classList.contains("task-icon-button--bordered")).toBe(true);
 
     await user.click(screen.getByRole("button", { name: "More task actions" }));
