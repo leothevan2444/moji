@@ -9,10 +9,6 @@ import {
   type DashboardTask
 } from "../../utils";
 import { useTranslation } from "react-i18next";
-import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faEllipsis } from "@fortawesome/free-solid-svg-icons/faEllipsis";
-import { faTrashCan } from "@fortawesome/free-solid-svg-icons/faTrashCan";
-import { Menu } from "../common/Menu";
 
 interface TaskCardProps {
   task: DashboardTask;
@@ -159,14 +155,21 @@ export function TaskCard({
               {isPendingScan ? t("taskUi.card.scanning") : t("taskUi.card.scan")}
             </button>
           ) : null}
-          {onDelete ? <div onClick={(event) => event.stopPropagation()} onKeyDown={(event) => event.stopPropagation()}>
-            <Menu
-              triggerLabel={<FontAwesomeIcon icon={faEllipsis} />}
-              triggerAriaLabel={t("taskBatch.moreActions", { task: taskSummary(task) })}
-              ariaLabel={t("taskBatch.moreActions", { task: taskSummary(task) })}
-              items={[{ key: "delete", disabled: isPendingDelete, onSelect: () => onDelete(task.id), label: <><FontAwesomeIcon icon={faTrashCan} /> {isPendingDelete ? t("taskUi.card.deleting") : t("taskUi.card.delete")}</> }]}
-            />
-          </div> : null}
+          {onDelete ? (
+            <button
+              type="button"
+              className="ghost-button task-card__action-button task-card__action-button--danger"
+              onClick={(event) => {
+                event.stopPropagation();
+                onDelete(task.id);
+              }}
+              onKeyDown={(event) => event.stopPropagation()}
+              disabled={isPendingDelete}
+              aria-label={t("taskUi.card.deleteLabel", { task: taskSummary(task) })}
+            >
+              {isPendingDelete ? t("taskUi.card.deleting") : t("taskUi.card.delete")}
+            </button>
+          ) : null}
         </div>
       </div>
     </article>

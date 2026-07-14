@@ -57,6 +57,8 @@ describe("TasksPage task controls", () => {
   it("switches card activation from details to selection in multi-select mode", async () => {
     const user = userEvent.setup();
     const callbacks = renderPage();
+    expect(screen.queryByRole("button", { name: "More actions for TASK-1" })).toBeNull();
+    expect(screen.getByRole("button", { name: "Delete task: TASK-1" })).toBeTruthy();
     await user.click(screen.getByRole("button", { name: /TASK-1.*Open details/i }));
     expect(callbacks.onOpenTask).toHaveBeenCalledWith("task-1");
 
