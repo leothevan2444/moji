@@ -65,6 +65,22 @@
     grid-template-columns: 1fr;
   }
 
+  .toolbar-inline--performer-list {
+    display: flex;
+
+    input {
+      flex-basis: 100%;
+    }
+
+    select {
+      flex: 1 1 120px;
+    }
+
+    button:not(.task-icon-button) {
+      flex: 1 1 auto;
+    }
+  }
+
   .task-selection-bar,
   .performer-selection-bar {
     position: fixed;

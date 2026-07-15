@@ -87,6 +87,7 @@ describe("PerformersPage list selection", () => {
     expect(onOpenPerformer).toHaveBeenCalledWith("p1");
 
     view.rerender(<PerformersPage {...props({ performerSelectionMode: true, onOpenPerformer, onTogglePerformerSelection })} />);
+    expect(screen.queryByRole("button", { name: "Select performer Alpha" })).toBeNull();
     fireEvent.click(screen.getByText("Alpha").closest("article")!);
     expect(onTogglePerformerSelection).toHaveBeenCalledWith("p1");
     expect(onOpenPerformer).toHaveBeenCalledTimes(1);
@@ -97,5 +98,17 @@ describe("PerformersPage list selection", () => {
     const actions = within(screen.getByRole("region", { name: "Selected performer actions" }));
     expect((actions.getByRole("button", { name: "Subscribe (1)" }) as HTMLButtonElement).disabled).toBe(false);
     expect((actions.getByRole("button", { name: "Check selected (0)" }) as HTMLButtonElement).disabled).toBe(true);
+    expect((screen.getByRole("button", { name: "Check Alpha now" }) as HTMLButtonElement).disabled).toBe(true);
+  });
+
+  it("keeps reload icon-only and moves check-all into more actions", () => {
+    render(<PerformersPage {...props()} />);
+    const reload = screen.getByRole("button", { name: "Reload from Stash" });
+    expect(reload.textContent).toBe("");
+    expect(screen.queryByRole("button", { name: "Check all" })).toBeNull();
+
+    fireEvent.click(screen.getByRole("button", { name: "More actions" }));
+    expect(screen.getByRole("dialog", { name: "More actions" })).toBeTruthy();
+    expect((screen.getByRole("button", { name: "Check all" }) as HTMLButtonElement).disabled).toBe(true);
   });
 });

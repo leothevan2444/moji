@@ -5,6 +5,7 @@ import { faBookmark } from "@fortawesome/free-solid-svg-icons/faBookmark";
 import { faCheck } from "@fortawesome/free-solid-svg-icons/faCheck";
 import { faFilm } from "@fortawesome/free-solid-svg-icons/faFilm";
 import { faHeart } from "@fortawesome/free-solid-svg-icons/faHeart";
+import { faEllipsis } from "@fortawesome/free-solid-svg-icons/faEllipsis";
 import { faListCheck } from "@fortawesome/free-solid-svg-icons/faListCheck";
 import { faPlus } from "@fortawesome/free-solid-svg-icons/faPlus";
 import { faPlayCircle } from "@fortawesome/free-solid-svg-icons/faPlayCircle";
@@ -13,7 +14,7 @@ import { faTags } from "@fortawesome/free-solid-svg-icons/faTags";
 import { faUsers } from "@fortawesome/free-solid-svg-icons/faUsers";
 import { faArrowsRotate } from "@fortawesome/free-solid-svg-icons/faArrowsRotate";
 import { faXmark } from "@fortawesome/free-solid-svg-icons/faXmark";
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { PerformerDetailView, PerformerListView } from "../components/performers/PerformerViews";
 import i18n from "../i18n/i18n";
@@ -195,6 +196,19 @@ export function PerformersPage({
   onQueueScene
 }: PerformersPageProps) {
   const { t } = useTranslation();
+  const [moreActionsOpen, setMoreActionsOpen] = useState(false);
+
+  useEffect(() => {
+    if (!moreActionsOpen) return;
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setMoreActionsOpen(false);
+    };
+    window.addEventListener("keydown", closeOnEscape);
+    return () => window.removeEventListener("keydown", closeOnEscape);
+  }, [moreActionsOpen]);
+
+  useEffect(() => setMoreActionsOpen(false), [selectedPerformerId]);
+
   const subscribedByID = useMemo(() => {
     return new Map(subscribedPerformers.map((item) => [item.performer.id, item]));
   }, [subscribedPerformers]);
@@ -278,9 +292,9 @@ export function PerformersPage({
                       <button
                         type="button"
                         className="profile-action-icon"
-                        title={t("performerUi.checkNow")}
+                        title={t(performerDetail.performer.subscribed ? "performerUi.checkNow" : "performerUi.checkRequiresSubscription")}
                         aria-label={t("performerUi.checkName", { name: performerDetail.performer.name })}
-                        disabled={pendingSubscriptionID === performerDetail.performer.id}
+                        disabled={!performerDetail.performer.subscribed || pendingSubscriptionID === performerDetail.performer.id}
                         onClick={() => onRefreshOne(performerDetail.performer)}
                       >
                         <FontAwesomeIcon icon={faRotate} className={pendingSubscriptionID === performerDetail.performer.id ? "is-spinning" : undefined} />
@@ -600,7 +614,7 @@ export function PerformersPage({
         </p>
       </div>
 
-      <div className="toolbar-inline toolbar-inline--subscription">
+      <div className="toolbar-inline toolbar-inline--subscription toolbar-inline--performer-list">
         <input
           placeholder={t("performerUi.search")}
           value={subscriptionSearch}
@@ -623,16 +637,19 @@ export function PerformersPage({
         >
           <FontAwesomeIcon icon={faListCheck} />
         </button>
-        <button type="button" className="ghost-button" onClick={onReload} disabled={refreshingList} title={t("performerUi.reloadHint")}>
-          <FontAwesomeIcon icon={faRotate} className={refreshingList ? "is-spinning" : undefined} /> {t("performerUi.reloadFromStash")}
+        <button type="button" className="ghost-button task-icon-button task-icon-button--bordered" onClick={onReload} disabled={refreshingList} aria-label={t("performerUi.reloadFromStash")} title={t("performerUi.reloadFromStash")}>
+          <FontAwesomeIcon icon={faRotate} className={refreshingList ? "is-spinning" : undefined} />
         </button>
         <button
           type="button"
-          className="ghost-button"
-          disabled={refreshingSubscriptionNow || subscribedPerformers.length === 0}
-          onClick={onRefreshAll}
+          className="ghost-button task-icon-button task-icon-button--bordered"
+          onClick={() => setMoreActionsOpen(true)}
+          aria-haspopup="dialog"
+          aria-expanded={moreActionsOpen}
+          aria-label={t("performerUi.moreActions")}
+          title={t("performerUi.moreActions")}
         >
-          <FontAwesomeIcon icon={faArrowsRotate} className={refreshingSubscriptionNow ? "is-spinning" : undefined} /> {refreshingSubscriptionNow ? t("performerUi.checking") : t("performerUi.checkAllSubscribed")}
+          <FontAwesomeIcon icon={faEllipsis} />
         </button>
       </div>
 
@@ -695,9 +712,6 @@ export function PerformersPage({
               role="button"
               tabIndex={0}
             >
-              {performerSelectionMode ? <button type="button" className="profile-card__selector" aria-pressed={selectedPerformerIds.includes(performer.id)} aria-label={t(selectedPerformerIds.includes(performer.id) ? "performerBatch.deselectName" : "performerBatch.selectName", { name: performer.name })} onClick={(event) => { event.stopPropagation(); onTogglePerformerSelection(performer.id); }}>
-                {selectedPerformerIds.includes(performer.id) ? <FontAwesomeIcon icon={faCheck} /> : null}
-              </button> : null}
               {imageURL ? (
                 <div className="avatar avatar--frame">
                   <span className="avatar__fallback" aria-hidden="true">{performerInitials(performer.name)}</span>
@@ -754,9 +768,9 @@ export function PerformersPage({
                     <button
                       type="button"
                       className="profile-action-icon"
-                      title={t("performerUi.checkNow")}
+                      title={t(performer.subscribed ? "performerUi.checkNow" : "performerUi.checkRequiresSubscription")}
                       aria-label={t("performerUi.checkName", { name: performer.name })}
-                      disabled={pendingSubscriptionID === performer.id}
+                      disabled={!performer.subscribed || pendingSubscriptionID === performer.id}
                       onClick={() => onRefreshOne(performer)}
                     >
                       <FontAwesomeIcon icon={faRotate} className={pendingSubscriptionID === performer.id ? "is-spinning" : undefined} />
@@ -792,6 +806,39 @@ export function PerformersPage({
           <button type="button" className="ghost-button" disabled={!stashPerformerPage.hasNextPage || fetchingStashPerformers} onClick={onNextPage}>
             {t("performerUi.next")}
           </button>
+        </div>
+      ) : null}
+
+      {moreActionsOpen ? (
+        <div className="task-actions-dialog__scrim" onClick={() => setMoreActionsOpen(false)}>
+          <section
+            className="task-actions-dialog"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="performer-actions-dialog-title"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className="task-actions-dialog__head">
+              <h3 id="performer-actions-dialog-title">{t("performerUi.moreActions")}</h3>
+              <button type="button" className="ghost-button" onClick={() => setMoreActionsOpen(false)} aria-label={t("common.close")} autoFocus>
+                <FontAwesomeIcon icon={faXmark} />
+              </button>
+            </div>
+            <div className="task-actions-dialog__body">
+              <button
+                type="button"
+                className="ghost-button task-actions-dialog__action"
+                disabled={refreshingSubscriptionNow || subscribedPerformers.length === 0}
+                onClick={() => {
+                  onRefreshAll();
+                  setMoreActionsOpen(false);
+                }}
+              >
+                <FontAwesomeIcon icon={faArrowsRotate} className={refreshingSubscriptionNow ? "is-spinning" : undefined} />
+                <span>{refreshingSubscriptionNow ? t("performerUi.checking") : t("performerUi.checkAllSubscribed")}</span>
+              </button>
+            </div>
+          </section>
         </div>
       ) : null}
     </section>

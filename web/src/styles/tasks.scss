@@ -643,29 +643,6 @@ $task-status-tones: (
     box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 18%, transparent), var(--shadow-sm);
   }
 
-  &__selector {
-    position: absolute;
-    z-index: 3;
-    top: 16px;
-    left: 16px;
-    display: grid;
-    place-items: center;
-    width: 28px;
-    height: 28px;
-    padding: 0;
-    border: 1px solid var(--line-strong);
-    border-radius: 50%;
-    background: color-mix(in srgb, var(--surface-strong) 92%, transparent);
-    color: var(--accent);
-    box-shadow: var(--shadow-sm);
-  }
-
-  &__selector[aria-pressed="true"] {
-    border-color: var(--accent);
-    background: var(--accent);
-    color: #fff;
-  }
-
   &__body {
     min-width: 0;
     min-height: 0;
