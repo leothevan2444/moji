@@ -1858,4 +1858,14 @@ func TestQueuePerformerScenesReturnsMixedSummary(t *testing.T) {
 	if result.Summary.RequestedCount != 3 || result.Summary.QueuedCount != 1 || result.Summary.SkippedCount != 1 || result.Summary.FailedCount != 1 {
 		t.Fatalf("unexpected summary: %+v", result.Summary)
 	}
+	if len(result.Results) != 3 {
+		t.Fatalf("expected one result per selected key, got %+v", result.Results)
+	}
+	wantKeys := []string{"stashbox:" + endpointKey(endpoint) + ":" + sceneID, "stash:" + inLibraryID, "missing-key"}
+	wantStatuses := []performerdomain.QueueSceneStatus{performerdomain.QueueSceneStatusQueued, performerdomain.QueueSceneStatusSkipped, performerdomain.QueueSceneStatusFailed}
+	for index := range wantKeys {
+		if result.Results[index].Key != wantKeys[index] || result.Results[index].Status != wantStatuses[index] {
+			t.Fatalf("result %d = %+v, want key %q status %s", index, result.Results[index], wantKeys[index], wantStatuses[index])
+		}
+	}
 }

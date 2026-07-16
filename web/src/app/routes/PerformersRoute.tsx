@@ -13,6 +13,7 @@ import { useTranslation } from "react-i18next";
 import { mergePerformerSelection } from "../../utils";
 import type { PerformerBatchConfirmAction } from "../../components/drawers/PerformerBatchConfirmDrawer";
 import type { PerformerBatchResultView } from "../../components/drawers/PerformerBatchResultDrawer";
+import { buildPerformerSceneQueueInput, performerSceneQueueSnapshot, usePerformerSceneSelection } from "./performerSceneSelection";
 
 const PerformerBatchConfirmDrawer = lazy(() => import("../../components/drawers/PerformerBatchConfirmDrawer").then((module) => ({ default: module.PerformerBatchConfirmDrawer })));
 const PerformerBatchResultDrawer = lazy(() => import("../../components/drawers/PerformerBatchResultDrawer").then((module) => ({ default: module.PerformerBatchResultDrawer })));
@@ -28,7 +29,6 @@ export function Component() {
   const location = useLocation();
   const { pushToast } = useOutletContext<AppOutletContext>();
   const [pendingSubscription, setPendingSubscription] = useState<string | null>(null);
-  const [selectedKeys, setSelectedKeys] = useState<string[]>([]);
   const [pendingKeys, setPendingKeys] = useState<string[]>([]);
   const [performerSelectionMode, setPerformerSelectionMode] = useState(false);
   const [selectedPerformerIds, setSelectedPerformerIds] = useState<string[]>([]);
@@ -36,11 +36,12 @@ export function Component() {
   const [batchResult, setBatchResult] = useState<PerformerBatchResultView | null>(null);
   const [lastRefreshedAt, setLastRefreshedAt] = useState<string | null>(null);
   const [reloadingList, setReloadingList] = useState(false);
-  useEffect(() => { setSelectedKeys([]); setPerformerSelectionMode(false); setSelectedPerformerIds([]); }, [performerId]);
+  useEffect(() => { setPerformerSelectionMode(false); setSelectedPerformerIds([]); }, [performerId]);
   const source = state.source === "stash" ? SceneSourceFilter.Stash : state.source === "stashbox" ? SceneSourceFilter.Stashbox : SceneSourceFilter.All;
   const library = state.library === "in-library" ? LibraryFilter.InLibrary : state.library === "not-in-library" ? LibraryFilter.NotInLibrary : LibraryFilter.All;
   const [{ data: config }] = useQuery({ query: PerformersConfigDocumentDocument, requestPolicy: "cache-and-network" });
   const subscription = usePerformersWorkspace({ enabled: true, search: deferredSearch || null, page: state.page, pageSize: state.pageSize, performerId: performerId ?? null, performerSceneSearch: deferredSceneSearch || null, performerSceneSource: source, performerSceneLibrary: library, performerScenePage: state.scenePage, performerScenePageSize: state.scenePageSize });
+  const sceneSelection = usePerformerSceneSelection(performerId ?? null, subscription.performerScenes);
   const update = (patch: Partial<typeof state>) => {
     const next = serializePerformerSearchParams({ ...state, ...patch });
     const base = performerId ? `/performers/${encodeURIComponent(performerId)}` : "/performers";
@@ -99,22 +100,19 @@ export function Component() {
     if (merged.length > 100) pushToast("tone-info", t("performerBatch.limit", { count: 100 }));
     setSelectedPerformerIds((current) => mergePerformerSelection(current, ids));
   };
-  const sceneInput = (scene: (typeof subscription.performerScenes)[number]) => ({ key: scene.key, sourceSceneId: scene.sourceSceneId, stashBoxSceneId: scene.stashBoxSceneId ?? undefined, stashBoxEndpoint: scene.stashBoxEndpoint ?? undefined, code: scene.code ?? undefined, title: scene.title ?? undefined, inLibrary: scene.inLibrary });
   const queueSelected = async () => {
-    if (!performerId || !selectedKeys.length) return;
-    const scenes = subscription.performerScenes.filter((scene) => selectedKeys.includes(scene.key));
-    if (!scenes.length) { pushToast("tone-danger", t("performerRoute.noSelection")); return; }
-    const result = await subscription.queuePerformerScenes({ input: { performerId, scenes: scenes.map(sceneInput) } });
+    if (!performerId || !sceneSelection.selected.size) return;
+    const result = await subscription.queuePerformerScenes({ input: buildPerformerSceneQueueInput(performerId, sceneSelection.selected) });
     if (result.error) { pushToast("tone-danger", describeQueryError(result.error)); return; }
     const payload = result.data?.queuePerformerScenes; if (!payload) { pushToast("tone-danger", t("performerRoute.batchNoResult")); return; }
     const { summary, results } = payload;
     pushToast(summary.queuedCount ? (summary.failedCount ? "tone-info" : "tone-success") : summary.failedCount ? "tone-danger" : "tone-info", t("performerRoute.batchSummary", { queued: summary.queuedCount, skipped: summary.skippedCount, failed: summary.failedCount }));
-    const queued = new Set(results.filter((item) => item.status === "QUEUED").map((item) => item.key)); setSelectedKeys((current) => current.filter((key) => !queued.has(key)));
+    sceneSelection.applyResults(results);
   };
   const queueOne = async (scene: (typeof subscription.performerScenes)[number]) => {
     if (!performerId || scene.inLibrary || scene.mojiTask || pendingKeys.includes(scene.key)) return;
     setPendingKeys((current) => [...current, scene.key]);
-    try { const result = await subscription.queueSinglePerformerScene({ input: { performerId, scenes: [sceneInput(scene)] } }); if (result.error) { pushToast("tone-danger", describeQueryError(result.error)); return; } const item = result.data?.queuePerformerScenes.results[0]; if (!item) pushToast("tone-danger", t("performerRoute.createNoResult")); else { pushToast(item.status === "QUEUED" ? "tone-success" : item.status === "SKIPPED" ? "tone-info" : "tone-danger", item.status === "QUEUED" ? t("performerRoute.created", { scene: item.resolvedCode || scene.code || scene.title || t("performerRoute.scene") }) : item.message); if (item.status !== "FAILED") setSelectedKeys((current) => current.filter((key) => key !== scene.key)); } }
+    try { const result = await subscription.queueSinglePerformerScene({ input: { performerId, scenes: [performerSceneQueueSnapshot(scene)] } }); if (result.error) { pushToast("tone-danger", describeQueryError(result.error)); return; } const item = result.data?.queuePerformerScenes.results[0]; if (!item) pushToast("tone-danger", t("performerRoute.createNoResult")); else { pushToast(item.status === "QUEUED" ? "tone-success" : item.status === "SKIPPED" ? "tone-info" : "tone-danger", item.status === "QUEUED" ? t("performerRoute.created", { scene: item.resolvedCode || scene.code || scene.title || t("performerRoute.scene") }) : item.message); if (item.status === "QUEUED") sceneSelection.applyResults([item]); } }
     finally { setPendingKeys((current) => current.filter((key) => key !== scene.key)); }
   };
 
@@ -122,7 +120,7 @@ export function Component() {
     fetchingStashPerformers={subscription.fetchingStashPerformers} fetchingSubscription={subscription.fetchingSubscription} performerDetail={subscription.performerDetail} performerScenePage={subscription.performerScenePage} performerScenes={subscription.performerScenes}
     fetchingPerformerDetail={subscription.fetchingPerformerDetail} fetchingPerformerScenes={subscription.fetchingPerformerScenes} refreshingSubscriptionNow={subscription.refreshingSubscriptionNow} refreshingList={reloadingList || subscription.fetchingStashPerformers} performerBatchPending={subscription.subscribingPerformers || subscription.unsubscribingPerformers || subscription.refreshingSubscribedPerformers} queueingPerformerScenes={subscription.queueingPerformerScenes}
     subscriptionSearch={state.q} subscriptionPageSize={state.pageSize} selectedPerformerId={performerId ?? null} performerSceneSearch={state.sceneQ} performerSceneSourceFilter={source} performerSceneLibraryFilter={library} performerScenePageSize={state.scenePageSize}
-    selectedSceneKeys={selectedKeys} selectedPerformerIds={selectedPerformerIds} performerSelectionMode={performerSelectionMode} lastRefreshedAt={lastRefreshedAt} pendingSceneKeys={pendingKeys} pendingSubscriptionID={pendingSubscription} subscriptionError={subscription.subscriptionError ?? null} stashPerformersError={subscription.stashPerformersError ?? null} performerDetailError={subscription.performerDetailError ?? null} performerScenesError={subscription.performerScenesError ?? null}
+    selectedSceneKeys={sceneSelection.selectedKeys} selectedPerformerIds={selectedPerformerIds} performerSelectionMode={performerSelectionMode} lastRefreshedAt={lastRefreshedAt} pendingSceneKeys={pendingKeys} pendingSubscriptionID={pendingSubscription} subscriptionError={subscription.subscriptionError ?? null} stashPerformersError={subscription.stashPerformersError ?? null} performerDetailError={subscription.performerDetailError ?? null} performerScenesError={subscription.performerScenesError ?? null}
     onSearchChange={(q) => update({ q, page: 1 })} onPageSizeChange={(pageSize) => update({ pageSize, page: 1 })} onReload={() => void reload()} onRefreshAll={() => void refreshAll()} onTogglePerformerSelectionMode={() => { if (performerSelectionMode) setSelectedPerformerIds([]); setPerformerSelectionMode((current) => !current); }} onTogglePerformerSelection={togglePerformerSelection} onSelectVisiblePerformers={selectVisiblePerformers} onClearPerformerSelection={() => setSelectedPerformerIds([])} onBatchSubscribePerformers={(ids) => void runBatchSubscribe(ids)} onBatchUnsubscribePerformers={(ids) => setBatchConfirm({ action: "unsubscribe", ids })} onBatchRefreshPerformers={(ids) => setBatchConfirm({ action: "refresh", ids })} onToggle={(p) => void toggle(p)} onRefreshOne={(p) => void refreshOne(p)}
     onPrevPage={() => update({ page: Math.max(1, state.page - 1) })} onNextPage={() => update({ page: state.page + 1 })}
     onOpenPerformer={(id) => { const next = serializePerformerSearchParams(state); navigate(`/performers/${encodeURIComponent(id)}${next.size ? `?${next}` : ""}`, { state: { backgroundLocation: location } }); }}
@@ -130,7 +128,7 @@ export function Component() {
     onPerformerSceneSearchChange={(sceneQ) => update({ sceneQ, scenePage: 1 })} onPerformerSceneSourceChange={(value) => update({ source: value === SceneSourceFilter.Stash ? "stash" : value === SceneSourceFilter.Stashbox ? "stashbox" : "all", scenePage: 1 })}
     onPerformerSceneLibraryChange={(value) => update({ library: value === LibraryFilter.InLibrary ? "in-library" : value === LibraryFilter.NotInLibrary ? "not-in-library" : "all", scenePage: 1 })} onPerformerScenePageSizeChange={(scenePageSize) => update({ scenePageSize, scenePage: 1 })}
     onPrevPerformerScenePage={() => update({ scenePage: Math.max(1, state.scenePage - 1) })} onNextPerformerScenePage={() => update({ scenePage: state.scenePage + 1 })}
-    onToggleSceneSelection={(key) => setSelectedKeys((current) => current.includes(key) ? current.filter((x) => x !== key) : [...current, key])} onSelectCurrentScenePage={(keys) => setSelectedKeys((current) => [...new Set([...current, ...keys])])} onClearSceneSelection={() => setSelectedKeys([])}
+    onToggleSceneSelection={sceneSelection.toggle} onSelectCurrentScenePage={sceneSelection.addVisible} onClearSceneSelection={sceneSelection.clear}
     onQueueSelectedScenes={() => void queueSelected()} onQueueScene={(scene) => void queueOne(scene)} />
     {batchConfirm ? <Drawer visibleDrawer="performer-batch-confirm" closing={false} title={t("performerBatch.confirmTitle")} onClose={() => { if (!(subscription.unsubscribingPerformers || subscription.refreshingSubscribedPerformers)) setBatchConfirm(null); }}><Suspense fallback={null}><PerformerBatchConfirmDrawer action={batchConfirm.action} count={batchConfirm.ids.length} pending={subscription.unsubscribingPerformers || subscription.refreshingSubscribedPerformers} onConfirm={() => batchConfirm.action === "unsubscribe" ? void runBatchUnsubscribe(batchConfirm.ids) : void runBatchRefresh(batchConfirm.ids)} onCancel={() => setBatchConfirm(null)} /></Suspense></Drawer> : null}
     {batchResult ? <Drawer visibleDrawer="performer-batch-result" closing={false} title={t("performerBatch.resultTitle")} onClose={() => setBatchResult(null)}><Suspense fallback={null}><PerformerBatchResultDrawer payload={batchResult} /></Suspense></Drawer> : null}
