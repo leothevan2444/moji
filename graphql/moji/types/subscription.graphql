@@ -210,17 +210,7 @@ type SubscriptionRelease {
 
 input QueuePerformerScenesInput {
   performerId: ID!
-  scenes: [QueuePerformerSceneInput!]!
-}
-
-input QueuePerformerSceneInput {
-  key: ID!
-  sourceSceneId: ID!
-  stashBoxSceneId: ID
-  stashBoxEndpoint: String
-  code: String
-  title: String
-  inLibrary: Boolean!
+  sceneKeys: [ID!]!
 }
 
 type QueuePerformerScenesPayload {
@@ -233,7 +223,6 @@ type QueuePerformerSceneResult {
   key: ID!
   status: QueuePerformerSceneStatus!
   reasonCode: String!
-  message: String!
   task: Task
   resolvedCode: String
 }

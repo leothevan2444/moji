@@ -386,28 +386,17 @@ type QueueDiscoveredSceneInput struct {
 	StashBoxEndpoint string `json:"stashBoxEndpoint"`
 }
 
-type QueuePerformerSceneInput struct {
-	Key              string  `json:"key"`
-	SourceSceneID    string  `json:"sourceSceneId"`
-	StashBoxSceneID  *string `json:"stashBoxSceneId,omitempty"`
-	StashBoxEndpoint *string `json:"stashBoxEndpoint,omitempty"`
-	Code             *string `json:"code,omitempty"`
-	Title            *string `json:"title,omitempty"`
-	InLibrary        bool    `json:"inLibrary"`
-}
-
 type QueuePerformerSceneResult struct {
 	Key          string                    `json:"key"`
 	Status       QueuePerformerSceneStatus `json:"status"`
 	ReasonCode   string                    `json:"reasonCode"`
-	Message      string                    `json:"message"`
 	Task         *Task                     `json:"task,omitempty"`
 	ResolvedCode *string                   `json:"resolvedCode,omitempty"`
 }
 
 type QueuePerformerScenesInput struct {
-	PerformerID string                      `json:"performerId"`
-	Scenes      []*QueuePerformerSceneInput `json:"scenes"`
+	PerformerID string   `json:"performerId"`
+	SceneKeys   []string `json:"sceneKeys"`
 }
 
 type QueuePerformerScenesPayload struct {

@@ -1708,13 +1708,7 @@ func TestQueuePerformerScenesQueuesEligibleScene(t *testing.T) {
 	service.SetTaskCreator(creator)
 
 	result, err := performerServiceForTest(t, service).QueuePerformerScenes(context.Background(), "p1", []performerdomain.QueueSceneSelection{{
-		Key:              "stashbox:" + endpointKey(endpoint) + ":" + sceneID,
-		SourceSceneID:    sceneID,
-		StashBoxSceneID:  sceneID,
-		StashBoxEndpoint: endpoint,
-		Code:             code,
-		Title:            "ignored",
-		InLibrary:        false,
+		Key: "stashbox:" + endpointKey(endpoint) + ":" + sceneID,
 	}})
 	if err != nil {
 		t.Fatalf("QueuePerformerScenes failed: %v", err)

@@ -285,6 +285,8 @@
       "TASK_BATCH_TOO_LARGE": "单次批量操作最多处理 100 个任务。",
       "PERFORMER_BATCH_EMPTY": "请至少选择一位演员。",
       "PERFORMER_BATCH_TOO_LARGE": "单次批量操作最多处理 100 位演员。",
+      "PERFORMER_SCENE_BATCH_EMPTY": "请至少选择一个演员作品。",
+      "PERFORMER_SCENE_BATCH_TOO_LARGE": "单次最多处理 100 个演员作品。",
       "TRACKER_NOT_CONFIGURED": "索引器未配置，请检查 Jackett 连接。",
       "DOWNLOADER_NOT_CONFIGURED": "下载器未配置，请检查 qBittorrent 连接。",
       "SCAN_PATH_REQUIRED": "缺少可供 Stash 扫描的路径。",
@@ -802,6 +804,19 @@
     "createNoResult": "创建任务失败，后端没有返回结果。",
     "created": "已为 {{scene}} 创建下载任务。",
     "scene": "影片"
+  },
+  "performerSceneQueue": {
+    "reasons": {
+      "QUEUED": "已创建下载任务。",
+      "ALREADY_IN_LIBRARY": "作品已在 Stash 库中。",
+      "DUPLICATE_CODE_TASK": "同一番号已存在下载任务。",
+      "DUPLICATE_TORRENT_TASK": "同一 torrent 或 magnet 已存在下载任务。",
+      "MISSING_CODE": "作品缺少可稳定解析的番号。",
+      "NO_STASHBOX_SOURCE": "作品缺少可用于下载的 StashBox 来源。",
+      "SCENE_NOT_FOUND": "当前演员作品中未找到该条目，请刷新后重试。",
+      "QUEUE_FAILED": "创建下载任务失败，请稍后重试。",
+      "UNKNOWN": "作品未能加入下载队列。"
+    }
   },
   "performerBatch": {
     "multiSelect": "进入演员多选",

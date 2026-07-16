@@ -16,6 +16,7 @@ import (
 	"github.com/99designs/gqlgen/graphql/handler/transport"
 	"github.com/google/uuid"
 	"github.com/gorilla/websocket"
+	"github.com/leothevan2444/moji/internal/performer"
 	"github.com/leothevan2444/moji/internal/subscription"
 	"github.com/leothevan2444/moji/internal/taskruntime"
 	"github.com/vektah/gqlparser/v2/ast"
@@ -23,24 +24,26 @@ import (
 )
 
 const (
-	ErrorDuplicateTorrentTask   = "DUPLICATE_TORRENT_TASK"
-	ErrorDuplicateCodeTask      = "DUPLICATE_CODE_TASK"
-	ErrorDuplicateLibraryCode   = "DUPLICATE_LIBRARY_CODE"
-	ErrorTaskCodeRequired       = "TASK_CODE_REQUIRED"
-	ErrorTrackerNotConfigured   = "TRACKER_NOT_CONFIGURED"
-	ErrorDownloaderDisabled     = "DOWNLOADER_NOT_CONFIGURED"
-	ErrorStashNotConfigured     = "STASH_NOT_CONFIGURED"
-	ErrorScanPathRequired       = "SCAN_PATH_REQUIRED"
-	ErrorTransferPathFailed     = "TRANSFER_PATH_FAILED"
-	ErrorStashScanFailed        = "STASH_SCAN_FAILED"
-	ErrorNoTorrentCandidate     = "NO_TORRENT_CANDIDATE"
-	ErrorTorrentURLRequired     = "TORRENT_URL_REQUIRED"
-	ErrorAddTorrentFailed       = "ADD_TORRENT_FAILED"
-	ErrorInternal               = "INTERNAL_ERROR"
-	ErrorTaskBatchEmpty         = "TASK_BATCH_EMPTY"
-	ErrorTaskBatchTooLarge      = "TASK_BATCH_TOO_LARGE"
-	ErrorPerformerBatchEmpty    = "PERFORMER_BATCH_EMPTY"
-	ErrorPerformerBatchTooLarge = "PERFORMER_BATCH_TOO_LARGE"
+	ErrorDuplicateTorrentTask        = "DUPLICATE_TORRENT_TASK"
+	ErrorDuplicateCodeTask           = "DUPLICATE_CODE_TASK"
+	ErrorDuplicateLibraryCode        = "DUPLICATE_LIBRARY_CODE"
+	ErrorTaskCodeRequired            = "TASK_CODE_REQUIRED"
+	ErrorTrackerNotConfigured        = "TRACKER_NOT_CONFIGURED"
+	ErrorDownloaderDisabled          = "DOWNLOADER_NOT_CONFIGURED"
+	ErrorStashNotConfigured          = "STASH_NOT_CONFIGURED"
+	ErrorScanPathRequired            = "SCAN_PATH_REQUIRED"
+	ErrorTransferPathFailed          = "TRANSFER_PATH_FAILED"
+	ErrorStashScanFailed             = "STASH_SCAN_FAILED"
+	ErrorNoTorrentCandidate          = "NO_TORRENT_CANDIDATE"
+	ErrorTorrentURLRequired          = "TORRENT_URL_REQUIRED"
+	ErrorAddTorrentFailed            = "ADD_TORRENT_FAILED"
+	ErrorInternal                    = "INTERNAL_ERROR"
+	ErrorTaskBatchEmpty              = "TASK_BATCH_EMPTY"
+	ErrorTaskBatchTooLarge           = "TASK_BATCH_TOO_LARGE"
+	ErrorPerformerBatchEmpty         = "PERFORMER_BATCH_EMPTY"
+	ErrorPerformerBatchTooLarge      = "PERFORMER_BATCH_TOO_LARGE"
+	ErrorPerformerSceneBatchEmpty    = "PERFORMER_SCENE_BATCH_EMPTY"
+	ErrorPerformerSceneBatchTooLarge = "PERFORMER_SCENE_BATCH_TOO_LARGE"
 )
 
 // ConfigureGraphQLServer installs the production error contract in one place.
@@ -118,6 +121,10 @@ func classifyError(err error) string {
 		return ErrorPerformerBatchEmpty
 	case errors.Is(err, subscription.ErrPerformerBatchTooLarge):
 		return ErrorPerformerBatchTooLarge
+	case errors.Is(err, performer.ErrQueueSceneBatchEmpty):
+		return ErrorPerformerSceneBatchEmpty
+	case errors.Is(err, performer.ErrQueueSceneBatchTooLarge):
+		return ErrorPerformerSceneBatchTooLarge
 	}
 	message := strings.ToLower(err.Error())
 	switch {

@@ -1,13 +1,14 @@
 // @vitest-environment jsdom
 
-import { act, fireEvent, render, renderHook, screen, waitFor } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, renderHook, screen, waitFor } from "@testing-library/react";
 import { Outlet, RouterProvider, createMemoryRouter } from "react-router";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { buildPerformerSceneQueueInput, type SceneSnapshotSource, usePerformerSceneSelection } from "./performerSceneSelection";
 
 const mocks = vi.hoisted(() => ({
   pushToast: vi.fn(),
   queuePerformerScenes: vi.fn(),
+  queueSinglePerformerScene: vi.fn(),
   workspace: vi.fn()
 }));
 
@@ -21,6 +22,8 @@ vi.mock("../../hooks/usePerformersWorkspace", () => ({
 
 import i18n from "../../i18n/i18n";
 import { Component as PerformersRoute } from "./PerformersRoute";
+
+afterEach(() => cleanup());
 
 function scene(key: string): SceneSnapshotSource {
   return {
@@ -111,7 +114,7 @@ function workspaceForPage(page: number) {
     performerDetailError: undefined,
     performerScenesError: undefined,
     queuePerformerScenes: mocks.queuePerformerScenes,
-    queueSinglePerformerScene: vi.fn(),
+    queueSinglePerformerScene: mocks.queueSinglePerformerScene,
     reloadSubscription: vi.fn(),
     reloadStashPerformers: vi.fn(),
     subscribePerformer: vi.fn(),
@@ -144,8 +147,8 @@ describe("PerformersRoute cross-page scene selection", () => {
     act(() => result.current.addVisible(["two", "shared"]));
     rerender({ performerId: "performer-1", visible: [] });
     const input = buildPerformerSceneQueueInput("performer-1", result.current.selected);
-    expect(input.scenes.map((item) => item.key)).toEqual(["one", "shared", "two"]);
-    expect(new Set(input.scenes.map((item) => item.key)).size).toBe(3);
+    expect(input.sceneKeys).toEqual(["one", "shared", "two"]);
+    expect(new Set(input.sceneKeys).size).toBe(3);
   });
 
   it("clears queued keys while retaining skipped, failed, and unreported keys", () => {
@@ -180,6 +183,7 @@ describe("PerformersRoute mutation integration", () => {
     await i18n.changeLanguage("en");
     mocks.pushToast.mockReset();
     mocks.queuePerformerScenes.mockReset();
+    mocks.queueSinglePerformerScene.mockReset();
     mocks.workspace.mockReset();
     mocks.workspace.mockImplementation((options: any) => workspaceForPage(options.performerScenePage));
   });
@@ -190,10 +194,10 @@ describe("PerformersRoute mutation integration", () => {
         queuePerformerScenes: {
           summary: { requestedCount: 4, queuedCount: 2, skippedCount: 1, failedCount: 1 },
           results: [
-            { key: "one", status: "QUEUED", reasonCode: "QUEUED", message: "queued", task: null, resolvedCode: "ONE" },
-            { key: "two", status: "SKIPPED", reasonCode: "ALREADY_IN_LIBRARY", message: "skipped", task: null, resolvedCode: "TWO" },
-            { key: "three", status: "FAILED", reasonCode: "QUEUE_FAILED", message: "failed", task: null, resolvedCode: "THREE" },
-            { key: "four", status: "QUEUED", reasonCode: "QUEUED", message: "queued", task: null, resolvedCode: "FOUR" }
+            { key: "one", status: "QUEUED", reasonCode: "QUEUED", task: null, resolvedCode: "ONE" },
+            { key: "two", status: "SKIPPED", reasonCode: "ALREADY_IN_LIBRARY", task: null, resolvedCode: "TWO" },
+            { key: "three", status: "FAILED", reasonCode: "QUEUE_FAILED", task: null, resolvedCode: "THREE" },
+            { key: "four", status: "QUEUED", reasonCode: "QUEUED", task: null, resolvedCode: "FOUR" }
           ]
         }
       },
@@ -220,11 +224,45 @@ describe("PerformersRoute mutation integration", () => {
     expect(mocks.queuePerformerScenes).toHaveBeenCalledWith({
       input: {
         performerId: "performer-1",
-        scenes: ["one", "two", "three", "four"].map((key) => expect.objectContaining({ key }))
+        sceneKeys: ["one", "two", "three", "four"]
       }
     });
     await waitFor(() => expect(screen.getByRole("button", { name: "Create download tasks (2)" })).toBeTruthy());
     expect(screen.getByRole("button", { name: "Deselect THREE" }).getAttribute("aria-pressed")).toBe("true");
     expect(screen.getByRole("button", { name: "Select FOUR" }).getAttribute("aria-pressed")).toBe("false");
+  });
+
+  it("submits a key-only single-scene request and localizes its reason code", async () => {
+    mocks.queueSinglePerformerScene.mockResolvedValue({
+      data: {
+        queuePerformerScenes: {
+          results: [{
+            key: "one",
+            status: "SKIPPED",
+            reasonCode: "NO_STASHBOX_SOURCE",
+            task: null,
+            resolvedCode: "ONE"
+          }]
+        }
+      },
+      error: undefined
+    });
+    const router = createMemoryRouter([
+      {
+        element: <TestLayout />,
+        children: [{ path: "/performers/:performerId", element: <PerformersRoute /> }]
+      }
+    ], { initialEntries: ["/performers/performer-1"] });
+    render(<RouterProvider router={router} />);
+
+    fireEvent.click((await screen.findAllByRole("button", { name: "Create task" }))[0]);
+
+    await waitFor(() => expect(mocks.queueSinglePerformerScene).toHaveBeenCalledWith({
+      input: { performerId: "performer-1", sceneKeys: ["one"] }
+    }));
+    expect(mocks.pushToast).toHaveBeenCalledWith(
+      "tone-info",
+      "No downloadable StashBox source is available for this scene."
+    );
   });
 });

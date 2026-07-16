@@ -289,6 +289,8 @@
       "TASK_BATCH_TOO_LARGE": "A batch can contain at most 100 tasks.",
       "PERFORMER_BATCH_EMPTY": "Select at least one performer.",
       "PERFORMER_BATCH_TOO_LARGE": "A batch can contain at most 100 performers.",
+      "PERFORMER_SCENE_BATCH_EMPTY": "Select at least one performer scene.",
+      "PERFORMER_SCENE_BATCH_TOO_LARGE": "A batch can contain at most 100 performer scenes.",
       "TRACKER_NOT_CONFIGURED": "No indexer is configured. Check the Jackett connection.",
       "DOWNLOADER_NOT_CONFIGURED": "No downloader is configured. Check the qBittorrent connection.",
       "SCAN_PATH_REQUIRED": "No path is available for the Stash scan.",
@@ -810,6 +812,19 @@
     "createNoResult": "Task creation failed because the server returned no result.",
     "created": "Created a download task for {{scene}}.",
     "scene": "scene"
+  },
+  "performerSceneQueue": {
+    "reasons": {
+      "QUEUED": "Created the download task.",
+      "ALREADY_IN_LIBRARY": "This scene is already in the Stash library.",
+      "DUPLICATE_CODE_TASK": "A download task already exists for this code.",
+      "DUPLICATE_TORRENT_TASK": "A download task already uses this torrent or magnet.",
+      "MISSING_CODE": "No stable scene code could be resolved.",
+      "NO_STASHBOX_SOURCE": "No downloadable StashBox source is available for this scene.",
+      "SCENE_NOT_FOUND": "This scene is no longer available for the performer. Refresh and try again.",
+      "QUEUE_FAILED": "The download task could not be created. Try again later.",
+      "UNKNOWN": "The scene could not be added to the download queue."
+    }
   },
   "performerBatch": {
     "multiSelect": "Select multiple performers",

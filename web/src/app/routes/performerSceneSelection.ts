@@ -1,7 +1,7 @@
-import type { QueuePerformerSceneInput, QueuePerformerScenesInput } from "../../graphql/generated/graphql";
+import type { QueuePerformerScenesInput } from "../../graphql/generated/graphql";
 import { useEffect, useState } from "react";
 
-export type PerformerSceneSelectionMap = ReadonlyMap<string, QueuePerformerSceneInput>;
+export type PerformerSceneSelectionMap = ReadonlyMap<string, string>;
 
 export type SceneSnapshotSource = {
   key: string;
@@ -15,33 +15,21 @@ export type SceneSnapshotSource = {
 
 const emptySelection: PerformerSceneSelectionMap = new Map();
 
-export function performerSceneQueueSnapshot(scene: SceneSnapshotSource): QueuePerformerSceneInput {
-  return {
-    key: scene.key,
-    sourceSceneId: scene.sourceSceneId,
-    stashBoxSceneId: scene.stashBoxSceneId ?? undefined,
-    stashBoxEndpoint: scene.stashBoxEndpoint ?? undefined,
-    code: scene.code ?? undefined,
-    title: scene.title ?? undefined,
-    inLibrary: scene.inLibrary
-  };
-}
-
 export function togglePerformerSceneSelection(current: PerformerSceneSelectionMap, scene: SceneSnapshotSource) {
   const next = new Map(current);
   if (next.has(scene.key)) next.delete(scene.key);
-  else next.set(scene.key, performerSceneQueueSnapshot(scene));
+  else next.set(scene.key, scene.key);
   return next;
 }
 
 export function addPerformerSceneSelections(current: PerformerSceneSelectionMap, scenes: SceneSnapshotSource[]) {
   const next = new Map(current);
-  for (const scene of scenes) next.set(scene.key, performerSceneQueueSnapshot(scene));
+  for (const scene of scenes) next.set(scene.key, scene.key);
   return next;
 }
 
 export function buildPerformerSceneQueueInput(performerId: string, selected: PerformerSceneSelectionMap): QueuePerformerScenesInput {
-  return { performerId, scenes: [...selected.values()] };
+  return { performerId, sceneKeys: [...selected.keys()] };
 }
 
 export function retainUnqueuedPerformerScenes(current: PerformerSceneSelectionMap, results: ReadonlyArray<{ key: string; status: string }>) {

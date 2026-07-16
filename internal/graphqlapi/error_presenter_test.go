@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/leothevan2444/moji/internal/performer"
 	"github.com/leothevan2444/moji/internal/subscription"
 	"github.com/leothevan2444/moji/internal/taskruntime"
 )
@@ -20,6 +21,8 @@ func TestErrorPresenterContract(t *testing.T) {
 		{taskruntime.ErrTaskCodeRequired, ErrorTaskCodeRequired},
 		{subscription.ErrPerformerBatchEmpty, ErrorPerformerBatchEmpty},
 		{subscription.ErrPerformerBatchTooLarge, ErrorPerformerBatchTooLarge},
+		{performer.ErrQueueSceneBatchEmpty, ErrorPerformerSceneBatchEmpty},
+		{performer.ErrQueueSceneBatchTooLarge, ErrorPerformerSceneBatchTooLarge},
 		{fmt.Errorf("tracker is not configured"), ErrorTrackerNotConfigured},
 		{fmt.Errorf("stash client is not configured"), ErrorStashNotConfigured},
 		{fmt.Errorf("resolve qB relative path failed: outside root"), ErrorTransferPathFailed},

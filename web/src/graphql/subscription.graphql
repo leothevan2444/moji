@@ -357,7 +357,6 @@ mutation QueuePerformerScenes($input: QueuePerformerScenesInput!) {
       key
       status
       reasonCode
-      message
       resolvedCode
       task {
         id

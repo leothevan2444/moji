@@ -373,7 +373,6 @@ type ComplexityRoot struct {
 
 	QueuePerformerSceneResult struct {
 		Key          func(childComplexity int) int
-		Message      func(childComplexity int) int
 		ReasonCode   func(childComplexity int) int
 		ResolvedCode func(childComplexity int) int
 		Status       func(childComplexity int) int
@@ -2484,13 +2483,6 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.QueuePerformerSceneResult.Key(childComplexity), true
 
-	case "QueuePerformerSceneResult.message":
-		if e.complexity.QueuePerformerSceneResult.Message == nil {
-			break
-		}
-
-		return e.complexity.QueuePerformerSceneResult.Message(childComplexity), true
-
 	case "QueuePerformerSceneResult.reasonCode":
 		if e.complexity.QueuePerformerSceneResult.ReasonCode == nil {
 			break
@@ -4142,7 +4134,6 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 		ec.unmarshalInputPreviewJackettSelectionInput,
 		ec.unmarshalInputQBittorrentAddInput,
 		ec.unmarshalInputQueueDiscoveredSceneInput,
-		ec.unmarshalInputQueuePerformerSceneInput,
 		ec.unmarshalInputQueuePerformerScenesInput,
 		ec.unmarshalInputResolveBlockedSourcingTaskInput,
 		ec.unmarshalInputStashBoxDataCacheSettingsInput,
@@ -5246,17 +5237,7 @@ type SubscriptionRelease {
 
 input QueuePerformerScenesInput {
   performerId: ID!
-  scenes: [QueuePerformerSceneInput!]!
-}
-
-input QueuePerformerSceneInput {
-  key: ID!
-  sourceSceneId: ID!
-  stashBoxSceneId: ID
-  stashBoxEndpoint: String
-  code: String
-  title: String
-  inLibrary: Boolean!
+  sceneKeys: [ID!]!
 }
 
 type QueuePerformerScenesPayload {
@@ -5269,7 +5250,6 @@ type QueuePerformerSceneResult {
   key: ID!
   status: QueuePerformerSceneStatus!
   reasonCode: String!
-  message: String!
   task: Task
   resolvedCode: String
 }
@@ -18388,50 +18368,6 @@ func (ec *executionContext) fieldContext_QueuePerformerSceneResult_reasonCode(_ 
 	return fc, nil
 }
 
-func (ec *executionContext) _QueuePerformerSceneResult_message(ctx context.Context, field graphql.CollectedField, obj *model.QueuePerformerSceneResult) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_QueuePerformerSceneResult_message(ctx, field)
-	if err != nil {
-		return graphql.Null
-	}
-	ctx = graphql.WithFieldContext(ctx, fc)
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.Message, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(string)
-	fc.Result = res
-	return ec.marshalNString2string(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) fieldContext_QueuePerformerSceneResult_message(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "QueuePerformerSceneResult",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type String does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
 func (ec *executionContext) _QueuePerformerSceneResult_task(ctx context.Context, field graphql.CollectedField, obj *model.QueuePerformerSceneResult) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_QueuePerformerSceneResult_task(ctx, field)
 	if err != nil {
@@ -18735,8 +18671,6 @@ func (ec *executionContext) fieldContext_QueuePerformerScenesPayload_results(_ c
 				return ec.fieldContext_QueuePerformerSceneResult_status(ctx, field)
 			case "reasonCode":
 				return ec.fieldContext_QueuePerformerSceneResult_reasonCode(ctx, field)
-			case "message":
-				return ec.fieldContext_QueuePerformerSceneResult_message(ctx, field)
 			case "task":
 				return ec.fieldContext_QueuePerformerSceneResult_task(ctx, field)
 			case "resolvedCode":
@@ -31825,75 +31759,6 @@ func (ec *executionContext) unmarshalInputQueueDiscoveredSceneInput(ctx context.
 	return it, nil
 }
 
-func (ec *executionContext) unmarshalInputQueuePerformerSceneInput(ctx context.Context, obj any) (model.QueuePerformerSceneInput, error) {
-	var it model.QueuePerformerSceneInput
-	asMap := map[string]any{}
-	for k, v := range obj.(map[string]any) {
-		asMap[k] = v
-	}
-
-	fieldsInOrder := [...]string{"key", "sourceSceneId", "stashBoxSceneId", "stashBoxEndpoint", "code", "title", "inLibrary"}
-	for _, k := range fieldsInOrder {
-		v, ok := asMap[k]
-		if !ok {
-			continue
-		}
-		switch k {
-		case "key":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("key"))
-			data, err := ec.unmarshalNID2string(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.Key = data
-		case "sourceSceneId":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("sourceSceneId"))
-			data, err := ec.unmarshalNID2string(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.SourceSceneID = data
-		case "stashBoxSceneId":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("stashBoxSceneId"))
-			data, err := ec.unmarshalOID2ᚖstring(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.StashBoxSceneID = data
-		case "stashBoxEndpoint":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("stashBoxEndpoint"))
-			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.StashBoxEndpoint = data
-		case "code":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("code"))
-			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.Code = data
-		case "title":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("title"))
-			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.Title = data
-		case "inLibrary":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("inLibrary"))
-			data, err := ec.unmarshalNBoolean2bool(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.InLibrary = data
-		}
-	}
-
-	return it, nil
-}
-
 func (ec *executionContext) unmarshalInputQueuePerformerScenesInput(ctx context.Context, obj any) (model.QueuePerformerScenesInput, error) {
 	var it model.QueuePerformerScenesInput
 	asMap := map[string]any{}
@@ -31901,7 +31766,7 @@ func (ec *executionContext) unmarshalInputQueuePerformerScenesInput(ctx context.
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"performerId", "scenes"}
+	fieldsInOrder := [...]string{"performerId", "sceneKeys"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -31915,13 +31780,13 @@ func (ec *executionContext) unmarshalInputQueuePerformerScenesInput(ctx context.
 				return it, err
 			}
 			it.PerformerID = data
-		case "scenes":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("scenes"))
-			data, err := ec.unmarshalNQueuePerformerSceneInput2ᚕᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐQueuePerformerSceneInputᚄ(ctx, v)
+		case "sceneKeys":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("sceneKeys"))
+			data, err := ec.unmarshalNID2ᚕstringᚄ(ctx, v)
 			if err != nil {
 				return it, err
 			}
-			it.Scenes = data
+			it.SceneKeys = data
 		}
 	}
 
@@ -35525,11 +35390,6 @@ func (ec *executionContext) _QueuePerformerSceneResult(ctx context.Context, sel 
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
-		case "message":
-			out.Values[i] = ec._QueuePerformerSceneResult_message(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
 		case "task":
 			out.Values[i] = ec._QueuePerformerSceneResult_task(ctx, field, obj)
 		case "resolvedCode":
@@ -39066,26 +38926,6 @@ func (ec *executionContext) marshalNQBittorrentStats2ᚖgithubᚗcomᚋleothevan
 func (ec *executionContext) unmarshalNQueueDiscoveredSceneInput2githubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐQueueDiscoveredSceneInput(ctx context.Context, v any) (model.QueueDiscoveredSceneInput, error) {
 	res, err := ec.unmarshalInputQueueDiscoveredSceneInput(ctx, v)
 	return res, graphql.ErrorOnPath(ctx, err)
-}
-
-func (ec *executionContext) unmarshalNQueuePerformerSceneInput2ᚕᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐQueuePerformerSceneInputᚄ(ctx context.Context, v any) ([]*model.QueuePerformerSceneInput, error) {
-	var vSlice []any
-	vSlice = graphql.CoerceList(v)
-	var err error
-	res := make([]*model.QueuePerformerSceneInput, len(vSlice))
-	for i := range vSlice {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithIndex(i))
-		res[i], err = ec.unmarshalNQueuePerformerSceneInput2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐQueuePerformerSceneInput(ctx, vSlice[i])
-		if err != nil {
-			return nil, err
-		}
-	}
-	return res, nil
-}
-
-func (ec *executionContext) unmarshalNQueuePerformerSceneInput2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐQueuePerformerSceneInput(ctx context.Context, v any) (*model.QueuePerformerSceneInput, error) {
-	res, err := ec.unmarshalInputQueuePerformerSceneInput(ctx, v)
-	return &res, graphql.ErrorOnPath(ctx, err)
 }
 
 func (ec *executionContext) marshalNQueuePerformerSceneResult2ᚕᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐQueuePerformerSceneResultᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.QueuePerformerSceneResult) graphql.Marshaler {

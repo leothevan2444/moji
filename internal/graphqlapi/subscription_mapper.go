@@ -263,7 +263,6 @@ func queuePerformerSceneResultToModel(item performerdomain.QueueSceneResult) *mo
 		Key:          item.Key,
 		Status:       model.QueuePerformerSceneStatus(item.Status),
 		ReasonCode:   item.ReasonCode,
-		Message:      item.Message,
 		Task:         taskToModel(item.Task),
 		ResolvedCode: nilIfEmpty(item.ResolvedCode),
 	}

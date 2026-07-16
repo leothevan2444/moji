@@ -84,10 +84,7 @@ type ScenePage struct {
 	CacheUpdatedAt                               *time.Time
 }
 
-type QueueSceneSelection struct {
-	Key, SourceSceneID, StashBoxSceneID, StashBoxEndpoint, Code, Title string
-	InLibrary                                                          bool
-}
+type QueueSceneSelection struct{ Key string }
 type QueueSceneStatus string
 
 const (
@@ -97,11 +94,11 @@ const (
 )
 
 type QueueSceneResult struct {
-	Key                 string
-	Status              QueueSceneStatus
-	ReasonCode, Message string
-	Task                *taskruntime.Task
-	ResolvedCode        string
+	Key          string
+	Status       QueueSceneStatus
+	ReasonCode   string
+	Task         *taskruntime.Task
+	ResolvedCode string
 }
 type QueueScenesSummary struct{ RequestedCount, QueuedCount, SkippedCount, FailedCount int }
 type QueueScenesResult struct {

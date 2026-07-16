@@ -110,17 +110,9 @@ func (r *mutationResolver) QueuePerformerScenes(ctx context.Context, input model
 		return nil, errors.New("performer service is not configured")
 	}
 
-	selections := make([]performer.QueueSceneSelection, 0, len(input.Scenes))
-	for _, scene := range input.Scenes {
-		selections = append(selections, performer.QueueSceneSelection{
-			Key:              scene.Key,
-			SourceSceneID:    scene.SourceSceneID,
-			StashBoxSceneID:  derefString(scene.StashBoxSceneID),
-			StashBoxEndpoint: derefString(scene.StashBoxEndpoint),
-			Code:             derefString(scene.Code),
-			Title:            derefString(scene.Title),
-			InLibrary:        scene.InLibrary,
-		})
+	selections := make([]performer.QueueSceneSelection, 0, len(input.SceneKeys))
+	for _, key := range input.SceneKeys {
+		selections = append(selections, performer.QueueSceneSelection{Key: key})
 	}
 
 	result, err := r.Performer.QueuePerformerScenes(ctx, input.PerformerID, selections)

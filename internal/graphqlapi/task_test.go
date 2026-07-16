@@ -331,7 +331,6 @@ func TestQueuePerformerScenesMutationMapsBatchResult(t *testing.T) {
 					Key:          "scene-a",
 					Status:       performerdomain.QueueSceneStatusQueued,
 					ReasonCode:   "QUEUED",
-					Message:      "已创建下载任务",
 					Task:         &taskruntime.Task{ID: "task-1", Stage: taskruntime.TaskStageDownloading, StageStatus: taskruntime.TaskStageStatusRunning},
 					ResolvedCode: "ABCD-123",
 				},
@@ -339,7 +338,6 @@ func TestQueuePerformerScenesMutationMapsBatchResult(t *testing.T) {
 					Key:        "scene-b",
 					Status:     performerdomain.QueueSceneStatusSkipped,
 					ReasonCode: "ALREADY_IN_LIBRARY",
-					Message:    "作品已在库中，跳过创建任务",
 				},
 			},
 			Summary: performerdomain.QueueScenesSummary{
@@ -363,7 +361,6 @@ func TestQueuePerformerScenesMutationMapsBatchResult(t *testing.T) {
 					Key          string  `json:"key"`
 					Status       string  `json:"status"`
 					ReasonCode   string  `json:"reasonCode"`
-					Message      string  `json:"message"`
 					ResolvedCode *string `json:"resolvedCode"`
 					Task         *struct {
 						ID string `json:"id"`
@@ -384,25 +381,10 @@ func TestQueuePerformerScenesMutationMapsBatchResult(t *testing.T) {
 	executeGraphQLInto(t, resolver, `mutation {
 		queuePerformerScenes(input: {
 			performerId: "p1"
-			scenes: [
-				{
-					key: "scene-a"
-					sourceSceneId: "scene-a"
-					stashBoxSceneId: "scene-a"
-					stashBoxEndpoint: "https://box.example/graphql"
-					code: "ABCD-123"
-					title: "Title A"
-					inLibrary: false
-				},
-				{
-					key: "scene-b"
-					sourceSceneId: "scene-b"
-					inLibrary: true
-				}
-			]
-		}) {
-			queuedTasks { id }
-			results { key status reasonCode message resolvedCode task { id } }
+				sceneKeys: ["scene-a", "scene-b"]
+			}) {
+				queuedTasks { id }
+				results { key status reasonCode resolvedCode task { id } }
 			summary { requestedCount queuedCount skippedCount failedCount }
 		}
 	}`, &resp)
@@ -412,6 +394,9 @@ func TestQueuePerformerScenesMutationMapsBatchResult(t *testing.T) {
 	}
 	if performerService.queuePerformerID != "p1" || len(performerService.queueSelections) != 2 {
 		t.Fatalf("unexpected service call: performer=%q selections=%+v", performerService.queuePerformerID, performerService.queueSelections)
+	}
+	if performerService.queueSelections[0].Key != "scene-a" || performerService.queueSelections[1].Key != "scene-b" {
+		t.Fatalf("unexpected selection order: %+v", performerService.queueSelections)
 	}
 	if resp.Data.QueuePerformerScenes.Summary.RequestedCount != 2 || resp.Data.QueuePerformerScenes.Summary.QueuedCount != 1 || resp.Data.QueuePerformerScenes.Summary.SkippedCount != 1 {
 		t.Fatalf("unexpected summary: %+v", resp.Data.QueuePerformerScenes.Summary)

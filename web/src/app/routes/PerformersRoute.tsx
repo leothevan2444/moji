@@ -13,7 +13,8 @@ import { useTranslation } from "react-i18next";
 import { mergePerformerSelection } from "../../utils";
 import type { PerformerBatchConfirmAction } from "../../components/drawers/PerformerBatchConfirmDrawer";
 import type { PerformerBatchResultView } from "../../components/drawers/PerformerBatchResultDrawer";
-import { buildPerformerSceneQueueInput, performerSceneQueueSnapshot, usePerformerSceneSelection } from "./performerSceneSelection";
+import { buildPerformerSceneQueueInput, usePerformerSceneSelection } from "./performerSceneSelection";
+import { describePerformerSceneQueueResult } from "../../services/performerSceneQueueResult";
 
 const PerformerBatchConfirmDrawer = lazy(() => import("../../components/drawers/PerformerBatchConfirmDrawer").then((module) => ({ default: module.PerformerBatchConfirmDrawer })));
 const PerformerBatchResultDrawer = lazy(() => import("../../components/drawers/PerformerBatchResultDrawer").then((module) => ({ default: module.PerformerBatchResultDrawer })));
@@ -112,7 +113,7 @@ export function Component() {
   const queueOne = async (scene: (typeof subscription.performerScenes)[number]) => {
     if (!performerId || scene.inLibrary || scene.mojiTask || pendingKeys.includes(scene.key)) return;
     setPendingKeys((current) => [...current, scene.key]);
-    try { const result = await subscription.queueSinglePerformerScene({ input: { performerId, scenes: [performerSceneQueueSnapshot(scene)] } }); if (result.error) { pushToast("tone-danger", describeQueryError(result.error)); return; } const item = result.data?.queuePerformerScenes.results[0]; if (!item) pushToast("tone-danger", t("performerRoute.createNoResult")); else { pushToast(item.status === "QUEUED" ? "tone-success" : item.status === "SKIPPED" ? "tone-info" : "tone-danger", item.status === "QUEUED" ? t("performerRoute.created", { scene: item.resolvedCode || scene.code || scene.title || t("performerRoute.scene") }) : item.message); if (item.status === "QUEUED") sceneSelection.applyResults([item]); } }
+    try { const result = await subscription.queueSinglePerformerScene({ input: { performerId, sceneKeys: [scene.key] } }); if (result.error) { pushToast("tone-danger", describeQueryError(result.error)); return; } const item = result.data?.queuePerformerScenes.results[0]; if (!item) pushToast("tone-danger", t("performerRoute.createNoResult")); else { pushToast(item.status === "QUEUED" ? "tone-success" : item.status === "SKIPPED" ? "tone-info" : "tone-danger", item.status === "QUEUED" ? t("performerRoute.created", { scene: item.resolvedCode || scene.code || scene.title || t("performerRoute.scene") }) : describePerformerSceneQueueResult(item.reasonCode)); if (item.status === "QUEUED") sceneSelection.applyResults([item]); } }
     finally { setPendingKeys((current) => current.filter((key) => key !== scene.key)); }
   };
 

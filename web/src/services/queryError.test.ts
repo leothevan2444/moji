@@ -19,4 +19,11 @@ describe("describeQueryError", () => {
     expect(describeQueryError({ graphQLErrors: [{ message: "duplicate torrent task" }] }))
       .toContain("Another Moji task already uses this torrent");
   });
+
+  it("localizes performer scene batch limits", () => {
+    const result = describeQueryError({
+      graphQLErrors: [{ message: "request failed", extensions: { code: "PERFORMER_SCENE_BATCH_TOO_LARGE", params: {} } }]
+    });
+    expect(result).toBe("A batch can contain at most 100 performer scenes.");
+  });
 });
