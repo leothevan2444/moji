@@ -218,6 +218,11 @@ SELECT
   moji_transfer_path,
   transfer_error,
   stash_scan_job_id,
+  stash_ingest_phase,
+  stash_generate_job_id,
+  stash_identify_job_id,
+  stash_scene_ids_json,
+  stash_scene_recovery_count,
   stash_scan_path,
   stash_scan_error,
   stash_scan_hint,
@@ -235,76 +240,86 @@ SELECT
 FROM tasks`
 
 type sqliteTaskRow struct {
-	ID                    string         `db:"id"`
-	Source                string         `db:"source"`
-	Code                  string         `db:"code"`
-	Stage                 string         `db:"stage"`
-	StageStatus           string         `db:"stage_status"`
-	StageErrorCode        sql.NullString `db:"stage_error_code"`
-	StageErrorMessage     sql.NullString `db:"stage_error_message"`
-	TorrentURL            string         `db:"torrent_url"`
-	SavePath              sql.NullString `db:"save_path"`
-	Category              sql.NullString `db:"category"`
-	Tags                  sql.NullString `db:"tags"`
-	TorrentIdentityHash   sql.NullString `db:"torrent_identity_hash"`
-	TorrentIdentityMagnet sql.NullString `db:"torrent_identity_magnet"`
-	TorrentHash           sql.NullString `db:"torrent_hash"`
-	TorrentName           sql.NullString `db:"torrent_name"`
-	Progress              float64        `db:"progress"`
-	QBittorrentState      sql.NullString `db:"qbittorrent_state"`
-	ContentPath           sql.NullString `db:"content_path"`
-	DownloadCompletedAt   sql.NullString `db:"download_completed_at"`
-	DeliveryMode          sql.NullString `db:"delivery_mode"`
-	MojiSourcePath        sql.NullString `db:"moji_source_path"`
-	TransferAction        sql.NullString `db:"transfer_action"`
-	MojiTransferPath      sql.NullString `db:"moji_transfer_path"`
-	TransferError         sql.NullString `db:"transfer_error"`
-	StashScanJobID        sql.NullString `db:"stash_scan_job_id"`
-	StashScanPath         sql.NullString `db:"stash_scan_path"`
-	StashScanError        sql.NullString `db:"stash_scan_error"`
-	StashScanHint         sql.NullString `db:"stash_scan_hint"`
-	StashScanStartedAt    sql.NullString `db:"stash_scan_started_at"`
-	SelectedTitle         string         `db:"selected_title"`
-	SelectedTracker       string         `db:"selected_tracker"`
-	SelectedInfoHash      string         `db:"selected_info_hash"`
-	SelectedLink          string         `db:"selected_link"`
-	SelectedMagnetURI     string         `db:"selected_magnet_uri"`
-	SelectedSize          int64          `db:"selected_size"`
-	SelectedSeeders       int            `db:"selected_seeders"`
-	SelectedPeers         int            `db:"selected_peers"`
-	CreatedAt             string         `db:"created_at"`
-	UpdatedAt             string         `db:"updated_at"`
+	ID                      string         `db:"id"`
+	Source                  string         `db:"source"`
+	Code                    string         `db:"code"`
+	Stage                   string         `db:"stage"`
+	StageStatus             string         `db:"stage_status"`
+	StageErrorCode          sql.NullString `db:"stage_error_code"`
+	StageErrorMessage       sql.NullString `db:"stage_error_message"`
+	TorrentURL              string         `db:"torrent_url"`
+	SavePath                sql.NullString `db:"save_path"`
+	Category                sql.NullString `db:"category"`
+	Tags                    sql.NullString `db:"tags"`
+	TorrentIdentityHash     sql.NullString `db:"torrent_identity_hash"`
+	TorrentIdentityMagnet   sql.NullString `db:"torrent_identity_magnet"`
+	TorrentHash             sql.NullString `db:"torrent_hash"`
+	TorrentName             sql.NullString `db:"torrent_name"`
+	Progress                float64        `db:"progress"`
+	QBittorrentState        sql.NullString `db:"qbittorrent_state"`
+	ContentPath             sql.NullString `db:"content_path"`
+	DownloadCompletedAt     sql.NullString `db:"download_completed_at"`
+	DeliveryMode            sql.NullString `db:"delivery_mode"`
+	MojiSourcePath          sql.NullString `db:"moji_source_path"`
+	TransferAction          sql.NullString `db:"transfer_action"`
+	MojiTransferPath        sql.NullString `db:"moji_transfer_path"`
+	TransferError           sql.NullString `db:"transfer_error"`
+	StashScanJobID          sql.NullString `db:"stash_scan_job_id"`
+	StashIngestPhase        sql.NullString `db:"stash_ingest_phase"`
+	StashGenerateJobID      sql.NullString `db:"stash_generate_job_id"`
+	StashIdentifyJobID      sql.NullString `db:"stash_identify_job_id"`
+	StashSceneIDsJSON       sql.NullString `db:"stash_scene_ids_json"`
+	StashSceneRecoveryCount int            `db:"stash_scene_recovery_count"`
+	StashScanPath           sql.NullString `db:"stash_scan_path"`
+	StashScanError          sql.NullString `db:"stash_scan_error"`
+	StashScanHint           sql.NullString `db:"stash_scan_hint"`
+	StashScanStartedAt      sql.NullString `db:"stash_scan_started_at"`
+	SelectedTitle           string         `db:"selected_title"`
+	SelectedTracker         string         `db:"selected_tracker"`
+	SelectedInfoHash        string         `db:"selected_info_hash"`
+	SelectedLink            string         `db:"selected_link"`
+	SelectedMagnetURI       string         `db:"selected_magnet_uri"`
+	SelectedSize            int64          `db:"selected_size"`
+	SelectedSeeders         int            `db:"selected_seeders"`
+	SelectedPeers           int            `db:"selected_peers"`
+	CreatedAt               string         `db:"created_at"`
+	UpdatedAt               string         `db:"updated_at"`
 }
 
 func (r sqliteTaskRow) toTask() (*Task, error) {
 	task := &Task{
-		ID:                    r.ID,
-		Source:                TaskSource(r.Source),
-		Code:                  r.Code,
-		Stage:                 TaskStage(r.Stage),
-		StageStatus:           TaskStageStatus(r.StageStatus),
-		StageErrorCode:        nullableStringValue(r.StageErrorCode),
-		StageErrorMessage:     nullableStringValue(r.StageErrorMessage),
-		TorrentURL:            r.TorrentURL,
-		SavePath:              nullableStringValue(r.SavePath),
-		Category:              nullableStringValue(r.Category),
-		Tags:                  nullableStringValue(r.Tags),
-		TorrentIdentityHash:   nullableStringValue(r.TorrentIdentityHash),
-		TorrentIdentityMagnet: nullableStringValue(r.TorrentIdentityMagnet),
-		TorrentHash:           nullableStringValue(r.TorrentHash),
-		TorrentName:           nullableStringValue(r.TorrentName),
-		Progress:              r.Progress,
-		QBittorrentState:      nullableStringValue(r.QBittorrentState),
-		ContentPath:           nullableStringValue(r.ContentPath),
-		DeliveryMode:          nullableStringValue(r.DeliveryMode),
-		MojiSourcePath:        nullableStringValue(r.MojiSourcePath),
-		TransferAction:        nullableStringValue(r.TransferAction),
-		MojiTransferPath:      nullableStringValue(r.MojiTransferPath),
-		TransferError:         nullableStringValue(r.TransferError),
-		StashScanJobID:        nullableStringValue(r.StashScanJobID),
-		StashScanPath:         nullableStringValue(r.StashScanPath),
-		StashScanError:        nullableStringValue(r.StashScanError),
-		StashScanHint:         nullableStringValue(r.StashScanHint),
+		ID:                      r.ID,
+		Source:                  TaskSource(r.Source),
+		Code:                    r.Code,
+		Stage:                   TaskStage(r.Stage),
+		StageStatus:             TaskStageStatus(r.StageStatus),
+		StageErrorCode:          nullableStringValue(r.StageErrorCode),
+		StageErrorMessage:       nullableStringValue(r.StageErrorMessage),
+		TorrentURL:              r.TorrentURL,
+		SavePath:                nullableStringValue(r.SavePath),
+		Category:                nullableStringValue(r.Category),
+		Tags:                    nullableStringValue(r.Tags),
+		TorrentIdentityHash:     nullableStringValue(r.TorrentIdentityHash),
+		TorrentIdentityMagnet:   nullableStringValue(r.TorrentIdentityMagnet),
+		TorrentHash:             nullableStringValue(r.TorrentHash),
+		TorrentName:             nullableStringValue(r.TorrentName),
+		Progress:                r.Progress,
+		QBittorrentState:        nullableStringValue(r.QBittorrentState),
+		ContentPath:             nullableStringValue(r.ContentPath),
+		DeliveryMode:            nullableStringValue(r.DeliveryMode),
+		MojiSourcePath:          nullableStringValue(r.MojiSourcePath),
+		TransferAction:          nullableStringValue(r.TransferAction),
+		MojiTransferPath:        nullableStringValue(r.MojiTransferPath),
+		TransferError:           nullableStringValue(r.TransferError),
+		StashScanJobID:          nullableStringValue(r.StashScanJobID),
+		StashIngestPhase:        nullableStringValue(r.StashIngestPhase),
+		StashGenerateJobID:      nullableStringValue(r.StashGenerateJobID),
+		StashIdentifyJobID:      nullableStringValue(r.StashIdentifyJobID),
+		StashSceneIDsJSON:       nullableStringValue(r.StashSceneIDsJSON),
+		StashSceneRecoveryCount: r.StashSceneRecoveryCount,
+		StashScanPath:           nullableStringValue(r.StashScanPath),
+		StashScanError:          nullableStringValue(r.StashScanError),
+		StashScanHint:           nullableStringValue(r.StashScanHint),
 		Candidate: Candidate{
 			Title:     r.SelectedTitle,
 			Tracker:   r.SelectedTracker,
@@ -338,45 +353,50 @@ func (r sqliteTaskRow) toTask() (*Task, error) {
 }
 
 type sqliteTaskParams struct {
-	ID                    string  `db:"id"`
-	Source                string  `db:"source"`
-	Code                  string  `db:"code"`
-	Stage                 string  `db:"stage"`
-	StageStatus           string  `db:"stage_status"`
-	StageErrorCode        any     `db:"stage_error_code"`
-	StageErrorMessage     any     `db:"stage_error_message"`
-	TorrentURL            string  `db:"torrent_url"`
-	SavePath              any     `db:"save_path"`
-	Category              any     `db:"category"`
-	Tags                  any     `db:"tags"`
-	TorrentIdentityHash   any     `db:"torrent_identity_hash"`
-	TorrentIdentityMagnet any     `db:"torrent_identity_magnet"`
-	TorrentHash           any     `db:"torrent_hash"`
-	TorrentName           any     `db:"torrent_name"`
-	Progress              float64 `db:"progress"`
-	QBittorrentState      any     `db:"qbittorrent_state"`
-	ContentPath           any     `db:"content_path"`
-	DownloadCompletedAt   any     `db:"download_completed_at"`
-	DeliveryMode          any     `db:"delivery_mode"`
-	MojiSourcePath        any     `db:"moji_source_path"`
-	TransferAction        any     `db:"transfer_action"`
-	MojiTransferPath      any     `db:"moji_transfer_path"`
-	TransferError         any     `db:"transfer_error"`
-	StashScanJobID        any     `db:"stash_scan_job_id"`
-	StashScanPath         any     `db:"stash_scan_path"`
-	StashScanError        any     `db:"stash_scan_error"`
-	StashScanHint         any     `db:"stash_scan_hint"`
-	StashScanStartedAt    any     `db:"stash_scan_started_at"`
-	SelectedTitle         string  `db:"selected_title"`
-	SelectedTracker       string  `db:"selected_tracker"`
-	SelectedInfoHash      string  `db:"selected_info_hash"`
-	SelectedLink          string  `db:"selected_link"`
-	SelectedMagnetURI     string  `db:"selected_magnet_uri"`
-	SelectedSize          int64   `db:"selected_size"`
-	SelectedSeeders       int     `db:"selected_seeders"`
-	SelectedPeers         int     `db:"selected_peers"`
-	CreatedAt             string  `db:"created_at"`
-	UpdatedAt             string  `db:"updated_at"`
+	ID                      string  `db:"id"`
+	Source                  string  `db:"source"`
+	Code                    string  `db:"code"`
+	Stage                   string  `db:"stage"`
+	StageStatus             string  `db:"stage_status"`
+	StageErrorCode          any     `db:"stage_error_code"`
+	StageErrorMessage       any     `db:"stage_error_message"`
+	TorrentURL              string  `db:"torrent_url"`
+	SavePath                any     `db:"save_path"`
+	Category                any     `db:"category"`
+	Tags                    any     `db:"tags"`
+	TorrentIdentityHash     any     `db:"torrent_identity_hash"`
+	TorrentIdentityMagnet   any     `db:"torrent_identity_magnet"`
+	TorrentHash             any     `db:"torrent_hash"`
+	TorrentName             any     `db:"torrent_name"`
+	Progress                float64 `db:"progress"`
+	QBittorrentState        any     `db:"qbittorrent_state"`
+	ContentPath             any     `db:"content_path"`
+	DownloadCompletedAt     any     `db:"download_completed_at"`
+	DeliveryMode            any     `db:"delivery_mode"`
+	MojiSourcePath          any     `db:"moji_source_path"`
+	TransferAction          any     `db:"transfer_action"`
+	MojiTransferPath        any     `db:"moji_transfer_path"`
+	TransferError           any     `db:"transfer_error"`
+	StashScanJobID          any     `db:"stash_scan_job_id"`
+	StashIngestPhase        any     `db:"stash_ingest_phase"`
+	StashGenerateJobID      any     `db:"stash_generate_job_id"`
+	StashIdentifyJobID      any     `db:"stash_identify_job_id"`
+	StashSceneIDsJSON       any     `db:"stash_scene_ids_json"`
+	StashSceneRecoveryCount int     `db:"stash_scene_recovery_count"`
+	StashScanPath           any     `db:"stash_scan_path"`
+	StashScanError          any     `db:"stash_scan_error"`
+	StashScanHint           any     `db:"stash_scan_hint"`
+	StashScanStartedAt      any     `db:"stash_scan_started_at"`
+	SelectedTitle           string  `db:"selected_title"`
+	SelectedTracker         string  `db:"selected_tracker"`
+	SelectedInfoHash        string  `db:"selected_info_hash"`
+	SelectedLink            string  `db:"selected_link"`
+	SelectedMagnetURI       string  `db:"selected_magnet_uri"`
+	SelectedSize            int64   `db:"selected_size"`
+	SelectedSeeders         int     `db:"selected_seeders"`
+	SelectedPeers           int     `db:"selected_peers"`
+	CreatedAt               string  `db:"created_at"`
+	UpdatedAt               string  `db:"updated_at"`
 }
 
 func taskToSQLiteParams(task *Task) sqliteTaskParams {
@@ -386,45 +406,50 @@ func taskToSQLiteParams(task *Task) sqliteTaskParams {
 		source = TaskSourceManual
 	}
 	return sqliteTaskParams{
-		ID:                    task.ID,
-		Source:                string(source),
-		Code:                  task.Code,
-		Stage:                 string(task.Stage),
-		StageStatus:           string(task.StageStatus),
-		StageErrorCode:        nullableStringParam(task.StageErrorCode),
-		StageErrorMessage:     nullableStringParam(task.StageErrorMessage),
-		TorrentURL:            task.TorrentURL,
-		SavePath:              nullableStringParam(task.SavePath),
-		Category:              nullableStringParam(task.Category),
-		Tags:                  nullableStringParam(task.Tags),
-		TorrentIdentityHash:   nullableStringParam(task.TorrentIdentityHash),
-		TorrentIdentityMagnet: nullableStringParam(task.TorrentIdentityMagnet),
-		TorrentHash:           nullableStringParam(task.TorrentHash),
-		TorrentName:           nullableStringParam(task.TorrentName),
-		Progress:              task.Progress,
-		QBittorrentState:      nullableStringParam(task.QBittorrentState),
-		ContentPath:           nullableStringParam(task.ContentPath),
-		DownloadCompletedAt:   formatOptionalSQLiteTimestamp(task.DownloadCompletedAt),
-		DeliveryMode:          nullableStringParam(task.DeliveryMode),
-		MojiSourcePath:        nullableStringParam(task.MojiSourcePath),
-		TransferAction:        nullableStringParam(task.TransferAction),
-		MojiTransferPath:      nullableStringParam(task.MojiTransferPath),
-		TransferError:         nullableStringParam(task.TransferError),
-		StashScanJobID:        nullableStringParam(task.StashScanJobID),
-		StashScanPath:         nullableStringParam(task.StashScanPath),
-		StashScanError:        nullableStringParam(task.StashScanError),
-		StashScanHint:         nullableStringParam(task.StashScanHint),
-		StashScanStartedAt:    formatOptionalSQLiteTimestamp(task.StashScanStartedAt),
-		SelectedTitle:         task.Candidate.Title,
-		SelectedTracker:       task.Candidate.Tracker,
-		SelectedInfoHash:      task.Candidate.InfoHash,
-		SelectedLink:          task.Candidate.Link,
-		SelectedMagnetURI:     task.Candidate.MagnetURI,
-		SelectedSize:          task.Candidate.Size,
-		SelectedSeeders:       task.Candidate.Seeders,
-		SelectedPeers:         task.Candidate.Peers,
-		CreatedAt:             formatSQLiteTimestamp(task.CreatedAt),
-		UpdatedAt:             formatSQLiteTimestamp(task.UpdatedAt),
+		ID:                      task.ID,
+		Source:                  string(source),
+		Code:                    task.Code,
+		Stage:                   string(task.Stage),
+		StageStatus:             string(task.StageStatus),
+		StageErrorCode:          nullableStringParam(task.StageErrorCode),
+		StageErrorMessage:       nullableStringParam(task.StageErrorMessage),
+		TorrentURL:              task.TorrentURL,
+		SavePath:                nullableStringParam(task.SavePath),
+		Category:                nullableStringParam(task.Category),
+		Tags:                    nullableStringParam(task.Tags),
+		TorrentIdentityHash:     nullableStringParam(task.TorrentIdentityHash),
+		TorrentIdentityMagnet:   nullableStringParam(task.TorrentIdentityMagnet),
+		TorrentHash:             nullableStringParam(task.TorrentHash),
+		TorrentName:             nullableStringParam(task.TorrentName),
+		Progress:                task.Progress,
+		QBittorrentState:        nullableStringParam(task.QBittorrentState),
+		ContentPath:             nullableStringParam(task.ContentPath),
+		DownloadCompletedAt:     formatOptionalSQLiteTimestamp(task.DownloadCompletedAt),
+		DeliveryMode:            nullableStringParam(task.DeliveryMode),
+		MojiSourcePath:          nullableStringParam(task.MojiSourcePath),
+		TransferAction:          nullableStringParam(task.TransferAction),
+		MojiTransferPath:        nullableStringParam(task.MojiTransferPath),
+		TransferError:           nullableStringParam(task.TransferError),
+		StashScanJobID:          nullableStringParam(task.StashScanJobID),
+		StashIngestPhase:        nullableStringParam(task.StashIngestPhase),
+		StashGenerateJobID:      nullableStringParam(task.StashGenerateJobID),
+		StashIdentifyJobID:      nullableStringParam(task.StashIdentifyJobID),
+		StashSceneIDsJSON:       nullableStringParam(task.StashSceneIDsJSON),
+		StashSceneRecoveryCount: task.StashSceneRecoveryCount,
+		StashScanPath:           nullableStringParam(task.StashScanPath),
+		StashScanError:          nullableStringParam(task.StashScanError),
+		StashScanHint:           nullableStringParam(task.StashScanHint),
+		StashScanStartedAt:      formatOptionalSQLiteTimestamp(task.StashScanStartedAt),
+		SelectedTitle:           task.Candidate.Title,
+		SelectedTracker:         task.Candidate.Tracker,
+		SelectedInfoHash:        task.Candidate.InfoHash,
+		SelectedLink:            task.Candidate.Link,
+		SelectedMagnetURI:       task.Candidate.MagnetURI,
+		SelectedSize:            task.Candidate.Size,
+		SelectedSeeders:         task.Candidate.Seeders,
+		SelectedPeers:           task.Candidate.Peers,
+		CreatedAt:               formatSQLiteTimestamp(task.CreatedAt),
+		UpdatedAt:               formatSQLiteTimestamp(task.UpdatedAt),
 	}
 }
 
@@ -435,6 +460,7 @@ INSERT INTO tasks (
   id, source, code, stage, stage_status, stage_error_code, stage_error_message, torrent_url, save_path, category, tags,
   torrent_identity_hash, torrent_identity_magnet, torrent_hash, torrent_name, progress, qbittorrent_state, content_path,
   download_completed_at, delivery_mode, moji_source_path, transfer_action, moji_transfer_path,
+  stash_ingest_phase, stash_generate_job_id, stash_identify_job_id, stash_scene_ids_json, stash_scene_recovery_count,
   transfer_error, stash_scan_job_id, stash_scan_path, stash_scan_error, stash_scan_hint,
   stash_scan_started_at, selected_title, selected_tracker, selected_info_hash, selected_link, selected_magnet_uri,
   selected_size, selected_seeders, selected_peers, created_at, updated_at
@@ -442,6 +468,7 @@ INSERT INTO tasks (
   :id, :source, :code, :stage, :stage_status, :stage_error_code, :stage_error_message, :torrent_url, :save_path, :category, :tags,
   :torrent_identity_hash, :torrent_identity_magnet, :torrent_hash, :torrent_name, :progress, :qbittorrent_state, :content_path,
   :download_completed_at, :delivery_mode, :moji_source_path, :transfer_action, :moji_transfer_path,
+  :stash_ingest_phase, :stash_generate_job_id, :stash_identify_job_id, :stash_scene_ids_json, :stash_scene_recovery_count,
   :transfer_error, :stash_scan_job_id, :stash_scan_path, :stash_scan_error, :stash_scan_hint,
   :stash_scan_started_at, :selected_title, :selected_tracker, :selected_info_hash, :selected_link, :selected_magnet_uri,
   :selected_size, :selected_seeders, :selected_peers, :created_at, :updated_at
@@ -473,6 +500,11 @@ ON CONFLICT(id) DO UPDATE SET
   moji_transfer_path = excluded.moji_transfer_path,
   transfer_error = excluded.transfer_error,
   stash_scan_job_id = excluded.stash_scan_job_id,
+  stash_ingest_phase = excluded.stash_ingest_phase,
+  stash_generate_job_id = excluded.stash_generate_job_id,
+  stash_identify_job_id = excluded.stash_identify_job_id,
+  stash_scene_ids_json = excluded.stash_scene_ids_json,
+  stash_scene_recovery_count = excluded.stash_scene_recovery_count,
   stash_scan_path = excluded.stash_scan_path,
   stash_scan_error = excluded.stash_scan_error,
   stash_scan_hint = excluded.stash_scan_hint,

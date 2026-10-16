@@ -41,6 +41,10 @@ clean-generated:
 moji:
 	go build ./cmd/moji
 
+.PHONY: moji-run
+moji-run:
+	go run ./cmd/moji
+
 .PHONY: web-install
 web-install:
 	npm --prefix web install

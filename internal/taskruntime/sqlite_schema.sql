@@ -34,6 +34,11 @@ CREATE TABLE IF NOT EXISTS tasks (
   moji_transfer_path TEXT,
   transfer_error TEXT,
   stash_scan_job_id TEXT,
+  stash_ingest_phase TEXT,
+  stash_generate_job_id TEXT,
+  stash_identify_job_id TEXT,
+  stash_scene_ids_json TEXT,
+  stash_scene_recovery_count INTEGER NOT NULL DEFAULT 0,
   stash_scan_path TEXT,
   stash_scan_error TEXT,
   stash_scan_hint TEXT,
@@ -93,5 +98,5 @@ CREATE INDEX IF NOT EXISTS idx_task_events_created_at
   ON task_events (created_at DESC);
 
 INSERT INTO task_store_meta (key, value)
-VALUES ('schema_version', '7')
+VALUES ('schema_version', '8')
 ON CONFLICT(key) DO UPDATE SET value = excluded.value;

@@ -714,13 +714,18 @@ type Task struct {
 	TransferAction      *string            `json:"transferAction,omitempty"`
 	MojiTransferPath    *string            `json:"mojiTransferPath,omitempty"`
 	TransferError       *string            `json:"transferError,omitempty"`
-	StashScanJobID      *string            `json:"stashScanJobId,omitempty"`
-	StashScanPath       *string            `json:"stashScanPath,omitempty"`
-	StashScanError      *string            `json:"stashScanError,omitempty"`
-	StashScanHint       *string            `json:"stashScanHint,omitempty"`
-	StashScanStartedAt  *string            `json:"stashScanStartedAt,omitempty"`
-	CreatedAt           string             `json:"createdAt"`
-	UpdatedAt           string             `json:"updatedAt"`
+	// Current Stash ingest step: SCAN, GENERATE, IDENTIFY, or VERIFY
+	StashIngestPhase   *string  `json:"stashIngestPhase,omitempty"`
+	StashGenerateJobID *string  `json:"stashGenerateJobId,omitempty"`
+	StashIdentifyJobID *string  `json:"stashIdentifyJobId,omitempty"`
+	StashSceneIds      []string `json:"stashSceneIds"`
+	StashScanJobID     *string  `json:"stashScanJobId,omitempty"`
+	StashScanPath      *string  `json:"stashScanPath,omitempty"`
+	StashScanError     *string  `json:"stashScanError,omitempty"`
+	StashScanHint      *string  `json:"stashScanHint,omitempty"`
+	StashScanStartedAt *string  `json:"stashScanStartedAt,omitempty"`
+	CreatedAt          string   `json:"createdAt"`
+	UpdatedAt          string   `json:"updatedAt"`
 }
 
 type TaskBatchPayload struct {

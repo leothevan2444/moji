@@ -6,6 +6,7 @@ import (
 	"errors"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 )
@@ -92,7 +93,7 @@ INSERT INTO task_store_meta (key, value) VALUES ('schema_version', '1');
 	if err != nil {
 		t.Fatalf("read schema version: %v", err)
 	}
-	if version != "7" {
+	if version != sqliteSchemaVersion {
 		t.Fatalf("expected schema version 7, got %q", version)
 	}
 }
@@ -109,7 +110,7 @@ func TestOpenSQLiteDatabaseInitializesNewSchemaVersion(t *testing.T) {
 	if err != nil {
 		t.Fatalf("read schema version: %v", err)
 	}
-	if version != "7" {
+	if version != sqliteSchemaVersion {
 		t.Fatalf("expected schema version 7, got %q", version)
 	}
 	for _, table := range []string{
@@ -397,5 +398,83 @@ INSERT INTO subscription_release_entities (
 	}
 	if releaseCount != 1 {
 		t.Fatalf("expected existing subscription rows to survive task runtime init, got %d", releaseCount)
+	}
+}
+
+func TestSQLiteV7IngestUpgradePreservesTasksAndHistory(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "v7.db")
+	legacy, err := sql.Open("sqlite", path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	schema := sqliteSchema
+	for _, column := range []string{"stash_ingest_phase", "stash_generate_job_id", "stash_identify_job_id", "stash_scene_ids_json"} {
+		schema = strings.ReplaceAll(schema, "  "+column+" TEXT,\n", "")
+	}
+	schema = strings.ReplaceAll(schema, "VALUES ('schema_version', '8')", "VALUES ('schema_version', '7')")
+	if _, err := legacy.Exec(schema); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := legacy.Exec(`INSERT INTO tasks (id, code, stage, stage_status, created_at, updated_at, stash_scan_job_id, stash_scan_path) VALUES ('old-task', 'ABCD-123', 'SCANNING', 'RUNNING', '2026-01-01T00:00:00Z', '2026-01-01T00:00:00Z', 'old-scan', '/library/ABCD-123.mp4')`); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := legacy.Exec(`INSERT INTO task_events (task_id, event_type, message, created_at) VALUES ('old-task', 'CREATED', 'original history', '2026-01-01T00:00:00Z')`); err != nil {
+		t.Fatal(err)
+	}
+	legacy.Close()
+	store, err := NewSQLiteTaskStore(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer store.db.Close()
+	task, err := store.Find(context.Background(), "old-task")
+	if err != nil || task.StashScanJobID != "old-scan" || task.StashIngestPhase != "" {
+		t.Fatalf("upgrade lost task: %+v %v", task, err)
+	}
+	task.StashIngestPhase, task.StashGenerateJobID = StashIngestGenerate, "generate-job"
+	task.StashSceneIDsJSON = `["1","2"]`
+	if err := store.Update(context.Background(), task); err != nil {
+		t.Fatal(err)
+	}
+	reloaded, err := store.Find(context.Background(), "old-task")
+	if err != nil || reloaded.StashGenerateJobID != "generate-job" || len(reloaded.StashSceneIDs()) != 2 {
+		t.Fatalf("new ingest fields not persisted: %+v %v", reloaded, err)
+	}
+	var count int
+	if err := store.db.Get(&count, `SELECT COUNT(*) FROM task_events WHERE message = 'original history'`); err != nil || count != 1 {
+		t.Fatalf("upgrade lost history: %d %v", count, err)
+	}
+}
+
+func TestSQLiteAddsRecoveryCounterToExistingV8Database(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "old-v8.db")
+	db, err := sql.Open("sqlite", path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	schema := strings.ReplaceAll(sqliteSchema, "  stash_scene_recovery_count INTEGER NOT NULL DEFAULT 0,\n", "")
+	if _, err := db.Exec(schema); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := db.Exec(`INSERT INTO tasks(id,stage,created_at,updated_at) VALUES('existing','SCANNING','2026-01-01T00:00:00Z','2026-01-01T00:00:00Z')`); err != nil {
+		t.Fatal(err)
+	}
+	db.Close()
+	store, err := NewSQLiteTaskStore(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer store.db.Close()
+	task, err := store.Find(context.Background(), "existing")
+	if err != nil || task.StashSceneRecoveryCount != 0 {
+		t.Fatalf("old task lost: %+v %v", task, err)
+	}
+	task.StashSceneRecoveryCount = 1
+	if err := store.Update(context.Background(), task); err != nil {
+		t.Fatal(err)
+	}
+	task, err = store.Find(context.Background(), "existing")
+	if err != nil || task.StashSceneRecoveryCount != 1 {
+		t.Fatalf("counter not persisted: %+v %v", task, err)
 	}
 }

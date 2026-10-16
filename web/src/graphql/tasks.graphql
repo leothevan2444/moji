@@ -25,6 +25,10 @@ query TaskDetailDocument($id: ID!) {
     transferAction
     mojiTransferPath
     transferError
+    stashIngestPhase
+    stashGenerateJobId
+    stashIdentifyJobId
+    stashSceneIds
     stashScanJobId
     stashScanPath
     stashScanError
@@ -73,6 +77,10 @@ mutation TriggerStashScansDocument {
     source
     deliveryMode
     transferError
+    stashIngestPhase
+    stashGenerateJobId
+    stashIdentifyJobId
+    stashSceneIds
     stashScanJobId
     stashScanPath
     stashScanError
@@ -87,6 +95,10 @@ mutation TriggerTaskStashScanDocument($id: ID!) {
     source
     deliveryMode
     transferError
+    stashIngestPhase
+    stashGenerateJobId
+    stashIdentifyJobId
+    stashSceneIds
     stashScanJobId
     stashScanPath
     stashScanError
@@ -142,7 +154,11 @@ mutation ProcessTaskIngestDocument($ids: [ID!]!) {
     summary { requestedCount succeededCount skippedCount failedCount }
     results {
       taskId status reasonCode
-      task { id source code stage stageStatus stageLabel stageStatusLabel progress deliveryMode transferError stashScanJobId stashScanPath stashScanError stashScanHint updatedAt }
+      task {
+        id source code stage stageStatus stageLabel stageStatusLabel progress deliveryMode transferError
+        stashIngestPhase stashGenerateJobId stashIdentifyJobId stashSceneIds
+        stashScanJobId stashScanPath stashScanError stashScanHint updatedAt
+      }
     }
   }
 }

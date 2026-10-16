@@ -572,6 +572,23 @@
     }
   },
   "taskModel": {
+    "ingest": {
+      "sceneMissing": "No Stash scenes exist under the delivered path. Check the files and scan results, then retry.",
+      "sceneChanged": "Stash scene records keep changing. Automatic recovery stopped; wait for library changes to finish, then retry.",
+      "sourcesMissing": "Stash has no saved Identify sources. Configure sources in the Stash Identify dialog, set them as default, then retry.",
+      "verifyingDetail": "Checking media files and identification results in Stash.",
+      "stepDone": "Stash completed this step.",
+      "stepUpcoming": "Waiting for earlier Stash ingest steps.",
+      "scan": "Stash scanning",
+      "generateJob": "Stash generation job",
+      "identifyJob": "Stash identification job",
+      "scenes": "Stash scene IDs",
+      "generate": "Stash generating",
+      "identify": "Stash identifying",
+      "verify": "Verifying Stash ingest",
+      "incomplete": "The target scene is missing or its code, title, date, studio, or performers are incomplete. Review Identify sources and results in Stash, then retry.",
+      "failed": "A Stash ingest step failed. Check Stash job logs and Identify sources, then retry."
+    },
     "manualMagnet": "Manual magnet task",
     "sources": {
       "search": "Search",
@@ -626,6 +643,9 @@
       "generic": "Task execution failed"
     },
     "lifecycle": {
+      "generating": "Generate",
+      "identifying": "Identify",
+      "verifying": "Verify ingest",
       "sourcing": "Sourcing",
       "downloading": "Downloading",
       "pending_ingest": "Pending ingest",
@@ -654,7 +674,7 @@
       "scanPath": "Scan path: {{path}}",
       "scanDone": "Scan completed.",
       "closed": "Task workflow completed.",
-      "completeUpcoming": "The task becomes complete after the scan finishes."
+      "completeUpcoming": "The task becomes complete after Stash scan, generation, identification, and result verification finish."
     },
     "presentation": {
       "transfer": "Download complete; Moji is preparing file delivery.",

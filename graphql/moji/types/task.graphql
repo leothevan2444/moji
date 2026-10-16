@@ -123,6 +123,11 @@ type Task {
   transferAction: String
   mojiTransferPath: String
   transferError: String
+  "Current Stash ingest step: SCAN, GENERATE, IDENTIFY, or VERIFY"
+  stashIngestPhase: String
+  stashGenerateJobId: ID
+  stashIdentifyJobId: ID
+  stashSceneIds: [ID!]!
   stashScanJobId: ID
   stashScanPath: String
   stashScanError: String

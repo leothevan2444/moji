@@ -215,6 +215,18 @@ export function TaskDetail({
             <dd>{task.stashScanJobId || "—"}</dd>
           </div>
           <div>
+            <dt>{t("taskModel.ingest.generateJob")}</dt>
+            <dd>{task.stashGenerateJobId || "—"}</dd>
+          </div>
+          <div>
+            <dt>{t("taskModel.ingest.identifyJob")}</dt>
+            <dd>{task.stashIdentifyJobId || "—"}</dd>
+          </div>
+          <div>
+            <dt>{t("taskModel.ingest.scenes")}</dt>
+            <dd>{task.stashSceneIds?.join(", ") || "—"}</dd>
+          </div>
+          <div>
             <dt>{t("taskDetail.ingestMode")}</dt>
             <dd>{task.deliveryMode ? deliveryModeLabel(task.deliveryMode) : "—"}</dd>
           </div>

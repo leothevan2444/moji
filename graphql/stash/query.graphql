@@ -143,3 +143,50 @@ query FindSceneCount {
     count
   }
 }
+
+mutation MetadataGenerate($input: GenerateMetadataInput!) {
+  metadataGenerate(input: $input)
+}
+
+mutation MetadataIdentify($input: IdentifyMetadataInput!) {
+  metadataIdentify(input: $input)
+}
+
+fragment IdentifyOptionsFragment on IdentifyMetadataOptions {
+  fieldOptions { field strategy createMissing }
+  setCoverImage
+  setOrganized
+  includeMalePerformers
+  skipMultipleMatches
+  skipMultipleMatchTag
+  skipSingleNamePerformers
+  skipSingleNamePerformerTag
+}
+
+query IngestDefaults {
+  configuration {
+    defaults {
+      identify {
+        sources {
+          source { stash_box_index stash_box_endpoint scraper_id }
+          options { ...IdentifyOptionsFragment }
+        }
+        options { ...IdentifyOptionsFragment }
+      }
+    }
+  }
+}
+
+query IngestScenes($scene_filter: SceneFilterType, $filter: FindFilterType, $ids: [ID!]) {
+  findScenes(scene_filter: $scene_filter, filter: $filter, ids: $ids) {
+    scenes {
+      id
+      title
+      code
+      date
+      studio { id }
+      performers { id }
+      files { path }
+    }
+  }
+}

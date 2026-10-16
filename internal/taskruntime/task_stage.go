@@ -103,6 +103,16 @@ func refreshTaskStageFields(task *Task) {
 	task.Stage = normalizeTaskStage(task.Stage)
 	task.StageStatus = normalizeTaskStageStatus(task.StageStatus)
 	task.StageLabel = taskStageLabel(task.Stage)
+	if task.Stage == TaskStageScanning {
+		switch task.StashIngestPhase {
+		case StashIngestGenerate:
+			task.StageLabel = "生成中"
+		case StashIngestIdentify:
+			task.StageLabel = "识别中"
+		case StashIngestVerify:
+			task.StageLabel = "验证入库中"
+		}
+	}
 	task.StageStatusLabel = taskStageStatusLabel(task.StageStatus)
 	task.StageErrorCode = strings.TrimSpace(task.StageErrorCode)
 	task.StageErrorMessage = strings.TrimSpace(task.StageErrorMessage)

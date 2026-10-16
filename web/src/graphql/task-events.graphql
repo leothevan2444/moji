@@ -28,6 +28,10 @@ subscription TaskEvents {
       transferAction
       mojiTransferPath
       transferError
+      stashIngestPhase
+      stashGenerateJobId
+      stashIdentifyJobId
+      stashSceneIds
       stashScanJobId
       stashScanPath
       stashScanError

@@ -17,7 +17,7 @@ import (
 //go:embed sqlite_schema.sql
 var sqliteSchema string
 
-const sqliteSchemaVersion = "7"
+const sqliteSchemaVersion = "8"
 
 func OpenSQLiteDatabase(path string) (*sqlx.DB, error) {
 	trimmed := strings.TrimSpace(path)
@@ -70,7 +70,7 @@ func configureSQLiteDatabase(db *sqlx.DB) error {
 		return err
 	}
 
-	if !hadSchema || versionBeforeInit == sqliteSchemaVersion {
+	if !hadSchema || versionBeforeInit == sqliteSchemaVersion || versionBeforeInit == "7" {
 		if _, err := db.Exec(sqliteSchema); err != nil {
 			return fmt.Errorf("taskruntime: initialize sqlite schema: %w", err)
 		}
@@ -115,6 +115,28 @@ func resetSQLiteDatabase(db *sqlx.DB) error {
 }
 
 func ensureSQLiteRuntimeState(db *sqlx.DB) error {
+	exists, err := sqliteColumnExists(db, "tasks", "stash_scene_recovery_count")
+	if err != nil {
+		return err
+	}
+	if !exists {
+		if _, err := db.Exec("ALTER TABLE tasks ADD COLUMN stash_scene_recovery_count INTEGER NOT NULL DEFAULT 0"); err != nil {
+			return fmt.Errorf("add scene recovery counter: %w", err)
+		}
+	}
+
+	for _, column := range []string{"stash_ingest_phase", "stash_generate_job_id", "stash_identify_job_id", "stash_scene_ids_json"} {
+		exists, err := sqliteColumnExists(db, "tasks", column)
+		if err != nil {
+			return err
+		}
+		if !exists {
+			if _, err := db.Exec("ALTER TABLE tasks ADD COLUMN " + column + " TEXT"); err != nil {
+				return fmt.Errorf("add ingest column %s: %w", column, err)
+			}
+		}
+	}
+
 	tx, err := db.Beginx()
 	if err != nil {
 		return fmt.Errorf("taskruntime: begin sqlite runtime state tx: %w", err)

@@ -449,7 +449,7 @@
       },
       "ingestPending": {
         "label": "待入库",
-        "description": "下载已完成，但 Stash 扫描尚未收口。"
+        "description": "下载已完成，等待 Stash 完成扫描、生成和识别。"
       },
       "completed": {
         "label": "已完成",
@@ -564,6 +564,23 @@
     }
   },
   "taskModel": {
+    "ingest": {
+      "sceneMissing": "Stash 中未找到交付路径下的影片。请检查文件和扫描结果，然后重试。",
+      "sceneChanged": "Stash 影片记录持续变化，自动恢复已停止。请等待库整理完成后重试。",
+      "sourcesMissing": "Stash 尚未保存可用的 Identify 来源。请在 Stash 识别弹窗中配置来源并设为默认，然后重试。",
+      "verifyingDetail": "检查 Stash 中的影片文件和识别结果。",
+      "stepDone": "Stash 已完成此步骤。",
+      "stepUpcoming": "等待 Stash 完成前序入库步骤。",
+      "scan": "Stash 扫描中",
+      "generateJob": "Stash 生成任务",
+      "identifyJob": "Stash 识别任务",
+      "scenes": "Stash 影片 ID",
+      "generate": "Stash 生成中",
+      "identify": "Stash 识别中",
+      "verify": "Stash 入库验证中",
+      "incomplete": "Stash 中尚未收录目标影片，或番号、标题、日期、片商、演员信息不完整。请在 Stash 检查识别结果和 Identify 来源，调整后重试。",
+      "failed": "Stash 入库步骤失败。请检查 Stash 后台任务日志及 Identify 来源配置，然后重试。"
+    },
     "manualMagnet": "手动磁链任务",
     "sources": {
       "search": "搜索",
@@ -618,6 +635,9 @@
       "generic": "任务执行失败"
     },
     "lifecycle": {
+      "generating": "生成",
+      "identifying": "识别",
+      "verifying": "验证入库",
       "sourcing": "待选种",
       "downloading": "下载中",
       "pending_ingest": "待入库",

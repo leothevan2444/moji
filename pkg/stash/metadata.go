@@ -7,7 +7,7 @@ import (
 )
 
 func (c *Client) MetadataScan(ctx context.Context, input graphql.ScanMetadataInput) (string, error) {
-	resp, err := c.graphql.MetadataScan(ctx, input)
+	resp, err := c.resolve().MetadataScan(ctx, input)
 	if err != nil {
 		return "", err
 	}
@@ -16,7 +16,7 @@ func (c *Client) MetadataScan(ctx context.Context, input graphql.ScanMetadataInp
 }
 
 func (c *Client) FindJob(ctx context.Context, id string) (*graphql.FindJob_FindJob, error) {
-	resp, err := c.graphql.FindJob(ctx, graphql.FindJobInput{ID: id})
+	resp, err := c.resolve().FindJob(ctx, graphql.FindJobInput{ID: id})
 	if err != nil {
 		return nil, err
 	}

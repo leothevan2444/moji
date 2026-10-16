@@ -32,6 +32,10 @@ query TasksOverviewDocument {
     transferAction
     mojiTransferPath
     transferError
+    stashIngestPhase
+    stashGenerateJobId
+    stashIdentifyJobId
+    stashSceneIds
     stashScanJobId
     stashScanPath
     stashScanError

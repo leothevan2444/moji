@@ -432,7 +432,7 @@ func TestTriggerStashScansPersistsSQLiteUpdatesWithExtendedStashColumns(t *testi
 	}
 }
 
-func TestTriggerStashScansPersistsCompletedScanJobState(t *testing.T) {
+func TestTriggerStashScansPersistsScanToGenerateTransition(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "tasks-completed.db")
 	store, err := NewSQLiteTaskStore(path)
 	if err != nil {
@@ -444,6 +444,7 @@ func TestTriggerStashScansPersistsCompletedScanJobState(t *testing.T) {
 		Stage:              TaskStageScanning,
 		StageStatus:        TaskStageStatusRunning,
 		StashScanJobID:     "job-finished",
+		StashScanPath:      "/library/ABCD-123.mp4",
 		CreatedAt:          time.Unix(100, 0).UTC(),
 		UpdatedAt:          time.Unix(200, 0).UTC(),
 		StashScanStartedAt: ptrTime(time.Unix(150, 0).UTC()),
@@ -461,24 +462,22 @@ func TestTriggerStashScansPersistsCompletedScanJobState(t *testing.T) {
 		t.Fatalf("NewService failed: %v", err)
 	}
 
-	tasks, err := service.TriggerStashScans(context.Background(), &fakeStashScanner{
-		job: &stashsync.Job{ID: "job-finished", Status: "FINISHED"},
-	})
+	tasks, err := service.TriggerStashScans(context.Background(), &fakeIngestScanner{fakeStashScanner: fakeStashScanner{job: &stashsync.Job{ID: "job-finished", Status: "FINISHED"}}, scenes: readyIngestScanner().scenes})
 	if err != nil {
 		t.Fatalf("TriggerStashScans failed: %v", err)
 	}
 	if len(tasks) != 1 {
 		t.Fatalf("expected one updated task, got %d", len(tasks))
 	}
-	if tasks[0].Stage != TaskStageCompleted || tasks[0].StageStatus != TaskStageStatusDone {
-		t.Fatalf("expected completed task stage, got %+v", tasks[0])
+	if tasks[0].Stage != TaskStageScanning || tasks[0].StashIngestPhase != StashIngestGenerate {
+		t.Fatalf("expected generation after scan, got %+v", tasks[0])
 	}
 	reloaded, err := store.Find(context.Background(), "task-scan-finished")
 	if err != nil {
 		t.Fatalf("Find failed: %v", err)
 	}
-	if reloaded.Stage != TaskStageCompleted || reloaded.StageStatus != TaskStageStatusDone {
-		t.Fatalf("expected persisted completed stage, got %+v", reloaded)
+	if reloaded.Stage != TaskStageScanning || reloaded.StashGenerateJobID != "generate-1" {
+		t.Fatalf("expected persisted generation checkpoint, got %+v", reloaded)
 	}
 }
 

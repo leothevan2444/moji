@@ -65,40 +65,45 @@ const (
 )
 
 type Task struct {
-	ID                    string
-	Source                TaskSource
-	Code                  string
-	Stage                 TaskStage
-	StageStatus           TaskStageStatus
-	StageLabel            string
-	StageStatusLabel      string
-	StageErrorCode        string
-	StageErrorMessage     string
-	Candidate             Candidate
-	TorrentURL            string
-	SavePath              string
-	Category              string
-	Tags                  string
-	TorrentIdentityHash   string
-	TorrentIdentityMagnet string
-	TorrentHash           string
-	TorrentName           string
-	Progress              float64
-	QBittorrentState      string
-	ContentPath           string
-	DownloadCompletedAt   *time.Time
-	DeliveryMode          string
-	MojiSourcePath        string
-	TransferAction        string
-	MojiTransferPath      string
-	TransferError         string
-	StashScanJobID        string
-	StashScanPath         string
-	StashScanError        string
-	StashScanHint         string
-	StashScanStartedAt    *time.Time
-	CreatedAt             time.Time
-	UpdatedAt             time.Time
+	ID                      string
+	Source                  TaskSource
+	Code                    string
+	Stage                   TaskStage
+	StageStatus             TaskStageStatus
+	StageLabel              string
+	StageStatusLabel        string
+	StageErrorCode          string
+	StageErrorMessage       string
+	Candidate               Candidate
+	TorrentURL              string
+	SavePath                string
+	Category                string
+	Tags                    string
+	TorrentIdentityHash     string
+	TorrentIdentityMagnet   string
+	TorrentHash             string
+	TorrentName             string
+	Progress                float64
+	QBittorrentState        string
+	ContentPath             string
+	DownloadCompletedAt     *time.Time
+	DeliveryMode            string
+	MojiSourcePath          string
+	TransferAction          string
+	MojiTransferPath        string
+	TransferError           string
+	StashScanJobID          string
+	StashIngestPhase        string
+	StashGenerateJobID      string
+	StashIdentifyJobID      string
+	StashSceneIDsJSON       string
+	StashSceneRecoveryCount int
+	StashScanPath           string
+	StashScanError          string
+	StashScanHint           string
+	StashScanStartedAt      *time.Time
+	CreatedAt               time.Time
+	UpdatedAt               time.Time
 }
 
 type Candidate struct {
@@ -507,7 +512,7 @@ func (s *Service) syncTaskProgress(ctx context.Context, snapshot *Task, torrents
 	if err != nil {
 		return snapshot, nil
 	}
-	if task.Stage == TaskStageCompleted || (task.Stage == TaskStageScanning && task.StageStatus == TaskStageStatusRunning) || task.Stage == TaskStagePendingIngest || task.Stage == TaskStageTransferring {
+	if task.Stage == TaskStageCompleted || task.Stage == TaskStageScanning || task.Stage == TaskStagePendingIngest || task.Stage == TaskStageTransferring {
 		return task, nil
 	}
 	torrent, ok := matchTaskTorrent(task, torrents)
@@ -573,6 +578,7 @@ func (s *Service) retryDownloadingTask(ctx context.Context, task *Task) (*Task, 
 
 func (s *Service) retryIngestTask(ctx context.Context, task *Task, scanner StashScanner) (*Task, error) {
 	next := cloneTask(task)
+	next.StashSceneRecoveryCount = 0
 	setTaskStage(next, next.Stage, TaskStageStatusPending)
 	clearTaskStageError(next)
 	next.UpdatedAt = s.now().UTC()
@@ -580,7 +586,20 @@ func (s *Service) retryIngestTask(ctx context.Context, task *Task, scanner Stash
 		return nil, fmt.Errorf("update task %q: %w", next.ID, err)
 	}
 
-	retried, execErr := s.executeTaskStashIntegration(ctx, next, scanner)
+	var retried *Task
+	var execErr error
+	if next.Stage == TaskStageScanning {
+		if next.StashIngestPhase == "" {
+			next.StashIngestPhase = StashIngestScan
+		}
+		if stashJobID(next) != "" && next.StashIngestPhase != StashIngestVerify {
+			retried, execErr = s.syncStashScanJob(ctx, next, scanner)
+		} else {
+			retried, execErr = s.startStashIngestStep(ctx, next, scanner)
+		}
+	} else {
+		retried, execErr = s.executeTaskStashIntegration(ctx, next, scanner)
+	}
 	if persistErr := s.store.Update(ctx, retried); persistErr != nil {
 		return nil, fmt.Errorf("update task %q: %w", retried.ID, persistErr)
 	}

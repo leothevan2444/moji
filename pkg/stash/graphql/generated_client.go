@@ -20,6 +20,10 @@ type StashGraphQLClient interface {
 	FindJob(ctx context.Context, input FindJobInput, interceptors ...clientv2.RequestInterceptor) (*FindJob, error)
 	Configuration(ctx context.Context, interceptors ...clientv2.RequestInterceptor) (*Configuration, error)
 	FindSceneCount(ctx context.Context, interceptors ...clientv2.RequestInterceptor) (*FindSceneCount, error)
+	MetadataGenerate(ctx context.Context, input GenerateMetadataInput, interceptors ...clientv2.RequestInterceptor) (*MetadataGenerate, error)
+	MetadataIdentify(ctx context.Context, input IdentifyMetadataInput, interceptors ...clientv2.RequestInterceptor) (*MetadataIdentify, error)
+	IngestDefaults(ctx context.Context, interceptors ...clientv2.RequestInterceptor) (*IngestDefaults, error)
+	IngestScenes(ctx context.Context, sceneFilter *SceneFilterType, filter *FindFilterType, ids []string, interceptors ...clientv2.RequestInterceptor) (*IngestScenes, error)
 }
 
 type Client struct {
@@ -302,6 +306,66 @@ func (t *StashBoxFragment) GetMaxRequestsPerMinute() int {
 	return t.MaxRequestsPerMinute
 }
 
+type IdentifyOptionsFragment struct {
+	FieldOptions               []*IdentifyOptionsFragment_FieldOptions "json:\"fieldOptions,omitempty\" graphql:\"fieldOptions\""
+	SetCoverImage              *bool                                   "json:\"setCoverImage,omitempty\" graphql:\"setCoverImage\""
+	SetOrganized               *bool                                   "json:\"setOrganized,omitempty\" graphql:\"setOrganized\""
+	IncludeMalePerformers      *bool                                   "json:\"includeMalePerformers,omitempty\" graphql:\"includeMalePerformers\""
+	SkipMultipleMatches        *bool                                   "json:\"skipMultipleMatches,omitempty\" graphql:\"skipMultipleMatches\""
+	SkipMultipleMatchTag       *string                                 "json:\"skipMultipleMatchTag,omitempty\" graphql:\"skipMultipleMatchTag\""
+	SkipSingleNamePerformers   *bool                                   "json:\"skipSingleNamePerformers,omitempty\" graphql:\"skipSingleNamePerformers\""
+	SkipSingleNamePerformerTag *string                                 "json:\"skipSingleNamePerformerTag,omitempty\" graphql:\"skipSingleNamePerformerTag\""
+}
+
+func (t *IdentifyOptionsFragment) GetFieldOptions() []*IdentifyOptionsFragment_FieldOptions {
+	if t == nil {
+		t = &IdentifyOptionsFragment{}
+	}
+	return t.FieldOptions
+}
+func (t *IdentifyOptionsFragment) GetSetCoverImage() *bool {
+	if t == nil {
+		t = &IdentifyOptionsFragment{}
+	}
+	return t.SetCoverImage
+}
+func (t *IdentifyOptionsFragment) GetSetOrganized() *bool {
+	if t == nil {
+		t = &IdentifyOptionsFragment{}
+	}
+	return t.SetOrganized
+}
+func (t *IdentifyOptionsFragment) GetIncludeMalePerformers() *bool {
+	if t == nil {
+		t = &IdentifyOptionsFragment{}
+	}
+	return t.IncludeMalePerformers
+}
+func (t *IdentifyOptionsFragment) GetSkipMultipleMatches() *bool {
+	if t == nil {
+		t = &IdentifyOptionsFragment{}
+	}
+	return t.SkipMultipleMatches
+}
+func (t *IdentifyOptionsFragment) GetSkipMultipleMatchTag() *string {
+	if t == nil {
+		t = &IdentifyOptionsFragment{}
+	}
+	return t.SkipMultipleMatchTag
+}
+func (t *IdentifyOptionsFragment) GetSkipSingleNamePerformers() *bool {
+	if t == nil {
+		t = &IdentifyOptionsFragment{}
+	}
+	return t.SkipSingleNamePerformers
+}
+func (t *IdentifyOptionsFragment) GetSkipSingleNamePerformerTag() *string {
+	if t == nil {
+		t = &IdentifyOptionsFragment{}
+	}
+	return t.SkipSingleNamePerformerTag
+}
+
 type SceneFragment_Paths struct {
 	Screenshot *string "json:\"screenshot,omitempty\" graphql:\"screenshot\""
 }
@@ -347,6 +411,31 @@ func (t *SceneFragment_Tags) GetName() string {
 		t = &SceneFragment_Tags{}
 	}
 	return t.Name
+}
+
+type IdentifyOptionsFragment_FieldOptions struct {
+	CreateMissing *bool                 "json:\"createMissing,omitempty\" graphql:\"createMissing\""
+	Field         string                "json:\"field\" graphql:\"field\""
+	Strategy      IdentifyFieldStrategy "json:\"strategy\" graphql:\"strategy\""
+}
+
+func (t *IdentifyOptionsFragment_FieldOptions) GetCreateMissing() *bool {
+	if t == nil {
+		t = &IdentifyOptionsFragment_FieldOptions{}
+	}
+	return t.CreateMissing
+}
+func (t *IdentifyOptionsFragment_FieldOptions) GetField() string {
+	if t == nil {
+		t = &IdentifyOptionsFragment_FieldOptions{}
+	}
+	return t.Field
+}
+func (t *IdentifyOptionsFragment_FieldOptions) GetStrategy() *IdentifyFieldStrategy {
+	if t == nil {
+		t = &IdentifyOptionsFragment_FieldOptions{}
+	}
+	return &t.Strategy
 }
 
 type FindPerformers_FindPerformers struct {
@@ -575,6 +664,236 @@ func (t *FindSceneCount_FindScenes) GetCount() int {
 	return t.Count
 }
 
+type IngestDefaults_Configuration_Defaults_Identify_Sources_Source struct {
+	ScraperID        *string "json:\"scraper_id,omitempty\" graphql:\"scraper_id\""
+	StashBoxEndpoint *string "json:\"stash_box_endpoint,omitempty\" graphql:\"stash_box_endpoint\""
+	StashBoxIndex    *int    "json:\"stash_box_index,omitempty\" graphql:\"stash_box_index\""
+}
+
+func (t *IngestDefaults_Configuration_Defaults_Identify_Sources_Source) GetScraperID() *string {
+	if t == nil {
+		t = &IngestDefaults_Configuration_Defaults_Identify_Sources_Source{}
+	}
+	return t.ScraperID
+}
+func (t *IngestDefaults_Configuration_Defaults_Identify_Sources_Source) GetStashBoxEndpoint() *string {
+	if t == nil {
+		t = &IngestDefaults_Configuration_Defaults_Identify_Sources_Source{}
+	}
+	return t.StashBoxEndpoint
+}
+func (t *IngestDefaults_Configuration_Defaults_Identify_Sources_Source) GetStashBoxIndex() *int {
+	if t == nil {
+		t = &IngestDefaults_Configuration_Defaults_Identify_Sources_Source{}
+	}
+	return t.StashBoxIndex
+}
+
+type IngestDefaults_Configuration_Defaults_Identify_Sources_Options_IdentifyOptionsFragment_FieldOptions struct {
+	CreateMissing *bool                 "json:\"createMissing,omitempty\" graphql:\"createMissing\""
+	Field         string                "json:\"field\" graphql:\"field\""
+	Strategy      IdentifyFieldStrategy "json:\"strategy\" graphql:\"strategy\""
+}
+
+func (t *IngestDefaults_Configuration_Defaults_Identify_Sources_Options_IdentifyOptionsFragment_FieldOptions) GetCreateMissing() *bool {
+	if t == nil {
+		t = &IngestDefaults_Configuration_Defaults_Identify_Sources_Options_IdentifyOptionsFragment_FieldOptions{}
+	}
+	return t.CreateMissing
+}
+func (t *IngestDefaults_Configuration_Defaults_Identify_Sources_Options_IdentifyOptionsFragment_FieldOptions) GetField() string {
+	if t == nil {
+		t = &IngestDefaults_Configuration_Defaults_Identify_Sources_Options_IdentifyOptionsFragment_FieldOptions{}
+	}
+	return t.Field
+}
+func (t *IngestDefaults_Configuration_Defaults_Identify_Sources_Options_IdentifyOptionsFragment_FieldOptions) GetStrategy() *IdentifyFieldStrategy {
+	if t == nil {
+		t = &IngestDefaults_Configuration_Defaults_Identify_Sources_Options_IdentifyOptionsFragment_FieldOptions{}
+	}
+	return &t.Strategy
+}
+
+type IngestDefaults_Configuration_Defaults_Identify_Sources struct {
+	Options *IdentifyOptionsFragment                                      "json:\"options,omitempty\" graphql:\"options\""
+	Source  IngestDefaults_Configuration_Defaults_Identify_Sources_Source "json:\"source\" graphql:\"source\""
+}
+
+func (t *IngestDefaults_Configuration_Defaults_Identify_Sources) GetOptions() *IdentifyOptionsFragment {
+	if t == nil {
+		t = &IngestDefaults_Configuration_Defaults_Identify_Sources{}
+	}
+	return t.Options
+}
+func (t *IngestDefaults_Configuration_Defaults_Identify_Sources) GetSource() *IngestDefaults_Configuration_Defaults_Identify_Sources_Source {
+	if t == nil {
+		t = &IngestDefaults_Configuration_Defaults_Identify_Sources{}
+	}
+	return &t.Source
+}
+
+type IngestDefaults_Configuration_Defaults_Identify_Options_IdentifyOptionsFragment_FieldOptions struct {
+	CreateMissing *bool                 "json:\"createMissing,omitempty\" graphql:\"createMissing\""
+	Field         string                "json:\"field\" graphql:\"field\""
+	Strategy      IdentifyFieldStrategy "json:\"strategy\" graphql:\"strategy\""
+}
+
+func (t *IngestDefaults_Configuration_Defaults_Identify_Options_IdentifyOptionsFragment_FieldOptions) GetCreateMissing() *bool {
+	if t == nil {
+		t = &IngestDefaults_Configuration_Defaults_Identify_Options_IdentifyOptionsFragment_FieldOptions{}
+	}
+	return t.CreateMissing
+}
+func (t *IngestDefaults_Configuration_Defaults_Identify_Options_IdentifyOptionsFragment_FieldOptions) GetField() string {
+	if t == nil {
+		t = &IngestDefaults_Configuration_Defaults_Identify_Options_IdentifyOptionsFragment_FieldOptions{}
+	}
+	return t.Field
+}
+func (t *IngestDefaults_Configuration_Defaults_Identify_Options_IdentifyOptionsFragment_FieldOptions) GetStrategy() *IdentifyFieldStrategy {
+	if t == nil {
+		t = &IngestDefaults_Configuration_Defaults_Identify_Options_IdentifyOptionsFragment_FieldOptions{}
+	}
+	return &t.Strategy
+}
+
+type IngestDefaults_Configuration_Defaults_Identify struct {
+	Options *IdentifyOptionsFragment                                  "json:\"options,omitempty\" graphql:\"options\""
+	Sources []*IngestDefaults_Configuration_Defaults_Identify_Sources "json:\"sources\" graphql:\"sources\""
+}
+
+func (t *IngestDefaults_Configuration_Defaults_Identify) GetOptions() *IdentifyOptionsFragment {
+	if t == nil {
+		t = &IngestDefaults_Configuration_Defaults_Identify{}
+	}
+	return t.Options
+}
+func (t *IngestDefaults_Configuration_Defaults_Identify) GetSources() []*IngestDefaults_Configuration_Defaults_Identify_Sources {
+	if t == nil {
+		t = &IngestDefaults_Configuration_Defaults_Identify{}
+	}
+	return t.Sources
+}
+
+type IngestDefaults_Configuration_Defaults struct {
+	Identify *IngestDefaults_Configuration_Defaults_Identify "json:\"identify,omitempty\" graphql:\"identify\""
+}
+
+func (t *IngestDefaults_Configuration_Defaults) GetIdentify() *IngestDefaults_Configuration_Defaults_Identify {
+	if t == nil {
+		t = &IngestDefaults_Configuration_Defaults{}
+	}
+	return t.Identify
+}
+
+type IngestDefaults_Configuration struct {
+	Defaults IngestDefaults_Configuration_Defaults "json:\"defaults\" graphql:\"defaults\""
+}
+
+func (t *IngestDefaults_Configuration) GetDefaults() *IngestDefaults_Configuration_Defaults {
+	if t == nil {
+		t = &IngestDefaults_Configuration{}
+	}
+	return &t.Defaults
+}
+
+type IngestScenes_FindScenes_Scenes_Studio struct {
+	ID string "json:\"id\" graphql:\"id\""
+}
+
+func (t *IngestScenes_FindScenes_Scenes_Studio) GetID() string {
+	if t == nil {
+		t = &IngestScenes_FindScenes_Scenes_Studio{}
+	}
+	return t.ID
+}
+
+type IngestScenes_FindScenes_Scenes_Performers struct {
+	ID string "json:\"id\" graphql:\"id\""
+}
+
+func (t *IngestScenes_FindScenes_Scenes_Performers) GetID() string {
+	if t == nil {
+		t = &IngestScenes_FindScenes_Scenes_Performers{}
+	}
+	return t.ID
+}
+
+type IngestScenes_FindScenes_Scenes_Files struct {
+	Path string "json:\"path\" graphql:\"path\""
+}
+
+func (t *IngestScenes_FindScenes_Scenes_Files) GetPath() string {
+	if t == nil {
+		t = &IngestScenes_FindScenes_Scenes_Files{}
+	}
+	return t.Path
+}
+
+type IngestScenes_FindScenes_Scenes struct {
+	Code       *string                                      "json:\"code,omitempty\" graphql:\"code\""
+	Date       *string                                      "json:\"date,omitempty\" graphql:\"date\""
+	Files      []*IngestScenes_FindScenes_Scenes_Files      "json:\"files\" graphql:\"files\""
+	ID         string                                       "json:\"id\" graphql:\"id\""
+	Performers []*IngestScenes_FindScenes_Scenes_Performers "json:\"performers\" graphql:\"performers\""
+	Studio     *IngestScenes_FindScenes_Scenes_Studio       "json:\"studio,omitempty\" graphql:\"studio\""
+	Title      *string                                      "json:\"title,omitempty\" graphql:\"title\""
+}
+
+func (t *IngestScenes_FindScenes_Scenes) GetCode() *string {
+	if t == nil {
+		t = &IngestScenes_FindScenes_Scenes{}
+	}
+	return t.Code
+}
+func (t *IngestScenes_FindScenes_Scenes) GetDate() *string {
+	if t == nil {
+		t = &IngestScenes_FindScenes_Scenes{}
+	}
+	return t.Date
+}
+func (t *IngestScenes_FindScenes_Scenes) GetFiles() []*IngestScenes_FindScenes_Scenes_Files {
+	if t == nil {
+		t = &IngestScenes_FindScenes_Scenes{}
+	}
+	return t.Files
+}
+func (t *IngestScenes_FindScenes_Scenes) GetID() string {
+	if t == nil {
+		t = &IngestScenes_FindScenes_Scenes{}
+	}
+	return t.ID
+}
+func (t *IngestScenes_FindScenes_Scenes) GetPerformers() []*IngestScenes_FindScenes_Scenes_Performers {
+	if t == nil {
+		t = &IngestScenes_FindScenes_Scenes{}
+	}
+	return t.Performers
+}
+func (t *IngestScenes_FindScenes_Scenes) GetStudio() *IngestScenes_FindScenes_Scenes_Studio {
+	if t == nil {
+		t = &IngestScenes_FindScenes_Scenes{}
+	}
+	return t.Studio
+}
+func (t *IngestScenes_FindScenes_Scenes) GetTitle() *string {
+	if t == nil {
+		t = &IngestScenes_FindScenes_Scenes{}
+	}
+	return t.Title
+}
+
+type IngestScenes_FindScenes struct {
+	Scenes []*IngestScenes_FindScenes_Scenes "json:\"scenes\" graphql:\"scenes\""
+}
+
+func (t *IngestScenes_FindScenes) GetScenes() []*IngestScenes_FindScenes_Scenes {
+	if t == nil {
+		t = &IngestScenes_FindScenes{}
+	}
+	return t.Scenes
+}
+
 type FindPerformerByID struct {
 	FindPerformer *PerformerFragment "json:\"findPerformer,omitempty\" graphql:\"findPerformer\""
 }
@@ -681,6 +1000,50 @@ type FindSceneCount struct {
 func (t *FindSceneCount) GetFindScenes() *FindSceneCount_FindScenes {
 	if t == nil {
 		t = &FindSceneCount{}
+	}
+	return &t.FindScenes
+}
+
+type MetadataGenerate struct {
+	MetadataGenerate string "json:\"metadataGenerate\" graphql:\"metadataGenerate\""
+}
+
+func (t *MetadataGenerate) GetMetadataGenerate() string {
+	if t == nil {
+		t = &MetadataGenerate{}
+	}
+	return t.MetadataGenerate
+}
+
+type MetadataIdentify struct {
+	MetadataIdentify string "json:\"metadataIdentify\" graphql:\"metadataIdentify\""
+}
+
+func (t *MetadataIdentify) GetMetadataIdentify() string {
+	if t == nil {
+		t = &MetadataIdentify{}
+	}
+	return t.MetadataIdentify
+}
+
+type IngestDefaults struct {
+	Configuration IngestDefaults_Configuration "json:\"configuration\" graphql:\"configuration\""
+}
+
+func (t *IngestDefaults) GetConfiguration() *IngestDefaults_Configuration {
+	if t == nil {
+		t = &IngestDefaults{}
+	}
+	return &t.Configuration
+}
+
+type IngestScenes struct {
+	FindScenes IngestScenes_FindScenes "json:\"findScenes\" graphql:\"findScenes\""
+}
+
+func (t *IngestScenes) GetFindScenes() *IngestScenes_FindScenes {
+	if t == nil {
+		t = &IngestScenes{}
 	}
 	return &t.FindScenes
 }
@@ -1085,6 +1448,142 @@ func (c *Client) FindSceneCount(ctx context.Context, interceptors ...clientv2.Re
 	return &res, nil
 }
 
+const MetadataGenerateDocument = `mutation MetadataGenerate ($input: GenerateMetadataInput!) {
+	metadataGenerate(input: $input)
+}
+`
+
+func (c *Client) MetadataGenerate(ctx context.Context, input GenerateMetadataInput, interceptors ...clientv2.RequestInterceptor) (*MetadataGenerate, error) {
+	vars := map[string]any{
+		"input": input,
+	}
+
+	var res MetadataGenerate
+	if err := c.Client.Post(ctx, "MetadataGenerate", MetadataGenerateDocument, &res, vars, interceptors...); err != nil {
+		if c.Client.ParseDataWhenErrors {
+			return &res, err
+		}
+
+		return nil, err
+	}
+
+	return &res, nil
+}
+
+const MetadataIdentifyDocument = `mutation MetadataIdentify ($input: IdentifyMetadataInput!) {
+	metadataIdentify(input: $input)
+}
+`
+
+func (c *Client) MetadataIdentify(ctx context.Context, input IdentifyMetadataInput, interceptors ...clientv2.RequestInterceptor) (*MetadataIdentify, error) {
+	vars := map[string]any{
+		"input": input,
+	}
+
+	var res MetadataIdentify
+	if err := c.Client.Post(ctx, "MetadataIdentify", MetadataIdentifyDocument, &res, vars, interceptors...); err != nil {
+		if c.Client.ParseDataWhenErrors {
+			return &res, err
+		}
+
+		return nil, err
+	}
+
+	return &res, nil
+}
+
+const IngestDefaultsDocument = `query IngestDefaults {
+	configuration {
+		defaults {
+			identify {
+				sources {
+					source {
+						stash_box_index
+						stash_box_endpoint
+						scraper_id
+					}
+					options {
+						... IdentifyOptionsFragment
+					}
+				}
+				options {
+					... IdentifyOptionsFragment
+				}
+			}
+		}
+	}
+}
+fragment IdentifyOptionsFragment on IdentifyMetadataOptions {
+	fieldOptions {
+		field
+		strategy
+		createMissing
+	}
+	setCoverImage
+	setOrganized
+	includeMalePerformers
+	skipMultipleMatches
+	skipMultipleMatchTag
+	skipSingleNamePerformers
+	skipSingleNamePerformerTag
+}
+`
+
+func (c *Client) IngestDefaults(ctx context.Context, interceptors ...clientv2.RequestInterceptor) (*IngestDefaults, error) {
+	vars := map[string]any{}
+
+	var res IngestDefaults
+	if err := c.Client.Post(ctx, "IngestDefaults", IngestDefaultsDocument, &res, vars, interceptors...); err != nil {
+		if c.Client.ParseDataWhenErrors {
+			return &res, err
+		}
+
+		return nil, err
+	}
+
+	return &res, nil
+}
+
+const IngestScenesDocument = `query IngestScenes ($scene_filter: SceneFilterType, $filter: FindFilterType, $ids: [ID!]) {
+	findScenes(scene_filter: $scene_filter, filter: $filter, ids: $ids) {
+		scenes {
+			id
+			title
+			code
+			date
+			studio {
+				id
+			}
+			performers {
+				id
+			}
+			files {
+				path
+			}
+		}
+	}
+}
+`
+
+func (c *Client) IngestScenes(ctx context.Context, sceneFilter *SceneFilterType, filter *FindFilterType, ids []string, interceptors ...clientv2.RequestInterceptor) (*IngestScenes, error) {
+	vars := map[string]any{
+		"scene_filter": sceneFilter,
+		"filter":       filter,
+		"ids":          ids,
+	}
+
+	var res IngestScenes
+	if err := c.Client.Post(ctx, "IngestScenes", IngestScenesDocument, &res, vars, interceptors...); err != nil {
+		if c.Client.ParseDataWhenErrors {
+			return &res, err
+		}
+
+		return nil, err
+	}
+
+	return &res, nil
+}
+
 var DocumentOperationNames = map[string]string{
 	FindPerformerByIDDocument:           "FindPerformerByID",
 	FindPerformersDocument:              "FindPerformers",
@@ -1096,4 +1595,8 @@ var DocumentOperationNames = map[string]string{
 	FindJobDocument:                     "FindJob",
 	ConfigurationDocument:               "Configuration",
 	FindSceneCountDocument:              "FindSceneCount",
+	MetadataGenerateDocument:            "MetadataGenerate",
+	MetadataIdentifyDocument:            "MetadataIdentify",
+	IngestDefaultsDocument:              "IngestDefaults",
+	IngestScenesDocument:                "IngestScenes",
 }
