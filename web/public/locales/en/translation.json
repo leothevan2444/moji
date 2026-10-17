@@ -25,6 +25,7 @@
     "title": "File preparation",
     "keepSubtitles": "Keep subtitles",
     "keepSubtitlesInfo": "Keep subtitles in every language. When off, external subtitles are skipped and embedded subtitle streams are excluded from delivery.",
+    "summary": "Only selected movie files and retained subtitles are delivered to Stash. Multiple movie parts are merged in the order below.",
     "selectionSaved": "File selection saved. The download will continue.",
     "classified": "Classified",
     "playbackOrder": "Movie merge order",

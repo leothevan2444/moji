@@ -1,13 +1,22 @@
 import { defineConfig, loadEnv } from "vite";
 import react from "@vitejs/plugin-react";
 import { configDefaults } from "vitest/config";
+import { readFileSync } from "node:fs";
+
+const version = readFileSync(new URL("../VERSION", import.meta.url), "utf8").trim();
 
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), "");
   const apiTarget = env.VITE_MOJI_API_TARGET || "http://127.0.0.1:10000";
 
   return {
-    plugins: [react()],
+    plugins: [react(), {
+      name: "moji-version",
+      generateBundle() {
+        this.emitFile({ type: "asset", fileName: "version.json", source: JSON.stringify({ version }) + "\n" });
+      }
+    }],
+    define: { __MOJI_VERSION__: JSON.stringify(version) },
     build: {
       rollupOptions: {
         output: {

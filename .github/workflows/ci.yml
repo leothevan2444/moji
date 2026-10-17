@@ -33,3 +33,10 @@ jobs:
           go-version-file: go.mod
           cache: true
       - run: go test ./internal/graphqlapi ./internal/taskruntime ./cmd/moji
+
+  docker:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: make docker-build
+      - run: make docker-test

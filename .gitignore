@@ -20,3 +20,7 @@ web/test-results/
 web/playwright-report/
 .log
 gitstats/
+docker/data/
+docker/downloads/
+docker/library/
+docker/.env

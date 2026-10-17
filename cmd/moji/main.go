@@ -17,6 +17,7 @@ import (
 
 	"github.com/99designs/gqlgen/graphql/playground"
 	"github.com/gorilla/websocket"
+	"github.com/leothevan2444/moji"
 	"github.com/leothevan2444/moji/internal/config"
 	"github.com/leothevan2444/moji/internal/controller/api"
 	"github.com/leothevan2444/moji/internal/discovery"
@@ -43,11 +44,17 @@ import (
 var runtimeCacheSequence atomic.Uint64
 
 func main() {
+	version := moji.Version()
 	var (
-		configPath = flag.String("config", "", "path to config yaml (or set MOJI_CONFIG)")
-		addr       = flag.String("addr", ":10000", "http listen address")
+		configPath  = flag.String("config", "", "path to config yaml (or set MOJI_CONFIG)")
+		addr        = flag.String("addr", ":10000", "http listen address")
+		showVersion = flag.Bool("version", false, "print version and exit")
 	)
 	flag.Parse()
+	if *showVersion {
+		fmt.Printf("moji %s\n", version)
+		return
+	}
 
 	// Config
 	var (
@@ -91,7 +98,7 @@ func main() {
 	}
 
 	// Dependencies
-	runtime := newHTTPRuntime(cfg, "dev", configStore)
+	runtime := newHTTPRuntime(cfg, version, configStore)
 	defer runtime.stashBoxCacheService.Close()
 
 	server := &http.Server{
@@ -275,7 +282,11 @@ func newHTTPRuntime(cfg *config.Config, version string, configStore *config.Stor
 	apiMux := http.NewServeMux()
 	apiHandler.Register(apiMux)
 	imageService.RegisterHandler(apiMux)
-	webHandler := webui.NewHandler("web/dist")
+	webDist := os.Getenv("MOJI_WEB_DIST")
+	if webDist == "" {
+		webDist = "web/dist"
+	}
+	webHandler := webui.NewHandler(webDist)
 
 	router := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch {

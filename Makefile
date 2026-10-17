@@ -2,6 +2,8 @@
 GO ?= go
 GOCACHE ?= /tmp/moji-go-cache
 GO_RUN = GOCACHE=$(GOCACHE) $(GO) run
+override VERSION := $(strip $(shell cat VERSION))
+IMAGE ?= moji
 
 # Generate files
 .PHONY: generate
@@ -39,7 +41,7 @@ clean-generated:
 # Builds the moji binary
 .PHONY: moji
 moji:
-	go build ./cmd/moji
+	GOCACHE=$(GOCACHE) $(GO) build -trimpath ./cmd/moji
 
 .PHONY: moji-run
 moji-run:
@@ -73,3 +75,11 @@ test-media:
 	@command -v ffmpeg >/dev/null || (echo "ffmpeg is required" >&2; exit 1)
 	@command -v ffprobe >/dev/null || (echo "ffprobe is required" >&2; exit 1)
 	GOCACHE=$(GOCACHE) $(GO) test ./internal/mediafiles
+
+.PHONY: docker-build
+docker-build:
+	docker build --build-arg VERSION=$(VERSION) --build-arg VCS_REF=$(shell git rev-parse HEAD) -t $(IMAGE):$(VERSION) .
+
+.PHONY: docker-test
+docker-test:
+	./docker/smoke-test.sh $(IMAGE):$(VERSION)

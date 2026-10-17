@@ -20,14 +20,28 @@ GraphQL user-visible failures use `extensions.code`, `params`, and `correlationI
 **Moji now only support installation via Docker.**
 ### Prerequisites
 - Docker and Docker Compose installed on your server.
-- FFmpeg and ffprobe in the Moji runtime PATH for file preparation and part merging.
+- FFmpeg and ffprobe are included in the Docker image. Native runs need both in PATH.
 - A running instance of [Stash](https://github.com/stashapp/stash).
 - [jackett](https://github.com/Jackett/Jackett) and [qBittorrent](https://www.qbittorrent.org/) for torrent searching and downloading.
 ### Docker Compose
-Get the [`docker-compose.yml`](./docker/docker-compose.yml) file from repository.
-
-Once you have that file where you want it, modify the settings as you please, and then run:
+Clone the repository. The release version comes from [VERSION](VERSION). Prepare persistent
+directories and copy the example configuration:
 ```shell
-docker compose up -d
+mkdir -p docker/data docker/downloads docker/library
+cp docker/config.example.yaml docker/data/config.yaml
+printf 'MOJI_UID=%s\nMOJI_GID=%s\n' "$(id -u)" "$(id -g)" > docker/.env
 ```
-Moji will by default be binded to port 10000. Web UI is available in your web browser locally at http://localhost:10000 or on your network as http://YOUR-LOCAL-IP:10000
+Fill in connection settings in `docker/data/config.yaml`, especially the required
+Jackett URL/API key, and configure the media mounts for qBittorrent and Stash.
+Then build and start:
+
+```shell
+./docker/compose.sh up -d --build
+./docker/compose.sh exec moji moji --version
+```
+
+The UI is available at <http://localhost:10000>. The image runs as a non-root
+user and stores config, databases, logs and caches under `/data`.
+See [Docker packaging](docs/docker.md) for permissions, path mapping, version
+labels, upgrades and image smoke tests. This builds a local `moji:<VERSION>` image;
+no public registry image is required.

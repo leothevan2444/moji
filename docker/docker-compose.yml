@@ -1,0 +1,33 @@
+services:
+  moji:
+    image: moji:${MOJI_VERSION:?Use ./docker/compose.sh to load VERSION}
+    build:
+      context: ..
+      dockerfile: Dockerfile
+      args:
+        VERSION: ${MOJI_VERSION:?Use ./docker/compose.sh to load VERSION}
+    user: "${MOJI_UID:-1000}:${MOJI_GID:-1000}"
+    ports:
+      - "${MOJI_BIND_ADDRESS:-127.0.0.1}:${MOJI_PORT:-10000}:10000"
+    environment:
+      TZ: ${TZ:-UTC}
+    volumes:
+      - type: bind
+        source: ./data
+        target: /data
+        bind:
+          create_host_path: false
+      - type: bind
+        source: ${MOJI_DOWNLOADS_DIR:-./downloads}
+        target: /downloads
+        bind:
+          create_host_path: false
+      - type: bind
+        source: ${MOJI_LIBRARY_DIR:-./library}
+        target: /library
+        bind:
+          create_host_path: false
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    restart: unless-stopped
+    stop_grace_period: 30s

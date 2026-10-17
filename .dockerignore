@@ -1,0 +1,25 @@
+# Allow only build inputs: local credentials, databases and media never enter context.
+**
+!Dockerfile
+!VERSION
+!version.go
+!go.mod
+!go.sum
+!cmd/
+!cmd/**
+!internal/
+!internal/**
+!pkg/
+!pkg/**
+!web/
+!web/**
+!docker/
+!docker/config.example.yaml
+**/node_modules
+**/dist
+**/.env*
+**/*.db*
+**/*.log*
+**/*.tsbuildinfo
+web/test-results
+web/playwright-report

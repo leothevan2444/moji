@@ -1,0 +1,37 @@
+# Replace connection values before starting. These are container-visible URLs.
+connection:
+  jackett:
+    url: http://host.docker.internal:9117
+    api_key: ""
+    password: ""
+  qbittorrent:
+    url: http://host.docker.internal:8080
+    username: ""
+    password: ""
+    default_save_path: /downloads
+    category: moji
+    tags: moji
+  stash:
+    url: http://host.docker.internal:9999
+    api_key: ""
+
+ingest:
+  keep_subtitles: false
+  downloads:
+    # Path reported by qBittorrent, and the same files as seen by Moji.
+    qb_root: /downloads
+    moji_root: /downloads
+  library:
+    # The SAME host directory must also be mounted into Stash.
+    moji_root: /library
+    stash_root: /library
+  transfer:
+    action: COPY
+
+automation:
+  task_progress_sync_interval_seconds: 5
+  subscription_poll_interval_hours: 24
+
+logging:
+  level: info
+  file_path: /data/moji.log

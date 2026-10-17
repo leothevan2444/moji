@@ -1,4 +1,5 @@
 import { FormEvent, useEffect, useState } from "react";
+import { APP_VERSION } from "../../version";
 import { useMutation, useQuery } from "urql";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faArrowDown } from "@fortawesome/free-solid-svg-icons/faArrowDown";
@@ -2247,7 +2248,7 @@ export function AutomationSettingsEditor({
       <dl className="settings-grid">
         <div>
           <dt>{t("systemUi.version")}</dt>
-          <dd>{appVersion || "dev"}</dd>
+          <dd>{appVersion || APP_VERSION}</dd>
         </div>
       </dl>
     </article>

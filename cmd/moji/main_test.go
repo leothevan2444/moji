@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 	"time"
@@ -16,6 +17,34 @@ import (
 	"github.com/leothevan2444/moji/internal/stashsync"
 	"github.com/leothevan2444/moji/internal/taskruntime"
 )
+
+func TestHTTPHandlerServesConfiguredWebDist(t *testing.T) {
+	dir := t.TempDir()
+	const page = "<!doctype html><html>container web assets</html>"
+	if err := os.WriteFile(filepath.Join(dir, "index.html"), []byte(page), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	t.Setenv("MOJI_WEB_DIST", dir)
+	handler := newHTTPHandler(testConfig(), "test-version")
+	rec := httptest.NewRecorder()
+	handler.ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/", nil))
+	if rec.Code != http.StatusOK || rec.Body.String() != page {
+		t.Fatalf("configured web assets not served: status=%d body=%q", rec.Code, rec.Body.String())
+	}
+}
+
+func TestDockerExampleConfig(t *testing.T) {
+	cfg, err := config.LoadFromPath("../../docker/config.example.yaml")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if cfg.Ingest.Downloads.MojiRoot != "/downloads" || cfg.Ingest.Library.MojiRoot != "/library" || cfg.Ingest.Transfer.Action != "COPY" {
+		t.Fatalf("unexpected container ingest paths: %+v", cfg.Ingest)
+	}
+	if cfg.EffectiveLogFilePath() != "/data/moji.log" {
+		t.Fatalf("logs must stay in the persistent data mount: %q", cfg.EffectiveLogFilePath())
+	}
+}
 
 func TestHTTPHandlerServesRootAndGraphQLPlayground(t *testing.T) {
 	handler := newHTTPHandler(testConfig(), "test-version")
