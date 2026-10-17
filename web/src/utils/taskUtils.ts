@@ -3,7 +3,7 @@
  */
 
 import type { TasksOverviewDocumentQuery } from "../graphql/generated/graphql";
-import { deliveryModeLabel, transferActionLabel } from "./ingestUtils";
+import { transferActionLabel } from "./ingestUtils";
 import i18n from "../i18n/i18n";
 
 const tr = (key: string, options?: Record<string, unknown>) => i18n.t(key, options);
@@ -398,9 +398,6 @@ export function taskMetaLine(task: DashboardTask) {
   if (task.category) {
     parts.push(task.category);
   }
-  if (task.deliveryMode) {
-    parts.push(deliveryModeLabel(task.deliveryMode));
-  }
   return parts.filter(Boolean).join(" · ");
 }
 
@@ -474,9 +471,6 @@ function lifecycleDetail(task: DashboardTask, stage: TaskStageKey, failure: Task
   }
 
   if (stage === "transferring") {
-    if (task.deliveryMode === "PATH_MAP") {
-      return tr(isCurrent ? "taskModel.lifecycle.noTransferCurrent" : "taskModel.lifecycle.noTransfer");
-    }
     if (isBlocked) return failure.detail;
     if (currentStage === "sourcing" || currentStage === "downloading" || currentStage === "pending_ingest") {
       return tr("taskModel.lifecycle.transferUpcoming");

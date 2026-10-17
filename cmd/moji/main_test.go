@@ -94,7 +94,7 @@ func TestHTTPHandlerServesSettingsSnapshot(t *testing.T) {
 			jackett { configured url apiKeyConfigured }
 			qbittorrent { configured url usernameConfigured passwordConfigured defaultSavePath }
 			stash { configured url apiKeyConfigured }
-			ingest { deliveryMode downloads { qbRoot mojiRoot } library { mojiRoot stashRoot } transfer { action } }
+			ingest { downloads { qbRoot mojiRoot } library { mojiRoot stashRoot } transfer { action } }
 			automation { taskProgressSyncIntervalSeconds subscriptionPollIntervalHours stashBoxEndpoints }
 			system { taskDeletePolicy }
 		}
@@ -203,31 +203,6 @@ func TestIngestConfigured(t *testing.T) {
 		}
 	})
 
-	t.Run("PATH_MAP mode", func(t *testing.T) {
-		cases := []struct {
-			name      string
-			qbRoot    string
-			stashRoot string
-			want      bool
-		}{
-			{"missing qb root", "", "/library", false},
-			{"missing stash root", "/downloads", "", false},
-			{"set", "/downloads", "/library", true},
-			{"whitespace only", "   ", "   ", false},
-		}
-		for _, tc := range cases {
-			t.Run(tc.name, func(t *testing.T) {
-				cfg := testConfig()
-				cfg.Ingest.DeliveryMode = "PATH_MAP"
-				cfg.Ingest.Downloads.QBRoot = tc.qbRoot
-				cfg.Ingest.Library.StashRoot = tc.stashRoot
-				if got := isIngestConfigured(cfg); got != tc.want {
-					t.Fatalf("isIngestConfigured(PATH_MAP) = %v, want %v", got, tc.want)
-				}
-			})
-		}
-	})
-
 	t.Run("TRANSFER mode", func(t *testing.T) {
 		cases := []struct {
 			name             string
@@ -245,13 +220,12 @@ func TestIngestConfigured(t *testing.T) {
 			{"empty stash root", "COPY", "/downloads", "/srv/downloads", "/mnt/library", "", false},
 			{"copy complete", "COPY", "/downloads", "/srv/downloads", "/mnt/library", "/library", true},
 			{"move complete", "MOVE", "/downloads", "/srv/downloads", "/mnt/library", "/library", true},
-			{"symlink complete", "SYMLINK", "/downloads", "/srv/downloads", "/mnt/library", "/library", true},
+			{"symlink complete", "SYMLINK", "/downloads", "/srv/downloads", "/mnt/library", "/library", false},
 			{"unsupported action", "GARBAGE", "/downloads", "/srv/downloads", "/mnt/library", "/library", false},
 		}
 		for _, tc := range cases {
 			t.Run(tc.name, func(t *testing.T) {
 				cfg := testConfig()
-				cfg.Ingest.DeliveryMode = "TRANSFER"
 				cfg.Ingest.Transfer.Action = tc.action
 				cfg.Ingest.Downloads.QBRoot = tc.qbRoot
 				cfg.Ingest.Downloads.MojiRoot = tc.mojiDownloadRoot
@@ -264,23 +238,6 @@ func TestIngestConfigured(t *testing.T) {
 		}
 	})
 
-	t.Run("default delivery mode falls back to PATH_MAP", func(t *testing.T) {
-		cfg := testConfig()
-		cfg.Ingest.DeliveryMode = ""
-		cfg.Ingest.Downloads.QBRoot = "/downloads"
-		cfg.Ingest.Library.StashRoot = "/library"
-		if !isIngestConfigured(cfg) {
-			t.Fatal("isIngestConfigured with empty delivery mode should fall back to PATH_MAP")
-		}
-	})
-
-	t.Run("unknown mode returns false", func(t *testing.T) {
-		cfg := testConfig()
-		cfg.Ingest.DeliveryMode = "GARBAGE_MODE"
-		if isIngestConfigured(cfg) {
-			t.Fatal("isIngestConfigured should return false for unknown mode")
-		}
-	})
 }
 
 func TestServiceReadiness(t *testing.T) {
@@ -395,7 +352,6 @@ type graphQLResponse struct {
 				APIKeyConfigured bool   `json:"apiKeyConfigured"`
 			} `json:"stash"`
 			Ingest struct {
-				DeliveryMode string `json:"deliveryMode"`
 			} `json:"ingest"`
 			Jackett struct {
 				Configured       bool   `json:"configured"`
@@ -478,7 +434,6 @@ func testConfig() *config.Config {
 	var cfg config.Config
 	cfg.Connection.Jackett.URL = "http://jackett.invalid"
 	cfg.Connection.Jackett.APIKey = "test-api-key"
-	cfg.Ingest.DeliveryMode = "PATH_MAP"
 	cfg.Ingest.Downloads.QBRoot = "/downloads"
 	cfg.Ingest.Library.StashRoot = "/library"
 	cfg.Automation.SubscriptionPollIntervalHours = 1

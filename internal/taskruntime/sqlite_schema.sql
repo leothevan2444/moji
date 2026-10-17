@@ -29,7 +29,6 @@ CREATE TABLE IF NOT EXISTS tasks (
   content_path TEXT,
 
   download_completed_at TEXT,
-  delivery_mode TEXT,
   moji_source_path TEXT,
   transfer_action TEXT,
   moji_transfer_path TEXT,

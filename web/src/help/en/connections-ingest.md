@@ -10,8 +10,8 @@ qBittorrent's default save path, category, and tags are applied to new tasks unl
 
 ## Ingest
 
-Path mapping does not touch files. Moji removes the **qB download root** from qBittorrent's content path and appends the relative path to the **Stash library root**. Use it only when qBittorrent and Stash already see the same files through different prefixes.
+Moji makes the task save directory relative to the **qB download root**, then appends it to the **Moji download root** to read selected files. It filters, deduplicates, and merges the movie into `code/code.mkv` under the **Moji library root**, together with retained subtitles.
 
-File delivery maps that relative path onto the **Moji download root**, then copies, moves, or symlinks it under the **Moji library root**. The same relative path is appended to the **Stash library root** for scanning. Existing targets are not overwritten.
+The **Stash library root** must expose the same files as the Moji library root. Moji appends the movie code directory to this root and asks Stash to scan the delivered movie.
 
-Every root must use the named service's filesystem view. Container paths must match that container's mounts. `Copy` preserves the source, `Move` can interrupt seeding, and `Symlink` requires the source to remain reachable from Moji.
+All four roots use the named service's filesystem perspective and must match container mounts. **Copy** retains downloaded sources. **Move** stops the qB task and deletes selected sources only after the entire movie and subtitles are published. Existing movies are not overwritten. The Moji runtime requires `ffmpeg` and `ffprobe`.

@@ -62,7 +62,7 @@ export const EMPTY_STASH_FORM = {
 };
 
 export const EMPTY_INGEST_FORM = {
-  deliveryMode: "PATH_MAP",
+
   downloads: {
     qbRoot: "",
     mojiRoot: ""

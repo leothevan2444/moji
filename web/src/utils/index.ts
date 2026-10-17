@@ -9,7 +9,6 @@ export {
   formatRelativeDate
 } from "./formatters";
 export {
-  deliveryModeLabel,
   transferActionLabel
 } from "./ingestUtils";
 export {

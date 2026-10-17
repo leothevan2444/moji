@@ -232,9 +232,6 @@ func (s *Service) startMediaPreparation(ctx context.Context, task *Task) (*Task,
 	if cfg.Transfer.Action != stashsync.TransferActionCopy && cfg.Transfer.Action != stashsync.TransferActionMove {
 		return s.blockMediaPreparation(task, errors.New("clean delivery requires COPY or MOVE"))
 	}
-	if cfg.DeliveryMode != stashsync.DeliveryModeTransfer {
-		return s.blockMediaPreparation(task, errors.New("clean delivery requires TRANSFER mode with Moji download and library roots"))
-	}
 	if strings.TrimSpace(cfg.Downloads.MojiRoot) == "" || strings.TrimSpace(cfg.Library.MojiRoot) == "" || strings.TrimSpace(cfg.Library.StashRoot) == "" {
 		return s.blockMediaPreparation(task, errors.New("configure Moji download, Moji library, and Stash library roots"))
 	}
@@ -339,7 +336,6 @@ func (s *Service) startMediaPreparation(ctx context.Context, task *Task) (*Task,
 			_, _ = s.blockMediaPreparation(latest, prepErr)
 			return
 		}
-		latest.DeliveryMode = string(cfg.DeliveryMode)
 		latest.TransferAction = string(cfg.Transfer.Action)
 		latest.MojiSourcePath = request.SourceRoot
 		latest.MojiTransferPath = result.Directory

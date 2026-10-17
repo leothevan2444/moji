@@ -13,7 +13,7 @@ mutation UpdateIngestSettingsDocument($input: UpdateIngestSettingsInput!) {
   updateIngestSettings(input: $input) {
     ingest {
       keepSubtitles
-      deliveryMode
+
       downloads {
         qbRoot
         mojiRoot

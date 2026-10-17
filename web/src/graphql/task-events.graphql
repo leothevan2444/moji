@@ -24,7 +24,6 @@ subscription TaskEvents {
       category
       tags
       downloadCompletedAt
-      deliveryMode
       mojiSourcePath
       transferAction
       mojiTransferPath

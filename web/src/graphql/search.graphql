@@ -104,7 +104,7 @@ mutation QueueDiscoveredSceneDocument($input: QueueDiscoveredSceneInput!) {
     code
     torrentName
     progress
-    deliveryMode
+
     createdAt
   }
 }

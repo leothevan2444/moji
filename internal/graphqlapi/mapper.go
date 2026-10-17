@@ -190,7 +190,6 @@ func taskToModel(task *taskruntime.Task) *model.Task {
 		QbittorrentState:    nilIfEmpty(task.QBittorrentState),
 		ContentPath:         nilIfEmpty(task.ContentPath),
 		DownloadCompletedAt: formatOptionalTime(task.DownloadCompletedAt),
-		DeliveryMode:        nilIfEmpty(task.DeliveryMode),
 		MojiSourcePath:      nilIfEmpty(task.MojiSourcePath),
 		TransferAction:      nilIfEmpty(task.TransferAction),
 		MojiTransferPath:    nilIfEmpty(task.MojiTransferPath),

@@ -139,7 +139,6 @@ type ComplexityRoot struct {
 	}
 
 	IngestSettings struct {
-		DeliveryMode  func(childComplexity int) int
 		Downloads     func(childComplexity int) int
 		KeepSubtitles func(childComplexity int) int
 		Library       func(childComplexity int) int
@@ -622,7 +621,6 @@ type ComplexityRoot struct {
 		Code                func(childComplexity int) int
 		ContentPath         func(childComplexity int) int
 		CreatedAt           func(childComplexity int) int
-		DeliveryMode        func(childComplexity int) int
 		DownloadCompletedAt func(childComplexity int) int
 		Files               func(childComplexity int) int
 		ID                  func(childComplexity int) int
@@ -1197,13 +1195,6 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.IndexerPreferenceRule.TrackerIds(childComplexity), true
-
-	case "IngestSettings.deliveryMode":
-		if e.complexity.IngestSettings.DeliveryMode == nil {
-			break
-		}
-
-		return e.complexity.IngestSettings.DeliveryMode(childComplexity), true
 
 	case "IngestSettings.downloads":
 		if e.complexity.IngestSettings.Downloads == nil {
@@ -3703,13 +3694,6 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.Task.CreatedAt(childComplexity), true
 
-	case "Task.deliveryMode":
-		if e.complexity.Task.DeliveryMode == nil {
-			break
-		}
-
-		return e.complexity.Task.DeliveryMode(childComplexity), true
-
 	case "Task.downloadCompletedAt":
 		if e.complexity.Task.DownloadCompletedAt == nil {
 			break
@@ -4752,7 +4736,7 @@ type StashSettings {
 
 type IngestSettings {
   keepSubtitles: Boolean!
-  deliveryMode: String!
+
   downloads: DownloadsIngestSettings!
   library: LibraryIngestSettings!
   transfer: TransferIngestSettings!
@@ -4986,7 +4970,7 @@ input UpdateStashSettingsInput {
 
 input UpdateIngestSettingsInput {
   keepSubtitles: Boolean = false
-  deliveryMode: String!
+
   downloads: DownloadsIngestSettingsInput!
   library: LibraryIngestSettingsInput!
   transfer: TransferIngestSettingsInput!
@@ -5541,7 +5525,7 @@ type Task {
   qbittorrentState: String
   contentPath: String
   downloadCompletedAt: String
-  deliveryMode: String
+
   mojiSourcePath: String
   transferAction: String
   mojiTransferPath: String
@@ -9572,50 +9556,6 @@ func (ec *executionContext) fieldContext_IngestSettings_keepSubtitles(_ context.
 	return fc, nil
 }
 
-func (ec *executionContext) _IngestSettings_deliveryMode(ctx context.Context, field graphql.CollectedField, obj *model.IngestSettings) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_IngestSettings_deliveryMode(ctx, field)
-	if err != nil {
-		return graphql.Null
-	}
-	ctx = graphql.WithFieldContext(ctx, fc)
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.DeliveryMode, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(string)
-	fc.Result = res
-	return ec.marshalNString2string(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) fieldContext_IngestSettings_deliveryMode(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "IngestSettings",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type String does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
 func (ec *executionContext) _IngestSettings_downloads(ctx context.Context, field graphql.CollectedField, obj *model.IngestSettings) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_IngestSettings_downloads(ctx, field)
 	if err != nil {
@@ -11702,8 +11642,6 @@ func (ec *executionContext) fieldContext_Mutation_addTorrent(ctx context.Context
 				return ec.fieldContext_Task_contentPath(ctx, field)
 			case "downloadCompletedAt":
 				return ec.fieldContext_Task_downloadCompletedAt(ctx, field)
-			case "deliveryMode":
-				return ec.fieldContext_Task_deliveryMode(ctx, field)
 			case "mojiSourcePath":
 				return ec.fieldContext_Task_mojiSourcePath(ctx, field)
 			case "transferAction":
@@ -11833,8 +11771,6 @@ func (ec *executionContext) fieldContext_Mutation_downloadMedia(ctx context.Cont
 				return ec.fieldContext_Task_contentPath(ctx, field)
 			case "downloadCompletedAt":
 				return ec.fieldContext_Task_downloadCompletedAt(ctx, field)
-			case "deliveryMode":
-				return ec.fieldContext_Task_deliveryMode(ctx, field)
 			case "mojiSourcePath":
 				return ec.fieldContext_Task_mojiSourcePath(ctx, field)
 			case "transferAction":
@@ -11964,8 +11900,6 @@ func (ec *executionContext) fieldContext_Mutation_syncTaskProgress(_ context.Con
 				return ec.fieldContext_Task_contentPath(ctx, field)
 			case "downloadCompletedAt":
 				return ec.fieldContext_Task_downloadCompletedAt(ctx, field)
-			case "deliveryMode":
-				return ec.fieldContext_Task_deliveryMode(ctx, field)
 			case "mojiSourcePath":
 				return ec.fieldContext_Task_mojiSourcePath(ctx, field)
 			case "transferAction":
@@ -12084,8 +12018,6 @@ func (ec *executionContext) fieldContext_Mutation_triggerTaskStashScan(ctx conte
 				return ec.fieldContext_Task_contentPath(ctx, field)
 			case "downloadCompletedAt":
 				return ec.fieldContext_Task_downloadCompletedAt(ctx, field)
-			case "deliveryMode":
-				return ec.fieldContext_Task_deliveryMode(ctx, field)
 			case "mojiSourcePath":
 				return ec.fieldContext_Task_mojiSourcePath(ctx, field)
 			case "transferAction":
@@ -12215,8 +12147,6 @@ func (ec *executionContext) fieldContext_Mutation_triggerStashScans(_ context.Co
 				return ec.fieldContext_Task_contentPath(ctx, field)
 			case "downloadCompletedAt":
 				return ec.fieldContext_Task_downloadCompletedAt(ctx, field)
-			case "deliveryMode":
-				return ec.fieldContext_Task_deliveryMode(ctx, field)
 			case "mojiSourcePath":
 				return ec.fieldContext_Task_mojiSourcePath(ctx, field)
 			case "transferAction":
@@ -12335,8 +12265,6 @@ func (ec *executionContext) fieldContext_Mutation_retryTask(ctx context.Context,
 				return ec.fieldContext_Task_contentPath(ctx, field)
 			case "downloadCompletedAt":
 				return ec.fieldContext_Task_downloadCompletedAt(ctx, field)
-			case "deliveryMode":
-				return ec.fieldContext_Task_deliveryMode(ctx, field)
 			case "mojiSourcePath":
 				return ec.fieldContext_Task_mojiSourcePath(ctx, field)
 			case "transferAction":
@@ -12466,8 +12394,6 @@ func (ec *executionContext) fieldContext_Mutation_resolveBlockedSourcingTask(ctx
 				return ec.fieldContext_Task_contentPath(ctx, field)
 			case "downloadCompletedAt":
 				return ec.fieldContext_Task_downloadCompletedAt(ctx, field)
-			case "deliveryMode":
-				return ec.fieldContext_Task_deliveryMode(ctx, field)
 			case "mojiSourcePath":
 				return ec.fieldContext_Task_mojiSourcePath(ctx, field)
 			case "transferAction":
@@ -12597,8 +12523,6 @@ func (ec *executionContext) fieldContext_Mutation_resolveTaskFiles(ctx context.C
 				return ec.fieldContext_Task_contentPath(ctx, field)
 			case "downloadCompletedAt":
 				return ec.fieldContext_Task_downloadCompletedAt(ctx, field)
-			case "deliveryMode":
-				return ec.fieldContext_Task_deliveryMode(ctx, field)
 			case "mojiSourcePath":
 				return ec.fieldContext_Task_mojiSourcePath(ctx, field)
 			case "transferAction":
@@ -12728,8 +12652,6 @@ func (ec *executionContext) fieldContext_Mutation_deleteTask(ctx context.Context
 				return ec.fieldContext_Task_contentPath(ctx, field)
 			case "downloadCompletedAt":
 				return ec.fieldContext_Task_downloadCompletedAt(ctx, field)
-			case "deliveryMode":
-				return ec.fieldContext_Task_deliveryMode(ctx, field)
 			case "mojiSourcePath":
 				return ec.fieldContext_Task_mojiSourcePath(ctx, field)
 			case "transferAction":
@@ -13048,8 +12970,6 @@ func (ec *executionContext) fieldContext_Mutation_queueDiscoveredScene(ctx conte
 				return ec.fieldContext_Task_contentPath(ctx, field)
 			case "downloadCompletedAt":
 				return ec.fieldContext_Task_downloadCompletedAt(ctx, field)
-			case "deliveryMode":
-				return ec.fieldContext_Task_deliveryMode(ctx, field)
 			case "mojiSourcePath":
 				return ec.fieldContext_Task_mojiSourcePath(ctx, field)
 			case "transferAction":
@@ -18414,8 +18334,6 @@ func (ec *executionContext) fieldContext_Query_task(ctx context.Context, field g
 				return ec.fieldContext_Task_contentPath(ctx, field)
 			case "downloadCompletedAt":
 				return ec.fieldContext_Task_downloadCompletedAt(ctx, field)
-			case "deliveryMode":
-				return ec.fieldContext_Task_deliveryMode(ctx, field)
 			case "mojiSourcePath":
 				return ec.fieldContext_Task_mojiSourcePath(ctx, field)
 			case "transferAction":
@@ -18545,8 +18463,6 @@ func (ec *executionContext) fieldContext_Query_tasks(_ context.Context, field gr
 				return ec.fieldContext_Task_contentPath(ctx, field)
 			case "downloadCompletedAt":
 				return ec.fieldContext_Task_downloadCompletedAt(ctx, field)
-			case "deliveryMode":
-				return ec.fieldContext_Task_deliveryMode(ctx, field)
 			case "mojiSourcePath":
 				return ec.fieldContext_Task_mojiSourcePath(ctx, field)
 			case "transferAction":
@@ -18925,8 +18841,6 @@ func (ec *executionContext) fieldContext_QueuePerformerSceneResult_task(_ contex
 				return ec.fieldContext_Task_contentPath(ctx, field)
 			case "downloadCompletedAt":
 				return ec.fieldContext_Task_downloadCompletedAt(ctx, field)
-			case "deliveryMode":
-				return ec.fieldContext_Task_deliveryMode(ctx, field)
 			case "mojiSourcePath":
 				return ec.fieldContext_Task_mojiSourcePath(ctx, field)
 			case "transferAction":
@@ -19086,8 +19000,6 @@ func (ec *executionContext) fieldContext_QueuePerformerScenesPayload_queuedTasks
 				return ec.fieldContext_Task_contentPath(ctx, field)
 			case "downloadCompletedAt":
 				return ec.fieldContext_Task_downloadCompletedAt(ctx, field)
-			case "deliveryMode":
-				return ec.fieldContext_Task_deliveryMode(ctx, field)
 			case "mojiSourcePath":
 				return ec.fieldContext_Task_mojiSourcePath(ctx, field)
 			case "transferAction":
@@ -19726,8 +19638,6 @@ func (ec *executionContext) fieldContext_Settings_ingest(_ context.Context, fiel
 			switch field.Name {
 			case "keepSubtitles":
 				return ec.fieldContext_IngestSettings_keepSubtitles(ctx, field)
-			case "deliveryMode":
-				return ec.fieldContext_IngestSettings_deliveryMode(ctx, field)
 			case "downloads":
 				return ec.fieldContext_IngestSettings_downloads(ctx, field)
 			case "library":
@@ -27413,47 +27323,6 @@ func (ec *executionContext) fieldContext_Task_downloadCompletedAt(_ context.Cont
 	return fc, nil
 }
 
-func (ec *executionContext) _Task_deliveryMode(ctx context.Context, field graphql.CollectedField, obj *model.Task) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_Task_deliveryMode(ctx, field)
-	if err != nil {
-		return graphql.Null
-	}
-	ctx = graphql.WithFieldContext(ctx, fc)
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.DeliveryMode, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		return graphql.Null
-	}
-	res := resTmp.(*string)
-	fc.Result = res
-	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) fieldContext_Task_deliveryMode(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "Task",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type String does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
 func (ec *executionContext) _Task_mojiSourcePath(ctx context.Context, field graphql.CollectedField, obj *model.Task) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_Task_mojiSourcePath(ctx, field)
 	if err != nil {
@@ -28440,8 +28309,6 @@ func (ec *executionContext) fieldContext_TaskBatchResult_task(_ context.Context,
 				return ec.fieldContext_Task_contentPath(ctx, field)
 			case "downloadCompletedAt":
 				return ec.fieldContext_Task_downloadCompletedAt(ctx, field)
-			case "deliveryMode":
-				return ec.fieldContext_Task_deliveryMode(ctx, field)
 			case "mojiSourcePath":
 				return ec.fieldContext_Task_mojiSourcePath(ctx, field)
 			case "transferAction":
@@ -28865,8 +28732,6 @@ func (ec *executionContext) fieldContext_TaskEvent_task(_ context.Context, field
 				return ec.fieldContext_Task_contentPath(ctx, field)
 			case "downloadCompletedAt":
 				return ec.fieldContext_Task_downloadCompletedAt(ctx, field)
-			case "deliveryMode":
-				return ec.fieldContext_Task_deliveryMode(ctx, field)
 			case "mojiSourcePath":
 				return ec.fieldContext_Task_mojiSourcePath(ctx, field)
 			case "transferAction":
@@ -33511,7 +33376,7 @@ func (ec *executionContext) unmarshalInputUpdateIngestSettingsInput(ctx context.
 		asMap["keepSubtitles"] = false
 	}
 
-	fieldsInOrder := [...]string{"keepSubtitles", "deliveryMode", "downloads", "library", "transfer"}
+	fieldsInOrder := [...]string{"keepSubtitles", "downloads", "library", "transfer"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -33525,13 +33390,6 @@ func (ec *executionContext) unmarshalInputUpdateIngestSettingsInput(ctx context.
 				return it, err
 			}
 			it.KeepSubtitles = data
-		case "deliveryMode":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("deliveryMode"))
-			data, err := ec.unmarshalNString2string(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.DeliveryMode = data
 		case "downloads":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("downloads"))
 			data, err := ec.unmarshalNDownloadsIngestSettingsInput2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐDownloadsIngestSettingsInput(ctx, v)
@@ -34409,11 +34267,6 @@ func (ec *executionContext) _IngestSettings(ctx context.Context, sel ast.Selecti
 			out.Values[i] = graphql.MarshalString("IngestSettings")
 		case "keepSubtitles":
 			out.Values[i] = ec._IngestSettings_keepSubtitles(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
-		case "deliveryMode":
-			out.Values[i] = ec._IngestSettings_deliveryMode(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
@@ -38084,8 +37937,6 @@ func (ec *executionContext) _Task(ctx context.Context, sel ast.SelectionSet, obj
 			out.Values[i] = ec._Task_contentPath(ctx, field, obj)
 		case "downloadCompletedAt":
 			out.Values[i] = ec._Task_downloadCompletedAt(ctx, field, obj)
-		case "deliveryMode":
-			out.Values[i] = ec._Task_deliveryMode(ctx, field, obj)
 		case "mojiSourcePath":
 			out.Values[i] = ec._Task_mojiSourcePath(ctx, field, obj)
 		case "transferAction":

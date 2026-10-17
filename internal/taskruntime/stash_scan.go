@@ -19,14 +19,12 @@ type StashScanner interface {
 }
 
 type StashIntegrationPlan struct {
-	DeliveryMode         stashsync.DeliveryMode
 	QBSourcePath         string
 	RelativePath         string
 	MojiSourcePath       string
 	ResolvedTransferPath string
 	ResolvedScanPath     string
 	TransferAction       stashsync.TransferAction
-	NeedsTransfer        bool
 	ValidationError      error
 	UserHint             string
 }
@@ -158,17 +156,13 @@ func (s *Service) executeTaskStashIntegration(ctx context.Context, task *Task, s
 
 	applyStashIntegrationPlan(task, plan, now)
 	if plan.ValidationError != nil {
-		recordStashIntegrationFailure(task, plan, now, plan.ValidationError)
+		logging.Errorf("taskruntime: stash integration planning failed for task %s: %v", task.ID, plan.ValidationError)
+		recordStashIntegrationFailure(task, now, plan.ValidationError)
 		blockTask(task, TaskStageErrorTransferPlan, plan.ValidationError.Error(), now)
-		logging.Errorf("taskruntime: stash integration planning failed for task %s delivery_mode=%s: %v", task.ID, plan.DeliveryMode, plan.ValidationError)
 		return task, fmt.Errorf("trigger stash scan for task %q: %w", task.ID, plan.ValidationError)
 	}
 
-	if plan.NeedsTransfer {
-		setTaskStage(task, TaskStageTransferring, TaskStageStatusRunning)
-	} else {
-		setTaskStage(task, TaskStageScanning, TaskStageStatusPending)
-	}
+	setTaskStage(task, TaskStageTransferring, TaskStageStatusRunning)
 	clearTaskStageError(task)
 	if err := s.executeDelivery(ctx, task, plan, now); err != nil {
 		recordTransferFailure(task, plan, s.now().UTC(), err)
@@ -187,9 +181,6 @@ func (s *Service) executeTaskStashIntegration(ctx context.Context, task *Task, s
 }
 
 func (s *Service) executeDelivery(ctx context.Context, task *Task, plan StashIntegrationPlan, now time.Time) error {
-	if !plan.NeedsTransfer {
-		return nil
-	}
 	task.UpdatedAt = now
 	if err := s.fileOps.Transfer(ctx, plan.MojiSourcePath, plan.TransferAction, plan.ResolvedTransferPath); err != nil {
 		return err
@@ -200,22 +191,12 @@ func (s *Service) executeDelivery(ctx context.Context, task *Task, plan StashInt
 	return nil
 }
 
-func planTaskStashIntegration(task *Task, cfg stashsync.IntegrationConfig) StashIntegrationPlan {
-	return planDelivery(cfg, resolveSource(task))
-}
-
 func planDelivery(cfg stashsync.IntegrationConfig, qbSourcePath string) StashIntegrationPlan {
-	deliveryMode := cfg.DeliveryMode
-	if deliveryMode == "" {
-		deliveryMode = stashsync.DeliveryModePathMap
-	}
-
 	plan := StashIntegrationPlan{
-		DeliveryMode:   deliveryMode,
 		QBSourcePath:   qbSourcePath,
 		TransferAction: cfg.Transfer.Action,
+		UserHint:       "Moji 根据 qB 下载根目录换算可读取的源路径，整理后交付到媒体库并通知 Stash 扫描。",
 	}
-	plan.UserHint = pathMappingHint(deliveryMode)
 
 	if plan.QBSourcePath == "" {
 		plan.ValidationError = errors.New("taskruntime: qB source path is required for stash integration")
@@ -246,49 +227,19 @@ func planDelivery(cfg stashsync.IntegrationConfig, qbSourcePath string) StashInt
 	}
 	plan.ResolvedScanPath = scanPath
 
-	switch deliveryMode {
-	case stashsync.DeliveryModePathMap:
-		return plan
-	case stashsync.DeliveryModeTransfer:
-		plan.NeedsTransfer = true
-		if cfg.Transfer.Action != stashsync.TransferActionCopy &&
-			cfg.Transfer.Action != stashsync.TransferActionMove &&
-			cfg.Transfer.Action != stashsync.TransferActionSymlink {
-			plan.ValidationError = errors.New("taskruntime: transfer delivery requires a transfer action of COPY, MOVE, or SYMLINK")
-			plan.UserHint = "请先选择交付动作：复制、移动或符号链接。"
-			return plan
-		}
-
-		mojiSourcePath, err := buildMappedPath(cfg.Downloads.MojiRoot, relative, "build Moji transfer source path failed", "downloads.moji_root")
-		if err != nil {
-			plan.ValidationError = err
-			plan.UserHint = "请先配置 Moji 视角下的下载根目录。"
-			return plan
-		}
-		plan.MojiSourcePath = mojiSourcePath
-
-		transferPath, err := buildMappedPath(cfg.Library.MojiRoot, relative, "build Moji transfer target path failed", "library.moji_root")
-		if err != nil {
-			plan.ValidationError = err
-			plan.UserHint = "请先配置 Moji 视角下的媒体库根目录。"
-			return plan
-		}
-		plan.ResolvedTransferPath = transferPath
-		return plan
-	default:
-		plan.ValidationError = fmt.Errorf("taskruntime: unsupported ingest delivery mode %q", deliveryMode)
-		plan.UserHint = "当前入库方式无效，请重新保存设置。"
+	if cfg.Transfer.Action != stashsync.TransferActionCopy && cfg.Transfer.Action != stashsync.TransferActionMove {
+		plan.ValidationError = errors.New("taskruntime: delivery requires COPY or MOVE")
+		plan.UserHint = "请先选择交付动作：复制或移动。"
 		return plan
 	}
-}
-
-func pathMappingHint(mode stashsync.DeliveryMode) string {
-	switch mode {
-	case stashsync.DeliveryModeTransfer:
-		return "Moji 会先基于 qB 下载根路径计算相对路径，再翻译成自己的源路径、交付目标路径和 Stash 扫描路径。"
-	default:
-		return "Moji 会先基于 qB 下载根路径计算相对路径，再翻译成 Stash 扫描路径。"
+	plan.MojiSourcePath, err = buildMappedPath(cfg.Downloads.MojiRoot, relative, "build Moji transfer source path failed", "downloads.moji_root")
+	if err != nil {
+		plan.ValidationError = err
+		return plan
 	}
+	plan.ResolvedTransferPath, err = buildMappedPath(cfg.Library.MojiRoot, relative, "build Moji transfer target path failed", "library.moji_root")
+	plan.ValidationError = err
+	return plan
 }
 
 func buildMappedPath(root string, relative string, label string, field string) (string, error) {
@@ -300,7 +251,6 @@ func buildMappedPath(root string, relative string, label string, field string) (
 }
 
 func applyStashIntegrationPlan(task *Task, plan StashIntegrationPlan, now time.Time) {
-	task.DeliveryMode = string(plan.DeliveryMode)
 	task.MojiSourcePath = plan.MojiSourcePath
 	task.TransferAction = string(plan.TransferAction)
 	task.MojiTransferPath = plan.ResolvedTransferPath
@@ -314,10 +264,8 @@ func applyStashIntegrationPlan(task *Task, plan StashIntegrationPlan, now time.T
 	refreshTaskStageFields(task)
 }
 
-func recordStashIntegrationFailure(task *Task, plan StashIntegrationPlan, now time.Time, err error) {
-	if plan.NeedsTransfer {
-		task.TransferError = err.Error()
-	}
+func recordStashIntegrationFailure(task *Task, now time.Time, err error) {
+	task.TransferError = err.Error()
 	task.StashScanError = err.Error()
 	task.UpdatedAt = now
 	refreshTaskStageFields(task)

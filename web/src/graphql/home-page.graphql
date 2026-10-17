@@ -5,7 +5,7 @@ query HomePageDocument {
     }
     ingest {
       keepSubtitles
-      deliveryMode
+
       downloads {
         qbRoot
         mojiRoot
@@ -48,7 +48,6 @@ query HomePageDocument {
     category
     tags
     downloadCompletedAt
-    deliveryMode
     mojiSourcePath
     transferAction
     mojiTransferPath

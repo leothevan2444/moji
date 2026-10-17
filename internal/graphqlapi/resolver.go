@@ -89,7 +89,6 @@ type UpdateStashSettingsInput struct {
 
 type UpdateIngestSettingsInput struct {
 	KeepSubtitles bool
-	DeliveryMode  string
 	Downloads     DownloadsIngestSettingsSnapshot
 	Library       LibraryIngestSettingsSnapshot
 	Transfer      TransferIngestSettingsSnapshot
@@ -150,7 +149,6 @@ type StashSettingsSnapshot struct {
 
 type IngestSettingsSnapshot struct {
 	KeepSubtitles bool
-	DeliveryMode  string
 	Downloads     DownloadsIngestSettingsSnapshot
 	Library       LibraryIngestSettingsSnapshot
 	Transfer      TransferIngestSettingsSnapshot

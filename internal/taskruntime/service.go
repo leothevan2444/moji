@@ -89,7 +89,6 @@ type Task struct {
 	QBittorrentState        string
 	ContentPath             string
 	DownloadCompletedAt     *time.Time
-	DeliveryMode            string
 	MojiSourcePath          string
 	TransferAction          string
 	MojiTransferPath        string
@@ -1210,11 +1209,6 @@ func (osFileOperator) Transfer(ctx context.Context, sourcePath string, action st
 		}
 		if err := os.Remove(sourcePath); err != nil {
 			return fmt.Errorf("taskruntime: remove transferred source %q: %w", sourcePath, err)
-		}
-		return nil
-	case stashsync.TransferActionSymlink:
-		if err := os.Symlink(sourcePath, targetPath); err != nil {
-			return fmt.Errorf("taskruntime: symlink %q -> %q: %w", targetPath, sourcePath, err)
 		}
 		return nil
 	default:

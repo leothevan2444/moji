@@ -169,7 +169,7 @@ func (f FFmpeg) Prepare(ctx context.Context, r Request) (Result, error) {
 		return Result{}, errors.New("invalid delivery identity")
 	}
 	if r.Action != "COPY" && r.Action != "MOVE" {
-		return Result{}, errors.New("clean video delivery requires COPY or MOVE; remuxing and merging cannot use SYMLINK")
+		return Result{}, errors.New("clean video delivery requires COPY or MOVE")
 	}
 	// Every output is a new assembled file; downloaded sources stay untouched
 	// until publication succeeds, including when the configured action is MOVE.

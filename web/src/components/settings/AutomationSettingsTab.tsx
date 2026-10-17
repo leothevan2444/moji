@@ -17,7 +17,7 @@ export default function AutomationSettingsTab() {
 
   const settings = {
     stash: { configured: false, url: "", apiKeyConfigured: false, apiKey: "" },
-    ingest: { deliveryMode: "PATH_MAP", downloads: { qbRoot: "", mojiRoot: "" }, library: { mojiRoot: "", stashRoot: "" }, transfer: { action: "COPY" } },
+    ingest: { downloads: { qbRoot: "", mojiRoot: "" }, library: { mojiRoot: "", stashRoot: "" }, transfer: { action: "COPY" } },
     jackett: { configured: false, url: "", apiKeyConfigured: false, apiKey: "", passwordConfigured: false, password: "" },
     qbittorrent: { configured: false, url: "", username: "", usernameConfigured: false, passwordConfigured: false, password: "", defaultSavePath: "", category: "", tags: "" },
     automation: data.settings.automation,

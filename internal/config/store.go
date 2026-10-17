@@ -83,16 +83,18 @@ func (s *Store) UpdateStash(url, apiKey string) (*Config, error) {
 }
 
 func (s *Store) UpdateIngest(
-	deliveryMode string,
 	downloads DownloadsIngestConfig,
 	library LibraryIngestConfig,
 	transfer TransferIngestConfig,
 	keepSubtitles ...bool,
 ) (*Config, error) {
+	if transfer.Action != "COPY" && transfer.Action != "MOVE" {
+		return nil, fmt.Errorf("ingest transfer action must be COPY or MOVE")
+	}
+
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	s.cfg.Ingest.DeliveryMode = deliveryMode
 	s.cfg.Ingest.Downloads = downloads
 	s.cfg.Ingest.Library = library
 	s.cfg.Ingest.Transfer = transfer
@@ -209,9 +211,7 @@ func (s *Store) updateConfigNode() error {
 		"url":     s.cfg.Connection.Stash.URL,
 		"api_key": s.cfg.Connection.Stash.APIKey,
 	})
-	setMapString(top, "ingest", map[string]string{
-		"delivery_mode": s.cfg.Ingest.DeliveryMode,
-	})
+	ensureMapValue(mapValue(top, "ingest"))
 	setBoolScalar(mapValue(top, "ingest"), "keep_subtitles", s.cfg.Ingest.KeepSubtitles)
 	setMapString(mapValue(top, "ingest"), "downloads", map[string]string{
 		"qb_root":   s.cfg.Ingest.Downloads.QBRoot,
@@ -262,25 +262,6 @@ func (s *Store) updateConfigNode() error {
 	}
 	if jackett := existingMapValue(connection, "jackett"); jackett != nil {
 		deleteMapKey(jackett, "candidate_selection")
-	}
-	if ingest := existingMapValue(top, "ingest"); ingest != nil {
-		deleteMapKey(ingest, "mode")
-		deleteMapKey(ingest, "shared_storage")
-		deleteMapKey(ingest, "file_transfer")
-		deleteMapKey(ingest, "library_scan")
-		deleteMapKey(ingest, "scan_scope")
-		deleteMapKey(ingest, "path_map")
-		deleteMapKey(ingest, "stash_library_path")
-		deleteMapKey(ingest, "library_path")
-		deleteMapKey(ingest, "qbittorrent_path_prefix")
-		deleteMapKey(ingest, "stash_path_prefix")
-		deleteMapKey(ingest, "transfer_action")
-		deleteMapKey(ingest, "transfer_target_path")
-		deleteMapKey(ingest, "target_path")
-		if transfer := existingMapValue(ingest, "transfer"); transfer != nil {
-			deleteMapKey(transfer, "moji_source_root")
-			deleteMapKey(transfer, "moji_target_root")
-		}
 	}
 
 	data, err := yaml.Marshal(&s.root)

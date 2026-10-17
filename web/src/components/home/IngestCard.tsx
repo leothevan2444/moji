@@ -15,78 +15,43 @@ interface IngestCardProps {
   onOpenSettings: (tab: SettingsTab) => void;
 }
 
-function modeLabel(mode: string, t: TFunction) {
-  if (mode === "PATH_MAP") return t("home.ingest.pathMap");
-  if (mode === "TRANSFER") return t("home.ingest.transfer");
-  return t("home.ingest.none");
-}
-
 function actionLabel(action: string, t: TFunction) {
   if (action === "COPY") return t("home.ingest.copy");
   if (action === "MOVE") return t("home.ingest.move");
-  if (action === "SYMLINK") return t("home.ingest.symlink");
   return action || t("home.ingest.none");
 }
 
 function ingestConfigRows(ingest: IngestSettings, t: TFunction): Array<{ key: string; value: string }> {
-  switch (ingest.deliveryMode) {
-    case "PATH_MAP":
-      return [
-        { key: t("home.config.mode"), value: modeLabel(ingest.deliveryMode, t) },
-        { key: t("home.config.qbRoot"), value: ingest.downloads.qbRoot || "—" },
-        { key: t("home.config.stashRoot"), value: ingest.library.stashRoot || "—" }
-      ];
-    case "TRANSFER":
-      return [
-        { key: t("home.config.mode"), value: modeLabel(ingest.deliveryMode, t) },
-        { key: t("home.config.action"), value: actionLabel(ingest.transfer.action, t) },
-        { key: t("home.config.qbRoot"), value: ingest.downloads.qbRoot || "—" },
-        { key: t("home.config.mojiDownloadRoot"), value: ingest.downloads.mojiRoot || "—" },
-        { key: t("home.config.mojiLibraryRoot"), value: ingest.library.mojiRoot || "—" },
-        { key: t("home.config.stashRoot"), value: ingest.library.stashRoot || "—" }
-      ];
-    default:
-      return [{ key: t("home.config.mode"), value: t("home.ingest.none") }];
-  }
+  return [
+    { key: t("home.config.action"), value: actionLabel(ingest.transfer.action, t) },
+    { key: t("home.config.qbRoot"), value: ingest.downloads.qbRoot || "—" },
+    { key: t("home.config.mojiDownloadRoot"), value: ingest.downloads.mojiRoot || "—" },
+    { key: t("home.config.mojiLibraryRoot"), value: ingest.library.mojiRoot || "—" },
+    { key: t("home.config.stashRoot"), value: ingest.library.stashRoot || "—" }
+  ];
 }
 
 function missingFields(ingest: IngestSettings, t: TFunction): string[] {
-  switch (ingest.deliveryMode) {
-    case "PATH_MAP":
-      return [
-        !ingest.downloads.qbRoot && t("home.config.qbRoot"),
-        !ingest.library.stashRoot && t("home.config.stashRoot")
-      ].filter(Boolean) as string[];
-    case "TRANSFER":
-      return [
-        !ingest.transfer.action && t("home.config.action"),
-        !ingest.downloads.qbRoot && t("home.config.qbRoot"),
-        !ingest.downloads.mojiRoot && t("home.config.mojiDownloadRoot"),
-        !ingest.library.mojiRoot && t("home.config.mojiLibraryRoot"),
-        !ingest.library.stashRoot && t("home.config.stashRoot")
-      ].filter(Boolean) as string[];
-    default:
-      return [];
-  }
+  return [
+    !["COPY", "MOVE"].includes(ingest.transfer.action) && t("home.config.action"),
+    !ingest.downloads.qbRoot.trim() && t("home.config.qbRoot"),
+    !ingest.downloads.mojiRoot.trim() && t("home.config.mojiDownloadRoot"),
+    !ingest.library.mojiRoot.trim() && t("home.config.mojiLibraryRoot"),
+    !ingest.library.stashRoot.trim() && t("home.config.stashRoot")
+  ].filter(Boolean) as string[];
 }
 
 export function IngestCard({ ingest, ingestStatus, onOpenSettings }: IngestCardProps) {
   const { t } = useTranslation();
   const configured = ingestStatus?.configured ?? false;
-  const mode = ingest?.deliveryMode ?? "";
-  const hasMode = Boolean(mode);
-  const guide = mode === "PATH_MAP"
-    ? { tone: "tone-info", title: t("home.ingest.pathMap"), summary: t("home.ingest.guidePathMap"), caution: t("home.ingest.cautionPathMap") }
-    : mode === "TRANSFER"
-      ? { tone: "tone-warn", title: t("home.ingest.transfer"), summary: t("home.ingest.guideTransfer"), caution: t("home.ingest.cautionTransfer") }
-      : { tone: "tone-neutral", title: t("home.ingest.none"), summary: t("home.ingest.guideNone"), caution: "" };
+  const guide = { tone: "tone-info", title: t("home.ingest.transfer"), summary: t("home.ingest.guideTransfer"), caution: t("home.ingest.cautionTransfer") };
 
   let tone: "tone-neutral" | "tone-warn" | "tone-success";
   let label: string;
   let ctaLabel: string | null = null;
   const ctaTab: SettingsTab = "ingest";
 
-  if (!ingest || !hasMode) {
+  if (!ingest) {
     tone = "tone-neutral";
     label = t("home.status.unconfigured");
     ctaLabel = t("home.configure");
@@ -99,7 +64,7 @@ export function IngestCard({ ingest, ingestStatus, onOpenSettings }: IngestCardP
     label = t("home.status.enabled");
   }
 
-  const showBlockers = !ingest || !hasMode;
+  const showBlockers = !ingest;
 
   return (
     <article className="ingest-card service-card service-card--detailed">
@@ -110,7 +75,7 @@ export function IngestCard({ ingest, ingestStatus, onOpenSettings }: IngestCardP
         <span className={`status-chip ${tone}`}>{label}</span>
       </div>
 
-      {ingest && hasMode ? (
+      {ingest ? (
         <dl className="service-card__meta">
           {ingestConfigRows(ingest, t).map((row) => (
             <div key={row.key} className="service-card__meta-row">
@@ -121,7 +86,7 @@ export function IngestCard({ ingest, ingestStatus, onOpenSettings }: IngestCardP
         </dl>
       ) : null}
 
-      {ingest && hasMode && !configured ? (
+      {ingest && !configured ? (
         <p className="service-card__diagnostics">
           {missingFields(ingest, t).length > 0
             ? t("home.ingest.missing", { fields: missingFields(ingest, t).join(", ") })
@@ -148,7 +113,7 @@ export function IngestCard({ ingest, ingestStatus, onOpenSettings }: IngestCardP
       <div className="service-card__foot">
         <div className="service-card__refresh" aria-live="polite">
           <span className={`service-card__refresh-dot ${tone === "tone-success" ? "" : "is-stale"}`} />
-          <span>{t("home.ingest.mode", { mode: modeLabel(ingest?.deliveryMode || "", t) })}</span>
+          <span>{t("home.ingest.transfer")}</span>
         </div>
         {ctaLabel ? (
           <div className="service-card__cta">

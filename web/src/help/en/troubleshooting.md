@@ -14,7 +14,7 @@ Start with **Home** for service readiness, open the affected task for its stage 
 
 - **Progress is stale:** use **Sync progress**. Then verify the torrent still exists in the configured qBittorrent instance and that its identity matches the task.
 - **Content path is outside qB root:** qBittorrent reported a path that is not below the configured qB download root. Correct the root from qBittorrent's filesystem view; do not use Moji's host path in that field.
-- **Transfer failed:** verify the Moji download and library roots, permissions, free space, and that the target does not already exist. For symlinks, verify the source remains reachable.
+- **Transfer failed:** verify the Moji download and library roots, permissions, free space, and that the target does not already exist.
 - **Scan path is wrong:** compare the task's relative path with the Stash library root. The final path must use Stash's filesystem view and be inside a configured Stash library.
 - **Stash scan failed or stalled:** verify Stash readiness and open the task for the scan job ID and error. Retry the task after the underlying Stash job or path problem is resolved.
 

@@ -15,27 +15,18 @@ type Client interface {
 	FindJob(ctx context.Context, id string) (*stashgraphql.FindJob_FindJob, error)
 }
 
-type DeliveryMode string
-
-const (
-	DeliveryModePathMap  DeliveryMode = "PATH_MAP"
-	DeliveryModeTransfer DeliveryMode = "TRANSFER"
-)
-
 type TransferAction string
 
 const (
-	TransferActionCopy    TransferAction = "COPY"
-	TransferActionMove    TransferAction = "MOVE"
-	TransferActionSymlink TransferAction = "SYMLINK"
+	TransferActionCopy TransferAction = "COPY"
+	TransferActionMove TransferAction = "MOVE"
 )
 
 type IntegrationConfig struct {
- KeepSubtitles bool
-	DeliveryMode DeliveryMode
-	Downloads    DownloadsPathConfig
-	Library      LibraryPathConfig
-	Transfer     TransferConfig
+	KeepSubtitles bool
+	Downloads     DownloadsPathConfig
+	Library       LibraryPathConfig
+	Transfer      TransferConfig
 }
 
 type DownloadsPathConfig struct {

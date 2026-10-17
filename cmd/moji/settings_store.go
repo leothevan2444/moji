@@ -60,7 +60,6 @@ func (s *runtimeSettingsEditor) UpdateStashSettings(input graphqlapi.UpdateStash
 
 func (s *runtimeSettingsEditor) UpdateIngestSettings(input graphqlapi.UpdateIngestSettingsInput) (*graphqlapi.SettingsSnapshot, error) {
 	cfg, err := s.store.UpdateIngest(
-		strings.TrimSpace(input.DeliveryMode),
 		config.DownloadsIngestConfig{
 			QBRoot:   strings.TrimSpace(input.Downloads.QBRoot),
 			MojiRoot: strings.TrimSpace(input.Downloads.MojiRoot),
@@ -79,8 +78,7 @@ func (s *runtimeSettingsEditor) UpdateIngestSettings(input graphqlapi.UpdateInge
 		return nil, err
 	}
 	logging.Infof(
-		"settings: ingest settings saved delivery_mode=%s qb_root=%s moji_download_root=%s stash_library_root=%s",
-		cfg.Ingest.DeliveryMode,
+		"settings: ingest settings saved qb_root=%s moji_download_root=%s stash_library_root=%s",
 		cfg.Ingest.Downloads.QBRoot,
 		cfg.Ingest.Downloads.MojiRoot,
 		cfg.Ingest.Library.StashRoot,

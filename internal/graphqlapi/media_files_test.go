@@ -51,7 +51,7 @@ func TestFileSelectionGraphQLPreservesOrderAndExposesPlan(t *testing.T) {
 	}
 }
 func TestIngestSubtitleSettingGraphQLContract(t *testing.T) {
-	editor := &fakeSettingsEditor{updateIngestSnapshot: &SettingsSnapshot{Ingest: IngestSettingsSnapshot{KeepSubtitles: true, DeliveryMode: "TRANSFER"}}}
+	editor := &fakeSettingsEditor{updateIngestSnapshot: &SettingsSnapshot{Ingest: IngestSettingsSnapshot{KeepSubtitles: true}}}
 	resolver := NewResolver(nil, nil, nil, nil, "test")
 	resolver.SettingsEditor = editor
 	var response struct {
@@ -60,7 +60,7 @@ func TestIngestSubtitleSettingGraphQLContract(t *testing.T) {
 		}
 		Errors []struct{ Message string }
 	}
-	executeGraphQLInto(t, resolver, `mutation { updateIngestSettings(input:{keepSubtitles:true,deliveryMode:"TRANSFER",downloads:{qbRoot:"/q",mojiRoot:"/m"},library:{mojiRoot:"/library",stashRoot:"/stash"},transfer:{action:"COPY"}}){ingest{keepSubtitles}} }`, &response)
+	executeGraphQLInto(t, resolver, `mutation { updateIngestSettings(input:{keepSubtitles:true,downloads:{qbRoot:"/q",mojiRoot:"/m"},library:{mojiRoot:"/library",stashRoot:"/stash"},transfer:{action:"COPY"}}){ingest{keepSubtitles}} }`, &response)
 	if len(response.Errors) > 0 || !response.Data.UpdateIngestSettings.Ingest.KeepSubtitles || !editor.ingestInput.KeepSubtitles {
 		t.Fatalf("subtitle setting lost: %+v %+v", response, editor.ingestInput)
 	}

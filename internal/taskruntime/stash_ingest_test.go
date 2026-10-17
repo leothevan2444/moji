@@ -66,10 +66,9 @@ func (f *fakeIngestScanner) FindJob(_ context.Context, id string) (*stashsync.Jo
 func readyIngestScanner() *fakeIngestScanner {
 	return &fakeIngestScanner{
 		fakeStashScanner: fakeStashScanner{jobID: "scan-1", config: stashsync.IntegrationConfig{
-			DeliveryMode: stashsync.DeliveryModeTransfer,
-			Downloads:    stashsync.DownloadsPathConfig{QBRoot: "/downloads", MojiRoot: "/moji/downloads"},
-			Library:      stashsync.LibraryPathConfig{StashRoot: "/library", MojiRoot: "/moji/library"},
-			Transfer:     stashsync.TransferConfig{Action: stashsync.TransferActionMove},
+			Downloads: stashsync.DownloadsPathConfig{QBRoot: "/downloads", MojiRoot: "/moji/downloads"},
+			Library:   stashsync.LibraryPathConfig{StashRoot: "/library", MojiRoot: "/moji/library"},
+			Transfer:  stashsync.TransferConfig{Action: stashsync.TransferActionMove},
 		}},
 		scenes: []stashsync.IngestScene{{ID: "scene-1", Code: "ABCD-123", Title: "Movie", Date: "2026-01-01", StudioID: "studio-1", PerformerCount: 1, Paths: []string{"/library/ABCD-123.mp4"}}},
 		jobs: map[string]*stashsync.Job{

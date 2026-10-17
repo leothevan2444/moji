@@ -11,97 +11,6 @@ import (
 	"github.com/leothevan2444/moji/internal/stashsync"
 )
 
-func TestTriggerStashScansStartsSharedStorageScanForCompletedTask(t *testing.T) {
-	store := NewMemoryTaskStore()
-	completedAt := time.Unix(200, 0).UTC()
-	if err := store.Create(context.Background(), &Task{
-		ID:                  "task-completed",
-		Stage:               TaskStagePendingIngest,
-		StageStatus:         TaskStageStatusPending,
-		SavePath:            "/downloads",
-		ContentPath:         "/downloads/ABCD-123.mp4",
-		DownloadCompletedAt: &completedAt,
-		CreatedAt:           time.Unix(100, 0).UTC(),
-		UpdatedAt:           time.Unix(200, 0).UTC(),
-	}); err != nil {
-		t.Fatalf("Create failed: %v", err)
-	}
-
-	scanner := &fakeStashScanner{
-		jobID: "job-1",
-		config: stashsync.IntegrationConfig{
-			DeliveryMode: stashsync.DeliveryModePathMap,
-			Downloads: stashsync.DownloadsPathConfig{
-				QBRoot: "/downloads",
-			},
-			Library: stashsync.LibraryPathConfig{
-				StashRoot: "/library",
-			},
-		},
-	}
-	service, err := NewService(
-		fakeTracker{},
-		&fakeTorrentAdder{},
-		store,
-		WithClock(func() time.Time { return time.Unix(300, 0).UTC() }),
-	)
-	if err != nil {
-		t.Fatalf("NewService failed: %v", err)
-	}
-
-	tasks, err := service.TriggerStashScans(context.Background(), scanner)
-	if err != nil {
-		t.Fatalf("TriggerStashScans failed: %v", err)
-	}
-	task := tasks[0]
-	if task.DeliveryMode != string(stashsync.DeliveryModePathMap) {
-		t.Fatalf("unexpected stash mode: %+v", task)
-	}
-	if task.MojiSourcePath != "" {
-		t.Fatalf("path-map mode should not record a Moji transfer source path: %+v", task)
-	}
-	if task.StashScanPath != "/library/ABCD-123.mp4" {
-		t.Fatalf("unexpected scan path: %+v", task)
-	}
-	if task.StashScanJobID != "job-1" || task.Stage != TaskStageScanning || task.StageStatus != TaskStageStatusRunning {
-		t.Fatalf("unexpected stash scan task: %+v", task)
-	}
-}
-
-func TestTriggerStashScansFallsBackToSavePathForPathMap(t *testing.T) {
-	store := NewMemoryTaskStore()
-	if err := store.Create(context.Background(), &Task{
-		ID:          "task-savepath-fallback",
-		Stage:       TaskStagePendingIngest,
-		StageStatus: TaskStageStatusPending,
-		SavePath:    "/downloads/SSIS-279",
-		CreatedAt:   time.Unix(100, 0).UTC(),
-		UpdatedAt:   time.Unix(200, 0).UTC(),
-	}); err != nil {
-		t.Fatalf("Create failed: %v", err)
-	}
-
-	service, err := NewService(fakeTracker{}, &fakeTorrentAdder{}, store)
-	if err != nil {
-		t.Fatalf("NewService failed: %v", err)
-	}
-
-	task, err := service.TriggerTaskStashScan(context.Background(), "task-savepath-fallback", &fakeStashScanner{
-		jobID: "job-fallback",
-		config: stashsync.IntegrationConfig{
-			DeliveryMode: stashsync.DeliveryModePathMap,
-			Downloads:    stashsync.DownloadsPathConfig{QBRoot: "/downloads"},
-			Library:      stashsync.LibraryPathConfig{StashRoot: "/library"},
-		},
-	})
-	if err != nil {
-		t.Fatalf("TriggerTaskStashScan failed: %v", err)
-	}
-	if task.StashScanPath != "/library/SSIS-279" {
-		t.Fatalf("unexpected scan path from save-path fallback: %+v", task)
-	}
-}
-
 func TestTriggerStashScansStartsFileTransferCopyBeforeScan(t *testing.T) {
 	store := NewMemoryTaskStore()
 	if err := store.Create(context.Background(), &Task{
@@ -131,7 +40,6 @@ func TestTriggerStashScansStartsFileTransferCopyBeforeScan(t *testing.T) {
 	scanner := &fakeStashScanner{
 		jobID: "job-transfer",
 		config: stashsync.IntegrationConfig{
-			DeliveryMode: stashsync.DeliveryModeTransfer,
 			Downloads: stashsync.DownloadsPathConfig{
 				QBRoot:   "/downloads",
 				MojiRoot: "/srv/jav-downloads",
@@ -165,63 +73,6 @@ func TestTriggerStashScansStartsFileTransferCopyBeforeScan(t *testing.T) {
 	}
 }
 
-func TestTriggerTaskStashScanStartsTransferSymlinkBeforeScan(t *testing.T) {
-	store := NewMemoryTaskStore()
-	if err := store.Create(context.Background(), &Task{
-		ID:          "task-symlink",
-		Stage:       TaskStagePendingIngest,
-		StageStatus: TaskStageStatusPending,
-		SavePath:    "/downloads",
-		ContentPath: "/downloads/ABCD-999.mp4",
-		CreatedAt:   time.Unix(100, 0).UTC(),
-		UpdatedAt:   time.Unix(200, 0).UTC(),
-	}); err != nil {
-		t.Fatalf("Create failed: %v", err)
-	}
-
-	fileOps := &fakeFileOperator{}
-	service, err := NewService(
-		fakeTracker{},
-		&fakeTorrentAdder{},
-		store,
-		WithClock(func() time.Time { return time.Unix(300, 0).UTC() }),
-		WithFileOperator(fileOps),
-	)
-	if err != nil {
-		t.Fatalf("NewService failed: %v", err)
-	}
-
-	scanner := &fakeStashScanner{
-		jobID: "job-symlink",
-		config: stashsync.IntegrationConfig{
-			DeliveryMode: stashsync.DeliveryModeTransfer,
-			Downloads: stashsync.DownloadsPathConfig{
-				QBRoot:   "/downloads",
-				MojiRoot: "/srv/jav-downloads",
-			},
-			Library: stashsync.LibraryPathConfig{
-				MojiRoot:  "/mnt/library",
-				StashRoot: "/library",
-			},
-			Transfer: stashsync.TransferConfig{Action: stashsync.TransferActionSymlink},
-		},
-	}
-	task, err := service.TriggerTaskStashScan(context.Background(), "task-symlink", scanner)
-	if err != nil {
-		t.Fatalf("TriggerTaskStashScan failed: %v", err)
-	}
-	if len(fileOps.calls) != 1 {
-		t.Fatalf("expected a single file transfer, got %+v", fileOps.calls)
-	}
-	call := fileOps.calls[0]
-	if call.action != stashsync.TransferActionSymlink || call.sourcePath != "/srv/jav-downloads/ABCD-999.mp4" || call.targetPath != "/mnt/library/ABCD-999.mp4" {
-		t.Fatalf("unexpected symlink transfer call: %+v", call)
-	}
-	if task.MojiTransferPath != "/mnt/library/ABCD-999.mp4" || task.StashScanPath != "/library/ABCD-999.mp4" || task.Stage != TaskStageScanning || task.StageStatus != TaskStageStatusRunning {
-		t.Fatalf("unexpected symlink task after transfer: %+v", task)
-	}
-}
-
 func TestTriggerTaskStashScanRecordsTransferFailure(t *testing.T) {
 	store := NewMemoryTaskStore()
 	if err := store.Create(context.Background(), &Task{
@@ -249,7 +100,6 @@ func TestTriggerTaskStashScanRecordsTransferFailure(t *testing.T) {
 
 	task, err := service.TriggerTaskStashScan(context.Background(), "task-transfer-fail", &fakeStashScanner{
 		config: stashsync.IntegrationConfig{
-			DeliveryMode: stashsync.DeliveryModeTransfer,
 			Downloads: stashsync.DownloadsPathConfig{
 				QBRoot:   "/downloads",
 				MojiRoot: "/srv/jav-downloads",
@@ -293,9 +143,8 @@ func TestTriggerTaskStashScanRejectsQBRootMismatch(t *testing.T) {
 
 	task, err := service.TriggerTaskStashScan(context.Background(), "task-mismatch", &fakeStashScanner{
 		config: stashsync.IntegrationConfig{
-			DeliveryMode: stashsync.DeliveryModePathMap,
-			Downloads:    stashsync.DownloadsPathConfig{QBRoot: "/downloads"},
-			Library:      stashsync.LibraryPathConfig{StashRoot: "/library"},
+			Downloads: stashsync.DownloadsPathConfig{QBRoot: "/downloads"},
+			Library:   stashsync.LibraryPathConfig{StashRoot: "/library"},
 		},
 	})
 	if err == nil {
@@ -329,10 +178,9 @@ func TestTriggerTaskStashScanRejectsMissingTransferRoots(t *testing.T) {
 
 	_, err = service.TriggerTaskStashScan(context.Background(), "task-missing-transfer-root", &fakeStashScanner{
 		config: stashsync.IntegrationConfig{
-			DeliveryMode: stashsync.DeliveryModeTransfer,
-			Downloads:    stashsync.DownloadsPathConfig{QBRoot: "/downloads"},
-			Library:      stashsync.LibraryPathConfig{StashRoot: "/library"},
-			Transfer:     stashsync.TransferConfig{Action: stashsync.TransferActionCopy},
+			Downloads: stashsync.DownloadsPathConfig{QBRoot: "/downloads"},
+			Library:   stashsync.LibraryPathConfig{StashRoot: "/library"},
+			Transfer:  stashsync.TransferConfig{Action: stashsync.TransferActionCopy},
 		},
 	})
 	if err == nil {
@@ -344,6 +192,7 @@ func TestTriggerTaskStashScanAllowsRetryAfterFailure(t *testing.T) {
 	store := NewMemoryTaskStore()
 	if err := store.Create(context.Background(), &Task{
 		ID:             "task-retry",
+		StashScanPath:  "/library/retry.mp4",
 		Stage:          TaskStageScanning,
 		StageStatus:    TaskStageStatusBlocked,
 		SavePath:       "/downloads",
@@ -357,9 +206,8 @@ func TestTriggerTaskStashScanAllowsRetryAfterFailure(t *testing.T) {
 	}
 
 	scanner := &fakeStashScanner{jobID: "job-retry", config: stashsync.IntegrationConfig{
-		DeliveryMode: stashsync.DeliveryModePathMap,
-		Downloads:    stashsync.DownloadsPathConfig{QBRoot: "/downloads"},
-		Library:      stashsync.LibraryPathConfig{StashRoot: "/library"},
+		Downloads: stashsync.DownloadsPathConfig{QBRoot: "/downloads"},
+		Library:   stashsync.LibraryPathConfig{StashRoot: "/library"},
 	}}
 	service, err := NewService(fakeTracker{}, &fakeTorrentAdder{}, store)
 	if err != nil {
@@ -401,6 +249,7 @@ func TestTriggerStashScansPersistsSQLiteUpdatesWithExtendedStashColumns(t *testi
 		&fakeTorrentAdder{},
 		store,
 		WithClock(func() time.Time { return time.Unix(300, 0).UTC() }),
+		WithFileOperator(&fakeFileOperator{}),
 	)
 	if err != nil {
 		t.Fatalf("NewService failed: %v", err)
@@ -409,9 +258,9 @@ func TestTriggerStashScansPersistsSQLiteUpdatesWithExtendedStashColumns(t *testi
 	scanner := &fakeStashScanner{
 		jobID: "job-sqlite",
 		config: stashsync.IntegrationConfig{
-			DeliveryMode: stashsync.DeliveryModePathMap,
-			Downloads:    stashsync.DownloadsPathConfig{QBRoot: "/downloads"},
-			Library:      stashsync.LibraryPathConfig{StashRoot: "/library"},
+			Downloads: stashsync.DownloadsPathConfig{QBRoot: "/downloads", MojiRoot: "/moji/downloads"},
+			Library:   stashsync.LibraryPathConfig{StashRoot: "/library", MojiRoot: "/moji/library"},
+			Transfer:  stashsync.TransferConfig{Action: stashsync.TransferActionCopy},
 		},
 	}
 

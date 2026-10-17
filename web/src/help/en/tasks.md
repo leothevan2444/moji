@@ -30,7 +30,7 @@ Files have four classes: movie/parts, subtitles, known advertisements/samples/pr
 
 The task code anchors filename matching. Advertising domains are ignored, and matching supports case, separators, zero-padding variants, and A/B or -1/-2 part suffixes. Original download filenames stay unchanged. Unknown videos, ambiguous parts, or gaps pause downloading. Select movie files and arrange their merge order in task details, then confirm to continue.
 
-Use **File delivery** and configure qB download, Moji download, Moji library, and Stash library roots. The Moji runtime requires `ffmpeg` and `ffprobe`. Pure path mapping and symlinks cannot produce the prepared movie; switch to Copy or Move when a task is blocked by those legacy modes.
+Use **File delivery** and configure qB download, Moji download, Moji library, and Stash library roots. The Moji runtime requires `ffmpeg` and `ffprobe`. Choose Copy or Move for delivery.
 
 Copy retains sources. Move stops the qBittorrent task and removes selected source files only after the entire movie and its subtitles have been published. Both produce one normalized MKV and exclude extras from the library.
 

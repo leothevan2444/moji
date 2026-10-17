@@ -71,7 +71,7 @@ func (p *controlledPreparer) Prepare(ctx context.Context, r mediafiles.Request) 
 	return mediafiles.Result{Directory: filepath.Join(r.TargetRoot, r.Code), VideoPath: filepath.Join(r.TargetRoot, r.Code, r.Code+".mkv")}, p.err
 }
 func mediaConfig() stashsync.IntegrationConfig {
-	return stashsync.IntegrationConfig{DeliveryMode: stashsync.DeliveryModeTransfer, Downloads: stashsync.DownloadsPathConfig{QBRoot: "/q/downloads", MojiRoot: "/moji/downloads"}, Library: stashsync.LibraryPathConfig{MojiRoot: "/moji/library", StashRoot: "/stash/library"}, Transfer: stashsync.TransferConfig{Action: stashsync.TransferActionCopy}}
+	return stashsync.IntegrationConfig{Downloads: stashsync.DownloadsPathConfig{QBRoot: "/q/downloads", MojiRoot: "/moji/downloads"}, Library: stashsync.LibraryPathConfig{MojiRoot: "/moji/library", StashRoot: "/stash/library"}, Transfer: stashsync.TransferConfig{Action: stashsync.TransferActionCopy}}
 }
 func fileService(t *testing.T, files []qbittorrent.TorrentContentFile, keep bool, preparer mediafiles.Preparer) (*Service, *MemoryTaskStore, *fileTorrent) {
 	t.Helper()

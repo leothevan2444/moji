@@ -14,7 +14,7 @@ The Moji server must be able to reach all three services. If you use file delive
 
 1. Open **Settings > Connections** and save the URL and credentials for each service.
 2. Return to **Home**. A service is ready only after a recent probe succeeds; “configured” alone does not prove connectivity.
-3. Open **Settings > Ingest**. Choose Path mapping when qBittorrent and Stash already see the same files, or File delivery when Moji must copy, move, or link them into the library.
+3. Open **Settings > Ingest**. Configure the qB download, Moji download, Moji library, and Stash library roots, then choose Copy or Move.
 4. Open **Settings > Automation**. Set progress and subscription intervals, refresh the StashBox list, and review the release and torrent-selection policies.
 5. Search in **Discover**, or open **Performers** and queue a scene. Follow the resulting item in **Tasks** until Stash scanning completes.
 

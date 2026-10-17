@@ -527,7 +527,6 @@ export function AutomationSettingsEditor({
       apiKey: runtimeSettings.stash.apiKey ?? ""
     });
     setIngestForm({
-      deliveryMode: runtimeSettings.ingest.deliveryMode || "PATH_MAP",
       downloads: {
         qbRoot: runtimeSettings.ingest.downloads.qbRoot || "",
         mojiRoot: runtimeSettings.ingest.downloads.mojiRoot || ""
@@ -593,7 +592,6 @@ export function AutomationSettingsEditor({
   const submitIngestSettings = async (qbRoot: string) => {
     const result = await updateIngestSettings({
       input: {
-        deliveryMode: ingestForm.deliveryMode.trim(),
         downloads: {
           qbRoot,
           mojiRoot: ingestForm.downloads.mojiRoot.trim()
@@ -1088,8 +1086,6 @@ export function AutomationSettingsEditor({
     const stashLibraries = runtimeStatus.stashLibraries ?? [];
     const stashLibrariesLoadError = runtimeStatus.stashLibrariesLoadError ?? null;
     const qbDefaultSavePath = qbittorrentForm.defaultSavePath.trim();
-    const deliveryModeInfo = ingestForm.deliveryMode === "PATH_MAP"
-      ? t("settings.ingest.pathMapInfo") : t("settings.ingest.transferInfo");
     const qbRootInfo = t("settings.ingest.qbRootInfo");
     const mojiDownloadsRootInfo = t("settings.ingest.mojiDownloadInfo");
     const mojiLibraryRootInfo = t("settings.ingest.mojiLibraryInfo");
@@ -1102,19 +1098,6 @@ export function AutomationSettingsEditor({
           <h3>{t("settings.tabs.ingest")}</h3>
         </div>
         <form className="settings-form" onSubmit={(event) => void saveIngestSettings(event)}>
-          <label className="settings-field">
-            <FieldLabel text={t("settings.ingest.mode")} info={deliveryModeInfo} />
-            <select
-              value={ingestForm.deliveryMode}
-              onChange={(event) => setIngestForm((current) => ({
-                ...current,
-                deliveryMode: event.target.value
-              }))}
-            >
-              <option value="PATH_MAP">{t("settings.ingest.pathMap")}</option>
-              <option value="TRANSFER">{t("settings.ingest.transfer")}</option>
-            </select>
-          </label>
           <label className="settings-field">
             <FieldLabel text={t("settings.ingest.qbRoot")} info={qbRootInfo} />
             <div className="secret-input">
@@ -1166,46 +1149,41 @@ export function AutomationSettingsEditor({
             </p>
           ) : null}
 
-          {ingestForm.deliveryMode === "TRANSFER" ? (
-            <>
-              <label className="settings-field">
-                <FieldLabel text={t("settings.ingest.action")} info={transferActionInfo} />
-                <select
-                  value={ingestForm.transfer.action}
-                  onChange={(event) => setIngestForm((current) => ({
-                    ...current,
-                    transfer: { ...current.transfer, action: event.target.value }
-                  }))}
-                >
-                  <option value="COPY">{t("settings.ingest.copy")}</option>
-                  <option value="MOVE">{t("settings.ingest.move")}</option>
-                  <option value="SYMLINK">{t("settings.ingest.symlink")}</option>
-                </select>
-              </label>
-              <label className="settings-field">
-                <FieldLabel text={t("settings.ingest.mojiDownloadRoot")} info={mojiDownloadsRootInfo} />
-                <input
-                  value={ingestForm.downloads.mojiRoot}
-                  onChange={(event) => setIngestForm((current) => ({
-                    ...current,
-                    downloads: { ...current.downloads, mojiRoot: event.target.value }
-                  }))}
-                  placeholder="/srv/downloads"
-                />
-              </label>
-              <label className="settings-field">
-                <FieldLabel text={t("settings.ingest.mojiLibraryRoot")} info={mojiLibraryRootInfo} />
-                <input
-                  value={ingestForm.library.mojiRoot}
-                  onChange={(event) => setIngestForm((current) => ({
-                    ...current,
-                    library: { ...current.library, mojiRoot: event.target.value }
-                  }))}
-                  placeholder="/srv/media-library"
-                />
-              </label>
-            </>
-          ) : null}
+          <label className="settings-field">
+            <FieldLabel text={t("settings.ingest.action")} info={transferActionInfo} />
+            <select
+              value={ingestForm.transfer.action}
+              onChange={(event) => setIngestForm((current) => ({
+                ...current,
+                transfer: { ...current.transfer, action: event.target.value }
+              }))}
+            >
+              <option value="COPY">{t("settings.ingest.copy")}</option>
+              <option value="MOVE">{t("settings.ingest.move")}</option>
+            </select>
+          </label>
+          <label className="settings-field">
+            <FieldLabel text={t("settings.ingest.mojiDownloadRoot")} info={mojiDownloadsRootInfo} />
+            <input
+              value={ingestForm.downloads.mojiRoot}
+              onChange={(event) => setIngestForm((current) => ({
+                ...current,
+                downloads: { ...current.downloads, mojiRoot: event.target.value }
+              }))}
+              placeholder="/srv/downloads"
+            />
+          </label>
+          <label className="settings-field">
+            <FieldLabel text={t("settings.ingest.mojiLibraryRoot")} info={mojiLibraryRootInfo} />
+            <input
+              value={ingestForm.library.mojiRoot}
+              onChange={(event) => setIngestForm((current) => ({
+                ...current,
+                library: { ...current.library, mojiRoot: event.target.value }
+              }))}
+              placeholder="/srv/media-library"
+            />
+          </label>
 
           <div className="settings-actions">
             <button type="submit" disabled={updatingIngest}>

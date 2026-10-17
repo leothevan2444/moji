@@ -540,7 +540,6 @@ func buildSettingsSnapshot(cfg *config.Config, version string) *graphqlapi.Setti
 		},
 		Ingest: graphqlapi.IngestSettingsSnapshot{
 			KeepSubtitles: cfg.Ingest.KeepSubtitles,
-			DeliveryMode:  effectiveDeliveryMode(cfg),
 			Downloads: graphqlapi.DownloadsIngestSettingsSnapshot{
 				QBRoot:   cfg.Ingest.Downloads.QBRoot,
 				MojiRoot: cfg.Ingest.Downloads.MojiRoot,
@@ -832,16 +831,9 @@ func configureStashService(cfg *config.Config, store *config.Store, client *stas
 	if err != nil {
 		logging.Fatalf("configure Stash: %v", err)
 	}
-	logging.Infof("runtime: stash sync service initialized with delivery_mode=%s", effectiveDeliveryMode(cfg))
 
+	logging.Infof("runtime: stash sync service initialized")
 	return service
-}
-
-func effectiveDeliveryMode(cfg *config.Config) string {
-	if cfg == nil || strings.TrimSpace(cfg.Ingest.DeliveryMode) == "" {
-		return string(stashsync.DeliveryModePathMap)
-	}
-	return strings.TrimSpace(cfg.Ingest.DeliveryMode)
 }
 
 func stashIntegrationConfig(cfg *config.Config) stashsync.IntegrationConfig {
@@ -850,7 +842,6 @@ func stashIntegrationConfig(cfg *config.Config) stashsync.IntegrationConfig {
 	}
 	return stashsync.IntegrationConfig{
 		KeepSubtitles: cfg.Ingest.KeepSubtitles,
-		DeliveryMode:  stashsync.DeliveryMode(effectiveDeliveryMode(cfg)),
 		Downloads: stashsync.DownloadsPathConfig{
 			QBRoot:   strings.TrimSpace(cfg.Ingest.Downloads.QBRoot),
 			MojiRoot: strings.TrimSpace(cfg.Ingest.Downloads.MojiRoot),
@@ -875,27 +866,17 @@ func isStashConfigured(cfg *config.Config) bool {
 	return strings.TrimSpace(cfg.Connection.Stash.URL) != ""
 }
 
-// isIngestConfigured reports whether the ingest pipeline is fully wired
-// for whichever mode is selected. Used by the new Ingest card chip and the
-// SettingsStatus.Ingest.Configured signal.
+// isIngestConfigured reports whether file preparation and delivery are fully configured.
 func isIngestConfigured(cfg *config.Config) bool {
 	if cfg == nil {
 		return false
 	}
-	switch stashsync.DeliveryMode(effectiveDeliveryMode(cfg)) {
-	case stashsync.DeliveryModePathMap:
-		return strings.TrimSpace(cfg.Ingest.Downloads.QBRoot) != "" &&
-			strings.TrimSpace(cfg.Ingest.Library.StashRoot) != ""
-	case stashsync.DeliveryModeTransfer:
-		action := strings.TrimSpace(cfg.Ingest.Transfer.Action)
-		return (action == string(stashsync.TransferActionCopy) || action == string(stashsync.TransferActionMove) || action == string(stashsync.TransferActionSymlink)) &&
-			strings.TrimSpace(cfg.Ingest.Downloads.QBRoot) != "" &&
-			strings.TrimSpace(cfg.Ingest.Downloads.MojiRoot) != "" &&
-			strings.TrimSpace(cfg.Ingest.Library.MojiRoot) != "" &&
-			strings.TrimSpace(cfg.Ingest.Library.StashRoot) != ""
-	default:
-		return false
-	}
+	action := strings.TrimSpace(cfg.Ingest.Transfer.Action)
+	return (action == "COPY" || action == "MOVE") &&
+		strings.TrimSpace(cfg.Ingest.Downloads.QBRoot) != "" &&
+		strings.TrimSpace(cfg.Ingest.Downloads.MojiRoot) != "" &&
+		strings.TrimSpace(cfg.Ingest.Library.MojiRoot) != "" &&
+		strings.TrimSpace(cfg.Ingest.Library.StashRoot) != ""
 }
 
 func configureMetadata(stashClient *stash.Client) *metadata.Service {

@@ -316,7 +316,6 @@ type SubscriptionReleasePolicyConfig struct {
 
 type IngestConfig struct {
 	KeepSubtitles bool                  `yaml:"keep_subtitles"`
-	DeliveryMode  string                `yaml:"delivery_mode"`
 	Downloads     DownloadsIngestConfig `yaml:"downloads"`
 	Library       LibraryIngestConfig   `yaml:"library"`
 	Transfer      TransferIngestConfig  `yaml:"transfer"`
@@ -904,6 +903,10 @@ func LoadFromPath(path string) (*Config, error) {
 	if err := yaml.Unmarshal(file, &config); err != nil {
 		return nil, fmt.Errorf("parse config %q: %w", path, err)
 	}
+	if action := config.Ingest.Transfer.Action; action != "" && action != "COPY" && action != "MOVE" {
+		return nil, fmt.Errorf("ingest transfer action must be COPY or MOVE")
+	}
+
 	config.Connection.Stash.normalize()
 	config.System.TaskDeletePolicy = config.System.EffectiveTaskDeletePolicy()
 	config.System.ImageCache = config.System.ImageCache.Normalize()

@@ -28,7 +28,6 @@ query TasksOverviewDocument {
     category
     tags
     downloadCompletedAt
-    deliveryMode
     mojiSourcePath
     transferAction
     mojiTransferPath

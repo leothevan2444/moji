@@ -710,7 +710,6 @@ func TestSettingsQueryReturnsRuntimeSnapshot(t *testing.T) {
 			APIKeyConfigured: true,
 		},
 		Ingest: IngestSettingsSnapshot{
-			DeliveryMode: "PATH_MAP",
 			Downloads: DownloadsIngestSettingsSnapshot{
 				QBRoot: "/downloads",
 			},
@@ -764,7 +763,7 @@ func TestSettingsQueryReturnsRuntimeSnapshot(t *testing.T) {
 	resp := executeGraphQL(t, resolver, `{
 		settings {
 			stash { configured url apiKeyConfigured }
-			ingest { deliveryMode downloads { qbRoot } library { stashRoot } }
+			ingest { downloads { qbRoot } library { stashRoot } }
 			jackett { configured url apiKeyConfigured }
 			qbittorrent { configured url username usernameConfigured passwordConfigured defaultSavePath category tags }
 			automation { taskProgressSyncIntervalSeconds subscriptionPollIntervalHours stashBoxEndpoints torrentSelection { enabled fastRules { type seeders { direction } } torrentRules { type } } }
@@ -927,7 +926,6 @@ func TestUpdateIngestSettingsMutation(t *testing.T) {
 	editor := &fakeSettingsEditor{
 		updateIngestSnapshot: &SettingsSnapshot{
 			Ingest: IngestSettingsSnapshot{
-				DeliveryMode: "TRANSFER",
 				Downloads: DownloadsIngestSettingsSnapshot{
 					QBRoot:   "/downloads",
 					MojiRoot: "/srv/downloads",
@@ -947,7 +945,6 @@ func TestUpdateIngestSettingsMutation(t *testing.T) {
 
 	resp := executeGraphQL(t, resolver, `mutation {
 		updateIngestSettings(input: {
-			deliveryMode: "TRANSFER"
 			downloads: {
 				qbRoot: "/downloads"
 				mojiRoot: "/srv/downloads"
@@ -960,16 +957,16 @@ func TestUpdateIngestSettingsMutation(t *testing.T) {
 				action: "COPY"
 			}
 		}) {
-			ingest { deliveryMode downloads { qbRoot mojiRoot } library { mojiRoot stashRoot } transfer { action } }
+			ingest { downloads { qbRoot mojiRoot } library { mojiRoot stashRoot } transfer { action } }
 		}
 	}`)
 	if len(resp.Errors) > 0 {
 		t.Fatalf("expected no errors, got %+v", resp.Errors)
 	}
-	if editor.ingestInput.DeliveryMode != "TRANSFER" || editor.ingestInput.Downloads.MojiRoot != "/srv/downloads" || editor.ingestInput.Library.MojiRoot != "/mnt/library" {
+	if editor.ingestInput.Downloads.MojiRoot != "/srv/downloads" || editor.ingestInput.Library.MojiRoot != "/mnt/library" {
 		t.Fatalf("unexpected ingest input: %+v", editor.ingestInput)
 	}
-	if resp.Data.UpdateIngestSettings.Ingest.DeliveryMode != "TRANSFER" {
+	if resp.Data.UpdateIngestSettings.Ingest.Downloads.MojiRoot != "/srv/downloads" {
 		t.Fatalf("unexpected ingest response: %+v", resp.Data.UpdateIngestSettings.Ingest)
 	}
 }
@@ -1410,8 +1407,7 @@ type graphQLTaskResponse struct {
 				APIKeyConfigured bool   `json:"apiKeyConfigured"`
 			} `json:"stash"`
 			Ingest struct {
-				DeliveryMode string `json:"deliveryMode"`
-				Downloads    struct {
+				Downloads struct {
 					QBRoot   string `json:"qbRoot"`
 					MojiRoot string `json:"mojiRoot"`
 				} `json:"downloads"`
@@ -1496,8 +1492,7 @@ type graphQLTaskResponse struct {
 		} `json:"updateStashSettings"`
 		UpdateIngestSettings struct {
 			Ingest struct {
-				DeliveryMode string `json:"deliveryMode"`
-				Downloads    struct {
+				Downloads struct {
 					QBRoot   string `json:"qbRoot"`
 					MojiRoot string `json:"mojiRoot"`
 				} `json:"downloads"`

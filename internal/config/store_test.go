@@ -138,10 +138,14 @@ func TestLoadFromPathUsesDirectStashURL(t *testing.T) {
     url: "http://stash.example"
     api_key: "secret"
 ingest:
-  delivery_mode: "PATH_MAP"
-  path_map:
-    qbittorrent_path_prefix: "/downloads"
-    stash_path_prefix: "/library"
+  downloads:
+    qb_root: "/downloads"
+    moji_root: "/moji/downloads"
+  library:
+    moji_root: "/moji/library"
+    stash_root: "/library"
+  transfer:
+    action: COPY
 `
 	if err := os.WriteFile(path, []byte(content), 0o644); err != nil {
 		t.Fatalf("write config: %v", err)
@@ -250,14 +254,14 @@ func TestStashBoxDataCacheConfigNormalizeBounds(t *testing.T) {
 
 func TestIngestSubtitleSwitchPersists(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "config.yaml")
-	if err := os.WriteFile(path, []byte("ingest:\n  delivery_mode: TRANSFER\n  keep_subtitles: false\n"), 0600); err != nil {
+	if err := os.WriteFile(path, []byte("ingest:\n  keep_subtitles: false\n"), 0600); err != nil {
 		t.Fatal(err)
 	}
 	store, err := OpenStore(path)
 	if err != nil {
 		t.Fatal(err)
 	}
-	cfg, err := store.UpdateIngest("TRANSFER", DownloadsIngestConfig{}, LibraryIngestConfig{}, TransferIngestConfig{Action: "COPY"}, true)
+	cfg, err := store.UpdateIngest(DownloadsIngestConfig{}, LibraryIngestConfig{}, TransferIngestConfig{Action: "COPY"}, true)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -270,5 +274,38 @@ func TestIngestSubtitleSwitchPersists(t *testing.T) {
 	}
 	if !reopened.Config().Ingest.KeepSubtitles {
 		t.Fatal("subtitle setting was not persisted")
+	}
+}
+
+func TestIngestRejectsUnsupportedActionsWithoutChangingConfig(t *testing.T) {
+	for _, action := range []string{"", "SYMLINK", "UNKNOWN"} {
+		t.Run(action, func(t *testing.T) {
+			path := filepath.Join(t.TempDir(), "config.yaml")
+			original := "ingest:\n  transfer:\n    action: COPY\n"
+			if err := os.WriteFile(path, []byte(original), 0600); err != nil {
+				t.Fatal(err)
+			}
+			store, err := OpenStore(path)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if _, err := store.UpdateIngest(DownloadsIngestConfig{}, LibraryIngestConfig{}, TransferIngestConfig{Action: action}); err == nil {
+				t.Fatal("expected unsupported delivery action to be rejected")
+			}
+			data, err := os.ReadFile(path)
+			if err != nil || string(data) != original || store.Config().Ingest.Transfer.Action != "COPY" {
+				t.Fatal("rejected settings changed the persisted or in-memory configuration")
+			}
+		})
+	}
+}
+
+func TestLoadRejectsUnsupportedIngestAction(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "config.yaml")
+	if err := os.WriteFile(path, []byte("ingest:\n  transfer:\n    action: SYMLINK\n"), 0600); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := LoadFromPath(path); err == nil || !strings.Contains(err.Error(), "COPY or MOVE") {
+		t.Fatalf("expected invalid delivery action error, got %v", err)
 	}
 }

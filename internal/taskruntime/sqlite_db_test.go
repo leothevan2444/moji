@@ -70,7 +70,6 @@ INSERT INTO task_store_meta (key, value) VALUES ('schema_version', '1');
 
 	for _, column := range []string{
 		"code",
-		"delivery_mode",
 		"moji_source_path",
 		"transfer_action",
 		"moji_transfer_path",

@@ -122,7 +122,7 @@ type Task {
   qbittorrentState: String
   contentPath: String
   downloadCompletedAt: String
-  deliveryMode: String
+
   mojiSourcePath: String
   transferAction: String
   mojiTransferPath: String

@@ -32,10 +32,10 @@ another release are excluded. No subtitle language detector is used.
 
 ## Preparation and publication
 
-The production clean-delivery path requires TRANSFER mode, COPY or MOVE, configured
-Moji filesystem roots, and `ffmpeg`/`ffprobe` in PATH. Path mapping and symlinks
-cannot produce a newly assembled video. The settings UI retains legacy values
-for visibility but offers the supported modes for new selections.
+Ingest always prepares a movie and delivers it using COPY or MOVE. Configure all
+four roots: qB download, Moji download, Moji library, and Stash library. The Moji
+runtime requires `ffmpeg` and `ffprobe` in PATH. Movies are published as
+`CODE/CODE.mkv`; Stash scans the corresponding `Stash library root/CODE` directory.
 
 The persisted preparation queue uses `TRANSFERRING/PENDING`. At most one task
 holds the processing slot. Active processing uses `TRANSFERRING/RUNNING` and a

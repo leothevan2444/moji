@@ -139,7 +139,6 @@ type IndexerPreferenceRuleInput struct {
 
 type IngestSettings struct {
 	KeepSubtitles bool                     `json:"keepSubtitles"`
-	DeliveryMode  string                   `json:"deliveryMode"`
 	Downloads     *DownloadsIngestSettings `json:"downloads"`
 	Library       *LibraryIngestSettings   `json:"library"`
 	Transfer      *TransferIngestSettings  `json:"transfer"`
@@ -711,7 +710,6 @@ type Task struct {
 	QbittorrentState    *string            `json:"qbittorrentState,omitempty"`
 	ContentPath         *string            `json:"contentPath,omitempty"`
 	DownloadCompletedAt *string            `json:"downloadCompletedAt,omitempty"`
-	DeliveryMode        *string            `json:"deliveryMode,omitempty"`
 	MojiSourcePath      *string            `json:"mojiSourcePath,omitempty"`
 	TransferAction      *string            `json:"transferAction,omitempty"`
 	MojiTransferPath    *string            `json:"mojiTransferPath,omitempty"`
@@ -863,7 +861,6 @@ type UpdateAutomationSettingsInput struct {
 
 type UpdateIngestSettingsInput struct {
 	KeepSubtitles *bool                         `json:"keepSubtitles,omitempty"`
-	DeliveryMode  string                        `json:"deliveryMode"`
 	Downloads     *DownloadsIngestSettingsInput `json:"downloads"`
 	Library       *LibraryIngestSettingsInput   `json:"library"`
 	Transfer      *TransferIngestSettingsInput  `json:"transfer"`

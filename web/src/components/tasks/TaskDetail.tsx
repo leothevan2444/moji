@@ -16,7 +16,6 @@ import {
   taskProgressPercent,
   taskSourceLabel,
   taskSummary,
-  deliveryModeLabel,
   transferActionLabel,
   type DashboardTask
 } from "../../utils";
@@ -227,10 +226,6 @@ export function TaskDetail({
           <div>
             <dt>{t("taskModel.ingest.scenes")}</dt>
             <dd>{task.stashSceneIds?.join(", ") || "—"}</dd>
-          </div>
-          <div>
-            <dt>{t("taskDetail.ingestMode")}</dt>
-            <dd>{task.deliveryMode ? deliveryModeLabel(task.deliveryMode) : "—"}</dd>
           </div>
           <div>
             <dt>{t("taskDetail.sourcePath")}</dt>
