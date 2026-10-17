@@ -1,3 +1,4 @@
+import { TaskFiles } from "./TaskFiles";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faCopy } from "@fortawesome/free-solid-svg-icons/faCopy";
 import { faDownload } from "@fortawesome/free-solid-svg-icons/faDownload";
@@ -52,6 +53,7 @@ export function TaskDetail({
 
   return (
     <>
+      <TaskFiles task={task} />
       <article className="drawer-card">
         <div className="drawer-card__head">
           <div>

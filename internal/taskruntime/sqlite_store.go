@@ -200,6 +200,7 @@ SELECT
   stage_status,
   stage_error_code,
   stage_error_message,
+  file_plan_json,
   torrent_url,
   save_path,
   category,
@@ -240,6 +241,7 @@ SELECT
 FROM tasks`
 
 type sqliteTaskRow struct {
+	FilePlanJSON            sql.NullString `db:"file_plan_json"`
 	ID                      string         `db:"id"`
 	Source                  string         `db:"source"`
 	Code                    string         `db:"code"`
@@ -288,6 +290,7 @@ type sqliteTaskRow struct {
 
 func (r sqliteTaskRow) toTask() (*Task, error) {
 	task := &Task{
+		FilePlanJSON:            nullableStringValue(r.FilePlanJSON),
 		ID:                      r.ID,
 		Source:                  TaskSource(r.Source),
 		Code:                    r.Code,
@@ -353,6 +356,7 @@ func (r sqliteTaskRow) toTask() (*Task, error) {
 }
 
 type sqliteTaskParams struct {
+	FilePlanJSON            any     `db:"file_plan_json"`
 	ID                      string  `db:"id"`
 	Source                  string  `db:"source"`
 	Code                    string  `db:"code"`
@@ -406,6 +410,7 @@ func taskToSQLiteParams(task *Task) sqliteTaskParams {
 		source = TaskSourceManual
 	}
 	return sqliteTaskParams{
+		FilePlanJSON:            nullableStringParam(task.FilePlanJSON),
 		ID:                      task.ID,
 		Source:                  string(source),
 		Code:                    task.Code,
@@ -457,7 +462,7 @@ func upsertTaskRow(ctx context.Context, tx *sqlx.Tx, task *Task, isUpdate bool) 
 	params := taskToSQLiteParams(task)
 	query := `
 INSERT INTO tasks (
-  id, source, code, stage, stage_status, stage_error_code, stage_error_message, torrent_url, save_path, category, tags,
+  id, source, code, stage, stage_status, stage_error_code, stage_error_message, file_plan_json, torrent_url, save_path, category, tags,
   torrent_identity_hash, torrent_identity_magnet, torrent_hash, torrent_name, progress, qbittorrent_state, content_path,
   download_completed_at, delivery_mode, moji_source_path, transfer_action, moji_transfer_path,
   stash_ingest_phase, stash_generate_job_id, stash_identify_job_id, stash_scene_ids_json, stash_scene_recovery_count,
@@ -465,7 +470,7 @@ INSERT INTO tasks (
   stash_scan_started_at, selected_title, selected_tracker, selected_info_hash, selected_link, selected_magnet_uri,
   selected_size, selected_seeders, selected_peers, created_at, updated_at
 ) VALUES (
-  :id, :source, :code, :stage, :stage_status, :stage_error_code, :stage_error_message, :torrent_url, :save_path, :category, :tags,
+  :id, :source, :code, :stage, :stage_status, :stage_error_code, :stage_error_message, :file_plan_json, :torrent_url, :save_path, :category, :tags,
   :torrent_identity_hash, :torrent_identity_magnet, :torrent_hash, :torrent_name, :progress, :qbittorrent_state, :content_path,
   :download_completed_at, :delivery_mode, :moji_source_path, :transfer_action, :moji_transfer_path,
   :stash_ingest_phase, :stash_generate_job_id, :stash_identify_job_id, :stash_scene_ids_json, :stash_scene_recovery_count,
@@ -482,6 +487,7 @@ ON CONFLICT(id) DO UPDATE SET
   stage_status = excluded.stage_status,
   stage_error_code = excluded.stage_error_code,
   stage_error_message = excluded.stage_error_message,
+  file_plan_json = excluded.file_plan_json,
   torrent_url = excluded.torrent_url,
   save_path = excluded.save_path,
   category = excluded.category,

@@ -87,6 +87,7 @@ func (s *Store) UpdateIngest(
 	downloads DownloadsIngestConfig,
 	library LibraryIngestConfig,
 	transfer TransferIngestConfig,
+	keepSubtitles ...bool,
 ) (*Config, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -95,6 +96,9 @@ func (s *Store) UpdateIngest(
 	s.cfg.Ingest.Downloads = downloads
 	s.cfg.Ingest.Library = library
 	s.cfg.Ingest.Transfer = transfer
+	if len(keepSubtitles) > 0 {
+		s.cfg.Ingest.KeepSubtitles = keepSubtitles[0]
+	}
 
 	if err := s.updateConfigNode(); err != nil {
 		return nil, err
@@ -208,6 +212,7 @@ func (s *Store) updateConfigNode() error {
 	setMapString(top, "ingest", map[string]string{
 		"delivery_mode": s.cfg.Ingest.DeliveryMode,
 	})
+	setBoolScalar(mapValue(top, "ingest"), "keep_subtitles", s.cfg.Ingest.KeepSubtitles)
 	setMapString(mapValue(top, "ingest"), "downloads", map[string]string{
 		"qb_root":   s.cfg.Ingest.Downloads.QBRoot,
 		"moji_root": s.cfg.Ingest.Downloads.MojiRoot,

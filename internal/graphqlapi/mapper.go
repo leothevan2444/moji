@@ -164,7 +164,12 @@ func taskToModel(task *taskruntime.Task) *model.Task {
 		source = taskruntime.TaskSourceManual
 	}
 
+	files := []*model.TaskFile{}
+	for _, file := range task.FilePlan().Files {
+		files = append(files, &model.TaskFile{Index: file.Index, Path: file.Path, Size: file.Size, Kind: string(file.Kind), Part: file.Part, Selected: file.Selected, Reason: file.Reason})
+	}
 	return &model.Task{
+		Files:               files,
 		ID:                  task.ID,
 		Source:              model.TaskSource(source),
 		Code:                task.Code,

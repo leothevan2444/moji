@@ -18,6 +18,42 @@
     "pageUnknownTotal": "第 {{page}} 页",
     "stale": "StashBox 刷新失败，当前显示上次缓存的数据。"
   },
+  "mediaFiles": {
+    "selected": "已选",
+    "review": "待确认",
+    "skipped": "跳过",
+    "title": "文件整理",
+    "keepSubtitles": "保留字幕",
+    "keepSubtitlesInfo": "保留影片附带的字幕，不区分语言。关闭后跳过外置字幕，交付文件也不保留内嵌字幕流。",
+    "deliveryInfo": "文件交付会过滤冗余文件、去重，并将分段正片按顺序合并为一个以番号命名的视频。请配置文件交付模式及 Moji 下载和媒体库根目录。",
+    "summary": "只有选定的正片和启用保留的字幕会交付给 Stash。多个正片按下方顺序合并。",
+    "selectionSaved": "文件选择已保存，任务将继续下载。",
+    "classified": "已分类",
+    "playbackOrder": "正片合并顺序",
+    "confirm": "确认文件与合并顺序",
+    "moveUp": "上移 {{file}}",
+    "moveDown": "下移 {{file}}",
+    "blocked": "需要选择正片",
+    "blockedDetail": "请在任务详情中确认正片文件及分段顺序。",
+    "prepareFailed": "影片整理失败",
+    "prepareFailedDetail": "请检查文件交付路径、媒体处理工具及分段兼容性；详细原因可在日志中查看。",
+    "kinds": {
+      "MAIN": "正片或正片分段",
+      "SUBTITLE": "字幕",
+      "DISCARD": "广告、样片或其他冗余文件",
+      "UNKNOWN_VIDEO": "用途待确认的视频"
+    },
+    "reasons": {
+      "TARGET_CODE": "匹配目标番号",
+      "NON_MEDIA": "非交付文件",
+      "ADVERTISEMENT_OR_SAMPLE": "广告或样片",
+      "SUBTITLE_POLICY": "按字幕设置处理",
+      "SUBTITLE_OTHER_RELEASE": "属于其他番号的字幕",
+      "IDENTITY_UNCERTAIN": "无法确认属于正片",
+      "USER_SELECTED": "人工选择",
+      "USER_EXCLUDED": "人工排除"
+    }
+  },
   "common": {
     "auto": "跟随浏览器",
     "language": "语言",

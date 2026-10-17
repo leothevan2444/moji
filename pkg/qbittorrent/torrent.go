@@ -338,7 +338,7 @@ type TorrentContentFile struct {
 }
 
 func (c *Client) GetTorrentContents(ctx context.Context, hash string, indexes []string) ([]TorrentContentFile, error) {
-baseURL, httpClient := c.resolve()
+	baseURL, httpClient := c.resolve()
 	params := url.Values{}
 	params.Set("hash", hash)
 	if len(indexes) > 0 {
@@ -360,6 +360,9 @@ baseURL, httpClient := c.resolve()
 		return nil, err
 	}
 	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("qB GetTorrentContents: HTTP %d", resp.StatusCode)
+	}
 
 	var files []TorrentContentFile
 	if err := json.NewDecoder(resp.Body).Decode(&files); err != nil {
@@ -436,7 +439,7 @@ baseURL, httpClient := c.resolve()
 }
 
 func (c *Client) PauseTorrents(ctx context.Context, hashes []string) error {
-baseURL, httpClient := c.resolve()
+	baseURL, httpClient := c.resolve()
 	params := url.Values{}
 	params.Set("hashes", strings.Join(hashes, "|"))
 
@@ -456,12 +459,15 @@ baseURL, httpClient := c.resolve()
 		return err
 	}
 	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		return fmt.Errorf("qB PauseTorrents: HTTP %d", resp.StatusCode)
+	}
 
 	return nil
 }
 
 func (c *Client) ResumeTorrents(ctx context.Context, hashes []string) error {
-baseURL, httpClient := c.resolve()
+	baseURL, httpClient := c.resolve()
 	params := url.Values{}
 	params.Set("hashes", strings.Join(hashes, "|"))
 
@@ -481,6 +487,9 @@ baseURL, httpClient := c.resolve()
 		return err
 	}
 	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		return fmt.Errorf("qB ResumeTorrents: HTTP %d", resp.StatusCode)
+	}
 
 	return nil
 }
@@ -571,6 +580,7 @@ type TorrentFile struct {
 }
 
 type AddTorrentOptions struct {
+	StopCondition      *string       `json:"stopCondition,omitempty"`
 	URLs               []string      `json:"-"`                            // URLs separated with newlines
 	Torrents           []TorrentFile `json:"-"`                            // Raw data of torrent file. torrents can be presented multiple times.
 	SavePath           *string       `json:"savepath,omitempty"`           // Download folder
@@ -590,7 +600,7 @@ type AddTorrentOptions struct {
 }
 
 func (c *Client) AddNewTorrent(ctx context.Context, opts AddTorrentOptions) error {
-baseURL, httpClient := c.resolve()
+	baseURL, httpClient := c.resolve()
 	body := &bytes.Buffer{}
 	writer := multipart.NewWriter(body)
 
@@ -611,6 +621,10 @@ baseURL, httpClient := c.resolve()
 	}
 	if opts.Paused != nil {
 		writer.WriteField("paused", strconv.FormatBool(*opts.Paused))
+		writer.WriteField("stopped", strconv.FormatBool(*opts.Paused))
+	}
+	if opts.StopCondition != nil {
+		writer.WriteField("stopCondition", *opts.StopCondition)
 	}
 	if opts.RootFolder != nil {
 		writer.WriteField("root_folder", *opts.RootFolder) // "true", "false", "unset"
@@ -879,14 +893,14 @@ baseURL, httpClient := c.resolve()
 }
 
 func (c *Client) SetTorrentFilePriority(ctx context.Context, hash string, fileIndexs []int, priority TorrentFilePriority) error {
-baseURL, httpClient := c.resolve()
+	baseURL, httpClient := c.resolve()
 	params := url.Values{}
 	params.Set("hash", hash)
 	strIndexes := make([]string, 0, len(fileIndexs))
 	for _, index := range fileIndexs {
 		strIndexes = append(strIndexes, strconv.Itoa(index))
 	}
-	params.Set("indexes", strings.Join(strIndexes, "|"))
+	params.Set("id", strings.Join(strIndexes, "|"))
 	params.Set("priority", strconv.Itoa(int(priority)))
 
 	req, err := http.NewRequestWithContext(
@@ -905,6 +919,9 @@ baseURL, httpClient := c.resolve()
 		return err
 	}
 	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		return fmt.Errorf("qB SetTorrentFilePriority: HTTP %d", resp.StatusCode)
+	}
 
 	return nil
 }

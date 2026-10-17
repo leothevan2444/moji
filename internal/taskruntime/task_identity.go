@@ -5,15 +5,13 @@ import (
 	"crypto/sha1"
 	"errors"
 	"fmt"
+	"github.com/leothevan2444/moji/internal/mediafiles"
 	"io"
 	"net/http"
 	"net/url"
 	"path"
-	"regexp"
 	"strings"
 )
-
-var codePattern = regexp.MustCompile(`(?i)\b([a-z]{2,10})[-_\s]?(\d{2,6})\b`)
 
 type torrentIdentity struct {
 	InfoHash  string
@@ -21,11 +19,7 @@ type torrentIdentity struct {
 }
 
 func normalizeCode(value string) string {
-	match := codePattern.FindStringSubmatch(strings.TrimSpace(value))
-	if len(match) != 3 {
-		return ""
-	}
-	return strings.ToUpper(match[1]) + "-" + match[2]
+	return mediafiles.ExtractCode(strings.TrimSpace(value))
 }
 
 func extractCode(values ...string) string {

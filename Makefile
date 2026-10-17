@@ -67,3 +67,9 @@ build: moji
 .PHONY: clean
 clean:
 	rm moji
+
+.PHONY: test-media
+test-media:
+	@command -v ffmpeg >/dev/null || (echo "ffmpeg is required" >&2; exit 1)
+	@command -v ffprobe >/dev/null || (echo "ffprobe is required" >&2; exit 1)
+	GOCACHE=$(GOCACHE) $(GO) test ./internal/mediafiles

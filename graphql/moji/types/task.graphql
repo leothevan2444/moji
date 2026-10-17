@@ -34,6 +34,9 @@ type Mutation {
   "Resolve a blocked sourcing task with a manually selected torrent"
   resolveBlockedSourcingTask(id: ID!, input: ResolveBlockedSourcingTaskInput!): Task!
 
+  "Choose main video files in playback order for a blocked download"
+  resolveTaskFiles(id: ID!, videoIndices: [Int!]!): Task!
+
   "Delete a persisted Moji task record"
   deleteTask(id: ID!): Task!
 
@@ -99,6 +102,7 @@ enum TaskSource {
 
 type Task {
   id: ID!
+  files: [TaskFile!]!
   source: TaskSource!
   code: String!
   stage: TaskStage!
@@ -188,4 +192,15 @@ type TaskBatchPayload {
   batchId: ID!
   summary: TaskBatchSummary!
   results: [TaskBatchResult!]!
+}
+
+"A classified qBittorrent file; order applies to selected main video parts"
+type TaskFile {
+  index: Int!
+  path: String!
+  size: Long!
+  kind: String!
+  part: Int!
+  selected: Boolean!
+  reason: String!
 }

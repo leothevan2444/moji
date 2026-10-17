@@ -408,10 +408,10 @@ func TestSQLiteV7IngestUpgradePreservesTasksAndHistory(t *testing.T) {
 		t.Fatal(err)
 	}
 	schema := sqliteSchema
-	for _, column := range []string{"stash_ingest_phase", "stash_generate_job_id", "stash_identify_job_id", "stash_scene_ids_json"} {
+	for _, column := range []string{"file_plan_json", "stash_ingest_phase", "stash_generate_job_id", "stash_identify_job_id", "stash_scene_ids_json"} {
 		schema = strings.ReplaceAll(schema, "  "+column+" TEXT,\n", "")
 	}
-	schema = strings.ReplaceAll(schema, "VALUES ('schema_version', '8')", "VALUES ('schema_version', '7')")
+	schema = strings.ReplaceAll(schema, "VALUES ('schema_version', '"+sqliteSchemaVersion+"')", "VALUES ('schema_version', '7')")
 	if _, err := legacy.Exec(schema); err != nil {
 		t.Fatal(err)
 	}

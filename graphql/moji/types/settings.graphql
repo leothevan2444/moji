@@ -144,6 +144,7 @@ type StashSettings {
 }
 
 type IngestSettings {
+  keepSubtitles: Boolean!
   deliveryMode: String!
   downloads: DownloadsIngestSettings!
   library: LibraryIngestSettings!
@@ -377,6 +378,7 @@ input UpdateStashSettingsInput {
 }
 
 input UpdateIngestSettingsInput {
+  keepSubtitles: Boolean = false
   deliveryMode: String!
   downloads: DownloadsIngestSettingsInput!
   library: LibraryIngestSettingsInput!

@@ -20,6 +20,7 @@ GraphQL user-visible failures use `extensions.code`, `params`, and `correlationI
 **Moji now only support installation via Docker.**
 ### Prerequisites
 - Docker and Docker Compose installed on your server.
+- FFmpeg and ffprobe in the Moji runtime PATH for file preparation and part merging.
 - A running instance of [Stash](https://github.com/stashapp/stash).
 - [jackett](https://github.com/Jackett/Jackett) and [qBittorrent](https://www.qbittorrent.org/) for torrent searching and downloading.
 ### Docker Compose

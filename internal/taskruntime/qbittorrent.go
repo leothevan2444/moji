@@ -2,6 +2,7 @@ package taskruntime
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/leothevan2444/moji/pkg/qbittorrent"
 )
@@ -56,4 +57,33 @@ func (c *DefaultingTorrentClient) AddNewTorrent(ctx context.Context, opts qbitto
 
 func (c *DefaultingTorrentClient) DeleteTorrents(ctx context.Context, hashes []string, deleteFiles bool) error {
 	return c.client.DeleteTorrents(ctx, hashes, deleteFiles)
+}
+
+func (c *DefaultingTorrentClient) GetTorrentContents(ctx context.Context, hash string, indices []string) ([]qbittorrent.TorrentContentFile, error) {
+	client, ok := c.client.(TorrentFileClient)
+	if !ok {
+		return nil, fmt.Errorf("qB file API unavailable")
+	}
+	return client.GetTorrentContents(ctx, hash, indices)
+}
+func (c *DefaultingTorrentClient) SetTorrentFilePriority(ctx context.Context, hash string, indices []int, priority qbittorrent.TorrentFilePriority) error {
+	client, ok := c.client.(TorrentFileClient)
+	if !ok {
+		return fmt.Errorf("qB file API unavailable")
+	}
+	return client.SetTorrentFilePriority(ctx, hash, indices, priority)
+}
+func (c *DefaultingTorrentClient) PauseTorrents(ctx context.Context, hashes []string) error {
+	client, ok := c.client.(TorrentFileClient)
+	if !ok {
+		return fmt.Errorf("qB file API unavailable")
+	}
+	return client.PauseTorrents(ctx, hashes)
+}
+func (c *DefaultingTorrentClient) ResumeTorrents(ctx context.Context, hashes []string) error {
+	client, ok := c.client.(TorrentFileClient)
+	if !ok {
+		return fmt.Errorf("qB file API unavailable")
+	}
+	return client.ResumeTorrents(ctx, hashes)
 }

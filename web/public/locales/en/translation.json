@@ -18,6 +18,42 @@
     "pageUnknownTotal": "Page {{page}}",
     "stale": "StashBox refresh failed. Showing the last cached data."
   },
+  "mediaFiles": {
+    "selected": "Selected",
+    "review": "Review needed",
+    "skipped": "Skipped",
+    "title": "File preparation",
+    "keepSubtitles": "Keep subtitles",
+    "keepSubtitlesInfo": "Keep subtitles in every language. When off, external subtitles are skipped and embedded subtitle streams are excluded from delivery.",
+    "deliveryInfo": "File delivery filters extras, removes duplicates, and merges movie parts in order into one video named with the release code. Configure File delivery and Moji download and library roots.",
+    "summary": "Only selected movie files and enabled subtitles are delivered to Stash. Movie parts are merged in the order below.",
+    "selectionSaved": "File selection saved. The download will continue.",
+    "classified": "Classified",
+    "playbackOrder": "Movie merge order",
+    "confirm": "Confirm files and merge order",
+    "moveUp": "Move {{file}} up",
+    "moveDown": "Move {{file}} down",
+    "blocked": "Select movie files",
+    "blockedDetail": "Confirm the movie files and part order in task details.",
+    "prepareFailed": "Movie preparation failed",
+    "prepareFailedDetail": "Check delivery paths, media processing tools, and part compatibility. Detailed diagnostics are available in logs.",
+    "kinds": {
+      "MAIN": "Movie or movie part",
+      "SUBTITLE": "Subtitle",
+      "DISCARD": "Advertisement, sample, or other extra",
+      "UNKNOWN_VIDEO": "Video requiring review"
+    },
+    "reasons": {
+      "TARGET_CODE": "Matches the target code",
+      "NON_MEDIA": "Excluded extra",
+      "ADVERTISEMENT_OR_SAMPLE": "Advertisement or sample",
+      "SUBTITLE_POLICY": "Subtitle retention policy",
+      "SUBTITLE_OTHER_RELEASE": "Subtitle for another release",
+      "IDENTITY_UNCERTAIN": "Movie identity is uncertain",
+      "USER_SELECTED": "Selected manually",
+      "USER_EXCLUDED": "Excluded manually"
+    }
+  },
   "common": {
     "auto": "Use browser language",
     "language": "Language",

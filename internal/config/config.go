@@ -315,10 +315,11 @@ type SubscriptionReleasePolicyConfig struct {
 }
 
 type IngestConfig struct {
-	DeliveryMode string                `yaml:"delivery_mode"`
-	Downloads    DownloadsIngestConfig `yaml:"downloads"`
-	Library      LibraryIngestConfig   `yaml:"library"`
-	Transfer     TransferIngestConfig  `yaml:"transfer"`
+	KeepSubtitles bool                  `yaml:"keep_subtitles"`
+	DeliveryMode  string                `yaml:"delivery_mode"`
+	Downloads     DownloadsIngestConfig `yaml:"downloads"`
+	Library       LibraryIngestConfig   `yaml:"library"`
+	Transfer      TransferIngestConfig  `yaml:"transfer"`
 }
 
 type DownloadsIngestConfig struct {

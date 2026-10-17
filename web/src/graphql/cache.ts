@@ -129,6 +129,7 @@ function applyTaskBatch(cache: Cache, payload: any, deleting = false) {
 const singleton = () => "singleton";
 
 export const graphcacheKeys: KeyingConfig = {
+  TaskFile: () => null,
   Settings: singleton,
   StashSettings: singleton,
   IngestSettings: singleton,
@@ -200,6 +201,7 @@ export const graphcacheUpdates: UpdatesConfig = {
     downloadMedia(result: any, _args, cache) { linkTask(cache, result.downloadMedia, true); },
     queueDiscoveredScene(result: any, _args, cache) { linkTask(cache, result.queueDiscoveredScene, true); },
     retryTask(result: any, _args, cache) { linkTask(cache, result.retryTask); },
+    resolveTaskFiles(result: any, _args, cache) { linkTask(cache, result.resolveTaskFiles); },
     resolveBlockedSourcingTask(result: any, _args, cache) { linkTask(cache, result.resolveBlockedSourcingTask); },
     deleteTask(result: any, args: any, cache) { unlinkTask(cache, result.deleteTask?.id ?? args.id); },
     retryTasks(result: any, _args, cache) { applyTaskBatch(cache, result.retryTasks); },

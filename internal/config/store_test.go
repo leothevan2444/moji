@@ -247,3 +247,28 @@ func TestStashBoxDataCacheConfigNormalizeBounds(t *testing.T) {
 		}
 	}
 }
+
+func TestIngestSubtitleSwitchPersists(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "config.yaml")
+	if err := os.WriteFile(path, []byte("ingest:\n  delivery_mode: TRANSFER\n  keep_subtitles: false\n"), 0600); err != nil {
+		t.Fatal(err)
+	}
+	store, err := OpenStore(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	cfg, err := store.UpdateIngest("TRANSFER", DownloadsIngestConfig{}, LibraryIngestConfig{}, TransferIngestConfig{Action: "COPY"}, true)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !cfg.Ingest.KeepSubtitles {
+		t.Fatal("subtitle setting was not set")
+	}
+	reopened, err := OpenStore(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !reopened.Config().Ingest.KeepSubtitles {
+		t.Fatal("subtitle setting was not persisted")
+	}
+}

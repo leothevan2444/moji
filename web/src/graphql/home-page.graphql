@@ -4,6 +4,7 @@ query HomePageDocument {
       url
     }
     ingest {
+      keepSubtitles
       deliveryMode
       downloads {
         qbRoot
@@ -36,6 +37,7 @@ query HomePageDocument {
     stageStatusLabel
     stageErrorCode
     stageErrorMessage
+    files { index path size kind part selected reason }
     torrentUrl
     torrentName
     progress

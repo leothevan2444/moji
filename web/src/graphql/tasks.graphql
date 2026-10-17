@@ -9,6 +9,7 @@ query TaskDetailDocument($id: ID!) {
     stageStatusLabel
     stageErrorCode
     stageErrorMessage
+    files { index path size kind part selected reason }
     candidate { title tracker infoHash link magnetUri size seeders peers }
     torrentUrl
     torrentName
@@ -49,6 +50,7 @@ mutation AddTorrentDocument($input: QBittorrentAddInput!) {
     stageStatusLabel
     stageErrorCode
     stageErrorMessage
+    files { index path size kind part selected reason }
     code
     torrentName
     progress
@@ -130,6 +132,7 @@ mutation RetryTaskDocument($id: ID!) {
     stageStatusLabel
     stageErrorCode
     stageErrorMessage
+    files { index path size kind part selected reason }
     code
     progress
     qbittorrentState
@@ -181,6 +184,7 @@ mutation ResolveBlockedSourcingTaskDocument($id: ID!, $input: ResolveBlockedSour
     stageStatusLabel
     stageErrorCode
     stageErrorMessage
+    files { index path size kind part selected reason }
     code
     candidate {
       title
@@ -193,6 +197,14 @@ mutation ResolveBlockedSourcingTaskDocument($id: ID!, $input: ResolveBlockedSour
     torrentUrl
     progress
     qbittorrentState
+    updatedAt
+  }
+}
+
+mutation ResolveTaskFilesDocument($id: ID!, $videoIndices: [Int!]!) {
+  resolveTaskFiles(id: $id, videoIndices: $videoIndices) {
+    id stage stageStatus stageErrorCode stageErrorMessage
+    files { index path size kind part selected reason }
     updatedAt
   }
 }

@@ -139,10 +139,11 @@ type ComplexityRoot struct {
 	}
 
 	IngestSettings struct {
-		DeliveryMode func(childComplexity int) int
-		Downloads    func(childComplexity int) int
-		Library      func(childComplexity int) int
-		Transfer     func(childComplexity int) int
+		DeliveryMode  func(childComplexity int) int
+		Downloads     func(childComplexity int) int
+		KeepSubtitles func(childComplexity int) int
+		Library       func(childComplexity int) int
+		Transfer      func(childComplexity int) int
 	}
 
 	IngestStatus struct {
@@ -230,6 +231,7 @@ type ComplexityRoot struct {
 		RefreshSubscribedPerformers func(childComplexity int, ids []string) int
 		RefreshSubscriptionsNow     func(childComplexity int) int
 		ResolveBlockedSourcingTask  func(childComplexity int, id string, input model.ResolveBlockedSourcingTaskInput) int
+		ResolveTaskFiles            func(childComplexity int, id string, videoIndices []int) int
 		RetryTask                   func(childComplexity int, id string) int
 		RetryTasks                  func(childComplexity int, ids []string) int
 		StashMetadataScan           func(childComplexity int, input model.StashMetadataScanInput) int
@@ -622,6 +624,7 @@ type ComplexityRoot struct {
 		CreatedAt           func(childComplexity int) int
 		DeliveryMode        func(childComplexity int) int
 		DownloadCompletedAt func(childComplexity int) int
+		Files               func(childComplexity int) int
 		ID                  func(childComplexity int) int
 		MojiSourcePath      func(childComplexity int) int
 		MojiTransferPath    func(childComplexity int) int
@@ -681,6 +684,16 @@ type ComplexityRoot struct {
 		Type           func(childComplexity int) int
 	}
 
+	TaskFile struct {
+		Index    func(childComplexity int) int
+		Kind     func(childComplexity int) int
+		Part     func(childComplexity int) int
+		Path     func(childComplexity int) int
+		Reason   func(childComplexity int) int
+		Selected func(childComplexity int) int
+		Size     func(childComplexity int) int
+	}
+
 	TitleMatchClause struct {
 		Effect      func(childComplexity int) int
 		Pattern     func(childComplexity int) int
@@ -733,6 +746,7 @@ type MutationResolver interface {
 	TriggerStashScans(ctx context.Context) ([]*model.Task, error)
 	RetryTask(ctx context.Context, id string) (*model.Task, error)
 	ResolveBlockedSourcingTask(ctx context.Context, id string, input model.ResolveBlockedSourcingTaskInput) (*model.Task, error)
+	ResolveTaskFiles(ctx context.Context, id string, videoIndices []int) (*model.Task, error)
 	DeleteTask(ctx context.Context, id string) (*model.Task, error)
 	RetryTasks(ctx context.Context, ids []string) (*model.TaskBatchPayload, error)
 	ProcessTaskIngest(ctx context.Context, ids []string) (*model.TaskBatchPayload, error)
@@ -1197,6 +1211,13 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.IngestSettings.Downloads(childComplexity), true
+
+	case "IngestSettings.keepSubtitles":
+		if e.complexity.IngestSettings.KeepSubtitles == nil {
+			break
+		}
+
+		return e.complexity.IngestSettings.KeepSubtitles(childComplexity), true
 
 	case "IngestSettings.library":
 		if e.complexity.IngestSettings.Library == nil {
@@ -1670,6 +1691,18 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.Mutation.ResolveBlockedSourcingTask(childComplexity, args["id"].(string), args["input"].(model.ResolveBlockedSourcingTaskInput)), true
+
+	case "Mutation.resolveTaskFiles":
+		if e.complexity.Mutation.ResolveTaskFiles == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_resolveTaskFiles_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.ResolveTaskFiles(childComplexity, args["id"].(string), args["videoIndices"].([]int)), true
 
 	case "Mutation.retryTask":
 		if e.complexity.Mutation.RetryTask == nil {
@@ -3684,6 +3717,13 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.Task.DownloadCompletedAt(childComplexity), true
 
+	case "Task.files":
+		if e.complexity.Task.Files == nil {
+			break
+		}
+
+		return e.complexity.Task.Files(childComplexity), true
+
 	case "Task.id":
 		if e.complexity.Task.ID == nil {
 			break
@@ -3998,6 +4038,55 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.TaskEvent.Type(childComplexity), true
+
+	case "TaskFile.index":
+		if e.complexity.TaskFile.Index == nil {
+			break
+		}
+
+		return e.complexity.TaskFile.Index(childComplexity), true
+
+	case "TaskFile.kind":
+		if e.complexity.TaskFile.Kind == nil {
+			break
+		}
+
+		return e.complexity.TaskFile.Kind(childComplexity), true
+
+	case "TaskFile.part":
+		if e.complexity.TaskFile.Part == nil {
+			break
+		}
+
+		return e.complexity.TaskFile.Part(childComplexity), true
+
+	case "TaskFile.path":
+		if e.complexity.TaskFile.Path == nil {
+			break
+		}
+
+		return e.complexity.TaskFile.Path(childComplexity), true
+
+	case "TaskFile.reason":
+		if e.complexity.TaskFile.Reason == nil {
+			break
+		}
+
+		return e.complexity.TaskFile.Reason(childComplexity), true
+
+	case "TaskFile.selected":
+		if e.complexity.TaskFile.Selected == nil {
+			break
+		}
+
+		return e.complexity.TaskFile.Selected(childComplexity), true
+
+	case "TaskFile.size":
+		if e.complexity.TaskFile.Size == nil {
+			break
+		}
+
+		return e.complexity.TaskFile.Size(childComplexity), true
 
 	case "TitleMatchClause.effect":
 		if e.complexity.TitleMatchClause.Effect == nil {
@@ -4662,6 +4751,7 @@ type StashSettings {
 }
 
 type IngestSettings {
+  keepSubtitles: Boolean!
   deliveryMode: String!
   downloads: DownloadsIngestSettings!
   library: LibraryIngestSettings!
@@ -4895,6 +4985,7 @@ input UpdateStashSettingsInput {
 }
 
 input UpdateIngestSettingsInput {
+  keepSubtitles: Boolean = false
   deliveryMode: String!
   downloads: DownloadsIngestSettingsInput!
   library: LibraryIngestSettingsInput!
@@ -5362,6 +5453,9 @@ type Mutation {
   "Resolve a blocked sourcing task with a manually selected torrent"
   resolveBlockedSourcingTask(id: ID!, input: ResolveBlockedSourcingTaskInput!): Task!
 
+  "Choose main video files in playback order for a blocked download"
+  resolveTaskFiles(id: ID!, videoIndices: [Int!]!): Task!
+
   "Delete a persisted Moji task record"
   deleteTask(id: ID!): Task!
 
@@ -5427,6 +5521,7 @@ enum TaskSource {
 
 type Task {
   id: ID!
+  files: [TaskFile!]!
   source: TaskSource!
   code: String!
   stage: TaskStage!
@@ -5516,6 +5611,17 @@ type TaskBatchPayload {
   batchId: ID!
   summary: TaskBatchSummary!
   results: [TaskBatchResult!]!
+}
+
+"A classified qBittorrent file; order applies to selected main video parts"
+type TaskFile {
+  index: Int!
+  path: String!
+  size: Long!
+  kind: String!
+  part: Int!
+  selected: Boolean!
+  reason: String!
 }
 `, BuiltIn: false},
 	{Name: "../../../graphql/moji/types/task_events.graphql", Input: `enum TaskEventType {
@@ -5922,6 +6028,57 @@ func (ec *executionContext) field_Mutation_resolveBlockedSourcingTask_argsInput(
 	}
 
 	var zeroVal model.ResolveBlockedSourcingTaskInput
+	return zeroVal, nil
+}
+
+func (ec *executionContext) field_Mutation_resolveTaskFiles_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := ec.field_Mutation_resolveTaskFiles_argsID(ctx, rawArgs)
+	if err != nil {
+		return nil, err
+	}
+	args["id"] = arg0
+	arg1, err := ec.field_Mutation_resolveTaskFiles_argsVideoIndices(ctx, rawArgs)
+	if err != nil {
+		return nil, err
+	}
+	args["videoIndices"] = arg1
+	return args, nil
+}
+func (ec *executionContext) field_Mutation_resolveTaskFiles_argsID(
+	ctx context.Context,
+	rawArgs map[string]any,
+) (string, error) {
+	if _, ok := rawArgs["id"]; !ok {
+		var zeroVal string
+		return zeroVal, nil
+	}
+
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
+	if tmp, ok := rawArgs["id"]; ok {
+		return ec.unmarshalNID2string(ctx, tmp)
+	}
+
+	var zeroVal string
+	return zeroVal, nil
+}
+
+func (ec *executionContext) field_Mutation_resolveTaskFiles_argsVideoIndices(
+	ctx context.Context,
+	rawArgs map[string]any,
+) ([]int, error) {
+	if _, ok := rawArgs["videoIndices"]; !ok {
+		var zeroVal []int
+		return zeroVal, nil
+	}
+
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("videoIndices"))
+	if tmp, ok := rawArgs["videoIndices"]; ok {
+		return ec.unmarshalNInt2ᚕintᚄ(ctx, tmp)
+	}
+
+	var zeroVal []int
 	return zeroVal, nil
 }
 
@@ -9371,6 +9528,50 @@ func (ec *executionContext) fieldContext_IndexerPreferenceRule_trackerIds(_ cont
 	return fc, nil
 }
 
+func (ec *executionContext) _IngestSettings_keepSubtitles(ctx context.Context, field graphql.CollectedField, obj *model.IngestSettings) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_IngestSettings_keepSubtitles(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.KeepSubtitles, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(bool)
+	fc.Result = res
+	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_IngestSettings_keepSubtitles(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "IngestSettings",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _IngestSettings_deliveryMode(ctx context.Context, field graphql.CollectedField, obj *model.IngestSettings) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_IngestSettings_deliveryMode(ctx, field)
 	if err != nil {
@@ -11461,6 +11662,8 @@ func (ec *executionContext) fieldContext_Mutation_addTorrent(ctx context.Context
 			switch field.Name {
 			case "id":
 				return ec.fieldContext_Task_id(ctx, field)
+			case "files":
+				return ec.fieldContext_Task_files(ctx, field)
 			case "source":
 				return ec.fieldContext_Task_source(ctx, field)
 			case "code":
@@ -11590,6 +11793,8 @@ func (ec *executionContext) fieldContext_Mutation_downloadMedia(ctx context.Cont
 			switch field.Name {
 			case "id":
 				return ec.fieldContext_Task_id(ctx, field)
+			case "files":
+				return ec.fieldContext_Task_files(ctx, field)
 			case "source":
 				return ec.fieldContext_Task_source(ctx, field)
 			case "code":
@@ -11719,6 +11924,8 @@ func (ec *executionContext) fieldContext_Mutation_syncTaskProgress(_ context.Con
 			switch field.Name {
 			case "id":
 				return ec.fieldContext_Task_id(ctx, field)
+			case "files":
+				return ec.fieldContext_Task_files(ctx, field)
 			case "source":
 				return ec.fieldContext_Task_source(ctx, field)
 			case "code":
@@ -11837,6 +12044,8 @@ func (ec *executionContext) fieldContext_Mutation_triggerTaskStashScan(ctx conte
 			switch field.Name {
 			case "id":
 				return ec.fieldContext_Task_id(ctx, field)
+			case "files":
+				return ec.fieldContext_Task_files(ctx, field)
 			case "source":
 				return ec.fieldContext_Task_source(ctx, field)
 			case "code":
@@ -11966,6 +12175,8 @@ func (ec *executionContext) fieldContext_Mutation_triggerStashScans(_ context.Co
 			switch field.Name {
 			case "id":
 				return ec.fieldContext_Task_id(ctx, field)
+			case "files":
+				return ec.fieldContext_Task_files(ctx, field)
 			case "source":
 				return ec.fieldContext_Task_source(ctx, field)
 			case "code":
@@ -12084,6 +12295,8 @@ func (ec *executionContext) fieldContext_Mutation_retryTask(ctx context.Context,
 			switch field.Name {
 			case "id":
 				return ec.fieldContext_Task_id(ctx, field)
+			case "files":
+				return ec.fieldContext_Task_files(ctx, field)
 			case "source":
 				return ec.fieldContext_Task_source(ctx, field)
 			case "code":
@@ -12213,6 +12426,8 @@ func (ec *executionContext) fieldContext_Mutation_resolveBlockedSourcingTask(ctx
 			switch field.Name {
 			case "id":
 				return ec.fieldContext_Task_id(ctx, field)
+			case "files":
+				return ec.fieldContext_Task_files(ctx, field)
 			case "source":
 				return ec.fieldContext_Task_source(ctx, field)
 			case "code":
@@ -12301,6 +12516,137 @@ func (ec *executionContext) fieldContext_Mutation_resolveBlockedSourcingTask(ctx
 	return fc, nil
 }
 
+func (ec *executionContext) _Mutation_resolveTaskFiles(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Mutation_resolveTaskFiles(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().ResolveTaskFiles(rctx, fc.Args["id"].(string), fc.Args["videoIndices"].([]int))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*model.Task)
+	fc.Result = res
+	return ec.marshalNTask2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐTask(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Mutation_resolveTaskFiles(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_Task_id(ctx, field)
+			case "files":
+				return ec.fieldContext_Task_files(ctx, field)
+			case "source":
+				return ec.fieldContext_Task_source(ctx, field)
+			case "code":
+				return ec.fieldContext_Task_code(ctx, field)
+			case "stage":
+				return ec.fieldContext_Task_stage(ctx, field)
+			case "stageStatus":
+				return ec.fieldContext_Task_stageStatus(ctx, field)
+			case "stageLabel":
+				return ec.fieldContext_Task_stageLabel(ctx, field)
+			case "stageStatusLabel":
+				return ec.fieldContext_Task_stageStatusLabel(ctx, field)
+			case "stageErrorCode":
+				return ec.fieldContext_Task_stageErrorCode(ctx, field)
+			case "stageErrorMessage":
+				return ec.fieldContext_Task_stageErrorMessage(ctx, field)
+			case "candidate":
+				return ec.fieldContext_Task_candidate(ctx, field)
+			case "torrentUrl":
+				return ec.fieldContext_Task_torrentUrl(ctx, field)
+			case "savePath":
+				return ec.fieldContext_Task_savePath(ctx, field)
+			case "category":
+				return ec.fieldContext_Task_category(ctx, field)
+			case "tags":
+				return ec.fieldContext_Task_tags(ctx, field)
+			case "torrentHash":
+				return ec.fieldContext_Task_torrentHash(ctx, field)
+			case "torrentName":
+				return ec.fieldContext_Task_torrentName(ctx, field)
+			case "progress":
+				return ec.fieldContext_Task_progress(ctx, field)
+			case "qbittorrentState":
+				return ec.fieldContext_Task_qbittorrentState(ctx, field)
+			case "contentPath":
+				return ec.fieldContext_Task_contentPath(ctx, field)
+			case "downloadCompletedAt":
+				return ec.fieldContext_Task_downloadCompletedAt(ctx, field)
+			case "deliveryMode":
+				return ec.fieldContext_Task_deliveryMode(ctx, field)
+			case "mojiSourcePath":
+				return ec.fieldContext_Task_mojiSourcePath(ctx, field)
+			case "transferAction":
+				return ec.fieldContext_Task_transferAction(ctx, field)
+			case "mojiTransferPath":
+				return ec.fieldContext_Task_mojiTransferPath(ctx, field)
+			case "transferError":
+				return ec.fieldContext_Task_transferError(ctx, field)
+			case "stashIngestPhase":
+				return ec.fieldContext_Task_stashIngestPhase(ctx, field)
+			case "stashGenerateJobId":
+				return ec.fieldContext_Task_stashGenerateJobId(ctx, field)
+			case "stashIdentifyJobId":
+				return ec.fieldContext_Task_stashIdentifyJobId(ctx, field)
+			case "stashSceneIds":
+				return ec.fieldContext_Task_stashSceneIds(ctx, field)
+			case "stashScanJobId":
+				return ec.fieldContext_Task_stashScanJobId(ctx, field)
+			case "stashScanPath":
+				return ec.fieldContext_Task_stashScanPath(ctx, field)
+			case "stashScanError":
+				return ec.fieldContext_Task_stashScanError(ctx, field)
+			case "stashScanHint":
+				return ec.fieldContext_Task_stashScanHint(ctx, field)
+			case "stashScanStartedAt":
+				return ec.fieldContext_Task_stashScanStartedAt(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_Task_createdAt(ctx, field)
+			case "updatedAt":
+				return ec.fieldContext_Task_updatedAt(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type Task", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_resolveTaskFiles_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _Mutation_deleteTask(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_Mutation_deleteTask(ctx, field)
 	if err != nil {
@@ -12342,6 +12688,8 @@ func (ec *executionContext) fieldContext_Mutation_deleteTask(ctx context.Context
 			switch field.Name {
 			case "id":
 				return ec.fieldContext_Task_id(ctx, field)
+			case "files":
+				return ec.fieldContext_Task_files(ctx, field)
 			case "source":
 				return ec.fieldContext_Task_source(ctx, field)
 			case "code":
@@ -12660,6 +13008,8 @@ func (ec *executionContext) fieldContext_Mutation_queueDiscoveredScene(ctx conte
 			switch field.Name {
 			case "id":
 				return ec.fieldContext_Task_id(ctx, field)
+			case "files":
+				return ec.fieldContext_Task_files(ctx, field)
 			case "source":
 				return ec.fieldContext_Task_source(ctx, field)
 			case "code":
@@ -18024,6 +18374,8 @@ func (ec *executionContext) fieldContext_Query_task(ctx context.Context, field g
 			switch field.Name {
 			case "id":
 				return ec.fieldContext_Task_id(ctx, field)
+			case "files":
+				return ec.fieldContext_Task_files(ctx, field)
 			case "source":
 				return ec.fieldContext_Task_source(ctx, field)
 			case "code":
@@ -18153,6 +18505,8 @@ func (ec *executionContext) fieldContext_Query_tasks(_ context.Context, field gr
 			switch field.Name {
 			case "id":
 				return ec.fieldContext_Task_id(ctx, field)
+			case "files":
+				return ec.fieldContext_Task_files(ctx, field)
 			case "source":
 				return ec.fieldContext_Task_source(ctx, field)
 			case "code":
@@ -18531,6 +18885,8 @@ func (ec *executionContext) fieldContext_QueuePerformerSceneResult_task(_ contex
 			switch field.Name {
 			case "id":
 				return ec.fieldContext_Task_id(ctx, field)
+			case "files":
+				return ec.fieldContext_Task_files(ctx, field)
 			case "source":
 				return ec.fieldContext_Task_source(ctx, field)
 			case "code":
@@ -18690,6 +19046,8 @@ func (ec *executionContext) fieldContext_QueuePerformerScenesPayload_queuedTasks
 			switch field.Name {
 			case "id":
 				return ec.fieldContext_Task_id(ctx, field)
+			case "files":
+				return ec.fieldContext_Task_files(ctx, field)
 			case "source":
 				return ec.fieldContext_Task_source(ctx, field)
 			case "code":
@@ -19366,6 +19724,8 @@ func (ec *executionContext) fieldContext_Settings_ingest(_ context.Context, fiel
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			switch field.Name {
+			case "keepSubtitles":
+				return ec.fieldContext_IngestSettings_keepSubtitles(ctx, field)
 			case "deliveryMode":
 				return ec.fieldContext_IngestSettings_deliveryMode(ctx, field)
 			case "downloads":
@@ -26169,6 +26529,66 @@ func (ec *executionContext) fieldContext_Task_id(_ context.Context, field graphq
 	return fc, nil
 }
 
+func (ec *executionContext) _Task_files(ctx context.Context, field graphql.CollectedField, obj *model.Task) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Task_files(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Files, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]*model.TaskFile)
+	fc.Result = res
+	return ec.marshalNTaskFile2ᚕᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐTaskFileᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Task_files(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Task",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "index":
+				return ec.fieldContext_TaskFile_index(ctx, field)
+			case "path":
+				return ec.fieldContext_TaskFile_path(ctx, field)
+			case "size":
+				return ec.fieldContext_TaskFile_size(ctx, field)
+			case "kind":
+				return ec.fieldContext_TaskFile_kind(ctx, field)
+			case "part":
+				return ec.fieldContext_TaskFile_part(ctx, field)
+			case "selected":
+				return ec.fieldContext_TaskFile_selected(ctx, field)
+			case "reason":
+				return ec.fieldContext_TaskFile_reason(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type TaskFile", field.Name)
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _Task_source(ctx context.Context, field graphql.CollectedField, obj *model.Task) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_Task_source(ctx, field)
 	if err != nil {
@@ -27980,6 +28400,8 @@ func (ec *executionContext) fieldContext_TaskBatchResult_task(_ context.Context,
 			switch field.Name {
 			case "id":
 				return ec.fieldContext_Task_id(ctx, field)
+			case "files":
+				return ec.fieldContext_Task_files(ctx, field)
 			case "source":
 				return ec.fieldContext_Task_source(ctx, field)
 			case "code":
@@ -28403,6 +28825,8 @@ func (ec *executionContext) fieldContext_TaskEvent_task(_ context.Context, field
 			switch field.Name {
 			case "id":
 				return ec.fieldContext_Task_id(ctx, field)
+			case "files":
+				return ec.fieldContext_Task_files(ctx, field)
 			case "source":
 				return ec.fieldContext_Task_source(ctx, field)
 			case "code":
@@ -28533,6 +28957,314 @@ func (ec *executionContext) fieldContext_TaskEvent_dashboardStats(_ context.Cont
 				return ec.fieldContext_DashboardStats_failed(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type DashboardStats", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _TaskFile_index(ctx context.Context, field graphql.CollectedField, obj *model.TaskFile) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_TaskFile_index(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Index, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int)
+	fc.Result = res
+	return ec.marshalNInt2int(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_TaskFile_index(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "TaskFile",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _TaskFile_path(ctx context.Context, field graphql.CollectedField, obj *model.TaskFile) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_TaskFile_path(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Path, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_TaskFile_path(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "TaskFile",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _TaskFile_size(ctx context.Context, field graphql.CollectedField, obj *model.TaskFile) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_TaskFile_size(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Size, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int64)
+	fc.Result = res
+	return ec.marshalNLong2int64(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_TaskFile_size(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "TaskFile",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Long does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _TaskFile_kind(ctx context.Context, field graphql.CollectedField, obj *model.TaskFile) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_TaskFile_kind(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Kind, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_TaskFile_kind(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "TaskFile",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _TaskFile_part(ctx context.Context, field graphql.CollectedField, obj *model.TaskFile) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_TaskFile_part(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Part, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int)
+	fc.Result = res
+	return ec.marshalNInt2int(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_TaskFile_part(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "TaskFile",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _TaskFile_selected(ctx context.Context, field graphql.CollectedField, obj *model.TaskFile) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_TaskFile_selected(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Selected, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(bool)
+	fc.Result = res
+	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_TaskFile_selected(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "TaskFile",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _TaskFile_reason(ctx context.Context, field graphql.CollectedField, obj *model.TaskFile) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_TaskFile_reason(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Reason, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_TaskFile_reason(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "TaskFile",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
 		},
 	}
 	return fc, nil
@@ -32775,13 +33507,24 @@ func (ec *executionContext) unmarshalInputUpdateIngestSettingsInput(ctx context.
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"deliveryMode", "downloads", "library", "transfer"}
+	if _, present := asMap["keepSubtitles"]; !present {
+		asMap["keepSubtitles"] = false
+	}
+
+	fieldsInOrder := [...]string{"keepSubtitles", "deliveryMode", "downloads", "library", "transfer"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
 			continue
 		}
 		switch k {
+		case "keepSubtitles":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("keepSubtitles"))
+			data, err := ec.unmarshalOBoolean2ᚖbool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.KeepSubtitles = data
 		case "deliveryMode":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("deliveryMode"))
 			data, err := ec.unmarshalNString2string(ctx, v)
@@ -33664,6 +34407,11 @@ func (ec *executionContext) _IngestSettings(ctx context.Context, sel ast.Selecti
 		switch field.Name {
 		case "__typename":
 			out.Values[i] = graphql.MarshalString("IngestSettings")
+		case "keepSubtitles":
+			out.Values[i] = ec._IngestSettings_keepSubtitles(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
 		case "deliveryMode":
 			out.Values[i] = ec._IngestSettings_deliveryMode(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
@@ -34277,6 +35025,13 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 		case "resolveBlockedSourcingTask":
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
 				return ec._Mutation_resolveBlockedSourcingTask(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "resolveTaskFiles":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_resolveTaskFiles(ctx, field)
 			})
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
@@ -37259,6 +38014,11 @@ func (ec *executionContext) _Task(ctx context.Context, sel ast.SelectionSet, obj
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
+		case "files":
+			out.Values[i] = ec._Task_files(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
 		case "source":
 			out.Values[i] = ec._Task_source(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
@@ -37572,6 +38332,75 @@ func (ec *executionContext) _TaskEvent(ctx context.Context, sel ast.SelectionSet
 			out.Values[i] = ec._TaskEvent_task(ctx, field, obj)
 		case "dashboardStats":
 			out.Values[i] = ec._TaskEvent_dashboardStats(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var taskFileImplementors = []string{"TaskFile"}
+
+func (ec *executionContext) _TaskFile(ctx context.Context, sel ast.SelectionSet, obj *model.TaskFile) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, taskFileImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("TaskFile")
+		case "index":
+			out.Values[i] = ec._TaskFile_index(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "path":
+			out.Values[i] = ec._TaskFile_path(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "size":
+			out.Values[i] = ec._TaskFile_size(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "kind":
+			out.Values[i] = ec._TaskFile_kind(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "part":
+			out.Values[i] = ec._TaskFile_part(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "selected":
+			out.Values[i] = ec._TaskFile_selected(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "reason":
+			out.Values[i] = ec._TaskFile_reason(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
@@ -38652,6 +39481,36 @@ func (ec *executionContext) marshalNInt2int(ctx context.Context, sel ast.Selecti
 		}
 	}
 	return res
+}
+
+func (ec *executionContext) unmarshalNInt2ᚕintᚄ(ctx context.Context, v any) ([]int, error) {
+	var vSlice []any
+	vSlice = graphql.CoerceList(v)
+	var err error
+	res := make([]int, len(vSlice))
+	for i := range vSlice {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithIndex(i))
+		res[i], err = ec.unmarshalNInt2int(ctx, vSlice[i])
+		if err != nil {
+			return nil, err
+		}
+	}
+	return res, nil
+}
+
+func (ec *executionContext) marshalNInt2ᚕintᚄ(ctx context.Context, sel ast.SelectionSet, v []int) graphql.Marshaler {
+	ret := make(graphql.Array, len(v))
+	for i := range v {
+		ret[i] = ec.marshalNInt2int(ctx, sel, v[i])
+	}
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
 }
 
 func (ec *executionContext) marshalNJackettIndexer2ᚕᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐJackettIndexerᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.JackettIndexer) graphql.Marshaler {
@@ -40180,6 +41039,60 @@ func (ec *executionContext) unmarshalNTaskEventType2githubᚗcomᚋleothevan2444
 
 func (ec *executionContext) marshalNTaskEventType2githubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐTaskEventType(ctx context.Context, sel ast.SelectionSet, v model.TaskEventType) graphql.Marshaler {
 	return v
+}
+
+func (ec *executionContext) marshalNTaskFile2ᚕᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐTaskFileᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.TaskFile) graphql.Marshaler {
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalNTaskFile2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐTaskFile(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
+}
+
+func (ec *executionContext) marshalNTaskFile2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐTaskFile(ctx context.Context, sel ast.SelectionSet, v *model.TaskFile) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._TaskFile(ctx, sel, v)
 }
 
 func (ec *executionContext) unmarshalNTaskSource2githubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐTaskSource(ctx context.Context, v any) (model.TaskSource, error) {

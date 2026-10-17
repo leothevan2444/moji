@@ -18,6 +18,7 @@ import (
 
 	"github.com/leothevan2444/moji/internal/config"
 	"github.com/leothevan2444/moji/internal/logging"
+	"github.com/leothevan2444/moji/internal/mediafiles"
 	"github.com/leothevan2444/moji/internal/stashsync"
 	"github.com/leothevan2444/moji/internal/tracker"
 	"github.com/leothevan2444/moji/pkg/jackett"
@@ -65,6 +66,7 @@ const (
 )
 
 type Task struct {
+	FilePlanJSON            string
 	ID                      string
 	Source                  TaskSource
 	Code                    string
@@ -157,6 +159,13 @@ var (
 )
 
 type Service struct {
+	mediaConfig   func() stashsync.IntegrationConfig
+	mediaPreparer mediafiles.Preparer
+	mediaContext  context.Context
+	mediaMu       sync.Mutex
+	mediaJobs     map[string]context.CancelFunc
+	mediaSlots    chan struct{}
+
 	tracker            tracker.Tracker
 	qbt                TorrentClient
 	store              TaskStore
@@ -377,6 +386,11 @@ func (s *Service) DeleteTask(ctx context.Context, id string) (*Task, error) {
 		}
 	}
 
+	s.mediaMu.Lock()
+	if cancel := s.mediaJobs[id]; cancel != nil {
+		cancel()
+	}
+	s.mediaMu.Unlock()
 	return s.store.Delete(ctx, id)
 }
 
@@ -525,6 +539,35 @@ func (s *Service) syncTaskProgress(ctx context.Context, snapshot *Task, torrents
 	prevStageStatus := next.StageStatus
 	prevProgress := next.Progress
 	applyTorrentProgress(next, torrent, s.now().UTC())
+	if s.mediaConfig != nil {
+		if task.StageStatus == TaskStageStatusBlocked && task.StageErrorCode == TaskStageErrorFileReview {
+			return task, nil
+		}
+		complete, fileErr := s.syncFileSelection(ctx, next)
+		switch torrent.State {
+		case qbittorrent.TorrentStateMoving, qbittorrent.TorrentStateCheckingDL, qbittorrent.TorrentStateCheckingUP, qbittorrent.TorrentStateCheckingResumeData:
+			complete = false
+		}
+		if fileErr != nil {
+			setTaskStage(next, TaskStageDownloading, TaskStageStatusRunning)
+			next.DownloadCompletedAt = nil
+			code := TaskStageErrorFileSelection
+			if errors.Is(fileErr, mediafiles.ErrReview) {
+				code = TaskStageErrorFileReview
+			}
+			blockTask(next, code, fileErr.Error(), s.now().UTC())
+		} else if !complete {
+			setTaskStage(next, TaskStageDownloading, TaskStageStatusRunning)
+			next.DownloadCompletedAt = nil
+		} else {
+			setTaskStage(next, TaskStagePendingIngest, TaskStageStatusPending)
+			clearTaskStageError(next)
+			if next.DownloadCompletedAt == nil {
+				now := s.now().UTC()
+				next.DownloadCompletedAt = &now
+			}
+		}
+	}
 	if err := s.store.Update(ctx, next); err != nil {
 		return task, fmt.Errorf("update task %q: %w", next.ID, err)
 	}
@@ -563,6 +606,9 @@ func (s *Service) retrySourcingTask(ctx context.Context, task *Task) (*Task, err
 }
 
 func (s *Service) retryDownloadingTask(ctx context.Context, task *Task) (*Task, error) {
+	if s.mediaConfig != nil && task.TorrentHash != "" && task.StageErrorCode != TaskStageErrorTorrentSubmit {
+		return s.retryFileDownload(ctx, task)
+	}
 	next := cloneTask(task)
 	setTaskStage(next, TaskStageDownloading, TaskStageStatusRunning)
 	clearTaskStageError(next)
@@ -769,6 +815,20 @@ func (s *Service) AddTorrentContext(ctx context.Context, req AddTorrentRequest) 
 
 func (s *Service) submitTaskTorrent(ctx context.Context, task *Task, torrentURL string, savePath string, category string, tags string, paused *bool) error {
 	addOptions := qbittorrent.AddTorrentOptions{URLs: []string{torrentURL}}
+	if s.mediaConfig != nil {
+		stopCondition := "MetadataReceived"
+		addOptions.StopCondition = &stopCondition
+		p := task.FilePlan()
+		p.KeepSubtitles = s.mediaConfig().KeepSubtitles
+		p.PauseRequested = paused != nil && *paused
+		task.setFilePlan(p)
+		// .torrent metadata is available while stopped. Magnets need a short metadata
+		// acquisition phase before qB exposes their file list.
+		if !strings.HasPrefix(strings.ToLower(torrentURL), "magnet:") {
+			stopped := true
+			paused = &stopped
+		}
+	}
 	if savePath != "" {
 		addOptions.SavePath = &savePath
 	}

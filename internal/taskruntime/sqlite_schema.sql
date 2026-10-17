@@ -14,6 +14,7 @@ CREATE TABLE IF NOT EXISTS tasks (
   stage_error_code TEXT,
   stage_error_message TEXT,
 
+  file_plan_json TEXT,
   torrent_url TEXT NOT NULL DEFAULT '',
   save_path TEXT,
   category TEXT,
@@ -98,5 +99,5 @@ CREATE INDEX IF NOT EXISTS idx_task_events_created_at
   ON task_events (created_at DESC);
 
 INSERT INTO task_store_meta (key, value)
-VALUES ('schema_version', '8')
+VALUES ('schema_version', '9')
 ON CONFLICT(key) DO UPDATE SET value = excluded.value;

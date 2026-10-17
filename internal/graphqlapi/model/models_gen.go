@@ -138,10 +138,11 @@ type IndexerPreferenceRuleInput struct {
 }
 
 type IngestSettings struct {
-	DeliveryMode string                   `json:"deliveryMode"`
-	Downloads    *DownloadsIngestSettings `json:"downloads"`
-	Library      *LibraryIngestSettings   `json:"library"`
-	Transfer     *TransferIngestSettings  `json:"transfer"`
+	KeepSubtitles bool                     `json:"keepSubtitles"`
+	DeliveryMode  string                   `json:"deliveryMode"`
+	Downloads     *DownloadsIngestSettings `json:"downloads"`
+	Library       *LibraryIngestSettings   `json:"library"`
+	Transfer      *TransferIngestSettings  `json:"transfer"`
 }
 
 type IngestStatus struct {
@@ -690,6 +691,7 @@ type SystemSettings struct {
 
 type Task struct {
 	ID                  string             `json:"id"`
+	Files               []*TaskFile        `json:"files"`
 	Source              TaskSource         `json:"source"`
 	Code                string             `json:"code"`
 	Stage               TaskStage          `json:"stage"`
@@ -754,6 +756,17 @@ type TaskEvent struct {
 	TaskID         string          `json:"taskId"`
 	Task           *Task           `json:"task,omitempty"`
 	DashboardStats *DashboardStats `json:"dashboardStats"`
+}
+
+// A classified qBittorrent file; order applies to selected main video parts
+type TaskFile struct {
+	Index    int    `json:"index"`
+	Path     string `json:"path"`
+	Size     int64  `json:"size"`
+	Kind     string `json:"kind"`
+	Part     int    `json:"part"`
+	Selected bool   `json:"selected"`
+	Reason   string `json:"reason"`
 }
 
 type TitleMatchClause struct {
@@ -849,10 +862,11 @@ type UpdateAutomationSettingsInput struct {
 }
 
 type UpdateIngestSettingsInput struct {
-	DeliveryMode string                        `json:"deliveryMode"`
-	Downloads    *DownloadsIngestSettingsInput `json:"downloads"`
-	Library      *LibraryIngestSettingsInput   `json:"library"`
-	Transfer     *TransferIngestSettingsInput  `json:"transfer"`
+	KeepSubtitles *bool                         `json:"keepSubtitles,omitempty"`
+	DeliveryMode  string                        `json:"deliveryMode"`
+	Downloads     *DownloadsIngestSettingsInput `json:"downloads"`
+	Library       *LibraryIngestSettingsInput   `json:"library"`
+	Transfer      *TransferIngestSettingsInput  `json:"transfer"`
 }
 
 type UpdateJackettSettingsInput struct {

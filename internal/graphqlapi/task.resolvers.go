@@ -181,6 +181,21 @@ func (r *mutationResolver) ResolveBlockedSourcingTask(ctx context.Context, id st
 	return nil, err
 }
 
+// ResolveTaskFiles is the resolver for the resolveTaskFiles field.
+func (r *mutationResolver) ResolveTaskFiles(ctx context.Context, id string, videoIndices []int) (*model.Task, error) {
+	runtime, ok := r.TaskRuntime.(interface {
+		ResolveTaskFiles(context.Context, string, []int) (*taskruntime.Task, error)
+	})
+	if !ok {
+		return nil, errors.New("task file selection is unavailable")
+	}
+	task, err := runtime.ResolveTaskFiles(ctx, id, videoIndices)
+	if task != nil {
+		return taskToModel(task), err
+	}
+	return nil, err
+}
+
 // DeleteTask is the resolver for the deleteTask field.
 func (r *mutationResolver) DeleteTask(ctx context.Context, id string) (*model.Task, error) {
 	if r.TaskRuntime == nil {

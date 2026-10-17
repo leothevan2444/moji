@@ -62,6 +62,15 @@ func (s *Service) TriggerStashScans(ctx context.Context, scanner StashScanner) (
 			continue
 		}
 		task = latest
+		if s.mediaConfig != nil && task.Stage == TaskStageTransferring && (task.StageStatus == TaskStageStatusRunning || task.StageStatus == TaskStageStatusPending) {
+			next, prepErr := s.startMediaPreparation(ctx, cloneTask(task))
+			updated = append(updated, next)
+			if prepErr != nil && firstErr == nil {
+				firstErr = prepErr
+			}
+			unlock()
+			continue
+		}
 		if task.Stage == TaskStageScanning && (task.StageStatus == TaskStageStatusRunning || task.StageStatus == TaskStageStatusPending) {
 			next, pollErr := s.syncStashScanJob(ctx, cloneTask(task), scanner)
 			if persistErr := s.store.Update(ctx, next); persistErr != nil {
@@ -139,6 +148,9 @@ func (s *Service) TriggerTaskStashScan(ctx context.Context, id string, scanner S
 }
 
 func (s *Service) executeTaskStashIntegration(ctx context.Context, task *Task, scanner StashScanner) (*Task, error) {
+	if s.mediaConfig != nil {
+		return s.startMediaPreparation(ctx, task)
+	}
 	cfg := scanner.CurrentConfig()
 	qbSourcePath := resolveSource(task)
 	plan := planDelivery(cfg, qbSourcePath)

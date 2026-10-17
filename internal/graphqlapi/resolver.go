@@ -88,10 +88,11 @@ type UpdateStashSettingsInput struct {
 }
 
 type UpdateIngestSettingsInput struct {
-	DeliveryMode string
-	Downloads    DownloadsIngestSettingsSnapshot
-	Library      LibraryIngestSettingsSnapshot
-	Transfer     TransferIngestSettingsSnapshot
+	KeepSubtitles bool
+	DeliveryMode  string
+	Downloads     DownloadsIngestSettingsSnapshot
+	Library       LibraryIngestSettingsSnapshot
+	Transfer      TransferIngestSettingsSnapshot
 }
 
 type UpdateJackettSettingsInput struct {
@@ -148,10 +149,11 @@ type StashSettingsSnapshot struct {
 }
 
 type IngestSettingsSnapshot struct {
-	DeliveryMode string
-	Downloads    DownloadsIngestSettingsSnapshot
-	Library      LibraryIngestSettingsSnapshot
-	Transfer     TransferIngestSettingsSnapshot
+	KeepSubtitles bool
+	DeliveryMode  string
+	Downloads     DownloadsIngestSettingsSnapshot
+	Library       LibraryIngestSettingsSnapshot
+	Transfer      TransferIngestSettingsSnapshot
 }
 
 type DownloadsIngestSettingsSnapshot struct {

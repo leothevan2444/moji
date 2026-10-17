@@ -172,6 +172,8 @@ function simplifyMessage(message: string) {
 }
 
 export function taskFailureSummary(task: DashboardTask): TaskFailureSummary {
+  if (task.stageErrorCode === "FILE_SELECTION_REQUIRED") return { title: tr("mediaFiles.blocked"), detail: tr("mediaFiles.blockedDetail"), tone: "tone-warn" };
+  if (["MEDIA_PREPARATION_FAILED", "FILE_SELECTION_FAILED"].includes(task.stageErrorCode || "")) return { title: tr("mediaFiles.prepareFailed"), detail: tr("mediaFiles.prepareFailedDetail"), tone: "tone-danger" };
   const transferError = simplifyMessage(task.transferError || "");
   const stashError = simplifyMessage(task.stashScanError || "");
   const taskError = simplifyMessage(task.stageErrorMessage || "");

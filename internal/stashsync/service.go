@@ -31,6 +31,7 @@ const (
 )
 
 type IntegrationConfig struct {
+ KeepSubtitles bool
 	DeliveryMode DeliveryMode
 	Downloads    DownloadsPathConfig
 	Library      LibraryPathConfig

@@ -112,6 +112,9 @@ func main() {
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
 
+	if preparer, ok := runtime.taskRuntimeService.(interface{ SetMediaPreparationContext(context.Context) }); ok {
+		preparer.SetMediaPreparationContext(ctx)
+	}
 	startTaskSyncWorker(ctx, runtime.taskRuntimeService, runtime.stashService, configureProgressSyncIntervalProvider(configStore, cfg))
 	startSubscriptionWorker(ctx, runtime.subscriptionService, configureSubscriptionPollIntervalProvider(configStore, cfg))
 	if runtime.stashBoxCacheService != nil {
@@ -408,6 +411,13 @@ func configureTaskRuntime(cfg *config.Config, configStore *config.Store, tr trac
 		taskruntime.WithCandidateSelectionProvider(configureTorrentSelectionProvider(configStore, cfg)),
 		taskruntime.WithTaskDeletePolicyProvider(configureTaskDeletePolicyProvider(configStore, cfg)),
 		taskruntime.WithLibraryCodeChecker(stashLibraryCodeChecker{client: stashClient}),
+		taskruntime.WithMediaPreparation(func() stashsync.IntegrationConfig {
+			current := cfg
+			if configStore != nil {
+				current = configStore.Config()
+			}
+			return stashIntegrationConfig(current)
+		}, nil),
 	)
 	if err != nil {
 		logging.Fatalf("configure task runtime: %v", err)
@@ -529,7 +539,8 @@ func buildSettingsSnapshot(cfg *config.Config, version string) *graphqlapi.Setti
 			APIKey:           cfg.Connection.Stash.APIKey,
 		},
 		Ingest: graphqlapi.IngestSettingsSnapshot{
-			DeliveryMode: effectiveDeliveryMode(cfg),
+			KeepSubtitles: cfg.Ingest.KeepSubtitles,
+			DeliveryMode:  effectiveDeliveryMode(cfg),
 			Downloads: graphqlapi.DownloadsIngestSettingsSnapshot{
 				QBRoot:   cfg.Ingest.Downloads.QBRoot,
 				MojiRoot: cfg.Ingest.Downloads.MojiRoot,
@@ -838,7 +849,8 @@ func stashIntegrationConfig(cfg *config.Config) stashsync.IntegrationConfig {
 		return stashsync.IntegrationConfig{}
 	}
 	return stashsync.IntegrationConfig{
-		DeliveryMode: stashsync.DeliveryMode(effectiveDeliveryMode(cfg)),
+		KeepSubtitles: cfg.Ingest.KeepSubtitles,
+		DeliveryMode:  stashsync.DeliveryMode(effectiveDeliveryMode(cfg)),
 		Downloads: stashsync.DownloadsPathConfig{
 			QBRoot:   strings.TrimSpace(cfg.Ingest.Downloads.QBRoot),
 			MojiRoot: strings.TrimSpace(cfg.Ingest.Downloads.MojiRoot),
