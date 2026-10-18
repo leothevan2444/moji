@@ -1,4 +1,15 @@
 {
+  "taskFlow": {
+    "ingestProgress": "入库进度",
+    "ingestSteps": "入库子步骤",
+    "stepsCompleted": "已完成 {{completed}} / {{total}} 步",
+    "states": {
+      "done": "已完成",
+      "current": "进行中",
+      "error": "需处理",
+      "upcoming": "待开始"
+    }
+  },
   "fileList": {
     "title": "文件清单",
     "downloads": "下载文件",
@@ -34,7 +45,6 @@
     "updated": "更新于 {{time}}",
     "result": "文件与入库结果",
     "ingest": "入库",
-    "steps": "展开入库步骤",
     "currentStep": "当前阶段：{{stage}}",
     "files": "文件清单（{{count}}）",
     "filesSummary": "已选 {{selected}} / {{total}} 个文件",

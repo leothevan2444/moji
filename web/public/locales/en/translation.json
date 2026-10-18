@@ -1,4 +1,15 @@
 {
+  "taskFlow": {
+    "ingestProgress": "Ingest progress",
+    "ingestSteps": "Ingest steps",
+    "stepsCompleted": "{{completed}} / {{total}} steps complete",
+    "states": {
+      "done": "Done",
+      "current": "In progress",
+      "error": "Needs attention",
+      "upcoming": "Upcoming"
+    }
+  },
   "fileList": {
     "title": "File list",
     "downloads": "Download files",
@@ -35,7 +46,6 @@
     "updated": "Updated {{time}}",
     "result": "Files and ingest results",
     "ingest": "Ingest",
-    "steps": "Expand ingest steps",
     "currentStep": "Current stage: {{stage}}",
     "files": "File list ({{count}})",
     "filesSummary": "{{selected}} of {{total}} files selected",

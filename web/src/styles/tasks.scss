@@ -281,54 +281,89 @@ $task-status-tones: (
   }
 }
 
+/* Keep the whole workflow visible; expand only its active stage. */
 .task-timeline {
-  @extend %stack-panel;
-  gap: 14px;
-  margin-top: 14px;
+  display: grid;
+  gap: 8px;
+  margin: 12px 0 0;
   padding: 0;
   list-style: none;
-
   &__item {
+    position: relative;
     display: grid;
-    grid-template-columns: 32px minmax(0, 1fr);
-    gap: $space-3;
-    align-items: flex-start;
-
-    &:not(:last-child) {
-      position: relative;
-
-      &::after {
-        content: "";
-        position: absolute;
-        left: 15px;
-        top: 34px;
-        bottom: -14px;
-        width: 1px;
-        background: var(--line);
-      }
+    grid-template-columns: 28px minmax(0, 1fr);
+    align-items: start;
+    gap: 10px;
+    padding: 6px 8px;
+    border: 1px solid transparent;
+    border-radius: 10px;
+    &:not(:last-child)::after {
+      content: "";
+      position: absolute;
+      inset-inline-start: 21px;
+      top: 35px;
+      bottom: -9px;
+      width: 1px;
+      background: var(--line);
     }
+    &.is-current, &.is-error { padding: 10px 8px; background: var(--surface-strong); border-color: var(--line); }
+    &.is-current { border-color: color-mix(in srgb, var(--accent) 35%, var(--line)); }
+    &.is-error { border-color: color-mix(in srgb, #c2412f 45%, var(--line)); }
+    &.is-upcoming { color: var(--muted); }
   }
-
   &__icon {
     display: grid;
     place-items: center;
-    width: 32px;
-    height: 32px;
-    border-radius: $radius-full;
-    border: 1px solid currentColor;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    border: 1px solid var(--line);
     background: var(--surface-strong);
-    font-size: 13px;
+    font-size: 12px;
+    font-variant-numeric: tabular-nums;
   }
-
+  &__item.is-current &__icon, &__item.is-error &__icon { border-color: currentColor; }
   &__copy {
     min-width: 0;
-
-    p {
-      margin: 0;
-      color: var(--muted);
-      line-height: 1.55;
-    }
+    p { margin: 5px 0 0; color: var(--muted); font-size: 13px; line-height: 1.5; overflow-wrap: anywhere; }
   }
+  &__head { display: flex; align-items: center; flex-wrap: wrap; gap: 4px 10px; min-height: 28px; }
+  &__head strong { font-size: 13px; font-weight: 600; }
+  &__state { color: var(--muted); font-size: 11px; }
+  &__head time { margin-inline-start: auto; color: var(--muted); font-size: 11px; }
+  &__item.is-current &__state { color: var(--accent); }
+  &__item.is-error &__state { color: #c2412f; }
+}
+.task-ingest-progress {
+  min-width: 0;
+  margin-top: 8px;
+  padding: 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface);
+  &__head { display: flex; justify-content: space-between; align-items: baseline; flex-wrap: wrap; gap: 4px 12px; font-size: 12px; }
+  &__head strong { font-weight: 600; }
+  &__head > span { color: var(--muted); font-size: 11px; font-variant-numeric: tabular-nums; }
+  &__segments {
+    display: flex; gap: 4px; margin-block: 8px;
+    > span { flex: 1; height: 3px; border-radius: 2px; background: var(--line); }
+    .is-done { background: var(--accent-2); }
+    .is-current { background: var(--accent); }
+    .is-error { background: #c2412f; }
+  }
+  &__steps { display: grid; gap: 2px; list-style: none; margin: 0; padding: 0; }
+  &__step { display: grid; grid-template-columns: 18px minmax(0, 1fr); align-items: start; gap: 8px; padding: 4px 6px; border: 1px solid transparent; border-radius: 6px; }
+  &__step.is-current { background: color-mix(in srgb, var(--accent) 5%, transparent); border-color: color-mix(in srgb, var(--accent) 20%, var(--line)); }
+  &__step.is-error { background: color-mix(in srgb, #c2412f 5%, transparent); border-color: color-mix(in srgb, #c2412f 20%, var(--line)); }
+  &__icon { display: grid; place-items: center; min-height: 20px; font-size: 11px; font-variant-numeric: tabular-nums; }
+  &__copy { min-width: 0; }
+  &__label { display: flex; justify-content: space-between; align-items: baseline; flex-wrap: wrap; gap: 2px 8px; min-height: 20px; line-height: 20px; }
+  &__label strong { font-size: 12px; font-weight: 500; }
+  &__label > span { color: var(--muted); font-size: 11px; }
+  &__step.is-current &__label strong { color: var(--accent); font-weight: 600; }
+  &__step.is-error &__label strong { color: #c2412f; font-weight: 600; }
+  &__step.is-upcoming &__label strong { color: var(--muted); }
+  &__copy p { margin: 3px 0; font-size: 12px; }
 }
 
 .task-ops {
@@ -2000,17 +2035,16 @@ summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 .drawer--task .settings-grid > div { min-width: 0; }
 .task-detail-files:empty { display: none; }
 .task-information { min-width: 0; }
-.task-ingest-steps {
-  min-width: 0;
-  > summary { cursor: pointer; font-weight: 600; padding-block: 10px; overflow-wrap: anywhere; }
-}
-.task-timeline__head { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 4px 12px; }
-.task-timeline__head time { color: var(--muted); font-size: 12px; }
-.task-timeline__copy { overflow-wrap: anywhere; }
 .task-value {
   display: flex; align-items: flex-start; gap: 8px; min-width: 0;
   &__text { align-self: center; }
   &__copy { flex: 0 0 auto; min-width: 38px; padding: 0 8px; }
+}
+.task-information .task-value__copy {
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+  &:hover { color: var(--accent); transform: none; }
 }
 @media (max-width: 640px), (pointer: coarse) {
   .task-card, .drawer--task, .task-actions-dialog {

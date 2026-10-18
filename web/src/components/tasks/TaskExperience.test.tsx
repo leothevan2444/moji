@@ -82,16 +82,13 @@ describe("task experience", () => {
     expect(screen.queryByRole("button", { name: "Scan pending-ingest tasks" })).toBeNull();
   });
 
-  it("summarizes the lifecycle in four steps and expands ingest stages", async () => {
-    const user = userEvent.setup();
+  it("keeps all three stages visible and embeds compact substeps in the active ingest stage", () => {
     render(<TaskDetail task={{ ...task, stage: TaskStage.Scanning, stashIngestPhase: "IDENTIFY", progress: 1 }} {...props()} />);
-    expect(within(screen.getAllByRole("list")[0]).getAllByRole("listitem")).toHaveLength(4);
-    expect(screen.getByText("Expand ingest steps").closest("details")?.open).toBe(false);
-    expect(screen.getByText("Current stage: Identify")).toBeTruthy();
-    await user.click(screen.getByText("Expand ingest steps"));
-    expect(screen.getByText("Expand ingest steps").closest("details")?.open).toBe(true);
-    expect(within(screen.getAllByRole("list")[1]).getAllByRole("listitem")).toHaveLength(6);
-    expect(screen.getAllByText("Identify")[0].closest("li")?.getAttribute("aria-current")).toBe("step");
+    expect(screen.getByRole("list", { name: "Lifecycle" }).children).toHaveLength(3);
+    expect(screen.getByRole("region", { name: "Ingest progress" })).toBeTruthy();
+    expect(within(screen.getByRole("list", { name: "Ingest steps" })).getAllByRole("listitem")).toHaveLength(6);
+    expect(screen.getByText("Identify").closest("li")?.getAttribute("aria-current")).toBe("step");
+    expect(screen.queryByText("Expand ingest steps")).toBeNull();
   });
 
   it("never fabricates milestone timestamps from updatedAt", () => {
