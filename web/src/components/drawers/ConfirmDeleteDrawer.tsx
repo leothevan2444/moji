@@ -20,36 +20,20 @@ export function ConfirmDeleteDrawer({
 }: ConfirmDeleteDrawerProps) {
   const { t } = useTranslation();
   return (
-    <div className="drawer-stack">
-      <article className="drawer-card">
-        <div className="drawer-card__head">
-          <div>
-            <h3>{t("taskRoute.confirmDelete")}</h3>
-            <p>{count ? t("taskBatch.confirmDeleteCount", { count }) : taskLabel}</p>
-            <p className={deletePolicy === "KEEP_ONLY" ? undefined : "tone-danger"}>
-              {deletePolicy !== "KEEP_ONLY" ? <FontAwesomeIcon icon={faTriangleExclamation} /> : null} {t(`taskBatch.deletePolicies.${deletePolicy}`)}
-            </p>
-          </div>
-        </div>
-        <div className="settings-actions">
-          <button
-            type="button"
-            className="ghost-button"
-            onClick={onCancel}
-            disabled={pending}
-          >
-            {t("taskRoute.cancel")}
-          </button>
-          <button
-            type="button"
-            className="task-ops__button task-ops__button--danger"
-            onClick={onConfirm}
-            disabled={pending}
-          >
-            {pending ? t("taskRoute.deleting") : t("taskRoute.confirm")}
-          </button>
-        </div>
-      </article>
+    <div className="confirm-delete">
+      {(count || taskLabel) ? <p className="confirm-delete__target">{count ? t("taskBatch.confirmDeleteCount", { count }) : taskLabel}</p> : null}
+      <p className={`confirm-delete__policy${deletePolicy !== "KEEP_ONLY" ? " tone-danger" : ""}`}>
+        {deletePolicy !== "KEEP_ONLY" ? <FontAwesomeIcon icon={faTriangleExclamation} /> : null}
+        <span>{t(`taskBatch.deletePolicies.${deletePolicy}`)}</span>
+      </p>
+      <div className="confirm-delete__actions">
+        <button type="button" className="ghost-button" onClick={onCancel} disabled={pending}>
+          {t("taskRoute.cancel")}
+        </button>
+        <button type="button" className="confirm-delete__confirm" onClick={onConfirm} disabled={pending} aria-busy={pending}>
+          {pending ? t("taskRoute.deleting") : t("taskRoute.confirm")}
+        </button>
+      </div>
     </div>
   );
 }

@@ -1259,6 +1259,27 @@ button.profile-icon {
     }
   }
 
+  &.drawer--confirm {
+    width: min(480px, calc(100vw - 32px));
+    height: auto;
+    max-height: min(80dvh, 640px);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    padding: 20px;
+    border-radius: $radius-xl;
+
+    .drawer__head {
+      flex: 0 0 auto;
+      flex-direction: row;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 14px;
+      padding-bottom: 12px;
+      h2 { font-size: 18px; overflow-wrap: anywhere; }
+    }
+  }
+
   &--popover {
     // 二级弹窗：比 modal 更小、更轻，作为设置页/任务抽屉之上的"嵌入式"小弹窗。
     // 视觉上明显是从属于下层抽屉（屏幕大一圈、靠外阴影），不抢眼。
@@ -1338,6 +1359,18 @@ button.profile-icon {
   &__head {
     margin-bottom: 10px;
   }
+}
+
+.confirm-delete {
+  &__target { margin: 0 0 12px; font-weight: 600; line-height: 1.5; overflow-wrap: anywhere; }
+  &__policy { display: flex; align-items: baseline; gap: 8px; margin: 0; color: var(--muted); font-size: 13px; line-height: 1.6; overflow-wrap: anywhere; }
+  &__policy > svg { flex-shrink: 0; }
+  &__policy.tone-danger { color: #c2412f; }
+  &__actions { display: flex; justify-content: flex-end; flex-wrap: wrap; gap: 8px; margin-top: 18px; padding-top: 14px; border-top: 1px solid var(--line); }
+  &__confirm { background: #c2412f; border-color: #c2412f; color: #fff; &:hover { background: #a83224; border-color: #a83224; } }
+}
+@media (max-width: 640px), (pointer: coarse) {
+  .drawer--confirm button { min-height: 44px; }
 }
 
 .stat-strip {
@@ -2028,8 +2061,17 @@ summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
   &__copy { overflow-wrap: anywhere; }
   &--blocked { padding: 12px; border: 1px solid currentColor; border-radius: 12px; }
 }
-.task-detail-actions { display: flex; align-items: center; gap: 12px; margin-block: 16px; }
-.task-detail-actions .task-more { margin-inline-start: auto; }
+.task-detail-actions { display: flex; align-items: center; flex-wrap: wrap; gap: 12px; }
+.task-detail-actions__delete {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-inline-start: auto;
+  background: #c2412f;
+  border-color: #c2412f;
+  color: #fff;
+  &:hover { background: #a83224; border-color: #a83224; }
+}
 .task-detail-progress { display: grid; gap: 8px; margin-top: 12px; font-size: 13px; }
 .task-detail-dates { margin-bottom: 0; }
 .drawer--task .settings-grid > div { min-width: 0; }

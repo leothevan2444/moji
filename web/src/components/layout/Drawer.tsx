@@ -17,6 +17,7 @@ export function Drawer({ visibleDrawer, closing, title, onClose, children }: Dra
   const titleId = useId();
   useModalFocus(panelRef, onClose);
   const isTaskDrawer = visibleDrawer === "task" || visibleDrawer === "task-resolution";
+  const variant = isTaskDrawer ? "task" : visibleDrawer === "confirm" ? "confirm" : "modal";
   return (
     <div
       className={`drawer-scrim ${isTaskDrawer ? "drawer-scrim--task" : "drawer-scrim--modal"} ${closing ? "is-closing" : ""}`}
@@ -28,7 +29,7 @@ export function Drawer({ visibleDrawer, closing, title, onClose, children }: Dra
         aria-modal="true"
         aria-labelledby={titleId}
         tabIndex={-1}
-        className={`drawer ${isTaskDrawer ? "drawer--task" : "drawer--modal"} ${closing ? "is-closing" : ""}`}
+        className={`drawer drawer--${variant} ${closing ? "is-closing" : ""}`}
         onClick={(event) => event.stopPropagation()}
       >
         <div className="drawer__head">

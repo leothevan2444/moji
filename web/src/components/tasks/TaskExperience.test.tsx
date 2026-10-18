@@ -70,7 +70,7 @@ describe("task experience", () => {
     const user = userEvent.setup();
     const callbacks = props();
     const path = "/library/long-directory/movie.mkv";
-    render(<TaskDetail task={{ ...task, mojiTransferPath: path }} {...callbacks} />);
+    const { container } = render(<TaskDetail task={{ ...task, mojiTransferPath: path }} {...callbacks} />);
     const information = screen.getByRole("article", { name: "Task information" });
     expect(information.querySelector("details")).toBeNull();
     expect(within(information).getByText(path).getAttribute("title")).toBe(path);
@@ -80,6 +80,11 @@ describe("task experience", () => {
     expect(callbacks.onCopy).toHaveBeenCalledWith(path, "Moji delivery target copied");
     expect(screen.queryByRole("button", { name: "Sync all task progress" })).toBeNull();
     expect(screen.queryByRole("button", { name: "Scan pending-ingest tasks" })).toBeNull();
+    const actions = screen.getByRole("group", { name: "Actions" });
+    expect(container.lastElementChild).toBe(actions.closest("article"));
+    expect(actions.querySelector("details, summary")).toBeNull();
+    await user.click(within(actions).getByRole("button", { name: "Delete task: Example movie" }));
+    expect(callbacks.onDeleteTask).toHaveBeenCalledWith(task.id);
   });
 
   it("keeps all three stages visible and embeds compact substeps in the active ingest stage", () => {

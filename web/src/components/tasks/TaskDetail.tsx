@@ -1,11 +1,11 @@
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faCopy } from "@fortawesome/free-solid-svg-icons/faCopy";
+import { faTrashCan } from "@fortawesome/free-solid-svg-icons/faTrashCan";
 import { useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { TaskFiles } from "./TaskFiles";
 import { TaskTimeline } from "./TaskTimeline";
 import { TaskPrimaryAction } from "./TaskPrimaryAction";
-import { TaskMoreActions } from "./TaskMoreActions";
 import {
   formatDateTime, isMagnetLink, needsTaskFileSelection, taskFailureSummary,
   taskPresentation, taskSourceLabel, taskSummary, transferActionLabel, type DashboardTask
@@ -100,15 +100,6 @@ export function TaskDetail({ task, pendingScan, pendingRetry, pendingDelete,
           <div className="progress-fill" style={{ width: `${presentation.progressPercent}%` }} />
         </div>
       </div> : null}
-      <div className="task-detail-actions" role="group" aria-label={t("taskDetail.actions")}>
-        <TaskPrimaryAction task={task} pendingScan={pendingScan} pendingRetry={pendingRetry}
-          onResolve={onResolveTask} onRetry={onRetryTask} onScan={onScanTask}
-          onFiles={() => {
-            filesRef.current?.scrollIntoView?.({ behavior: "smooth", block: "nearest" });
-            (filesRef.current?.querySelector<HTMLElement>("input, button") ?? filesRef.current)?.focus();
-          }} />
-        <TaskMoreActions task={task} pendingDelete={pendingDelete} onDelete={onDeleteTask} />
-      </div>
       <dl className="settings-grid task-detail-dates">
         <div><dt>{t("taskDetail.created")}</dt><dd>{formatDateTime(task.createdAt)}</dd></div>
         <div><dt>{t("taskDetail.updated")}</dt><dd>{formatDateTime(task.updatedAt)}</dd></div>
@@ -134,6 +125,24 @@ export function TaskDetail({ task, pendingScan, pendingRetry, pendingDelete,
       <dl className="settings-grid">
         {informationFields.map(([label, value], index) => <TaskValue key={index} label={label} value={value} onCopy={onCopy} />)}
       </dl>
+    </article>
+    <article className="drawer-card task-detail-operations">
+      <div className="drawer-card__head"><h3>{t("taskDetail.actions")}</h3></div>
+      <div className="task-detail-actions" role="group" aria-label={t("taskDetail.actions")}>
+        <TaskPrimaryAction task={task} pendingScan={pendingScan} pendingRetry={pendingRetry}
+          onResolve={onResolveTask} onRetry={onRetryTask} onScan={onScanTask}
+          onFiles={() => {
+            filesRef.current?.scrollIntoView?.({ behavior: "smooth", block: "nearest" });
+            (filesRef.current?.querySelector<HTMLElement>("input, button") ?? filesRef.current)?.focus();
+          }} />
+        <button type="button" className="ghost-button task-ops__button--danger task-detail-actions__delete"
+          disabled={pendingDelete} aria-busy={pendingDelete}
+          aria-label={t("taskUi.card.deleteLabel", { task: taskSummary(task) })}
+          onClick={() => onDeleteTask(task.id)}>
+          <FontAwesomeIcon icon={faTrashCan} />
+          <span>{t(pendingDelete ? "taskDetail.deleting" : "taskDetail.delete")}</span>
+        </button>
+      </div>
     </article>
   </>;
 }
