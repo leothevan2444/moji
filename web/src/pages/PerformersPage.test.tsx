@@ -102,15 +102,29 @@ describe("PerformersPage list selection", () => {
     expect((screen.getByRole("button", { name: "Check Alpha now" }) as HTMLButtonElement).disabled).toBe(true);
   });
 
-  it("keeps reload icon-only and moves check-all into more actions", () => {
-    render(<PerformersPage {...props()} />);
+  it("shows reload and check-all as toolbar icons with tooltips", () => {
+    const onRefreshAll = vi.fn();
+    const pageProps = props({ onRefreshAll });
+    const view = render(<PerformersPage {...pageProps} />);
     const reload = screen.getByRole("button", { name: "Reload from Stash" });
+    const checkAll = screen.getByRole("button", { name: "Check all" }) as HTMLButtonElement;
     expect(reload.textContent).toBe("");
-    expect(screen.queryByRole("button", { name: "Check all" })).toBeNull();
+    expect(reload.title).toBe("Reload from Stash");
+    expect(checkAll.textContent).toBe("");
+    expect(checkAll.title).toBe("Check all");
+    expect(checkAll.disabled).toBe(true);
+    expect(checkAll.closest(".toolbar-inline")).toBe(reload.closest(".toolbar-inline"));
+    expect(screen.queryByRole("button", { name: "More actions" })).toBeNull();
 
-    fireEvent.click(screen.getByRole("button", { name: "More actions" }));
-    expect(screen.getByRole("dialog", { name: "More actions" })).toBeTruthy();
-    expect((screen.getByRole("button", { name: "Check all" }) as HTMLButtonElement).disabled).toBe(true);
+    view.rerender(<PerformersPage {...pageProps} subscribedPerformers={[{ performer: pageProps.stashPerformers[0], recentReleases: [], lastCheckedAt: null, pendingReleaseCount: 0, processedReleaseCount: 0 }]} />);
+    expect(checkAll.disabled).toBe(false);
+    fireEvent.click(checkAll);
+    expect(onRefreshAll).toHaveBeenCalledTimes(1);
+
+    view.rerender(<PerformersPage {...pageProps} refreshingSubscriptionNow />);
+    const checking = screen.getByRole("button", { name: "Checking..." }) as HTMLButtonElement;
+    expect(checking.disabled).toBe(true);
+    expect(checking.title).toBe("Checking...");
   });
 
   it("jumps to first, last, and valid specified pages and disables navigation while loading", () => {

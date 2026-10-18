@@ -1,11 +1,15 @@
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { faAnglesLeft } from "@fortawesome/free-solid-svg-icons/faAnglesLeft";
+import { faAngleLeft } from "@fortawesome/free-solid-svg-icons/faAngleLeft";
+import { faAngleRight } from "@fortawesome/free-solid-svg-icons/faAngleRight";
+import { faAnglesRight } from "@fortawesome/free-solid-svg-icons/faAnglesRight";
 import { faArrowLeft } from "@fortawesome/free-solid-svg-icons/faArrowLeft";
 import { faArrowUpRightFromSquare } from "@fortawesome/free-solid-svg-icons/faArrowUpRightFromSquare";
 import { faBookmark } from "@fortawesome/free-solid-svg-icons/faBookmark";
 import { faCheck } from "@fortawesome/free-solid-svg-icons/faCheck";
+import { faClipboardCheck } from "@fortawesome/free-solid-svg-icons/faClipboardCheck";
 import { faFilm } from "@fortawesome/free-solid-svg-icons/faFilm";
 import { faHeart } from "@fortawesome/free-solid-svg-icons/faHeart";
-import { faEllipsis } from "@fortawesome/free-solid-svg-icons/faEllipsis";
 import { faListCheck } from "@fortawesome/free-solid-svg-icons/faListCheck";
 import { faPlus } from "@fortawesome/free-solid-svg-icons/faPlus";
 import { faPlayCircle } from "@fortawesome/free-solid-svg-icons/faPlayCircle";
@@ -198,7 +202,6 @@ export function PerformersPage({
   onQueueScene
 }: PerformersPageProps) {
   const { t } = useTranslation();
-  const [moreActionsOpen, setMoreActionsOpen] = useState(false);
   const [pageInput, setPageInput] = useState("");
   const targetPage = Number(pageInput);
   const canJump = Number.isInteger(targetPage) && targetPage >= 1
@@ -206,17 +209,6 @@ export function PerformersPage({
     && targetPage !== stashPerformerPage?.page;
 
   useEffect(() => setPageInput(""), [stashPerformerPage?.page]);
-
-  useEffect(() => {
-    if (!moreActionsOpen) return;
-    const closeOnEscape = (event: KeyboardEvent) => {
-      if (event.key === "Escape") setMoreActionsOpen(false);
-    };
-    window.addEventListener("keydown", closeOnEscape);
-    return () => window.removeEventListener("keydown", closeOnEscape);
-  }, [moreActionsOpen]);
-
-  useEffect(() => setMoreActionsOpen(false), [selectedPerformerId]);
 
   const subscribedByID = useMemo(() => {
     return new Map(subscribedPerformers.map((item) => [item.performer.id, item]));
@@ -614,20 +606,20 @@ export function PerformersPage({
 
   const pagination = stashPerformerPage && stashPerformerPage.totalPages > 1 ? (
     <div className="pagination-bar pagination-bar--performers">
-      <button type="button" className="ghost-button" disabled={!stashPerformerPage.hasPrevPage || fetchingStashPerformers} onClick={() => onPageChange(1)}>
-        {t("performerUi.firstPage")}
+      <button type="button" className="ghost-button task-icon-button task-icon-button--bordered" disabled={!stashPerformerPage.hasPrevPage || fetchingStashPerformers} onClick={() => onPageChange(1)} aria-label={t("performerUi.firstPage")} title={t("performerUi.firstPage")}>
+        <FontAwesomeIcon icon={faAnglesLeft} />
       </button>
-      <button type="button" className="ghost-button" disabled={!stashPerformerPage.hasPrevPage || fetchingStashPerformers} onClick={onPrevPage}>
-        {t("performerUi.previous")}
+      <button type="button" className="ghost-button task-icon-button task-icon-button--bordered" disabled={!stashPerformerPage.hasPrevPage || fetchingStashPerformers} onClick={onPrevPage} aria-label={t("performerUi.previous")} title={t("performerUi.previous")}>
+        <FontAwesomeIcon icon={faAngleLeft} />
       </button>
       <span className="status-chip tone-neutral">
         {t("performerUi.page", { page: stashPerformerPage.page, pages: stashPerformerPage.totalPages })}
       </span>
-      <button type="button" className="ghost-button" disabled={!stashPerformerPage.hasNextPage || fetchingStashPerformers} onClick={onNextPage}>
-        {t("performerUi.next")}
+      <button type="button" className="ghost-button task-icon-button task-icon-button--bordered" disabled={!stashPerformerPage.hasNextPage || fetchingStashPerformers} onClick={onNextPage} aria-label={t("performerUi.next")} title={t("performerUi.next")}>
+        <FontAwesomeIcon icon={faAngleRight} />
       </button>
-      <button type="button" className="ghost-button" disabled={!stashPerformerPage.hasNextPage || fetchingStashPerformers} onClick={() => onPageChange(stashPerformerPage.totalPages)}>
-        {t("performerUi.lastPage")}
+      <button type="button" className="ghost-button task-icon-button task-icon-button--bordered" disabled={!stashPerformerPage.hasNextPage || fetchingStashPerformers} onClick={() => onPageChange(stashPerformerPage.totalPages)} aria-label={t("performerUi.lastPage")} title={t("performerUi.lastPage")}>
+        <FontAwesomeIcon icon={faAnglesRight} />
       </button>
       <form className="pagination-bar__jump" onSubmit={(event) => {
         event.preventDefault();
@@ -692,13 +684,12 @@ export function PerformersPage({
         <button
           type="button"
           className="ghost-button task-icon-button task-icon-button--bordered"
-          onClick={() => setMoreActionsOpen(true)}
-          aria-haspopup="dialog"
-          aria-expanded={moreActionsOpen}
-          aria-label={t("performerUi.moreActions")}
-          title={t("performerUi.moreActions")}
+          onClick={onRefreshAll}
+          disabled={refreshingSubscriptionNow || subscribedPerformers.length === 0}
+          aria-label={t(refreshingSubscriptionNow ? "performerUi.checking" : "performerUi.checkAllSubscribed")}
+          title={t(refreshingSubscriptionNow ? "performerUi.checking" : "performerUi.checkAllSubscribed")}
         >
-          <FontAwesomeIcon icon={faEllipsis} />
+          <FontAwesomeIcon icon={refreshingSubscriptionNow ? faRotate : faClipboardCheck} className={refreshingSubscriptionNow ? "is-spinning" : undefined} />
         </button>
       </div>
 
@@ -833,39 +824,6 @@ export function PerformersPage({
       </div>
 
       {pagination}
-
-      {moreActionsOpen ? (
-        <div className="task-actions-dialog__scrim" onClick={() => setMoreActionsOpen(false)}>
-          <section
-            className="task-actions-dialog"
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="performer-actions-dialog-title"
-            onClick={(event) => event.stopPropagation()}
-          >
-            <div className="task-actions-dialog__head">
-              <h3 id="performer-actions-dialog-title">{t("performerUi.moreActions")}</h3>
-              <button type="button" className="ghost-button" onClick={() => setMoreActionsOpen(false)} aria-label={t("common.close")} autoFocus>
-                <FontAwesomeIcon icon={faXmark} />
-              </button>
-            </div>
-            <div className="task-actions-dialog__body">
-              <button
-                type="button"
-                className="ghost-button task-actions-dialog__action"
-                disabled={refreshingSubscriptionNow || subscribedPerformers.length === 0}
-                onClick={() => {
-                  onRefreshAll();
-                  setMoreActionsOpen(false);
-                }}
-              >
-                <FontAwesomeIcon icon={faArrowsRotate} className={refreshingSubscriptionNow ? "is-spinning" : undefined} />
-                <span>{refreshingSubscriptionNow ? t("performerUi.checking") : t("performerUi.checkAllSubscribed")}</span>
-              </button>
-            </div>
-          </section>
-        </div>
-      ) : null}
     </section>
   )}</PerformerListView>;
 }
