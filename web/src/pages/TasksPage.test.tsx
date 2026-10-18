@@ -57,14 +57,17 @@ describe("TasksPage task controls", () => {
   it("switches card activation from details to selection in multi-select mode", async () => {
     const user = userEvent.setup();
     const callbacks = renderPage();
-    expect(screen.queryByRole("button", { name: "More actions for TASK-1" })).toBeNull();
+    expect(screen.getByLabelText("More actions for TASK-1")).toBeTruthy();
+    expect(screen.getByLabelText("More actions for TASK-1").closest("details")?.open).toBe(false);
+    await user.click(screen.getByLabelText("More actions for TASK-1"));
     expect(screen.getByRole("button", { name: "Delete task: TASK-1" })).toBeTruthy();
+    await user.keyboard("{Escape}");
     await user.click(screen.getByRole("button", { name: /TASK-1.*Open details/i }));
     expect(callbacks.onOpenTask).toHaveBeenCalledWith("task-1");
 
     await user.click(screen.getByRole("button", { name: "Enter multi-select mode" }));
     expect(screen.getByRole("region", { name: "Selected task actions" }).textContent).toContain("0 selected");
-    expect(screen.queryByRole("checkbox")).toBeNull();
+    expect(screen.getByRole("checkbox", { name: "Select task: TASK-1" })).toBeTruthy();
     await user.click(screen.getByRole("button", { name: "Select task: TASK-1" }));
     expect(callbacks.onToggleTaskSelection).toHaveBeenCalledWith("task-1");
     expect(callbacks.onOpenTask).toHaveBeenCalledTimes(1);
@@ -82,4 +85,20 @@ describe("TasksPage task controls", () => {
     expect(callbacks.onSync).toHaveBeenCalledTimes(1);
     expect(screen.queryByRole("dialog")).toBeNull();
   });
+  it("keeps global ingest in the list toolbar and restores focus after Escape", async () => {
+    const user = userEvent.setup();
+    const ingest = vi.fn();
+    renderPage({ onIngestAll: ingest });
+    const opener = screen.getByRole("button", { name: "More task actions" });
+    await user.click(opener);
+    await user.click(screen.getByRole("button", { name: "Process all pending-ingest tasks" }));
+    expect(ingest).toHaveBeenCalledTimes(1);
+    expect(screen.queryByRole("dialog")).toBeNull();
+    expect(document.activeElement).toBe(opener);
+    await user.click(opener);
+    await user.keyboard("{Escape}");
+    expect(screen.queryByRole("dialog")).toBeNull();
+    expect(document.activeElement).toBe(opener);
+  });
+
 });

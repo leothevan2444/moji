@@ -54,7 +54,7 @@ export function Component() {
     pause: !taskId,
     requestPolicy: "cache-and-network"
   });
-  const { deleteTask, retryTask, syncTaskProgress, syncingTaskProgress, triggerTaskStashScan, triggerStashScans, retryTasks, retryingTasks, processTaskIngest, processingTaskIngest, deleteTasks, deletingTasks } = useTaskMutations();
+  const { deleteTask, retryTask, syncTaskProgress, syncingTaskProgress, triggerTaskStashScan, triggerStashScans, triggeringStashScans, retryTasks, retryingTasks, processTaskIngest, processingTaskIngest, deleteTasks, deletingTasks } = useTaskMutations();
   const tasks = useMemo(() => data?.tasks ?? [], [data?.tasks]);
   const activeTask = detailData?.task ?? (taskId ? tasks.find((task) => task.id === taskId) ?? null : null);
   const deleteTarget = confirmDeleteIds.length === 1 ? tasks.find((task) => task.id === confirmDeleteIds[0]) ?? null : null;
@@ -78,7 +78,11 @@ export function Component() {
   };
 
   const runSync = async () => { const result = await syncTaskProgress({}); if (result.error) pushToast("tone-danger", describeQueryError(result.error)); else pushToast("tone-success", t("taskBatch.syncComplete")); };
-  const runScanAll = async () => { await triggerStashScans({}); };
+  const runScanAll = async () => {
+    const result = await triggerStashScans({});
+    if (result.error) pushToast("tone-danger", describeQueryError(result.error));
+    else pushToast("tone-success", t("taskExperience.ingestSubmitted"));
+  };
   const runScan = async (id: string) => {
     setPendingScan(id);
     try { const result = await triggerTaskStashScan({ id }); if (result.error) pushToast("tone-danger", describeQueryError(result.error)); }
@@ -138,7 +142,8 @@ export function Component() {
       autoSyncEnabled={data?.settingsStatus.automation.taskProgressSyncEnabled ?? false} autoSyncIntervalSeconds={data?.settingsStatus.automation.taskProgressSyncIntervalSeconds ?? 0} lastRefreshedAt={lastRefreshedAt}
       onSearchChange={(q) => updateFilter({ q })} onStatusChange={(status) => updateFilter({ status })} onSortChange={(sort) => updateFilter({ sort })}
       onToggleGroup={(group) => setGroups((current) => ({ ...current, [group]: !current[group] }))}
-      onRefresh={requery} onSync={() => void runSync()} onOpenTask={(id) => openTask(id)}
+      onRefresh={requery} onSync={() => void runSync()}
+      ingesting={triggeringStashScans} onIngestAll={() => void runScanAll()} onOpenTask={(id) => openTask(id)}
       onScanTask={(id) => void runScan(id)} onRetryTask={(id) => void runRetry(id)} onResolveTask={(id) => openTask(id, true)}
       onDeleteTask={(id) => setConfirmDeleteIds([id])} onToggleTaskSelection={toggleSelection} onSelectVisibleTasks={selectVisible} onClearTaskSelection={() => setSelectedTaskIds([])}
       onBatchRetry={(ids) => void runBatchRetry(ids)} onBatchIngest={(ids) => void runBatchIngest(ids)} onBatchDelete={setConfirmDeleteIds} />
@@ -146,7 +151,7 @@ export function Component() {
       <Suspense fallback={<div className="skeleton skeleton-card" />}>
         {detailFetching && !activeTask ? <p>{t("taskRoute.loading")}</p> : detailError ? <div className="empty-card"><h3>{t("taskRoute.loadFailed")}</h3><p>{describeQueryError(detailError)}</p></div> : !activeTask ? <div className="empty-card"><h3>{t("taskRoute.notFound")}</h3></div> : isResolution ?
           <SourcingResolutionDrawer task={activeTask} onResolved={async () => { navigate(`/tasks/${encodeURIComponent(taskId)}`); }} /> :
-          <TaskDrawer task={activeTask} pendingScan={pendingScan === taskId} pendingRetry={pendingRetry === taskId} pendingDelete={pendingDelete === taskId} onCopy={copyText} onSyncAll={() => void runSync()} onScanTask={(id) => void runScan(id)} onRetryTask={(id) => void runRetry(id)} onScanAll={() => void runScanAll()} onDeleteTask={(id) => setConfirmDeleteIds([id])} />}
+          <TaskDrawer task={activeTask} pendingScan={pendingScan === taskId} pendingRetry={pendingRetry === taskId} pendingDelete={pendingDelete === taskId} onCopy={copyText} onResolveTask={(id) => openTask(id, true)} onScanTask={(id) => void runScan(id)} onRetryTask={(id) => void runRetry(id)} onDeleteTask={(id) => setConfirmDeleteIds([id])} />}
       </Suspense>
     </Drawer> : null}
     {confirmDeleteIds.length ? <Drawer visibleDrawer="confirm" closing={false} title={t("taskRoute.deleteTitle")} onClose={() => { if (!pendingDelete && !deletingTasks) setConfirmDeleteIds([]); }}><Suspense fallback={null}><ConfirmDeleteDrawer taskLabel={deleteTarget ? taskSummary(deleteTarget) : undefined} count={confirmDeleteIds.length > 1 ? confirmDeleteIds.length : undefined} deletePolicy={deletePolicy} pending={Boolean(pendingDelete) || deletingTasks} onConfirm={() => confirmDeleteIds.length === 1 ? void runDelete(confirmDeleteIds[0]) : void runBatchDelete(confirmDeleteIds)} onCancel={() => { if (!pendingDelete && !deletingTasks) setConfirmDeleteIds([]); }} /></Suspense></Drawer> : null}

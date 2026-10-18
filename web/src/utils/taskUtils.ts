@@ -39,6 +39,7 @@ export type TaskPresentation = {
   detail: string;
   progressPercent: number;
   progressLabel: string;
+  showDownloadProgress: boolean;
   metaLine: string;
   lifecycle: TaskLifecycleStep[];
 };
@@ -152,6 +153,21 @@ export function taskGroupTone(group: TaskGroupKey) {
 
 export function canTriggerTaskStashScan(task: DashboardTask) {
   return stageValue(task) === "pending_ingest" && !task.stashScanJobId;
+}
+
+export function needsTaskFileSelection(task: DashboardTask) {
+  return task.stage === "DOWNLOADING" && task.stageStatus === "BLOCKED"
+    && (task.stageErrorCode === "FILE_SELECTION_REQUIRED"
+      || (!task.stageErrorCode && Boolean(task.files?.some(file => file.kind === "UNKNOWN_VIDEO" && file.reason === "IDENTITY_UNCERTAIN"))));
+}
+
+export function taskPrimaryAction(task: DashboardTask): "resolve" | "files" | "retry" | "ingest" | null {
+  if (task.stageStatus === "BLOCKED") {
+    if (task.stage === "SOURCING") return "resolve";
+    if (needsTaskFileSelection(task)) return "files";
+    return task.stage === "COMPLETED" ? null : "retry";
+  }
+  return canTriggerTaskStashScan(task) ? "ingest" : null;
 }
 
 export function taskBatchEligibility(tasks: DashboardTask[]) {
@@ -391,10 +407,7 @@ export function taskPrimaryState(task: DashboardTask): Pick<TaskPresentation, "p
 }
 
 export function taskMetaLine(task: DashboardTask) {
-  const parts = [taskQueryLabel(task), tr("taskModel.source", { source: taskSourceLabel(task.source) })];
-  if (task.torrentHash) {
-    parts.push(`Hash ${task.torrentHash.slice(0, 8)}`);
-  }
+  const parts = task.torrentName ? [taskQueryLabel(task)] : [];
   if (task.category) {
     parts.push(task.category);
   }
@@ -420,23 +433,11 @@ function lifecycleLabel(stage: TaskStageKey) {
 }
 
 function lifecycleTime(task: DashboardTask, stage: TaskStageKey) {
-  const currentIndex = taskStageIndex(task);
-  const stageIndex = TASK_STAGE_SEQUENCE.indexOf(stage);
-
+  // Only show timestamps explicitly recorded for this milestone.
   if (stage === "sourcing") return task.createdAt;
-  if (stage === "downloading") {
-    return currentIndex >= stageIndex ? (task.downloadCompletedAt || task.updatedAt) : null;
-  }
-  if (stage === "pending_ingest") {
-    return currentIndex >= stageIndex ? (task.downloadCompletedAt || task.updatedAt) : null;
-  }
-  if (stage === "transferring") {
-    return currentIndex >= stageIndex ? task.updatedAt : null;
-  }
-  if (stage === "scanning") {
-    return task.stashScanStartedAt || (currentIndex >= stageIndex ? task.updatedAt : null);
-  }
-  return stageValue(task) === "completed" ? task.updatedAt : null;
+  if (stage === "pending_ingest") return task.downloadCompletedAt;
+  if (stage === "scanning") return task.stashScanStartedAt;
+  return null;
 }
 
 function lifecycleDetail(task: DashboardTask, stage: TaskStageKey, failure: TaskFailureSummary, progress: number) {
@@ -576,13 +577,14 @@ export function taskPresentation(task: DashboardTask): TaskPresentation {
     summary = tr("taskModel.presentation.completed");
     detail = task.stashScanPath || task.contentPath || tr("taskModel.presentation.closed");
   } else if (primary.phase === "downloading") {
-    summary = task.qbittorrentState ? `qBittorrent: ${task.qbittorrentState}` : tr("taskModel.presentation.downloaderWaiting");
-    detail = tr("taskModel.presentation.progress", { progress });
+    summary = tr("taskModel.states.downloading");
+    detail = tr("taskExperience.afterDownload");
   } else {
     summary = tr("taskModel.presentation.queued");
     detail = tr("taskModel.presentation.stageWaiting");
   }
 
+  const showDownloadProgress = stageValue(task) === "downloading";
   return {
     phase: primary.phase,
     label: primary.label,
@@ -590,7 +592,10 @@ export function taskPresentation(task: DashboardTask): TaskPresentation {
     summary,
     detail,
     progressPercent: progress,
-    progressLabel: primary.phase === "completed" ? tr("taskModel.states.closed") : `${progress}%`,
+    showDownloadProgress,
+    progressLabel: showDownloadProgress
+      ? tr("taskExperience.downloadProgress", { progress })
+      : primary.label,
     metaLine: taskMetaLine(task),
     lifecycle: taskLifecycle(task, failure)
   };

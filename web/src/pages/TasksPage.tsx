@@ -10,8 +10,9 @@ import {
   type DashboardTask,
   type TaskGroupKey
 } from "../utils";
-import { useDeferredValue, useEffect, useMemo, useState } from "react";
+import { useDeferredValue, useMemo, useRef, useState } from "react";
 import type { TaskSortKey, TaskStatusFilter } from "../types";
+import { useModalFocus } from "../hooks/useModalFocus";
 import { useTranslation } from "react-i18next";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faArrowsRotate } from "@fortawesome/free-solid-svg-icons/faArrowsRotate";
@@ -41,6 +42,8 @@ interface TasksPageProps {
   batchPending: boolean;
   refreshing: boolean;
   syncing: boolean;
+  ingesting?: boolean;
+  onIngestAll?: () => void;
   autoSyncEnabled: boolean;
   autoSyncIntervalSeconds: number;
   lastRefreshedAt: Date | null;
@@ -77,6 +80,8 @@ export function TasksPage({
   batchPending,
   refreshing,
   syncing,
+  ingesting = false,
+  onIngestAll,
   autoSyncEnabled,
   autoSyncIntervalSeconds,
   lastRefreshedAt,
@@ -102,15 +107,6 @@ export function TasksPage({
   const deferredTaskSearch = useDeferredValue(taskSearch.trim().toLowerCase());
   const [moreActionsOpen, setMoreActionsOpen] = useState(false);
   const [selectionMode, setSelectionMode] = useState(false);
-
-  useEffect(() => {
-    if (!moreActionsOpen) return;
-    const closeOnEscape = (event: KeyboardEvent) => {
-      if (event.key === "Escape") setMoreActionsOpen(false);
-    };
-    window.addEventListener("keydown", closeOnEscape);
-    return () => window.removeEventListener("keydown", closeOnEscape);
-  }, [moreActionsOpen]);
 
   const visibleTasks = useMemo(() => {
     const search = deferredTaskSearch;
@@ -273,16 +269,10 @@ export function TasksPage({
 
       {moreActionsOpen ? (
         <div className="task-actions-dialog__scrim" onClick={() => setMoreActionsOpen(false)}>
-          <section
-            className="task-actions-dialog"
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="task-actions-dialog-title"
-            onClick={(event) => event.stopPropagation()}
-          >
+          <TaskActionsDialog onClose={() => setMoreActionsOpen(false)}>
             <div className="task-actions-dialog__head">
               <h3 id="task-actions-dialog-title">{t("taskBatch.more")}</h3>
-              <button type="button" className="ghost-button" onClick={() => setMoreActionsOpen(false)} aria-label={t("common.close")} autoFocus>
+              <button type="button" className="ghost-button" onClick={() => setMoreActionsOpen(false)} aria-label={t("common.close")}>
                 <FontAwesomeIcon icon={faXmark} />
               </button>
             </div>
@@ -299,8 +289,13 @@ export function TasksPage({
                 <FontAwesomeIcon icon={faArrowsRotate} />
                 <span>{syncing ? t("taskBatch.syncing") : t("taskBatch.syncNow")}</span>
               </button>
+              {onIngestAll ? <button type="button" className="ghost-button task-actions-dialog__action" disabled={ingesting}
+                onClick={() => { onIngestAll(); setMoreActionsOpen(false); }}>
+                <FontAwesomeIcon icon={faBoxArchive} />
+                <span>{t(ingesting ? "taskExperience.processing" : "taskExperience.scanAll")}</span>
+              </button> : null}
             </div>
-          </section>
+          </TaskActionsDialog>
         </div>
       ) : null}
     </section>
@@ -308,3 +303,10 @@ export function TasksPage({
 }
 
 export type { TaskStatusFilter, TaskSortKey };
+
+function TaskActionsDialog({ onClose, children }: { onClose: () => void; children: React.ReactNode }) {
+  const ref = useRef<HTMLElement>(null);
+  useModalFocus(ref, onClose);
+  return <section ref={ref} className="task-actions-dialog" role="dialog" aria-modal="true"
+    aria-labelledby="task-actions-dialog-title" tabIndex={-1} onClick={event => event.stopPropagation()}>{children}</section>;
+}

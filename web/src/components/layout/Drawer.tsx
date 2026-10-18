@@ -1,4 +1,5 @@
-import { ReactNode } from "react";
+import { useId, useRef, type ReactNode } from "react";
+import { useModalFocus } from "../../hooks/useModalFocus";
 import type { DrawerKey } from "../../types";
 import { useTranslation } from "react-i18next";
 
@@ -12,6 +13,9 @@ interface DrawerProps {
 
 export function Drawer({ visibleDrawer, closing, title, onClose, children }: DrawerProps) {
   const { t } = useTranslation();
+  const panelRef = useRef<HTMLElement>(null);
+  const titleId = useId();
+  useModalFocus(panelRef, onClose);
   const isTaskDrawer = visibleDrawer === "task" || visibleDrawer === "task-resolution";
   return (
     <div
@@ -19,12 +23,17 @@ export function Drawer({ visibleDrawer, closing, title, onClose, children }: Dra
       onClick={onClose}
     >
       <aside
+        ref={panelRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={titleId}
+        tabIndex={-1}
         className={`drawer ${isTaskDrawer ? "drawer--task" : "drawer--modal"} ${closing ? "is-closing" : ""}`}
         onClick={(event) => event.stopPropagation()}
       >
         <div className="drawer__head">
           <div>
-            <h2>{title}</h2>
+            <h2 id={titleId}>{title}</h2>
           </div>
           <button type="button" className="ghost-button" onClick={onClose}>
             {t("common.close")}

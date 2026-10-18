@@ -8,10 +8,9 @@ interface TaskDrawerProps {
   pendingRetry: boolean;
   pendingDelete: boolean;
   onCopy: (value: string, successMessage: string) => void | Promise<void>;
-  onSyncAll: () => void;
+  onResolveTask: (taskId: string) => void;
   onScanTask: (taskId: string) => void;
   onRetryTask: (taskId: string) => void;
-  onScanAll: () => void;
   onDeleteTask: (taskId: string) => void;
 }
 
@@ -21,10 +20,9 @@ export function TaskDrawer({
   pendingRetry,
   pendingDelete,
   onCopy,
-  onSyncAll,
+  onResolveTask,
   onScanTask,
   onRetryTask,
-  onScanAll,
   onDeleteTask
 }: TaskDrawerProps) {
   const { t } = useTranslation();
@@ -37,10 +35,9 @@ export function TaskDrawer({
           pendingRetry={pendingRetry}
           pendingDelete={pendingDelete}
           onCopy={onCopy}
-          onSyncAll={onSyncAll}
+          onResolveTask={onResolveTask}
           onScanTask={onScanTask}
           onRetryTask={onRetryTask}
-          onScanAll={onScanAll}
           onDeleteTask={onDeleteTask}
         />
       ) : (

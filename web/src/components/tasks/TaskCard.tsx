@@ -1,14 +1,10 @@
 import {
-  canTriggerTaskStashScan,
-  formatDateTime,
-  taskCardState,
-  taskFailureSummary,
-  taskPresentation,
-  taskSourceLabel,
-  taskSummary,
-  type DashboardTask
+  formatDateTime, formatRelative, taskFailureSummary, taskPresentation,
+  taskSourceLabel, taskSummary, type DashboardTask
 } from "../../utils";
 import { useTranslation } from "react-i18next";
+import { TaskPrimaryAction } from "./TaskPrimaryAction";
+import { TaskMoreActions } from "./TaskMoreActions";
 
 interface TaskCardProps {
   task: DashboardTask;
@@ -26,152 +22,61 @@ interface TaskCardProps {
   onToggleSelection?: (taskId: string) => void;
 }
 
-export function TaskCard({
-  task,
-  compact = false,
-  pendingScanId = null,
-  pendingRetryId = null,
-  pendingDeleteId = null,
-  onOpen,
-  onScan,
-  onRetry,
-  onResolve,
-  onDelete,
-  selectionMode = false,
-  selected = false,
-  onToggleSelection
+export function TaskCard({ task, compact = false, pendingScanId, pendingRetryId, pendingDeleteId,
+  onOpen, onScan, onRetry, onResolve, onDelete, selectionMode = false, selected = false, onToggleSelection
 }: TaskCardProps) {
   const { t } = useTranslation();
   const presentation = taskPresentation(task);
   const failure = taskFailureSummary(task);
-  const state = taskCardState(presentation, failure);
-  const isPendingScan = pendingScanId === task.id;
-  const isPendingRetry = pendingRetryId === task.id;
-  const isPendingDelete = pendingDeleteId === task.id;
-  const activateCard = () => {
-    if (selectionMode && onToggleSelection) onToggleSelection(task.id);
-    else onOpen(task.id);
-  };
+  const blocked = task.stageStatus === "BLOCKED";
+  const activateCard = () => selectionMode && onToggleSelection ? onToggleSelection(task.id) : onOpen(task.id);
+  const selectionLabel = t(selected ? "taskBatch.deselectTask" : "taskBatch.selectTask", { task: taskSummary(task) });
 
-  return (
-    <article
-      className={`task-card ${presentation.tone} ${compact ? "task-card--compact" : ""} ${selectionMode ? "is-selection-mode" : ""} ${selected ? "is-selected" : ""}`}
-      onClick={activateCard}
-      onKeyDown={(event) => {
-        if (event.key === "Enter" || event.key === " ") {
-          event.preventDefault();
-          activateCard();
-        }
-      }}
-      role="button"
-      tabIndex={0}
-      aria-pressed={selectionMode ? selected : undefined}
-      aria-label={selectionMode
-        ? t(selected ? "taskBatch.deselectTask" : "taskBatch.selectTask", { task: taskSummary(task) })
-        : t("taskUi.card.aria", { task: taskSummary(task), status: presentation.label })}
-    >
-      <div className="task-card__head">
-        <div>
-          <h3>{taskSummary(task)}</h3>
-          <p>{presentation.metaLine}</p>
-        </div>
-        <div className="profile-card__icons">
-          <span className="status-chip tone-neutral">{taskSourceLabel(task.source)}</span>
-          <span className={`status-chip ${presentation.tone}`}>{presentation.label}</span>
-        </div>
+  return <article
+    className={`task-card ${presentation.tone} ${compact ? "task-card--compact" : ""} ${selectionMode ? "is-selection-mode" : ""} ${selected ? "is-selected" : ""}`}
+    onClick={event => {
+      if (!selectionMode) event.currentTarget.querySelector<HTMLButtonElement>(".task-card__open")?.focus();
+      activateCard();
+    }}
+  >
+    <div className="task-card__head">
+      {selectionMode ? <label className="task-card__selection" onClick={event => event.stopPropagation()}><input className="task-card__checkbox" type="checkbox" checked={selected}
+        aria-label={selectionLabel} onClick={event => event.stopPropagation()} onChange={() => onToggleSelection?.(task.id)} /></label> : null}
+      <div className="task-card__identity">
+        <h3><button type="button" className="task-card__open"
+          data-task-id={task.id}
+          aria-label={selectionMode ? selectionLabel : t("taskUi.card.aria", { task: taskSummary(task), status: presentation.label })}
+          aria-pressed={selectionMode ? selected : undefined}
+        >{taskSummary(task)}</button></h3>
+        {presentation.metaLine ? <p>{presentation.metaLine}</p> : null}
       </div>
-
-      <div className="task-card__status">
-        {state === "error" ? (
-          <div className={`task-status-error ${failure.tone}`}>
-            <strong>{failure.title}</strong>
-            <span>{failure.detail}</span>
-          </div>
-        ) : state === "progress" ? (
-          <div className="task-status-progress">
-            <div className="task-status-progress__copy">
-              <strong>{presentation.summary}</strong>
-              <span>{presentation.progressLabel}</span>
-            </div>
-            <div className="progress-shell">
-              <div className="progress-fill" style={{ width: `${presentation.progressPercent}%` }} />
-            </div>
-          </div>
-        ) : state === "completed" ? (
-          <div className="task-status-completed">
-            {presentation.summary}
-          </div>
-        ) : (
-          <div className={`task-status-pending ${failure.tone}`}>
-            <strong>{failure.title}</strong>
-            <span>{failure.detail}</span>
-          </div>
-        )}
+      <div className="profile-card__icons">
+        <span className="status-chip tone-neutral">{taskSourceLabel(task.source)}</span>
+        <span className={`status-chip ${presentation.tone}`}>{presentation.label}</span>
       </div>
-
-      <div className="task-card__actions">
-        <span>{formatDateTime(task.updatedAt)}</span>
-
-        <div className="task-card__right">
-          {task.stage === "SOURCING" && task.stageStatus === "BLOCKED" && onResolve ? (
-            <button
-              type="button"
-              className="ghost-button task-card__action-button"
-              onClick={(event) => {
-                event.stopPropagation();
-                onResolve(task.id);
-              }}
-              onKeyDown={(event) => event.stopPropagation()}
-              aria-label={t("taskUi.card.resolveLabel", { task: taskSummary(task) })}
-            >
-              {t("taskUi.card.resolve")}
-            </button>
-          ) : task.stageStatus === "BLOCKED" && onRetry ? (
-            <button
-              type="button"
-              className="ghost-button task-card__action-button"
-              onClick={(event) => {
-                event.stopPropagation();
-                onRetry(task.id);
-              }}
-              onKeyDown={(event) => event.stopPropagation()}
-              disabled={isPendingRetry}
-              aria-label={t("taskUi.card.retryLabel", { task: taskSummary(task) })}
-            >
-              {isPendingRetry ? t("taskUi.card.retrying") : t("taskUi.card.retry")}
-            </button>
-          ) : null}
-          {canTriggerTaskStashScan(task) && onScan ? (
-            <button
-              type="button"
-              className="ghost-button task-card__action-button"
-              onClick={(event) => {
-                event.stopPropagation();
-                onScan(task.id);
-              }}
-              disabled={isPendingScan}
-              aria-label={t("taskUi.card.scanLabel", { task: taskSummary(task) })}
-            >
-              {isPendingScan ? t("taskUi.card.scanning") : t("taskUi.card.scan")}
-            </button>
-          ) : null}
-          {onDelete ? (
-            <button
-              type="button"
-              className="ghost-button task-card__action-button task-card__action-button--danger"
-              onClick={(event) => {
-                event.stopPropagation();
-                onDelete(task.id);
-              }}
-              onKeyDown={(event) => event.stopPropagation()}
-              disabled={isPendingDelete}
-              aria-label={t("taskUi.card.deleteLabel", { task: taskSummary(task) })}
-            >
-              {isPendingDelete ? t("taskUi.card.deleting") : t("taskUi.card.delete")}
-            </button>
-          ) : null}
+    </div>
+    <div className="task-card__status">
+      {blocked ? <div className={`task-status-error ${failure.tone}`}>
+        <strong>{failure.title}</strong><span className="task-card__error-summary">{failure.detail}</span>
+      </div> : presentation.showDownloadProgress ? <div className="task-status-progress">
+        <div className="task-status-progress__copy"><strong>{presentation.progressLabel}</strong></div>
+        <div className="progress-shell" role="progressbar" aria-label={t("taskModel.states.downloading")}
+          aria-valuemin={0} aria-valuemax={100} aria-valuenow={presentation.progressPercent}>
+          <div className="progress-fill" style={{ width: `${presentation.progressPercent}%` }} />
         </div>
-      </div>
-    </article>
-  );
+      </div> : <div className={presentation.phase === "completed" ? "task-status-completed" : "task-status-pending"}>
+        <strong>{presentation.summary}</strong>
+      </div>}
+    </div>
+    <div className="task-card__actions">
+      <time dateTime={task.updatedAt} title={formatDateTime(task.updatedAt)}>
+        {t("taskExperience.updated", { time: formatRelative(task.updatedAt) ?? formatDateTime(task.updatedAt) })}
+      </time>
+      {!selectionMode ? <div className="task-card__right">
+        <TaskPrimaryAction task={task} pendingScan={pendingScanId === task.id} pendingRetry={pendingRetryId === task.id}
+          onResolve={onResolve} onFiles={onOpen} onScan={onScan} onRetry={onRetry} />
+        {onDelete ? <TaskMoreActions task={task} onDelete={onDelete} pendingDelete={pendingDeleteId === task.id} /> : null}
+      </div> : null}
+    </div>
+  </article>;
 }

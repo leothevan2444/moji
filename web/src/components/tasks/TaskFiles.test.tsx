@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { cleanup, render, screen } from "@testing-library/react";
+import { cleanup, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import i18n from "../../i18n/i18n";
@@ -26,14 +26,57 @@ describe("TaskFiles", () => {
   expect(checkboxes).toHaveLength(2);
   await user.click(checkboxes[0]); await user.click(checkboxes[1]);
   await user.click(screen.getByRole("button", { name: "Move unknown-b.mkv up" }));
-  await user.click(screen.getByRole("button", { name: "Confirm files and merge order" }));
+  await user.click(screen.getByRole("button", { name: "Confirm and continue download" }));
   expect(resolve).toHaveBeenCalledWith({ id: task.id, videoIndices: [12, 7] });
   expect(await screen.findByRole("status")).toBeTruthy();
  });
- it("shows the plan without editable controls while downloading", () => {
-  render(<TaskFiles task={{ ...task, stageStatus: "RUNNING" as DashboardTask["stageStatus"] }} />);
+ it("always shows the file groups and gives download files priority over skipped extras", () => {
+  const { rerender } = render(<TaskFiles task={{ ...task, stageStatus: "RUNNING" as DashboardTask["stageStatus"] }} />);
   expect(screen.queryAllByRole("checkbox")).toHaveLength(0);
-  expect(screen.getByText("unknown-a.mkv")).toBeTruthy();
-  expect(screen.getByText("advert.mp4")).toBeTruthy();
+  const list = screen.getByRole("article", { name: "File list" });
+  expect(list.querySelector("details, summary")).toBeNull();
+  const downloads = screen.getByRole("region", { name: "Download files" });
+  const skipped = screen.getByRole("region", { name: "Skipped" });
+  expect(within(downloads).getByText("movie.en.srt")).toBeTruthy();
+  expect(within(skipped).getByText("advert.mp4")).toBeTruthy();
+  expect(within(skipped).getByText("unknown-a.mkv")).toBeTruthy();
+  expect(screen.queryByText("Only selected movie files and retained subtitles are delivered to Stash. Multiple movie parts are merged in the order below.")).toBeNull();
+  rerender(<TaskFiles task={{ ...task, id: "task-2" }} />);
+  expect(screen.getByRole("article", { name: "File list" }).querySelector("details, summary")).toBeNull();
+ });
+ it("shows filenames with complete paths on hover and copies the original path", async () => {
+  const user = userEvent.setup();
+  const onCopy = vi.fn();
+  const path = "release/a-long-directory/movie.en.srt";
+  render(<TaskFiles task={{ ...task, files: [{ ...task.files[2], path }] }} onCopy={onCopy} />);
+  expect(screen.getByText("movie.en.srt").getAttribute("title")).toBe(path);
+  await user.click(screen.getByRole("button", { name: `Copy ${path}` }));
+  expect(onCopy).toHaveBeenCalledWith(path, `${path} copied`);
+ });
+ it("updates selection and merge order in the same list while protecting against empty submissions", async () => {
+  const user = userEvent.setup();
+  render(<TaskFiles task={task} />);
+  const confirm = screen.getByRole("button", { name: "Confirm and continue download" });
+  expect((confirm as HTMLButtonElement).disabled).toBe(true);
+  await user.click(screen.getByRole("checkbox", { name: "unknown-a.mkv" }));
+  await user.click(screen.getByRole("checkbox", { name: "unknown-b.mkv" }));
+  await user.click(screen.getByRole("button", { name: "Move unknown-b.mkv up" }));
+  const candidates = screen.getByRole("region", { name: "Movie files & merge order" });
+  expect(within(candidates).getAllByRole("checkbox").map(input => input.getAttribute("aria-label"))).toEqual(["unknown-b.mkv", "unknown-a.mkv"]);
+  expect(document.activeElement).toBe(screen.getByRole("checkbox", { name: "unknown-b.mkv" }));
+  await user.click(confirm);
+  expect(resolve).toHaveBeenCalledWith({ id: task.id, videoIndices: [12, 7] });
+ });
+ it("keeps selections available after a failed save and allows retry", async () => {
+  const user = userEvent.setup();
+  resolve.mockRejectedValueOnce(new Error("Connection interrupted"));
+  render(<TaskFiles task={task} />);
+  await user.click(screen.getByRole("checkbox", { name: "unknown-a.mkv" }));
+  const confirm = screen.getByRole("button", { name: "Confirm and continue download" });
+  await user.click(confirm);
+  expect(await screen.findByRole("alert")).toBeTruthy();
+  expect((screen.getByRole("checkbox", { name: "unknown-a.mkv" }) as HTMLInputElement).checked).toBe(true);
+  await user.click(confirm);
+  expect(await screen.findByRole("status")).toBeTruthy();
  });
 });
