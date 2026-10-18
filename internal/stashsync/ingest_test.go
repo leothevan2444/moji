@@ -91,3 +91,23 @@ func TestIngestSceneLookupExcludesSimilarPaths(t *testing.T) {
 		t.Fatalf("incorrect path scope: %+v", scenes)
 	}
 }
+
+func TestIngestSceneIncludesMovieMetadata(t *testing.T) {
+	title, code, date, image := "Movie", "ABCD-123", "2026-10-18", "/scene/1/screenshot"
+	client := &fakeIngestClient{scenes: []*graphql.IngestScenes_FindScenes_Scenes{{
+		ID: "1", Title: &title, Code: &code, Date: &date,
+		Studio:     &graphql.IngestScenes_FindScenes_Scenes_Studio{ID: "studio", Name: "Studio"},
+		Performers: []*graphql.IngestScenes_FindScenes_Scenes_Performers{{ID: "actor", Name: "Actor"}, nil},
+		Paths:      graphql.IngestScenes_FindScenes_Scenes_Paths{Screenshot: &image},
+		Files:      []*graphql.IngestScenes_FindScenes_Scenes_Files{{Path: "/library/movie.mp4"}},
+	}}}
+	service, _ := NewService(client, nil)
+	scenes, err := service.FindIngestScenes(context.Background(), "/library/movie.mp4", []string{"1"})
+	if err != nil || len(scenes) != 1 {
+		t.Fatalf("unexpected scenes: %+v %v", scenes, err)
+	}
+	scene := scenes[0]
+	if scene.Title != title || scene.Code != code || scene.Date != date || scene.ImageURL != image || scene.StudioName != "Studio" || !reflect.DeepEqual(scene.PerformerNames, []string{"Actor"}) {
+		t.Fatalf("missing movie metadata: %+v", scene)
+	}
+}

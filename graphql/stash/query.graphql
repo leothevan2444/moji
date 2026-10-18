@@ -184,8 +184,9 @@ query IngestScenes($scene_filter: SceneFilterType, $filter: FindFilterType, $ids
       title
       code
       date
-      studio { id }
-      performers { id }
+      studio { id name }
+      performers { id name }
+      paths { screenshot }
       files { path }
     }
   }

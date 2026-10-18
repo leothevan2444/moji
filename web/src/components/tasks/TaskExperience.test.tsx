@@ -8,7 +8,7 @@ import { taskLifecycle, taskFailureSummary, type DashboardTask } from "../../uti
 import { TaskCard } from "./TaskCard";
 import { TaskDetail } from "./TaskDetail";
 
-vi.mock("urql", () => ({ useMutation: () => [{ fetching: false }, vi.fn()] }));
+vi.mock("urql", () => ({ useQuery: () => [{ fetching: false }, vi.fn()], useMutation: () => [{ fetching: false }, vi.fn()] }));
 const task = {
   id: "task-1", source: "MANUAL", code: "DEMO-001", torrentName: "Example movie",
   stage: "DOWNLOADING", stageStatus: "RUNNING", progress: 0.46,

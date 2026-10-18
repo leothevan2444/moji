@@ -2,6 +2,7 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faTrashCan } from "@fortawesome/free-solid-svg-icons/faTrashCan";
 import { useRef } from "react";
 import { useTranslation } from "react-i18next";
+import { TaskStashScenes } from "./TaskStashScenes";
 import { TaskFiles } from "./TaskFiles";
 import { TaskValue } from "./TaskValue";
 import { TaskTimeline } from "./TaskTimeline";
@@ -79,13 +80,7 @@ export function TaskDetail({ task, pendingScan, pendingRetry, pendingDelete,
     </article>
 
     {selectFiles ? files : null}
-    {(task.mojiTransferPath || task.stashSceneIds?.length || task.stage === "COMPLETED") ? <article className="drawer-card">
-      <h3>{t("taskExperience.result")}</h3>
-      <dl className="settings-grid">
-        <TaskValue label={t("taskDetail.targetPath")} value={task.mojiTransferPath} onCopy={onCopy} />
-        <TaskValue label={t("taskModel.ingest.scenes")} value={task.stashSceneIds?.join(", ")} onCopy={onCopy} />
-      </dl>
-    </article> : null}
+    <TaskStashScenes key={`${task.id}:${task.stage}:${task.stageStatus}:${task.stashIngestPhase}:${task.stashSceneIds?.join(",")}`} task={task} />
     {!selectFiles ? files : null}
     <article className="drawer-card task-information" aria-label={t("taskDetail.data")}>
       <div className="drawer-card__head"><h3>{t("taskDetail.data")}</h3></div>

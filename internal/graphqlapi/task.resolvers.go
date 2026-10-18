@@ -284,6 +284,11 @@ func (r *queryResolver) Task(ctx context.Context, id string) (*model.Task, error
 	return taskToModel(task), nil
 }
 
+// TaskStashScenes is the resolver for the taskStashScenes field.
+func (r *queryResolver) TaskStashScenes(ctx context.Context, id string) ([]*model.TaskStashScene, error) {
+	return r.loadTaskStashScenes(ctx, id)
+}
+
 // Tasks is the resolver for the tasks field.
 func (r *queryResolver) Tasks(ctx context.Context) ([]*model.Task, error) {
 	if r.TaskRuntime == nil {

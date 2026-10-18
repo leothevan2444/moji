@@ -1,4 +1,17 @@
 {
+  "taskStash": {
+    "title": "Stash movie information",
+    "pending": "Movie information appears after ingest",
+    "empty": "No linked Stash movies found",
+    "loading": "Loading movie information…",
+    "failed": "Stash movie information is temporarily unavailable",
+    "retry": "Reload",
+    "untitled": "Untitled movie",
+    "releaseDate": "Release date",
+    "open": "View in Stash",
+    "openLabel": "View in Stash: {{title}}",
+    "missing": "Unavailable linked movies: {{count}}"
+  },
   "taskFlow": {
     "completedAt": "Completed at {{time}}",
     "ingestProgress": "Ingest progress",
@@ -47,7 +60,6 @@
     "more": "More actions for {{task}}",
     "options": "Task actions",
     "updated": "Updated {{time}}",
-    "result": "Files and ingest results",
     "ingest": "Ingest",
     "currentStep": "Current stage: {{stage}}",
     "files": "File list ({{count}})",

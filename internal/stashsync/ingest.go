@@ -24,6 +24,9 @@ type IngestScene struct {
 	Code           string
 	Date           string
 	StudioID       string
+	StudioName     string
+	PerformerNames []string
+	ImageURL       string
 	PerformerCount int
 	Paths          []string
 }
@@ -106,6 +109,15 @@ func (s *Service) FindIngestScenes(ctx context.Context, path string, ids []strin
 		}
 		if scene.Studio != nil {
 			item.StudioID = scene.Studio.ID
+			item.StudioName = scene.Studio.Name
+		}
+		if scene.Paths.Screenshot != nil {
+			item.ImageURL = *scene.Paths.Screenshot
+		}
+		for _, performer := range scene.Performers {
+			if performer != nil && strings.TrimSpace(performer.Name) != "" {
+				item.PerformerNames = append(item.PerformerNames, performer.Name)
+			}
 		}
 		for _, file := range scene.Files {
 			if file == nil {

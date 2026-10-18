@@ -798,7 +798,8 @@ func (t *IngestDefaults_Configuration) GetDefaults() *IngestDefaults_Configurati
 }
 
 type IngestScenes_FindScenes_Scenes_Studio struct {
-	ID string "json:\"id\" graphql:\"id\""
+	ID   string "json:\"id\" graphql:\"id\""
+	Name string "json:\"name\" graphql:\"name\""
 }
 
 func (t *IngestScenes_FindScenes_Scenes_Studio) GetID() string {
@@ -807,9 +808,16 @@ func (t *IngestScenes_FindScenes_Scenes_Studio) GetID() string {
 	}
 	return t.ID
 }
+func (t *IngestScenes_FindScenes_Scenes_Studio) GetName() string {
+	if t == nil {
+		t = &IngestScenes_FindScenes_Scenes_Studio{}
+	}
+	return t.Name
+}
 
 type IngestScenes_FindScenes_Scenes_Performers struct {
-	ID string "json:\"id\" graphql:\"id\""
+	ID   string "json:\"id\" graphql:\"id\""
+	Name string "json:\"name\" graphql:\"name\""
 }
 
 func (t *IngestScenes_FindScenes_Scenes_Performers) GetID() string {
@@ -817,6 +825,23 @@ func (t *IngestScenes_FindScenes_Scenes_Performers) GetID() string {
 		t = &IngestScenes_FindScenes_Scenes_Performers{}
 	}
 	return t.ID
+}
+func (t *IngestScenes_FindScenes_Scenes_Performers) GetName() string {
+	if t == nil {
+		t = &IngestScenes_FindScenes_Scenes_Performers{}
+	}
+	return t.Name
+}
+
+type IngestScenes_FindScenes_Scenes_Paths struct {
+	Screenshot *string "json:\"screenshot,omitempty\" graphql:\"screenshot\""
+}
+
+func (t *IngestScenes_FindScenes_Scenes_Paths) GetScreenshot() *string {
+	if t == nil {
+		t = &IngestScenes_FindScenes_Scenes_Paths{}
+	}
+	return t.Screenshot
 }
 
 type IngestScenes_FindScenes_Scenes_Files struct {
@@ -835,6 +860,7 @@ type IngestScenes_FindScenes_Scenes struct {
 	Date       *string                                      "json:\"date,omitempty\" graphql:\"date\""
 	Files      []*IngestScenes_FindScenes_Scenes_Files      "json:\"files\" graphql:\"files\""
 	ID         string                                       "json:\"id\" graphql:\"id\""
+	Paths      IngestScenes_FindScenes_Scenes_Paths         "json:\"paths\" graphql:\"paths\""
 	Performers []*IngestScenes_FindScenes_Scenes_Performers "json:\"performers\" graphql:\"performers\""
 	Studio     *IngestScenes_FindScenes_Scenes_Studio       "json:\"studio,omitempty\" graphql:\"studio\""
 	Title      *string                                      "json:\"title,omitempty\" graphql:\"title\""
@@ -863,6 +889,12 @@ func (t *IngestScenes_FindScenes_Scenes) GetID() string {
 		t = &IngestScenes_FindScenes_Scenes{}
 	}
 	return t.ID
+}
+func (t *IngestScenes_FindScenes_Scenes) GetPaths() *IngestScenes_FindScenes_Scenes_Paths {
+	if t == nil {
+		t = &IngestScenes_FindScenes_Scenes{}
+	}
+	return &t.Paths
 }
 func (t *IngestScenes_FindScenes_Scenes) GetPerformers() []*IngestScenes_FindScenes_Scenes_Performers {
 	if t == nil {
@@ -1553,9 +1585,14 @@ const IngestScenesDocument = `query IngestScenes ($scene_filter: SceneFilterType
 			date
 			studio {
 				id
+				name
 			}
 			performers {
 				id
+				name
+			}
+			paths {
+				screenshot
 			}
 			files {
 				path

@@ -1,4 +1,17 @@
 {
+  "taskStash": {
+    "title": "Stash 影片信息",
+    "pending": "入库后显示影片信息",
+    "empty": "未找到关联的 Stash 影片",
+    "loading": "正在加载影片信息…",
+    "failed": "暂时无法加载 Stash 影片信息",
+    "retry": "重新加载",
+    "untitled": "未命名影片",
+    "releaseDate": "发行日期",
+    "open": "在 Stash 中查看",
+    "openLabel": "在 Stash 中查看：{{title}}",
+    "missing": "有 {{count}} 部关联影片未找到"
+  },
   "taskFlow": {
     "completedAt": "完成于 {{time}}",
     "ingestProgress": "入库进度",
@@ -45,7 +58,6 @@
     "more": "更多操作：{{task}}",
     "options": "任务操作",
     "updated": "更新于 {{time}}",
-    "result": "文件与入库结果",
     "ingest": "入库",
     "currentStep": "当前阶段：{{stage}}",
     "files": "文件清单（{{count}}）",

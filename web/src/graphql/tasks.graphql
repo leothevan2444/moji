@@ -215,3 +215,9 @@ mutation ResolveTaskFilesDocument($id: ID!, $videoIndices: [Int!]!) {
     updatedAt
   }
 }
+
+query TaskStashScenesDocument($id: ID!) {
+  taskStashScenes(id: $id) {
+    id title code date studio performers imageUrl url
+  }
+}

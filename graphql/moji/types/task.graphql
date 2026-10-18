@@ -5,6 +5,9 @@ extend type Query {
   "Get a Moji download task by id"
   task(id: ID!): Task
 
+  "Read current Stash information for the scenes linked to a task."
+  taskStashScenes(id: ID!): [TaskStashScene!]!
+
   "List Moji download tasks, newest first"
   tasks: [Task!]!
 }
@@ -207,4 +210,16 @@ type TaskFile {
   part: Int!
   selected: Boolean!
   reason: String!
+}
+
+"A Stash scene linked to a task's ingest result."
+type TaskStashScene {
+  id: ID!
+  title: String!
+  code: String!
+  date: String!
+  studio: String!
+  performers: [String!]!
+  imageUrl: String
+  url: String
 }

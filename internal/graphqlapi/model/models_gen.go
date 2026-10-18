@@ -771,6 +771,18 @@ type TaskFile struct {
 	Reason   string `json:"reason"`
 }
 
+// A Stash scene linked to a task's ingest result.
+type TaskStashScene struct {
+	ID         string   `json:"id"`
+	Title      string   `json:"title"`
+	Code       string   `json:"code"`
+	Date       string   `json:"date"`
+	Studio     string   `json:"studio"`
+	Performers []string `json:"performers"`
+	ImageURL   *string  `json:"imageUrl,omitempty"`
+	URL        *string  `json:"url,omitempty"`
+}
+
 type TitleMatchClause struct {
 	Pattern     string                `json:"pattern"`
 	PatternMode TitleMatchPatternMode `json:"patternMode"`
