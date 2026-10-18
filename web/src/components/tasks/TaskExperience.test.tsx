@@ -27,6 +27,11 @@ describe("task experience", () => {
     const { container } = render(<><TaskCard task={current} onOpen={vi.fn()} /><TaskDetail task={current} {...props()} /></>);
     expect(screen.queryAllByRole("progressbar")).toHaveLength(0);
     expect(container.textContent).not.toContain("100%");
+    if (stage === TaskStage.Completed) {
+      const overview = screen.getByRole("article", { name: "Task overview" });
+      expect(within(overview).queryByText("Download and ingest completed.")).toBeNull();
+      expect(overview.querySelector(".task-detail-hero")).toBeNull();
+    }
   });
 
   it("labels download progress and reports its numeric value accessibly", () => {
@@ -91,18 +96,36 @@ describe("task experience", () => {
 
   it("keeps all three stages visible and embeds compact substeps in the active ingest stage", () => {
     render(<TaskDetail task={{ ...task, stage: TaskStage.Scanning, stashIngestPhase: "IDENTIFY", progress: 1 }} {...props()} />);
-    expect(screen.getByRole("list", { name: "Lifecycle" }).children).toHaveLength(3);
+    const overview = screen.getByRole("article", { name: "Task overview" });
+    expect(within(overview).getByRole("list", { name: "Lifecycle" }).children).toHaveLength(3);
+    expect(within(overview).getByRole("region", { name: "Ingest progress" })).toBeTruthy();
+    expect(screen.queryByRole("heading", { name: "Lifecycle" })).toBeNull();
     expect(screen.getByRole("region", { name: "Ingest progress" })).toBeTruthy();
     expect(within(screen.getByRole("list", { name: "Ingest steps" })).getAllByRole("listitem")).toHaveLength(6);
     expect(screen.getByText("Identify").closest("li")?.getAttribute("aria-current")).toBe("step");
     expect(screen.queryByText("Expand ingest steps")).toBeNull();
   });
 
+  it("places download progress, stage details, and key dates inside the overview", () => {
+    const { container } = render(<TaskDetail task={task} {...props()} />);
+    const overview = screen.getByRole("article", { name: "Task overview" });
+    expect(container.firstElementChild).toBe(overview);
+    expect(within(overview).getByRole("heading", { name: "Task overview" })).toBeTruthy();
+    expect(within(overview).queryByRole("heading", { name: "DEMO-001" })).toBeNull();
+    const progress = within(overview).getByRole("progressbar", { name: "Downloading" });
+    expect(progress.closest("li")?.getAttribute("aria-current")).toBe("step");
+    expect(progress.getAttribute("aria-valuenow")).toBe("46");
+    expect(within(overview).getByText("Created")).toBeTruthy();
+    expect(within(overview).getByText("Last updated")).toBeTruthy();
+    expect(within(overview).getAllByText("Download progress 46%")).toHaveLength(1);
+    expect(screen.queryByRole("heading", { name: "Lifecycle" })).toBeNull();
+  });
+
   it("never fabricates milestone timestamps from updatedAt", () => {
-    const current = { ...task, stage: TaskStage.Completed, downloadCompletedAt: "2026-10-17T02:30:00Z", stashScanStartedAt: "2026-10-17T02:35:00Z" };
+    const current = { ...task, stage: TaskStage.Completed, sourcingCompletedAt: "2026-10-17T02:10:00Z", downloadCompletedAt: "2026-10-17T02:30:00Z", stashScanStartedAt: "2026-10-17T02:35:00Z", ingestCompletedAt: "2026-10-17T03:00:00Z" };
     const steps = taskLifecycle(current, taskFailureSummary(current));
     expect(steps.filter(step => step.time).map(step => [step.key, step.time])).toEqual([
-      ["sourcing", current.createdAt], ["pending_ingest", current.downloadCompletedAt], ["scanning", current.stashScanStartedAt]
+      ["sourcing", current.sourcingCompletedAt], ["downloading", current.downloadCompletedAt], ["scanning", current.stashScanStartedAt], ["completed", current.ingestCompletedAt]
     ]);
   });
 });

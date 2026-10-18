@@ -21,31 +21,51 @@ describe("adaptive task lifecycle", () => {
     render(view({ stage, stageStatus: stage === TaskStage.Completed ? TaskStageStatus.Done : TaskStageStatus.Running }));
     const main = screen.getByRole("list", { name: "Lifecycle" });
     expect(main.children).toHaveLength(3);
-    for (const label of ["Sourcing", "Downloading", "Ingest"]) expect(within(main).getByText(label)).toBeTruthy();
+    for (const label of ["Source", "Download", "Ingest"]) expect(within(main).getByText(label)).toBeTruthy();
     expect(screen.queryByRole("region", { name: "Ingest progress" })).toBeNull();
     expect(screen.queryByRole("list", { name: "Ingest steps" })).toBeNull();
     expect(main.querySelector("details")).toBeNull();
     expect(within(main).queryByText("Completed")).toBeNull();
   });
 
+  it("places real completion times on their stages and leaves unknown history empty", () => {
+    const sourcingCompletedAt = "2026-10-18T02:10:00Z";
+    const downloadCompletedAt = "2026-10-18T02:30:00Z";
+    const ingestCompletedAt = "2026-10-18T02:55:00Z";
+    const { rerender } = render(view({ stage: TaskStage.Completed, stageStatus: TaskStageStatus.Done, sourcingCompletedAt, downloadCompletedAt, ingestCompletedAt }));
+    const stages = screen.getByRole("list", { name: "Lifecycle" }).children;
+    expect(stages[0].querySelector("time")?.dateTime).toBe(sourcingCompletedAt);
+    expect(stages[0].querySelector("time")?.textContent).toContain("Completed at");
+    expect(stages[1].querySelector("time")?.dateTime).toBe(downloadCompletedAt);
+    expect(stages[2].querySelector("time")?.dateTime).toBe(ingestCompletedAt);
+    expect(stages[2].querySelector("time")?.textContent).toContain("Completed at");
+    rerender(view({ stage: TaskStage.Completed, stageStatus: TaskStageStatus.Done, downloadCompletedAt }));
+    expect(stages[0].querySelector("time")).toBeNull();
+    expect(stages[2].querySelector("time")).toBeNull();
+    rerender(view({ stage: TaskStage.Scanning, stashIngestPhase: "VERIFY" }));
+    expect(stages[2].querySelector("time")).toBeNull();
+  });
+
   it("compresses past and future stages and expands only the current stage", () => {
     render(view());
     const stages = Array.from(screen.getByRole("list", { name: "Lifecycle" }).children);
     expect(stages[0].querySelector("p")).toBeNull();
+    expect(stages[0].querySelector("time")).toBeNull();
     expect(stages[1].getAttribute("aria-current")).toBe("step");
     expect(stages[1].querySelector("p")?.textContent).toContain("46%");
     expect(stages[2].querySelector("p")).toBeNull();
-    expect(within(stages[0] as HTMLElement).getByText("Done")).toBeTruthy();
+    expect(within(stages[0] as HTMLElement).queryByText("Done")).toBeNull();
+    expect(within(stages[1] as HTMLElement).getByText("In progress")).toBeTruthy();
     expect(within(stages[2] as HTMLElement).getByText("Upcoming")).toBeTruthy();
   });
 
   it.each([
     [TaskStage.PendingIngest, undefined, "Pending ingest"],
-    [TaskStage.Transferring, undefined, "Transferring"],
-    [TaskStage.Scanning, "SCAN", "Scanning"],
+    [TaskStage.Transferring, undefined, "Transfer"],
+    [TaskStage.Scanning, "SCAN", "Scan"],
     [TaskStage.Scanning, "GENERATE", "Generate"],
     [TaskStage.Scanning, "IDENTIFY", "Identify"],
-    [TaskStage.Scanning, "VERIFY", "Verify ingest"]
+    [TaskStage.Scanning, "VERIFY", "Verify"]
   ])("shows compact progress for %s / %s", (stage, phase, label) => {
     render(view({ stage, stashIngestPhase: phase }));
     const progress = screen.getByRole("region", { name: "Ingest progress" });
@@ -58,6 +78,7 @@ describe("adaptive task lifecycle", () => {
     expect(substeps.filter(step => step !== current).every(step => !step.querySelector("p"))).toBe(true);
     expect(screen.getByRole("list", { name: "Lifecycle" }).children[2].contains(progress)).toBe(true);
     expect(progress.textContent).not.toContain("100%");
+    expect(within(progress).queryByText("Done")).toBeNull();
   });
 
   it("shows a blocked substep without counting it as completed", () => {

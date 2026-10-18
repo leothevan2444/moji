@@ -201,6 +201,9 @@ func (s *Service) startStashIngestStep(ctx context.Context, task *Task, scanner 
 				return task, verifyErr
 			}
 			setTaskStage(task, TaskStageCompleted, TaskStageStatusDone)
+			now := s.now().UTC()
+			task.IngestCompletedAt = &now
+			task.UpdatedAt = now
 			return task, nil
 		default:
 			err = errors.New("invalid Stash ingest phase")

@@ -689,31 +689,35 @@ type SystemSettings struct {
 }
 
 type Task struct {
-	ID                  string             `json:"id"`
-	Files               []*TaskFile        `json:"files"`
-	Source              TaskSource         `json:"source"`
-	Code                string             `json:"code"`
-	Stage               TaskStage          `json:"stage"`
-	StageStatus         TaskStageStatus    `json:"stageStatus"`
-	StageLabel          string             `json:"stageLabel"`
-	StageStatusLabel    string             `json:"stageStatusLabel"`
-	StageErrorCode      *string            `json:"stageErrorCode,omitempty"`
-	StageErrorMessage   *string            `json:"stageErrorMessage,omitempty"`
-	Candidate           *DownloadCandidate `json:"candidate"`
-	TorrentURL          string             `json:"torrentUrl"`
-	SavePath            *string            `json:"savePath,omitempty"`
-	Category            *string            `json:"category,omitempty"`
-	Tags                *string            `json:"tags,omitempty"`
-	TorrentHash         *string            `json:"torrentHash,omitempty"`
-	TorrentName         *string            `json:"torrentName,omitempty"`
-	Progress            float64            `json:"progress"`
-	QbittorrentState    *string            `json:"qbittorrentState,omitempty"`
-	ContentPath         *string            `json:"contentPath,omitempty"`
-	DownloadCompletedAt *string            `json:"downloadCompletedAt,omitempty"`
-	MojiSourcePath      *string            `json:"mojiSourcePath,omitempty"`
-	TransferAction      *string            `json:"transferAction,omitempty"`
-	MojiTransferPath    *string            `json:"mojiTransferPath,omitempty"`
-	TransferError       *string            `json:"transferError,omitempty"`
+	ID                string             `json:"id"`
+	Files             []*TaskFile        `json:"files"`
+	Source            TaskSource         `json:"source"`
+	Code              string             `json:"code"`
+	Stage             TaskStage          `json:"stage"`
+	StageStatus       TaskStageStatus    `json:"stageStatus"`
+	StageLabel        string             `json:"stageLabel"`
+	StageStatusLabel  string             `json:"stageStatusLabel"`
+	StageErrorCode    *string            `json:"stageErrorCode,omitempty"`
+	StageErrorMessage *string            `json:"stageErrorMessage,omitempty"`
+	Candidate         *DownloadCandidate `json:"candidate"`
+	TorrentURL        string             `json:"torrentUrl"`
+	SavePath          *string            `json:"savePath,omitempty"`
+	Category          *string            `json:"category,omitempty"`
+	Tags              *string            `json:"tags,omitempty"`
+	TorrentHash       *string            `json:"torrentHash,omitempty"`
+	TorrentName       *string            `json:"torrentName,omitempty"`
+	Progress          float64            `json:"progress"`
+	QbittorrentState  *string            `json:"qbittorrentState,omitempty"`
+	ContentPath       *string            `json:"contentPath,omitempty"`
+	// Time when a selected torrent was successfully submitted to the downloader; null when not recorded.
+	SourcingCompletedAt *string `json:"sourcingCompletedAt,omitempty"`
+	DownloadCompletedAt *string `json:"downloadCompletedAt,omitempty"`
+	// Time when all ingest steps passed verification; null when not recorded.
+	IngestCompletedAt *string `json:"ingestCompletedAt,omitempty"`
+	MojiSourcePath    *string `json:"mojiSourcePath,omitempty"`
+	TransferAction    *string `json:"transferAction,omitempty"`
+	MojiTransferPath  *string `json:"mojiTransferPath,omitempty"`
+	TransferError     *string `json:"transferError,omitempty"`
 	// Current Stash ingest step: SCAN, GENERATE, IDENTIFY, or VERIFY
 	StashIngestPhase   *string  `json:"stashIngestPhase,omitempty"`
 	StashGenerateJobID *string  `json:"stashGenerateJobId,omitempty"`

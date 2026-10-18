@@ -341,8 +341,7 @@ $task-status-tones: (
   border: 1px solid var(--line);
   border-radius: 8px;
   background: var(--surface);
-  &__head { display: flex; justify-content: space-between; align-items: baseline; flex-wrap: wrap; gap: 4px 12px; font-size: 12px; }
-  &__head strong { font-weight: 600; }
+  &__head { display: flex; justify-content: flex-end; align-items: baseline; flex-wrap: wrap; gap: 4px 12px; font-size: 12px; }
   &__head > span { color: var(--muted); font-size: 11px; font-variant-numeric: tabular-nums; }
   &__segments {
     display: flex; gap: 4px; margin-block: 8px;
@@ -2074,6 +2073,16 @@ summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 }
 .task-detail-progress { display: grid; gap: 8px; margin-top: 12px; font-size: 13px; }
 .task-detail-dates { margin-bottom: 0; }
+.task-detail-overview .task-detail-dates {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 20px;
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--line);
+  > div { flex: 1 1 160px; }
+  dd { font-size: 12px; color: var(--muted); }
+}
 .drawer--task .settings-grid > div { min-width: 0; }
 .task-detail-files:empty { display: none; }
 .task-information { min-width: 0; }
@@ -2099,6 +2108,8 @@ summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
   .drawer--task .drawer__head { flex-direction: row; align-items: flex-start; }
   .drawer--task .drawer__head h2 { font-size: 20px; overflow-wrap: anywhere; }
   .drawer--task .drawer-card__head { flex-wrap: wrap; }
+  .task-detail-overview > .drawer-card__head .task-detail-heading { flex-basis: 100%; }
+  .task-detail-overview > .drawer-card__head .profile-card__icons { justify-content: flex-start; }
 }
 
 @media (prefers-reduced-motion: reduce) {

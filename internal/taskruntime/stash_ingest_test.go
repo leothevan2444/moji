@@ -109,7 +109,7 @@ func TestStashIngestRunsAllStepsAndSurvivesRestart(t *testing.T) {
 		t.Fatalf("unexpected phase: %+v", task)
 	}
 	task = advanceIngest(t, service, scanner)
-	if task.Stage == TaskStageCompleted || task.StashGenerateJobID != "generate-1" {
+	if task.Stage == TaskStageCompleted || task.IngestCompletedAt != nil || task.StashGenerateJobID != "generate-1" {
 		t.Fatalf("scan must not complete ingest: %+v", task)
 	}
 	// Re-open storage to exercise real checkpoint serialization.
@@ -119,14 +119,39 @@ func TestStashIngestRunsAllStepsAndSurvivesRestart(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer reopened.db.Close()
-	service, _ = NewService(fakeTracker{}, &fakeTorrentAdder{}, reopened, WithFileOperator(files))
+	completedAt := time.Date(2026, 10, 18, 6, 30, 0, 0, time.UTC)
+	service, _ = NewService(fakeTracker{}, &fakeTorrentAdder{}, reopened, WithFileOperator(files), WithClock(func() time.Time { return completedAt }))
 	task = advanceIngest(t, service, scanner)
-	if task.StashIngestPhase != StashIngestIdentify || task.StashIdentifyJobID != "identify-1" {
+	if task.IngestCompletedAt != nil || task.StashIngestPhase != StashIngestIdentify || task.StashIdentifyJobID != "identify-1" {
 		t.Fatalf("unexpected phase after restart: %+v", task)
 	}
 	task = advanceIngest(t, service, scanner)
 	if task.Stage != TaskStageCompleted || task.StageStatus != TaskStageStatusDone {
 		t.Fatalf("unexpected completion: %+v", task)
+	}
+	if task.IngestCompletedAt == nil || !task.IngestCompletedAt.Equal(completedAt) {
+		t.Fatalf("completion timestamp not recorded after verification: %+v", task)
+	}
+	reopened.db.Close()
+	reopened, err = NewSQLiteTaskStore(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer reopened.db.Close()
+	stored, err := reopened.Find(context.Background(), "ingest")
+	if err != nil || stored.IngestCompletedAt == nil || !stored.IngestCompletedAt.Equal(completedAt) {
+		t.Fatalf("completion timestamp not persisted: %+v %v", stored, err)
+	}
+	copy := cloneTask(stored)
+	*copy.IngestCompletedAt = completedAt.Add(time.Hour)
+	if !stored.IngestCompletedAt.Equal(completedAt) {
+		t.Fatal("timestamp pointer is shared")
+	}
+	service, _ = NewService(fakeTracker{}, &fakeTorrentAdder{}, reopened, WithClock(func() time.Time { return completedAt.Add(time.Hour) }))
+	advanceIngest(t, service, scanner)
+	stored, _ = reopened.Find(context.Background(), "ingest")
+	if !stored.IngestCompletedAt.Equal(completedAt) {
+		t.Fatal("completed polling changed timestamp")
 	}
 	if len(files.calls) != 1 || len(scanner.requests) != 1 {
 		t.Fatal("delivery and scan must each run once")
@@ -170,7 +195,7 @@ func TestStashIngestRetriesOnlyFailedStep(t *testing.T) {
 				t.Fatal("expected blocked ingest")
 			}
 			task, _ := store.Find(context.Background(), "ingest")
-			if task.StageStatus != TaskStageStatusBlocked {
+			if task.IngestCompletedAt != nil || task.StageStatus != TaskStageStatusBlocked {
 				t.Fatalf("expected blocked: %+v", task)
 			}
 			scanner.err, scanner.generateErr, scanner.identifyErr, scanner.jobErr = nil, nil, nil, nil
@@ -181,7 +206,7 @@ func TestStashIngestRetriesOnlyFailedStep(t *testing.T) {
 			for range 4 {
 				task = advanceIngest(t, service, scanner)
 			}
-			if task.Stage != TaskStageCompleted {
+			if task.Stage != TaskStageCompleted || task.IngestCompletedAt == nil {
 				t.Fatalf("expected complete after retry: %+v", task)
 			}
 			if len(files.calls) != 1 {

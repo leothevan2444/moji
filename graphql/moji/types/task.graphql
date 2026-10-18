@@ -121,7 +121,11 @@ type Task {
   progress: Float!
   qbittorrentState: String
   contentPath: String
+  "Time when a selected torrent was successfully submitted to the downloader; null when not recorded."
+  sourcingCompletedAt: String
   downloadCompletedAt: String
+  "Time when all ingest steps passed verification; null when not recorded."
+  ingestCompletedAt: String
 
   mojiSourcePath: String
   transferAction: String

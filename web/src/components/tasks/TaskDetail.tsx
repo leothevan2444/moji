@@ -59,39 +59,26 @@ export function TaskDetail({ task, pendingScan, pendingRetry, pendingDelete,
   ];
 
   return <>
-    <article className="drawer-card task-detail-overview">
+    <article className="drawer-card task-detail-overview" aria-label={t("taskDetail.overview")}>
       <div className="drawer-card__head">
-        <div className="task-detail-heading"><h3>{taskSummary(task)}</h3>{presentation.metaLine ? <p>{presentation.metaLine}</p> : null}</div>
+        <div className="task-detail-heading"><h3>{t("taskDetail.overview")}</h3>{presentation.metaLine ? <p>{presentation.metaLine}</p> : null}</div>
         <div className="profile-card__icons">
           <span className="status-chip tone-neutral">{taskSourceLabel(task.source)}</span>
           <span className={`status-chip ${presentation.tone}`}>{presentation.label}</span>
         </div>
       </div>
-      <div className={`task-detail-hero${blocked ? ` task-detail-hero--blocked ${failure.tone}` : ""}`}>
-        <div className="task-detail-hero__copy">
-          <strong>{blocked ? failure.title : presentation.summary}</strong>
-          <p>{blocked ? failure.detail : presentation.detail}</p>
-        </div>
-      </div>
-      {presentation.showDownloadProgress ? <div className="task-detail-progress">
-        <span>{presentation.progressLabel}</span>
-        <div className="progress-shell progress-shell--detail" role="progressbar" aria-label={t("taskModel.states.downloading")}
-          aria-valuemin={0} aria-valuemax={100} aria-valuenow={presentation.progressPercent}>
-          <div className="progress-fill" style={{ width: `${presentation.progressPercent}%` }} />
-        </div>
+      {blocked ? <div className={`task-detail-hero task-detail-hero--blocked ${failure.tone}`}>
+        <div className="task-detail-hero__copy"><strong>{failure.title}</strong></div>
       </div> : null}
+      <TaskTimeline key={task.id} steps={presentation.lifecycle}
+        downloadProgress={presentation.showDownloadProgress ? { percent: presentation.progressPercent, label: presentation.progressLabel } : undefined} />
       <dl className="settings-grid task-detail-dates">
         <div><dt>{t("taskDetail.created")}</dt><dd>{formatDateTime(task.createdAt)}</dd></div>
         <div><dt>{t("taskDetail.updated")}</dt><dd>{formatDateTime(task.updatedAt)}</dd></div>
-        {task.downloadCompletedAt ? <div><dt>{t("taskExperience.downloadCompletedAt")}</dt><dd>{formatDateTime(task.downloadCompletedAt)}</dd></div> : null}
       </dl>
     </article>
 
     {selectFiles ? files : null}
-    <article className="drawer-card">
-      <h3>{t("taskDetail.lifecycle")}</h3>
-      <TaskTimeline key={task.id} steps={presentation.lifecycle} />
-    </article>
     {(task.mojiTransferPath || task.stashSceneIds?.length || task.stage === "COMPLETED") ? <article className="drawer-card">
       <h3>{t("taskExperience.result")}</h3>
       <dl className="settings-grid">

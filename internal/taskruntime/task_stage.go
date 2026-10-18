@@ -124,6 +124,12 @@ func setTaskStage(task *Task, stage TaskStage, status TaskStageStatus) {
 	}
 	task.Stage = normalizeTaskStage(stage)
 	task.StageStatus = normalizeTaskStageStatus(status)
+	if task.Stage == TaskStageSourcing {
+		task.SourcingCompletedAt = nil
+	}
+	if task.Stage != TaskStageCompleted || task.StageStatus != TaskStageStatusDone {
+		task.IngestCompletedAt = nil
+	}
 	refreshTaskStageFields(task)
 }
 

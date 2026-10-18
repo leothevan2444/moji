@@ -431,8 +431,9 @@ function lifecycleLabel(stage: TaskStageKey) {
 
 function lifecycleTime(task: DashboardTask, stage: TaskStageKey) {
   // Only show timestamps explicitly recorded for this milestone.
-  if (stage === "sourcing") return task.createdAt;
-  if (stage === "pending_ingest") return task.downloadCompletedAt;
+  if (stage === "sourcing") return task.sourcingCompletedAt;
+  if (stage === "downloading") return task.downloadCompletedAt;
+  if (stage === "completed") return task.ingestCompletedAt;
   if (stage === "scanning") return task.stashScanStartedAt;
   return null;
 }

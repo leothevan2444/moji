@@ -212,7 +212,7 @@ SELECT
   progress,
   qbittorrent_state,
   content_path,
-  download_completed_at,
+  sourcing_completed_at, download_completed_at, ingest_completed_at,
   moji_source_path,
   transfer_action,
   moji_transfer_path,
@@ -259,7 +259,9 @@ type sqliteTaskRow struct {
 	Progress                float64        `db:"progress"`
 	QBittorrentState        sql.NullString `db:"qbittorrent_state"`
 	ContentPath             sql.NullString `db:"content_path"`
+	SourcingCompletedAt     sql.NullString `db:"sourcing_completed_at"`
 	DownloadCompletedAt     sql.NullString `db:"download_completed_at"`
+	IngestCompletedAt       sql.NullString `db:"ingest_completed_at"`
 	MojiSourcePath          sql.NullString `db:"moji_source_path"`
 	TransferAction          sql.NullString `db:"transfer_action"`
 	MojiTransferPath        sql.NullString `db:"moji_transfer_path"`
@@ -336,8 +338,14 @@ func (r sqliteTaskRow) toTask() (*Task, error) {
 	}
 
 	var err error
+	if task.SourcingCompletedAt, err = parseOptionalSQLiteTimestamp(r.SourcingCompletedAt); err != nil {
+		return nil, fmt.Errorf("taskruntime: parse sourcing_completed_at for task %q: %w", task.ID, err)
+	}
 	if task.DownloadCompletedAt, err = parseOptionalSQLiteTimestamp(r.DownloadCompletedAt); err != nil {
 		return nil, fmt.Errorf("taskruntime: parse download_completed_at for task %q: %w", task.ID, err)
+	}
+	if task.IngestCompletedAt, err = parseOptionalSQLiteTimestamp(r.IngestCompletedAt); err != nil {
+		return nil, fmt.Errorf("taskruntime: parse ingest_completed_at for task %q: %w", task.ID, err)
 	}
 	if task.StashScanStartedAt, err = parseOptionalSQLiteTimestamp(r.StashScanStartedAt); err != nil {
 		return nil, fmt.Errorf("taskruntime: parse stash_scan_started_at for task %q: %w", task.ID, err)
@@ -372,7 +380,9 @@ type sqliteTaskParams struct {
 	Progress                float64 `db:"progress"`
 	QBittorrentState        any     `db:"qbittorrent_state"`
 	ContentPath             any     `db:"content_path"`
+	SourcingCompletedAt     any     `db:"sourcing_completed_at"`
 	DownloadCompletedAt     any     `db:"download_completed_at"`
+	IngestCompletedAt       any     `db:"ingest_completed_at"`
 	MojiSourcePath          any     `db:"moji_source_path"`
 	TransferAction          any     `db:"transfer_action"`
 	MojiTransferPath        any     `db:"moji_transfer_path"`
@@ -425,7 +435,9 @@ func taskToSQLiteParams(task *Task) sqliteTaskParams {
 		Progress:                task.Progress,
 		QBittorrentState:        nullableStringParam(task.QBittorrentState),
 		ContentPath:             nullableStringParam(task.ContentPath),
+		SourcingCompletedAt:     formatOptionalSQLiteTimestamp(task.SourcingCompletedAt),
 		DownloadCompletedAt:     formatOptionalSQLiteTimestamp(task.DownloadCompletedAt),
+		IngestCompletedAt:       formatOptionalSQLiteTimestamp(task.IngestCompletedAt),
 		MojiSourcePath:          nullableStringParam(task.MojiSourcePath),
 		TransferAction:          nullableStringParam(task.TransferAction),
 		MojiTransferPath:        nullableStringParam(task.MojiTransferPath),
@@ -459,7 +471,7 @@ func upsertTaskRow(ctx context.Context, tx *sqlx.Tx, task *Task, isUpdate bool) 
 INSERT INTO tasks (
   id, source, code, stage, stage_status, stage_error_code, stage_error_message, file_plan_json, torrent_url, save_path, category, tags,
   torrent_identity_hash, torrent_identity_magnet, torrent_hash, torrent_name, progress, qbittorrent_state, content_path,
-  download_completed_at, moji_source_path, transfer_action, moji_transfer_path,
+  sourcing_completed_at, download_completed_at, ingest_completed_at, moji_source_path, transfer_action, moji_transfer_path,
   stash_ingest_phase, stash_generate_job_id, stash_identify_job_id, stash_scene_ids_json, stash_scene_recovery_count,
   transfer_error, stash_scan_job_id, stash_scan_path, stash_scan_error, stash_scan_hint,
   stash_scan_started_at, selected_title, selected_tracker, selected_info_hash, selected_link, selected_magnet_uri,
@@ -467,7 +479,7 @@ INSERT INTO tasks (
 ) VALUES (
   :id, :source, :code, :stage, :stage_status, :stage_error_code, :stage_error_message, :file_plan_json, :torrent_url, :save_path, :category, :tags,
   :torrent_identity_hash, :torrent_identity_magnet, :torrent_hash, :torrent_name, :progress, :qbittorrent_state, :content_path,
-  :download_completed_at, :moji_source_path, :transfer_action, :moji_transfer_path,
+  :sourcing_completed_at, :download_completed_at, :ingest_completed_at, :moji_source_path, :transfer_action, :moji_transfer_path,
   :stash_ingest_phase, :stash_generate_job_id, :stash_identify_job_id, :stash_scene_ids_json, :stash_scene_recovery_count,
   :transfer_error, :stash_scan_job_id, :stash_scan_path, :stash_scan_error, :stash_scan_hint,
   :stash_scan_started_at, :selected_title, :selected_tracker, :selected_info_hash, :selected_link, :selected_magnet_uri,
@@ -494,7 +506,9 @@ ON CONFLICT(id) DO UPDATE SET
   progress = excluded.progress,
   qbittorrent_state = excluded.qbittorrent_state,
   content_path = excluded.content_path,
+  sourcing_completed_at = excluded.sourcing_completed_at,
   download_completed_at = excluded.download_completed_at,
+  ingest_completed_at = excluded.ingest_completed_at,
   moji_source_path = excluded.moji_source_path,
   transfer_action = excluded.transfer_action,
   moji_transfer_path = excluded.moji_transfer_path,

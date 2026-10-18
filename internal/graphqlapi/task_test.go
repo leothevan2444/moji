@@ -1702,3 +1702,32 @@ func (fakeStashService) CurrentConfig() stashsync.IntegrationConfig {
 func ptrTime(t time.Time) *time.Time {
 	return &t
 }
+
+func TestTaskCompletionTimestamps(t *testing.T) {
+	completedAt := time.Date(2026, 10, 18, 5, 30, 0, 0, time.UTC)
+	runtime := &fakeTaskRuntime{listTasks: []*taskruntime.Task{
+		{ID: "complete", Stage: taskruntime.TaskStageCompleted, StageStatus: taskruntime.TaskStageStatusDone, SourcingCompletedAt: &completedAt, DownloadCompletedAt: &completedAt, IngestCompletedAt: &completedAt},
+		{ID: "historical", Stage: taskruntime.TaskStageCompleted, StageStatus: taskruntime.TaskStageStatusDone},
+	}}
+	var response struct {
+		Data struct {
+			Tasks []struct {
+				SourcingCompletedAt *string `json:"sourcingCompletedAt"`
+				DownloadCompletedAt *string `json:"downloadCompletedAt"`
+				IngestCompletedAt   *string `json:"ingestCompletedAt"`
+			} `json:"tasks"`
+		} `json:"data"`
+		Errors []any `json:"errors"`
+	}
+	executeGraphQLInto(t, NewResolver(nil, nil, runtime, nil, "test"), `{ tasks { sourcingCompletedAt downloadCompletedAt ingestCompletedAt } }`, &response)
+	if len(response.Errors) != 0 || len(response.Data.Tasks) != 2 {
+		t.Fatalf("unexpected response: %+v", response)
+	}
+	actual := response.Data.Tasks[0]
+	if actual.SourcingCompletedAt == nil || *actual.SourcingCompletedAt != completedAt.Format(time.RFC3339) || actual.IngestCompletedAt == nil || *actual.IngestCompletedAt != completedAt.Format(time.RFC3339) || actual.DownloadCompletedAt == nil {
+		t.Fatalf("missing completion times: %+v", actual)
+	}
+	if response.Data.Tasks[1].SourcingCompletedAt != nil || response.Data.Tasks[1].IngestCompletedAt != nil {
+		t.Fatal("historical completion time was fabricated")
+	}
+}

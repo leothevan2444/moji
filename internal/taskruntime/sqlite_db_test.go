@@ -477,3 +477,50 @@ func TestSQLiteAddsRecoveryCounterToExistingV8Database(t *testing.T) {
 		t.Fatalf("counter not persisted: %+v %v", task, err)
 	}
 }
+
+func TestSQLiteV9CompletionUpgradePreservesTasksAndHistory(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "v9.db")
+	legacy, err := sql.Open("sqlite", path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	schema := sqliteSchema
+	for _, column := range []string{"sourcing_completed_at", "ingest_completed_at"} {
+		schema = strings.ReplaceAll(schema, "  "+column+" TEXT,\n", "")
+	}
+	schema = strings.ReplaceAll(schema, "VALUES ('schema_version', '"+sqliteSchemaVersion+"')", "VALUES ('schema_version', '9')")
+	if _, err := legacy.Exec(schema); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := legacy.Exec(`INSERT INTO tasks (id, code, stage, stage_status, created_at, updated_at, stash_scan_job_id, stash_scan_path) VALUES ('old-task', 'ABCD-123', 'SCANNING', 'RUNNING', '2026-01-01T00:00:00Z', '2026-01-01T00:00:00Z', 'old-scan', '/library/ABCD-123.mp4')`); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := legacy.Exec(`INSERT INTO task_events (task_id, event_type, message, created_at) VALUES ('old-task', 'CREATED', 'original history', '2026-01-01T00:00:00Z')`); err != nil {
+		t.Fatal(err)
+	}
+	legacy.Close()
+	store, err := NewSQLiteTaskStore(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer store.db.Close()
+	task, err := store.Find(context.Background(), "old-task")
+	if err != nil || task.StashScanJobID != "old-scan" || task.IngestCompletedAt != nil {
+		t.Fatalf("upgrade lost task: %+v %v", task, err)
+	}
+	completedAt := time.Date(2026, 10, 18, 5, 0, 0, 0, time.UTC)
+	task.IngestCompletedAt = &completedAt
+	task.StashIngestPhase, task.StashGenerateJobID = StashIngestGenerate, "generate-job"
+	task.StashSceneIDsJSON = `["1","2"]`
+	if err := store.Update(context.Background(), task); err != nil {
+		t.Fatal(err)
+	}
+	reloaded, err := store.Find(context.Background(), "old-task")
+	if err != nil || reloaded.StashGenerateJobID != "generate-job" || len(reloaded.StashSceneIDs()) != 2 || reloaded.IngestCompletedAt == nil || !reloaded.IngestCompletedAt.Equal(completedAt) {
+		t.Fatalf("new ingest fields not persisted: %+v %v", reloaded, err)
+	}
+	var count int
+	if err := store.db.Get(&count, `SELECT COUNT(*) FROM task_events WHERE message = 'original history'`); err != nil || count != 1 {
+		t.Fatalf("upgrade lost history: %d %v", count, err)
+	}
+}

@@ -28,6 +28,7 @@ query TasksOverviewDocument {
     category
     tags
     downloadCompletedAt
+    sourcingCompletedAt ingestCompletedAt
     mojiSourcePath
     transferAction
     mojiTransferPath

@@ -21,6 +21,7 @@ query TaskDetailDocument($id: ID!) {
     category
     tags
     downloadCompletedAt
+    sourcingCompletedAt ingestCompletedAt
     mojiSourcePath
     transferAction
     mojiTransferPath
@@ -68,6 +69,7 @@ mutation SyncTaskProgressDocument {
     stageStatusLabel
     progress
     qbittorrentState
+    sourcingCompletedAt ingestCompletedAt
     updatedAt
   }
 }
@@ -86,6 +88,7 @@ mutation TriggerStashScansDocument {
     stashScanPath
     stashScanError
     stashScanHint
+    sourcingCompletedAt ingestCompletedAt
     updatedAt
   }
 }
@@ -104,6 +107,7 @@ mutation TriggerTaskStashScanDocument($id: ID!) {
     stashScanPath
     stashScanError
     stashScanHint
+    sourcingCompletedAt ingestCompletedAt
     updatedAt
   }
 }
@@ -117,6 +121,7 @@ mutation DeleteTaskDocument($id: ID!) {
     stageLabel
     stageStatusLabel
     code
+    sourcingCompletedAt ingestCompletedAt
     updatedAt
   }
 }
@@ -135,6 +140,7 @@ mutation RetryTaskDocument($id: ID!) {
     code
     progress
     qbittorrentState
+    sourcingCompletedAt ingestCompletedAt
     updatedAt
   }
 }
@@ -145,7 +151,7 @@ mutation RetryTasksDocument($ids: [ID!]!) {
     summary { requestedCount succeededCount skippedCount failedCount }
     results {
       taskId status reasonCode
-      task { id source code stage stageStatus stageLabel stageStatusLabel progress qbittorrentState updatedAt }
+      task { id source code stage stageStatus stageLabel stageStatusLabel progress qbittorrentState sourcingCompletedAt ingestCompletedAt updatedAt }
     }
   }
 }
@@ -159,7 +165,7 @@ mutation ProcessTaskIngestDocument($ids: [ID!]!) {
       task {
         id source code stage stageStatus stageLabel stageStatusLabel progress transferError
         stashIngestPhase stashGenerateJobId stashIdentifyJobId stashSceneIds
-        stashScanJobId stashScanPath stashScanError stashScanHint updatedAt
+        stashScanJobId stashScanPath stashScanError stashScanHint sourcingCompletedAt ingestCompletedAt updatedAt
       }
     }
   }
@@ -196,6 +202,7 @@ mutation ResolveBlockedSourcingTaskDocument($id: ID!, $input: ResolveBlockedSour
     torrentUrl
     progress
     qbittorrentState
+    sourcingCompletedAt ingestCompletedAt
     updatedAt
   }
 }
@@ -204,6 +211,7 @@ mutation ResolveTaskFilesDocument($id: ID!, $videoIndices: [Int!]!) {
   resolveTaskFiles(id: $id, videoIndices: $videoIndices) {
     id stage stageStatus stageErrorCode stageErrorMessage
     files { index path size kind part selected reason }
+    sourcingCompletedAt ingestCompletedAt
     updatedAt
   }
 }

@@ -17,7 +17,7 @@ import (
 //go:embed sqlite_schema.sql
 var sqliteSchema string
 
-const sqliteSchemaVersion = "9"
+const sqliteSchemaVersion = "11"
 
 func OpenSQLiteDatabase(path string) (*sqlx.DB, error) {
 	trimmed := strings.TrimSpace(path)
@@ -70,7 +70,7 @@ func configureSQLiteDatabase(db *sqlx.DB) error {
 		return err
 	}
 
-	if !hadSchema || versionBeforeInit == sqliteSchemaVersion || versionBeforeInit == "7" || versionBeforeInit == "8" {
+	if !hadSchema || versionBeforeInit == sqliteSchemaVersion || versionBeforeInit == "7" || versionBeforeInit == "8" || versionBeforeInit == "9" || versionBeforeInit == "10" {
 		if _, err := db.Exec(sqliteSchema); err != nil {
 			return fmt.Errorf("taskruntime: initialize sqlite schema: %w", err)
 		}
@@ -125,7 +125,7 @@ func ensureSQLiteRuntimeState(db *sqlx.DB) error {
 		}
 	}
 
-	for _, column := range []string{"file_plan_json", "stash_ingest_phase", "stash_generate_job_id", "stash_identify_job_id", "stash_scene_ids_json"} {
+	for _, column := range []string{"sourcing_completed_at", "ingest_completed_at", "file_plan_json", "stash_ingest_phase", "stash_generate_job_id", "stash_identify_job_id", "stash_scene_ids_json"} {
 		exists, err := sqliteColumnExists(db, "tasks", column)
 		if err != nil {
 			return err

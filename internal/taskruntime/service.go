@@ -88,7 +88,9 @@ type Task struct {
 	Progress                float64
 	QBittorrentState        string
 	ContentPath             string
+	SourcingCompletedAt     *time.Time
 	DownloadCompletedAt     *time.Time
+	IngestCompletedAt       *time.Time
 	MojiSourcePath          string
 	TransferAction          string
 	MojiTransferPath        string
@@ -851,6 +853,10 @@ func (s *Service) submitTaskTorrent(ctx context.Context, task *Task, torrentURL 
 	setTaskStage(task, TaskStageDownloading, TaskStageStatusRunning)
 	clearTaskStageError(task)
 	task.UpdatedAt = s.now().UTC()
+	if task.SourcingCompletedAt == nil {
+		completedAt := task.UpdatedAt
+		task.SourcingCompletedAt = &completedAt
+	}
 	if err := s.store.Update(ctx, task); err != nil {
 		logging.Errorf("taskruntime: persist task %s failed after qB submit: %v", task.ID, err)
 		return fmt.Errorf("update task: %w", err)
@@ -1142,7 +1148,9 @@ func cloneTask(task *Task) *Task {
 		return nil
 	}
 	cp := *task
+	cp.SourcingCompletedAt = cloneTime(task.SourcingCompletedAt)
 	cp.DownloadCompletedAt = cloneTime(task.DownloadCompletedAt)
+	cp.IngestCompletedAt = cloneTime(task.IngestCompletedAt)
 	cp.StashScanStartedAt = cloneTime(task.StashScanStartedAt)
 	refreshTaskStageFields(&cp)
 	return &cp

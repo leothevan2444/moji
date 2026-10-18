@@ -624,12 +624,14 @@ type ComplexityRoot struct {
 		DownloadCompletedAt func(childComplexity int) int
 		Files               func(childComplexity int) int
 		ID                  func(childComplexity int) int
+		IngestCompletedAt   func(childComplexity int) int
 		MojiSourcePath      func(childComplexity int) int
 		MojiTransferPath    func(childComplexity int) int
 		Progress            func(childComplexity int) int
 		QbittorrentState    func(childComplexity int) int
 		SavePath            func(childComplexity int) int
 		Source              func(childComplexity int) int
+		SourcingCompletedAt func(childComplexity int) int
 		Stage               func(childComplexity int) int
 		StageErrorCode      func(childComplexity int) int
 		StageErrorMessage   func(childComplexity int) int
@@ -3715,6 +3717,13 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.Task.ID(childComplexity), true
 
+	case "Task.ingestCompletedAt":
+		if e.complexity.Task.IngestCompletedAt == nil {
+			break
+		}
+
+		return e.complexity.Task.IngestCompletedAt(childComplexity), true
+
 	case "Task.mojiSourcePath":
 		if e.complexity.Task.MojiSourcePath == nil {
 			break
@@ -3756,6 +3765,13 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.Task.Source(childComplexity), true
+
+	case "Task.sourcingCompletedAt":
+		if e.complexity.Task.SourcingCompletedAt == nil {
+			break
+		}
+
+		return e.complexity.Task.SourcingCompletedAt(childComplexity), true
 
 	case "Task.stage":
 		if e.complexity.Task.Stage == nil {
@@ -4736,7 +4752,6 @@ type StashSettings {
 
 type IngestSettings {
   keepSubtitles: Boolean!
-
   downloads: DownloadsIngestSettings!
   library: LibraryIngestSettings!
   transfer: TransferIngestSettings!
@@ -4970,7 +4985,6 @@ input UpdateStashSettingsInput {
 
 input UpdateIngestSettingsInput {
   keepSubtitles: Boolean = false
-
   downloads: DownloadsIngestSettingsInput!
   library: LibraryIngestSettingsInput!
   transfer: TransferIngestSettingsInput!
@@ -5524,7 +5538,11 @@ type Task {
   progress: Float!
   qbittorrentState: String
   contentPath: String
+  "Time when a selected torrent was successfully submitted to the downloader; null when not recorded."
+  sourcingCompletedAt: String
   downloadCompletedAt: String
+  "Time when all ingest steps passed verification; null when not recorded."
+  ingestCompletedAt: String
 
   mojiSourcePath: String
   transferAction: String
@@ -11640,8 +11658,12 @@ func (ec *executionContext) fieldContext_Mutation_addTorrent(ctx context.Context
 				return ec.fieldContext_Task_qbittorrentState(ctx, field)
 			case "contentPath":
 				return ec.fieldContext_Task_contentPath(ctx, field)
+			case "sourcingCompletedAt":
+				return ec.fieldContext_Task_sourcingCompletedAt(ctx, field)
 			case "downloadCompletedAt":
 				return ec.fieldContext_Task_downloadCompletedAt(ctx, field)
+			case "ingestCompletedAt":
+				return ec.fieldContext_Task_ingestCompletedAt(ctx, field)
 			case "mojiSourcePath":
 				return ec.fieldContext_Task_mojiSourcePath(ctx, field)
 			case "transferAction":
@@ -11769,8 +11791,12 @@ func (ec *executionContext) fieldContext_Mutation_downloadMedia(ctx context.Cont
 				return ec.fieldContext_Task_qbittorrentState(ctx, field)
 			case "contentPath":
 				return ec.fieldContext_Task_contentPath(ctx, field)
+			case "sourcingCompletedAt":
+				return ec.fieldContext_Task_sourcingCompletedAt(ctx, field)
 			case "downloadCompletedAt":
 				return ec.fieldContext_Task_downloadCompletedAt(ctx, field)
+			case "ingestCompletedAt":
+				return ec.fieldContext_Task_ingestCompletedAt(ctx, field)
 			case "mojiSourcePath":
 				return ec.fieldContext_Task_mojiSourcePath(ctx, field)
 			case "transferAction":
@@ -11898,8 +11924,12 @@ func (ec *executionContext) fieldContext_Mutation_syncTaskProgress(_ context.Con
 				return ec.fieldContext_Task_qbittorrentState(ctx, field)
 			case "contentPath":
 				return ec.fieldContext_Task_contentPath(ctx, field)
+			case "sourcingCompletedAt":
+				return ec.fieldContext_Task_sourcingCompletedAt(ctx, field)
 			case "downloadCompletedAt":
 				return ec.fieldContext_Task_downloadCompletedAt(ctx, field)
+			case "ingestCompletedAt":
+				return ec.fieldContext_Task_ingestCompletedAt(ctx, field)
 			case "mojiSourcePath":
 				return ec.fieldContext_Task_mojiSourcePath(ctx, field)
 			case "transferAction":
@@ -12016,8 +12046,12 @@ func (ec *executionContext) fieldContext_Mutation_triggerTaskStashScan(ctx conte
 				return ec.fieldContext_Task_qbittorrentState(ctx, field)
 			case "contentPath":
 				return ec.fieldContext_Task_contentPath(ctx, field)
+			case "sourcingCompletedAt":
+				return ec.fieldContext_Task_sourcingCompletedAt(ctx, field)
 			case "downloadCompletedAt":
 				return ec.fieldContext_Task_downloadCompletedAt(ctx, field)
+			case "ingestCompletedAt":
+				return ec.fieldContext_Task_ingestCompletedAt(ctx, field)
 			case "mojiSourcePath":
 				return ec.fieldContext_Task_mojiSourcePath(ctx, field)
 			case "transferAction":
@@ -12145,8 +12179,12 @@ func (ec *executionContext) fieldContext_Mutation_triggerStashScans(_ context.Co
 				return ec.fieldContext_Task_qbittorrentState(ctx, field)
 			case "contentPath":
 				return ec.fieldContext_Task_contentPath(ctx, field)
+			case "sourcingCompletedAt":
+				return ec.fieldContext_Task_sourcingCompletedAt(ctx, field)
 			case "downloadCompletedAt":
 				return ec.fieldContext_Task_downloadCompletedAt(ctx, field)
+			case "ingestCompletedAt":
+				return ec.fieldContext_Task_ingestCompletedAt(ctx, field)
 			case "mojiSourcePath":
 				return ec.fieldContext_Task_mojiSourcePath(ctx, field)
 			case "transferAction":
@@ -12263,8 +12301,12 @@ func (ec *executionContext) fieldContext_Mutation_retryTask(ctx context.Context,
 				return ec.fieldContext_Task_qbittorrentState(ctx, field)
 			case "contentPath":
 				return ec.fieldContext_Task_contentPath(ctx, field)
+			case "sourcingCompletedAt":
+				return ec.fieldContext_Task_sourcingCompletedAt(ctx, field)
 			case "downloadCompletedAt":
 				return ec.fieldContext_Task_downloadCompletedAt(ctx, field)
+			case "ingestCompletedAt":
+				return ec.fieldContext_Task_ingestCompletedAt(ctx, field)
 			case "mojiSourcePath":
 				return ec.fieldContext_Task_mojiSourcePath(ctx, field)
 			case "transferAction":
@@ -12392,8 +12434,12 @@ func (ec *executionContext) fieldContext_Mutation_resolveBlockedSourcingTask(ctx
 				return ec.fieldContext_Task_qbittorrentState(ctx, field)
 			case "contentPath":
 				return ec.fieldContext_Task_contentPath(ctx, field)
+			case "sourcingCompletedAt":
+				return ec.fieldContext_Task_sourcingCompletedAt(ctx, field)
 			case "downloadCompletedAt":
 				return ec.fieldContext_Task_downloadCompletedAt(ctx, field)
+			case "ingestCompletedAt":
+				return ec.fieldContext_Task_ingestCompletedAt(ctx, field)
 			case "mojiSourcePath":
 				return ec.fieldContext_Task_mojiSourcePath(ctx, field)
 			case "transferAction":
@@ -12521,8 +12567,12 @@ func (ec *executionContext) fieldContext_Mutation_resolveTaskFiles(ctx context.C
 				return ec.fieldContext_Task_qbittorrentState(ctx, field)
 			case "contentPath":
 				return ec.fieldContext_Task_contentPath(ctx, field)
+			case "sourcingCompletedAt":
+				return ec.fieldContext_Task_sourcingCompletedAt(ctx, field)
 			case "downloadCompletedAt":
 				return ec.fieldContext_Task_downloadCompletedAt(ctx, field)
+			case "ingestCompletedAt":
+				return ec.fieldContext_Task_ingestCompletedAt(ctx, field)
 			case "mojiSourcePath":
 				return ec.fieldContext_Task_mojiSourcePath(ctx, field)
 			case "transferAction":
@@ -12650,8 +12700,12 @@ func (ec *executionContext) fieldContext_Mutation_deleteTask(ctx context.Context
 				return ec.fieldContext_Task_qbittorrentState(ctx, field)
 			case "contentPath":
 				return ec.fieldContext_Task_contentPath(ctx, field)
+			case "sourcingCompletedAt":
+				return ec.fieldContext_Task_sourcingCompletedAt(ctx, field)
 			case "downloadCompletedAt":
 				return ec.fieldContext_Task_downloadCompletedAt(ctx, field)
+			case "ingestCompletedAt":
+				return ec.fieldContext_Task_ingestCompletedAt(ctx, field)
 			case "mojiSourcePath":
 				return ec.fieldContext_Task_mojiSourcePath(ctx, field)
 			case "transferAction":
@@ -12968,8 +13022,12 @@ func (ec *executionContext) fieldContext_Mutation_queueDiscoveredScene(ctx conte
 				return ec.fieldContext_Task_qbittorrentState(ctx, field)
 			case "contentPath":
 				return ec.fieldContext_Task_contentPath(ctx, field)
+			case "sourcingCompletedAt":
+				return ec.fieldContext_Task_sourcingCompletedAt(ctx, field)
 			case "downloadCompletedAt":
 				return ec.fieldContext_Task_downloadCompletedAt(ctx, field)
+			case "ingestCompletedAt":
+				return ec.fieldContext_Task_ingestCompletedAt(ctx, field)
 			case "mojiSourcePath":
 				return ec.fieldContext_Task_mojiSourcePath(ctx, field)
 			case "transferAction":
@@ -18332,8 +18390,12 @@ func (ec *executionContext) fieldContext_Query_task(ctx context.Context, field g
 				return ec.fieldContext_Task_qbittorrentState(ctx, field)
 			case "contentPath":
 				return ec.fieldContext_Task_contentPath(ctx, field)
+			case "sourcingCompletedAt":
+				return ec.fieldContext_Task_sourcingCompletedAt(ctx, field)
 			case "downloadCompletedAt":
 				return ec.fieldContext_Task_downloadCompletedAt(ctx, field)
+			case "ingestCompletedAt":
+				return ec.fieldContext_Task_ingestCompletedAt(ctx, field)
 			case "mojiSourcePath":
 				return ec.fieldContext_Task_mojiSourcePath(ctx, field)
 			case "transferAction":
@@ -18461,8 +18523,12 @@ func (ec *executionContext) fieldContext_Query_tasks(_ context.Context, field gr
 				return ec.fieldContext_Task_qbittorrentState(ctx, field)
 			case "contentPath":
 				return ec.fieldContext_Task_contentPath(ctx, field)
+			case "sourcingCompletedAt":
+				return ec.fieldContext_Task_sourcingCompletedAt(ctx, field)
 			case "downloadCompletedAt":
 				return ec.fieldContext_Task_downloadCompletedAt(ctx, field)
+			case "ingestCompletedAt":
+				return ec.fieldContext_Task_ingestCompletedAt(ctx, field)
 			case "mojiSourcePath":
 				return ec.fieldContext_Task_mojiSourcePath(ctx, field)
 			case "transferAction":
@@ -18839,8 +18905,12 @@ func (ec *executionContext) fieldContext_QueuePerformerSceneResult_task(_ contex
 				return ec.fieldContext_Task_qbittorrentState(ctx, field)
 			case "contentPath":
 				return ec.fieldContext_Task_contentPath(ctx, field)
+			case "sourcingCompletedAt":
+				return ec.fieldContext_Task_sourcingCompletedAt(ctx, field)
 			case "downloadCompletedAt":
 				return ec.fieldContext_Task_downloadCompletedAt(ctx, field)
+			case "ingestCompletedAt":
+				return ec.fieldContext_Task_ingestCompletedAt(ctx, field)
 			case "mojiSourcePath":
 				return ec.fieldContext_Task_mojiSourcePath(ctx, field)
 			case "transferAction":
@@ -18998,8 +19068,12 @@ func (ec *executionContext) fieldContext_QueuePerformerScenesPayload_queuedTasks
 				return ec.fieldContext_Task_qbittorrentState(ctx, field)
 			case "contentPath":
 				return ec.fieldContext_Task_contentPath(ctx, field)
+			case "sourcingCompletedAt":
+				return ec.fieldContext_Task_sourcingCompletedAt(ctx, field)
 			case "downloadCompletedAt":
 				return ec.fieldContext_Task_downloadCompletedAt(ctx, field)
+			case "ingestCompletedAt":
+				return ec.fieldContext_Task_ingestCompletedAt(ctx, field)
 			case "mojiSourcePath":
 				return ec.fieldContext_Task_mojiSourcePath(ctx, field)
 			case "transferAction":
@@ -27282,6 +27356,47 @@ func (ec *executionContext) fieldContext_Task_contentPath(_ context.Context, fie
 	return fc, nil
 }
 
+func (ec *executionContext) _Task_sourcingCompletedAt(ctx context.Context, field graphql.CollectedField, obj *model.Task) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Task_sourcingCompletedAt(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.SourcingCompletedAt, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*string)
+	fc.Result = res
+	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Task_sourcingCompletedAt(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Task",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _Task_downloadCompletedAt(ctx context.Context, field graphql.CollectedField, obj *model.Task) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_Task_downloadCompletedAt(ctx, field)
 	if err != nil {
@@ -27311,6 +27426,47 @@ func (ec *executionContext) _Task_downloadCompletedAt(ctx context.Context, field
 }
 
 func (ec *executionContext) fieldContext_Task_downloadCompletedAt(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Task",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Task_ingestCompletedAt(ctx context.Context, field graphql.CollectedField, obj *model.Task) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Task_ingestCompletedAt(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.IngestCompletedAt, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*string)
+	fc.Result = res
+	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Task_ingestCompletedAt(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "Task",
 		Field:      field,
@@ -28307,8 +28463,12 @@ func (ec *executionContext) fieldContext_TaskBatchResult_task(_ context.Context,
 				return ec.fieldContext_Task_qbittorrentState(ctx, field)
 			case "contentPath":
 				return ec.fieldContext_Task_contentPath(ctx, field)
+			case "sourcingCompletedAt":
+				return ec.fieldContext_Task_sourcingCompletedAt(ctx, field)
 			case "downloadCompletedAt":
 				return ec.fieldContext_Task_downloadCompletedAt(ctx, field)
+			case "ingestCompletedAt":
+				return ec.fieldContext_Task_ingestCompletedAt(ctx, field)
 			case "mojiSourcePath":
 				return ec.fieldContext_Task_mojiSourcePath(ctx, field)
 			case "transferAction":
@@ -28730,8 +28890,12 @@ func (ec *executionContext) fieldContext_TaskEvent_task(_ context.Context, field
 				return ec.fieldContext_Task_qbittorrentState(ctx, field)
 			case "contentPath":
 				return ec.fieldContext_Task_contentPath(ctx, field)
+			case "sourcingCompletedAt":
+				return ec.fieldContext_Task_sourcingCompletedAt(ctx, field)
 			case "downloadCompletedAt":
 				return ec.fieldContext_Task_downloadCompletedAt(ctx, field)
+			case "ingestCompletedAt":
+				return ec.fieldContext_Task_ingestCompletedAt(ctx, field)
 			case "mojiSourcePath":
 				return ec.fieldContext_Task_mojiSourcePath(ctx, field)
 			case "transferAction":
@@ -37935,8 +38099,12 @@ func (ec *executionContext) _Task(ctx context.Context, sel ast.SelectionSet, obj
 			out.Values[i] = ec._Task_qbittorrentState(ctx, field, obj)
 		case "contentPath":
 			out.Values[i] = ec._Task_contentPath(ctx, field, obj)
+		case "sourcingCompletedAt":
+			out.Values[i] = ec._Task_sourcingCompletedAt(ctx, field, obj)
 		case "downloadCompletedAt":
 			out.Values[i] = ec._Task_downloadCompletedAt(ctx, field, obj)
+		case "ingestCompletedAt":
+			out.Values[i] = ec._Task_ingestCompletedAt(ctx, field, obj)
 		case "mojiSourcePath":
 			out.Values[i] = ec._Task_mojiSourcePath(ctx, field, obj)
 		case "transferAction":
