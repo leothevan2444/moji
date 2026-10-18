@@ -1002,6 +1002,10 @@
     }
   },
   "performerUi": {
+    "firstPage": "First page",
+    "lastPage": "Last page",
+    "targetPage": "Page number",
+    "jumpToPage": "Go",
     "downloadProgress": "Downloading {{progress}}%",
     "dualSource": "Dual source",
     "detail": "Performer details",

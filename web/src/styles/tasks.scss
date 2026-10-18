@@ -1201,6 +1201,28 @@ button.profile-icon {
   flex-wrap: wrap;
 }
 
+.pagination-bar--performers {
+  flex-wrap: nowrap;
+  justify-content: safe center;
+  overflow-x: auto;
+
+  > * {
+    flex-shrink: 0;
+    white-space: nowrap;
+  }
+}
+
+.pagination-bar__jump {
+  display: flex;
+  align-items: center;
+  gap: $space-2;
+
+  input {
+    width: 5rem;
+    min-width: 0;
+  }
+}
+
 .drawer-scrim {
   position: fixed;
   inset: 0;

@@ -57,6 +57,7 @@ function props(overrides: Partial<ComponentProps<typeof PerformersPage>> = {}): 
     onRefreshOne: noop,
     onPrevPage: noop,
     onNextPage: noop,
+    onPageChange: noop,
     onOpenPerformer: noop,
     onOpenTask: noop,
     onBackToList: noop,
@@ -110,5 +111,43 @@ describe("PerformersPage list selection", () => {
     fireEvent.click(screen.getByRole("button", { name: "More actions" }));
     expect(screen.getByRole("dialog", { name: "More actions" })).toBeTruthy();
     expect((screen.getByRole("button", { name: "Check all" }) as HTMLButtonElement).disabled).toBe(true);
+  });
+
+  it("jumps to first, last, and valid specified pages and disables navigation while loading", () => {
+    const onPageChange = vi.fn();
+    const pageProps = props({
+      onPageChange,
+      stashPerformerPage: { ...props().stashPerformerPage!, page: 3, totalPages: 10, hasPrevPage: true, hasNextPage: true }
+    });
+    const view = render(<PerformersPage {...pageProps} />);
+    const pagination = within(view.container.querySelector(".pagination-bar--performers")! as HTMLElement);
+    fireEvent.click(pagination.getByRole("button", { name: "First page" }));
+    expect(onPageChange).toHaveBeenLastCalledWith(1);
+    fireEvent.click(pagination.getByRole("button", { name: "Last page" }));
+    expect(onPageChange).toHaveBeenLastCalledWith(10);
+
+    const input = pagination.getByRole("spinbutton", { name: "Page number" });
+    const submit = pagination.getByRole("button", { name: "Go" }) as HTMLButtonElement;
+    for (const value of ["", "0", "11", "2.5", "3"]) {
+      fireEvent.change(input, { target: { value } });
+      expect(submit.disabled).toBe(true);
+      fireEvent.submit(input.closest("form")!);
+    }
+    expect(onPageChange).toHaveBeenCalledTimes(2);
+    fireEvent.change(input, { target: { value: "7" } });
+    expect(submit.disabled).toBe(false);
+    fireEvent.submit(input.closest("form")!);
+    expect(onPageChange).toHaveBeenLastCalledWith(7);
+
+    view.rerender(<PerformersPage {...pageProps} fetchingStashPerformers />);
+    for (const name of ["First page", "Previous", "Next", "Last page", "Go"]) {
+      expect((pagination.getByRole("button", { name }) as HTMLButtonElement).disabled).toBe(true);
+    }
+
+    view.rerender(<PerformersPage {...pageProps} stashPerformerPage={{ ...pageProps.stashPerformerPage!, page: 1, hasPrevPage: false }} />);
+    expect((pagination.getByRole("button", { name: "First page" }) as HTMLButtonElement).disabled).toBe(true);
+    expect((input as HTMLInputElement).value).toBe("");
+    view.rerender(<PerformersPage {...pageProps} stashPerformerPage={{ ...pageProps.stashPerformerPage!, page: 10, hasNextPage: false }} />);
+    expect((pagination.getByRole("button", { name: "Last page" }) as HTMLButtonElement).disabled).toBe(true);
   });
 });

@@ -116,6 +116,7 @@ interface PerformersPageProps {
   onRefreshOne: (performer: StashPerformerEntry) => void;
   onPrevPage: () => void;
   onNextPage: () => void;
+  onPageChange: (page: number) => void;
   onOpenPerformer: (performerId: string) => void;
   onOpenTask: (taskId: string) => void;
   onBackToList: () => void;
@@ -180,6 +181,7 @@ export function PerformersPage({
   onRefreshOne,
   onPrevPage,
   onNextPage,
+  onPageChange,
   onOpenPerformer,
   onOpenTask,
   onBackToList,
@@ -197,6 +199,13 @@ export function PerformersPage({
 }: PerformersPageProps) {
   const { t } = useTranslation();
   const [moreActionsOpen, setMoreActionsOpen] = useState(false);
+  const [pageInput, setPageInput] = useState("");
+  const targetPage = Number(pageInput);
+  const canJump = Number.isInteger(targetPage) && targetPage >= 1
+    && targetPage <= (stashPerformerPage?.totalPages ?? 1)
+    && targetPage !== stashPerformerPage?.page;
+
+  useEffect(() => setPageInput(""), [stashPerformerPage?.page]);
 
   useEffect(() => {
     if (!moreActionsOpen) return;
@@ -603,6 +612,46 @@ export function PerformersPage({
     )}</PerformerDetailView>;
   }
 
+  const pagination = stashPerformerPage && stashPerformerPage.totalPages > 1 ? (
+    <div className="pagination-bar pagination-bar--performers">
+      <button type="button" className="ghost-button" disabled={!stashPerformerPage.hasPrevPage || fetchingStashPerformers} onClick={() => onPageChange(1)}>
+        {t("performerUi.firstPage")}
+      </button>
+      <button type="button" className="ghost-button" disabled={!stashPerformerPage.hasPrevPage || fetchingStashPerformers} onClick={onPrevPage}>
+        {t("performerUi.previous")}
+      </button>
+      <span className="status-chip tone-neutral">
+        {t("performerUi.page", { page: stashPerformerPage.page, pages: stashPerformerPage.totalPages })}
+      </span>
+      <button type="button" className="ghost-button" disabled={!stashPerformerPage.hasNextPage || fetchingStashPerformers} onClick={onNextPage}>
+        {t("performerUi.next")}
+      </button>
+      <button type="button" className="ghost-button" disabled={!stashPerformerPage.hasNextPage || fetchingStashPerformers} onClick={() => onPageChange(stashPerformerPage.totalPages)}>
+        {t("performerUi.lastPage")}
+      </button>
+      <form className="pagination-bar__jump" onSubmit={(event) => {
+        event.preventDefault();
+        if (canJump && !fetchingStashPerformers) onPageChange(targetPage);
+      }}>
+        <input
+          type="number"
+          min={1}
+          max={stashPerformerPage.totalPages}
+          step={1}
+          required
+          value={pageInput}
+          placeholder={String(stashPerformerPage.page)}
+          aria-label={t("performerUi.targetPage")}
+          disabled={fetchingStashPerformers}
+          onChange={(event) => setPageInput(event.target.value)}
+        />
+        <button type="submit" className="ghost-button" disabled={!canJump || fetchingStashPerformers}>
+          {t("performerUi.jumpToPage")}
+        </button>
+      </form>
+    </div>
+  ) : null;
+
   return <PerformerListView>{(
     <section className="section-band">
       <div className="band-head">
@@ -665,19 +714,7 @@ export function PerformersPage({
         <button type="button" className="ghost-button" disabled={performerBatchPending || selectedPerformerIds.length === 0} onClick={onClearPerformerSelection}><FontAwesomeIcon icon={faXmark} /> {t("performerBatch.clear")}</button>
       </div> : null}
 
-      {stashPerformerPage && stashPerformerPage.totalPages > 1 ? (
-        <div className="pagination-bar">
-          <button type="button" className="ghost-button" disabled={!stashPerformerPage.hasPrevPage || fetchingStashPerformers} onClick={onPrevPage}>
-            {t("performerUi.previous")}
-          </button>
-          <span className="status-chip tone-neutral">
-            {t("performerUi.page", { page: stashPerformerPage.page, pages: stashPerformerPage.totalPages })}
-          </span>
-          <button type="button" className="ghost-button" disabled={!stashPerformerPage.hasNextPage || fetchingStashPerformers} onClick={onNextPage}>
-            {t("performerUi.next")}
-          </button>
-        </div>
-      ) : null}
+      {pagination}
 
 
       {subscriptionError || stashPerformersError ? (
@@ -795,19 +832,7 @@ export function PerformersPage({
         })}
       </div>
 
-      {stashPerformerPage && stashPerformerPage.totalPages > 1 ? (
-        <div className="pagination-bar">
-          <button type="button" className="ghost-button" disabled={!stashPerformerPage.hasPrevPage || fetchingStashPerformers} onClick={onPrevPage}>
-            {t("performerUi.previous")}
-          </button>
-          <span className="status-chip tone-neutral">
-            {t("performerUi.page", { page: stashPerformerPage.page, pages: stashPerformerPage.totalPages })}
-          </span>
-          <button type="button" className="ghost-button" disabled={!stashPerformerPage.hasNextPage || fetchingStashPerformers} onClick={onNextPage}>
-            {t("performerUi.next")}
-          </button>
-        </div>
-      ) : null}
+      {pagination}
 
       {moreActionsOpen ? (
         <div className="task-actions-dialog__scrim" onClick={() => setMoreActionsOpen(false)}>

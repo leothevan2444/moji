@@ -992,6 +992,10 @@
     }
   },
   "performerUi": {
+    "firstPage": "首页",
+    "lastPage": "尾页",
+    "targetPage": "跳转页码",
+    "jumpToPage": "跳转",
     "downloadProgress": "下载 {{progress}}%",
     "dualSource": "双源",
     "detail": "演员详情",
