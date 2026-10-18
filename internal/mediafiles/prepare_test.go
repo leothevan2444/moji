@@ -1,8 +1,11 @@
 package mediafiles
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
 	"errors"
+	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -113,7 +116,7 @@ func TestRealFFmpegMergesFiltersDeduplicatesAndShiftsSubtitles(t *testing.T) {
 		t.Fatal("modified output must not be reused")
 	}
 }
-func TestRealFFmpegSubtitleOffAndCancelledPreparation(t *testing.T) {
+func TestRealFFmpegSingleFilePreservesEmbeddedSubtitlesAndCancelledPreparation(t *testing.T) {
 	requireFFmpeg(t)
 	source, target := t.TempDir(), t.TempDir()
 	makeClip(t, filepath.Join(source, "SSIS-618.mkv"), "green", true)
@@ -126,10 +129,12 @@ func TestRealFFmpegSubtitleOffAndCancelledPreparation(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	hasSubtitle := false
 	for _, s := range p.Streams {
-		if s.Type == "subtitle" {
-			t.Fatal("embedded subtitle retained while disabled")
-		}
+		hasSubtitle = hasSubtitle || s.Type == "subtitle"
+	}
+	if !hasSubtitle {
+		t.Fatal("direct delivery must preserve embedded subtitles")
 	}
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
@@ -140,6 +145,31 @@ func TestRealFFmpegSubtitleOffAndCancelledPreparation(t *testing.T) {
 	}
 	if _, err := os.Stat(filepath.Join(request.TargetRoot, request.Code)); !os.IsNotExist(err) {
 		t.Fatal("cancelled job published output")
+	}
+}
+
+func TestRealFFmpegMultiplePartsStillMergeAndApplySubtitlePolicy(t *testing.T) {
+	requireFFmpeg(t)
+	source, target := t.TempDir(), t.TempDir()
+	makeClip(t, filepath.Join(source, "SSIS-618A.mkv"), "red", true)
+	makeClip(t, filepath.Join(source, "SSIS-618B.mkv"), "blue", true)
+	request := Request{TaskID: "parts", Code: "SSIS-618", SourceRoot: source, TargetRoot: target, Action: "COPY", Plan: Classify("SSIS-618", []File{{Path: "SSIS-618A.mkv"}, {Path: "SSIS-618B.mkv"}}, false)}
+	result, err := (FFmpeg{}).Prepare(context.Background(), request)
+	if err != nil {
+		t.Fatal(err)
+	}
+	p, err := (FFmpeg{}).inspect(context.Background(), result.VideoPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, s := range p.Streams {
+		if s.Type == "subtitle" {
+			t.Fatal("merged output retained disabled subtitles")
+		}
+	}
+	duration, err := p.duration()
+	if err != nil || duration < 1.8 || duration > 2.4 {
+		t.Fatalf("merged duration = %f, err = %v", duration, err)
 	}
 }
 func TestResolveRejectsTraversalAndSymlinkEscape(t *testing.T) {
@@ -181,5 +211,156 @@ func TestRealFFmpegMovePublishesBeforeRemovingSourcesAndRecovers(t *testing.T) {
 	}
 	if _, err := (FFmpeg{}).Prepare(context.Background(), request); err != nil {
 		t.Fatalf("MOVE restart failed after sources removed: %v", err)
+	}
+}
+
+// Deliberately invalid tool paths make any accidental media-tool call fail.
+func withoutMediaTools(t *testing.T) FFmpeg {
+	t.Helper()
+	return FFmpeg{Binary: filepath.Join(t.TempDir(), "missing-ffmpeg"), ProbeBinary: filepath.Join(t.TempDir(), "missing-ffprobe")}
+}
+
+func TestSingleFileDeliveryWithoutMediaTools(t *testing.T) {
+	for _, action := range []string{"COPY", "MOVE"} {
+		for _, keep := range []bool{false, true} {
+			t.Run(action+"/subtitles="+fmt.Sprint(keep), func(t *testing.T) {
+				source, target := t.TempDir(), t.TempDir()
+				video := []byte("original container, tracks, chapters and metadata")
+				subtitle := []byte("1\n00:00:00,100 --> 00:00:00,500\nCaption\n")
+				for name, data := range map[string][]byte{"hhd800.com@IDBD-998.mp4": video, "IDBD-998.en.srt": subtitle, "extra.txt": []byte("extra")} {
+					if err := os.WriteFile(filepath.Join(source, name), data, 0600); err != nil {
+						t.Fatal(err)
+					}
+				}
+				request := Request{TaskID: "single", Code: "IDBD-998", SourceRoot: source, TargetRoot: target, Action: action,
+					Plan: Classify("IDBD-998", []File{{Index: 0, Path: "hhd800.com@IDBD-998.mp4", Size: int64(len(video))}, {Index: 1, Path: "IDBD-998.en.srt"}, {Index: 2, Path: "extra.txt"}}, keep)}
+				preparer := withoutMediaTools(t)
+				result, err := preparer.Prepare(context.Background(), request)
+				if err != nil {
+					t.Fatal(err)
+				}
+				want := filepath.Join(target, "IDBD-998", "IDBD-998.mp4")
+				if result.VideoPath != want {
+					t.Fatalf("video path = %s, want %s", result.VideoPath, want)
+				}
+				got, err := os.ReadFile(want)
+				if err != nil || !bytes.Equal(got, video) {
+					t.Fatalf("video bytes changed: %v", err)
+				}
+				entries, err := os.ReadDir(result.Directory)
+				if err != nil {
+					t.Fatal(err)
+				}
+				count := 1
+				if keep {
+					count++
+					got, err := os.ReadFile(filepath.Join(result.Directory, "IDBD-998.en.srt"))
+					if err != nil || !bytes.Equal(got, subtitle) {
+						t.Fatalf("subtitle bytes changed: %v", err)
+					}
+				}
+				if len(entries) != count {
+					t.Fatalf("unexpected delivered files: %v", entries)
+				}
+				for name, removed := range map[string]bool{"hhd800.com@IDBD-998.mp4": action == "MOVE", "IDBD-998.en.srt": action == "MOVE" && keep, "extra.txt": false} {
+					_, err := os.Stat(filepath.Join(source, name))
+					if removed && !os.IsNotExist(err) || !removed && err != nil {
+						t.Fatalf("source %s removed=%v: %v", name, removed, err)
+					}
+				}
+				retried, err := preparer.Prepare(context.Background(), request)
+				if err != nil || retried != result {
+					t.Fatalf("retry result=%+v err=%v", retried, err)
+				}
+				if err := os.WriteFile(want, []byte("changed"), 0600); err != nil {
+					t.Fatal(err)
+				}
+				if _, err := preparer.Prepare(context.Background(), request); err == nil {
+					t.Fatal("modified output reused")
+				}
+			})
+		}
+	}
+}
+
+func TestDuplicatePartsDeliverOriginalWithoutMediaTools(t *testing.T) {
+	source, target := t.TempDir(), t.TempDir()
+	for _, name := range []string{"IDBD-998A.mp4", "IDBD-998B.mp4"} {
+		if err := os.WriteFile(filepath.Join(source, name), []byte("identical movie"), 0600); err != nil {
+			t.Fatal(err)
+		}
+	}
+	request := Request{TaskID: "duplicates", Code: "IDBD-998", SourceRoot: source, TargetRoot: target, Action: "COPY", Plan: Classify("IDBD-998", []File{{Path: "IDBD-998A.mp4"}, {Path: "IDBD-998B.mp4"}}, false)}
+	result, err := withoutMediaTools(t).Prepare(context.Background(), request)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if filepath.Ext(result.VideoPath) != ".mp4" {
+		t.Fatalf("deduplicated movie was remuxed: %+v", result)
+	}
+}
+
+func TestSingleFileDeliveryRejectsSizeMismatchAndCancellation(t *testing.T) {
+	source, target := t.TempDir(), t.TempDir()
+	if err := os.WriteFile(filepath.Join(source, "IDBD-998.mp4"), []byte("video"), 0600); err != nil {
+		t.Fatal(err)
+	}
+	request := Request{TaskID: "blocked", Code: "IDBD-998", SourceRoot: source, TargetRoot: target, Action: "MOVE", Plan: Classify("IDBD-998", []File{{Path: "IDBD-998.mp4", Size: 100}}, false)}
+	preparer := withoutMediaTools(t)
+	if _, err := preparer.Prepare(context.Background(), request); err == nil || !strings.Contains(err.Error(), "size") {
+		t.Fatalf("expected size mismatch, got %v", err)
+	}
+	request.Plan.Files[0].Size = 5
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+	if _, err := preparer.Prepare(ctx, request); !errors.Is(err, context.Canceled) {
+		t.Fatalf("expected cancellation, got %v", err)
+	}
+	if _, err := os.Stat(filepath.Join(target, request.Code)); !os.IsNotExist(err) {
+		t.Fatal("failed preparation published output")
+	}
+	if _, err := os.Stat(filepath.Join(source, "IDBD-998.mp4")); err != nil {
+		t.Fatal("failed MOVE removed source")
+	}
+}
+
+func TestLegacyReceiptRecoversRemuxedSingleFile(t *testing.T) {
+	source, target := t.TempDir(), t.TempDir()
+	if err := os.WriteFile(filepath.Join(source, "IDBD-998.mp4"), []byte("movie"), 0600); err != nil {
+		t.Fatal(err)
+	}
+	request := Request{TaskID: "legacy", Code: "IDBD-998", SourceRoot: source, TargetRoot: target, Action: "MOVE", Plan: Classify("IDBD-998", []File{{Path: "IDBD-998.mp4"}}, false)}
+	preparer := withoutMediaTools(t)
+	result, err := preparer.Prepare(context.Background(), request)
+	if err != nil {
+		t.Fatal(err)
+	}
+	// Model an old .mkv output/receipt without the new VideoName field.
+	legacyPath := filepath.Join(result.Directory, "IDBD-998.mkv")
+	if err := os.Rename(result.VideoPath, legacyPath); err != nil {
+		t.Fatal(err)
+	}
+	receiptPath := filepath.Join(target, ".moji-receipts", "legacy.json")
+	data, err := os.ReadFile(receiptPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var saved receipt
+	if err := json.Unmarshal(data, &saved); err != nil {
+		t.Fatal(err)
+	}
+	saved.Files["IDBD-998.mkv"] = saved.Files[saved.VideoName]
+	delete(saved.Files, saved.VideoName)
+	saved.VideoName = ""
+	data, err = json.Marshal(saved)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(receiptPath, data, 0600); err != nil {
+		t.Fatal(err)
+	}
+	result, err = preparer.Prepare(context.Background(), request)
+	if err != nil || result.VideoPath != legacyPath {
+		t.Fatalf("legacy recovery: %+v, %v", result, err)
 	}
 }

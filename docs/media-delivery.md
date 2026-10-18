@@ -33,9 +33,11 @@ another release are excluded. No subtitle language detector is used.
 ## Preparation and publication
 
 Ingest always prepares a movie and delivers it using COPY or MOVE. Configure all
-four roots: qB download, Moji download, Moji library, and Stash library. The Moji
-runtime requires `ffmpeg` and `ffprobe` in PATH. Movies are published as
-`CODE/CODE.mkv`; Stash scans the corresponding `Stash library root/CODE` directory.
+four roots: qB download, Moji download, Moji library, and Stash library. Single
+movies are published as `CODE/CODE.ext`, retaining the source extension
+and bytes without requiring media tools. Multiple distinct parts require `ffmpeg`
+and `ffprobe` in PATH and are published as `CODE/CODE.mkv`. Stash scans the
+corresponding `Stash library root/CODE` directory.
 
 The persisted preparation queue uses `TRANSFERRING/PENDING`. At most one task
 holds the processing slot. Active processing uses `TRANSFERRING/RUNNING` and a
@@ -43,12 +45,18 @@ lifecycle context independent of the HTTP request and progress polling timeout.
 A process shutdown cancels tools and leaves a recoverable checkpoint. Deleting a
 task cancels its preparation. A failed preparation stays blocked before Stash.
 
-The preparer validates source containment and declared video sizes, hashes files
-to remove byte-identical videos, checks stream compatibility, and losslessly
-remuxes/concatenates into `CODE/CODE.mkv`. It does not silently re-encode incompatible
-parts. It validates output duration before publication. With subtitles disabled,
-embedded subtitle streams are excluded as well. Selected part text subtitles are
-normalized to SRT and shifted using preceding video durations; whole-movie
+The preparer validates source containment and declared video sizes and hashes
+files to remove byte-identical videos. If one distinct movie remains, it copies
+the file unchanged and checks the copy against the source hash. Embedded tracks,
+metadata, and chapters remain intact, regardless of the subtitle setting. No
+`ffprobe` or `ffmpeg` call is made for single-file delivery, including retained
+external subtitles. This verifies file integrity, not media decodability.
+
+For multiple distinct parts, it probes stream compatibility, losslessly
+concatenates into `CODE/CODE.mkv`, and checks output duration before publication.
+It does not silently re-encode incompatible parts. During merging, embedded
+subtitle streams follow the subtitle retention setting. Selected part text
+subtitles are normalized to SRT and shifted using preceding video durations; whole-movie
 subtitles retain their format. Conflicting tracks or unsupported part bitmap
 subtitles block publication instead of producing misleading captions.
 
@@ -56,7 +64,9 @@ Work stays in a private temporary directory with a `.stashignore` file. After
 all artifacts are ready, the movie directory is renamed into place on the same
 filesystem. Only the final directory is submitted to Stash. A separate
 `.moji-receipts` directory contains task-owned signatures and output hashes for
-recovery; these bookkeeping files are not in the submitted movie directory.
+recovery, including the output video filename; legacy receipts without that
+filename still recover their MKV output. These bookkeeping files are not in the
+submitted movie directory.
 An existing unrelated or modified target is never reused or overwritten.
 
 COPY retains downloaded files. MOVE first stops qBittorrent, publishes the full
@@ -66,6 +76,8 @@ Stash scan/generate/identify workflow without repeating preparation.
 
 ## Validation
 
+Tool-independent tests cover original-format single-file COPY/MOVE, subtitles,
+deduplication to one file, size checks, cancellation, and legacy receipt recovery.
 Media integration tests create real FFmpeg clips and check ordered assembly,
 byte-level deduplication, subtitle offsets, subtitle exclusion, cancellation,
 output ownership, and refusal to reuse modified outputs. Runtime tests cover

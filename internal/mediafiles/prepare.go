@@ -159,6 +159,7 @@ func Resolve(root, name string) (string, error) {
 type receipt struct {
 	Signature string            `json:"signature"`
 	Files     map[string]string `json:"files"`
+	VideoName string            `json:"videoName,omitempty"`
 }
 
 func (f FFmpeg) Prepare(ctx context.Context, r Request) (Result, error) {
@@ -171,8 +172,7 @@ func (f FFmpeg) Prepare(ctx context.Context, r Request) (Result, error) {
 	if r.Action != "COPY" && r.Action != "MOVE" {
 		return Result{}, errors.New("clean video delivery requires COPY or MOVE")
 	}
-	// Every output is a new assembled file; downloaded sources stay untouched
-	// until publication succeeds, including when the configured action is MOVE.
+	// Downloaded sources stay untouched until publication succeeds, including MOVE.
 	if strings.ContainsAny(r.SourceRoot+r.TargetRoot, "\r\n\x00") {
 		return Result{}, errors.New("invalid media root")
 	}
@@ -213,6 +213,14 @@ func (f FFmpeg) Prepare(ctx context.Context, r Request) (Result, error) {
 				return Result{}, errors.New("delivery output has changed")
 			}
 		}
+		videoName := saved.VideoName
+		if videoName == "" {
+			videoName = r.Code + ".mkv" // Receipts from before direct single-file delivery.
+		}
+		if filepath.Base(videoName) != videoName || saved.Files[videoName] == "" {
+			return Result{}, errors.New("delivery receipt has no movie output")
+		}
+		result.VideoPath = filepath.Join(final, videoName)
 		if err := cleanupSources(ctx, r); err != nil {
 			return Result{}, err
 		}
@@ -235,10 +243,9 @@ func (f FFmpeg) Prepare(ctx context.Context, r Request) (Result, error) {
 	videos := r.Plan.Videos()
 	sources := []string{}
 	parts := []File{}
-	probes := []probe{}
 	seen := map[string]File{}
 	partAliases := map[int]int{}
-	durations := []float64{}
+	sourceHashes := []string{}
 	for _, v := range videos {
 		source, err := Resolve(r.SourceRoot, v.Path)
 		if err != nil {
@@ -261,101 +268,35 @@ func (f FFmpeg) Prepare(ctx context.Context, r Request) (Result, error) {
 		}
 		seen[hash] = v
 		partAliases[v.Part] = v.Part
-		p, err := f.inspect(ctx, source)
-		if err != nil {
-			return Result{}, err
-		}
-		d, err := p.duration()
-		if err != nil {
-			return Result{}, err
-		}
 		sources = append(sources, source)
 		parts = append(parts, v)
-		probes = append(probes, p)
-		durations = append(durations, d)
+		sourceHashes = append(sourceHashes, hash)
 	}
 	if len(sources) == 0 {
 		return Result{}, errors.New("no main video remains after deduplication")
 	}
-	selectedStreams := func(p probe) []stream {
-		out := []stream{}
-		for _, s := range p.Streams {
-			if s.Type == "video" || s.Type == "audio" || r.Plan.KeepSubtitles && s.Type == "subtitle" {
-				out = append(out, s)
-			}
-		}
-		return out
-	}
-	first := selectedStreams(probes[0])
-	hasVideo := false
-	for _, stream := range first {
-		hasVideo = hasVideo || stream.Type == "video"
-	}
-	if !hasVideo {
-		return Result{}, errors.New("main file has no video stream")
-	}
-	for _, p := range probes[1:] {
-		if !reflect.DeepEqual(first, selectedStreams(p)) {
-			return Result{}, errors.New("MERGE_INCOMPATIBLE: parts have different stream parameters; a lossless merge is not safe")
-		}
-	}
 	output := filepath.Join(staging, "video.partial")
-	args := []string{"-hide_banner", "-loglevel", "error", "-nostdin", "-n"}
+	videoName := r.Code + ".mkv"
+	durations := []float64{0} // Single-file subtitles need no time offsets.
 	if len(sources) == 1 {
-		args = append(args, "-protocol_whitelist", "file,crypto,data", "-i", sources[0])
-	} else {
-		var list strings.Builder
-		for _, source := range sources {
-			list.WriteString("file '" + strings.ReplaceAll(source, "'", "'\\''") + "'\n")
-		}
-		listPath := filepath.Join(staging, "concat.txt")
-		if err := os.WriteFile(listPath, []byte(list.String()), 0600); err != nil {
+		videoName = r.Code + filepath.Ext(parts[0].Path)
+		if err := copyMedia(ctx, sources[0], output); err != nil {
 			return Result{}, err
 		}
-		args = append(args, "-f", "concat", "-safe", "0", "-protocol_whitelist", "file,crypto,data", "-i", listPath)
-	}
-	args = append(args, "-map", "0:v:0", "-map", "0:a?")
-	if r.Plan.KeepSubtitles {
-		args = append(args, "-map", "0:s?")
-	}
-	args = append(args, "-map_metadata", "-1", "-map_chapters", "-1", "-c", "copy")
-	if r.Plan.KeepSubtitles {
-		index := 0
-		for _, stream := range probes[0].Streams {
-			if stream.Type == "subtitle" {
-				if stream.Codec == "mov_text" || stream.Codec == "webvtt" {
-					args = append(args, fmt.Sprintf("-c:s:%d", index), "srt")
-				}
-				index++
-			}
+	} else {
+		durations, err = f.merge(ctx, r, sources, staging, output)
+		if err != nil {
+			return Result{}, err
 		}
 	}
-	args = append(args, "-f", "matroska", output)
-	if _, err := run(ctx, binary(f.Binary, "ffmpeg"), args...); err != nil {
-		return Result{}, err
-	}
-	p, err := f.inspect(ctx, output)
-	if err != nil {
-		return Result{}, err
-	}
-	actual, err := p.duration()
-	if err != nil {
-		return Result{}, err
-	}
-	total := 0.0
-	for _, d := range durations {
-		total += d
-	}
-	if math.Abs(actual-total) > math.Max(.25*float64(len(sources)), total*.001) {
-		return Result{}, errors.New("merged video duration does not match its parts")
-	}
-	outputs := map[string]string{r.Code + ".mkv": output}
+	result.VideoPath = filepath.Join(final, videoName)
+	outputs := map[string]string{videoName: output}
 	if r.Plan.KeepSubtitles {
 		if err := f.prepareSubtitles(ctx, r, parts, durations, staging, outputs, partAliases); err != nil {
 			return Result{}, err
 		}
 	}
-	saved := receipt{Signature: signature, Files: map[string]string{}}
+	saved := receipt{Signature: signature, Files: map[string]string{}, VideoName: videoName}
 	publish := filepath.Join(staging, "publish")
 	if err := os.Mkdir(publish, 0755); err != nil {
 		return Result{}, err
@@ -364,6 +305,9 @@ func (f FFmpeg) Prepare(ctx context.Context, r Request) (Result, error) {
 		hash, err := FileHash(ctx, source)
 		if err != nil {
 			return Result{}, err
+		}
+		if name == videoName && len(sources) == 1 && hash != sourceHashes[0] {
+			return Result{}, errors.New("copied video does not match the source")
 		}
 		saved.Files[name] = hash
 		if err := os.Rename(source, filepath.Join(publish, name)); err != nil {
@@ -405,6 +349,92 @@ func (f FFmpeg) Prepare(ctx context.Context, r Request) (Result, error) {
 		return Result{}, err
 	}
 	return result, nil
+}
+
+// merge probes only distinct movie parts, then concatenates compatible streams.
+func (f FFmpeg) merge(ctx context.Context, r Request, sources []string, staging, output string) ([]float64, error) {
+	durations := make([]float64, 0, len(sources))
+	probes := make([]probe, 0, len(sources))
+	for _, source := range sources {
+		p, err := f.inspect(ctx, source)
+		if err != nil {
+			return nil, err
+		}
+		d, err := p.duration()
+		if err != nil {
+			return nil, err
+		}
+		probes = append(probes, p)
+		durations = append(durations, d)
+	}
+	selectedStreams := func(p probe) []stream {
+		out := []stream{}
+		for _, s := range p.Streams {
+			if s.Type == "video" || s.Type == "audio" || r.Plan.KeepSubtitles && s.Type == "subtitle" {
+				out = append(out, s)
+			}
+		}
+		return out
+	}
+	first := selectedStreams(probes[0])
+	hasVideo := false
+	for _, stream := range first {
+		hasVideo = hasVideo || stream.Type == "video"
+	}
+	if !hasVideo {
+		return nil, errors.New("main file has no video stream")
+	}
+	for _, p := range probes[1:] {
+		if !reflect.DeepEqual(first, selectedStreams(p)) {
+			return nil, errors.New("MERGE_INCOMPATIBLE: parts have different stream parameters; a lossless merge is not safe")
+		}
+	}
+	args := []string{"-hide_banner", "-loglevel", "error", "-nostdin", "-n"}
+	var list strings.Builder
+	for _, source := range sources {
+		list.WriteString("file '" + strings.ReplaceAll(source, "'", "'\\''") + "'\n")
+	}
+	listPath := filepath.Join(staging, "concat.txt")
+	if err := os.WriteFile(listPath, []byte(list.String()), 0600); err != nil {
+		return nil, err
+	}
+	args = append(args, "-f", "concat", "-safe", "0", "-protocol_whitelist", "file,crypto,data", "-i", listPath)
+	args = append(args, "-map", "0:v:0", "-map", "0:a?")
+	if r.Plan.KeepSubtitles {
+		args = append(args, "-map", "0:s?")
+	}
+	args = append(args, "-map_metadata", "-1", "-map_chapters", "-1", "-c", "copy")
+	if r.Plan.KeepSubtitles {
+		index := 0
+		for _, stream := range probes[0].Streams {
+			if stream.Type == "subtitle" {
+				if stream.Codec == "mov_text" || stream.Codec == "webvtt" {
+					args = append(args, fmt.Sprintf("-c:s:%d", index), "srt")
+				}
+				index++
+			}
+		}
+	}
+	args = append(args, "-f", "matroska", output)
+	if _, err := run(ctx, binary(f.Binary, "ffmpeg"), args...); err != nil {
+		return nil, err
+	}
+	p, err := f.inspect(ctx, output)
+	if err != nil {
+		return nil, err
+	}
+	actual, err := p.duration()
+	if err != nil {
+		return nil, err
+	}
+	total := 0.0
+	for _, d := range durations {
+		total += d
+	}
+	if math.Abs(actual-total) > math.Max(.25*float64(len(sources)), total*.001) {
+		return nil, errors.New("merged video duration does not match its parts")
+	}
+	return durations, nil
 }
 
 func copyMedia(ctx context.Context, source, target string) error {

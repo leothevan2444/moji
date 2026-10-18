@@ -17,8 +17,9 @@ those Stash operations rather than writing movie metadata itself.
   screenshots, and other extras. Ambiguous videos wait for manual selection.
 - Release-code matching across common filename variants, ordered movie-part
   assembly, and removal of byte-identical duplicate video files.
-- Delivery as a single `CODE/CODE.mkv`. Compatible parts are joined without
-  re-encoding; incompatible parts block delivery for review.
+- Single movies are delivered unchanged as `CODE/CODE.ext`. Compatible parts
+  are joined into `CODE/CODE.mkv` without re-encoding; incompatible parts block
+  delivery for review.
 - Optional retention of existing subtitles in every language, including time
   shifting and merging supported text subtitles for movie parts. Retention is
   off by default. Moji does not generate or translate subtitles.
@@ -151,7 +152,8 @@ Container replacement preserves data in the host-mounted directories.
 ## Development and verification
 
 Native execution is supported. Use Go as specified in [go.mod](go.mod), Node.js
-22, npm, and FFmpeg with ffprobe in `PATH` for movie preparation.
+22 and npm. Joining multiple movie parts requires FFmpeg with ffprobe in `PATH`;
+single-file delivery does not require either tool.
 
 Create `config.yaml` from [the example](docker/config.example.yaml), replacing
 container service URLs and `/data`, `/downloads`, and `/library` paths with your

@@ -162,7 +162,7 @@ func (f FFmpeg) prepareSubtitles(ctx context.Context, r Request, parts []File, d
 			if err != nil {
 				return err
 			}
-			if ext == ".srt" || ext == ".ass" || ext == ".ssa" || ext == ".vtt" || ext == ".smi" {
+			if len(parts) > 1 && (ext == ".srt" || ext == ".ass" || ext == ".ssa" || ext == ".vtt" || ext == ".smi") {
 				info, err := f.inspect(ctx, source)
 				if err != nil {
 					return err
