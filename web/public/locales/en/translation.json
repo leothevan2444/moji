@@ -11,7 +11,9 @@
     }
   },
   "fileList": {
-    "title": "File list",
+    "title": "Torrent information",
+    "fileCount": "{{count}} file",
+    "fileCount_other": "{{count}} files",
     "downloads": "Download files",
     "choose": "Movie files & merge order",
     "subtitles": "Retained subtitles",

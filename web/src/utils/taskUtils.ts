@@ -111,10 +111,11 @@ export function isMagnetLink(value?: string | null) {
 }
 
 export function taskQueryLabel(task: DashboardTask) {
+  if (task.code?.trim()) return task.code.trim();
   if (isMagnetLink(task.torrentUrl)) {
     return tr("taskModel.manualMagnet");
   }
-  return task.code || task.id;
+  return task.id;
 }
 
 export function isCopyableTaskValue(value?: string | null) {
@@ -122,7 +123,7 @@ export function isCopyableTaskValue(value?: string | null) {
 }
 
 export function taskSummary(task: DashboardTask) {
-  return task.torrentName || taskQueryLabel(task);
+  return task.code?.trim() || task.torrentName?.trim() || taskQueryLabel(task);
 }
 
 export function taskSourceLabel(source: string) {
@@ -407,11 +408,7 @@ export function taskPrimaryState(task: DashboardTask): Pick<TaskPresentation, "p
 }
 
 export function taskMetaLine(task: DashboardTask) {
-  const parts = task.torrentName ? [taskQueryLabel(task)] : [];
-  if (task.category) {
-    parts.push(task.category);
-  }
-  return parts.filter(Boolean).join(" · ");
+  return task.category?.trim() || "";
 }
 
 function lifecycleStageValue(task: DashboardTask): TaskStageKey {

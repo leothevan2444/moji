@@ -11,7 +11,8 @@
     }
   },
   "fileList": {
-    "title": "文件清单",
+    "title": "种子信息",
+    "fileCount": "{{count}} 个文件",
     "downloads": "下载文件",
     "choose": "正片与合并顺序",
     "subtitles": "保留字幕",
@@ -776,7 +777,7 @@
     "category": "分类",
     "tags": "标签",
     "contentPath": "qB 内容路径",
-    "torrentName": "Torrent 名称",
+    "torrentName": "种子名称",
     "copyName": "复制 Torrent 名称",
     "copiedName": "Torrent 名称已复制",
     "torrentHash": "Torrent Hash",
@@ -802,8 +803,8 @@
     "triggering": "正在触发当前任务扫描",
     "trigger": "触发当前任务扫描",
     "scanPending": "触发待入库任务扫描",
-    "deleting": "正在删除当前任务",
-    "delete": "删除当前任务"
+    "deleting": "正在删除任务",
+    "delete": "删除此任务"
   },
   "discoverUi": {
     "search": "搜索",

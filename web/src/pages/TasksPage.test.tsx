@@ -101,4 +101,10 @@ describe("TasksPage task controls", () => {
     expect(document.activeElement).toBe(opener);
   });
 
+  it("finds tasks by torrent name while displaying the code as their title", () => {
+    renderPage({ taskSearch: "Release title", tasks: [{ ...task, torrentName: "Release title 1080p" }] });
+    expect(screen.getByRole("button", { name: /TASK-1.*Open details/i })).toBeTruthy();
+    expect(screen.queryByRole("heading", { name: "Release title 1080p" })).toBeNull();
+  });
+
 });

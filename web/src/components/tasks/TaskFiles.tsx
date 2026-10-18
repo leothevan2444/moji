@@ -10,7 +10,8 @@ import { useMutation } from "urql";
 import { useTranslation } from "react-i18next";
 import { ResolveTaskFilesDocumentDocument } from "../../graphql/generated/graphql";
 import { describeQueryError } from "../../services/queryError";
-import { formatBytes, needsTaskFileSelection, type DashboardTask } from "../../utils";
+import { TaskValue } from "./TaskValue";
+import { formatBytes, isMagnetLink, needsTaskFileSelection, type DashboardTask } from "../../utils";
 
 type TaskFile = NonNullable<DashboardTask["files"]>[number];
 const isVideo = (file: TaskFile) => ["MAIN", "UNKNOWN_VIDEO"].includes(file.kind);
@@ -38,7 +39,7 @@ export function TaskFiles({ task, onCopy }: { task: DashboardTask; onCopy?: (val
     focusAfterUpdate.current = null;
   }, [selected]);
   const editable = needsTaskFileSelection(task);
-  if (!files.length) return null;
+  if (!files.length && !task.torrentName?.trim() && !task.torrentHash?.trim() && !task.torrentUrl?.trim()) return null;
   const selectedVideoFiles = selected.map(index => files.find(file => file.index === index)).filter((file): file is TaskFile => Boolean(file));
   const candidates = [...selectedVideoFiles, ...files.filter(file => isVideo(file) && !selected.includes(file.index))];
   const included = files.filter(file => file.selected).sort((a, b) => (a.kind === "MAIN" ? 0 : 1) - (b.kind === "MAIN" ? 0 : 1) || a.part - b.part);
@@ -70,9 +71,15 @@ export function TaskFiles({ task, onCopy }: { task: DashboardTask; onCopy?: (val
 
   return <article key={task.id} className="drawer-card task-files" aria-labelledby={headingId}>
     <div className="task-files__heading">
-      <h3 id={headingId}>{t("fileList.title")}</h3><span className="task-files__count">{t("common.items", { count: files.length })}</span>
+      <h3 id={headingId}>{t("fileList.title")}</h3>
+      {files.length > 0 ? <span className="task-files__count">{t("fileList.fileCount", { count: files.length })} · {formatBytes(files.reduce((sum, file) => sum + fileSize(file), 0))}</span> : null}
     </div>
-    <div className="task-files__groups">
+    <dl className="torrent-info">
+      <TaskValue className="torrent-info__name" label={t("taskDetail.torrentName")} value={task.torrentName?.trim()} onCopy={onCopy} />
+      {task.torrentHash?.trim() ? <TaskValue label={t("taskDetail.torrentHash")} value={task.torrentHash.trim()} onCopy={onCopy} /> : null}
+      {task.torrentUrl?.trim() ? <TaskValue label={t(isMagnetLink(task.torrentUrl) ? "taskDetail.magnet" : "taskExperience.torrentUrl")} value={task.torrentUrl.trim()} onCopy={onCopy} /> : null}
+    </dl>
+    {files.length > 0 ? <div className="task-files__groups">
       {groups.filter(group => group.files.length > 0).map(group => <section key={group.key} className={`task-file-group task-file-group--${group.key}`} aria-label={group.label}>
         <div className="task-file-group__heading">
           <h4>{group.label}<span>{group.files.length}</span></h4>
@@ -114,8 +121,8 @@ export function TaskFiles({ task, onCopy }: { task: DashboardTask; onCopy?: (val
           })}
         </ul>
       </section>)}
-    </div>
-    {editable ? <div className="task-files__footer">
+    </div> : null}
+    {editable && files.length > 0 ? <div className="task-files__footer">
       <span>{t("fileList.selected", { count: selected.length })}<strong>{formatBytes(selectedVideoFiles.reduce((sum, file) => sum + fileSize(file), 0))}</strong></span>
       <button type="button" className="task-primary-action" disabled={fetching || !selected.length} aria-busy={fetching} onClick={() => void save()}>{t(fetching ? "taskExperience.actions.pending" : "fileList.confirm")}</button>
     </div> : null}

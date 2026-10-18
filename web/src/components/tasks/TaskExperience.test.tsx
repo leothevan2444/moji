@@ -48,12 +48,12 @@ describe("task experience", () => {
       <TaskCard task={current} onOpen={open} onResolve={callbacks.onResolveTask} onRetry={callbacks.onRetryTask} />
       <TaskDetail task={current} {...callbacks} />
     </>);
-    const actions = screen.getAllByRole("button", { name: `${label}: Example movie` });
+    const actions = screen.getAllByRole("button", { name: `${label}: DEMO-001` });
     expect(actions).toHaveLength(2);
     await user.click(actions[0]);
     if (handler === "files") {
       expect(open).toHaveBeenCalledWith(task.id);
-      const fileDetails = screen.getByRole("article", { name: "File list" });
+      const fileDetails = screen.getByRole("article", { name: "Torrent information" });
       expect(fileDetails.querySelector("summary")).toBeNull();
       await user.click(actions[1]);
       expect(document.activeElement).toBe(within(fileDetails).getByRole("checkbox"));
@@ -74,8 +74,10 @@ describe("task experience", () => {
     const information = screen.getByRole("article", { name: "Task information" });
     expect(information.querySelector("details")).toBeNull();
     expect(within(information).getByText(path).getAttribute("title")).toBe(path);
+    expect(within(information).queryByText("Example movie")).toBeNull();
+    expect(within(screen.getByRole("article", { name: "Torrent information" })).getByText("Example movie")).toBeTruthy();
     expect(within(information).getByText(path).classList.contains("task-inline-value--truncate")).toBe(true);
-    expect(screen.getByRole("article", { name: "File list" }).querySelector("details")).toBeNull();
+    expect(screen.getByRole("article", { name: "Torrent information" }).querySelector("details")).toBeNull();
     await user.click(within(information).getByRole("button", { name: "Copy Moji delivery target" }));
     expect(callbacks.onCopy).toHaveBeenCalledWith(path, "Moji delivery target copied");
     expect(screen.queryByRole("button", { name: "Sync all task progress" })).toBeNull();
@@ -83,7 +85,7 @@ describe("task experience", () => {
     const actions = screen.getByRole("group", { name: "Actions" });
     expect(container.lastElementChild).toBe(actions.closest("article"));
     expect(actions.querySelector("details, summary")).toBeNull();
-    await user.click(within(actions).getByRole("button", { name: "Delete task: Example movie" }));
+    await user.click(within(actions).getByRole("button", { name: "Delete task: DEMO-001" }));
     expect(callbacks.onDeleteTask).toHaveBeenCalledWith(task.id);
   });
 

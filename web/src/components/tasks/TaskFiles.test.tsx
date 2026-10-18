@@ -33,7 +33,7 @@ describe("TaskFiles", () => {
  it("always shows the file groups and gives download files priority over skipped extras", () => {
   const { rerender } = render(<TaskFiles task={{ ...task, stageStatus: "RUNNING" as DashboardTask["stageStatus"] }} />);
   expect(screen.queryAllByRole("checkbox")).toHaveLength(0);
-  const list = screen.getByRole("article", { name: "File list" });
+  const list = screen.getByRole("article", { name: "Torrent information" });
   expect(list.querySelector("details, summary")).toBeNull();
   const downloads = screen.getByRole("region", { name: "Download files" });
   const skipped = screen.getByRole("region", { name: "Skipped" });
@@ -42,7 +42,7 @@ describe("TaskFiles", () => {
   expect(within(skipped).getByText("unknown-a.mkv")).toBeTruthy();
   expect(screen.queryByText("Only selected movie files and retained subtitles are delivered to Stash. Multiple movie parts are merged in the order below.")).toBeNull();
   rerender(<TaskFiles task={{ ...task, id: "task-2" }} />);
-  expect(screen.getByRole("article", { name: "File list" }).querySelector("details, summary")).toBeNull();
+  expect(screen.getByRole("article", { name: "Torrent information" }).querySelector("details, summary")).toBeNull();
  });
  it("shows filenames with complete paths on hover and copies the original path", async () => {
   const user = userEvent.setup();
@@ -79,4 +79,26 @@ describe("TaskFiles", () => {
   await user.click(confirm);
   expect(await screen.findByRole("status")).toBeTruthy();
  });
+ it("shows torrent metadata even before its files have synced", async () => {
+  const user = userEvent.setup();
+  const onCopy = vi.fn();
+  const torrentName = "DEMO-001 Example movie 1080p";
+  const torrentHash = "0123456789abcdef0123456789abcdef01234567";
+  const torrentUrl = `magnet:?xt=urn:btih:${torrentHash}`;
+  render(<TaskFiles task={{ ...task, files: [], torrentName, torrentHash, torrentUrl }} onCopy={onCopy} />);
+  const information = screen.getByRole("article", { name: "Torrent information" });
+  expect(within(information).getByText(torrentName).getAttribute("title")).toBe(torrentName);
+  expect(within(information).getByText(torrentHash).getAttribute("title")).toBe(torrentHash);
+  expect(within(information).getByText(torrentUrl).getAttribute("title")).toBe(torrentUrl);
+  expect(within(information).queryByRole("list")).toBeNull();
+  await user.click(within(information).getByRole("button", { name: "Copy Torrent name" }));
+  expect(onCopy).toHaveBeenCalledWith(torrentName, "Torrent name copied");
+  await user.click(within(information).getByRole("button", { name: "Copy Magnet link" }));
+  expect(onCopy).toHaveBeenCalledWith(torrentUrl, "Magnet link copied");
+ });
+ it("does not show an empty torrent panel before a resource is chosen", () => {
+  render(<TaskFiles task={{ ...task, files: [] }} />);
+  expect(screen.queryByRole("article", { name: "Torrent information" })).toBeNull();
+ });
+
 });

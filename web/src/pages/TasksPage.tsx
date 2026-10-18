@@ -114,6 +114,7 @@ export function TasksPage({
       if (!search) return true;
       const haystack = [
         taskSummary(task),
+        task.torrentName,
         task.stage,
         task.stageStatus,
         task.stageLabel,

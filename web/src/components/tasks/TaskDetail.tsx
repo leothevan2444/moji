@@ -1,13 +1,13 @@
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faCopy } from "@fortawesome/free-solid-svg-icons/faCopy";
 import { faTrashCan } from "@fortawesome/free-solid-svg-icons/faTrashCan";
 import { useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { TaskFiles } from "./TaskFiles";
+import { TaskValue } from "./TaskValue";
 import { TaskTimeline } from "./TaskTimeline";
 import { TaskPrimaryAction } from "./TaskPrimaryAction";
 import {
-  formatDateTime, isMagnetLink, needsTaskFileSelection, taskFailureSummary,
+  formatDateTime, needsTaskFileSelection, taskFailureSummary,
   taskPresentation, taskSourceLabel, taskSummary, transferActionLabel, type DashboardTask
 } from "../../utils";
 
@@ -23,23 +23,6 @@ interface TaskDetailProps {
   onDeleteTask: (taskId: string) => void;
 }
 
-function TaskValue({ label, value, onCopy }: {
-  label: string;
-  value?: string | null;
-  onCopy: TaskDetailProps["onCopy"];
-}) {
-  const { t } = useTranslation();
-  return <div>
-    <dt>{label}</dt>
-    <dd>{value ? <div className="task-value">
-      <span className="task-value__text task-inline-value task-inline-value--truncate" title={value}>{value}</span>
-      <button type="button" className="ghost-button task-value__copy"
-        aria-label={t("taskExperience.copy", { label })}
-        onClick={() => void onCopy(value, t("taskExperience.copied", { label }))}><FontAwesomeIcon icon={faCopy} /></button>
-    </div> : "—"}</dd>
-  </div>;
-}
-
 export function TaskDetail({ task, pendingScan, pendingRetry, pendingDelete,
   onCopy, onResolveTask, onScanTask, onRetryTask, onDeleteTask
 }: TaskDetailProps) {
@@ -53,11 +36,8 @@ export function TaskDetail({ task, pendingScan, pendingRetry, pendingDelete,
     <TaskFiles key={task.id} task={task} onCopy={onCopy} />
   </div>;
   const informationFields: [string, string | null | undefined][] = [
-    [t(isMagnetLink(task.torrentUrl) ? "taskDetail.magnet" : "taskExperience.torrentUrl"), task.torrentUrl],
     [t("taskDetail.code"), task.code],
     [t("taskDetail.source"), taskSourceLabel(task.source)],
-    [t("taskDetail.torrentName"), task.torrentName],
-    [t("taskDetail.torrentHash"), task.torrentHash],
     [t("taskDetail.savePath"), task.savePath],
     [t("taskDetail.category"), task.category],
     [t("taskDetail.tags"), task.tags],
@@ -133,7 +113,7 @@ export function TaskDetail({ task, pendingScan, pendingRetry, pendingDelete,
           onResolve={onResolveTask} onRetry={onRetryTask} onScan={onScanTask}
           onFiles={() => {
             filesRef.current?.scrollIntoView?.({ behavior: "smooth", block: "nearest" });
-            (filesRef.current?.querySelector<HTMLElement>("input, button") ?? filesRef.current)?.focus();
+            (filesRef.current?.querySelector<HTMLInputElement>('input[type="checkbox"]:not(:disabled)') ?? filesRef.current)?.focus();
           }} />
         <button type="button" className="ghost-button task-ops__button--danger task-detail-actions__delete"
           disabled={pendingDelete} aria-busy={pendingDelete}

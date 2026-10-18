@@ -2082,7 +2082,8 @@ summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
   &__text { align-self: center; }
   &__copy { flex: 0 0 auto; min-width: 38px; padding: 0 8px; }
 }
-.task-information .task-value__copy {
+.task-information .task-value__copy,
+.torrent-info .task-value__copy {
   border: 0;
   background: transparent;
   color: var(--muted);
@@ -2190,4 +2191,23 @@ summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
     &__copy { grid-column: 3; grid-row: 1; min-width: 44px; min-height: 44px; }
     &.is-skipped &__copy { opacity: 1; }
   }
+}
+
+.torrent-info {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px 16px;
+  margin-top: 10px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--line);
+  > div { min-width: 0; }
+  &__name { grid-column: 1 / -1; }
+  &__name .task-value__text { font-size: 14px; font-weight: 600; }
+  dt { font-size: 11px; }
+  dd { margin-top: 2px; font-size: 12px; }
+  &:last-child { border-bottom: 0; padding-bottom: 0; }
+}
+@media (max-width: 640px) {
+  .torrent-info { grid-template-columns: minmax(0, 1fr); gap: 6px; }
+  .task-files__heading { flex-wrap: wrap; gap: 4px 10px; }
 }
