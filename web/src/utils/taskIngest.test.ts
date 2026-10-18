@@ -13,17 +13,19 @@ describe("Stash ingest task presentation", () => {
   it("shows generation as current and leaves identification unfinished", () => {
     const presentation = taskPresentation(task("GENERATE"));
     expect(presentation.label).toBe("Stash generating");
-    expect(presentation.detail).toContain("generate-1");
+    expect(presentation.detail).toBe("Generating previews and playback assets");
+    expect(presentation.detail).not.toContain("generate-1");
     expect(presentation.lifecycle.find(step => step.key === "scanning")?.state).toBe("done");
     expect(presentation.lifecycle.find(step => step.key === "generating")?.state).toBe("current");
     expect(presentation.lifecycle.find(step => step.key === "identifying")?.state).toBe("upcoming");
     expect(presentation.lifecycle.find(step => step.key === "completed")?.state).toBe("upcoming");
   });
 
-  it("shows the identification job rather than the earlier scan", () => {
+  it("describes identification without showing internal job IDs", () => {
     const presentation = taskPresentation(task("IDENTIFY"));
     expect(presentation.label).toBe("Stash identifying");
-    expect(presentation.detail).toContain("identify-1");
+    expect(presentation.detail).toBe("Identifying movie information");
+    expect(presentation.detail).not.toContain("identify-1");
     expect(presentation.lifecycle.find(step => step.key === "identifying")?.state).toBe("current");
   });
 

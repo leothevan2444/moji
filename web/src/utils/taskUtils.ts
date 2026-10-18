@@ -70,11 +70,6 @@ export function stashIngestLabel(task: DashboardTask) {
   return tr(`taskModel.ingest.${phase === "GENERATE" ? "generate" : phase === "IDENTIFY" ? "identify" : phase === "VERIFY" ? "verify" : "scan"}`);
 }
 
-function stashIngestJobId(task: DashboardTask) {
-  return task.stashIngestPhase === "GENERATE" ? task.stashGenerateJobId
-    : task.stashIngestPhase === "IDENTIFY" ? task.stashIdentifyJobId : task.stashScanJobId;
-}
-
 // ── Simple helpers ──────────────────────────────────────────────────
 
 export function normalizeStatus(value?: string | null) {
@@ -489,9 +484,7 @@ function lifecycleDetail(task: DashboardTask, stage: TaskStageKey, failure: Task
       return tr("taskModel.lifecycle.scanUpcoming");
     }
     if (isCurrent) {
-      return stashIngestJobId(task)
-        ? tr("taskModel.lifecycle.jobRunning", { job: stashIngestJobId(task) })
-        : task.stashScanHint || tr("taskModel.lifecycle.scanWaiting");
+      return tr("taskFlow.running.scanning");
     }
     if (task.stashScanPath) return tr("taskModel.lifecycle.scanPath", { path: task.stashScanPath });
     return tr("taskModel.lifecycle.scanDone");
@@ -500,8 +493,7 @@ function lifecycleDetail(task: DashboardTask, stage: TaskStageKey, failure: Task
   if (stage === "generating" || stage === "identifying" || stage === "verifying") {
     if (isBlocked) return failure.detail;
     if (isCurrent) {
-      const job = stashIngestJobId(task);
-      return stage !== "verifying" && job ? tr("taskModel.lifecycle.jobRunning", { job }) : tr("taskModel.ingest.verifyingDetail");
+      return tr(`taskFlow.running.${stage}`);
     }
     return tr(taskStageIndex(task) > TASK_STAGE_SEQUENCE.indexOf(stage) ? "taskModel.ingest.stepDone" : "taskModel.ingest.stepUpcoming");
   }
@@ -567,7 +559,7 @@ export function taskPresentation(task: DashboardTask): TaskPresentation {
     detail = task.mojiTransferPath ? `${transferActionLabel(task.transferAction ?? "") || tr("taskModel.lifecycle.delivery")} -> ${task.mojiTransferPath}` : tr("taskModel.presentation.target");
   } else if (primary.phase === "scanRunning") {
     summary = stashIngestLabel(task);
-    detail = stashIngestJobId(task) ? tr("taskModel.lifecycle.jobRunning", { job: stashIngestJobId(task) }) : tr("taskModel.presentation.stashAccepted");
+    detail = lifecycleDetail(task, lifecycleStageValue(task), failure, progress);
   } else if (primary.phase === "scanPending") {
     summary = tr("taskModel.presentation.pending");
     detail = task.stashScanHint || tr("taskModel.presentation.noScan");

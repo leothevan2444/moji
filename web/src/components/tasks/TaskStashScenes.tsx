@@ -5,6 +5,7 @@ import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useQuery } from "urql";
 import { TaskStashScenesDocumentDocument } from "../../graphql/generated/graphql";
+import { TaskValue } from "./TaskValue";
 import type { DashboardTask } from "../../utils";
 
 function ScenePoster({ src }: { src?: string | null }) {
@@ -14,7 +15,7 @@ function ScenePoster({ src }: { src?: string | null }) {
   </div>;
 }
 
-export function TaskStashScenes({ task }: { task: DashboardTask }) {
+export function TaskStashScenes({ task, onCopy }: { task: DashboardTask; onCopy?: (value: string, message: string) => void | Promise<void> }) {
   const { t } = useTranslation();
   const ids = [...new Set(task.stashSceneIds ?? [])];
   const [result, reload] = useQuery({
@@ -53,5 +54,8 @@ export function TaskStashScenes({ task }: { task: DashboardTask }) {
       </ul> : null}
       {!result.fetching && !result.error && missing > 0 ? <p className="task-stash-scenes__message">{t(scenes.length ? "taskStash.missing" : "taskStash.empty", { count: missing })}</p> : null}
     </>}
+    {task.stashScanPath?.trim() ? <dl className="task-stash-scenes__location">
+      <TaskValue label={t("taskInfo.libraryLocation")} value={task.stashScanPath.trim()} onCopy={onCopy} />
+    </dl> : null}
   </article>;
 }

@@ -39,7 +39,8 @@ export function TaskFiles({ task, onCopy }: { task: DashboardTask; onCopy?: (val
     focusAfterUpdate.current = null;
   }, [selected]);
   const editable = needsTaskFileSelection(task);
-  if (!files.length && !task.torrentName?.trim() && !task.torrentHash?.trim() && !task.torrentUrl?.trim()) return null;
+  const downloadLocation = task.contentPath?.trim() || task.savePath?.trim();
+  if (!downloadLocation && !task.tags?.trim() && !files.length && !task.torrentName?.trim() && !task.torrentHash?.trim() && !task.torrentUrl?.trim()) return null;
   const selectedVideoFiles = selected.map(index => files.find(file => file.index === index)).filter((file): file is TaskFile => Boolean(file));
   const candidates = [...selectedVideoFiles, ...files.filter(file => isVideo(file) && !selected.includes(file.index))];
   const included = files.filter(file => file.selected).sort((a, b) => (a.kind === "MAIN" ? 0 : 1) - (b.kind === "MAIN" ? 0 : 1) || a.part - b.part);
@@ -75,9 +76,11 @@ export function TaskFiles({ task, onCopy }: { task: DashboardTask; onCopy?: (val
       {files.length > 0 ? <span className="task-files__count">{t("fileList.fileCount", { count: files.length })} · {formatBytes(files.reduce((sum, file) => sum + fileSize(file), 0))}</span> : null}
     </div>
     <dl className="torrent-info">
-      <TaskValue className="torrent-info__name" label={t("taskDetail.torrentName")} value={task.torrentName?.trim()} onCopy={onCopy} />
+      {task.torrentName?.trim() ? <TaskValue className="torrent-info__name" label={t("taskDetail.torrentName")} value={task.torrentName.trim()} onCopy={onCopy} /> : null}
       {task.torrentHash?.trim() ? <TaskValue label={t("taskDetail.torrentHash")} value={task.torrentHash.trim()} onCopy={onCopy} /> : null}
       {task.torrentUrl?.trim() ? <TaskValue label={t(isMagnetLink(task.torrentUrl) ? "taskDetail.magnet" : "taskExperience.torrentUrl")} value={task.torrentUrl.trim()} onCopy={onCopy} /> : null}
+      {downloadLocation ? <TaskValue label={t("taskInfo.downloadLocation")} value={downloadLocation} onCopy={onCopy} /> : null}
+      {task.tags?.trim() ? <TaskValue label={t("taskDetail.tags")} value={task.tags.trim()} onCopy={onCopy} /> : null}
     </dl>
     {files.length > 0 ? <div className="task-files__groups">
       {groups.filter(group => group.files.length > 0).map(group => <section key={group.key} className={`task-file-group task-file-group--${group.key}`} aria-label={group.label}>

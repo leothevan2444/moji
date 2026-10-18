@@ -1,4 +1,12 @@
 {
+  "taskInfo": {
+    "downloadLocation": "下载位置",
+    "libraryLocation": "入库位置",
+    "transferMethod": "搬运方式",
+    "transferTarget": "目标位置",
+    "copyDiagnostics": "复制诊断信息",
+    "diagnosticsCopied": "诊断信息已复制"
+  },
   "taskStash": {
     "title": "Stash 影片信息",
     "pending": "入库后显示影片信息",
@@ -13,6 +21,12 @@
     "missing": "有 {{count}} 部关联影片未找到"
   },
   "taskFlow": {
+    "running": {
+      "scanning": "正在扫描影片文件",
+      "generating": "正在生成预览与播放资源",
+      "identifying": "正在识别影片信息",
+      "verifying": "正在校验入库结果"
+    },
     "completedAt": "完成于 {{time}}",
     "ingestProgress": "入库进度",
     "ingestSteps": "入库子步骤",

@@ -71,20 +71,26 @@ describe("task experience", () => {
     }
   });
 
-  it("shows task information directly with hover titles and preserves path copying", async () => {
+  it("moves file locations to their sections and removes the task information section", async () => {
     const user = userEvent.setup();
     const callbacks = props();
-    const path = "/library/long-directory/movie.mkv";
-    const { container } = render(<TaskDetail task={{ ...task, mojiTransferPath: path }} {...callbacks} />);
-    const information = screen.getByRole("article", { name: "Task information" });
+    const path = "/stash/library/long-directory/movie.mkv";
+    const download = "/qb/downloads/movie.mkv";
+    const { container } = render(<TaskDetail task={{ ...task, stashScanPath: path, contentPath: download, savePath: "/qb/downloads", tags: "favorites", mojiTransferPath: "/moji/library/movie.mkv" }} {...callbacks} />);
+    expect(screen.queryByRole("article", { name: "Task information" })).toBeNull();
+    const information = screen.getByRole("article", { name: "Stash movie information" });
+    const torrent = screen.getByRole("article", { name: "Torrent information" });
     expect(information.querySelector("details")).toBeNull();
     expect(within(information).getByText(path).getAttribute("title")).toBe(path);
-    expect(within(information).queryByText("Example movie")).toBeNull();
-    expect(within(screen.getByRole("article", { name: "Torrent information" })).getByText("Example movie")).toBeTruthy();
     expect(within(information).getByText(path).classList.contains("task-inline-value--truncate")).toBe(true);
-    expect(screen.getByRole("article", { name: "Torrent information" }).querySelector("details")).toBeNull();
-    await user.click(within(information).getByRole("button", { name: "Copy Moji delivery target" }));
-    expect(callbacks.onCopy).toHaveBeenCalledWith(path, "Moji delivery target copied");
+    expect(within(torrent).getByText(download)).toBeTruthy();
+    expect(within(torrent).getByText("favorites")).toBeTruthy();
+    expect(within(torrent).getByText("Example movie")).toBeTruthy();
+    expect(screen.queryByText("/moji/library/movie.mkv")).toBeNull();
+    await user.click(within(information).getByRole("button", { name: "Copy Library location" }));
+    expect(callbacks.onCopy).toHaveBeenCalledWith(path, "Library location copied");
+    await user.click(within(torrent).getByRole("button", { name: "Copy Download location" }));
+    expect(callbacks.onCopy).toHaveBeenCalledWith(download, "Download location copied");
     expect(screen.queryByRole("button", { name: "Sync all task progress" })).toBeNull();
     expect(screen.queryByRole("button", { name: "Scan pending-ingest tasks" })).toBeNull();
     const actions = screen.getByRole("group", { name: "Actions" });
@@ -92,6 +98,35 @@ describe("task experience", () => {
     expect(actions.querySelector("details, summary")).toBeNull();
     await user.click(within(actions).getByRole("button", { name: "Delete task: DEMO-001" }));
     expect(callbacks.onDeleteTask).toHaveBeenCalledWith(task.id);
+  });
+
+  it("copies operational diagnostics without adding persistent technical fields", async () => {
+    const callbacks = props();
+    const current = { ...task, stage: TaskStage.Scanning, stageStatus: TaskStageStatus.Blocked, stashIngestPhase: "GENERATE", stashGenerateJobId: "generate-1", stageErrorCode: "STASH_GENERATE_FAILED", stashScanError: "raw failure", mojiSourcePath: "/moji/downloads/movie", torrentUrl: "https://example.test/download?token=secret" };
+    render(<TaskDetail task={current} {...callbacks} />);
+    expect(screen.queryByText("generate-1")).toBeNull();
+    expect(screen.queryByText("raw failure")).toBeNull();
+    await userEvent.setup().click(screen.getByRole("button", { name: "Copy diagnostic information" }));
+    const [value, message] = callbacks.onCopy.mock.calls[0];
+    expect(JSON.parse(value)).toMatchObject({ id: task.id, stashGenerateJobId: "generate-1", stashScanError: "raw failure", mojiSourcePath: "/moji/downloads/movie" });
+    expect(value).not.toContain("token=secret");
+    expect(message).toBe("Diagnostic information copied");
+    const currentStep = screen.getByText("Generate").closest("li")!;
+    expect(currentStep.getAttribute("aria-current")).toBe("step");
+    expect(currentStep.querySelector("p")?.textContent).toContain("then retry");
+  });
+
+  it("shows transfer details only in the active transfer substep", async () => {
+    const callbacks = props();
+    const current = { ...task, stage: TaskStage.Transferring, transferAction: "COPY", mojiTransferPath: "/moji/library/movie.mkv" };
+    const { rerender } = render(<TaskDetail task={current} {...callbacks} />);
+    const step = screen.getByText("Transfer").closest("li")!;
+    expect(within(step).getByText("Copy")).toBeTruthy();
+    expect(within(step).getByText(current.mojiTransferPath).getAttribute("title")).toBe(current.mojiTransferPath);
+    await userEvent.setup().click(within(step).getByRole("button", { name: "Copy Destination" }));
+    expect(callbacks.onCopy).toHaveBeenCalledWith(current.mojiTransferPath, "Destination copied");
+    rerender(<TaskDetail task={{ ...current, stage: TaskStage.Completed, stageStatus: TaskStageStatus.Done }} {...callbacks} />);
+    expect(screen.queryByText(current.mojiTransferPath)).toBeNull();
   });
 
   it("keeps all three stages visible and embeds compact substeps in the active ingest stage", () => {

@@ -20,6 +20,14 @@ const task = {
 describe("TaskFiles", () => {
  beforeEach(async () => { await i18n.changeLanguage("en"); resolve.mockReset(); resolve.mockResolvedValue({ data: { resolveTaskFiles: { id: task.id } } }); });
  afterEach(cleanup);
+ it("uses the save directory when the content path is unavailable", async () => {
+  const onCopy = vi.fn();
+  render(<TaskFiles task={{ ...task, files: [], savePath: "/downloads/library", tags: " " }} onCopy={onCopy} />);
+  expect(screen.getByText("Download location")).toBeTruthy();
+  expect(screen.queryByText("Tags")).toBeNull();
+  await userEvent.setup().click(screen.getByRole("button", { name: "Copy Download location" }));
+  expect(onCopy).toHaveBeenCalledWith("/downloads/library", "Download location copied");
+ });
  it("lets the user choose and order uncertain videos without selecting extras", async () => {
   const user = userEvent.setup(); render(<TaskFiles task={task} />);
   const checkboxes = screen.getAllByRole("checkbox");

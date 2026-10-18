@@ -3,7 +3,14 @@ import { faCircleCheck } from "@fortawesome/free-solid-svg-icons/faCircleCheck";
 import { faClock } from "@fortawesome/free-solid-svg-icons/faClock";
 import { faTriangleExclamation } from "@fortawesome/free-solid-svg-icons/faTriangleExclamation";
 import { useTranslation } from "react-i18next";
-import { formatDateTime, type TaskLifecycleStep } from "../../utils";
+import { formatDateTime, transferActionLabel, type TaskLifecycleStep } from "../../utils";
+
+import { TaskValue } from "./TaskValue";
+
+interface StageInformation {
+  transfer?: { action?: string | null; target?: string | null };
+  onCopy?: (value: string, message: string) => void | Promise<void>;
+}
 
 const isActive = (step: TaskLifecycleStep) => step.state === "current" || step.state === "error";
 
@@ -12,7 +19,7 @@ function StepIcon({ step, position }: { step: TaskLifecycleStep; position: numbe
     <FontAwesomeIcon icon={step.state === "error" ? faTriangleExclamation : step.state === "done" ? faCircleCheck : faClock} />}</span>;
 }
 
-function IngestProgress({ steps }: { steps: TaskLifecycleStep[] }) {
+function IngestProgress({ steps, transfer, onCopy }: { steps: TaskLifecycleStep[] } & StageInformation) {
   const { t } = useTranslation();
   const completed = steps.filter(step => step.state === "done").length;
   return <section className="task-ingest-progress" aria-label={t("taskFlow.ingestProgress")}>
@@ -28,19 +35,25 @@ function IngestProgress({ steps }: { steps: TaskLifecycleStep[] }) {
         <div className={`task-ingest-progress__icon ${step.tone}`}><StepIcon step={step} position={index} /></div>
         <div className="task-ingest-progress__copy">
           <div className="task-ingest-progress__label"><strong>{step.label}</strong>{step.state !== "done" ? <span>{t(`taskFlow.states.${step.state}`)}</span> : null}</div>
-          {isActive(step) ? <p>{step.detail}</p> : null}
+          {isActive(step) ? <>
+            {step.key !== "transferring" || !transfer?.target || step.state === "error" ? <p>{step.detail}</p> : null}
+            {step.key === "transferring" && (transfer?.action || transfer?.target) ? <dl className="task-ingest-progress__information">
+              {transfer.action ? <TaskValue label={t("taskInfo.transferMethod")} value={transferActionLabel(transfer.action)} /> : null}
+              {transfer.target ? <TaskValue label={t("taskInfo.transferTarget")} value={transfer.target} onCopy={onCopy} /> : null}
+            </dl> : null}
+          </> : null}
         </div>
       </li>)}
     </ol>
   </section>;
 }
 
-interface TaskTimelineProps {
+interface TaskTimelineProps extends StageInformation {
   steps: TaskLifecycleStep[];
   downloadProgress?: { percent: number; label: string };
 }
 
-export function TaskTimeline({ steps, downloadProgress }: TaskTimelineProps) {
+export function TaskTimeline({ steps, downloadProgress, transfer, onCopy }: TaskTimelineProps) {
   const { t } = useTranslation();
   const ingestSteps = steps.filter(step => !["sourcing", "downloading", "completed"].includes(step.key));
   const active = ingestSteps.find(isActive);
@@ -63,7 +76,7 @@ export function TaskTimeline({ steps, downloadProgress }: TaskTimelineProps) {
           {step.state !== "done" ? <span className="task-timeline__state">{t(`taskFlow.states.${step.state}`)}</span> : null}
           {step.time ? <time dateTime={step.time}>{step.state === "done" ? t("taskFlow.completedAt", { time: formatDateTime(step.time) }) : formatDateTime(step.time)}</time> : null}
         </div>
-        {isActive(step) ? step.key === "ingest" ? <IngestProgress steps={ingestSteps} /> : <>
+        {isActive(step) ? step.key === "ingest" ? <IngestProgress steps={ingestSteps} transfer={transfer} onCopy={onCopy} /> : <>
           {step.key !== "downloading" || !downloadProgress || step.state === "error" ? <p>{step.detail}</p> : null}
           {step.key === "downloading" && downloadProgress ? <div className="task-detail-progress">
             <span>{downloadProgress.label}</span>

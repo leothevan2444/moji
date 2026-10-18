@@ -1,4 +1,12 @@
 {
+  "taskInfo": {
+    "downloadLocation": "Download location",
+    "libraryLocation": "Library location",
+    "transferMethod": "Transfer method",
+    "transferTarget": "Destination",
+    "copyDiagnostics": "Copy diagnostic information",
+    "diagnosticsCopied": "Diagnostic information copied"
+  },
   "taskStash": {
     "title": "Stash movie information",
     "pending": "Movie information appears after ingest",
@@ -13,6 +21,12 @@
     "missing": "Unavailable linked movies: {{count}}"
   },
   "taskFlow": {
+    "running": {
+      "scanning": "Scanning movie files",
+      "generating": "Generating previews and playback assets",
+      "identifying": "Identifying movie information",
+      "verifying": "Verifying library results"
+    },
     "completedAt": "Completed at {{time}}",
     "ingestProgress": "Ingest progress",
     "ingestSteps": "Ingest steps",

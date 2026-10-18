@@ -2085,14 +2085,13 @@ summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 }
 .drawer--task .settings-grid > div { min-width: 0; }
 .task-detail-files:empty { display: none; }
-.task-information { min-width: 0; }
 .task-value {
   display: flex; align-items: flex-start; gap: 8px; min-width: 0;
   &__text { align-self: center; }
   &__copy { flex: 0 0 auto; min-width: 38px; padding: 0 8px; }
 }
-.task-information .task-value__copy,
-.torrent-info .task-value__copy {
+.task-value__copy,
+.task-detail-actions__diagnostics {
   border: 0;
   background: transparent;
   color: var(--muted);
@@ -2224,6 +2223,7 @@ summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 }
 
 .task-stash-scenes {
+  min-width: 0;
   &__message { margin: 0; color: var(--muted); font-size: 13px; line-height: 1.6; }
   &__feedback { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px; color: var(--muted); font-size: 13px; }
   &__list { display: grid; gap: 12px; padding: 0; margin: 0; list-style: none; }
@@ -2252,3 +2252,13 @@ summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 @media (max-width: 600px) {
   .task-stash-scene { grid-template-columns: 112px minmax(0, 1fr); gap: 10px; padding: 10px; }
 }
+
+.task-stash-scenes__location, .task-ingest-progress__information {
+  margin: 12px 0 0;
+  min-width: 0;
+  > div { min-width: 0; }
+  dt { color: var(--muted); font-size: 11px; }
+  dd { margin: 2px 0 0; font-size: 12px; }
+}
+.task-stash-scenes__location { border-top: 1px solid var(--line); padding-top: 10px; }
+.task-ingest-progress__information { display: grid; gap: 6px; margin-top: 6px; }
