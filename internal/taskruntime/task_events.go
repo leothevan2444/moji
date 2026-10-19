@@ -306,6 +306,7 @@ func taskChangedBeyondProgress(previous, next *Task) bool {
 	right := cloneTask(next)
 	left.Progress, right.Progress = 0, 0
 	left.UpdatedAt, right.UpdatedAt = time.Time{}, time.Time{}
+	left.LastProgressAt, right.LastProgressAt = nil, nil
 	return !reflect.DeepEqual(left, right)
 }
 

@@ -13,6 +13,7 @@ import (
 
 	"github.com/leothevan2444/moji/internal/config"
 	"github.com/leothevan2444/moji/internal/logging"
+	"github.com/leothevan2444/moji/internal/mediafiles"
 	"github.com/leothevan2444/moji/pkg/jackett"
 )
 
@@ -509,6 +510,9 @@ func parsePublishDate(value string) (time.Time, bool) {
 }
 
 func titleSimilarityScore(query string, title string) int {
+	if mediafiles.SameCode(query, title) {
+		return 10000
+	}
 	normQuery := normalizeSimilarityText(query)
 	normTitle := normalizeSimilarityText(title)
 	if normQuery == "" || normTitle == "" {

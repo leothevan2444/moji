@@ -231,13 +231,13 @@ func TestFilePlanSurvivesSQLiteReload(t *testing.T) {
 }
 func TestTorrentSubmissionStopsAtMetadataBeforeFiltering(t *testing.T) {
 	service, _, q := fileService(t, nil, false, &controlledPreparer{})
-	task := &Task{ID: "submission", Stage: TaskStageDownloading}
+	task := &Task{ID: "submission", Code: "OFJE-329", Stage: TaskStageDownloading}
 	now := time.Now().UTC()
 	task.CreatedAt, task.UpdatedAt = now, now
 	if err := service.store.Create(context.Background(), task); err != nil {
 		t.Fatal(err)
 	}
-	if err := service.submitTaskTorrent(context.Background(), task, "magnet:?xt=urn:btih:hash&dn=OFJE-329", "", "", "", nil); err != nil {
+	if err := service.submitTaskTorrent(context.Background(), task, "magnet:?xt=urn:btih:submission&dn=OFJE-329", "", "", "", nil); err != nil {
 		t.Fatal(err)
 	}
 	if q.options.StopCondition == nil || *q.options.StopCondition != "MetadataReceived" {

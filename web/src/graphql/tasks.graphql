@@ -36,7 +36,7 @@ query TaskDetailDocument($id: ID!) {
     stashScanHint
     stashScanStartedAt
     createdAt
-    updatedAt
+    updatedAt lastProgressAt
   }
 }
 
@@ -70,7 +70,7 @@ mutation SyncTaskProgressDocument {
     progress
     qbittorrentState
     sourcingCompletedAt ingestCompletedAt
-    updatedAt
+    updatedAt lastProgressAt
   }
 }
 
@@ -89,7 +89,7 @@ mutation TriggerStashScansDocument {
     stashScanError
     stashScanHint
     sourcingCompletedAt ingestCompletedAt
-    updatedAt
+    updatedAt lastProgressAt
   }
 }
 
@@ -108,7 +108,7 @@ mutation TriggerTaskStashScanDocument($id: ID!) {
     stashScanError
     stashScanHint
     sourcingCompletedAt ingestCompletedAt
-    updatedAt
+    updatedAt lastProgressAt
   }
 }
 
@@ -122,7 +122,7 @@ mutation DeleteTaskDocument($id: ID!) {
     stageStatusLabel
     code
     sourcingCompletedAt ingestCompletedAt
-    updatedAt
+    updatedAt lastProgressAt
   }
 }
 
@@ -141,7 +141,7 @@ mutation RetryTaskDocument($id: ID!) {
     progress
     qbittorrentState
     sourcingCompletedAt ingestCompletedAt
-    updatedAt
+    updatedAt lastProgressAt
   }
 }
 
@@ -151,7 +151,7 @@ mutation RetryTasksDocument($ids: [ID!]!) {
     summary { requestedCount succeededCount skippedCount failedCount }
     results {
       taskId status reasonCode
-      task { id source code stage stageStatus stageLabel stageStatusLabel progress qbittorrentState sourcingCompletedAt ingestCompletedAt updatedAt }
+      task { id source code stage stageStatus stageLabel stageStatusLabel progress qbittorrentState sourcingCompletedAt ingestCompletedAt updatedAt lastProgressAt }
     }
   }
 }
@@ -165,7 +165,7 @@ mutation ProcessTaskIngestDocument($ids: [ID!]!) {
       task {
         id source code stage stageStatus stageLabel stageStatusLabel progress transferError
         stashIngestPhase stashGenerateJobId stashIdentifyJobId stashSceneIds
-        stashScanJobId stashScanPath stashScanError stashScanHint sourcingCompletedAt ingestCompletedAt updatedAt
+        stashScanJobId stashScanPath stashScanError stashScanHint sourcingCompletedAt ingestCompletedAt updatedAt lastProgressAt
       }
     }
   }
@@ -175,7 +175,7 @@ mutation DeleteTasksDocument($ids: [ID!]!) {
   deleteTasks(ids: $ids) {
     batchId
     summary { requestedCount succeededCount skippedCount failedCount }
-    results { taskId status reasonCode task { id code stage stageStatus updatedAt } }
+    results { taskId status reasonCode task { id code stage stageStatus updatedAt lastProgressAt } }
   }
 }
 
@@ -203,7 +203,7 @@ mutation ResolveBlockedSourcingTaskDocument($id: ID!, $input: ResolveBlockedSour
     progress
     qbittorrentState
     sourcingCompletedAt ingestCompletedAt
-    updatedAt
+    updatedAt lastProgressAt
   }
 }
 
@@ -212,7 +212,7 @@ mutation ResolveTaskFilesDocument($id: ID!, $videoIndices: [Int!]!) {
     id stage stageStatus stageErrorCode stageErrorMessage
     files { index path size kind part selected reason }
     sourcingCompletedAt ingestCompletedAt
-    updatedAt
+    updatedAt lastProgressAt
   }
 }
 

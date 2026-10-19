@@ -107,6 +107,7 @@ type Task struct {
 	StashScanStartedAt      *time.Time
 	CreatedAt               time.Time
 	UpdatedAt               time.Time
+	LastProgressAt          *time.Time
 }
 
 type Candidate struct {
@@ -454,9 +455,9 @@ func (s *Service) ResolveBlockedSourcingTask(ctx context.Context, id string, req
 	if torrentURL == "" {
 		return nil, errors.New("taskruntime: torrent url is required")
 	}
-	candidate, _, identity, err := s.resolveManualTorrent(ctx, torrentURL)
+	candidate, _, identity, metadata, err := s.resolveManualTorrent(ctx, torrentURL)
 	if err != nil {
-		return task, err
+		return task, s.blockSourcingValidation(ctx, task, candidateError(TaskStageErrorTorrentMetadata, "unable to read selected torrent metadata"))
 	}
 	if value := strings.TrimSpace(req.Title); value != "" {
 		candidate.Title = value
@@ -473,6 +474,12 @@ func (s *Service) ResolveBlockedSourcingTask(ctx context.Context, id string, req
 	}
 	candidate.Seeders = req.Seeders
 	candidate.Peers = req.Peers
+	prepared, err := s.prepareTorrentWithMetadata(ctx, task.Code, candidate, torrentURL, metadata)
+	if err != nil {
+		return task, s.blockSourcingValidation(ctx, task, err)
+	}
+	candidate = prepared.candidate
+	identity = torrentIdentityFromCandidate(candidate, torrentURL)
 	if err := s.ensureTaskIdentityAvailable(ctx, task.ID, identity); err != nil {
 		return task, err
 	}
@@ -482,13 +489,7 @@ func (s *Service) ResolveBlockedSourcingTask(ctx context.Context, id string, req
 	next.TorrentURL = torrentURL
 	next.TorrentIdentityHash = identity.InfoHash
 	next.TorrentIdentityMagnet = identity.MagnetURI
-	setTaskStage(next, TaskStageDownloading, TaskStageStatusRunning)
-	clearTaskStageError(next)
-	next.UpdatedAt = s.now().UTC()
-	if err := s.store.Update(ctx, next); err != nil {
-		return next, fmt.Errorf("update task %q: %w", next.ID, err)
-	}
-	if err := s.submitTaskTorrent(ctx, next, torrentURL, next.SavePath, next.Category, next.Tags, req.Paused); err != nil {
+	if err := s.submitPreparedTaskTorrent(ctx, next, torrentURL, prepared, next.SavePath, next.Category, next.Tags, req.Paused); err != nil {
 		return next, err
 	}
 	return next, nil
@@ -527,8 +528,19 @@ func (s *Service) syncTaskProgress(ctx context.Context, snapshot *Task, torrents
 	if err != nil {
 		return snapshot, nil
 	}
-	if task.Stage == TaskStageCompleted || task.Stage == TaskStageScanning || task.Stage == TaskStagePendingIngest || task.Stage == TaskStageTransferring {
+	if task.Stage != TaskStageDownloading {
 		return task, nil
+	}
+	// Recover older submissions that were marked downloading without ever
+	// reaching qB. Do not attach a fuzzy candidate to an unrelated torrent.
+	if task.TorrentHash == "" && task.Progress == 0 {
+		if _, err := validateCodeEvidence(task.Code, task.Candidate.Title, magnetDisplayName(task.TorrentURL)); err != nil {
+			next := cloneTask(task)
+			if blockErr := s.blockSourcingValidation(ctx, next, err); !errors.Is(blockErr, err) {
+				return task, blockErr
+			}
+			return next, nil
+		}
 	}
 	torrent, ok := matchTaskTorrent(task, torrents)
 	if !ok {
@@ -611,12 +623,6 @@ func (s *Service) retryDownloadingTask(ctx context.Context, task *Task) (*Task, 
 		return s.retryFileDownload(ctx, task)
 	}
 	next := cloneTask(task)
-	setTaskStage(next, TaskStageDownloading, TaskStageStatusRunning)
-	clearTaskStageError(next)
-	next.UpdatedAt = s.now().UTC()
-	if err := s.store.Update(ctx, next); err != nil {
-		return nil, fmt.Errorf("update task %q: %w", next.ID, err)
-	}
 	if err := s.submitTaskTorrent(ctx, next, next.TorrentURL, next.SavePath, next.Category, next.Tags, nil); err != nil {
 		return next, err
 	}
@@ -724,8 +730,12 @@ func (s *Service) runSourcingFlow(ctx context.Context, task *Task, req DownloadR
 	if selector == nil {
 		selector = defaultCandidateSelector{inspectTorrent: s.inspectSearchResultTorrent}
 	}
-	result, err := selector.Select(ctx, code, results, selectionConfig)
+	result, prepared, err := s.selectVerifiedCandidate(ctx, selector, code, results, selectionConfig)
 	if err != nil {
+		var validation *candidateValidationError
+		if errors.As(err, &validation) {
+			return task, s.blockSourcingValidation(ctx, task, err)
+		}
 		errorCode := TaskStageErrorSearch
 		if strings.Contains(err.Error(), "no downloadable torrent candidate found") {
 			errorCode = TaskStageErrorNoDownloadCandidate
@@ -736,7 +746,7 @@ func (s *Service) runSourcingFlow(ctx context.Context, task *Task, req DownloadR
 		return task, err
 	}
 
-	candidate := candidateFromSearchResult(result)
+	candidate := prepared.candidate
 	torrentURL := preferredTorrentURL(result)
 	identity := torrentIdentityFromCandidate(candidate, torrentURL)
 	if err := s.ensureTaskIdentityAvailable(ctx, task.ID, identity); err != nil {
@@ -748,14 +758,8 @@ func (s *Service) runSourcingFlow(ctx context.Context, task *Task, req DownloadR
 	task.TorrentURL = torrentURL
 	task.TorrentIdentityHash = identity.InfoHash
 	task.TorrentIdentityMagnet = identity.MagnetURI
-	setTaskStage(task, TaskStageDownloading, TaskStageStatusRunning)
-	clearTaskStageError(task)
-	task.UpdatedAt = s.now().UTC()
-	if err := s.store.Update(ctx, task); err != nil {
-		return task, fmt.Errorf("update task: %w", err)
-	}
 
-	if err := s.submitTaskTorrent(ctx, task, torrentURL, req.SavePath, req.Category, req.Tags, req.Paused); err != nil {
+	if err := s.submitPreparedTaskTorrent(ctx, task, torrentURL, prepared, req.SavePath, req.Category, req.Tags, req.Paused); err != nil {
 		return task, err
 	}
 	logging.Infof("taskruntime: %s task %s added to qBittorrent for code %q", strings.ToLower(string(task.Source)), task.ID, code)
@@ -769,7 +773,7 @@ func (s *Service) AddTorrentContext(ctx context.Context, req AddTorrentRequest) 
 		return nil, errors.New("taskruntime: torrent url is required")
 	}
 
-	candidate, code, identity, err := s.resolveManualTorrent(ctx, torrentURL)
+	candidate, code, identity, metadata, err := s.resolveManualTorrent(ctx, torrentURL)
 	if err != nil {
 		return nil, err
 	}
@@ -786,7 +790,7 @@ func (s *Service) AddTorrentContext(ctx context.Context, req AddTorrentRequest) 
 		ID:                    s.newID(),
 		Source:                source,
 		Code:                  code,
-		Stage:                 TaskStageDownloading,
+		Stage:                 TaskStageSourcing,
 		StageStatus:           TaskStageStatusRunning,
 		Candidate:             candidate,
 		TorrentURL:            torrentURL,
@@ -806,7 +810,7 @@ func (s *Service) AddTorrentContext(ctx context.Context, req AddTorrentRequest) 
 	}
 	logging.Infof("taskruntime: created %s task %s for url %q", strings.ToLower(string(source)), task.ID, torrentURL)
 
-	if err := s.submitTaskTorrent(ctx, task, torrentURL, req.SavePath, req.Category, req.Tags, req.Paused); err != nil {
+	if err := s.submitTaskTorrentWithMetadata(ctx, task, torrentURL, metadata, req.SavePath, req.Category, req.Tags, req.Paused); err != nil {
 		return task, err
 	}
 	logging.Infof("taskruntime: %s task %s added to qBittorrent", strings.ToLower(string(source)), task.ID)
@@ -815,7 +819,26 @@ func (s *Service) AddTorrentContext(ctx context.Context, req AddTorrentRequest) 
 }
 
 func (s *Service) submitTaskTorrent(ctx context.Context, task *Task, torrentURL string, savePath string, category string, tags string, paused *bool) error {
-	addOptions := qbittorrent.AddTorrentOptions{URLs: []string{torrentURL}}
+	return s.submitTaskTorrentWithMetadata(ctx, task, torrentURL, nil, savePath, category, tags, paused)
+}
+
+func (s *Service) submitTaskTorrentWithMetadata(ctx context.Context, task *Task, torrentURL string, metadata *downloadedTorrentMetadata, savePath string, category string, tags string, paused *bool) error {
+	prepared, err := s.prepareTorrentWithMetadata(ctx, task.Code, task.Candidate, torrentURL, metadata)
+	if err != nil {
+		return s.blockSourcingValidation(ctx, task, err)
+	}
+	task.Candidate = prepared.candidate
+	identity := torrentIdentityFromCandidate(task.Candidate, torrentURL)
+	if err := s.ensureTaskIdentityAvailable(ctx, task.ID, identity); err != nil {
+		return s.blockSourcingValidation(ctx, task, candidateError(TaskStageErrorDuplicateTorrent, err.Error()))
+	}
+	task.TorrentIdentityHash = identity.InfoHash
+	task.TorrentIdentityMagnet = identity.MagnetURI
+	return s.submitPreparedTaskTorrent(ctx, task, torrentURL, prepared, savePath, category, tags, paused)
+}
+
+func (s *Service) submitPreparedTaskTorrent(ctx context.Context, task *Task, torrentURL string, prepared preparedTorrent, savePath string, category string, tags string, paused *bool) error {
+	addOptions := prepared.options
 	if s.mediaConfig != nil {
 		stopCondition := "MetadataReceived"
 		addOptions.StopCondition = &stopCondition
@@ -842,8 +865,15 @@ func (s *Service) submitTaskTorrent(ctx context.Context, task *Task, torrentURL 
 	if paused != nil {
 		addOptions.Paused = paused
 	}
+	setTaskStage(task, TaskStageDownloading, TaskStageStatusRunning)
+	clearTaskStageError(task)
+	task.UpdatedAt = s.now().UTC()
+	if err := s.store.Update(ctx, task); err != nil {
+		return fmt.Errorf("persist validated torrent before submission: %w", err)
+	}
 
 	if err := s.qbt.AddNewTorrent(ctx, addOptions); err != nil {
+		setTaskStage(task, TaskStageDownloading, TaskStageStatusBlocked)
 		blockTask(task, TaskStageErrorTorrentSubmit, err.Error(), s.now().UTC())
 		_ = s.store.Update(ctx, task)
 		logging.Errorf("taskruntime: add torrent failed for task %s: %v", task.ID, err)
@@ -1037,6 +1067,7 @@ func (s *MemoryTaskStore) Create(_ context.Context, task *Task) error {
 	if _, exists := s.tasks[task.ID]; exists {
 		return fmt.Errorf("taskruntime: task %q already exists", task.ID)
 	}
+	trackTaskProgress(nil, task)
 	s.tasks[task.ID] = cloneTask(task)
 	return nil
 }
@@ -1050,6 +1081,7 @@ func (s *MemoryTaskStore) Update(_ context.Context, task *Task) error {
 	if _, exists := s.tasks[task.ID]; !exists {
 		return fmt.Errorf("taskruntime: task %q not found", task.ID)
 	}
+	trackTaskProgress(s.tasks[task.ID], task)
 	s.tasks[task.ID] = cloneTask(task)
 	return nil
 }
@@ -1148,6 +1180,7 @@ func cloneTask(task *Task) *Task {
 		return nil
 	}
 	cp := *task
+	cp.LastProgressAt = cloneTime(task.LastProgressAt)
 	cp.SourcingCompletedAt = cloneTime(task.SourcingCompletedAt)
 	cp.DownloadCompletedAt = cloneTime(task.DownloadCompletedAt)
 	cp.IngestCompletedAt = cloneTime(task.IngestCompletedAt)

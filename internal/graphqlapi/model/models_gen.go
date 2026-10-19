@@ -730,6 +730,8 @@ type Task struct {
 	StashScanStartedAt *string  `json:"stashScanStartedAt,omitempty"`
 	CreatedAt          string   `json:"createdAt"`
 	UpdatedAt          string   `json:"updatedAt"`
+	// Last observed execution change, excluding unchanged polling; null for untracked history.
+	LastProgressAt *string `json:"lastProgressAt,omitempty"`
 }
 
 type TaskBatchPayload struct {

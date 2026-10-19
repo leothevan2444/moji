@@ -71,6 +71,7 @@
     },
     "more": "更多操作：{{task}}",
     "options": "任务操作",
+    "created": "创建于 {{time}}",
     "updated": "更新于 {{time}}",
     "ingest": "入库",
     "currentStep": "当前阶段：{{stage}}",
@@ -705,6 +706,12 @@
       "closed": "已闭环"
     },
     "failure": {
+      "candidateMismatch": "候选番号不匹配",
+      "candidateMismatchDetail": "候选标题、磁力名称或种子内的影片番号与任务不符。任务停留在选种阶段；请重新搜索或提供正确的资源。",
+      "candidateUnverified": "无法确认候选番号",
+      "candidateUnverifiedDetail": "候选名称或种子内的视频文件无法确认目标番号。请提供可识别番号的资源后重试。",
+      "torrentMetadata": "种子文件验证失败",
+      "torrentMetadataDetail": "Moji 无法获取或验证种子文件。请检查索引器连接和种子链接后重试，或选择其他资源。",
       "blocked": "当前阶段受阻",
       "blockedDetail": "任务被阻塞，但没有更多错误上下文。",
       "scanPending": "等待扫描收口",

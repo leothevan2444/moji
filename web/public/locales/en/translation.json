@@ -73,6 +73,7 @@
     },
     "more": "More actions for {{task}}",
     "options": "Task actions",
+    "created": "Created {{time}}",
     "updated": "Updated {{time}}",
     "ingest": "Ingest",
     "currentStep": "Current stage: {{stage}}",
@@ -715,6 +716,12 @@
       "closed": "Closed"
     },
     "failure": {
+      "candidateMismatch": "Candidate code mismatch",
+      "candidateMismatchDetail": "A candidate title, magnet name, or video code differs from the task. The task remains in sourcing; search again or provide a matching resource.",
+      "candidateUnverified": "Candidate code unverified",
+      "candidateUnverifiedDetail": "The candidate names or torrent video files do not establish the target code. Provide a resource with an identifiable code and retry.",
+      "torrentMetadata": "Torrent validation failed",
+      "torrentMetadataDetail": "Moji could not fetch or validate the torrent file. Check the indexer connection and torrent link, then retry or choose another resource.",
       "blocked": "Current stage blocked",
       "blockedDetail": "The task is blocked without additional error context.",
       "scanPending": "Waiting for scan completion",

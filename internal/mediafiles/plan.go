@@ -75,6 +75,17 @@ func ExtractCode(value string) string {
 	}
 	return found
 }
+
+// ExtractCodes returns all code tokens, including conflicting identities, so
+// callers validating a torrent do not mistake an ambiguous name for no code.
+func ExtractCodes(value string) []string {
+	var codes []string
+	for _, m := range codeMatches(value) {
+		codes = append(codes, m[0]+"-"+m[1])
+	}
+	return codes
+}
+
 func SameCode(a, b string) bool {
 	x, y := codeMatches(a), codeMatches(b)
 	if len(x) != 1 || len(y) != 1 {

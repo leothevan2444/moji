@@ -39,7 +39,7 @@ subscription TaskEvents {
       stashScanHint
       stashScanStartedAt
       createdAt
-      updatedAt
+      updatedAt lastProgressAt
     }
     dashboardStats {
       total

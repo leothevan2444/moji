@@ -189,6 +189,7 @@ func taskToModel(task *taskruntime.Task) *model.Task {
 		Progress:            task.Progress,
 		QbittorrentState:    nilIfEmpty(task.QBittorrentState),
 		ContentPath:         nilIfEmpty(task.ContentPath),
+		LastProgressAt:      formatOptionalTime(task.LastProgressAt),
 		SourcingCompletedAt: formatOptionalTime(task.SourcingCompletedAt),
 		DownloadCompletedAt: formatOptionalTime(task.DownloadCompletedAt),
 		IngestCompletedAt:   formatOptionalTime(task.IngestCompletedAt),

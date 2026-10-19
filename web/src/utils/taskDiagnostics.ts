@@ -16,7 +16,7 @@ export function taskDiagnostics(task: DashboardTask) {
     stashIdentifyJobId: task.stashIdentifyJobId, stashSceneIds: task.stashSceneIds,
     stashScanHint: task.stashScanHint, stashScanError: task.stashScanError,
     stashScanStartedAt: task.stashScanStartedAt, files: task.files,
-    createdAt: task.createdAt, updatedAt: task.updatedAt,
+    createdAt: task.createdAt, updatedAt: task.updatedAt, lastProgressAt: task.lastProgressAt,
     sourcingCompletedAt: task.sourcingCompletedAt, downloadCompletedAt: task.downloadCompletedAt,
     ingestCompletedAt: task.ingestCompletedAt
   }, null, 2);

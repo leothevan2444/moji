@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"mime/multipart"
 	"net/http"
 	"net/url"
@@ -145,7 +146,7 @@ func buildTorrentListParams(opts *TorrentListOptions) url.Values {
 }
 
 func (c *Client) GetTorrentList(ctx context.Context, options *TorrentListOptions) ([]Torrent, error) {
-baseURL, httpClient := c.resolve()
+	baseURL, httpClient := c.resolve()
 	params := buildTorrentListParams(options)
 
 	req, err := http.NewRequestWithContext(
@@ -210,7 +211,7 @@ type TorrentGenericProperties struct {
 }
 
 func (c *Client) GetTorrentGenericProperties(ctx context.Context, hash string) (*TorrentGenericProperties, error) {
-baseURL, httpClient := c.resolve()
+	baseURL, httpClient := c.resolve()
 	params := url.Values{}
 	params.Set("hash", hash)
 
@@ -260,7 +261,7 @@ type TorrentTracker struct {
 }
 
 func (c *Client) GetTorrentTrackers(ctx context.Context, hash string) ([]TorrentTracker, error) {
-baseURL, httpClient := c.resolve()
+	baseURL, httpClient := c.resolve()
 	params := url.Values{}
 	params.Set("hash", hash)
 
@@ -289,7 +290,7 @@ baseURL, httpClient := c.resolve()
 }
 
 func (c *Client) GetTorrentWebSeeds(ctx context.Context, hash string) ([]string, error) {
-baseURL, httpClient := c.resolve()
+	baseURL, httpClient := c.resolve()
 	params := url.Values{}
 	params.Set("hash", hash)
 
@@ -381,7 +382,7 @@ const (
 )
 
 func (c *Client) GetTorrentPiecesStates(ctx context.Context, hash string) ([]int, error) {
-baseURL, httpClient := c.resolve()
+	baseURL, httpClient := c.resolve()
 	params := url.Values{}
 	params.Set("hash", hash)
 
@@ -410,7 +411,7 @@ baseURL, httpClient := c.resolve()
 }
 
 func (c *Client) GetTorrentPiecesHashes(ctx context.Context, hash string) ([]string, error) {
-baseURL, httpClient := c.resolve()
+	baseURL, httpClient := c.resolve()
 	params := url.Values{}
 	params.Set("hash", hash)
 
@@ -495,7 +496,7 @@ func (c *Client) ResumeTorrents(ctx context.Context, hashes []string) error {
 }
 
 func (c *Client) DeleteTorrents(ctx context.Context, hashes []string, deleteFiles bool) error {
-baseURL, httpClient := c.resolve()
+	baseURL, httpClient := c.resolve()
 	params := url.Values{}
 	params.Set("hashes", strings.Join(hashes, "|"))
 	if deleteFiles {
@@ -525,7 +526,7 @@ baseURL, httpClient := c.resolve()
 }
 
 func (c *Client) RecheckTorrents(ctx context.Context, hashes []string) error {
-baseURL, httpClient := c.resolve()
+	baseURL, httpClient := c.resolve()
 	params := url.Values{}
 	params.Set("hashes", strings.Join(hashes, "|"))
 
@@ -550,7 +551,7 @@ baseURL, httpClient := c.resolve()
 }
 
 func (c *Client) ReannounceTorrents(ctx context.Context, hashes []string) error {
-baseURL, httpClient := c.resolve()
+	baseURL, httpClient := c.resolve()
 	params := url.Values{}
 	params.Set("hashes", strings.Join(hashes, "|"))
 
@@ -683,12 +684,19 @@ func (c *Client) AddNewTorrent(ctx context.Context, opts AddTorrentOptions) erro
 	if resp.StatusCode != http.StatusOK {
 		return fmt.Errorf("add torrent failed with status: %s", resp.Status)
 	}
+	result, err := io.ReadAll(io.LimitReader(resp.Body, 1024))
+	if err != nil {
+		return fmt.Errorf("read add torrent response: %w", err)
+	}
+	if strings.TrimSpace(string(result)) != "Ok." {
+		return fmt.Errorf("add torrent rejected by qBittorrent")
+	}
 
 	return nil
 }
 
 func (c *Client) AddTrackers(ctx context.Context, hash string, urls []string) error {
-baseURL, httpClient := c.resolve()
+	baseURL, httpClient := c.resolve()
 	params := url.Values{}
 	params.Set("hash", hash)
 	params.Set("urls", strings.Join(urls, "\n"))
@@ -714,7 +722,7 @@ baseURL, httpClient := c.resolve()
 }
 
 func (c *Client) EditTrackers(ctx context.Context, hash string, oldURL string, newURL string) error {
-baseURL, httpClient := c.resolve()
+	baseURL, httpClient := c.resolve()
 	params := url.Values{}
 	params.Set("hash", hash)
 	params.Set("oldUrl", oldURL)
@@ -741,7 +749,7 @@ baseURL, httpClient := c.resolve()
 }
 
 func (c *Client) RemoveTrackers(ctx context.Context, hash string, urls []string) error {
-baseURL, httpClient := c.resolve()
+	baseURL, httpClient := c.resolve()
 	params := url.Values{}
 	params.Set("hash", hash)
 	params.Set("urls", strings.Join(urls, "|"))
@@ -767,7 +775,7 @@ baseURL, httpClient := c.resolve()
 }
 
 func (c *Client) AddPeers(ctx context.Context, hash string, peers []string) error {
-baseURL, httpClient := c.resolve()
+	baseURL, httpClient := c.resolve()
 	params := url.Values{}
 	params.Set("hash", hash)
 	params.Set("peers", strings.Join(peers, "|"))
@@ -793,7 +801,7 @@ baseURL, httpClient := c.resolve()
 }
 
 func (c *Client) IncreaseTorrentPriority(ctx context.Context, hash string) error {
-baseURL, httpClient := c.resolve()
+	baseURL, httpClient := c.resolve()
 	params := url.Values{}
 	params.Set("hash", hash)
 
@@ -818,7 +826,7 @@ baseURL, httpClient := c.resolve()
 }
 
 func (c *Client) DecreaseTorrentPriority(ctx context.Context, hash string) error {
-baseURL, httpClient := c.resolve()
+	baseURL, httpClient := c.resolve()
 	params := url.Values{}
 	params.Set("hash", hash)
 
@@ -843,7 +851,7 @@ baseURL, httpClient := c.resolve()
 }
 
 func (c *Client) MaximalTorrentPriority(ctx context.Context, hash string) error {
-baseURL, httpClient := c.resolve()
+	baseURL, httpClient := c.resolve()
 	params := url.Values{}
 	params.Set("hash", hash)
 
@@ -868,7 +876,7 @@ baseURL, httpClient := c.resolve()
 }
 
 func (c *Client) MinimalTorrentPriority(ctx context.Context, hash string) error {
-baseURL, httpClient := c.resolve()
+	baseURL, httpClient := c.resolve()
 	params := url.Values{}
 	params.Set("hash", hash)
 
@@ -929,7 +937,7 @@ func (c *Client) SetTorrentFilePriority(ctx context.Context, hash string, fileIn
 type TorrentDownloadLimit map[string]int64 // key: torrent hash | value: Download limit (bytes/s). zero if unlimited.
 
 func (c *Client) GetTorrentDownloadLimit(ctx context.Context, hashes []string) (*TorrentDownloadLimit, error) {
-baseURL, httpClient := c.resolve()
+	baseURL, httpClient := c.resolve()
 	params := url.Values{}
 	params.Set("hashes", strings.Join(hashes, "|"))
 
@@ -958,7 +966,7 @@ baseURL, httpClient := c.resolve()
 }
 
 func (c *Client) SetTorrentDownloadLimit(ctx context.Context, hashes []string, limit int64) error {
-baseURL, httpClient := c.resolve()
+	baseURL, httpClient := c.resolve()
 	params := url.Values{}
 	params.Set("hashes", strings.Join(hashes, "|"))
 	params.Set("limit", strconv.FormatInt(limit, 10))
@@ -990,7 +998,7 @@ type TorrentShareLimit struct {
 }
 
 func (c *Client) SetTorrentShareLimits(ctx context.Context, hashes []string, limit TorrentShareLimit) error {
-baseURL, httpClient := c.resolve()
+	baseURL, httpClient := c.resolve()
 	params := url.Values{}
 	params.Set("hashes", strings.Join(hashes, "|"))
 	params.Set("ratioLimit", strconv.FormatFloat(limit.ratio, 'f', -1, 64))
@@ -1020,7 +1028,7 @@ baseURL, httpClient := c.resolve()
 type TorrentUploadLimit map[string]int64 // key: torrent hash | value: Upload limit (bytes/s). zero if unlimited.
 
 func (c *Client) GetTorrentUploadLimit(ctx context.Context, hashes []string) (*TorrentUploadLimit, error) {
-baseURL, httpClient := c.resolve()
+	baseURL, httpClient := c.resolve()
 	params := url.Values{}
 	params.Set("hashes", strings.Join(hashes, "|"))
 
@@ -1049,7 +1057,7 @@ baseURL, httpClient := c.resolve()
 }
 
 func (c *Client) SetTorrentUploadLimit(ctx context.Context, hashes []string, limit int64) error {
-baseURL, httpClient := c.resolve()
+	baseURL, httpClient := c.resolve()
 	params := url.Values{}
 	params.Set("hashes", strings.Join(hashes, "|"))
 	params.Set("limit", strconv.FormatInt(limit, 10))
@@ -1075,7 +1083,7 @@ baseURL, httpClient := c.resolve()
 }
 
 func (c *Client) SetTorrentLocation(ctx context.Context, hashes []string, location string) error {
-baseURL, httpClient := c.resolve()
+	baseURL, httpClient := c.resolve()
 	params := url.Values{}
 	params.Set("hashes", strings.Join(hashes, "|"))
 	params.Set("location", location)
@@ -1101,7 +1109,7 @@ baseURL, httpClient := c.resolve()
 }
 
 func (c *Client) SetTorrentName(ctx context.Context, hash string, newName string) error {
-baseURL, httpClient := c.resolve()
+	baseURL, httpClient := c.resolve()
 	params := url.Values{}
 	params.Set("hash", hash)
 	params.Set("name", newName)
@@ -1127,7 +1135,7 @@ baseURL, httpClient := c.resolve()
 }
 
 func (c *Client) SetTorrentCategory(ctx context.Context, hashes []string, categoryName string) error {
-baseURL, httpClient := c.resolve()
+	baseURL, httpClient := c.resolve()
 	params := url.Values{}
 	params.Set("hashes", strings.Join(hashes, "|"))
 	params.Set("category", categoryName)
@@ -1158,7 +1166,7 @@ type Category struct {
 }
 
 func (c *Client) GetAllCategories(ctx context.Context) (map[string]Category, error) {
-baseURL, httpClient := c.resolve()
+	baseURL, httpClient := c.resolve()
 	req, err := http.NewRequestWithContext(
 		ctx,
 		http.MethodGet,
@@ -1184,7 +1192,7 @@ baseURL, httpClient := c.resolve()
 }
 
 func (c *Client) AddNewCategory(ctx context.Context, category Category) error {
-baseURL, httpClient := c.resolve()
+	baseURL, httpClient := c.resolve()
 	params := url.Values{}
 	params.Set("category", category.Name)
 	params.Set("savePath", category.SavePath)
@@ -1210,7 +1218,7 @@ baseURL, httpClient := c.resolve()
 }
 
 func (c *Client) EditCategory(ctx context.Context, category Category) error {
-baseURL, httpClient := c.resolve()
+	baseURL, httpClient := c.resolve()
 	params := url.Values{}
 	params.Set("category", category.Name)
 	params.Set("savePath", category.SavePath)
@@ -1236,7 +1244,7 @@ baseURL, httpClient := c.resolve()
 }
 
 func (c *Client) RemoveCategory(ctx context.Context, categoryName string) error {
-baseURL, httpClient := c.resolve()
+	baseURL, httpClient := c.resolve()
 	params := url.Values{}
 	params.Set("category", categoryName)
 
@@ -1261,7 +1269,7 @@ baseURL, httpClient := c.resolve()
 }
 
 func (c *Client) AddTorrentTags(ctx context.Context, hashes []string, tags []string) error {
-baseURL, httpClient := c.resolve()
+	baseURL, httpClient := c.resolve()
 	params := url.Values{}
 	params.Set("hashes", strings.Join(hashes, "|"))
 	params.Set("tags", strings.Join(tags, ","))
@@ -1287,7 +1295,7 @@ baseURL, httpClient := c.resolve()
 }
 
 func (c *Client) RemoveTorrentTags(ctx context.Context, hashes []string, tags []string) error {
-baseURL, httpClient := c.resolve()
+	baseURL, httpClient := c.resolve()
 	params := url.Values{}
 	params.Set("hashes", strings.Join(hashes, "|"))
 	params.Set("tags", strings.Join(tags, ","))
@@ -1315,7 +1323,7 @@ baseURL, httpClient := c.resolve()
 type TorrentTag string
 
 func (c *Client) GetAllTags(ctx context.Context) ([]TorrentTag, error) {
-baseURL, httpClient := c.resolve()
+	baseURL, httpClient := c.resolve()
 	req, err := http.NewRequestWithContext(
 		ctx,
 		http.MethodGet,
@@ -1341,7 +1349,7 @@ baseURL, httpClient := c.resolve()
 }
 
 func (c *Client) CreateTag(ctx context.Context, tags []TorrentTag) error {
-baseURL, httpClient := c.resolve()
+	baseURL, httpClient := c.resolve()
 	params := url.Values{}
 	params.Set("tags", strings.Join(func() []string {
 		strs := make([]string, 0, len(tags))
@@ -1372,7 +1380,7 @@ baseURL, httpClient := c.resolve()
 }
 
 func (c *Client) DeleteTags(ctx context.Context, tags []TorrentTag) error {
-baseURL, httpClient := c.resolve()
+	baseURL, httpClient := c.resolve()
 	params := url.Values{}
 	params.Set("tags", strings.Join(func() []string {
 		strs := make([]string, 0, len(tags))
@@ -1403,7 +1411,7 @@ baseURL, httpClient := c.resolve()
 }
 
 func (c *Client) SetAutomaticTorrentManagement(ctx context.Context, hashes []string, enable bool) error {
-baseURL, httpClient := c.resolve()
+	baseURL, httpClient := c.resolve()
 	params := url.Values{}
 	params.Set("hashes", strings.Join(hashes, "|"))
 	params.Set("enable", strconv.FormatBool(enable))
@@ -1429,7 +1437,7 @@ baseURL, httpClient := c.resolve()
 }
 
 func (c *Client) ToggleSequentialDownload(ctx context.Context, hashes []string) error {
-baseURL, httpClient := c.resolve()
+	baseURL, httpClient := c.resolve()
 	params := url.Values{}
 	params.Set("hashes", strings.Join(hashes, "|"))
 
@@ -1454,7 +1462,7 @@ baseURL, httpClient := c.resolve()
 }
 
 func (c *Client) SetFirstLastPiecePriority(ctx context.Context, hashes []string) error {
-baseURL, httpClient := c.resolve()
+	baseURL, httpClient := c.resolve()
 	params := url.Values{}
 	params.Set("hashes", strings.Join(hashes, "|"))
 
@@ -1479,7 +1487,7 @@ baseURL, httpClient := c.resolve()
 }
 
 func (c *Client) SetForceStart(ctx context.Context, hashes []string, enable bool) error {
-baseURL, httpClient := c.resolve()
+	baseURL, httpClient := c.resolve()
 	params := url.Values{}
 	params.Set("hashes", strings.Join(hashes, "|"))
 	params.Set("value", strconv.FormatBool(enable))
@@ -1505,7 +1513,7 @@ baseURL, httpClient := c.resolve()
 }
 
 func (c *Client) SetSuperSeeding(ctx context.Context, hashes []string, enable bool) error {
-baseURL, httpClient := c.resolve()
+	baseURL, httpClient := c.resolve()
 	params := url.Values{}
 	params.Set("hashes", strings.Join(hashes, "|"))
 	params.Set("value", strconv.FormatBool(enable))
@@ -1531,7 +1539,7 @@ baseURL, httpClient := c.resolve()
 }
 
 func (c *Client) RenameTorrentFile(ctx context.Context, hash string, oldPath string, newPath string) error {
-baseURL, httpClient := c.resolve()
+	baseURL, httpClient := c.resolve()
 	params := url.Values{}
 	params.Set("hash", hash)
 	params.Set("oldPath", oldPath)
@@ -1558,7 +1566,7 @@ baseURL, httpClient := c.resolve()
 }
 
 func (c *Client) RenameFolder(ctx context.Context, hash string, oldPath string, newPath string) error {
-baseURL, httpClient := c.resolve()
+	baseURL, httpClient := c.resolve()
 	params := url.Values{}
 	params.Set("hash", hash)
 	params.Set("oldPath", oldPath)

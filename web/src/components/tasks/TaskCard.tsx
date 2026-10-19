@@ -2,6 +2,7 @@ import {
   formatDateTime, formatRelative, taskFailureSummary, taskPresentation,
   taskSourceLabel, taskSummary, type DashboardTask
 } from "../../utils";
+import { taskProgressTime } from "../../utils/taskProgressTime";
 import { useTranslation } from "react-i18next";
 import { TaskPrimaryAction } from "./TaskPrimaryAction";
 import { TaskMoreActions } from "./TaskMoreActions";
@@ -28,6 +29,9 @@ export function TaskCard({ task, compact = false, pendingScanId, pendingRetryId,
   const { t } = useTranslation();
   const presentation = taskPresentation(task);
   const failure = taskFailureSummary(task);
+  const progressTime = taskProgressTime(task);
+  const cardTime = progressTime ?? task.createdAt;
+  const timeLabel = progressTime ? "taskExperience.updated" : "taskExperience.created";
   const blocked = task.stageStatus === "BLOCKED";
   const activateCard = () => selectionMode && onToggleSelection ? onToggleSelection(task.id) : onOpen(task.id);
   const selectionLabel = t(selected ? "taskBatch.deselectTask" : "taskBatch.selectTask", { task: taskSummary(task) });
@@ -69,8 +73,8 @@ export function TaskCard({ task, compact = false, pendingScanId, pendingRetryId,
       </div>}
     </div>
     <div className="task-card__actions">
-      <time dateTime={task.updatedAt} title={formatDateTime(task.updatedAt)}>
-        {t("taskExperience.updated", { time: formatRelative(task.updatedAt) ?? formatDateTime(task.updatedAt) })}
+      <time dateTime={cardTime} title={t(timeLabel, { time: formatDateTime(cardTime) })}>
+        {t(timeLabel, { time: formatRelative(cardTime) ?? formatDateTime(cardTime) })}
       </time>
       {!selectionMode ? <div className="task-card__right">
         <TaskPrimaryAction task={task} pendingScan={pendingScanId === task.id} pendingRetry={pendingRetryId === task.id}

@@ -157,13 +157,16 @@ func (s *Service) ensureTaskIdentityAvailable(ctx context.Context, taskID string
 }
 
 type downloadedTorrentMetadata struct {
-	Name     string
-	FilePath string
-	InfoHash string
-	Paths    []string
+	Data          []byte
+	Name          string
+	FilePath      string
+	InfoHash      string
+	Paths         []string
+	IdentityNames []string
+	IdentityPaths []string
 }
 
-func (s *Service) resolveManualTorrent(ctx context.Context, torrentURL string) (Candidate, string, torrentIdentity, error) {
+func (s *Service) resolveManualTorrent(ctx context.Context, torrentURL string) (Candidate, string, torrentIdentity, *downloadedTorrentMetadata, error) {
 	candidate := candidateFromTorrentURL(torrentURL)
 	titleCandidates := []string{magnetDisplayName(torrentURL)}
 	urlCandidates := []string{torrentURL}
@@ -183,12 +186,12 @@ func (s *Service) resolveManualTorrent(ctx context.Context, torrentURL string) (
 		}
 		code := extractCode(append(titleCandidates, urlCandidates...)...)
 		identity := torrentIdentityFromCandidate(candidate, torrentURL)
-		return candidate, code, identity, nil
+		return candidate, code, identity, nil, nil
 	}
 
 	metadata, err := s.fetchTorrentMetadata(ctx, torrentURL)
 	if err != nil {
-		return Candidate{}, "", torrentIdentity{}, err
+		return Candidate{}, "", torrentIdentity{}, nil, err
 	}
 	if metadata.Name != "" {
 		candidate.Title = metadata.Name
@@ -202,7 +205,7 @@ func (s *Service) resolveManualTorrent(ctx context.Context, torrentURL string) (
 	}
 	code := extractCode(titleCandidates...)
 	identity := torrentIdentityFromCandidate(candidate, torrentURL)
-	return candidate, code, identity, nil
+	return candidate, code, identity, &metadata, nil
 }
 
 func (s *Service) fetchTorrentMetadata(ctx context.Context, torrentURL string) (downloadedTorrentMetadata, error) {
@@ -221,9 +224,13 @@ func (s *Service) fetchTorrentMetadata(ctx context.Context, torrentURL string) (
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
 		return downloadedTorrentMetadata{}, fmt.Errorf("taskruntime: fetch torrent metadata: unexpected status %d", resp.StatusCode)
 	}
-	body, err := io.ReadAll(io.LimitReader(resp.Body, 8<<20))
+	const maxTorrentBytes = 8 << 20
+	body, err := io.ReadAll(io.LimitReader(resp.Body, maxTorrentBytes+1))
 	if err != nil {
 		return downloadedTorrentMetadata{}, fmt.Errorf("taskruntime: read torrent metadata: %w", err)
+	}
+	if len(body) > maxTorrentBytes {
+		return downloadedTorrentMetadata{}, errors.New("taskruntime: torrent metadata exceeds 8 MiB")
 	}
 	return parseTorrentMetadata(body)
 }
@@ -235,9 +242,12 @@ func parseTorrentMetadata(data []byte) (downloadedTorrentMetadata, error) {
 		return downloadedTorrentMetadata{}, fmt.Errorf("taskruntime: parse .torrent metadata: %w", err)
 	}
 	metadata := downloadedTorrentMetadata{
-		Name:     root.name,
-		FilePath: root.firstPath,
-		Paths:    append([]string(nil), root.paths...),
+		Data:          data,
+		Name:          root.name,
+		FilePath:      root.firstPath,
+		Paths:         append([]string(nil), root.paths...),
+		IdentityNames: root.names,
+		IdentityPaths: parser.identityPaths,
 	}
 	if len(metadata.Paths) == 0 && metadata.Name != "" {
 		metadata.Paths = []string{metadata.Name}
@@ -249,18 +259,24 @@ func parseTorrentMetadata(data []byte) (downloadedTorrentMetadata, error) {
 		hash := sha1.Sum(infoBytes)
 		metadata.InfoHash = strings.ToUpper(fmt.Sprintf("%x", hash[:]))
 	}
+	if len(infoBytes) == 0 || metadata.Name == "" || parser.pos != len(data) {
+		return downloadedTorrentMetadata{}, errors.New("taskruntime: incomplete or trailing torrent metadata")
+	}
 	return metadata, nil
 }
 
 type torrentMetainfo struct {
 	name      string
+	names     []string
 	firstPath string
 	paths     []string
 }
 
 type bencodeParser struct {
-	data []byte
-	pos  int
+	data          []byte
+	pos           int
+	depth         int
+	identityPaths []string
 }
 
 func (p *bencodeParser) parseMetainfo() (torrentMetainfo, []byte, error) {
@@ -278,6 +294,9 @@ func (p *bencodeParser) parseMetainfo() (torrentMetainfo, []byte, error) {
 		valueStart := p.pos
 		switch key {
 		case "info":
+			if infoBytes != nil {
+				return torrentMetainfo{}, nil, errors.New("duplicate info dictionary")
+			}
 			infoMeta, err := p.parseInfoDict()
 			if err != nil {
 				return torrentMetainfo{}, nil, err
@@ -303,18 +322,26 @@ func (p *bencodeParser) parseInfoDict() (torrentMetainfo, error) {
 	}
 	p.pos++
 	var meta torrentMetainfo
+	seen := make(map[string]bool)
 	for p.pos < len(p.data) && p.data[p.pos] != 'e' {
 		key, err := p.parseString()
 		if err != nil {
 			return torrentMetainfo{}, err
 		}
+		if seen[key] {
+			return torrentMetainfo{}, errors.New("duplicate info key")
+		}
+		seen[key] = true
 		switch key {
-		case "name":
+		case "name", "name.utf-8":
 			value, err := p.parseString()
 			if err != nil {
 				return torrentMetainfo{}, err
 			}
-			meta.name = value
+			meta.names = append(meta.names, value)
+			if key == "name.utf-8" || !seen["name.utf-8"] {
+				meta.name = value
+			}
 		case "files":
 			paths, err := p.parseFiles()
 			if err != nil {
@@ -365,17 +392,26 @@ func (p *bencodeParser) parseFileEntry() (string, error) {
 	}
 	p.pos++
 	firstPath := ""
+	seen := make(map[string]bool)
 	for p.pos < len(p.data) && p.data[p.pos] != 'e' {
 		key, err := p.parseString()
 		if err != nil {
 			return "", err
 		}
-		if key == "path" {
+		if seen[key] {
+			return "", errors.New("duplicate file key")
+		}
+		seen[key] = true
+		if key == "path" || key == "path.utf-8" {
 			pathSegments, err := p.parseStringList()
 			if err != nil {
 				return "", err
 			}
-			firstPath = strings.Join(pathSegments, "/")
+			value := strings.Join(pathSegments, "/")
+			p.identityPaths = append(p.identityPaths, value)
+			if key == "path.utf-8" || !seen["path.utf-8"] {
+				firstPath = value
+			}
 			continue
 		}
 		if err := p.skipValue(); err != nil {
@@ -421,7 +457,14 @@ func (p *bencodeParser) parseString() (string, error) {
 		return "", errors.New("unterminated string length")
 	}
 	lengthValue := 0
+	if lengthStart == p.pos {
+		return "", errors.New("empty string length")
+	}
 	for _, digit := range p.data[lengthStart:p.pos] {
+		// Bound lengths before arithmetic to avoid overflow and slice panics.
+		if lengthValue > len(p.data)/10 || lengthValue*10+int(digit-'0') > len(p.data) {
+			return "", errors.New("string exceeds buffer")
+		}
 		lengthValue = lengthValue*10 + int(digit-'0')
 	}
 	p.pos++
@@ -434,6 +477,11 @@ func (p *bencodeParser) parseString() (string, error) {
 }
 
 func (p *bencodeParser) skipValue() error {
+	if p.depth >= 64 {
+		return errors.New("torrent metadata nesting exceeds limit")
+	}
+	p.depth++
+	defer func() { p.depth-- }()
 	if p.pos >= len(p.data) {
 		return io.ErrUnexpectedEOF
 	}

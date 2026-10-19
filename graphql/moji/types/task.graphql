@@ -146,6 +146,8 @@ type Task {
   stashScanStartedAt: String
   createdAt: String!
   updatedAt: String!
+  "Last observed execution change, excluding unchanged polling; null for untracked history."
+  lastProgressAt: String
 }
 
 enum TaskStage {

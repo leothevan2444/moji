@@ -4,6 +4,23 @@ Moji owns download file selection and the delivery artifact. Stash owns library
 metadata, identification, generated playback resources, and the existing task
 completion checks.
 
+## Validation before submission
+
+Automatic sourcing checks candidate codes before applying download submission.
+Case, optional separators and numeric zero-padding are accepted aliases;
+different numeric codes are rejected even when an indexer returns them as fuzzy
+search hits. HTTP torrents are fetched by Moji, limited to 8 MiB, and checked
+against the task code in the torrent name and video paths, including UTF-8 name
+variants. The exact verified file is uploaded to qBittorrent with its computed
+info hash retained for progress matching. qBittorrent does not need to fetch the
+indexer's download URL.
+
+Invalid candidates are skipped. If no candidate passes validation, the task
+remains blocked in sourcing with an explanation in the Web UI. Manual candidate
+resolution and download retries perform the same checks. Pure magnets validate
+their candidate title and display name before submission; their file contents
+are checked by the metadata and file-selection workflow below.
+
 ## File plan
 
 `internal/mediafiles` classifies torrent entries into four kinds: `MAIN`,

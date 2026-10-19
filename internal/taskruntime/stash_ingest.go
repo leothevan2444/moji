@@ -136,6 +136,7 @@ func (s *Service) syncStashScanJob(ctx context.Context, task *Task, scanner Stas
 			return s.failStashIngest(task, errors.New("invalid Stash ingest phase"))
 		}
 		// Persist the completed step before submitting the next remote job.
+		task.UpdatedAt = s.now().UTC()
 		if err := s.store.Update(ctx, task); err != nil {
 			return task, err
 		}

@@ -176,7 +176,7 @@ func TestDownloadMediaContextRecordsAddFailure(t *testing.T) {
 	qbtErr := errors.New("qbt rejected torrent")
 	service, err := NewService(
 		fakeTracker{results: []jackett.SearchResult{
-			{Title: "SONE-000 candidate", Link: "https://example.test/file.torrent", Seeders: 1},
+			{Title: "SONE-000 candidate", MagnetURI: "magnet:?xt=urn:btih:failed", Seeders: 1},
 		}},
 		&fakeTorrentAdder{err: qbtErr},
 		NewMemoryTaskStore(),
@@ -401,8 +401,8 @@ func TestAddTorrentContextParsesTorrentMetadataForCode(t *testing.T) {
 	if task.TorrentIdentityHash == "" {
 		t.Fatal("expected info hash to be populated from torrent metadata")
 	}
-	if got := qbt.options.URLs; len(got) != 1 || got[0] != "https://example.test/release.torrent" {
-		t.Fatalf("unexpected qBittorrent URLs: %v", got)
+	if len(qbt.options.URLs) != 0 || len(qbt.options.Torrents) != 1 || string(qbt.options.Torrents[0].Data) != testTorrentFile("SONE-001", []string{"SONE-001.mp4"}) {
+		t.Fatalf("expected verified torrent upload, got %+v", qbt.options)
 	}
 }
 

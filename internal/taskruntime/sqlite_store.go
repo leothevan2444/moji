@@ -34,6 +34,7 @@ func (s *SQLiteTaskStore) Create(ctx context.Context, task *Task) error {
 	}
 	defer tx.Rollback()
 
+	trackTaskProgress(nil, task)
 	if err := upsertTaskRow(ctx, tx, task, false); err != nil {
 		return err
 	}
@@ -58,14 +59,20 @@ func (s *SQLiteTaskStore) Update(ctx context.Context, task *Task) error {
 	}
 	defer tx.Rollback()
 
-	var previousStage string
-	if err := tx.GetContext(ctx, &previousStage, `SELECT stage FROM tasks WHERE id = ?`, task.ID); err != nil {
+	var previousRow sqliteTaskRow
+	if err := tx.GetContext(ctx, &previousRow, taskSelectSQL+` WHERE id = ?`, task.ID); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return fmt.Errorf("taskruntime: task %q not found", task.ID)
 		}
 		return fmt.Errorf("taskruntime: load task %q before update: %w", task.ID, err)
 	}
 
+	previous, err := previousRow.toTask()
+	if err != nil {
+		return err
+	}
+	previousStage := string(previous.Stage)
+	trackTaskProgress(previous, task)
 	if err := upsertTaskRow(ctx, tx, task, true); err != nil {
 		return err
 	}
@@ -212,7 +219,7 @@ SELECT
   progress,
   qbittorrent_state,
   content_path,
-  sourcing_completed_at, download_completed_at, ingest_completed_at,
+  last_progress_at, sourcing_completed_at, download_completed_at, ingest_completed_at,
   moji_source_path,
   transfer_action,
   moji_transfer_path,
@@ -259,6 +266,7 @@ type sqliteTaskRow struct {
 	Progress                float64        `db:"progress"`
 	QBittorrentState        sql.NullString `db:"qbittorrent_state"`
 	ContentPath             sql.NullString `db:"content_path"`
+	LastProgressAt          sql.NullString `db:"last_progress_at"`
 	SourcingCompletedAt     sql.NullString `db:"sourcing_completed_at"`
 	DownloadCompletedAt     sql.NullString `db:"download_completed_at"`
 	IngestCompletedAt       sql.NullString `db:"ingest_completed_at"`
@@ -338,6 +346,9 @@ func (r sqliteTaskRow) toTask() (*Task, error) {
 	}
 
 	var err error
+	if task.LastProgressAt, err = parseOptionalSQLiteTimestamp(r.LastProgressAt); err != nil {
+		return nil, fmt.Errorf("taskruntime: parse last_progress_at for task %q: %w", task.ID, err)
+	}
 	if task.SourcingCompletedAt, err = parseOptionalSQLiteTimestamp(r.SourcingCompletedAt); err != nil {
 		return nil, fmt.Errorf("taskruntime: parse sourcing_completed_at for task %q: %w", task.ID, err)
 	}
@@ -380,6 +391,7 @@ type sqliteTaskParams struct {
 	Progress                float64 `db:"progress"`
 	QBittorrentState        any     `db:"qbittorrent_state"`
 	ContentPath             any     `db:"content_path"`
+	LastProgressAt          any     `db:"last_progress_at"`
 	SourcingCompletedAt     any     `db:"sourcing_completed_at"`
 	DownloadCompletedAt     any     `db:"download_completed_at"`
 	IngestCompletedAt       any     `db:"ingest_completed_at"`
@@ -435,6 +447,7 @@ func taskToSQLiteParams(task *Task) sqliteTaskParams {
 		Progress:                task.Progress,
 		QBittorrentState:        nullableStringParam(task.QBittorrentState),
 		ContentPath:             nullableStringParam(task.ContentPath),
+		LastProgressAt:          formatOptionalSQLiteTimestamp(task.LastProgressAt),
 		SourcingCompletedAt:     formatOptionalSQLiteTimestamp(task.SourcingCompletedAt),
 		DownloadCompletedAt:     formatOptionalSQLiteTimestamp(task.DownloadCompletedAt),
 		IngestCompletedAt:       formatOptionalSQLiteTimestamp(task.IngestCompletedAt),
@@ -471,7 +484,7 @@ func upsertTaskRow(ctx context.Context, tx *sqlx.Tx, task *Task, isUpdate bool) 
 INSERT INTO tasks (
   id, source, code, stage, stage_status, stage_error_code, stage_error_message, file_plan_json, torrent_url, save_path, category, tags,
   torrent_identity_hash, torrent_identity_magnet, torrent_hash, torrent_name, progress, qbittorrent_state, content_path,
-  sourcing_completed_at, download_completed_at, ingest_completed_at, moji_source_path, transfer_action, moji_transfer_path,
+  last_progress_at, sourcing_completed_at, download_completed_at, ingest_completed_at, moji_source_path, transfer_action, moji_transfer_path,
   stash_ingest_phase, stash_generate_job_id, stash_identify_job_id, stash_scene_ids_json, stash_scene_recovery_count,
   transfer_error, stash_scan_job_id, stash_scan_path, stash_scan_error, stash_scan_hint,
   stash_scan_started_at, selected_title, selected_tracker, selected_info_hash, selected_link, selected_magnet_uri,
@@ -479,7 +492,7 @@ INSERT INTO tasks (
 ) VALUES (
   :id, :source, :code, :stage, :stage_status, :stage_error_code, :stage_error_message, :file_plan_json, :torrent_url, :save_path, :category, :tags,
   :torrent_identity_hash, :torrent_identity_magnet, :torrent_hash, :torrent_name, :progress, :qbittorrent_state, :content_path,
-  :sourcing_completed_at, :download_completed_at, :ingest_completed_at, :moji_source_path, :transfer_action, :moji_transfer_path,
+  :last_progress_at, :sourcing_completed_at, :download_completed_at, :ingest_completed_at, :moji_source_path, :transfer_action, :moji_transfer_path,
   :stash_ingest_phase, :stash_generate_job_id, :stash_identify_job_id, :stash_scene_ids_json, :stash_scene_recovery_count,
   :transfer_error, :stash_scan_job_id, :stash_scan_path, :stash_scan_error, :stash_scan_hint,
   :stash_scan_started_at, :selected_title, :selected_tracker, :selected_info_hash, :selected_link, :selected_magnet_uri,
@@ -506,6 +519,7 @@ ON CONFLICT(id) DO UPDATE SET
   progress = excluded.progress,
   qbittorrent_state = excluded.qbittorrent_state,
   content_path = excluded.content_path,
+  last_progress_at = excluded.last_progress_at,
   sourcing_completed_at = excluded.sourcing_completed_at,
   download_completed_at = excluded.download_completed_at,
   ingest_completed_at = excluded.ingest_completed_at,

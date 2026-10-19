@@ -43,7 +43,7 @@ query TasksOverviewDocument {
     stashScanHint
     stashScanStartedAt
     createdAt
-    updatedAt
+    updatedAt lastProgressAt
   }
   settings { system { taskDeletePolicy } }
   settingsStatus {

@@ -184,6 +184,15 @@ function simplifyMessage(message: string) {
 }
 
 export function taskFailureSummary(task: DashboardTask): TaskFailureSummary {
+  const sourcingFailures: Record<string, string> = {
+    CANDIDATE_CODE_MISMATCH: "candidateMismatch",
+    CANDIDATE_IDENTITY_UNVERIFIED: "candidateUnverified",
+    TORRENT_METADATA_FAILED: "torrentMetadata",
+  };
+  const sourcingFailure = sourcingFailures[task.stageErrorCode || ""];
+  if (sourcingFailure) {
+    return { title: tr(`taskModel.failure.${sourcingFailure}`), detail: tr(`taskModel.failure.${sourcingFailure}Detail`), tone: "tone-warn" };
+  }
   if (task.stageErrorCode === "FILE_SELECTION_REQUIRED") return { title: tr("mediaFiles.blocked"), detail: tr("mediaFiles.blockedDetail"), tone: "tone-warn" };
   if (["MEDIA_PREPARATION_FAILED", "FILE_SELECTION_FAILED"].includes(task.stageErrorCode || "")) return { title: tr("mediaFiles.prepareFailed"), detail: tr("mediaFiles.prepareFailedDetail"), tone: "tone-danger" };
   const transferError = simplifyMessage(task.transferError || "");

@@ -45,6 +45,7 @@ func (s *JSONTaskStore) Create(ctx context.Context, task *Task) error {
 	if _, exists := s.tasks[task.ID]; exists {
 		return fmt.Errorf("taskruntime: task %q already exists", task.ID)
 	}
+	trackTaskProgress(nil, task)
 	s.tasks[task.ID] = cloneTask(task)
 	return s.saveLocked(ctx)
 }
@@ -59,6 +60,7 @@ func (s *JSONTaskStore) Update(ctx context.Context, task *Task) error {
 	if _, exists := s.tasks[task.ID]; !exists {
 		return fmt.Errorf("taskruntime: task %q not found", task.ID)
 	}
+	trackTaskProgress(s.tasks[task.ID], task)
 	s.tasks[task.ID] = cloneTask(task)
 	return s.saveLocked(ctx)
 }

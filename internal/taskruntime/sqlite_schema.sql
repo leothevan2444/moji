@@ -28,6 +28,7 @@ CREATE TABLE IF NOT EXISTS tasks (
   qbittorrent_state TEXT,
   content_path TEXT,
 
+  last_progress_at TEXT,
   sourcing_completed_at TEXT,
   download_completed_at TEXT,
   ingest_completed_at TEXT,
@@ -100,5 +101,5 @@ CREATE INDEX IF NOT EXISTS idx_task_events_created_at
   ON task_events (created_at DESC);
 
 INSERT INTO task_store_meta (key, value)
-VALUES ('schema_version', '11')
+VALUES ('schema_version', '12')
 ON CONFLICT(key) DO UPDATE SET value = excluded.value;
