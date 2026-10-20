@@ -549,72 +549,55 @@ $task-status-tones: (
 
 .sourcing-resolution {
   display: grid;
-  gap: 14px;
-
-  .drawer-card__head p {
-    margin: 6px 0 0;
-  }
-
-  &__magnet {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) auto;
-    gap: 10px;
-  }
-
-  &__upload {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) auto;
-    align-items: end;
-    gap: 10px;
-
-    .settings-field { min-width: 0; }
-    input[type="file"] { width: 100%; min-width: 0; }
-  }
-
-  &__search {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-
-    span {
-      color: var(--text-muted);
-      font-size: 13px;
-    }
-  }
-
-  &__candidates {
-    display: grid;
-    gap: 8px;
-    max-height: 360px;
-    overflow-y: auto;
-  }
+  min-width: 0;
+  gap: 16px;
+  &__intro { margin: 0; color: var(--muted); font-size: 13px; line-height: 1.6; }
+  &__magnet { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; align-items: center; gap: 8px; }
+  &__magnet input:not([type="file"]) { min-width: 0; width: 100%; }
+  &__magnet button { white-space: nowrap; }
+  &__upload, &__search > button { display: inline-flex; align-items: center; justify-content: center; gap: 7px; }
+  &__feedback { margin: 0; color: var(--muted); font-size: 13px; overflow-wrap: anywhere; }
+  &__results { display: grid; gap: 12px; min-width: 0; padding-top: 16px; border-top: 1px solid var(--line); }
+  &__search { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px; }
+  &__result-heading { display: flex; align-items: baseline; flex-wrap: wrap; gap: 6px 12px; }
+  &__result-heading h3 { margin: 0; font-size: 14px; }
+  &__result-heading > span { color: var(--muted); font-size: 12px; }
+  &__search > button { font-size: 12px; }
+  &__loading, &__empty { color: var(--muted); font-size: 13px; line-height: 1.6; }
+  &__empty { margin: 0; padding: 18px 12px; text-align: center; background: var(--surface-strong); border-radius: 8px; }
+  &__error { padding: 10px 12px; border: 1px solid color-mix(in srgb, #c2412f 25%, var(--line)); border-radius: 8px; background: color-mix(in srgb, #c2412f 4%, var(--surface)); color: #a83224; font-size: 13px; line-height: 1.6; overflow-wrap: anywhere; }
+  &__skeletons { display: grid; gap: 8px; margin-top: 12px; }
+  &__skeletons > span { height: 72px; border-radius: 8px; background: var(--line); animation: task-progress-pulse 1.8s ease-in-out infinite; }
+  &__candidates { display: grid; gap: 8px; margin: 0; padding: 0; list-style: none; }
+  svg.fa-spinner { animation: profile-action-spin 1s linear infinite; }
 }
-
 .sourcing-candidate {
-  display: flex;
+  display: grid;
+  grid-template-columns: 24px minmax(0, 1fr) auto;
   align-items: center;
-  justify-content: space-between;
-  gap: 12px;
+  gap: 10px;
   padding: 12px;
   border: 1px solid var(--line);
-  border-radius: $radius-lg;
+  border-radius: 10px;
   background: var(--surface);
-
-  div {
-    min-width: 0;
-    display: grid;
-    gap: 4px;
-  }
-
-  strong,
-  span {
-    overflow-wrap: anywhere;
-  }
-
-  span {
-    color: var(--muted);
-    font-size: 13px;
-  }
+  &__rank { color: var(--muted); font-size: 11px; font-variant-numeric: tabular-nums; }
+  &__copy { min-width: 0; display: grid; gap: 7px; }
+  strong { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; overflow-wrap: anywhere; font-size: 13px; line-height: 1.5; }
+  &__meta { display: flex; align-items: center; flex-wrap: wrap; gap: 4px 12px; color: var(--muted); font-size: 11px; }
+  &__tracker { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 160px; }
+  .has-seeders { color: var(--accent-2); font-weight: 600; }
+  > button { font-size: 12px; white-space: nowrap; }
+}
+@media (max-width: 640px) {
+  .sourcing-resolution__magnet { grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: stretch; }
+  .sourcing-resolution__magnet input:not([type="file"]) { grid-column: 1 / -1; }
+  .sourcing-resolution__magnet button { padding-inline: 8px; font-size: 12px; white-space: normal; line-height: 1.4; }
+  .sourcing-resolution__upload svg { flex-shrink: 0; }
+  .sourcing-candidate { grid-template-columns: minmax(0, 1fr) auto; gap: 8px; padding: 10px; }
+  .sourcing-candidate__rank { display: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .sourcing-resolution svg.fa-spinner, .sourcing-resolution__skeletons > span { animation: none; }
 }
 
 .icon-button {

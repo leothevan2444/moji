@@ -150,7 +150,7 @@ export function Component() {
     {taskId ? <Drawer visibleDrawer={isResolution ? "task-resolution" : "task"} closing={false} title={isResolution ? t("taskRoute.resolutionTitle", { task: activeTask ? taskSummary(activeTask) : t("taskRoute.task") }) : activeTask ? taskSummary(activeTask) : t("taskRoute.details")} onClose={closeTask}>
       <Suspense fallback={<div className="skeleton skeleton-card" />}>
         {detailFetching && !activeTask ? <p>{t("taskRoute.loading")}</p> : detailError ? <div className="empty-card"><h3>{t("taskRoute.loadFailed")}</h3><p>{describeQueryError(detailError)}</p></div> : !activeTask ? <div className="empty-card"><h3>{t("taskRoute.notFound")}</h3></div> : isResolution ?
-          <SourcingResolutionDrawer task={activeTask} onResolved={async () => { navigate(`/tasks/${encodeURIComponent(taskId)}`); }} /> :
+          <SourcingResolutionDrawer task={activeTask} onNotify={pushToast} onResolved={async () => { navigate(`/tasks/${encodeURIComponent(taskId)}`); }} /> :
           <TaskDrawer task={activeTask} pendingScan={pendingScan === taskId} pendingRetry={pendingRetry === taskId} pendingDelete={pendingDelete === taskId} onCopy={copyText} onResolveTask={(id) => openTask(id, true)} onScanTask={(id) => void runScan(id)} onRetryTask={(id) => void runRetry(id)} onDeleteTask={(id) => setConfirmDeleteIds([id])} />}
       </Suspense>
     </Drawer> : null}

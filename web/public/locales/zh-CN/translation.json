@@ -1,5 +1,12 @@
 {
   "sourcingManual": {
+    "intro": "候选种子会自动搜索，也可直接提供磁力链接或种子文件。",
+    "candidates": "候选种子",
+    "searchingFor": "正在搜索 {{code}} 的候选种子…",
+    "validating": "校验中…",
+    "validatingFile": "正在校验 {{name}}…",
+    "accepted": "资源校验通过，已提交下载。",
+    "selectCandidate": "选用：{{title}}",
     "fileLabel": "上传种子文件",
     "fileHelp": "选择 .torrent 文件，最大 8 MiB。Moji 会校验种子名称和视频番号。",
     "useFile": "使用种子文件",
@@ -617,7 +624,7 @@
     "deleteNoResult": "任务删除失败，后端没有返回已删除的任务记录。",
     "deleted": "已删除任务：{{task}}。",
     "loadFailed": "任务加载失败",
-    "resolutionTitle": "人工处理：{{task}}",
+    "resolutionTitle": "手动选种 · {{task}}",
     "task": "任务",
     "details": "任务详情",
     "loading": "正在加载任务...",
@@ -687,7 +694,7 @@
     "resolution": {
       "noResult": "后端没有返回已恢复的任务记录。",
       "title": "选择或补充资源",
-      "detail": "为 {{code}} 填入磁力链接、上传种子文件，或从索引结果中选择资源以继续原任务。",
+      "detail": "为 {{code}} 填入磁力链接、上传种子文件，或从索引结果中选择资源以继续。",
       "magnetPlaceholder": "粘贴 magnet:?xt=urn:btih:...",
       "magnetLabel": "磁力链接",
       "submitting": "提交中...",

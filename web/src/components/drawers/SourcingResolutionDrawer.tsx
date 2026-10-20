@@ -5,9 +5,10 @@ import { useTranslation } from "react-i18next";
 interface SourcingResolutionDrawerProps {
   task: DashboardTask | null;
   onResolved: () => void | Promise<void>;
+  onNotify?: (tone: "tone-success" | "tone-danger", message: string) => void;
 }
 
-export function SourcingResolutionDrawer({ task, onResolved }: SourcingResolutionDrawerProps) {
+export function SourcingResolutionDrawer({ task, onResolved, onNotify }: SourcingResolutionDrawerProps) {
   const { t } = useTranslation();
   if (!task || task.stage !== "SOURCING" || (task.stageStatus !== "BLOCKED" && !isWaitingForResource(task))) {
     return (
@@ -20,7 +21,7 @@ export function SourcingResolutionDrawer({ task, onResolved }: SourcingResolutio
 
   return (
     <div className="drawer-stack">
-      <BlockedSourcingResolution key={task.id} task={task} onResolved={onResolved} />
+      <BlockedSourcingResolution key={task.id} task={task} onResolved={onResolved} onNotify={onNotify} />
     </div>
   );
 }

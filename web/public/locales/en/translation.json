@@ -1,5 +1,12 @@
 {
   "sourcingManual": {
+    "intro": "Candidates are searched automatically. You can also provide a magnet link or torrent file.",
+    "candidates": "Candidate torrents",
+    "searchingFor": "Searching for {{code}} candidates…",
+    "validating": "Validating…",
+    "validatingFile": "Validating {{name}}…",
+    "accepted": "Resource verified and submitted for download.",
+    "selectCandidate": "Select: {{title}}",
     "fileLabel": "Upload torrent file",
     "fileHelp": "Choose a .torrent file up to 8 MiB. Moji checks its name and video codes.",
     "useFile": "Use torrent file",
@@ -626,7 +633,7 @@
     "deleteNoResult": "Deletion failed because the server returned no deleted task record.",
     "deleted": "Deleted task: {{task}}.",
     "loadFailed": "Tasks failed to load",
-    "resolutionTitle": "Manual resolution: {{task}}",
+    "resolutionTitle": "Select seed manually · {{task}}",
     "task": "Task",
     "details": "Task details",
     "loading": "Loading task...",
