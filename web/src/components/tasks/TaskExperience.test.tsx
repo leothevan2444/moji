@@ -41,8 +41,8 @@ describe("task experience", () => {
   });
 
   it.each([
-    [TaskStage.Sourcing, undefined, "Choose or add a resource", "onResolveTask"],
-    [TaskStage.Downloading, "FILE_SELECTION_REQUIRED", "Confirm movie files", "files"],
+    [TaskStage.Sourcing, undefined, "Select seed manually", "onResolveTask"],
+    [TaskStage.Downloading, "FILE_SELECTION_REQUIRED", "Select movie files", "files"],
     [TaskStage.Transferring, "MEDIA_PREPARATION_FAILED", "Retry current stage", "onRetryTask"]
   ] as const)("uses the same next action in cards and details for %s / %s", async (stage, stageErrorCode, label, handler) => {
     const user = userEvent.setup();
@@ -69,6 +69,36 @@ describe("task experience", () => {
       expect(callbacks[handler]).toHaveBeenCalledWith(task.id);
       expect(open).not.toHaveBeenCalled();
     }
+  });
+
+  it("keeps three resource actions concise and exposes deletion directly", async () => {
+    const callbacks = props();
+    const open = vi.fn();
+    const current = { ...task, stage: TaskStage.Sourcing, stageStatus: TaskStageStatus.Pending, sourcingNextCheckAt: "2026-10-21T02:00:00Z" };
+    const { container, rerender } = render(<TaskCard task={current} onOpen={open} onResolve={callbacks.onResolveTask} onRetry={callbacks.onRetryTask} onDelete={callbacks.onDeleteTask} />);
+    expect(container.querySelector("details, summary")).toBeNull();
+    const choose = screen.getByRole("button", { name: "Select seed manually: DEMO-001" });
+    const check = screen.getByRole("button", { name: "Check resources now: DEMO-001" });
+    const remove = screen.getByRole("button", { name: "Delete task: DEMO-001" });
+    expect(choose.textContent).toBe("Select seed");
+    expect(choose.getAttribute("title")).toBe("Search for a seed or provide a magnet link");
+    expect(check.getAttribute("title")).toBe("Search for available resources now");
+    expect(remove.getAttribute("title")).toBe("Delete this task after confirmation");
+    expect(check.textContent).toBe("Check");
+    expect(remove.textContent).toBe("Delete");
+    const user = userEvent.setup();
+    await user.click(choose); await user.click(check); await user.click(remove);
+    expect(callbacks.onResolveTask).toHaveBeenCalledWith(task.id);
+    expect(callbacks.onRetryTask).toHaveBeenCalledWith(task.id);
+    expect(callbacks.onDeleteTask).toHaveBeenCalledWith(task.id);
+    expect(open).not.toHaveBeenCalled();
+    rerender(<TaskCard task={current} onOpen={open} onDelete={callbacks.onDeleteTask} pendingDeleteId={task.id} />);
+    const deleting = screen.getByRole("button", { name: "Delete task: DEMO-001" });
+    expect((deleting as HTMLButtonElement).disabled).toBe(true);
+    expect(deleting.getAttribute("aria-busy")).toBe("true");
+    await user.click(deleting);
+    expect(callbacks.onDeleteTask).toHaveBeenCalledTimes(1);
+    expect(open).not.toHaveBeenCalled();
   });
 
   it("moves file locations to their sections and removes the task information section", async () => {

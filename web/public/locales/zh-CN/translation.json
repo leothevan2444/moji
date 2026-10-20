@@ -6,6 +6,24 @@
     "invalidFile": "请选择非空的 .torrent 文件，大小不能超过 8 MiB。",
     "seeders": "{{count}} 个做种者"
   },
+  "taskActionHints": {
+    "resolve": "搜索并选择种子，或补充磁力链接",
+    "files": "选择并确认需要下载的影片文件",
+    "retry": "重新执行当前受阻阶段",
+    "ingest": "整理下载文件并导入 Stash",
+    "check": "立即搜索新的可用资源",
+    "delete": "删除当前任务，操作前需要确认"
+  },
+  "taskCardActions": {
+    "resolve": "手动选种",
+    "files": "选文件",
+    "retry": "重试",
+    "ingest": "入库",
+    "check": "检查资源",
+    "pending": "处理中…",
+    "delete": "删除",
+    "deleting": "删除中…"
+  },
   "resourceTracking": {
     "waiting": "等待资源",
     "waitingDetail": "尚无通过验证的资源。Moji 会持续定期搜索，找到有效资源后自动开始下载。",
@@ -85,8 +103,8 @@
     "downloadFinished": "下载已完成",
     "downloadCompletedAt": "下载完成时间",
     "actions": {
-      "resolve": "选择或补充资源",
-      "files": "确认主影片文件",
+      "resolve": "手动选种",
+      "files": "选择影片文件",
       "retry": "重试当前阶段",
       "ingest": "开始入库",
       "pending": "正在提交…"

@@ -3,6 +3,7 @@ import { taskPrimaryAction, taskSummary, isWaitingForResource, type DashboardTas
 
 interface TaskPrimaryActionProps {
   task: DashboardTask;
+  compact?: boolean;
   pendingScan?: boolean;
   pendingRetry?: boolean;
   onResolve?: (id: string) => void;
@@ -11,7 +12,7 @@ interface TaskPrimaryActionProps {
   onScan?: (id: string) => void;
 }
 
-export function TaskPrimaryAction({ task, pendingScan, pendingRetry, onResolve, onFiles, onRetry, onScan }: TaskPrimaryActionProps) {
+export function TaskPrimaryAction({ task, compact = false, pendingScan, pendingRetry, onResolve, onFiles, onRetry, onScan }: TaskPrimaryActionProps) {
   const { t } = useTranslation();
   const action = taskPrimaryAction(task);
   if (!action) return null;
@@ -19,19 +20,22 @@ export function TaskPrimaryAction({ task, pendingScan, pendingRetry, onResolve, 
   if (!handler) return null;
   const pending = action === "retry" ? pendingRetry : action === "ingest" ? pendingScan : false;
   const label = isWaitingForResource(task) ? t("resourceTracking.checkNow") : t(`taskExperience.actions.${action}`);
+  const visibleLabel = compact ? t(`taskCardActions.${isWaitingForResource(task) ? "check" : action}`) : label;
   return <>
-    {isWaitingForResource(task) && onResolve ? <button type="button" className="ghost-button task-primary-action"
+    {isWaitingForResource(task) && onResolve ? <button type="button" className="ghost-button task-primary-action task-primary-action--secondary"
+      title={compact ? t("taskActionHints.resolve") : undefined}
       disabled={pendingRetry} aria-label={`${t("taskExperience.actions.resolve")}: ${taskSummary(task)}`}
       onClick={event => { event.stopPropagation(); onResolve(task.id); }}>
-      {t("taskExperience.actions.resolve")}
+      {t(compact ? "taskCardActions.resolve" : "taskExperience.actions.resolve")}
     </button> : null}
     <button
     type="button"
     className="ghost-button task-primary-action"
+    title={compact ? t(`taskActionHints.${isWaitingForResource(task) ? "check" : action}`) : undefined}
     disabled={pending}
     aria-busy={Boolean(pending)}
     aria-label={`${label}: ${taskSummary(task)}`}
     onClick={event => { event.stopPropagation(); handler(task.id); }}
-  >{pending ? t("taskExperience.actions.pending") : label}</button>
+  >{pending ? t(compact ? "taskCardActions.pending" : "taskExperience.actions.pending") : visibleLabel}</button>
   </>;
 }

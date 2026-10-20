@@ -22,7 +22,7 @@ describe("task card progress time",()=>{
   expect(container.querySelector(".task-card__tracking")?.textContent).toContain("Next check:");
   fireEvent.click(screen.getByRole("button",{name:"Check resources now: ABCD-123"}));
   expect(onRetry).toHaveBeenCalledWith(task.id);
-  fireEvent.click(screen.getByRole("button",{name:"Choose or add a resource: ABCD-123"}));
+  fireEvent.click(screen.getByRole("button",{name:"Select seed manually: ABCD-123"}));
   expect(onResolve).toHaveBeenCalledWith(task.id);
  });
  it("keeps the visible time stable during polling and advances it on actual progress",()=>{

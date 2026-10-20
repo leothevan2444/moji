@@ -5,7 +5,8 @@ import {
 import { taskProgressTime } from "../../utils/taskProgressTime";
 import { useTranslation } from "react-i18next";
 import { TaskPrimaryAction } from "./TaskPrimaryAction";
-import { TaskMoreActions } from "./TaskMoreActions";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { faTrashCan } from "@fortawesome/free-solid-svg-icons/faTrashCan";
 
 interface TaskCardProps {
   task: DashboardTask;
@@ -79,10 +80,16 @@ export function TaskCard({ task, compact = false, pendingScanId, pendingRetryId,
       <time dateTime={cardTime} title={t(timeLabel, { time: formatDateTime(cardTime) })}>
         {t(timeLabel, { time: formatRelative(cardTime) ?? formatDateTime(cardTime) })}
       </time>
-      {!selectionMode ? <div className="task-card__right">
-        <TaskPrimaryAction task={task} pendingScan={pendingScanId === task.id} pendingRetry={pendingRetryId === task.id}
+      {!selectionMode ? <div className="task-card__right" onClick={event => event.stopPropagation()}>
+        <TaskPrimaryAction task={task} compact pendingScan={pendingScanId === task.id} pendingRetry={pendingRetryId === task.id}
           onResolve={onResolve} onFiles={onOpen} onScan={onScan} onRetry={onRetry} />
-        {onDelete ? <TaskMoreActions task={task} onDelete={onDelete} pendingDelete={pendingDeleteId === task.id} /> : null}
+        {onDelete ? <button type="button" className="ghost-button task-card__delete"
+          title={t("taskActionHints.delete")}
+          disabled={pendingDeleteId === task.id} aria-busy={pendingDeleteId === task.id}
+          aria-label={t("taskUi.card.deleteLabel", { task: taskSummary(task) })}
+          onClick={event => { event.stopPropagation(); onDelete(task.id); }}>
+          <FontAwesomeIcon icon={faTrashCan} /><span>{t(pendingDeleteId === task.id ? "taskCardActions.deleting" : "taskCardActions.delete")}</span>
+        </button> : null}
       </div> : null}
     </div>
   </article>;

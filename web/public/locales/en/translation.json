@@ -6,6 +6,24 @@
     "invalidFile": "Choose a non-empty .torrent file no larger than 8 MiB.",
     "seeders": "{{count}} seeders"
   },
+  "taskActionHints": {
+    "resolve": "Search for a seed or provide a magnet link",
+    "files": "Choose and confirm movie files to download",
+    "retry": "Retry the current blocked stage",
+    "ingest": "Prepare downloaded files and import them into Stash",
+    "check": "Search for available resources now",
+    "delete": "Delete this task after confirmation"
+  },
+  "taskCardActions": {
+    "resolve": "Select seed",
+    "files": "Files",
+    "retry": "Retry",
+    "ingest": "Ingest",
+    "check": "Check",
+    "pending": "Working…",
+    "delete": "Delete",
+    "deleting": "Deleting…"
+  },
   "resourceTracking": {
     "waiting": "Waiting for resources",
     "waitingDetail": "No verified resource is available yet. Moji keeps searching periodically and starts downloading when a valid resource appears.",
@@ -87,8 +105,8 @@
     "downloadFinished": "Download complete",
     "downloadCompletedAt": "Download completed",
     "actions": {
-      "resolve": "Choose or add a resource",
-      "files": "Confirm movie files",
+      "resolve": "Select seed manually",
+      "files": "Select movie files",
       "retry": "Retry current stage",
       "ingest": "Start ingest",
       "pending": "Submitting…"
