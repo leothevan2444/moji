@@ -35,6 +35,7 @@ type StashService interface {
 }
 
 type TaskRuntimeService interface {
+	QueueDownloadContext(ctx context.Context, req taskruntime.DownloadRequest) (*taskruntime.Task, error)
 	AddTorrentContext(ctx context.Context, req taskruntime.AddTorrentRequest) (*taskruntime.Task, error)
 	DownloadMediaContext(ctx context.Context, req taskruntime.DownloadRequest) (*taskruntime.Task, error)
 	PreviewJackettSelectionContext(ctx context.Context, req taskruntime.PreviewJackettSelectionRequest) (*taskruntime.CandidateSelectionPreview, error)

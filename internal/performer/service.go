@@ -17,7 +17,7 @@ type StashClient interface {
 	FindScenes(context.Context, *stashgraphql.SceneFilterType, *stashgraphql.FindFilterType) ([]*stashgraphql.SceneFragment, error)
 }
 type TaskCreator interface {
-	QueueDiscoveredScene(context.Context, string, string) (*taskruntime.Task, error)
+	QueueResolvedScene(context.Context, string, string) (*taskruntime.Task, error)
 }
 type TaskLister interface {
 	ListTasks(context.Context) ([]*taskruntime.Task, error)

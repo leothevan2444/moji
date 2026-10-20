@@ -13,7 +13,7 @@ import (
 // and it translates that intent into standard taskruntime requests.
 type TaskRuntime interface {
 	AddTorrentContext(ctx context.Context, req taskruntime.AddTorrentRequest) (*taskruntime.Task, error)
-	DownloadMediaContext(ctx context.Context, req taskruntime.DownloadRequest) (*taskruntime.Task, error)
+	QueueDownloadContext(ctx context.Context, req taskruntime.DownloadRequest) (*taskruntime.Task, error)
 }
 
 type DiscoveredSceneResolver interface {
@@ -95,7 +95,7 @@ func (s *Service) CreateFromSearchCode(ctx context.Context, input CreateFromSear
 		return nil, errors.New("taskflow: task runtime is not configured")
 	}
 
-	return s.taskRuntime.DownloadMediaContext(ctx, taskruntime.DownloadRequest{
+	return s.taskRuntime.QueueDownloadContext(ctx, taskruntime.DownloadRequest{
 		Source:     taskruntime.TaskSourceManual,
 		Code:       input.Code,
 		Trackers:   input.Trackers,
@@ -130,6 +130,11 @@ func (s *Service) CreateFromDiscoveredSceneRef(ctx context.Context, input Create
 	})
 }
 
+// QueueResolvedScene accepts a server-validated scene without fetching it again.
+func (s *Service) QueueResolvedScene(ctx context.Context, code, title string) (*taskruntime.Task, error) {
+	return s.CreateFromDiscoveredScene(ctx, CreateFromDiscoveredSceneInput{Code: code, Title: title})
+}
+
 func (s *Service) QueueDiscoveredScene(ctx context.Context, sceneID string, stashBoxEndpoint string) (*taskruntime.Task, error) {
 	task, err := s.CreateFromDiscoveredSceneRef(ctx, CreateFromDiscoveredSceneRefInput{
 		SceneID:          sceneID,
@@ -159,7 +164,7 @@ func (s *Service) createFromCode(ctx context.Context, source taskruntime.TaskSou
 		return nil, errors.New("task code is required")
 	}
 
-	task, err := s.taskRuntime.DownloadMediaContext(ctx, taskruntime.DownloadRequest{
+	task, err := s.taskRuntime.QueueDownloadContext(ctx, taskruntime.DownloadRequest{
 		Source: source,
 		Code:   resolvedCode,
 	})

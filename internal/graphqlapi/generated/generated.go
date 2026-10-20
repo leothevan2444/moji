@@ -5525,7 +5525,7 @@ type Mutation {
   "Add a torrent URL or magnet and create a persisted Moji task"
   addTorrent(input: QBittorrentAddInput!): Task!
 
-  "Search torrent candidates and create a Moji download task"
+  "Persist a download task immediately; search and submit torrent candidates in the background"
   downloadMedia(input: DownloadMediaInput!): Task!
 
   "Synchronize Moji task progress from qBittorrent"

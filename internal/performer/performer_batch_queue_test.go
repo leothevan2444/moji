@@ -14,13 +14,17 @@ import (
 )
 
 type queueTestTaskCreator struct {
-	task  *taskruntime.Task
-	err   error
-	calls int
+	task   *taskruntime.Task
+	err    error
+	calls  int
+	codes  []string
+	titles []string
 }
 
-func (f *queueTestTaskCreator) QueueDiscoveredScene(context.Context, string, string) (*taskruntime.Task, error) {
+func (f *queueTestTaskCreator) QueueResolvedScene(_ context.Context, code, title string) (*taskruntime.Task, error) {
 	f.calls++
+	f.codes = append(f.codes, code)
+	f.titles = append(f.titles, title)
 	return f.task, f.err
 }
 
@@ -93,7 +97,7 @@ func TestQueuePerformerScenesAcceptsMaximumAndPreservesOrder(t *testing.T) {
 func TestQueuePerformerScenesReturnsOrderedPartialSuccess(t *testing.T) {
 	const endpoint = "https://box.example/graphql"
 	code := "ABC-123"
-	remote := &stashboxgraphql.SceneFragment{ID: "remote-1", Code: &code}
+	remote := &stashboxgraphql.SceneFragment{ID: "remote-1", Code: &code, Performers: []*stashboxgraphql.PerformerAppearanceFragment{{Performer: &stashboxgraphql.PerformerFragment{ID: "box-performer-1"}}}}
 	client := &pagedStashBoxClient{
 		performer: &stashboxgraphql.PerformerFragment{ID: "box-performer-1", Name: "Alice"},
 		pages:     map[int][]*stashboxgraphql.SceneFragment{1: {remote}},
@@ -208,5 +212,40 @@ func TestMapPerformerSceneQueueErrorReasonCodes(t *testing.T) {
 				t.Fatalf("result = %+v, want status %s reason %s", result, test.status, test.reason)
 			}
 		})
+	}
+}
+
+type queueLookupOnlyStash struct{ testStashClient }
+
+func (queueLookupOnlyStash) FindScenes(context.Context, *stashgraphql.SceneFilterType, *stashgraphql.FindFilterType) ([]*stashgraphql.SceneFragment, error) {
+	return nil, errors.New("creating a task must not enumerate local movies")
+}
+func TestQueueOnlyLooksUpSelectedSceneAndChecksMembership(t *testing.T) {
+	const endpoint = "https://box.example/graphql"
+	code, title := "ABCD-123", "Movie"
+	actor := &stashgraphql.PerformerFragment{ID: "actor", StashIds: []*stashgraphql.StashIDFragment{{Endpoint: endpoint, StashID: "remote-actor"}}}
+	remote := &stashboxgraphql.SceneFragment{ID: "wanted", Code: &code, Title: &title, Performers: []*stashboxgraphql.PerformerAppearanceFragment{{Performer: &stashboxgraphql.PerformerFragment{ID: "remote-actor"}}}}
+	outsider := &stashboxgraphql.SceneFragment{ID: "outsider", Code: &code}
+	box := &pagedStashBoxClient{pages: map[int][]*stashboxgraphql.SceneFragment{1: {remote, outsider}}}
+	registry := metadata.NewRegistry(performerClientFactory{client: box})
+	registry.Replace([]stash.StashBoxEndpoint{{Endpoint: endpoint}})
+	creator := &queueTestTaskCreator{task: &taskruntime.Task{ID: "queued", Stage: taskruntime.TaskStageSourcing, StageStatus: taskruntime.TaskStageStatusPending}}
+	service, err := NewService(queueLookupOnlyStash{testStashClient{performer: actor}}, metadata.NewService(nil, registry), creator, nil, func(context.Context, string) string { t.Fatal("queue registered images"); return "" }, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	prefix := "stashbox:" + endpointKey(endpoint) + ":"
+	result, err := service.QueuePerformerScenes(context.Background(), actor.ID, []QueueSceneSelection{{Key: prefix + "wanted"}, {Key: prefix + "outsider"}, {Key: prefix + "missing"}, {Key: "stash:local"}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(box.inputs) != 0 {
+		t.Fatal("queue paginated the remote catalogue")
+	}
+	if result.Summary != (QueueScenesSummary{RequestedCount: 4, QueuedCount: 1, SkippedCount: 1, FailedCount: 2}) {
+		t.Fatalf("unexpected summary: %+v", result.Summary)
+	}
+	if creator.calls != 1 || creator.codes[0] != code || creator.titles[0] != title {
+		t.Fatalf("resolved scene was not reused: %+v", creator)
 	}
 }

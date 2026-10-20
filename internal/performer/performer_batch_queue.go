@@ -6,8 +6,9 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/leothevan2444/moji/internal/metadata"
+	"github.com/leothevan2444/moji/internal/logging"
 	"github.com/leothevan2444/moji/internal/taskruntime"
+	stashgraphql "github.com/leothevan2444/moji/pkg/stash/graphql"
 )
 
 const MaxQueueSceneBatchSize = 100
@@ -53,15 +54,6 @@ func (s *Service) QueuePerformerScenes(ctx context.Context, performerID string, 
 		return QueueScenesResult{}, fmt.Errorf("performer: performer %q not found", performerID)
 	}
 
-	scenes, _, _, _, _, _, _, err := s.loadPerformerScenes(ctx, performer, SceneQuery{Page: 1, PageSize: 100}, true, metadata.CachePreferred)
-	if err != nil {
-		return QueueScenesResult{}, err
-	}
-	byKey := make(map[string]Scene, len(scenes))
-	for _, scene := range scenes {
-		byKey[scene.Key] = scene
-	}
-
 	result := QueueScenesResult{
 		QueuedTasks: make([]*taskruntime.Task, 0, len(selections)),
 		Results:     make([]QueueSceneResult, 0, len(selections)),
@@ -71,7 +63,18 @@ func (s *Service) QueuePerformerScenes(ctx context.Context, performerID string, 
 	}
 
 	for _, selection := range selections {
-		itemResult := s.queuePerformerSceneSelection(ctx, byKey, selection)
+		scene, found, lookupErr := s.resolveQueueScene(ctx, performer, selection.Key)
+		itemResult := QueueSceneResult{Key: selection.Key, Status: QueueSceneStatusFailed, ReasonCode: "QUEUE_FAILED"}
+		if lookupErr != nil {
+			logging.Warnf("performer: selected scene lookup failed performer=%s key=%s: %v", performerID, selection.Key, lookupErr)
+		}
+		if lookupErr == nil {
+			byKey := map[string]Scene{}
+			if found {
+				byKey[selection.Key] = scene
+			}
+			itemResult = s.queuePerformerSceneSelection(ctx, byKey, selection)
+		}
 		result.Results = append(result.Results, itemResult)
 		switch itemResult.Status {
 		case QueueSceneStatusQueued:
@@ -125,7 +128,7 @@ func (s *Service) queuePerformerSceneSelection(ctx context.Context, byKey map[st
 			ReasonCode: "MISSING_CODE",
 		}
 	}
-	task, err := s.taskCreator.QueueDiscoveredScene(ctx, current.StashBoxSceneID, current.StashBoxEndpoint)
+	task, err := s.taskCreator.QueueResolvedScene(ctx, resolvedCode, current.Title)
 	if err == nil {
 		return QueueSceneResult{
 			Key:          selection.Key,
@@ -162,4 +165,49 @@ func mapPerformerSceneQueueError(key, resolvedCode string, task *taskruntime.Tas
 		result.ReasonCode = "QUEUE_FAILED"
 	}
 	return result
+}
+
+// Resolve only the selected scene. Never enumerate a performer's entire catalogue
+// or register images while creating a task.
+func (s *Service) resolveQueueScene(ctx context.Context, performer *stashgraphql.PerformerFragment, key string) (Scene, bool, error) {
+	if strings.HasPrefix(key, "stash:") && strings.TrimPrefix(key, "stash:") != "" {
+		// Local scene selections cannot create a download, irrespective of ownership.
+		return Scene{Key: key, InLibrary: true}, true, nil
+	}
+	for _, mapping := range performer.StashIds {
+		if mapping == nil || mapping.StashID == "" {
+			continue
+		}
+		prefix := "stashbox:" + endpointKey(mapping.Endpoint) + ":"
+		if !strings.HasPrefix(key, prefix) {
+			continue
+		}
+		id := strings.TrimPrefix(key, prefix)
+		if id == "" {
+			return Scene{}, false, nil
+		}
+		client, ok := s.metadata.Get(mapping.Endpoint)
+		if !ok {
+			return Scene{}, false, nil
+		}
+		remote, err := client.FindSceneByID(ctx, id)
+		if err != nil {
+			return Scene{}, false, err
+		}
+		if remote == nil || remote.ID != id {
+			return Scene{}, false, nil
+		}
+		belongs := false
+		for _, appearance := range remote.Performers {
+			if appearance != nil && appearance.Performer != nil && appearance.Performer.ID == mapping.StashID {
+				belongs = true
+				break
+			}
+		}
+		if !belongs {
+			return Scene{}, false, nil
+		}
+		return stashBoxSceneToPerformerScene(remote, mapping.Endpoint), true, nil
+	}
+	return Scene{}, false, nil
 }

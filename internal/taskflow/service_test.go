@@ -31,7 +31,7 @@ func (f *fakeTaskRuntime) AddTorrentContext(_ context.Context, req taskruntime.A
 	return f.addTask, nil
 }
 
-func (f *fakeTaskRuntime) DownloadMediaContext(_ context.Context, req taskruntime.DownloadRequest) (*taskruntime.Task, error) {
+func (f *fakeTaskRuntime) QueueDownloadContext(_ context.Context, req taskruntime.DownloadRequest) (*taskruntime.Task, error) {
 	f.downloadRequest = req
 	if f.err != nil {
 		return nil, f.err

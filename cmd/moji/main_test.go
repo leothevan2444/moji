@@ -486,6 +486,10 @@ func (f *fakeProgressSyncService) AddTorrentContext(context.Context, taskruntime
 	return nil, nil
 }
 
+func (f *fakeProgressSyncService) QueueDownloadContext(ctx context.Context, req taskruntime.DownloadRequest) (*taskruntime.Task, error) {
+	return f.DownloadMediaContext(ctx, req)
+}
+
 func (f *fakeProgressSyncService) DownloadMediaContext(context.Context, taskruntime.DownloadRequest) (*taskruntime.Task, error) {
 	return nil, nil
 }

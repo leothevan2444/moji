@@ -26,3 +26,15 @@ describe("sourcing validation failures", () => {
     }
   });
 });
+
+it.each([
+ ["PENDING", "Waiting for source selection", "upcoming"],
+ ["RUNNING", "Selecting source", "current"]
+])("labels sourcing %s without presenting it as a download", async (stageStatus,label,state) => {
+ await i18n.changeLanguage("en");
+ const presentation = taskPresentation({ id:"queued",source:"SEARCH",code:"ABCD-123",stage:"SOURCING",stageStatus,progress:0 } as DashboardTask);
+ expect(presentation.label).toBe(label);
+ expect(presentation.summary).toBe(label);
+ expect(presentation.showDownloadProgress).toBe(false);
+ expect(presentation.lifecycle.find(step => step.key === "sourcing")?.state).toBe(state);
+});

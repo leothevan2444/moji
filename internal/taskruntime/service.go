@@ -108,6 +108,7 @@ type Task struct {
 	CreatedAt               time.Time
 	UpdatedAt               time.Time
 	LastProgressAt          *time.Time
+	SourcingRequestJSON     string
 }
 
 type Candidate struct {
@@ -161,6 +162,8 @@ var (
 )
 
 type Service struct {
+	sourcingWake  chan struct{}
+	sourcingRunMu sync.Mutex
 	mediaConfig   func() stashsync.IntegrationConfig
 	mediaPreparer mediafiles.Preparer
 	mediaContext  context.Context
@@ -257,6 +260,7 @@ func NewService(tr tracker.Tracker, qbt TorrentClient, store TaskStore, options 
 	}
 
 	s := &Service{
+		sourcingWake:       make(chan struct{}, 1),
 		tracker:            tr,
 		qbt:                qbt,
 		store:              store,
@@ -603,6 +607,19 @@ func (s *Service) syncTaskProgress(ctx context.Context, snapshot *Task, torrents
 
 func (s *Service) retrySourcingTask(ctx context.Context, task *Task) (*Task, error) {
 	next := cloneTask(task)
+	if next.SourcingRequestJSON != "" {
+		setTaskStage(next, TaskStageSourcing, TaskStageStatusPending)
+		clearTaskStageError(next)
+		next.UpdatedAt = s.now().UTC()
+		if err := s.store.Update(ctx, next); err != nil {
+			return nil, err
+		}
+		select {
+		case s.sourcingWake <- struct{}{}:
+		default:
+		}
+		return next, nil
+	}
 	setTaskStage(next, TaskStageSourcing, TaskStageStatusRunning)
 	clearTaskStageError(next)
 	next.UpdatedAt = s.now().UTC()
@@ -708,6 +725,9 @@ func (s *Service) runSourcingFlow(ctx context.Context, task *Task, req DownloadR
 	}
 
 	results, err := s.tracker.Search(code, searchOptions...)
+	if ctx.Err() != nil {
+		return task, ctx.Err()
+	}
 	if err != nil {
 		blockTask(task, TaskStageErrorSearch, err.Error(), s.now().UTC())
 		_ = s.store.Update(ctx, task)
@@ -865,13 +885,18 @@ func (s *Service) submitPreparedTaskTorrent(ctx context.Context, task *Task, tor
 	if paused != nil {
 		addOptions.Paused = paused
 	}
-	setTaskStage(task, TaskStageDownloading, TaskStageStatusRunning)
+	if task.SourcingRequestJSON == "" {
+		setTaskStage(task, TaskStageDownloading, TaskStageStatusRunning)
+	}
 	clearTaskStageError(task)
 	task.UpdatedAt = s.now().UTC()
 	if err := s.store.Update(ctx, task); err != nil {
 		return fmt.Errorf("persist validated torrent before submission: %w", err)
 	}
 
+	if err := ctx.Err(); err != nil {
+		return err
+	}
 	if err := s.qbt.AddNewTorrent(ctx, addOptions); err != nil {
 		setTaskStage(task, TaskStageDownloading, TaskStageStatusBlocked)
 		blockTask(task, TaskStageErrorTorrentSubmit, err.Error(), s.now().UTC())

@@ -388,6 +388,11 @@ export function taskPrimaryState(task: DashboardTask): Pick<TaskPresentation, "p
     return { phase: "failed", label: tr("taskModel.states.blocked"), tone: "tone-danger" as const };
   }
 
+  if (stageValue(task) === "sourcing") {
+    const pending = stageStatusValue(task) === "pending";
+    return { phase: "queued", label: tr(pending ? "taskQueue.pending" : "taskQueue.running"), tone: pending ? "tone-neutral" : "tone-info" };
+  }
+
   if (stageValue(task) === "transferring") {
     return { phase: "transferRunning", label: tr("taskModel.states.transferring"), tone: "tone-info" as const };
   }
@@ -529,7 +534,9 @@ export function taskLifecycle(task: DashboardTask, failure: TaskFailureSummary):
       state = "done";
       tone = "tone-success";
     } else if (isCurrent) {
-      if (currentStatus === "blocked") {
+      if (stage === "sourcing" && currentStatus === "pending") {
+        state = "upcoming";
+      } else if (currentStatus === "blocked") {
         state = "error";
         tone = "tone-danger";
       } else if (stage === "completed" && currentStatus === "done") {
@@ -579,8 +586,8 @@ export function taskPresentation(task: DashboardTask): TaskPresentation {
     summary = tr("taskModel.states.downloading");
     detail = tr("taskExperience.afterDownload");
   } else {
-    summary = tr("taskModel.presentation.queued");
-    detail = tr("taskModel.presentation.stageWaiting");
+    summary = stageValue(task) === "sourcing" ? primary.label : tr("taskModel.presentation.queued");
+    detail = stageValue(task) === "sourcing" && stageStatusValue(task) === "pending" ? tr("taskQueue.waiting") : tr("taskModel.presentation.stageWaiting");
   }
 
   const showDownloadProgress = stageValue(task) === "downloading";

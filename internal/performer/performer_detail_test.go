@@ -29,7 +29,14 @@ func (c *pagedStashBoxClient) FindPerformerByID(context.Context, string) (*stash
 	return c.performer, nil
 }
 
-func (*pagedStashBoxClient) FindSceneByID(context.Context, string) (*stashboxgraphql.SceneFragment, error) {
+func (c *pagedStashBoxClient) FindSceneByID(_ context.Context, id string) (*stashboxgraphql.SceneFragment, error) {
+	for _, page := range c.pages {
+		for _, scene := range page {
+			if scene.ID == id {
+				return scene, nil
+			}
+		}
+	}
 	return nil, nil
 }
 

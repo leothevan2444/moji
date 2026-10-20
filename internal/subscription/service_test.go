@@ -129,6 +129,7 @@ type fakeTaskCreator struct {
 	queueTask        *taskruntime.Task
 	queueErr         error
 	queueCalls       []fakeQueuedSceneCall
+	resolvedCodes    []string
 	subscriptionTask *taskruntime.Task
 	subscriptionCode string
 	subscriptionErr  error
@@ -218,6 +219,10 @@ func (f *fakeStashboxClient) QueryScenesPage(ctx context.Context, input stashbox
 	return stashboxpkg.ScenePage{Scenes: scenes, Count: count}, err
 }
 
+func (f *fakeTaskRuntime) QueueDownloadContext(ctx context.Context, req taskruntime.DownloadRequest) (*taskruntime.Task, error) {
+	return f.DownloadMediaContext(ctx, req)
+}
+
 func (f *fakeTaskRuntime) DownloadMediaContext(_ context.Context, req taskruntime.DownloadRequest) (*taskruntime.Task, error) {
 	f.calls++
 	f.codes = append(f.codes, req.Code)
@@ -238,6 +243,11 @@ func (f *fakeTaskRuntime) ListTasks(_ context.Context) ([]*taskruntime.Task, err
 		return nil, f.err
 	}
 	return append([]*taskruntime.Task(nil), f.tasks...), nil
+}
+
+func (f *fakeTaskCreator) QueueResolvedScene(_ context.Context, code, title string) (*taskruntime.Task, error) {
+	f.resolvedCodes = append(f.resolvedCodes, code)
+	return f.queueTask, f.queueErr
 }
 
 func (f *fakeTaskCreator) QueueDiscoveredScene(_ context.Context, sceneID string, stashBoxEndpoint string) (*taskruntime.Task, error) {
@@ -1686,7 +1696,7 @@ func TestQueuePerformerScenesQueuesEligibleScene(t *testing.T) {
 		client: &fakeStashboxClient{
 			performer: &stashboxgraphql.PerformerFragment{ID: "sb-1", Name: "Rara"},
 			scenes: []*stashboxgraphql.SceneFragment{
-				{ID: sceneID, Code: &code},
+				{ID: sceneID, Code: &code, Performers: []*stashboxgraphql.PerformerAppearanceFragment{{Performer: &stashboxgraphql.PerformerFragment{ID: "sb-1"}}}},
 			},
 		},
 	})
@@ -1713,7 +1723,7 @@ func TestQueuePerformerScenesQueuesEligibleScene(t *testing.T) {
 	if err != nil {
 		t.Fatalf("QueuePerformerScenes failed: %v", err)
 	}
-	if len(creator.queueCalls) != 1 || creator.queueCalls[0].SceneID != sceneID || creator.queueCalls[0].StashBoxEndpoint != endpoint {
+	if len(creator.resolvedCodes) != 1 || creator.resolvedCodes[0] != code {
 		t.Fatalf("unexpected task creator calls: %+v", creator.queueCalls)
 	}
 	if result.Summary.RequestedCount != 1 || result.Summary.QueuedCount != 1 || result.Summary.SkippedCount != 0 || result.Summary.FailedCount != 0 {
@@ -1736,7 +1746,7 @@ func TestQueuePerformerScenesMapsDuplicateCodeToSkipped(t *testing.T) {
 		client: &fakeStashboxClient{
 			performer: &stashboxgraphql.PerformerFragment{ID: "sb-1", Name: "Rara"},
 			scenes: []*stashboxgraphql.SceneFragment{
-				{ID: sceneID, Code: &code},
+				{ID: sceneID, Code: &code, Performers: []*stashboxgraphql.PerformerAppearanceFragment{{Performer: &stashboxgraphql.PerformerFragment{ID: "sb-1"}}}},
 			},
 		},
 	})
@@ -1818,7 +1828,7 @@ func TestQueuePerformerScenesReturnsMixedSummary(t *testing.T) {
 		client: &fakeStashboxClient{
 			performer: &stashboxgraphql.PerformerFragment{ID: "sb-1", Name: "Rara"},
 			scenes: []*stashboxgraphql.SceneFragment{
-				{ID: sceneID, Code: &code},
+				{ID: sceneID, Code: &code, Performers: []*stashboxgraphql.PerformerAppearanceFragment{{Performer: &stashboxgraphql.PerformerFragment{ID: "sb-1"}}}},
 			},
 		},
 	})

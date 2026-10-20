@@ -1,4 +1,9 @@
 {
+  "taskQueue": {
+    "pending": "Waiting for source selection",
+    "running": "Selecting source",
+    "waiting": "Waiting to start source selection"
+  },
   "taskInfo": {
     "downloadLocation": "Download location",
     "libraryLocation": "Library location",

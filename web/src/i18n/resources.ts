@@ -1,6 +1,7 @@
 export const resources = {
   "zh-CN": {
     translation: {
+      taskQueue: { pending: "等待选种", running: "选种中", waiting: "等待开始选种" },
       taskInfo: { downloadLocation: "下载位置", libraryLocation: "入库位置", transferMethod: "搬运方式", transferTarget: "目标位置", copyDiagnostics: "复制诊断信息", diagnosticsCopied: "诊断信息已复制" },
       taskStash: { title: "Stash 影片信息", pending: "入库后显示影片信息", empty: "未找到关联的 Stash 影片", loading: "正在加载影片信息…", failed: "暂时无法加载 Stash 影片信息", retry: "重新加载", untitled: "未命名影片", releaseDate: "发行日期", open: "在 Stash 中查看", openLabel: "在 Stash 中查看：{{title}}", missing: "有 {{count}} 部关联影片未找到" },
       taskFlow: {"running": {"scanning": "正在扫描影片文件", "generating": "正在生成预览与播放资源", "identifying": "正在识别影片信息", "verifying": "正在校验入库结果"}, "completedAt": "完成于 {{time}}", "ingestProgress": "入库进度", "ingestSteps": "入库子步骤", "stepsCompleted": "已完成 {{completed}} / {{total}} 步", "states": {"done": "已完成", "current": "进行中", "error": "需处理", "upcoming": "待开始"}},
@@ -69,6 +70,7 @@ export const resources = {
   },
   en: {
     translation: {
+      taskQueue: { pending: "Waiting for source selection", running: "Selecting source", waiting: "Waiting to start source selection" },
       taskInfo: { downloadLocation: "Download location", libraryLocation: "Library location", transferMethod: "Transfer method", transferTarget: "Destination", copyDiagnostics: "Copy diagnostic information", diagnosticsCopied: "Diagnostic information copied" },
       taskStash: { title: "Stash movie information", pending: "Movie information appears after ingest", empty: "No linked Stash movies found", loading: "Loading movie information…", failed: "Stash movie information is temporarily unavailable", retry: "Reload", untitled: "Untitled movie", releaseDate: "Release date", open: "View in Stash", openLabel: "View in Stash: {{title}}", missing: "Unavailable linked movies: {{count}}" },
       taskFlow: {"running": {"scanning": "Scanning movie files", "generating": "Generating previews and playback assets", "identifying": "Identifying movie information", "verifying": "Verifying library results"}, "completedAt": "Completed at {{time}}", "ingestProgress": "Ingest progress", "ingestSteps": "Ingest steps", "stepsCompleted": "{{completed}} / {{total}} steps complete", "states": {"done": "Done", "current": "In progress", "error": "Needs attention", "upcoming": "Upcoming"}},

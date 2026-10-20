@@ -312,7 +312,7 @@ export type Mutation = {
   deleteTask: Task;
   /** Delete selected tasks using the configured deletion policy */
   deleteTasks: TaskBatchPayload;
-  /** Search torrent candidates and create a Moji download task */
+  /** Persist a download task immediately; search and submit torrent candidates in the background */
   downloadMedia: Task;
   /** Advance selected tasks through transfer and Stash ingest */
   processTaskIngest: TaskBatchPayload;

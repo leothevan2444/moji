@@ -1,4 +1,9 @@
 {
+  "taskQueue": {
+    "pending": "等待选种",
+    "running": "选种中",
+    "waiting": "等待开始选种"
+  },
   "taskInfo": {
     "downloadLocation": "下载位置",
     "libraryLocation": "入库位置",

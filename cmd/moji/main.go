@@ -122,6 +122,9 @@ func main() {
 	if preparer, ok := runtime.taskRuntimeService.(interface{ SetMediaPreparationContext(context.Context) }); ok {
 		preparer.SetMediaPreparationContext(ctx)
 	}
+	if worker, ok := runtime.taskRuntimeService.(interface{ RunSourcingWorker(context.Context) }); ok {
+		go worker.RunSourcingWorker(ctx)
+	}
 	startTaskSyncWorker(ctx, runtime.taskRuntimeService, runtime.stashService, configureProgressSyncIntervalProvider(configStore, cfg))
 	startSubscriptionWorker(ctx, runtime.subscriptionService, configureSubscriptionPollIntervalProvider(configStore, cfg))
 	if runtime.stashBoxCacheService != nil {
