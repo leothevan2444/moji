@@ -67,7 +67,7 @@ export function TaskCard({ task, compact = false, pendingScanId, pendingRetryId,
         <div className="task-status-progress__copy"><strong>{presentation.progressLabel}</strong></div>
         <div className="progress-shell" role="progressbar" aria-label={t("taskModel.states.downloading")}
           aria-valuemin={0} aria-valuemax={100} aria-valuenow={presentation.progressPercent}>
-          <div className="progress-fill" style={{ width: `${presentation.progressPercent}%` }} />
+          <div className={`progress-fill${presentation.animateDownloadProgress ? " is-animating" : ""}`} style={{ width: `${presentation.progressPercent}%` }} />
         </div>
       </div> : <div className={presentation.phase === "completed" ? "task-status-completed" : "task-status-pending"}>
         <strong>{presentation.summary}</strong>

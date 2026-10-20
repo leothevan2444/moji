@@ -34,6 +34,24 @@ describe("task experience", () => {
     }
   });
 
+  it.each([
+    ["downloading", TaskStageStatus.Running, 0.46, true],
+    ["forcedDL", TaskStageStatus.Running, 0.46, true],
+    ["pausedDL", TaskStageStatus.Running, 0.46, false],
+    ["stoppedDL", TaskStageStatus.Running, 0.46, false],
+    ["stalledDL", TaskStageStatus.Running, 0.46, false],
+    ["queuedDL", TaskStageStatus.Running, 0.46, false],
+    ["downloading", TaskStageStatus.Blocked, 0.46, false],
+    ["downloading", TaskStageStatus.Running, 1, false]
+  ])("animates only active download progress for %s / %s / %s", (qbittorrentState, stageStatus, progress, expected) => {
+    const current = { ...task, qbittorrentState, stageStatus, progress };
+    const { container } = render(<><TaskCard task={current} onOpen={vi.fn()} /><TaskDetail task={current} {...props()} /></>);
+    expect(container.querySelectorAll(".progress-fill.is-animating")).toHaveLength(expected ? 2 : 0);
+    for (const bar of container.querySelectorAll('[role="progressbar"]')) {
+      expect(bar.getAttribute("aria-valuenow")).toBe(String(Math.round(progress * 100)));
+    }
+  });
+
   it("labels download progress and reports its numeric value accessibly", () => {
     render(<TaskCard task={task} onOpen={vi.fn()} />);
     expect(screen.getByText("Download progress 46%")).toBeTruthy();

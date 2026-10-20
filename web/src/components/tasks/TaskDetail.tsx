@@ -50,8 +50,8 @@ export function TaskDetail({ task, pendingScan, pendingRetry, pendingDelete,
       {blocked ? <div className={`task-detail-hero task-detail-hero--blocked ${failure.tone}`}>
         <div className="task-detail-hero__copy"><strong>{failure.title}</strong></div>
       </div> : null}
-      <TaskTimeline key={task.id} steps={presentation.lifecycle} transfer={{ action: task.transferAction, target: task.mojiTransferPath }} onCopy={onCopy}
-        downloadProgress={presentation.showDownloadProgress ? { percent: presentation.progressPercent, label: presentation.progressLabel } : undefined} />
+      <TaskTimeline key={task.id} steps={presentation.lifecycle} animateIngest={task.stageStatus === "RUNNING"} transfer={{ action: task.transferAction, target: task.mojiTransferPath }} onCopy={onCopy}
+        downloadProgress={presentation.showDownloadProgress ? { percent: presentation.progressPercent, label: presentation.progressLabel, active: presentation.animateDownloadProgress } : undefined} />
       <dl className="settings-grid task-detail-dates">
         {task.sourcingNextCheckAt ? <>
           <div><dt>{t("resourceTracking.lastChecked")}</dt><dd>{formatDateTime(task.sourcingLastCheckedAt)}</dd></div>

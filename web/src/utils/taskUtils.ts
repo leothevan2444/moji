@@ -40,6 +40,7 @@ export type TaskPresentation = {
   progressPercent: number;
   progressLabel: string;
   showDownloadProgress: boolean;
+  animateDownloadProgress: boolean;
   metaLine: string;
   lifecycle: TaskLifecycleStep[];
 };
@@ -606,6 +607,8 @@ export function taskPresentation(task: DashboardTask): TaskPresentation {
     detail,
     progressPercent: progress,
     showDownloadProgress,
+    animateDownloadProgress: showDownloadProgress && stageStatusValue(task) === "running" && progress > 0 && progress < 100
+      && (!task.qbittorrentState || ["downloading", "forceddl", "metadl", "forcedmetadl"].includes(normalizeStatus(task.qbittorrentState))),
     progressLabel: showDownloadProgress
       ? tr("taskExperience.downloadProgress", { progress })
       : primary.label,

@@ -8,6 +8,7 @@ import { formatDateTime, transferActionLabel, type TaskLifecycleStep } from "../
 import { TaskValue } from "./TaskValue";
 
 interface StageInformation {
+  animateIngest?: boolean;
   transfer?: { action?: string | null; target?: string | null };
   onCopy?: (value: string, message: string) => void | Promise<void>;
 }
@@ -19,7 +20,7 @@ function StepIcon({ step, position }: { step: TaskLifecycleStep; position: numbe
     <FontAwesomeIcon icon={step.state === "error" ? faTriangleExclamation : step.state === "done" ? faCircleCheck : faClock} />}</span>;
 }
 
-function IngestProgress({ steps, transfer, onCopy }: { steps: TaskLifecycleStep[] } & StageInformation) {
+function IngestProgress({ steps, transfer, onCopy, animateIngest = true }: { steps: TaskLifecycleStep[] } & StageInformation) {
   const { t } = useTranslation();
   const completed = steps.filter(step => step.state === "done").length;
   return <section className="task-ingest-progress" aria-label={t("taskFlow.ingestProgress")}>
@@ -27,7 +28,7 @@ function IngestProgress({ steps, transfer, onCopy }: { steps: TaskLifecycleStep[
       <span>{t("taskFlow.stepsCompleted", { completed, total: steps.length })}</span>
     </div>
     <div className="task-ingest-progress__segments" aria-hidden="true">
-      {steps.map(step => <span key={step.key} className={`is-${step.state}`} />)}
+      {steps.map(step => <span key={step.key} className={`is-${step.state}${animateIngest && step.state === "current" && step.key !== "pending_ingest" ? " is-animating" : ""}`} />)}
     </div>
     <ol className="task-ingest-progress__steps" aria-label={t("taskFlow.ingestSteps")}>
       {steps.map((step, index) => <li key={step.key} className={`task-ingest-progress__step is-${step.state}`}
@@ -50,10 +51,10 @@ function IngestProgress({ steps, transfer, onCopy }: { steps: TaskLifecycleStep[
 
 interface TaskTimelineProps extends StageInformation {
   steps: TaskLifecycleStep[];
-  downloadProgress?: { percent: number; label: string };
+  downloadProgress?: { percent: number; label: string; active?: boolean };
 }
 
-export function TaskTimeline({ steps, downloadProgress, transfer, onCopy }: TaskTimelineProps) {
+export function TaskTimeline({ steps, downloadProgress, transfer, onCopy, animateIngest }: TaskTimelineProps) {
   const { t } = useTranslation();
   const ingestSteps = steps.filter(step => !["sourcing", "downloading", "completed"].includes(step.key));
   const active = ingestSteps.find(isActive);
@@ -76,13 +77,13 @@ export function TaskTimeline({ steps, downloadProgress, transfer, onCopy }: Task
           {step.state !== "done" ? <span className="task-timeline__state">{t(`taskFlow.states.${step.state}`)}</span> : null}
           {step.time ? <time dateTime={step.time}>{step.state === "done" ? t("taskFlow.completedAt", { time: formatDateTime(step.time) }) : formatDateTime(step.time)}</time> : null}
         </div>
-        {isActive(step) ? step.key === "ingest" ? <IngestProgress steps={ingestSteps} transfer={transfer} onCopy={onCopy} /> : <>
+        {isActive(step) ? step.key === "ingest" ? <IngestProgress steps={ingestSteps} animateIngest={animateIngest} transfer={transfer} onCopy={onCopy} /> : <>
           {step.key !== "downloading" || !downloadProgress || step.state === "error" ? <p>{step.detail}</p> : null}
           {step.key === "downloading" && downloadProgress ? <div className="task-detail-progress">
             <span>{downloadProgress.label}</span>
             <div className="progress-shell progress-shell--detail" role="progressbar" aria-label={t("taskModel.states.downloading")}
               aria-valuemin={0} aria-valuemax={100} aria-valuenow={downloadProgress.percent}>
-              <div className="progress-fill" style={{ width: `${downloadProgress.percent}%` }} />
+              <div className={`progress-fill${downloadProgress.active ? " is-animating" : ""}`} style={{ width: `${downloadProgress.percent}%` }} />
             </div>
           </div> : null}
         </> : null}
