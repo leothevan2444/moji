@@ -53,6 +53,10 @@ export function TaskDetail({ task, pendingScan, pendingRetry, pendingDelete,
       <TaskTimeline key={task.id} steps={presentation.lifecycle} transfer={{ action: task.transferAction, target: task.mojiTransferPath }} onCopy={onCopy}
         downloadProgress={presentation.showDownloadProgress ? { percent: presentation.progressPercent, label: presentation.progressLabel } : undefined} />
       <dl className="settings-grid task-detail-dates">
+        {task.sourcingNextCheckAt ? <>
+          <div><dt>{t("resourceTracking.lastChecked")}</dt><dd>{formatDateTime(task.sourcingLastCheckedAt)}</dd></div>
+          <div><dt>{t("resourceTracking.nextChecked")}</dt><dd>{formatDateTime(task.sourcingNextCheckAt)}</dd></div>
+        </> : null}
         <div><dt>{t("taskDetail.created")}</dt><dd>{formatDateTime(task.createdAt)}</dd></div>
         <div><dt>{t("taskDetail.updated")}</dt><dd>{formatDateTime(task.updatedAt)}</dd></div>
       </dl>

@@ -102,11 +102,15 @@ func (r *mutationResolver) UpdateQBittorrentSettings(ctx context.Context, input 
 // UpdateAutomationSettings is the resolver for the updateAutomationSettings field.
 func (r *mutationResolver) UpdateAutomationSettings(ctx context.Context, input model.UpdateAutomationSettingsInput) (*model.Settings, error) {
 	_ = ctx
+	if input.SourcingRetryIntervalHours < 1 || input.SourcingRetryIntervalHours > 168 {
+		return nil, errors.New("resource search interval must be between 1 and 168 hours")
+	}
 	if r.SettingsEditor == nil {
 		return nil, errors.New("settings editor is not configured")
 	}
 
 	snapshot, err := r.SettingsEditor.UpdateAutomationSettings(UpdateAutomationSettingsInput{
+		SourcingRetryIntervalHours:      input.SourcingRetryIntervalHours,
 		TaskProgressSyncIntervalSeconds: input.TaskProgressSyncIntervalSeconds,
 		SubscriptionPollIntervalHours:   input.SubscriptionPollIntervalHours,
 		StashBoxEndpoints:               append([]string(nil), input.StashBoxEndpoints...),

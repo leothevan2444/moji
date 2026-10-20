@@ -17,7 +17,7 @@ import (
 //go:embed sqlite_schema.sql
 var sqliteSchema string
 
-const sqliteSchemaVersion = "13"
+const sqliteSchemaVersion = "15"
 
 func OpenSQLiteDatabase(path string) (*sqlx.DB, error) {
 	trimmed := strings.TrimSpace(path)
@@ -70,7 +70,7 @@ func configureSQLiteDatabase(db *sqlx.DB) error {
 		return err
 	}
 
-	if !hadSchema || versionBeforeInit == sqliteSchemaVersion || versionBeforeInit == "7" || versionBeforeInit == "8" || versionBeforeInit == "9" || versionBeforeInit == "10" || versionBeforeInit == "11" || versionBeforeInit == "12" {
+	if !hadSchema || versionBeforeInit == sqliteSchemaVersion || versionBeforeInit == "7" || versionBeforeInit == "8" || versionBeforeInit == "9" || versionBeforeInit == "10" || versionBeforeInit == "11" || versionBeforeInit == "12" || versionBeforeInit == "13" || versionBeforeInit == "14" {
 		if _, err := db.Exec(sqliteSchema); err != nil {
 			return fmt.Errorf("taskruntime: initialize sqlite schema: %w", err)
 		}
@@ -125,7 +125,7 @@ func ensureSQLiteRuntimeState(db *sqlx.DB) error {
 		}
 	}
 
-	for _, column := range []string{"sourcing_request_json", "last_progress_at", "sourcing_completed_at", "ingest_completed_at", "file_plan_json", "stash_ingest_phase", "stash_generate_job_id", "stash_identify_job_id", "stash_scene_ids_json"} {
+	for _, column := range []string{"sourcing_last_checked_at", "sourcing_next_check_at", "sourcing_request_json", "last_progress_at", "sourcing_completed_at", "ingest_completed_at", "file_plan_json", "stash_ingest_phase", "stash_generate_job_id", "stash_identify_job_id", "stash_scene_ids_json"} {
 		exists, err := sqliteColumnExists(db, "tasks", column)
 		if err != nil {
 			return err
@@ -134,6 +134,13 @@ func ensureSQLiteRuntimeState(db *sqlx.DB) error {
 			if _, err := db.Exec("ALTER TABLE tasks ADD COLUMN " + column + " TEXT"); err != nil {
 				return fmt.Errorf("add ingest column %s: %w", column, err)
 			}
+		}
+	}
+	if exists, err := sqliteColumnExists(db, "tasks", "torrent_file_data"); err != nil {
+		return err
+	} else if !exists {
+		if _, err := db.Exec("ALTER TABLE tasks ADD COLUMN torrent_file_data BLOB"); err != nil {
+			return fmt.Errorf("add uploaded torrent data: %w", err)
 		}
 	}
 

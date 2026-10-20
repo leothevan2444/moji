@@ -1,5 +1,5 @@
 import { BlockedSourcingResolution } from "../tasks/BlockedSourcingResolution";
-import type { DashboardTask } from "../../utils";
+import { isWaitingForResource, type DashboardTask } from "../../utils";
 import { useTranslation } from "react-i18next";
 
 interface SourcingResolutionDrawerProps {
@@ -9,7 +9,7 @@ interface SourcingResolutionDrawerProps {
 
 export function SourcingResolutionDrawer({ task, onResolved }: SourcingResolutionDrawerProps) {
   const { t } = useTranslation();
-  if (!task || task.stage !== "SOURCING" || task.stageStatus !== "BLOCKED") {
+  if (!task || task.stage !== "SOURCING" || (task.stageStatus !== "BLOCKED" && !isWaitingForResource(task))) {
     return (
       <article className="drawer-card">
         <h3>{t("taskUi.cannotResolve")}</h3>
@@ -20,7 +20,7 @@ export function SourcingResolutionDrawer({ task, onResolved }: SourcingResolutio
 
   return (
     <div className="drawer-stack">
-      <BlockedSourcingResolution task={task} onResolved={onResolved} />
+      <BlockedSourcingResolution key={task.id} task={task} onResolved={onResolved} />
     </div>
   );
 }

@@ -72,6 +72,9 @@ export function TaskCard({ task, compact = false, pendingScanId, pendingRetryId,
         <strong>{presentation.summary}</strong>
       </div>}
     </div>
+    {task.sourcingNextCheckAt ? <p className="task-card__tracking">
+      {t("resourceTracking.nextCheck", { time: formatDateTime(task.sourcingNextCheckAt) })}
+    </p> : null}
     <div className="task-card__actions">
       <time dateTime={cardTime} title={t(timeLabel, { time: formatDateTime(cardTime) })}>
         {t(timeLabel, { time: formatRelative(cardTime) ?? formatDateTime(cardTime) })}

@@ -63,6 +63,7 @@ mutation UpdateAutomationSettingsDocument($input: UpdateAutomationSettingsInput!
     automation {
       taskProgressSyncIntervalSeconds
       subscriptionPollIntervalHours
+      sourcingRetryIntervalHours
       stashBoxEndpoints
       subscriptionReleasePolicy {
         soloBehavior
@@ -178,6 +179,7 @@ mutation ClearStashBoxDataCacheDocument {
 mutation RefreshStashBoxes {
   refreshStashBoxes {
     automation {
+      sourcingRetryIntervalHours
       stashBoxEndpoints
     }
   }

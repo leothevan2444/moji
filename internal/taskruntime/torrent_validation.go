@@ -25,6 +25,14 @@ func candidateError(code, message string) error {
 	return &candidateValidationError{code: code, message: message}
 }
 
+func SourcingValidationErrorCode(err error) string {
+	var validation *candidateValidationError
+	if errors.As(err, &validation) {
+		return validation.code
+	}
+	return ""
+}
+
 // Matching is independent of configurable ranking rules. A fuzzy indexer hit
 // must never win merely because all the real matches are unavailable.
 func validateCodeEvidence(code string, values ...string) (bool, error) {
@@ -102,7 +110,14 @@ func (s *Service) prepareTorrentWithMetadata(ctx context.Context, code string, c
 		}
 		return preparedTorrent{}, candidateError(TaskStageErrorTorrentMetadata, fmt.Sprintf("unable to validate torrent metadata: %v", err))
 	}
-	if err := validateTorrentCode(code, *metadata); err != nil {
+	return prepareTorrentFile(code, candidate, *metadata)
+}
+
+func prepareTorrentFile(code string, candidate Candidate, metadata downloadedTorrentMetadata) (preparedTorrent, error) {
+	if _, err := validateCodeEvidence(code, candidate.Title); err != nil {
+		return preparedTorrent{}, err
+	}
+	if err := validateTorrentCode(code, metadata); err != nil {
 		return preparedTorrent{}, err
 	}
 	if expected := normalizeInfoHash(candidate.InfoHash); expected != "" && expected != metadata.InfoHash {
@@ -192,8 +207,7 @@ func (s *Service) blockSourcingValidation(ctx context.Context, task *Task, err e
 		code = validation.code
 	}
 	setTaskStage(task, TaskStageSourcing, TaskStageStatusBlocked)
-	blockTask(task, code, err.Error(), s.now().UTC())
-	if persistErr := s.store.Update(ctx, task); persistErr != nil {
+	if persistErr := s.recordSourcingFailure(ctx, task, code, err.Error()); persistErr != nil {
 		return fmt.Errorf("persist sourcing validation failure: %w", persistErr)
 	}
 	return err

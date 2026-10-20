@@ -210,6 +210,7 @@ function buildAutomationSettingsPayload(form: AutomationFormShape) {
   const maxGroupPerformerCount = Number.parseInt(form.subscriptionReleasePolicy.maxGroupPerformerCount.trim(), 10);
   return {
     taskProgressSyncIntervalSeconds: Number.isNaN(taskProgressSyncIntervalSeconds) ? 60 : taskProgressSyncIntervalSeconds,
+    sourcingRetryIntervalHours: Number.parseInt(form.sourcingRetryIntervalHours.trim(), 10) || 6,
     subscriptionPollIntervalHours: Number.isNaN(subscriptionPollIntervalHours) ? 1 : subscriptionPollIntervalHours,
     stashBoxEndpoints: form.stashBoxEndpoints,
     subscriptionReleasePolicy: {
@@ -555,6 +556,7 @@ export function AutomationSettingsEditor({
     });
     if (!automationDirty) markAutomationSaved({
       taskProgressSyncIntervalSeconds: String(runtimeSettings.automation.taskProgressSyncIntervalSeconds || 60),
+      sourcingRetryIntervalHours: String(runtimeSettings.automation.sourcingRetryIntervalHours || 6),
       subscriptionPollIntervalHours: String(runtimeSettings.automation.subscriptionPollIntervalHours || 1),
       stashBoxEndpoints: [...(runtimeSettings.automation.stashBoxEndpoints ?? [])],
       subscriptionReleasePolicy: {
@@ -1295,6 +1297,13 @@ export function AutomationSettingsEditor({
         </div>
 
         <form className="settings-form" onSubmit={(event) => void saveAutomationSettings(event)}>
+          <label className="settings-field">
+            <span>{t("resourceTracking.interval")}</span>
+            <input type="number" min="1" max="168" required
+              value={automationForm.sourcingRetryIntervalHours}
+              onChange={event => setAutomationForm(current => ({ ...current, sourcingRetryIntervalHours: event.target.value }))} />
+            <small>{t("resourceTracking.intervalHelp")}</small>
+          </label>
           <label className="settings-field">
             <span>{t("automationUi.syncInterval")}</span>
             <input

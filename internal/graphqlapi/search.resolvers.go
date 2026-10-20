@@ -152,8 +152,8 @@ func (r *queryResolver) BlockedTaskTorrentCandidates(ctx context.Context, id str
 	if task == nil {
 		return nil, errors.New("task not found")
 	}
-	if task.Stage != taskruntime.TaskStageSourcing || task.StageStatus != taskruntime.TaskStageStatusBlocked {
-		return nil, errors.New("task is not a blocked sourcing task")
+	if task.Stage != taskruntime.TaskStageSourcing || (task.StageStatus != taskruntime.TaskStageStatusBlocked && !(task.StageStatus == taskruntime.TaskStageStatusPending && task.SourcingNextCheckAt != nil)) {
+		return nil, taskruntime.ErrSourcingUnavailable
 	}
 	options := []tracker.SearchOption{}
 	if limit != nil {

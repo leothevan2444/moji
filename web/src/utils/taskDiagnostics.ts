@@ -18,6 +18,7 @@ export function taskDiagnostics(task: DashboardTask) {
     stashScanStartedAt: task.stashScanStartedAt, files: task.files,
     createdAt: task.createdAt, updatedAt: task.updatedAt, lastProgressAt: task.lastProgressAt,
     sourcingCompletedAt: task.sourcingCompletedAt, downloadCompletedAt: task.downloadCompletedAt,
+    sourcingLastCheckedAt: task.sourcingLastCheckedAt, sourcingNextCheckAt: task.sourcingNextCheckAt,
     ingestCompletedAt: task.ingestCompletedAt
   }, null, 2);
 }

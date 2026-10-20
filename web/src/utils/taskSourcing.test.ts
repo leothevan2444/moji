@@ -1,9 +1,23 @@
 import { describe, expect, it } from "vitest";
 import i18n from "../i18n/i18n";
 import { resources } from "../i18n/resources";
-import { taskFailureSummary, taskPresentation, type DashboardTask } from "./taskUtils";
+import { taskFailureSummary, taskPresentation, taskPrimaryAction, taskBatchEligibility, type DashboardTask } from "./taskUtils";
 
 describe("sourcing validation failures", () => {
+  it("treats scheduled resource absence as normal waiting with an immediate check action", async () => {
+    await i18n.changeLanguage("en");
+    const task = { id: "tracked", source: "SEARCH", code: "ABCD-123", stage: "SOURCING", stageStatus: "PENDING", progress: 0,
+      sourcingLastCheckedAt: "2026-10-20T00:00:00Z", sourcingNextCheckAt: "2026-10-20T06:00:00Z" } as DashboardTask;
+    const presentation = taskPresentation(task);
+    expect(presentation.label).toBe("Waiting for resources");
+    expect(presentation.phase).toBe("queued");
+    expect(presentation.tone).toBe("tone-neutral");
+    expect(presentation.showDownloadProgress).toBe(false);
+    expect(presentation.detail).toContain("keeps searching");
+    expect(presentation.lifecycle.find(step => step.key === "sourcing")?.state).not.toBe("error");
+    expect(taskPrimaryAction(task)).toBe("retry");
+    expect(taskBatchEligibility([task]).retryIds).toEqual([task.id]);
+  });
   it.each([
     ["CANDIDATE_CODE_MISMATCH", "Candidate code mismatch", resources["zh-CN"].translation.taskModel.failure.candidateMismatch],
     ["CANDIDATE_IDENTITY_UNVERIFIED", "Candidate code unverified", resources["zh-CN"].translation.taskModel.failure.candidateUnverified],

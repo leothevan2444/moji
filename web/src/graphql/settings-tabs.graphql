@@ -39,6 +39,7 @@ query AutomationSettingsTab {
     automation {
       taskProgressSyncIntervalSeconds
       subscriptionPollIntervalHours
+      sourcingRetryIntervalHours
       stashBoxEndpoints
       subscriptionReleasePolicy { soloBehavior groupBehavior compilationBehavior maxGroupPerformerCount releaseDateRange }
       torrentSelection {

@@ -153,8 +153,17 @@ func (r *mutationResolver) ResolveBlockedSourcingTask(ctx context.Context, id st
 		return nil, errors.New("task runtime is not configured")
 	}
 	req := taskruntime.ResolveBlockedSourcingRequest{
-		URL:    input.TorrentURL,
 		Paused: input.Paused,
+	}
+	if input.TorrentURL != nil {
+		req.URL = *input.TorrentURL
+	}
+	if input.TorrentFile != nil {
+		data, err := readSourcingTorrentUpload(input.TorrentFile)
+		if err != nil {
+			return nil, err
+		}
+		req.TorrentData = data
 	}
 	if input.Title != nil {
 		req.Title = *input.Title

@@ -1,4 +1,21 @@
 {
+  "sourcingManual": {
+    "fileLabel": "Upload torrent file",
+    "fileHelp": "Choose a .torrent file up to 8 MiB. Moji checks its name and video codes.",
+    "useFile": "Use torrent file",
+    "invalidFile": "Choose a non-empty .torrent file no larger than 8 MiB.",
+    "seeders": "{{count}} seeders"
+  },
+  "resourceTracking": {
+    "waiting": "Waiting for resources",
+    "waitingDetail": "No verified resource is available yet. Moji keeps searching periodically and starts downloading when a valid resource appears.",
+    "nextCheck": "Next check: {{time}}",
+    "lastChecked": "Last resource check",
+    "nextChecked": "Next resource check",
+    "checkNow": "Check resources now",
+    "interval": "Resource search interval (hours)",
+    "intervalHelp": "Keep searching for movies without a valid resource. Defaults to every 6 hours; choose 1–168 hours. Indexer failures are checked again on this interval too."
+  },
   "taskQueue": {
     "pending": "Waiting for source selection",
     "running": "Selecting source",
@@ -452,6 +469,11 @@
   },
   "errorCorrelation": "Correlation ID: {{id}}",
   "errorExtra": {
+    "CANDIDATE_CODE_MISMATCH": "The resource code differs from this task. Choose a resource for the matching movie.",
+    "CANDIDATE_IDENTITY_UNVERIFIED": "The resource names or video files do not establish the task code. Provide a verifiable resource.",
+    "TORRENT_METADATA_FAILED": "The torrent could not be read or validated. Check the file or torrent link.",
+    "INVALID_TORRENT_INPUT": "Provide exactly one magnet or torrent URL, or a non-empty torrent file up to 8 MiB.",
+    "SOURCING_TASK_UNAVAILABLE": "The task has left resource waiting or blocked sourcing. Refresh its status.",
     "TRANSFER_PATH_FAILED": "Ingest path mapping failed. Check the qB, Moji, and Stash root paths.",
     "STASH_SCAN_FAILED": "The Stash scan failed. Check the connection and scan path.",
     "NO_TORRENT_CANDIDATE": "No downloadable torrent candidate was found.",
@@ -652,11 +674,11 @@
     "noneSelected": "No task selected",
     "noneSelectedDetail": "Select a task card to see its details and actions here.",
     "cannotResolve": "This task cannot be resolved manually",
-    "cannotResolveDetail": "The task may have left the blocked sourcing stage. Close this panel and refresh the list.",
+    "cannotResolveDetail": "The task may have left resource waiting or blocked sourcing. Close this panel and refresh the list.",
     "resolution": {
       "noResult": "The server returned no resumed task record.",
-      "title": "Resolve blocked sourcing manually",
-      "detail": "Search again for {{code}}, or provide a magnet link to continue the existing task.",
+      "title": "Choose or add a resource",
+      "detail": "Provide a magnet link, upload a torrent file, or select an indexer result for {{code}} to continue the existing task.",
       "magnetPlaceholder": "Paste magnet:?xt=urn:btih:...",
       "magnetLabel": "Magnet link",
       "submitting": "Submitting...",
@@ -666,7 +688,7 @@
       "search": "Search candidates",
       "found": "Found {{count}} candidate",
       "found_other": "Found {{count}} candidates",
-      "none": "No candidates found. Update Jackett and search again, or paste a magnet link.",
+      "none": "No candidates yet. Paste a magnet link, upload a torrent file, or wait for the next automatic check.",
       "selecting": "Selecting...",
       "select": "Select"
     },

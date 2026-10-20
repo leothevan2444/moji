@@ -157,7 +157,12 @@ export function needsTaskFileSelection(task: DashboardTask) {
       || (!task.stageErrorCode && Boolean(task.files?.some(file => file.kind === "UNKNOWN_VIDEO" && file.reason === "IDENTITY_UNCERTAIN"))));
 }
 
+export function isWaitingForResource(task: DashboardTask) {
+  return task.stage === "SOURCING" && task.stageStatus === "PENDING" && Boolean(task.sourcingNextCheckAt);
+}
+
 export function taskPrimaryAction(task: DashboardTask): "resolve" | "files" | "retry" | "ingest" | null {
+  if (isWaitingForResource(task)) return "retry";
   if (task.stageStatus === "BLOCKED") {
     if (task.stage === "SOURCING") return "resolve";
     if (needsTaskFileSelection(task)) return "files";
@@ -168,7 +173,7 @@ export function taskPrimaryAction(task: DashboardTask): "resolve" | "files" | "r
 
 export function taskBatchEligibility(tasks: DashboardTask[]) {
   return {
-    retryIds: tasks.filter((task) => task.stageStatus === "BLOCKED" && task.stage !== "COMPLETED").map((task) => task.id),
+    retryIds: tasks.filter((task) => (task.stageStatus === "BLOCKED" || isWaitingForResource(task)) && task.stage !== "COMPLETED").map((task) => task.id),
     ingestIds: tasks.filter((task) => ["PENDING_INGEST", "TRANSFERRING", "SCANNING"].includes(task.stage) && !(task.stage === "SCANNING" && task.stageStatus === "RUNNING")).map((task) => task.id)
   };
 }
@@ -384,6 +389,7 @@ export function taskProgressPercent(task: DashboardTask) {
 }
 
 export function taskPrimaryState(task: DashboardTask): Pick<TaskPresentation, "phase" | "label" | "tone"> {
+  if (isWaitingForResource(task)) return { phase: "queued", label: tr("resourceTracking.waiting"), tone: "tone-neutral" };
   if (stageStatusValue(task) === "blocked") {
     return { phase: "failed", label: tr("taskModel.states.blocked"), tone: "tone-danger" as const };
   }
@@ -454,6 +460,7 @@ function lifecycleDetail(task: DashboardTask, stage: TaskStageKey, failure: Task
   const isBlocked = isCurrent && currentStatus === "blocked";
 
   if (stage === "sourcing") {
+    if (isCurrent && isWaitingForResource(task)) return tr("resourceTracking.waitingDetail");
     if (isBlocked) return failure.detail;
     if (isCurrent) return tr("taskModel.lifecycle.sourcingCurrent");
     return tr("taskModel.lifecycle.sourcingUpcoming");
@@ -587,7 +594,7 @@ export function taskPresentation(task: DashboardTask): TaskPresentation {
     detail = tr("taskExperience.afterDownload");
   } else {
     summary = stageValue(task) === "sourcing" ? primary.label : tr("taskModel.presentation.queued");
-    detail = stageValue(task) === "sourcing" && stageStatusValue(task) === "pending" ? tr("taskQueue.waiting") : tr("taskModel.presentation.stageWaiting");
+    detail = isWaitingForResource(task) ? tr("resourceTracking.waitingDetail") : stageValue(task) === "sourcing" && stageStatusValue(task) === "pending" ? tr("taskQueue.waiting") : tr("taskModel.presentation.stageWaiting");
   }
 
   const showDownloadProgress = stageValue(task) === "downloading";

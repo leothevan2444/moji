@@ -26,6 +26,7 @@ export {
   canTriggerTaskStashScan,
   needsTaskFileSelection,
   taskPrimaryAction,
+  isWaitingForResource,
   taskBatchEligibility,
   mergeTaskSelection,
   taskFailureSummary,

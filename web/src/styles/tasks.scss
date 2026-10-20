@@ -159,6 +159,13 @@ $task-status-tones: (
   text-align: left;
 }
 
+.task-card__tracking {
+  margin: 0;
+  color: var(--muted-2);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
 .task-selection-bar,
 .performer-selection-bar {
   position: sticky;
@@ -551,6 +558,16 @@ $task-status-tones: (
     display: grid;
     grid-template-columns: minmax(0, 1fr) auto;
     gap: 10px;
+  }
+
+  &__upload {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: end;
+    gap: 10px;
+
+    .settings-field { min-width: 0; }
+    input[type="file"] { width: 100%; min-width: 0; }
   }
 
   &__search {

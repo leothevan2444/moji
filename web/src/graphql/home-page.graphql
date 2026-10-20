@@ -63,6 +63,6 @@ query HomePageDocument {
     stashScanHint
     stashScanStartedAt
     createdAt
-    updatedAt lastProgressAt
+    updatedAt lastProgressAt sourcingLastCheckedAt sourcingNextCheckAt
   }
 }

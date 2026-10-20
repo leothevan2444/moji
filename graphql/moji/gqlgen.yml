@@ -16,6 +16,9 @@ resolver:
   package: graphqlapi
 
 models:
+  Upload:
+    model:
+    - github.com/99designs/gqlgen/graphql.Upload
   Long:
     model:
     - github.com/99designs/gqlgen/graphql.Int64

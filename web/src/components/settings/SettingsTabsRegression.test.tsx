@@ -14,6 +14,11 @@ vi.mock("urql", async (importOriginal) => ({
   useMutation: () => [{ fetching: false }, updateSettings],
   useQuery: ({ query }: { query: { definitions: Array<{ name?: { value: string } }> } }) => {
     const name = query.definitions[0]?.name?.value;
+    if (name === "AutomationSettingsTab") return [{ data: { settings: { automation: {
+      taskProgressSyncIntervalSeconds: 60, subscriptionPollIntervalHours: 48, sourcingRetryIntervalHours: 6, stashBoxEndpoints: [],
+      subscriptionReleasePolicy: { soloBehavior: "DOWNLOAD", groupBehavior: "REVIEW", compilationBehavior: "BLOCK", maxGroupPerformerCount: 3, releaseDateRange: "ALL" },
+      torrentSelection: { enabled: true, inspectionCandidateLimit: 5, fastRules: [], torrentRules: [] }
+    } }, settingsStatus: { automation: { taskProgressSyncEnabled: true, subscriptionPollEnabled: true }, stashBox: { stashBoxes: [], stashBoxesLoaded: true, stashBoxesLoadError: null } } }, fetching: false, error: null }, vi.fn()];
     if (name === "IngestSettingsTab") return [{ data: { settings: { ingest: { keepSubtitles: true, downloads: { qbRoot: "/q/downloads", mojiRoot: "/moji/downloads" }, library: { mojiRoot: "/moji/library", stashRoot: "/stash/library" }, transfer: { action: "COPY" } }, qbittorrent: { defaultSavePath: "" } }, settingsStatus: { stashLibraries: [{ path: "/stash/library" }] } }, fetching: false, error: null }, vi.fn()];
     if (name === "SystemSettingsTab") return [{ data: { settings: { system: { taskDeletePolicy: "KEEP_ONLY", imageCache: { enabled: true, maxSizeMb: 1024, retentionDays: 30 } } }, settingsStatus: { imageCache: { usedBytes: 0, entryCount: 0, cacheDirectory: "", lastCleanupAt: null, lastError: null } } }, fetching: false, error: null }, vi.fn()];
     return [{ data: { logs: [{ sequence: 2, time: "2026-07-13T10:00:00Z", level: "INFO", message: "second" }, { sequence: 1, time: "2026-07-13T09:00:00Z", level: "WARNING", message: "first" }] }, fetching: false, error: null }, vi.fn()];
@@ -23,10 +28,22 @@ vi.mock("urql", async (importOriginal) => ({
 import IngestSettingsTab from "./IngestSettingsTab";
 import LogsSettingsTab from "./LogsSettingsTab";
 import SystemSettingsTab from "./SystemSettingsTab";
+import AutomationSettingsTab from "./AutomationSettingsTab";
 
 afterEach(cleanup);
 
 describe("settings tab visual contracts", () => {
+  it("loads and saves the resource search interval independently of metadata polling", async () => {
+    updateSettings.mockClear();
+    render(<SettingsDraftProvider><AutomationSettingsTab /></SettingsDraftProvider>);
+    const input = screen.getByLabelText(/resourceTracking.interval/) as HTMLInputElement;
+    expect(input.value).toBe("6");
+    expect(input.min).toBe("1");
+    expect(input.max).toBe("168");
+    fireEvent.change(input, { target: { value: "12" } });
+    fireEvent.click(screen.getByText("automationUi.save"));
+    await waitFor(() => expect(updateSettings).toHaveBeenCalledWith({ input: expect.objectContaining({ sourcingRetryIntervalHours: 12, subscriptionPollIntervalHours: 48 }) }));
+  });
   it("offers four roots and Copy or Move, and saves without an ingest mode", async () => {
     const view = render(<SettingsDraftProvider><IngestSettingsTab /></SettingsDraftProvider>);
     expect(screen.queryByText("settings.ingest.mode")).toBeNull();

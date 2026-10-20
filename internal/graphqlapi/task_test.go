@@ -1736,3 +1736,34 @@ func TestTaskCompletionTimestamps(t *testing.T) {
 		t.Fatal("historical completion time was fabricated")
 	}
 }
+
+func TestTaskResourceScheduleIsExposedWithoutDownloadCompletion(t *testing.T) {
+	checked := time.Date(2026, 10, 20, 0, 0, 0, 0, time.UTC)
+	next := checked.Add(6 * time.Hour)
+	runtime := &fakeTaskRuntime{listTasks: []*taskruntime.Task{
+		{ID: "waiting", Stage: taskruntime.TaskStageSourcing, StageStatus: taskruntime.TaskStageStatusPending, SourcingLastCheckedAt: &checked, SourcingNextCheckAt: &next},
+		{ID: "new", Stage: taskruntime.TaskStageSourcing, StageStatus: taskruntime.TaskStageStatusPending},
+	}}
+	var response struct {
+		Data struct {
+			Tasks []struct {
+				Last      *string `json:"sourcingLastCheckedAt"`
+				Next      *string `json:"sourcingNextCheckAt"`
+				Completed *string `json:"sourcingCompletedAt"`
+				Error     *string `json:"stageErrorCode"`
+			} `json:"tasks"`
+		} `json:"data"`
+		Errors []any `json:"errors"`
+	}
+	executeGraphQLInto(t, NewResolver(nil, nil, runtime, nil, "test"), `{ tasks { sourcingLastCheckedAt sourcingNextCheckAt sourcingCompletedAt stageErrorCode } }`, &response)
+	if len(response.Errors) != 0 || len(response.Data.Tasks) != 2 {
+		t.Fatalf("unexpected schedule response: %+v", response)
+	}
+	actual := response.Data.Tasks[0]
+	if actual.Last == nil || *actual.Last != checked.Format(time.RFC3339) || actual.Next == nil || *actual.Next != next.Format(time.RFC3339) || actual.Completed != nil || actual.Error != nil {
+		t.Fatalf("schedule missing or represented as an error: %+v", actual)
+	}
+	if response.Data.Tasks[1].Last != nil || response.Data.Tasks[1].Next != nil {
+		t.Fatal("new task received fabricated schedule")
+	}
+}

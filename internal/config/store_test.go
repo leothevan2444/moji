@@ -60,6 +60,35 @@ automation:
 	}
 }
 
+func TestResourceSearchIntervalPersistsAndRejectsInvalidValues(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "config.yaml")
+	if err := os.WriteFile(path, []byte("automation: {}\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	store, err := OpenStore(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if store.Config().Automation.EffectiveSourcingRetryIntervalHours() != 6 {
+		t.Fatal("legacy configuration lost the default interval")
+	}
+	if _, err := store.UpdateAutomation(60, 48, nil, DefaultSubscriptionReleasePolicyConfig(), DefaultTorrentSelectionConfig(), 12); err != nil {
+		t.Fatal(err)
+	}
+	reopened, err := OpenStore(path)
+	if err != nil || reopened.Config().Automation.EffectiveSourcingRetryIntervalHours() != 12 {
+		t.Fatalf("resource interval not persisted: %v", err)
+	}
+	for _, value := range []int{0, -1, 169} {
+		if _, err := store.UpdateAutomation(60, 48, nil, DefaultSubscriptionReleasePolicyConfig(), DefaultTorrentSelectionConfig(), value); err == nil {
+			t.Fatalf("invalid interval %d accepted", value)
+		}
+	}
+	if store.Config().Automation.EffectiveSourcingRetryIntervalHours() != 12 {
+		t.Fatal("invalid update modified configuration")
+	}
+}
+
 func TestStoreUpdateAutomationPersistsTorrentSelection(t *testing.T) {
 	dir := t.TempDir()
 	path := filepath.Join(dir, "config.yaml")

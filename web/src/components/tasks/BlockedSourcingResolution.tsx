@@ -7,7 +7,8 @@ import {
   type BlockedTaskTorrentCandidatesDocumentQuery,
   type BlockedTaskTorrentCandidatesDocumentQueryVariables,
   type ResolveBlockedSourcingTaskDocumentMutation,
-  type ResolveBlockedSourcingTaskDocumentMutationVariables
+  type ResolveBlockedSourcingTaskDocumentMutationVariables,
+  type ResolveBlockedSourcingTaskInput
 } from "../../graphql/generated/graphql";
 import { formatBytes, type DashboardTask } from "../../utils";
 import { useTranslation } from "react-i18next";
@@ -23,6 +24,7 @@ export function BlockedSourcingResolution({ task, onResolved }: BlockedSourcingR
   const { t } = useTranslation();
   const [searchEnabled, setSearchEnabled] = useState(false);
   const [magnetURL, setMagnetURL] = useState("");
+  const [torrentFile, setTorrentFile] = useState<File | null>(null);
   const [resolvingKey, setResolvingKey] = useState<string | null>(null);
   const [submitError, setSubmitError] = useState("");
   const [{ data, fetching, error }, searchCandidates] = useQuery<
@@ -39,24 +41,13 @@ export function BlockedSourcingResolution({ task, onResolved }: BlockedSourcingR
     ResolveBlockedSourcingTaskDocumentMutationVariables
   >(ResolveBlockedSourcingTaskDocumentDocument);
 
-  const resolve = async (torrentUrl: string, candidate?: Candidate) => {
-    const trimmedURL = torrentUrl.trim();
-    if (!trimmedURL) return;
-    const key = candidate ? `${candidate.tracker}-${candidate.link}` : "manual-magnet";
+  const submit = async (input: ResolveBlockedSourcingTaskInput, key: string) => {
     setResolvingKey(key);
     setSubmitError("");
     try {
       const result = await resolveSourcingTask({
         id: task.id,
-        input: {
-          torrentUrl: trimmedURL,
-          title: candidate?.title,
-          tracker: candidate?.tracker,
-          infoHash: candidate?.infoHash,
-          size: candidate?.size,
-          seeders: candidate?.seeders,
-          peers: candidate?.peers
-        }
+        input
       });
       if (result.error) {
         setSubmitError(describeQueryError(result.error));
@@ -67,14 +58,33 @@ export function BlockedSourcingResolution({ task, onResolved }: BlockedSourcingR
         return;
       }
       await onResolved();
+    } catch (error) {
+      setSubmitError(describeQueryError(error));
     } finally {
       setResolvingKey(null);
     }
   };
 
+  const resolve = async (torrentUrl: string, candidate?: Candidate) => {
+    if (!torrentUrl.trim()) return;
+    await submit({ torrentUrl: torrentUrl.trim(), title: candidate?.title, tracker: candidate?.tracker,
+      infoHash: candidate?.infoHash, size: candidate?.size, seeders: candidate?.seeders, peers: candidate?.peers },
+      candidate ? `${candidate.tracker}-${candidate.link}` : "manual-magnet");
+  };
+
   const submitMagnet = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     void resolve(magnetURL);
+  };
+
+  const selectFile = (file: File | null) => {
+    setSubmitError("");
+    if (file && (!file.name.toLowerCase().endsWith(".torrent") || file.size === 0 || file.size > 8 * 1024 * 1024)) {
+      setTorrentFile(null);
+      setSubmitError(t("sourcingManual.invalidFile"));
+      return;
+    }
+    setTorrentFile(file);
   };
 
   const candidates = data?.blockedTaskTorrentCandidates ?? [];
@@ -90,6 +100,7 @@ export function BlockedSourcingResolution({ task, onResolved }: BlockedSourcingR
 
       <form className="sourcing-resolution__magnet" onSubmit={submitMagnet}>
         <input
+          disabled={resolvingKey !== null}
           value={magnetURL}
           onChange={(event) => setMagnetURL(event.target.value)}
           placeholder={t("taskUi.resolution.magnetPlaceholder")}
@@ -97,6 +108,21 @@ export function BlockedSourcingResolution({ task, onResolved }: BlockedSourcingR
         />
         <button type="submit" disabled={!magnetURL.trim() || resolvingKey !== null}>
           {resolvingKey === "manual-magnet" ? t("taskUi.resolution.submitting") : t("taskUi.resolution.useMagnet")}
+        </button>
+      </form>
+
+      <form className="sourcing-resolution__upload" onSubmit={event => {
+        event.preventDefault();
+        if (torrentFile) void submit({ torrentFile }, "torrent-file");
+      }}>
+        <label className="settings-field">
+          <span>{t("sourcingManual.fileLabel")}</span>
+          <input type="file" accept=".torrent,application/x-bittorrent" disabled={resolvingKey !== null}
+            onChange={event => selectFile(event.target.files?.[0] ?? null)} />
+          <small>{t("sourcingManual.fileHelp")}</small>
+        </label>
+        <button type="submit" disabled={!torrentFile || resolvingKey !== null}>
+          {resolvingKey === "torrent-file" ? t("taskUi.resolution.submitting") : t("sourcingManual.useFile")}
         </button>
       </form>
 
@@ -120,7 +146,7 @@ export function BlockedSourcingResolution({ task, onResolved }: BlockedSourcingR
       </div>
 
       {error ? <div className="task-issue tone-danger"><span>{describeQueryError(error)}</span></div> : null}
-      {submitError ? <div className="task-issue tone-danger"><span>{submitError}</span></div> : null}
+      {submitError ? <div className="task-issue tone-danger" role="alert"><span>{submitError}</span></div> : null}
 
       {searchEnabled && !fetching && !error && candidates.length === 0 ? (
         <div className="task-issue tone-warn"><span>{t("taskUi.resolution.none")}</span></div>
@@ -135,7 +161,7 @@ export function BlockedSourcingResolution({ task, onResolved }: BlockedSourcingR
               <div className="sourcing-candidate" key={key}>
                 <div>
                   <strong>{candidate.title}</strong>
-                  <span>{candidate.tracker} · {formatBytes(Number(candidate.size) || 0)} · {candidate.seeders} seeders</span>
+                  <span>{candidate.tracker} · {formatBytes(Number(candidate.size) || 0)} · {t("sourcingManual.seeders", { count: candidate.seeders })}</span>
                 </div>
                 <button
                   type="button"

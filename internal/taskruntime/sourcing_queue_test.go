@@ -175,12 +175,12 @@ func TestQueuedSourcingFailureAndRetry(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if err := service.processQueuedSourcing(ctx, task.ID); err == nil {
-		t.Fatal("expected search failure")
+	if err := service.processQueuedSourcing(ctx, task.ID); err != nil {
+		t.Fatal(err)
 	}
 	failed, _ := store.Find(ctx, task.ID)
-	if failed.StageStatus != TaskStageStatusBlocked || failed.StageErrorCode != TaskStageErrorNoCandidate {
-		t.Fatalf("failure not visible: %+v", failed)
+	if !waitingForResource(failed) || failed.StageErrorCode != "" {
+		t.Fatalf("resource absence should wait normally: %+v", failed)
 	}
 	search.results = queuedResult()
 	retried, err := service.RetryTask(ctx, task.ID, nil)

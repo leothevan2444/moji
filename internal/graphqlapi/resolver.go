@@ -111,6 +111,7 @@ type UpdateQBittorrentSettingsInput struct {
 }
 
 type UpdateAutomationSettingsInput struct {
+	SourcingRetryIntervalHours      int
 	TaskProgressSyncIntervalSeconds int
 	SubscriptionPollIntervalHours   int
 	StashBoxEndpoints               []string
@@ -237,6 +238,7 @@ type QBittorrentSettingsSnapshot struct {
 }
 
 type AutomationSettingsSnapshot struct {
+	SourcingRetryIntervalHours      int
 	TaskProgressSyncIntervalSeconds int
 	SubscriptionPollIntervalHours   int
 	StashBoxEndpoints               []string

@@ -49,6 +49,7 @@ type DirectiveRoot struct {
 
 type ComplexityRoot struct {
 	AutomationSettings struct {
+		SourcingRetryIntervalHours      func(childComplexity int) int
 		StashBoxEndpoints               func(childComplexity int) int
 		SubscriptionPollIntervalHours   func(childComplexity int) int
 		SubscriptionReleasePolicy       func(childComplexity int) int
@@ -617,45 +618,47 @@ type ComplexityRoot struct {
 	}
 
 	Task struct {
-		Candidate           func(childComplexity int) int
-		Category            func(childComplexity int) int
-		Code                func(childComplexity int) int
-		ContentPath         func(childComplexity int) int
-		CreatedAt           func(childComplexity int) int
-		DownloadCompletedAt func(childComplexity int) int
-		Files               func(childComplexity int) int
-		ID                  func(childComplexity int) int
-		IngestCompletedAt   func(childComplexity int) int
-		LastProgressAt      func(childComplexity int) int
-		MojiSourcePath      func(childComplexity int) int
-		MojiTransferPath    func(childComplexity int) int
-		Progress            func(childComplexity int) int
-		QbittorrentState    func(childComplexity int) int
-		SavePath            func(childComplexity int) int
-		Source              func(childComplexity int) int
-		SourcingCompletedAt func(childComplexity int) int
-		Stage               func(childComplexity int) int
-		StageErrorCode      func(childComplexity int) int
-		StageErrorMessage   func(childComplexity int) int
-		StageLabel          func(childComplexity int) int
-		StageStatus         func(childComplexity int) int
-		StageStatusLabel    func(childComplexity int) int
-		StashGenerateJobID  func(childComplexity int) int
-		StashIdentifyJobID  func(childComplexity int) int
-		StashIngestPhase    func(childComplexity int) int
-		StashScanError      func(childComplexity int) int
-		StashScanHint       func(childComplexity int) int
-		StashScanJobID      func(childComplexity int) int
-		StashScanPath       func(childComplexity int) int
-		StashScanStartedAt  func(childComplexity int) int
-		StashSceneIds       func(childComplexity int) int
-		Tags                func(childComplexity int) int
-		TorrentHash         func(childComplexity int) int
-		TorrentName         func(childComplexity int) int
-		TorrentURL          func(childComplexity int) int
-		TransferAction      func(childComplexity int) int
-		TransferError       func(childComplexity int) int
-		UpdatedAt           func(childComplexity int) int
+		Candidate             func(childComplexity int) int
+		Category              func(childComplexity int) int
+		Code                  func(childComplexity int) int
+		ContentPath           func(childComplexity int) int
+		CreatedAt             func(childComplexity int) int
+		DownloadCompletedAt   func(childComplexity int) int
+		Files                 func(childComplexity int) int
+		ID                    func(childComplexity int) int
+		IngestCompletedAt     func(childComplexity int) int
+		LastProgressAt        func(childComplexity int) int
+		MojiSourcePath        func(childComplexity int) int
+		MojiTransferPath      func(childComplexity int) int
+		Progress              func(childComplexity int) int
+		QbittorrentState      func(childComplexity int) int
+		SavePath              func(childComplexity int) int
+		Source                func(childComplexity int) int
+		SourcingCompletedAt   func(childComplexity int) int
+		SourcingLastCheckedAt func(childComplexity int) int
+		SourcingNextCheckAt   func(childComplexity int) int
+		Stage                 func(childComplexity int) int
+		StageErrorCode        func(childComplexity int) int
+		StageErrorMessage     func(childComplexity int) int
+		StageLabel            func(childComplexity int) int
+		StageStatus           func(childComplexity int) int
+		StageStatusLabel      func(childComplexity int) int
+		StashGenerateJobID    func(childComplexity int) int
+		StashIdentifyJobID    func(childComplexity int) int
+		StashIngestPhase      func(childComplexity int) int
+		StashScanError        func(childComplexity int) int
+		StashScanHint         func(childComplexity int) int
+		StashScanJobID        func(childComplexity int) int
+		StashScanPath         func(childComplexity int) int
+		StashScanStartedAt    func(childComplexity int) int
+		StashSceneIds         func(childComplexity int) int
+		Tags                  func(childComplexity int) int
+		TorrentHash           func(childComplexity int) int
+		TorrentName           func(childComplexity int) int
+		TorrentURL            func(childComplexity int) int
+		TransferAction        func(childComplexity int) int
+		TransferError         func(childComplexity int) int
+		UpdatedAt             func(childComplexity int) int
 	}
 
 	TaskBatchPayload struct {
@@ -833,6 +836,13 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 	ec := executionContext{nil, e, 0, 0, nil}
 	_ = ec
 	switch typeName + "." + field {
+
+	case "AutomationSettings.sourcingRetryIntervalHours":
+		if e.complexity.AutomationSettings.SourcingRetryIntervalHours == nil {
+			break
+		}
+
+		return e.complexity.AutomationSettings.SourcingRetryIntervalHours(childComplexity), true
 
 	case "AutomationSettings.stashBoxEndpoints":
 		if e.complexity.AutomationSettings.StashBoxEndpoints == nil {
@@ -3806,6 +3816,20 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.Task.SourcingCompletedAt(childComplexity), true
 
+	case "Task.sourcingLastCheckedAt":
+		if e.complexity.Task.SourcingLastCheckedAt == nil {
+			break
+		}
+
+		return e.complexity.Task.SourcingLastCheckedAt(childComplexity), true
+
+	case "Task.sourcingNextCheckAt":
+		if e.complexity.Task.SourcingNextCheckAt == nil {
+			break
+		}
+
+		return e.complexity.Task.SourcingNextCheckAt(childComplexity), true
+
 	case "Task.stage":
 		if e.complexity.Task.Stage == nil {
 			break
@@ -4967,6 +4991,7 @@ type QBittorrentSettings {
 }
 
 type AutomationSettings {
+  sourcingRetryIntervalHours: Int!
   taskProgressSyncIntervalSeconds: Int!
   subscriptionPollIntervalHours: Int!
   "Endpoint URLs in the user-defined order used for subscription lookups. Endpoints not listed here are still queried, in their Stash order, appended after the listed ones. An empty list means use Stash's order as-is."
@@ -5156,6 +5181,7 @@ input UpdateQBittorrentSettingsInput {
 }
 
 input UpdateAutomationSettingsInput {
+  sourcingRetryIntervalHours: Int! = 6
   taskProgressSyncIntervalSeconds: Int!
   subscriptionPollIntervalHours: Int!
   stashBoxEndpoints: [String!]!
@@ -5537,7 +5563,7 @@ type Mutation {
   "Trigger Stash metadata scans for completed Moji tasks"
   triggerStashScans: [Task!]!
 
-  "Retry a blocked Moji task from its current stage"
+  "Retry a blocked task or immediately check a task waiting for resources"
   retryTask(id: ID!): Task!
 
   "Resolve a blocked sourcing task with a manually selected torrent"
@@ -5549,7 +5575,7 @@ type Mutation {
   "Delete a persisted Moji task record"
   deleteTask(id: ID!): Task!
 
-  "Retry blocked tasks with per-task results"
+  "Retry blocked tasks or check waiting resources with per-task results"
   retryTasks(ids: [ID!]!): TaskBatchPayload!
 
   "Advance selected tasks through transfer and Stash ingest"
@@ -5593,7 +5619,9 @@ input DownloadMediaInput {
 }
 
 input ResolveBlockedSourcingTaskInput {
-  torrentUrl: String!
+  "Provide exactly one URL or uploaded torrent file."
+  torrentUrl: String
+  torrentFile: Upload
   title: String
   tracker: String
   infoHash: String
@@ -5602,6 +5630,8 @@ input ResolveBlockedSourcingTaskInput {
   peers: Int
   paused: Boolean
 }
+
+scalar Upload
 
 enum TaskSource {
   MANUAL
@@ -5632,6 +5662,10 @@ type Task {
   contentPath: String
   "Time when a selected torrent was successfully submitted to the downloader; null when not recorded."
   sourcingCompletedAt: String
+  "Last automatic resource search; persists across restarts."
+  sourcingLastCheckedAt: String
+  "Next scheduled resource search; null when no search is scheduled."
+  sourcingNextCheckAt: String
   downloadCompletedAt: String
   "Time when all ingest steps passed verification; null when not recorded."
   ingestCompletedAt: String
@@ -7254,6 +7288,50 @@ func (ec *executionContext) field___Type_fields_argsIncludeDeprecated(
 // endregion ************************** directives.gotpl **************************
 
 // region    **************************** field.gotpl *****************************
+
+func (ec *executionContext) _AutomationSettings_sourcingRetryIntervalHours(ctx context.Context, field graphql.CollectedField, obj *model.AutomationSettings) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_AutomationSettings_sourcingRetryIntervalHours(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.SourcingRetryIntervalHours, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int)
+	fc.Result = res
+	return ec.marshalNInt2int(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_AutomationSettings_sourcingRetryIntervalHours(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AutomationSettings",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
 
 func (ec *executionContext) _AutomationSettings_taskProgressSyncIntervalSeconds(ctx context.Context, field graphql.CollectedField, obj *model.AutomationSettings) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_AutomationSettings_taskProgressSyncIntervalSeconds(ctx, field)
@@ -11794,6 +11872,10 @@ func (ec *executionContext) fieldContext_Mutation_addTorrent(ctx context.Context
 				return ec.fieldContext_Task_contentPath(ctx, field)
 			case "sourcingCompletedAt":
 				return ec.fieldContext_Task_sourcingCompletedAt(ctx, field)
+			case "sourcingLastCheckedAt":
+				return ec.fieldContext_Task_sourcingLastCheckedAt(ctx, field)
+			case "sourcingNextCheckAt":
+				return ec.fieldContext_Task_sourcingNextCheckAt(ctx, field)
 			case "downloadCompletedAt":
 				return ec.fieldContext_Task_downloadCompletedAt(ctx, field)
 			case "ingestCompletedAt":
@@ -11929,6 +12011,10 @@ func (ec *executionContext) fieldContext_Mutation_downloadMedia(ctx context.Cont
 				return ec.fieldContext_Task_contentPath(ctx, field)
 			case "sourcingCompletedAt":
 				return ec.fieldContext_Task_sourcingCompletedAt(ctx, field)
+			case "sourcingLastCheckedAt":
+				return ec.fieldContext_Task_sourcingLastCheckedAt(ctx, field)
+			case "sourcingNextCheckAt":
+				return ec.fieldContext_Task_sourcingNextCheckAt(ctx, field)
 			case "downloadCompletedAt":
 				return ec.fieldContext_Task_downloadCompletedAt(ctx, field)
 			case "ingestCompletedAt":
@@ -12064,6 +12150,10 @@ func (ec *executionContext) fieldContext_Mutation_syncTaskProgress(_ context.Con
 				return ec.fieldContext_Task_contentPath(ctx, field)
 			case "sourcingCompletedAt":
 				return ec.fieldContext_Task_sourcingCompletedAt(ctx, field)
+			case "sourcingLastCheckedAt":
+				return ec.fieldContext_Task_sourcingLastCheckedAt(ctx, field)
+			case "sourcingNextCheckAt":
+				return ec.fieldContext_Task_sourcingNextCheckAt(ctx, field)
 			case "downloadCompletedAt":
 				return ec.fieldContext_Task_downloadCompletedAt(ctx, field)
 			case "ingestCompletedAt":
@@ -12188,6 +12278,10 @@ func (ec *executionContext) fieldContext_Mutation_triggerTaskStashScan(ctx conte
 				return ec.fieldContext_Task_contentPath(ctx, field)
 			case "sourcingCompletedAt":
 				return ec.fieldContext_Task_sourcingCompletedAt(ctx, field)
+			case "sourcingLastCheckedAt":
+				return ec.fieldContext_Task_sourcingLastCheckedAt(ctx, field)
+			case "sourcingNextCheckAt":
+				return ec.fieldContext_Task_sourcingNextCheckAt(ctx, field)
 			case "downloadCompletedAt":
 				return ec.fieldContext_Task_downloadCompletedAt(ctx, field)
 			case "ingestCompletedAt":
@@ -12323,6 +12417,10 @@ func (ec *executionContext) fieldContext_Mutation_triggerStashScans(_ context.Co
 				return ec.fieldContext_Task_contentPath(ctx, field)
 			case "sourcingCompletedAt":
 				return ec.fieldContext_Task_sourcingCompletedAt(ctx, field)
+			case "sourcingLastCheckedAt":
+				return ec.fieldContext_Task_sourcingLastCheckedAt(ctx, field)
+			case "sourcingNextCheckAt":
+				return ec.fieldContext_Task_sourcingNextCheckAt(ctx, field)
 			case "downloadCompletedAt":
 				return ec.fieldContext_Task_downloadCompletedAt(ctx, field)
 			case "ingestCompletedAt":
@@ -12447,6 +12545,10 @@ func (ec *executionContext) fieldContext_Mutation_retryTask(ctx context.Context,
 				return ec.fieldContext_Task_contentPath(ctx, field)
 			case "sourcingCompletedAt":
 				return ec.fieldContext_Task_sourcingCompletedAt(ctx, field)
+			case "sourcingLastCheckedAt":
+				return ec.fieldContext_Task_sourcingLastCheckedAt(ctx, field)
+			case "sourcingNextCheckAt":
+				return ec.fieldContext_Task_sourcingNextCheckAt(ctx, field)
 			case "downloadCompletedAt":
 				return ec.fieldContext_Task_downloadCompletedAt(ctx, field)
 			case "ingestCompletedAt":
@@ -12582,6 +12684,10 @@ func (ec *executionContext) fieldContext_Mutation_resolveBlockedSourcingTask(ctx
 				return ec.fieldContext_Task_contentPath(ctx, field)
 			case "sourcingCompletedAt":
 				return ec.fieldContext_Task_sourcingCompletedAt(ctx, field)
+			case "sourcingLastCheckedAt":
+				return ec.fieldContext_Task_sourcingLastCheckedAt(ctx, field)
+			case "sourcingNextCheckAt":
+				return ec.fieldContext_Task_sourcingNextCheckAt(ctx, field)
 			case "downloadCompletedAt":
 				return ec.fieldContext_Task_downloadCompletedAt(ctx, field)
 			case "ingestCompletedAt":
@@ -12717,6 +12823,10 @@ func (ec *executionContext) fieldContext_Mutation_resolveTaskFiles(ctx context.C
 				return ec.fieldContext_Task_contentPath(ctx, field)
 			case "sourcingCompletedAt":
 				return ec.fieldContext_Task_sourcingCompletedAt(ctx, field)
+			case "sourcingLastCheckedAt":
+				return ec.fieldContext_Task_sourcingLastCheckedAt(ctx, field)
+			case "sourcingNextCheckAt":
+				return ec.fieldContext_Task_sourcingNextCheckAt(ctx, field)
 			case "downloadCompletedAt":
 				return ec.fieldContext_Task_downloadCompletedAt(ctx, field)
 			case "ingestCompletedAt":
@@ -12852,6 +12962,10 @@ func (ec *executionContext) fieldContext_Mutation_deleteTask(ctx context.Context
 				return ec.fieldContext_Task_contentPath(ctx, field)
 			case "sourcingCompletedAt":
 				return ec.fieldContext_Task_sourcingCompletedAt(ctx, field)
+			case "sourcingLastCheckedAt":
+				return ec.fieldContext_Task_sourcingLastCheckedAt(ctx, field)
+			case "sourcingNextCheckAt":
+				return ec.fieldContext_Task_sourcingNextCheckAt(ctx, field)
 			case "downloadCompletedAt":
 				return ec.fieldContext_Task_downloadCompletedAt(ctx, field)
 			case "ingestCompletedAt":
@@ -13176,6 +13290,10 @@ func (ec *executionContext) fieldContext_Mutation_queueDiscoveredScene(ctx conte
 				return ec.fieldContext_Task_contentPath(ctx, field)
 			case "sourcingCompletedAt":
 				return ec.fieldContext_Task_sourcingCompletedAt(ctx, field)
+			case "sourcingLastCheckedAt":
+				return ec.fieldContext_Task_sourcingLastCheckedAt(ctx, field)
+			case "sourcingNextCheckAt":
+				return ec.fieldContext_Task_sourcingNextCheckAt(ctx, field)
 			case "downloadCompletedAt":
 				return ec.fieldContext_Task_downloadCompletedAt(ctx, field)
 			case "ingestCompletedAt":
@@ -18546,6 +18664,10 @@ func (ec *executionContext) fieldContext_Query_task(ctx context.Context, field g
 				return ec.fieldContext_Task_contentPath(ctx, field)
 			case "sourcingCompletedAt":
 				return ec.fieldContext_Task_sourcingCompletedAt(ctx, field)
+			case "sourcingLastCheckedAt":
+				return ec.fieldContext_Task_sourcingLastCheckedAt(ctx, field)
+			case "sourcingNextCheckAt":
+				return ec.fieldContext_Task_sourcingNextCheckAt(ctx, field)
 			case "downloadCompletedAt":
 				return ec.fieldContext_Task_downloadCompletedAt(ctx, field)
 			case "ingestCompletedAt":
@@ -18754,6 +18876,10 @@ func (ec *executionContext) fieldContext_Query_tasks(_ context.Context, field gr
 				return ec.fieldContext_Task_contentPath(ctx, field)
 			case "sourcingCompletedAt":
 				return ec.fieldContext_Task_sourcingCompletedAt(ctx, field)
+			case "sourcingLastCheckedAt":
+				return ec.fieldContext_Task_sourcingLastCheckedAt(ctx, field)
+			case "sourcingNextCheckAt":
+				return ec.fieldContext_Task_sourcingNextCheckAt(ctx, field)
 			case "downloadCompletedAt":
 				return ec.fieldContext_Task_downloadCompletedAt(ctx, field)
 			case "ingestCompletedAt":
@@ -19138,6 +19264,10 @@ func (ec *executionContext) fieldContext_QueuePerformerSceneResult_task(_ contex
 				return ec.fieldContext_Task_contentPath(ctx, field)
 			case "sourcingCompletedAt":
 				return ec.fieldContext_Task_sourcingCompletedAt(ctx, field)
+			case "sourcingLastCheckedAt":
+				return ec.fieldContext_Task_sourcingLastCheckedAt(ctx, field)
+			case "sourcingNextCheckAt":
+				return ec.fieldContext_Task_sourcingNextCheckAt(ctx, field)
 			case "downloadCompletedAt":
 				return ec.fieldContext_Task_downloadCompletedAt(ctx, field)
 			case "ingestCompletedAt":
@@ -19303,6 +19433,10 @@ func (ec *executionContext) fieldContext_QueuePerformerScenesPayload_queuedTasks
 				return ec.fieldContext_Task_contentPath(ctx, field)
 			case "sourcingCompletedAt":
 				return ec.fieldContext_Task_sourcingCompletedAt(ctx, field)
+			case "sourcingLastCheckedAt":
+				return ec.fieldContext_Task_sourcingLastCheckedAt(ctx, field)
+			case "sourcingNextCheckAt":
+				return ec.fieldContext_Task_sourcingNextCheckAt(ctx, field)
 			case "downloadCompletedAt":
 				return ec.fieldContext_Task_downloadCompletedAt(ctx, field)
 			case "ingestCompletedAt":
@@ -20121,6 +20255,8 @@ func (ec *executionContext) fieldContext_Settings_automation(_ context.Context, 
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			switch field.Name {
+			case "sourcingRetryIntervalHours":
+				return ec.fieldContext_AutomationSettings_sourcingRetryIntervalHours(ctx, field)
 			case "taskProgressSyncIntervalSeconds":
 				return ec.fieldContext_AutomationSettings_taskProgressSyncIntervalSeconds(ctx, field)
 			case "subscriptionPollIntervalHours":
@@ -27632,6 +27768,88 @@ func (ec *executionContext) fieldContext_Task_sourcingCompletedAt(_ context.Cont
 	return fc, nil
 }
 
+func (ec *executionContext) _Task_sourcingLastCheckedAt(ctx context.Context, field graphql.CollectedField, obj *model.Task) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Task_sourcingLastCheckedAt(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.SourcingLastCheckedAt, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*string)
+	fc.Result = res
+	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Task_sourcingLastCheckedAt(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Task",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Task_sourcingNextCheckAt(ctx context.Context, field graphql.CollectedField, obj *model.Task) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Task_sourcingNextCheckAt(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.SourcingNextCheckAt, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*string)
+	fc.Result = res
+	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Task_sourcingNextCheckAt(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Task",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _Task_downloadCompletedAt(ctx context.Context, field graphql.CollectedField, obj *model.Task) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_Task_downloadCompletedAt(ctx, field)
 	if err != nil {
@@ -28741,6 +28959,10 @@ func (ec *executionContext) fieldContext_TaskBatchResult_task(_ context.Context,
 				return ec.fieldContext_Task_contentPath(ctx, field)
 			case "sourcingCompletedAt":
 				return ec.fieldContext_Task_sourcingCompletedAt(ctx, field)
+			case "sourcingLastCheckedAt":
+				return ec.fieldContext_Task_sourcingLastCheckedAt(ctx, field)
+			case "sourcingNextCheckAt":
+				return ec.fieldContext_Task_sourcingNextCheckAt(ctx, field)
 			case "downloadCompletedAt":
 				return ec.fieldContext_Task_downloadCompletedAt(ctx, field)
 			case "ingestCompletedAt":
@@ -29170,6 +29392,10 @@ func (ec *executionContext) fieldContext_TaskEvent_task(_ context.Context, field
 				return ec.fieldContext_Task_contentPath(ctx, field)
 			case "sourcingCompletedAt":
 				return ec.fieldContext_Task_sourcingCompletedAt(ctx, field)
+			case "sourcingLastCheckedAt":
+				return ec.fieldContext_Task_sourcingLastCheckedAt(ctx, field)
+			case "sourcingNextCheckAt":
+				return ec.fieldContext_Task_sourcingNextCheckAt(ctx, field)
 			case "downloadCompletedAt":
 				return ec.fieldContext_Task_downloadCompletedAt(ctx, field)
 			case "ingestCompletedAt":
@@ -33511,7 +33737,7 @@ func (ec *executionContext) unmarshalInputResolveBlockedSourcingTaskInput(ctx co
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"torrentUrl", "title", "tracker", "infoHash", "size", "seeders", "peers", "paused"}
+	fieldsInOrder := [...]string{"torrentUrl", "torrentFile", "title", "tracker", "infoHash", "size", "seeders", "peers", "paused"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -33520,11 +33746,18 @@ func (ec *executionContext) unmarshalInputResolveBlockedSourcingTaskInput(ctx co
 		switch k {
 		case "torrentUrl":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("torrentUrl"))
-			data, err := ec.unmarshalNString2string(ctx, v)
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
 			if err != nil {
 				return it, err
 			}
 			it.TorrentURL = data
+		case "torrentFile":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("torrentFile"))
+			data, err := ec.unmarshalOUpload2ᚖgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚐUpload(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.TorrentFile = data
 		case "title":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("title"))
 			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
@@ -34107,13 +34340,24 @@ func (ec *executionContext) unmarshalInputUpdateAutomationSettingsInput(ctx cont
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"taskProgressSyncIntervalSeconds", "subscriptionPollIntervalHours", "stashBoxEndpoints", "subscriptionReleasePolicy", "torrentSelection"}
+	if _, present := asMap["sourcingRetryIntervalHours"]; !present {
+		asMap["sourcingRetryIntervalHours"] = 6
+	}
+
+	fieldsInOrder := [...]string{"sourcingRetryIntervalHours", "taskProgressSyncIntervalSeconds", "subscriptionPollIntervalHours", "stashBoxEndpoints", "subscriptionReleasePolicy", "torrentSelection"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
 			continue
 		}
 		switch k {
+		case "sourcingRetryIntervalHours":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("sourcingRetryIntervalHours"))
+			data, err := ec.unmarshalNInt2int(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.SourcingRetryIntervalHours = data
 		case "taskProgressSyncIntervalSeconds":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("taskProgressSyncIntervalSeconds"))
 			data, err := ec.unmarshalNInt2int(ctx, v)
@@ -34404,6 +34648,11 @@ func (ec *executionContext) _AutomationSettings(ctx context.Context, sel ast.Sel
 		switch field.Name {
 		case "__typename":
 			out.Values[i] = graphql.MarshalString("AutomationSettings")
+		case "sourcingRetryIntervalHours":
+			out.Values[i] = ec._AutomationSettings_sourcingRetryIntervalHours(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
 		case "taskProgressSyncIntervalSeconds":
 			out.Values[i] = ec._AutomationSettings_taskProgressSyncIntervalSeconds(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
@@ -38749,6 +38998,10 @@ func (ec *executionContext) _Task(ctx context.Context, sel ast.SelectionSet, obj
 			out.Values[i] = ec._Task_contentPath(ctx, field, obj)
 		case "sourcingCompletedAt":
 			out.Values[i] = ec._Task_sourcingCompletedAt(ctx, field, obj)
+		case "sourcingLastCheckedAt":
+			out.Values[i] = ec._Task_sourcingLastCheckedAt(ctx, field, obj)
+		case "sourcingNextCheckAt":
+			out.Values[i] = ec._Task_sourcingNextCheckAt(ctx, field, obj)
 		case "downloadCompletedAt":
 			out.Values[i] = ec._Task_downloadCompletedAt(ctx, field, obj)
 		case "ingestCompletedAt":
@@ -42883,6 +43136,24 @@ func (ec *executionContext) unmarshalOTorrentSelectionRuleInput2ᚕᚖgithubᚗc
 		}
 	}
 	return res, nil
+}
+
+func (ec *executionContext) unmarshalOUpload2ᚖgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚐUpload(ctx context.Context, v any) (*graphql.Upload, error) {
+	if v == nil {
+		return nil, nil
+	}
+	res, err := graphql.UnmarshalUpload(v)
+	return &res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalOUpload2ᚖgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚐUpload(ctx context.Context, sel ast.SelectionSet, v *graphql.Upload) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	_ = sel
+	_ = ctx
+	res := graphql.MarshalUpload(*v)
+	return res
 }
 
 func (ec *executionContext) marshalO__EnumValue2ᚕgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐEnumValueᚄ(ctx context.Context, sel ast.SelectionSet, v []introspection.EnumValue) graphql.Marshaler {

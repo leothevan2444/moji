@@ -184,6 +184,10 @@ func (s *runtimeSettingsEditor) UpdateQBittorrentSettings(input graphqlapi.Updat
 }
 
 func (s *runtimeSettingsEditor) UpdateAutomationSettings(input graphqlapi.UpdateAutomationSettingsInput) (*graphqlapi.SettingsSnapshot, error) {
+	interval := input.SourcingRetryIntervalHours
+	if interval == 0 {
+		interval = s.store.Config().Automation.EffectiveSourcingRetryIntervalHours()
+	}
 	cfg, err := s.store.UpdateAutomation(
 		input.TaskProgressSyncIntervalSeconds,
 		input.SubscriptionPollIntervalHours,
@@ -194,6 +198,7 @@ func (s *runtimeSettingsEditor) UpdateAutomationSettings(input graphqlapi.Update
 			input.TorrentSelection.InspectionCandidateLimit,
 			torrentSelectionConfigRulesFromSnapshot(input.TorrentSelection),
 		),
+		interval,
 	)
 	if err != nil {
 		logging.Errorf("settings: save automation settings failed: %v", err)

@@ -166,6 +166,8 @@ type downloadedTorrentMetadata struct {
 	IdentityPaths []string
 }
 
+const MaxTorrentBytes = 8 << 20
+
 func (s *Service) resolveManualTorrent(ctx context.Context, torrentURL string) (Candidate, string, torrentIdentity, *downloadedTorrentMetadata, error) {
 	candidate := candidateFromTorrentURL(torrentURL)
 	titleCandidates := []string{magnetDisplayName(torrentURL)}
@@ -224,12 +226,11 @@ func (s *Service) fetchTorrentMetadata(ctx context.Context, torrentURL string) (
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
 		return downloadedTorrentMetadata{}, fmt.Errorf("taskruntime: fetch torrent metadata: unexpected status %d", resp.StatusCode)
 	}
-	const maxTorrentBytes = 8 << 20
-	body, err := io.ReadAll(io.LimitReader(resp.Body, maxTorrentBytes+1))
+	body, err := io.ReadAll(io.LimitReader(resp.Body, MaxTorrentBytes+1))
 	if err != nil {
 		return downloadedTorrentMetadata{}, fmt.Errorf("taskruntime: read torrent metadata: %w", err)
 	}
-	if len(body) > maxTorrentBytes {
+	if len(body) > MaxTorrentBytes {
 		return downloadedTorrentMetadata{}, errors.New("taskruntime: torrent metadata exceeds 8 MiB")
 	}
 	return parseTorrentMetadata(body)

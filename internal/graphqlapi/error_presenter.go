@@ -66,7 +66,7 @@ func NewGraphQLServer(schema graphql.ExecutableSchema) *handler.Server {
 	server.AddTransport(transport.Options{})
 	server.AddTransport(transport.GET{})
 	server.AddTransport(transport.POST{})
-	server.AddTransport(transport.MultipartForm{})
+	server.AddTransport(transport.MultipartForm{MaxUploadSize: 9 << 20, MaxMemory: 1 << 20})
 	server.SetQueryCache(lru.New[*ast.QueryDocument](1000))
 	server.Use(extension.Introspection{})
 	server.Use(extension.AutomaticPersistedQuery{Cache: lru.New[string](100)})
@@ -104,7 +104,15 @@ func ErrorPresenter(ctx context.Context, err error) *gqlerror.Error {
 }
 
 func classifyError(err error) string {
+	switch code := taskruntime.SourcingValidationErrorCode(err); code {
+	case taskruntime.TaskStageErrorCandidateMismatch, taskruntime.TaskStageErrorCandidateUnverified, taskruntime.TaskStageErrorTorrentMetadata:
+		return code
+	}
 	switch {
+	case errors.Is(err, taskruntime.ErrInvalidTorrentInput):
+		return "INVALID_TORRENT_INPUT"
+	case errors.Is(err, taskruntime.ErrSourcingUnavailable):
+		return "SOURCING_TASK_UNAVAILABLE"
 	case errors.Is(err, taskruntime.ErrDuplicateTorrentTask):
 		return ErrorDuplicateTorrentTask
 	case errors.Is(err, taskruntime.ErrDuplicateCodeTask):

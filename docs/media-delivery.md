@@ -6,6 +6,27 @@ completion checks.
 
 ## Validation before submission
 
+Movies with no verified resource remain in sourcing as normal pending work.
+The sourcing worker searches again every six hours by default, without an
+attempt limit or expiry. Change `automation.sourcing_retry_interval_hours`
+(1–168 hours) in the Automation settings to adjust this interval independently
+of performer metadata polling. The task card and details show the next check;
+"Check resources now" bypasses the wait. Search options and the last/next check
+times are persisted, so tracking survives restarts. A newly found candidate
+must pass the same validation before download submission. Existing blocked
+searches for unavailable or mismatched resources are adopted automatically.
+Transient indexer or metadata errors remain visible and are also scheduled for
+another check; duplicate-library, duplicate-torrent and invalid-request blocks
+require operator intervention. Deleting a waiting task stops its tracking.
+
+Waiting tasks also offer "Choose or add a resource" alongside the immediate
+automatic check. The panel accepts a magnet link, a `.torrent` upload up to
+8 MiB, or an indexer search result. All three resume the original task after
+the same identity checks. A rejected manual resource leaves its automatic
+tracking plan intact. Uploads use GraphQL multipart requests and are retained
+privately in SQLite so retries and interrupted submissions keep the original
+torrent, including any private trackers, instead of replacing it with a magnet.
+
 Automatic sourcing checks candidate codes before applying download submission.
 Case, optional separators and numeric zero-padding are accepted aliases;
 different numeric codes are rejected even when an indexer returns them as fuzzy
@@ -16,8 +37,8 @@ info hash retained for progress matching. qBittorrent does not need to fetch the
 indexer's download URL.
 
 Invalid candidates are skipped. If no candidate passes validation, the task
-remains blocked in sourcing with an explanation in the Web UI. Manual candidate
-resolution and download retries perform the same checks. Pure magnets validate
+remains in sourcing and queued tasks schedule their next resource check.
+Manual candidate resolution and download retries perform the same checks. Pure magnets validate
 their candidate title and display name before submission; their file contents
 are checked by the metadata and file-selection workflow below.
 

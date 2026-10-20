@@ -1,4 +1,21 @@
 {
+  "sourcingManual": {
+    "fileLabel": "上传种子文件",
+    "fileHelp": "选择 .torrent 文件，最大 8 MiB。Moji 会校验种子名称和视频番号。",
+    "useFile": "使用种子文件",
+    "invalidFile": "请选择非空的 .torrent 文件，大小不能超过 8 MiB。",
+    "seeders": "{{count}} 个做种者"
+  },
+  "resourceTracking": {
+    "waiting": "等待资源",
+    "waitingDetail": "尚无通过验证的资源。Moji 会持续定期搜索，找到有效资源后自动开始下载。",
+    "nextCheck": "下次检查：{{time}}",
+    "lastChecked": "上次资源检查",
+    "nextChecked": "下次资源检查",
+    "checkNow": "立即检查资源",
+    "interval": "资源追踪间隔（小时）",
+    "intervalHelp": "对尚无有效资源的影片持续重新搜索，默认每 6 小时一次，可设置为 1–168 小时。索引器故障也会按此间隔再次检查。"
+  },
   "taskQueue": {
     "pending": "等待选种",
     "running": "选种中",
@@ -446,6 +463,11 @@
   },
   "errorCorrelation": "关联 ID：{{id}}",
   "errorExtra": {
+    "CANDIDATE_CODE_MISMATCH": "资源中的番号与当前任务不匹配，请选择对应影片的资源。",
+    "CANDIDATE_IDENTITY_UNVERIFIED": "无法从资源名称或视频文件中确认任务番号，请提供可验证的资源。",
+    "TORRENT_METADATA_FAILED": "种子文件无法读取或未通过验证，请检查文件或种子链接。",
+    "INVALID_TORRENT_INPUT": "请只提供一个磁力或种子链接，或一个非空且不超过 8 MiB 的种子文件。",
+    "SOURCING_TASK_UNAVAILABLE": "任务已离开等待资源或选种受阻阶段，请刷新任务状态。",
     "TRANSFER_PATH_FAILED": "入库路径映射失败，请检查 qB、Moji 与 Stash 根路径配置。",
     "STASH_SCAN_FAILED": "Stash 扫描失败，请检查连接和扫描路径。",
     "NO_TORRENT_CANDIDATE": "没有找到可下载的 torrent 候选。",
@@ -643,11 +665,11 @@
     "noneSelected": "还没有选中任务",
     "noneSelectedDetail": "点击任务卡片后，这里会显示详细信息和操作。",
     "cannotResolve": "任务当前无法人工处理",
-    "cannotResolveDetail": "任务可能已经离开选种受阻阶段，请关闭后刷新任务列表。",
+    "cannotResolveDetail": "任务可能已经离开等待资源或选种受阻阶段，请关闭后刷新任务列表。",
     "resolution": {
       "noResult": "后端没有返回已恢复的任务记录。",
-      "title": "人工解决选种受阻",
-      "detail": "为 {{code}} 重新搜索候选，或直接提供磁力链接以继续原任务。",
+      "title": "选择或补充资源",
+      "detail": "为 {{code}} 填入磁力链接、上传种子文件，或从索引结果中选择资源以继续原任务。",
       "magnetPlaceholder": "粘贴 magnet:?xt=urn:btih:...",
       "magnetLabel": "磁力链接",
       "submitting": "提交中...",
@@ -656,7 +678,7 @@
       "searchAgain": "重新搜索候选",
       "search": "搜索候选",
       "found": "找到 {{count}} 个候选",
-      "none": "没有找到候选，可以修改 Jackett 配置后重搜，或直接粘贴磁力链接。",
+      "none": "暂无候选。可以粘贴磁力链接、上传种子文件，或等待后续自动检查。",
       "selecting": "选用中...",
       "select": "选用"
     },

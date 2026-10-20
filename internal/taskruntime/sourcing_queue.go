@@ -91,7 +91,18 @@ func (s *Service) RunSourcingWorker(ctx context.Context) {
 			return
 		}
 		for _, task := range tasks {
-			if task.Stage != TaskStageSourcing || task.StageStatus == TaskStageStatusBlocked || task.StageStatus == TaskStageStatusDone || inflight[task.ID] {
+			if task.Stage != TaskStageSourcing || task.StageStatus == TaskStageStatusDone || inflight[task.ID] {
+				continue
+			}
+			task, err = s.prepareResourceTracking(ctx, task)
+			if err != nil {
+				logging.Errorf("taskruntime: prepare resource tracking: %v", err)
+				continue
+			}
+			if task.Stage != TaskStageSourcing || (task.StageStatus == TaskStageStatusBlocked && task.SourcingNextCheckAt == nil) {
+				continue
+			}
+			if task.SourcingNextCheckAt != nil && task.SourcingNextCheckAt.After(s.now().UTC()) {
 				continue
 			}
 			// Old synchronous requests are not queue jobs; only resume persisted intents.
@@ -136,25 +147,40 @@ func (s *Service) processQueuedSourcing(parent context.Context, id string) (resu
 	if err != nil {
 		return err
 	}
-	if task == nil || task.Stage != TaskStageSourcing || task.StageStatus == TaskStageStatusBlocked || task.SourcingRequestJSON == "" {
+	if task == nil || task.Stage != TaskStageSourcing || (task.StageStatus == TaskStageStatusBlocked && task.SourcingNextCheckAt == nil) || task.SourcingRequestJSON == "" {
+		return nil
+	}
+	if task.SourcingNextCheckAt != nil && task.SourcingNextCheckAt.After(s.now().UTC()) {
 		return nil
 	}
 	// Shutdown leaves a resumable job; a live deadline becomes actionable even
 	// when it expires during the library lookup rather than during torrent search.
 	defer func() {
+		if parent.Err() != nil {
+			return
+		}
 		if parent.Err() == nil && ctx.Err() != nil {
 			blockTask(task, TaskStageErrorSearch, "sourcing timed out; retry this task", s.now().UTC())
 			if err := s.store.Update(parent, task); err != nil {
 				resultErr = err
 			}
 		}
+		if err := s.finishResourceCheck(parent, id); err != nil {
+			resultErr = err
+			return
+		}
+		latest, err := s.store.Find(parent, id)
+		if err == nil && waitingForResource(latest) {
+			resultErr = nil
+		}
 	}()
 	var req DownloadRequest
 	if err := json.Unmarshal([]byte(task.SourcingRequestJSON), &req); err != nil {
-		blockTask(task, TaskStageErrorSearch, "unable to read queued task request", s.now().UTC())
+		blockTask(task, TaskStageErrorSourcingRequest, "unable to read queued task request", s.now().UTC())
 		return s.store.Update(ctx, task)
 	}
 	setTaskStage(task, TaskStageSourcing, TaskStageStatusRunning)
+	task.SourcingNextCheckAt = nil
 	clearTaskStageError(task)
 	task.UpdatedAt = s.now().UTC()
 	if err := s.store.Update(ctx, task); err != nil {

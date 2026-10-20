@@ -1,5 +1,5 @@
 import { useTranslation } from "react-i18next";
-import { taskPrimaryAction, taskSummary, type DashboardTask } from "../../utils";
+import { taskPrimaryAction, taskSummary, isWaitingForResource, type DashboardTask } from "../../utils";
 
 interface TaskPrimaryActionProps {
   task: DashboardTask;
@@ -18,13 +18,20 @@ export function TaskPrimaryAction({ task, pendingScan, pendingRetry, onResolve, 
   const handler = { resolve: onResolve, files: onFiles, retry: onRetry, ingest: onScan }[action];
   if (!handler) return null;
   const pending = action === "retry" ? pendingRetry : action === "ingest" ? pendingScan : false;
-  const label = t(`taskExperience.actions.${action}`);
-  return <button
+  const label = isWaitingForResource(task) ? t("resourceTracking.checkNow") : t(`taskExperience.actions.${action}`);
+  return <>
+    {isWaitingForResource(task) && onResolve ? <button type="button" className="ghost-button task-primary-action"
+      disabled={pendingRetry} aria-label={`${t("taskExperience.actions.resolve")}: ${taskSummary(task)}`}
+      onClick={event => { event.stopPropagation(); onResolve(task.id); }}>
+      {t("taskExperience.actions.resolve")}
+    </button> : null}
+    <button
     type="button"
     className="ghost-button task-primary-action"
     disabled={pending}
     aria-busy={Boolean(pending)}
     aria-label={`${label}: ${taskSummary(task)}`}
     onClick={event => { event.stopPropagation(); handler(task.id); }}
-  >{pending ? t("taskExperience.actions.pending") : label}</button>;
+  >{pending ? t("taskExperience.actions.pending") : label}</button>
+  </>;
 }

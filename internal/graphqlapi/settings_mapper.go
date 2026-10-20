@@ -114,6 +114,7 @@ func settingsSnapshotToModel(snapshot *SettingsSnapshot, appVersion string) *mod
 			Tags:               snapshot.QBittorrent.Tags,
 		},
 		Automation: &model.AutomationSettings{
+			SourcingRetryIntervalHours:      snapshot.Automation.SourcingRetryIntervalHours,
 			TaskProgressSyncIntervalSeconds: snapshot.Automation.TaskProgressSyncIntervalSeconds,
 			SubscriptionPollIntervalHours:   snapshot.Automation.SubscriptionPollIntervalHours,
 			StashBoxEndpoints:               append([]string(nil), snapshot.Automation.StashBoxEndpoints...),

@@ -72,7 +72,7 @@ func (s *Service) RetryTasks(ctx context.Context, ids []string, scanner StashSca
 		if err != nil || task == nil {
 			return missingOrFailedBatchResult(id, err, TaskBatchReasonRetryFailed)
 		}
-		if task.StageStatus != TaskStageStatusBlocked || task.Stage == TaskStageCompleted {
+		if (task.StageStatus != TaskStageStatusBlocked && !waitingForResource(task)) || task.Stage == TaskStageCompleted {
 			return TaskBatchResult{TaskID: id, Status: TaskBatchStatusSkipped, ReasonCode: TaskBatchReasonNotRetryable, Task: task}
 		}
 		next, err := s.RetryTask(ctx, id, scanner)

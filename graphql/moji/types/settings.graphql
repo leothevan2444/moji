@@ -271,6 +271,7 @@ type QBittorrentSettings {
 }
 
 type AutomationSettings {
+  sourcingRetryIntervalHours: Int!
   taskProgressSyncIntervalSeconds: Int!
   subscriptionPollIntervalHours: Int!
   "Endpoint URLs in the user-defined order used for subscription lookups. Endpoints not listed here are still queried, in their Stash order, appended after the listed ones. An empty list means use Stash's order as-is."
@@ -460,6 +461,7 @@ input UpdateQBittorrentSettingsInput {
 }
 
 input UpdateAutomationSettingsInput {
+  sourcingRetryIntervalHours: Int! = 6
   taskProgressSyncIntervalSeconds: Int!
   subscriptionPollIntervalHours: Int!
   stashBoxEndpoints: [String!]!

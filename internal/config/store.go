@@ -142,12 +142,18 @@ func (s *Store) UpdateQBittorrent(url, username, password, defaultSavePath, cate
 	return &clone, nil
 }
 
-func (s *Store) UpdateAutomation(taskProgressSyncIntervalSeconds, subscriptionPollIntervalHours int, stashBoxEndpoints []string, subscriptionReleasePolicy SubscriptionReleasePolicyConfig, torrentSelection TorrentSelectionConfig) (*Config, error) {
+func (s *Store) UpdateAutomation(taskProgressSyncIntervalSeconds, subscriptionPollIntervalHours int, stashBoxEndpoints []string, subscriptionReleasePolicy SubscriptionReleasePolicyConfig, torrentSelection TorrentSelectionConfig, sourcingRetryIntervalHours ...int) (*Config, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
 	if err := torrentSelection.Validate(); err != nil {
 		return nil, err
+	}
+	if len(sourcingRetryIntervalHours) > 0 {
+		if sourcingRetryIntervalHours[0] < 1 || sourcingRetryIntervalHours[0] > 168 {
+			return nil, fmt.Errorf("resource search interval must be between 1 and 168 hours")
+		}
+		s.cfg.Automation.SourcingRetryIntervalHours = sourcingRetryIntervalHours[0]
 	}
 
 	s.cfg.Automation.TaskProgressSyncIntervalSeconds = taskProgressSyncIntervalSeconds
@@ -233,6 +239,7 @@ func (s *Store) updateConfigNode() error {
 		"tags":              s.cfg.Connection.QBittorrent.Tags,
 	})
 	setIntScalar(mapValue(top, "automation"), "task_progress_sync_interval_seconds", s.cfg.Automation.TaskProgressSyncIntervalSeconds)
+	setIntScalar(mapValue(top, "automation"), "sourcing_retry_interval_hours", s.cfg.Automation.EffectiveSourcingRetryIntervalHours())
 	setIntScalar(mapValue(top, "automation"), "subscription_poll_interval_hours", s.cfg.Automation.SubscriptionPollIntervalHours)
 	setStringList(mapValue(top, "automation"), "selected_stash_box_endpoints", s.cfg.Automation.StashBoxEndpoints)
 	setNodeValue(mapValue(top, "automation"), "subscription_release_policy", s.cfg.Automation.SubscriptionReleasePolicy.Effective())

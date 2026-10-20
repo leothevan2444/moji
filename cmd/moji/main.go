@@ -422,6 +422,13 @@ func configureTaskRuntime(cfg *config.Config, configStore *config.Store, tr trac
 		tr,
 		torrent,
 		eventingStore,
+		taskruntime.WithSourcingRetryInterval(func() time.Duration {
+			current := cfg
+			if configStore != nil {
+				current = configStore.Config()
+			}
+			return time.Duration(current.Automation.EffectiveSourcingRetryIntervalHours()) * time.Hour
+		}),
 		taskruntime.WithCandidateSelectionProvider(configureTorrentSelectionProvider(configStore, cfg)),
 		taskruntime.WithTaskDeletePolicyProvider(configureTaskDeletePolicyProvider(configStore, cfg)),
 		taskruntime.WithLibraryCodeChecker(stashLibraryCodeChecker{client: stashClient}),
@@ -586,6 +593,7 @@ func buildSettingsSnapshot(cfg *config.Config, version string) *graphqlapi.Setti
 			Tags:               cfg.Connection.QBittorrent.Tags,
 		},
 		Automation: graphqlapi.AutomationSettingsSnapshot{
+			SourcingRetryIntervalHours:      cfg.Automation.EffectiveSourcingRetryIntervalHours(),
 			TaskProgressSyncIntervalSeconds: effectiveTaskProgressSyncIntervalSeconds(cfg),
 			SubscriptionPollIntervalHours:   effectiveSubscriptionPollIntervalHours(cfg),
 			StashBoxEndpoints:               append([]string(nil), cfg.Automation.StashBoxEndpoints...),

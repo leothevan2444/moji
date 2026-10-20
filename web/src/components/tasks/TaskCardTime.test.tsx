@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { cleanup, render } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import i18n from "../../i18n/i18n";
 import type { DashboardTask } from "../../utils";
@@ -13,6 +13,18 @@ beforeEach(async()=>{await i18n.changeLanguage("en");});
 afterEach(cleanup);
 
 describe("task card progress time",()=>{
+ it("shows a normal resource wait, its next check and an immediate check action",()=>{
+  const onRetry=vi.fn();
+  const onResolve=vi.fn();
+  const waiting={...task,stage:"SOURCING",stageStatus:"PENDING",progress:0,sourcingLastCheckedAt:"2026-10-20T00:00:00Z",sourcingNextCheckAt:"2026-10-20T06:00:00Z"} as DashboardTask;
+  const {container}=render(<TaskCard task={waiting} onOpen={vi.fn()} onRetry={onRetry} onResolve={onResolve}/>);
+  expect(container.querySelector(".task-status-error")).toBeNull();
+  expect(container.querySelector(".task-card__tracking")?.textContent).toContain("Next check:");
+  fireEvent.click(screen.getByRole("button",{name:"Check resources now: ABCD-123"}));
+  expect(onRetry).toHaveBeenCalledWith(task.id);
+  fireEvent.click(screen.getByRole("button",{name:"Choose or add a resource: ABCD-123"}));
+  expect(onResolve).toHaveBeenCalledWith(task.id);
+ });
  it("keeps the visible time stable during polling and advances it on actual progress",()=>{
   const {container,rerender}=render(<TaskCard task={task} onOpen={vi.fn()} />);
   const time=()=>container.querySelector("time")!;

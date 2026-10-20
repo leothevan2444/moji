@@ -7,9 +7,12 @@ import (
 	"fmt"
 	"io"
 	"strconv"
+
+	"github.com/99designs/gqlgen/graphql"
 )
 
 type AutomationSettings struct {
+	SourcingRetryIntervalHours      int `json:"sourcingRetryIntervalHours"`
 	TaskProgressSyncIntervalSeconds int `json:"taskProgressSyncIntervalSeconds"`
 	SubscriptionPollIntervalHours   int `json:"subscriptionPollIntervalHours"`
 	// Endpoint URLs in the user-defined order used for subscription lookups. Endpoints not listed here are still queried, in their Stash order, appended after the listed ones. An empty list means use Stash's order as-is.
@@ -413,14 +416,16 @@ type QueuePerformerScenesSummary struct {
 }
 
 type ResolveBlockedSourcingTaskInput struct {
-	TorrentURL string  `json:"torrentUrl"`
-	Title      *string `json:"title,omitempty"`
-	Tracker    *string `json:"tracker,omitempty"`
-	InfoHash   *string `json:"infoHash,omitempty"`
-	Size       *int64  `json:"size,omitempty"`
-	Seeders    *int    `json:"seeders,omitempty"`
-	Peers      *int    `json:"peers,omitempty"`
-	Paused     *bool   `json:"paused,omitempty"`
+	// Provide exactly one URL or uploaded torrent file.
+	TorrentURL  *string         `json:"torrentUrl,omitempty"`
+	TorrentFile *graphql.Upload `json:"torrentFile,omitempty"`
+	Title       *string         `json:"title,omitempty"`
+	Tracker     *string         `json:"tracker,omitempty"`
+	InfoHash    *string         `json:"infoHash,omitempty"`
+	Size        *int64          `json:"size,omitempty"`
+	Seeders     *int            `json:"seeders,omitempty"`
+	Peers       *int            `json:"peers,omitempty"`
+	Paused      *bool           `json:"paused,omitempty"`
 }
 
 type ServiceStatus struct {
@@ -711,6 +716,10 @@ type Task struct {
 	ContentPath       *string            `json:"contentPath,omitempty"`
 	// Time when a selected torrent was successfully submitted to the downloader; null when not recorded.
 	SourcingCompletedAt *string `json:"sourcingCompletedAt,omitempty"`
+	// Last automatic resource search; persists across restarts.
+	SourcingLastCheckedAt *string `json:"sourcingLastCheckedAt,omitempty"`
+	// Next scheduled resource search; null when no search is scheduled.
+	SourcingNextCheckAt *string `json:"sourcingNextCheckAt,omitempty"`
 	DownloadCompletedAt *string `json:"downloadCompletedAt,omitempty"`
 	// Time when all ingest steps passed verification; null when not recorded.
 	IngestCompletedAt *string `json:"ingestCompletedAt,omitempty"`
@@ -870,6 +879,7 @@ type TransferIngestSettingsInput struct {
 }
 
 type UpdateAutomationSettingsInput struct {
+	SourcingRetryIntervalHours      int                             `json:"sourcingRetryIntervalHours"`
 	TaskProgressSyncIntervalSeconds int                             `json:"taskProgressSyncIntervalSeconds"`
 	SubscriptionPollIntervalHours   int                             `json:"subscriptionPollIntervalHours"`
 	StashBoxEndpoints               []string                        `json:"stashBoxEndpoints"`

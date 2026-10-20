@@ -31,7 +31,7 @@ type Mutation {
   "Trigger Stash metadata scans for completed Moji tasks"
   triggerStashScans: [Task!]!
 
-  "Retry a blocked Moji task from its current stage"
+  "Retry a blocked task or immediately check a task waiting for resources"
   retryTask(id: ID!): Task!
 
   "Resolve a blocked sourcing task with a manually selected torrent"
@@ -43,7 +43,7 @@ type Mutation {
   "Delete a persisted Moji task record"
   deleteTask(id: ID!): Task!
 
-  "Retry blocked tasks with per-task results"
+  "Retry blocked tasks or check waiting resources with per-task results"
   retryTasks(ids: [ID!]!): TaskBatchPayload!
 
   "Advance selected tasks through transfer and Stash ingest"
@@ -87,7 +87,9 @@ input DownloadMediaInput {
 }
 
 input ResolveBlockedSourcingTaskInput {
-  torrentUrl: String!
+  "Provide exactly one URL or uploaded torrent file."
+  torrentUrl: String
+  torrentFile: Upload
   title: String
   tracker: String
   infoHash: String
@@ -96,6 +98,8 @@ input ResolveBlockedSourcingTaskInput {
   peers: Int
   paused: Boolean
 }
+
+scalar Upload
 
 enum TaskSource {
   MANUAL
@@ -126,6 +130,10 @@ type Task {
   contentPath: String
   "Time when a selected torrent was successfully submitted to the downloader; null when not recorded."
   sourcingCompletedAt: String
+  "Last automatic resource search; persists across restarts."
+  sourcingLastCheckedAt: String
+  "Next scheduled resource search; null when no search is scheduled."
+  sourcingNextCheckAt: String
   downloadCompletedAt: String
   "Time when all ingest steps passed verification; null when not recorded."
   ingestCompletedAt: String

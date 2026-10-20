@@ -24,6 +24,7 @@ const (
 
 const (
 	TaskStageErrorSearch              = "SEARCH_ERROR"
+	TaskStageErrorSourcingRequest     = "SOURCING_REQUEST_INVALID"
 	TaskStageErrorNoCandidate         = "NO_CANDIDATE"
 	TaskStageErrorNoDownloadCandidate = "NO_DOWNLOADABLE_CANDIDATE"
 	TaskStageErrorTorrentSubmit       = "TORRENT_SUBMIT_FAILED"
@@ -127,6 +128,9 @@ func setTaskStage(task *Task, stage TaskStage, status TaskStageStatus) {
 	}
 	task.Stage = normalizeTaskStage(stage)
 	task.StageStatus = normalizeTaskStageStatus(status)
+	if task.Stage != TaskStageSourcing {
+		task.SourcingNextCheckAt = nil
+	}
 	if task.Stage == TaskStageSourcing {
 		task.SourcingCompletedAt = nil
 	}

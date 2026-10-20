@@ -281,11 +281,22 @@ func (s StashConfig) GraphQLEndpoint() string {
 }
 
 type AutomationConfig struct {
+	SourcingRetryIntervalHours      int                             `yaml:"sourcing_retry_interval_hours"`
 	TaskProgressSyncIntervalSeconds int                             `yaml:"task_progress_sync_interval_seconds"`
 	SubscriptionPollIntervalHours   int                             `yaml:"subscription_poll_interval_hours"`
 	StashBoxEndpoints               []string                        `yaml:"selected_stash_box_endpoints"`
 	SubscriptionReleasePolicy       SubscriptionReleasePolicyConfig `yaml:"subscription_release_policy"`
 	TorrentSelection                TorrentSelectionConfig          `yaml:"torrent_selection"`
+}
+
+func (a AutomationConfig) EffectiveSourcingRetryIntervalHours() int {
+	if a.SourcingRetryIntervalHours <= 0 {
+		return 6
+	}
+	if a.SourcingRetryIntervalHours > 168 {
+		return 168
+	}
+	return a.SourcingRetryIntervalHours
 }
 
 type SubscriptionReleaseBehavior string
