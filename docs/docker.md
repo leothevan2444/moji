@@ -1,16 +1,20 @@
 # Docker packaging
 
-The repository root `VERSION` is the only release version source. Change that
-file and rebuild to release a new version. Go embeds it at compile time, including
-plain `go run` and `go build`; Vite reads it for the frontend bundle and emits
-`web/dist/version.json`. The private npm package and lockfile do not carry an
-independent application version.
+Git tags are the only release version source. A clean checkout with a single
+release tag such as `v0.2.0` builds version `0.2.0`; `v0.3.0-rc.1` builds
+`0.3.0-rc.1`. Other commits use `dev-<12-character-commit>`, with `-dirty` appended
+for tracked changes or untracked files. Ignored build output and local data do
+not affect the version. Release tags must follow SemVer without `+metadata` and
+fit Docker's 128-character tag limit. Invalid or ambiguous `v*` tags fail the
+build. Use one release tag per commit.
 
-Make and `docker/compose.sh` read `VERSION` for the image tag and Docker build
-argument. Docker checks that argument against the embedded source file before
-building, and uses it for the OCI version label. There is no hard-coded Docker
-or Compose release default, and inherited version overrides are ignored by the
-Makefile and Compose wrapper.
+Make, Vite and `docker/compose.sh` resolve the version with `scripts/version.sh`.
+Make and Compose ignore inherited version overrides. Docker receives the resolved
+version through the required `VERSION` build argument, injects it into the Go
+binary and frontend build, and uses it for the OCI version label. Git metadata
+is not sent in the Docker context and Git is not needed in the runtime image.
+The private npm package and lockfile have no independent application version.
+Plain `go build`/`go run` produce `dev`; Make builds inject the Git-derived version.
 
 The image builds the React UI and Go binary in separate stages. Its Debian
 runtime installs the distribution's `ffmpeg` package, which includes both
@@ -24,7 +28,7 @@ From the repository root:
 
 ```sh
 make docker-build
-version=$(cat VERSION)
+version=$(sh scripts/version.sh)
 docker run --rm "moji:$version" --version
 docker run --rm --entrypoint ffmpeg "moji:$version" -version
 docker run --rm --entrypoint ffprobe "moji:$version" -version
@@ -34,13 +38,15 @@ make docker-test
 
 `docker-test` checks the non-root user, real two-part FFmpeg assembly, HTTP
 health, built UI, frontend and GraphQL versions, and persistent data across container replacement.
-It creates and removes its own container and volume. CI runs this same check.
+It creates and removes its own container and volume. CI runs this same check
+and verifies the OCI version label.
 
 The binary's `--version`, frontend bundle, GraphQL `version`, image tag and OCI
-version label all use the value in `VERSION`. `make docker-build` also records the
+version label all use the value derived from Git. `make docker-build` also records the
 source commit in the OCI revision label. Local builds receive a `moji:<version>`
 tag; no registry upload is performed. For a direct Docker build, supply
-`--build-arg VERSION="$(cat VERSION)"` and tag it with that same value.
+`--build-arg VERSION="$(sh scripts/version.sh)"` and
+`--build-arg VCS_REF="$(git rev-parse HEAD)"`, and tag it with the same version.
 FFmpeg's exact package version is determined at image build time
 and can be inspected with the commands above. Base-image tags and Debian package
 updates mean rebuilding an application version is not byte-for-byte reproducible.
@@ -78,10 +84,27 @@ write permission to the downloads directory. Use absolute host paths for
 existing downloads and library directories.
 
 Use `docker/compose.sh` for Compose commands, such as `./docker/compose.sh logs`
-and `./docker/compose.sh down`. It reads the release version from the repository
-regardless of the working directory; do not maintain `MOJI_VERSION` in `.env`.
-After changing `VERSION`, restart development servers or rebuild production
-artifacts to pick up the new embedded version.
+and `./docker/compose.sh down`. It resolves the Git version and revision from the
+repository regardless of the working directory; do not maintain `MOJI_VERSION`
+or `MOJI_VCS_REF` in `.env`. Keep the same checkout while operating a deployment.
+After checking out another revision, restart development servers or rebuild
+production artifacts to pick up the new compiled version.
+
+## Automatic publishing
+
+Push a `v*` release tag after committing the source changes; no version file
+needs updating. CI fetches tags and runs all Go, frontend, visual and Docker
+smoke checks. Its publish job then calls `.github/workflows/docker-publish.yml`
+to build and push `linux/amd64` and `linux/arm64` images. The version must match
+the triggering tag, and invalid or ambiguous tags stop publishing.
+
+Configure the repository variable `DOCKERHUB_USERNAME` and the secret
+`DOCKERHUB_TOKEN` with permission to push `<username>/moji`. Stable tags publish
+the version and update `latest`. Prereleases publish their version without
+updating `latest`. Successful `main` pushes update `edge`; every published image
+also gets a `sha-<commit>` tag. To retry manually, run the CI workflow on `main`
+or a release tag; publication still waits for its tests. `make docker-build`
+and Compose continue to build locally and do not push images.
 
 ## Persistent data and media paths
 

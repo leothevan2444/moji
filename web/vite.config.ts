@@ -1,9 +1,14 @@
 import { defineConfig, loadEnv } from "vite";
 import react from "@vitejs/plugin-react";
 import { configDefaults } from "vitest/config";
-import { readFileSync } from "node:fs";
+import { execFileSync } from "node:child_process";
+import { fileURLToPath } from "node:url";
 
-const version = readFileSync(new URL("../VERSION", import.meta.url), "utf8").trim();
+// Docker receives the Git-derived version as a build argument, without .git.
+const version = process.env.MOJI_BUILD_VERSION?.trim() || execFileSync(
+  "sh", [fileURLToPath(new URL("../scripts/version.sh", import.meta.url))],
+  { encoding: "utf8" },
+).trim();
 
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), "");

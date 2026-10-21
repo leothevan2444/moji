@@ -1,11 +1,12 @@
 services:
   moji:
-    image: moji:${MOJI_VERSION:?Use ./docker/compose.sh to load VERSION}
+    image: moji:${MOJI_VERSION:?Use ./docker/compose.sh to derive the Git version}
     build:
       context: ..
       dockerfile: Dockerfile
       args:
-        VERSION: ${MOJI_VERSION:?Use ./docker/compose.sh to load VERSION}
+        VERSION: ${MOJI_VERSION:?Use ./docker/compose.sh to derive the Git version}
+        VCS_REF: ${MOJI_VCS_REF:?Use ./docker/compose.sh to load the Git revision}
     user: "${MOJI_UID:-1000}:${MOJI_GID:-1000}"
     ports:
       - "${MOJI_BIND_ADDRESS:-127.0.0.1}:${MOJI_PORT:-10000}:10000"

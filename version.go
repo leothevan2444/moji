@@ -1,16 +1,10 @@
-// Package moji exposes the application release embedded from VERSION.
+// Package moji exposes the application version set at build time from Git tags.
 package moji
 
-import (
-	_ "embed"
-	"strings"
-)
+// Make and Docker set this with -ldflags -X. Plain go build/run stays a dev build.
+var releaseVersion = "dev"
 
-//go:embed VERSION
-var releaseVersion string
-
-// Version returns the release compiled into this binary, independently of its
-// working directory and without requiring build flags or a runtime VERSION file.
+// Version returns the compiled version without requiring Git at runtime.
 func Version() string {
-	return strings.TrimSpace(releaseVersion)
+	return releaseVersion
 }

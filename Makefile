@@ -2,7 +2,11 @@
 GO ?= go
 GOCACHE ?= /tmp/moji-go-cache
 GO_RUN = GOCACHE=$(GOCACHE) $(GO) run
-override VERSION := $(strip $(shell cat VERSION))
+override VERSION := $(strip $(shell sh scripts/version.sh))
+ifeq ($(VERSION),)
+$(error Could not derive version from Git; see scripts/version.sh)
+endif
+VERSION_LDFLAGS = -X github.com/leothevan2444/moji.releaseVersion=$(VERSION)
 IMAGE ?= moji
 
 # Generate files
@@ -41,11 +45,11 @@ clean-generated:
 # Builds the moji binary
 .PHONY: moji
 moji:
-	GOCACHE=$(GOCACHE) $(GO) build -trimpath ./cmd/moji
+	GOCACHE=$(GOCACHE) $(GO) build -trimpath -ldflags "$(VERSION_LDFLAGS)" ./cmd/moji
 
 .PHONY: moji-run
 moji-run:
-	go run ./cmd/moji
+	$(GO_RUN) -ldflags "$(VERSION_LDFLAGS)" ./cmd/moji
 
 .PHONY: web-install
 web-install:

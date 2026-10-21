@@ -1,7 +1,7 @@
 #!/bin/sh
 set -eu
 
-version=$(cat "$(dirname "$0")/../VERSION")
+version=$(sh "$(dirname "$0")/../scripts/version.sh")
 image=${1:-moji:$version}
 name="moji-smoke-$$"
 volume="$name-data"
@@ -15,6 +15,7 @@ trap 'exit 1' HUP INT TERM
 
 # Exercise the exact FFmpeg binaries and shared libraries shipped in the image.
 test "$(docker run --rm "$image" --version)" = "moji $version"
+test "$(docker image inspect "$image" --format '{{index .Config.Labels "org.opencontainers.image.version"}}')" = "$version"
 docker run --rm --entrypoint sh "$image" -ec '
     test "$(id -u)" != 0
     ffprobe -version >/dev/null

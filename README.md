@@ -73,7 +73,7 @@ the Docker host only. To allow access from your local network, add
 `MOJI_BIND_ADDRESS=0.0.0.0` to `docker/.env` and recreate the container.
 
 Use the wrapper for subsequent Compose commands so the image version is always
-read from the repository's [VERSION](VERSION):
+derived from the checked-out Git revision:
 
 ```sh
 ./docker/compose.sh ps
@@ -127,13 +127,35 @@ permissions, and detailed path mapping.
 
 ## Versions and upgrades
 
-The root [VERSION](VERSION) is the only application version source. Go embeds it
-at compile time, Vite uses it for the frontend bundle and `web/dist/version.json`,
-and the Docker build uses it for the image tag and OCI version label. The private
-web package does not maintain a separate release version.
+Git tags are the only release version source; there is no `VERSION` file to
+update. A clean checkout tagged `v0.2.0` builds version `0.2.0`. Prereleases such
+as `v0.3.0-rc.1` build version `0.3.0-rc.1`. Untagged commits and modified working
+trees build `dev-<commit>` and `dev-<commit>-dirty`, respectively.
 
-When preparing a release, change `VERSION` and rebuild. Development servers must
-be restarted to pick up a changed version. Check the running version with:
+[scripts/version.sh](scripts/version.sh) resolves this version for Make, Vite,
+Docker and Compose. Make and Docker inject it into Go at link time; Vite uses it
+for the frontend bundle and `web/dist/version.json`. The image's OCI version
+label uses the same value. Plain `go build` and `go run` without the Makefile
+produce version `dev`; use `make moji` or `make moji-run` for Git-derived versions.
+Restart development servers or rebuild artifacts after changing Git revisions.
+
+To publish a release, commit the changes, create one release tag on that commit,
+and push it:
+
+```sh
+git tag -a v0.2.0 -m "Release 0.2.0"
+git push origin v0.2.0
+```
+
+CI runs the Go, frontend, visual and Docker smoke tests before publishing
+`linux/amd64` and `linux/arm64` images to Docker Hub. Configure the repository
+variable `DOCKERHUB_USERNAME` and secret `DOCKERHUB_TOKEN` (with push access).
+Stable release tags publish `<username>/moji:0.2.0` and update `latest`;
+prereleases do not update `latest`. Successful `main` builds update `edge`.
+All published builds also receive a `sha-<commit>` tag. Release tags must use
+`vMAJOR.MINOR.PATCH` with an optional SemVer prerelease suffix, without `+metadata`.
+
+Check the running version with:
 
 ```sh
 ./docker/compose.sh exec moji moji --version

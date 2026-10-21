@@ -1,11 +1,11 @@
 # syntax=docker/dockerfile:1
 FROM node:22-bookworm-slim AS web
+ARG VERSION
 WORKDIR /src/web
 COPY web/package.json web/package-lock.json ./
 RUN npm ci
-COPY VERSION /src/VERSION
 COPY web/ ./
-RUN npm run build
+RUN test -n "$VERSION" && MOJI_BUILD_VERSION="$VERSION" npm run build
 
 FROM golang:1.26-bookworm AS backend
 WORKDIR /src
@@ -15,12 +15,11 @@ RUN go mod download
 COPY cmd/ ./cmd/
 COPY internal/ ./internal/
 COPY pkg/ ./pkg/
-COPY VERSION version.go ./
+COPY version.go ./
 ARG VERSION
-# Build args supply Docker labels; the embedded file supplies the binary version.
-# Use make docker-build or docker/compose.sh to read the argument from VERSION.
-RUN test "$VERSION" = "$(cat VERSION)" \
-    && go build -trimpath -ldflags "-s -w" -o /out/moji ./cmd/moji \
+# Make, Compose and CI resolve VERSION from Git before sending the build context.
+RUN test -n "$VERSION" \
+    && go build -trimpath -ldflags "-s -w -X github.com/leothevan2444/moji.releaseVersion=$VERSION" -o /out/moji ./cmd/moji \
     && test "$(/out/moji --version)" = "moji $VERSION"
 
 FROM debian:bookworm-slim AS runtime

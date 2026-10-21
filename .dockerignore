@@ -1,7 +1,6 @@
 # Allow only build inputs: local credentials, databases and media never enter context.
 **
 !Dockerfile
-!VERSION
 !version.go
 !go.mod
 !go.sum
