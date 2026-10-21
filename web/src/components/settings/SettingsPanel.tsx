@@ -74,6 +74,7 @@ import { LogEventStream } from "./LogEventStream";
 import { useTranslation } from "react-i18next";
 import type { TFunction } from "i18next";
 import { useSettingsDraft } from "./SettingsDraftStore";
+import { SettingsLoading } from "./SettingsTabCommon";
 
 type RuntimeSettings = Settings;
 type RuntimeSettingsStatus = SettingsStatus;
@@ -882,19 +883,7 @@ export function AutomationSettingsEditor({
   const totalRuleCount = fastRules.length + fileInspectionRules.length;
 
   if (!runtimeSettings || !runtimeStatus) {
-    return (
-      <article className="drawer-card">
-        <div className="drawer-card__head">
-          <h3>{t(`settings.tabs.${settingsTab}`)}</h3>
-        </div>
-        <dl className="settings-grid">
-          <div>
-            <dt>{t("settings.state")}</dt>
-            <dd>{t("settings.waiting")}</dd>
-          </div>
-        </dl>
-      </article>
-    );
+    return <SettingsLoading title={t(`settings.tabs.${settingsTab}`)} />;
   }
 
   if (settingsTab === "connections") {

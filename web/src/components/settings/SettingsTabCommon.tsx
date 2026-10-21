@@ -5,10 +5,11 @@ import { faEyeSlash } from "@fortawesome/free-solid-svg-icons/faEyeSlash";
 import { useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { describeQueryError } from "../../services/queryError";
+import "../../styles/settings-shell.scss";
 
 export function SettingsLoading({ title }: { title: string }) {
   const { t } = useTranslation();
-  return <article className="drawer-card"><div className="drawer-card__head"><h3>{title}</h3></div><p>{t("settings.waiting")}</p></article>;
+  return <article className="drawer-card"><div className="drawer-card__head"><h3>{title}</h3></div><div className="settings-loading" role="status" aria-label={t("common.loading")}><span className="settings-loading__spinner" aria-hidden="true" /></div></article>;
 }
 
 export function SettingsError({ title, error, onRetry }: { title: string; error: unknown; onRetry: () => void }) {
