@@ -14,7 +14,7 @@ interface IngestDraft { keepSubtitles: boolean; qbRoot: string; mojiDownloadsRoo
 export default function IngestSettingsTab() {
   const { t } = useTranslation();
   const { pushToast } = useOutletContext<AppOutletContext>();
-  const [{ data, fetching, error }, refresh] = useQuery({ query: IngestSettingsTabDocument, requestPolicy: "cache-first" });
+  const [{ data, fetching, error }, refresh] = useQuery({ query: IngestSettingsTabDocument });
   const [{ fetching: saving }, updateIngest] = useMutation(UpdateIngestSettingsDocumentDocument);
   const [pendingDefault, setPendingDefault] = useState<string | null>(null);
   const initial = useMemo<IngestDraft>(() => ({
@@ -35,6 +35,7 @@ export default function IngestSettingsTab() {
     if (result.error) { pushToast("tone-danger", describeQueryError(result.error)); return; }
     const saved = { ...form, qbRoot };
     markSaved(saved);
+    refresh();
     setPendingDefault(null);
     pushToast("tone-success", t("settings.ingest.saved"));
   };

@@ -15,7 +15,7 @@ interface SystemDraft { taskDeletePolicy: TaskDeletePolicy; enabled: boolean; ma
 export default function SystemSettingsTab() {
   const { t } = useTranslation();
   const { pushToast } = useOutletContext<AppOutletContext>();
-  const [{ data, fetching, error }, refresh] = useQuery({ query: SystemSettingsTabDocument, requestPolicy: "cache-first" });
+  const [{ data, fetching, error }, refresh] = useQuery({ query: SystemSettingsTabDocument });
   const [{ fetching: saving }, updateSystem] = useMutation(UpdateSystemSettingsDocumentDocument);
   const [{ fetching: clearing }, clearImageCache] = useMutation(ClearImageCacheDocumentDocument);
   const [{ fetching: clearingStashBox }, clearStashBoxCache] = useMutation(ClearStashBoxDataCacheDocumentDocument);
@@ -34,6 +34,7 @@ export default function SystemSettingsTab() {
     const result = await updateSystem({ input: { taskDeletePolicy: form.taskDeletePolicy, imageCache: { enabled: form.enabled, maxSizeMb: Number(form.maxSizeMb), retentionDays: Number(form.retentionDays) }, stashBoxDataCache: { ttlHours: Number(form.stashBoxTtlHours) } } });
     if (result.error) { pushToast("tone-danger", describeQueryError(result.error)); return; }
     markSaved(form); pushToast("tone-success", t("systemUi.saved"));
+    refresh();
   };
   const clearStashBox = async () => {
     const result = await clearStashBoxCache({});
@@ -45,6 +46,7 @@ export default function SystemSettingsTab() {
     const result = await clearImageCache({});
     if (result.error) { pushToast("tone-danger", describeQueryError(result.error)); return; }
     setConfirming(false); pushToast("tone-success", released ? t("systemUi.clearedBytes", { size: formatBytes(released) }) : t("systemUi.cleared"));
+    refresh();
   };
 
   return <SettingsCard title={t("settings.tabs.system")}><form className="settings-form" onSubmit={(event) => void save(event)}>

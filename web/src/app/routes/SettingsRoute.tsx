@@ -1,6 +1,8 @@
 import { Component as ReactComponent, lazy, Suspense, type ErrorInfo, type ReactNode } from "react";
 import { Navigate, useNavigate, useParams } from "react-router";
 import { useTranslation } from "react-i18next";
+import { Provider } from "urql";
+import { settingsClient } from "../../graphql/client";
 import { LocaleSelect } from "../../components/common/LocaleSelect";
 import { SettingsDraftProvider } from "../../components/settings/SettingsDraftStore";
 import { SETTINGS_TABS } from "../../constants";
@@ -39,7 +41,7 @@ export function Component() {
     <div className="drawer-stack">
       <LocaleSelect />
       <div className="settings-tabs">{SETTINGS_TABS.map((tab) => <button key={tab} type="button" className={`chip ${active === tab ? "is-active" : ""}`} onClick={() => navigate(`/settings/${tab}`)}>{t(`settings.tabs.${tab}`)}</button>)}</div>
-      <SettingsDraftProvider><TabErrorBoundary resetKey={active} fallback={failed}><Suspense fallback={loading}><ActiveTab /></Suspense></TabErrorBoundary></SettingsDraftProvider>
+      <Provider value={settingsClient}><SettingsDraftProvider><TabErrorBoundary resetKey={active} fallback={failed}><Suspense fallback={loading}><ActiveTab /></Suspense></TabErrorBoundary></SettingsDraftProvider></Provider>
     </div>
   </section>;
 }

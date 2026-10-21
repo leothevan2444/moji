@@ -25,8 +25,8 @@ interface ConnectionsDraft {
 export default function ConnectionsSettingsTab() {
   const { t } = useTranslation();
   const { pushToast } = useOutletContext<AppOutletContext>();
-  const [{ data, fetching, error }, refreshSettings] = useQuery({ query: ConnectionsSettingsDocument, requestPolicy: "cache-first" });
-  const [{ data: statusData, error: statusError }, refreshStatus] = useQuery({ query: ConnectionsStatusDocument, requestPolicy: "cache-and-network" });
+  const [{ data, fetching, error }, refreshSettings] = useQuery({ query: ConnectionsSettingsDocument });
+  const [{ data: statusData, error: statusError }, refreshStatus] = useQuery({ query: ConnectionsStatusDocument });
   useServiceStatusEvents({ onRefresh: () => refreshStatus({ requestPolicy: "network-only" }) });
   const [, updateStash] = useMutation(UpdateStashSettingsDocumentDocument);
   const [, updateJackett] = useMutation(UpdateJackettSettingsDocumentDocument);
@@ -56,6 +56,8 @@ export default function ConnectionsSettingsTab() {
         : await updateQBittorrent({ input: { ...form.qbittorrent, url: form.qbittorrent.url.trim(), username: form.qbittorrent.username.trim(), password: form.qbittorrent.password.trim(), defaultSavePath: form.qbittorrent.defaultSavePath.trim(), category: form.qbittorrent.category.trim(), tags: form.qbittorrent.tags.trim() } });
     if (result.error) { pushToast("tone-danger", describeQueryError(result.error)); return; }
     markSaved(form);
+    refreshSettings();
+    refreshStatus();
     pushToast("tone-success", t("settings.connections.saved", { service: service === "stash" ? "Stash" : service === "jackett" ? "Jackett" : "qBittorrent" }));
   };
 

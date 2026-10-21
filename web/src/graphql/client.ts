@@ -47,23 +47,30 @@ const wsClient = createWSClient({
   }
 });
 
+const realtimeExchange = subscriptionExchange({
+  forwardSubscription(request) {
+    if (!request.query) throw new Error("GraphQL subscription query is missing");
+    const input = { ...request, query: request.query };
+    return {
+      subscribe(sink) {
+        const dispose = wsClient.subscribe(input, sink);
+        return { unsubscribe: dispose };
+      }
+    };
+  }
+});
+
 export const client = createClient({
   url: "/graphql",
   preferGetMethod: false,
-  exchanges: [
-    graphcacheExchange,
-    subscriptionExchange({
-      forwardSubscription(request) {
-        if (!request.query) throw new Error("GraphQL subscription query is missing");
-        const input = { ...request, query: request.query };
-        return {
-          subscribe(sink) {
-            const dispose = wsClient.subscribe(input, sink);
-            return { unsubscribe: dispose };
-          }
-        };
-      }
-    }),
-    fetchExchange
-  ]
+  exchanges: [graphcacheExchange, realtimeExchange, fetchExchange]
+});
+
+// Settings always read from the server, including lists and status queries.
+// Keep subscriptions available without reading or writing the shared cache.
+export const settingsClient = createClient({
+  url: "/graphql",
+  preferGetMethod: false,
+  requestPolicy: "network-only",
+  exchanges: [realtimeExchange, fetchExchange]
 });

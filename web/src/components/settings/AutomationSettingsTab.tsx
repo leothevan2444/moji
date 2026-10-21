@@ -10,7 +10,7 @@ import "../../styles/settings.scss";
 export default function AutomationSettingsTab() {
   const { t } = useTranslation();
   const { pushToast } = useOutletContext<AppOutletContext>();
-  const [{ data, fetching, error }, refresh] = useQuery({ query: AutomationSettingsTabDocument, requestPolicy: "cache-first" });
+  const [{ data, fetching, error }, refresh] = useQuery({ query: AutomationSettingsTabDocument });
   if (fetching && !data) return <SettingsLoading title={t("settings.tabs.automation")} />;
   if (error && !data) return <SettingsError title={t("settings.tabs.automation")} error={error} onRetry={() => refresh({ requestPolicy: "network-only" })} />;
   if (!data) return null;
