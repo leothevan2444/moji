@@ -1,4 +1,5 @@
-import { expect, test, type Page } from "@playwright/test";
+import { expect, type Page } from "@playwright/test";
+import { test } from "./fixtures";
 
 const routes = [
   ["home", "/"],
@@ -10,9 +11,15 @@ const routes = [
 
 async function prepare(page: Page, locale: "zh-CN" | "en") {
   await page.addInitScript((value) => localStorage.setItem("moji:locale", value), locale);
-  await page.route("**/graphql", async (route) => {
-    await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ data: {} }) });
-  });
+}
+
+async function expectReady(page: Page) {
+  await expect(page.locator(".app-shell main .section-band").first()).toBeVisible();
+  await expect(page.locator(".skeleton, .settings-loading, .is-spinning")).toHaveCount(0);
+  await page.evaluate(() => document.fonts.ready);
+  await expect.poll(() => page.evaluate(() =>
+    document.documentElement.scrollWidth <= document.documentElement.clientWidth,
+  ), { message: "Page must fit the viewport without horizontal scrolling" }).toBe(true);
 }
 
 for (const locale of ["zh-CN", "en"] as const) {
@@ -21,8 +28,9 @@ for (const locale of ["zh-CN", "en"] as const) {
       await prepare(page, locale);
       await page.goto(path);
       await expect(page.locator("html")).toHaveAttribute("lang", locale);
-      await expect(page.locator("body")).toBeVisible();
-      expect(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBe(true);
+      await expectReady(page);
+      if (name === "home") await expect(page.locator(".card-grid--deps .service-card--detailed")).toHaveCount(3);
+      if (name === "settings") await expect(page.locator(".settings-form")).toBeVisible();
       await expect(page).toHaveScreenshot(`${locale}-${name}.png`, { fullPage: true });
     });
   }
@@ -34,7 +42,7 @@ for (const locale of ["qps-ploc", "ar-XB"] as const) {
     await page.goto(`/discover?__locale=${locale}`);
     await expect(page.locator("html")).toHaveAttribute("lang", locale);
     await expect(page.locator("html")).toHaveAttribute("dir", locale === "ar-XB" ? "rtl" : "ltr");
-    expect(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBe(true);
+    await expectReady(page);
     await expect(page).toHaveScreenshot(`${locale}-discover.png`, { fullPage: true });
   });
 }

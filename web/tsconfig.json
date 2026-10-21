@@ -16,5 +16,5 @@
     "noEmit": true,
     "jsx": "react-jsx"
   },
-  "include": ["src", "codegen.ts"]
+  "include": ["src", "codegen.ts", "playwright.config.ts", "tests/visual"]
 }

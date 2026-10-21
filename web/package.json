@@ -13,7 +13,8 @@
     "codegen": "graphql-codegen --config codegen.ts",
     "i18n:export": "node scripts/export-locales.mjs",
     "test:visual": "playwright test",
-    "test:visual:update": "playwright test --update-snapshots"
+    "test:visual:update": "playwright test --update-snapshots=all",
+    "test:visual:docker": "sh scripts/test-visual-docker.sh"
   },
   "dependencies": {
     "@fortawesome/free-solid-svg-icons": "^7.2.0",
@@ -32,7 +33,7 @@
   "devDependencies": {
     "@graphql-codegen/cli": "^5.0.5",
     "@graphql-codegen/client-preset": "^4.8.3",
-    "@playwright/test": "^1.61.1",
+    "@playwright/test": "1.61.1",
     "@testing-library/react": "^16.3.2",
     "@testing-library/user-event": "^14.6.1",
     "@types/react": "^19.1.8",

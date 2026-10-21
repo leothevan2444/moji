@@ -201,6 +201,7 @@ go test ./...
 npm --prefix web test
 npm --prefix web run i18n:check
 npm --prefix web run build
+npm --prefix web run test:visual:docker
 make test-media
 make docker-build
 make docker-test
@@ -214,6 +215,24 @@ persistence across container replacement; it cleans up its test resources.
 After changing Moji's GraphQL schema, run `make generate-moji-graphql` to update
 the Go and frontend bindings. CI covers backend tests, frontend tests,
 internationalization, the web build, visual regression, and Docker smoke tests.
+
+Visual tests use the pinned Playwright Docker image from CI so browser binaries,
+fonts (including Chinese glyphs), timezone and rendering libraries match the
+reviewed baselines. Install frontend dependencies with `npm --prefix web ci`
+before running the Docker wrapper on Linux. After an intentional UI change,
+regenerate screenshots in that same environment and inspect the changed images:
+
+```sh
+npm --prefix web run test:visual:docker -- --update-snapshots=all
+npm --prefix web run test:visual:docker
+```
+
+Keep the exact `@playwright/test` version, CI image and Docker wrapper image in
+sync when upgrading Playwright. Visual fixtures execute queries against Moji's
+GraphQL schema, fail on browser or fixture errors, and wait for loaded content
+before taking screenshots. CI saves failing screenshots and traces in the
+`visual-test-results` artifact; do not raise screenshot tolerances to accept
+unexpected differences.
 
 ### Internationalization
 

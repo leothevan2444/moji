@@ -8,6 +8,10 @@ on:
 jobs:
   web:
     runs-on: ubuntu-latest
+    # Keep browser binaries, fonts and system libraries identical to the baselines.
+    container:
+      image: mcr.microsoft.com/playwright:v1.61.1-noble
+      options: --ipc=host
     defaults:
       run:
         working-directory: web
@@ -24,8 +28,14 @@ jobs:
       - run: npm run i18n:check
       - run: npm test
       - run: npm run build
-      - run: npx playwright install --with-deps chromium
       - run: npm run test:visual
+      - name: Upload visual test diagnostics
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: visual-test-results
+          path: web/test-results/
+          retention-days: 7
 
   go:
     runs-on: ubuntu-latest
