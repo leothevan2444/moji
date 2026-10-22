@@ -24,7 +24,7 @@ const task = {
 function renderPage(overrides: Partial<React.ComponentProps<typeof TasksPage>> = {}) {
   const callbacks = {
     onSearchChange: vi.fn(), onStatusChange: vi.fn(), onSortChange: vi.fn(), onToggleGroup: vi.fn(),
-    onRefresh: vi.fn(), onOpenTask: vi.fn(), onRetryTask: vi.fn(),
+    onRefresh: vi.fn(), onOpenQueue: vi.fn(), onOpenTask: vi.fn(), onRetryTask: vi.fn(),
     onResolveTask: vi.fn(), onDeleteTask: vi.fn(), onToggleTaskSelection: vi.fn(), onSelectVisibleTasks: vi.fn(),
     onClearTaskSelection: vi.fn(), onBatchRetry: vi.fn(), onBatchDelete: vi.fn()
   };
@@ -93,6 +93,12 @@ describe("TasksPage task controls", () => {
     expect(screen.queryByRole("button", { name: /TASK-1.*Open details/i })).toBeNull();
     const options = Array.from((screen.getByRole("combobox", { name: "Task category" }) as HTMLSelectElement).options).map(option => option.textContent);
     expect(options).toEqual(["All", "Needs attention", "Waiting for resources", "In progress", "Completed"]);
+  });
+
+  it("opens a queue for all attention tasks even when the list uses another category", async () => {
+    const callbacks = renderPage({ taskStatus: "completed", tasks: [{ ...task, stageStatus: TaskStageStatus.Blocked }] });
+    await userEvent.setup().click(screen.getByRole("button", { name: "Open task workbench (1 tasks)" }));
+    expect(callbacks.onOpenQueue).toHaveBeenCalledTimes(1);
   });
 
   it("finds tasks by torrent name while displaying the code as their title", () => {

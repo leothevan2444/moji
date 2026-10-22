@@ -1,4 +1,28 @@
 {
+  "taskProcessingQueue": {
+    "currentTask": "当前任务",
+    "advancing": "此任务已处理，正在切换…",
+    "title": "任务处理台",
+    "open": "打开任务处理台（{{count}} 项）",
+    "entryHelp": "依次处理全部需处理任务，不受列表筛选影响",
+    "navigation": "切换待处理任务",
+    "previous": "上一个",
+    "next": "下一个",
+    "position": "第 {{current}} / {{count}} 项",
+    "progress": "已处理 {{done}} 项 · 剩余 {{remaining}} 项",
+    "progressLabel": "总处理进度",
+    "hint": "处理成功后自动切换，未处理的任务可随时返回。",
+    "finished": "本轮任务已处理完成",
+    "finishedHelp": "可以关闭面板，返回任务列表。",
+    "empty": "暂无需处理的任务",
+    "emptyHelp": "需要确认或重试的任务会出现在这里。",
+    "retryHelp": "处理好上述问题后，点击重试即可继续任务。",
+    "noResult": "未能确认处理结果，请重试。",
+    "stillBlocked": "任务仍需要处理，请检查原因后重试。",
+    "retried": "已重新处理 {{task}}。",
+    "removeMissing": "移除此任务",
+    "errorDetails": "查看详细原因"
+  },
   "sourcingManual": {
     "intro": "候选种子会自动搜索，也可直接提供磁力链接或种子文件。",
     "candidates": "候选种子",

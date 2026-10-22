@@ -16,6 +16,7 @@ import { faRotate } from "@fortawesome/free-solid-svg-icons/faRotate";
 import { faTrashCan } from "@fortawesome/free-solid-svg-icons/faTrashCan";
 import { faXmark } from "@fortawesome/free-solid-svg-icons/faXmark";
 import { faListCheck } from "@fortawesome/free-solid-svg-icons/faListCheck";
+import { faClipboardCheck } from "@fortawesome/free-solid-svg-icons/faClipboardCheck";
 
 interface TasksPageProps {
   tasks: DashboardTask[];
@@ -36,6 +37,7 @@ interface TasksPageProps {
   onSortChange: (sort: TaskSortKey) => void;
   onToggleGroup: (group: TaskGroupKey) => void;
   onRefresh: () => void;
+  onOpenQueue: () => void;
   onOpenTask: (taskId: string) => void;
   onRetryTask: (taskId: string) => void;
   onResolveTask: (taskId: string) => void;
@@ -66,6 +68,7 @@ export function TasksPage({
   onSortChange,
   onToggleGroup,
   onRefresh,
+  onOpenQueue,
   onOpenTask,
   onRetryTask,
   onResolveTask,
@@ -178,6 +181,12 @@ export function TasksPage({
             <FontAwesomeIcon icon={faRotate} className={refreshing ? "is-spinning" : undefined} />
           </button>
         </div>
+
+        <button type="button" className="ghost-button task-queue-entry" onClick={onOpenQueue}
+          disabled={metrics.failed === 0} title={t("taskProcessingQueue.entryHelp")} aria-label={t("taskProcessingQueue.open", { count: metrics.failed })}>
+          <FontAwesomeIcon icon={faClipboardCheck} aria-hidden="true" />
+          {t("taskProcessingQueue.title")} <span>{metrics.failed}</span>
+        </button>
 
       </div>
 

@@ -22,6 +22,7 @@ const TaskDrawer = lazy(() => import("../../components/drawers/TaskDrawer").then
 const ConfirmDeleteDrawer = lazy(() => import("../../components/drawers/ConfirmDeleteDrawer").then((m) => ({ default: m.ConfirmDeleteDrawer })));
 const SourcingResolutionDrawer = lazy(() => import("../../components/drawers/SourcingResolutionDrawer").then((m) => ({ default: m.SourcingResolutionDrawer })));
 const TaskBatchResultDrawer = lazy(() => import("../../components/drawers/TaskBatchResultDrawer").then((m) => ({ default: m.TaskBatchResultDrawer })));
+const TaskProcessingQueueDrawer = lazy(() => import("../../components/drawers/TaskProcessingQueueDrawer").then(m => ({ default: m.TaskProcessingQueueDrawer })));
 
 export function taskCloseTarget(state: unknown, searchParams: URLSearchParams) {
   const background = (state as { backgroundLocation?: { pathname: string; search?: string } } | null)?.backgroundLocation;
@@ -46,6 +47,7 @@ export function Component() {
   const [selectedTaskIds, setSelectedTaskIds] = useState<string[]>([]);
   const [batchResult, setBatchResult] = useState<TaskBatchResultView | null>(null);
   const [lastRefreshedAt, setLastRefreshedAt] = useState<Date | null>(null);
+  const [queueOpen, setQueueOpen] = useState(false);
 
   const [{ data, fetching, error }, refresh] = useQuery({ query: TasksOverviewDocumentDocument, requestPolicy: "cache-and-network" });
   const [{ data: detailData, fetching: detailFetching, error: detailError }, refreshDetail] = useQuery({
@@ -139,10 +141,14 @@ export function Component() {
       onSearchChange={(q) => updateFilter({ q })} onStatusChange={(status) => updateFilter({ status })} onSortChange={(sort) => updateFilter({ sort })}
       onToggleGroup={(group) => setGroups((current) => ({ ...current, [group]: !current[group] }))}
       onRefresh={requery}
+      onOpenQueue={() => setQueueOpen(true)}
       onOpenTask={(id) => openTask(id)}
       onRetryTask={(id) => void runRetry(id)} onResolveTask={(id) => openTask(id, true)}
       onDeleteTask={(id) => setConfirmDeleteIds([id])} onToggleTaskSelection={toggleSelection} onSelectVisibleTasks={selectVisible} onClearTaskSelection={() => setSelectedTaskIds([])}
       onBatchRetry={(ids) => void runBatchRetry(ids)} onBatchDelete={setConfirmDeleteIds} />
+    {queueOpen ? <Suspense fallback={<Drawer visibleDrawer="task-queue" closing={false} title={t("taskProcessingQueue.title")} onClose={() => setQueueOpen(false)}><div className="skeleton skeleton-card" /></Drawer>}>
+      <TaskProcessingQueueDrawer tasks={tasks} onCopy={copyText} onNotify={pushToast} onClose={() => setQueueOpen(false)} />
+    </Suspense> : null}
     {taskId ? <Drawer visibleDrawer={isResolution ? "task-resolution" : "task"} closing={false} title={isResolution ? t("taskRoute.resolutionTitle", { task: activeTask ? taskSummary(activeTask) : t("taskRoute.task") }) : activeTask ? taskSummary(activeTask) : t("taskRoute.details")} onClose={closeTask}>
       <Suspense fallback={<div className="skeleton skeleton-card" />}>
         {detailFetching && !activeTask ? <p>{t("taskRoute.loading")}</p> : detailError ? <div className="empty-card"><h3>{t("taskRoute.loadFailed")}</h3><p>{describeQueryError(detailError)}</p></div> : !activeTask ? <div className="empty-card"><h3>{t("taskRoute.notFound")}</h3></div> : isResolution ?

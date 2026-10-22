@@ -1,4 +1,28 @@
 {
+  "taskProcessingQueue": {
+    "currentTask": "Current task",
+    "advancing": "Task handled. Moving on…",
+    "title": "Task workbench",
+    "open": "Open task workbench ({{count}} tasks)",
+    "entryHelp": "Review all tasks needing attention, regardless of list filters",
+    "navigation": "Review task navigation",
+    "previous": "Previous",
+    "next": "Next",
+    "position": "{{current}} of {{count}}",
+    "progress": "{{done}} handled · {{remaining}} remaining",
+    "progressLabel": "Overall progress",
+    "hint": "Resolved tasks leave the queue automatically. You can return to unfinished tasks.",
+    "finished": "This round is complete",
+    "finishedHelp": "Close this panel to return to your tasks.",
+    "empty": "No tasks need attention",
+    "emptyHelp": "Tasks that need confirmation or a retry will appear here.",
+    "retryHelp": "Resolve the issue above, then retry to continue this task.",
+    "noResult": "Could not confirm the result. Please try again.",
+    "stillBlocked": "This task still needs attention. Check the cause and try again.",
+    "retried": "Retried {{task}}.",
+    "removeMissing": "Remove task",
+    "errorDetails": "View details"
+  },
   "sourcingManual": {
     "intro": "Candidates are searched automatically. You can also provide a magnet link or torrent file.",
     "candidates": "Candidate torrents",

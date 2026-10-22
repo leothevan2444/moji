@@ -7,16 +7,19 @@ interface DrawerProps {
   visibleDrawer: Exclude<DrawerKey, null>;
   closing: boolean;
   title: string;
+  titleIcon?: ReactNode;
   onClose: () => void;
   children: ReactNode;
+  footer?: ReactNode;
+  closeDisabled?: boolean;
 }
 
-export function Drawer({ visibleDrawer, closing, title, onClose, children }: DrawerProps) {
+export function Drawer({ visibleDrawer, closing, title, titleIcon, onClose, children, footer, closeDisabled = false }: DrawerProps) {
   const { t } = useTranslation();
   const panelRef = useRef<HTMLElement>(null);
   const titleId = useId();
   useModalFocus(panelRef, onClose);
-  const isTaskDrawer = visibleDrawer === "task" || visibleDrawer === "task-resolution";
+  const isTaskDrawer = visibleDrawer === "task" || visibleDrawer === "task-resolution" || visibleDrawer === "task-queue";
   const variant = isTaskDrawer ? "task" : visibleDrawer === "confirm" ? "confirm" : "modal";
   return (
     <div
@@ -34,14 +37,15 @@ export function Drawer({ visibleDrawer, closing, title, onClose, children }: Dra
       >
         <div className="drawer__head">
           <div>
-            <h2 id={titleId}>{title}</h2>
+            <h2 id={titleId}>{titleIcon ? <span className="drawer__title-icon" aria-hidden="true">{titleIcon}</span> : null}{title}</h2>
           </div>
-          <button type="button" className="ghost-button" onClick={onClose}>
+          <button type="button" className="ghost-button" disabled={closeDisabled} onClick={onClose}>
             {t("common.close")}
           </button>
         </div>
 
         <div className="drawer-body">{children}</div>
+        {footer ? <div className="drawer__footer">{footer}</div> : null}
       </aside>
     </div>
   );

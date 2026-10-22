@@ -19,18 +19,21 @@ import { useTranslation } from "react-i18next";
 
 interface BlockedSourcingResolutionProps {
   task: DashboardTask;
-  onResolved: () => void | Promise<void>;
+  onResolved: (task: Pick<DashboardTask, "id" | "stage" | "stageStatus">) => void | Promise<void>;
   onNotify?: (tone: "tone-success" | "tone-danger", message: string) => void;
+  onBusyChange?: (busy: boolean) => void;
+  initialMagnetURL?: string;
+  onMagnetChange?: (value: string) => void;
 }
 
 type Candidate = BlockedTaskTorrentCandidatesDocumentQuery["blockedTaskTorrentCandidates"][number];
 
-export function BlockedSourcingResolution({ task, onResolved, onNotify }: BlockedSourcingResolutionProps) {
+export function BlockedSourcingResolution({ task, onResolved, onNotify, onBusyChange, initialMagnetURL = "", onMagnetChange }: BlockedSourcingResolutionProps) {
   const { t } = useTranslation();
   const headingId = useId();
   const fileInput = useRef<HTMLInputElement>(null);
   const submitting = useRef(false);
-  const [magnetURL, setMagnetURL] = useState("");
+  const [magnetURL, setMagnetURL] = useState(initialMagnetURL);
   const [resolvingKey, setResolvingKey] = useState<string | null>(null);
   const [uploadName, setUploadName] = useState("");
   const [submitError, setSubmitError] = useState("");
@@ -54,6 +57,7 @@ export function BlockedSourcingResolution({ task, onResolved, onNotify }: Blocke
   const submit = async (input: ResolveBlockedSourcingTaskInput, key: string) => {
     if (submitting.current) return;
     submitting.current = true;
+    onBusyChange?.(true);
     setResolvingKey(key);
     setSubmitError("");
     try {
@@ -67,12 +71,13 @@ export function BlockedSourcingResolution({ task, onResolved, onNotify }: Blocke
         return;
       }
       onNotify?.("tone-success", t("sourcingManual.accepted"));
-      await onResolved();
+      await onResolved(result.data.resolveBlockedSourcingTask);
     } catch (error) {
       reportError(describeQueryError(error));
     } finally {
       submitting.current = false;
       setResolvingKey(null);
+      onBusyChange?.(false);
     }
   };
 
@@ -101,7 +106,7 @@ export function BlockedSourcingResolution({ task, onResolved, onNotify }: Blocke
   return <article className="drawer-card sourcing-resolution" aria-label={t("taskExperience.actions.resolve")}>
     <p className="sourcing-resolution__intro">{t("sourcingManual.intro")}</p>
     <form className="sourcing-resolution__magnet" onSubmit={submitMagnet}>
-      <input disabled={busy} value={magnetURL} onChange={event => setMagnetURL(event.target.value)}
+      <input disabled={busy} value={magnetURL} onChange={event => { setMagnetURL(event.target.value); onMagnetChange?.(event.target.value); }}
         placeholder={t("taskUi.resolution.magnetPlaceholder")} aria-label={t("taskUi.resolution.magnetLabel")} />
       <button type="submit" className="ghost-button task-primary-action" disabled={!magnetURL.trim() || busy} aria-busy={resolvingKey === "manual-magnet"}>
         {t(resolvingKey === "manual-magnet" ? "taskUi.resolution.submitting" : "taskUi.resolution.useMagnet")}

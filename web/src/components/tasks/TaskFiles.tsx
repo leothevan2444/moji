@@ -18,18 +18,26 @@ const isVideo = (file: TaskFile) => ["MAIN", "UNKNOWN_VIDEO"].includes(file.kind
 const filename = (path: string) => path.split(/[\\/]/).pop() || path;
 const fileSize = (file: TaskFile) => Math.max(0, Number(file.size) || 0);
 
-export function TaskFiles({ task, onCopy }: { task: DashboardTask; onCopy?: (value: string, message: string) => void | Promise<void> }) {
+export function TaskFiles({ task, onCopy, initialSelection, onSelectionChange, onBusyChange, onResolved }: {
+  task: DashboardTask;
+  onCopy?: (value: string, message: string) => void | Promise<void>;
+  initialSelection?: number[];
+  onSelectionChange?: (selection: number[]) => void;
+  onBusyChange?: (busy: boolean) => void;
+  onResolved?: (task: Pick<DashboardTask, "id" | "stage" | "stageStatus">) => void;
+}) {
   const { t } = useTranslation();
   const headingId = useId();
   const files = task.files ?? [];
   const initial = useMemo(() => files.filter(file => file.selected && file.kind === "MAIN").sort((a, b) => a.part - b.part).map(file => file.index), [files]);
-  const [selected, setSelected] = useState(initial);
+  const [selected, setSelected] = useState(initialSelection ?? initial);
   const [message, setMessage] = useState("");
   const [failed, setFailed] = useState(false);
   const focusAfterUpdate = useRef<HTMLElement | null>(null);
+  const saving = useRef(false);
   const [{ fetching }, resolve] = useMutation(ResolveTaskFilesDocumentDocument);
   const signature = initial.join(",");
-  useEffect(() => { setSelected(initial); setMessage(""); setFailed(false); }, [task.id, signature]);
+  useEffect(() => { setSelected(initialSelection ?? initial); setMessage(""); setFailed(false); }, [task.id, signature]);
   useLayoutEffect(() => {
     const element = focusAfterUpdate.current;
     if (element?.isConnected) {
@@ -52,21 +60,28 @@ export function TaskFiles({ task, onCopy }: { task: DashboardTask; onCopy?: (val
     : [{ key: "included", label: t("fileList.downloads"), files: included }, { key: "skipped", label: t("mediaFiles.skipped"), files: skipped }];
   const move = (position: number, direction: number, element: HTMLElement) => {
     focusAfterUpdate.current = element;
-    setSelected(current => {
-      const next = [...current];
-      [next[position], next[position + direction]] = [next[position + direction], next[position]];
-      return next;
-    });
+    const next = [...selected];
+    [next[position], next[position + direction]] = [next[position + direction], next[position]];
+    setSelected(next);
+    onSelectionChange?.(next);
   };
   const save = async () => {
+    if (saving.current) return;
+    saving.current = true;
     setMessage("");
+    onBusyChange?.(true);
     try {
       const result = await resolve({ id: task.id, videoIndices: selected });
-      setFailed(Boolean(result.error));
-      setMessage(result.error ? describeQueryError(result.error) : t("mediaFiles.selectionSaved"));
+      const saved = result.data?.resolveTaskFiles;
+      setFailed(Boolean(result.error) || !saved?.id);
+      setMessage(result.error ? describeQueryError(result.error) : saved?.id ? t("mediaFiles.selectionSaved") : t("taskProcessingQueue.noResult"));
+      if (!result.error && saved?.id) onResolved?.(saved);
     } catch (error) {
       setFailed(true);
       setMessage(describeQueryError(error));
+    } finally {
+      saving.current = false;
+      onBusyChange?.(false);
     }
   };
 
@@ -101,7 +116,9 @@ export function TaskFiles({ task, onCopy }: { task: DashboardTask; onCopy?: (val
                   <input type="checkbox" checked={included} disabled={fetching} aria-label={name} onChange={event => {
                     focusAfterUpdate.current = event.currentTarget;
                     const checked = event.currentTarget.checked;
-                    setSelected(current => checked ? [...current, file.index] : current.filter(index => index !== file.index));
+                    const next = checked ? [...selected, file.index] : selected.filter(index => index !== file.index);
+                    setSelected(next);
+                    onSelectionChange?.(next);
                   }} />
                 </label> : <span className="task-file-row__icon"><FontAwesomeIcon icon={file.kind === "SUBTITLE" ? faClosedCaptioning : isVideo(file) ? faFileVideo : faFile} /></span>}
               </div>
