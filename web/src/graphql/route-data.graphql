@@ -24,3 +24,7 @@ query StatsPageDocument {
     failed
   }
 }
+
+query TaskProcessingState {
+  settings { automation { taskProcessingEnabled } }
+}

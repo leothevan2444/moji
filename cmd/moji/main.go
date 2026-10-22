@@ -463,10 +463,10 @@ func configureTaskStore(cfg *config.Config) (taskruntime.TaskStore, error) {
 
 func configureProgressSyncInterval(cfg *config.Config) time.Duration {
 	seconds := cfg.Automation.TaskProgressSyncIntervalSeconds
-	if seconds < 0 {
+	if !cfg.Automation.EffectiveTaskProcessingEnabled() {
 		return 0
 	}
-	if seconds == 0 {
+	if seconds <= 0 {
 		seconds = 60
 	}
 	return time.Duration(seconds) * time.Second
@@ -593,6 +593,7 @@ func buildSettingsSnapshot(cfg *config.Config, version string) *graphqlapi.Setti
 			Tags:               cfg.Connection.QBittorrent.Tags,
 		},
 		Automation: graphqlapi.AutomationSettingsSnapshot{
+			TaskProcessingEnabled:           cfg.Automation.EffectiveTaskProcessingEnabled(),
 			SourcingRetryIntervalHours:      cfg.Automation.EffectiveSourcingRetryIntervalHours(),
 			TaskProgressSyncIntervalSeconds: effectiveTaskProgressSyncIntervalSeconds(cfg),
 			SubscriptionPollIntervalHours:   effectiveSubscriptionPollIntervalHours(cfg),
@@ -718,7 +719,7 @@ func buildSettingsStatusSnapshot(cfg *config.Config, version string, downloaderE
 		},
 		Automation: graphqlapi.AutomationStatusSnapshot{
 			TaskProgressSyncIntervalSeconds: effectiveTaskProgressSyncIntervalSeconds(cfg),
-			TaskProgressSyncEnabled:         cfg.Automation.TaskProgressSyncIntervalSeconds >= 0 && downloaderEnabled,
+			TaskProgressSyncEnabled:         cfg.Automation.EffectiveTaskProcessingEnabled() && downloaderEnabled,
 			SubscriptionPollIntervalHours:   effectiveSubscriptionPollIntervalHours(cfg),
 			SubscriptionPollEnabled:         cfg.Automation.SubscriptionPollIntervalHours >= 0 && stashEnabled,
 		},
@@ -753,27 +754,52 @@ func loadStashLibraries(stashConfigured bool, stashClient *stash.Client) ([]grap
 }
 
 func startTaskSyncWorker(ctx context.Context, service graphqlapi.TaskRuntimeService, stash graphqlapi.StashService, intervalProvider func() time.Duration) {
-	if service == nil || intervalProvider == nil || intervalProvider() <= 0 {
-		if service == nil {
-			logging.Infof("runtime: task sync worker not started because task runtime service is unavailable")
-		} else {
-			logging.Infof("runtime: task sync worker disabled by sync interval")
-		}
+	if service == nil || intervalProvider == nil {
 		return
 	}
-	initial := intervalProvider()
-	logging.Infof("runtime: starting task sync worker with interval %s", initial)
-
 	go func() {
-		current := initial
-		ticker := time.NewTicker(current)
-		defer ticker.Stop()
-
+		// Keep observing configuration while paused so enabling never needs a restart.
+		check := time.NewTicker(500 * time.Millisecond)
+		defer check.Stop()
+		timer := time.NewTimer(time.Hour)
+		defer timer.Stop()
+		var tick <-chan time.Time
+		schedule := func(delay time.Duration, enabled bool) {
+			if !timer.Stop() {
+				select {
+				case <-timer.C:
+				default:
+				}
+			}
+			tick = nil
+			if enabled {
+				timer.Reset(delay)
+				tick = timer.C
+			}
+		}
+		current := intervalProvider()
+		schedule(current, current > 0)
 		for {
 			select {
 			case <-ctx.Done():
 				return
-			case <-ticker.C:
+			case <-check.C:
+				next := intervalProvider()
+				if next != current {
+					delay := next
+					if current <= 0 && next > 0 {
+						delay = 0
+					}
+					current = next
+					schedule(delay, next > 0)
+				}
+			case <-tick:
+				next := intervalProvider()
+				if next != current {
+					current = next
+					schedule(next, next > 0)
+					continue
+				}
 				syncCtx, cancel := context.WithTimeout(ctx, 30*time.Second)
 				if _, err := service.SyncProgress(syncCtx); err != nil && !errors.Is(err, context.Canceled) {
 					logging.Errorf("sync download progress: %v", err)
@@ -784,20 +810,8 @@ func startTaskSyncWorker(ctx context.Context, service graphqlapi.TaskRuntimeServ
 					}
 				}
 				cancel()
-
-				// Re-check the interval after each tick so Web UI edits to
-				// automation.taskProgressSyncIntervalSeconds take effect on the
-				// next iteration without restarting the process.
-				next := intervalProvider()
-				if next <= 0 {
-					logging.Infof("runtime: task sync worker stopping because sync interval became non-positive")
-					return
-				}
-				if next != current {
-					ticker.Reset(next)
-					current = next
-					logging.Infof("runtime: task sync worker interval changed to %s", current)
-				}
+				current = intervalProvider()
+				schedule(current, current > 0)
 			}
 		}
 	}()
@@ -1026,10 +1040,7 @@ func stashBoxCacheDatabasePath() string { return "cache/stashbox/cache.db" }
 
 func effectiveTaskProgressSyncIntervalSeconds(cfg *config.Config) int {
 	seconds := cfg.Automation.TaskProgressSyncIntervalSeconds
-	if seconds < 0 {
-		return 0
-	}
-	if seconds == 0 {
+	if seconds <= 0 {
 		return 60
 	}
 	return seconds

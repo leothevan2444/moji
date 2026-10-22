@@ -15,20 +15,18 @@ import {
 
 interface TaskDetailProps {
   task: DashboardTask;
-  pendingScan: boolean;
   pendingRetry: boolean;
   pendingDelete: boolean;
   onCopy: (value: string, successMessage: string) => void | Promise<void>;
   onResolveTask: (taskId: string) => void;
-  onScanTask: (taskId: string) => void;
   onRetryTask: (taskId: string) => void;
   onDeleteTask: (taskId: string) => void;
   onRestartTask?: (taskId: string) => void;
   pendingRestart?: boolean;
 }
 
-export function TaskDetail({ task, pendingScan, pendingRetry, pendingDelete,
-  onCopy, onResolveTask, onScanTask, onRetryTask, onDeleteTask, onRestartTask, pendingRestart
+export function TaskDetail({ task, pendingRetry, pendingDelete,
+  onCopy, onResolveTask, onRetryTask, onDeleteTask, onRestartTask, pendingRestart
 }: TaskDetailProps) {
   const { t } = useTranslation();
   const presentation = taskPresentation(task);
@@ -70,14 +68,13 @@ export function TaskDetail({ task, pendingScan, pendingRetry, pendingDelete,
     <article className="drawer-card task-detail-operations">
       <div className="drawer-card__head"><h3>{t("taskDetail.actions")}</h3></div>
       <div className="task-detail-actions" role="group" aria-label={t("taskDetail.actions")}>
-        <TaskPrimaryAction task={task} pendingScan={pendingScan} pendingRetry={pendingRetry}
-          onResolve={onResolveTask} onRetry={onRetryTask} onScan={onScanTask}
-          onFiles={() => {
+        <TaskPrimaryAction task={task} pendingRetry={pendingRetry}
+          onResolve={onResolveTask} onRetry={onRetryTask} onFiles={() => {
             filesRef.current?.scrollIntoView?.({ behavior: "smooth", block: "nearest" });
             (filesRef.current?.querySelector<HTMLInputElement>('input[type="checkbox"]:not(:disabled)') ?? filesRef.current)?.focus();
           }} />
         {onRestartTask && canRestartTaskSourcing(task) ? <button type="button" className="ghost-button"
-          disabled={pendingRestart || pendingDelete || pendingRetry || pendingScan} aria-busy={Boolean(pendingRestart)}
+          disabled={pendingRestart || pendingDelete || pendingRetry} aria-busy={Boolean(pendingRestart)}
           onClick={() => onRestartTask(task.id)}>{t(pendingRestart ? "taskRestart.pending" : "taskRestart.action")}</button> : null}
         <button type="button" className="ghost-button task-detail-actions__diagnostics"
           onClick={() => void onCopy(taskDiagnostics(task), t("taskInfo.diagnosticsCopied"))}>

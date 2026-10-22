@@ -61,6 +61,7 @@ mutation UpdateQBittorrentSettingsDocument($input: UpdateQBittorrentSettingsInpu
 mutation UpdateAutomationSettingsDocument($input: UpdateAutomationSettingsInput!) {
   updateAutomationSettings(input: $input) {
     automation {
+      taskProcessingEnabled
       taskProgressSyncIntervalSeconds
       subscriptionPollIntervalHours
       sourcingRetryIntervalHours

@@ -12,7 +12,7 @@ const tr = (key: string, options?: Record<string, unknown>) => i18n.t(key, optio
 
 export type DashboardTask = TasksOverviewDocumentQuery["tasks"][number];
 
-export type TaskGroupKey = "attention" | "active" | "ingestPending" | "completed";
+export type TaskGroupKey = "attention" | "waiting" | "active" | "completed";
 
 export type TaskFailureSummary = {
   title: string;
@@ -91,9 +91,7 @@ export function isStatus(task: DashboardTask, ...values: string[]) {
 }
 
 export function isTaskActive(task: DashboardTask) {
-  if (stageStatusValue(task) === "blocked" || stageValue(task) === "completed") return false;
-  return ["sourcing", "downloading", "transferring", "scanning"].includes(stageValue(task))
-    || Boolean(task.stashScanJobId);
+  return stageStatusValue(task) !== "blocked" && stageValue(task) !== "completed" && !isWaitingForResource(task);
 }
 
 export function isScanPending(task: DashboardTask) {
@@ -132,25 +130,21 @@ export function taskSourceLabel(source: string) {
 // ── Task grouping ───────────────────────────────────────────────────
 
 export function taskGroup(task: DashboardTask): TaskGroupKey {
+  if (stageValue(task) === "completed") return "completed";
   if (stageStatusValue(task) === "blocked") return "attention";
-  if (isTaskActive(task)) return "active";
-  if (isScanPending(task)) return "ingestPending";
-  return "completed";
+  if (isWaitingForResource(task)) return "waiting";
+  return "active";
 }
 
 export function taskGroupTone(group: TaskGroupKey) {
   if (group === "attention") return "tone-danger";
   if (group === "active") return "tone-info";
-  if (group === "ingestPending") return "tone-warn";
+  if (group === "waiting") return "tone-warn";
   return "tone-success";
 }
 
 
 // ── Task actions ────────────────────────────────────────────────────
-
-export function canTriggerTaskStashScan(task: DashboardTask) {
-  return stageValue(task) === "pending_ingest" && !task.stashScanJobId;
-}
 
 export function canRestartTaskSourcing(task: DashboardTask) {
   return Boolean(task.code) && task.stage !== "COMPLETED" && task.stage !== "SOURCING"
@@ -168,20 +162,19 @@ export function isWaitingForResource(task: DashboardTask) {
   return task.stage === "SOURCING" && task.stageStatus === "PENDING" && Boolean(task.sourcingNextCheckAt);
 }
 
-export function taskPrimaryAction(task: DashboardTask): "resolve" | "files" | "retry" | "ingest" | null {
+export function taskPrimaryAction(task: DashboardTask): "resolve" | "files" | "retry" | null {
   if (isWaitingForResource(task)) return "retry";
   if (task.stageStatus === "BLOCKED") {
     if (task.stage === "SOURCING") return "resolve";
     if (needsTaskFileSelection(task)) return "files";
     return task.stage === "COMPLETED" ? null : "retry";
   }
-  return canTriggerTaskStashScan(task) ? "ingest" : null;
+  return null;
 }
 
 export function taskBatchEligibility(tasks: DashboardTask[]) {
   return {
-    retryIds: tasks.filter((task) => (task.stageStatus === "BLOCKED" || isWaitingForResource(task)) && task.stage !== "COMPLETED" && task.stageErrorCode !== "MANUAL_SOURCE_REQUIRED").map((task) => task.id),
-    ingestIds: tasks.filter((task) => ["PENDING_INGEST", "TRANSFERRING", "SCANNING"].includes(task.stage) && !(task.stage === "SCANNING" && task.stageStatus === "RUNNING")).map((task) => task.id)
+    retryIds: tasks.filter((task) => (task.stageStatus === "BLOCKED" || isWaitingForResource(task)) && task.stage !== "COMPLETED" && task.stageErrorCode !== "MANUAL_SOURCE_REQUIRED").map((task) => task.id)
   };
 }
 

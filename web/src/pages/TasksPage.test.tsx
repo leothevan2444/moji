@@ -5,6 +5,7 @@ import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import i18n from "../i18n/i18n";
 import type { DashboardTask } from "../utils";
+import { TaskStage, TaskStageStatus } from "../graphql/generated/graphql";
 import { TasksPage } from "./TasksPage";
 
 const task = {
@@ -23,24 +24,21 @@ const task = {
 function renderPage(overrides: Partial<React.ComponentProps<typeof TasksPage>> = {}) {
   const callbacks = {
     onSearchChange: vi.fn(), onStatusChange: vi.fn(), onSortChange: vi.fn(), onToggleGroup: vi.fn(),
-    onRefresh: vi.fn(), onSync: vi.fn(), onOpenTask: vi.fn(), onScanTask: vi.fn(), onRetryTask: vi.fn(),
+    onRefresh: vi.fn(), onOpenTask: vi.fn(), onRetryTask: vi.fn(),
     onResolveTask: vi.fn(), onDeleteTask: vi.fn(), onToggleTaskSelection: vi.fn(), onSelectVisibleTasks: vi.fn(),
-    onClearTaskSelection: vi.fn(), onBatchRetry: vi.fn(), onBatchIngest: vi.fn(), onBatchDelete: vi.fn()
+    onClearTaskSelection: vi.fn(), onBatchRetry: vi.fn(), onBatchDelete: vi.fn()
   };
   render(<TasksPage
     tasks={[task]}
-    metrics={{ active: 1, completed: 0, pendingScans: 0, failed: 0 }}
     taskSearch=""
     taskStatus="all"
     taskSort="createdAt"
-    taskGroupOpen={{ attention: true, active: true, ingestPending: true, completed: true }}
-    pendingTaskScanId={null}
+    taskGroupOpen={{ attention: true, active: true, waiting: true, completed: true }}
     pendingTaskRetryId={null}
     pendingTaskDeleteId={null}
     selectedTaskIds={[]}
     batchPending={false}
     refreshing={false}
-    syncing={false}
     autoSyncEnabled={false}
     autoSyncIntervalSeconds={0}
     lastRefreshedAt={null}
@@ -72,32 +70,29 @@ describe("TasksPage task controls", () => {
     expect(callbacks.onOpenTask).toHaveBeenCalledTimes(1);
   });
 
-  it("opens more actions in a dialog and keeps refresh visibly bordered", async () => {
-    const user = userEvent.setup();
-    const callbacks = renderPage();
-    expect(screen.getByText("Auto sync disabled").classList.contains("task-sync-meta")).toBe(true);
+  it("offers refresh without a manual task-processing button", () => {
+    renderPage();
+    expect(screen.getByText(/Automatic task processing is paused/)).toBeTruthy();
     expect(screen.getByRole("button", { name: "Refresh" }).classList.contains("task-icon-button--bordered")).toBe(true);
-
-    await user.click(screen.getByRole("button", { name: "More task actions" }));
-    expect(screen.getByRole("dialog", { name: "More task actions" })).toBeTruthy();
-    await user.click(screen.getByRole("button", { name: "Sync qBittorrent now" }));
-    expect(callbacks.onSync).toHaveBeenCalledTimes(1);
-    expect(screen.queryByRole("dialog")).toBeNull();
+    expect(screen.queryByRole("button", { name: "Sync now" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "More task actions" })).toBeNull();
+    expect(screen.queryByRole("button", { name: /Process.*ingest/ })).toBeNull();
   });
-  it("keeps global ingest in the list toolbar and restores focus after Escape", async () => {
-    const user = userEvent.setup();
-    const ingest = vi.fn();
-    renderPage({ onIngestAll: ingest });
-    const opener = screen.getByRole("button", { name: "More task actions" });
-    await user.click(opener);
-    await user.click(screen.getByRole("button", { name: "Process all pending-ingest tasks" }));
-    expect(ingest).toHaveBeenCalledTimes(1);
-    expect(screen.queryByRole("dialog")).toBeNull();
-    expect(document.activeElement).toBe(opener);
-    await user.click(opener);
-    await user.keyboard("{Escape}");
-    expect(screen.queryByRole("dialog")).toBeNull();
-    expect(document.activeElement).toBe(opener);
+
+  it("shows pending ingest with other active tasks without a manual ingest action", async () => {
+    renderPage({ taskStatus: "running", tasks: [{ ...task, stage: TaskStage.PendingIngest, stageStatus: TaskStageStatus.Pending }] });
+    expect(screen.getByRole("button", { name: /TASK-1.*Open details/i })).toBeTruthy();
+    expect(screen.getByRole("heading", { name: "In progress" })).toBeTruthy();
+    expect(screen.queryByRole("button", { name: /Process ingest/ })).toBeNull();
+    await userEvent.setup().click(screen.getByRole("button", { name: "Enter multi-select mode" }));
+    expect(screen.getByRole("region", { name: "Selected task actions" }).textContent).not.toContain("Ingest");
+  });
+
+  it("keeps waiting resources out of in-progress results and offers a dedicated category", () => {
+    renderPage({ taskStatus: "running", tasks: [{ ...task, stage: TaskStage.Sourcing, stageStatus: TaskStageStatus.Pending, sourcingNextCheckAt: "2026-10-23T00:00:00Z" }] });
+    expect(screen.queryByRole("button", { name: /TASK-1.*Open details/i })).toBeNull();
+    const options = Array.from((screen.getByRole("combobox", { name: "Task category" }) as HTMLSelectElement).options).map(option => option.textContent);
+    expect(options).toEqual(["All", "Needs attention", "Waiting for resources", "In progress", "Completed"]);
   });
 
   it("finds tasks by torrent name while displaying the code as their title", () => {

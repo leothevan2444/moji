@@ -4,21 +4,19 @@ import { taskPrimaryAction, taskSummary, isWaitingForResource, type DashboardTas
 interface TaskPrimaryActionProps {
   task: DashboardTask;
   compact?: boolean;
-  pendingScan?: boolean;
   pendingRetry?: boolean;
   onResolve?: (id: string) => void;
   onFiles: (id: string) => void;
   onRetry?: (id: string) => void;
-  onScan?: (id: string) => void;
 }
 
-export function TaskPrimaryAction({ task, compact = false, pendingScan, pendingRetry, onResolve, onFiles, onRetry, onScan }: TaskPrimaryActionProps) {
+export function TaskPrimaryAction({ task, compact = false, pendingRetry, onResolve, onFiles, onRetry }: TaskPrimaryActionProps) {
   const { t } = useTranslation();
   const action = taskPrimaryAction(task);
   if (!action) return null;
-  const handler = { resolve: onResolve, files: onFiles, retry: onRetry, ingest: onScan }[action];
+  const handler = { resolve: onResolve, files: onFiles, retry: onRetry }[action];
   if (!handler) return null;
-  const pending = action === "retry" ? pendingRetry : action === "ingest" ? pendingScan : false;
+  const pending = action === "retry" ? pendingRetry : false;
   const label = isWaitingForResource(task) ? t("resourceTracking.checkNow") : t(`taskExperience.actions.${action}`);
   const visibleLabel = compact ? t(`taskCardActions.${isWaitingForResource(task) ? "check" : action}`) : label;
   return <>

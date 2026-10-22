@@ -7,6 +7,7 @@ import { useTheme } from "../hooks/useTheme";
 import { useToast } from "../hooks/useToast";
 import type { HelpTopicId } from "../help/types";
 import { useTranslation } from "react-i18next";
+import { TaskProcessingNotice } from "../components/layout/TaskProcessingNotice";
 import { TaskEventBridge } from "../components/events/TaskEventBridge";
 
 const HelpDrawer = lazy(() => import("../components/drawers/HelpDrawer").then((module) => ({ default: module.HelpDrawer })));
@@ -39,6 +40,7 @@ export function AppLayout() {
       <div className="ambient ambient-c" />
       <Header onOpenHelp={() => setHelpOpen(true)} theme={theme} />
       <main className="content">
+        <TaskProcessingNotice />
         <Suspense fallback={<div className="skeleton skeleton-card" aria-label={t("common.loading")} />}>
           <Outlet context={{ pushToast, copyText, openHelp: () => setHelpOpen(true) } satisfies AppOutletContext} />
         </Suspense>

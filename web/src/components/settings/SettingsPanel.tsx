@@ -210,6 +210,7 @@ function buildAutomationSettingsPayload(form: AutomationFormShape) {
   const inspectionCandidateLimit = Number.parseInt(form.torrentSelection.inspectionCandidateLimit.trim(), 10);
   const maxGroupPerformerCount = Number.parseInt(form.subscriptionReleasePolicy.maxGroupPerformerCount.trim(), 10);
   return {
+    taskProcessingEnabled: form.taskProcessingEnabled,
     taskProgressSyncIntervalSeconds: Number.isNaN(taskProgressSyncIntervalSeconds) ? 60 : taskProgressSyncIntervalSeconds,
     sourcingRetryIntervalHours: Number.parseInt(form.sourcingRetryIntervalHours.trim(), 10) || 6,
     subscriptionPollIntervalHours: Number.isNaN(subscriptionPollIntervalHours) ? 1 : subscriptionPollIntervalHours,
@@ -556,7 +557,8 @@ export function AutomationSettingsEditor({
       tags: runtimeSettings.qbittorrent.tags || ""
     });
     if (!automationDirty) markAutomationSaved({
-      taskProgressSyncIntervalSeconds: String(runtimeSettings.automation.taskProgressSyncIntervalSeconds || 60),
+      taskProcessingEnabled: runtimeSettings.automation.taskProcessingEnabled ?? true,
+      taskProgressSyncIntervalSeconds: String([30, 60, 120, 300].includes(runtimeSettings.automation.taskProgressSyncIntervalSeconds) ? runtimeSettings.automation.taskProgressSyncIntervalSeconds : 60),
       sourcingRetryIntervalHours: String(runtimeSettings.automation.sourcingRetryIntervalHours || 6),
       subscriptionPollIntervalHours: String(runtimeSettings.automation.subscriptionPollIntervalHours || 1),
       stashBoxEndpoints: [...(runtimeSettings.automation.stashBoxEndpoints ?? [])],
@@ -1286,20 +1288,33 @@ export function AutomationSettingsEditor({
         </div>
 
         <form className="settings-form" onSubmit={(event) => void saveAutomationSettings(event)}>
+          <section className="task-processing-settings">
+            <label className="switch-row">
+              <span className="switch-row__label">{t("automationUi.processingEnabled")}</span>
+              <span className="switch" role="switch" aria-checked={automationForm.taskProcessingEnabled}>
+                <input type="checkbox" aria-label={t("automationUi.processingEnabled")} checked={automationForm.taskProcessingEnabled}
+                  onChange={event => setAutomationForm(current => ({ ...current, taskProcessingEnabled: event.target.checked }))} />
+                <span className="switch__track" aria-hidden="true" />
+                <span className="switch__thumb" aria-hidden="true" />
+              </span>
+            </label>
+            <p className="settings-section__hint">{t("automationUi.processingHelp")}</p>
+            {!automationForm.taskProcessingEnabled ? <p className="task-processing-settings__paused" role="status">{t("automationUi.processingOffHelp")}</p> : null}
+            <label className="settings-field">
+              <span>{t("automationUi.syncInterval")}</span>
+              <select value={automationForm.taskProgressSyncIntervalSeconds} disabled={!automationForm.taskProcessingEnabled}
+                onChange={event => setAutomationForm(current => ({ ...current, taskProgressSyncIntervalSeconds: event.target.value }))}>
+                {[30, 60, 120, 300].map(seconds => <option value={seconds} key={seconds}>{t(`automationUi.intervalOptions.${seconds}`)}</option>)}
+              </select>
+              <small>{t("automationUi.intervalHelp")}</small>
+            </label>
+          </section>
           <label className="settings-field">
             <span>{t("resourceTracking.interval")}</span>
             <input type="number" min="1" max="168" required
               value={automationForm.sourcingRetryIntervalHours}
               onChange={event => setAutomationForm(current => ({ ...current, sourcingRetryIntervalHours: event.target.value }))} />
             <small>{t("resourceTracking.intervalHelp")}</small>
-          </label>
-          <label className="settings-field">
-            <span>{t("automationUi.syncInterval")}</span>
-            <input
-              value={automationForm.taskProgressSyncIntervalSeconds}
-              onChange={(event) => setAutomationForm((current) => ({ ...current, taskProgressSyncIntervalSeconds: event.target.value }))}
-              placeholder="60"
-            />
           </label>
           <label className="settings-field">
             <span>{t("automationUi.pollInterval")}</span>

@@ -318,10 +318,23 @@
     }
   },
   "automationUi": {
-    "syncInterval": "Task progress sync interval (seconds)",
-    "pollInterval": "Subscription polling interval (hours)",
-    "taskSync": "Task sync: {{state}}",
-    "poll": "Subscription polling: {{state}}",
+    "processingEnabled": "Process tasks automatically",
+    "processingHelp": "Update download progress and organize completed downloads for Stash. Changes take effect when saved.",
+    "processingOffHelp": "Saving will pause progress updates and automatic imports. Downloads and work already started may continue.",
+    "intervalHelp": "How often Moji checks tasks. Shorter intervals update progress and start imports sooner, without changing download speed.",
+    "intervalOptions": {
+      "30": "30 seconds",
+      "60": "1 minute (recommended)",
+      "120": "2 minutes",
+      "300": "5 minutes"
+    },
+    "pausedTitle": "Automatic task processing is paused",
+    "pausedDetail": "Download progress will stop updating, and completed downloads will not be added to Stash automatically. Downloads and work already started may continue. Resource searches and subscription checks are unaffected.",
+    "openSettings": "Open automation settings",
+    "syncInterval": "Check tasks every",
+    "pollInterval": "Subscription check interval (hours)",
+    "taskSync": "Automatic task processing: {{state}}",
+    "poll": "Subscription checks: {{state}}",
     "enabled": "Enabled",
     "disabled": "Disabled",
     "policyTitle": "New-release download policy",
@@ -336,7 +349,7 @@
     "dateRange": "Automatic download date range",
     "dateRangeInfo": "Only applies when the policy would download. Older or undated releases are recorded for review.",
     "save": "Save automation settings",
-    "saved": "Automation settings saved. New subscription discoveries will use this policy; recorded releases are not reevaluated.",
+    "saved": "Automation settings saved.",
     "stashBoxes": {
       "title": "Stash-Box source priority",
       "detail": "Stash-Box endpoints configured in Stash appear here. All endpoints participate in subscription queries; drag cards to change priority.",
@@ -583,14 +596,16 @@
   },
   "tasks": {
     "title": "Workspace",
-    "metrics": "Active {{active}} · Completed {{completed}} · Pending scans {{pendingScans}} · Failed {{failed}}",
+    "metrics": "In progress {{active}} · Waiting for resources {{waiting}} · Completed {{completed}} · Needs attention {{failed}}",
     "searchPlaceholder": "Search tasks, codes, trackers, or statuses",
+    "statusLabel": "Task category",
+    "sortLabel": "Task sort order",
     "filters": {
       "all": "All",
-      "running": "Running",
+      "running": "In progress",
       "completed": "Completed",
-      "failed": "Failed",
-      "scanPending": "Pending scan"
+      "failed": "Needs attention",
+      "waiting": "Waiting for resources"
     },
     "sorts": {
       "createdAt": "Newest",
@@ -614,12 +629,12 @@
         "description": "Failed tasks, scan errors, and tasks requiring review."
       },
       "active": {
-        "label": "Running",
-        "description": "Tasks downloading, syncing, or waiting for an external state change."
+        "label": "In progress",
+        "description": "Tasks queued or progressing through sourcing, download, and ingest."
       },
-      "ingestPending": {
-        "label": "Pending ingest",
-        "description": "Downloads completed but the Stash scan has not finished."
+      "waiting": {
+        "label": "Waiting for resources",
+        "description": "No usable resource yet; the system checks periodically."
       },
       "completed": {
         "label": "Completed",
@@ -652,11 +667,12 @@
     "multiSelect": "Enter multi-select mode",
     "exitMultiSelect": "Exit multi-select mode",
     "deselectTask": "Deselect task: {{task}}",
-    "syncNow": "Sync qBittorrent now",
-    "syncing": "Syncing qBittorrent…",
-    "syncComplete": "qBittorrent task progress synchronized.",
-    "autoSyncOn": "Auto sync every {{seconds}} seconds",
-    "autoSyncOff": "Auto sync disabled",
+    "syncNow": "Sync now",
+    "syncing": "Syncing…",
+    "syncHelp": "Sync downloads and advance file preparation and Stash ingest",
+    "syncComplete": "Download status synced and ingest workflow advanced.",
+    "autoSyncOn": "Check tasks automatically every {{seconds}} seconds",
+    "autoSyncOff": "Automatic task processing is paused. Enable it in automation settings to resume.",
     "updatedAt": "List updated at {{time}}",
     "selectionActions": "Selected task actions",
     "selectTask": "Select task: {{task}}",

@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
@@ -556,6 +557,40 @@ func TestSyncTaskProgress(t *testing.T) {
 	}
 }
 
+func TestSyncTaskProgressAdvancesIngest(t *testing.T) {
+	for _, tc := range []struct {
+		name                   string
+		downloadErr, ingestErr error
+	}{
+		{name: "success"},
+		{name: "download failure still advances ingest", downloadErr: errors.New("downloader offline")},
+		{name: "ingest failure is reported", ingestErr: errors.New("stash offline")},
+		{name: "both failures are reported", downloadErr: errors.New("downloader offline"), ingestErr: errors.New("stash offline")},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			runtime := &fakeTaskRuntime{
+				syncTasks:  []*taskruntime.Task{{ID: "task", Stage: taskruntime.TaskStagePendingIngest}},
+				stashTasks: []*taskruntime.Task{{ID: "task", Stage: taskruntime.TaskStageScanning, StageStatus: taskruntime.TaskStageStatusRunning}},
+				syncErr:    tc.downloadErr, ingestErr: tc.ingestErr,
+			}
+			resolver := NewResolver(nil, nil, runtime, fakeStashService{}, "test")
+			tasks, err := resolver.Mutation().SyncTaskProgress(context.Background())
+			if len(runtime.syncCalls) != 2 || runtime.syncCalls[0] != "downloads" || runtime.syncCalls[1] != "ingest" {
+				t.Fatalf("expected downloads then ingest, got %v", runtime.syncCalls)
+			}
+			if tc.downloadErr != nil || tc.ingestErr != nil {
+				if err == nil || (tc.downloadErr != nil && !errors.Is(err, tc.downloadErr)) || (tc.ingestErr != nil && !errors.Is(err, tc.ingestErr)) {
+					t.Fatalf("expected both operation errors, got %v", err)
+				}
+				return
+			}
+			if err != nil || len(tasks) != 1 || tasks[0].Stage != "SCANNING" {
+				t.Fatalf("expected latest ingest state, got %+v, %v", tasks, err)
+			}
+		})
+	}
+}
+
 func TestTriggerStashScans(t *testing.T) {
 	dl := &fakeTaskRuntime{
 		stashTasks: []*taskruntime.Task{
@@ -1023,6 +1058,7 @@ func TestUpdateAutomationSettingsMutation(t *testing.T) {
 	editor := &fakeSettingsEditor{
 		updateAutomationSnapshot: &SettingsSnapshot{
 			Automation: AutomationSettingsSnapshot{
+				TaskProcessingEnabled:           true,
 				TaskProgressSyncIntervalSeconds: 60,
 				SubscriptionPollIntervalHours:   1,
 				StashBoxEndpoints:               []string{"https://javstash.example.org/graphql"},
@@ -1046,6 +1082,7 @@ func TestUpdateAutomationSettingsMutation(t *testing.T) {
 
 	resp := executeGraphQL(t, resolver, `mutation {
 		updateAutomationSettings(input: {
+ taskProcessingEnabled: true
 			taskProgressSyncIntervalSeconds: 60
 			subscriptionPollIntervalHours: 1
 			stashBoxEndpoints: ["https://javstash.example.org/graphql"]
@@ -1070,6 +1107,7 @@ func TestUpdateAutomationSettingsMutation(t *testing.T) {
 				}
 		}) {
 			automation {
+ taskProcessingEnabled
 				stashBoxEndpoints
 				subscriptionReleasePolicy { soloBehavior groupBehavior compilationBehavior maxGroupPerformerCount releaseDateRange }
 				torrentSelection { enabled fastRules { type } torrentRules { type } }
@@ -1078,6 +1116,12 @@ func TestUpdateAutomationSettingsMutation(t *testing.T) {
 	}`)
 	if len(resp.Errors) > 0 {
 		t.Fatalf("expected no errors, got %+v", resp.Errors)
+	}
+	if editor.automationInput.TaskProcessingEnabled == nil || !*editor.automationInput.TaskProcessingEnabled {
+		t.Fatal("processing switch was not passed to settings editor")
+	}
+	if !resp.Data.UpdateAutomationSettings.Automation.TaskProcessingEnabled {
+		t.Fatal("processing switch missing from settings response")
 	}
 	if len(editor.automationInput.StashBoxEndpoints) != 1 || editor.automationInput.StashBoxEndpoints[0] != "https://javstash.example.org/graphql" {
 		t.Fatalf("unexpected automation input: %+v", editor.automationInput)
@@ -1229,6 +1273,9 @@ func TestUpdateQBittorrentSettingsRequiresEditor(t *testing.T) {
 }
 
 type fakeTaskRuntime struct {
+	syncErr             error
+	ingestErr           error
+	syncCalls           []string
 	addRequest          taskruntime.AddTorrentRequest
 	downloadRequest     taskruntime.DownloadRequest
 	previewRequest      taskruntime.PreviewJackettSelectionRequest
@@ -1302,7 +1349,8 @@ func (f *fakeTaskRuntime) ResolveBlockedSourcingTask(_ context.Context, id strin
 }
 
 func (f *fakeTaskRuntime) SyncProgress(_ context.Context) ([]*taskruntime.Task, error) {
-	return f.syncTasks, nil
+	f.syncCalls = append(f.syncCalls, "downloads")
+	return f.syncTasks, f.syncErr
 }
 
 func (f *fakeTaskRuntime) TriggerTaskStashScan(_ context.Context, id string, _ taskruntime.StashScanner) (*taskruntime.Task, error) {
@@ -1311,7 +1359,8 @@ func (f *fakeTaskRuntime) TriggerTaskStashScan(_ context.Context, id string, _ t
 }
 
 func (f *fakeTaskRuntime) TriggerStashScans(_ context.Context, _ taskruntime.StashScanner) ([]*taskruntime.Task, error) {
-	return f.stashTasks, nil
+	f.syncCalls = append(f.syncCalls, "ingest")
+	return f.stashTasks, f.ingestErr
 }
 
 func (f *fakeTaskRuntime) RetryTasks(_ context.Context, _ []string, _ taskruntime.StashScanner) (taskruntime.TaskBatchPayload, error) {
@@ -1516,6 +1565,7 @@ type graphQLTaskResponse struct {
 		} `json:"updateJackettSettings"`
 		UpdateAutomationSettings struct {
 			Automation struct {
+				TaskProcessingEnabled           bool     `json:"taskProcessingEnabled"`
 				TaskProgressSyncIntervalSeconds int      `json:"taskProgressSyncIntervalSeconds"`
 				SubscriptionPollIntervalHours   int      `json:"subscriptionPollIntervalHours"`
 				StashBoxEndpoints               []string `json:"stashBoxEndpoints"`

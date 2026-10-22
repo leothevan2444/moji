@@ -271,6 +271,8 @@ type QBittorrentSettings {
 }
 
 type AutomationSettings {
+  "Whether automatic download and ingest processing is enabled"
+  taskProcessingEnabled: Boolean!
   sourcingRetryIntervalHours: Int!
   taskProgressSyncIntervalSeconds: Int!
   subscriptionPollIntervalHours: Int!
@@ -461,6 +463,8 @@ input UpdateQBittorrentSettingsInput {
 }
 
 input UpdateAutomationSettingsInput {
+  "Independent switch; omitted by legacy clients to preserve the current setting"
+  taskProcessingEnabled: Boolean
   sourcingRetryIntervalHours: Int! = 6
   taskProgressSyncIntervalSeconds: Int!
   subscriptionPollIntervalHours: Int!

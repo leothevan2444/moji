@@ -21,7 +21,6 @@ export function Component() {
   const navigate = useNavigate();
   const location = useLocation();
   const { pushToast } = useOutletContext<AppOutletContext>();
-  const [pendingTaskScanId, setPendingTaskScanId] = useState<string | null>(null);
   const [pendingTaskRetryId, setPendingTaskRetryId] = useState<string | null>(null);
   const [{ data, error, fetching }, refreshDashboard] = useQuery({
     query: HomePageDocumentDocument,
@@ -34,18 +33,8 @@ export function Component() {
   useServiceStatusEvents({
     onRefresh: () => refreshServiceStatus({ requestPolicy: "network-only" })
   });
-  const { retryTask, triggerTaskStashScan } = useTaskMutations();
+  const { retryTask } = useTaskMutations();
   const tasks = data?.tasks ?? [];
-
-  const runTaskScan = async (taskId: string) => {
-    setPendingTaskScanId(taskId);
-    try {
-      const result = await triggerTaskStashScan({ id: taskId });
-      if (result.error) pushToast("tone-danger", describeQueryError(result.error));
-    } finally {
-      setPendingTaskScanId(null);
-    }
-  };
 
   const runRetryTask = async (taskId: string) => {
     const task = tasks.find((entry) => entry.id === taskId);
@@ -69,10 +58,8 @@ export function Component() {
     tasks={tasks}
     runtimeSettings={data?.settings ?? null}
     runtimeStatus={serviceStatusData?.settingsStatus ?? null}
-    pendingTaskScanId={pendingTaskScanId}
     pendingTaskRetryId={pendingTaskRetryId}
     onOpenTask={(id) => navigate(`/tasks/${encodeURIComponent(id)}`, { state: { backgroundLocation: location } })}
-    onScanTask={(id) => void runTaskScan(id)}
     onRetryTask={(id) => void runRetryTask(id)}
     onResolveTask={(id) => navigate(`/tasks/${encodeURIComponent(id)}/resolve`, { state: { backgroundLocation: location } })}
     onOpenSettings={(tab) => navigate(`/settings/${settingsSlugs[tab]}`)}

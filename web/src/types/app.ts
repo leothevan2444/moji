@@ -17,5 +17,5 @@ export type ToastItem = {
 
 export type SettingsTab = "connections" | "ingest" | "automation" | "system" | "logs" | "about";
 
-export type TaskStatusFilter = "all" | "running" | "completed" | "failed" | "scanPending";
+export type TaskStatusFilter = "all" | "running" | "completed" | "failed" | "waiting";
 export type TaskSortKey = "createdAt" | "updatedAt" | "progress";

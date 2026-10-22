@@ -110,6 +110,7 @@ func (r *mutationResolver) UpdateAutomationSettings(ctx context.Context, input m
 	}
 
 	snapshot, err := r.SettingsEditor.UpdateAutomationSettings(UpdateAutomationSettingsInput{
+		TaskProcessingEnabled:           input.TaskProcessingEnabled,
 		SourcingRetryIntervalHours:      input.SourcingRetryIntervalHours,
 		TaskProgressSyncIntervalSeconds: input.TaskProgressSyncIntervalSeconds,
 		SubscriptionPollIntervalHours:   input.SubscriptionPollIntervalHours,

@@ -88,8 +88,14 @@ func (r *mutationResolver) SyncTaskProgress(ctx context.Context) ([]*model.Task,
 		return nil, errors.New("task runtime is not configured")
 	}
 
-	tasks, err := r.TaskRuntime.SyncProgress(ctx)
-	if err != nil {
+	// Match the background worker: download failures must not prevent unrelated
+	// ingest jobs from advancing. Return an error if either part failed.
+	tasks, syncErr := r.TaskRuntime.SyncProgress(ctx)
+	var ingestErr error
+	if r.Stash != nil {
+		tasks, ingestErr = r.TaskRuntime.TriggerStashScans(ctx, r.Stash)
+	}
+	if err := errors.Join(syncErr, ingestErr); err != nil {
 		return nil, err
 	}
 	out := make([]*model.Task, 0, len(tasks))

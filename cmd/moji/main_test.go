@@ -9,6 +9,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -333,6 +334,64 @@ func TestBuildSettingsSnapshotNormalizesDefaults(t *testing.T) {
 	}
 	if len(snapshot.Automation.StashBoxEndpoints) != 0 {
 		t.Fatalf("expected empty stash box selection in default snapshot, got %+v", snapshot.Automation)
+	}
+}
+
+func TestTaskProcessingWorkerCanPauseAndResumeWithoutRestart(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	var interval atomic.Int64
+	service := &fakeProgressSyncService{called: make(chan struct{}, 1)}
+	startTaskSyncWorker(ctx, service, nil, func() time.Duration { return time.Duration(interval.Load()) })
+	select {
+	case <-service.called:
+		t.Fatal("disabled worker ran")
+	case <-time.After(25 * time.Millisecond):
+	}
+	interval.Store(int64(time.Millisecond))
+	select {
+	case <-service.called:
+	case <-time.After(2 * time.Second):
+		t.Fatal("worker did not start after enabling")
+	}
+	interval.Store(0)
+	// Allow an operation already started to finish, then discard its notification.
+	time.Sleep(25 * time.Millisecond)
+	for {
+		select {
+		case <-service.called:
+		default:
+			goto drained
+		}
+	}
+drained:
+	select {
+	case <-service.called:
+		t.Fatal("paused worker continued processing")
+	case <-time.After(50 * time.Millisecond):
+	}
+	interval.Store(int64(time.Millisecond))
+	select {
+	case <-service.called:
+	case <-time.After(2 * time.Second):
+		t.Fatal("worker did not resume")
+	}
+}
+
+func TestTaskProcessingSwitchIsIndependentFromInterval(t *testing.T) {
+	cfg := testConfig()
+	enabled := false
+	cfg.Automation.TaskProcessingEnabled = &enabled
+	cfg.Automation.TaskProgressSyncIntervalSeconds = 120
+	if configureProgressSyncInterval(cfg) != 0 {
+		t.Fatal("switch did not pause processing")
+	}
+	if effectiveTaskProgressSyncIntervalSeconds(cfg) != 120 {
+		t.Fatal("pausing lost the configured interval")
+	}
+	enabled = true
+	if configureProgressSyncInterval(cfg) != 120*time.Second {
+		t.Fatal("enabling did not restore the interval")
 	}
 }
 

@@ -281,12 +281,21 @@ func (s StashConfig) GraphQLEndpoint() string {
 }
 
 type AutomationConfig struct {
+	TaskProcessingEnabled           *bool                           `yaml:"task_processing_enabled,omitempty"`
 	SourcingRetryIntervalHours      int                             `yaml:"sourcing_retry_interval_hours"`
 	TaskProgressSyncIntervalSeconds int                             `yaml:"task_progress_sync_interval_seconds"`
 	SubscriptionPollIntervalHours   int                             `yaml:"subscription_poll_interval_hours"`
 	StashBoxEndpoints               []string                        `yaml:"selected_stash_box_endpoints"`
 	SubscriptionReleasePolicy       SubscriptionReleasePolicyConfig `yaml:"subscription_release_policy"`
 	TorrentSelection                TorrentSelectionConfig          `yaml:"torrent_selection"`
+}
+
+// EffectiveTaskProcessingEnabled preserves legacy negative-interval configuration.
+func (a AutomationConfig) EffectiveTaskProcessingEnabled() bool {
+	if a.TaskProcessingEnabled != nil {
+		return *a.TaskProcessingEnabled
+	}
+	return a.TaskProgressSyncIntervalSeconds >= 0
 }
 
 func (a AutomationConfig) EffectiveSourcingRetryIntervalHours() int {

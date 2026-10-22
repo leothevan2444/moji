@@ -37,6 +37,7 @@ query IngestSettingsTab {
 query AutomationSettingsTab {
   settings {
     automation {
+      taskProcessingEnabled
       taskProgressSyncIntervalSeconds
       subscriptionPollIntervalHours
       sourcingRetryIntervalHours

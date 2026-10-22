@@ -38,9 +38,8 @@ export function Component() {
   const recoveryGeneration = useTaskSnapshotRecoveryGeneration();
   const observedRecoveryGeneration = useRef(recoveryGeneration);
   const filter = parseTaskSearchParams(searchParams);
-  const [groups, setGroups] = useState<Record<TaskGroupKey, boolean>>({ attention: true, active: true, ingestPending: false, completed: false });
+  const [groups, setGroups] = useState<Record<TaskGroupKey, boolean>>({ attention: true, waiting: true, active: true, completed: false });
   const [restartTargetId, setRestartTargetId] = useState<string | null>(null);
-  const [pendingScan, setPendingScan] = useState<string | null>(null);
   const [pendingRetry, setPendingRetry] = useState<string | null>(null);
   const [pendingDelete, setPendingDelete] = useState<string | null>(null);
   const [confirmDeleteIds, setConfirmDeleteIds] = useState<string[]>([]);
@@ -55,7 +54,7 @@ export function Component() {
     pause: !taskId,
     requestPolicy: "cache-and-network"
   });
-  const { restartTaskSourcing, restartingTaskSourcing, deleteTask, retryTask, syncTaskProgress, syncingTaskProgress, triggerTaskStashScan, triggerStashScans, triggeringStashScans, retryTasks, retryingTasks, processTaskIngest, processingTaskIngest, deleteTasks, deletingTasks } = useTaskMutations();
+  const { restartTaskSourcing, restartingTaskSourcing, deleteTask, retryTask, retryTasks, retryingTasks, deleteTasks, deletingTasks } = useTaskMutations();
   const tasks = useMemo(() => data?.tasks ?? [], [data?.tasks]);
   const activeTask = detailData?.task ?? (taskId ? tasks.find((task) => task.id === taskId) ?? null : null);
   const deleteTarget = confirmDeleteIds.length === 1 ? tasks.find((task) => task.id === confirmDeleteIds[0]) ?? null : null;
@@ -78,17 +77,6 @@ export function Component() {
     setSearchParams(serializeTaskSearchParams({ ...filter, ...patch }));
   };
 
-  const runSync = async () => { const result = await syncTaskProgress({}); if (result.error) pushToast("tone-danger", describeQueryError(result.error)); else pushToast("tone-success", t("taskBatch.syncComplete")); };
-  const runScanAll = async () => {
-    const result = await triggerStashScans({});
-    if (result.error) pushToast("tone-danger", describeQueryError(result.error));
-    else pushToast("tone-success", t("taskExperience.ingestSubmitted"));
-  };
-  const runScan = async (id: string) => {
-    setPendingScan(id);
-    try { const result = await triggerTaskStashScan({ id }); if (result.error) pushToast("tone-danger", describeQueryError(result.error)); }
-    finally { setPendingScan(null); }
-  };
   const runRetry = async (id: string) => {
     setPendingRetry(id);
     try {
@@ -123,7 +111,6 @@ export function Component() {
     else pushToast("tone-success", t("taskBatch.batchComplete", { count: payload.summary.succeededCount }));
   };
   const runBatchRetry = async (ids: string[]) => { const result = await retryTasks({ ids }); if (result.error) pushToast("tone-danger", describeQueryError(result.error)); else showBatchResult(result.data?.retryTasks); };
-  const runBatchIngest = async (ids: string[]) => { const result = await processTaskIngest({ ids }); if (result.error) pushToast("tone-danger", describeQueryError(result.error)); else showBatchResult(result.data?.processTaskIngest); };
   const runBatchDelete = async (ids: string[]) => {
     const result = await deleteTasks({ ids });
     if (result.error) { pushToast("tone-danger", describeQueryError(result.error)); return; }
@@ -143,25 +130,24 @@ export function Component() {
   };
 
   if (error && !data) return <div className="empty-card"><h3>{t("taskRoute.loadFailed")}</h3><p>{describeQueryError(error)}</p><button type="button" onClick={requery}>{t("common.retry")}</button></div>;
-  const metrics = data?.dashboardStats;
   return <>
-    <TasksPage tasks={tasks} metrics={{ active: metrics?.active ?? 0, completed: metrics?.completed ?? 0, pendingScans: metrics?.pendingScans ?? 0, failed: metrics?.failed ?? 0 }}
+    <TasksPage tasks={tasks}
       taskSearch={filter.q} taskStatus={filter.status} taskSort={filter.sort} taskGroupOpen={groups}
-      pendingTaskScanId={pendingScan} pendingTaskRetryId={pendingRetry} pendingTaskDeleteId={pendingDelete} selectedTaskIds={selectedTaskIds}
-      batchPending={retryingTasks || processingTaskIngest || deletingTasks} refreshing={fetching} syncing={syncingTaskProgress}
-      autoSyncEnabled={data?.settingsStatus.automation.taskProgressSyncEnabled ?? false} autoSyncIntervalSeconds={data?.settingsStatus.automation.taskProgressSyncIntervalSeconds ?? 0} lastRefreshedAt={lastRefreshedAt}
+      pendingTaskRetryId={pendingRetry} pendingTaskDeleteId={pendingDelete} selectedTaskIds={selectedTaskIds}
+      batchPending={retryingTasks || deletingTasks} refreshing={fetching}
+      autoSyncEnabled={data?.settings.automation?.taskProcessingEnabled ?? true} autoSyncIntervalSeconds={data?.settingsStatus.automation.taskProgressSyncIntervalSeconds ?? 0} lastRefreshedAt={lastRefreshedAt}
       onSearchChange={(q) => updateFilter({ q })} onStatusChange={(status) => updateFilter({ status })} onSortChange={(sort) => updateFilter({ sort })}
       onToggleGroup={(group) => setGroups((current) => ({ ...current, [group]: !current[group] }))}
-      onRefresh={requery} onSync={() => void runSync()}
-      ingesting={triggeringStashScans} onIngestAll={() => void runScanAll()} onOpenTask={(id) => openTask(id)}
-      onScanTask={(id) => void runScan(id)} onRetryTask={(id) => void runRetry(id)} onResolveTask={(id) => openTask(id, true)}
+      onRefresh={requery}
+      onOpenTask={(id) => openTask(id)}
+      onRetryTask={(id) => void runRetry(id)} onResolveTask={(id) => openTask(id, true)}
       onDeleteTask={(id) => setConfirmDeleteIds([id])} onToggleTaskSelection={toggleSelection} onSelectVisibleTasks={selectVisible} onClearTaskSelection={() => setSelectedTaskIds([])}
-      onBatchRetry={(ids) => void runBatchRetry(ids)} onBatchIngest={(ids) => void runBatchIngest(ids)} onBatchDelete={setConfirmDeleteIds} />
+      onBatchRetry={(ids) => void runBatchRetry(ids)} onBatchDelete={setConfirmDeleteIds} />
     {taskId ? <Drawer visibleDrawer={isResolution ? "task-resolution" : "task"} closing={false} title={isResolution ? t("taskRoute.resolutionTitle", { task: activeTask ? taskSummary(activeTask) : t("taskRoute.task") }) : activeTask ? taskSummary(activeTask) : t("taskRoute.details")} onClose={closeTask}>
       <Suspense fallback={<div className="skeleton skeleton-card" />}>
         {detailFetching && !activeTask ? <p>{t("taskRoute.loading")}</p> : detailError ? <div className="empty-card"><h3>{t("taskRoute.loadFailed")}</h3><p>{describeQueryError(detailError)}</p></div> : !activeTask ? <div className="empty-card"><h3>{t("taskRoute.notFound")}</h3></div> : isResolution ?
           <SourcingResolutionDrawer task={activeTask} onNotify={pushToast} onResolved={async () => { navigate(`/tasks/${encodeURIComponent(taskId)}`); }} /> :
-          <TaskDrawer onRestartTask={setRestartTargetId} pendingRestart={restartingTaskSourcing} task={activeTask} pendingScan={pendingScan === taskId} pendingRetry={pendingRetry === taskId} pendingDelete={pendingDelete === taskId} onCopy={copyText} onResolveTask={(id) => openTask(id, true)} onScanTask={(id) => void runScan(id)} onRetryTask={(id) => void runRetry(id)} onDeleteTask={(id) => setConfirmDeleteIds([id])} />}
+          <TaskDrawer onRestartTask={setRestartTargetId} pendingRestart={restartingTaskSourcing} task={activeTask} pendingRetry={pendingRetry === taskId} pendingDelete={pendingDelete === taskId} onCopy={copyText} onResolveTask={(id) => openTask(id, true)} onRetryTask={(id) => void runRetry(id)} onDeleteTask={(id) => setConfirmDeleteIds([id])} />}
       </Suspense>
     </Drawer> : null}
     {restartTargetId ? <Drawer visibleDrawer="confirm" closing={false} title={t("taskRestart.title")} onClose={() => { if (!restartingTaskSourcing) setRestartTargetId(null); }}>

@@ -8,6 +8,13 @@ describe("task search params", () => {
     expect(serializeTaskSearchParams(state).toString()).toBe("");
   });
 
+  it("maps the former pending-scan view to in-progress tasks", () => {
+    expect(parseTaskSearchParams(new URLSearchParams("status=pending-scan")).status).toBe("running");
+    const state = parseTaskSearchParams(new URLSearchParams("status=waiting"));
+    expect(state.status).toBe("waiting");
+    expect(serializeTaskSearchParams(state).get("status")).toBe("waiting");
+  });
+
   it("round trips public URL values", () => {
     const state = parseTaskSearchParams(new URLSearchParams("q=abc&status=failed&sort=updated"));
     expect(serializeTaskSearchParams(state).toString()).toBe("q=abc&status=failed&sort=updated");

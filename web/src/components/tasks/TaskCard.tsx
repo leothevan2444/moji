@@ -11,11 +11,9 @@ import { faTrashCan } from "@fortawesome/free-solid-svg-icons/faTrashCan";
 interface TaskCardProps {
   task: DashboardTask;
   compact?: boolean;
-  pendingScanId?: string | null;
   pendingRetryId?: string | null;
   pendingDeleteId?: string | null;
   onOpen: (taskId: string) => void;
-  onScan?: (taskId: string) => void;
   onRetry?: (taskId: string) => void;
   onResolve?: (taskId: string) => void;
   onDelete?: (taskId: string) => void;
@@ -24,8 +22,8 @@ interface TaskCardProps {
   onToggleSelection?: (taskId: string) => void;
 }
 
-export function TaskCard({ task, compact = false, pendingScanId, pendingRetryId, pendingDeleteId,
-  onOpen, onScan, onRetry, onResolve, onDelete, selectionMode = false, selected = false, onToggleSelection
+export function TaskCard({ task, compact = false, pendingRetryId, pendingDeleteId,
+  onOpen, onRetry, onResolve, onDelete, selectionMode = false, selected = false, onToggleSelection
 }: TaskCardProps) {
   const { t } = useTranslation();
   const presentation = taskPresentation(task);
@@ -81,8 +79,8 @@ export function TaskCard({ task, compact = false, pendingScanId, pendingRetryId,
         {t(timeLabel, { time: formatRelative(cardTime) ?? formatDateTime(cardTime) })}
       </time>
       {!selectionMode ? <div className="task-card__right" onClick={event => event.stopPropagation()}>
-        <TaskPrimaryAction task={task} compact pendingScan={pendingScanId === task.id} pendingRetry={pendingRetryId === task.id}
-          onResolve={onResolve} onFiles={onOpen} onScan={onScan} onRetry={onRetry} />
+        <TaskPrimaryAction task={task} compact pendingRetry={pendingRetryId === task.id}
+          onResolve={onResolve} onFiles={onOpen} onRetry={onRetry} />
         {onDelete ? <button type="button" className="ghost-button task-card__delete"
           title={t("taskActionHints.delete")}
           disabled={pendingDeleteId === task.id} aria-busy={pendingDeleteId === task.id}

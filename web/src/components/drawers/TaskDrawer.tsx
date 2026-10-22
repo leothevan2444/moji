@@ -4,12 +4,10 @@ import { useTranslation } from "react-i18next";
 
 interface TaskDrawerProps {
   task: DashboardTask | null;
-  pendingScan: boolean;
   pendingRetry: boolean;
   pendingDelete: boolean;
   onCopy: (value: string, successMessage: string) => void | Promise<void>;
   onResolveTask: (taskId: string) => void;
-  onScanTask: (taskId: string) => void;
   onRetryTask: (taskId: string) => void;
   onDeleteTask: (taskId: string) => void;
   onRestartTask?: (taskId: string) => void;
@@ -18,12 +16,10 @@ interface TaskDrawerProps {
 
 export function TaskDrawer({
   task,
-  pendingScan,
   pendingRetry,
   pendingDelete,
   onCopy,
   onResolveTask,
-  onScanTask,
   onRetryTask,
   onDeleteTask,
   onRestartTask,
@@ -35,12 +31,10 @@ export function TaskDrawer({
       {task ? (
         <TaskDetail
           task={task}
-          pendingScan={pendingScan}
           pendingRetry={pendingRetry}
           pendingDelete={pendingDelete}
           onCopy={onCopy}
           onResolveTask={onResolveTask}
-          onScanTask={onScanTask}
           onRetryTask={onRetryTask}
           onDeleteTask={onDeleteTask}
           onRestartTask={onRestartTask}

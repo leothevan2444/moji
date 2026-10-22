@@ -313,10 +313,23 @@
     }
   },
   "automationUi": {
-    "syncInterval": "任务进度同步间隔（秒）",
-    "pollInterval": "订阅轮询间隔（小时）",
-    "taskSync": "任务同步：{{state}}",
-    "poll": "订阅轮询：{{state}}",
+    "processingEnabled": "自动处理任务",
+    "processingHelp": "自动更新下载进度，下载完成后整理文件并添加到 Stash。保存后生效。",
+    "processingOffHelp": "保存后将暂停进度更新和自动入库。正在下载或处理的内容可能继续完成。",
+    "intervalHelp": "Moji 每隔这段时间检查任务。间隔越短，进度更新和自动入库越及时，不影响下载速度。",
+    "intervalOptions": {
+      "30": "30 秒",
+      "60": "1 分钟",
+      "120": "2 分钟",
+      "300": "5 分钟"
+    },
+    "pausedTitle": "任务自动处理已暂停",
+    "pausedDetail": "下载进度暂时停止更新，已下载的影片不会自动入库。正在下载或处理的内容可能继续完成，资源搜索和订阅检查不受影响。",
+    "openSettings": "前往自动化设置",
+    "syncInterval": "任务检查间隔",
+    "pollInterval": "订阅检查间隔（小时）",
+    "taskSync": "任务自动处理：{{state}}",
+    "poll": "订阅检查：{{state}}",
     "enabled": "已启用",
     "disabled": "未启用",
     "policyTitle": "新发行下载策略",
@@ -331,7 +344,7 @@
     "dateRange": "自动下载时间范围",
     "dateRangeInfo": "只在策略本来会自动下载时生效。超出范围或发行日期缺失的影片会改为记录供复核。",
     "save": "保存自动化设置",
-    "saved": "自动化设置已保存。新的订阅发现将按此策略决定是否自动下载；已记录发行不回溯重判。",
+    "saved": "自动化设置已保存。",
     "stashBoxes": {
       "title": "Stash-Box 数据源优先级",
       "detail": "在 Stash 中配置的 Stash-Box 会出现在这里。所有端点都会参与订阅查询，拖动卡片即可调整优先级。",
@@ -574,14 +587,16 @@
   },
   "tasks": {
     "title": "工作台",
-    "metrics": "活跃 {{active}} · 完成 {{completed}} · 待扫 {{pendingScans}} · 失败 {{failed}}",
+    "metrics": "进行中 {{active}} · 等待资源 {{waiting}} · 已完成 {{completed}} · 需处理 {{failed}}",
     "searchPlaceholder": "搜索任务、番号、tracker、状态",
+    "statusLabel": "任务分类",
+    "sortLabel": "任务排序",
     "filters": {
       "all": "全部",
-      "running": "运行中",
-      "completed": "完成",
-      "failed": "失败",
-      "scanPending": "待扫描"
+      "running": "进行中",
+      "completed": "已完成",
+      "failed": "需处理",
+      "waiting": "等待资源"
     },
     "sorts": {
       "createdAt": "最新",
@@ -605,12 +620,12 @@
         "description": "失败、扫描报错或需要人工回看的任务。"
       },
       "active": {
-        "label": "运行中",
-        "description": "仍在下载、同步或等待外部状态推进。"
+        "label": "进行中",
+        "description": "已排队或正在选种、下载和入库的任务。"
       },
-      "ingestPending": {
-        "label": "待入库",
-        "description": "下载已完成，等待 Stash 完成扫描、生成和识别。"
+      "waiting": {
+        "label": "等待资源",
+        "description": "暂未找到可用资源，系统将定期检查。"
       },
       "completed": {
         "label": "已完成",
@@ -643,11 +658,12 @@
     "multiSelect": "进入多选模式",
     "exitMultiSelect": "退出多选模式",
     "deselectTask": "取消选择任务：{{task}}",
-    "syncNow": "立即同步 qBittorrent",
-    "syncing": "正在同步 qBittorrent…",
-    "syncComplete": "qBittorrent 任务进度已同步。",
-    "autoSyncOn": "自动同步：每 {{seconds}} 秒",
-    "autoSyncOff": "自动同步已关闭",
+    "syncNow": "立即同步",
+    "syncing": "同步中…",
+    "syncHelp": "同步下载状态并推进文件整理与 Stash 入库",
+    "syncComplete": "已同步下载状态并推进入库流程。",
+    "autoSyncOn": "每 {{seconds}} 秒自动检查任务",
+    "autoSyncOff": "任务自动处理已暂停，请在自动化设置中重新开启。",
     "updatedAt": "列表更新于 {{time}}",
     "selectionActions": "所选任务操作",
     "selectTask": "选择任务：{{task}}",

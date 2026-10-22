@@ -143,8 +143,20 @@ func (s *Store) UpdateQBittorrent(url, username, password, defaultSavePath, cate
 }
 
 func (s *Store) UpdateAutomation(taskProgressSyncIntervalSeconds, subscriptionPollIntervalHours int, stashBoxEndpoints []string, subscriptionReleasePolicy SubscriptionReleasePolicyConfig, torrentSelection TorrentSelectionConfig, sourcingRetryIntervalHours ...int) (*Config, error) {
+	return s.UpdateAutomationProcessing(nil, taskProgressSyncIntervalSeconds, subscriptionPollIntervalHours, stashBoxEndpoints, subscriptionReleasePolicy, torrentSelection, sourcingRetryIntervalHours...)
+}
+
+func (s *Store) UpdateAutomationProcessing(enabled *bool, taskProgressSyncIntervalSeconds, subscriptionPollIntervalHours int, stashBoxEndpoints []string, subscriptionReleasePolicy SubscriptionReleasePolicyConfig, torrentSelection TorrentSelectionConfig, sourcingRetryIntervalHours ...int) (*Config, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
+
+	if enabled != nil {
+		switch taskProgressSyncIntervalSeconds {
+		case 30, 60, 120, 300:
+		default:
+			return nil, fmt.Errorf("task processing interval must be 30, 60, 120 or 300 seconds")
+		}
+	}
 
 	if err := torrentSelection.Validate(); err != nil {
 		return nil, err
@@ -156,6 +168,10 @@ func (s *Store) UpdateAutomation(taskProgressSyncIntervalSeconds, subscriptionPo
 		s.cfg.Automation.SourcingRetryIntervalHours = sourcingRetryIntervalHours[0]
 	}
 
+	if enabled != nil {
+		value := *enabled
+		s.cfg.Automation.TaskProcessingEnabled = &value
+	}
 	s.cfg.Automation.TaskProgressSyncIntervalSeconds = taskProgressSyncIntervalSeconds
 	s.cfg.Automation.SubscriptionPollIntervalHours = subscriptionPollIntervalHours
 	s.cfg.Automation.StashBoxEndpoints = cleanStrings(stashBoxEndpoints)
@@ -238,6 +254,9 @@ func (s *Store) updateConfigNode() error {
 		"category":          s.cfg.Connection.QBittorrent.Category,
 		"tags":              s.cfg.Connection.QBittorrent.Tags,
 	})
+	if s.cfg.Automation.TaskProcessingEnabled != nil {
+		setBoolScalar(mapValue(top, "automation"), "task_processing_enabled", *s.cfg.Automation.TaskProcessingEnabled)
+	}
 	setIntScalar(mapValue(top, "automation"), "task_progress_sync_interval_seconds", s.cfg.Automation.TaskProgressSyncIntervalSeconds)
 	setIntScalar(mapValue(top, "automation"), "sourcing_retry_interval_hours", s.cfg.Automation.EffectiveSourcingRetryIntervalHours())
 	setIntScalar(mapValue(top, "automation"), "subscription_poll_interval_hours", s.cfg.Automation.SubscriptionPollIntervalHours)

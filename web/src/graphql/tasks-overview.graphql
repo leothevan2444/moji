@@ -45,7 +45,7 @@ query TasksOverviewDocument {
     createdAt
     updatedAt lastProgressAt sourcingLastCheckedAt sourcingNextCheckAt
   }
-  settings { system { taskDeletePolicy } }
+  settings { system { taskDeletePolicy } automation { taskProcessingEnabled } }
   settingsStatus {
     automation { taskProgressSyncIntervalSeconds taskProgressSyncEnabled }
   }

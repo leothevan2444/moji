@@ -661,3 +661,20 @@
 @keyframes discovery-shell-spin {
   to { transform: rotate(360deg); }
 }
+
+.task-processing-notice {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding: 14px 16px;
+  margin-bottom: 16px;
+  border: 1px solid color-mix(in srgb, #b46918 35%, var(--line));
+  border-radius: 12px;
+  background: color-mix(in srgb, #b46918 8%, var(--surface));
+  > div { flex: 1 1 280px; min-width: 0; }
+  strong { color: #a15c13; font-size: 14px; }
+  p { margin: 5px 0 0; color: var(--muted); font-size: 13px; line-height: 1.6; }
+  > a { display: inline-flex; padding: 8px 12px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); color: var(--text); text-decoration: none; font-size: 13px; line-height: 1.4; white-space: nowrap; }
+}

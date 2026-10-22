@@ -15,8 +15,8 @@ const task = {
   createdAt: "2026-10-17T02:00:00Z", updatedAt: "2026-10-17T03:00:00Z",
   files: [{ index: 1, path: "movie/part-1.mp4", kind: "MAIN", part: 1, selected: true, reason: "TARGET_CODE", size: 100 }]
 } as DashboardTask;
-const props = () => ({ pendingScan: false, pendingRetry: false, pendingDelete: false,
-  onCopy: vi.fn(), onResolveTask: vi.fn(), onScanTask: vi.fn(), onRetryTask: vi.fn(), onDeleteTask: vi.fn() });
+const props = () => ({ pendingRetry: false, pendingDelete: false,
+  onCopy: vi.fn(), onResolveTask: vi.fn(), onRetryTask: vi.fn(), onDeleteTask: vi.fn() });
 
 beforeEach(async () => { await i18n.changeLanguage("en"); });
 afterEach(cleanup);

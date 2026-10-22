@@ -33,10 +33,8 @@ interface HomePageProps {
   tasks: DashboardTask[];
   runtimeSettings: RuntimeSettings | null;
   runtimeStatus: RuntimeStatus | null;
-  pendingTaskScanId: string | null;
   pendingTaskRetryId: string | null;
   onOpenTask: (taskId: string) => void;
-  onScanTask: (taskId: string) => void;
   onRetryTask: (taskId: string) => void;
   onResolveTask: (taskId: string) => void;
   onOpenSettings: (tab: SettingsTab) => void;
@@ -46,10 +44,8 @@ export function HomePage({
   tasks,
   runtimeSettings,
   runtimeStatus,
-  pendingTaskScanId,
   pendingTaskRetryId,
   onOpenTask,
-  onScanTask,
   onRetryTask,
   onResolveTask,
   onOpenSettings
@@ -199,10 +195,8 @@ export function HomePage({
               key={task.id}
               task={task}
               compact
-              pendingScanId={pendingTaskScanId}
               pendingRetryId={pendingTaskRetryId}
               onOpen={onOpenTask}
-              onScan={onScanTask}
               onRetry={onRetryTask}
               onResolve={onResolveTask}
             />

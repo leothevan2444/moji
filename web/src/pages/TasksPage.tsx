@@ -1,8 +1,5 @@
 import { TaskGroupSection } from "../components/tasks";
 import {
-  isScanPending,
-  isStatus,
-  isTaskActive,
   taskGroup,
   taskGroupTone,
   taskBatchEligibility,
@@ -10,40 +7,27 @@ import {
   type DashboardTask,
   type TaskGroupKey
 } from "../utils";
-import { useDeferredValue, useMemo, useRef, useState } from "react";
+import { useDeferredValue, useMemo, useState } from "react";
 import type { TaskSortKey, TaskStatusFilter } from "../types";
-import { useModalFocus } from "../hooks/useModalFocus";
 import { useTranslation } from "react-i18next";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faArrowsRotate } from "@fortawesome/free-solid-svg-icons/faArrowsRotate";
-import { faEllipsis } from "@fortawesome/free-solid-svg-icons/faEllipsis";
 import { faRotate } from "@fortawesome/free-solid-svg-icons/faRotate";
 import { faTrashCan } from "@fortawesome/free-solid-svg-icons/faTrashCan";
 import { faXmark } from "@fortawesome/free-solid-svg-icons/faXmark";
-import { faBoxArchive } from "@fortawesome/free-solid-svg-icons/faBoxArchive";
 import { faListCheck } from "@fortawesome/free-solid-svg-icons/faListCheck";
 
 interface TasksPageProps {
   tasks: DashboardTask[];
-  metrics: {
-    active: number;
-    completed: number;
-    pendingScans: number;
-    failed: number;
-  };
   taskSearch: string;
   taskStatus: TaskStatusFilter;
   taskSort: TaskSortKey;
   taskGroupOpen: Record<TaskGroupKey, boolean>;
-  pendingTaskScanId: string | null;
   pendingTaskRetryId: string | null;
   pendingTaskDeleteId: string | null;
   selectedTaskIds: string[];
   batchPending: boolean;
   refreshing: boolean;
-  syncing: boolean;
-  ingesting?: boolean;
-  onIngestAll?: () => void;
   autoSyncEnabled: boolean;
   autoSyncIntervalSeconds: number;
   lastRefreshedAt: Date | null;
@@ -52,9 +36,7 @@ interface TasksPageProps {
   onSortChange: (sort: TaskSortKey) => void;
   onToggleGroup: (group: TaskGroupKey) => void;
   onRefresh: () => void;
-  onSync: () => void;
   onOpenTask: (taskId: string) => void;
-  onScanTask: (taskId: string) => void;
   onRetryTask: (taskId: string) => void;
   onResolveTask: (taskId: string) => void;
   onDeleteTask: (taskId: string) => void;
@@ -62,26 +44,20 @@ interface TasksPageProps {
   onSelectVisibleTasks: (taskIds: string[]) => void;
   onClearTaskSelection: () => void;
   onBatchRetry: (taskIds: string[]) => void;
-  onBatchIngest: (taskIds: string[]) => void;
   onBatchDelete: (taskIds: string[]) => void;
 }
 
 export function TasksPage({
   tasks,
-  metrics,
   taskSearch,
   taskStatus,
   taskSort,
   taskGroupOpen,
-  pendingTaskScanId,
   pendingTaskRetryId,
   pendingTaskDeleteId,
   selectedTaskIds,
   batchPending,
   refreshing,
-  syncing,
-  ingesting = false,
-  onIngestAll,
   autoSyncEnabled,
   autoSyncIntervalSeconds,
   lastRefreshedAt,
@@ -90,9 +66,7 @@ export function TasksPage({
   onSortChange,
   onToggleGroup,
   onRefresh,
-  onSync,
   onOpenTask,
-  onScanTask,
   onRetryTask,
   onResolveTask,
   onDeleteTask,
@@ -100,12 +74,10 @@ export function TasksPage({
   onSelectVisibleTasks,
   onClearTaskSelection,
   onBatchRetry,
-  onBatchIngest,
   onBatchDelete
 }: TasksPageProps) {
   const { t } = useTranslation();
   const deferredTaskSearch = useDeferredValue(taskSearch.trim().toLowerCase());
-  const [moreActionsOpen, setMoreActionsOpen] = useState(false);
   const [selectionMode, setSelectionMode] = useState(false);
 
   const visibleTasks = useMemo(() => {
@@ -131,15 +103,8 @@ export function TasksPage({
       return haystack.includes(search);
     });
 
-    if (taskStatus === "running") {
-      next = next.filter(isTaskActive);
-    } else if (taskStatus === "completed") {
-      next = next.filter((task) => isStatus(task, "completed"));
-    } else if (taskStatus === "failed") {
-      next = next.filter((task) => task.stageStatus === "BLOCKED");
-    } else if (taskStatus === "scanPending") {
-      next = next.filter(isScanPending);
-    }
+    const groupByFilter = { running: "active", completed: "completed", failed: "attention", waiting: "waiting" } as const;
+    if (taskStatus !== "all") next = next.filter(task => taskGroup(task) === groupByFilter[taskStatus]);
 
     const sorters: Record<TaskSortKey, (a: DashboardTask, b: DashboardTask) => number> = {
       createdAt: (a, b) => Date.parse(b.createdAt) - Date.parse(a.createdAt),
@@ -151,7 +116,7 @@ export function TasksPage({
   }, [deferredTaskSearch, taskSort, taskStatus, tasks]);
 
   const taskGroups = useMemo(() => {
-    const order: TaskGroupKey[] = ["attention", "active", "ingestPending", "completed"];
+    const order: TaskGroupKey[] = ["attention", "waiting", "active", "completed"];
     return order.map((group) => ({
       group,
       tone: taskGroupTone(group),
@@ -159,8 +124,16 @@ export function TasksPage({
       tasks: visibleTasks.filter((task) => taskGroup(task) === group)
     }));
   }, [t, visibleTasks]);
+  const metrics = useMemo(() => {
+    const counts = { active: 0, waiting: 0, completed: 0, failed: 0 };
+    for (const task of tasks) {
+      const group = taskGroup(task);
+      counts[group === "attention" ? "failed" : group]++;
+    }
+    return counts;
+  }, [tasks]);
   const selectedTasks = tasks.filter((task) => selectedTaskIds.includes(task.id));
-  const { retryIds: retryableIds, ingestIds } = taskBatchEligibility(selectedTasks);
+  const { retryIds: retryableIds } = taskBatchEligibility(selectedTasks);
   const hiddenSelectedCount = selectedTaskIds.filter((id) => !visibleTasks.some((task) => task.id === id)).length;
 
   return (
@@ -174,16 +147,17 @@ export function TasksPage({
         </p>
       </div>
 
-      <div className="toolbar-inline">
+      <div className="toolbar-inline toolbar-inline--tasks">
         <input
+          aria-label={t("tasks.searchPlaceholder")}
           value={taskSearch}
           onChange={(event) => onSearchChange(event.target.value)}
           placeholder={t("tasks.searchPlaceholder")}
         />
-        <select value={taskStatus} onChange={(event) => onStatusChange(event.target.value as TaskStatusFilter)}>
-          {(["all", "running", "completed", "failed", "scanPending"] as const).map((value) => <option key={value} value={value}>{t(`tasks.filters.${value}`)}</option>)}
+        <select aria-label={t("tasks.statusLabel")} value={taskStatus} onChange={(event) => onStatusChange(event.target.value as TaskStatusFilter)}>
+          {(["all", "failed", "waiting", "running", "completed"] as const).map((value) => <option key={value} value={value}>{t(`tasks.filters.${value}`)}</option>)}
         </select>
-        <select value={taskSort} onChange={(event) => onSortChange(event.target.value as TaskSortKey)}>
+        <select aria-label={t("tasks.sortLabel")} value={taskSort} onChange={(event) => onSortChange(event.target.value as TaskSortKey)}>
           {(["createdAt", "updatedAt", "progress"] as const).map((value) => <option key={value} value={value}>{t(`tasks.sorts.${value}`)}</option>)}
         </select>
         <div className="task-toolbar-actions">
@@ -204,17 +178,7 @@ export function TasksPage({
             <FontAwesomeIcon icon={faRotate} className={refreshing ? "is-spinning" : undefined} />
           </button>
         </div>
-        <button
-          type="button"
-          className="ghost-button task-icon-button task-icon-button--bordered"
-          onClick={() => setMoreActionsOpen(true)}
-          aria-haspopup="dialog"
-          aria-expanded={moreActionsOpen}
-          aria-label={t("taskBatch.more")}
-          title={t("taskBatch.more")}
-        >
-          <FontAwesomeIcon icon={faEllipsis} />
-        </button>
+
       </div>
 
       {selectionMode ? <div className="task-selection-bar" role="region" aria-label={t("taskBatch.selectionActions")}>
@@ -222,10 +186,14 @@ export function TasksPage({
         {hiddenSelectedCount ? <span>{t("taskBatch.hidden", { count: hiddenSelectedCount })}</span> : null}
         <button type="button" className="ghost-button" disabled={batchPending || visibleTasks.length === 0} onClick={() => onSelectVisibleTasks(visibleTasks.map((task) => task.id))}>{t("taskBatch.selectVisible", { count: visibleTasks.length })}</button>
         <button type="button" className="ghost-button" disabled={batchPending || retryableIds.length === 0} onClick={() => onBatchRetry(retryableIds)}><FontAwesomeIcon icon={faArrowsRotate} /> {t("taskBatch.retry", { count: retryableIds.length })}</button>
-        <button type="button" className="ghost-button" disabled={batchPending || ingestIds.length === 0} onClick={() => onBatchIngest(ingestIds)}><FontAwesomeIcon icon={faBoxArchive} /> {t("taskBatch.ingest", { count: ingestIds.length })}</button>
         <button type="button" className="ghost-button task-ops__button--danger" disabled={batchPending || selectedTaskIds.length === 0} onClick={() => onBatchDelete(selectedTaskIds)}><FontAwesomeIcon icon={faTrashCan} /> {t("taskBatch.delete", { count: selectedTaskIds.length })}</button>
         <button type="button" className="ghost-button" disabled={batchPending || selectedTaskIds.length === 0} onClick={onClearTaskSelection} aria-label={t("taskBatch.clear")}><FontAwesomeIcon icon={faXmark} /> {t("taskBatch.clear")}</button>
       </div> : null}
+
+      <p className="task-sync-meta">
+        {t(autoSyncEnabled ? "taskBatch.autoSyncOn" : "taskBatch.autoSyncOff", { seconds: autoSyncIntervalSeconds })}
+        {lastRefreshedAt ? ` · ${t("taskBatch.updatedAt", { time: lastRefreshedAt.toLocaleTimeString() })}` : ""}
+      </p>
 
       {!visibleTasks.length ? (
         <div className="task-grid">
@@ -246,68 +214,21 @@ export function TasksPage({
             description={item.description}
             tasks={item.tasks}
             open={taskGroupOpen[item.group]}
-            pendingTaskScanId={pendingTaskScanId}
             pendingTaskRetryId={pendingTaskRetryId}
             pendingTaskDeleteId={pendingTaskDeleteId}
             onToggle={onToggleGroup}
             onOpenTask={onOpenTask}
-            onScanTask={onScanTask}
             onRetryTask={onRetryTask}
             onResolveTask={onResolveTask}
             onDeleteTask={onDeleteTask}
-            onProcessIngest={onBatchIngest}
-            batchPending={batchPending}
             selectionMode={selectionMode}
             selectedTaskIds={selectedTaskIds}
             onToggleTaskSelection={onToggleTaskSelection}
           />
         ))}
 
-      <p className="task-sync-meta">
-        {t(autoSyncEnabled ? "taskBatch.autoSyncOn" : "taskBatch.autoSyncOff", { seconds: autoSyncIntervalSeconds })}
-        {lastRefreshedAt ? ` · ${t("taskBatch.updatedAt", { time: lastRefreshedAt.toLocaleTimeString() })}` : ""}
-      </p>
-
-      {moreActionsOpen ? (
-        <div className="task-actions-dialog__scrim" onClick={() => setMoreActionsOpen(false)}>
-          <TaskActionsDialog onClose={() => setMoreActionsOpen(false)}>
-            <div className="task-actions-dialog__head">
-              <h3 id="task-actions-dialog-title">{t("taskBatch.more")}</h3>
-              <button type="button" className="ghost-button" onClick={() => setMoreActionsOpen(false)} aria-label={t("common.close")}>
-                <FontAwesomeIcon icon={faXmark} />
-              </button>
-            </div>
-            <div className="task-actions-dialog__body">
-              <button
-                type="button"
-                className="ghost-button task-actions-dialog__action"
-                disabled={syncing}
-                onClick={() => {
-                  onSync();
-                  setMoreActionsOpen(false);
-                }}
-              >
-                <FontAwesomeIcon icon={faArrowsRotate} />
-                <span>{syncing ? t("taskBatch.syncing") : t("taskBatch.syncNow")}</span>
-              </button>
-              {onIngestAll ? <button type="button" className="ghost-button task-actions-dialog__action" disabled={ingesting}
-                onClick={() => { onIngestAll(); setMoreActionsOpen(false); }}>
-                <FontAwesomeIcon icon={faBoxArchive} />
-                <span>{t(ingesting ? "taskExperience.processing" : "taskExperience.scanAll")}</span>
-              </button> : null}
-            </div>
-          </TaskActionsDialog>
-        </div>
-      ) : null}
     </section>
   );
 }
 
 export type { TaskStatusFilter, TaskSortKey };
-
-function TaskActionsDialog({ onClose, children }: { onClose: () => void; children: React.ReactNode }) {
-  const ref = useRef<HTMLElement>(null);
-  useModalFocus(ref, onClose);
-  return <section ref={ref} className="task-actions-dialog" role="dialog" aria-modal="true"
-    aria-labelledby="task-actions-dialog-title" tabIndex={-1} onClick={event => event.stopPropagation()}>{children}</section>;
-}

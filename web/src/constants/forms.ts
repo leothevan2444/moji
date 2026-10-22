@@ -92,6 +92,7 @@ export const EMPTY_QBITTORRENT_FORM = {
 };
 
 export const EMPTY_AUTOMATION_FORM = {
+  taskProcessingEnabled: true,
   sourcingRetryIntervalHours: "6",
   taskProgressSyncIntervalSeconds: "60",
   subscriptionPollIntervalHours: "1",

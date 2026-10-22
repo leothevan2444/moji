@@ -4,7 +4,7 @@ import { mergeTaskSelection, taskBatchEligibility, type DashboardTask } from "./
 const task = (id: string, stage: string, stageStatus: string) => ({ id, stage, stageStatus }) as DashboardTask;
 
 describe("task batch helpers", () => {
-  it("classifies retry and ingest eligibility", () => {
+  it("offers retry for blocked tasks but does not require manual ingest", () => {
     const result = taskBatchEligibility([
       task("retry", "SOURCING", "BLOCKED"),
       task("ingest", "PENDING_INGEST", "PENDING"),
@@ -12,7 +12,6 @@ describe("task batch helpers", () => {
       task("blocked-scan", "SCANNING", "BLOCKED")
     ]);
     expect(result.retryIds).toEqual(["retry", "blocked-scan"]);
-    expect(result.ingestIds).toEqual(["ingest", "blocked-scan"]);
   });
 
   it("deduplicates selection and enforces the limit", () => {

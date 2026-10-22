@@ -15,7 +15,7 @@ vi.mock("urql", async (importOriginal) => ({
   useQuery: ({ query }: { query: { definitions: Array<{ name?: { value: string } }> } }) => {
     const name = query.definitions[0]?.name?.value;
     if (name === "AutomationSettingsTab") return [{ data: { settings: { automation: {
-      taskProgressSyncIntervalSeconds: 60, subscriptionPollIntervalHours: 48, sourcingRetryIntervalHours: 6, stashBoxEndpoints: [],
+      taskProcessingEnabled: true, taskProgressSyncIntervalSeconds: 60, subscriptionPollIntervalHours: 48, sourcingRetryIntervalHours: 6, stashBoxEndpoints: [],
       subscriptionReleasePolicy: { soloBehavior: "DOWNLOAD", groupBehavior: "REVIEW", compilationBehavior: "BLOCK", maxGroupPerformerCount: 3, releaseDateRange: "ALL" },
       torrentSelection: { enabled: true, inspectionCandidateLimit: 5, fastRules: [], torrentRules: [] }
     } }, settingsStatus: { automation: { taskProgressSyncEnabled: true, subscriptionPollEnabled: true }, stashBox: { stashBoxes: [], stashBoxesLoaded: true, stashBoxesLoadError: null } } }, fetching: false, error: null }, vi.fn()];
@@ -44,6 +44,23 @@ describe("settings tab visual contracts", () => {
     fireEvent.click(screen.getByText("automationUi.save"));
     await waitFor(() => expect(updateSettings).toHaveBeenCalledWith({ input: expect.objectContaining({ sourcingRetryIntervalHours: 12, subscriptionPollIntervalHours: 48 }) }));
   });
+  it("offers preset heartbeat intervals and saves the processing switch independently", async () => {
+    updateSettings.mockClear();
+    render(<SettingsDraftProvider><AutomationSettingsTab /></SettingsDraftProvider>);
+    const toggle = screen.getByLabelText("automationUi.processingEnabled") as HTMLInputElement;
+    const interval = screen.getByLabelText(/automationUi.syncInterval/) as HTMLSelectElement;
+    expect(toggle.closest('[role="switch"]')).toBeTruthy();
+    expect(toggle.checked).toBe(true);
+    expect(Array.from(interval.options, option => option.value)).toEqual(["30", "60", "120", "300"]);
+    fireEvent.change(interval, { target: { value: "120" } });
+    fireEvent.click(toggle);
+    expect(interval.disabled).toBe(true);
+    expect(interval.value).toBe("120");
+    expect(screen.getByText("automationUi.processingOffHelp")).toBeTruthy();
+    fireEvent.click(screen.getByText("automationUi.save"));
+    await waitFor(() => expect(updateSettings).toHaveBeenCalledWith({ input: expect.objectContaining({ taskProcessingEnabled: false, taskProgressSyncIntervalSeconds: 120 }) }));
+  });
+
   it("offers four roots and Copy or Move, and saves without an ingest mode", async () => {
     const view = render(<SettingsDraftProvider><IngestSettingsTab /></SettingsDraftProvider>);
     expect(screen.queryByText("settings.ingest.mode")).toBeNull();

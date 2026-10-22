@@ -23,7 +23,6 @@ export {
   taskSourceLabel,
   taskGroup,
   taskGroupTone,
-  canTriggerTaskStashScan,
   canRestartTaskSourcing,
   needsTaskFileSelection,
   taskPrimaryAction,

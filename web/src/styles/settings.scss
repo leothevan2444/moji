@@ -1790,3 +1790,16 @@
 
   > label { display: flex; align-items: center; gap: 0.75rem; }
 }
+
+.task-processing-settings {
+  grid-column: 1 / -1;
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface);
+  .switch-row { justify-content: space-between; }
+  .switch__track { pointer-events: none; }
+  .settings-field { margin-top: 12px; max-width: 420px; }
+  .settings-field small { color: var(--muted); font-size: 12px; line-height: 1.6; }
+  &__paused { padding: 10px 12px; border-radius: 8px; background: color-mix(in srgb, #b46918 8%, var(--surface)); color: #a15c13; font-size: 13px; line-height: 1.6; }
+}

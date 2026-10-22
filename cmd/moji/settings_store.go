@@ -188,7 +188,8 @@ func (s *runtimeSettingsEditor) UpdateAutomationSettings(input graphqlapi.Update
 	if interval == 0 {
 		interval = s.store.Config().Automation.EffectiveSourcingRetryIntervalHours()
 	}
-	cfg, err := s.store.UpdateAutomation(
+	cfg, err := s.store.UpdateAutomationProcessing(
+		input.TaskProcessingEnabled,
 		input.TaskProgressSyncIntervalSeconds,
 		input.SubscriptionPollIntervalHours,
 		input.StashBoxEndpoints,

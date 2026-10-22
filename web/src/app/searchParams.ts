@@ -1,10 +1,10 @@
 import type { TaskSortKey, TaskStatusFilter } from "../types";
 
-export type TaskStatusParam = "all" | "active" | "completed" | "failed" | "pending-scan";
+export type TaskStatusParam = "all" | "active" | "completed" | "failed" | "waiting";
 export type TaskSortParam = "newest" | "updated" | "progress";
 
 const taskStatusFromParam: Record<TaskStatusParam, TaskStatusFilter> = {
-  all: "all", active: "running", completed: "completed", failed: "failed", "pending-scan": "scanPending"
+  all: "all", active: "running", completed: "completed", failed: "failed", waiting: "waiting"
 };
 const taskStatusToParam = Object.fromEntries(
   Object.entries(taskStatusFromParam).map(([key, value]) => [value, key])
@@ -24,11 +24,11 @@ export interface TaskSearchState {
 }
 
 export function parseTaskSearchParams(params: URLSearchParams): TaskSearchState {
-  const status = params.get("status") as TaskStatusParam | null;
+  const status = params.get("status") as TaskStatusParam | "pending-scan" | null;
   const sort = params.get("sort") as TaskSortParam | null;
   return {
     q: params.get("q")?.trim() ?? "",
-    status: status && taskStatusFromParam[status] ? taskStatusFromParam[status] : "all",
+    status: status === "pending-scan" ? "running" : status && taskStatusFromParam[status] ? taskStatusFromParam[status] : "all",
     sort: sort && taskSortFromParam[sort] ? taskSortFromParam[sort] : "createdAt"
   };
 }

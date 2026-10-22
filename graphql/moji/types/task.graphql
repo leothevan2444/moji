@@ -22,7 +22,7 @@ type Mutation {
   "Persist a download task immediately; search and submit torrent candidates in the background"
   downloadMedia(input: DownloadMediaInput!): Task!
 
-  "Synchronize Moji task progress from qBittorrent"
+  "Synchronize downloads and advance file preparation and Stash ingest, matching one background processing cycle"
   syncTaskProgress: [Task!]!
 
   "Trigger a Stash metadata scan for a single completed Moji task"

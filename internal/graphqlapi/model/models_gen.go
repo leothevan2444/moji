@@ -12,9 +12,11 @@ import (
 )
 
 type AutomationSettings struct {
-	SourcingRetryIntervalHours      int `json:"sourcingRetryIntervalHours"`
-	TaskProgressSyncIntervalSeconds int `json:"taskProgressSyncIntervalSeconds"`
-	SubscriptionPollIntervalHours   int `json:"subscriptionPollIntervalHours"`
+	// Whether automatic download and ingest processing is enabled
+	TaskProcessingEnabled           bool `json:"taskProcessingEnabled"`
+	SourcingRetryIntervalHours      int  `json:"sourcingRetryIntervalHours"`
+	TaskProgressSyncIntervalSeconds int  `json:"taskProgressSyncIntervalSeconds"`
+	SubscriptionPollIntervalHours   int  `json:"subscriptionPollIntervalHours"`
 	// Endpoint URLs in the user-defined order used for subscription lookups. Endpoints not listed here are still queried, in their Stash order, appended after the listed ones. An empty list means use Stash's order as-is.
 	StashBoxEndpoints         []string                   `json:"stashBoxEndpoints"`
 	SubscriptionReleasePolicy *SubscriptionReleasePolicy `json:"subscriptionReleasePolicy"`
@@ -879,6 +881,8 @@ type TransferIngestSettingsInput struct {
 }
 
 type UpdateAutomationSettingsInput struct {
+	// Independent switch; omitted by legacy clients to preserve the current setting
+	TaskProcessingEnabled           *bool                           `json:"taskProcessingEnabled,omitempty"`
 	SourcingRetryIntervalHours      int                             `json:"sourcingRetryIntervalHours"`
 	TaskProgressSyncIntervalSeconds int                             `json:"taskProgressSyncIntervalSeconds"`
 	SubscriptionPollIntervalHours   int                             `json:"subscriptionPollIntervalHours"`
