@@ -17,6 +17,7 @@ connection:
 
 ingest:
   keep_subtitles: false
+  generate_transcodes: false
   downloads:
     # Path reported by qBittorrent, and the same files as seen by Moji.
     qb_root: /downloads

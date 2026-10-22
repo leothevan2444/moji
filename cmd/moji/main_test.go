@@ -337,6 +337,16 @@ func TestBuildSettingsSnapshotNormalizesDefaults(t *testing.T) {
 	}
 }
 
+func TestIngestTranscodeSettingReachesSnapshotAndRuntime(t *testing.T) {
+	cfg := testConfig()
+	for _, enabled := range []bool{false, true, false} {
+		cfg.Ingest.GenerateTranscodes = enabled
+		if buildSettingsSnapshot(cfg, "test").Ingest.GenerateTranscodes != enabled || stashIntegrationConfig(cfg).GenerateTranscodes != enabled {
+			t.Fatalf("transcode setting %t was lost", enabled)
+		}
+	}
+}
+
 func TestTaskProcessingWorkerCanPauseAndResumeWithoutRestart(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()

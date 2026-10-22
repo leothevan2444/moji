@@ -72,6 +72,7 @@ func (s *runtimeSettingsEditor) UpdateIngestSettings(input graphqlapi.UpdateInge
 			Action: strings.TrimSpace(input.Transfer.Action),
 		},
 		input.KeepSubtitles,
+		input.GenerateTranscodes,
 	)
 	if err != nil {
 		logging.Errorf("settings: save ingest settings failed: %v", err)

@@ -259,6 +259,8 @@
       "defaultTags": "默认标签"
     },
     "ingest": {
+      "generateTranscodes": "生成视频转码",
+      "generateTranscodesInfo": "默认关闭。开启后，入库时请求 Stash 按需生成完整视频转码，可能增加处理时间和磁盘占用。关闭不影响封面、预览、时间轴导航图和 pHash 的生成。",
       "saved": "入库设置已保存。",
       "save": "保存入库设置",
       "transfer": "文件交付",

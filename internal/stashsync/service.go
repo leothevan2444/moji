@@ -23,10 +23,11 @@ const (
 )
 
 type IntegrationConfig struct {
-	KeepSubtitles bool
-	Downloads     DownloadsPathConfig
-	Library       LibraryPathConfig
-	Transfer      TransferConfig
+	GenerateTranscodes bool
+	KeepSubtitles      bool
+	Downloads          DownloadsPathConfig
+	Library            LibraryPathConfig
+	Transfer           TransferConfig
 }
 
 type DownloadsPathConfig struct {

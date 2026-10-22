@@ -560,7 +560,8 @@ func buildSettingsSnapshot(cfg *config.Config, version string) *graphqlapi.Setti
 			APIKey:           cfg.Connection.Stash.APIKey,
 		},
 		Ingest: graphqlapi.IngestSettingsSnapshot{
-			KeepSubtitles: cfg.Ingest.KeepSubtitles,
+			GenerateTranscodes: cfg.Ingest.GenerateTranscodes,
+			KeepSubtitles:      cfg.Ingest.KeepSubtitles,
 			Downloads: graphqlapi.DownloadsIngestSettingsSnapshot{
 				QBRoot:   cfg.Ingest.Downloads.QBRoot,
 				MojiRoot: cfg.Ingest.Downloads.MojiRoot,
@@ -877,7 +878,8 @@ func stashIntegrationConfig(cfg *config.Config) stashsync.IntegrationConfig {
 		return stashsync.IntegrationConfig{}
 	}
 	return stashsync.IntegrationConfig{
-		KeepSubtitles: cfg.Ingest.KeepSubtitles,
+		GenerateTranscodes: cfg.Ingest.GenerateTranscodes,
+		KeepSubtitles:      cfg.Ingest.KeepSubtitles,
 		Downloads: stashsync.DownloadsPathConfig{
 			QBRoot:   strings.TrimSpace(cfg.Ingest.Downloads.QBRoot),
 			MojiRoot: strings.TrimSpace(cfg.Ingest.Downloads.MojiRoot),

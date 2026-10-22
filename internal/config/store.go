@@ -86,7 +86,7 @@ func (s *Store) UpdateIngest(
 	downloads DownloadsIngestConfig,
 	library LibraryIngestConfig,
 	transfer TransferIngestConfig,
-	keepSubtitles ...bool,
+	keepSubtitles, generateTranscodes bool,
 ) (*Config, error) {
 	if transfer.Action != "COPY" && transfer.Action != "MOVE" {
 		return nil, fmt.Errorf("ingest transfer action must be COPY or MOVE")
@@ -98,9 +98,8 @@ func (s *Store) UpdateIngest(
 	s.cfg.Ingest.Downloads = downloads
 	s.cfg.Ingest.Library = library
 	s.cfg.Ingest.Transfer = transfer
-	if len(keepSubtitles) > 0 {
-		s.cfg.Ingest.KeepSubtitles = keepSubtitles[0]
-	}
+	s.cfg.Ingest.KeepSubtitles = keepSubtitles
+	s.cfg.Ingest.GenerateTranscodes = generateTranscodes
 
 	if err := s.updateConfigNode(); err != nil {
 		return nil, err
@@ -235,6 +234,7 @@ func (s *Store) updateConfigNode() error {
 	})
 	ensureMapValue(mapValue(top, "ingest"))
 	setBoolScalar(mapValue(top, "ingest"), "keep_subtitles", s.cfg.Ingest.KeepSubtitles)
+	setBoolScalar(mapValue(top, "ingest"), "generate_transcodes", s.cfg.Ingest.GenerateTranscodes)
 	setMapString(mapValue(top, "ingest"), "downloads", map[string]string{
 		"qb_root":   s.cfg.Ingest.Downloads.QBRoot,
 		"moji_root": s.cfg.Ingest.Downloads.MojiRoot,

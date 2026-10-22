@@ -38,7 +38,8 @@ func (r *mutationResolver) UpdateIngestSettings(ctx context.Context, input model
 	}
 
 	snapshot, err := r.SettingsEditor.UpdateIngestSettings(UpdateIngestSettingsInput{
-		KeepSubtitles: input.KeepSubtitles != nil && *input.KeepSubtitles,
+		GenerateTranscodes: input.GenerateTranscodes != nil && *input.GenerateTranscodes,
+		KeepSubtitles:      input.KeepSubtitles != nil && *input.KeepSubtitles,
 		Downloads: DownloadsIngestSettingsSnapshot{
 			QBRoot:   input.Downloads.QbRoot,
 			MojiRoot: input.Downloads.MojiRoot,

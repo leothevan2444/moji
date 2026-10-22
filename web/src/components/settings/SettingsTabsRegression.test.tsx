@@ -73,10 +73,27 @@ describe("settings tab visual contracts", () => {
     fireEvent.click(screen.getByText("settings.ingest.save"));
     await waitFor(() => expect(updateSettings).toHaveBeenCalledWith({ input: {
       keepSubtitles: true,
+      generateTranscodes: false,
       downloads: { qbRoot: "/q/downloads", mojiRoot: "/moji/downloads" },
       library: { mojiRoot: "/moji/library", stashRoot: "/stash/library" },
       transfer: { action: "MOVE" }
     } }));
+  });
+
+  it("defaults transcodes off and preserves the choice across tab changes before saving", async () => {
+    updateSettings.mockClear();
+    const view = render(<SettingsDraftProvider><IngestSettingsTab /></SettingsDraftProvider>);
+    const toggle = screen.getByLabelText("settings.ingest.generateTranscodes") as HTMLInputElement;
+    expect(toggle.checked).toBe(false);
+    fireEvent.click(toggle);
+    view.rerender(<SettingsDraftProvider><SystemSettingsTab /></SettingsDraftProvider>);
+    view.rerender(<SettingsDraftProvider><IngestSettingsTab /></SettingsDraftProvider>);
+    expect((screen.getByLabelText("settings.ingest.generateTranscodes") as HTMLInputElement).checked).toBe(true);
+    fireEvent.click(screen.getByText("settings.ingest.save"));
+    await waitFor(() => expect(updateSettings).toHaveBeenCalledWith({ input: expect.objectContaining({ generateTranscodes: true, keepSubtitles: true }) }));
+    fireEvent.click(screen.getByLabelText("settings.ingest.generateTranscodes"));
+    fireEvent.click(screen.getByText("settings.ingest.save"));
+    await waitFor(() => expect(updateSettings).toHaveBeenLastCalledWith({ input: expect.objectContaining({ generateTranscodes: false }) }));
   });
 
   it("renders image cache as a switch and disables dependent inputs", () => {

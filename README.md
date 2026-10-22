@@ -116,6 +116,9 @@ must share the actual library directory, not just use matching path names.
 sources. MOVE stops the torrent and removes selected sources after the prepared
 movie and subtitles have been delivered; it also requires write permission to
 the download directory. `ingest.keep_subtitles` controls subtitle retention.
+`ingest.generate_transcodes` defaults to `false`. Enable **Generate video transcodes**
+under **Settings → Ingest** to ask Stash to generate necessary video transcodes
+during ingest. Covers, previews, timeline sprites, and pHash are generated regardless.
 
 The example service URLs use `host.docker.internal` to reach ports published on
 the Docker host. Use service names when connecting containers on a shared Docker

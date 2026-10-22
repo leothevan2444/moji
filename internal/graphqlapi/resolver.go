@@ -89,10 +89,11 @@ type UpdateStashSettingsInput struct {
 }
 
 type UpdateIngestSettingsInput struct {
-	KeepSubtitles bool
-	Downloads     DownloadsIngestSettingsSnapshot
-	Library       LibraryIngestSettingsSnapshot
-	Transfer      TransferIngestSettingsSnapshot
+	GenerateTranscodes bool
+	KeepSubtitles      bool
+	Downloads          DownloadsIngestSettingsSnapshot
+	Library            LibraryIngestSettingsSnapshot
+	Transfer           TransferIngestSettingsSnapshot
 }
 
 type UpdateJackettSettingsInput struct {
@@ -151,10 +152,11 @@ type StashSettingsSnapshot struct {
 }
 
 type IngestSettingsSnapshot struct {
-	KeepSubtitles bool
-	Downloads     DownloadsIngestSettingsSnapshot
-	Library       LibraryIngestSettingsSnapshot
-	Transfer      TransferIngestSettingsSnapshot
+	GenerateTranscodes bool
+	KeepSubtitles      bool
+	Downloads          DownloadsIngestSettingsSnapshot
+	Library            LibraryIngestSettingsSnapshot
+	Transfer           TransferIngestSettingsSnapshot
 }
 
 type DownloadsIngestSettingsSnapshot struct {

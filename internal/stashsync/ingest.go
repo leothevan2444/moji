@@ -107,11 +107,12 @@ func (s *Service) MetadataGenerate(ctx context.Context, ids []string) (string, e
 		return "", err
 	}
 	enabled := true
+	transcodes := s.CurrentConfig().GenerateTranscodes
 	// pHash must exist before stash-box identification. Generate playback assets
-	// without overwriting existing files; transcodes are generated only if needed.
+	// without overwriting existing files; opt-in transcodes are generated only if needed.
 	return client.MetadataGenerate(ctx, stashgraphql.GenerateMetadataInput{
 		SceneIDs: ids, Covers: &enabled, Previews: &enabled, Sprites: &enabled,
-		Phashes: &enabled, Transcodes: &enabled,
+		Phashes: &enabled, Transcodes: &transcodes,
 	})
 }
 

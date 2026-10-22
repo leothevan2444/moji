@@ -262,6 +262,8 @@
       "defaultTags": "Default tags"
     },
     "ingest": {
+      "generateTranscodes": "Generate video transcodes",
+      "generateTranscodesInfo": "Off by default. When enabled, ingest asks Stash to generate full video transcodes when needed, which may use more processing time and disk space. Covers, previews, timeline sprites, and pHash are generated regardless.",
       "saved": "Ingest settings saved.",
       "save": "Save ingest settings",
       "transfer": "File delivery",

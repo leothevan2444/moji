@@ -45,7 +45,7 @@ func TestIngestJobsAreScopedAndUseStashIdentifySettings(t *testing.T) {
 	if _, err := service.MetadataGenerate(context.Background(), ids); err != nil {
 		t.Fatal(err)
 	}
-	if !reflect.DeepEqual(client.generate.SceneIDs, ids) || client.generate.Phashes == nil || !*client.generate.Phashes || client.generate.Transcodes == nil || !*client.generate.Transcodes {
+	if !reflect.DeepEqual(client.generate.SceneIDs, ids) || client.generate.Phashes == nil || !*client.generate.Phashes || client.generate.Transcodes == nil || *client.generate.Transcodes {
 		t.Fatalf("missing scope or playback/fingerprint generation: %+v", client.generate)
 	}
 	if client.generate.Overwrite != nil || client.generate.ForceTranscodes != nil {
@@ -56,6 +56,30 @@ func TestIngestJobsAreScopedAndUseStashIdentifySettings(t *testing.T) {
 	}
 	if !reflect.DeepEqual(client.identify.SceneIDs, ids) || len(client.identify.Paths) != 0 || client.identify.Sources[0].Source.ScraperID != &source || client.identify.Sources[0].Options.FieldOptions[0].Strategy != merge {
 		t.Fatalf("Identify settings or scope lost: %+v", client.identify)
+	}
+}
+
+func TestIngestTranscodesFollowCurrentSettings(t *testing.T) {
+	client := &fakeIngestClient{}
+	cfg := IntegrationConfig{}
+	service, _ := NewService(client, func() IntegrationConfig { return cfg })
+	for _, enabled := range []bool{false, true, false} {
+		cfg.GenerateTranscodes = enabled
+		if _, err := service.MetadataGenerate(context.Background(), []string{"1"}); err != nil {
+			t.Fatal(err)
+		}
+		input := client.generate
+		if input.Transcodes == nil || *input.Transcodes != enabled {
+			t.Fatalf("transcodes should follow current setting %t: %+v", enabled, input)
+		}
+		for name, flag := range map[string]*bool{"covers": input.Covers, "previews": input.Previews, "sprites": input.Sprites, "phashes": input.Phashes} {
+			if flag == nil || !*flag {
+				t.Fatalf("%s must remain enabled", name)
+			}
+		}
+		if input.Overwrite != nil || input.ForceTranscodes != nil {
+			t.Fatal("generation must not overwrite or force transcodes")
+		}
 	}
 }
 

@@ -143,10 +143,11 @@ type IndexerPreferenceRuleInput struct {
 }
 
 type IngestSettings struct {
-	KeepSubtitles bool                     `json:"keepSubtitles"`
-	Downloads     *DownloadsIngestSettings `json:"downloads"`
-	Library       *LibraryIngestSettings   `json:"library"`
-	Transfer      *TransferIngestSettings  `json:"transfer"`
+	GenerateTranscodes bool                     `json:"generateTranscodes"`
+	KeepSubtitles      bool                     `json:"keepSubtitles"`
+	Downloads          *DownloadsIngestSettings `json:"downloads"`
+	Library            *LibraryIngestSettings   `json:"library"`
+	Transfer           *TransferIngestSettings  `json:"transfer"`
 }
 
 type IngestStatus struct {
@@ -892,10 +893,11 @@ type UpdateAutomationSettingsInput struct {
 }
 
 type UpdateIngestSettingsInput struct {
-	KeepSubtitles *bool                         `json:"keepSubtitles,omitempty"`
-	Downloads     *DownloadsIngestSettingsInput `json:"downloads"`
-	Library       *LibraryIngestSettingsInput   `json:"library"`
-	Transfer      *TransferIngestSettingsInput  `json:"transfer"`
+	GenerateTranscodes *bool                         `json:"generateTranscodes,omitempty"`
+	KeepSubtitles      *bool                         `json:"keepSubtitles,omitempty"`
+	Downloads          *DownloadsIngestSettingsInput `json:"downloads"`
+	Library            *LibraryIngestSettingsInput   `json:"library"`
+	Transfer           *TransferIngestSettingsInput  `json:"transfer"`
 }
 
 type UpdateJackettSettingsInput struct {

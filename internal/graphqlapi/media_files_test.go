@@ -50,6 +50,31 @@ func TestFileSelectionGraphQLPreservesOrderAndExposesPlan(t *testing.T) {
 		t.Fatalf("file plan missing: %+v", response)
 	}
 }
+func TestIngestTranscodeSettingGraphQLContract(t *testing.T) {
+	for _, tc := range []struct {
+		name, field string
+		enabled     bool
+	}{{"omitted", "", false}, {"enabled", "generateTranscodes:true,", true}, {"disabled", "generateTranscodes:false,", false}} {
+		t.Run(tc.name, func(t *testing.T) {
+			editor := &fakeSettingsEditor{updateIngestSnapshot: &SettingsSnapshot{Ingest: IngestSettingsSnapshot{GenerateTranscodes: tc.enabled}}}
+			resolver := NewResolver(nil, nil, nil, nil, "test")
+			resolver.SettingsEditor = editor
+			var response struct {
+				Data struct {
+					UpdateIngestSettings struct {
+						Ingest struct{ GenerateTranscodes bool }
+					}
+				}
+				Errors []struct{ Message string }
+			}
+			executeGraphQLInto(t, resolver, `mutation { updateIngestSettings(input:{`+tc.field+`downloads:{qbRoot:"/q",mojiRoot:"/m"},library:{mojiRoot:"/library",stashRoot:"/stash"},transfer:{action:"COPY"}}){ingest{generateTranscodes}} }`, &response)
+			if len(response.Errors) > 0 || response.Data.UpdateIngestSettings.Ingest.GenerateTranscodes != tc.enabled || editor.ingestInput.GenerateTranscodes != tc.enabled {
+				t.Fatalf("transcode setting lost: %+v %+v", response, editor.ingestInput)
+			}
+		})
+	}
+}
+
 func TestIngestSubtitleSettingGraphQLContract(t *testing.T) {
 	editor := &fakeSettingsEditor{updateIngestSnapshot: &SettingsSnapshot{Ingest: IngestSettingsSnapshot{KeepSubtitles: true}}}
 	resolver := NewResolver(nil, nil, nil, nil, "test")

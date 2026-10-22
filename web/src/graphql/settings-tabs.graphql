@@ -21,6 +21,7 @@ query IngestSettingsTab {
   settings {
     ingest {
       keepSubtitles
+      generateTranscodes
 
       downloads { qbRoot mojiRoot }
       library { mojiRoot stashRoot }

@@ -9,7 +9,7 @@ import { useSettingsDraft } from "./SettingsDraftStore";
 import { FieldLabel, SettingsCard, SettingsError, SettingsLoading } from "./SettingsTabCommon";
 import "../../styles/settings-system.scss";
 
-interface IngestDraft { keepSubtitles: boolean; qbRoot: string; mojiDownloadsRoot: string; mojiLibraryRoot: string; stashRoot: string; transferAction: string }
+interface IngestDraft { keepSubtitles: boolean; generateTranscodes: boolean; qbRoot: string; mojiDownloadsRoot: string; mojiLibraryRoot: string; stashRoot: string; transferAction: string }
 
 export default function IngestSettingsTab() {
   const { t } = useTranslation();
@@ -19,6 +19,7 @@ export default function IngestSettingsTab() {
   const [pendingDefault, setPendingDefault] = useState<string | null>(null);
   const initial = useMemo<IngestDraft>(() => ({
     keepSubtitles: data?.settings.ingest.keepSubtitles ?? false,
+    generateTranscodes: data?.settings.ingest.generateTranscodes ?? false,
     qbRoot: data?.settings.ingest.downloads.qbRoot ?? "",
     mojiDownloadsRoot: data?.settings.ingest.downloads.mojiRoot ?? "",
     mojiLibraryRoot: data?.settings.ingest.library.mojiRoot ?? "",
@@ -31,7 +32,7 @@ export default function IngestSettingsTab() {
   if (error && !data) return <SettingsError title={t("settings.tabs.ingest")} error={error} onRetry={() => refresh({ requestPolicy: "network-only" })} />;
 
   const submit = async (qbRoot: string) => {
-    const result = await updateIngest({ input: { keepSubtitles: form.keepSubtitles, downloads: { qbRoot, mojiRoot: form.mojiDownloadsRoot.trim() }, library: { mojiRoot: form.mojiLibraryRoot.trim(), stashRoot: form.stashRoot.trim() }, transfer: { action: form.transferAction } } });
+    const result = await updateIngest({ input: { keepSubtitles: form.keepSubtitles, generateTranscodes: form.generateTranscodes, downloads: { qbRoot, mojiRoot: form.mojiDownloadsRoot.trim() }, library: { mojiRoot: form.mojiLibraryRoot.trim(), stashRoot: form.stashRoot.trim() }, transfer: { action: form.transferAction } } });
     if (result.error) { pushToast("tone-danger", describeQueryError(result.error)); return; }
     const saved = { ...form, qbRoot };
     markSaved(saved);
@@ -49,6 +50,7 @@ export default function IngestSettingsTab() {
 
   return <SettingsCard title={t("settings.tabs.ingest")}>
     <form className="settings-form" onSubmit={save}>
+      <label className="settings-field"><span className="switch-row__label"><FieldLabel text={t("settings.ingest.generateTranscodes")} info={t("settings.ingest.generateTranscodesInfo")} /></span><span className="switch" role="switch" aria-checked={form.generateTranscodes}><input type="checkbox" checked={form.generateTranscodes} aria-label={t("settings.ingest.generateTranscodes")} onChange={(event) => setForm((current) => ({ ...current, generateTranscodes: event.target.checked }))} /><span className="switch__track" aria-hidden="true" /><span className="switch__thumb" aria-hidden="true" /></span></label>
       <label className="settings-field"><span className="switch-row__label"><FieldLabel text={t("mediaFiles.keepSubtitles")} info={t("mediaFiles.keepSubtitlesInfo")} /></span><span className="switch" role="switch" aria-checked={form.keepSubtitles}><input type="checkbox" checked={form.keepSubtitles} aria-label={t("mediaFiles.keepSubtitles")} onChange={(event) => setForm((current) => ({ ...current, keepSubtitles: event.target.checked }))} /><span className="switch__track" aria-hidden="true" /><span className="switch__thumb" aria-hidden="true" /></span></label>
       <label className="settings-field"><FieldLabel text={t("settings.ingest.qbRoot")} info={t("settings.ingest.qbRootInfo")} /><input value={form.qbRoot} onChange={(event) => setForm((current) => ({ ...current, qbRoot: event.target.value }))} placeholder="/downloads" /></label>
       <label className="settings-field"><FieldLabel text={t("settings.ingest.stashRoot")} info={t("settings.ingest.stashInfo")} /><select value={form.stashRoot} onChange={(event) => setForm((current) => ({ ...current, stashRoot: event.target.value }))}><option value="">{libraries.length ? t("settings.ingest.selectStashRoot") : t("settings.ingest.noStashRoot")}</option>{form.stashRoot && !libraries.some((item) => item.path === form.stashRoot) ? <option value={form.stashRoot}>{form.stashRoot}</option> : null}{libraries.map((item) => <option key={item.path} value={item.path}>{item.path}</option>)}</select></label>

@@ -81,7 +81,8 @@ func settingsSnapshotToModel(snapshot *SettingsSnapshot, appVersion string) *mod
 			APIKey:           snapshot.Stash.APIKey,
 		},
 		Ingest: &model.IngestSettings{
-			KeepSubtitles: snapshot.Ingest.KeepSubtitles,
+			GenerateTranscodes: snapshot.Ingest.GenerateTranscodes,
+			KeepSubtitles:      snapshot.Ingest.KeepSubtitles,
 			Downloads: &model.DownloadsIngestSettings{
 				QbRoot:   snapshot.Ingest.Downloads.QBRoot,
 				MojiRoot: snapshot.Ingest.Downloads.MojiRoot,

@@ -335,10 +335,11 @@ type SubscriptionReleasePolicyConfig struct {
 }
 
 type IngestConfig struct {
-	KeepSubtitles bool                  `yaml:"keep_subtitles"`
-	Downloads     DownloadsIngestConfig `yaml:"downloads"`
-	Library       LibraryIngestConfig   `yaml:"library"`
-	Transfer      TransferIngestConfig  `yaml:"transfer"`
+	GenerateTranscodes bool                  `yaml:"generate_transcodes"`
+	KeepSubtitles      bool                  `yaml:"keep_subtitles"`
+	Downloads          DownloadsIngestConfig `yaml:"downloads"`
+	Library            LibraryIngestConfig   `yaml:"library"`
+	Transfer           TransferIngestConfig  `yaml:"transfer"`
 }
 
 type DownloadsIngestConfig struct {

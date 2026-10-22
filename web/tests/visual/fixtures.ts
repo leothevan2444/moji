@@ -29,6 +29,7 @@ const rootValue = {
       defaultSavePath: "/downloads", category: "moji", tags: "",
     },
     ingest: {
+      generateTranscodes: false,
       keepSubtitles: false,
       downloads: { qbRoot: "/downloads", mojiRoot: "/downloads" },
       library: { mojiRoot: "/library", stashRoot: "/library" },

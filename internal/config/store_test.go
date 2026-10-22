@@ -290,7 +290,7 @@ func TestIngestSubtitleSwitchPersists(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	cfg, err := store.UpdateIngest(DownloadsIngestConfig{}, LibraryIngestConfig{}, TransferIngestConfig{Action: "COPY"}, true)
+	cfg, err := store.UpdateIngest(DownloadsIngestConfig{}, LibraryIngestConfig{}, TransferIngestConfig{Action: "COPY"}, true, false)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -306,6 +306,36 @@ func TestIngestSubtitleSwitchPersists(t *testing.T) {
 	}
 }
 
+func TestIngestTranscodeSwitchDefaultsOffAndPersists(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "config.yaml")
+	if err := os.WriteFile(path, []byte("ingest:\n  keep_subtitles: true\n"), 0600); err != nil {
+		t.Fatal(err)
+	}
+	store, err := OpenStore(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if store.Config().Ingest.GenerateTranscodes {
+		t.Fatal("old configurations must default transcodes to off")
+	}
+	for _, enabled := range []bool{true, false} {
+		cfg, err := store.UpdateIngest(DownloadsIngestConfig{}, LibraryIngestConfig{}, TransferIngestConfig{Action: "COPY"}, true, enabled)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if cfg.Ingest.GenerateTranscodes != enabled || !cfg.Ingest.KeepSubtitles {
+			t.Fatalf("incorrect ingest settings: %+v", cfg.Ingest)
+		}
+		store, err = OpenStore(path)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if store.Config().Ingest.GenerateTranscodes != enabled {
+			t.Fatalf("transcode setting %t did not survive reopening", enabled)
+		}
+	}
+}
+
 func TestIngestRejectsUnsupportedActionsWithoutChangingConfig(t *testing.T) {
 	for _, action := range []string{"", "SYMLINK", "UNKNOWN"} {
 		t.Run(action, func(t *testing.T) {
@@ -318,7 +348,7 @@ func TestIngestRejectsUnsupportedActionsWithoutChangingConfig(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			if _, err := store.UpdateIngest(DownloadsIngestConfig{}, LibraryIngestConfig{}, TransferIngestConfig{Action: action}); err == nil {
+			if _, err := store.UpdateIngest(DownloadsIngestConfig{}, LibraryIngestConfig{}, TransferIngestConfig{Action: action}, false, false); err == nil {
 				t.Fatal("expected unsupported delivery action to be rejected")
 			}
 			data, err := os.ReadFile(path)

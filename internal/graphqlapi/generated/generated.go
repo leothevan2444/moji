@@ -141,10 +141,11 @@ type ComplexityRoot struct {
 	}
 
 	IngestSettings struct {
-		Downloads     func(childComplexity int) int
-		KeepSubtitles func(childComplexity int) int
-		Library       func(childComplexity int) int
-		Transfer      func(childComplexity int) int
+		Downloads          func(childComplexity int) int
+		GenerateTranscodes func(childComplexity int) int
+		KeepSubtitles      func(childComplexity int) int
+		Library            func(childComplexity int) int
+		Transfer           func(childComplexity int) int
 	}
 
 	IngestStatus struct {
@@ -1238,6 +1239,13 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.IngestSettings.Downloads(childComplexity), true
+
+	case "IngestSettings.generateTranscodes":
+		if e.complexity.IngestSettings.GenerateTranscodes == nil {
+			break
+		}
+
+		return e.complexity.IngestSettings.GenerateTranscodes(childComplexity), true
 
 	case "IngestSettings.keepSubtitles":
 		if e.complexity.IngestSettings.KeepSubtitles == nil {
@@ -4886,6 +4894,7 @@ type StashSettings {
 }
 
 type IngestSettings {
+  generateTranscodes: Boolean!
   keepSubtitles: Boolean!
   downloads: DownloadsIngestSettings!
   library: LibraryIngestSettings!
@@ -5122,6 +5131,7 @@ input UpdateStashSettingsInput {
 }
 
 input UpdateIngestSettingsInput {
+  generateTranscodes: Boolean = false
   keepSubtitles: Boolean = false
   downloads: DownloadsIngestSettingsInput!
   library: LibraryIngestSettingsInput!
@@ -9838,6 +9848,50 @@ func (ec *executionContext) fieldContext_IndexerPreferenceRule_trackerIds(_ cont
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _IngestSettings_generateTranscodes(ctx context.Context, field graphql.CollectedField, obj *model.IngestSettings) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_IngestSettings_generateTranscodes(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.GenerateTranscodes, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(bool)
+	fc.Result = res
+	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_IngestSettings_generateTranscodes(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "IngestSettings",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
 		},
 	}
 	return fc, nil
@@ -20319,6 +20373,8 @@ func (ec *executionContext) fieldContext_Settings_ingest(_ context.Context, fiel
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			switch field.Name {
+			case "generateTranscodes":
+				return ec.fieldContext_IngestSettings_generateTranscodes(ctx, field)
 			case "keepSubtitles":
 				return ec.fieldContext_IngestSettings_keepSubtitles(ctx, field)
 			case "downloads":
@@ -34655,17 +34711,27 @@ func (ec *executionContext) unmarshalInputUpdateIngestSettingsInput(ctx context.
 		asMap[k] = v
 	}
 
+	if _, present := asMap["generateTranscodes"]; !present {
+		asMap["generateTranscodes"] = false
+	}
 	if _, present := asMap["keepSubtitles"]; !present {
 		asMap["keepSubtitles"] = false
 	}
 
-	fieldsInOrder := [...]string{"keepSubtitles", "downloads", "library", "transfer"}
+	fieldsInOrder := [...]string{"generateTranscodes", "keepSubtitles", "downloads", "library", "transfer"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
 			continue
 		}
 		switch k {
+		case "generateTranscodes":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("generateTranscodes"))
+			data, err := ec.unmarshalOBoolean2ᚖbool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.GenerateTranscodes = data
 		case "keepSubtitles":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("keepSubtitles"))
 			data, err := ec.unmarshalOBoolean2ᚖbool(ctx, v)
@@ -35558,6 +35624,11 @@ func (ec *executionContext) _IngestSettings(ctx context.Context, sel ast.Selecti
 		switch field.Name {
 		case "__typename":
 			out.Values[i] = graphql.MarshalString("IngestSettings")
+		case "generateTranscodes":
+			out.Values[i] = ec._IngestSettings_generateTranscodes(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
 		case "keepSubtitles":
 			out.Values[i] = ec._IngestSettings_keepSubtitles(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
