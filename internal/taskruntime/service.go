@@ -66,6 +66,7 @@ const (
 )
 
 type Task struct {
+	RestartStateJSON        string
 	TorrentFileData         []byte
 	SourcingLastCheckedAt   *time.Time
 	SourcingNextCheckAt     *time.Time
@@ -389,6 +390,9 @@ func (s *Service) DeleteTask(ctx context.Context, id string) (*Task, error) {
 	}
 
 	policy := config.TaskDeletePolicyKeepOnly
+	if task.RestartStateJSON != "" {
+		return task, ErrRestartCleanup
+	}
 	if s.taskDeletePolicy != nil {
 		policy = config.NormalizeTaskDeletePolicy(string(s.taskDeletePolicy()))
 	}
@@ -422,6 +426,12 @@ func (s *Service) RetryTask(ctx context.Context, id string, scanner StashScanner
 	}
 	if task == nil {
 		return nil, fmt.Errorf("taskruntime: task %q not found", id)
+	}
+	if task.RestartStateJSON != "" {
+		return s.restartTaskSourcingLocked(ctx, task, scanner)
+	}
+	if task.StageErrorCode == TaskStageErrorManualSource {
+		return task, ErrSourcingUnavailable
 	}
 	if task.Stage == TaskStageCompleted {
 		return nil, fmt.Errorf("taskruntime: task %q is already completed", id)
@@ -459,7 +469,7 @@ func (s *Service) ResolveBlockedSourcingTask(ctx context.Context, id string, req
 	if task == nil {
 		return nil, fmt.Errorf("taskruntime: task %q not found", id)
 	}
-	if task.Stage != TaskStageSourcing || (task.StageStatus != TaskStageStatusBlocked && !waitingForResource(task)) {
+	if task.RestartStateJSON != "" || task.Stage != TaskStageSourcing || (task.StageStatus != TaskStageStatusBlocked && !waitingForResource(task)) {
 		return nil, ErrSourcingUnavailable
 	}
 
@@ -569,7 +579,7 @@ func (s *Service) syncTaskProgress(ctx context.Context, snapshot *Task, torrents
 	if err != nil {
 		return snapshot, nil
 	}
-	if task.Stage != TaskStageDownloading {
+	if task.Stage != TaskStageDownloading || task.RestartStateJSON != "" {
 		return task, nil
 	}
 	// Recover older submissions that were marked downloading without ever

@@ -24,6 +24,7 @@ type StashGraphQLClient interface {
 	MetadataIdentify(ctx context.Context, input IdentifyMetadataInput, interceptors ...clientv2.RequestInterceptor) (*MetadataIdentify, error)
 	IngestDefaults(ctx context.Context, interceptors ...clientv2.RequestInterceptor) (*IngestDefaults, error)
 	IngestScenes(ctx context.Context, sceneFilter *SceneFilterType, filter *FindFilterType, ids []string, interceptors ...clientv2.RequestInterceptor) (*IngestScenes, error)
+	RemoveIngestScene(ctx context.Context, input SceneDestroyInput, interceptors ...clientv2.RequestInterceptor) (*RemoveIngestScene, error)
 }
 
 type Client struct {
@@ -1080,6 +1081,17 @@ func (t *IngestScenes) GetFindScenes() *IngestScenes_FindScenes {
 	return &t.FindScenes
 }
 
+type RemoveIngestScene struct {
+	SceneDestroy bool "json:\"sceneDestroy\" graphql:\"sceneDestroy\""
+}
+
+func (t *RemoveIngestScene) GetSceneDestroy() bool {
+	if t == nil {
+		t = &RemoveIngestScene{}
+	}
+	return t.SceneDestroy
+}
+
 const FindPerformerByIDDocument = `query FindPerformerByID ($id: ID!) {
 	findPerformer(id: $id) {
 		... PerformerFragment
@@ -1621,6 +1633,28 @@ func (c *Client) IngestScenes(ctx context.Context, sceneFilter *SceneFilterType,
 	return &res, nil
 }
 
+const RemoveIngestSceneDocument = `mutation RemoveIngestScene ($input: SceneDestroyInput!) {
+	sceneDestroy(input: $input)
+}
+`
+
+func (c *Client) RemoveIngestScene(ctx context.Context, input SceneDestroyInput, interceptors ...clientv2.RequestInterceptor) (*RemoveIngestScene, error) {
+	vars := map[string]any{
+		"input": input,
+	}
+
+	var res RemoveIngestScene
+	if err := c.Client.Post(ctx, "RemoveIngestScene", RemoveIngestSceneDocument, &res, vars, interceptors...); err != nil {
+		if c.Client.ParseDataWhenErrors {
+			return &res, err
+		}
+
+		return nil, err
+	}
+
+	return &res, nil
+}
+
 var DocumentOperationNames = map[string]string{
 	FindPerformerByIDDocument:           "FindPerformerByID",
 	FindPerformersDocument:              "FindPerformers",
@@ -1636,4 +1670,5 @@ var DocumentOperationNames = map[string]string{
 	MetadataIdentifyDocument:            "MetadataIdentify",
 	IngestDefaultsDocument:              "IngestDefaults",
 	IngestScenesDocument:                "IngestScenes",
+	RemoveIngestSceneDocument:           "RemoveIngestScene",
 }

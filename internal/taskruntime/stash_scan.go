@@ -121,6 +121,9 @@ func (s *Service) TriggerTaskStashScan(ctx context.Context, id string, scanner S
 	if task == nil {
 		return nil, fmt.Errorf("taskruntime: task %q not found", id)
 	}
+	if task.RestartStateJSON != "" {
+		return task, ErrRestartCleanup
+	}
 	if !shouldAllowManualStashScan(task) {
 		return nil, fmt.Errorf("taskruntime: task %q is not ready for stash scan", id)
 	}

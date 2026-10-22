@@ -121,6 +121,10 @@ func classifyError(err error) string {
 		return ErrorDuplicateLibraryCode
 	case errors.Is(err, taskruntime.ErrTaskCodeRequired):
 		return ErrorTaskCodeRequired
+	case errors.Is(err, taskruntime.ErrRestartUnavailable):
+		return "TASK_RESTART_UNAVAILABLE"
+	case errors.Is(err, taskruntime.ErrRestartCleanup):
+		return "TASK_RESTART_CLEANUP_PENDING"
 	case errors.Is(err, taskruntime.ErrTaskBatchEmpty):
 		return ErrorTaskBatchEmpty
 	case errors.Is(err, taskruntime.ErrTaskBatchTooLarge):

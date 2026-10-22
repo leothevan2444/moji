@@ -59,3 +59,17 @@ func (c *Client) FindIngestScenes(ctx context.Context, path string, ids []string
 	}
 	return response.FindScenes.Scenes, nil
 }
+
+// Remove only the scene record and generated assets. Downloaded and delivered
+// media are deleted separately by Moji's persisted task cleanup.
+func (c *Client) RemoveIngestScene(ctx context.Context, id string) error {
+	no, yes := false, true
+	response, err := c.resolve().RemoveIngestScene(ctx, graphql.SceneDestroyInput{ID: id, DeleteFile: &no, DeleteGenerated: &yes})
+	if err != nil {
+		return err
+	}
+	if !response.SceneDestroy {
+		return errors.New("Stash did not remove the scene")
+	}
+	return nil
+}

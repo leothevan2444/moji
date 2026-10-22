@@ -24,6 +24,7 @@ export {
   taskGroup,
   taskGroupTone,
   canTriggerTaskStashScan,
+  canRestartTaskSourcing,
   needsTaskFileSelection,
   taskPrimaryAction,
   isWaitingForResource,

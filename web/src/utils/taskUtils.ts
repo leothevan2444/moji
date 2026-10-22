@@ -152,6 +152,12 @@ export function canTriggerTaskStashScan(task: DashboardTask) {
   return stageValue(task) === "pending_ingest" && !task.stashScanJobId;
 }
 
+export function canRestartTaskSourcing(task: DashboardTask) {
+  return Boolean(task.code) && task.stage !== "COMPLETED" && task.stage !== "SOURCING"
+    && (task.stage === "DOWNLOADING" || task.stageStatus === "BLOCKED"
+      || (task.stage === "PENDING_INGEST" && task.stageStatus === "PENDING"));
+}
+
 export function needsTaskFileSelection(task: DashboardTask) {
   return task.stage === "DOWNLOADING" && task.stageStatus === "BLOCKED"
     && (task.stageErrorCode === "FILE_SELECTION_REQUIRED"
@@ -174,7 +180,7 @@ export function taskPrimaryAction(task: DashboardTask): "resolve" | "files" | "r
 
 export function taskBatchEligibility(tasks: DashboardTask[]) {
   return {
-    retryIds: tasks.filter((task) => (task.stageStatus === "BLOCKED" || isWaitingForResource(task)) && task.stage !== "COMPLETED").map((task) => task.id),
+    retryIds: tasks.filter((task) => (task.stageStatus === "BLOCKED" || isWaitingForResource(task)) && task.stage !== "COMPLETED" && task.stageErrorCode !== "MANUAL_SOURCE_REQUIRED").map((task) => task.id),
     ingestIds: tasks.filter((task) => ["PENDING_INGEST", "TRANSFERRING", "SCANNING"].includes(task.stage) && !(task.stage === "SCANNING" && task.stageStatus === "RUNNING")).map((task) => task.id)
   };
 }
@@ -190,6 +196,8 @@ function simplifyMessage(message: string) {
 }
 
 export function taskFailureSummary(task: DashboardTask): TaskFailureSummary {
+  if (task.stageErrorCode === "MANUAL_SOURCE_REQUIRED") return { title: tr("taskRestart.choose"), detail: tr("taskRestart.chooseDetail"), tone: "tone-warn" };
+  if (task.stageErrorCode === "TASK_RESTART_CLEANUP_PENDING") return { title: tr("taskRestart.cleanup"), detail: tr("taskRestart.cleanupDetail"), tone: "tone-danger" };
   const sourcingFailures: Record<string, string> = {
     CANDIDATE_CODE_MISMATCH: "candidateMismatch",
     CANDIDATE_IDENTITY_UNVERIFIED: "candidateUnverified",

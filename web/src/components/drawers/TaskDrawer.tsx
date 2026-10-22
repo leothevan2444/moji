@@ -12,6 +12,8 @@ interface TaskDrawerProps {
   onScanTask: (taskId: string) => void;
   onRetryTask: (taskId: string) => void;
   onDeleteTask: (taskId: string) => void;
+  onRestartTask?: (taskId: string) => void;
+  pendingRestart?: boolean;
 }
 
 export function TaskDrawer({
@@ -23,7 +25,9 @@ export function TaskDrawer({
   onResolveTask,
   onScanTask,
   onRetryTask,
-  onDeleteTask
+  onDeleteTask,
+  onRestartTask,
+  pendingRestart
 }: TaskDrawerProps) {
   const { t } = useTranslation();
   return (
@@ -39,6 +43,8 @@ export function TaskDrawer({
           onScanTask={onScanTask}
           onRetryTask={onRetryTask}
           onDeleteTask={onDeleteTask}
+          onRestartTask={onRestartTask}
+          pendingRestart={pendingRestart}
         />
       ) : (
         <article className="drawer-card">

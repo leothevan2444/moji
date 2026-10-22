@@ -200,6 +200,12 @@ export const graphcacheUpdates: UpdatesConfig = {
     addTorrent(result: any, _args, cache) { linkTask(cache, result.addTorrent, true); },
     downloadMedia(result: any, _args, cache) { linkTask(cache, result.downloadMedia, true); },
     queueDiscoveredScene(result: any, _args, cache) { linkTask(cache, result.queueDiscoveredScene, true); },
+    restartTaskSourcing(result: any, _args, cache) {
+      linkTask(cache, result.restartTaskSourcing);
+      for (const field of cache.inspectFields("Query")) {
+        if (field.fieldName === "taskStashScenes") cache.invalidate("Query", field.fieldName, field.arguments ?? {});
+      }
+    },
     retryTask(result: any, _args, cache) { linkTask(cache, result.retryTask); },
     resolveTaskFiles(result: any, _args, cache) { linkTask(cache, result.resolveTaskFiles); },
     resolveBlockedSourcingTask(result: any, _args, cache) { linkTask(cache, result.resolveBlockedSourcingTask); },

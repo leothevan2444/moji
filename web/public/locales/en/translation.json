@@ -499,6 +499,8 @@
     "TORRENT_METADATA_FAILED": "The torrent could not be read or validated. Check the file or torrent link.",
     "INVALID_TORRENT_INPUT": "Provide exactly one magnet or torrent URL, or a non-empty torrent file up to 8 MiB.",
     "SOURCING_TASK_UNAVAILABLE": "The task has left resource waiting or blocked sourcing. Refresh its status.",
+    "TASK_RESTART_UNAVAILABLE": "This task is processing media or has completed and cannot restart torrent selection.",
+    "TASK_RESTART_CLEANUP_PENDING": "Torrent reselection cleanup is incomplete. Check task diagnostics and click “Reselect torrent” again.",
     "TRANSFER_PATH_FAILED": "Ingest path mapping failed. Check the qB, Moji, and Stash root paths.",
     "STASH_SCAN_FAILED": "The Stash scan failed. Check the connection and scan path.",
     "NO_TORRENT_CANDIDATE": "No downloadable torrent candidate was found.",
@@ -855,6 +857,21 @@
       "queued": "Task created; searching for resources.",
       "stageWaiting": "Waiting for the current stage to advance."
     }
+  },
+  "taskRestart": {
+    "action": "Reselect torrent",
+    "title": "Reselect torrent and start over?",
+    "description": "This will delete the corresponding qBittorrent download task and downloaded files, along with the movie and its related data in your library.",
+    "next": "You can then choose another torrent, download it, and add it to your library again.",
+    "warning": "Files will be deleted without a backup and cannot be recovered.",
+    "confirm": "Delete files and reselect torrent",
+    "pending": "Deleting previous task files…",
+    "ready": "{{task}} has been reset. Choose a torrent to start again.",
+    "noResult": "The server returned no task for torrent reselection.",
+    "choose": "Choose a torrent again",
+    "chooseDetail": "Choose a torrent, then confirm the movie files again.",
+    "cleanup": "Torrent reselection cleanup is incomplete",
+    "cleanupDetail": "Click “Reselect torrent” again to resume cleanup. Copy diagnostics to inspect the failure."
   },
   "taskDetail": {
     "overview": "Task overview",

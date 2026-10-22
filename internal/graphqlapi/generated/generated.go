@@ -232,6 +232,7 @@ type ComplexityRoot struct {
 		RefreshSubscriptionsNow     func(childComplexity int) int
 		ResolveBlockedSourcingTask  func(childComplexity int, id string, input model.ResolveBlockedSourcingTaskInput) int
 		ResolveTaskFiles            func(childComplexity int, id string, videoIndices []int) int
+		RestartTaskSourcing         func(childComplexity int, id string) int
 		RetryTask                   func(childComplexity int, id string) int
 		RetryTasks                  func(childComplexity int, ids []string) int
 		StashMetadataScan           func(childComplexity int, input model.StashMetadataScanInput) int
@@ -761,6 +762,7 @@ type MutationResolver interface {
 	TriggerTaskStashScan(ctx context.Context, id string) (*model.Task, error)
 	TriggerStashScans(ctx context.Context) ([]*model.Task, error)
 	RetryTask(ctx context.Context, id string) (*model.Task, error)
+	RestartTaskSourcing(ctx context.Context, id string) (*model.Task, error)
 	ResolveBlockedSourcingTask(ctx context.Context, id string, input model.ResolveBlockedSourcingTaskInput) (*model.Task, error)
 	ResolveTaskFiles(ctx context.Context, id string, videoIndices []int) (*model.Task, error)
 	DeleteTask(ctx context.Context, id string) (*model.Task, error)
@@ -1720,6 +1722,18 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.Mutation.ResolveTaskFiles(childComplexity, args["id"].(string), args["videoIndices"].([]int)), true
+
+	case "Mutation.restartTaskSourcing":
+		if e.complexity.Mutation.RestartTaskSourcing == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_restartTaskSourcing_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.RestartTaskSourcing(childComplexity, args["id"].(string)), true
 
 	case "Mutation.retryTask":
 		if e.complexity.Mutation.RetryTask == nil {
@@ -5566,6 +5580,9 @@ type Mutation {
   "Retry a blocked task or immediately check a task waiting for resources"
   retryTask(id: ID!): Task!
 
+  "Delete downloaded and delivered files and linked Stash scenes, clear execution state, and return to manual torrent selection"
+  restartTaskSourcing(id: ID!): Task!
+
   "Resolve a blocked sourcing task with a manually selected torrent"
   resolveBlockedSourcingTask(id: ID!, input: ResolveBlockedSourcingTaskInput!): Task!
 
@@ -6221,6 +6238,34 @@ func (ec *executionContext) field_Mutation_resolveTaskFiles_argsVideoIndices(
 	}
 
 	var zeroVal []int
+	return zeroVal, nil
+}
+
+func (ec *executionContext) field_Mutation_restartTaskSourcing_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := ec.field_Mutation_restartTaskSourcing_argsID(ctx, rawArgs)
+	if err != nil {
+		return nil, err
+	}
+	args["id"] = arg0
+	return args, nil
+}
+func (ec *executionContext) field_Mutation_restartTaskSourcing_argsID(
+	ctx context.Context,
+	rawArgs map[string]any,
+) (string, error) {
+	if _, ok := rawArgs["id"]; !ok {
+		var zeroVal string
+		return zeroVal, nil
+	}
+
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
+	if tmp, ok := rawArgs["id"]; ok {
+		return ec.unmarshalNID2string(ctx, tmp)
+	}
+
+	var zeroVal string
 	return zeroVal, nil
 }
 
@@ -12597,6 +12642,145 @@ func (ec *executionContext) fieldContext_Mutation_retryTask(ctx context.Context,
 	}()
 	ctx = graphql.WithFieldContext(ctx, fc)
 	if fc.Args, err = ec.field_Mutation_retryTask_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_restartTaskSourcing(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Mutation_restartTaskSourcing(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().RestartTaskSourcing(rctx, fc.Args["id"].(string))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*model.Task)
+	fc.Result = res
+	return ec.marshalNTask2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐTask(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Mutation_restartTaskSourcing(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_Task_id(ctx, field)
+			case "files":
+				return ec.fieldContext_Task_files(ctx, field)
+			case "source":
+				return ec.fieldContext_Task_source(ctx, field)
+			case "code":
+				return ec.fieldContext_Task_code(ctx, field)
+			case "stage":
+				return ec.fieldContext_Task_stage(ctx, field)
+			case "stageStatus":
+				return ec.fieldContext_Task_stageStatus(ctx, field)
+			case "stageLabel":
+				return ec.fieldContext_Task_stageLabel(ctx, field)
+			case "stageStatusLabel":
+				return ec.fieldContext_Task_stageStatusLabel(ctx, field)
+			case "stageErrorCode":
+				return ec.fieldContext_Task_stageErrorCode(ctx, field)
+			case "stageErrorMessage":
+				return ec.fieldContext_Task_stageErrorMessage(ctx, field)
+			case "candidate":
+				return ec.fieldContext_Task_candidate(ctx, field)
+			case "torrentUrl":
+				return ec.fieldContext_Task_torrentUrl(ctx, field)
+			case "savePath":
+				return ec.fieldContext_Task_savePath(ctx, field)
+			case "category":
+				return ec.fieldContext_Task_category(ctx, field)
+			case "tags":
+				return ec.fieldContext_Task_tags(ctx, field)
+			case "torrentHash":
+				return ec.fieldContext_Task_torrentHash(ctx, field)
+			case "torrentName":
+				return ec.fieldContext_Task_torrentName(ctx, field)
+			case "progress":
+				return ec.fieldContext_Task_progress(ctx, field)
+			case "qbittorrentState":
+				return ec.fieldContext_Task_qbittorrentState(ctx, field)
+			case "contentPath":
+				return ec.fieldContext_Task_contentPath(ctx, field)
+			case "sourcingCompletedAt":
+				return ec.fieldContext_Task_sourcingCompletedAt(ctx, field)
+			case "sourcingLastCheckedAt":
+				return ec.fieldContext_Task_sourcingLastCheckedAt(ctx, field)
+			case "sourcingNextCheckAt":
+				return ec.fieldContext_Task_sourcingNextCheckAt(ctx, field)
+			case "downloadCompletedAt":
+				return ec.fieldContext_Task_downloadCompletedAt(ctx, field)
+			case "ingestCompletedAt":
+				return ec.fieldContext_Task_ingestCompletedAt(ctx, field)
+			case "mojiSourcePath":
+				return ec.fieldContext_Task_mojiSourcePath(ctx, field)
+			case "transferAction":
+				return ec.fieldContext_Task_transferAction(ctx, field)
+			case "mojiTransferPath":
+				return ec.fieldContext_Task_mojiTransferPath(ctx, field)
+			case "transferError":
+				return ec.fieldContext_Task_transferError(ctx, field)
+			case "stashIngestPhase":
+				return ec.fieldContext_Task_stashIngestPhase(ctx, field)
+			case "stashGenerateJobId":
+				return ec.fieldContext_Task_stashGenerateJobId(ctx, field)
+			case "stashIdentifyJobId":
+				return ec.fieldContext_Task_stashIdentifyJobId(ctx, field)
+			case "stashSceneIds":
+				return ec.fieldContext_Task_stashSceneIds(ctx, field)
+			case "stashScanJobId":
+				return ec.fieldContext_Task_stashScanJobId(ctx, field)
+			case "stashScanPath":
+				return ec.fieldContext_Task_stashScanPath(ctx, field)
+			case "stashScanError":
+				return ec.fieldContext_Task_stashScanError(ctx, field)
+			case "stashScanHint":
+				return ec.fieldContext_Task_stashScanHint(ctx, field)
+			case "stashScanStartedAt":
+				return ec.fieldContext_Task_stashScanStartedAt(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_Task_createdAt(ctx, field)
+			case "updatedAt":
+				return ec.fieldContext_Task_updatedAt(ctx, field)
+			case "lastProgressAt":
+				return ec.fieldContext_Task_lastProgressAt(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type Task", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_restartTaskSourcing_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return fc, err
 	}
@@ -35910,6 +36094,13 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 		case "retryTask":
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
 				return ec._Mutation_retryTask(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "restartTaskSourcing":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_restartTaskSourcing(ctx, field)
 			})
 			if out.Values[i] == graphql.Null {
 				out.Invalids++

@@ -4,6 +4,7 @@ import {
   DeleteTaskDocumentDocument,
   DeleteTasksDocumentDocument,
   ProcessTaskIngestDocumentDocument,
+  RestartTaskSourcingDocumentDocument,
   RetryTaskDocumentDocument,
   RetryTasksDocumentDocument,
   SyncTaskProgressDocumentDocument,
@@ -49,6 +50,8 @@ export function useTaskMutations() {
     DeleteTaskDocumentMutationVariables
   >(DeleteTaskDocumentDocument);
 
+  const [{ fetching: restartingTaskSourcing }, restartTaskSourcing] = useMutation(RestartTaskSourcingDocumentDocument);
+
   const [, retryTask] = useMutation<
     RetryTaskDocumentMutation,
     RetryTaskDocumentMutationVariables
@@ -72,6 +75,8 @@ export function useTaskMutations() {
     addTorrent,
     deleteTask,
     retryTask,
+    restartTaskSourcing,
+    restartingTaskSourcing,
     retryTasks,
     retryingTasks,
     processTaskIngest,

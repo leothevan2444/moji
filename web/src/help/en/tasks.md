@@ -37,3 +37,11 @@ Copy retains sources. Move stops the qBittorrent task and removes selected sourc
 Preparation checks file sizes, removes byte-identical videos using SHA-256, then copies a single remaining movie unchanged and verifies its hash, without calling FFmpeg or ffprobe. Multiple distinct parts are checked with ffprobe, concatenated with FFmpeg, and checked for output duration. Incompatible parts remain blocked instead of being silently transcoded at lower quality. Part text subtitles are offset by preceding video durations and combined as SRT; styling may be simplified. Unsupported part bitmap subtitles block preparation and can be omitted by disabling subtitle retention before retrying.
 
 Preparation runs in the background independently of web requests. Stash is notified only after the final movie directory is ready. File selections and ordering persist across restarts. Task-owned receipts and output hashes allow retries to reuse an already published movie without overwriting unrelated targets. Stash scan, generation, identification, and existing completion checks remain unchanged.
+
+## Reselect torrent
+
+For a wrong torrent or mistaken file confirmation, open **Task details > Actions > Reselect torrent** to start over. Confirmation deletes the old qBittorrent task and its downloaded files, delivered files and the delivery receipt, and the corresponding Stash scenes and generated assets. Files are deleted directly without backups. This happens regardless of the ordinary task deletion policy, including when that policy keeps downloaded files. Deletion cannot be undone.
+
+The original Moji task entry and code remain. The old torrent, file selection, download progress, completion timestamps, and ingest references are cleared. Manual torrent selection opens only after all cleanup succeeds. Choosing a resource then starts file selection, downloading, and the full ingest workflow from the beginning.
+
+Completed tasks and tasks actively delivering or processing in Stash cannot restart. Unowned or modified outputs and scenes linked to outside files stop cleanup. If cleanup is interrupted, select **Reselect torrent** again or retry to remove the remaining artifacts. A new download cannot start until cleanup finishes, and the old torrent is never selected automatically.

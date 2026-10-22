@@ -4,6 +4,14 @@ import { resources } from "../i18n/resources";
 import { taskFailureSummary, taskPresentation, taskPrimaryAction, taskBatchEligibility, type DashboardTask } from "./taskUtils";
 
 describe("sourcing validation failures", () => {
+  it("keeps a restarted task in manual torrent selection and out of batch retry", async () => {
+    await i18n.changeLanguage("en");
+    const task = { id: "restarted", source: "SUBSCRIPTION", code: "SNOS-184", stage: "SOURCING", stageStatus: "BLOCKED", progress: 0,
+      stageErrorCode: "MANUAL_SOURCE_REQUIRED" } as DashboardTask;
+    expect(taskFailureSummary(task).title).toBe("Choose a torrent again");
+    expect(taskPrimaryAction(task)).toBe("resolve");
+    expect(taskBatchEligibility([task]).retryIds).toEqual([]);
+  });
   it("treats scheduled resource absence as normal waiting with an immediate check action", async () => {
     await i18n.changeLanguage("en");
     const task = { id: "tracked", source: "SEARCH", code: "ABCD-123", stage: "SOURCING", stageStatus: "PENDING", progress: 0,

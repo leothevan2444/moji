@@ -362,7 +362,15 @@ $task-status-tones: (
   &__step { display: grid; grid-template-columns: 18px minmax(0, 1fr); align-items: start; gap: 8px; padding: 4px 6px; border: 1px solid transparent; border-radius: 6px; }
   &__step.is-current { background: color-mix(in srgb, var(--accent) 5%, transparent); border-color: color-mix(in srgb, var(--accent) 20%, var(--line)); }
   &__step.is-error { background: color-mix(in srgb, #c2412f 5%, transparent); border-color: color-mix(in srgb, #c2412f 20%, var(--line)); }
-  &__icon { display: grid; place-items: center; min-height: 20px; font-size: 11px; font-variant-numeric: tabular-nums; }
+  &__step &__icon {
+    display: grid;
+    place-items: center;
+    min-height: 20px;
+    border: 0;
+    background: transparent;
+    font-size: 11px;
+    font-variant-numeric: tabular-nums;
+  }
   &__copy { min-width: 0; }
   &__label { display: flex; justify-content: space-between; align-items: baseline; flex-wrap: wrap; gap: 2px 8px; min-height: 20px; line-height: 20px; }
   &__label strong { font-size: 12px; font-weight: 500; }

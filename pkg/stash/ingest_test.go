@@ -15,6 +15,34 @@ type ingestRoundTripper func(*http.Request) (*http.Response, error)
 
 func (f ingestRoundTripper) RoundTrip(r *http.Request) (*http.Response, error) { return f(r) }
 
+func TestRemoveIngestSceneRetainsMediaAndRemovesGeneratedAssets(t *testing.T) {
+	for _, success := range []bool{true, false} {
+		transport := ingestRoundTripper(func(r *http.Request) (*http.Response, error) {
+			var request struct {
+				OperationName string
+				Variables     struct{ Input graphql.SceneDestroyInput }
+			}
+			if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
+				t.Fatal(err)
+			}
+			input := request.Variables.Input
+			if request.OperationName != "RemoveIngestScene" || input.ID != "4525" || input.DeleteFile == nil || *input.DeleteFile || input.DeleteGenerated == nil || !*input.DeleteGenerated {
+				t.Fatalf("unsafe removal request: %+v", request)
+			}
+			body := "{\"data\":{\"sceneDestroy\":false}}"
+			if success {
+				body = "{\"data\":{\"sceneDestroy\":true}}"
+			}
+			return &http.Response{StatusCode: 200, Header: http.Header{"Content-Type": []string{"application/json"}}, Body: io.NopCloser(strings.NewReader(body))}, nil
+		})
+		client := NewClient(nil)
+		client.graphql = graphql.NewClient(&http.Client{Transport: transport}, "http://stash/graphql", nil).(*graphql.Client)
+		if err := client.RemoveIngestScene(context.Background(), "4525"); (err == nil) != success {
+			t.Fatalf("removal result ignored: %v", err)
+		}
+	}
+}
+
 func TestStashIngestGraphQLRequests(t *testing.T) {
 	calls := []string{}
 	transport := ingestRoundTripper(func(r *http.Request) (*http.Response, error) {

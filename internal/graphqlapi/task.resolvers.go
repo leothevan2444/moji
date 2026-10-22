@@ -147,6 +147,21 @@ func (r *mutationResolver) RetryTask(ctx context.Context, id string) (*model.Tas
 	return nil, err
 }
 
+// RestartTaskSourcing is the resolver for the restartTaskSourcing field.
+func (r *mutationResolver) RestartTaskSourcing(ctx context.Context, id string) (*model.Task, error) {
+	runtime, ok := r.TaskRuntime.(interface {
+		RestartTaskSourcing(context.Context, string, taskruntime.StashScanner) (*taskruntime.Task, error)
+	})
+	if !ok {
+		return nil, errors.New("task restart is unavailable")
+	}
+	task, err := runtime.RestartTaskSourcing(ctx, id, r.Stash)
+	if task != nil {
+		return taskToModel(task), err
+	}
+	return nil, err
+}
+
 // ResolveBlockedSourcingTask is the resolver for the resolveBlockedSourcingTask field.
 func (r *mutationResolver) ResolveBlockedSourcingTask(ctx context.Context, id string, input model.ResolveBlockedSourcingTaskInput) (*model.Task, error) {
 	if r.TaskRuntime == nil {

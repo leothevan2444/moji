@@ -493,6 +493,8 @@
     "TORRENT_METADATA_FAILED": "种子文件无法读取或未通过验证，请检查文件或种子链接。",
     "INVALID_TORRENT_INPUT": "请只提供一个磁力或种子链接，或一个非空且不超过 8 MiB 的种子文件。",
     "SOURCING_TASK_UNAVAILABLE": "任务已离开等待资源或选种受阻阶段，请刷新任务状态。",
+    "TASK_RESTART_UNAVAILABLE": "任务正在处理媒体或已经完成，暂时无法重新选种。",
+    "TASK_RESTART_CLEANUP_PENDING": "旧产物尚未清理完成，请查看任务诊断并再次执行重新选种。",
     "TRANSFER_PATH_FAILED": "入库路径映射失败，请检查 qB、Moji 与 Stash 根路径配置。",
     "STASH_SCAN_FAILED": "Stash 扫描失败，请检查连接和扫描路径。",
     "NO_TORRENT_CANDIDATE": "没有找到可下载的 torrent 候选。",
@@ -845,6 +847,21 @@
       "queued": "任务已创建，正在搜寻资源。",
       "stageWaiting": "当前阶段等待继续推进。"
     }
+  },
+  "taskRestart": {
+    "action": "重新选种",
+    "title": "重新选种并从头开始？",
+    "description": "将删除此任务在 qBittorrent 中的下载任务和已下载文件，同时删除已入库的影片及相关数据。",
+    "next": "清理完成后，你可以重新选择种子，从头下载和入库。",
+    "warning": "已下载文件将直接删除，不会备份，且无法恢复。",
+    "confirm": "删除文件并重新选种",
+    "pending": "正在清理旧任务…",
+    "ready": "「{{task}}」已重置，请重新选择种子。",
+    "noResult": "后端未返回重新选种的任务。",
+    "choose": "等待重新选种",
+    "chooseDetail": "请选择种子，之后重新确认影片文件。",
+    "cleanup": "重新选种尚未完成",
+    "cleanupDetail": "请再次点击“重新选种”以继续清理；可复制诊断信息查看失败原因。"
   },
   "taskDetail": {
     "overview": "任务总览",

@@ -9,7 +9,7 @@ import { taskDiagnostics } from "../../utils/taskDiagnostics";
 import { TaskTimeline } from "./TaskTimeline";
 import { TaskPrimaryAction } from "./TaskPrimaryAction";
 import {
-  formatDateTime, needsTaskFileSelection, taskFailureSummary,
+  formatDateTime, needsTaskFileSelection, canRestartTaskSourcing, taskFailureSummary,
   taskPresentation, taskSourceLabel, taskSummary, type DashboardTask
 } from "../../utils";
 
@@ -23,10 +23,12 @@ interface TaskDetailProps {
   onScanTask: (taskId: string) => void;
   onRetryTask: (taskId: string) => void;
   onDeleteTask: (taskId: string) => void;
+  onRestartTask?: (taskId: string) => void;
+  pendingRestart?: boolean;
 }
 
 export function TaskDetail({ task, pendingScan, pendingRetry, pendingDelete,
-  onCopy, onResolveTask, onScanTask, onRetryTask, onDeleteTask
+  onCopy, onResolveTask, onScanTask, onRetryTask, onDeleteTask, onRestartTask, pendingRestart
 }: TaskDetailProps) {
   const { t } = useTranslation();
   const presentation = taskPresentation(task);
@@ -74,6 +76,9 @@ export function TaskDetail({ task, pendingScan, pendingRetry, pendingDelete,
             filesRef.current?.scrollIntoView?.({ behavior: "smooth", block: "nearest" });
             (filesRef.current?.querySelector<HTMLInputElement>('input[type="checkbox"]:not(:disabled)') ?? filesRef.current)?.focus();
           }} />
+        {onRestartTask && canRestartTaskSourcing(task) ? <button type="button" className="ghost-button"
+          disabled={pendingRestart || pendingDelete || pendingRetry || pendingScan} aria-busy={Boolean(pendingRestart)}
+          onClick={() => onRestartTask(task.id)}>{t(pendingRestart ? "taskRestart.pending" : "taskRestart.action")}</button> : null}
         <button type="button" className="ghost-button task-detail-actions__diagnostics"
           onClick={() => void onCopy(taskDiagnostics(task), t("taskInfo.diagnosticsCopied"))}>
           <FontAwesomeIcon icon={faCopy} /><span>{t("taskInfo.copyDiagnostics")}</span>

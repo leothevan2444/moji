@@ -3,11 +3,70 @@ package stashsync
 import (
 	"context"
 	"errors"
+	"fmt"
 	"path/filepath"
 	"strings"
 
 	stashgraphql "github.com/leothevan2444/moji/pkg/stash/graphql"
 )
+
+// RemoveIngestScenes scopes deletion to the task-owned delivery path and rejects
+// scenes which also link files outside it. Query by path to make retries safe
+// after some scene records have already been removed.
+func (s *Service) RemoveIngestScenes(ctx context.Context, path string, ids []string) error {
+	client, err := s.ingestClient()
+	if err != nil {
+		return err
+	}
+	remover, ok := s.client.(interface {
+		RemoveIngestScene(context.Context, string) error
+	})
+	if !ok {
+		return errors.New("Stash scene removal is unavailable")
+	}
+	root := filepath.Clean(path)
+	if !filepath.IsAbs(root) || root == string(filepath.Separator) {
+		return errors.New("invalid Stash delivery path")
+	}
+	scenes, err := client.FindIngestScenes(ctx, path, nil)
+	if err != nil {
+		return err
+	}
+	wanted := map[string]bool{}
+	for _, id := range ids {
+		wanted[id] = true
+	}
+	remove := []string{}
+	for _, scene := range scenes {
+		if scene == nil {
+			continue
+		}
+		inside, outside := false, false
+		for _, file := range scene.Files {
+			if file == nil {
+				continue
+			}
+			if strings.HasPrefix(filepath.Clean(file.Path), root+string(filepath.Separator)) {
+				inside = true
+			} else {
+				outside = true
+			}
+		}
+		if !inside {
+			continue
+		}
+		if outside || (len(wanted) > 0 && !wanted[scene.ID]) {
+			return fmt.Errorf("Stash scene %s is not exclusively owned by this task", scene.ID)
+		}
+		remove = append(remove, scene.ID)
+	}
+	for _, id := range remove {
+		if err := remover.RemoveIngestScene(ctx, id); err != nil {
+			return err
+		}
+	}
+	return nil
+}
 
 var ErrIdentifySourcesMissing = errors.New("configure Identify sources in Stash Settings > Tasks before ingesting")
 

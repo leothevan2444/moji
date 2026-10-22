@@ -191,3 +191,7 @@ query IngestScenes($scene_filter: SceneFilterType, $filter: FindFilterType, $ids
     }
   }
 }
+
+mutation RemoveIngestScene($input: SceneDestroyInput!) {
+  sceneDestroy(input: $input)
+}

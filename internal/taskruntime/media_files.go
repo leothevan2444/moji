@@ -180,7 +180,7 @@ func (s *Service) ResolveTaskFiles(ctx context.Context, id string, indices []int
 	if err != nil {
 		return nil, err
 	}
-	if s.mediaConfig == nil || task.Stage != TaskStageDownloading || task.StageStatus != TaskStageStatusBlocked {
+	if task.RestartStateJSON != "" || s.mediaConfig == nil || task.Stage != TaskStageDownloading || task.StageStatus != TaskStageStatusBlocked {
 		return nil, errors.New("task is not awaiting download file selection")
 	}
 	p := task.FilePlan()

@@ -39,6 +39,7 @@ export function Component() {
   const observedRecoveryGeneration = useRef(recoveryGeneration);
   const filter = parseTaskSearchParams(searchParams);
   const [groups, setGroups] = useState<Record<TaskGroupKey, boolean>>({ attention: true, active: true, ingestPending: false, completed: false });
+  const [restartTargetId, setRestartTargetId] = useState<string | null>(null);
   const [pendingScan, setPendingScan] = useState<string | null>(null);
   const [pendingRetry, setPendingRetry] = useState<string | null>(null);
   const [pendingDelete, setPendingDelete] = useState<string | null>(null);
@@ -54,7 +55,7 @@ export function Component() {
     pause: !taskId,
     requestPolicy: "cache-and-network"
   });
-  const { deleteTask, retryTask, syncTaskProgress, syncingTaskProgress, triggerTaskStashScan, triggerStashScans, triggeringStashScans, retryTasks, retryingTasks, processTaskIngest, processingTaskIngest, deleteTasks, deletingTasks } = useTaskMutations();
+  const { restartTaskSourcing, restartingTaskSourcing, deleteTask, retryTask, syncTaskProgress, syncingTaskProgress, triggerTaskStashScan, triggerStashScans, triggeringStashScans, retryTasks, retryingTasks, processTaskIngest, processingTaskIngest, deleteTasks, deletingTasks } = useTaskMutations();
   const tasks = useMemo(() => data?.tasks ?? [], [data?.tasks]);
   const activeTask = detailData?.task ?? (taskId ? tasks.find((task) => task.id === taskId) ?? null : null);
   const deleteTarget = confirmDeleteIds.length === 1 ? tasks.find((task) => task.id === confirmDeleteIds[0]) ?? null : null;
@@ -96,6 +97,15 @@ export function Component() {
       else if (!result.data?.retryTask?.id) pushToast("tone-danger", t("taskRoute.retryNoResult"));
       else pushToast("tone-success", t("taskRoute.retried", { task: tasks.find((task) => task.id === id) ? taskSummary(tasks.find((task) => task.id === id)!) : id }));
     } finally { setPendingRetry(null); }
+  };
+  const runRestart = async (id: string) => {
+    const result = await restartTaskSourcing({ id });
+    if (result.error) { pushToast("tone-danger", describeQueryError(result.error)); return; }
+    const restartedTask = result.data?.restartTaskSourcing;
+    if (!restartedTask?.id) { pushToast("tone-danger", t("taskRestart.noResult")); return; }
+    setRestartTargetId(null);
+    pushToast("tone-success", t("taskRestart.ready", { task: taskSummary(restartedTask) }));
+    navigate(`/tasks/${encodeURIComponent(id)}/resolve`, { replace: true, state: location.state });
   };
   const runDelete = async (id: string) => {
     setPendingDelete(id);
@@ -151,8 +161,21 @@ export function Component() {
       <Suspense fallback={<div className="skeleton skeleton-card" />}>
         {detailFetching && !activeTask ? <p>{t("taskRoute.loading")}</p> : detailError ? <div className="empty-card"><h3>{t("taskRoute.loadFailed")}</h3><p>{describeQueryError(detailError)}</p></div> : !activeTask ? <div className="empty-card"><h3>{t("taskRoute.notFound")}</h3></div> : isResolution ?
           <SourcingResolutionDrawer task={activeTask} onNotify={pushToast} onResolved={async () => { navigate(`/tasks/${encodeURIComponent(taskId)}`); }} /> :
-          <TaskDrawer task={activeTask} pendingScan={pendingScan === taskId} pendingRetry={pendingRetry === taskId} pendingDelete={pendingDelete === taskId} onCopy={copyText} onResolveTask={(id) => openTask(id, true)} onScanTask={(id) => void runScan(id)} onRetryTask={(id) => void runRetry(id)} onDeleteTask={(id) => setConfirmDeleteIds([id])} />}
+          <TaskDrawer onRestartTask={setRestartTargetId} pendingRestart={restartingTaskSourcing} task={activeTask} pendingScan={pendingScan === taskId} pendingRetry={pendingRetry === taskId} pendingDelete={pendingDelete === taskId} onCopy={copyText} onResolveTask={(id) => openTask(id, true)} onScanTask={(id) => void runScan(id)} onRetryTask={(id) => void runRetry(id)} onDeleteTask={(id) => setConfirmDeleteIds([id])} />}
       </Suspense>
+    </Drawer> : null}
+    {restartTargetId ? <Drawer visibleDrawer="confirm" closing={false} title={t("taskRestart.title")} onClose={() => { if (!restartingTaskSourcing) setRestartTargetId(null); }}>
+      <div className="confirm-delete">
+        <p className="confirm-delete__target">{tasks.find(task => task.id === restartTargetId)?.code ?? restartTargetId}</p>
+        <p>{t("taskRestart.description")}</p>
+        <p>{t("taskRestart.next")}</p>
+        <p><strong>{t("taskRestart.warning")}</strong></p>
+        <div className="confirm-delete__actions">
+          <button type="button" className="ghost-button" disabled={restartingTaskSourcing} onClick={() => setRestartTargetId(null)}>{t("taskRoute.cancel")}</button>
+          <button type="button" className="confirm-delete__confirm" disabled={restartingTaskSourcing} aria-busy={restartingTaskSourcing}
+            onClick={() => void runRestart(restartTargetId)}>{t(restartingTaskSourcing ? "taskRestart.pending" : "taskRestart.confirm")}</button>
+        </div>
+      </div>
     </Drawer> : null}
     {confirmDeleteIds.length ? <Drawer visibleDrawer="confirm" closing={false} title={t("taskRoute.deleteTitle")} onClose={() => { if (!pendingDelete && !deletingTasks) setConfirmDeleteIds([]); }}><Suspense fallback={null}><ConfirmDeleteDrawer taskLabel={deleteTarget ? taskSummary(deleteTarget) : undefined} count={confirmDeleteIds.length > 1 ? confirmDeleteIds.length : undefined} deletePolicy={deletePolicy} pending={Boolean(pendingDelete) || deletingTasks} onConfirm={() => confirmDeleteIds.length === 1 ? void runDelete(confirmDeleteIds[0]) : void runBatchDelete(confirmDeleteIds)} onCancel={() => { if (!pendingDelete && !deletingTasks) setConfirmDeleteIds([]); }} /></Suspense></Drawer> : null}
     {batchResult ? <Drawer visibleDrawer="task-batch-result" closing={false} title={t("taskBatch.resultTitle")} onClose={() => setBatchResult(null)}><Suspense fallback={null}><TaskBatchResultDrawer payload={batchResult} onOpenTask={(id) => { setBatchResult(null); openTask(id); }} /></Suspense></Drawer> : null}

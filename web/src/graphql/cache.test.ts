@@ -23,6 +23,14 @@ function fakeCache(initial: Record<string, unknown> = {}, inspectedFields: Array
 const updates = graphcacheUpdates as any;
 
 describe("graphcache configuration", () => {
+  it("keeps the restarted task in the list and invalidates cached Stash scenes", () => {
+    const { cache, fields } = fakeCache({ "Query.tasks": ["Task:task-1"] }, [
+      { fieldName: "taskStashScenes", arguments: { id: "task-1" } }
+    ]);
+    updates.Mutation.restartTaskSourcing({ restartTaskSourcing: { __typename: "Task", id: "task-1", stage: "SOURCING" } }, {}, cache);
+    expect(fields.get("Query.tasks")).toEqual(["Task:task-1"]);
+    expect(cache.invalidate).toHaveBeenCalledWith("Query", "taskStashScenes", { id: "task-1" });
+  });
   it("uses stable singleton and composite keys", () => {
     expect(graphcacheKeys.Settings?.({} as any)).toBe("singleton");
     expect(graphcacheKeys.StashPerformerScene?.({ key: "scene-1" } as any)).toBe("scene-1");

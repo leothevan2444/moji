@@ -22,6 +22,20 @@ beforeEach(async () => { await i18n.changeLanguage("en"); });
 afterEach(cleanup);
 
 describe("task experience", () => {
+  it("offers restarting a blocked ingest from selection and disables it while pending", async () => {
+    const user = userEvent.setup();
+    const onRestartTask = vi.fn();
+    const current = { ...task, stage: TaskStage.Scanning, stageStatus: TaskStageStatus.Blocked };
+    const { rerender } = render(<TaskDetail task={current} {...props()} onRestartTask={onRestartTask} />);
+    await user.click(screen.getByRole("button", { name: "Reselect torrent" }));
+    expect(onRestartTask).toHaveBeenCalledWith(task.id);
+    rerender(<TaskDetail task={current} {...props()} onRestartTask={onRestartTask} pendingRestart />);
+    expect((screen.getByRole("button", { name: "Deleting previous task files…" }) as HTMLButtonElement).disabled).toBe(true);
+    rerender(<TaskDetail task={{ ...current, stageStatus: TaskStageStatus.Running }} {...props()} onRestartTask={onRestartTask} />);
+    expect(screen.queryByRole("button", { name: "Reselect torrent" })).toBeNull();
+    rerender(<TaskDetail task={{ ...current, stage: TaskStage.Completed }} {...props()} onRestartTask={onRestartTask} />);
+    expect(screen.queryByRole("button", { name: "Reselect torrent" })).toBeNull();
+  });
   it.each([TaskStage.PendingIngest, TaskStage.Transferring, TaskStage.Scanning, TaskStage.Completed] as const)("does not show download percentages as overall progress during %s", stage => {
     const current = { ...task, stage, progress: 1 };
     const { container } = render(<><TaskCard task={current} onOpen={vi.fn()} /><TaskDetail task={current} {...props()} /></>);

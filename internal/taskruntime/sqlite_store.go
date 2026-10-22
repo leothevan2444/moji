@@ -208,6 +208,7 @@ SELECT
   stage_error_code,
   stage_error_message,
   sourcing_request_json,
+  restart_state_json,
   torrent_file_data,
   sourcing_last_checked_at, sourcing_next_check_at,
   file_plan_json,
@@ -250,6 +251,7 @@ SELECT
 FROM tasks`
 
 type sqliteTaskRow struct {
+	RestartStateJSON        sql.NullString `db:"restart_state_json"`
 	TorrentFileData         []byte         `db:"torrent_file_data"`
 	SourcingLastCheckedAt   sql.NullString `db:"sourcing_last_checked_at"`
 	SourcingNextCheckAt     sql.NullString `db:"sourcing_next_check_at"`
@@ -305,6 +307,7 @@ type sqliteTaskRow struct {
 
 func (r sqliteTaskRow) toTask() (*Task, error) {
 	task := &Task{
+		RestartStateJSON:        nullableStringValue(r.RestartStateJSON),
 		TorrentFileData:         r.TorrentFileData,
 		SourcingRequestJSON:     r.SourcingRequestJSON.String,
 		FilePlanJSON:            nullableStringValue(r.FilePlanJSON),
@@ -387,6 +390,7 @@ func (r sqliteTaskRow) toTask() (*Task, error) {
 }
 
 type sqliteTaskParams struct {
+	RestartStateJSON        any     `db:"restart_state_json"`
 	TorrentFileData         []byte  `db:"torrent_file_data"`
 	SourcingLastCheckedAt   any     `db:"sourcing_last_checked_at"`
 	SourcingNextCheckAt     any     `db:"sourcing_next_check_at"`
@@ -447,6 +451,7 @@ func taskToSQLiteParams(task *Task) sqliteTaskParams {
 		source = TaskSourceManual
 	}
 	return sqliteTaskParams{
+		RestartStateJSON:        nullableStringParam(task.RestartStateJSON),
 		TorrentFileData:         task.TorrentFileData,
 		SourcingRequestJSON:     nullableStringParam(task.SourcingRequestJSON),
 		FilePlanJSON:            nullableStringParam(task.FilePlanJSON),
@@ -505,7 +510,7 @@ func upsertTaskRow(ctx context.Context, tx *sqlx.Tx, task *Task, isUpdate bool) 
 	params := taskToSQLiteParams(task)
 	query := `
 INSERT INTO tasks (
-  id, source, code, stage, stage_status, stage_error_code, stage_error_message, sourcing_request_json, torrent_file_data, sourcing_last_checked_at, sourcing_next_check_at, file_plan_json, torrent_url, save_path, category, tags,
+  id, source, code, stage, stage_status, stage_error_code, stage_error_message, restart_state_json, sourcing_request_json, torrent_file_data, sourcing_last_checked_at, sourcing_next_check_at, file_plan_json, torrent_url, save_path, category, tags,
   torrent_identity_hash, torrent_identity_magnet, torrent_hash, torrent_name, progress, qbittorrent_state, content_path,
   last_progress_at, sourcing_completed_at, download_completed_at, ingest_completed_at, moji_source_path, transfer_action, moji_transfer_path,
   stash_ingest_phase, stash_generate_job_id, stash_identify_job_id, stash_scene_ids_json, stash_scene_recovery_count,
@@ -513,7 +518,7 @@ INSERT INTO tasks (
   stash_scan_started_at, selected_title, selected_tracker, selected_info_hash, selected_link, selected_magnet_uri,
   selected_size, selected_seeders, selected_peers, created_at, updated_at
 ) VALUES (
-  :id, :source, :code, :stage, :stage_status, :stage_error_code, :stage_error_message, :sourcing_request_json, :torrent_file_data, :sourcing_last_checked_at, :sourcing_next_check_at, :file_plan_json, :torrent_url, :save_path, :category, :tags,
+  :id, :source, :code, :stage, :stage_status, :stage_error_code, :stage_error_message, :restart_state_json, :sourcing_request_json, :torrent_file_data, :sourcing_last_checked_at, :sourcing_next_check_at, :file_plan_json, :torrent_url, :save_path, :category, :tags,
   :torrent_identity_hash, :torrent_identity_magnet, :torrent_hash, :torrent_name, :progress, :qbittorrent_state, :content_path,
   :last_progress_at, :sourcing_completed_at, :download_completed_at, :ingest_completed_at, :moji_source_path, :transfer_action, :moji_transfer_path,
   :stash_ingest_phase, :stash_generate_job_id, :stash_identify_job_id, :stash_scene_ids_json, :stash_scene_recovery_count,
@@ -531,6 +536,7 @@ ON CONFLICT(id) DO UPDATE SET
   stage_error_code = excluded.stage_error_code,
   stage_error_message = excluded.stage_error_message,
   sourcing_request_json = excluded.sourcing_request_json,
+  restart_state_json = excluded.restart_state_json,
   torrent_file_data = excluded.torrent_file_data,
   sourcing_last_checked_at = excluded.sourcing_last_checked_at,
   sourcing_next_check_at = excluded.sourcing_next_check_at,

@@ -221,3 +221,45 @@ query TaskStashScenesDocument($id: ID!) {
     id title code date studio performers imageUrl url
   }
 }
+
+mutation RestartTaskSourcingDocument($id: ID!) {
+  restartTaskSourcing(id: $id) {
+    id
+    source
+    code
+    stage
+    stageStatus
+    stageLabel
+    stageStatusLabel
+    stageErrorCode
+    stageErrorMessage
+    files { index path size kind part selected reason }
+    candidate { title tracker infoHash link magnetUri size seeders peers }
+    torrentUrl
+    torrentName
+    progress
+    qbittorrentState
+    contentPath
+    torrentHash
+    savePath
+    category
+    tags
+    downloadCompletedAt
+    sourcingCompletedAt ingestCompletedAt
+    mojiSourcePath
+    transferAction
+    mojiTransferPath
+    transferError
+    stashIngestPhase
+    stashGenerateJobId
+    stashIdentifyJobId
+    stashSceneIds
+    stashScanJobId
+    stashScanPath
+    stashScanError
+    stashScanHint
+    stashScanStartedAt
+    createdAt
+    updatedAt lastProgressAt sourcingLastCheckedAt sourcingNextCheckAt
+  }
+}
