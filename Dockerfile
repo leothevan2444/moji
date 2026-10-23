@@ -22,20 +22,18 @@ RUN test -n "$VERSION" \
     && go build -trimpath -ldflags "-s -w -X github.com/leothevan2444/moji.releaseVersion=$VERSION" -o /out/moji ./cmd/moji \
     && test "$(/out/moji --version)" = "moji $VERSION"
 
-FROM debian:bookworm-slim AS runtime
+FROM alpine:3.23 AS runtime
 ARG VERSION
 ARG VCS_REF=unknown
 LABEL org.opencontainers.image.title="Moji" \
       org.opencontainers.image.description="Moji with web UI, FFmpeg and ffprobe" \
       org.opencontainers.image.version="$VERSION" \
       org.opencontainers.image.revision="$VCS_REF"
-RUN apt-get update \
-    && apt-get install -y --no-install-recommends ca-certificates curl ffmpeg tini tzdata \
-    && rm -rf /var/lib/apt/lists/* \
+RUN apk add --no-cache ca-certificates curl ffmpeg tini tzdata \
     && ffmpeg -version >/dev/null \
     && ffprobe -version >/dev/null \
-    && groupadd --gid 1000 moji \
-    && useradd --uid 1000 --gid moji --home-dir /data --no-create-home moji \
+    && addgroup -g 1000 moji \
+    && adduser -D -u 1000 -G moji -h /data moji \
     && mkdir -p /data /downloads /library \
     && chown moji:moji /data /downloads /library
 COPY --from=backend /out/moji /usr/local/bin/moji
@@ -49,5 +47,5 @@ USER 1000:1000
 EXPOSE 10000
 HEALTHCHECK --interval=30s --timeout=5s --start-period=30s --retries=3 \
     CMD curl --fail --silent --show-error http://127.0.0.1:10000/healthz || exit 1
-ENTRYPOINT ["/usr/bin/tini", "--", "/usr/local/bin/moji"]
+ENTRYPOINT ["/sbin/tini", "--", "/usr/local/bin/moji"]
 CMD ["-addr", ":10000"]

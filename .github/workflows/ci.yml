@@ -56,7 +56,16 @@ jobs:
       - run: go test ./internal/graphqlapi ./internal/taskruntime ./cmd/moji
 
   docker:
-    runs-on: ubuntu-latest
+    name: Docker (${{ matrix.arch }})
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - arch: amd64
+            runner: ubuntu-latest
+          - arch: arm64
+            runner: ubuntu-24.04-arm
+    runs-on: ${{ matrix.runner }}
     steps:
       - uses: actions/checkout@v4
         with:

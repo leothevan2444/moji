@@ -212,8 +212,10 @@ make docker-test
 
 `test-media` requires FFmpeg and ffprobe and exercises real movie-part assembly
 and subtitle processing. `docker-test` uses temporary containers and a volume to
-verify FFmpeg assembly, the web UI, frontend and backend versions, and data
-persistence across container replacement; it cleans up its test resources.
+verify H.264/AAC assembly and subtitles, Docker health status, the web UI,
+frontend and backend versions, read-only startup, graceful shutdown, and saved
+settings and data across container replacement; it cleans up its test resources.
+CI runs the Docker checks on both native amd64 and arm64 runners.
 
 After changing Moji's GraphQL schema, run `make generate-moji-graphql` to update
 the Go and frontend bindings. CI covers backend tests, frontend tests,

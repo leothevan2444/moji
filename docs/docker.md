@@ -16,9 +16,9 @@ is not sent in the Docker context and Git is not needed in the runtime image.
 The private npm package and lockfile have no independent application version.
 Plain `go build`/`go run` produce `dev`; Make builds inject the Git-derived version.
 
-The image builds the React UI and Go binary in separate stages. Its Debian
+The image builds the React UI and static Go binary in separate stages. Its Alpine 3.23
 runtime installs the distribution's `ffmpeg` package, which includes both
-[ffmpeg and ffprobe](https://packages.debian.org/bookworm/amd64/ffmpeg/filelist),
+[ffmpeg and ffprobe](https://pkgs.alpinelinux.org/package/v3.23/community/x86_64/ffmpeg),
 along with CA certificates, timezone data, curl for health checks and tini for
 process supervision. Node and Go build tools are absent from the runtime.
 
@@ -36,10 +36,13 @@ docker image inspect "moji:$version" --format '{{json .Config.Labels}}'
 make docker-test
 ```
 
-`docker-test` checks the non-root user, real two-part FFmpeg assembly, HTTP
-health, built UI, frontend and GraphQL versions, and persistent data across container replacement.
-It creates and removes its own container and volume. CI runs this same check
-and verifies the OCI version label.
+`docker-test` checks the non-root user, H.264/AAC media with embedded subtitle
+conversion and two-part FFmpeg assembly, Docker health status, built UI,
+frontend and GraphQL versions, and the OCI version label. It starts Moji with a
+read-only root filesystem, saves settings through GraphQL, checks graceful
+shutdown, and verifies config and SQLite persistence across container replacement.
+It creates and removes its own containers and volume. CI runs the same check on
+native amd64 and arm64 runners before publishing either architecture.
 
 The binary's `--version`, frontend bundle, GraphQL `version`, image tag and OCI
 version label all use the value derived from Git. `make docker-build` also records the
@@ -48,8 +51,53 @@ tag; no registry upload is performed. For a direct Docker build, supply
 `--build-arg VERSION="$(sh scripts/version.sh)"` and
 `--build-arg VCS_REF="$(git rev-parse HEAD)"`, and tag it with the same version.
 FFmpeg's exact package version is determined at image build time
-and can be inspected with the commands above. Base-image tags and Debian package
+and can be inspected with the commands above. Base-image tags and Alpine package
 updates mean rebuilding an application version is not byte-for-byte reproducible.
+
+### Alpine migration validation (2026-10-23)
+
+Before changing the repository Dockerfile, isolated candidate images were built
+from clean source revision `c0cee9c9b506` with version `dev-c0cee9c9b506`.
+The Node and Go build stages stayed Debian-based; only the runtime changed.
+The arm64 candidate used native build stages to cross-compile the same static
+Go binary, then executed the arm64 runtime and FFmpeg through QEMU on amd64.
+Native ARM hardware was not used for this local validation; CI now covers it.
+
+| Check | amd64 | arm64 (QEMU) |
+| --- | --- | --- |
+| `internal/mediafiles`, including real assembly, subtitles, COPY/MOVE, cancellation and restart recovery | 17 passed | 17 passed |
+| `internal/config` | 13 passed | 13 passed |
+| `internal/stashboxcache` | 8 passed | 8 passed |
+| `internal/taskruntime`, including SQLite upgrades | 124 passed | 124 passed |
+| `internal/graphqlapi` | 60 passed | 60 passed |
+| `cmd/moji` | 18 passed | 18 passed |
+| H.264/H.265, AAC/AC3, MP4/MKV, mov_text/SRT/WebVTT, Unicode filenames | Passed | Passed |
+| Enhanced `docker-test` | Passed | Passed |
+| UID/GID 1000 and 2000; read-only root; config save and recreation | Passed | Passed |
+| Docker DNS, HTTP, verified local TLS, system CA roots, Asia/Shanghai timezone | Passed | Passed |
+| SIGTERM via tini, exit code 0 within 10 seconds | Passed | Passed |
+
+Test counts are top-level tests: 240 per architecture, with no skips. Test
+binaries were compiled with `CGO_ENABLED=0` and run inside the candidate images.
+The main package's tests used a writable temporary working directory because
+one test writes a log file there. The app itself was separately tested with a
+read-only root and writable data volume. The media suite also passed against
+the same-source Debian baseline. A Debian-to-Alpine container replacement
+preserved saved settings and the SQLite cache using the same data volume.
+
+Local uncompressed image sizes for that clean source revision:
+
+| Runtime | Architecture | Bytes | Decimal MB |
+| --- | --- | ---: | ---: |
+| Debian bookworm-slim | amd64 | 565441753 | 565.4 |
+| Alpine 3.23 | amd64 | 169206214 | 169.2 |
+| Alpine 3.23 | arm64 | 143548408 | 143.5 |
+
+The amd64 reduction is 70.1%. These are local image sizes, not registry download
+sizes. The tested Alpine package was FFmpeg 8.0.1; the Debian baseline used
+FFmpeg 5.1.9. Validation covers Moji's exercised media operations and fixtures;
+it does not establish compatibility with every possible media file or hardware
+acceleration setup.
 
 ## Start with Compose
 
