@@ -36,6 +36,7 @@ const rootValue = {
       transfer: { action: "COPY" },
     },
     automation: {
+      taskProcessingEnabled: true,
       taskProgressSyncIntervalSeconds: 60, subscriptionPollIntervalHours: 6,
       sourcingRetryIntervalHours: 6, stashBoxEndpoints: [],
       subscriptionReleasePolicy: {
