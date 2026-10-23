@@ -28,7 +28,7 @@ export function useTaskMutations() {
     AddTorrentDocumentMutationVariables
   >(AddTorrentDocumentDocument);
 
-  const [, deleteTask] = useMutation<
+  const [{ fetching: deletingTask }, deleteTask] = useMutation<
     DeleteTaskDocumentMutation,
     DeleteTaskDocumentMutationVariables
   >(DeleteTaskDocumentDocument);
@@ -47,6 +47,7 @@ export function useTaskMutations() {
   return {
     addTorrent,
     deleteTask,
+    deletingTask,
     retryTask,
     restartTaskSourcing,
     restartingTaskSourcing,

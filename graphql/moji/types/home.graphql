@@ -1,0 +1,25 @@
+extend type Query {
+  "Bounded task lists and mutually exclusive operational counts for Home."
+  homeOverview: HomeOverview!
+  "Persisted subscription health without an upstream performer catalogue read."
+  homeSubscriptionSummary: HomeSubscriptionSummary!
+}
+
+type HomeOverview {
+  total: Int!
+  attention: Int!
+  active: Int!
+  waiting: Int!
+  completedLast24Hours: Int!
+  attentionTasks: [Task!]!
+  activeTasks: [Task!]!
+  recentTasks: [Task!]!
+}
+
+type HomeSubscriptionSummary {
+  total: Int!
+  attention: Int!
+  unchecked: Int!
+  lastCheckedAt: String
+  attentionPerformerIds: [ID!]!
+}

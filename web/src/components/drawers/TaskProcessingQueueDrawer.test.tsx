@@ -35,6 +35,17 @@ beforeEach(async () => {
 afterEach(cleanup);
 
 describe("processing queue", () => {
+  it("lets homepage users continue at their own pace after a successful action", async () => {
+    const tasks = [task("one"), task("two")];
+    tasks.forEach(task => mocks.details.set(task.id, task));
+    render(<TaskProcessingQueueDrawer tasks={tasks} autoAdvance={false} {...callbacks()} />);
+    await userEvent.setup().click(screen.getByRole("button", { name: "Retry current stage" }));
+    expect(screen.getByRole("heading", { name: "one handled" })).toBeTruthy();
+    expect(screen.queryByRole("heading", { name: "two" })).toBeNull();
+    await userEvent.setup().click(screen.getByRole("button", { name: /Review next task/ }));
+    expect(screen.getByRole("heading", { name: "two" })).toBeTruthy();
+  });
+
   it("reviews only attention tasks, oldest first, and advances after retry", async () => {
     setup([task("new", { createdAt: "2026-10-02T00:00:00Z" }), task("old"),
       task("waiting", { stage: TaskStage.Sourcing, stageStatus: TaskStageStatus.Pending, sourcingNextCheckAt: "2026-10-23T00:00:00Z" })]);

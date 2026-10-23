@@ -114,6 +114,25 @@ type Health struct {
 	Message string `json:"message"`
 }
 
+type HomeOverview struct {
+	Total                int     `json:"total"`
+	Attention            int     `json:"attention"`
+	Active               int     `json:"active"`
+	Waiting              int     `json:"waiting"`
+	CompletedLast24Hours int     `json:"completedLast24Hours"`
+	AttentionTasks       []*Task `json:"attentionTasks"`
+	ActiveTasks          []*Task `json:"activeTasks"`
+	RecentTasks          []*Task `json:"recentTasks"`
+}
+
+type HomeSubscriptionSummary struct {
+	Total                 int      `json:"total"`
+	Attention             int      `json:"attention"`
+	Unchecked             int      `json:"unchecked"`
+	LastCheckedAt         *string  `json:"lastCheckedAt,omitempty"`
+	AttentionPerformerIds []string `json:"attentionPerformerIds"`
+}
+
 type ImageCacheSettings struct {
 	Enabled       bool `json:"enabled"`
 	MaxSizeMb     int  `json:"maxSizeMb"`

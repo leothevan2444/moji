@@ -33,7 +33,7 @@ export function AppLayout() {
 
   return (
     <div className="app-shell">
-      <TaskEventBridge />
+      <TaskEventBridge scope={location.pathname === "/" ? "home" : "tasks"} />
       <ToastStack toasts={toasts} onDismiss={dismissToast} />
       <div className="ambient ambient-a" />
       <div className="ambient ambient-b" />

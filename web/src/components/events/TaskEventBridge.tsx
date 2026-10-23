@@ -1,10 +1,10 @@
 import { useCallback, useEffect, useRef } from "react";
 import { useClient } from "urql";
-import { TasksOverviewDocumentDocument } from "../../graphql/generated/graphql";
+import { HomePageDocumentDocument, TasksOverviewDocumentDocument } from "../../graphql/generated/graphql";
 import { notifyTaskSnapshotRecovery } from "../../graphql/taskRecovery";
 import { useTaskEvents } from "../../hooks/useTaskEvents";
 
-export function TaskEventBridge({ delay = 200 }: { delay?: number }) {
+export function TaskEventBridge({ delay = 200, scope = "tasks" }: { delay?: number; scope?: "home" | "tasks" }) {
   const client = useClient();
   const timer = useRef<number | null>(null);
   const initialCalibrationScheduled = useRef(false);
@@ -15,11 +15,11 @@ export function TaskEventBridge({ delay = 200 }: { delay?: number }) {
       timer.current = null;
       notifyTaskSnapshotRecovery();
       if (import.meta.env.DEV) console.info("GraphQL task snapshots recalibrating", reason);
-      void client.query(TasksOverviewDocumentDocument, {}, { requestPolicy: "network-only" }).toPromise().then((result) => {
+      void client.query(scope === "home" ? HomePageDocumentDocument : TasksOverviewDocumentDocument, {}, { requestPolicy: "network-only" }).toPromise().then((result) => {
         if (result.error && import.meta.env.DEV) console.error("GraphQL task snapshot recalibration failed", result.error);
       });
     }, delay);
-  }, [client, delay]);
+  }, [client, delay, scope]);
 
   const subscription = useTaskEvents({
     onSequenceGap: () => scheduleRecovery("sequence-gap"),

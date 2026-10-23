@@ -1,15 +1,32 @@
 # Home
 
-Home is the operational summary. It shows whether Moji can currently use its dependencies, how content will enter Stash, and which tasks need attention.
+Home is the daily workspace: see what needs attention, follow task progress, or find your next movie.
 
-## Service cards
+## Search and overview
 
-Each Stash, Jackett, and qBittorrent card distinguishes **configured** from **ready**. Configured means the minimum connection fields are present. Ready means a recent backend probe succeeded. A failed or stale probe makes the service unavailable and the card shows the latest error.
+Choose **Find movies** (StashBox) or **Find resources** (Jackett). Submitting opens Discover with the query and source preserved. Press `/` to focus the search field.
 
-Stash statistics include its version, scene count, and pending Moji scans. Jackett shows configured indexers and the latest search condition. qBittorrent shows transfer rates, active torrents, connection state, and alternative speed-limit state.
+Each metric opens its corresponding task list:
 
-## Ingest and attention items
+- **Needs attention**: blocked tasks requiring source selection, file confirmation, or recovery.
+- **In progress**: sourcing, downloading, queued ingest, file preparation, scanning, and identification.
+- **Waiting for resources**: tasks with another automatic resource search scheduled. These do not require intervention.
+- **Added in last 24h**: tasks that passed the complete ingest workflow during the past 24 hours. The linked list uses the same completion window.
 
-The ingest card summarizes the active delivery mode and paths. Treat an incomplete card as a blocker: downloads may finish, but Moji cannot safely produce a Stash scan path.
+Downloading to 100% is not completion. File preparation and Stash scanning, generation, identification, and verification must finish successfully.
 
-Attention items contain blocked tasks and downloads awaiting a Stash scan. Open a card for exact paths, upstream state, and the available retry, resolve, or scan action. Home shows only a short list; **Tasks** is authoritative for the full history.
+## Review tasks
+
+Needs attention shows the three oldest blocked tasks with a direct next action. Open a release code to inspect its details in a drawer without losing your home position. Detail URLs can be shared.
+
+Review queue opens the task center workbench for all attention items. Unsubmitted choices remain available while switching within the session. Successful actions show a result before you continue to the next item. Closing returns to Home.
+
+In progress shows up to five tasks. Download percentages use real progress; other stages show their current step. Recently added shows the latest three tasks with recorded ingest completion times. Linked scenes can open in Stash in a new tab.
+
+## Subscriptions and services
+
+Subscription health comes from persisted check results. It includes subscribed performers, failed checks, first checks still pending, and links to affected performers. Reading Home does not trigger subscription checks.
+
+Healthy services use a compact summary. Expand Connection & ingest details for paths and diagnostics. **Configured** means required fields exist; **Ready** means a recent probe succeeded. First-run guidance links to connection and delivery settings.
+
+Paused automatic processing remains visible. Home hides connection details, the global update time, and manual refresh during normal operation. An interrupted connection shows a notice and retry action until recovery. Home refreshes snapshots every 30 seconds. Background tabs pause polling and refresh when visible again. A failed module leaves other modules usable and retains available data with a retry notice.

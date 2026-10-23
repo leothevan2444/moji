@@ -11,11 +11,33 @@ const schema = buildSchema([
 ].join("\n"));
 
 const now = "2026-01-15T12:00:00Z";
+function homeTask(id: string, stage: string, status = "RUNNING", extra: Record<string, unknown> = {}) {
+  return { id, code: id, source: "SUBSCRIPTION", stage, stageStatus: status, stageLabel: stage, stageStatusLabel: status,
+    candidate: { title: id, tracker: "", infoHash: "", link: "", magnetUri: "", size: 0, seeders: 0, peers: 0 }, files: [], torrentUrl: "", progress: 0, stashSceneIds: [], createdAt: "2026-01-14T12:00:00Z", updatedAt: now, ...extra };
+}
+export const homeOverview = {
+  total: 26, attention: 3, active: 8, waiting: 12, completedLast24Hours: 3,
+  attentionTasks: [
+    homeTask("MOJI-101", "DOWNLOADING", "BLOCKED", { stageErrorCode: "FILE_SELECTION_REQUIRED", files: [{ index: 0, path: "MOJI-101.mp4", size: 1000, kind: "UNKNOWN_VIDEO", part: 0, selected: false, reason: "IDENTITY_UNCERTAIN" }] }),
+    homeTask("MOJI-102", "SOURCING", "BLOCKED", { stageErrorCode: "SOURCING_FAILED" }),
+    homeTask("MOJI-103", "SCANNING", "BLOCKED", { stageErrorCode: "STASH_IDENTIFY_FAILED" }),
+  ],
+  activeTasks: [homeTask("MOJI-201", "DOWNLOADING", "RUNNING", { progress: .62 }), homeTask("MOJI-202", "TRANSFERRING"), homeTask("MOJI-203", "SCANNING", "RUNNING", { stashIngestPhase: "IDENTIFY" })],
+  recentTasks: [homeTask("MOJI-301", "COMPLETED", "DONE", { ingestCompletedAt: "2026-01-15T11:50:00Z", stashSceneIds: ["301"] }), homeTask("MOJI-302", "COMPLETED", "DONE", { ingestCompletedAt: "2026-01-15T11:25:00Z", stashSceneIds: ["302"] })],
+};
 // Execute the real queries against the schema so missing non-null fields fail
 // the test instead of silently producing an error page or a loading skeleton.
 const rootValue = {
   version: "0.0.0-visual",
+  homeOverview,
+  homeSubscriptionSummary: { total: 24, attention: 1, unchecked: 0, lastCheckedAt: "2026-01-15T11:30:00Z", attentionPerformerIds: ["p1"] },
   tasks: [],
+  task: ({ id }: { id: string }) => [...homeOverview.attentionTasks, ...homeOverview.activeTasks, ...homeOverview.recentTasks].find(task => task.id === id),
+  taskStashScenes: [],
+  blockedTaskTorrentCandidates: [],
+  jackettSearch: [],
+  jackettIndexers: [],
+  discoverScenes: { items: [], usedStashBox: null, fallbackCount: 0, searchedQuery: "" },
   dashboardStats: { total: 0, active: 0, completed: 0, downloading: 0, pendingScans: 0, failed: 0 },
   settings: {
     stash: { configured: true, url: "http://stash.test", apiKeyConfigured: false, apiKey: "" },
@@ -89,8 +111,9 @@ const rootValue = {
   },
 };
 
-export const test = base.extend({
-  page: async ({ page }, use) => {
+export const test = base.extend<{ graphqlOverrides: Record<string, unknown> }>({
+  graphqlOverrides: [{}, { option: true }],
+  page: async ({ page, graphqlOverrides }, use) => {
     const errors: string[] = [];
     page.on("pageerror", (error) => errors.push(error.message));
     page.on("console", (message) => {
@@ -100,7 +123,7 @@ export const test = base.extend({
     await page.route("**/graphql", async (route) => {
       const request = route.request().postDataJSON();
       const result = graphqlSync({
-        schema, rootValue, source: request.query,
+        schema, rootValue: { ...rootValue, ...graphqlOverrides }, source: request.query,
         variableValues: request.variables, operationName: request.operationName,
       });
       errors.push(...(result.errors ?? []).map((error) => error.message));

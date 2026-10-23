@@ -20,6 +20,8 @@ import { faClipboardCheck } from "@fortawesome/free-solid-svg-icons/faClipboardC
 
 interface TasksPageProps {
   tasks: DashboardTask[];
+  completedWithin24Hours?: boolean;
+  onClearCompletedWindow?: () => void;
   taskSearch: string;
   taskStatus: TaskStatusFilter;
   taskSort: TaskSortKey;
@@ -51,6 +53,8 @@ interface TasksPageProps {
 
 export function TasksPage({
   tasks,
+  completedWithin24Hours = false,
+  onClearCompletedWindow,
   taskSearch,
   taskStatus,
   taskSort,
@@ -115,8 +119,12 @@ export function TasksPage({
       progress: (a, b) => b.progress - a.progress
     };
 
+    if (completedWithin24Hours) {
+      const now = Date.now();
+      next = next.filter(task => task.stage === "COMPLETED" && task.ingestCompletedAt && Date.parse(task.ingestCompletedAt) >= now - 86400000 && Date.parse(task.ingestCompletedAt) <= now);
+    }
     return [...next].sort(sorters[taskSort]);
-  }, [deferredTaskSearch, taskSort, taskStatus, tasks]);
+  }, [deferredTaskSearch, taskSort, taskStatus, tasks, completedWithin24Hours]);
 
   const taskGroups = useMemo(() => {
     const order: TaskGroupKey[] = ["attention", "waiting", "active", "completed"];
@@ -150,6 +158,7 @@ export function TasksPage({
         </p>
       </div>
 
+      {completedWithin24Hours ? <p className="home-muted">{t("workbench.recentFilter")} · <button type="button" className="ghost-button" onClick={onClearCompletedWindow}>{t("workbench.clearRecentFilter")}</button></p> : null}
       <div className="toolbar-inline toolbar-inline--tasks">
         <input
           aria-label={t("tasks.searchPlaceholder")}

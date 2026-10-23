@@ -52,6 +52,15 @@ describe("TasksPage task controls", () => {
   beforeEach(async () => i18n.changeLanguage("en"));
   afterEach(cleanup);
 
+  it("matches the homepage rolling completion count using verified completion time", () => {
+    const now = Date.now();
+    const completed = (id: string, hours: number, stage = TaskStage.Completed) => ({ ...task, id, code: id, stage, stageStatus: TaskStageStatus.Done, ingestCompletedAt: new Date(now - hours * 3600000).toISOString() });
+    renderPage({ taskStatus: "completed", completedWithin24Hours: true, tasks: [completed("RECENT", 1), completed("OLD", 25), { ...completed("NO-MILESTONE", 1), ingestCompletedAt: null }, completed("FUTURE", -1), completed("DOWNLOAD-ONLY", 1, TaskStage.PendingIngest)] });
+    expect(screen.getByText("RECENT")).toBeTruthy();
+    for (const label of ["OLD", "NO-MILESTONE", "FUTURE", "DOWNLOAD-ONLY"]) expect(screen.queryByText(label)).toBeNull();
+    expect(screen.getByText(/Completed in the last 24 hours/)).toBeTruthy();
+  });
+
   it("switches card activation from details to selection in multi-select mode", async () => {
     const user = userEvent.setup();
     const callbacks = renderPage();

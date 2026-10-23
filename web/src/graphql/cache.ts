@@ -152,6 +152,8 @@ export const graphcacheKeys: KeyingConfig = {
   StashBoxStatus: singleton,
   ImageCacheStatus: singleton,
   DashboardStats: singleton,
+  HomeOverview: singleton,
+  HomeSubscriptionSummary: singleton,
   PerformerWorkspaceSnapshot: singleton,
   StashPerformerScene: (data) => typeof data.key === "string" ? data.key : null,
   DiscoveredScene: (data) => typeof data.key === "string" ? data.key : null,

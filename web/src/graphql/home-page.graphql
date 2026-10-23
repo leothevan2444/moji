@@ -1,5 +1,7 @@
 query HomePageDocument {
   settings {
+    system { taskDeletePolicy }
+    automation { taskProcessingEnabled }
     stash {
       url
     }
@@ -27,7 +29,15 @@ query HomePageDocument {
       defaultSavePath
     }
   }
-  tasks {
+  homeOverview {
+    total attention active waiting completedLast24Hours
+    attentionTasks { ...HomeTask }
+    activeTasks { ...HomeTask }
+    recentTasks { ...HomeTask }
+  }
+}
+
+fragment HomeTask on Task {
     id
     source
     code
@@ -65,4 +75,7 @@ query HomePageDocument {
     createdAt
     updatedAt lastProgressAt sourcingLastCheckedAt sourcingNextCheckAt
   }
+
+query HomeSubscriptionSummary {
+  homeSubscriptionSummary { total attention unchecked lastCheckedAt attentionPerformerIds }
 }

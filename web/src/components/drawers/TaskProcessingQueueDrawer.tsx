@@ -15,17 +15,19 @@ type TaskResult = Pick<DashboardTask, "id" | "stage" | "stageStatus">;
 type Notify = (tone: "tone-success" | "tone-danger", message: string) => void;
 interface Props {
   tasks: DashboardTask[];
+  autoAdvance?: boolean;
   onClose: () => void;
   onCopy: (value: string, message: string) => void | Promise<void>;
   onNotify: Notify;
 }
 
-export function TaskProcessingQueueDrawer({ tasks, onClose, onCopy, onNotify }: Props) {
+export function TaskProcessingQueueDrawer({ tasks, onClose, onCopy, onNotify, autoAdvance = true }: Props) {
   const { t } = useTranslation();
   const [session] = useState(() => taskProcessingQueue(tasks));
   const [finished, setFinished] = useState<Set<string>>(() => new Set());
   const [currentId, setCurrentId] = useState<string | undefined>(session[0]?.id);
   const [busy, setBusy] = useState(false);
+  const [handled, setHandled] = useState<string | null>(null);
   const drafts = useRef(new Map<string, TaskQueueDraft>());
   const heading = useRef<HTMLHeadingElement>(null);
   const liveTasks = useMemo(() => new Map(tasks.map(task => [task.id, task])), [tasks]);
@@ -39,12 +41,13 @@ export function TaskProcessingQueueDrawer({ tasks, onClose, onCopy, onNotify }: 
     const removed = new Set(ids);
     setFinished(current => new Set([...current, ...ids]));
     if (item && removed.has(item.id)) {
+      if (!autoAdvance) setHandled(taskSummary(item));
       const next = remaining.slice(index + 1).find(task => !removed.has(task.id))
         ?? remaining.slice(0, index).reverse().find(task => !removed.has(task.id));
       setCurrentId(next?.id);
     }
     for (const id of ids) drafts.current.delete(id);
-  }, [index, item, remaining]);
+  }, [autoAdvance, index, item, remaining]);
 
   useEffect(() => {
     if (busy) return;
@@ -58,11 +61,11 @@ export function TaskProcessingQueueDrawer({ tasks, onClose, onCopy, onNotify }: 
     const body = heading.current?.closest(".drawer-body");
     if (body) body.scrollTop = 0;
     heading.current?.focus({ preventScroll: true });
-  }, [item?.id]);
+  }, [item?.id, handled]);
 
   const close = () => { if (!busy) onClose(); };
   const footer = <nav className="task-queue-nav" aria-label={t("taskProcessingQueue.navigation")}>
-    {item ? <>
+    {handled ? <button type="button" className="ghost-button" onClick={() => { if (remaining.length) setHandled(null); else close(); }}>{t(remaining.length ? "workbench.nextTask" : "common.close")} →</button> : item ? <>
       <button type="button" className="ghost-button" disabled={busy || index === 0} onClick={() => setCurrentId(remaining[index - 1].id)}>
         <span aria-hidden="true">←</span> {t("taskProcessingQueue.previous")}
       </button>
@@ -82,10 +85,10 @@ export function TaskProcessingQueueDrawer({ tasks, onClose, onCopy, onNotify }: 
           <p>{t("taskProcessingQueue.progress", { done: finished.size, remaining: remaining.length })}</p>
         </div>
         {session.length ? <progress aria-label={t("taskProcessingQueue.progressLabel")} max={session.length} value={finished.size} /> : null}
-        <span>{t("taskProcessingQueue.hint")}</span>
+        <span>{t(autoAdvance ? "taskProcessingQueue.hint" : "workbench.queueHint")}</span>
       </section>
       <section className="task-queue__task">
-      {task ? <>
+      {handled ? <div className="task-queue__empty"><span aria-hidden="true">✓</span><h3 ref={heading} tabIndex={-1}>{t("workbench.handledTitle", { task: handled })}</h3><p>{t("workbench.handledDetail")}</p></div> : task ? <>
         <div className="task-queue__task-heading">
           <span>{t("taskProcessingQueue.currentTask")}</span>
           <h3 ref={heading} tabIndex={-1} className="task-queue__title">{taskSummary(task)}</h3>

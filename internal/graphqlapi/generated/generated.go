@@ -122,6 +122,25 @@ type ComplexityRoot struct {
 		Ok      func(childComplexity int) int
 	}
 
+	HomeOverview struct {
+		Active               func(childComplexity int) int
+		ActiveTasks          func(childComplexity int) int
+		Attention            func(childComplexity int) int
+		AttentionTasks       func(childComplexity int) int
+		CompletedLast24Hours func(childComplexity int) int
+		RecentTasks          func(childComplexity int) int
+		Total                func(childComplexity int) int
+		Waiting              func(childComplexity int) int
+	}
+
+	HomeSubscriptionSummary struct {
+		Attention             func(childComplexity int) int
+		AttentionPerformerIds func(childComplexity int) int
+		LastCheckedAt         func(childComplexity int) int
+		Total                 func(childComplexity int) int
+		Unchecked             func(childComplexity int) int
+	}
+
 	ImageCacheSettings struct {
 		Enabled       func(childComplexity int) int
 		MaxSizeMb     func(childComplexity int) int
@@ -358,6 +377,8 @@ type ComplexityRoot struct {
 		DashboardStats               func(childComplexity int) int
 		DiscoverScenes               func(childComplexity int, input model.DiscoverScenesInput) int
 		Health                       func(childComplexity int) int
+		HomeOverview                 func(childComplexity int) int
+		HomeSubscriptionSummary      func(childComplexity int) int
 		JackettIndexers              func(childComplexity int) int
 		JackettSearch                func(childComplexity int, input model.JackettSearchInput) int
 		Logs                         func(childComplexity int, limit *int, minLevel *model.LogLevel) int
@@ -795,6 +816,8 @@ type MutationResolver interface {
 type QueryResolver interface {
 	Health(ctx context.Context) (*model.Health, error)
 	Version(ctx context.Context) (string, error)
+	HomeOverview(ctx context.Context) (*model.HomeOverview, error)
+	HomeSubscriptionSummary(ctx context.Context) (*model.HomeSubscriptionSummary, error)
 	Logs(ctx context.Context, limit *int, minLevel *model.LogLevel) ([]*model.LogEntry, error)
 	DiscoverScenes(ctx context.Context, input model.DiscoverScenesInput) (*model.DiscoverSceneConnection, error)
 	JackettSearch(ctx context.Context, input model.JackettSearchInput) ([]*model.JackettSearchResult, error)
@@ -1169,6 +1192,97 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.Health.Ok(childComplexity), true
+
+	case "HomeOverview.active":
+		if e.complexity.HomeOverview.Active == nil {
+			break
+		}
+
+		return e.complexity.HomeOverview.Active(childComplexity), true
+
+	case "HomeOverview.activeTasks":
+		if e.complexity.HomeOverview.ActiveTasks == nil {
+			break
+		}
+
+		return e.complexity.HomeOverview.ActiveTasks(childComplexity), true
+
+	case "HomeOverview.attention":
+		if e.complexity.HomeOverview.Attention == nil {
+			break
+		}
+
+		return e.complexity.HomeOverview.Attention(childComplexity), true
+
+	case "HomeOverview.attentionTasks":
+		if e.complexity.HomeOverview.AttentionTasks == nil {
+			break
+		}
+
+		return e.complexity.HomeOverview.AttentionTasks(childComplexity), true
+
+	case "HomeOverview.completedLast24Hours":
+		if e.complexity.HomeOverview.CompletedLast24Hours == nil {
+			break
+		}
+
+		return e.complexity.HomeOverview.CompletedLast24Hours(childComplexity), true
+
+	case "HomeOverview.recentTasks":
+		if e.complexity.HomeOverview.RecentTasks == nil {
+			break
+		}
+
+		return e.complexity.HomeOverview.RecentTasks(childComplexity), true
+
+	case "HomeOverview.total":
+		if e.complexity.HomeOverview.Total == nil {
+			break
+		}
+
+		return e.complexity.HomeOverview.Total(childComplexity), true
+
+	case "HomeOverview.waiting":
+		if e.complexity.HomeOverview.Waiting == nil {
+			break
+		}
+
+		return e.complexity.HomeOverview.Waiting(childComplexity), true
+
+	case "HomeSubscriptionSummary.attention":
+		if e.complexity.HomeSubscriptionSummary.Attention == nil {
+			break
+		}
+
+		return e.complexity.HomeSubscriptionSummary.Attention(childComplexity), true
+
+	case "HomeSubscriptionSummary.attentionPerformerIds":
+		if e.complexity.HomeSubscriptionSummary.AttentionPerformerIds == nil {
+			break
+		}
+
+		return e.complexity.HomeSubscriptionSummary.AttentionPerformerIds(childComplexity), true
+
+	case "HomeSubscriptionSummary.lastCheckedAt":
+		if e.complexity.HomeSubscriptionSummary.LastCheckedAt == nil {
+			break
+		}
+
+		return e.complexity.HomeSubscriptionSummary.LastCheckedAt(childComplexity), true
+
+	case "HomeSubscriptionSummary.total":
+		if e.complexity.HomeSubscriptionSummary.Total == nil {
+			break
+		}
+
+		return e.complexity.HomeSubscriptionSummary.Total(childComplexity), true
+
+	case "HomeSubscriptionSummary.unchecked":
+		if e.complexity.HomeSubscriptionSummary.Unchecked == nil {
+			break
+		}
+
+		return e.complexity.HomeSubscriptionSummary.Unchecked(childComplexity), true
 
 	case "ImageCacheSettings.enabled":
 		if e.complexity.ImageCacheSettings.Enabled == nil {
@@ -2397,6 +2511,20 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.Query.Health(childComplexity), true
+
+	case "Query.homeOverview":
+		if e.complexity.Query.HomeOverview == nil {
+			break
+		}
+
+		return e.complexity.Query.HomeOverview(childComplexity), true
+
+	case "Query.homeSubscriptionSummary":
+		if e.complexity.Query.HomeSubscriptionSummary == nil {
+			break
+		}
+
+		return e.complexity.Query.HomeSubscriptionSummary(childComplexity), true
 
 	case "Query.jackettIndexers":
 		if e.complexity.Query.JackettIndexers == nil {
@@ -4546,6 +4674,32 @@ type Health {
 type Query {
   health: Health!
   version: String!
+}
+`, BuiltIn: false},
+	{Name: "../../../graphql/moji/types/home.graphql", Input: `extend type Query {
+  "Bounded task lists and mutually exclusive operational counts for Home."
+  homeOverview: HomeOverview!
+  "Persisted subscription health without an upstream performer catalogue read."
+  homeSubscriptionSummary: HomeSubscriptionSummary!
+}
+
+type HomeOverview {
+  total: Int!
+  attention: Int!
+  active: Int!
+  waiting: Int!
+  completedLast24Hours: Int!
+  attentionTasks: [Task!]!
+  activeTasks: [Task!]!
+  recentTasks: [Task!]!
+}
+
+type HomeSubscriptionSummary {
+  total: Int!
+  attention: Int!
+  unchecked: Int!
+  lastCheckedAt: String
+  attentionPerformerIds: [ID!]!
 }
 `, BuiltIn: false},
 	{Name: "../../../graphql/moji/types/logging.graphql", Input: `extend type Query {
@@ -9458,6 +9612,827 @@ func (ec *executionContext) fieldContext_Health_message(_ context.Context, field
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _HomeOverview_total(ctx context.Context, field graphql.CollectedField, obj *model.HomeOverview) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_HomeOverview_total(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Total, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int)
+	fc.Result = res
+	return ec.marshalNInt2int(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_HomeOverview_total(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "HomeOverview",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _HomeOverview_attention(ctx context.Context, field graphql.CollectedField, obj *model.HomeOverview) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_HomeOverview_attention(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Attention, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int)
+	fc.Result = res
+	return ec.marshalNInt2int(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_HomeOverview_attention(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "HomeOverview",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _HomeOverview_active(ctx context.Context, field graphql.CollectedField, obj *model.HomeOverview) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_HomeOverview_active(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Active, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int)
+	fc.Result = res
+	return ec.marshalNInt2int(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_HomeOverview_active(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "HomeOverview",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _HomeOverview_waiting(ctx context.Context, field graphql.CollectedField, obj *model.HomeOverview) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_HomeOverview_waiting(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Waiting, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int)
+	fc.Result = res
+	return ec.marshalNInt2int(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_HomeOverview_waiting(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "HomeOverview",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _HomeOverview_completedLast24Hours(ctx context.Context, field graphql.CollectedField, obj *model.HomeOverview) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_HomeOverview_completedLast24Hours(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.CompletedLast24Hours, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int)
+	fc.Result = res
+	return ec.marshalNInt2int(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_HomeOverview_completedLast24Hours(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "HomeOverview",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _HomeOverview_attentionTasks(ctx context.Context, field graphql.CollectedField, obj *model.HomeOverview) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_HomeOverview_attentionTasks(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.AttentionTasks, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]*model.Task)
+	fc.Result = res
+	return ec.marshalNTask2ᚕᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐTaskᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_HomeOverview_attentionTasks(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "HomeOverview",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_Task_id(ctx, field)
+			case "files":
+				return ec.fieldContext_Task_files(ctx, field)
+			case "source":
+				return ec.fieldContext_Task_source(ctx, field)
+			case "code":
+				return ec.fieldContext_Task_code(ctx, field)
+			case "stage":
+				return ec.fieldContext_Task_stage(ctx, field)
+			case "stageStatus":
+				return ec.fieldContext_Task_stageStatus(ctx, field)
+			case "stageLabel":
+				return ec.fieldContext_Task_stageLabel(ctx, field)
+			case "stageStatusLabel":
+				return ec.fieldContext_Task_stageStatusLabel(ctx, field)
+			case "stageErrorCode":
+				return ec.fieldContext_Task_stageErrorCode(ctx, field)
+			case "stageErrorMessage":
+				return ec.fieldContext_Task_stageErrorMessage(ctx, field)
+			case "candidate":
+				return ec.fieldContext_Task_candidate(ctx, field)
+			case "torrentUrl":
+				return ec.fieldContext_Task_torrentUrl(ctx, field)
+			case "savePath":
+				return ec.fieldContext_Task_savePath(ctx, field)
+			case "category":
+				return ec.fieldContext_Task_category(ctx, field)
+			case "tags":
+				return ec.fieldContext_Task_tags(ctx, field)
+			case "torrentHash":
+				return ec.fieldContext_Task_torrentHash(ctx, field)
+			case "torrentName":
+				return ec.fieldContext_Task_torrentName(ctx, field)
+			case "progress":
+				return ec.fieldContext_Task_progress(ctx, field)
+			case "qbittorrentState":
+				return ec.fieldContext_Task_qbittorrentState(ctx, field)
+			case "contentPath":
+				return ec.fieldContext_Task_contentPath(ctx, field)
+			case "sourcingCompletedAt":
+				return ec.fieldContext_Task_sourcingCompletedAt(ctx, field)
+			case "sourcingLastCheckedAt":
+				return ec.fieldContext_Task_sourcingLastCheckedAt(ctx, field)
+			case "sourcingNextCheckAt":
+				return ec.fieldContext_Task_sourcingNextCheckAt(ctx, field)
+			case "downloadCompletedAt":
+				return ec.fieldContext_Task_downloadCompletedAt(ctx, field)
+			case "ingestCompletedAt":
+				return ec.fieldContext_Task_ingestCompletedAt(ctx, field)
+			case "mojiSourcePath":
+				return ec.fieldContext_Task_mojiSourcePath(ctx, field)
+			case "transferAction":
+				return ec.fieldContext_Task_transferAction(ctx, field)
+			case "mojiTransferPath":
+				return ec.fieldContext_Task_mojiTransferPath(ctx, field)
+			case "transferError":
+				return ec.fieldContext_Task_transferError(ctx, field)
+			case "stashIngestPhase":
+				return ec.fieldContext_Task_stashIngestPhase(ctx, field)
+			case "stashGenerateJobId":
+				return ec.fieldContext_Task_stashGenerateJobId(ctx, field)
+			case "stashIdentifyJobId":
+				return ec.fieldContext_Task_stashIdentifyJobId(ctx, field)
+			case "stashSceneIds":
+				return ec.fieldContext_Task_stashSceneIds(ctx, field)
+			case "stashScanJobId":
+				return ec.fieldContext_Task_stashScanJobId(ctx, field)
+			case "stashScanPath":
+				return ec.fieldContext_Task_stashScanPath(ctx, field)
+			case "stashScanError":
+				return ec.fieldContext_Task_stashScanError(ctx, field)
+			case "stashScanHint":
+				return ec.fieldContext_Task_stashScanHint(ctx, field)
+			case "stashScanStartedAt":
+				return ec.fieldContext_Task_stashScanStartedAt(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_Task_createdAt(ctx, field)
+			case "updatedAt":
+				return ec.fieldContext_Task_updatedAt(ctx, field)
+			case "lastProgressAt":
+				return ec.fieldContext_Task_lastProgressAt(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type Task", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _HomeOverview_activeTasks(ctx context.Context, field graphql.CollectedField, obj *model.HomeOverview) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_HomeOverview_activeTasks(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.ActiveTasks, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]*model.Task)
+	fc.Result = res
+	return ec.marshalNTask2ᚕᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐTaskᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_HomeOverview_activeTasks(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "HomeOverview",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_Task_id(ctx, field)
+			case "files":
+				return ec.fieldContext_Task_files(ctx, field)
+			case "source":
+				return ec.fieldContext_Task_source(ctx, field)
+			case "code":
+				return ec.fieldContext_Task_code(ctx, field)
+			case "stage":
+				return ec.fieldContext_Task_stage(ctx, field)
+			case "stageStatus":
+				return ec.fieldContext_Task_stageStatus(ctx, field)
+			case "stageLabel":
+				return ec.fieldContext_Task_stageLabel(ctx, field)
+			case "stageStatusLabel":
+				return ec.fieldContext_Task_stageStatusLabel(ctx, field)
+			case "stageErrorCode":
+				return ec.fieldContext_Task_stageErrorCode(ctx, field)
+			case "stageErrorMessage":
+				return ec.fieldContext_Task_stageErrorMessage(ctx, field)
+			case "candidate":
+				return ec.fieldContext_Task_candidate(ctx, field)
+			case "torrentUrl":
+				return ec.fieldContext_Task_torrentUrl(ctx, field)
+			case "savePath":
+				return ec.fieldContext_Task_savePath(ctx, field)
+			case "category":
+				return ec.fieldContext_Task_category(ctx, field)
+			case "tags":
+				return ec.fieldContext_Task_tags(ctx, field)
+			case "torrentHash":
+				return ec.fieldContext_Task_torrentHash(ctx, field)
+			case "torrentName":
+				return ec.fieldContext_Task_torrentName(ctx, field)
+			case "progress":
+				return ec.fieldContext_Task_progress(ctx, field)
+			case "qbittorrentState":
+				return ec.fieldContext_Task_qbittorrentState(ctx, field)
+			case "contentPath":
+				return ec.fieldContext_Task_contentPath(ctx, field)
+			case "sourcingCompletedAt":
+				return ec.fieldContext_Task_sourcingCompletedAt(ctx, field)
+			case "sourcingLastCheckedAt":
+				return ec.fieldContext_Task_sourcingLastCheckedAt(ctx, field)
+			case "sourcingNextCheckAt":
+				return ec.fieldContext_Task_sourcingNextCheckAt(ctx, field)
+			case "downloadCompletedAt":
+				return ec.fieldContext_Task_downloadCompletedAt(ctx, field)
+			case "ingestCompletedAt":
+				return ec.fieldContext_Task_ingestCompletedAt(ctx, field)
+			case "mojiSourcePath":
+				return ec.fieldContext_Task_mojiSourcePath(ctx, field)
+			case "transferAction":
+				return ec.fieldContext_Task_transferAction(ctx, field)
+			case "mojiTransferPath":
+				return ec.fieldContext_Task_mojiTransferPath(ctx, field)
+			case "transferError":
+				return ec.fieldContext_Task_transferError(ctx, field)
+			case "stashIngestPhase":
+				return ec.fieldContext_Task_stashIngestPhase(ctx, field)
+			case "stashGenerateJobId":
+				return ec.fieldContext_Task_stashGenerateJobId(ctx, field)
+			case "stashIdentifyJobId":
+				return ec.fieldContext_Task_stashIdentifyJobId(ctx, field)
+			case "stashSceneIds":
+				return ec.fieldContext_Task_stashSceneIds(ctx, field)
+			case "stashScanJobId":
+				return ec.fieldContext_Task_stashScanJobId(ctx, field)
+			case "stashScanPath":
+				return ec.fieldContext_Task_stashScanPath(ctx, field)
+			case "stashScanError":
+				return ec.fieldContext_Task_stashScanError(ctx, field)
+			case "stashScanHint":
+				return ec.fieldContext_Task_stashScanHint(ctx, field)
+			case "stashScanStartedAt":
+				return ec.fieldContext_Task_stashScanStartedAt(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_Task_createdAt(ctx, field)
+			case "updatedAt":
+				return ec.fieldContext_Task_updatedAt(ctx, field)
+			case "lastProgressAt":
+				return ec.fieldContext_Task_lastProgressAt(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type Task", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _HomeOverview_recentTasks(ctx context.Context, field graphql.CollectedField, obj *model.HomeOverview) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_HomeOverview_recentTasks(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.RecentTasks, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]*model.Task)
+	fc.Result = res
+	return ec.marshalNTask2ᚕᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐTaskᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_HomeOverview_recentTasks(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "HomeOverview",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_Task_id(ctx, field)
+			case "files":
+				return ec.fieldContext_Task_files(ctx, field)
+			case "source":
+				return ec.fieldContext_Task_source(ctx, field)
+			case "code":
+				return ec.fieldContext_Task_code(ctx, field)
+			case "stage":
+				return ec.fieldContext_Task_stage(ctx, field)
+			case "stageStatus":
+				return ec.fieldContext_Task_stageStatus(ctx, field)
+			case "stageLabel":
+				return ec.fieldContext_Task_stageLabel(ctx, field)
+			case "stageStatusLabel":
+				return ec.fieldContext_Task_stageStatusLabel(ctx, field)
+			case "stageErrorCode":
+				return ec.fieldContext_Task_stageErrorCode(ctx, field)
+			case "stageErrorMessage":
+				return ec.fieldContext_Task_stageErrorMessage(ctx, field)
+			case "candidate":
+				return ec.fieldContext_Task_candidate(ctx, field)
+			case "torrentUrl":
+				return ec.fieldContext_Task_torrentUrl(ctx, field)
+			case "savePath":
+				return ec.fieldContext_Task_savePath(ctx, field)
+			case "category":
+				return ec.fieldContext_Task_category(ctx, field)
+			case "tags":
+				return ec.fieldContext_Task_tags(ctx, field)
+			case "torrentHash":
+				return ec.fieldContext_Task_torrentHash(ctx, field)
+			case "torrentName":
+				return ec.fieldContext_Task_torrentName(ctx, field)
+			case "progress":
+				return ec.fieldContext_Task_progress(ctx, field)
+			case "qbittorrentState":
+				return ec.fieldContext_Task_qbittorrentState(ctx, field)
+			case "contentPath":
+				return ec.fieldContext_Task_contentPath(ctx, field)
+			case "sourcingCompletedAt":
+				return ec.fieldContext_Task_sourcingCompletedAt(ctx, field)
+			case "sourcingLastCheckedAt":
+				return ec.fieldContext_Task_sourcingLastCheckedAt(ctx, field)
+			case "sourcingNextCheckAt":
+				return ec.fieldContext_Task_sourcingNextCheckAt(ctx, field)
+			case "downloadCompletedAt":
+				return ec.fieldContext_Task_downloadCompletedAt(ctx, field)
+			case "ingestCompletedAt":
+				return ec.fieldContext_Task_ingestCompletedAt(ctx, field)
+			case "mojiSourcePath":
+				return ec.fieldContext_Task_mojiSourcePath(ctx, field)
+			case "transferAction":
+				return ec.fieldContext_Task_transferAction(ctx, field)
+			case "mojiTransferPath":
+				return ec.fieldContext_Task_mojiTransferPath(ctx, field)
+			case "transferError":
+				return ec.fieldContext_Task_transferError(ctx, field)
+			case "stashIngestPhase":
+				return ec.fieldContext_Task_stashIngestPhase(ctx, field)
+			case "stashGenerateJobId":
+				return ec.fieldContext_Task_stashGenerateJobId(ctx, field)
+			case "stashIdentifyJobId":
+				return ec.fieldContext_Task_stashIdentifyJobId(ctx, field)
+			case "stashSceneIds":
+				return ec.fieldContext_Task_stashSceneIds(ctx, field)
+			case "stashScanJobId":
+				return ec.fieldContext_Task_stashScanJobId(ctx, field)
+			case "stashScanPath":
+				return ec.fieldContext_Task_stashScanPath(ctx, field)
+			case "stashScanError":
+				return ec.fieldContext_Task_stashScanError(ctx, field)
+			case "stashScanHint":
+				return ec.fieldContext_Task_stashScanHint(ctx, field)
+			case "stashScanStartedAt":
+				return ec.fieldContext_Task_stashScanStartedAt(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_Task_createdAt(ctx, field)
+			case "updatedAt":
+				return ec.fieldContext_Task_updatedAt(ctx, field)
+			case "lastProgressAt":
+				return ec.fieldContext_Task_lastProgressAt(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type Task", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _HomeSubscriptionSummary_total(ctx context.Context, field graphql.CollectedField, obj *model.HomeSubscriptionSummary) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_HomeSubscriptionSummary_total(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Total, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int)
+	fc.Result = res
+	return ec.marshalNInt2int(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_HomeSubscriptionSummary_total(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "HomeSubscriptionSummary",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _HomeSubscriptionSummary_attention(ctx context.Context, field graphql.CollectedField, obj *model.HomeSubscriptionSummary) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_HomeSubscriptionSummary_attention(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Attention, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int)
+	fc.Result = res
+	return ec.marshalNInt2int(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_HomeSubscriptionSummary_attention(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "HomeSubscriptionSummary",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _HomeSubscriptionSummary_unchecked(ctx context.Context, field graphql.CollectedField, obj *model.HomeSubscriptionSummary) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_HomeSubscriptionSummary_unchecked(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Unchecked, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int)
+	fc.Result = res
+	return ec.marshalNInt2int(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_HomeSubscriptionSummary_unchecked(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "HomeSubscriptionSummary",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _HomeSubscriptionSummary_lastCheckedAt(ctx context.Context, field graphql.CollectedField, obj *model.HomeSubscriptionSummary) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_HomeSubscriptionSummary_lastCheckedAt(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.LastCheckedAt, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*string)
+	fc.Result = res
+	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_HomeSubscriptionSummary_lastCheckedAt(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "HomeSubscriptionSummary",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _HomeSubscriptionSummary_attentionPerformerIds(ctx context.Context, field graphql.CollectedField, obj *model.HomeSubscriptionSummary) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_HomeSubscriptionSummary_attentionPerformerIds(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.AttentionPerformerIds, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]string)
+	fc.Result = res
+	return ec.marshalNID2ᚕstringᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_HomeSubscriptionSummary_attentionPerformerIds(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "HomeSubscriptionSummary",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type ID does not have child fields")
 		},
 	}
 	return fc, nil
@@ -17767,6 +18742,124 @@ func (ec *executionContext) fieldContext_Query_version(_ context.Context, field 
 		IsResolver: true,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Query_homeOverview(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Query_homeOverview(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Query().HomeOverview(rctx)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*model.HomeOverview)
+	fc.Result = res
+	return ec.marshalNHomeOverview2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐHomeOverview(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Query_homeOverview(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "total":
+				return ec.fieldContext_HomeOverview_total(ctx, field)
+			case "attention":
+				return ec.fieldContext_HomeOverview_attention(ctx, field)
+			case "active":
+				return ec.fieldContext_HomeOverview_active(ctx, field)
+			case "waiting":
+				return ec.fieldContext_HomeOverview_waiting(ctx, field)
+			case "completedLast24Hours":
+				return ec.fieldContext_HomeOverview_completedLast24Hours(ctx, field)
+			case "attentionTasks":
+				return ec.fieldContext_HomeOverview_attentionTasks(ctx, field)
+			case "activeTasks":
+				return ec.fieldContext_HomeOverview_activeTasks(ctx, field)
+			case "recentTasks":
+				return ec.fieldContext_HomeOverview_recentTasks(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type HomeOverview", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Query_homeSubscriptionSummary(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Query_homeSubscriptionSummary(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Query().HomeSubscriptionSummary(rctx)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*model.HomeSubscriptionSummary)
+	fc.Result = res
+	return ec.marshalNHomeSubscriptionSummary2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐHomeSubscriptionSummary(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Query_homeSubscriptionSummary(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "total":
+				return ec.fieldContext_HomeSubscriptionSummary_total(ctx, field)
+			case "attention":
+				return ec.fieldContext_HomeSubscriptionSummary_attention(ctx, field)
+			case "unchecked":
+				return ec.fieldContext_HomeSubscriptionSummary_unchecked(ctx, field)
+			case "lastCheckedAt":
+				return ec.fieldContext_HomeSubscriptionSummary_lastCheckedAt(ctx, field)
+			case "attentionPerformerIds":
+				return ec.fieldContext_HomeSubscriptionSummary_attentionPerformerIds(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type HomeSubscriptionSummary", field.Name)
 		},
 	}
 	return fc, nil
@@ -35472,6 +36565,136 @@ func (ec *executionContext) _Health(ctx context.Context, sel ast.SelectionSet, o
 	return out
 }
 
+var homeOverviewImplementors = []string{"HomeOverview"}
+
+func (ec *executionContext) _HomeOverview(ctx context.Context, sel ast.SelectionSet, obj *model.HomeOverview) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, homeOverviewImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("HomeOverview")
+		case "total":
+			out.Values[i] = ec._HomeOverview_total(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "attention":
+			out.Values[i] = ec._HomeOverview_attention(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "active":
+			out.Values[i] = ec._HomeOverview_active(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "waiting":
+			out.Values[i] = ec._HomeOverview_waiting(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "completedLast24Hours":
+			out.Values[i] = ec._HomeOverview_completedLast24Hours(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "attentionTasks":
+			out.Values[i] = ec._HomeOverview_attentionTasks(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "activeTasks":
+			out.Values[i] = ec._HomeOverview_activeTasks(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "recentTasks":
+			out.Values[i] = ec._HomeOverview_recentTasks(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var homeSubscriptionSummaryImplementors = []string{"HomeSubscriptionSummary"}
+
+func (ec *executionContext) _HomeSubscriptionSummary(ctx context.Context, sel ast.SelectionSet, obj *model.HomeSubscriptionSummary) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, homeSubscriptionSummaryImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("HomeSubscriptionSummary")
+		case "total":
+			out.Values[i] = ec._HomeSubscriptionSummary_total(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "attention":
+			out.Values[i] = ec._HomeSubscriptionSummary_attention(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "unchecked":
+			out.Values[i] = ec._HomeSubscriptionSummary_unchecked(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "lastCheckedAt":
+			out.Values[i] = ec._HomeSubscriptionSummary_lastCheckedAt(ctx, field, obj)
+		case "attentionPerformerIds":
+			out.Values[i] = ec._HomeSubscriptionSummary_attentionPerformerIds(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
 var imageCacheSettingsImplementors = []string{"ImageCacheSettings"}
 
 func (ec *executionContext) _ImageCacheSettings(ctx context.Context, sel ast.SelectionSet, obj *model.ImageCacheSettings) graphql.Marshaler {
@@ -37234,6 +38457,50 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 					}
 				}()
 				res = ec._Query_version(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			rrm := func(ctx context.Context) graphql.Marshaler {
+				return ec.OperationContext.RootResolverMiddleware(ctx,
+					func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
+		case "homeOverview":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_homeOverview(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			rrm := func(ctx context.Context) graphql.Marshaler {
+				return ec.OperationContext.RootResolverMiddleware(ctx,
+					func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
+		case "homeSubscriptionSummary":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_homeSubscriptionSummary(ctx, field)
 				if res == graphql.Null {
 					atomic.AddUint32(&fs.Invalids, 1)
 				}
@@ -40687,6 +41954,34 @@ func (ec *executionContext) marshalNHealth2ᚖgithubᚗcomᚋleothevan2444ᚋmoj
 		return graphql.Null
 	}
 	return ec._Health(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNHomeOverview2githubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐHomeOverview(ctx context.Context, sel ast.SelectionSet, v model.HomeOverview) graphql.Marshaler {
+	return ec._HomeOverview(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNHomeOverview2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐHomeOverview(ctx context.Context, sel ast.SelectionSet, v *model.HomeOverview) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._HomeOverview(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNHomeSubscriptionSummary2githubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐHomeSubscriptionSummary(ctx context.Context, sel ast.SelectionSet, v model.HomeSubscriptionSummary) graphql.Marshaler {
+	return ec._HomeSubscriptionSummary(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNHomeSubscriptionSummary2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐHomeSubscriptionSummary(ctx context.Context, sel ast.SelectionSet, v *model.HomeSubscriptionSummary) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._HomeSubscriptionSummary(ctx, sel, v)
 }
 
 func (ec *executionContext) unmarshalNID2string(ctx context.Context, v any) (string, error) {

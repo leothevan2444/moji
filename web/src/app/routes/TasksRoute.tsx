@@ -47,7 +47,7 @@ export function Component() {
   const [selectedTaskIds, setSelectedTaskIds] = useState<string[]>([]);
   const [batchResult, setBatchResult] = useState<TaskBatchResultView | null>(null);
   const [lastRefreshedAt, setLastRefreshedAt] = useState<Date | null>(null);
-  const [queueOpen, setQueueOpen] = useState(false);
+  const [queueOpen, setQueueOpen] = useState(searchParams.get("workbench") === "1");
 
   const [{ data, fetching, error }, refresh] = useQuery({ query: TasksOverviewDocumentDocument, requestPolicy: "cache-and-network" });
   const [{ data: detailData, fetching: detailFetching, error: detailError }, refreshDetail] = useQuery({
@@ -76,7 +76,9 @@ export function Component() {
     navigate(taskCloseTarget(location.state, searchParams));
   };
   const updateFilter = (patch: Partial<{ q: string; status: TaskStatusFilter; sort: TaskSortKey }>) => {
-    setSearchParams(serializeTaskSearchParams({ ...filter, ...patch }));
+    const next = serializeTaskSearchParams({ ...filter, ...patch });
+    if (searchParams.get("completedWithin") === "24h" && (!patch.status || patch.status === "completed")) next.set("completedWithin", "24h");
+    setSearchParams(next);
   };
 
   const runRetry = async (id: string) => {
@@ -133,7 +135,8 @@ export function Component() {
 
   if (error && !data) return <div className="empty-card"><h3>{t("taskRoute.loadFailed")}</h3><p>{describeQueryError(error)}</p><button type="button" onClick={requery}>{t("common.retry")}</button></div>;
   return <>
-    <TasksPage tasks={tasks}
+    <TasksPage tasks={tasks} completedWithin24Hours={searchParams.get("completedWithin") === "24h" && filter.status === "completed"}
+      onClearCompletedWindow={() => { const next = new URLSearchParams(searchParams); next.delete("completedWithin"); setSearchParams(next); }}
       taskSearch={filter.q} taskStatus={filter.status} taskSort={filter.sort} taskGroupOpen={groups}
       pendingTaskRetryId={pendingRetry} pendingTaskDeleteId={pendingDelete} selectedTaskIds={selectedTaskIds}
       batchPending={retryingTasks || deletingTasks} refreshing={fetching}
@@ -146,8 +149,8 @@ export function Component() {
       onRetryTask={(id) => void runRetry(id)} onResolveTask={(id) => openTask(id, true)}
       onDeleteTask={(id) => setConfirmDeleteIds([id])} onToggleTaskSelection={toggleSelection} onSelectVisibleTasks={selectVisible} onClearTaskSelection={() => setSelectedTaskIds([])}
       onBatchRetry={(ids) => void runBatchRetry(ids)} onBatchDelete={setConfirmDeleteIds} />
-    {queueOpen ? <Suspense fallback={<Drawer visibleDrawer="task-queue" closing={false} title={t("taskProcessingQueue.title")} onClose={() => setQueueOpen(false)}><div className="skeleton skeleton-card" /></Drawer>}>
-      <TaskProcessingQueueDrawer tasks={tasks} onCopy={copyText} onNotify={pushToast} onClose={() => setQueueOpen(false)} />
+    {queueOpen && data ? <Suspense fallback={<Drawer visibleDrawer="task-queue" closing={false} title={t("taskProcessingQueue.title")} onClose={() => { setQueueOpen(false); if (searchParams.get("workbench") === "1") navigate(taskCloseTarget(location.state, new URLSearchParams("status=failed")), { replace: true }); }}><div className="skeleton skeleton-card" /></Drawer>}>
+      <TaskProcessingQueueDrawer tasks={tasks} autoAdvance={searchParams.get("workbench") !== "1"} onCopy={copyText} onNotify={pushToast} onClose={() => { setQueueOpen(false); if (searchParams.get("workbench") === "1") navigate(taskCloseTarget(location.state, new URLSearchParams("status=failed")), { replace: true }); }} />
     </Suspense> : null}
     {taskId ? <Drawer visibleDrawer={isResolution ? "task-resolution" : "task"} closing={false} title={isResolution ? t("taskRoute.resolutionTitle", { task: activeTask ? taskSummary(activeTask) : t("taskRoute.task") }) : activeTask ? taskSummary(activeTask) : t("taskRoute.details")} onClose={closeTask}>
       <Suspense fallback={<div className="skeleton skeleton-card" />}>

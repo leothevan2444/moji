@@ -21,7 +21,7 @@ function rootFields(document: { definitions: readonly unknown[] }) {
 
 describe("route-owned GraphQL operations", () => {
   it("keeps each route query scoped to its surface", () => {
-    expect(rootFields(HomePageDocumentDocument)).toEqual(["settings", "tasks"]);
+    expect(rootFields(HomePageDocumentDocument)).toEqual(["homeOverview", "settings"]);
     expect(rootFields(HomeServiceStatusDocument)).toEqual(["settingsStatus"]);
     expect(rootFields(TasksOverviewDocumentDocument)).toEqual(["dashboardStats", "settings", "settingsStatus", "tasks"]);
     expect(rootFields(ConnectionsSettingsDocument)).toEqual(["settings"]);

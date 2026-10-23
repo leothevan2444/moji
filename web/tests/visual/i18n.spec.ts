@@ -29,7 +29,7 @@ for (const locale of ["zh-CN", "en"] as const) {
       await page.goto(path);
       await expect(page.locator("html")).toHaveAttribute("lang", locale);
       await expectReady(page);
-      if (name === "home") await expect(page.locator(".card-grid--deps .service-card--detailed")).toHaveCount(3);
+      if (name === "home") await expect(page.locator(".home-metrics .home-metric")).toHaveCount(4);
       if (name === "settings") await expect(page.locator(".settings-form")).toBeVisible();
       // Fractional desktop card positions can vary glyph edges by 217 pixels
       // in Chromium; keep this allowance local to the affected screenshot.
