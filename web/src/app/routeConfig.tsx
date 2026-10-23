@@ -16,6 +16,7 @@ export const appRoutes: RouteObject[] = [
       { path: "/tasks/:taskId/resolve", lazy: () => import("./routes/TasksRoute") },
       { path: "/discover", lazy: () => import("./routes/DiscoverRoute") },
       { path: "/performers", lazy: () => import("./routes/PerformersRoute") },
+      { path: "/performers/review", lazy: () => import("./routes/ReleaseReviewsRoute") },
       { path: "/performers/:performerId", lazy: () => import("./routes/PerformersRoute") },
       { path: "/stats", lazy: () => import("./routes/StatsRoute") },
       { path: "/settings/:section", lazy: () => import("./routes/SettingsRoute") }

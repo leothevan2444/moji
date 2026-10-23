@@ -119,6 +119,7 @@ func (r *mutationResolver) QueuePerformerScenes(ctx context.Context, input model
 	if err != nil {
 		return nil, err
 	}
+	r.synchronizeReleaseReviews(ctx)
 	return queuePerformerScenesResultToModel(result), nil
 }
 

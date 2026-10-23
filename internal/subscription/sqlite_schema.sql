@@ -62,3 +62,9 @@ CREATE INDEX IF NOT EXISTS idx_subscription_performer_releases_performer_linked_
 
 CREATE INDEX IF NOT EXISTS idx_subscription_performer_releases_release_id
   ON subscription_performer_releases (release_id);
+
+-- Durable decisions outlive performer snapshots, unsubscribe and display windows.
+CREATE TABLE IF NOT EXISTS subscription_release_reviews (
+  release_key TEXT PRIMARY KEY,
+  record_json TEXT NOT NULL CHECK (json_valid(record_json))
+) STRICT;

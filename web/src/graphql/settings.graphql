@@ -71,6 +71,7 @@ mutation UpdateAutomationSettingsDocument($input: UpdateAutomationSettingsInput!
         soloBehavior
         groupBehavior
         compilationBehavior
+        vrBehavior
         maxGroupPerformerCount
         releaseDateRange
       }

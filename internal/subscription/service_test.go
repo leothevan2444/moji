@@ -126,13 +126,14 @@ type fakeTaskRuntime struct {
 }
 
 type fakeTaskCreator struct {
-	queueTask        *taskruntime.Task
-	queueErr         error
-	queueCalls       []fakeQueuedSceneCall
-	resolvedCodes    []string
-	subscriptionTask *taskruntime.Task
-	subscriptionCode string
-	subscriptionErr  error
+	queueTask         *taskruntime.Task
+	queueErr          error
+	queueCalls        []fakeQueuedSceneCall
+	resolvedCodes     []string
+	subscriptionTask  *taskruntime.Task
+	subscriptionCode  string
+	subscriptionErr   error
+	subscriptionCalls []string
 }
 
 type fakeQueuedSceneCall struct {
@@ -256,6 +257,7 @@ func (f *fakeTaskCreator) QueueDiscoveredScene(_ context.Context, sceneID string
 }
 
 func (f *fakeTaskCreator) QueueSubscriptionRelease(_ context.Context, code, _ string) (*taskruntime.Task, error) {
+	f.subscriptionCalls = append(f.subscriptionCalls, code)
 	if f.subscriptionCode != "" {
 		code = f.subscriptionCode
 	}

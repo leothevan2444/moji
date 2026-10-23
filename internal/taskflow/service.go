@@ -75,6 +75,18 @@ func (s *Service) SetDiscoveredSceneResolver(resolver DiscoveredSceneResolver) {
 	s.discoveredSceneResolver = resolver
 }
 
+func (s *Service) ListTasks(ctx context.Context) ([]*taskruntime.Task, error) {
+	if s == nil || s.taskRuntime == nil {
+		return nil, nil
+	}
+	if lister, ok := s.taskRuntime.(interface {
+		ListTasks(context.Context) ([]*taskruntime.Task, error)
+	}); ok {
+		return lister.ListTasks(ctx)
+	}
+	return nil, nil
+}
+
 func (s *Service) CreateFromManualTorrent(ctx context.Context, input CreateFromManualTorrentInput) (*taskruntime.Task, error) {
 	if s == nil || s.taskRuntime == nil {
 		return nil, errors.New("taskflow: task runtime is not configured")

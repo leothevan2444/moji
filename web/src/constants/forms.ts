@@ -101,6 +101,7 @@ export const EMPTY_AUTOMATION_FORM = {
     soloBehavior: SubscriptionReleaseBehavior.Download,
     groupBehavior: SubscriptionReleaseBehavior.Review,
     compilationBehavior: SubscriptionReleaseBehavior.Block,
+    vrBehavior: SubscriptionReleaseBehavior.Review,
     maxGroupPerformerCount: "3",
     releaseDateRange: SubscriptionReleaseDateRange.All
   },

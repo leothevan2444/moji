@@ -16,7 +16,7 @@ vi.mock("urql", async (importOriginal) => ({
     const name = query.definitions[0]?.name?.value;
     if (name === "AutomationSettingsTab") return [{ data: { settings: { automation: {
       taskProcessingEnabled: true, taskProgressSyncIntervalSeconds: 60, subscriptionPollIntervalHours: 48, sourcingRetryIntervalHours: 6, stashBoxEndpoints: [],
-      subscriptionReleasePolicy: { soloBehavior: "DOWNLOAD", groupBehavior: "REVIEW", compilationBehavior: "BLOCK", maxGroupPerformerCount: 3, releaseDateRange: "ALL" },
+      subscriptionReleasePolicy: { soloBehavior: "DOWNLOAD", groupBehavior: "REVIEW", compilationBehavior: "BLOCK", vrBehavior: "REVIEW", maxGroupPerformerCount: 3, releaseDateRange: "ALL" },
       torrentSelection: { enabled: true, inspectionCandidateLimit: 5, fastRules: [], torrentRules: [] }
     } }, settingsStatus: { automation: { taskProgressSyncEnabled: true, subscriptionPollEnabled: true }, stashBox: { stashBoxes: [], stashBoxesLoaded: true, stashBoxesLoadError: null } } }, fetching: false, error: null }, vi.fn()];
     if (name === "IngestSettingsTab") return [{ data: { settings: { ingest: { keepSubtitles: true, downloads: { qbRoot: "/q/downloads", mojiRoot: "/moji/downloads" }, library: { mojiRoot: "/moji/library", stashRoot: "/stash/library" }, transfer: { action: "COPY" } }, qbittorrent: { defaultSavePath: "" } }, settingsStatus: { stashLibraries: [{ path: "/stash/library" }] } }, fetching: false, error: null }, vi.fn()];
@@ -33,6 +33,26 @@ import AutomationSettingsTab from "./AutomationSettingsTab";
 afterEach(cleanup);
 
 describe("settings tab visual contracts", () => {
+  it("saves the VR policy and preserves its draft across tabs", async () => {
+    updateSettings.mockClear();
+    const view = render(<SettingsDraftProvider><AutomationSettingsTab /></SettingsDraftProvider>);
+    const vr = screen.getByRole("combobox", { name: /automationUi.vr/ }) as HTMLSelectElement;
+    expect(vr.value).toBe("REVIEW");
+    expect(Array.from(vr.options, option => option.value)).toEqual(["DOWNLOAD", "REVIEW", "BLOCK"]);
+    expect(screen.queryByText("automationUi.groupMax")).toBeNull();
+    for (const key of ["policyScope", "behaviorHelp", "priorityHelp", "reviewHelp"]) {
+      expect(screen.getByText(`automationUi.${key}`)).toBeTruthy();
+    }
+    fireEvent.change(vr, { target: { value: "BLOCK" } });
+    view.rerender(<SettingsDraftProvider><SystemSettingsTab /></SettingsDraftProvider>);
+    view.rerender(<SettingsDraftProvider><AutomationSettingsTab /></SettingsDraftProvider>);
+    expect((screen.getByRole("combobox", { name: /automationUi.vr/ }) as HTMLSelectElement).value).toBe("BLOCK");
+    fireEvent.click(screen.getByText("automationUi.save"));
+    await waitFor(() => expect(updateSettings).toHaveBeenCalledWith({ input: expect.objectContaining({
+      subscriptionReleasePolicy: expect.objectContaining({ vrBehavior: "BLOCK", maxGroupPerformerCount: 3 })
+    }) }));
+  });
+
   it("loads and saves the resource search interval independently of metadata polling", async () => {
     updateSettings.mockClear();
     render(<SettingsDraftProvider><AutomationSettingsTab /></SettingsDraftProvider>);

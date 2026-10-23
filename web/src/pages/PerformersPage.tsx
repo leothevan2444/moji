@@ -1,3 +1,4 @@
+import { Link } from "react-router";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faAnglesLeft } from "@fortawesome/free-solid-svg-icons/faAnglesLeft";
 import { faAngleLeft } from "@fortawesome/free-solid-svg-icons/faAngleLeft";
@@ -73,6 +74,8 @@ function performerSceneSourceLabel(scene: StashPerformerSceneEntry) {
 }
 
 interface PerformersPageProps {
+  reviewPendingCount?: number;
+  reviewCounts?: Record<string,number>;
   stashBaseURL: string | null;
   stashPerformerPage: StashPerformerPage | null;
   stashPerformers: StashPerformerEntry[];
@@ -199,7 +202,9 @@ export function PerformersPage({
   onSelectCurrentScenePage,
   onClearSceneSelection,
   onQueueSelectedScenes,
-  onQueueScene
+  onQueueScene,
+  reviewPendingCount = 0,
+  reviewCounts = {}
 }: PerformersPageProps) {
   const { t } = useTranslation();
   const [pageInput, setPageInput] = useState("");
@@ -290,6 +295,15 @@ export function PerformersPage({
                     </div>
 
                     <div className="performer-detail-card__icons">
+                      <Link
+                        className="profile-action-icon profile-action-icon--count"
+                        title={t("releaseReview.actorEntry", { count: reviewCounts[performerDetail.performer.id] ?? performerSubscription?.reviewReleaseCount ?? 0 })}
+                        aria-label={t("releaseReview.actorEntry", { count: reviewCounts[performerDetail.performer.id] ?? performerSubscription?.reviewReleaseCount ?? 0 })}
+                        to={`/performers/review?performer=${encodeURIComponent(performerDetail.performer.id)}`}
+                      >
+                        <FontAwesomeIcon icon={faClipboardCheck} />
+                        <span aria-hidden="true">{reviewCounts[performerDetail.performer.id] ?? performerSubscription?.reviewReleaseCount ?? 0}</span>
+                      </Link>
                       <button
                         type="button"
                         className="profile-action-icon"
@@ -656,6 +670,7 @@ export function PerformersPage({
       </div>
 
       <div className="toolbar-inline toolbar-inline--subscription toolbar-inline--performer-list">
+        <Link className="ghost-button release-review-link" to="/performers/review"><FontAwesomeIcon icon={faClipboardCheck} /> {t("releaseReview.entry", { count: reviewPendingCount })}</Link>
         <input
           placeholder={t("performerUi.search")}
           value={subscriptionSearch}
@@ -793,6 +808,18 @@ export function PerformersPage({
                 <div className="profile-card__footer">
                   <p className="profile-check-meta">{t("performerUi.lastChecked", { time: formatDateTime(subscriptionEntry?.lastCheckedAt) })}</p>
                   <div className="profile-actions" onClick={(event) => event.stopPropagation()}>
+                    {(reviewCounts[performer.id] ?? subscriptionEntry?.reviewReleaseCount ?? 0) > 0 ? (
+                      <Link
+                        className="profile-action-icon profile-action-icon--count"
+                        title={t("releaseReview.actorEntry", { count: reviewCounts[performer.id] ?? subscriptionEntry?.reviewReleaseCount })}
+                        aria-label={t("releaseReview.actorEntry", { count: reviewCounts[performer.id] ?? subscriptionEntry?.reviewReleaseCount })}
+                        onKeyDown={event => event.stopPropagation()}
+                        to={`/performers/review?performer=${encodeURIComponent(performer.id)}`}
+                      >
+                        <FontAwesomeIcon icon={faClipboardCheck} />
+                        <span aria-hidden="true">{reviewCounts[performer.id] ?? subscriptionEntry?.reviewReleaseCount}</span>
+                      </Link>
+                    ) : null}
                     <button
                       type="button"
                       className="profile-action-icon"

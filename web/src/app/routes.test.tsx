@@ -8,7 +8,7 @@ describe("SPA route boundaries", () => {
     const children = appRoutes.find((route) => route.children)?.children ?? [];
     expect(children.map((route) => route.index ? "/" : route.path)).toEqual([
       "/", "/tasks", "/tasks/:taskId", "/tasks/:taskId/resolve", "/discover",
-      "/performers", "/performers/:performerId", "/stats", "/settings/:section"
+      "/performers", "/performers/review", "/performers/:performerId", "/stats", "/settings/:section"
     ]);
     expect(children.every((route) => typeof route.lazy === "function")).toBe(true);
   });
@@ -21,6 +21,7 @@ describe("SPA route boundaries", () => {
   it.each([
     ["/tasks/task-1", "/tasks/:taskId"],
     ["/tasks/task-1/resolve", "/tasks/:taskId/resolve"],
+    ["/performers/review", "/performers/review"],
     ["/performers/performer-1", "/performers/:performerId"],
     ["/settings/automation", "/settings/:section"]
   ])("matches deep link %s to its lazy route", (url, expectedPath) => {

@@ -15,3 +15,9 @@ The detail view can filter scenes by text, source, and library state. Scenes app
 Queue one scene or select eligible scenes on the current page for a batch. Items already in the library, already assigned a task, missing a usable code, or duplicated are skipped or failed individually; the batch result reports queued, skipped, and failed counts.
 
 Subscription release policy classifies a release as solo, group, compilation-like, or unknown. **Download** creates a task, **Review** records it for review, and **Block** ignores it. Unknown dates and dates outside the automatic-download range are moved to review instead of downloaded automatically.
+
+## Release review
+
+Open Release review from the Performers page, or use a performer’s review count to filter by that performer. Filter by performer, code or title, VR and status. Selection persists across pages, up to 100 releases.
+
+Only Download release creates a task. Do not download saves a persistent decision; Reconsider explicitly returns rejected or policy-skipped releases to review. Batch results are reported individually and failed or unchanged selections are retained. Task creation failures have their own view and retry action. Existing tasks and library items are not duplicated.

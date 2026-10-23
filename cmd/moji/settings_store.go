@@ -156,6 +156,7 @@ func subscriptionReleasePolicyConfigFromSnapshot(snapshot graphqlapi.Subscriptio
 		SoloBehavior:           config.SubscriptionReleaseBehavior(strings.TrimSpace(snapshot.SoloBehavior)),
 		GroupBehavior:          config.SubscriptionReleaseBehavior(strings.TrimSpace(snapshot.GroupBehavior)),
 		CompilationBehavior:    config.SubscriptionReleaseBehavior(strings.TrimSpace(snapshot.CompilationBehavior)),
+		VRBehavior:             config.SubscriptionReleaseBehavior(strings.TrimSpace(snapshot.VRBehavior)),
 		MaxGroupPerformerCount: snapshot.MaxGroupPerformerCount,
 		ReleaseDateRange:       config.SubscriptionReleaseDateRange(strings.TrimSpace(snapshot.ReleaseDateRange)),
 	}
@@ -185,6 +186,9 @@ func (s *runtimeSettingsEditor) UpdateQBittorrentSettings(input graphqlapi.Updat
 }
 
 func (s *runtimeSettingsEditor) UpdateAutomationSettings(input graphqlapi.UpdateAutomationSettingsInput) (*graphqlapi.SettingsSnapshot, error) {
+	if input.SubscriptionReleasePolicy.VRBehavior == "" {
+		input.SubscriptionReleasePolicy.VRBehavior = string(s.store.Config().Automation.SubscriptionReleasePolicy.Effective().VRBehavior)
+	}
 	interval := input.SourcingRetryIntervalHours
 	if interval == 0 {
 		interval = s.store.Config().Automation.EffectiveSourcingRetryIntervalHours()

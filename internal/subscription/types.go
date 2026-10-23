@@ -10,12 +10,12 @@ import (
 const DefaultCustomFieldKey = performer.DefaultCustomFieldKey
 
 type Release struct {
-	SceneID, Key, Source, Title, Code, Date, URL string
-	PerformerCount                               int
-	PerformerNames                               []string
-	Classification                               ReleaseClassification
-	Decision                                     ReleaseDecision
-	DecisionReason                               string
+	SceneID, Key, Source, Title, Code, Date, URL, ImageURL string
+	PerformerCount                                         int
+	PerformerNames                                         []string
+	Classification                                         ReleaseClassification
+	Decision                                               ReleaseDecision
+	DecisionReason                                         string
 }
 type RecordedRelease struct {
 	Key            string                `json:"key"`
@@ -40,11 +40,11 @@ type PerformerState struct {
 	PendingReleases   []RecordedRelease `json:"pending_releases,omitempty"`
 }
 type SubscribedPerformer struct {
-	Performer                                  performer.Performer
-	LastCheckedAt                              *time.Time
-	LastError                                  string
-	PendingReleaseCount, ProcessedReleaseCount int
-	RecentReleases                             []RecordedRelease
+	Performer                                                      performer.Performer
+	LastCheckedAt                                                  *time.Time
+	LastError                                                      string
+	PendingReleaseCount, ProcessedReleaseCount, ReviewReleaseCount int
+	RecentReleases                                                 []RecordedRelease
 }
 
 type PerformerBatchStatus string

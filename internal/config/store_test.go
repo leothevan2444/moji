@@ -89,6 +89,34 @@ func TestResourceSearchIntervalPersistsAndRejectsInvalidValues(t *testing.T) {
 	}
 }
 
+func TestVRReleasePolicyDefaultsAndPersists(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "config.yaml")
+	if err := os.WriteFile(path, []byte("automation: {}\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	store, err := OpenStore(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := store.Config().Automation.SubscriptionReleasePolicy.Effective().VRBehavior; got != SubscriptionReleaseBehaviorReview {
+		t.Fatalf("legacy configuration VR behavior = %s, want REVIEW", got)
+	}
+	for _, behavior := range []SubscriptionReleaseBehavior{SubscriptionReleaseBehaviorDownload, SubscriptionReleaseBehaviorReview, SubscriptionReleaseBehaviorBlock} {
+		policy := DefaultSubscriptionReleasePolicyConfig()
+		policy.VRBehavior = behavior
+		if _, err := store.UpdateAutomation(60, 1, nil, policy, DefaultTorrentSelectionConfig(), 6); err != nil {
+			t.Fatal(err)
+		}
+		reloaded, err := OpenStore(path)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if got := reloaded.Config().Automation.SubscriptionReleasePolicy.VRBehavior; got != behavior {
+			t.Fatalf("VR behavior = %s, want %s", got, behavior)
+		}
+	}
+}
+
 func TestStoreUpdateAutomationPersistsTorrentSelection(t *testing.T) {
 	dir := t.TempDir()
 	path := filepath.Join(dir, "config.yaml")

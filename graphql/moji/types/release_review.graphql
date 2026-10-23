@@ -1,0 +1,70 @@
+extend type Query {
+  releaseReviews(input: ReleaseReviewQueryInput!): ReleaseReviewConnection!
+}
+
+extend type Mutation {
+  processReleaseReviews(input: ProcessReleaseReviewsInput!): ReleaseReviewPayload!
+}
+
+enum ReleaseReviewStatus { ALL PENDING DOWNLOADED REJECTED SKIPPED FAILED IN_LIBRARY }
+enum ReleaseReviewAction { DOWNLOAD REJECT RECONSIDER }
+
+input ReleaseReviewQueryInput {
+  search: String
+  performerId: ID
+  status: ReleaseReviewStatus = PENDING
+  vr: Boolean
+  page: Int = 1
+  pageSize: Int = 24
+}
+
+input ProcessReleaseReviewsInput {
+  keys: [ID!]!
+  action: ReleaseReviewAction!
+}
+
+type ReleaseReviewPerformer { id: ID! name: String! pendingCount: Int! }
+
+type ReleaseReview {
+  key: ID!
+  code: String!
+  title: String!
+  date: String
+  url: String
+  imageUrl: String
+  source: String!
+  vr: Boolean!
+  status: ReleaseReviewStatus!
+  reasonCode: String!
+  error: String
+  taskId: ID
+  seenAt: String!
+  reviewedAt: String
+  performers: [ReleaseReviewPerformer!]!
+  performerNames: [String!]!
+}
+
+type ReleaseReviewConnection {
+  items: [ReleaseReview!]!
+  performers: [ReleaseReviewPerformer!]!
+  totalCount: Int!
+  pendingCount: Int!
+  failedCount: Int!
+  page: Int!
+  pageSize: Int!
+  totalPages: Int!
+}
+
+type ReleaseReviewResult {
+  key: ID!
+  outcome: String!
+  reasonCode: String!
+  release: ReleaseReview
+}
+
+type ReleaseReviewPayload {
+  results: [ReleaseReviewResult!]!
+  succeededCount: Int!
+  skippedCount: Int!
+  failedCount: Int!
+}

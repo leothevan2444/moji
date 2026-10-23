@@ -157,6 +157,11 @@ export const graphcacheKeys: KeyingConfig = {
   PerformerWorkspaceSnapshot: singleton,
   StashPerformerScene: (data) => typeof data.key === "string" ? data.key : null,
   DiscoveredScene: (data) => typeof data.key === "string" ? data.key : null,
+  ReleaseReview: (data) => typeof data.key === "string" ? data.key : null,
+  ReleaseReviewConnection: () => null,
+  ReleaseReviewResult: () => null,
+  ReleaseReviewPayload: () => null,
+  ReleaseReviewPerformer: (data) => typeof data.id === "string" ? data.id : null,
   SubscriptionRelease: (data) => typeof data.key === "string" ? data.key : null,
   QueuePerformerSceneResult: (data) => typeof data.key === "string" ? data.key : null,
   SubscribedPerformer: (data) => {
@@ -189,16 +194,25 @@ export const graphcacheUpdates: UpdatesConfig = {
         linkTask(cache, event.task, event.type === "CREATED");
         updatePerformerSceneTask(cache, event.task);
       }
-      if (event.type === "CREATED" || event.type === "DELETED") invalidatePerformerSceneQueries(cache);
+      if (event.type === "CREATED" || event.type === "DELETED") {
+        invalidatePerformerSceneQueries(cache);
+        for (const field of cache.inspectFields("Query")) if (field.fieldName === "releaseReviews") cache.invalidate("Query", field.fieldName, field.arguments ?? {});
+      }
     },
     performerSubscriptionEvents(result: any, _args, cache) {
       const event = result.performerSubscriptionEvents;
       if (!event) return;
       if (event.type === "DELETED") removeSubscribedPerformer(cache, event.performerId);
       else upsertSubscribedPerformer(cache, event.state);
+      for (const field of cache.inspectFields("Query")) if (field.fieldName === "releaseReviews") cache.invalidate("Query", field.fieldName, field.arguments ?? {});
     }
   },
   Mutation: {
+    processReleaseReviews(_result, _args, cache) {
+      for (const field of cache.inspectFields("Query")) {
+        if (["releaseReviews", "performerWorkspace", "subscribedPerformers"].includes(field.fieldName)) cache.invalidate("Query", field.fieldName, field.arguments ?? {});
+      }
+    },
     addTorrent(result: any, _args, cache) { linkTask(cache, result.addTorrent, true); },
     downloadMedia(result: any, _args, cache) { linkTask(cache, result.downloadMedia, true); },
     queueDiscoveredScene(result: any, _args, cache) { linkTask(cache, result.queueDiscoveredScene, true); },

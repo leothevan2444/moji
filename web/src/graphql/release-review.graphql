@@ -1,0 +1,16 @@
+query ReleaseReviews($input: ReleaseReviewQueryInput!) {
+  releaseReviews(input: $input) {
+    totalCount pendingCount failedCount page pageSize totalPages
+    performers { id name }
+    items { key code title date url imageUrl source vr status reasonCode error taskId seenAt reviewedAt performerNames performers { id name } }
+  }
+}
+query ReleaseReviewSummary {
+  releaseReviews(input: { pageSize: 1 }) { pendingCount failedCount performers { id pendingCount } }
+}
+mutation ProcessReleaseReviews($input: ProcessReleaseReviewsInput!) {
+  processReleaseReviews(input: $input) {
+    succeededCount skippedCount failedCount
+    results { key outcome reasonCode release { key status error taskId } }
+  }
+}

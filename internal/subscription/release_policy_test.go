@@ -29,6 +29,51 @@ func TestEvaluateReleasePolicySoloBehavior(t *testing.T) {
 	}
 }
 
+func TestVRPolicyUsesOnlyCodeAndCannotRelaxOtherPolicies(t *testing.T) {
+	for _, tc := range []struct {
+		name, code, title     string
+		vr, solo, compilation config.SubscriptionReleaseBehavior
+		want                  ReleaseDecision
+		wantReason            string
+	}{
+		{name: "default review", code: "ABC-VR-123", want: ReleaseDecisionQueued, wantReason: "vr_behavior_review"},
+		{name: "explicit download", code: "ABC-VR-123", vr: config.SubscriptionReleaseBehaviorDownload, want: ReleaseDecisionDownloaded},
+		{name: "skip", code: "ABC-VR-123", vr: config.SubscriptionReleaseBehaviorBlock, want: ReleaseDecisionBlocked, wantReason: "vr_behavior_block"},
+		{name: "case insensitive", code: "abc-vr-123", want: ReleaseDecisionQueued},
+		{name: "substring anywhere", code: "ABCVR123", want: ReleaseDecisionQueued},
+		{name: "title and tags alone do not qualify", code: "ABC-123", title: "VR movie", vr: config.SubscriptionReleaseBehaviorBlock, want: ReleaseDecisionDownloaded},
+		{name: "missing code is not VR", title: "VR movie", vr: config.SubscriptionReleaseBehaviorBlock, want: ReleaseDecisionDownloaded},
+		{name: "solo skip wins over VR download", code: "ABC-VR-123", solo: config.SubscriptionReleaseBehaviorBlock, vr: config.SubscriptionReleaseBehaviorDownload, want: ReleaseDecisionBlocked},
+		{name: "solo skip wins over VR review", code: "ABC-VR-123", solo: config.SubscriptionReleaseBehaviorBlock, vr: config.SubscriptionReleaseBehaviorReview, want: ReleaseDecisionBlocked},
+		{name: "solo review wins over VR download", code: "ABC-VR-123", solo: config.SubscriptionReleaseBehaviorReview, vr: config.SubscriptionReleaseBehaviorDownload, want: ReleaseDecisionQueued},
+		{name: "VR skip wins over solo review", code: "ABC-VR-123", solo: config.SubscriptionReleaseBehaviorReview, vr: config.SubscriptionReleaseBehaviorBlock, want: ReleaseDecisionBlocked},
+		{name: "compilation skip wins", code: "ABC-VR-123", title: "compilation", compilation: config.SubscriptionReleaseBehaviorBlock, vr: config.SubscriptionReleaseBehaviorDownload, want: ReleaseDecisionBlocked},
+		{name: "VR review restricts compilation", code: "ABC-VR-123", title: "compilation", compilation: config.SubscriptionReleaseBehaviorDownload, vr: config.SubscriptionReleaseBehaviorReview, want: ReleaseDecisionQueued},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			target := &stashboxgraphql.PerformerFragment{ID: "p1", Name: "Actor"}
+			scene := releasePolicyScene("s1", target, target)
+			scene.Code, scene.Title = stringPointer(tc.code), stringPointer(tc.title)
+			scene.Tags = []*stashboxgraphql.TagFragment{{ID: "vr", Name: "VR"}}
+			policy := config.DefaultSubscriptionReleasePolicyConfig()
+			policy.VRBehavior = tc.vr
+			if tc.solo != "" {
+				policy.SoloBehavior = tc.solo
+			}
+			if tc.compilation != "" {
+				policy.CompilationBehavior = tc.compilation
+			}
+			evaluation, matched := evaluateReleasePolicy(policy, time.Now(), target, scene)
+			if !matched || evaluation.Decision != tc.want {
+				t.Fatalf("got %+v (matched %v), want %s", evaluation, matched, tc.want)
+			}
+			if tc.wantReason != "" && evaluation.DecisionReason != tc.wantReason {
+				t.Fatalf("reason = %q, want %q", evaluation.DecisionReason, tc.wantReason)
+			}
+		})
+	}
+}
+
 func TestEvaluateReleasePolicyGroupBehaviorCoversLargeGroup(t *testing.T) {
 	target := &stashboxgraphql.PerformerFragment{ID: "p1", Name: "Actor A"}
 	scene := releasePolicyScene(

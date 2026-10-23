@@ -46,6 +46,9 @@ type Service struct {
 	releasePolicy ReleasePolicyConfig
 	operationMu   sync.Mutex
 	operations    map[string]*performerOperationLock
+	reviewMu      sync.Mutex
+	reviews       ReleaseReviewStore
+	reviewTasks   ReviewTaskLister
 }
 
 func (s *Service) SetImageProxy(proxy *imagecache.Service, stashConfig func() (string, string)) {
@@ -105,6 +108,11 @@ func NewService(stash StashClient, source *metadata.Service, taskCreator TaskCre
 	if store == nil {
 		store = NewMemoryStore()
 	}
+	taskLister, _ := taskCreator.(ReviewTaskLister)
+	reviewStore, ok := store.(ReleaseReviewStore)
+	if !ok {
+		return nil, errors.New("subscription: store must support durable release reviews")
+	}
 	if source == nil {
 		return nil, errors.New("subscription: metadata source is required")
 	}
@@ -113,6 +121,8 @@ func NewService(stash StashClient, source *metadata.Service, taskCreator TaskCre
 		metadata:       source,
 		taskCreator:    taskCreator,
 		store:          store,
+		reviews:        reviewStore,
+		reviewTasks:    taskLister,
 		customFieldKey: DefaultCustomFieldKey,
 		now:            time.Now,
 		releasePolicy:  DefaultReleasePolicyConfig(),
@@ -157,6 +167,15 @@ func (s *Service) ListSubscribedPerformers(ctx context.Context) ([]SubscribedPer
 }
 
 func (s *Service) BuildSubscribedPerformers(ctx context.Context, performers []performer.Performer) ([]SubscribedPerformer, error) {
+	s.reviewMu.Lock()
+	defer s.reviewMu.Unlock()
+	records, err := s.reviewRecordsLocked(ctx)
+	if err != nil {
+		return nil, err
+	}
+	if err := s.reconcileReviewTasksLocked(ctx, records); err != nil {
+		return nil, err
+	}
 	out := make([]SubscribedPerformer, 0)
 	for _, item := range performers {
 		if !item.Subscribed {
@@ -166,7 +185,9 @@ func (s *Service) BuildSubscribedPerformers(ctx context.Context, performers []pe
 		if err != nil {
 			return nil, err
 		}
-		out = append(out, buildSubscribedPerformer(item, state))
+		snapshot := buildSubscribedPerformer(item, state)
+		applyReviewSummary(&snapshot, records)
+		out = append(out, snapshot)
 	}
 
 	sort.Slice(out, func(i, j int) bool {
@@ -203,6 +224,7 @@ func (s *Service) subscribePerformer(ctx context.Context, performerID string) (S
 	logging.Infof("subscription: subscribed performer %s (%s)", item.ID, item.Name)
 
 	result := buildSubscribedPerformer(item, state)
+	s.applyStoredReviewSummary(ctx, &result)
 	s.publishEvent(PerformerSubscriptionEventCreated, item.ID, &result)
 	return result, nil
 }
@@ -214,6 +236,11 @@ func (s *Service) UnsubscribePerformer(ctx context.Context, performerID string) 
 }
 
 func (s *Service) unsubscribePerformer(ctx context.Context, performerID string) error {
+	s.reviewMu.Lock()
+	defer s.reviewMu.Unlock()
+	if _, err := s.reviewRecordsLocked(ctx); err != nil {
+		return err
+	}
 	if _, err := s.stash.UpdatePerformerCustomFields(ctx, performerID, nil, []string{s.customFieldKey}); err != nil {
 		logging.Errorf("subscription: unsubscribe performer %s failed: %v", performerID, err)
 		return err
@@ -268,6 +295,7 @@ func (s *Service) refreshSubscribedPerformer(ctx context.Context, performerID st
 			return SubscribedPerformer{}, putErr
 		}
 		result := buildSubscribedPerformer(item, state)
+		s.applyStoredReviewSummary(ctx, &result)
 		s.publishEvent(PerformerSubscriptionEventUpdated, performerID, &result)
 		logging.Errorf("subscription: refresh failed for performer %s (%s): %v", performerID, performer.Name, err)
 		if errors.Is(err, errNoMatchingStashBoxMapping) {
@@ -277,6 +305,13 @@ func (s *Service) refreshSubscribedPerformer(ctx context.Context, performerID st
 	}
 	logging.Infof("subscription: refresh fetched %d releases for performer %s (%s)", len(releases), performerID, performer.Name)
 
+	s.reviewMu.Lock()
+	defer s.reviewMu.Unlock()
+	reviewRecords, err := s.reviewRecordsLocked(ctx)
+	if err != nil {
+		return SubscribedPerformer{}, err
+	}
+
 	processed := make(map[string]RecordedRelease, len(state.ProcessedReleases)+len(state.PendingReleases))
 	for _, release := range state.ProcessedReleases {
 		processed[release.Key] = release
@@ -285,10 +320,25 @@ func (s *Service) refreshSubscribedPerformer(ctx context.Context, performerID st
 		processed[release.Key] = release
 	}
 
+	reviewUpdates := make(map[string]ReleaseReview)
 	existingPending := append([]RecordedRelease(nil), state.PendingReleases...)
 	pending := make([]RecordedRelease, 0)
 	skippedInLibrary := 0
 	for _, release := range releases {
+		if existing, exists := reviewRecords[release.Key]; exists {
+			if addReviewPerformer(&existing, performerID, item.Name) {
+				reviewUpdates[release.Key] = existing
+			}
+			reviewRecords[release.Key] = existing
+			if _, known := processed[release.Key]; !known {
+				if existing.Status == ReviewDownloaded || existing.Status == ReviewInLibrary {
+					state.ProcessedReleases = append(state.ProcessedReleases, existing.RecordedRelease)
+				} else {
+					existingPending = append(existingPending, existing.RecordedRelease)
+				}
+			}
+			continue
+		}
 		if _, exists := processed[release.Key]; exists {
 			continue
 		}
@@ -322,11 +372,23 @@ func (s *Service) refreshSubscribedPerformer(ctx context.Context, performerID st
 			DecisionReason: release.DecisionReason,
 		}
 		pending = append(pending, record)
+		reviewRecords[record.Key] = ReleaseReview{RecordedRelease: record, SceneID: release.SceneID, ImageURL: release.ImageURL,
+			Status: reviewStatus(record, false), Performers: []ReviewPerformer{{ID: performerID, Name: item.Name}}}
+		reviewUpdates[record.Key] = reviewRecords[record.Key]
 	}
 	if len(pending) > 0 {
 		logging.Infof("subscription: detected %d new releases for performer %s (%s)", len(pending), performerID, performer.Name)
 	}
 
+	archive := make([]ReleaseReview, 0, len(reviewUpdates))
+	for _, record := range reviewUpdates {
+		archive = append(archive, record)
+	}
+	if err := s.reviews.PutReleaseReviews(ctx, archive); err != nil {
+		return SubscribedPerformer{}, err
+	}
+
+	reviewUpdates = make(map[string]ReleaseReview)
 	if s.taskCreator != nil {
 		nextPending := append([]RecordedRelease(nil), existingPending...)
 		for i := range pending {
@@ -337,6 +399,11 @@ func (s *Service) refreshSubscribedPerformer(ctx context.Context, performerID st
 			task, err := s.taskCreator.QueueSubscriptionRelease(ctx, pending[i].Code, pending[i].Title)
 			if err != nil {
 				state.LastError = err.Error()
+				review := reviewRecords[pending[i].Key]
+				review.Status = ReviewFailed
+				review.Error = err.Error()
+				reviewRecords[pending[i].Key] = review
+				reviewUpdates[pending[i].Key] = review
 				logging.Errorf("subscription: auto-download failed for performer %s code %q: %v", performerID, pending[i].Code, err)
 				nextPending = append(nextPending, pending[i])
 				continue
@@ -345,6 +412,12 @@ func (s *Service) refreshSubscribedPerformer(ctx context.Context, performerID st
 				pending[i].TaskID = task.ID
 				logging.Infof("subscription: auto-download created task %s for performer %s code %q", task.ID, performerID, pending[i].Code)
 			}
+			review := reviewRecords[pending[i].Key]
+			review.RecordedRelease = pending[i]
+			review.Status = ReviewDownloaded
+			review.Error = ""
+			reviewRecords[pending[i].Key] = review
+			reviewUpdates[pending[i].Key] = review
 			state.ProcessedReleases = append([]RecordedRelease{pending[i]}, state.ProcessedReleases...)
 		}
 		state.PendingReleases = nextPending
@@ -358,6 +431,13 @@ func (s *Service) refreshSubscribedPerformer(ctx context.Context, performerID st
 		state.LastError = previousLastError
 	}
 
+	archive = archive[:0]
+	for _, record := range reviewUpdates {
+		archive = append(archive, record)
+	}
+	if err := s.reviews.PutReleaseReviews(ctx, archive); err != nil {
+		return SubscribedPerformer{}, err
+	}
 	state.ProcessedReleases = trimRecordedReleases(state.ProcessedReleases, 25)
 	state.PendingReleases = trimRecordedReleases(state.PendingReleases, 25)
 	if err := s.store.Put(ctx, state); err != nil {
@@ -373,6 +453,8 @@ func (s *Service) refreshSubscribedPerformer(ctx context.Context, performerID st
 		skippedInLibrary,
 	)
 	result := buildSubscribedPerformer(item, state)
+	s.applyStoredReviewSummary(ctx, &result)
+	applyReviewSummary(&result, reviewRecords)
 	s.publishEvent(PerformerSubscriptionEventUpdated, performerID, &result)
 	return result, nil
 }
@@ -493,6 +575,9 @@ func (s *Service) fetchReleases(ctx context.Context, performer *stashgraphql.Per
 				Classification: evaluation.Classification,
 				Decision:       evaluation.Decision,
 				DecisionReason: evaluation.DecisionReason,
+			}
+			if len(scene.Images) > 0 && scene.Images[0] != nil {
+				release.ImageURL = s.proxyImage(ctx, imagecache.SourceStashBox, target.Endpoint, scene.Images[0].URL, s.metadata.APIKey(target.Endpoint))
 			}
 			if len(scene.Urls) > 0 && scene.Urls[0] != nil {
 				release.URL = scene.Urls[0].URL

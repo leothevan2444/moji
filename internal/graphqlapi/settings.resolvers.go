@@ -110,6 +110,10 @@ func (r *mutationResolver) UpdateAutomationSettings(ctx context.Context, input m
 		return nil, errors.New("settings editor is not configured")
 	}
 
+	vrBehavior := ""
+	if input.SubscriptionReleasePolicy.VrBehavior != nil {
+		vrBehavior = string(*input.SubscriptionReleasePolicy.VrBehavior)
+	}
 	snapshot, err := r.SettingsEditor.UpdateAutomationSettings(UpdateAutomationSettingsInput{
 		TaskProcessingEnabled:           input.TaskProcessingEnabled,
 		SourcingRetryIntervalHours:      input.SourcingRetryIntervalHours,
@@ -120,6 +124,7 @@ func (r *mutationResolver) UpdateAutomationSettings(ctx context.Context, input m
 			SoloBehavior:           string(input.SubscriptionReleasePolicy.SoloBehavior),
 			GroupBehavior:          string(input.SubscriptionReleasePolicy.GroupBehavior),
 			CompilationBehavior:    string(input.SubscriptionReleasePolicy.CompilationBehavior),
+			VRBehavior:             vrBehavior,
 			MaxGroupPerformerCount: input.SubscriptionReleasePolicy.MaxGroupPerformerCount,
 			ReleaseDateRange:       string(input.SubscriptionReleasePolicy.ReleaseDateRange),
 		},

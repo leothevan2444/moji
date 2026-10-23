@@ -43,7 +43,7 @@ query AutomationSettingsTab {
       subscriptionPollIntervalHours
       sourcingRetryIntervalHours
       stashBoxEndpoints
-      subscriptionReleasePolicy { soloBehavior groupBehavior compilationBehavior maxGroupPerformerCount releaseDateRange }
+      subscriptionReleasePolicy { soloBehavior groupBehavior compilationBehavior vrBehavior maxGroupPerformerCount releaseDateRange }
       torrentSelection {
         enabled
         inspectionCandidateLimit

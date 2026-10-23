@@ -219,6 +219,7 @@ function buildAutomationSettingsPayload(form: AutomationFormShape) {
       soloBehavior: form.subscriptionReleasePolicy.soloBehavior,
       groupBehavior: form.subscriptionReleasePolicy.groupBehavior,
       compilationBehavior: form.subscriptionReleasePolicy.compilationBehavior,
+      vrBehavior: form.subscriptionReleasePolicy.vrBehavior,
       maxGroupPerformerCount: Number.isNaN(maxGroupPerformerCount) ? 3 : maxGroupPerformerCount,
       releaseDateRange: form.subscriptionReleasePolicy.releaseDateRange
     },
@@ -232,13 +233,11 @@ function buildAutomationSettingsPayload(form: AutomationFormShape) {
 }
 
 function releasePolicySummary(form: AutomationFormShape["subscriptionReleasePolicy"], t: TFunction) {
-  const max = Number.parseInt(form.maxGroupPerformerCount.trim(), 10);
-  const safeMax = Number.isNaN(max) ? 3 : max;
   return t("automation.policy.summary", {
-    max: safeMax,
     solo: t(`automation.behaviors.${SUBSCRIPTION_RELEASE_BEHAVIOR_KEYS[form.soloBehavior]}`),
     group: t(`automation.behaviors.${SUBSCRIPTION_RELEASE_BEHAVIOR_KEYS[form.groupBehavior]}`),
     compilation: t(`automation.behaviors.${SUBSCRIPTION_RELEASE_BEHAVIOR_KEYS[form.compilationBehavior]}`),
+    vr: t(`automation.behaviors.${SUBSCRIPTION_RELEASE_BEHAVIOR_KEYS[form.vrBehavior]}`),
     range: t(`automation.ranges.${SUBSCRIPTION_RELEASE_DATE_RANGE_KEYS[form.releaseDateRange]}`)
   });
 }
@@ -566,6 +565,7 @@ export function AutomationSettingsEditor({
         soloBehavior: runtimeSettings.automation.subscriptionReleasePolicy.soloBehavior,
         groupBehavior: runtimeSettings.automation.subscriptionReleasePolicy.groupBehavior,
         compilationBehavior: runtimeSettings.automation.subscriptionReleasePolicy.compilationBehavior,
+        vrBehavior: runtimeSettings.automation.subscriptionReleasePolicy.vrBehavior ?? SubscriptionReleaseBehavior.Review,
         maxGroupPerformerCount: String(runtimeSettings.automation.subscriptionReleasePolicy.maxGroupPerformerCount || 3),
         releaseDateRange: runtimeSettings.automation.subscriptionReleasePolicy.releaseDateRange
       },
@@ -1332,6 +1332,7 @@ export function AutomationSettingsEditor({
             <header className="settings-section__head">
               <div>
                 <h4>{t("automationUi.policyTitle")}</h4>
+                <p className="settings-section__hint">{t("automationUi.policyScope")}</p>
                 <p className="settings-section__hint">{releasePolicySummary(automationForm.subscriptionReleasePolicy, t)}</p>
               </div>
             </header>
@@ -1387,20 +1388,21 @@ export function AutomationSettingsEditor({
               </select>
             </label>
             <label className="settings-field">
-              <FieldLabel text={t("automationUi.groupMax")} info={t("automationUi.groupMaxInfo")} />
-              <input
-                value={automationForm.subscriptionReleasePolicy.maxGroupPerformerCount}
+              <FieldLabel text={t("automationUi.vr")} info={t("automationUi.vrInfo")} />
+              <select
+                value={automationForm.subscriptionReleasePolicy.vrBehavior}
                 onChange={(event) =>
                   setAutomationForm((current) => ({
                     ...current,
                     subscriptionReleasePolicy: {
                       ...current.subscriptionReleasePolicy,
-                      maxGroupPerformerCount: event.target.value
+                      vrBehavior: event.target.value as SubscriptionReleaseBehavior
                     }
                   }))
                 }
-                placeholder="3"
-              />
+              >
+                {renderSubscriptionReleaseBehaviorOptions(t)}
+              </select>
             </label>
             <label className="settings-field">
               <FieldLabel text={t("automationUi.dateRange")} info={t("automationUi.dateRangeInfo")} />
@@ -1423,6 +1425,9 @@ export function AutomationSettingsEditor({
                 ))}
               </select>
             </label>
+            <p className="settings-section__hint">{t("automationUi.behaviorHelp")}</p>
+            <p className="settings-section__hint">{t("automationUi.priorityHelp")}</p>
+            <p className="settings-section__hint">{t("automationUi.reviewHelp")}</p>
           </section>
           <div className="settings-actions">
             <button type="submit" disabled={updatingAutomation}>

@@ -330,6 +330,7 @@ type SubscriptionReleasePolicyConfig struct {
 	SoloBehavior           SubscriptionReleaseBehavior  `yaml:"solo_behavior"`
 	GroupBehavior          SubscriptionReleaseBehavior  `yaml:"group_behavior"`
 	CompilationBehavior    SubscriptionReleaseBehavior  `yaml:"compilation_behavior"`
+	VRBehavior             SubscriptionReleaseBehavior  `yaml:"vr_behavior"`
 	MaxGroupPerformerCount int                          `yaml:"max_group_performer_count"`
 	ReleaseDateRange       SubscriptionReleaseDateRange `yaml:"release_date_range"`
 }
@@ -393,6 +394,7 @@ func DefaultSubscriptionReleasePolicyConfig() SubscriptionReleasePolicyConfig {
 		SoloBehavior:           SubscriptionReleaseBehaviorDownload,
 		GroupBehavior:          SubscriptionReleaseBehaviorReview,
 		CompilationBehavior:    SubscriptionReleaseBehaviorBlock,
+		VRBehavior:             SubscriptionReleaseBehaviorReview,
 		MaxGroupPerformerCount: 3,
 		ReleaseDateRange:       SubscriptionReleaseDateRangeAll,
 	}
@@ -516,6 +518,7 @@ func (p SubscriptionReleasePolicyConfig) Effective() SubscriptionReleasePolicyCo
 		SoloBehavior:           NormalizeSubscriptionReleaseBehavior(p.SoloBehavior),
 		GroupBehavior:          NormalizeSubscriptionReleaseBehavior(p.GroupBehavior),
 		CompilationBehavior:    NormalizeSubscriptionReleaseBehavior(p.CompilationBehavior),
+		VRBehavior:             NormalizeSubscriptionReleaseBehavior(p.VRBehavior),
 		MaxGroupPerformerCount: NormalizeSubscriptionReleaseMaxGroupPerformerCount(p.MaxGroupPerformerCount),
 		ReleaseDateRange:       NormalizeSubscriptionReleaseDateRange(p.ReleaseDateRange),
 	}

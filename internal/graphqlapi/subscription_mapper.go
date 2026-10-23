@@ -201,6 +201,7 @@ func subscriptionPerformerToModel(item subscription.SubscribedPerformer) *model.
 		LastCheckedAt:         formatTimePointer(item.LastCheckedAt),
 		LastError:             nilIfEmpty(item.LastError),
 		PendingReleaseCount:   item.PendingReleaseCount,
+		ReviewReleaseCount:    item.ReviewReleaseCount,
 		ProcessedReleaseCount: item.ProcessedReleaseCount,
 		RecentReleases:        releases,
 	}

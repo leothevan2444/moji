@@ -43,20 +43,38 @@ func evaluateReleasePolicy(policy ReleasePolicyConfig, now time.Time, targetPerf
 	switch evaluation.Classification {
 	case ReleaseClassificationCompilationLike:
 		applyBehavior(&evaluation, policy.CompilationBehavior, "compilation_behavior")
-		return evaluation, true
 	case ReleaseClassificationUnknown:
 		evaluation.Decision = ReleaseDecisionQueued
 		evaluation.DecisionReason = "metadata_unknown_review"
-		return evaluation, true
 	default:
 		if evaluation.Classification == ReleaseClassificationSolo {
 			applyBehavior(&evaluation, policy.SoloBehavior, "solo_behavior")
-			applyReleaseDateRange(&evaluation, policy.ReleaseDateRange, now, scene)
-			return evaluation, true
+		} else {
+			applyBehavior(&evaluation, policy.GroupBehavior, "group_behavior")
 		}
-		applyBehavior(&evaluation, policy.GroupBehavior, "group_behavior")
 		applyReleaseDateRange(&evaluation, policy.ReleaseDateRange, now, scene)
-		return evaluation, true
+	}
+	// VR is determined solely by the release code, independently of the scene's
+	// classification. It can restrict, but never relax, another policy decision.
+	if strings.Contains(strings.ToUpper(stringValue(scene.Code)), "VR") {
+		vr := ReleaseEvaluation{}
+		applyBehavior(&vr, policy.VRBehavior, "vr_behavior")
+		if releaseDecisionRestriction(vr.Decision) > releaseDecisionRestriction(evaluation.Decision) {
+			evaluation.Decision = vr.Decision
+			evaluation.DecisionReason = vr.DecisionReason
+		}
+	}
+	return evaluation, true
+}
+
+func releaseDecisionRestriction(decision ReleaseDecision) int {
+	switch decision {
+	case ReleaseDecisionBlocked:
+		return 2
+	case ReleaseDecisionQueued:
+		return 1
+	default:
+		return 0
 	}
 }
 

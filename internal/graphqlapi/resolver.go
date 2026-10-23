@@ -254,6 +254,7 @@ type SubscriptionReleasePolicySnapshot struct {
 	SoloBehavior           string
 	GroupBehavior          string
 	CompilationBehavior    string
+	VRBehavior             string
 	MaxGroupPerformerCount int
 	ReleaseDateRange       string
 }

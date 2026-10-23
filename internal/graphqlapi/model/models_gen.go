@@ -351,6 +351,11 @@ type PreviewJackettSelectionResult struct {
 	PreviewMeta *PreviewJackettSelectionMeta `json:"previewMeta"`
 }
 
+type ProcessReleaseReviewsInput struct {
+	Keys   []string            `json:"keys"`
+	Action ReleaseReviewAction `json:"action"`
+}
+
 type QBTorrent struct {
 	Hash     string  `json:"hash"`
 	Name     string  `json:"name"`
@@ -435,6 +440,65 @@ type QueuePerformerScenesSummary struct {
 	QueuedCount    int `json:"queuedCount"`
 	SkippedCount   int `json:"skippedCount"`
 	FailedCount    int `json:"failedCount"`
+}
+
+type ReleaseReview struct {
+	Key            string                    `json:"key"`
+	Code           string                    `json:"code"`
+	Title          string                    `json:"title"`
+	Date           *string                   `json:"date,omitempty"`
+	URL            *string                   `json:"url,omitempty"`
+	ImageURL       *string                   `json:"imageUrl,omitempty"`
+	Source         string                    `json:"source"`
+	Vr             bool                      `json:"vr"`
+	Status         ReleaseReviewStatus       `json:"status"`
+	ReasonCode     string                    `json:"reasonCode"`
+	Error          *string                   `json:"error,omitempty"`
+	TaskID         *string                   `json:"taskId,omitempty"`
+	SeenAt         string                    `json:"seenAt"`
+	ReviewedAt     *string                   `json:"reviewedAt,omitempty"`
+	Performers     []*ReleaseReviewPerformer `json:"performers"`
+	PerformerNames []string                  `json:"performerNames"`
+}
+
+type ReleaseReviewConnection struct {
+	Items        []*ReleaseReview          `json:"items"`
+	Performers   []*ReleaseReviewPerformer `json:"performers"`
+	TotalCount   int                       `json:"totalCount"`
+	PendingCount int                       `json:"pendingCount"`
+	FailedCount  int                       `json:"failedCount"`
+	Page         int                       `json:"page"`
+	PageSize     int                       `json:"pageSize"`
+	TotalPages   int                       `json:"totalPages"`
+}
+
+type ReleaseReviewPayload struct {
+	Results        []*ReleaseReviewResult `json:"results"`
+	SucceededCount int                    `json:"succeededCount"`
+	SkippedCount   int                    `json:"skippedCount"`
+	FailedCount    int                    `json:"failedCount"`
+}
+
+type ReleaseReviewPerformer struct {
+	ID           string `json:"id"`
+	Name         string `json:"name"`
+	PendingCount int    `json:"pendingCount"`
+}
+
+type ReleaseReviewQueryInput struct {
+	Search      *string              `json:"search,omitempty"`
+	PerformerID *string              `json:"performerId,omitempty"`
+	Status      *ReleaseReviewStatus `json:"status,omitempty"`
+	Vr          *bool                `json:"vr,omitempty"`
+	Page        *int                 `json:"page,omitempty"`
+	PageSize    *int                 `json:"pageSize,omitempty"`
+}
+
+type ReleaseReviewResult struct {
+	Key        string         `json:"key"`
+	Outcome    string         `json:"outcome"`
+	ReasonCode string         `json:"reasonCode"`
+	Release    *ReleaseReview `json:"release,omitempty"`
 }
 
 type ResolveBlockedSourcingTaskInput struct {
@@ -673,6 +737,7 @@ type SubscribedPerformer struct {
 	LastCheckedAt         *string                `json:"lastCheckedAt,omitempty"`
 	LastError             *string                `json:"lastError,omitempty"`
 	PendingReleaseCount   int                    `json:"pendingReleaseCount"`
+	ReviewReleaseCount    int                    `json:"reviewReleaseCount"`
 	ProcessedReleaseCount int                    `json:"processedReleaseCount"`
 	RecentReleases        []*SubscriptionRelease `json:"recentReleases"`
 }
@@ -697,14 +762,17 @@ type SubscriptionReleasePolicy struct {
 	SoloBehavior           SubscriptionReleaseBehavior  `json:"soloBehavior"`
 	GroupBehavior          SubscriptionReleaseBehavior  `json:"groupBehavior"`
 	CompilationBehavior    SubscriptionReleaseBehavior  `json:"compilationBehavior"`
+	VrBehavior             SubscriptionReleaseBehavior  `json:"vrBehavior"`
 	MaxGroupPerformerCount int                          `json:"maxGroupPerformerCount"`
 	ReleaseDateRange       SubscriptionReleaseDateRange `json:"releaseDateRange"`
 }
 
 type SubscriptionReleasePolicyInput struct {
-	SoloBehavior           SubscriptionReleaseBehavior  `json:"soloBehavior"`
-	GroupBehavior          SubscriptionReleaseBehavior  `json:"groupBehavior"`
-	CompilationBehavior    SubscriptionReleaseBehavior  `json:"compilationBehavior"`
+	SoloBehavior        SubscriptionReleaseBehavior `json:"soloBehavior"`
+	GroupBehavior       SubscriptionReleaseBehavior `json:"groupBehavior"`
+	CompilationBehavior SubscriptionReleaseBehavior `json:"compilationBehavior"`
+	// Omit to preserve the current VR policy. VR is identified only by VR in the release code.
+	VrBehavior             *SubscriptionReleaseBehavior `json:"vrBehavior,omitempty"`
 	MaxGroupPerformerCount int                          `json:"maxGroupPerformerCount"`
 	ReleaseDateRange       SubscriptionReleaseDateRange `json:"releaseDateRange"`
 }
@@ -1405,6 +1473,128 @@ func (e *QueuePerformerSceneStatus) UnmarshalJSON(b []byte) error {
 }
 
 func (e QueuePerformerSceneStatus) MarshalJSON() ([]byte, error) {
+	var buf bytes.Buffer
+	e.MarshalGQL(&buf)
+	return buf.Bytes(), nil
+}
+
+type ReleaseReviewAction string
+
+const (
+	ReleaseReviewActionDownload   ReleaseReviewAction = "DOWNLOAD"
+	ReleaseReviewActionReject     ReleaseReviewAction = "REJECT"
+	ReleaseReviewActionReconsider ReleaseReviewAction = "RECONSIDER"
+)
+
+var AllReleaseReviewAction = []ReleaseReviewAction{
+	ReleaseReviewActionDownload,
+	ReleaseReviewActionReject,
+	ReleaseReviewActionReconsider,
+}
+
+func (e ReleaseReviewAction) IsValid() bool {
+	switch e {
+	case ReleaseReviewActionDownload, ReleaseReviewActionReject, ReleaseReviewActionReconsider:
+		return true
+	}
+	return false
+}
+
+func (e ReleaseReviewAction) String() string {
+	return string(e)
+}
+
+func (e *ReleaseReviewAction) UnmarshalGQL(v any) error {
+	str, ok := v.(string)
+	if !ok {
+		return fmt.Errorf("enums must be strings")
+	}
+
+	*e = ReleaseReviewAction(str)
+	if !e.IsValid() {
+		return fmt.Errorf("%s is not a valid ReleaseReviewAction", str)
+	}
+	return nil
+}
+
+func (e ReleaseReviewAction) MarshalGQL(w io.Writer) {
+	fmt.Fprint(w, strconv.Quote(e.String()))
+}
+
+func (e *ReleaseReviewAction) UnmarshalJSON(b []byte) error {
+	s, err := strconv.Unquote(string(b))
+	if err != nil {
+		return err
+	}
+	return e.UnmarshalGQL(s)
+}
+
+func (e ReleaseReviewAction) MarshalJSON() ([]byte, error) {
+	var buf bytes.Buffer
+	e.MarshalGQL(&buf)
+	return buf.Bytes(), nil
+}
+
+type ReleaseReviewStatus string
+
+const (
+	ReleaseReviewStatusAll        ReleaseReviewStatus = "ALL"
+	ReleaseReviewStatusPending    ReleaseReviewStatus = "PENDING"
+	ReleaseReviewStatusDownloaded ReleaseReviewStatus = "DOWNLOADED"
+	ReleaseReviewStatusRejected   ReleaseReviewStatus = "REJECTED"
+	ReleaseReviewStatusSkipped    ReleaseReviewStatus = "SKIPPED"
+	ReleaseReviewStatusFailed     ReleaseReviewStatus = "FAILED"
+	ReleaseReviewStatusInLibrary  ReleaseReviewStatus = "IN_LIBRARY"
+)
+
+var AllReleaseReviewStatus = []ReleaseReviewStatus{
+	ReleaseReviewStatusAll,
+	ReleaseReviewStatusPending,
+	ReleaseReviewStatusDownloaded,
+	ReleaseReviewStatusRejected,
+	ReleaseReviewStatusSkipped,
+	ReleaseReviewStatusFailed,
+	ReleaseReviewStatusInLibrary,
+}
+
+func (e ReleaseReviewStatus) IsValid() bool {
+	switch e {
+	case ReleaseReviewStatusAll, ReleaseReviewStatusPending, ReleaseReviewStatusDownloaded, ReleaseReviewStatusRejected, ReleaseReviewStatusSkipped, ReleaseReviewStatusFailed, ReleaseReviewStatusInLibrary:
+		return true
+	}
+	return false
+}
+
+func (e ReleaseReviewStatus) String() string {
+	return string(e)
+}
+
+func (e *ReleaseReviewStatus) UnmarshalGQL(v any) error {
+	str, ok := v.(string)
+	if !ok {
+		return fmt.Errorf("enums must be strings")
+	}
+
+	*e = ReleaseReviewStatus(str)
+	if !e.IsValid() {
+		return fmt.Errorf("%s is not a valid ReleaseReviewStatus", str)
+	}
+	return nil
+}
+
+func (e ReleaseReviewStatus) MarshalGQL(w io.Writer) {
+	fmt.Fprint(w, strconv.Quote(e.String()))
+}
+
+func (e *ReleaseReviewStatus) UnmarshalJSON(b []byte) error {
+	s, err := strconv.Unquote(string(b))
+	if err != nil {
+		return err
+	}
+	return e.UnmarshalGQL(s)
+}
+
+func (e ReleaseReviewStatus) MarshalJSON() ([]byte, error) {
 	var buf bytes.Buffer
 	e.MarshalGQL(&buf)
 	return buf.Bytes(), nil

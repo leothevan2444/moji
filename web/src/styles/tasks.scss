@@ -669,6 +669,18 @@ $task-status-tones: (
   }
 }
 
+a.release-review-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: .4rem;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  font-size: 13px;
+  line-height: 1.4;
+  text-decoration: none;
+}
+
 .inline-error,
 .task-error {
   color: #a33d2a;
@@ -1180,6 +1192,18 @@ button.profile-icon {
   color: var(--muted);
   cursor: pointer;
   transition: transform 160ms ease, color 160ms ease;
+
+  &--count {
+    width: auto;
+    min-width: 26px;
+    gap: 4px;
+    padding-inline: 4px;
+    font-size: 12px;
+    line-height: 1;
+    white-space: nowrap;
+    text-decoration: none;
+    font-variant-numeric: tabular-nums;
+  }
 
   &:hover:not(:disabled) {
     transform: translateY(-1px);

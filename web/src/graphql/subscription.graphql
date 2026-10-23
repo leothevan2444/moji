@@ -49,7 +49,8 @@ query PerformerWorkspace($search: String, $page: Int, $pageSize: Int) {
       }
       lastCheckedAt
       lastError
-      pendingReleaseCount
+      reviewReleaseCount
+    pendingReleaseCount
       processedReleaseCount
       recentReleases {
         key
@@ -188,6 +189,7 @@ query SubscribedPerformers {
     }
     lastCheckedAt
     lastError
+    reviewReleaseCount
     pendingReleaseCount
     processedReleaseCount
     recentReleases {
@@ -213,6 +215,7 @@ mutation SubscribePerformer($stashPerformerID: ID!) {
     }
     lastCheckedAt
     lastError
+    reviewReleaseCount
     pendingReleaseCount
     processedReleaseCount
     recentReleases {
@@ -242,6 +245,7 @@ mutation RefreshSubscribedPerformer($stashPerformerID: ID!) {
     }
     lastCheckedAt
     lastError
+    reviewReleaseCount
     pendingReleaseCount
     processedReleaseCount
     recentReleases {
@@ -267,6 +271,7 @@ mutation RefreshSubscriptionsNow {
     }
     lastCheckedAt
     lastError
+    reviewReleaseCount
     pendingReleaseCount
     processedReleaseCount
     recentReleases {
@@ -330,7 +335,8 @@ fragment PerformerBatchFields on PerformerBatchPayload {
       }
       lastCheckedAt
       lastError
-      pendingReleaseCount
+      reviewReleaseCount
+    pendingReleaseCount
       processedReleaseCount
       recentReleases {
         key

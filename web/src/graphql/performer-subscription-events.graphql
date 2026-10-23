@@ -15,7 +15,8 @@ subscription PerformerSubscriptionEvents {
       }
       lastCheckedAt
       lastError
-      pendingReleaseCount
+      reviewReleaseCount
+    pendingReleaseCount
       processedReleaseCount
       recentReleases {
         key

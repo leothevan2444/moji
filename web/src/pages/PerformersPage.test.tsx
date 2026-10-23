@@ -1,11 +1,14 @@
 // @vitest-environment jsdom
+import { MemoryRouter } from "react-router";
 
-import { fireEvent, render, screen, within } from "@testing-library/react";
+import { fireEvent, render as baseRender, screen, within } from "@testing-library/react";
 import type { ComponentProps } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { LibraryFilter, SceneSourceFilter } from "../graphql/generated/graphql";
 import i18n from "../i18n/i18n";
 import { PerformersPage } from "./PerformersPage";
+
+const render = (ui: React.ReactNode) => baseRender(ui, { wrapper: MemoryRouter });
 
 function props(overrides: Partial<ComponentProps<typeof PerformersPage>> = {}): ComponentProps<typeof PerformersPage> {
   const noop = vi.fn();
@@ -80,6 +83,12 @@ describe("PerformersPage list selection", () => {
   beforeEach(async () => i18n.changeLanguage("en"));
   afterEach(() => document.body.replaceChildren());
 
+  it("shows durable review counts for a performer who is no longer subscribed", () => {
+    render(<PerformersPage {...props({ reviewPendingCount: 2, reviewCounts: { p1: 2 } })} />);
+    expect(screen.getByRole("link", { name: "2 awaiting review" }).getAttribute("href")).toBe("/performers/review?performer=p1");
+    expect(screen.getByRole("link", { name: "Release review · 2" }).getAttribute("href")).toBe("/performers/review");
+  });
+
   it("opens a performer normally and selects it in multi-select mode", () => {
     const onOpenPerformer = vi.fn();
     const onTogglePerformerSelection = vi.fn();
@@ -116,7 +125,7 @@ describe("PerformersPage list selection", () => {
     expect(checkAll.closest(".toolbar-inline")).toBe(reload.closest(".toolbar-inline"));
     expect(screen.queryByRole("button", { name: "More actions" })).toBeNull();
 
-    view.rerender(<PerformersPage {...pageProps} subscribedPerformers={[{ performer: pageProps.stashPerformers[0], recentReleases: [], lastCheckedAt: null, pendingReleaseCount: 0, processedReleaseCount: 0 }]} />);
+    view.rerender(<PerformersPage {...pageProps} subscribedPerformers={[{ performer: pageProps.stashPerformers[0], recentReleases: [], lastCheckedAt: null, pendingReleaseCount: 0, reviewReleaseCount: 0, processedReleaseCount: 0 }]} />);
     expect(checkAll.disabled).toBe(false);
     fireEvent.click(checkAll);
     expect(onRefreshAll).toHaveBeenCalledTimes(1);

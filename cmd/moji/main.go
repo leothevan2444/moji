@@ -603,6 +603,7 @@ func buildSettingsSnapshot(cfg *config.Config, version string) *graphqlapi.Setti
 				SoloBehavior:           string(cfg.Automation.SubscriptionReleasePolicy.Effective().SoloBehavior),
 				GroupBehavior:          string(cfg.Automation.SubscriptionReleasePolicy.Effective().GroupBehavior),
 				CompilationBehavior:    string(cfg.Automation.SubscriptionReleasePolicy.Effective().CompilationBehavior),
+				VRBehavior:             string(cfg.Automation.SubscriptionReleasePolicy.Effective().VRBehavior),
 				MaxGroupPerformerCount: cfg.Automation.SubscriptionReleasePolicy.Effective().MaxGroupPerformerCount,
 				ReleaseDateRange:       string(cfg.Automation.SubscriptionReleasePolicy.Effective().ReleaseDateRange),
 			},

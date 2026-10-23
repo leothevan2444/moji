@@ -1066,6 +1066,7 @@ func TestUpdateAutomationSettingsMutation(t *testing.T) {
 					SoloBehavior:           "DOWNLOAD",
 					GroupBehavior:          "REVIEW",
 					CompilationBehavior:    "BLOCK",
+					VRBehavior:             "REVIEW",
 					MaxGroupPerformerCount: 3,
 					ReleaseDateRange:       "ALL",
 				},
@@ -1090,6 +1091,7 @@ func TestUpdateAutomationSettingsMutation(t *testing.T) {
 					soloBehavior: DOWNLOAD
 					groupBehavior: REVIEW
 					compilationBehavior: BLOCK
+					vrBehavior: REVIEW
 					maxGroupPerformerCount: 3
 					releaseDateRange: ALL
 				}
@@ -1109,13 +1111,16 @@ func TestUpdateAutomationSettingsMutation(t *testing.T) {
 			automation {
  taskProcessingEnabled
 				stashBoxEndpoints
-				subscriptionReleasePolicy { soloBehavior groupBehavior compilationBehavior maxGroupPerformerCount releaseDateRange }
+				subscriptionReleasePolicy { soloBehavior groupBehavior compilationBehavior vrBehavior maxGroupPerformerCount releaseDateRange }
 				torrentSelection { enabled fastRules { type } torrentRules { type } }
 			}
 		}
 	}`)
 	if len(resp.Errors) > 0 {
 		t.Fatalf("expected no errors, got %+v", resp.Errors)
+	}
+	if editor.automationInput.SubscriptionReleasePolicy.VRBehavior != "REVIEW" || resp.Data.UpdateAutomationSettings.Automation.SubscriptionReleasePolicy.VRBehavior != "REVIEW" {
+		t.Fatal("VR policy missing from settings input or output")
 	}
 	if editor.automationInput.TaskProcessingEnabled == nil || !*editor.automationInput.TaskProcessingEnabled {
 		t.Fatal("processing switch was not passed to settings editor")
@@ -1569,7 +1574,10 @@ type graphQLTaskResponse struct {
 				TaskProgressSyncIntervalSeconds int      `json:"taskProgressSyncIntervalSeconds"`
 				SubscriptionPollIntervalHours   int      `json:"subscriptionPollIntervalHours"`
 				StashBoxEndpoints               []string `json:"stashBoxEndpoints"`
-				TorrentSelection                struct {
+				SubscriptionReleasePolicy       struct {
+					VRBehavior string `json:"vrBehavior"`
+				} `json:"subscriptionReleasePolicy"`
+				TorrentSelection struct {
 					Enabled   bool `json:"enabled"`
 					FastRules []struct {
 						Type string `json:"type"`

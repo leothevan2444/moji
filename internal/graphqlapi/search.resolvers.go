@@ -21,6 +21,7 @@ func (r *mutationResolver) QueueDiscoveredScene(ctx context.Context, input model
 	}
 	task, err := r.Discovery.Queue(ctx, input.SceneID, input.StashBoxEndpoint)
 	if task != nil {
+		r.synchronizeReleaseReviews(ctx)
 		return taskToModel(task), err
 	}
 	return nil, err

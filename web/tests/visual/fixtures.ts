@@ -39,6 +39,14 @@ const rootValue = {
   jackettIndexers: [],
   discoverScenes: { items: [], usedStashBox: null, fallbackCount: 0, searchedQuery: "" },
   dashboardStats: { total: 0, active: 0, completed: 0, downloading: 0, pendingScans: 0, failed: 0 },
+  releaseReviews: ({ input }: { input: { status?: string; page?: number } }) => ({
+    totalCount: 2, pendingCount: 2, failedCount: 0, page: input.page ?? 1, pageSize: 24, totalPages: 1,
+    performers: [{ id: "review-actor", name: "Example performer", pendingCount: 2 }],
+    items: [
+      { key: "review-1", code: "ABCVR-123", title: "A release recorded for manual review", date: "2026-01-12", url: "https://example.com/releases/1", imageUrl: null, source: "stash-box:https://example.com/graphql", vr: true, status: "PENDING", reasonCode: "vr_behavior_review", error: null, taskId: null, seenAt: now, reviewedAt: null, performerNames: ["Example performer"], performers: [{ id: "review-actor", name: "Example performer" }] },
+      { key: "review-2", code: "ABC-456", title: "A second release awaiting a download decision", date: null, url: null, imageUrl: null, source: "stash-box:https://example.com/graphql", vr: false, status: "PENDING", reasonCode: "group_behavior_review", error: null, taskId: null, seenAt: now, reviewedAt: null, performerNames: ["Example performer", "Another performer"], performers: [{ id: "review-actor", name: "Example performer" }] }
+    ]
+  }),
   settings: {
     stash: { configured: true, url: "http://stash.test", apiKeyConfigured: false, apiKey: "" },
     jackett: {
@@ -62,7 +70,7 @@ const rootValue = {
       taskProgressSyncIntervalSeconds: 60, subscriptionPollIntervalHours: 6,
       sourcingRetryIntervalHours: 6, stashBoxEndpoints: [],
       subscriptionReleasePolicy: {
-        soloBehavior: "DOWNLOAD", groupBehavior: "REVIEW", compilationBehavior: "BLOCK",
+        soloBehavior: "DOWNLOAD", groupBehavior: "REVIEW", compilationBehavior: "BLOCK", vrBehavior: "REVIEW",
         maxGroupPerformerCount: 5, releaseDateRange: "ALL",
       },
       torrentSelection: { enabled: false, inspectionCandidateLimit: 5, fastRules: [], torrentRules: [] },

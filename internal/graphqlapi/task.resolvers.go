@@ -45,6 +45,7 @@ func (r *mutationResolver) AddTorrent(ctx context.Context, input model.QBittorre
 
 	task, err := r.TaskFlow.CreateFromManualTorrent(ctx, req)
 	if task != nil {
+		r.synchronizeReleaseReviews(ctx)
 		return taskToModel(task), err
 	}
 	return nil, err
@@ -77,6 +78,7 @@ func (r *mutationResolver) DownloadMedia(ctx context.Context, input model.Downlo
 
 	task, err := r.TaskFlow.CreateFromSearchCode(ctx, req)
 	if task != nil {
+		r.synchronizeReleaseReviews(ctx)
 		return taskToModel(task), err
 	}
 	return nil, err

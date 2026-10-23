@@ -3,6 +3,7 @@ package graphqlapi
 import (
 	"time"
 
+	"github.com/leothevan2444/moji/internal/config"
 	"github.com/leothevan2444/moji/internal/graphqlapi/model"
 	"github.com/leothevan2444/moji/internal/imagecache"
 	"github.com/leothevan2444/moji/internal/stashboxcache"
@@ -132,10 +133,12 @@ func settingsSnapshotToModel(snapshot *SettingsSnapshot, appVersion string) *mod
 }
 
 func subscriptionReleasePolicyToModel(snapshot SubscriptionReleasePolicySnapshot) *model.SubscriptionReleasePolicy {
+	vrBehavior := config.NormalizeSubscriptionReleaseBehavior(config.SubscriptionReleaseBehavior(snapshot.VRBehavior))
 	return &model.SubscriptionReleasePolicy{
 		SoloBehavior:           model.SubscriptionReleaseBehavior(snapshot.SoloBehavior),
 		GroupBehavior:          model.SubscriptionReleaseBehavior(snapshot.GroupBehavior),
 		CompilationBehavior:    model.SubscriptionReleaseBehavior(snapshot.CompilationBehavior),
+		VrBehavior:             model.SubscriptionReleaseBehavior(vrBehavior),
 		MaxGroupPerformerCount: snapshot.MaxGroupPerformerCount,
 		ReleaseDateRange:       model.SubscriptionReleaseDateRange(snapshot.ReleaseDateRange),
 	}

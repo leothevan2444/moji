@@ -287,6 +287,7 @@ type SubscriptionReleasePolicy {
   soloBehavior: SubscriptionReleaseBehavior!
   groupBehavior: SubscriptionReleaseBehavior!
   compilationBehavior: SubscriptionReleaseBehavior!
+  vrBehavior: SubscriptionReleaseBehavior!
   maxGroupPerformerCount: Int!
   releaseDateRange: SubscriptionReleaseDateRange!
 }
@@ -479,6 +480,8 @@ input SubscriptionReleasePolicyInput {
   soloBehavior: SubscriptionReleaseBehavior!
   groupBehavior: SubscriptionReleaseBehavior!
   compilationBehavior: SubscriptionReleaseBehavior!
+  "Omit to preserve the current VR policy. VR is identified only by VR in the release code."
+  vrBehavior: SubscriptionReleaseBehavior
   maxGroupPerformerCount: Int!
   releaseDateRange: SubscriptionReleaseDateRange!
 }

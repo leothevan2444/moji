@@ -191,6 +191,7 @@ type SubscribedPerformer {
   lastCheckedAt: String
   lastError: String
   pendingReleaseCount: Int!
+  reviewReleaseCount: Int!
   processedReleaseCount: Int!
   recentReleases: [SubscriptionRelease!]!
 }
