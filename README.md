@@ -150,9 +150,11 @@ git tag -a v0.2.0 -m "Release 0.2.0"
 git push origin v0.2.0
 ```
 
-CI runs the Go, frontend, visual and Docker smoke tests before publishing
-`linux/amd64` and `linux/arm64` images to Docker Hub. Configure the repository
-variable `DOCKERHUB_USERNAME` and secret `DOCKERHUB_TOKEN` (with push access).
+CI builds and smoke-tests `linux/amd64` and `linux/arm64` images on native runners.
+After the Go, frontend and visual checks also pass, publication reuses those
+exact image artifacts and merges their platform manifests without rebuilding.
+Configure the repository variable `DOCKERHUB_USERNAME` and secret
+`DOCKERHUB_TOKEN` (with push access).
 Stable release tags publish `<username>/moji:0.2.0` and update `latest`;
 prereleases do not update `latest`. Successful `main` builds update `edge`.
 All published builds also receive a `sha-<commit>` tag. Release tags must use
@@ -201,6 +203,8 @@ Run the relevant checks from the repository root:
 
 ```sh
 go test ./...
+python3 scripts/version_test.py
+python3 scripts/docker_publish_test.py
 npm --prefix web test
 npm --prefix web run i18n:check
 npm --prefix web run build

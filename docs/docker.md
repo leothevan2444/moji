@@ -143,16 +143,42 @@ production artifacts to pick up the new compiled version.
 Push a `v*` release tag after committing the source changes; no version file
 needs updating. CI fetches tags and runs all Go, frontend, visual and Docker
 smoke checks. Its publish job then calls `.github/workflows/docker-publish.yml`
-to build and push `linux/amd64` and `linux/arm64` images. The version must match
-the triggering tag, and invalid or ambiguous tags stop publishing.
+to publish the tested `linux/amd64` and `linux/arm64` images. The version must
+match the triggering tag, and invalid or ambiguous tags stop publishing.
+
+The Docker matrix builds each platform once on its native runner using Buildx,
+loads that result into Docker, and runs `make docker-test` against it. Build
+caches are separated into `moji-amd64` and `moji-arm64` scopes. Version arguments
+are declared after dependency installation so a new Git version does not
+invalidate the npm or Alpine package-install layers.
+
+For publishable main/tag runs, each successful Docker job uploads
+`moji-image-amd64` or `moji-image-arm64`, containing a Docker image archive and
+its post-test inspection record. These artifacts stay within the current
+workflow run and expire after one day. Pull requests and other branches run
+the image checks without uploading publication artifacts or using registry
+credentials.
+
+After every required CI job passes, the reusable publication workflow downloads
+both artifacts. `scripts/docker_publish.py` checks the Linux architecture,
+Git-derived version and source revision against the current run, loads the
+archives, and verifies their image IDs against the post-test records. Both
+images must pass before any registry push. It pushes the verified IDs under
+unique `ci-<run-id>-<attempt>-<arch>` tags and merges their immutable registry
+digests with `docker buildx imagetools create`. These staging tags remain in the
+repository; they share the image layers with release tags. No QEMU or second
+image build is used by publication. OCI version/revision labels stay in each
+tested image; metadata-action controls the release tags on the final manifest
+list. Docker archives do not retain BuildKit provenance attestations.
 
 Configure the repository variable `DOCKERHUB_USERNAME` and the secret
 `DOCKERHUB_TOKEN` with permission to push `<username>/moji`. Stable tags publish
 the version and update `latest`. Prereleases publish their version without
 updating `latest`. Successful `main` pushes update `edge`; every published image
 also gets a `sha-<commit>` tag. To retry manually, run the CI workflow on `main`
-or a release tag; publication still waits for its tests. `make docker-build`
-and Compose continue to build locally and do not push images.
+or a release tag; publication still waits for its tests. To retry a failed
+publication after its image artifacts expire, rerun the whole CI workflow.
+`make docker-build` and Compose continue to build locally and do not push images.
 
 ## Persistent data and media paths
 

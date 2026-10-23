@@ -53,6 +53,7 @@ jobs:
           go-version-file: go.mod
           cache: true
       - run: python3 scripts/version_test.py
+      - run: python3 scripts/docker_publish_test.py
       - run: go test ./internal/graphqlapi ./internal/taskruntime ./cmd/moji
 
   docker:
@@ -70,8 +71,54 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      - run: make docker-build
-      - run: make docker-test
+      - name: Resolve version from Git
+        id: version
+        run: |
+          version=$(sh scripts/version.sh)
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v4
+      - name: Build native image
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          file: ./Dockerfile
+          platforms: linux/${{ matrix.arch }}
+          load: true
+          tags: moji-ci-${{ matrix.arch }}:${{ steps.version.outputs.version }}
+          build-args: |
+            VERSION=${{ steps.version.outputs.version }}
+            VCS_REF=${{ github.sha }}
+          cache-from: type=gha,scope=moji-${{ matrix.arch }}
+          cache-to: type=gha,mode=max,scope=moji-${{ matrix.arch }}
+      - name: Test native image
+        env:
+          IMAGE: moji-ci-${{ matrix.arch }}
+        run: make docker-test
+      - name: Export tested image
+        if: >-
+          github.event_name != 'pull_request' &&
+          (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v'))
+        env:
+          ARCH: ${{ matrix.arch }}
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          artifact_dir="$RUNNER_TEMP/moji-image-$ARCH"
+          mkdir -p "$artifact_dir"
+          docker image inspect "moji-ci-$ARCH:$VERSION" > "$artifact_dir/image.json"
+          docker image save --output "$artifact_dir/image.tar" "moji-ci-$ARCH:$VERSION"
+      - name: Upload tested image
+        if: >-
+          github.event_name != 'pull_request' &&
+          (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v'))
+        uses: actions/upload-artifact@v4
+        with:
+          name: moji-image-${{ matrix.arch }}
+          path: ${{ runner.temp }}/moji-image-${{ matrix.arch }}/
+          if-no-files-found: error
+          compression-level: 1
+          retention-days: 1
+          overwrite: true
 
   publish:
     if: >-
