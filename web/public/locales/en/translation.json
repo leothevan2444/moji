@@ -1212,8 +1212,8 @@
   "performerRoute": {
     "unsubscribed": "Unsubscribed from {{name}}.",
     "subscribed": "Subscribed to {{name}}; Moji records the state in custom_fields.",
-    "checked": "Checked {{name}} for new releases.",
-    "checkedAll": "Started an update check for all subscribed performers.",
+    "checked": "Checked {{name}} for scene updates.",
+    "checkedAll": "Finished checking all subscribed performers for scene updates.",
     "reloaded": "Reloaded the performer list from Stash.",
     "noSelection": "No selected scenes can be submitted. Refresh the list and try again.",
     "batchNoResult": "Bulk download failed because the server returned no result.",
@@ -1245,6 +1245,7 @@
     "subscribe": "Subscribe ({{count}})",
     "unsubscribe": "Unsubscribe ({{count}})",
     "refresh": "Check selected ({{count}})",
+    "refreshHelp": "Check selected performers for scene updates and apply subscription rules",
     "clear": "Clear selection",
     "selectName": "Select performer {{name}}",
     "deselectName": "Deselect performer {{name}}",
@@ -1267,19 +1268,19 @@
         "detail": "This removes the Moji subscription marker in Stash and clears local subscription state. Existing tasks and files are not deleted."
       },
       "refresh": {
-        "title": "Check {{count}} subscribed performers?",
-        "detail": "This queries StashBox for new releases and may create download tasks under the current automation policy."
+        "title": "Check {{count}} subscribed performers for updates?",
+        "detail": "Newly found scenes will be handled according to subscription rules and may create download tasks."
       }
     },
     "reasons": {
       "SUBSCRIBED": "Subscribed",
       "UNSUBSCRIBED": "Unsubscribed",
-      "REFRESHED": "Release check completed",
+      "REFRESHED": "Update check completed",
       "ALREADY_SUBSCRIBED": "Performer is already subscribed",
       "NOT_SUBSCRIBED": "Performer is not subscribed",
       "PERFORMER_NOT_FOUND": "Performer no longer exists in Stash",
       "STASH_UPDATE_FAILED": "Failed to update the Stash subscription marker",
-      "REFRESH_FAILED": "Release check failed",
+      "REFRESH_FAILED": "Update check failed",
       "CANCELLED": "Operation cancelled",
       "UNKNOWN": "Unknown operation result"
     }
@@ -1349,9 +1350,11 @@
     "preferredBox": "Preferred StashBox",
     "noPreferredBox": "No preferred StashBox match",
     "unmatched": "No match",
-    "checkNow": "Check now",
+    "checkNow": "Check for updates",
+    "checkUpdatesHelp": "Check for scene updates and apply subscription rules",
+    "checkAllHelp": "Check all subscribed performers for scene updates and apply subscription rules",
     "checkRequiresSubscription": "Subscribe before checking for updates",
-    "checkName": "Check {{name}} now",
+    "checkName": "Check {{name}} for updates",
     "stashHome": "Open Stash profile",
     "stashHomeName": "Open {{name}} in Stash",
     "aliases": "Aliases",
@@ -1422,10 +1425,10 @@
     "reloadFromStash": "Reload from Stash",
     "reloadHint": "Reload performer details and subscription markers without checking releases",
     "updatedAt": "List updated at {{time}}",
-    "checking": "Checking...",
+    "checking": "Checking for updates…",
     "moreActions": "More actions",
-    "checkAll": "Check all performers",
-    "checkAllSubscribed": "Check all",
+    "checkAll": "Check all performers for updates",
+    "checkAllSubscribed": "Check all for updates",
     "noPerformers": "No matching performers",
     "noPerformersDetail": "Try a different query or confirm that Stash returns performer data.",
     "subscribe": "Subscribe",

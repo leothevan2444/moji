@@ -98,6 +98,9 @@ test("performer selection survives pagination and filters", async ({ page }) => 
   await expect(page).toHaveURL(/filter=review/);
   await expect(page.locator(".profile-card input[type=checkbox]")).toBeChecked();
   await expect(page.getByRole("region", { name: "Selected performer actions" })).toContainText("2 performers selected");
+  await expect(page).toHaveScreenshot("en-performers-selection.png");
+  await page.getByRole("button", { name: "Exit performer selection" }).click();
+  await expect(page.getByRole("region", { name: "Selected performer actions" })).toBeHidden();
 });
 
 
@@ -174,7 +177,7 @@ test("scene multi-select is optional and clears when exited", async ({ page }) =
   await page.addInitScript(() => localStorage.setItem("moji:locale", "en"));
   await page.goto("/performers/actor-0");
   await expect(page.locator(".performer-scene-card")).toHaveCount(24);
-  await expect(page.locator(".performer-scene-selection")).toHaveCount(0);
+  await expect(page.locator(".performer-scene-selection")).toBeHidden();
   await expect(page.locator(".performer-scene-card__selector")).toHaveCount(0);
   await page.locator(".performer-scene-card").nth(3).click();
   await expect(page.locator(".performer-scene-card.is-selected")).toHaveCount(0);
@@ -189,9 +192,39 @@ test("scene multi-select is optional and clears when exited", async ({ page }) =
   await expect(page).toHaveScreenshot("en-performer-scene-selection.png");
 
   await page.getByRole("button", { name: "Exit selection", exact: true }).click();
-  await expect(page.locator(".performer-scene-selection")).toHaveCount(0);
+  await expect(page.locator(".performer-scene-selection")).toBeHidden();
   await expect(page.locator(".performer-scene-card__selector")).toHaveCount(0);
   await page.getByRole("button", { name: "Select scenes", exact: true }).click();
   await expect(page.locator(".performer-scene-card.is-selected")).toHaveCount(0);
   await expect(page.getByRole("button", { name: "Create download tasks", exact: true })).toBeDisabled();
 });
+
+
+for (const workspace of ["scenes", "performers"] as const) {
+  test(`${workspace} selection expands and collapses smoothly`, async ({ page }) => {
+    await page.emulateMedia({ reducedMotion: "no-preference" });
+    await page.addInitScript(() => localStorage.setItem("moji:locale", "en"));
+    await page.goto(workspace === "scenes" ? "/performers/actor-0" : "/performers");
+    const toggle = page.getByRole("button", { name: workspace === "scenes" ? "Select scenes" : "Select multiple performers", exact: true });
+    await expect(toggle).toBeVisible();
+    const motion = await page.evaluate(async () => {
+      const toggle = document.querySelector<HTMLButtonElement>(".performer-toolbar__toggle")!;
+      const panel = document.querySelector<HTMLElement>(".performer-toolbar__collapse")!;
+      const initial = panel.getBoundingClientRect().height;
+      toggle.click();
+      await new Promise(requestAnimationFrame);
+      await new Promise(requestAnimationFrame);
+      const animations = panel.getAnimations();
+      const expanding = animations.some(animation => (animation as CSSTransition).transitionProperty === "grid-template-rows");
+      await Promise.all(animations.map(animation => animation.finished));
+      return { initial, expanding, expanded: panel.getBoundingClientRect().height };
+    });
+    expect(motion.initial).toBe(0);
+    expect(motion.expanding).toBe(true);
+    expect(motion.expanded).toBeGreaterThan(0);
+    await page.getByRole("button", { name: workspace === "scenes" ? "Exit selection" : "Exit performer selection", exact: true }).click();
+    await expect(page.locator(".performer-subtoolbar")).toBeHidden();
+    await expect.poll(() => page.locator(".performer-toolbar__collapse").evaluate(el => el.getBoundingClientRect().height)).toBe(0);
+  });
+
+}

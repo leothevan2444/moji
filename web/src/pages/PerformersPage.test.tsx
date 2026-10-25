@@ -92,6 +92,9 @@ describe("PerformersPage list selection", () => {
     render(<PerformersPage {...props({ reviewPendingCount: 2, reviewCounts: { p1: 2 } })} />);
     expect(screen.getByRole("link", { name: "2 awaiting review" }).getAttribute("href")).toBe("/performers/review?performer=p1");
     expect(screen.getByRole("link", { name: "Release review · 2" }).getAttribute("href")).toBe("/performers/review");
+    for (const name of ["Release review · 2", "2 awaiting review"]) {
+      expect(screen.getByRole("link", { name }).querySelector("svg")?.getAttribute("data-icon")).toBe("clipboard-question");
+    }
   });
 
   it("opens a performer normally and selects it in multi-select mode", () => {
@@ -113,7 +116,7 @@ describe("PerformersPage list selection", () => {
     const actions = within(screen.getByRole("region", { name: "Selected performer actions" }));
     expect((actions.getByRole("button", { name: "Subscribe (1)" }) as HTMLButtonElement).disabled).toBe(false);
     expect((actions.getByRole("button", { name: "Check selected (0)" }) as HTMLButtonElement).disabled).toBe(true);
-    expect(screen.queryByRole("button", { name: "Check Alpha now" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Check Alpha for updates" })).toBeNull();
   });
 
   it("shows reload and check-all as toolbar icons with tooltips", () => {
@@ -121,11 +124,13 @@ describe("PerformersPage list selection", () => {
     const pageProps = props({ onRefreshAll });
     const view = render(<PerformersPage {...pageProps} />);
     const reload = screen.getByRole("button", { name: "Reload from Stash" });
-    const checkAll = screen.getByRole("button", { name: "Check all" }) as HTMLButtonElement;
+    const checkAll = screen.getByRole("button", { name: "Check all for updates" }) as HTMLButtonElement;
     expect(reload.textContent).toBe("");
     expect(reload.title).toBe("Reload from Stash");
+    expect(reload.querySelector("svg")?.getAttribute("data-icon")).toBe("rotate");
     expect(checkAll.textContent).toBe("");
-    expect(checkAll.title).toBe("Check all");
+    expect(checkAll.querySelector("svg")?.getAttribute("data-icon")).toBe("binoculars");
+    expect(checkAll.title).toBe("Check all subscribed performers for scene updates and apply subscription rules");
     expect(checkAll.disabled).toBe(true);
     expect(checkAll.closest(".toolbar-inline")).toBe(reload.closest(".toolbar-inline"));
     expect(screen.queryByRole("button", { name: "More actions" })).toBeNull();
@@ -136,9 +141,11 @@ describe("PerformersPage list selection", () => {
     expect(onRefreshAll).toHaveBeenCalledTimes(1);
 
     view.rerender(<PerformersPage {...pageProps} refreshingSubscriptionNow />);
-    const checking = screen.getByRole("button", { name: "Checking..." }) as HTMLButtonElement;
+    const checking = screen.getByRole("button", { name: "Checking for updates…" }) as HTMLButtonElement;
     expect(checking.disabled).toBe(true);
-    expect(checking.title).toBe("Checking...");
+    expect(checking.title).toBe("Checking for updates…");
+    expect(checking.getAttribute("aria-busy")).toBe("true");
+    expect(checking.querySelector("svg")?.getAttribute("data-icon")).toBe("binoculars");
   });
 
   it("jumps to first, last, and valid specified pages and disables navigation while loading", () => {
@@ -234,6 +241,9 @@ describe("Performer workspace interactions", () => {
     const onOpenPerformer = vi.fn();
     render(<PerformersPage {...props({ onOpenPerformer, stashPerformers: [performer], subscribedPerformers: [{ performer, lastCheckedAt: null, lastError: "StashBox unavailable", recentReleases: [], pendingReleaseCount: 0, reviewReleaseCount: 0, processedReleaseCount: 0 }] })} />);
     expect(screen.queryByRole("dialog")).toBeNull();
+    const check = screen.getByRole("button", { name: "Check Alpha for updates" });
+    expect(check.title).toBe("Check for scene updates and apply subscription rules");
+    expect(check.querySelector("svg")?.getAttribute("data-icon")).toBe("binoculars");
     fireEvent.click(within(screen.getByText("Alpha").closest("article")!).getByRole("button", { name: "Check failed" }));
     expect(within(screen.getByRole("dialog")).getByText("StashBox unavailable")).toBeTruthy();
     expect(onOpenPerformer).not.toHaveBeenCalled();

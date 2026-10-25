@@ -1,8 +1,8 @@
 import { faBookmark } from "@fortawesome/free-solid-svg-icons/faBookmark";
-import { faClipboardCheck } from "@fortawesome/free-solid-svg-icons/faClipboardCheck";
+import { faClipboardQuestion } from "@fortawesome/free-solid-svg-icons/faClipboardQuestion";
 import { faHeart } from "@fortawesome/free-solid-svg-icons/faHeart";
 import { faPlayCircle } from "@fortawesome/free-solid-svg-icons/faPlayCircle";
-import { faRotate } from "@fortawesome/free-solid-svg-icons/faRotate";
+import { faBinoculars } from "@fortawesome/free-solid-svg-icons/faBinoculars";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { useState } from "react";
 import { createPortal } from "react-dom";
@@ -67,18 +67,19 @@ export function PerformerOverview({ performerDetail, performerSummary, performer
                 aria-label={t("releaseReview.actorEntry", { count: reviewCounts[performerDetail.performer.id] ?? performerSubscription?.reviewReleaseCount ?? 0 })}
                 to={`/performers/review?performer=${encodeURIComponent(performerDetail.performer.id)}`}
               >
-                <FontAwesomeIcon icon={faClipboardCheck} />
+                <FontAwesomeIcon icon={faClipboardQuestion} />
                 <span aria-hidden="true">{reviewCounts[performerDetail.performer.id] ?? performerSubscription?.reviewReleaseCount ?? 0}</span>
               </Link>
               <button
                 type="button"
                 className="profile-action-icon"
-                title={t(performerDetail.performer.subscribed ? "performerUi.checkNow" : "performerUi.checkRequiresSubscription")}
+                aria-busy={pendingSubscriptionID === performerDetail.performer.id}
+                title={t(performerDetail.performer.subscribed ? "performerUi.checkUpdatesHelp" : "performerUi.checkRequiresSubscription")}
                 aria-label={t("performerUi.checkName", { name: performerDetail.performer.name })}
                 disabled={!performerDetail.performer.subscribed || pendingSubscriptionID === performerDetail.performer.id}
                 onClick={() => onRefreshOne(performerDetail.performer)}
               >
-                <FontAwesomeIcon icon={faRotate} className={pendingSubscriptionID === performerDetail.performer.id ? "is-spinning" : undefined} />
+                <FontAwesomeIcon icon={faBinoculars} />
               </button>
               {detailStashURL ? (
                 <a

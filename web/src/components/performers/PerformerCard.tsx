@@ -1,4 +1,4 @@
-import { faBookmark, faClipboardCheck, faHeart, faPlayCircle, faRotate } from "@fortawesome/free-solid-svg-icons";
+import { faBookmark, faClipboardQuestion, faHeart, faPlayCircle, faBinoculars } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { useState } from "react";
 import { createPortal } from "react-dom";
@@ -68,9 +68,9 @@ export function PerformerCard({ performer, subscription, reviewCount, page }: { 
           </div>
           <div className="profile-card__footer">
             {reviewCount > 0 || !performerSelectionMode ? <div className="profile-actions">
-              {reviewCount > 0 ? <Link className="profile-action-icon profile-action-icon--count" aria-label={t("releaseReview.actorEntry", { count: reviewCount })} title={t("releaseReview.actorEntry", { count: reviewCount })} to={`/performers/review?performer=${encodeURIComponent(performer.id)}`}><FontAwesomeIcon icon={faClipboardCheck} /><span aria-hidden="true">{reviewCount}</span></Link> : null}
+              {reviewCount > 0 ? <Link className="profile-action-icon profile-action-icon--count" aria-label={t("releaseReview.actorEntry", { count: reviewCount })} title={t("releaseReview.actorEntry", { count: reviewCount })} to={`/performers/review?performer=${encodeURIComponent(performer.id)}`}><FontAwesomeIcon icon={faClipboardQuestion} /><span aria-hidden="true">{reviewCount}</span></Link> : null}
               {!performerSelectionMode ? <>
-                {performer.subscribed ? <button type="button" className="profile-action-icon" title={t("performerUi.checkNow")} aria-label={t("performerUi.checkName", { name: performer.name })} disabled={pending} onClick={() => onRefreshOne(performer)}><FontAwesomeIcon icon={faRotate} className={pending ? "is-spinning" : undefined} /></button> : null}
+                {performer.subscribed ? <button type="button" className="profile-action-icon" title={t("performerUi.checkUpdatesHelp")} aria-busy={pending} aria-label={t("performerUi.checkName", { name: performer.name })} disabled={pending} onClick={() => onRefreshOne(performer)}><FontAwesomeIcon icon={faBinoculars} /></button> : null}
                 {stashURL ? <a className="profile-action-icon profile-action-icon--count" href={stashURL} target="_blank" rel="noreferrer" title={t("performerWorkspace.stashLibrary", { name: performer.name, count: performer.sceneCount })} aria-label={t("performerWorkspace.stashLibrary", { name: performer.name, count: performer.sceneCount })}><FontAwesomeIcon icon={faPlayCircle} /><span aria-hidden="true">{performer.sceneCount}</span></a> : null}
               </> : null}
             </div> : null}

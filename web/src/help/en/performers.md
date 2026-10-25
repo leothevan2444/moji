@@ -10,7 +10,7 @@ Filter the complete list by subscribed performers, Stash favorites, pending revi
 
 Enter selection mode to select performers with checkboxes. Selections persist across pages, searches, and filters; the action bar reports selections outside the current page. Exiting selection mode clears them. Performer names, subscription buttons, and check buttons support independent keyboard operation.
 
-Subscribing records the performer in Moji. **Check now** refreshes one performer; **Check all** checks every subscription. Scheduled checks use the polling interval in **Settings > Automation**. A subscription needs a matching performer identity on a configured StashBox. Expand check errors on a card or in the detail view to read the cause. Subscriptions that have never been checked are labeled separately.
+Subscribing records the performer in Moji. **Check for updates** checks one performer; **Check all for updates** checks every subscription. Newly found scenes are handled according to subscription rules. Scheduled checks use the polling interval in **Settings > Automation**. A subscription needs a matching performer identity on a configured StashBox. Expand check errors on a card or in the detail view to read the cause. Subscriptions that have never been checked are labeled separately.
 
 ## Review and queue scenes
 

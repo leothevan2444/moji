@@ -1202,8 +1202,8 @@
   "performerRoute": {
     "unsubscribed": "已取消订阅 {{name}}。",
     "subscribed": "已订阅 {{name}}，Moji 会通过 custom_fields 记录状态。",
-    "checked": "已检查 {{name}} 的最新发行信息。",
-    "checkedAll": "已触发全部已订阅演员的更新检查。",
+    "checked": "已检查 {{name}} 的作品更新。",
+    "checkedAll": "已完成全部已订阅演员的作品更新检查。",
     "reloaded": "已从 Stash 重新加载演员列表。",
     "noSelection": "当前没有可提交的已选作品，请刷新列表后重试。",
     "batchNoResult": "批量下载失败，后端没有返回结果。",
@@ -1235,6 +1235,7 @@
     "subscribe": "订阅（{{count}}）",
     "unsubscribe": "取消订阅（{{count}}）",
     "refresh": "检查所选（{{count}}）",
+    "refreshHelp": "检查所选演员的作品更新，并按订阅规则处理",
     "clear": "清空选择",
     "selectName": "选择演员 {{name}}",
     "deselectName": "取消选择演员 {{name}}",
@@ -1257,19 +1258,19 @@
         "detail": "将移除 Stash 中的 Moji 订阅标记并清理本地订阅状态，但不会删除已有任务或文件。"
       },
       "refresh": {
-        "title": "检查 {{count}} 位已订阅演员？",
-        "detail": "将访问 StashBox 获取最新发行，并可能按当前自动化策略创建下载任务。"
+        "title": "检查 {{count}} 位已订阅演员的作品更新？",
+        "detail": "发现的作品将按订阅规则处理，可能创建下载任务。"
       }
     },
     "reasons": {
       "SUBSCRIBED": "已订阅",
       "UNSUBSCRIBED": "已取消订阅",
-      "REFRESHED": "已完成发行检查",
+      "REFRESHED": "已完成作品更新检查",
       "ALREADY_SUBSCRIBED": "演员已经订阅",
       "NOT_SUBSCRIBED": "演员尚未订阅",
       "PERFORMER_NOT_FOUND": "Stash 中已找不到该演员",
       "STASH_UPDATE_FAILED": "更新 Stash 订阅标记失败",
-      "REFRESH_FAILED": "发行检查失败",
+      "REFRESH_FAILED": "作品更新检查失败",
       "CANCELLED": "操作已取消",
       "UNKNOWN": "未识别的操作结果"
     }
@@ -1339,9 +1340,11 @@
     "preferredBox": "首选 StashBox",
     "noPreferredBox": "未匹配到首选 StashBox",
     "unmatched": "未匹配",
-    "checkNow": "立即检查",
+    "checkNow": "检查更新",
+    "checkUpdatesHelp": "检查作品更新，并按订阅规则处理",
+    "checkAllHelp": "检查全部已订阅演员的作品更新，并按订阅规则处理",
     "checkRequiresSubscription": "订阅后才能检查更新",
-    "checkName": "立即检查 {{name}}",
+    "checkName": "检查 {{name}} 的作品更新",
     "stashHome": "前往 Stash 主页",
     "stashHomeName": "前往 {{name}} 的 Stash 主页",
     "aliases": "别名",
@@ -1410,9 +1413,9 @@
     "reloadFromStash": "从 Stash 重新加载",
     "reloadHint": "重新获取演员资料和订阅标记，不检查最新发行",
     "updatedAt": "列表更新于 {{time}}",
-    "checking": "检查中...",
+    "checking": "正在检查更新…",
     "moreActions": "更多操作",
-    "checkAll": "检查全部演员",
+    "checkAll": "检查全部演员的作品更新",
     "checkAllSubscribed": "检查全部",
     "noPerformers": "没有找到匹配的演员",
     "noPerformersDetail": "可以尝试修改关键词，或先确认 Stash 已正确返回演员数据。",
