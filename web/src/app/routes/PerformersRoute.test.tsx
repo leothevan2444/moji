@@ -79,6 +79,8 @@ function workspaceForPage(page: number) {
       totalSceneCount: 4,
       stashSceneCount: 0,
       stashBoxSceneCount: 4,
+      activeTaskCount: 0,
+      sceneStatsComplete: true,
       dedupedSceneCount: 4
     },
     performerScenePage: {

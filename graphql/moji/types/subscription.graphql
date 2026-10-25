@@ -3,7 +3,7 @@ extend type Query {
   stashPerformers(search: String, page: Int = 1, pageSize: Int = 24): StashPerformerConnection!
 
   "Load the actor list and subscription state from one Stash snapshot"
-  performerWorkspace(search: String, page: Int = 1, pageSize: Int = 24): PerformerWorkspaceSnapshot!
+  performerWorkspace(search: String, page: Int = 1, pageSize: Int = 24, options: PerformerListOptions): PerformerWorkspaceSnapshot!
 
   "Fetch Stash performer detail with Moji / StashBox context"
   stashPerformerDetail(id: ID!): StashPerformerDetail!
@@ -13,6 +13,26 @@ extend type Query {
 
   "List performers currently subscribed by Moji"
   subscribedPerformers: [SubscribedPerformer!]!
+}
+
+enum PerformerListFilter {
+  ALL
+  SUBSCRIBED
+  FAVORITE
+  REVIEW
+  ERROR
+}
+
+enum PerformerListSort {
+  DEFAULT
+  NAME
+  SCENE_COUNT
+  LAST_CHECKED
+}
+
+input PerformerListOptions {
+  filter: PerformerListFilter = ALL
+  sort: PerformerListSort = DEFAULT
 }
 
 extend type Mutation {
@@ -69,6 +89,10 @@ type StashPerformerDetail {
   stashSceneCount: Int!
   stashBoxSceneCount: Int!
   dedupedSceneCount: Int!
+  "Unfinished tasks associated with loaded performer scenes, counted once per task"
+  activeTaskCount: Int!
+  "Whether the source catalog used for the task count is fully loaded"
+  sceneStatsComplete: Boolean!
 }
 
 type MatchedStashBox {

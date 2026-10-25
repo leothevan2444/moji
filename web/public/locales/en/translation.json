@@ -1285,6 +1285,49 @@
       "UNKNOWN": "Unknown operation result"
     }
   },
+  "performerWorkspace": {
+    "recentCheck": "Latest check",
+    "checkTime": "Check time",
+    "worksAndTasks": "Scenes and tasks",
+    "libraryWorks": "Scenes in Stash",
+    "sourceWorks": "Scenes at source",
+    "activeTasks": "Ongoing tasks",
+    "activeTasksHelp": "Unfinished associated tasks, including waiting and blocked tasks. Each task is counted once.",
+    "partialTasksHelp": "The source catalog is not fully loaded. Task counts cover loaded scenes only.",
+    "filter": "Filter performers",
+    "sort": "Sort",
+    "pageSize": "Page size",
+    "filters": {
+      "all": "All performers",
+      "subscribed": "Subscribed",
+      "favorite": "Stash favorites",
+      "review": "Awaiting review",
+      "error": "Check failed"
+    },
+    "sorts": {
+      "default": "Default order",
+      "name": "Name A–Z",
+      "scene_count": "Most scenes first",
+      "last_checked": "Recently checked first"
+    },
+    "sceneCount": "Scenes in library: {{count}}",
+    "stashLibrary": "Open {{name}} in Stash · Scenes in library: {{count}}",
+    "noReleases": "Checked; no release records yet.",
+    "loading": "Loading performer information…",
+    "retry": "Reload",
+    "total": "{{count}} results",
+    "visible": "{{count}} on this page",
+    "selectedScenes": "{{count}} scenes selected (kept across pages)",
+    "hiddenScenes": "{{count}} selected on other pages",
+    "selectionHelp": "Select performers for batch actions. Selections are kept across pages and filters.",
+    "errorReason": "View reason",
+    "errorDetails": "View check failure details",
+    "sourceFilter": "Scene source",
+    "libraryFilter": "Library status",
+    "summaryLoading": "Updating results…",
+    "filterEmpty": "No performers match the current filters",
+    "clearFilters": "Clear search and filters"
+  },
   "performerUi": {
     "firstPage": "First page",
     "lastPage": "Last page",

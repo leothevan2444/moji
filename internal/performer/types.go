@@ -114,4 +114,6 @@ type Detail struct {
 	URLs                                                                    []string
 	MatchedStashBox                                                         *MatchedStashBox
 	TotalSceneCount, StashSceneCount, StashBoxSceneCount, DedupedSceneCount int
+	ActiveTaskCount                                                         int
+	SceneStatsComplete                                                      bool
 }

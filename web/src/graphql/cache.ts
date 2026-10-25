@@ -68,6 +68,12 @@ function invalidatePerformerSceneQueries(cache: Cache) {
   }
 }
 
+function invalidatePerformerDetailQueries(cache: Cache) {
+  for (const field of cache.inspectFields("Query")) {
+    if (field.fieldName === "stashPerformerDetail") cache.invalidate("Query", field.fieldName, field.arguments ?? {});
+  }
+}
+
 function subscribedPerformerID(cache: Cache, link: string): string | null {
   const performerLink = cache.resolve(link, "performer");
   if (typeof performerLink !== "string") return null;
@@ -80,6 +86,17 @@ function replaceSubscribedPerformers(cache: Cache, performers: Entity[]) {
   for (const parent of subscriptionParents) {
     if (subscriptionLinks(cache, parent)) cache.link(parent, "subscribedPerformers", links);
   }
+  invalidatePerformerListOptions(cache);
+}
+
+function invalidatePerformerListOptions(cache: Cache) {
+  for (const field of cache.inspectFields("Query")) {
+    if (field.fieldName !== "performerWorkspace") continue;
+    const options = field.arguments?.options as { filter?: string; sort?: string } | undefined;
+    if ((options?.filter && options.filter !== "ALL") || (options?.sort && options.sort !== "DEFAULT")) {
+      cache.invalidate("Query", field.fieldName, field.arguments ?? {});
+    }
+  }
 }
 
 function upsertSubscribedPerformer(cache: Cache, performer: Entity | null | undefined) {
@@ -90,6 +107,7 @@ function upsertSubscribedPerformer(cache: Cache, performer: Entity | null | unde
     const links = subscriptionLinks(cache, parent);
     if (links) cache.link(parent, "subscribedPerformers", [key, ...links.filter((item) => item !== key)]);
   }
+  invalidatePerformerListOptions(cache);
 }
 
 function removeSubscribedPerformer(cache: Cache, id: string) {
@@ -98,6 +116,7 @@ function removeSubscribedPerformer(cache: Cache, id: string) {
     if (links) cache.link(parent, "subscribedPerformers", links.filter((link) => subscribedPerformerID(cache, link) !== id));
   }
   cache.writeFragment(PERFORMER_SUBSCRIBED_FRAGMENT, { __typename: "StashPerformer", id, subscribed: false });
+  invalidatePerformerListOptions(cache);
 }
 
 function applyPerformerBatch(cache: Cache, payload: any, action: "subscribe" | "unsubscribe" | "refresh") {
@@ -116,6 +135,7 @@ function linkQueuedSceneTasks(cache: Cache, payload: any) {
     if (sceneKey && taskKey) cache.link(sceneKey, "mojiTask", taskKey);
     linkTask(cache, item.task, true);
   }
+  if (payload?.results?.some((item: any) => item?.status === "QUEUED")) invalidatePerformerDetailQueries(cache);
 }
 
 function applyTaskBatch(cache: Cache, payload: any, deleting = false) {
@@ -196,8 +216,10 @@ export const graphcacheUpdates: UpdatesConfig = {
       }
       if (event.type === "CREATED" || event.type === "DELETED") {
         invalidatePerformerSceneQueries(cache);
+        invalidatePerformerDetailQueries(cache);
         for (const field of cache.inspectFields("Query")) if (field.fieldName === "releaseReviews") cache.invalidate("Query", field.fieldName, field.arguments ?? {});
       }
+      else if (event.task?.stage === "COMPLETED") invalidatePerformerDetailQueries(cache);
     },
     performerSubscriptionEvents(result: any, _args, cache) {
       const event = result.performerSubscriptionEvents;

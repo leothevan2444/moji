@@ -42,6 +42,8 @@ export function serializeTaskSearchParams(state: TaskSearchState): URLSearchPara
 }
 
 export interface PerformerSearchState {
+  filter: "all" | "subscribed" | "favorite" | "review" | "error";
+  sort: "default" | "name" | "scene_count" | "last_checked";
   q: string;
   page: number;
   pageSize: number;
@@ -63,7 +65,11 @@ export function parsePerformerSearchParams(params: URLSearchParams): PerformerSe
   const scenePageSize = positiveInt(params.get("scenePageSize"), 24);
   const source = params.get("source");
   const library = params.get("library");
+  const filter = params.get("filter");
+  const sort = params.get("sort");
   return {
+    filter: filter === "subscribed" || filter === "favorite" || filter === "review" || filter === "error" ? filter : "all",
+    sort: sort === "name" || sort === "scene_count" || sort === "last_checked" ? sort : "default",
     q: params.get("q")?.trim() ?? "",
     page: positiveInt(params.get("page"), 1),
     pageSize: PAGE_SIZES.includes(pageSize as (typeof PAGE_SIZES)[number]) ? pageSize : 24,
@@ -78,6 +84,8 @@ export function parsePerformerSearchParams(params: URLSearchParams): PerformerSe
 export function serializePerformerSearchParams(state: PerformerSearchState): URLSearchParams {
   const params = new URLSearchParams();
   if (state.q) params.set("q", state.q);
+  if (state.filter !== "all") params.set("filter", state.filter);
+  if (state.sort !== "default") params.set("sort", state.sort);
   if (state.page !== 1) params.set("page", String(state.page));
   if (state.pageSize !== 24) params.set("pageSize", String(state.pageSize));
   if (state.sceneQ) params.set("sceneQ", state.sceneQ);

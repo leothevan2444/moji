@@ -11,6 +11,7 @@ import (
 
 	"github.com/leothevan2444/moji/internal/graphqlapi/model"
 	"github.com/leothevan2444/moji/internal/performer"
+	"github.com/leothevan2444/moji/internal/subscription"
 )
 
 // SubscribePerformer is the resolver for the subscribePerformer field.
@@ -205,7 +206,7 @@ func (r *queryResolver) StashPerformers(ctx context.Context, search *string, pag
 }
 
 // PerformerWorkspace is the resolver for the performerWorkspace field.
-func (r *queryResolver) PerformerWorkspace(ctx context.Context, search *string, page *int, pageSize *int) (*model.PerformerWorkspaceSnapshot, error) {
+func (r *queryResolver) PerformerWorkspace(ctx context.Context, search *string, page *int, pageSize *int, options *model.PerformerListOptions) (*model.PerformerWorkspaceSnapshot, error) {
 	if r.Performer == nil {
 		return &model.PerformerWorkspaceSnapshot{Performers: stashPerformerPageToModel(buildStashPerformerPage(nil, "", page, pageSize)), SubscribedPerformers: []*model.SubscribedPerformer{}}, nil
 	}
@@ -227,6 +228,19 @@ func (r *queryResolver) PerformerWorkspace(ctx context.Context, search *string, 
 	if search != nil {
 		needle = *search
 	}
+	reviews := map[string]int{}
+	if options != nil && options.Filter != nil && *options.Filter == model.PerformerListFilterReview {
+		if service, ok := r.PerformerSubscription.(ReleaseReviewService); ok {
+			result, reviewErr := service.ListReleaseReviews(ctx, subscription.ReleaseReviewQuery{Page: 1, PageSize: 1})
+			if reviewErr != nil {
+				return nil, reviewErr
+			}
+			for _, actor := range result.Performers {
+				reviews[actor.ID] = actor.PendingCount
+			}
+		}
+	}
+	items = filterAndSortPerformers(items, subscribed, reviews, options)
 	return &model.PerformerWorkspaceSnapshot{Performers: stashPerformerPageToModel(buildStashPerformerPage(items, needle, page, pageSize)), SubscribedPerformers: subscribed}, nil
 }
 

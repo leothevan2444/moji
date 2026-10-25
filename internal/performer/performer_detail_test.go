@@ -9,6 +9,7 @@ import (
 
 	"github.com/leothevan2444/moji/internal/metadata"
 	"github.com/leothevan2444/moji/internal/stashboxcache"
+	"github.com/leothevan2444/moji/internal/taskruntime"
 	"github.com/leothevan2444/moji/pkg/stash"
 	stashgraphql "github.com/leothevan2444/moji/pkg/stash/graphql"
 	stashboxpkg "github.com/leothevan2444/moji/pkg/stashbox"
@@ -105,6 +106,13 @@ func TestListPerformerScenesLoadsFortyItemBatchesOnDemand(t *testing.T) {
 	if len(first.Items) != 24 || first.TotalCount != 85 || first.TotalPages != 4 || !first.TotalCountExact || first.StashBoxLoadedCount != 40 || len(client.inputs) != 1 {
 		t.Fatalf("unexpected first page: %+v calls=%+v", first, client.inputs)
 	}
+	detail, err := service.GetPerformerDetail(context.Background(), stashPerformer.ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if detail.StashBoxSceneCount != 85 || detail.SceneStatsComplete || detail.ActiveTaskCount != 0 {
+		t.Fatalf("unexpected detail summary: %+v", detail)
+	}
 	second, err := service.ListPerformerScenes(context.Background(), stashPerformer.ID, SceneQuery{Source: SceneSourceFilterStashBox, Page: 2, PageSize: 24})
 	if err != nil {
 		t.Fatal(err)
@@ -125,5 +133,22 @@ func TestListPerformerScenesLoadsFortyItemBatchesOnDemand(t *testing.T) {
 	}
 	if len(last.Items) != 13 || !last.CacheComplete || len(client.inputs) != 3 || client.inputs[2].Page != 3 || client.inputs[2].PerPage != 40 {
 		t.Fatalf("unexpected final page: %+v calls=%+v", last, client.inputs)
+	}
+}
+
+func TestCountActivePerformerSceneTasksCountsUniqueUnfinishedTasks(t *testing.T) {
+	scenes := []Scene{
+		{MojiTask: &SceneTask{ID: "active", Stage: taskruntime.TaskStageDownloading}},
+		{MojiTask: &SceneTask{ID: "active", Stage: taskruntime.TaskStageDownloading}},
+		{MojiTask: &SceneTask{ID: "waiting", Stage: taskruntime.TaskStageSourcing, StageStatus: taskruntime.TaskStageStatusPending}},
+		{MojiTask: &SceneTask{ID: "blocked", Stage: taskruntime.TaskStageScanning, StageStatus: taskruntime.TaskStageStatusBlocked}},
+		{MojiTask: &SceneTask{ID: "done", Stage: taskruntime.TaskStageCompleted}},
+		{},
+	}
+	if got := countActivePerformerSceneTasks(scenes); got != 3 {
+		t.Fatalf("got %d unfinished tasks, want 3", got)
+	}
+	if got := countActivePerformerSceneTasks(nil); got != 0 {
+		t.Fatalf("got %d tasks for no scenes", got)
 	}
 }

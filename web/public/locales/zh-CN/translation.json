@@ -1275,6 +1275,49 @@
       "UNKNOWN": "未识别的操作结果"
     }
   },
+  "performerWorkspace": {
+    "recentCheck": "最近检查",
+    "checkTime": "检查时间",
+    "worksAndTasks": "作品与任务",
+    "libraryWorks": "Stash 已入库作品",
+    "sourceWorks": "数据源作品",
+    "activeTasks": "进行中任务",
+    "activeTasksHelp": "未完成的关联任务，包含等待和受阻任务；按任务去重统计。",
+    "partialTasksHelp": "数据源尚未加载完整，任务数仅统计已加载作品的关联任务。",
+    "filter": "筛选演员",
+    "sort": "排序",
+    "pageSize": "每页条数",
+    "filters": {
+      "all": "全部演员",
+      "subscribed": "已订阅",
+      "favorite": "Stash 收藏",
+      "review": "有待复核",
+      "error": "检查异常"
+    },
+    "sorts": {
+      "default": "默认顺序",
+      "name": "姓名 A–Z",
+      "scene_count": "作品数从多到少",
+      "last_checked": "最近检查优先"
+    },
+    "sceneCount": "已入库作品 {{count}} 部",
+    "stashLibrary": "前往 {{name}} 的 Stash 主页 · 已入库作品 {{count}} 部",
+    "noReleases": "已检查，暂无发行记录。",
+    "loading": "正在加载演员信息…",
+    "retry": "重新加载",
+    "total": "共 {{count}} 条",
+    "visible": "本页 {{count}} 条",
+    "selectedScenes": "已选 {{count}} 部（跨页保留）",
+    "hiddenScenes": "其中 {{count}} 部不在本页",
+    "selectionHelp": "勾选演员进行批量操作，翻页和筛选会保留选择。",
+    "errorReason": "查看原因",
+    "errorDetails": "查看检查失败原因",
+    "sourceFilter": "影片来源",
+    "libraryFilter": "入库状态",
+    "summaryLoading": "正在更新结果…",
+    "filterEmpty": "没有符合当前筛选条件的演员",
+    "clearFilters": "清除搜索与筛选"
+  },
   "performerUi": {
     "firstPage": "首页",
     "lastPage": "尾页",

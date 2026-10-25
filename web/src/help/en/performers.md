@@ -6,7 +6,11 @@ Performers are read from Stash. Moji adds its own subscription state without cha
 
 Search matches Stash performer names and aliases. Open a performer to see Stash details, the preferred StashBox match, subscription health, release counts, and a deduplicated scene list built from Stash and StashBox.
 
-Subscribing records the performer in Moji. **Check now** refreshes one performer; **Refresh all** checks every subscription. Scheduled checks use the polling interval in **Settings > Automation**. A subscription needs a matching performer identity on a configured StashBox; errors remain visible on the performer.
+Filter the complete list by subscribed performers, Stash favorites, pending reviews, or failed checks. Sort by name, scene count, or most recent check. Filters and sorting are saved in the URL. The pending-review filter also includes performers who are no longer subscribed.
+
+Enter selection mode to select performers with checkboxes. Selections persist across pages, searches, and filters; the action bar reports selections outside the current page. Exiting selection mode clears them. Performer names, subscription buttons, and check buttons support independent keyboard operation.
+
+Subscribing records the performer in Moji. **Check now** refreshes one performer; **Check all** checks every subscription. Scheduled checks use the polling interval in **Settings > Automation**. A subscription needs a matching performer identity on a configured StashBox. Expand check errors on a card or in the detail view to read the cause. Subscriptions that have never been checked are labeled separately.
 
 ## Review and queue scenes
 

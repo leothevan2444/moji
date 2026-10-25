@@ -4,8 +4,11 @@ import { MemoryRouter } from "react-router";
 import { fireEvent, render as baseRender, screen, within } from "@testing-library/react";
 import type { ComponentProps } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { LibraryFilter, SceneSourceFilter } from "../graphql/generated/graphql";
+import userEvent from "@testing-library/user-event";
+import { LibraryFilter, SceneSourceFilter, TaskStage, TaskStageStatus } from "../graphql/generated/graphql";
 import i18n from "../i18n/i18n";
+import { PerformerSceneCard } from "../components/performers/PerformerSceneCard";
+import type { StashPerformerSceneEntry } from "../components/performers/types";
 import { PerformersPage } from "./PerformersPage";
 
 const render = (ui: React.ReactNode) => baseRender(ui, { wrapper: MemoryRouter });
@@ -97,7 +100,7 @@ describe("PerformersPage list selection", () => {
     expect(onOpenPerformer).toHaveBeenCalledWith("p1");
 
     view.rerender(<PerformersPage {...props({ performerSelectionMode: true, onOpenPerformer, onTogglePerformerSelection })} />);
-    expect(screen.queryByRole("button", { name: "Select performer Alpha" })).toBeNull();
+    expect((screen.getByRole("checkbox", { name: "Select Alpha" }) as HTMLInputElement).checked).toBe(false);
     fireEvent.click(screen.getByText("Alpha").closest("article")!);
     expect(onTogglePerformerSelection).toHaveBeenCalledWith("p1");
     expect(onOpenPerformer).toHaveBeenCalledTimes(1);
@@ -108,7 +111,7 @@ describe("PerformersPage list selection", () => {
     const actions = within(screen.getByRole("region", { name: "Selected performer actions" }));
     expect((actions.getByRole("button", { name: "Subscribe (1)" }) as HTMLButtonElement).disabled).toBe(false);
     expect((actions.getByRole("button", { name: "Check selected (0)" }) as HTMLButtonElement).disabled).toBe(true);
-    expect((screen.getByRole("button", { name: "Check Alpha now" }) as HTMLButtonElement).disabled).toBe(true);
+    expect(screen.queryByRole("button", { name: "Check Alpha now" })).toBeNull();
   });
 
   it("shows reload and check-all as toolbar icons with tooltips", () => {
@@ -172,5 +175,79 @@ describe("PerformersPage list selection", () => {
     expect((input as HTMLInputElement).value).toBe("");
     view.rerender(<PerformersPage {...pageProps} stashPerformerPage={{ ...pageProps.stashPerformerPage!, page: 10, hasNextPage: false }} />);
     expect((pagination.getByRole("button", { name: "Last page" }) as HTMLButtonElement).disabled).toBe(true);
+  });
+});
+
+
+describe("Performer workspace interactions", () => {
+  beforeEach(async () => i18n.changeLanguage("en"));
+  afterEach(() => document.body.replaceChildren());
+
+  it("activates a nested subscription button with Space without opening the performer", async () => {
+    const user = userEvent.setup();
+    const onToggle = vi.fn();
+    const onOpenPerformer = vi.fn();
+    render(<PerformersPage {...props({ onToggle, onOpenPerformer })} />);
+    screen.getByRole("button", { name: "Subscribe to Alpha" }).focus();
+    await user.keyboard(" ");
+    expect(onToggle).toHaveBeenCalledTimes(1);
+    expect(onOpenPerformer).not.toHaveBeenCalled();
+    expect(screen.getByRole("link", { name: "Alpha" }).getAttribute("href")).toBe("/performers/p1");
+  });
+
+  it("exposes a checked checkbox in selection mode and keeps individual actions out of the selection flow", () => {
+    const onTogglePerformerSelection = vi.fn();
+    render(<PerformersPage {...props({ performerSelectionMode: true, selectedPerformerIds: ["p1"], onTogglePerformerSelection })} />);
+    const checkbox = screen.getByRole("checkbox", { name: "Deselect Alpha" }) as HTMLInputElement;
+    expect(checkbox.checked).toBe(true);
+    fireEvent.click(checkbox);
+    expect(onTogglePerformerSelection).toHaveBeenCalledExactlyOnceWith("p1");
+    expect(screen.queryByRole("button", { name: "Subscribe to Alpha" })).toBeNull();
+  });
+
+  it("provides named sorting and filter controls", () => {
+    const onListFilterChange = vi.fn();
+    const onListSortChange = vi.fn();
+    render(<PerformersPage {...props({ onListFilterChange, onListSortChange })} />);
+    fireEvent.click(screen.getByRole("button", { name: "Awaiting review" }));
+    expect(onListFilterChange).toHaveBeenCalledWith("review");
+    fireEvent.change(screen.getByRole("combobox", { name: "Sort" }), { target: { value: "scene_count" } });
+    expect(onListSortChange).toHaveBeenCalledWith("scene_count");
+  });
+
+  it("distinguishes loading and failures from empty results and supports retry", () => {
+    const onReload = vi.fn();
+    const view = render(<PerformersPage {...props({ fetchingStashPerformers: true, stashPerformers: [] })} />);
+    expect(screen.getByRole("status", { name: "Loading performer information…" })).toBeTruthy();
+    expect(screen.queryByText("No matching performers")).toBeNull();
+    view.rerender(<PerformersPage {...props({ stashPerformers: [], stashPerformersError: new Error("offline"), onReload })} />);
+    expect(screen.getByRole("alert")).toBeTruthy();
+    expect(screen.queryByText("No matching performers")).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: "Reload" }));
+    expect(onReload).toHaveBeenCalledTimes(1);
+  });
+
+  it("opens full check errors in a separate dialog without opening the performer", async () => {
+    const performer = { ...props().stashPerformers[0], subscribed: true };
+    const onOpenPerformer = vi.fn();
+    render(<PerformersPage {...props({ onOpenPerformer, stashPerformers: [performer], subscribedPerformers: [{ performer, lastCheckedAt: null, lastError: "StashBox unavailable", recentReleases: [], pendingReleaseCount: 0, reviewReleaseCount: 0, processedReleaseCount: 0 }] })} />);
+    expect(screen.queryByRole("dialog")).toBeNull();
+    fireEvent.click(within(screen.getByText("Alpha").closest("article")!).getByRole("button", { name: "Check failed" }));
+    expect(within(screen.getByRole("dialog")).getByText("StashBox unavailable")).toBeTruthy();
+    expect(onOpenPerformer).not.toHaveBeenCalled();
+    await userEvent.setup().keyboard("{Escape}");
+    expect(screen.queryByRole("dialog")).toBeNull();
+  });
+
+  it("uses sourcing and blocked task labels instead of a generic download label", () => {
+    const scene: StashPerformerSceneEntry = {
+      key: "one", primarySource: "STASHBOX" as StashPerformerSceneEntry["primarySource"], sourceSceneId: "one", title: "Example", code: "ABC-123", date: null, studioName: null, performerCount: 1, tagCount: 0, performers: [], tags: [], imageUrl: null, url: null, inLibrary: false, matchedStashSceneId: null, hasStashSource: false, hasStashBoxSource: true, stashBoxSceneId: "one", stashBoxEndpoint: null, sourceLabels: [], stashIds: [],
+      mojiTask: { id: "task-one", stage: TaskStage.Sourcing, stageStatus: TaskStageStatus.Pending, stageLabel: "", stageStatusLabel: "", progress: 0 }
+    };
+    const view = render(<PerformerSceneCard scene={scene} page={props()} />);
+    expect(screen.getByRole("button", { name: i18n.t("taskQueue.pending") })).toBeTruthy();
+    view.rerender(<PerformerSceneCard scene={{ ...scene, mojiTask: { ...scene.mojiTask!, stage: TaskStage.Downloading, stageStatus: TaskStageStatus.Blocked, progress: .5 } }} page={props()} />);
+    expect(screen.getByRole("button", { name: i18n.t("taskModel.states.blocked") })).toBeTruthy();
+    expect(screen.queryByText("Downloading 50%")).toBeNull();
   });
 });

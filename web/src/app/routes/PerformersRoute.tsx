@@ -5,7 +5,7 @@ import { Drawer } from "../../components/layout/Drawer";
 import { PerformersPage } from "../../pages/PerformersPage";
 import { usePerformersWorkspace } from "../../hooks/usePerformersWorkspace";
 import { parsePerformerSearchParams, serializePerformerSearchParams } from "../searchParams";
-import { LibraryFilter, PerformerBatchFieldsFragmentDoc, PerformersConfigDocumentDocument, ReleaseReviewSummaryDocument, SceneSourceFilter } from "../../graphql/generated/graphql";
+import { PerformerListFilter, PerformerListSort, LibraryFilter, PerformerBatchFieldsFragmentDoc, PerformersConfigDocumentDocument, ReleaseReviewSummaryDocument, SceneSourceFilter } from "../../graphql/generated/graphql";
 import { useFragment as readFragment } from "../../graphql/generated/fragment-masking";
 import { describeQueryError } from "../../services/queryError";
 import type { AppOutletContext } from "../AppLayout";
@@ -43,9 +43,10 @@ export function Component() {
   const [{ data: config }] = useQuery({ query: PerformersConfigDocumentDocument, requestPolicy: "cache-and-network" });
   const [{ data: reviewSummary }, refreshReviewSummary] = useQuery({ query: ReleaseReviewSummaryDocument, requestPolicy: "network-only" });
 
-  const subscription = usePerformersWorkspace({ enabled: true, search: deferredSearch || null, page: state.page, pageSize: state.pageSize, performerId: performerId ?? null, performerSceneSearch: deferredSceneSearch || null, performerSceneSource: source, performerSceneLibrary: library, performerScenePage: state.scenePage, performerScenePageSize: state.scenePageSize });
+  const subscription = usePerformersWorkspace({ options: { filter: state.filter.toUpperCase() as PerformerListFilter, sort: state.sort.toUpperCase() as PerformerListSort }, enabled: true, search: deferredSearch || null, page: state.page, pageSize: state.pageSize, performerId: performerId ?? null, performerSceneSearch: deferredSceneSearch || null, performerSceneSource: source, performerSceneLibrary: library, performerScenePage: state.scenePage, performerScenePageSize: state.scenePageSize });
   const sceneSelection = usePerformerSceneSelection(performerId ?? null, subscription.performerScenes);
-  useEffect(() => { refreshReviewSummary({ requestPolicy: "network-only" }); }, [subscription.subscribedPerformers, refreshReviewSummary]);
+  // Subscription events and review mutations invalidate releaseReviews in graphcache.
+  // Avoid using an array fallback as an effect dependency when workspace loading fails.
   const update = (patch: Partial<typeof state>) => {
     const next = serializePerformerSearchParams({ ...state, ...patch });
     const base = performerId ? `/performers/${encodeURIComponent(performerId)}` : "/performers";
@@ -55,6 +56,7 @@ export function Component() {
     setReloadingList(true);
     try {
       const results = await subscription.reloadSubscription();
+      refreshReviewSummary({ requestPolicy: "network-only" });
       const failure = results.find((result) => result.error)?.error;
       if (failure) pushToast("tone-danger", describeQueryError(failure));
       else { setLastRefreshedAt(new Date().toISOString()); pushToast("tone-success", t("performerRoute.reloaded")); }
@@ -120,7 +122,7 @@ export function Component() {
     finally { setPendingKeys((current) => current.filter((key) => key !== scene.key)); }
   };
 
-  return <><PerformersPage reviewPendingCount={reviewSummary?.releaseReviews?.pendingCount ?? 0} reviewCounts={Object.fromEntries((reviewSummary?.releaseReviews?.performers ?? []).map(actor => [actor.id,actor.pendingCount]))} stashBaseURL={config?.settings.stash.url ?? null} stashPerformerPage={subscription.stashPerformerPage} stashPerformers={subscription.stashPerformers} subscribedPerformers={subscription.subscribedPerformers}
+  return <><PerformersPage listFilter={state.filter} listSort={state.sort} onClearListFilters={() => update({ q: "", filter: "all", page: 1 })} onListFilterChange={(filter) => update({ filter, page: 1 })} onListSortChange={(sort) => update({ sort, page: 1 })} onRetryDetail={() => subscription.refreshPerformerDetail({ requestPolicy: "network-only" })} onRetryScenes={() => subscription.refreshPerformerScenes({ requestPolicy: "network-only" })} reviewPendingCount={reviewSummary?.releaseReviews?.pendingCount ?? 0} reviewCounts={Object.fromEntries((reviewSummary?.releaseReviews?.performers ?? []).map(actor => [actor.id,actor.pendingCount]))} stashBaseURL={config?.settings.stash.url ?? null} stashPerformerPage={subscription.stashPerformerPage} stashPerformers={subscription.stashPerformers} subscribedPerformers={subscription.subscribedPerformers}
     fetchingStashPerformers={subscription.fetchingStashPerformers} fetchingSubscription={subscription.fetchingSubscription} performerDetail={subscription.performerDetail} performerScenePage={subscription.performerScenePage} performerScenes={subscription.performerScenes}
     fetchingPerformerDetail={subscription.fetchingPerformerDetail} fetchingPerformerScenes={subscription.fetchingPerformerScenes} refreshingSubscriptionNow={subscription.refreshingSubscriptionNow} refreshingList={reloadingList || subscription.fetchingStashPerformers} performerBatchPending={subscription.subscribingPerformers || subscription.unsubscribingPerformers || subscription.refreshingSubscribedPerformers} queueingPerformerScenes={subscription.queueingPerformerScenes}
     subscriptionSearch={state.q} subscriptionPageSize={state.pageSize} selectedPerformerId={performerId ?? null} performerSceneSearch={state.sceneQ} performerSceneSourceFilter={source} performerSceneLibraryFilter={library} performerScenePageSize={state.scenePageSize}

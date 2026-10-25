@@ -55,6 +55,8 @@ func stashPerformerDetailToModel(detail performerdomain.Detail) *model.StashPerf
 		StashSceneCount:    detail.StashSceneCount,
 		StashBoxSceneCount: detail.StashBoxSceneCount,
 		DedupedSceneCount:  detail.DedupedSceneCount,
+		ActiveTaskCount:    detail.ActiveTaskCount,
+		SceneStatsComplete: detail.SceneStatsComplete,
 	}
 }
 

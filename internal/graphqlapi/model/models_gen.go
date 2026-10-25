@@ -285,6 +285,11 @@ type PerformerBatchSummary struct {
 	FailedCount    int `json:"failedCount"`
 }
 
+type PerformerListOptions struct {
+	Filter *PerformerListFilter `json:"filter,omitempty"`
+	Sort   *PerformerListSort   `json:"sort,omitempty"`
+}
+
 type PerformerScenePerson struct {
 	ID   string `json:"id"`
 	Name string `json:"name"`
@@ -651,6 +656,10 @@ type StashPerformerDetail struct {
 	StashSceneCount    int              `json:"stashSceneCount"`
 	StashBoxSceneCount int              `json:"stashBoxSceneCount"`
 	DedupedSceneCount  int              `json:"dedupedSceneCount"`
+	// Unfinished tasks associated with loaded performer scenes, counted once per task
+	ActiveTaskCount int `json:"activeTaskCount"`
+	// Whether the source catalog used for the task count is fully loaded
+	SceneStatsComplete bool `json:"sceneStatsComplete"`
 }
 
 type StashPerformerScene struct {
@@ -1359,6 +1368,126 @@ func (e *PerformerBatchStatus) UnmarshalJSON(b []byte) error {
 }
 
 func (e PerformerBatchStatus) MarshalJSON() ([]byte, error) {
+	var buf bytes.Buffer
+	e.MarshalGQL(&buf)
+	return buf.Bytes(), nil
+}
+
+type PerformerListFilter string
+
+const (
+	PerformerListFilterAll        PerformerListFilter = "ALL"
+	PerformerListFilterSubscribed PerformerListFilter = "SUBSCRIBED"
+	PerformerListFilterFavorite   PerformerListFilter = "FAVORITE"
+	PerformerListFilterReview     PerformerListFilter = "REVIEW"
+	PerformerListFilterError      PerformerListFilter = "ERROR"
+)
+
+var AllPerformerListFilter = []PerformerListFilter{
+	PerformerListFilterAll,
+	PerformerListFilterSubscribed,
+	PerformerListFilterFavorite,
+	PerformerListFilterReview,
+	PerformerListFilterError,
+}
+
+func (e PerformerListFilter) IsValid() bool {
+	switch e {
+	case PerformerListFilterAll, PerformerListFilterSubscribed, PerformerListFilterFavorite, PerformerListFilterReview, PerformerListFilterError:
+		return true
+	}
+	return false
+}
+
+func (e PerformerListFilter) String() string {
+	return string(e)
+}
+
+func (e *PerformerListFilter) UnmarshalGQL(v any) error {
+	str, ok := v.(string)
+	if !ok {
+		return fmt.Errorf("enums must be strings")
+	}
+
+	*e = PerformerListFilter(str)
+	if !e.IsValid() {
+		return fmt.Errorf("%s is not a valid PerformerListFilter", str)
+	}
+	return nil
+}
+
+func (e PerformerListFilter) MarshalGQL(w io.Writer) {
+	fmt.Fprint(w, strconv.Quote(e.String()))
+}
+
+func (e *PerformerListFilter) UnmarshalJSON(b []byte) error {
+	s, err := strconv.Unquote(string(b))
+	if err != nil {
+		return err
+	}
+	return e.UnmarshalGQL(s)
+}
+
+func (e PerformerListFilter) MarshalJSON() ([]byte, error) {
+	var buf bytes.Buffer
+	e.MarshalGQL(&buf)
+	return buf.Bytes(), nil
+}
+
+type PerformerListSort string
+
+const (
+	PerformerListSortDefault     PerformerListSort = "DEFAULT"
+	PerformerListSortName        PerformerListSort = "NAME"
+	PerformerListSortSceneCount  PerformerListSort = "SCENE_COUNT"
+	PerformerListSortLastChecked PerformerListSort = "LAST_CHECKED"
+)
+
+var AllPerformerListSort = []PerformerListSort{
+	PerformerListSortDefault,
+	PerformerListSortName,
+	PerformerListSortSceneCount,
+	PerformerListSortLastChecked,
+}
+
+func (e PerformerListSort) IsValid() bool {
+	switch e {
+	case PerformerListSortDefault, PerformerListSortName, PerformerListSortSceneCount, PerformerListSortLastChecked:
+		return true
+	}
+	return false
+}
+
+func (e PerformerListSort) String() string {
+	return string(e)
+}
+
+func (e *PerformerListSort) UnmarshalGQL(v any) error {
+	str, ok := v.(string)
+	if !ok {
+		return fmt.Errorf("enums must be strings")
+	}
+
+	*e = PerformerListSort(str)
+	if !e.IsValid() {
+		return fmt.Errorf("%s is not a valid PerformerListSort", str)
+	}
+	return nil
+}
+
+func (e PerformerListSort) MarshalGQL(w io.Writer) {
+	fmt.Fprint(w, strconv.Quote(e.String()))
+}
+
+func (e *PerformerListSort) UnmarshalJSON(b []byte) error {
+	s, err := strconv.Unquote(string(b))
+	if err != nil {
+		return err
+	}
+	return e.UnmarshalGQL(s)
+}
+
+func (e PerformerListSort) MarshalJSON() ([]byte, error) {
 	var buf bytes.Buffer
 	e.MarshalGQL(&buf)
 	return buf.Bytes(), nil

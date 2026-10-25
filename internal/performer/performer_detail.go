@@ -50,11 +50,32 @@ func (s *Service) GetPerformerDetail(ctx context.Context, performerID string) (D
 			PerformerName: target.Performer.Name,
 		}
 	}
-	detail.TotalSceneCount = performer.SceneCount
-	detail.StashSceneCount = performer.SceneCount
-	detail.StashBoxSceneCount = 0
-	detail.DedupedSceneCount = performer.SceneCount
+	// Summary counts use all sources and no scene filters. Keep the existing
+	// incremental cache policy rather than downloading the full source catalog.
+	scenes, stashCount, sourceCount, _, complete, _, _, err := s.loadPerformerScenes(ctx, performer, SceneQuery{Source: SceneSourceFilterAll, InLibrary: LibraryFilterAll, Page: 1, PageSize: 12}, false, metadata.CachePreferred)
+	if err != nil {
+		return Detail{}, err
+	}
+	if err := s.attachPerformerSceneTasks(ctx, scenes); err != nil {
+		return Detail{}, err
+	}
+	detail.TotalSceneCount = len(scenes)
+	detail.StashSceneCount = stashCount
+	detail.StashBoxSceneCount = sourceCount
+	detail.DedupedSceneCount = len(scenes)
+	detail.ActiveTaskCount = countActivePerformerSceneTasks(scenes)
+	detail.SceneStatsComplete = complete
 	return detail, nil
+}
+
+func countActivePerformerSceneTasks(scenes []Scene) int {
+	ids := make(map[string]struct{})
+	for _, scene := range scenes {
+		if task := scene.MojiTask; task != nil && task.ID != "" && task.Stage != taskruntime.TaskStageCompleted {
+			ids[task.ID] = struct{}{}
+		}
+	}
+	return len(ids)
 }
 
 func (s *Service) ListPerformerScenes(ctx context.Context, performerID string, query SceneQuery) (ScenePage, error) {

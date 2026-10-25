@@ -27,10 +27,12 @@ describe("performer search params", () => {
     expect(state.page).toBe(1);
     expect(state.pageSize).toBe(24);
     expect(state.source).toBe("all");
+    expect(state.filter).toBe("all");
+    expect(state.sort).toBe("default");
   });
 
   it("round trips shareable list and scene state", () => {
-    const state = parsePerformerSearchParams(new URLSearchParams("q=a&page=2&sceneQ=b&source=stashbox&library=not-in-library&scenePage=3"));
+    const state = parsePerformerSearchParams(new URLSearchParams("q=a&filter=review&sort=last_checked&page=2&sceneQ=b&source=stashbox&library=not-in-library&scenePage=3"));
     expect(parsePerformerSearchParams(serializePerformerSearchParams(state))).toEqual(state);
   });
 });

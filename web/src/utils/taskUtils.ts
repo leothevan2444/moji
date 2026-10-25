@@ -66,7 +66,7 @@ const TASK_STAGE_SEQUENCE = [
 
 type TaskStageKey = typeof TASK_STAGE_SEQUENCE[number];
 
-export function stashIngestLabel(task: DashboardTask) {
+export function stashIngestLabel(task: Pick<DashboardTask, "stashIngestPhase">) {
   const phase = task.stashIngestPhase;
   return tr(`taskModel.ingest.${phase === "GENERATE" ? "generate" : phase === "IDENTIFY" ? "identify" : phase === "VERIFY" ? "verify" : "scan"}`);
 }
@@ -77,11 +77,11 @@ export function normalizeStatus(value?: string | null) {
   return (value ?? "").trim().toLowerCase();
 }
 
-export function stageValue(task: DashboardTask) {
+export function stageValue(task: Pick<DashboardTask, "stage">) {
   return normalizeStatus(task.stage);
 }
 
-export function stageStatusValue(task: DashboardTask) {
+export function stageStatusValue(task: Pick<DashboardTask, "stageStatus">) {
   return normalizeStatus(task.stageStatus);
 }
 
@@ -90,7 +90,7 @@ export function isStatus(task: DashboardTask, ...values: string[]) {
   return values.some((value) => status === value || status.includes(value));
 }
 
-export function isTaskActive(task: DashboardTask) {
+export function isTaskActive(task: TaskPrimaryStateInput) {
   return stageStatusValue(task) !== "blocked" && stageValue(task) !== "completed" && !isWaitingForResource(task);
 }
 
@@ -158,7 +158,7 @@ export function needsTaskFileSelection(task: DashboardTask) {
       || (!task.stageErrorCode && Boolean(task.files?.some(file => file.kind === "UNKNOWN_VIDEO" && file.reason === "IDENTITY_UNCERTAIN"))));
 }
 
-export function isWaitingForResource(task: DashboardTask) {
+export function isWaitingForResource(task: TaskPrimaryStateInput) {
   return task.stage === "SOURCING" && task.stageStatus === "PENDING" && Boolean(task.sourcingNextCheckAt);
 }
 
@@ -390,7 +390,9 @@ export function taskProgressPercent(task: DashboardTask) {
   return Math.max(0, Math.min(100, Math.round(task.progress * 100)));
 }
 
-export function taskPrimaryState(task: DashboardTask): Pick<TaskPresentation, "phase" | "label" | "tone"> {
+type TaskPrimaryStateInput = Pick<DashboardTask, "stage" | "stageStatus"> & Partial<Pick<DashboardTask, "sourcingNextCheckAt" | "stashIngestPhase">>;
+
+export function taskPrimaryState(task: TaskPrimaryStateInput): Pick<TaskPresentation, "phase" | "label" | "tone"> {
   if (isWaitingForResource(task)) return { phase: "queued", label: tr("resourceTracking.waiting"), tone: "tone-neutral" };
   if (stageStatusValue(task) === "blocked") {
     return { phase: "failed", label: tr("taskModel.states.blocked"), tone: "tone-danger" as const };

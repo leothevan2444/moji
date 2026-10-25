@@ -51,6 +51,7 @@ describe("graphcache configuration", () => {
   it("updates performer scene task summaries and invalidates scene queries when membership can change", () => {
     const { cache } = fakeCache({ "Query.tasks": ["Task:task-1"] }, [
       { fieldName: "stashPerformerScenes", arguments: { id: "p1", input: { page: 1 } } },
+      { fieldName: "stashPerformerDetail", arguments: { id: "p1" } },
       { fieldName: "tasks" }
     ]);
     updates.Subscription.taskEvents({ taskEvents: { type: "UPDATED", taskId: "task-1", task: { id: "task-1", stage: "DOWNLOADING", stageStatus: "RUNNING", stageLabel: "Downloading", stageStatusLabel: "Running", progress: 0.5 } } }, {}, cache);
@@ -59,6 +60,10 @@ describe("graphcache configuration", () => {
 
     updates.Subscription.taskEvents({ taskEvents: { type: "CREATED", taskId: "task-2", task: { __typename: "Task", id: "task-2" } } }, {}, cache);
     expect(cache.invalidate).toHaveBeenCalledWith("Query", "stashPerformerScenes", { id: "p1", input: { page: 1 } });
+    expect(cache.invalidate).toHaveBeenCalledWith("Query", "stashPerformerDetail", { id: "p1" });
+    cache.invalidate.mockClear();
+    updates.Subscription.taskEvents({ taskEvents: { type: "UPDATED", taskId: "task-1", task: { id: "task-1", stage: "COMPLETED" } } }, {}, cache);
+    expect(cache.invalidate).toHaveBeenCalledWith("Query", "stashPerformerDetail", { id: "p1" });
   });
 
   it("updates subscribed performer membership without broad query refreshes", () => {
@@ -72,6 +77,20 @@ describe("graphcache configuration", () => {
     updates.Mutation.unsubscribePerformer({}, { stashPerformerID: "p1" }, cache);
     expect(fields.get("Query.subscribedPerformers")).toEqual([]);
     expect(cache.writeFragment).toHaveBeenCalledWith(expect.anything(), expect.objectContaining({ id: "p1", subscribed: false }));
+  });
+
+  it("refreshes filtered and sorted performer pages after subscription changes", () => {
+    const filtered = { options: { filter: "SUBSCRIBED", sort: "DEFAULT" } };
+    const sorted = { options: { filter: "ALL", sort: "LAST_CHECKED" } };
+    const { cache } = fakeCache({}, [
+      { fieldName: "performerWorkspace", arguments: filtered },
+      { fieldName: "performerWorkspace", arguments: sorted },
+      { fieldName: "performerWorkspace", arguments: { options: { filter: "ALL", sort: "DEFAULT" } } }
+    ]);
+    updates.Mutation.subscribePerformer({ subscribePerformer: { __typename: "SubscribedPerformer", performer: { id: "p1" } } }, {}, cache);
+    expect(cache.invalidate).toHaveBeenCalledTimes(2);
+    expect(cache.invalidate).toHaveBeenCalledWith("Query", "performerWorkspace", filtered);
+    expect(cache.invalidate).toHaveBeenCalledWith("Query", "performerWorkspace", sorted);
   });
 
   it("applies performer subscription events idempotently", () => {

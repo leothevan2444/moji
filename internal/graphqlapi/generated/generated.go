@@ -383,7 +383,7 @@ type ComplexityRoot struct {
 		JackettIndexers              func(childComplexity int) int
 		JackettSearch                func(childComplexity int, input model.JackettSearchInput) int
 		Logs                         func(childComplexity int, limit *int, minLevel *model.LogLevel) int
-		PerformerWorkspace           func(childComplexity int, search *string, page *int, pageSize *int) int
+		PerformerWorkspace           func(childComplexity int, search *string, page *int, pageSize *int, options *model.PerformerListOptions) int
 		PreviewJackettSelection      func(childComplexity int, input model.PreviewJackettSelectionInput) int
 		QbittorrentTorrents          func(childComplexity int, limit *int) int
 		ReleaseReviews               func(childComplexity int, input model.ReleaseReviewQueryInput) int
@@ -570,6 +570,7 @@ type ComplexityRoot struct {
 	}
 
 	StashPerformerDetail struct {
+		ActiveTaskCount    func(childComplexity int) int
 		Birthdate          func(childComplexity int) int
 		Country            func(childComplexity int) int
 		DedupedSceneCount  func(childComplexity int) int
@@ -580,6 +581,7 @@ type ComplexityRoot struct {
 		MatchedStashBox    func(childComplexity int) int
 		Performer          func(childComplexity int) int
 		Rating100          func(childComplexity int) int
+		SceneStatsComplete func(childComplexity int) int
 		StashBoxSceneCount func(childComplexity int) int
 		StashSceneCount    func(childComplexity int) int
 		TotalSceneCount    func(childComplexity int) int
@@ -885,7 +887,7 @@ type QueryResolver interface {
 	StashJob(ctx context.Context, id string) (*model.StashJob, error)
 	DashboardStats(ctx context.Context) (*model.DashboardStats, error)
 	StashPerformers(ctx context.Context, search *string, page *int, pageSize *int) (*model.StashPerformerConnection, error)
-	PerformerWorkspace(ctx context.Context, search *string, page *int, pageSize *int) (*model.PerformerWorkspaceSnapshot, error)
+	PerformerWorkspace(ctx context.Context, search *string, page *int, pageSize *int, options *model.PerformerListOptions) (*model.PerformerWorkspaceSnapshot, error)
 	StashPerformerDetail(ctx context.Context, id string) (*model.StashPerformerDetail, error)
 	StashPerformerScenes(ctx context.Context, id string, input model.StashPerformerScenesInput) (*model.StashPerformerSceneConnection, error)
 	SubscribedPerformers(ctx context.Context) ([]*model.SubscribedPerformer, error)
@@ -2635,7 +2637,7 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 			return 0, false
 		}
 
-		return e.complexity.Query.PerformerWorkspace(childComplexity, args["search"].(*string), args["page"].(*int), args["pageSize"].(*int)), true
+		return e.complexity.Query.PerformerWorkspace(childComplexity, args["search"].(*string), args["page"].(*int), args["pageSize"].(*int), args["options"].(*model.PerformerListOptions)), true
 
 	case "Query.previewJackettSelection":
 		if e.complexity.Query.PreviewJackettSelection == nil {
@@ -3543,6 +3545,13 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.StashPerformerConnection.TotalPages(childComplexity), true
 
+	case "StashPerformerDetail.activeTaskCount":
+		if e.complexity.StashPerformerDetail.ActiveTaskCount == nil {
+			break
+		}
+
+		return e.complexity.StashPerformerDetail.ActiveTaskCount(childComplexity), true
+
 	case "StashPerformerDetail.birthdate":
 		if e.complexity.StashPerformerDetail.Birthdate == nil {
 			break
@@ -3612,6 +3621,13 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.StashPerformerDetail.Rating100(childComplexity), true
+
+	case "StashPerformerDetail.sceneStatsComplete":
+		if e.complexity.StashPerformerDetail.SceneStatsComplete == nil {
+			break
+		}
+
+		return e.complexity.StashPerformerDetail.SceneStatsComplete(childComplexity), true
 
 	case "StashPerformerDetail.stashBoxSceneCount":
 		if e.complexity.StashPerformerDetail.StashBoxSceneCount == nil {
@@ -4861,6 +4877,7 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 		ec.unmarshalInputIndexerPreferenceRuleInput,
 		ec.unmarshalInputJackettSearchInput,
 		ec.unmarshalInputLibraryIngestSettingsInput,
+		ec.unmarshalInputPerformerListOptions,
 		ec.unmarshalInputPreviewJackettSelectionCandidateInput,
 		ec.unmarshalInputPreviewJackettSelectionInput,
 		ec.unmarshalInputProcessReleaseReviewsInput,
@@ -5871,7 +5888,7 @@ type DashboardStats {
   stashPerformers(search: String, page: Int = 1, pageSize: Int = 24): StashPerformerConnection!
 
   "Load the actor list and subscription state from one Stash snapshot"
-  performerWorkspace(search: String, page: Int = 1, pageSize: Int = 24): PerformerWorkspaceSnapshot!
+  performerWorkspace(search: String, page: Int = 1, pageSize: Int = 24, options: PerformerListOptions): PerformerWorkspaceSnapshot!
 
   "Fetch Stash performer detail with Moji / StashBox context"
   stashPerformerDetail(id: ID!): StashPerformerDetail!
@@ -5881,6 +5898,26 @@ type DashboardStats {
 
   "List performers currently subscribed by Moji"
   subscribedPerformers: [SubscribedPerformer!]!
+}
+
+enum PerformerListFilter {
+  ALL
+  SUBSCRIBED
+  FAVORITE
+  REVIEW
+  ERROR
+}
+
+enum PerformerListSort {
+  DEFAULT
+  NAME
+  SCENE_COUNT
+  LAST_CHECKED
+}
+
+input PerformerListOptions {
+  filter: PerformerListFilter = ALL
+  sort: PerformerListSort = DEFAULT
 }
 
 extend type Mutation {
@@ -5937,6 +5974,10 @@ type StashPerformerDetail {
   stashSceneCount: Int!
   stashBoxSceneCount: Int!
   dedupedSceneCount: Int!
+  "Unfinished tasks associated with loaded performer scenes, counted once per task"
+  activeTaskCount: Int!
+  "Whether the source catalog used for the task count is fully loaded"
+  sceneStatsComplete: Boolean!
 }
 
 type MatchedStashBox {
@@ -7485,6 +7526,11 @@ func (ec *executionContext) field_Query_performerWorkspace_args(ctx context.Cont
 		return nil, err
 	}
 	args["pageSize"] = arg2
+	arg3, err := ec.field_Query_performerWorkspace_argsOptions(ctx, rawArgs)
+	if err != nil {
+		return nil, err
+	}
+	args["options"] = arg3
 	return args, nil
 }
 func (ec *executionContext) field_Query_performerWorkspace_argsSearch(
@@ -7538,6 +7584,24 @@ func (ec *executionContext) field_Query_performerWorkspace_argsPageSize(
 	}
 
 	var zeroVal *int
+	return zeroVal, nil
+}
+
+func (ec *executionContext) field_Query_performerWorkspace_argsOptions(
+	ctx context.Context,
+	rawArgs map[string]any,
+) (*model.PerformerListOptions, error) {
+	if _, ok := rawArgs["options"]; !ok {
+		var zeroVal *model.PerformerListOptions
+		return zeroVal, nil
+	}
+
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("options"))
+	if tmp, ok := rawArgs["options"]; ok {
+		return ec.unmarshalOPerformerListOptions2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐPerformerListOptions(ctx, tmp)
+	}
+
+	var zeroVal *model.PerformerListOptions
 	return zeroVal, nil
 }
 
@@ -20239,7 +20303,7 @@ func (ec *executionContext) _Query_performerWorkspace(ctx context.Context, field
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Query().PerformerWorkspace(rctx, fc.Args["search"].(*string), fc.Args["page"].(*int), fc.Args["pageSize"].(*int))
+		return ec.resolvers.Query().PerformerWorkspace(rctx, fc.Args["search"].(*string), fc.Args["page"].(*int), fc.Args["pageSize"].(*int), fc.Args["options"].(*model.PerformerListOptions))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -20353,6 +20417,10 @@ func (ec *executionContext) fieldContext_Query_stashPerformerDetail(ctx context.
 				return ec.fieldContext_StashPerformerDetail_stashBoxSceneCount(ctx, field)
 			case "dedupedSceneCount":
 				return ec.fieldContext_StashPerformerDetail_dedupedSceneCount(ctx, field)
+			case "activeTaskCount":
+				return ec.fieldContext_StashPerformerDetail_activeTaskCount(ctx, field)
+			case "sceneStatsComplete":
+				return ec.fieldContext_StashPerformerDetail_sceneStatsComplete(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type StashPerformerDetail", field.Name)
 		},
@@ -26923,6 +26991,94 @@ func (ec *executionContext) fieldContext_StashPerformerDetail_dedupedSceneCount(
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _StashPerformerDetail_activeTaskCount(ctx context.Context, field graphql.CollectedField, obj *model.StashPerformerDetail) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_StashPerformerDetail_activeTaskCount(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.ActiveTaskCount, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int)
+	fc.Result = res
+	return ec.marshalNInt2int(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_StashPerformerDetail_activeTaskCount(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "StashPerformerDetail",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _StashPerformerDetail_sceneStatsComplete(ctx context.Context, field graphql.CollectedField, obj *model.StashPerformerDetail) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_StashPerformerDetail_sceneStatsComplete(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.SceneStatsComplete, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(bool)
+	fc.Result = res
+	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_StashPerformerDetail_sceneStatsComplete(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "StashPerformerDetail",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
 		},
 	}
 	return fc, nil
@@ -37166,6 +37322,47 @@ func (ec *executionContext) unmarshalInputLibraryIngestSettingsInput(ctx context
 	return it, nil
 }
 
+func (ec *executionContext) unmarshalInputPerformerListOptions(ctx context.Context, obj any) (model.PerformerListOptions, error) {
+	var it model.PerformerListOptions
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	if _, present := asMap["filter"]; !present {
+		asMap["filter"] = "ALL"
+	}
+	if _, present := asMap["sort"]; !present {
+		asMap["sort"] = "DEFAULT"
+	}
+
+	fieldsInOrder := [...]string{"filter", "sort"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "filter":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("filter"))
+			data, err := ec.unmarshalOPerformerListFilter2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐPerformerListFilter(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Filter = data
+		case "sort":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("sort"))
+			data, err := ec.unmarshalOPerformerListSort2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐPerformerListSort(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Sort = data
+		}
+	}
+
+	return it, nil
+}
+
 func (ec *executionContext) unmarshalInputPreviewJackettSelectionCandidateInput(ctx context.Context, obj any) (model.PreviewJackettSelectionCandidateInput, error) {
 	var it model.PreviewJackettSelectionCandidateInput
 	asMap := map[string]any{}
@@ -42650,6 +42847,16 @@ func (ec *executionContext) _StashPerformerDetail(ctx context.Context, sel ast.S
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
+		case "activeTaskCount":
+			out.Values[i] = ec._StashPerformerDetail_activeTaskCount(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "sceneStatsComplete":
+			out.Values[i] = ec._StashPerformerDetail_sceneStatsComplete(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -47639,6 +47846,46 @@ func (ec *executionContext) marshalOMatchedStashBox2ᚖgithubᚗcomᚋleothevan2
 		return graphql.Null
 	}
 	return ec._MatchedStashBox(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalOPerformerListFilter2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐPerformerListFilter(ctx context.Context, v any) (*model.PerformerListFilter, error) {
+	if v == nil {
+		return nil, nil
+	}
+	var res = new(model.PerformerListFilter)
+	err := res.UnmarshalGQL(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalOPerformerListFilter2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐPerformerListFilter(ctx context.Context, sel ast.SelectionSet, v *model.PerformerListFilter) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return v
+}
+
+func (ec *executionContext) unmarshalOPerformerListOptions2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐPerformerListOptions(ctx context.Context, v any) (*model.PerformerListOptions, error) {
+	if v == nil {
+		return nil, nil
+	}
+	res, err := ec.unmarshalInputPerformerListOptions(ctx, v)
+	return &res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) unmarshalOPerformerListSort2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐPerformerListSort(ctx context.Context, v any) (*model.PerformerListSort, error) {
+	if v == nil {
+		return nil, nil
+	}
+	var res = new(model.PerformerListSort)
+	err := res.UnmarshalGQL(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalOPerformerListSort2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐPerformerListSort(ctx context.Context, sel ast.SelectionSet, v *model.PerformerListSort) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return v
 }
 
 func (ec *executionContext) marshalOPerformerSceneTask2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐPerformerSceneTask(ctx context.Context, sel ast.SelectionSet, v *model.PerformerSceneTask) graphql.Marshaler {

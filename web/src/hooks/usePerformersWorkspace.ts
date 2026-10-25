@@ -6,6 +6,7 @@ import { useQueuePerformerScenes } from "./useQueuePerformerScenes";
 import { useSubscriptions } from "./useSubscriptions";
 
 interface Options {
+  options?: import("../graphql/generated/graphql").PerformerListOptions;
   enabled: boolean;
   search: string | null;
   page: number;

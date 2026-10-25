@@ -1,220 +1,76 @@
-import { Link } from "react-router";
-import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faAnglesLeft } from "@fortawesome/free-solid-svg-icons/faAnglesLeft";
-import { faAngleLeft } from "@fortawesome/free-solid-svg-icons/faAngleLeft";
-import { faAngleRight } from "@fortawesome/free-solid-svg-icons/faAngleRight";
-import { faAnglesRight } from "@fortawesome/free-solid-svg-icons/faAnglesRight";
 import { faArrowLeft } from "@fortawesome/free-solid-svg-icons/faArrowLeft";
-import { faArrowUpRightFromSquare } from "@fortawesome/free-solid-svg-icons/faArrowUpRightFromSquare";
-import { faBookmark } from "@fortawesome/free-solid-svg-icons/faBookmark";
-import { faCheck } from "@fortawesome/free-solid-svg-icons/faCheck";
-import { faClipboardCheck } from "@fortawesome/free-solid-svg-icons/faClipboardCheck";
-import { faFilm } from "@fortawesome/free-solid-svg-icons/faFilm";
-import { faHeart } from "@fortawesome/free-solid-svg-icons/faHeart";
-import { faListCheck } from "@fortawesome/free-solid-svg-icons/faListCheck";
-import { faPlus } from "@fortawesome/free-solid-svg-icons/faPlus";
-import { faPlayCircle } from "@fortawesome/free-solid-svg-icons/faPlayCircle";
-import { faRotate } from "@fortawesome/free-solid-svg-icons/faRotate";
-import { faTags } from "@fortawesome/free-solid-svg-icons/faTags";
-import { faUsers } from "@fortawesome/free-solid-svg-icons/faUsers";
 import { faArrowsRotate } from "@fortawesome/free-solid-svg-icons/faArrowsRotate";
+import { faBookmark } from "@fortawesome/free-solid-svg-icons/faBookmark";
 import { faXmark } from "@fortawesome/free-solid-svg-icons/faXmark";
-import { useEffect, useMemo, useState } from "react";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
-import { PerformerDetailView, PerformerListView } from "../components/performers/PerformerViews";
-import i18n from "../i18n/i18n";
+import { PerformerCard } from "../components/performers/PerformerCard";
+import { PerformerError, PerformerLoading } from "../components/performers/PerformerFeedback";
+import { PerformerListFilters } from "../components/performers/PerformerListFilters";
+import { PerformerOverview } from "../components/performers/PerformerOverview";
+import { PerformerPagination } from "../components/performers/PerformerPagination";
+import { PerformerSceneCard } from "../components/performers/PerformerSceneCard";
+import type { PerformersPageProps } from "../components/performers/types";
 import { SUBSCRIPTION_PAGE_SIZE_OPTIONS } from "../constants";
-import { describeQueryError } from "../services/queryError";
-import {
-  formatDateTime,
-  formatRelative,
-  formatRelativeDate,
-  performerBatchEligibility,
-  performerImageURL,
-  performerInitials,
-  stashPerformerURL
-} from "../utils";
 import {
   LibraryFilter,
-  type PerformerWorkspaceQuery,
-  SceneSourceFilter,
-  TaskStage,
-  TaskStageStatus,
-  type StashPerformerDetailQuery,
-  type StashPerformerScenesQuery,
+  SceneSourceFilter
 } from "../graphql/generated/graphql";
+import {
+  formatDateTime,
+  performerBatchEligibility
+} from "../utils";
 
-type StashPerformerEntry = PerformerWorkspaceQuery["performerWorkspace"]["performers"]["items"][number];
-type StashPerformerPage = PerformerWorkspaceQuery["performerWorkspace"]["performers"];
-type StashPerformerDetail = StashPerformerDetailQuery["stashPerformerDetail"];
-type StashPerformerScenePage = StashPerformerScenesQuery["stashPerformerScenes"];
-type StashPerformerSceneEntry = StashPerformerScenePage["items"][number];
-type SubscribedPerformerEntry = PerformerWorkspaceQuery["performerWorkspace"]["subscribedPerformers"][number];
-function performerSceneTaskLabel(task: NonNullable<StashPerformerSceneEntry["mojiTask"]>) {
-  if (task.stage === TaskStage.Downloading && task.progress > 0) {
-    return i18n.t("performerUi.downloadProgress", { progress: Math.round(task.progress * 100) });
-  }
-  if (task.stageStatus === TaskStageStatus.Blocked) {
-    return i18n.t("taskModel.states.blocked");
-  }
-  if (task.stage === TaskStage.Completed) return i18n.t("taskModel.states.completed");
-  return i18n.t("taskModel.states.queued");
-}
-
-function performerSceneTaskTone(task: NonNullable<StashPerformerSceneEntry["mojiTask"]>) {
-  if (task.stageStatus === TaskStageStatus.Blocked) return "tone-danger";
-  if (task.stage === TaskStage.Completed) return "tone-success";
-  return "tone-info";
-}
-
-function performerSceneSourceLabel(scene: StashPerformerSceneEntry) {
-  if (scene.hasStashSource && scene.hasStashBoxSource) return i18n.t("performerUi.dualSource");
-  if (scene.hasStashBoxSource) return "StashBox";
-  return "Stash";
-}
-
-interface PerformersPageProps {
-  reviewPendingCount?: number;
-  reviewCounts?: Record<string,number>;
-  stashBaseURL: string | null;
-  stashPerformerPage: StashPerformerPage | null;
-  stashPerformers: StashPerformerEntry[];
-  performerDetail: StashPerformerDetail | null;
-  performerScenePage: StashPerformerScenePage | null;
-  performerScenes: StashPerformerSceneEntry[];
-  subscribedPerformers: SubscribedPerformerEntry[];
-  fetchingStashPerformers: boolean;
-  fetchingPerformerDetail: boolean;
-  fetchingPerformerScenes: boolean;
-  fetchingSubscription: boolean;
-  refreshingSubscriptionNow: boolean;
-  refreshingList: boolean;
-  performerBatchPending: boolean;
-  queueingPerformerScenes: boolean;
-  subscriptionSearch: string;
-  subscriptionPageSize: number;
-  selectedPerformerId: string | null;
-  performerSceneSearch: string;
-  performerSceneSourceFilter: SceneSourceFilter;
-  performerSceneLibraryFilter: LibraryFilter;
-  performerScenePageSize: number;
-  selectedSceneKeys: string[];
-  selectedPerformerIds: string[];
-  performerSelectionMode: boolean;
-  lastRefreshedAt: string | null;
-  pendingSceneKeys: string[];
-  pendingSubscriptionID: string | null;
-  subscriptionError: Error | null;
-  stashPerformersError: Error | null;
-  performerDetailError: Error | null;
-  performerScenesError: Error | null;
-  onSearchChange: (value: string) => void;
-  onPageSizeChange: (size: number) => void;
-  onReload: () => void;
-  onRefreshAll: () => void;
-  onTogglePerformerSelectionMode: () => void;
-  onTogglePerformerSelection: (performerId: string) => void;
-  onSelectVisiblePerformers: (performerIds: string[]) => void;
-  onClearPerformerSelection: () => void;
-  onBatchSubscribePerformers: (performerIds: string[]) => void;
-  onBatchUnsubscribePerformers: (performerIds: string[]) => void;
-  onBatchRefreshPerformers: (performerIds: string[]) => void;
-  onToggle: (performer: StashPerformerEntry) => void;
-  onRefreshOne: (performer: StashPerformerEntry) => void;
-  onPrevPage: () => void;
-  onNextPage: () => void;
-  onPageChange: (page: number) => void;
-  onOpenPerformer: (performerId: string) => void;
-  onOpenTask: (taskId: string) => void;
-  onBackToList: () => void;
-  onPerformerSceneSearchChange: (value: string) => void;
-  onPerformerSceneSourceChange: (value: SceneSourceFilter) => void;
-  onPerformerSceneLibraryChange: (value: LibraryFilter) => void;
-  onPerformerScenePageSizeChange: (value: number) => void;
-  onPrevPerformerScenePage: () => void;
-  onNextPerformerScenePage: () => void;
-  onToggleSceneSelection: (key: string) => void;
-  onSelectCurrentScenePage: (keys: string[]) => void;
-  onClearSceneSelection: () => void;
-  onQueueSelectedScenes: () => void;
-  onQueueScene: (scene: StashPerformerSceneEntry) => void;
-}
-
-export function PerformersPage({
-  stashBaseURL,
-  stashPerformerPage,
-  stashPerformers,
-  performerDetail,
-  performerScenePage,
-  performerScenes,
-  subscribedPerformers,
-  fetchingStashPerformers,
-  fetchingPerformerDetail,
-  fetchingPerformerScenes,
-  fetchingSubscription,
-  refreshingSubscriptionNow,
-  refreshingList,
-  performerBatchPending,
-  queueingPerformerScenes,
-  subscriptionSearch,
-  subscriptionPageSize,
-  selectedPerformerId,
-  performerSceneSearch,
-  performerSceneSourceFilter,
-  performerSceneLibraryFilter,
-  performerScenePageSize,
-  selectedSceneKeys,
-  selectedPerformerIds,
-  performerSelectionMode,
-  lastRefreshedAt,
-  pendingSceneKeys,
-  pendingSubscriptionID,
-  subscriptionError,
-  stashPerformersError,
-  performerDetailError,
-  performerScenesError,
-  onSearchChange,
-  onPageSizeChange,
-  onReload,
-  onRefreshAll,
-  onTogglePerformerSelectionMode,
-  onTogglePerformerSelection,
-  onSelectVisiblePerformers,
-  onClearPerformerSelection,
-  onBatchSubscribePerformers,
-  onBatchUnsubscribePerformers,
-  onBatchRefreshPerformers,
-  onToggle,
-  onRefreshOne,
-  onPrevPage,
-  onNextPage,
-  onPageChange,
-  onOpenPerformer,
-  onOpenTask,
-  onBackToList,
-  onPerformerSceneSearchChange,
-  onPerformerSceneSourceChange,
-  onPerformerSceneLibraryChange,
-  onPerformerScenePageSizeChange,
-  onPrevPerformerScenePage,
-  onNextPerformerScenePage,
-  onToggleSceneSelection,
-  onSelectCurrentScenePage,
-  onClearSceneSelection,
-  onQueueSelectedScenes,
-  onQueueScene,
-  reviewPendingCount = 0,
-  reviewCounts = {}
-}: PerformersPageProps) {
+export function PerformersPage(props: PerformersPageProps) {
+  const {
+    stashPerformerPage,
+    stashPerformers,
+    performerDetail,
+    performerScenePage,
+    performerScenes,
+    subscribedPerformers,
+    fetchingStashPerformers,
+    fetchingPerformerDetail,
+    fetchingPerformerScenes,
+    fetchingSubscription,
+    performerBatchPending,
+    queueingPerformerScenes,
+    subscriptionSearch,
+    selectedPerformerId,
+    performerSceneSearch,
+    performerSceneSourceFilter,
+    performerSceneLibraryFilter,
+    performerScenePageSize,
+    selectedSceneKeys,
+    selectedPerformerIds,
+    performerSelectionMode,
+    lastRefreshedAt,
+    pendingSceneKeys,
+    subscriptionError,
+    stashPerformersError,
+    performerDetailError,
+    performerScenesError,
+    onReload,
+    onSelectVisiblePerformers,
+    onClearPerformerSelection,
+    onBatchSubscribePerformers,
+    onBatchUnsubscribePerformers,
+    onBatchRefreshPerformers,
+    onBackToList,
+    onPerformerSceneSearchChange,
+    onPerformerSceneSourceChange,
+    onPerformerSceneLibraryChange,
+    onPerformerScenePageSizeChange,
+    onPrevPerformerScenePage,
+    onNextPerformerScenePage,
+    onSelectCurrentScenePage,
+    onClearSceneSelection,
+    onQueueSelectedScenes,
+    reviewPendingCount = 0,
+    reviewCounts = {}
+  } = props;
   const { t } = useTranslation();
-  const [pageInput, setPageInput] = useState("");
-  const targetPage = Number(pageInput);
-  const canJump = Number.isInteger(targetPage) && targetPage >= 1
-    && targetPage <= (stashPerformerPage?.totalPages ?? 1)
-    && targetPage !== stashPerformerPage?.page;
-
-  useEffect(() => setPageInput(""), [stashPerformerPage?.page]);
-
   const subscribedByID = useMemo(() => {
     return new Map(subscribedPerformers.map((item) => [item.performer.id, item]));
   }, [subscribedPerformers]);
@@ -225,14 +81,10 @@ export function PerformersPage({
   const currentPageKeys = performerScenes
     .filter((scene) => !scene.inLibrary && !scene.mojiTask && !pendingSceneKeys.includes(scene.key))
     .map((scene) => scene.key);
-  const detailStashURL = performerDetail
-    ? stashPerformerURL(performerDetail.performer.id, stashBaseURL)
-    : null;
-  const latestRelease = performerSubscription?.recentReleases[0] ?? null;
 
   if (selectedPerformerId) {
-    return <PerformerDetailView>{(
-      <section className="section-band">
+    return (
+      <section className={`section-band performer-workspace${performerSelectionMode ? " performer-workspace--selecting" : ""}`}>
         <div className="band-head">
           <div>
             <h2>{t("performerUi.detail")}</h2>
@@ -242,177 +94,39 @@ export function PerformersPage({
           </button>
         </div>
 
-        {performerDetailError || performerScenesError ? (
-          <p className="settings-feedback tone-danger">
-            {describeQueryError(performerDetailError || performerScenesError)}
-          </p>
-        ) : null}
+        {performerDetailError ? <PerformerError error={performerDetailError} onRetry={props.onRetryDetail} /> : null}
+        {performerScenesError ? <PerformerError error={performerScenesError} onRetry={props.onRetryScenes} /> : null}
 
         {performerDetail ? (
           <>
-            <article className="performer-detail-card">
-              <div className="performer-detail-hero">
-                {performerImageURL(performerDetail.performer.imagePath, stashBaseURL) ? (
-                  <img
-                    className="avatar avatar--image performer-detail-hero__avatar"
-                    src={performerImageURL(performerDetail.performer.imagePath, stashBaseURL) ?? ""}
-                    alt={performerDetail.performer.name}
-                    loading="lazy"
-                    onError={(event) => { event.currentTarget.style.display = "none"; }}
-                  />
-                ) : (
-                  <div className="avatar avatar--placeholder performer-detail-hero__avatar">
-                    {performerInitials(performerDetail.performer.name)}
-                  </div>
-                )}
+            <PerformerOverview performerDetail={performerDetail} performerSubscription={performerSubscription} page={props} />
 
-                <div className="performer-detail-hero__copy">
-                  <div className="performer-detail-hero__topline">
-                    <div className="performer-detail-hero__identity">
-                      <strong className="performer-detail-hero__name">{performerDetail.performer.name}</strong>
-                      <span
-                        className={`performer-detail-hero__state ${performerDetail.performer.favorite ? "is-favorite" : ""}`}
-                        title={t(performerDetail.performer.favorite ? "performerUi.favorite" : "performerUi.notFavorite")}
-                      >
-                        <FontAwesomeIcon icon={faHeart} />
-                        {t(performerDetail.performer.favorite ? "performerUi.favorite" : "performerUi.notFavorite")}
-                      </span>
-                      <button
-                        type="button"
-                        className={`performer-detail-hero__state performer-detail-hero__subscription ${performerDetail.performer.subscribed ? "is-subscribed" : ""}`}
-                        title={t(performerDetail.performer.subscribed ? "performerUi.removeSubscription" : "performerUi.addSubscription")}
-                        aria-label={t(performerDetail.performer.subscribed ? "performerUi.unsubscribeName" : "performerUi.subscribeName", { name: performerDetail.performer.name })}
-                        disabled={pendingSubscriptionID === performerDetail.performer.id}
-                        onClick={() => onToggle(performerDetail.performer)}
-                      >
-                        <FontAwesomeIcon icon={faBookmark} />
-                        Moji {t(performerDetail.performer.subscribed ? "performerUi.subscribed" : "performerUi.unsubscribed")}
-                      </button>
-                      <span className="performer-detail-hero__stashbox" title={performerDetail.matchedStashBox?.name ?? t("performerUi.noPreferredBox")}>
-                        <span>{t("performerUi.preferredBox")}</span>
-                        <strong>{performerDetail.matchedStashBox?.name ?? t("performerUi.unmatched")}</strong>
-                      </span>
-                    </div>
-
-                    <div className="performer-detail-card__icons">
-                      <Link
-                        className="profile-action-icon profile-action-icon--count"
-                        title={t("releaseReview.actorEntry", { count: reviewCounts[performerDetail.performer.id] ?? performerSubscription?.reviewReleaseCount ?? 0 })}
-                        aria-label={t("releaseReview.actorEntry", { count: reviewCounts[performerDetail.performer.id] ?? performerSubscription?.reviewReleaseCount ?? 0 })}
-                        to={`/performers/review?performer=${encodeURIComponent(performerDetail.performer.id)}`}
-                      >
-                        <FontAwesomeIcon icon={faClipboardCheck} />
-                        <span aria-hidden="true">{reviewCounts[performerDetail.performer.id] ?? performerSubscription?.reviewReleaseCount ?? 0}</span>
-                      </Link>
-                      <button
-                        type="button"
-                        className="profile-action-icon"
-                        title={t(performerDetail.performer.subscribed ? "performerUi.checkNow" : "performerUi.checkRequiresSubscription")}
-                        aria-label={t("performerUi.checkName", { name: performerDetail.performer.name })}
-                        disabled={!performerDetail.performer.subscribed || pendingSubscriptionID === performerDetail.performer.id}
-                        onClick={() => onRefreshOne(performerDetail.performer)}
-                      >
-                        <FontAwesomeIcon icon={faRotate} className={pendingSubscriptionID === performerDetail.performer.id ? "is-spinning" : undefined} />
-                      </button>
-                      {detailStashURL ? (
-                        <a
-                          className="profile-action-icon"
-                          href={detailStashURL}
-                          target="_blank"
-                          rel="noreferrer"
-                          title={t("performerUi.stashHome")}
-                          aria-label={t("performerUi.stashHomeName", { name: performerDetail.performer.name })}
-                        >
-                          <FontAwesomeIcon icon={faPlayCircle} />
-                        </a>
-                      ) : null}
-                    </div>
-                  </div>
-
-                  <div className="performer-detail-hero__description">
-                    <p title={performerDetail.performer.aliasList.join(" / ")}>
-                      <span>{t("performerUi.aliases")}</span>
-                      {performerDetail.performer.aliasList.length > 0 ? performerDetail.performer.aliasList.join(" / ") : t("performerUi.none")}
-                    </p>
-                    <p title={performerDetail.disambiguation ?? ""}>
-                      <span>{t("performerUi.description")}</span>
-                      {performerDetail.disambiguation || t("performerUi.noDescription")}
-                    </p>
-                    <p>
-                      <span>{t("performerUi.profile")}</span>
-                      {[performerDetail.birthdate, performerDetail.country, performerDetail.heightCm ? `${performerDetail.heightCm} cm` : null]
-                        .filter(Boolean)
-                        .join(" · ") || t("performerUi.none")}
-                    </p>
-                    {latestRelease ? (
-                      <p title={latestRelease.title}>
-                        <span>{t("performerUi.latest")}</span>
-                        {latestRelease.code || latestRelease.title} · {formatRelativeDate(latestRelease.date || latestRelease.seenAt)}
-                      </p>
-                    ) : null}
-                  </div>
-
-                  <dl className="performer-detail-metrics">
-                    <div>
-                      <dt>{t("performerUi.lastCheck")}</dt>
-                      <dd title={formatDateTime(performerSubscription?.lastCheckedAt)}>
-                        {formatRelative(performerSubscription?.lastCheckedAt) ?? t("performerUi.neverChecked")}
-                      </dd>
-                    </div>
-                    <div className={performerSubscription?.lastError ? "tone-danger" : undefined}>
-                      <dt>{t("performerUi.checkStatus")}</dt>
-                      <dd title={performerSubscription?.lastError ?? ""}>
-                        {t(performerSubscription?.lastError ? "performerUi.failed" : performerDetail.performer.subscribed ? "performerUi.normal" : "performerUi.unsubscribed")}
-                      </dd>
-                    </div>
-                    <div>
-                      <dt>{t("performerUi.pendingReleases")}</dt>
-                      <dd>{performerSubscription?.pendingReleaseCount ?? 0}</dd>
-                    </div>
-                    <div>
-                      <dt>{t("performerUi.processedReleases")}</dt>
-                      <dd>{performerSubscription?.processedReleaseCount ?? 0}</dd>
-                    </div>
-                    <div>
-                      <dt>Stash</dt>
-                      <dd>{performerScenePage?.stashSceneCount ?? performerDetail.stashSceneCount}</dd>
-                    </div>
-                    <div>
-                      <dt>StashBox</dt>
-                      <dd>{performerScenePage?.stashBoxCount ?? performerDetail.stashBoxSceneCount}</dd>
-                    </div>
-                    <div>
-                      <dt>{t("performerUi.deduped")}</dt>
-                      <dd>{performerScenePage?.dedupedCount ?? performerDetail.dedupedSceneCount}</dd>
-                    </div>
-                  </dl>
-                </div>
-              </div>
-            </article>
-
-            <div className="toolbar-inline toolbar-inline--subscription">
+            <div className="toolbar-inline toolbar-inline--subscription performer-scene-filters">
               <input
+                aria-label={t("performerUi.sceneSearch")}
                 placeholder={t("performerUi.sceneSearch")}
                 value={performerSceneSearch}
                 onChange={(event) => onPerformerSceneSearchChange(event.target.value)}
               />
-              <select value={performerSceneSourceFilter} onChange={(event) => onPerformerSceneSourceChange(event.target.value as SceneSourceFilter)}>
+              <select aria-label={t("performerWorkspace.sourceFilter")} value={performerSceneSourceFilter} onChange={(event) => onPerformerSceneSourceChange(event.target.value as SceneSourceFilter)}>
                 <option value={SceneSourceFilter.All}>{t("performerUi.allSources")}</option>
                 <option value={SceneSourceFilter.Stash}>Stash</option>
                 <option value={SceneSourceFilter.Stashbox}>StashBox</option>
               </select>
-              <select value={performerSceneLibraryFilter} onChange={(event) => onPerformerSceneLibraryChange(event.target.value as LibraryFilter)}>
+              <select aria-label={t("performerWorkspace.libraryFilter")} value={performerSceneLibraryFilter} onChange={(event) => onPerformerSceneLibraryChange(event.target.value as LibraryFilter)}>
                 <option value={LibraryFilter.All}>{t("performerUi.allStates")}</option>
                 <option value={LibraryFilter.InLibrary}>{t("performerUi.inLibrary")}</option>
                 <option value={LibraryFilter.NotInLibrary}>{t("performerUi.notInLibrary")}</option>
               </select>
-              <select value={performerScenePageSize} onChange={(event) => onPerformerScenePageSizeChange(Number(event.target.value))}>
+              <select aria-label={t("performerWorkspace.pageSize")} value={performerScenePageSize} onChange={(event) => onPerformerScenePageSizeChange(Number(event.target.value))}>
                 {SUBSCRIPTION_PAGE_SIZE_OPTIONS.map((size) => (
                   <option key={size} value={size}>
                     {t("performerUi.pageSize", { size })}
                   </option>
                 ))}
               </select>
+            </div>
+            <div className="performer-scene-selection">
               <button
                 type="button"
                 className="ghost-button"
@@ -443,150 +157,23 @@ export function PerformersPage({
               </button>
             </div>
 
-            <div className="settings-meta">
-              <span>{t(performerScenePage?.totalCountExact ? "performerUi.pageItems" : "performerCacheUi.loadedItems", { count: performerScenePage?.totalCount ?? 0 })}</span>
+            {selectedSceneKeys.length ? <p className="performer-selection-summary" role="status">{t("performerWorkspace.selectedScenes", { count: selectedSceneKeys.length })}{selectedSceneKeys.some(key => !performerScenes.some(scene => scene.key === key)) ? ` · ${t("performerWorkspace.hiddenScenes", { count: selectedSceneKeys.filter(key => !performerScenes.some(scene => scene.key === key)).length })}` : ""}</p> : null}
+            <div className="settings-meta performer-results-meta" aria-live="polite">
+              <span>{t(performerScenePage?.totalCountExact ? "performerWorkspace.total" : "performerCacheUi.loadedItems", { count: performerScenePage?.totalCount ?? 0 })}</span>
+              <span>{t("performerWorkspace.visible", { count: performerScenes.length })}</span>
               <span>{performerScenePage?.totalPages != null ? t("performerUi.pagination", { page: performerScenePage.page, pages: performerScenePage.totalPages }) : t("performerCacheUi.loadingMorePages", { page: performerScenePage?.page ?? 1 })}</span>
               <span>{t("performerUi.state", { state: t(fetchingPerformerDetail || fetchingPerformerScenes ? "performerUi.loading" : "performerUi.ready") })}</span>
             </div>
             {performerScenePage?.cacheStale ? <p className="settings-feedback tone-warn">{t("performerCacheUi.stale")}</p> : null}
 
+            {fetchingPerformerScenes && performerScenes.length === 0 ? <PerformerLoading /> : null}
             <div
               className="card-grid"
               style={{ marginTop: 16 }}
             >
-              {performerScenes.map((scene) => {
-                const selected = selectedSceneKeys.includes(scene.key);
-                const pendingSingleQueue = pendingSceneKeys.includes(scene.key);
-                const selectable = !scene.inLibrary && !scene.mojiTask && !pendingSingleQueue;
-                return (
-                  <article
-                    key={scene.key}
-                    className={`candidate-card performer-scene-card has-media ${selected ? "is-selected" : ""} ${selectable ? "" : "is-unselectable"}`}
-                    onClick={() => {
-                      if (selectable) onToggleSceneSelection(scene.key);
-                    }}
-                  >
-                    <div className="performer-scene-card__media">
-                      {scene.imageUrl ? (
-                        <img
-                          src={scene.imageUrl}
-                          alt={scene.title || scene.code || "scene"}
-                          loading="lazy"
-                          onError={(event) => { event.currentTarget.style.display = "none"; }}
-                          className="performer-scene-card__image"
-                        />
-                      ) : (
-                        <div className="performer-scene-card__image-placeholder" aria-hidden="true">
-                          <FontAwesomeIcon icon={faFilm} />
-                        </div>
-                      )}
-                      <span
-                        className="performer-scene-card__source-badge"
-                        title={t("performerUi.source", { sources: scene.sourceLabels.join(" + ") })}
-                      >
-                        {performerSceneSourceLabel(scene)}
-                      </span>
-                    </div>
-                    {selectable ? (
-                      <button
-                        type="button"
-                        className="performer-scene-card__selector"
-                        aria-pressed={selected}
-                        aria-label={t(selected ? "performerUi.deselectName" : "performerUi.selectName", { name: scene.code || scene.title || scene.sourceSceneId })}
-                        title={t(selected ? "performerUi.deselect" : "performerUi.selectScene")}
-                        onClick={(event) => {
-                          event.stopPropagation();
-                          onToggleSceneSelection(scene.key);
-                        }}
-                      >
-                        {selected ? <FontAwesomeIcon icon={faCheck} /> : null}
-                      </button>
-                    ) : null}
-                    <div className="performer-scene-card__content">
-                      <div className="performer-scene-card__status-row">
-                        <h3 title={scene.code || scene.title || scene.sourceSceneId}>{scene.code || scene.title || scene.sourceSceneId}</h3>
-                        <time className="performer-scene-card__date" dateTime={scene.date ?? undefined}>
-                          {scene.date || t("performerUi.noDate")}
-                        </time>
-                      </div>
-                      <p className="performer-scene-card__meta" title={scene.studioName || t("performerUi.unknownStudio")}>
-                        {scene.studioName || t("performerUi.unknownStudio")}
-                      </p>
-                      <p className="performer-scene-card__title" title={scene.title || t("performerUi.noTitle")}>{scene.title || t("performerUi.noTitle")}</p>
-                      <div className="performer-scene-card__counts">
-                        <span
-                          title={scene.performers.length > 0 ? t("performerUi.cast", { names: scene.performers.map((item) => item.name).join(" / ") }) : t("performerUi.castCount", { count: scene.performerCount })}
-                          aria-label={t("performerUi.castCount", { count: scene.performerCount })}
-                        >
-                          <FontAwesomeIcon icon={faUsers} />
-                          {scene.performerCount}
-                        </span>
-                        <span
-                          title={scene.tags.length > 0 ? t("performerUi.tags", { names: scene.tags.map((item) => item.name).join(" / ") }) : t("performerUi.tagCount", { count: scene.tagCount })}
-                          aria-label={t("performerUi.tagCount", { count: scene.tagCount })}
-                        >
-                          <FontAwesomeIcon icon={faTags} />
-                          {scene.tagCount}
-                        </span>
-                      </div>
-                      <div className="performer-scene-card__bottom-actions">
-                        {scene.inLibrary ? (
-                          <span className="status-chip performer-scene-card__business-state tone-success" title={t("performerUi.sceneInLibrary")}>
-                            {t("performerUi.inLibrary")}
-                          </span>
-                        ) : scene.mojiTask ? (
-                          <button
-                            type="button"
-                            className={`status-chip performer-scene-card__business-state performer-scene-card__task ${performerSceneTaskTone(scene.mojiTask)}`}
-                            title={t("performerUi.taskTitle", { stage: performerSceneTaskLabel(scene.mojiTask), status: scene.mojiTask.stageStatus === TaskStageStatus.Blocked ? t("taskModel.states.blocked") : t("performerUi.normal") })}
-                            onClick={(event) => {
-                              event.stopPropagation();
-                              onOpenTask(scene.mojiTask!.id);
-                            }}
-                          >
-                            {performerSceneTaskLabel(scene.mojiTask)}
-                          </button>
-                        ) : (
-                          <button
-                            type="button"
-                            className="status-chip performer-scene-card__business-state performer-scene-card__create-task tone-warn"
-                            title={t("performerUi.createScene")}
-                            disabled={pendingSingleQueue}
-                            onClick={(event) => {
-                              event.stopPropagation();
-                              onQueueScene(scene);
-                            }}
-                          >
-                            {pendingSingleQueue ? (
-                              t("performerUi.creating")
-                            ) : (
-                              <>
-                                <FontAwesomeIcon icon={faPlus} />
-                                {t("performerUi.createTask")}
-                              </>
-                            )}
-                          </button>
-                        )}
-                        {scene.url ? (
-                          <a
-                            className="profile-action-icon performer-scene-card__source-link"
-                            href={scene.url}
-                            target="_blank"
-                            rel="noreferrer"
-                            title={t("performerUi.original")}
-                            aria-label={t("performerUi.originalName", { name: scene.code || scene.title || scene.sourceSceneId })}
-                            onClick={(event) => event.stopPropagation()}
-                          >
-                            <FontAwesomeIcon icon={faArrowUpRightFromSquare} />
-                          </a>
-                        ) : null}
-                      </div>
-                    </div>
-                  </article>
-                );
-              })}
+              {performerScenes.map((scene) => <PerformerSceneCard key={scene.key} scene={scene} page={props} />)}
 
-              {!fetchingPerformerScenes && performerScenes.length === 0 ? (
+              {!fetchingPerformerScenes && !performerScenesError && performerScenes.length === 0 ? (
                 <article className="empty-card empty-card--wide">
                   <h3>{t("performerUi.noScenes")}</h3>
                   <p>{t("performerUi.noScenesDetail")}</p>
@@ -608,58 +195,20 @@ export function PerformersPage({
               </div>
             ) : null}
           </>
-        ) : (
+        ) : fetchingPerformerDetail ? <PerformerLoading detail /> : !performerDetailError ? (
           <article className="empty-card empty-card--wide">
             <h3>{t(fetchingPerformerDetail ? "performerUi.detailLoading" : "performerUi.detailMissing")}</h3>
             <p>{t("performerUi.detailMissingHelp")}</p>
           </article>
-        )}
+        ) : null}
       </section>
-    )}</PerformerDetailView>;
+    );
   }
 
-  const pagination = stashPerformerPage && stashPerformerPage.totalPages > 1 ? (
-    <div className="pagination-bar pagination-bar--performers">
-      <button type="button" className="ghost-button task-icon-button task-icon-button--bordered" disabled={!stashPerformerPage.hasPrevPage || fetchingStashPerformers} onClick={() => onPageChange(1)} aria-label={t("performerUi.firstPage")} title={t("performerUi.firstPage")}>
-        <FontAwesomeIcon icon={faAnglesLeft} />
-      </button>
-      <button type="button" className="ghost-button task-icon-button task-icon-button--bordered" disabled={!stashPerformerPage.hasPrevPage || fetchingStashPerformers} onClick={onPrevPage} aria-label={t("performerUi.previous")} title={t("performerUi.previous")}>
-        <FontAwesomeIcon icon={faAngleLeft} />
-      </button>
-      <span className="status-chip tone-neutral">
-        {t("performerUi.page", { page: stashPerformerPage.page, pages: stashPerformerPage.totalPages })}
-      </span>
-      <button type="button" className="ghost-button task-icon-button task-icon-button--bordered" disabled={!stashPerformerPage.hasNextPage || fetchingStashPerformers} onClick={onNextPage} aria-label={t("performerUi.next")} title={t("performerUi.next")}>
-        <FontAwesomeIcon icon={faAngleRight} />
-      </button>
-      <button type="button" className="ghost-button task-icon-button task-icon-button--bordered" disabled={!stashPerformerPage.hasNextPage || fetchingStashPerformers} onClick={() => onPageChange(stashPerformerPage.totalPages)} aria-label={t("performerUi.lastPage")} title={t("performerUi.lastPage")}>
-        <FontAwesomeIcon icon={faAnglesRight} />
-      </button>
-      <form className="pagination-bar__jump" onSubmit={(event) => {
-        event.preventDefault();
-        if (canJump && !fetchingStashPerformers) onPageChange(targetPage);
-      }}>
-        <input
-          type="number"
-          min={1}
-          max={stashPerformerPage.totalPages}
-          step={1}
-          required
-          value={pageInput}
-          placeholder={String(stashPerformerPage.page)}
-          aria-label={t("performerUi.targetPage")}
-          disabled={fetchingStashPerformers}
-          onChange={(event) => setPageInput(event.target.value)}
-        />
-        <button type="submit" className="ghost-button" disabled={!canJump || fetchingStashPerformers}>
-          {t("performerUi.jumpToPage")}
-        </button>
-      </form>
-    </div>
-  ) : null;
 
-  return <PerformerListView>{(
-    <section className="section-band">
+
+  return (
+    <section className={`section-band performer-workspace${performerSelectionMode ? " performer-workspace--selecting" : ""}`}>
       <div className="band-head">
         <div>
           <h2>{t("performerUi.list")}</h2>
@@ -669,188 +218,39 @@ export function PerformersPage({
         </p>
       </div>
 
-      <div className="toolbar-inline toolbar-inline--subscription toolbar-inline--performer-list">
-        <Link className="ghost-button release-review-link" to="/performers/review"><FontAwesomeIcon icon={faClipboardCheck} /> {t("releaseReview.entry", { count: reviewPendingCount })}</Link>
-        <input
-          placeholder={t("performerUi.search")}
-          value={subscriptionSearch}
-          onChange={(event) => onSearchChange(event.target.value)}
-        />
-        <select value={subscriptionPageSize} onChange={(event) => onPageSizeChange(Number(event.target.value))}>
-          {SUBSCRIPTION_PAGE_SIZE_OPTIONS.map((size) => (
-            <option key={size} value={size}>
-              {t("performerUi.pageSizeRows", { size })}
-            </option>
-          ))}
-        </select>
-        <button
-          type="button"
-          className={`ghost-button task-icon-button task-icon-button--bordered${performerSelectionMode ? " is-active" : ""}`}
-          onClick={onTogglePerformerSelectionMode}
-          aria-pressed={performerSelectionMode}
-          aria-label={t(performerSelectionMode ? "performerBatch.exitMultiSelect" : "performerBatch.multiSelect")}
-          title={t(performerSelectionMode ? "performerBatch.exitMultiSelect" : "performerBatch.multiSelect")}
-        >
-          <FontAwesomeIcon icon={faListCheck} />
-        </button>
-        <button type="button" className="ghost-button task-icon-button task-icon-button--bordered" onClick={onReload} disabled={refreshingList} aria-label={t("performerUi.reloadFromStash")} title={t("performerUi.reloadFromStash")}>
-          <FontAwesomeIcon icon={faRotate} className={refreshingList ? "is-spinning" : undefined} />
-        </button>
-        <button
-          type="button"
-          className="ghost-button task-icon-button task-icon-button--bordered"
-          onClick={onRefreshAll}
-          disabled={refreshingSubscriptionNow || subscribedPerformers.length === 0}
-          aria-label={t(refreshingSubscriptionNow ? "performerUi.checking" : "performerUi.checkAllSubscribed")}
-          title={t(refreshingSubscriptionNow ? "performerUi.checking" : "performerUi.checkAllSubscribed")}
-        >
-          <FontAwesomeIcon icon={refreshingSubscriptionNow ? faRotate : faClipboardCheck} className={refreshingSubscriptionNow ? "is-spinning" : undefined} />
-        </button>
-      </div>
+      <PerformerListFilters page={props} />
 
       {lastRefreshedAt ? <p className="task-sync-meta">{t("performerUi.updatedAt", { time: formatDateTime(lastRefreshedAt) })}</p> : null}
 
+      {performerSelectionMode ? <p className="performer-selection-help">{t("performerWorkspace.selectionHelp")}</p> : null}
       {performerSelectionMode ? <div className="task-selection-bar performer-selection-bar" role="region" aria-label={t("performerBatch.selectionActions")}>
         <strong>{t("performerBatch.selected", { count: selectedPerformerIds.length })}</strong>
         {hiddenSelectedPerformerCount ? <span>{t("performerBatch.hidden", { count: hiddenSelectedPerformerCount })}</span> : null}
-        <button type="button" className="ghost-button" disabled={performerBatchPending || stashPerformers.length === 0} onClick={() => onSelectVisiblePerformers(stashPerformers.map((performer) => performer.id))}>{t("performerBatch.selectVisible", { count: stashPerformers.length })}</button>
+        <button type="button" className="ghost-button" disabled={performerBatchPending || fetchingStashPerformers || stashPerformers.length === 0} onClick={() => onSelectVisiblePerformers(stashPerformers.map((performer) => performer.id))}>{t("performerBatch.selectVisible", { count: stashPerformers.length })}</button>
         <button type="button" className="ghost-button" disabled={performerBatchPending || selectedUnsubscribedIds.length === 0} onClick={() => onBatchSubscribePerformers(selectedUnsubscribedIds)}><FontAwesomeIcon icon={faBookmark} /> {t("performerBatch.subscribe", { count: selectedUnsubscribedIds.length })}</button>
         <button type="button" className="ghost-button" disabled={performerBatchPending || selectedSubscribedIds.length === 0} onClick={() => onBatchRefreshPerformers(selectedSubscribedIds)}><FontAwesomeIcon icon={faArrowsRotate} /> {t("performerBatch.refresh", { count: selectedSubscribedIds.length })}</button>
         <button type="button" className="ghost-button task-ops__button--danger" disabled={performerBatchPending || selectedSubscribedIds.length === 0} onClick={() => onBatchUnsubscribePerformers(selectedSubscribedIds)}><FontAwesomeIcon icon={faBookmark} /> {t("performerBatch.unsubscribe", { count: selectedSubscribedIds.length })}</button>
         <button type="button" className="ghost-button" disabled={performerBatchPending || selectedPerformerIds.length === 0} onClick={onClearPerformerSelection}><FontAwesomeIcon icon={faXmark} /> {t("performerBatch.clear")}</button>
       </div> : null}
 
-      {pagination}
+      <PerformerPagination page={props} />
 
 
-      {subscriptionError || stashPerformersError ? (
-        <p className="settings-feedback tone-danger">{describeQueryError(subscriptionError || stashPerformersError)}</p>
-      ) : null}
+      {subscriptionError || stashPerformersError ? <PerformerError error={(subscriptionError || stashPerformersError)!} onRetry={onReload} /> : null}
+      {fetchingStashPerformers && stashPerformers.length === 0 ? <PerformerLoading /> : null}
 
       <div className="profile-grid">
-        {stashPerformers.length === 0 && !fetchingStashPerformers ? (
+        {stashPerformers.length === 0 && !fetchingStashPerformers && !stashPerformersError && !subscriptionError ? (
           <article className="empty-card empty-card--wide">
             <h3>{t("performerUi.noPerformers")}</h3>
-            <p>{t("performerUi.noPerformersDetail")}</p>
+            <p>{t(props.listFilter && props.listFilter !== "all" ? "performerWorkspace.filterEmpty" : "performerUi.noPerformersDetail")}</p>
+            {subscriptionSearch || (props.listFilter && props.listFilter !== "all") ? <button type="button" className="ghost-button" onClick={() => { props.onClearListFilters?.(); }}>{t("performerWorkspace.clearFilters")}</button> : null}
           </article>
         ) : null}
-        {stashPerformers.map((performer, index) => {
-          const subscriptionEntry = subscribedByID.get(performer.id) ?? null;
-          const latestRelease = subscriptionEntry?.recentReleases[0] ?? null;
-          const imageURL = performerImageURL(performer.imagePath, stashBaseURL);
-          const stashURL = stashPerformerURL(performer.id, stashBaseURL);
-
-          return (
-            <article
-              key={performer.id}
-              className={`profile-card${performerSelectionMode ? " profile-card--selectable" : ""}${selectedPerformerIds.includes(performer.id) ? " is-selected" : ""}`}
-              style={{ animationDelay: `${index * 80}ms`, cursor: "pointer" }}
-              onClick={() => performerSelectionMode ? onTogglePerformerSelection(performer.id) : onOpenPerformer(performer.id)}
-              onKeyDown={(event) => {
-                if (event.key !== "Enter" && event.key !== " ") return;
-                event.preventDefault();
-                if (performerSelectionMode) onTogglePerformerSelection(performer.id);
-                else onOpenPerformer(performer.id);
-              }}
-              role="button"
-              tabIndex={0}
-            >
-              {imageURL ? (
-                <div className="avatar avatar--frame">
-                  <span className="avatar__fallback" aria-hidden="true">{performerInitials(performer.name)}</span>
-                  <img
-                    className="avatar__image"
-                    src={imageURL}
-                    alt={performer.name}
-                    loading="lazy"
-                    onError={(event) => { event.currentTarget.style.display = "none"; }}
-                  />
-                </div>
-              ) : (
-                <div className="avatar avatar--placeholder">{performerInitials(performer.name)}</div>
-              )}
-              <div className="profile-card__body">
-                <div className="profile-card__head">
-                  <div>
-                    <h3>{performer.name}</h3>
-                  </div>
-                  <div className="profile-card__icons" onClick={(event) => event.stopPropagation()}>
-                    {performer.favorite ? (
-                      <span className="profile-icon profile-icon--favorite is-active" title={t("performerUi.favorite")} aria-label={t("performerUi.favorite")}>
-                        <FontAwesomeIcon icon={faHeart} />
-                      </span>
-                    ) : null}
-                    <button
-                      type="button"
-                      className={`profile-icon profile-icon--subscribe ${performer.subscribed ? "is-active" : ""}`}
-                      title={t(performer.subscribed ? "performerUi.unsubscribe" : "performerUi.subscribe")}
-                      aria-label={t(performer.subscribed ? "performerUi.unsubscribe" : "performerUi.subscribe")}
-                      disabled={pendingSubscriptionID === performer.id}
-                      onClick={() => onToggle(performer)}
-                    >
-                      <FontAwesomeIcon icon={faBookmark} />
-                    </button>
-                  </div>
-                </div>
-                <dl className="profile-facts">
-                  <div>
-                    <dt>{t("performerUi.works")}</dt>
-                    <dd>{performer.sceneCount}</dd>
-                  </div>
-                </dl>
-                <p className="profile-note">
-                  {latestRelease
-                    ? t("performerUi.recent", { release: latestRelease.code || latestRelease.title, date: formatRelativeDate(latestRelease.date || latestRelease.seenAt) })
-                    : performer.subscribed
-                      ? t("performerUi.waitingFirst")
-                      : t("performerUi.notSubscribed")}
-                </p>
-                <div className="profile-card__footer">
-                  <p className="profile-check-meta">{t("performerUi.lastChecked", { time: formatDateTime(subscriptionEntry?.lastCheckedAt) })}</p>
-                  <div className="profile-actions" onClick={(event) => event.stopPropagation()}>
-                    {(reviewCounts[performer.id] ?? subscriptionEntry?.reviewReleaseCount ?? 0) > 0 ? (
-                      <Link
-                        className="profile-action-icon profile-action-icon--count"
-                        title={t("releaseReview.actorEntry", { count: reviewCounts[performer.id] ?? subscriptionEntry?.reviewReleaseCount })}
-                        aria-label={t("releaseReview.actorEntry", { count: reviewCounts[performer.id] ?? subscriptionEntry?.reviewReleaseCount })}
-                        onKeyDown={event => event.stopPropagation()}
-                        to={`/performers/review?performer=${encodeURIComponent(performer.id)}`}
-                      >
-                        <FontAwesomeIcon icon={faClipboardCheck} />
-                        <span aria-hidden="true">{reviewCounts[performer.id] ?? subscriptionEntry?.reviewReleaseCount}</span>
-                      </Link>
-                    ) : null}
-                    <button
-                      type="button"
-                      className="profile-action-icon"
-                      title={t(performer.subscribed ? "performerUi.checkNow" : "performerUi.checkRequiresSubscription")}
-                      aria-label={t("performerUi.checkName", { name: performer.name })}
-                      disabled={!performer.subscribed || pendingSubscriptionID === performer.id}
-                      onClick={() => onRefreshOne(performer)}
-                    >
-                      <FontAwesomeIcon icon={faRotate} className={pendingSubscriptionID === performer.id ? "is-spinning" : undefined} />
-                    </button>
-                    {stashURL ? (
-                      <a
-                        className="profile-action-icon"
-                        href={stashURL}
-                        target="_blank"
-                        rel="noreferrer"
-                        title={t("performerUi.stashHome")}
-                        aria-label={t("performerUi.stashHomeName", { name: performer.name })}
-                      >
-                        <FontAwesomeIcon icon={faPlayCircle} />
-                      </a>
-                    ) : null}
-                  </div>
-                </div>
-              </div>
-            </article>
-          );
-        })}
+        {stashPerformers.map((performer) => <PerformerCard key={performer.id} performer={performer} subscription={subscribedByID.get(performer.id) ?? null} reviewCount={reviewCounts[performer.id] ?? subscribedByID.get(performer.id)?.reviewReleaseCount ?? 0} page={props} />)}
       </div>
 
-      {pagination}
+      <PerformerPagination page={props} />
     </section>
-  )}</PerformerListView>;
+  );
 }

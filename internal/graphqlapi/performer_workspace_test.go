@@ -4,6 +4,7 @@ import (
 	"context"
 	"testing"
 
+	"github.com/leothevan2444/moji/internal/graphqlapi/model"
 	performerdomain "github.com/leothevan2444/moji/internal/performer"
 	"github.com/leothevan2444/moji/internal/subscription"
 )
@@ -13,7 +14,7 @@ func TestPerformerWorkspaceBuildsListAndSubscriptionsFromOneSnapshot(t *testing.
 	subscriptions := &workspaceSubscriptionService{}
 	resolver := &queryResolver{Resolver: &Resolver{Performer: performers, PerformerSubscription: subscriptions}}
 	search, page, pageSize := "alp", 1, 24
-	snapshot, err := resolver.PerformerWorkspace(context.Background(), &search, &page, &pageSize)
+	snapshot, err := resolver.PerformerWorkspace(context.Background(), &search, &page, &pageSize, nil)
 	if err != nil {
 		t.Fatalf("PerformerWorkspace: %v", err)
 	}
@@ -103,4 +104,55 @@ func (s *workspaceSubscriptionService) UnsubscribePerformers(context.Context, []
 }
 func (s *workspaceSubscriptionService) RefreshSubscribedPerformers(context.Context, []string) (subscription.PerformerBatchPayload, error) {
 	return s.batch, nil
+}
+
+func TestPerformerListOptionsApplyAcrossPagesAndKeepReviewOnlyActors(t *testing.T) {
+	items := []performerdomain.Performer{
+		{ID: "a", Name: "Alpha", SceneCount: 2, Subscribed: true},
+		{ID: "b", Name: "Beta", SceneCount: 20, Favorite: true},
+		{ID: "c", Name: "Charlie", SceneCount: 10, Subscribed: true},
+	}
+	lastCheck, failed := "2026-10-24T10:00:00Z", "check failed"
+	states := []*model.SubscribedPerformer{
+		{Performer: &model.StashPerformer{ID: "a"}, LastError: &failed},
+		{Performer: &model.StashPerformer{ID: "c"}, LastCheckedAt: &lastCheck},
+	}
+	for _, test := range []struct {
+		filter model.PerformerListFilter
+		want   string
+	}{
+		{model.PerformerListFilterSubscribed, "ac"},
+		{model.PerformerListFilterFavorite, "b"},
+		{model.PerformerListFilterReview, "b"},
+		{model.PerformerListFilterError, "a"},
+	} {
+		t.Run(string(test.filter), func(t *testing.T) {
+			result := filterAndSortPerformers(items, states, map[string]int{"b": 2}, &model.PerformerListOptions{Filter: &test.filter})
+			var ids string
+			for _, item := range result {
+				ids += item.ID
+			}
+			if ids != test.want {
+				t.Fatalf("got %q, want %q", ids, test.want)
+			}
+		})
+	}
+	for _, test := range []struct {
+		sort model.PerformerListSort
+		want string
+	}{
+		{model.PerformerListSortName, "a"},
+		{model.PerformerListSortSceneCount, "b"},
+		{model.PerformerListSortLastChecked, "c"},
+	} {
+		result := filterAndSortPerformers(items, states, nil, &model.PerformerListOptions{Sort: &test.sort})
+		page, pageSize := 1, 1
+		paged := buildStashPerformerPage(result, "", &page, &pageSize)
+		if paged.Items[0].ID != test.want || paged.TotalCount != 3 {
+			t.Fatalf("sort %s produced %#v", test.sort, paged)
+		}
+	}
+	if items[0].ID != "a" {
+		t.Fatal("options changed the shared input snapshot")
+	}
 }

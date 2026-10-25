@@ -18,8 +18,8 @@ query StashPerformers($search: String, $page: Int, $pageSize: Int) {
   }
 }
 
-query PerformerWorkspace($search: String, $page: Int, $pageSize: Int) {
-  performerWorkspace(search: $search, page: $page, pageSize: $pageSize) {
+query PerformerWorkspace($search: String, $page: Int, $pageSize: Int, $options: PerformerListOptions) {
+  performerWorkspace(search: $search, page: $page, pageSize: $pageSize, options: $options) {
     performers {
       items {
         id
@@ -92,6 +92,8 @@ query StashPerformerDetail($id: ID!) {
     stashSceneCount
     stashBoxSceneCount
     dedupedSceneCount
+    activeTaskCount
+    sceneStatsComplete
   }
 }
 
