@@ -6,9 +6,10 @@ import { Drawer } from "../layout/Drawer";
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router";
 import { formatDateTime, formatRelative, performerImageURL, performerInitials, stashPerformerURL } from "../../utils";
+import { performerCheckRun } from "../../hooks/useSubscriptionChecks";
 import type { PerformersPageProps, StashPerformerEntry, SubscribedPerformerEntry } from "./types";
 
-type CardPage = Pick<PerformersPageProps, "stashBaseURL" | "performerSelectionMode" | "selectedPerformerIds" | "performerBatchPending" | "pendingSubscriptionID" | "onTogglePerformerSelection" | "onOpenPerformer" | "onToggle" | "onRefreshOne">;
+type CardPage = Pick<PerformersPageProps, "checkActivity" | "checksLoading" | "checksError" | "checkStarting" | "stashBaseURL" | "performerSelectionMode" | "selectedPerformerIds" | "performerBatchPending" | "pendingSubscriptionID" | "onTogglePerformerSelection" | "onOpenPerformer" | "onToggle" | "onRefreshOne">;
 
 export function PerformerCard({ performer, subscription, reviewCount, page }: { performer: StashPerformerEntry; subscription: SubscribedPerformerEntry | null; reviewCount: number; page: CardPage; }) {
   const { t } = useTranslation();
@@ -16,6 +17,9 @@ export function PerformerCard({ performer, subscription, reviewCount, page }: { 
   const { stashBaseURL, performerSelectionMode, selectedPerformerIds, performerBatchPending, pendingSubscriptionID, onTogglePerformerSelection, onOpenPerformer, onToggle, onRefreshOne } = page;
   const selected = selectedPerformerIds.includes(performer.id);
   const pending = pendingSubscriptionID === performer.id;
+  const checkRun = performerCheckRun(page.checkActivity, performer.id);
+  const checkItem = checkRun;
+  const checkDisabled = pending || Boolean(checkRun || page.checkStarting || page.checksLoading || page.checksError);
   const imageURL = performerImageURL(performer.imagePath, stashBaseURL);
   const stashURL = stashPerformerURL(performer.id, stashBaseURL);
   const aliases = performer.aliasList.join(" / ");
@@ -62,6 +66,7 @@ export function PerformerCard({ performer, subscription, reviewCount, page }: { 
               {performerSelectionMode ? <input type="checkbox" className="performer-card-selector" checked={selected} disabled={performerBatchPending} onChange={() => onTogglePerformerSelection(performer.id)} aria-label={t(selected ? "performerUi.deselectName" : "performerUi.selectName", { name: performer.name })} /> : null}
             </div>
             <div className="performer-card-check-row">
+              {checkRun ? <Link className="profile-check-meta" to={`/?check=${encodeURIComponent(checkRun.runId)}`} title={t("subscriptionChecks.followRun")} aria-live="polite">{t(`subscriptionChecks.itemStates.${checkItem?.status ?? "PENDING"}`)}</Link> : null}
               {performer.subscribed ? <p className="profile-check-meta" title={formatDateTime(subscription?.lastCheckedAt)}>{subscription?.lastCheckedAt ? t("performerUi.lastChecked", { time: formatRelative(subscription.lastCheckedAt) }) : t("performerUi.neverChecked")}</p> : null}
               {subscription?.lastError ? <button type="button" className="performer-card-error-button" aria-haspopup="dialog" title={t("performerWorkspace.errorDetails")} onClick={() => setShowCheckError(true)}>{t("performerUi.failed")}</button> : null}
             </div>
@@ -70,7 +75,7 @@ export function PerformerCard({ performer, subscription, reviewCount, page }: { 
             {reviewCount > 0 || !performerSelectionMode ? <div className="profile-actions">
               {reviewCount > 0 ? <Link className="profile-action-icon profile-action-icon--count" aria-label={t("releaseReview.actorEntry", { count: reviewCount })} title={t("releaseReview.actorEntry", { count: reviewCount })} to={`/performers/review?performer=${encodeURIComponent(performer.id)}`}><FontAwesomeIcon icon={faClipboardQuestion} /><span aria-hidden="true">{reviewCount}</span></Link> : null}
               {!performerSelectionMode ? <>
-                {performer.subscribed ? <button type="button" className="profile-action-icon" title={t("performerUi.checkUpdatesHelp")} aria-busy={pending} aria-label={t("performerUi.checkName", { name: performer.name })} disabled={pending} onClick={() => onRefreshOne(performer)}><FontAwesomeIcon icon={faBinoculars} /></button> : null}
+                {performer.subscribed ? <button type="button" className="profile-action-icon" title={t(checkRun ? "subscriptionChecks.inRun" : "performerUi.checkUpdatesHelp")} aria-busy={Boolean(checkRun || page.checkStarting)} aria-label={t("performerUi.checkName", { name: performer.name })} disabled={checkDisabled} onClick={() => onRefreshOne(performer)}><FontAwesomeIcon icon={faBinoculars} /></button> : null}
                 {stashURL ? <a className="profile-action-icon profile-action-icon--count" href={stashURL} target="_blank" rel="noreferrer" title={t("performerWorkspace.stashLibrary", { name: performer.name, count: performer.sceneCount })} aria-label={t("performerWorkspace.stashLibrary", { name: performer.name, count: performer.sceneCount })}><FontAwesomeIcon icon={faPlayCircle} /><span aria-hidden="true">{performer.sceneCount}</span></a> : null}
               </> : null}
             </div> : null}

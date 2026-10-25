@@ -20,7 +20,20 @@ compatible development behavior.
 Its counts and up to three affected performer IDs require no Stash catalogue
 or release-history read. A failed summary does not hide the rest of Home.
 
+`homeSubscriptionChecks` is a separate bounded local projection of release-check
+runs: the full active count, three active and three recent run summaries, and the
+latest scheduled run. Each run includes at most three current actor names.
+`internal/subscription/home_checks.go` builds this projection independently of
+check execution; `home.resolvers.go` only maps it to the GraphQL contract.
+Full actor outcomes are fetched through `subscriptionCheck(id)` on demand.
+
 ## Navigation and updates
+
+Check details use the `check` URL parameter and the same drawer and focus pattern
+as task details. Their independent errors leave task modules usable. Home and
+actor controls share visibility-aware polling, every two seconds while checks
+are active and every ten seconds while idle. Actor controls query scoped
+reservations rather than Home history.
 
 Home task details use the `task` URL parameter, with `resolve=1` for manual source
 selection and `files=1` for direct file confirmation. The drawer keeps Home

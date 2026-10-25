@@ -23,3 +23,37 @@ type HomeSubscriptionSummary {
   lastCheckedAt: String
   attentionPerformerIds: [ID!]!
 }
+
+extend type Query {
+  "Bounded local check progress, schedule, and latest outcomes for Home."
+  homeSubscriptionChecks: HomeSubscriptionChecks!
+}
+
+type HomeSubscriptionChecks {
+  enabled: Boolean!
+  nextRunAt: String
+  activeCount: Int!
+  latestScheduled: HomeSubscriptionCheckRun
+  activeRuns: [HomeSubscriptionCheckRun!]!
+  recentRuns: [HomeSubscriptionCheckRun!]!
+}
+
+type HomeSubscriptionCheckRun {
+  id: ID!
+  trigger: SubscriptionCheckTrigger!
+  scope: SubscriptionCheckScope!
+  status: SubscriptionCheckStatus!
+  startedAt: String!
+  finishedAt: String
+  totalCount: Int!
+  completedCount: Int!
+  succeededCount: Int!
+  failedCount: Int!
+  skippedCount: Int!
+  currentPerformers: [HomeCheckPerformer!]!
+}
+
+type HomeCheckPerformer {
+  performerId: ID!
+  name: String!
+}

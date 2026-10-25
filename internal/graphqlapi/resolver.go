@@ -336,6 +336,11 @@ type DiscoveryService interface {
 	Queue(ctx context.Context, sceneID string, stashBoxEndpoint string) (*taskruntime.Task, error)
 }
 
+type SubscriptionCheckService interface {
+	StartSubscriptionCheck(context.Context, []string, string) (*subscription.CheckRun, error)
+	SubscriptionCheck(context.Context, string) (*subscription.CheckRun, error)
+}
+
 type SubscriptionService interface {
 	ListSubscribedPerformers(ctx context.Context) ([]subscription.SubscribedPerformer, error)
 	BuildSubscribedPerformers(ctx context.Context, performers []performer.Performer) ([]subscription.SubscribedPerformer, error)

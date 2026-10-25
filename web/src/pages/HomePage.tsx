@@ -3,6 +3,7 @@ import { Link } from "react-router";
 import { useTranslation } from "react-i18next";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faArrowRight, faCheck, faCircleExclamation, faMagnifyingGlass, faRotate, faBookmark, faArrowUpRightFromSquare, faBolt } from "@fortawesome/free-solid-svg-icons";
+import { HomeSubscriptionChecks, type HomeChecksView } from "../components/home/HomeSubscriptionChecks";
 import { IngestCard, ServiceCard, buildJackettConfig, buildQBittorrentConfig } from "../components/home";
 import { TaskPrimaryAction } from "../components/tasks/TaskPrimaryAction";
 import { formatDateTime, formatRelative, taskFailureSummary, taskPresentation, taskSummary, type DashboardTask } from "../utils";
@@ -12,6 +13,10 @@ import type { HomePageDocumentQuery, HomeServiceStatusQuery, HomeSubscriptionSum
 import { useGlobalSlashShortcut } from "../hooks/useGlobalSlashShortcut";
 
 export interface HomePageProps {
+  checks?: HomeChecksView | null;
+  checksError?: string | null;
+  onRefreshChecks?: () => void;
+  onOpenCheck?: (id: string) => void;
   interactionOpen?: boolean;
   listUpdatePending?: boolean;
   onApplyUpdates?: () => void;
@@ -122,6 +127,7 @@ export function HomePage(props: HomePageProps) {
           <Link className="home-more" to="/performers">{t("workbench.manageSubscriptions")} <FontAwesomeIcon icon={faArrowRight} aria-hidden="true" /></Link></>}
       </section>
 
+      <HomeSubscriptionChecks snapshot={props.checks ?? null} error={props.checksError ?? null} onRetry={props.onRefreshChecks ?? props.onRefresh} onOpenRun={id => props.onOpenCheck?.(id)} />
       <section className="home-panel home-system" aria-labelledby="home-system-title">
         <div className="home-panel-heading"><h2 id="home-system-title">{t("workbench.system")}</h2><span className={`home-dot ${!status ? "home-dot--unknown" : problems.length || !status.ingest?.configured ? "home-dot--warning" : ""}`} /></div>
         {error(props.statusError, props.onRefreshStatus, Boolean(status))}

@@ -10,6 +10,11 @@ export type StashPerformerSceneEntry = StashPerformerScenePage["items"][number];
 export type SubscribedPerformerEntry = PerformerWorkspaceQuery["performerWorkspace"]["subscribedPerformers"][number];
 
 export interface PerformersPageProps {
+  checkActivity?: import("../../hooks/useSubscriptionChecks").SubscriptionCheckActivityView | null;
+  checksLoading?: boolean;
+  checksError?: string | null;
+  checkStarting?: boolean;
+  onRefreshChecks?: () => void;
   listFilter?: PerformerSearchState["filter"];
   listSort?: PerformerSearchState["sort"];
   onListFilterChange?: (value: PerformerSearchState["filter"]) => void;

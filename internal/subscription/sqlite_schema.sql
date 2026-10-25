@@ -68,3 +68,12 @@ CREATE TABLE IF NOT EXISTS subscription_release_reviews (
   release_key TEXT PRIMARY KEY,
   record_json TEXT NOT NULL CHECK (json_valid(record_json))
 ) STRICT;
+
+CREATE TABLE IF NOT EXISTS subscription_check_runs (
+ id TEXT PRIMARY KEY,
+ trigger TEXT NOT NULL,
+ status TEXT NOT NULL,
+ started_at TEXT NOT NULL,
+ payload TEXT NOT NULL
+) STRICT;
+CREATE INDEX IF NOT EXISTS idx_subscription_check_runs_started ON subscription_check_runs(started_at DESC);

@@ -19,10 +19,13 @@ import {
   stashPerformerURL
 } from "../../utils";
 
+import { performerCheckRun } from "../../hooks/useSubscriptionChecks";
 import type { PerformerSummary, PerformersPageProps, StashPerformerDetail, SubscribedPerformerEntry } from "./types";
 
-export function PerformerOverview({ performerDetail, performerSummary, performerSubscription, page }: { performerDetail: NonNullable<StashPerformerDetail>; performerSummary?: PerformerSummary | null; performerSubscription: SubscribedPerformerEntry | null; page: Pick<PerformersPageProps, "stashBaseURL" | "reviewCounts" | "pendingSubscriptionID" | "onToggle" | "onRefreshOne" | "fetchingPerformerSummary">; }) {
+export function PerformerOverview({ performerDetail, performerSummary, performerSubscription, page }: { performerDetail: NonNullable<StashPerformerDetail>; performerSummary?: PerformerSummary | null; performerSubscription: SubscribedPerformerEntry | null; page: Pick<PerformersPageProps, "checkActivity" | "checksLoading" | "checksError" | "checkStarting" | "stashBaseURL" | "reviewCounts" | "pendingSubscriptionID" | "onToggle" | "onRefreshOne" | "fetchingPerformerSummary">; }) {
   const { t } = useTranslation();
+  const checkRun = performerCheckRun(page.checkActivity, performerDetail.performer.id);
+  const checkItem = checkRun;
   const [showCheckError, setShowCheckError] = useState(false);
   const { stashBaseURL, reviewCounts = {}, pendingSubscriptionID, onToggle, onRefreshOne } = page;
   const detailStashURL = stashPerformerURL(performerDetail.performer.id, stashBaseURL);
@@ -73,10 +76,10 @@ export function PerformerOverview({ performerDetail, performerSummary, performer
               <button
                 type="button"
                 className="profile-action-icon"
-                aria-busy={pendingSubscriptionID === performerDetail.performer.id}
-                title={t(performerDetail.performer.subscribed ? "performerUi.checkUpdatesHelp" : "performerUi.checkRequiresSubscription")}
+                aria-busy={Boolean(checkRun || page.checkStarting)}
+                title={t(checkRun ? "subscriptionChecks.inRun" : performerDetail.performer.subscribed ? "performerUi.checkUpdatesHelp" : "performerUi.checkRequiresSubscription")}
                 aria-label={t("performerUi.checkName", { name: performerDetail.performer.name })}
-                disabled={!performerDetail.performer.subscribed || pendingSubscriptionID === performerDetail.performer.id}
+                disabled={!performerDetail.performer.subscribed || pendingSubscriptionID === performerDetail.performer.id || Boolean(checkRun || page.checkStarting || page.checksLoading || page.checksError)}
                 onClick={() => onRefreshOne(performerDetail.performer)}
               >
                 <FontAwesomeIcon icon={faBinoculars} />
@@ -130,7 +133,7 @@ export function PerformerOverview({ performerDetail, performerSummary, performer
                 <div className={performerSubscription?.lastError ? "tone-danger" : undefined}>
                   <dt>{t("performerUi.checkStatus")}</dt>
                   <dd className="performer-check-result">
-                    <span className={`performer-check-state ${performerSubscription?.lastError ? "is-failed" : performerDetail.performer.subscribed && performerSubscription?.lastCheckedAt ? "is-healthy" : "is-neutral"}`}>{t(performerSubscription?.lastError ? "performerUi.failed" : performerDetail.performer.subscribed ? performerSubscription?.lastCheckedAt ? "performerUi.normal" : "performerUi.neverChecked" : "performerUi.unsubscribed")}</span>
+                    <span className={`performer-check-state ${performerSubscription?.lastError ? "is-failed" : performerDetail.performer.subscribed && performerSubscription?.lastCheckedAt ? "is-healthy" : "is-neutral"}`}>{checkRun ? t(`subscriptionChecks.itemStates.${checkItem?.status ?? "PENDING"}`) : t(performerSubscription?.lastError ? "performerUi.failed" : performerDetail.performer.subscribed ? performerSubscription?.lastCheckedAt ? "performerUi.normal" : "performerUi.neverChecked" : "performerUi.unsubscribed")}</span>
                     {performerSubscription?.lastError ? <button type="button" className="performer-check-reason" aria-haspopup="dialog" title={t("performerWorkspace.errorDetails")} onClick={() => setShowCheckError(true)}>{t("performerWorkspace.errorReason")}</button> : null}
                   </dd>
                 </div>

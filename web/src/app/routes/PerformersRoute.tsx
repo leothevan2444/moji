@@ -45,7 +45,7 @@ export function Component() {
   const [{ data: config }] = useQuery({ query: PerformersConfigDocumentDocument, requestPolicy: "cache-and-network" });
   const [{ data: reviewSummary }, refreshReviewSummary] = useQuery({ query: ReleaseReviewSummaryDocument, requestPolicy: "network-only" });
 
-  const subscription = usePerformersWorkspace({ options: { filter: state.filter.toUpperCase() as PerformerListFilter, sort: state.sort.toUpperCase() as PerformerListSort }, enabled: true, search: deferredSearch || null, page: state.page, pageSize: state.pageSize, performerId: performerId ?? null, performerSceneSearch: deferredSceneSearch || null, performerSceneSource: source, performerSceneLibrary: library, performerScenePage: state.scenePage, performerScenePageSize: state.scenePageSize });
+  const subscription = usePerformersWorkspace({ checkPerformerIds: selectedPerformerIds, options: { filter: state.filter.toUpperCase() as PerformerListFilter, sort: state.sort.toUpperCase() as PerformerListSort }, enabled: true, search: deferredSearch || null, page: state.page, pageSize: state.pageSize, performerId: performerId ?? null, performerSceneSearch: deferredSceneSearch || null, performerSceneSource: source, performerSceneLibrary: library, performerScenePage: state.scenePage, performerScenePageSize: state.scenePageSize });
   const sceneSelection = usePerformerSceneSelection(performerId ?? null, subscription.performerScenes);
   const toggleSceneSelectionMode = () => {
     if (subscription.queueingPerformerScenes) return;
@@ -74,8 +74,14 @@ export function Component() {
     try { const result = performer.subscribed ? await subscription.unsubscribePerformer({ stashPerformerID: performer.id }) : await subscription.subscribePerformer({ stashPerformerID: performer.id }); if (result.error) pushToast("tone-danger", describeQueryError(result.error)); else { pushToast("tone-success", t(performer.subscribed ? "performerRoute.unsubscribed" : "performerRoute.subscribed", { name: performer.name })); } }
     finally { setPendingSubscription(null); }
   };
-  const refreshOne = async (performer: { id: string; name: string }) => { setPendingSubscription(performer.id); try { const result = await subscription.refreshSubscribedPerformer({ stashPerformerID: performer.id }); if (result.error) pushToast("tone-danger", describeQueryError(result.error)); else { pushToast("tone-info", t("performerRoute.checked", { name: performer.name })); } } finally { setPendingSubscription(null); } };
-  const refreshAll = async () => { const result = await subscription.refreshSubscriptionsNow({}); if (result.error) pushToast("tone-danger", describeQueryError(result.error)); else { pushToast("tone-info", t("performerRoute.checkedAll")); } };
+  const startCheck = async (ids?: string[]) => {
+    const result = await subscription.startCheck(ids);
+    if (result.error) pushToast("tone-danger", describeQueryError(result.error));
+    else if (result.run) pushToast("tone-info", t("subscriptionChecks.started"));
+    return !result.error;
+  };
+  const refreshOne = (performer: { id: string }) => startCheck([performer.id]);
+  const refreshAll = () => startCheck();
   const showPerformerBatchResult = (payload: PerformerBatchResultView | undefined) => {
     if (!payload) { pushToast("tone-danger", t("performerBatch.noResult")); return; }
     if (payload.summary.failedCount || payload.summary.skippedCount) setBatchResult(payload);
@@ -101,11 +107,7 @@ export function Component() {
     await subscription.reloadStashPerformers();
   };
   const runBatchRefresh = async (ids: string[]) => {
-    const result = await subscription.refreshSubscribedPerformers({ ids });
-    if (result.error) { pushToast("tone-danger", describeQueryError(result.error)); return; }
-    showPerformerBatchResult(batchPayload(result.data?.refreshSubscribedPerformers));
-    setBatchConfirm(null);
-    await subscription.reloadStashPerformers();
+    if (await startCheck(ids)) setBatchConfirm(null);
   };
   const togglePerformerSelection = (id: string) => setSelectedPerformerIds((current) => current.includes(id) ? current.filter((item) => item !== id) : current.length >= 100 ? (pushToast("tone-info", t("performerBatch.limit", { count: 100 })), current) : [...current, id]);
   const selectVisiblePerformers = (ids: string[]) => {
@@ -130,10 +132,11 @@ export function Component() {
   };
 
   return <><PerformersPage
+    checkActivity={subscription.checkActivity} checksLoading={subscription.checksLoading} checksError={subscription.checksError} checkStarting={subscription.startingCheck} onRefreshChecks={subscription.refreshChecks}
     sceneSelectionMode={sceneSelectionMode} onToggleSceneSelectionMode={toggleSceneSelectionMode}
     performerSummary={subscription.performerSummary} fetchingPerformerSummary={subscription.fetchingPerformerSummary} performerSummaryError={subscription.performerSummaryError ? new Error(describeQueryError(subscription.performerSummaryError)) : null} onRetrySummary={() => subscription.refreshPerformerSummary({ requestPolicy: "network-only" })} listFilter={state.filter} listSort={state.sort} onClearListFilters={() => update({ q: "", filter: "all", page: 1 })} onListFilterChange={(filter) => update({ filter, page: 1 })} onListSortChange={(sort) => update({ sort, page: 1 })} onRetryDetail={() => subscription.refreshPerformerDetail({ requestPolicy: "network-only" })} onRetryScenes={() => subscription.refreshPerformerScenes({ requestPolicy: "network-only" })} reviewPendingCount={reviewSummary?.releaseReviews?.pendingCount ?? 0} reviewCounts={Object.fromEntries((reviewSummary?.releaseReviews?.performers ?? []).map(actor => [actor.id,actor.pendingCount]))} stashBaseURL={config?.settings.stash.url ?? null} stashPerformerPage={subscription.stashPerformerPage} stashPerformers={subscription.stashPerformers} subscribedPerformers={subscription.subscribedPerformers}
     fetchingStashPerformers={subscription.fetchingStashPerformers} fetchingSubscription={subscription.fetchingSubscription} performerDetail={subscription.performerDetail} performerScenePage={subscription.performerScenePage} performerScenes={subscription.performerScenes}
-    fetchingPerformerDetail={subscription.fetchingPerformerDetail} fetchingPerformerScenes={subscription.fetchingPerformerScenes} refreshingSubscriptionNow={subscription.refreshingSubscriptionNow} refreshingList={reloadingList || subscription.fetchingStashPerformers} performerBatchPending={subscription.subscribingPerformers || subscription.unsubscribingPerformers || subscription.refreshingSubscribedPerformers} queueingPerformerScenes={subscription.queueingPerformerScenes}
+    fetchingPerformerDetail={subscription.fetchingPerformerDetail} fetchingPerformerScenes={subscription.fetchingPerformerScenes} refreshingSubscriptionNow={Boolean(subscription.checkActivity?.allRunId)} refreshingList={reloadingList || subscription.fetchingStashPerformers} performerBatchPending={subscription.subscribingPerformers || subscription.unsubscribingPerformers || subscription.startingCheck} queueingPerformerScenes={subscription.queueingPerformerScenes}
     subscriptionSearch={state.q} subscriptionPageSize={state.pageSize} selectedPerformerId={performerId ?? null} performerSceneSearch={state.sceneQ} performerSceneSourceFilter={source} performerSceneLibraryFilter={library} performerScenePageSize={state.scenePageSize}
     selectedSceneKeys={sceneSelection.selectedKeys} selectedPerformerIds={selectedPerformerIds} performerSelectionMode={performerSelectionMode} lastRefreshedAt={lastRefreshedAt} pendingSceneKeys={pendingKeys} pendingSubscriptionID={pendingSubscription} subscriptionError={subscription.subscriptionError ?? null} stashPerformersError={subscription.stashPerformersError ?? null} performerDetailError={subscription.performerDetailError ?? null} performerScenesError={subscription.performerScenesError ?? null}
     onSearchChange={(q) => update({ q, page: 1 })} onPageSizeChange={(pageSize) => update({ pageSize, page: 1 })} onReload={() => void reload()} onRefreshAll={() => void refreshAll()} onTogglePerformerSelectionMode={() => { if (performerSelectionMode) setSelectedPerformerIds([]); setPerformerSelectionMode((current) => !current); }} onTogglePerformerSelection={togglePerformerSelection} onSelectVisiblePerformers={selectVisiblePerformers} onClearPerformerSelection={() => setSelectedPerformerIds([])} onBatchSubscribePerformers={(ids) => void runBatchSubscribe(ids)} onBatchUnsubscribePerformers={(ids) => setBatchConfirm({ action: "unsubscribe", ids })} onBatchRefreshPerformers={(ids) => setBatchConfirm({ action: "refresh", ids })} onToggle={(p) => void toggle(p)} onRefreshOne={(p) => void refreshOne(p)}
@@ -146,7 +149,7 @@ export function Component() {
     onPrevPerformerScenePage={() => update({ scenePage: Math.max(1, state.scenePage - 1) })} onNextPerformerScenePage={() => update({ scenePage: state.scenePage + 1 })}
     onToggleSceneSelection={sceneSelection.toggle} onSelectCurrentScenePage={sceneSelection.addVisible} onClearSceneSelection={sceneSelection.clear}
     onQueueSelectedScenes={() => void queueSelected()} onQueueScene={(scene) => void queueOne(scene)} />
-    {batchConfirm ? <Drawer visibleDrawer="performer-batch-confirm" closing={false} title={t("performerBatch.confirmTitle")} onClose={() => { if (!(subscription.unsubscribingPerformers || subscription.refreshingSubscribedPerformers)) setBatchConfirm(null); }}><Suspense fallback={null}><PerformerBatchConfirmDrawer action={batchConfirm.action} count={batchConfirm.ids.length} pending={subscription.unsubscribingPerformers || subscription.refreshingSubscribedPerformers} onConfirm={() => batchConfirm.action === "unsubscribe" ? void runBatchUnsubscribe(batchConfirm.ids) : void runBatchRefresh(batchConfirm.ids)} onCancel={() => setBatchConfirm(null)} /></Suspense></Drawer> : null}
+    {batchConfirm ? <Drawer visibleDrawer="performer-batch-confirm" closing={false} title={t("performerBatch.confirmTitle")} onClose={() => { if (!(subscription.unsubscribingPerformers || subscription.startingCheck)) setBatchConfirm(null); }}><Suspense fallback={null}><PerformerBatchConfirmDrawer action={batchConfirm.action} count={batchConfirm.ids.length} pending={subscription.unsubscribingPerformers || subscription.startingCheck} onConfirm={() => batchConfirm.action === "unsubscribe" ? void runBatchUnsubscribe(batchConfirm.ids) : void runBatchRefresh(batchConfirm.ids)} onCancel={() => setBatchConfirm(null)} /></Suspense></Drawer> : null}
     {batchResult ? <Drawer visibleDrawer="performer-batch-result" closing={false} title={t("performerBatch.resultTitle")} onClose={() => setBatchResult(null)}><Suspense fallback={null}><PerformerBatchResultDrawer payload={batchResult} /></Suspense></Drawer> : null}
   </>;
 }

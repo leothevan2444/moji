@@ -114,6 +114,11 @@ type Health struct {
 	Message string `json:"message"`
 }
 
+type HomeCheckPerformer struct {
+	PerformerID string `json:"performerId"`
+	Name        string `json:"name"`
+}
+
 type HomeOverview struct {
 	Total                int     `json:"total"`
 	Attention            int     `json:"attention"`
@@ -123,6 +128,30 @@ type HomeOverview struct {
 	AttentionTasks       []*Task `json:"attentionTasks"`
 	ActiveTasks          []*Task `json:"activeTasks"`
 	RecentTasks          []*Task `json:"recentTasks"`
+}
+
+type HomeSubscriptionCheckRun struct {
+	ID                string                   `json:"id"`
+	Trigger           SubscriptionCheckTrigger `json:"trigger"`
+	Scope             SubscriptionCheckScope   `json:"scope"`
+	Status            SubscriptionCheckStatus  `json:"status"`
+	StartedAt         string                   `json:"startedAt"`
+	FinishedAt        *string                  `json:"finishedAt,omitempty"`
+	TotalCount        int                      `json:"totalCount"`
+	CompletedCount    int                      `json:"completedCount"`
+	SucceededCount    int                      `json:"succeededCount"`
+	FailedCount       int                      `json:"failedCount"`
+	SkippedCount      int                      `json:"skippedCount"`
+	CurrentPerformers []*HomeCheckPerformer    `json:"currentPerformers"`
+}
+
+type HomeSubscriptionChecks struct {
+	Enabled         bool                        `json:"enabled"`
+	NextRunAt       *string                     `json:"nextRunAt,omitempty"`
+	ActiveCount     int                         `json:"activeCount"`
+	LatestScheduled *HomeSubscriptionCheckRun   `json:"latestScheduled,omitempty"`
+	ActiveRuns      []*HomeSubscriptionCheckRun `json:"activeRuns"`
+	RecentRuns      []*HomeSubscriptionCheckRun `json:"recentRuns"`
 }
 
 type HomeSubscriptionSummary struct {
@@ -283,6 +312,12 @@ type PerformerBatchSummary struct {
 	SucceededCount int `json:"succeededCount"`
 	SkippedCount   int `json:"skippedCount"`
 	FailedCount    int `json:"failedCount"`
+}
+
+type PerformerCheckActivity struct {
+	PerformerID string                  `json:"performerId"`
+	RunID       string                  `json:"runId"`
+	Status      SubscriptionCheckStatus `json:"status"`
 }
 
 type PerformerListOptions struct {
@@ -766,6 +801,37 @@ type SubscribedPerformer struct {
 }
 
 type Subscription struct {
+}
+
+type SubscriptionCheckActivity struct {
+	ActiveCount int                       `json:"activeCount"`
+	AllRunID    *string                   `json:"allRunId,omitempty"`
+	Performers  []*PerformerCheckActivity `json:"performers"`
+}
+
+type SubscriptionCheckItem struct {
+	PerformerID string                  `json:"performerId"`
+	Name        string                  `json:"name"`
+	Status      SubscriptionCheckStatus `json:"status"`
+	Error       *string                 `json:"error,omitempty"`
+	StartedAt   *string                 `json:"startedAt,omitempty"`
+	FinishedAt  *string                 `json:"finishedAt,omitempty"`
+}
+
+type SubscriptionCheckRun struct {
+	ID             string                   `json:"id"`
+	Trigger        SubscriptionCheckTrigger `json:"trigger"`
+	Scope          SubscriptionCheckScope   `json:"scope"`
+	Status         SubscriptionCheckStatus  `json:"status"`
+	StartedAt      string                   `json:"startedAt"`
+	FinishedAt     *string                  `json:"finishedAt,omitempty"`
+	Error          *string                  `json:"error,omitempty"`
+	TotalCount     int                      `json:"totalCount"`
+	CompletedCount int                      `json:"completedCount"`
+	SucceededCount int                      `json:"succeededCount"`
+	FailedCount    int                      `json:"failedCount"`
+	SkippedCount   int                      `json:"skippedCount"`
+	Items          []*SubscriptionCheckItem `json:"items"`
 }
 
 type SubscriptionRelease struct {
@@ -1850,6 +1916,183 @@ func (e *SceneSourceFilter) UnmarshalJSON(b []byte) error {
 }
 
 func (e SceneSourceFilter) MarshalJSON() ([]byte, error) {
+	var buf bytes.Buffer
+	e.MarshalGQL(&buf)
+	return buf.Bytes(), nil
+}
+
+type SubscriptionCheckScope string
+
+const (
+	SubscriptionCheckScopeAll      SubscriptionCheckScope = "ALL"
+	SubscriptionCheckScopeSingle   SubscriptionCheckScope = "SINGLE"
+	SubscriptionCheckScopeSelected SubscriptionCheckScope = "SELECTED"
+)
+
+var AllSubscriptionCheckScope = []SubscriptionCheckScope{
+	SubscriptionCheckScopeAll,
+	SubscriptionCheckScopeSingle,
+	SubscriptionCheckScopeSelected,
+}
+
+func (e SubscriptionCheckScope) IsValid() bool {
+	switch e {
+	case SubscriptionCheckScopeAll, SubscriptionCheckScopeSingle, SubscriptionCheckScopeSelected:
+		return true
+	}
+	return false
+}
+
+func (e SubscriptionCheckScope) String() string {
+	return string(e)
+}
+
+func (e *SubscriptionCheckScope) UnmarshalGQL(v any) error {
+	str, ok := v.(string)
+	if !ok {
+		return fmt.Errorf("enums must be strings")
+	}
+
+	*e = SubscriptionCheckScope(str)
+	if !e.IsValid() {
+		return fmt.Errorf("%s is not a valid SubscriptionCheckScope", str)
+	}
+	return nil
+}
+
+func (e SubscriptionCheckScope) MarshalGQL(w io.Writer) {
+	fmt.Fprint(w, strconv.Quote(e.String()))
+}
+
+func (e *SubscriptionCheckScope) UnmarshalJSON(b []byte) error {
+	s, err := strconv.Unquote(string(b))
+	if err != nil {
+		return err
+	}
+	return e.UnmarshalGQL(s)
+}
+
+func (e SubscriptionCheckScope) MarshalJSON() ([]byte, error) {
+	var buf bytes.Buffer
+	e.MarshalGQL(&buf)
+	return buf.Bytes(), nil
+}
+
+type SubscriptionCheckStatus string
+
+const (
+	SubscriptionCheckStatusPending     SubscriptionCheckStatus = "PENDING"
+	SubscriptionCheckStatusRunning     SubscriptionCheckStatus = "RUNNING"
+	SubscriptionCheckStatusSucceeded   SubscriptionCheckStatus = "SUCCEEDED"
+	SubscriptionCheckStatusSkipped     SubscriptionCheckStatus = "SKIPPED"
+	SubscriptionCheckStatusPartial     SubscriptionCheckStatus = "PARTIAL"
+	SubscriptionCheckStatusFailed      SubscriptionCheckStatus = "FAILED"
+	SubscriptionCheckStatusInterrupted SubscriptionCheckStatus = "INTERRUPTED"
+)
+
+var AllSubscriptionCheckStatus = []SubscriptionCheckStatus{
+	SubscriptionCheckStatusPending,
+	SubscriptionCheckStatusRunning,
+	SubscriptionCheckStatusSucceeded,
+	SubscriptionCheckStatusSkipped,
+	SubscriptionCheckStatusPartial,
+	SubscriptionCheckStatusFailed,
+	SubscriptionCheckStatusInterrupted,
+}
+
+func (e SubscriptionCheckStatus) IsValid() bool {
+	switch e {
+	case SubscriptionCheckStatusPending, SubscriptionCheckStatusRunning, SubscriptionCheckStatusSucceeded, SubscriptionCheckStatusSkipped, SubscriptionCheckStatusPartial, SubscriptionCheckStatusFailed, SubscriptionCheckStatusInterrupted:
+		return true
+	}
+	return false
+}
+
+func (e SubscriptionCheckStatus) String() string {
+	return string(e)
+}
+
+func (e *SubscriptionCheckStatus) UnmarshalGQL(v any) error {
+	str, ok := v.(string)
+	if !ok {
+		return fmt.Errorf("enums must be strings")
+	}
+
+	*e = SubscriptionCheckStatus(str)
+	if !e.IsValid() {
+		return fmt.Errorf("%s is not a valid SubscriptionCheckStatus", str)
+	}
+	return nil
+}
+
+func (e SubscriptionCheckStatus) MarshalGQL(w io.Writer) {
+	fmt.Fprint(w, strconv.Quote(e.String()))
+}
+
+func (e *SubscriptionCheckStatus) UnmarshalJSON(b []byte) error {
+	s, err := strconv.Unquote(string(b))
+	if err != nil {
+		return err
+	}
+	return e.UnmarshalGQL(s)
+}
+
+func (e SubscriptionCheckStatus) MarshalJSON() ([]byte, error) {
+	var buf bytes.Buffer
+	e.MarshalGQL(&buf)
+	return buf.Bytes(), nil
+}
+
+type SubscriptionCheckTrigger string
+
+const (
+	SubscriptionCheckTriggerManual    SubscriptionCheckTrigger = "MANUAL"
+	SubscriptionCheckTriggerScheduled SubscriptionCheckTrigger = "SCHEDULED"
+)
+
+var AllSubscriptionCheckTrigger = []SubscriptionCheckTrigger{
+	SubscriptionCheckTriggerManual,
+	SubscriptionCheckTriggerScheduled,
+}
+
+func (e SubscriptionCheckTrigger) IsValid() bool {
+	switch e {
+	case SubscriptionCheckTriggerManual, SubscriptionCheckTriggerScheduled:
+		return true
+	}
+	return false
+}
+
+func (e SubscriptionCheckTrigger) String() string {
+	return string(e)
+}
+
+func (e *SubscriptionCheckTrigger) UnmarshalGQL(v any) error {
+	str, ok := v.(string)
+	if !ok {
+		return fmt.Errorf("enums must be strings")
+	}
+
+	*e = SubscriptionCheckTrigger(str)
+	if !e.IsValid() {
+		return fmt.Errorf("%s is not a valid SubscriptionCheckTrigger", str)
+	}
+	return nil
+}
+
+func (e SubscriptionCheckTrigger) MarshalGQL(w io.Writer) {
+	fmt.Fprint(w, strconv.Quote(e.String()))
+}
+
+func (e *SubscriptionCheckTrigger) UnmarshalJSON(b []byte) error {
+	s, err := strconv.Unquote(string(b))
+	if err != nil {
+		return err
+	}
+	return e.UnmarshalGQL(s)
+}
+
+func (e SubscriptionCheckTrigger) MarshalJSON() ([]byte, error) {
 	var buf bytes.Buffer
 	e.MarshalGQL(&buf)
 	return buf.Bytes(), nil

@@ -105,3 +105,47 @@ describe("Home workspace", () => {
     expect(document.activeElement).not.toBe(screen.getByRole("textbox"));
   });
 });
+
+describe("Home release checks", () => {
+  const run = {
+    id: "check-home", trigger: "SCHEDULED", scope: "ALL", status: "RUNNING", startedAt: "2026-01-15T11:55:00Z", finishedAt: null,
+    totalCount: 10, completedCount: 4, succeededCount: 3, failedCount: 1, skippedCount: 0,
+    currentPerformers: [{ performerId: "p1", name: "Alpha" }]
+  } as NonNullable<HomePageProps["checks"]>["activeRuns"][number];
+  const checks = { enabled: true, nextRunAt: "2026-01-15T18:00:00Z", activeCount: 1, latestScheduled: run, activeRuns: [run], recentRuns: [] };
+
+  it("shows schedule and true progress and opens a run through Home's detail action", async () => {
+    const onOpenCheck = vi.fn();
+    setup({ checks, onOpenCheck });
+    const region = screen.getByRole("region", { name: /Release checks/ });
+    expect(within(region).getByText("Latest scheduled run")).toBeTruthy();
+    expect(within(region).getByText("Next scheduled run")).toBeTruthy();
+    expect(within(region).getByText("Checked 4 / 10 performers")).toBeTruthy();
+    expect(within(region).getByText("Checking: Alpha")).toBeTruthy();
+    expect(within(region).getByRole("progressbar").getAttribute("aria-valuenow")).toBe("4");
+    expect(within(region).queryByText("Run ID")).toBeNull();
+    await userEvent.setup().click(within(region).getByRole("button", { name: /View Scheduled check/ }));
+    expect(onOpenCheck).toHaveBeenCalledWith("check-home");
+  });
+
+  it("isolates failed check reads from task lists and retries only that module", async () => {
+    const onRefreshChecks = vi.fn();
+    setup({ checksError: "Check snapshot unavailable", onRefreshChecks });
+    const region = screen.getByRole("region", { name: /Release checks/ });
+    expect(within(region).getByText("Check snapshot unavailable")).toBeTruthy();
+    expect(screen.getByText("DEMO-101")).toBeTruthy();
+    await userEvent.setup().click(within(region).getByRole("button", { name: "Retry" }));
+    expect(onRefreshChecks).toHaveBeenCalledOnce();
+  });
+
+  it("keeps recent outcomes collapsed and shows the backend's partial failure", () => {
+    const finished = { ...run, status: "PARTIAL", failedCount: 1 } as typeof run;
+    setup({ checks: { ...checks, activeCount: 0, activeRuns: [], latestScheduled: finished, recentRuns: [finished] } });
+    const region = screen.getByRole("region", { name: /Release checks/ });
+    expect(within(region).getByText("Idle")).toBeTruthy();
+    const history = region.querySelector("details")!;
+    expect(history.open).toBe(false);
+    expect(within(history).getByText("Partially failed")).toBeTruthy();
+    expect(within(history).getByText("Succeeded 3 · Failed 1 · Skipped 0")).toBeTruthy();
+  });
+});

@@ -1,0 +1,71 @@
+enum SubscriptionCheckStatus {
+  PENDING
+  RUNNING
+  SUCCEEDED
+  SKIPPED
+  PARTIAL
+  FAILED
+  INTERRUPTED
+}
+
+enum SubscriptionCheckTrigger {
+  MANUAL
+  SCHEDULED
+}
+
+enum SubscriptionCheckScope {
+  ALL
+  SINGLE
+  SELECTED
+}
+
+type SubscriptionCheckItem {
+  performerId: ID!
+  name: String!
+  status: SubscriptionCheckStatus!
+  error: String
+  startedAt: String
+  finishedAt: String
+}
+
+type SubscriptionCheckRun {
+  id: ID!
+  trigger: SubscriptionCheckTrigger!
+  scope: SubscriptionCheckScope!
+  status: SubscriptionCheckStatus!
+  startedAt: String!
+  finishedAt: String
+  error: String
+  totalCount: Int!
+  completedCount: Int!
+  succeededCount: Int!
+  failedCount: Int!
+  skippedCount: Int!
+  items: [SubscriptionCheckItem!]!
+}
+
+extend type Query {
+  subscriptionCheck(id: ID!): SubscriptionCheckRun
+}
+
+extend type Mutation {
+  "Start a background check. Omit ids to check all subscriptions. Duplicate active checks return the existing run."
+  startSubscriptionCheck(ids: [ID!]): SubscriptionCheckRun!
+}
+
+type SubscriptionCheckActivity {
+  activeCount: Int!
+  allRunId: ID
+  performers: [PerformerCheckActivity!]!
+}
+
+type PerformerCheckActivity {
+  performerId: ID!
+  runId: ID!
+  status: SubscriptionCheckStatus!
+}
+
+extend type Query {
+  "Check reservations for at most 256 visible or selected actors; no history or upstream reads."
+  subscriptionCheckActivity(ids: [ID!]!): SubscriptionCheckActivity!
+}

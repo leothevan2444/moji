@@ -67,3 +67,32 @@ func (r *queryResolver) HomeSubscriptionSummary(ctx context.Context) (*model.Hom
 	}
 	return result, nil
 }
+
+// HomeSubscriptionChecks is the resolver for the homeSubscriptionChecks field.
+func (r *queryResolver) HomeSubscriptionChecks(ctx context.Context) (*model.HomeSubscriptionChecks, error) {
+	result := &model.HomeSubscriptionChecks{ActiveRuns: []*model.HomeSubscriptionCheckRun{}, RecentRuns: []*model.HomeSubscriptionCheckRun{}}
+	if r.PerformerSubscription == nil {
+		return result, nil
+	}
+	source, ok := r.PerformerSubscription.(interface {
+		HomeChecks(context.Context) (subscription.HomeChecks, error)
+	})
+	if !ok {
+		return nil, fmt.Errorf("home subscription checks unavailable")
+	}
+	snapshot, err := source.HomeChecks(ctx)
+	if err != nil {
+		return nil, err
+	}
+	result.Enabled, result.NextRunAt, result.ActiveCount = snapshot.Enabled, checkTime(snapshot.NextRunAt), snapshot.ActiveCount
+	if snapshot.LatestScheduled != nil {
+		result.LatestScheduled = homeCheckRunToModel(*snapshot.LatestScheduled)
+	}
+	for _, run := range snapshot.ActiveRuns {
+		result.ActiveRuns = append(result.ActiveRuns, homeCheckRunToModel(run))
+	}
+	for _, run := range snapshot.RecentRuns {
+		result.RecentRuns = append(result.RecentRuns, homeCheckRunToModel(run))
+	}
+	return result, nil
+}

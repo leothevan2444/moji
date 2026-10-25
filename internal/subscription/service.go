@@ -32,6 +32,7 @@ type TaskCreator interface {
 }
 
 type Service struct {
+	checks           *checkTracker
 	stash            StashClient
 	metadata         *metadata.Service
 	taskCreator      TaskCreator
@@ -116,7 +117,7 @@ func NewService(stash StashClient, source *metadata.Service, taskCreator TaskCre
 	if source == nil {
 		return nil, errors.New("subscription: metadata source is required")
 	}
-	return &Service{
+	service := &Service{
 		stash:          stash,
 		metadata:       source,
 		taskCreator:    taskCreator,
@@ -127,7 +128,11 @@ func NewService(stash StashClient, source *metadata.Service, taskCreator TaskCre
 		now:            time.Now,
 		releasePolicy:  DefaultReleasePolicyConfig(),
 		operations:     make(map[string]*performerOperationLock),
-	}, nil
+	}
+	if err := service.initCheckTracking(); err != nil {
+		return nil, err
+	}
+	return service, nil
 }
 
 func (s *Service) SetTaskCreator(creator TaskCreator) {
@@ -255,7 +260,37 @@ func (s *Service) unsubscribePerformer(ctx context.Context, performerID string) 
 	return nil
 }
 
-func (s *Service) RefreshSubscribedPerformer(ctx context.Context, performerID string) (SubscribedPerformer, error) {
+func (s *Service) RefreshSubscribedPerformer(ctx context.Context, performerID string) (result SubscribedPerformer, resultErr error) {
+	ids, err := normalizeCheckID(performerID)
+	if err != nil {
+		return result, err
+	}
+	performerID = ids[0]
+	ctx, _, owner, err := s.beginCheck(ctx, "SINGLE", ids, "MANUAL")
+	if err != nil {
+		return result, err
+	}
+	if owner {
+		defer func() { s.finishCheck(ctx, resultErr) }()
+	}
+	if err := s.startCheckItem(ctx, performerID); err != nil {
+		return result, err
+	}
+	defer func() {
+		status, message := "SUCCEEDED", result.LastError
+		if resultErr != nil {
+			message = resultErr.Error()
+		}
+		if message != "" {
+			status = "FAILED"
+		}
+		if ctx.Err() != nil && status == "FAILED" {
+			status = "INTERRUPTED"
+		}
+		if err := s.finishCheckItem(ctx, performerID, result.Performer.Name, status, message); err != nil && resultErr == nil {
+			resultErr = err
+		}
+	}()
 	unlock := s.lockPerformerOperation(performerID)
 	defer unlock()
 	return s.refreshSubscribedPerformer(ctx, performerID)
@@ -272,6 +307,15 @@ func (s *Service) refreshSubscribedPerformer(ctx context.Context, performerID st
 		return SubscribedPerformer{}, fmt.Errorf("subscription: performer %q not found", performerID)
 	}
 
+	if err := s.updateCheck(ctx, func(run *CheckRun) {
+		for i := range run.Items {
+			if run.Items[i].PerformerID == performerID {
+				run.Items[i].Name = performer.Name
+			}
+		}
+	}); err != nil {
+		return SubscribedPerformer{}, err
+	}
 	item := performerFromStash(performer, s.customFieldKey)
 	item.ImagePath = s.proxyStashImage(ctx, item.ImagePath)
 	state, err := s.store.Get(ctx, performerID)
@@ -481,16 +525,29 @@ func (s *Service) refreshSubscribedPerformer(ctx context.Context, performerID st
 	return result, nil
 }
 
-func (s *Service) RefreshAll(ctx context.Context) ([]SubscribedPerformer, error) {
+func (s *Service) RefreshAll(ctx context.Context) (result []SubscribedPerformer, resultErr error) {
+	ctx, _, owner, err := s.beginCheck(ctx, "ALL", nil, "MANUAL")
+	if err != nil {
+		return nil, err
+	}
+	if owner {
+		defer func() { s.finishCheck(ctx, resultErr) }()
+	}
 	items, err := s.ListSubscribedPerformers(ctx)
 	if err != nil {
 		logging.Errorf("subscription: list subscribed performers failed: %v", err)
+		return nil, err
+	}
+	if err := s.checkItems(ctx, items); err != nil {
 		return nil, err
 	}
 	logging.Infof("subscription: refresh all started for %d performers", len(items))
 
 	out := make([]SubscribedPerformer, 0, len(items))
 	for _, item := range items {
+		if err := ctx.Err(); err != nil {
+			return out, err
+		}
 		refreshed, refreshErr := s.RefreshSubscribedPerformer(ctx, item.Performer.ID)
 		if refreshErr != nil {
 			out = append(out, refreshed)

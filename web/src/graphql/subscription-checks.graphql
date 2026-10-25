@@ -1,0 +1,38 @@
+fragment SubscriptionCheckFields on SubscriptionCheckRun {
+  id
+  trigger
+  scope
+  status
+  startedAt
+  finishedAt
+  error
+  totalCount
+  completedCount
+  succeededCount
+  failedCount
+  skippedCount
+  items {
+    performerId
+    name
+    status
+    error
+    startedAt
+    finishedAt
+  }
+}
+
+query SubscriptionCheckActivity($ids: [ID!]!) {
+  subscriptionCheckActivity(ids: $ids) {
+    activeCount
+    allRunId
+    performers { performerId runId status }
+  }
+}
+
+query SubscriptionCheckDetail($id: ID!) {
+  subscriptionCheck(id: $id) { ...SubscriptionCheckFields }
+}
+
+mutation StartSubscriptionCheck($ids: [ID!]) {
+  startSubscriptionCheck(ids: $ids) { id }
+}

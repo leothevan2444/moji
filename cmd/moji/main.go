@@ -265,7 +265,9 @@ func newHTTPRuntime(cfg *config.Config, version string, configStore *config.Stor
 		resolver.Performer = performerService
 		resolver.Discovery = discovery.NewService(metadataService, taskFlowService, stashBoxImage)
 	}
-	resolver.PerformerSubscription = subscriptionService
+	if subscriptionService != nil {
+		resolver.PerformerSubscription = subscriptionService
+	}
 	resolver.TaskEventSource = taskEventBus
 	resolver.ServiceStatusEventSource = serviceStatusEventBus
 	resolver.PerformerSubscriptionEventSource = performerSubscriptionEventBus
@@ -310,7 +312,7 @@ func newHTTPRuntime(cfg *config.Config, version string, configStore *config.Stor
 		handler:                       router,
 		taskRuntimeService:            taskRuntimeService,
 		stashService:                  stashService,
-		subscriptionService:           subscriptionService,
+		subscriptionService:           resolver.PerformerSubscription,
 		statsCollector:                statsCollector,
 		taskEventBus:                  taskEventBus,
 		serviceStatusEventBus:         serviceStatusEventBus,
@@ -990,46 +992,91 @@ func storeAutomation(cfg *config.Config, store *config.Store) *config.Config {
 }
 
 func startSubscriptionWorker(ctx context.Context, service graphqlapi.SubscriptionService, intervalProvider func() time.Duration) {
-	if service == nil || intervalProvider == nil || intervalProvider() <= 0 {
-		if service == nil {
-			logging.Infof("runtime: subscription worker not started because subscription service is unavailable")
-		} else {
-			logging.Infof("runtime: subscription worker disabled by poll interval")
-		}
+	if service == nil || intervalProvider == nil {
 		return
 	}
-	initial := intervalProvider()
-	logging.Infof("runtime: starting subscription worker with interval %s", initial)
-
+	tracked, hasTracking := service.(interface {
+		ConfigureCheckRuntime(context.Context)
+		SetCheckSchedule(bool, *time.Time)
+		StartSubscriptionCheck(context.Context, []string, string) (*subscription.CheckRun, error)
+	})
+	if hasTracking {
+		tracked.ConfigureCheckRuntime(ctx)
+	}
+	current := intervalProvider()
+	var deadline *time.Time
+	publishSchedule := func(interval time.Duration) {
+		deadline = nil
+		if interval > 0 {
+			next := time.Now().Add(interval)
+			deadline = &next
+		}
+		if hasTracking {
+			tracked.SetCheckSchedule(interval > 0, deadline)
+		}
+	}
+	publishSchedule(current)
 	go func() {
-		current := initial
-		ticker := time.NewTicker(current)
-		defer ticker.Stop()
-
+		// Reconcile settings even while disabled, so enabling polling needs no restart.
+		settingsTicker := time.NewTicker(5 * time.Second)
+		defer settingsTicker.Stop()
+		timer := time.NewTimer(time.Hour)
+		if !timer.Stop() {
+			<-timer.C
+		}
+		defer timer.Stop()
+		arm := func() {
+			if !timer.Stop() {
+				select {
+				case <-timer.C:
+				default:
+				}
+			}
+			if deadline != nil {
+				timer.Reset(time.Until(*deadline))
+			}
+		}
+		arm()
 		for {
 			select {
 			case <-ctx.Done():
+				if hasTracking {
+					tracked.SetCheckSchedule(false, nil)
+				}
 				return
-			case <-ticker.C:
-				syncCtx, cancel := context.WithTimeout(ctx, 2*time.Minute)
-				if _, err := service.RefreshAll(syncCtx); err != nil && !errors.Is(err, context.Canceled) {
-					logging.Errorf("refresh subscription performers: %v", err)
-				}
-				cancel()
-
-				// Re-check the interval after each tick so Web UI edits to
-				// automation.subscriptionPollIntervalHours take effect on the
-				// next iteration without restarting the process.
+			case <-settingsTicker.C:
 				next := intervalProvider()
-				if next <= 0 {
-					logging.Infof("runtime: subscription worker stopping because poll interval became non-positive")
-					return
-				}
 				if next != current {
-					ticker.Reset(next)
 					current = next
-					logging.Infof("runtime: subscription worker interval changed to %s", current)
+					publishSchedule(current)
+					arm()
 				}
+			case <-timer.C:
+				// Apply a just-disabled setting before dispatching another check.
+				current = intervalProvider()
+				delay := current
+				if current > 0 {
+					if hasTracking {
+						if _, err := tracked.StartSubscriptionCheck(ctx, nil, "SCHEDULED"); err != nil && !errors.Is(err, context.Canceled) {
+							var conflict *subscription.CheckConflictError
+							if errors.As(err, &conflict) {
+								// Retry soon after selected manual checks, instead of missing a whole polling interval.
+								delay = min(current, 30*time.Second)
+								logging.Infof("runtime: scheduled subscription check deferred by active run %s", conflict.RunID)
+							} else {
+								logging.Errorf("refresh subscription performers: %v", err)
+							}
+						}
+					} else {
+						syncCtx, cancel := context.WithTimeout(ctx, 2*time.Minute)
+						if _, err := service.RefreshAll(syncCtx); err != nil && !errors.Is(err, context.Canceled) {
+							logging.Errorf("refresh subscription performers: %v", err)
+						}
+						cancel()
+					}
+				}
+				publishSchedule(delay)
+				arm()
 			}
 		}
 	}()

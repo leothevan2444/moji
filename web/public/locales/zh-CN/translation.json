@@ -1,4 +1,72 @@
 {
+  "subscriptionChecks": {
+    "title": "作品检查",
+    "followRun": "在主页查看本次检查进度",
+    "openRun": "查看{{trigger}} · {{time}}",
+    "currentPerformers": "正在检查：{{names}}",
+    "moreActive": "另有 {{count}} 项检查运行中",
+    "startedAt": "开始时间",
+    "finished": "结束时间",
+    "notFound": "运行记录不存在或已超出保留期限。",
+    "refresh": "刷新检查状态",
+    "loading": "正在读取检查状态…",
+    "syncError": "无法确认最新检查状态，暂时不能发起检查。",
+    "schedule": "定时检查",
+    "enabled": "已开启",
+    "disabled": "已停用",
+    "lastScheduled": "最近定时运行",
+    "nextScheduled": "下次定时运行",
+    "never": "暂无运行记录",
+    "current": "当前运行",
+    "idle": "空闲",
+    "runningCount": "正在运行 {{count}} 项检查",
+    "history": "最近运行记录（{{count}}）",
+    "noHistory": "暂无运行记录",
+    "started": "检查已提交，可在主页的作品检查中查看进度。",
+    "inRun": "此演员已包含在正在运行的检查中",
+    "loadingPerformers": "正在读取已订阅演员…",
+    "progress": "已检查 {{completed}} / {{total}} 位演员",
+    "progressLabel": "检查进度",
+    "counts": "成功 {{succeeded}} · 失败 {{failed}} · 跳过 {{skipped}}",
+    "finishedAt": "结束于 {{time}}",
+    "runId": "运行 ID",
+    "triggers": {
+      "MANUAL": "手动检查",
+      "SCHEDULED": "定时检查"
+    },
+    "scopes": {
+      "ALL": "全部订阅",
+      "SINGLE": "单个演员",
+      "SELECTED": "选中演员"
+    },
+    "states": {
+      "PENDING": "等待中",
+      "RUNNING": "运行中",
+      "SUCCEEDED": "已完成",
+      "SKIPPED": "已跳过",
+      "PARTIAL": "部分失败",
+      "FAILED": "失败",
+      "INTERRUPTED": "已中断"
+    },
+    "itemStates": {
+      "PENDING": "等待检查",
+      "RUNNING": "正在检查",
+      "SUCCEEDED": "检查完成",
+      "SKIPPED": "已跳过",
+      "PARTIAL": "部分失败",
+      "FAILED": "检查失败",
+      "INTERRUPTED": "检查中断"
+    },
+    "reasons": {
+      "CHECK_CANCELLED": "服务停止，本次检查已取消。",
+      "CHECK_TIMED_OUT": "检查超过 30 分钟，本次运行已中断。",
+      "SERVICE_RESTARTED": "服务重启，本次检查已中断。",
+      "PERFORMER_NOT_FOUND": "演员已不存在。",
+      "NOT_SUBSCRIBED": "演员已取消订阅。",
+      "REFRESH_FAILED": "检查失败，请查看服务日志。",
+      "CANCELLED": "检查已取消。"
+    }
+  },
   "releaseReview": {
     "select": "选择 {{code}}",
     "title": "发行复核",
@@ -688,6 +756,7 @@
     "retry": "重试"
   },
   "errorSpecial": {
+    "SUBSCRIPTION_CHECK_IN_PROGRESS": "所选演员已有检查正在运行，请在作品检查中查看进度。",
     "STASH_NOT_CONFIGURED": "Stash 未配置，请检查连接设置。"
   },
   "errorCorrelation": "关联 ID：{{id}}",

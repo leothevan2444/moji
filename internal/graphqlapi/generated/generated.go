@@ -122,6 +122,11 @@ type ComplexityRoot struct {
 		Ok      func(childComplexity int) int
 	}
 
+	HomeCheckPerformer struct {
+		Name        func(childComplexity int) int
+		PerformerID func(childComplexity int) int
+	}
+
 	HomeOverview struct {
 		Active               func(childComplexity int) int
 		ActiveTasks          func(childComplexity int) int
@@ -131,6 +136,30 @@ type ComplexityRoot struct {
 		RecentTasks          func(childComplexity int) int
 		Total                func(childComplexity int) int
 		Waiting              func(childComplexity int) int
+	}
+
+	HomeSubscriptionCheckRun struct {
+		CompletedCount    func(childComplexity int) int
+		CurrentPerformers func(childComplexity int) int
+		FailedCount       func(childComplexity int) int
+		FinishedAt        func(childComplexity int) int
+		ID                func(childComplexity int) int
+		Scope             func(childComplexity int) int
+		SkippedCount      func(childComplexity int) int
+		StartedAt         func(childComplexity int) int
+		Status            func(childComplexity int) int
+		SucceededCount    func(childComplexity int) int
+		TotalCount        func(childComplexity int) int
+		Trigger           func(childComplexity int) int
+	}
+
+	HomeSubscriptionChecks struct {
+		ActiveCount     func(childComplexity int) int
+		ActiveRuns      func(childComplexity int) int
+		Enabled         func(childComplexity int) int
+		LatestScheduled func(childComplexity int) int
+		NextRunAt       func(childComplexity int) int
+		RecentRuns      func(childComplexity int) int
 	}
 
 	HomeSubscriptionSummary struct {
@@ -257,6 +286,7 @@ type ComplexityRoot struct {
 		RestartTaskSourcing         func(childComplexity int, id string) int
 		RetryTask                   func(childComplexity int, id string) int
 		RetryTasks                  func(childComplexity int, ids []string) int
+		StartSubscriptionCheck      func(childComplexity int, ids []string) int
 		StashMetadataScan           func(childComplexity int, input model.StashMetadataScanInput) int
 		SubscribePerformer          func(childComplexity int, stashPerformerID string) int
 		SubscribePerformers         func(childComplexity int, ids []string) int
@@ -292,6 +322,12 @@ type ComplexityRoot struct {
 		RequestedCount func(childComplexity int) int
 		SkippedCount   func(childComplexity int) int
 		SucceededCount func(childComplexity int) int
+	}
+
+	PerformerCheckActivity struct {
+		PerformerID func(childComplexity int) int
+		RunID       func(childComplexity int) int
+		Status      func(childComplexity int) int
 	}
 
 	PerformerScenePerson struct {
@@ -379,6 +415,7 @@ type ComplexityRoot struct {
 		DiscoverScenes               func(childComplexity int, input model.DiscoverScenesInput) int
 		Health                       func(childComplexity int) int
 		HomeOverview                 func(childComplexity int) int
+		HomeSubscriptionChecks       func(childComplexity int) int
 		HomeSubscriptionSummary      func(childComplexity int) int
 		JackettIndexers              func(childComplexity int) int
 		JackettSearch                func(childComplexity int, input model.JackettSearchInput) int
@@ -395,6 +432,8 @@ type ComplexityRoot struct {
 		StashPerformerScenes         func(childComplexity int, id string, input model.StashPerformerScenesInput) int
 		StashPerformers              func(childComplexity int, search *string, page *int, pageSize *int) int
 		SubscribedPerformers         func(childComplexity int) int
+		SubscriptionCheck            func(childComplexity int, id string) int
+		SubscriptionCheckActivity    func(childComplexity int, ids []string) int
 		Task                         func(childComplexity int, id string) int
 		TaskStashScenes              func(childComplexity int, id string) int
 		Tasks                        func(childComplexity int) int
@@ -683,6 +722,37 @@ type ComplexityRoot struct {
 		TaskEvents                  func(childComplexity int) int
 	}
 
+	SubscriptionCheckActivity struct {
+		ActiveCount func(childComplexity int) int
+		AllRunID    func(childComplexity int) int
+		Performers  func(childComplexity int) int
+	}
+
+	SubscriptionCheckItem struct {
+		Error       func(childComplexity int) int
+		FinishedAt  func(childComplexity int) int
+		Name        func(childComplexity int) int
+		PerformerID func(childComplexity int) int
+		StartedAt   func(childComplexity int) int
+		Status      func(childComplexity int) int
+	}
+
+	SubscriptionCheckRun struct {
+		CompletedCount func(childComplexity int) int
+		Error          func(childComplexity int) int
+		FailedCount    func(childComplexity int) int
+		FinishedAt     func(childComplexity int) int
+		ID             func(childComplexity int) int
+		Items          func(childComplexity int) int
+		Scope          func(childComplexity int) int
+		SkippedCount   func(childComplexity int) int
+		StartedAt      func(childComplexity int) int
+		Status         func(childComplexity int) int
+		SucceededCount func(childComplexity int) int
+		TotalCount     func(childComplexity int) int
+		Trigger        func(childComplexity int) int
+	}
+
 	SubscriptionRelease struct {
 		Code           func(childComplexity int) int
 		Date           func(childComplexity int) int
@@ -883,12 +953,14 @@ type MutationResolver interface {
 	RefreshSubscribedPerformers(ctx context.Context, ids []string) (*model.PerformerBatchPayload, error)
 	QueuePerformerScenes(ctx context.Context, input model.QueuePerformerScenesInput) (*model.QueuePerformerScenesPayload, error)
 	RefreshStashPerformerScenes(ctx context.Context, id string, input model.StashPerformerScenesInput) (*model.StashPerformerSceneConnection, error)
+	StartSubscriptionCheck(ctx context.Context, ids []string) (*model.SubscriptionCheckRun, error)
 }
 type QueryResolver interface {
 	Health(ctx context.Context) (*model.Health, error)
 	Version(ctx context.Context) (string, error)
 	HomeOverview(ctx context.Context) (*model.HomeOverview, error)
 	HomeSubscriptionSummary(ctx context.Context) (*model.HomeSubscriptionSummary, error)
+	HomeSubscriptionChecks(ctx context.Context) (*model.HomeSubscriptionChecks, error)
 	Logs(ctx context.Context, limit *int, minLevel *model.LogLevel) ([]*model.LogEntry, error)
 	ReleaseReviews(ctx context.Context, input model.ReleaseReviewQueryInput) (*model.ReleaseReviewConnection, error)
 	DiscoverScenes(ctx context.Context, input model.DiscoverScenesInput) (*model.DiscoverSceneConnection, error)
@@ -906,6 +978,8 @@ type QueryResolver interface {
 	StashPerformerDetail(ctx context.Context, id string) (*model.StashPerformerDetail, error)
 	StashPerformerScenes(ctx context.Context, id string, input model.StashPerformerScenesInput) (*model.StashPerformerSceneConnection, error)
 	SubscribedPerformers(ctx context.Context) ([]*model.SubscribedPerformer, error)
+	SubscriptionCheck(ctx context.Context, id string) (*model.SubscriptionCheckRun, error)
+	SubscriptionCheckActivity(ctx context.Context, ids []string) (*model.SubscriptionCheckActivity, error)
 	QbittorrentTorrents(ctx context.Context, limit *int) ([]*model.QBTorrent, error)
 	Task(ctx context.Context, id string) (*model.Task, error)
 	TaskStashScenes(ctx context.Context, id string) ([]*model.TaskStashScene, error)
@@ -1266,6 +1340,20 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.Health.Ok(childComplexity), true
 
+	case "HomeCheckPerformer.name":
+		if e.complexity.HomeCheckPerformer.Name == nil {
+			break
+		}
+
+		return e.complexity.HomeCheckPerformer.Name(childComplexity), true
+
+	case "HomeCheckPerformer.performerId":
+		if e.complexity.HomeCheckPerformer.PerformerID == nil {
+			break
+		}
+
+		return e.complexity.HomeCheckPerformer.PerformerID(childComplexity), true
+
 	case "HomeOverview.active":
 		if e.complexity.HomeOverview.Active == nil {
 			break
@@ -1321,6 +1409,132 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.HomeOverview.Waiting(childComplexity), true
+
+	case "HomeSubscriptionCheckRun.completedCount":
+		if e.complexity.HomeSubscriptionCheckRun.CompletedCount == nil {
+			break
+		}
+
+		return e.complexity.HomeSubscriptionCheckRun.CompletedCount(childComplexity), true
+
+	case "HomeSubscriptionCheckRun.currentPerformers":
+		if e.complexity.HomeSubscriptionCheckRun.CurrentPerformers == nil {
+			break
+		}
+
+		return e.complexity.HomeSubscriptionCheckRun.CurrentPerformers(childComplexity), true
+
+	case "HomeSubscriptionCheckRun.failedCount":
+		if e.complexity.HomeSubscriptionCheckRun.FailedCount == nil {
+			break
+		}
+
+		return e.complexity.HomeSubscriptionCheckRun.FailedCount(childComplexity), true
+
+	case "HomeSubscriptionCheckRun.finishedAt":
+		if e.complexity.HomeSubscriptionCheckRun.FinishedAt == nil {
+			break
+		}
+
+		return e.complexity.HomeSubscriptionCheckRun.FinishedAt(childComplexity), true
+
+	case "HomeSubscriptionCheckRun.id":
+		if e.complexity.HomeSubscriptionCheckRun.ID == nil {
+			break
+		}
+
+		return e.complexity.HomeSubscriptionCheckRun.ID(childComplexity), true
+
+	case "HomeSubscriptionCheckRun.scope":
+		if e.complexity.HomeSubscriptionCheckRun.Scope == nil {
+			break
+		}
+
+		return e.complexity.HomeSubscriptionCheckRun.Scope(childComplexity), true
+
+	case "HomeSubscriptionCheckRun.skippedCount":
+		if e.complexity.HomeSubscriptionCheckRun.SkippedCount == nil {
+			break
+		}
+
+		return e.complexity.HomeSubscriptionCheckRun.SkippedCount(childComplexity), true
+
+	case "HomeSubscriptionCheckRun.startedAt":
+		if e.complexity.HomeSubscriptionCheckRun.StartedAt == nil {
+			break
+		}
+
+		return e.complexity.HomeSubscriptionCheckRun.StartedAt(childComplexity), true
+
+	case "HomeSubscriptionCheckRun.status":
+		if e.complexity.HomeSubscriptionCheckRun.Status == nil {
+			break
+		}
+
+		return e.complexity.HomeSubscriptionCheckRun.Status(childComplexity), true
+
+	case "HomeSubscriptionCheckRun.succeededCount":
+		if e.complexity.HomeSubscriptionCheckRun.SucceededCount == nil {
+			break
+		}
+
+		return e.complexity.HomeSubscriptionCheckRun.SucceededCount(childComplexity), true
+
+	case "HomeSubscriptionCheckRun.totalCount":
+		if e.complexity.HomeSubscriptionCheckRun.TotalCount == nil {
+			break
+		}
+
+		return e.complexity.HomeSubscriptionCheckRun.TotalCount(childComplexity), true
+
+	case "HomeSubscriptionCheckRun.trigger":
+		if e.complexity.HomeSubscriptionCheckRun.Trigger == nil {
+			break
+		}
+
+		return e.complexity.HomeSubscriptionCheckRun.Trigger(childComplexity), true
+
+	case "HomeSubscriptionChecks.activeCount":
+		if e.complexity.HomeSubscriptionChecks.ActiveCount == nil {
+			break
+		}
+
+		return e.complexity.HomeSubscriptionChecks.ActiveCount(childComplexity), true
+
+	case "HomeSubscriptionChecks.activeRuns":
+		if e.complexity.HomeSubscriptionChecks.ActiveRuns == nil {
+			break
+		}
+
+		return e.complexity.HomeSubscriptionChecks.ActiveRuns(childComplexity), true
+
+	case "HomeSubscriptionChecks.enabled":
+		if e.complexity.HomeSubscriptionChecks.Enabled == nil {
+			break
+		}
+
+		return e.complexity.HomeSubscriptionChecks.Enabled(childComplexity), true
+
+	case "HomeSubscriptionChecks.latestScheduled":
+		if e.complexity.HomeSubscriptionChecks.LatestScheduled == nil {
+			break
+		}
+
+		return e.complexity.HomeSubscriptionChecks.LatestScheduled(childComplexity), true
+
+	case "HomeSubscriptionChecks.nextRunAt":
+		if e.complexity.HomeSubscriptionChecks.NextRunAt == nil {
+			break
+		}
+
+		return e.complexity.HomeSubscriptionChecks.NextRunAt(childComplexity), true
+
+	case "HomeSubscriptionChecks.recentRuns":
+		if e.complexity.HomeSubscriptionChecks.RecentRuns == nil {
+			break
+		}
+
+		return e.complexity.HomeSubscriptionChecks.RecentRuns(childComplexity), true
 
 	case "HomeSubscriptionSummary.attention":
 		if e.complexity.HomeSubscriptionSummary.Attention == nil {
@@ -1974,6 +2188,18 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.Mutation.RetryTasks(childComplexity, args["ids"].([]string)), true
 
+	case "Mutation.startSubscriptionCheck":
+		if e.complexity.Mutation.StartSubscriptionCheck == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_startSubscriptionCheck_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.StartSubscriptionCheck(childComplexity, args["ids"].([]string)), true
+
 	case "Mutation.stashMetadataScan":
 		if e.complexity.Mutation.StashMetadataScan == nil {
 			break
@@ -2215,6 +2441,27 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.PerformerBatchSummary.SucceededCount(childComplexity), true
+
+	case "PerformerCheckActivity.performerId":
+		if e.complexity.PerformerCheckActivity.PerformerID == nil {
+			break
+		}
+
+		return e.complexity.PerformerCheckActivity.PerformerID(childComplexity), true
+
+	case "PerformerCheckActivity.runId":
+		if e.complexity.PerformerCheckActivity.RunID == nil {
+			break
+		}
+
+		return e.complexity.PerformerCheckActivity.RunID(childComplexity), true
+
+	case "PerformerCheckActivity.status":
+		if e.complexity.PerformerCheckActivity.Status == nil {
+			break
+		}
+
+		return e.complexity.PerformerCheckActivity.Status(childComplexity), true
 
 	case "PerformerScenePerson.id":
 		if e.complexity.PerformerScenePerson.ID == nil {
@@ -2604,6 +2851,13 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.Query.HomeOverview(childComplexity), true
 
+	case "Query.homeSubscriptionChecks":
+		if e.complexity.Query.HomeSubscriptionChecks == nil {
+			break
+		}
+
+		return e.complexity.Query.HomeSubscriptionChecks(childComplexity), true
+
 	case "Query.homeSubscriptionSummary":
 		if e.complexity.Query.HomeSubscriptionSummary == nil {
 			break
@@ -2770,6 +3024,30 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.Query.SubscribedPerformers(childComplexity), true
+
+	case "Query.subscriptionCheck":
+		if e.complexity.Query.SubscriptionCheck == nil {
+			break
+		}
+
+		args, err := ec.field_Query_subscriptionCheck_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Query.SubscriptionCheck(childComplexity, args["id"].(string)), true
+
+	case "Query.subscriptionCheckActivity":
+		if e.complexity.Query.SubscriptionCheckActivity == nil {
+			break
+		}
+
+		args, err := ec.field_Query_subscriptionCheckActivity_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Query.SubscriptionCheckActivity(childComplexity, args["ids"].([]string)), true
 
 	case "Query.task":
 		if e.complexity.Query.Task == nil {
@@ -4174,6 +4452,160 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.Subscription.TaskEvents(childComplexity), true
 
+	case "SubscriptionCheckActivity.activeCount":
+		if e.complexity.SubscriptionCheckActivity.ActiveCount == nil {
+			break
+		}
+
+		return e.complexity.SubscriptionCheckActivity.ActiveCount(childComplexity), true
+
+	case "SubscriptionCheckActivity.allRunId":
+		if e.complexity.SubscriptionCheckActivity.AllRunID == nil {
+			break
+		}
+
+		return e.complexity.SubscriptionCheckActivity.AllRunID(childComplexity), true
+
+	case "SubscriptionCheckActivity.performers":
+		if e.complexity.SubscriptionCheckActivity.Performers == nil {
+			break
+		}
+
+		return e.complexity.SubscriptionCheckActivity.Performers(childComplexity), true
+
+	case "SubscriptionCheckItem.error":
+		if e.complexity.SubscriptionCheckItem.Error == nil {
+			break
+		}
+
+		return e.complexity.SubscriptionCheckItem.Error(childComplexity), true
+
+	case "SubscriptionCheckItem.finishedAt":
+		if e.complexity.SubscriptionCheckItem.FinishedAt == nil {
+			break
+		}
+
+		return e.complexity.SubscriptionCheckItem.FinishedAt(childComplexity), true
+
+	case "SubscriptionCheckItem.name":
+		if e.complexity.SubscriptionCheckItem.Name == nil {
+			break
+		}
+
+		return e.complexity.SubscriptionCheckItem.Name(childComplexity), true
+
+	case "SubscriptionCheckItem.performerId":
+		if e.complexity.SubscriptionCheckItem.PerformerID == nil {
+			break
+		}
+
+		return e.complexity.SubscriptionCheckItem.PerformerID(childComplexity), true
+
+	case "SubscriptionCheckItem.startedAt":
+		if e.complexity.SubscriptionCheckItem.StartedAt == nil {
+			break
+		}
+
+		return e.complexity.SubscriptionCheckItem.StartedAt(childComplexity), true
+
+	case "SubscriptionCheckItem.status":
+		if e.complexity.SubscriptionCheckItem.Status == nil {
+			break
+		}
+
+		return e.complexity.SubscriptionCheckItem.Status(childComplexity), true
+
+	case "SubscriptionCheckRun.completedCount":
+		if e.complexity.SubscriptionCheckRun.CompletedCount == nil {
+			break
+		}
+
+		return e.complexity.SubscriptionCheckRun.CompletedCount(childComplexity), true
+
+	case "SubscriptionCheckRun.error":
+		if e.complexity.SubscriptionCheckRun.Error == nil {
+			break
+		}
+
+		return e.complexity.SubscriptionCheckRun.Error(childComplexity), true
+
+	case "SubscriptionCheckRun.failedCount":
+		if e.complexity.SubscriptionCheckRun.FailedCount == nil {
+			break
+		}
+
+		return e.complexity.SubscriptionCheckRun.FailedCount(childComplexity), true
+
+	case "SubscriptionCheckRun.finishedAt":
+		if e.complexity.SubscriptionCheckRun.FinishedAt == nil {
+			break
+		}
+
+		return e.complexity.SubscriptionCheckRun.FinishedAt(childComplexity), true
+
+	case "SubscriptionCheckRun.id":
+		if e.complexity.SubscriptionCheckRun.ID == nil {
+			break
+		}
+
+		return e.complexity.SubscriptionCheckRun.ID(childComplexity), true
+
+	case "SubscriptionCheckRun.items":
+		if e.complexity.SubscriptionCheckRun.Items == nil {
+			break
+		}
+
+		return e.complexity.SubscriptionCheckRun.Items(childComplexity), true
+
+	case "SubscriptionCheckRun.scope":
+		if e.complexity.SubscriptionCheckRun.Scope == nil {
+			break
+		}
+
+		return e.complexity.SubscriptionCheckRun.Scope(childComplexity), true
+
+	case "SubscriptionCheckRun.skippedCount":
+		if e.complexity.SubscriptionCheckRun.SkippedCount == nil {
+			break
+		}
+
+		return e.complexity.SubscriptionCheckRun.SkippedCount(childComplexity), true
+
+	case "SubscriptionCheckRun.startedAt":
+		if e.complexity.SubscriptionCheckRun.StartedAt == nil {
+			break
+		}
+
+		return e.complexity.SubscriptionCheckRun.StartedAt(childComplexity), true
+
+	case "SubscriptionCheckRun.status":
+		if e.complexity.SubscriptionCheckRun.Status == nil {
+			break
+		}
+
+		return e.complexity.SubscriptionCheckRun.Status(childComplexity), true
+
+	case "SubscriptionCheckRun.succeededCount":
+		if e.complexity.SubscriptionCheckRun.SucceededCount == nil {
+			break
+		}
+
+		return e.complexity.SubscriptionCheckRun.SucceededCount(childComplexity), true
+
+	case "SubscriptionCheckRun.totalCount":
+		if e.complexity.SubscriptionCheckRun.TotalCount == nil {
+			break
+		}
+
+		return e.complexity.SubscriptionCheckRun.TotalCount(childComplexity), true
+
+	case "SubscriptionCheckRun.trigger":
+		if e.complexity.SubscriptionCheckRun.Trigger == nil {
+			break
+		}
+
+		return e.complexity.SubscriptionCheckRun.Trigger(childComplexity), true
+
 	case "SubscriptionRelease.code":
 		if e.complexity.SubscriptionRelease.Code == nil {
 			break
@@ -5155,6 +5587,40 @@ type HomeSubscriptionSummary {
   unchecked: Int!
   lastCheckedAt: String
   attentionPerformerIds: [ID!]!
+}
+
+extend type Query {
+  "Bounded local check progress, schedule, and latest outcomes for Home."
+  homeSubscriptionChecks: HomeSubscriptionChecks!
+}
+
+type HomeSubscriptionChecks {
+  enabled: Boolean!
+  nextRunAt: String
+  activeCount: Int!
+  latestScheduled: HomeSubscriptionCheckRun
+  activeRuns: [HomeSubscriptionCheckRun!]!
+  recentRuns: [HomeSubscriptionCheckRun!]!
+}
+
+type HomeSubscriptionCheckRun {
+  id: ID!
+  trigger: SubscriptionCheckTrigger!
+  scope: SubscriptionCheckScope!
+  status: SubscriptionCheckStatus!
+  startedAt: String!
+  finishedAt: String
+  totalCount: Int!
+  completedCount: Int!
+  succeededCount: Int!
+  failedCount: Int!
+  skippedCount: Int!
+  currentPerformers: [HomeCheckPerformer!]!
+}
+
+type HomeCheckPerformer {
+  performerId: ID!
+  name: String!
 }
 `, BuiltIn: false},
 	{Name: "../../../graphql/moji/types/logging.graphql", Input: `extend type Query {
@@ -6291,6 +6757,78 @@ type PerformerBatchPayload {
   results: [PerformerBatchResult!]!
 }
 `, BuiltIn: false},
+	{Name: "../../../graphql/moji/types/subscription_checks.graphql", Input: `enum SubscriptionCheckStatus {
+  PENDING
+  RUNNING
+  SUCCEEDED
+  SKIPPED
+  PARTIAL
+  FAILED
+  INTERRUPTED
+}
+
+enum SubscriptionCheckTrigger {
+  MANUAL
+  SCHEDULED
+}
+
+enum SubscriptionCheckScope {
+  ALL
+  SINGLE
+  SELECTED
+}
+
+type SubscriptionCheckItem {
+  performerId: ID!
+  name: String!
+  status: SubscriptionCheckStatus!
+  error: String
+  startedAt: String
+  finishedAt: String
+}
+
+type SubscriptionCheckRun {
+  id: ID!
+  trigger: SubscriptionCheckTrigger!
+  scope: SubscriptionCheckScope!
+  status: SubscriptionCheckStatus!
+  startedAt: String!
+  finishedAt: String
+  error: String
+  totalCount: Int!
+  completedCount: Int!
+  succeededCount: Int!
+  failedCount: Int!
+  skippedCount: Int!
+  items: [SubscriptionCheckItem!]!
+}
+
+extend type Query {
+  subscriptionCheck(id: ID!): SubscriptionCheckRun
+}
+
+extend type Mutation {
+  "Start a background check. Omit ids to check all subscriptions. Duplicate active checks return the existing run."
+  startSubscriptionCheck(ids: [ID!]): SubscriptionCheckRun!
+}
+
+type SubscriptionCheckActivity {
+  activeCount: Int!
+  allRunId: ID
+  performers: [PerformerCheckActivity!]!
+}
+
+type PerformerCheckActivity {
+  performerId: ID!
+  runId: ID!
+  status: SubscriptionCheckStatus!
+}
+
+extend type Query {
+  "Check reservations for at most 256 visible or selected actors; no history or upstream reads."
+  subscriptionCheckActivity(ids: [ID!]!): SubscriptionCheckActivity!
+}
+`, BuiltIn: false},
 	{Name: "../../../graphql/moji/types/task.graphql", Input: `extend type Query {
   "List torrents from qBittorrent"
   qbittorrentTorrents(limit: Int): [QBTorrent!]!
@@ -7094,6 +7632,34 @@ func (ec *executionContext) field_Mutation_retryTasks_argsIds(
 	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("ids"))
 	if tmp, ok := rawArgs["ids"]; ok {
 		return ec.unmarshalNID2ᚕstringᚄ(ctx, tmp)
+	}
+
+	var zeroVal []string
+	return zeroVal, nil
+}
+
+func (ec *executionContext) field_Mutation_startSubscriptionCheck_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := ec.field_Mutation_startSubscriptionCheck_argsIds(ctx, rawArgs)
+	if err != nil {
+		return nil, err
+	}
+	args["ids"] = arg0
+	return args, nil
+}
+func (ec *executionContext) field_Mutation_startSubscriptionCheck_argsIds(
+	ctx context.Context,
+	rawArgs map[string]any,
+) ([]string, error) {
+	if _, ok := rawArgs["ids"]; !ok {
+		var zeroVal []string
+		return zeroVal, nil
+	}
+
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("ids"))
+	if tmp, ok := rawArgs["ids"]; ok {
+		return ec.unmarshalOID2ᚕstringᚄ(ctx, tmp)
 	}
 
 	var zeroVal []string
@@ -8009,6 +8575,62 @@ func (ec *executionContext) field_Query_stashPerformers_argsPageSize(
 	}
 
 	var zeroVal *int
+	return zeroVal, nil
+}
+
+func (ec *executionContext) field_Query_subscriptionCheckActivity_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := ec.field_Query_subscriptionCheckActivity_argsIds(ctx, rawArgs)
+	if err != nil {
+		return nil, err
+	}
+	args["ids"] = arg0
+	return args, nil
+}
+func (ec *executionContext) field_Query_subscriptionCheckActivity_argsIds(
+	ctx context.Context,
+	rawArgs map[string]any,
+) ([]string, error) {
+	if _, ok := rawArgs["ids"]; !ok {
+		var zeroVal []string
+		return zeroVal, nil
+	}
+
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("ids"))
+	if tmp, ok := rawArgs["ids"]; ok {
+		return ec.unmarshalNID2ᚕstringᚄ(ctx, tmp)
+	}
+
+	var zeroVal []string
+	return zeroVal, nil
+}
+
+func (ec *executionContext) field_Query_subscriptionCheck_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := ec.field_Query_subscriptionCheck_argsID(ctx, rawArgs)
+	if err != nil {
+		return nil, err
+	}
+	args["id"] = arg0
+	return args, nil
+}
+func (ec *executionContext) field_Query_subscriptionCheck_argsID(
+	ctx context.Context,
+	rawArgs map[string]any,
+) (string, error) {
+	if _, ok := rawArgs["id"]; !ok {
+		var zeroVal string
+		return zeroVal, nil
+	}
+
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
+	if tmp, ok := rawArgs["id"]; ok {
+		return ec.unmarshalNID2string(ctx, tmp)
+	}
+
+	var zeroVal string
 	return zeroVal, nil
 }
 
@@ -10297,6 +10919,94 @@ func (ec *executionContext) fieldContext_Health_message(_ context.Context, field
 	return fc, nil
 }
 
+func (ec *executionContext) _HomeCheckPerformer_performerId(ctx context.Context, field graphql.CollectedField, obj *model.HomeCheckPerformer) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_HomeCheckPerformer_performerId(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.PerformerID, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNID2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_HomeCheckPerformer_performerId(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "HomeCheckPerformer",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type ID does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _HomeCheckPerformer_name(ctx context.Context, field graphql.CollectedField, obj *model.HomeCheckPerformer) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_HomeCheckPerformer_name(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Name, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_HomeCheckPerformer_name(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "HomeCheckPerformer",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _HomeOverview_total(ctx context.Context, field graphql.CollectedField, obj *model.HomeOverview) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_HomeOverview_total(ctx, field)
 	if err != nil {
@@ -10896,6 +11606,873 @@ func (ec *executionContext) fieldContext_HomeOverview_recentTasks(_ context.Cont
 				return ec.fieldContext_Task_lastProgressAt(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Task", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _HomeSubscriptionCheckRun_id(ctx context.Context, field graphql.CollectedField, obj *model.HomeSubscriptionCheckRun) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_HomeSubscriptionCheckRun_id(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.ID, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNID2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_HomeSubscriptionCheckRun_id(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "HomeSubscriptionCheckRun",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type ID does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _HomeSubscriptionCheckRun_trigger(ctx context.Context, field graphql.CollectedField, obj *model.HomeSubscriptionCheckRun) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_HomeSubscriptionCheckRun_trigger(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Trigger, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(model.SubscriptionCheckTrigger)
+	fc.Result = res
+	return ec.marshalNSubscriptionCheckTrigger2githubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐSubscriptionCheckTrigger(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_HomeSubscriptionCheckRun_trigger(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "HomeSubscriptionCheckRun",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type SubscriptionCheckTrigger does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _HomeSubscriptionCheckRun_scope(ctx context.Context, field graphql.CollectedField, obj *model.HomeSubscriptionCheckRun) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_HomeSubscriptionCheckRun_scope(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Scope, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(model.SubscriptionCheckScope)
+	fc.Result = res
+	return ec.marshalNSubscriptionCheckScope2githubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐSubscriptionCheckScope(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_HomeSubscriptionCheckRun_scope(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "HomeSubscriptionCheckRun",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type SubscriptionCheckScope does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _HomeSubscriptionCheckRun_status(ctx context.Context, field graphql.CollectedField, obj *model.HomeSubscriptionCheckRun) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_HomeSubscriptionCheckRun_status(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Status, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(model.SubscriptionCheckStatus)
+	fc.Result = res
+	return ec.marshalNSubscriptionCheckStatus2githubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐSubscriptionCheckStatus(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_HomeSubscriptionCheckRun_status(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "HomeSubscriptionCheckRun",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type SubscriptionCheckStatus does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _HomeSubscriptionCheckRun_startedAt(ctx context.Context, field graphql.CollectedField, obj *model.HomeSubscriptionCheckRun) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_HomeSubscriptionCheckRun_startedAt(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.StartedAt, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_HomeSubscriptionCheckRun_startedAt(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "HomeSubscriptionCheckRun",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _HomeSubscriptionCheckRun_finishedAt(ctx context.Context, field graphql.CollectedField, obj *model.HomeSubscriptionCheckRun) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_HomeSubscriptionCheckRun_finishedAt(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.FinishedAt, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*string)
+	fc.Result = res
+	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_HomeSubscriptionCheckRun_finishedAt(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "HomeSubscriptionCheckRun",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _HomeSubscriptionCheckRun_totalCount(ctx context.Context, field graphql.CollectedField, obj *model.HomeSubscriptionCheckRun) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_HomeSubscriptionCheckRun_totalCount(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.TotalCount, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int)
+	fc.Result = res
+	return ec.marshalNInt2int(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_HomeSubscriptionCheckRun_totalCount(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "HomeSubscriptionCheckRun",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _HomeSubscriptionCheckRun_completedCount(ctx context.Context, field graphql.CollectedField, obj *model.HomeSubscriptionCheckRun) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_HomeSubscriptionCheckRun_completedCount(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.CompletedCount, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int)
+	fc.Result = res
+	return ec.marshalNInt2int(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_HomeSubscriptionCheckRun_completedCount(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "HomeSubscriptionCheckRun",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _HomeSubscriptionCheckRun_succeededCount(ctx context.Context, field graphql.CollectedField, obj *model.HomeSubscriptionCheckRun) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_HomeSubscriptionCheckRun_succeededCount(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.SucceededCount, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int)
+	fc.Result = res
+	return ec.marshalNInt2int(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_HomeSubscriptionCheckRun_succeededCount(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "HomeSubscriptionCheckRun",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _HomeSubscriptionCheckRun_failedCount(ctx context.Context, field graphql.CollectedField, obj *model.HomeSubscriptionCheckRun) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_HomeSubscriptionCheckRun_failedCount(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.FailedCount, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int)
+	fc.Result = res
+	return ec.marshalNInt2int(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_HomeSubscriptionCheckRun_failedCount(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "HomeSubscriptionCheckRun",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _HomeSubscriptionCheckRun_skippedCount(ctx context.Context, field graphql.CollectedField, obj *model.HomeSubscriptionCheckRun) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_HomeSubscriptionCheckRun_skippedCount(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.SkippedCount, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int)
+	fc.Result = res
+	return ec.marshalNInt2int(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_HomeSubscriptionCheckRun_skippedCount(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "HomeSubscriptionCheckRun",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _HomeSubscriptionCheckRun_currentPerformers(ctx context.Context, field graphql.CollectedField, obj *model.HomeSubscriptionCheckRun) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_HomeSubscriptionCheckRun_currentPerformers(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.CurrentPerformers, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]*model.HomeCheckPerformer)
+	fc.Result = res
+	return ec.marshalNHomeCheckPerformer2ᚕᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐHomeCheckPerformerᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_HomeSubscriptionCheckRun_currentPerformers(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "HomeSubscriptionCheckRun",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "performerId":
+				return ec.fieldContext_HomeCheckPerformer_performerId(ctx, field)
+			case "name":
+				return ec.fieldContext_HomeCheckPerformer_name(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type HomeCheckPerformer", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _HomeSubscriptionChecks_enabled(ctx context.Context, field graphql.CollectedField, obj *model.HomeSubscriptionChecks) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_HomeSubscriptionChecks_enabled(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Enabled, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(bool)
+	fc.Result = res
+	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_HomeSubscriptionChecks_enabled(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "HomeSubscriptionChecks",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _HomeSubscriptionChecks_nextRunAt(ctx context.Context, field graphql.CollectedField, obj *model.HomeSubscriptionChecks) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_HomeSubscriptionChecks_nextRunAt(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.NextRunAt, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*string)
+	fc.Result = res
+	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_HomeSubscriptionChecks_nextRunAt(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "HomeSubscriptionChecks",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _HomeSubscriptionChecks_activeCount(ctx context.Context, field graphql.CollectedField, obj *model.HomeSubscriptionChecks) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_HomeSubscriptionChecks_activeCount(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.ActiveCount, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int)
+	fc.Result = res
+	return ec.marshalNInt2int(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_HomeSubscriptionChecks_activeCount(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "HomeSubscriptionChecks",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _HomeSubscriptionChecks_latestScheduled(ctx context.Context, field graphql.CollectedField, obj *model.HomeSubscriptionChecks) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_HomeSubscriptionChecks_latestScheduled(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.LatestScheduled, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*model.HomeSubscriptionCheckRun)
+	fc.Result = res
+	return ec.marshalOHomeSubscriptionCheckRun2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐHomeSubscriptionCheckRun(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_HomeSubscriptionChecks_latestScheduled(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "HomeSubscriptionChecks",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_HomeSubscriptionCheckRun_id(ctx, field)
+			case "trigger":
+				return ec.fieldContext_HomeSubscriptionCheckRun_trigger(ctx, field)
+			case "scope":
+				return ec.fieldContext_HomeSubscriptionCheckRun_scope(ctx, field)
+			case "status":
+				return ec.fieldContext_HomeSubscriptionCheckRun_status(ctx, field)
+			case "startedAt":
+				return ec.fieldContext_HomeSubscriptionCheckRun_startedAt(ctx, field)
+			case "finishedAt":
+				return ec.fieldContext_HomeSubscriptionCheckRun_finishedAt(ctx, field)
+			case "totalCount":
+				return ec.fieldContext_HomeSubscriptionCheckRun_totalCount(ctx, field)
+			case "completedCount":
+				return ec.fieldContext_HomeSubscriptionCheckRun_completedCount(ctx, field)
+			case "succeededCount":
+				return ec.fieldContext_HomeSubscriptionCheckRun_succeededCount(ctx, field)
+			case "failedCount":
+				return ec.fieldContext_HomeSubscriptionCheckRun_failedCount(ctx, field)
+			case "skippedCount":
+				return ec.fieldContext_HomeSubscriptionCheckRun_skippedCount(ctx, field)
+			case "currentPerformers":
+				return ec.fieldContext_HomeSubscriptionCheckRun_currentPerformers(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type HomeSubscriptionCheckRun", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _HomeSubscriptionChecks_activeRuns(ctx context.Context, field graphql.CollectedField, obj *model.HomeSubscriptionChecks) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_HomeSubscriptionChecks_activeRuns(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.ActiveRuns, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]*model.HomeSubscriptionCheckRun)
+	fc.Result = res
+	return ec.marshalNHomeSubscriptionCheckRun2ᚕᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐHomeSubscriptionCheckRunᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_HomeSubscriptionChecks_activeRuns(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "HomeSubscriptionChecks",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_HomeSubscriptionCheckRun_id(ctx, field)
+			case "trigger":
+				return ec.fieldContext_HomeSubscriptionCheckRun_trigger(ctx, field)
+			case "scope":
+				return ec.fieldContext_HomeSubscriptionCheckRun_scope(ctx, field)
+			case "status":
+				return ec.fieldContext_HomeSubscriptionCheckRun_status(ctx, field)
+			case "startedAt":
+				return ec.fieldContext_HomeSubscriptionCheckRun_startedAt(ctx, field)
+			case "finishedAt":
+				return ec.fieldContext_HomeSubscriptionCheckRun_finishedAt(ctx, field)
+			case "totalCount":
+				return ec.fieldContext_HomeSubscriptionCheckRun_totalCount(ctx, field)
+			case "completedCount":
+				return ec.fieldContext_HomeSubscriptionCheckRun_completedCount(ctx, field)
+			case "succeededCount":
+				return ec.fieldContext_HomeSubscriptionCheckRun_succeededCount(ctx, field)
+			case "failedCount":
+				return ec.fieldContext_HomeSubscriptionCheckRun_failedCount(ctx, field)
+			case "skippedCount":
+				return ec.fieldContext_HomeSubscriptionCheckRun_skippedCount(ctx, field)
+			case "currentPerformers":
+				return ec.fieldContext_HomeSubscriptionCheckRun_currentPerformers(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type HomeSubscriptionCheckRun", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _HomeSubscriptionChecks_recentRuns(ctx context.Context, field graphql.CollectedField, obj *model.HomeSubscriptionChecks) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_HomeSubscriptionChecks_recentRuns(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.RecentRuns, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]*model.HomeSubscriptionCheckRun)
+	fc.Result = res
+	return ec.marshalNHomeSubscriptionCheckRun2ᚕᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐHomeSubscriptionCheckRunᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_HomeSubscriptionChecks_recentRuns(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "HomeSubscriptionChecks",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_HomeSubscriptionCheckRun_id(ctx, field)
+			case "trigger":
+				return ec.fieldContext_HomeSubscriptionCheckRun_trigger(ctx, field)
+			case "scope":
+				return ec.fieldContext_HomeSubscriptionCheckRun_scope(ctx, field)
+			case "status":
+				return ec.fieldContext_HomeSubscriptionCheckRun_status(ctx, field)
+			case "startedAt":
+				return ec.fieldContext_HomeSubscriptionCheckRun_startedAt(ctx, field)
+			case "finishedAt":
+				return ec.fieldContext_HomeSubscriptionCheckRun_finishedAt(ctx, field)
+			case "totalCount":
+				return ec.fieldContext_HomeSubscriptionCheckRun_totalCount(ctx, field)
+			case "completedCount":
+				return ec.fieldContext_HomeSubscriptionCheckRun_completedCount(ctx, field)
+			case "succeededCount":
+				return ec.fieldContext_HomeSubscriptionCheckRun_succeededCount(ctx, field)
+			case "failedCount":
+				return ec.fieldContext_HomeSubscriptionCheckRun_failedCount(ctx, field)
+			case "skippedCount":
+				return ec.fieldContext_HomeSubscriptionCheckRun_skippedCount(ctx, field)
+			case "currentPerformers":
+				return ec.fieldContext_HomeSubscriptionCheckRun_currentPerformers(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type HomeSubscriptionCheckRun", field.Name)
 		},
 	}
 	return fc, nil
@@ -16603,6 +18180,89 @@ func (ec *executionContext) fieldContext_Mutation_refreshStashPerformerScenes(ct
 	return fc, nil
 }
 
+func (ec *executionContext) _Mutation_startSubscriptionCheck(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Mutation_startSubscriptionCheck(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().StartSubscriptionCheck(rctx, fc.Args["ids"].([]string))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*model.SubscriptionCheckRun)
+	fc.Result = res
+	return ec.marshalNSubscriptionCheckRun2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐSubscriptionCheckRun(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Mutation_startSubscriptionCheck(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_SubscriptionCheckRun_id(ctx, field)
+			case "trigger":
+				return ec.fieldContext_SubscriptionCheckRun_trigger(ctx, field)
+			case "scope":
+				return ec.fieldContext_SubscriptionCheckRun_scope(ctx, field)
+			case "status":
+				return ec.fieldContext_SubscriptionCheckRun_status(ctx, field)
+			case "startedAt":
+				return ec.fieldContext_SubscriptionCheckRun_startedAt(ctx, field)
+			case "finishedAt":
+				return ec.fieldContext_SubscriptionCheckRun_finishedAt(ctx, field)
+			case "error":
+				return ec.fieldContext_SubscriptionCheckRun_error(ctx, field)
+			case "totalCount":
+				return ec.fieldContext_SubscriptionCheckRun_totalCount(ctx, field)
+			case "completedCount":
+				return ec.fieldContext_SubscriptionCheckRun_completedCount(ctx, field)
+			case "succeededCount":
+				return ec.fieldContext_SubscriptionCheckRun_succeededCount(ctx, field)
+			case "failedCount":
+				return ec.fieldContext_SubscriptionCheckRun_failedCount(ctx, field)
+			case "skippedCount":
+				return ec.fieldContext_SubscriptionCheckRun_skippedCount(ctx, field)
+			case "items":
+				return ec.fieldContext_SubscriptionCheckRun_items(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type SubscriptionCheckRun", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_startSubscriptionCheck_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _PerformerBatchPayload_batchId(ctx context.Context, field graphql.CollectedField, obj *model.PerformerBatchPayload) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_PerformerBatchPayload_batchId(ctx, field)
 	if err != nil {
@@ -17174,6 +18834,138 @@ func (ec *executionContext) fieldContext_PerformerBatchSummary_failedCount(_ con
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _PerformerCheckActivity_performerId(ctx context.Context, field graphql.CollectedField, obj *model.PerformerCheckActivity) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_PerformerCheckActivity_performerId(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.PerformerID, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNID2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_PerformerCheckActivity_performerId(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "PerformerCheckActivity",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type ID does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _PerformerCheckActivity_runId(ctx context.Context, field graphql.CollectedField, obj *model.PerformerCheckActivity) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_PerformerCheckActivity_runId(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.RunID, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNID2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_PerformerCheckActivity_runId(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "PerformerCheckActivity",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type ID does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _PerformerCheckActivity_status(ctx context.Context, field graphql.CollectedField, obj *model.PerformerCheckActivity) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_PerformerCheckActivity_status(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Status, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(model.SubscriptionCheckStatus)
+	fc.Result = res
+	return ec.marshalNSubscriptionCheckStatus2githubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐSubscriptionCheckStatus(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_PerformerCheckActivity_status(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "PerformerCheckActivity",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type SubscriptionCheckStatus does not have child fields")
 		},
 	}
 	return fc, nil
@@ -19622,6 +21414,64 @@ func (ec *executionContext) fieldContext_Query_homeSubscriptionSummary(_ context
 	return fc, nil
 }
 
+func (ec *executionContext) _Query_homeSubscriptionChecks(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Query_homeSubscriptionChecks(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Query().HomeSubscriptionChecks(rctx)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*model.HomeSubscriptionChecks)
+	fc.Result = res
+	return ec.marshalNHomeSubscriptionChecks2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐHomeSubscriptionChecks(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Query_homeSubscriptionChecks(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "enabled":
+				return ec.fieldContext_HomeSubscriptionChecks_enabled(ctx, field)
+			case "nextRunAt":
+				return ec.fieldContext_HomeSubscriptionChecks_nextRunAt(ctx, field)
+			case "activeCount":
+				return ec.fieldContext_HomeSubscriptionChecks_activeCount(ctx, field)
+			case "latestScheduled":
+				return ec.fieldContext_HomeSubscriptionChecks_latestScheduled(ctx, field)
+			case "activeRuns":
+				return ec.fieldContext_HomeSubscriptionChecks_activeRuns(ctx, field)
+			case "recentRuns":
+				return ec.fieldContext_HomeSubscriptionChecks_recentRuns(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type HomeSubscriptionChecks", field.Name)
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _Query_logs(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_Query_logs(ctx, field)
 	if err != nil {
@@ -20803,6 +22653,149 @@ func (ec *executionContext) fieldContext_Query_subscribedPerformers(_ context.Co
 			}
 			return nil, fmt.Errorf("no field named %q was found under type SubscribedPerformer", field.Name)
 		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Query_subscriptionCheck(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Query_subscriptionCheck(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Query().SubscriptionCheck(rctx, fc.Args["id"].(string))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*model.SubscriptionCheckRun)
+	fc.Result = res
+	return ec.marshalOSubscriptionCheckRun2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐSubscriptionCheckRun(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Query_subscriptionCheck(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_SubscriptionCheckRun_id(ctx, field)
+			case "trigger":
+				return ec.fieldContext_SubscriptionCheckRun_trigger(ctx, field)
+			case "scope":
+				return ec.fieldContext_SubscriptionCheckRun_scope(ctx, field)
+			case "status":
+				return ec.fieldContext_SubscriptionCheckRun_status(ctx, field)
+			case "startedAt":
+				return ec.fieldContext_SubscriptionCheckRun_startedAt(ctx, field)
+			case "finishedAt":
+				return ec.fieldContext_SubscriptionCheckRun_finishedAt(ctx, field)
+			case "error":
+				return ec.fieldContext_SubscriptionCheckRun_error(ctx, field)
+			case "totalCount":
+				return ec.fieldContext_SubscriptionCheckRun_totalCount(ctx, field)
+			case "completedCount":
+				return ec.fieldContext_SubscriptionCheckRun_completedCount(ctx, field)
+			case "succeededCount":
+				return ec.fieldContext_SubscriptionCheckRun_succeededCount(ctx, field)
+			case "failedCount":
+				return ec.fieldContext_SubscriptionCheckRun_failedCount(ctx, field)
+			case "skippedCount":
+				return ec.fieldContext_SubscriptionCheckRun_skippedCount(ctx, field)
+			case "items":
+				return ec.fieldContext_SubscriptionCheckRun_items(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type SubscriptionCheckRun", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Query_subscriptionCheck_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Query_subscriptionCheckActivity(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Query_subscriptionCheckActivity(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Query().SubscriptionCheckActivity(rctx, fc.Args["ids"].([]string))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*model.SubscriptionCheckActivity)
+	fc.Result = res
+	return ec.marshalNSubscriptionCheckActivity2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐSubscriptionCheckActivity(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Query_subscriptionCheckActivity(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "activeCount":
+				return ec.fieldContext_SubscriptionCheckActivity_activeCount(ctx, field)
+			case "allRunId":
+				return ec.fieldContext_SubscriptionCheckActivity_allRunId(ctx, field)
+			case "performers":
+				return ec.fieldContext_SubscriptionCheckActivity_performers(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type SubscriptionCheckActivity", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Query_subscriptionCheckActivity_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
 	}
 	return fc, nil
 }
@@ -30532,6 +32525,978 @@ func (ec *executionContext) fieldContext_Subscription_serviceStatusEvents(_ cont
 	return fc, nil
 }
 
+func (ec *executionContext) _SubscriptionCheckActivity_activeCount(ctx context.Context, field graphql.CollectedField, obj *model.SubscriptionCheckActivity) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_SubscriptionCheckActivity_activeCount(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.ActiveCount, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int)
+	fc.Result = res
+	return ec.marshalNInt2int(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_SubscriptionCheckActivity_activeCount(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "SubscriptionCheckActivity",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _SubscriptionCheckActivity_allRunId(ctx context.Context, field graphql.CollectedField, obj *model.SubscriptionCheckActivity) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_SubscriptionCheckActivity_allRunId(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.AllRunID, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*string)
+	fc.Result = res
+	return ec.marshalOID2ᚖstring(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_SubscriptionCheckActivity_allRunId(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "SubscriptionCheckActivity",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type ID does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _SubscriptionCheckActivity_performers(ctx context.Context, field graphql.CollectedField, obj *model.SubscriptionCheckActivity) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_SubscriptionCheckActivity_performers(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Performers, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]*model.PerformerCheckActivity)
+	fc.Result = res
+	return ec.marshalNPerformerCheckActivity2ᚕᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐPerformerCheckActivityᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_SubscriptionCheckActivity_performers(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "SubscriptionCheckActivity",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "performerId":
+				return ec.fieldContext_PerformerCheckActivity_performerId(ctx, field)
+			case "runId":
+				return ec.fieldContext_PerformerCheckActivity_runId(ctx, field)
+			case "status":
+				return ec.fieldContext_PerformerCheckActivity_status(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type PerformerCheckActivity", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _SubscriptionCheckItem_performerId(ctx context.Context, field graphql.CollectedField, obj *model.SubscriptionCheckItem) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_SubscriptionCheckItem_performerId(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.PerformerID, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNID2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_SubscriptionCheckItem_performerId(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "SubscriptionCheckItem",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type ID does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _SubscriptionCheckItem_name(ctx context.Context, field graphql.CollectedField, obj *model.SubscriptionCheckItem) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_SubscriptionCheckItem_name(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Name, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_SubscriptionCheckItem_name(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "SubscriptionCheckItem",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _SubscriptionCheckItem_status(ctx context.Context, field graphql.CollectedField, obj *model.SubscriptionCheckItem) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_SubscriptionCheckItem_status(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Status, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(model.SubscriptionCheckStatus)
+	fc.Result = res
+	return ec.marshalNSubscriptionCheckStatus2githubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐSubscriptionCheckStatus(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_SubscriptionCheckItem_status(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "SubscriptionCheckItem",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type SubscriptionCheckStatus does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _SubscriptionCheckItem_error(ctx context.Context, field graphql.CollectedField, obj *model.SubscriptionCheckItem) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_SubscriptionCheckItem_error(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Error, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*string)
+	fc.Result = res
+	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_SubscriptionCheckItem_error(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "SubscriptionCheckItem",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _SubscriptionCheckItem_startedAt(ctx context.Context, field graphql.CollectedField, obj *model.SubscriptionCheckItem) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_SubscriptionCheckItem_startedAt(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.StartedAt, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*string)
+	fc.Result = res
+	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_SubscriptionCheckItem_startedAt(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "SubscriptionCheckItem",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _SubscriptionCheckItem_finishedAt(ctx context.Context, field graphql.CollectedField, obj *model.SubscriptionCheckItem) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_SubscriptionCheckItem_finishedAt(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.FinishedAt, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*string)
+	fc.Result = res
+	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_SubscriptionCheckItem_finishedAt(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "SubscriptionCheckItem",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _SubscriptionCheckRun_id(ctx context.Context, field graphql.CollectedField, obj *model.SubscriptionCheckRun) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_SubscriptionCheckRun_id(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.ID, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNID2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_SubscriptionCheckRun_id(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "SubscriptionCheckRun",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type ID does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _SubscriptionCheckRun_trigger(ctx context.Context, field graphql.CollectedField, obj *model.SubscriptionCheckRun) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_SubscriptionCheckRun_trigger(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Trigger, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(model.SubscriptionCheckTrigger)
+	fc.Result = res
+	return ec.marshalNSubscriptionCheckTrigger2githubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐSubscriptionCheckTrigger(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_SubscriptionCheckRun_trigger(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "SubscriptionCheckRun",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type SubscriptionCheckTrigger does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _SubscriptionCheckRun_scope(ctx context.Context, field graphql.CollectedField, obj *model.SubscriptionCheckRun) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_SubscriptionCheckRun_scope(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Scope, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(model.SubscriptionCheckScope)
+	fc.Result = res
+	return ec.marshalNSubscriptionCheckScope2githubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐSubscriptionCheckScope(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_SubscriptionCheckRun_scope(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "SubscriptionCheckRun",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type SubscriptionCheckScope does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _SubscriptionCheckRun_status(ctx context.Context, field graphql.CollectedField, obj *model.SubscriptionCheckRun) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_SubscriptionCheckRun_status(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Status, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(model.SubscriptionCheckStatus)
+	fc.Result = res
+	return ec.marshalNSubscriptionCheckStatus2githubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐSubscriptionCheckStatus(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_SubscriptionCheckRun_status(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "SubscriptionCheckRun",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type SubscriptionCheckStatus does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _SubscriptionCheckRun_startedAt(ctx context.Context, field graphql.CollectedField, obj *model.SubscriptionCheckRun) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_SubscriptionCheckRun_startedAt(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.StartedAt, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_SubscriptionCheckRun_startedAt(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "SubscriptionCheckRun",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _SubscriptionCheckRun_finishedAt(ctx context.Context, field graphql.CollectedField, obj *model.SubscriptionCheckRun) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_SubscriptionCheckRun_finishedAt(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.FinishedAt, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*string)
+	fc.Result = res
+	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_SubscriptionCheckRun_finishedAt(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "SubscriptionCheckRun",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _SubscriptionCheckRun_error(ctx context.Context, field graphql.CollectedField, obj *model.SubscriptionCheckRun) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_SubscriptionCheckRun_error(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Error, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*string)
+	fc.Result = res
+	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_SubscriptionCheckRun_error(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "SubscriptionCheckRun",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _SubscriptionCheckRun_totalCount(ctx context.Context, field graphql.CollectedField, obj *model.SubscriptionCheckRun) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_SubscriptionCheckRun_totalCount(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.TotalCount, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int)
+	fc.Result = res
+	return ec.marshalNInt2int(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_SubscriptionCheckRun_totalCount(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "SubscriptionCheckRun",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _SubscriptionCheckRun_completedCount(ctx context.Context, field graphql.CollectedField, obj *model.SubscriptionCheckRun) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_SubscriptionCheckRun_completedCount(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.CompletedCount, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int)
+	fc.Result = res
+	return ec.marshalNInt2int(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_SubscriptionCheckRun_completedCount(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "SubscriptionCheckRun",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _SubscriptionCheckRun_succeededCount(ctx context.Context, field graphql.CollectedField, obj *model.SubscriptionCheckRun) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_SubscriptionCheckRun_succeededCount(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.SucceededCount, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int)
+	fc.Result = res
+	return ec.marshalNInt2int(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_SubscriptionCheckRun_succeededCount(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "SubscriptionCheckRun",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _SubscriptionCheckRun_failedCount(ctx context.Context, field graphql.CollectedField, obj *model.SubscriptionCheckRun) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_SubscriptionCheckRun_failedCount(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.FailedCount, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int)
+	fc.Result = res
+	return ec.marshalNInt2int(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_SubscriptionCheckRun_failedCount(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "SubscriptionCheckRun",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _SubscriptionCheckRun_skippedCount(ctx context.Context, field graphql.CollectedField, obj *model.SubscriptionCheckRun) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_SubscriptionCheckRun_skippedCount(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.SkippedCount, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int)
+	fc.Result = res
+	return ec.marshalNInt2int(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_SubscriptionCheckRun_skippedCount(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "SubscriptionCheckRun",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _SubscriptionCheckRun_items(ctx context.Context, field graphql.CollectedField, obj *model.SubscriptionCheckRun) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_SubscriptionCheckRun_items(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Items, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]*model.SubscriptionCheckItem)
+	fc.Result = res
+	return ec.marshalNSubscriptionCheckItem2ᚕᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐSubscriptionCheckItemᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_SubscriptionCheckRun_items(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "SubscriptionCheckRun",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "performerId":
+				return ec.fieldContext_SubscriptionCheckItem_performerId(ctx, field)
+			case "name":
+				return ec.fieldContext_SubscriptionCheckItem_name(ctx, field)
+			case "status":
+				return ec.fieldContext_SubscriptionCheckItem_status(ctx, field)
+			case "error":
+				return ec.fieldContext_SubscriptionCheckItem_error(ctx, field)
+			case "startedAt":
+				return ec.fieldContext_SubscriptionCheckItem_startedAt(ctx, field)
+			case "finishedAt":
+				return ec.fieldContext_SubscriptionCheckItem_finishedAt(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type SubscriptionCheckItem", field.Name)
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _SubscriptionRelease_key(ctx context.Context, field graphql.CollectedField, obj *model.SubscriptionRelease) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_SubscriptionRelease_key(ctx, field)
 	if err != nil {
@@ -39856,6 +42821,50 @@ func (ec *executionContext) _Health(ctx context.Context, sel ast.SelectionSet, o
 	return out
 }
 
+var homeCheckPerformerImplementors = []string{"HomeCheckPerformer"}
+
+func (ec *executionContext) _HomeCheckPerformer(ctx context.Context, sel ast.SelectionSet, obj *model.HomeCheckPerformer) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, homeCheckPerformerImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("HomeCheckPerformer")
+		case "performerId":
+			out.Values[i] = ec._HomeCheckPerformer_performerId(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "name":
+			out.Values[i] = ec._HomeCheckPerformer_name(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
 var homeOverviewImplementors = []string{"HomeOverview"}
 
 func (ec *executionContext) _HomeOverview(ctx context.Context, sel ast.SelectionSet, obj *model.HomeOverview) graphql.Marshaler {
@@ -39904,6 +42913,155 @@ func (ec *executionContext) _HomeOverview(ctx context.Context, sel ast.Selection
 			}
 		case "recentTasks":
 			out.Values[i] = ec._HomeOverview_recentTasks(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var homeSubscriptionCheckRunImplementors = []string{"HomeSubscriptionCheckRun"}
+
+func (ec *executionContext) _HomeSubscriptionCheckRun(ctx context.Context, sel ast.SelectionSet, obj *model.HomeSubscriptionCheckRun) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, homeSubscriptionCheckRunImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("HomeSubscriptionCheckRun")
+		case "id":
+			out.Values[i] = ec._HomeSubscriptionCheckRun_id(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "trigger":
+			out.Values[i] = ec._HomeSubscriptionCheckRun_trigger(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "scope":
+			out.Values[i] = ec._HomeSubscriptionCheckRun_scope(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "status":
+			out.Values[i] = ec._HomeSubscriptionCheckRun_status(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "startedAt":
+			out.Values[i] = ec._HomeSubscriptionCheckRun_startedAt(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "finishedAt":
+			out.Values[i] = ec._HomeSubscriptionCheckRun_finishedAt(ctx, field, obj)
+		case "totalCount":
+			out.Values[i] = ec._HomeSubscriptionCheckRun_totalCount(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "completedCount":
+			out.Values[i] = ec._HomeSubscriptionCheckRun_completedCount(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "succeededCount":
+			out.Values[i] = ec._HomeSubscriptionCheckRun_succeededCount(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "failedCount":
+			out.Values[i] = ec._HomeSubscriptionCheckRun_failedCount(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "skippedCount":
+			out.Values[i] = ec._HomeSubscriptionCheckRun_skippedCount(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "currentPerformers":
+			out.Values[i] = ec._HomeSubscriptionCheckRun_currentPerformers(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var homeSubscriptionChecksImplementors = []string{"HomeSubscriptionChecks"}
+
+func (ec *executionContext) _HomeSubscriptionChecks(ctx context.Context, sel ast.SelectionSet, obj *model.HomeSubscriptionChecks) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, homeSubscriptionChecksImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("HomeSubscriptionChecks")
+		case "enabled":
+			out.Values[i] = ec._HomeSubscriptionChecks_enabled(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "nextRunAt":
+			out.Values[i] = ec._HomeSubscriptionChecks_nextRunAt(ctx, field, obj)
+		case "activeCount":
+			out.Values[i] = ec._HomeSubscriptionChecks_activeCount(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "latestScheduled":
+			out.Values[i] = ec._HomeSubscriptionChecks_latestScheduled(ctx, field, obj)
+		case "activeRuns":
+			out.Values[i] = ec._HomeSubscriptionChecks_activeRuns(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "recentRuns":
+			out.Values[i] = ec._HomeSubscriptionChecks_recentRuns(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
@@ -40949,6 +44107,13 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
+		case "startSubscriptionCheck":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_startSubscriptionCheck(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -41102,6 +44267,55 @@ func (ec *executionContext) _PerformerBatchSummary(ctx context.Context, sel ast.
 			}
 		case "failedCount":
 			out.Values[i] = ec._PerformerBatchSummary_failedCount(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var performerCheckActivityImplementors = []string{"PerformerCheckActivity"}
+
+func (ec *executionContext) _PerformerCheckActivity(ctx context.Context, sel ast.SelectionSet, obj *model.PerformerCheckActivity) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, performerCheckActivityImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("PerformerCheckActivity")
+		case "performerId":
+			out.Values[i] = ec._PerformerCheckActivity_performerId(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "runId":
+			out.Values[i] = ec._PerformerCheckActivity_runId(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "status":
+			out.Values[i] = ec._PerformerCheckActivity_status(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
@@ -41811,6 +45025,28 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 			}
 
 			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
+		case "homeSubscriptionChecks":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_homeSubscriptionChecks(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			rrm := func(ctx context.Context) graphql.Marshaler {
+				return ec.OperationContext.RootResolverMiddleware(ctx,
+					func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
 		case "logs":
 			field := field
 
@@ -42170,6 +45406,47 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 					}
 				}()
 				res = ec._Query_subscribedPerformers(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			rrm := func(ctx context.Context) graphql.Marshaler {
+				return ec.OperationContext.RootResolverMiddleware(ctx,
+					func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
+		case "subscriptionCheck":
+			field := field
+
+			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_subscriptionCheck(ctx, field)
+				return res
+			}
+
+			rrm := func(ctx context.Context) graphql.Marshaler {
+				return ec.OperationContext.RootResolverMiddleware(ctx,
+					func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
+		case "subscriptionCheckActivity":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_subscriptionCheckActivity(ctx, field)
 				if res == graphql.Null {
 					atomic.AddUint32(&fs.Invalids, 1)
 				}
@@ -44075,6 +47352,200 @@ func (ec *executionContext) _Subscription(ctx context.Context, sel ast.Selection
 	}
 }
 
+var subscriptionCheckActivityImplementors = []string{"SubscriptionCheckActivity"}
+
+func (ec *executionContext) _SubscriptionCheckActivity(ctx context.Context, sel ast.SelectionSet, obj *model.SubscriptionCheckActivity) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, subscriptionCheckActivityImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("SubscriptionCheckActivity")
+		case "activeCount":
+			out.Values[i] = ec._SubscriptionCheckActivity_activeCount(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "allRunId":
+			out.Values[i] = ec._SubscriptionCheckActivity_allRunId(ctx, field, obj)
+		case "performers":
+			out.Values[i] = ec._SubscriptionCheckActivity_performers(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var subscriptionCheckItemImplementors = []string{"SubscriptionCheckItem"}
+
+func (ec *executionContext) _SubscriptionCheckItem(ctx context.Context, sel ast.SelectionSet, obj *model.SubscriptionCheckItem) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, subscriptionCheckItemImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("SubscriptionCheckItem")
+		case "performerId":
+			out.Values[i] = ec._SubscriptionCheckItem_performerId(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "name":
+			out.Values[i] = ec._SubscriptionCheckItem_name(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "status":
+			out.Values[i] = ec._SubscriptionCheckItem_status(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "error":
+			out.Values[i] = ec._SubscriptionCheckItem_error(ctx, field, obj)
+		case "startedAt":
+			out.Values[i] = ec._SubscriptionCheckItem_startedAt(ctx, field, obj)
+		case "finishedAt":
+			out.Values[i] = ec._SubscriptionCheckItem_finishedAt(ctx, field, obj)
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var subscriptionCheckRunImplementors = []string{"SubscriptionCheckRun"}
+
+func (ec *executionContext) _SubscriptionCheckRun(ctx context.Context, sel ast.SelectionSet, obj *model.SubscriptionCheckRun) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, subscriptionCheckRunImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("SubscriptionCheckRun")
+		case "id":
+			out.Values[i] = ec._SubscriptionCheckRun_id(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "trigger":
+			out.Values[i] = ec._SubscriptionCheckRun_trigger(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "scope":
+			out.Values[i] = ec._SubscriptionCheckRun_scope(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "status":
+			out.Values[i] = ec._SubscriptionCheckRun_status(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "startedAt":
+			out.Values[i] = ec._SubscriptionCheckRun_startedAt(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "finishedAt":
+			out.Values[i] = ec._SubscriptionCheckRun_finishedAt(ctx, field, obj)
+		case "error":
+			out.Values[i] = ec._SubscriptionCheckRun_error(ctx, field, obj)
+		case "totalCount":
+			out.Values[i] = ec._SubscriptionCheckRun_totalCount(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "completedCount":
+			out.Values[i] = ec._SubscriptionCheckRun_completedCount(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "succeededCount":
+			out.Values[i] = ec._SubscriptionCheckRun_succeededCount(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "failedCount":
+			out.Values[i] = ec._SubscriptionCheckRun_failedCount(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "skippedCount":
+			out.Values[i] = ec._SubscriptionCheckRun_skippedCount(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "items":
+			out.Values[i] = ec._SubscriptionCheckRun_items(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
 var subscriptionReleaseImplementors = []string{"SubscriptionRelease"}
 
 func (ec *executionContext) _SubscriptionRelease(ctx context.Context, sel ast.SelectionSet, obj *model.SubscriptionRelease) graphql.Marshaler {
@@ -45705,6 +49176,60 @@ func (ec *executionContext) marshalNHealth2ᚖgithubᚗcomᚋleothevan2444ᚋmoj
 	return ec._Health(ctx, sel, v)
 }
 
+func (ec *executionContext) marshalNHomeCheckPerformer2ᚕᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐHomeCheckPerformerᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.HomeCheckPerformer) graphql.Marshaler {
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalNHomeCheckPerformer2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐHomeCheckPerformer(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
+}
+
+func (ec *executionContext) marshalNHomeCheckPerformer2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐHomeCheckPerformer(ctx context.Context, sel ast.SelectionSet, v *model.HomeCheckPerformer) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._HomeCheckPerformer(ctx, sel, v)
+}
+
 func (ec *executionContext) marshalNHomeOverview2githubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐHomeOverview(ctx context.Context, sel ast.SelectionSet, v model.HomeOverview) graphql.Marshaler {
 	return ec._HomeOverview(ctx, sel, &v)
 }
@@ -45717,6 +49242,74 @@ func (ec *executionContext) marshalNHomeOverview2ᚖgithubᚗcomᚋleothevan2444
 		return graphql.Null
 	}
 	return ec._HomeOverview(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNHomeSubscriptionCheckRun2ᚕᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐHomeSubscriptionCheckRunᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.HomeSubscriptionCheckRun) graphql.Marshaler {
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalNHomeSubscriptionCheckRun2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐHomeSubscriptionCheckRun(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
+}
+
+func (ec *executionContext) marshalNHomeSubscriptionCheckRun2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐHomeSubscriptionCheckRun(ctx context.Context, sel ast.SelectionSet, v *model.HomeSubscriptionCheckRun) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._HomeSubscriptionCheckRun(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNHomeSubscriptionChecks2githubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐHomeSubscriptionChecks(ctx context.Context, sel ast.SelectionSet, v model.HomeSubscriptionChecks) graphql.Marshaler {
+	return ec._HomeSubscriptionChecks(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNHomeSubscriptionChecks2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐHomeSubscriptionChecks(ctx context.Context, sel ast.SelectionSet, v *model.HomeSubscriptionChecks) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._HomeSubscriptionChecks(ctx, sel, v)
 }
 
 func (ec *executionContext) marshalNHomeSubscriptionSummary2githubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐHomeSubscriptionSummary(ctx context.Context, sel ast.SelectionSet, v model.HomeSubscriptionSummary) graphql.Marshaler {
@@ -46207,6 +49800,60 @@ func (ec *executionContext) marshalNPerformerBatchSummary2ᚖgithubᚗcomᚋleot
 		return graphql.Null
 	}
 	return ec._PerformerBatchSummary(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNPerformerCheckActivity2ᚕᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐPerformerCheckActivityᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.PerformerCheckActivity) graphql.Marshaler {
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalNPerformerCheckActivity2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐPerformerCheckActivity(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
+}
+
+func (ec *executionContext) marshalNPerformerCheckActivity2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐPerformerCheckActivity(ctx context.Context, sel ast.SelectionSet, v *model.PerformerCheckActivity) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._PerformerCheckActivity(ctx, sel, v)
 }
 
 func (ec *executionContext) marshalNPerformerScenePerson2ᚕᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐPerformerScenePersonᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.PerformerScenePerson) graphql.Marshaler {
@@ -47362,6 +51009,118 @@ func (ec *executionContext) marshalNSubscribedPerformer2ᚖgithubᚗcomᚋleothe
 	return ec._SubscribedPerformer(ctx, sel, v)
 }
 
+func (ec *executionContext) marshalNSubscriptionCheckActivity2githubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐSubscriptionCheckActivity(ctx context.Context, sel ast.SelectionSet, v model.SubscriptionCheckActivity) graphql.Marshaler {
+	return ec._SubscriptionCheckActivity(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNSubscriptionCheckActivity2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐSubscriptionCheckActivity(ctx context.Context, sel ast.SelectionSet, v *model.SubscriptionCheckActivity) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._SubscriptionCheckActivity(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNSubscriptionCheckItem2ᚕᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐSubscriptionCheckItemᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.SubscriptionCheckItem) graphql.Marshaler {
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalNSubscriptionCheckItem2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐSubscriptionCheckItem(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
+}
+
+func (ec *executionContext) marshalNSubscriptionCheckItem2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐSubscriptionCheckItem(ctx context.Context, sel ast.SelectionSet, v *model.SubscriptionCheckItem) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._SubscriptionCheckItem(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNSubscriptionCheckRun2githubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐSubscriptionCheckRun(ctx context.Context, sel ast.SelectionSet, v model.SubscriptionCheckRun) graphql.Marshaler {
+	return ec._SubscriptionCheckRun(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNSubscriptionCheckRun2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐSubscriptionCheckRun(ctx context.Context, sel ast.SelectionSet, v *model.SubscriptionCheckRun) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._SubscriptionCheckRun(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalNSubscriptionCheckScope2githubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐSubscriptionCheckScope(ctx context.Context, v any) (model.SubscriptionCheckScope, error) {
+	var res model.SubscriptionCheckScope
+	err := res.UnmarshalGQL(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNSubscriptionCheckScope2githubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐSubscriptionCheckScope(ctx context.Context, sel ast.SelectionSet, v model.SubscriptionCheckScope) graphql.Marshaler {
+	return v
+}
+
+func (ec *executionContext) unmarshalNSubscriptionCheckStatus2githubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐSubscriptionCheckStatus(ctx context.Context, v any) (model.SubscriptionCheckStatus, error) {
+	var res model.SubscriptionCheckStatus
+	err := res.UnmarshalGQL(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNSubscriptionCheckStatus2githubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐSubscriptionCheckStatus(ctx context.Context, sel ast.SelectionSet, v model.SubscriptionCheckStatus) graphql.Marshaler {
+	return v
+}
+
+func (ec *executionContext) unmarshalNSubscriptionCheckTrigger2githubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐSubscriptionCheckTrigger(ctx context.Context, v any) (model.SubscriptionCheckTrigger, error) {
+	var res model.SubscriptionCheckTrigger
+	err := res.UnmarshalGQL(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNSubscriptionCheckTrigger2githubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐSubscriptionCheckTrigger(ctx context.Context, sel ast.SelectionSet, v model.SubscriptionCheckTrigger) graphql.Marshaler {
+	return v
+}
+
 func (ec *executionContext) marshalNSubscriptionRelease2ᚕᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐSubscriptionReleaseᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.SubscriptionRelease) graphql.Marshaler {
 	ret := make(graphql.Array, len(v))
 	var wg sync.WaitGroup
@@ -48440,6 +52199,49 @@ func (ec *executionContext) marshalOFloat2ᚖfloat64(ctx context.Context, sel as
 	return graphql.WrapContextMarshaler(ctx, res)
 }
 
+func (ec *executionContext) marshalOHomeSubscriptionCheckRun2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐHomeSubscriptionCheckRun(ctx context.Context, sel ast.SelectionSet, v *model.HomeSubscriptionCheckRun) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return ec._HomeSubscriptionCheckRun(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalOID2ᚕstringᚄ(ctx context.Context, v any) ([]string, error) {
+	if v == nil {
+		return nil, nil
+	}
+	var vSlice []any
+	vSlice = graphql.CoerceList(v)
+	var err error
+	res := make([]string, len(vSlice))
+	for i := range vSlice {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithIndex(i))
+		res[i], err = ec.unmarshalNID2string(ctx, vSlice[i])
+		if err != nil {
+			return nil, err
+		}
+	}
+	return res, nil
+}
+
+func (ec *executionContext) marshalOID2ᚕstringᚄ(ctx context.Context, sel ast.SelectionSet, v []string) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	ret := make(graphql.Array, len(v))
+	for i := range v {
+		ret[i] = ec.marshalNID2string(ctx, sel, v[i])
+	}
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
+}
+
 func (ec *executionContext) unmarshalOID2ᚖstring(ctx context.Context, v any) (*string, error) {
 	if v == nil {
 		return nil, nil
@@ -48768,6 +52570,13 @@ func (ec *executionContext) marshalOSubscribedPerformer2ᚖgithubᚗcomᚋleothe
 		return graphql.Null
 	}
 	return ec._SubscribedPerformer(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalOSubscriptionCheckRun2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐSubscriptionCheckRun(ctx context.Context, sel ast.SelectionSet, v *model.SubscriptionCheckRun) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return ec._SubscriptionCheckRun(ctx, sel, v)
 }
 
 func (ec *executionContext) unmarshalOSubscriptionReleaseBehavior2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐSubscriptionReleaseBehavior(ctx context.Context, v any) (*model.SubscriptionReleaseBehavior, error) {

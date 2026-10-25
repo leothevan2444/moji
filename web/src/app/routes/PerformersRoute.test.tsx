@@ -125,6 +125,8 @@ function workspaceForPage(page: number) {
     refreshSubscriptionsNow: vi.fn(),
     subscribePerformers: vi.fn(),
     unsubscribePerformers: vi.fn(),
+    startCheck: vi.fn().mockResolvedValue({ run: { id: "check-1" } }),
+    refreshChecks: vi.fn(),
     refreshSubscribedPerformers: vi.fn()
   };
 }

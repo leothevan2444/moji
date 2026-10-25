@@ -7,9 +7,10 @@ import (
 )
 
 type MemoryStore struct {
-	mu      sync.RWMutex
-	states  map[string]*PerformerState
-	reviews map[string]ReleaseReview
+	mu        sync.RWMutex
+	states    map[string]*PerformerState
+	checkRuns map[string]CheckRun
+	reviews   map[string]ReleaseReview
 }
 
 func NewMemoryStore() *MemoryStore {

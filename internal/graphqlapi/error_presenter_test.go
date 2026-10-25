@@ -19,6 +19,7 @@ func TestErrorPresenterContract(t *testing.T) {
 		{taskruntime.ErrDuplicateTorrentTask, ErrorDuplicateTorrentTask},
 		{taskruntime.ErrDuplicateLibraryCode, ErrorDuplicateLibraryCode},
 		{taskruntime.ErrTaskCodeRequired, ErrorTaskCodeRequired},
+		{&subscription.CheckConflictError{RunID: "check-1"}, "SUBSCRIPTION_CHECK_IN_PROGRESS"},
 		{subscription.ErrPerformerBatchEmpty, ErrorPerformerBatchEmpty},
 		{subscription.ErrPerformerBatchTooLarge, ErrorPerformerBatchTooLarge},
 		{performer.ErrQueueSceneBatchEmpty, ErrorPerformerSceneBatchEmpty},

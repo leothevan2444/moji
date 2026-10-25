@@ -4,11 +4,13 @@ import { useMutation } from "urql";
 import { usePerformers } from "./usePerformers";
 import { usePerformerScenes } from "./usePerformerScenes";
 import { useQueuePerformerScenes } from "./useQueuePerformerScenes";
+import { useSubscriptionChecks } from "./useSubscriptionChecks";
 import { useSubscriptions } from "./useSubscriptions";
 
 interface Options {
   options?: import("../graphql/generated/graphql").PerformerListOptions;
   enabled: boolean;
+  checkPerformerIds?: string[];
   search: string | null;
   page: number;
   pageSize: number;
@@ -46,6 +48,7 @@ export function usePerformersWorkspace(options: Options) {
   }, [options.enabled, options.performerId, stale, performers.fetchingPerformerSummary, scenes.fetchingPerformerScenes, performers.refreshPerformerSummary, scenes.refreshPerformerScenes]);
   const subscriptions = useSubscriptions(options.enabled, performers.subscribedPerformers, performers.reloadStashPerformers);
   const queue = useQueuePerformerScenes();
+  const checks = useSubscriptionChecks(options.enabled, [...performers.stashPerformers.map(actor => actor.id), ...(options.performerId ? [options.performerId] : []), ...(options.checkPerformerIds ?? [])]);
   const [{ fetching: refreshingPerformerCache }, refreshPerformerCache] = useMutation(RefreshStashPerformerScenesDocument);
 
   const reloadSubscription = async () => {
@@ -59,5 +62,5 @@ export function usePerformersWorkspace(options: Options) {
     return [await performers.reloadStashPerformers()];
   };
 
-  return { ...performers, ...scenes, ...subscriptions, ...queue, fetchingSubscription: performers.fetchingStashPerformers, subscriptionError: performers.stashPerformersError, refreshingPerformerCache, reloadSubscription };
+  return { ...performers, ...scenes, ...subscriptions, ...queue, ...checks, fetchingSubscription: performers.fetchingStashPerformers, subscriptionError: performers.stashPerformersError, refreshingPerformerCache, reloadSubscription };
 }

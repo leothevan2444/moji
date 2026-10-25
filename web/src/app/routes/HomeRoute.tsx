@@ -4,6 +4,7 @@ import { useQuery } from "urql";
 import { useTranslation } from "react-i18next";
 import { HomePage } from "../../pages/HomePage";
 import { Drawer } from "../../components/layout/Drawer";
+import { useSubscriptionCheckPolling } from "../../hooks/useSubscriptionCheckPolling";
 import { useTaskMutations } from "../../hooks/useTaskMutations";
 import { useServiceStatusEvents } from "../../hooks/useServiceStatusEvents";
 import { useTaskEvents } from "../../hooks/useTaskEvents";
@@ -11,9 +12,10 @@ import { usePerformerSubscriptionEvents } from "../../hooks/usePerformerSubscrip
 import { describeQueryError } from "../../services/queryError";
 import { taskSummary } from "../../utils/taskUtils";
 import { useFragment as readFragment } from "../../graphql/generated/fragment-masking";
-import { HomePageDocumentDocument, HomeServiceStatusDocument, HomeSubscriptionSummaryDocument, HomeTaskFragmentDoc, TaskDetailDocumentDocument, TaskDeletePolicy } from "../../graphql/generated/graphql";
+import { HomePageDocumentDocument, HomeSubscriptionChecksDocument, HomeSubscriptionCheckRunFieldsFragmentDoc, SubscriptionCheckDetailDocument, SubscriptionCheckFieldsFragmentDoc, HomeServiceStatusDocument, HomeSubscriptionSummaryDocument, HomeTaskFragmentDoc, TaskDetailDocumentDocument, TaskDeletePolicy } from "../../graphql/generated/graphql";
 import type { AppOutletContext } from "../AppLayout";
 
+const SubscriptionCheckDrawer = lazy(() => import("../../components/drawers/SubscriptionCheckDrawer").then(m => ({ default: m.SubscriptionCheckDrawer })));
 const TaskFiles = lazy(() => import("../../components/tasks/TaskFiles").then(m => ({ default: m.TaskFiles })));
 const TaskDrawer = lazy(() => import("../../components/drawers/TaskDrawer").then(m => ({ default: m.TaskDrawer })));
 const SourcingResolutionDrawer = lazy(() => import("../../components/drawers/SourcingResolutionDrawer").then(m => ({ default: m.SourcingResolutionDrawer })));
@@ -23,7 +25,8 @@ export function Component() {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const [params, setParams] = useSearchParams();
-  const taskId = params.get("task");
+  const checkId = params.get("check");
+  const taskId = checkId ? null : params.get("task");
   const resolve = params.get("resolve") === "1";
   const filesOnly = params.get("files") === "1";
   const [filesBusy, setFilesBusy] = useState(false);
@@ -33,6 +36,18 @@ export function Component() {
   const [{ data, error, fetching }, refresh] = useQuery({ query: HomePageDocumentDocument, requestPolicy: "cache-and-network" });
   const [{ data: status, error: statusError, fetching: statusFetching }, refreshStatus] = useQuery({ query: HomeServiceStatusDocument, requestPolicy: "cache-and-network" });
   const [{ data: subscriptions, error: subscriptionError }, refreshSubscriptions] = useQuery({ query: HomeSubscriptionSummaryDocument, requestPolicy: "cache-and-network" });
+  const [{ data: checkData, error: checksError }, refreshChecks] = useQuery({ query: HomeSubscriptionChecksDocument, requestPolicy: "network-only" });
+  const [{ data: checkDetailData, error: checkDetailError, fetching: checkDetailFetching }, refreshCheckDetail] = useQuery({ query: SubscriptionCheckDetailDocument, variables: { id: checkId ?? "" }, pause: !checkId, requestPolicy: "network-only" });
+  const loadedCheckRun = checkDetailData?.subscriptionCheck ? readFragment(SubscriptionCheckFieldsFragmentDoc, checkDetailData.subscriptionCheck) : null;
+  const checkRun = loadedCheckRun?.id === checkId ? loadedCheckRun : null;
+  const checks = useMemo(() => checkData?.homeSubscriptionChecks ? {
+    ...checkData.homeSubscriptionChecks,
+    latestScheduled: checkData.homeSubscriptionChecks.latestScheduled ? readFragment(HomeSubscriptionCheckRunFieldsFragmentDoc, checkData.homeSubscriptionChecks.latestScheduled) : null,
+    activeRuns: checkData.homeSubscriptionChecks.activeRuns.map(run => readFragment(HomeSubscriptionCheckRunFieldsFragmentDoc, run)),
+    recentRuns: checkData.homeSubscriptionChecks.recentRuns.map(run => readFragment(HomeSubscriptionCheckRunFieldsFragmentDoc, run))
+  } : null, [checkData?.homeSubscriptionChecks]);
+  const refreshHomeChecks = useCallback(() => { refreshChecks({ requestPolicy: "network-only" }); if (checkId) refreshCheckDetail({ requestPolicy: "network-only" }); }, [refreshChecks, refreshCheckDetail, checkId]);
+  useSubscriptionCheckPolling(true, Boolean(checks?.activeCount || checkRun?.status === "RUNNING"), refreshHomeChecks);
   const [{ data: detail, error: detailError, fetching: detailFetching }, refreshDetail] = useQuery({ query: TaskDetailDocumentDocument, variables: { id: taskId ?? "" }, pause: !taskId, requestPolicy: "cache-and-network" });
   const { retryTask, deleteTask, deletingTask } = useTaskMutations();
   const timer = useRef<number | null>(null);
@@ -45,7 +60,7 @@ export function Component() {
   const taskEvents = useTaskEvents({ onEvent: scheduleRefresh, onReconnect: scheduleRefresh, onSequenceGap: scheduleRefresh });
   const serviceEvents = useServiceStatusEvents({ onRefresh: () => refreshStatus({ requestPolicy: "network-only" }) });
   const subscriptionEvents = usePerformerSubscriptionEvents({ enabled: true, onRefresh: () => refreshSubscriptions({ requestPolicy: "network-only" }) });
-  useEffect(() => { if (subscriptionEvents.event) refreshSubscriptions({ requestPolicy: "network-only" }); }, [subscriptionEvents.event, refreshSubscriptions]);
+  useEffect(() => { if (subscriptionEvents.event) { refreshSubscriptions({ requestPolicy: "network-only" }); refreshHomeChecks(); } }, [subscriptionEvents.event, refreshSubscriptions, refreshHomeChecks]);
   useEffect(() => () => { if (timer.current !== null) window.clearTimeout(timer.current); }, []);
   // Keep the bounded snapshot current even when a subscription drops silently.
   useEffect(() => {
@@ -69,7 +84,7 @@ export function Component() {
   const [displayed, setDisplayed] = useState(overview);
   const [listUpdatePending, setListUpdatePending] = useState(false);
   useEffect(() => {
-    if (taskId || pendingRetry || overview === displayed) return;
+    if (taskId || checkId || pendingRetry || overview === displayed) return;
     const signature = (value: typeof overview) => value ? [value.attentionTasks, value.activeTasks, value.recentTasks].map(tasks => tasks.map(task => task.id).join(",")).join(";") : "";
     if (displayed && document.activeElement?.closest(".home-task-list") && signature(displayed) !== signature(overview)) {
       setListUpdatePending(true);
@@ -77,7 +92,7 @@ export function Component() {
     }
     setDisplayed(overview);
     setListUpdatePending(false);
-  }, [overview, displayed, taskId, pendingRetry]);
+  }, [overview, displayed, taskId, checkId, pendingRetry]);
   const tasks = overview ? [...overview.attentionTasks, ...overview.activeTasks, ...overview.recentTasks] : [];
   const task = detail ? detail.task ?? null : tasks.find(entry => entry.id === taskId) ?? null;
   const openTask = (id: string, resolution = false, files = false) => { const next = new URLSearchParams(params); next.set("task", id); if (resolution) next.set("resolve", "1"); else next.delete("resolve"); if (files) next.set("files", "1"); else next.delete("files"); setParams(next, { preventScrollReset: true }); };
@@ -110,14 +125,22 @@ export function Component() {
       }
     } catch { pushToast("tone-danger", t("taskRoute.deleteNoResult")); }
   };
-  const refreshAll = () => { refreshRef.current(); refreshStatus({ requestPolicy: "network-only" }); refreshSubscriptions({ requestPolicy: "network-only" }); };
+  const openCheck = (id: string) => { const next = new URLSearchParams(params); next.set("check", id); next.delete("task"); next.delete("resolve"); next.delete("files"); setParams(next, { preventScrollReset: true }); };
+  const closeCheck = () => { const next = new URLSearchParams(params); next.delete("check"); setParams(next, { replace: true, preventScrollReset: true }); };
+  const refreshAll = () => { refreshRef.current(); refreshStatus({ requestPolicy: "network-only" }); refreshSubscriptions({ requestPolicy: "network-only" }); refreshHomeChecks(); };
   return <>
-    <HomePage listUpdatePending={listUpdatePending} onApplyUpdates={() => { setDisplayed(overview); setListUpdatePending(false); }} interactionOpen={Boolean(taskId)} overview={displayed ?? overview} runtimeSettings={data?.settings ?? null} runtimeStatus={status?.settingsStatus ?? null} subscription={subscriptions?.homeSubscriptionSummary ?? null}
+    <HomePage checks={checks} checksError={checksError ? describeQueryError(checksError) : null} onRefreshChecks={refreshHomeChecks} onOpenCheck={openCheck} listUpdatePending={listUpdatePending} onApplyUpdates={() => { setDisplayed(overview); setListUpdatePending(false); }} interactionOpen={Boolean(taskId || checkId)} overview={displayed ?? overview} runtimeSettings={data?.settings ?? null} runtimeStatus={status?.settingsStatus ?? null} subscription={subscriptions?.homeSubscriptionSummary ?? null}
       overviewError={error ? describeQueryError(error) : null} statusError={statusError ? describeQueryError(statusError) : null} subscriptionError={subscriptionError ? describeQueryError(subscriptionError) : null}
       fetching={fetching || statusFetching} connectionStatus={taskEvents.error || serviceEvents.error || subscriptionEvents.error ? "error" : taskEvents.connectionStatus} pendingTaskRetryId={pendingRetry}
       onRefresh={refreshAll} onRefreshStatus={() => refreshStatus({ requestPolicy: "network-only" })} onRefreshSubscription={() => refreshSubscriptions({ requestPolicy: "network-only" })}
       onSearch={(q, source) => navigate(`/discover?${new URLSearchParams({ q, source })}`)} onOpenTask={id => openTask(id)} onConfirmFiles={id => openTask(id, false, true)} onRetryTask={id => void retry(id)} onResolveTask={id => openTask(id, true)}
       onOpenQueue={() => navigate("/tasks?status=failed&workbench=1", { state: { backgroundLocation: { pathname: "/", search: "" } } })} onOpenSettings={tab => navigate(`/settings/${tab}`)} />
+    {checkId ? <Drawer visibleDrawer="subscription-check" closing={false} title={t("subscriptionChecks.title")} onClose={closeCheck}>
+      <Suspense fallback={<div className="home-loading" aria-label={t("common.loading")}><span /><span /><span /></div>}>
+        {checkDetailError ? <div className="home-module-error" role="alert"><p>{describeQueryError(checkDetailError)}</p><button type="button" onClick={refreshHomeChecks}>{t("common.retry")}</button></div> : null}
+        {checkRun ? <SubscriptionCheckDrawer run={checkRun} /> : checkDetailFetching ? <div className="home-loading" aria-label={t("common.loading")}><span /><span /><span /></div> : !checkDetailError ? <p>{t("subscriptionChecks.notFound")}</p> : null}
+      </Suspense>
+    </Drawer> : null}
     {taskId ? <Drawer visibleDrawer={resolve ? "task-resolution" : "task"} closing={false} title={task ? taskSummary(task) : t("taskRoute.details")} onClose={closeTask} closeDisabled={Boolean(pendingRetry) || deletingTask || filesBusy}>
       <Suspense fallback={<div className="skeleton skeleton-card" aria-label={t("common.loading")} />}>
         {detailError && !task ? <div className="home-module-error"><p>{describeQueryError(detailError)}</p><button type="button" onClick={() => refreshDetail({ requestPolicy: "network-only" })}>{t("common.retry")}</button></div> : detailFetching && !task ? <div className="skeleton skeleton-card" aria-label={t("common.loading")} /> : !task ? <p>{t("taskRoute.notFound")}</p> : filesOnly ? <TaskFiles key={task.id} task={task} onCopy={copyText} onBusyChange={setFilesBusy} onResolved={() => { setFilesBusy(false); pushToast("tone-success", t("mediaFiles.selectionSaved")); openTask(task.id); refreshRef.current(); }} /> : resolve ? <SourcingResolutionDrawer task={task} onNotify={pushToast} onResolved={async () => { openTask(task.id); refreshRef.current(); }} /> : <TaskDrawer task={task} pendingRetry={pendingRetry === task.id} pendingDelete={deletingTask} onCopy={copyText} onResolveTask={id => openTask(id, true)} onRetryTask={id => void retry(id)} onDeleteTask={setDeleteId} />}

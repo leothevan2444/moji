@@ -110,6 +110,9 @@ const rootValue = {
       databasePath: "/data/stashbox.db", lastCleanupAt: null, lastError: null,
     },
   },
+  homeSubscriptionChecks: { enabled: true, nextRunAt: "2026-01-15T18:00:00Z", activeCount: 0, latestScheduled: null, activeRuns: [], recentRuns: [] },
+  subscriptionCheckActivity: { activeCount: 0, allRunId: null, performers: [] },
+  subscriptionCheck: null,
   performerWorkspace: {
     performers: {
       items: [], page: 1, pageSize: 24, totalCount: 0, totalPages: 1,

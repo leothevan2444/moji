@@ -79,3 +79,29 @@ fragment HomeTask on Task {
 query HomeSubscriptionSummary {
   homeSubscriptionSummary { total attention unchecked lastCheckedAt attentionPerformerIds }
 }
+
+query HomeSubscriptionChecks {
+  homeSubscriptionChecks {
+    enabled
+    nextRunAt
+    activeCount
+    latestScheduled { ...HomeSubscriptionCheckRunFields }
+    activeRuns { ...HomeSubscriptionCheckRunFields }
+    recentRuns { ...HomeSubscriptionCheckRunFields }
+  }
+}
+
+fragment HomeSubscriptionCheckRunFields on HomeSubscriptionCheckRun {
+  id
+  trigger
+  scope
+  status
+  startedAt
+  finishedAt
+  totalCount
+  completedCount
+  succeededCount
+  failedCount
+  skippedCount
+  currentPerformers { performerId name }
+}

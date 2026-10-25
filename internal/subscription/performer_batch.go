@@ -71,8 +71,50 @@ func (s *Service) UnsubscribePerformers(ctx context.Context, ids []string) (Perf
 	})
 }
 
-func (s *Service) RefreshSubscribedPerformers(ctx context.Context, ids []string) (PerformerBatchPayload, error) {
-	return s.runPerformerBatch(ctx, "refresh", ids, func(ctx context.Context, id string) PerformerBatchResult {
+func (s *Service) RefreshSubscribedPerformers(ctx context.Context, ids []string) (payload PerformerBatchPayload, resultErr error) {
+	cleaned, err := normalizePerformerBatchIDs(ids)
+	if err != nil {
+		return payload, err
+	}
+	scope := "SELECTED"
+	if len(cleaned) == 1 {
+		scope = "SINGLE"
+	}
+	ctx, _, owner, err := s.beginCheck(ctx, scope, cleaned, "MANUAL")
+	if err != nil {
+		return payload, err
+	}
+	if owner {
+		defer func() { s.finishCheck(ctx, resultErr) }()
+	}
+
+	return s.runPerformerBatch(ctx, "refresh", cleaned, func(ctx context.Context, id string) (result PerformerBatchResult) {
+		if err := s.startCheckItem(ctx, id); err != nil {
+			return PerformerBatchResult{PerformerID: id, Status: PerformerBatchStatusFailed, ReasonCode: PerformerBatchReasonRefreshFailed}
+		}
+		defer func() {
+			name, message := "", ""
+			if result.Performer != nil {
+				name = result.Performer.Name
+			}
+			if result.Status != PerformerBatchStatusSucceeded {
+				message = result.ReasonCode
+			}
+			if result.State != nil && result.State.LastError != "" {
+				message = result.State.LastError
+				result.Status = PerformerBatchStatusFailed
+				result.ReasonCode = PerformerBatchReasonRefreshFailed
+			}
+			status := string(result.Status)
+			if ctx.Err() != nil && result.Status == PerformerBatchStatusFailed {
+				status = "INTERRUPTED"
+			}
+			if err := s.finishCheckItem(ctx, id, name, status, message); err != nil {
+				result.Status = PerformerBatchStatusFailed
+				result.ReasonCode = PerformerBatchReasonRefreshFailed
+			}
+		}()
+
 		unlock := s.lockPerformerOperation(id)
 		defer unlock()
 		item, found, err := s.loadBatchPerformer(ctx, id)
@@ -133,7 +175,13 @@ func (s *Service) runPerformerBatch(ctx context.Context, action string, ids []st
 	close(jobs)
 	workers.Wait()
 
-	payload := PerformerBatchPayload{BatchID: "performer-batch-" + uuid.NewString(), Results: results}
+	batchID := "performer-batch-" + uuid.NewString()
+	if action == "refresh" {
+		if id, ok := ctx.Value(checkRunContextKey{}).(string); ok {
+			batchID = id
+		}
+	}
+	payload := PerformerBatchPayload{BatchID: batchID, Results: results}
 	payload.Summary.RequestedCount = len(results)
 	for _, result := range results {
 		switch result.Status {

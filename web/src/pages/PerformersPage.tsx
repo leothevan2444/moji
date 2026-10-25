@@ -10,6 +10,7 @@ import { PerformerCard } from "../components/performers/PerformerCard";
 import { PerformerError, PerformerLoading } from "../components/performers/PerformerFeedback";
 import { PerformerToolbar } from "../components/performers/PerformerToolbar";
 import { PerformerListFilters } from "../components/performers/PerformerListFilters";
+import { performerCheckRun } from "../hooks/useSubscriptionChecks";
 import { PerformerOverview } from "../components/performers/PerformerOverview";
 import { PerformerPagination } from "../components/performers/PerformerPagination";
 import { PerformerSceneCard } from "../components/performers/PerformerSceneCard";
@@ -74,6 +75,7 @@ export function PerformersPage(props: PerformersPageProps) {
     reviewCounts = {}
   } = props;
   const { t } = useTranslation();
+  const checkStatusError = props.checksError ? <PerformerError error={new Error(`${t("subscriptionChecks.syncError")} ${props.checksError}`)} onRetry={props.onRefreshChecks} /> : null;
   const subscribedByID = useMemo(() => {
     return new Map(subscribedPerformers.map((item) => [item.performer.id, item]));
   }, [subscribedPerformers]);
@@ -99,6 +101,7 @@ export function PerformersPage(props: PerformersPageProps) {
 
         {performerDetailError ? <PerformerError error={performerDetailError} onRetry={props.onRetryDetail} /> : null}
         {performerScenesError ? <PerformerError error={performerScenesError} onRetry={props.onRetryScenes} /> : null}
+        {checkStatusError}
 
         {performerDetail ? (
           <PerformerOverview performerDetail={performerDetail} performerSubscription={performerSubscription} performerSummary={props.performerSummary} page={props} />
@@ -222,12 +225,13 @@ export function PerformersPage(props: PerformersPageProps) {
         </div>
       </div>
 
+      {checkStatusError}
       <PerformerListFilters page={props}>
         <div role="region" aria-label={t("performerBatch.selectionActions")}>
           <div className="performer-list-selection">
             <button type="button" className="ghost-button" disabled={performerBatchPending || fetchingStashPerformers || stashPerformers.length === 0} onClick={() => onSelectVisiblePerformers(stashPerformers.map((performer) => performer.id))}>{t("performerBatch.selectVisible", { count: stashPerformers.length })}</button>
             <button type="button" className="ghost-button" disabled={performerBatchPending || selectedUnsubscribedIds.length === 0} onClick={() => onBatchSubscribePerformers(selectedUnsubscribedIds)}><FontAwesomeIcon icon={faBookmark} /> {t("performerBatch.subscribe", { count: selectedUnsubscribedIds.length })}</button>
-            <button type="button" className="ghost-button" disabled={performerBatchPending || selectedSubscribedIds.length === 0} onClick={() => onBatchRefreshPerformers(selectedSubscribedIds)} title={t("performerBatch.refreshHelp")}><FontAwesomeIcon icon={faBinoculars} /> {t("performerBatch.refresh", { count: selectedSubscribedIds.length })}</button>
+            <button type="button" className="ghost-button" disabled={performerBatchPending || selectedSubscribedIds.length === 0 || Boolean(props.checkStarting || props.checksLoading || props.checksError || selectedSubscribedIds.some(id => performerCheckRun(props.checkActivity, id)))} onClick={() => onBatchRefreshPerformers(selectedSubscribedIds)} title={t("performerBatch.refreshHelp")}><FontAwesomeIcon icon={faBinoculars} /> {t("performerBatch.refresh", { count: selectedSubscribedIds.length })}</button>
             <button type="button" className="ghost-button task-ops__button--danger" disabled={performerBatchPending || selectedSubscribedIds.length === 0} onClick={() => onBatchUnsubscribePerformers(selectedSubscribedIds)}><FontAwesomeIcon icon={faBookmark} /> {t("performerBatch.unsubscribe", { count: selectedSubscribedIds.length })}</button>
             <button type="button" className="ghost-button" disabled={performerBatchPending || selectedPerformerIds.length === 0} onClick={onClearPerformerSelection}><FontAwesomeIcon icon={faXmark} /> {t("performerBatch.clear")}</button>
           </div>

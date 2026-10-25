@@ -104,6 +104,10 @@ func ErrorPresenter(ctx context.Context, err error) *gqlerror.Error {
 }
 
 func classifyError(err error) string {
+	var checkConflict *subscription.CheckConflictError
+	if errors.As(err, &checkConflict) {
+		return "SUBSCRIPTION_CHECK_IN_PROGRESS"
+	}
 	switch code := taskruntime.SourcingValidationErrorCode(err); code {
 	case taskruntime.TaskStageErrorCandidateMismatch, taskruntime.TaskStageErrorCandidateUnverified, taskruntime.TaskStageErrorTorrentMetadata:
 		return code

@@ -5,7 +5,7 @@ import { fireEvent, render as baseRender, screen, within } from "@testing-librar
 import type { ComponentProps } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import userEvent from "@testing-library/user-event";
-import { LibraryFilter, SceneSourceFilter, TaskStage, TaskStageStatus } from "../graphql/generated/graphql";
+import { LibraryFilter, SceneSourceFilter, TaskStage, TaskStageStatus, SubscriptionCheckTrigger, SubscriptionCheckScope, SubscriptionCheckStatus } from "../graphql/generated/graphql";
 import i18n from "../i18n/i18n";
 import { PerformerSceneCard } from "../components/performers/PerformerSceneCard";
 import type { StashPerformerSceneEntry } from "../components/performers/types";
@@ -261,5 +261,56 @@ describe("Performer workspace interactions", () => {
     view.rerender(<PerformerSceneCard scene={{ ...scene, mojiTask: { ...scene.mojiTask!, stage: TaskStage.Downloading, stageStatus: TaskStageStatus.Blocked, progress: .5 } }} page={props()} />);
     expect(screen.getByRole("button", { name: i18n.t("taskModel.states.blocked") })).toBeTruthy();
     expect(screen.queryByText("Downloading 50%")).toBeNull();
+  });
+});
+
+describe("persistent subscription check state", () => {
+  beforeEach(async () => i18n.changeLanguage("en"));
+  afterEach(() => document.body.replaceChildren());
+
+  const run = {
+    id: "check-persisted", trigger: SubscriptionCheckTrigger.Manual, scope: SubscriptionCheckScope.Single, status: SubscriptionCheckStatus.Running,
+    startedAt: "2026-01-15T11:00:00Z", finishedAt: null, error: null,
+    totalCount: 1, completedCount: 0, succeededCount: 0, failedCount: 0, skippedCount: 0,
+    items: [{ performerId: "p1", name: "Alpha", status: SubscriptionCheckStatus.Running, error: null, startedAt: "2026-01-15T11:00:00Z", finishedAt: null }]
+  };
+
+  it("blocks a restored active check after remount and enables it after real completion", () => {
+    const performer = { ...props().stashPerformers[0], subscribed: true };
+    const activity = { activeCount: 1, allRunId: null, performers: [{ performerId: "p1", runId: run.id, status: run.items[0].status }] };
+    const page = props({ stashPerformers: [performer], checkActivity: activity });
+    const first = render(<PerformersPage {...page} />);
+    expect((screen.getByRole("button", { name: "Check Alpha for updates" }) as HTMLButtonElement).disabled).toBe(true);
+    first.unmount();
+    const restored = render(<PerformersPage {...page} />);
+    expect((screen.getByRole("button", { name: "Check Alpha for updates" }) as HTMLButtonElement).disabled).toBe(true);
+    expect(screen.getAllByText("Checking").length).toBeGreaterThan(0);
+    restored.rerender(<PerformersPage {...page} checkActivity={{ activeCount: 0, allRunId: null, performers: [] }} />);
+    expect((screen.getByRole("button", { name: "Check Alpha for updates" }) as HTMLButtonElement).disabled).toBe(false);
+  });
+
+  it("reserves all actors while a check-all is still enumerating subscriptions", () => {
+    const performer = { ...props().stashPerformers[0], subscribed: true };
+    render(<PerformersPage {...props({ stashPerformers: [performer], checkActivity: { activeCount: 1, allRunId: run.id, performers: [] } })} />);
+    expect((screen.getByRole("button", { name: "Check Alpha for updates" }) as HTMLButtonElement).disabled).toBe(true);
+    expect(screen.queryByRole("region", { name: "Release checks" })).toBeNull();
+  });
+
+  it("keeps check actions disabled when the server state cannot be confirmed", () => {
+    const performer = { ...props().stashPerformers[0], subscribed: true };
+    const view = render(<PerformersPage {...props({ stashPerformers: [performer], checksLoading: true })} />);
+    expect((screen.getByRole("button", { name: "Check Alpha for updates" }) as HTMLButtonElement).disabled).toBe(true);
+    view.rerender(<PerformersPage {...props({ stashPerformers: [performer], checksError: "offline" })} />);
+    expect((screen.getByRole("button", { name: "Check Alpha for updates" }) as HTMLButtonElement).disabled).toBe(true);
+    expect(screen.getByRole("alert").textContent).toContain("Unable to confirm");
+    view.rerender(<PerformersPage {...props({ selectedPerformerId: performer.id, performerDetail: { performer, disambiguation: null, birthdate: null, ethnicity: null, country: null, eyeColor: null, heightCm: null, rating100: null, urls: [] }, checksError: "offline" })} />);
+    expect((screen.getByRole("button", { name: "Check Alpha for updates" }) as HTMLButtonElement).disabled).toBe(true);
+    expect(screen.getByRole("alert").textContent).toContain("Unable to confirm");
+  });
+
+  it("keeps check overview and history out of the actor page", () => {
+    render(<PerformersPage {...props({ checkActivity: { activeCount: 0, allRunId: null, performers: [] } })} />);
+    expect(screen.queryByRole("region", { name: "Release checks" })).toBeNull();
+    expect(screen.queryByText("Latest scheduled run")).toBeNull();
   });
 });

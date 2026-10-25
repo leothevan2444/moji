@@ -1,4 +1,72 @@
 {
+  "subscriptionChecks": {
+    "title": "Release checks",
+    "followRun": "Follow this check on Home",
+    "openRun": "View {{trigger}} · {{time}}",
+    "currentPerformers": "Checking: {{names}}",
+    "moreActive": "Additional active checks: {{count}}",
+    "startedAt": "Started at",
+    "finished": "Finished at",
+    "notFound": "This run no longer exists or has passed its retention period.",
+    "refresh": "Refresh check status",
+    "loading": "Loading check status…",
+    "syncError": "Unable to confirm the latest check status. Starting checks is temporarily unavailable.",
+    "schedule": "Scheduled checks",
+    "enabled": "Enabled",
+    "disabled": "Disabled",
+    "lastScheduled": "Latest scheduled run",
+    "nextScheduled": "Next scheduled run",
+    "never": "No run recorded",
+    "current": "Current activity",
+    "idle": "Idle",
+    "runningCount": "Active checks: {{count}}",
+    "history": "Recent runs ({{count}})",
+    "noHistory": "No runs yet",
+    "started": "Check submitted. Follow its progress in Release checks on Home.",
+    "inRun": "This performer is included in an active check",
+    "loadingPerformers": "Loading subscribed performers…",
+    "progress": "Checked {{completed}} / {{total}} performers",
+    "progressLabel": "Check progress",
+    "counts": "Succeeded {{succeeded}} · Failed {{failed}} · Skipped {{skipped}}",
+    "finishedAt": "Finished at {{time}}",
+    "runId": "Run ID",
+    "triggers": {
+      "MANUAL": "Manual check",
+      "SCHEDULED": "Scheduled check"
+    },
+    "scopes": {
+      "ALL": "All subscriptions",
+      "SINGLE": "One performer",
+      "SELECTED": "Selected performers"
+    },
+    "states": {
+      "PENDING": "Pending",
+      "RUNNING": "Running",
+      "SUCCEEDED": "Completed",
+      "SKIPPED": "Skipped",
+      "PARTIAL": "Partially failed",
+      "FAILED": "Failed",
+      "INTERRUPTED": "Interrupted"
+    },
+    "itemStates": {
+      "PENDING": "Waiting for check",
+      "RUNNING": "Checking",
+      "SUCCEEDED": "Check completed",
+      "SKIPPED": "Skipped",
+      "PARTIAL": "Partially failed",
+      "FAILED": "Check failed",
+      "INTERRUPTED": "Check interrupted"
+    },
+    "reasons": {
+      "CHECK_CANCELLED": "The service stopped and cancelled this check.",
+      "CHECK_TIMED_OUT": "The check exceeded 30 minutes and was interrupted.",
+      "SERVICE_RESTARTED": "The service restarted and interrupted this check.",
+      "PERFORMER_NOT_FOUND": "The performer no longer exists.",
+      "NOT_SUBSCRIBED": "The performer is no longer subscribed.",
+      "REFRESH_FAILED": "Check failed. See the service logs for details.",
+      "CANCELLED": "The check was cancelled."
+    }
+  },
   "releaseReview": {
     "select": "Select {{code}}",
     "title": "Release review",
@@ -694,6 +762,7 @@
     "retry": "Retry"
   },
   "errorSpecial": {
+    "SUBSCRIPTION_CHECK_IN_PROGRESS": "A check is already running for the selected performers. Follow its progress in Release checks.",
     "STASH_NOT_CONFIGURED": "Stash is not configured. Check the connection settings."
   },
   "errorCorrelation": "Correlation ID: {{id}}",
