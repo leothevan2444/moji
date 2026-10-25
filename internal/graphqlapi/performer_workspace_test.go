@@ -47,6 +47,10 @@ type workspacePerformerService struct {
 	listCalls int
 }
 
+func (s *workspacePerformerService) GetPerformerProfile(ctx context.Context, id string) (performerdomain.Detail, error) {
+	return s.GetPerformerDetail(ctx, id)
+}
+
 func (s *workspacePerformerService) List(context.Context, string) ([]performerdomain.Performer, error) {
 	s.listCalls++
 	return append([]performerdomain.Performer(nil), s.items...), nil

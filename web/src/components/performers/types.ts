@@ -1,9 +1,10 @@
-import type { PerformerWorkspaceQuery, StashPerformerDetailQuery, StashPerformerScenesQuery, SceneSourceFilter, LibraryFilter } from "../../graphql/generated/graphql";
+import type { StashPerformerProfileQuery, PerformerWorkspaceQuery, StashPerformerDetailQuery, StashPerformerScenesQuery, SceneSourceFilter, LibraryFilter } from "../../graphql/generated/graphql";
 import type { PerformerSearchState } from "../../app/searchParams";
 
 export type StashPerformerEntry = PerformerWorkspaceQuery["performerWorkspace"]["performers"]["items"][number];
 export type StashPerformerPage = PerformerWorkspaceQuery["performerWorkspace"]["performers"];
-export type StashPerformerDetail = StashPerformerDetailQuery["stashPerformerDetail"];
+export type StashPerformerDetail = StashPerformerProfileQuery["stashPerformerProfile"];
+export type PerformerSummary = StashPerformerDetailQuery["stashPerformerDetail"];
 export type StashPerformerScenePage = StashPerformerScenesQuery["stashPerformerScenes"];
 export type StashPerformerSceneEntry = StashPerformerScenePage["items"][number];
 export type SubscribedPerformerEntry = PerformerWorkspaceQuery["performerWorkspace"]["subscribedPerformers"][number];
@@ -22,6 +23,10 @@ export interface PerformersPageProps {
   stashPerformerPage: StashPerformerPage | null;
   stashPerformers: StashPerformerEntry[];
   performerDetail: StashPerformerDetail | null;
+  performerSummary?: PerformerSummary | null;
+  fetchingPerformerSummary?: boolean;
+  performerSummaryError?: Error | null;
+  onRetrySummary?: () => void;
   performerScenePage: StashPerformerScenePage | null;
   performerScenes: StashPerformerSceneEntry[];
   subscribedPerformers: SubscribedPerformerEntry[];
@@ -41,6 +46,8 @@ export interface PerformersPageProps {
   performerSceneLibraryFilter: LibraryFilter;
   performerScenePageSize: number;
   selectedSceneKeys: string[];
+  sceneSelectionMode: boolean;
+  onToggleSceneSelectionMode: () => void;
   selectedPerformerIds: string[];
   performerSelectionMode: boolean;
   lastRefreshedAt: string | null;

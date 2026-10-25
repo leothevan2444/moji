@@ -6,6 +6,8 @@ import (
 	"sort"
 	"strings"
 
+	"golang.org/x/sync/singleflight"
+
 	"github.com/leothevan2444/moji/internal/metadata"
 	"github.com/leothevan2444/moji/internal/taskruntime"
 	stashgraphql "github.com/leothevan2444/moji/pkg/stash/graphql"
@@ -26,6 +28,7 @@ type StashImageProxy func(context.Context, string) string
 type StashBoxImageProxy func(context.Context, string, string) string
 
 type Service struct {
+	reads          singleflight.Group
 	stash          StashClient
 	metadata       *metadata.Service
 	taskCreator    TaskCreator

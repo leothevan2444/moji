@@ -15,8 +15,9 @@ import (
 	stashboxgraphql "github.com/leothevan2444/moji/pkg/stashbox/graphql"
 )
 
-func (s *Service) GetPerformerDetail(ctx context.Context, performerID string) (Detail, error) {
-	performer, err := s.stash.FindPerformerByID(ctx, performerID)
+// GetPerformerProfile never contacts external metadata sources.
+func (s *Service) GetPerformerProfile(ctx context.Context, performerID string) (Detail, error) {
+	performer, err := s.findPerformer(ctx, performerID)
 	if err != nil {
 		return Detail{}, err
 	}
@@ -24,6 +25,10 @@ func (s *Service) GetPerformerDetail(ctx context.Context, performerID string) (D
 		return Detail{}, fmt.Errorf("performer: performer %q not found", performerID)
 	}
 
+	return s.profileFromStash(ctx, performer), nil
+}
+
+func (s *Service) profileFromStash(ctx context.Context, performer *stashgraphql.PerformerFragment) Detail {
 	item := performerFromStash(performer, s.customFieldKey)
 	item.ImagePath = s.proxyStashImage(ctx, item.ImagePath)
 	detail := Detail{
@@ -38,7 +43,19 @@ func (s *Service) GetPerformerDetail(ctx context.Context, performerID string) (D
 		URLs:           append([]string(nil), performerURLs(performer)...),
 	}
 
-	target, err := s.metadata.ResolvePerformer(ctx, performer)
+	return detail
+}
+
+func (s *Service) GetPerformerDetail(ctx context.Context, performerID string) (Detail, error) {
+	performer, err := s.findPerformer(ctx, performerID)
+	if err != nil {
+		return Detail{}, err
+	}
+	if performer == nil {
+		return Detail{}, fmt.Errorf("performer: performer %q not found", performerID)
+	}
+	detail := s.profileFromStash(ctx, performer)
+	target, err := s.metadata.ResolvePerformerWithPolicy(ctx, performer, metadata.StaleWhileRevalidate)
 	if err != nil && !errors.Is(err, metadata.ErrNoPerformerMapping) {
 		return Detail{}, err
 	}
@@ -52,7 +69,7 @@ func (s *Service) GetPerformerDetail(ctx context.Context, performerID string) (D
 	}
 	// Summary counts use all sources and no scene filters. Keep the existing
 	// incremental cache policy rather than downloading the full source catalog.
-	scenes, stashCount, sourceCount, _, complete, _, _, err := s.loadPerformerScenes(ctx, performer, SceneQuery{Source: SceneSourceFilterAll, InLibrary: LibraryFilterAll, Page: 1, PageSize: 12}, false, metadata.CachePreferred)
+	scenes, stashCount, sourceCount, _, complete, stale, _, err := s.loadPerformerScenes(ctx, performer, SceneQuery{Source: SceneSourceFilterAll, InLibrary: LibraryFilterAll, Page: 1, PageSize: 12}, false, metadata.StaleWhileRevalidate)
 	if err != nil {
 		return Detail{}, err
 	}
@@ -65,6 +82,7 @@ func (s *Service) GetPerformerDetail(ctx context.Context, performerID string) (D
 	detail.DedupedSceneCount = len(scenes)
 	detail.ActiveTaskCount = countActivePerformerSceneTasks(scenes)
 	detail.SceneStatsComplete = complete
+	detail.SceneStatsStale = stale
 	return detail, nil
 }
 
@@ -79,7 +97,7 @@ func countActivePerformerSceneTasks(scenes []Scene) int {
 }
 
 func (s *Service) ListPerformerScenes(ctx context.Context, performerID string, query SceneQuery) (ScenePage, error) {
-	return s.listPerformerScenesWithPolicy(ctx, performerID, query, metadata.CachePreferred)
+	return s.listPerformerScenesWithPolicy(ctx, performerID, query, metadata.StaleWhileRevalidate)
 }
 
 func (s *Service) RefreshPerformerScenes(ctx context.Context, performerID string, query SceneQuery) (ScenePage, error) {
@@ -87,7 +105,7 @@ func (s *Service) RefreshPerformerScenes(ctx context.Context, performerID string
 }
 
 func (s *Service) listPerformerScenesWithPolicy(ctx context.Context, performerID string, query SceneQuery, policy metadata.CachePolicy) (ScenePage, error) {
-	performer, err := s.stash.FindPerformerByID(ctx, performerID)
+	performer, err := s.findPerformer(ctx, performerID)
 	if err != nil {
 		return ScenePage{}, err
 	}
@@ -98,7 +116,7 @@ func (s *Service) listPerformerScenesWithPolicy(ctx context.Context, performerID
 }
 
 func (s *Service) buildPerformerScenePage(ctx context.Context, performer *stashgraphql.PerformerFragment, query SceneQuery) (ScenePage, error) {
-	return s.buildPerformerScenePageWithPolicy(ctx, performer, query, metadata.CachePreferred)
+	return s.buildPerformerScenePageWithPolicy(ctx, performer, query, metadata.StaleWhileRevalidate)
 }
 
 func (s *Service) buildPerformerScenePageWithPolicy(ctx context.Context, performer *stashgraphql.PerformerFragment, query SceneQuery, policy metadata.CachePolicy) (ScenePage, error) {
@@ -351,6 +369,10 @@ func (s *Service) mergePerformerScenes(ctx context.Context, stashScenes []*stash
 }
 
 func (s *Service) fetchStashScenes(ctx context.Context, performerID string) ([]*stashgraphql.SceneFragment, error) {
+	return s.sharedStashScenes(ctx, performerID)
+}
+
+func (s *Service) fetchStashScenesUnshared(ctx context.Context, performerID string) ([]*stashgraphql.SceneFragment, error) {
 	return s.stash.FindScenes(ctx, &stashgraphql.SceneFilterType{
 		Performers: &stashgraphql.MultiCriterionInput{
 			Value:    []string{performerID},

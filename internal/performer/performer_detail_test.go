@@ -152,3 +152,12 @@ func TestCountActivePerformerSceneTasksCountsUniqueUnfinishedTasks(t *testing.T)
 		t.Fatalf("got %d tasks for no scenes", got)
 	}
 }
+
+func TestProfileDoesNotContactMetadataOrLoadScenes(t *testing.T) {
+	// Deliberately omit metadata: basic Stash information must remain available.
+	s := &Service{stash: testStashClient{performer: &stashgraphql.PerformerFragment{ID: "p1", Name: "Alice"}}, customFieldKey: DefaultCustomFieldKey}
+	profile, err := s.GetPerformerProfile(context.Background(), "p1")
+	if err != nil || profile.Performer.Name != "Alice" {
+		t.Fatalf("profile=%+v error=%v", profile, err)
+	}
+}

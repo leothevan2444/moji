@@ -314,3 +314,107 @@ func testScenes(count int) []*stashboxgraphql.SceneFragment {
 	}
 	return out
 }
+
+type blockedRefreshClient struct {
+	*fakeClient
+	started chan struct{}
+	release chan struct{}
+}
+
+func (b *blockedRefreshClient) wait(ctx context.Context) error {
+	select {
+	case b.started <- struct{}{}:
+	default:
+	}
+	select {
+	case <-b.release:
+		return nil
+	case <-ctx.Done():
+		return ctx.Err()
+	}
+}
+func (b *blockedRefreshClient) FindPerformerByID(ctx context.Context, id string) (*stashboxgraphql.PerformerFragment, error) {
+	if err := b.wait(ctx); err != nil {
+		return nil, err
+	}
+	return b.fakeClient.FindPerformerByID(ctx, id)
+}
+func (b *blockedRefreshClient) QueryScenesPage(ctx context.Context, input stashboxgraphql.SceneQueryInput) (stashboxpkg.ScenePage, error) {
+	if err := b.wait(ctx); err != nil {
+		return stashboxpkg.ScenePage{}, err
+	}
+	return b.fakeClient.QueryScenesPage(ctx, input)
+}
+
+func TestBrowsingReturnsExpiredCacheWhileRefreshIsBlocked(t *testing.T) {
+	for _, kind := range []string{"performer", "scenes"} {
+		t.Run(kind, func(t *testing.T) {
+			now := time.Date(2026, 7, 14, 0, 0, 0, 0, time.UTC)
+			service := newTestService(t, &now)
+			client := &fakeClient{scenes: testScenes(2), performer: &stashboxgraphql.PerformerFragment{ID: "p1", Name: "Alice"}}
+			ctx := context.Background()
+			if _, _, err := service.ResolvePerformer(ctx, client, "https://box", "p1", CachePreferred); err != nil {
+				t.Fatal(err)
+			}
+			if _, err := service.Load(ctx, client, "https://box", "p1", 40, CachePreferred); err != nil {
+				t.Fatal(err)
+			}
+			now = now.Add(25 * time.Hour)
+			blocked := &blockedRefreshClient{fakeClient: client, started: make(chan struct{}, 1), release: make(chan struct{})}
+			var release sync.Once
+			t.Cleanup(func() { release.Do(func() { close(blocked.release) }); service.refreshWG.Wait() })
+			read := func() error {
+				if kind == "performer" {
+					p, stale, err := service.ResolvePerformer(ctx, blocked, "https://box", "p1", StaleWhileRevalidate)
+					if err != nil {
+						return err
+					}
+					if p.Name != "Alice" || !stale {
+						return fmt.Errorf("unexpected cached performer: %+v stale=%v", p, stale)
+					}
+					return nil
+				}
+				r, err := service.Load(ctx, blocked, "https://box", "p1", 40, StaleWhileRevalidate)
+				if err != nil {
+					return err
+				}
+				if r.LoadedCount != 2 || !r.Stale {
+					return fmt.Errorf("unexpected cached scenes: %+v", r)
+				}
+				return nil
+			}
+			if err := read(); err != nil {
+				t.Fatal(err)
+			}
+			select {
+			case <-blocked.started:
+			case <-time.After(time.Second):
+				t.Fatal("background refresh did not start")
+			}
+			// The background fetch holds the actor lock. Other browsers must still read immediately.
+			done := make(chan error, 1)
+			go func() { done <- read() }()
+			select {
+			case err := <-done:
+				if err != nil {
+					t.Fatal(err)
+				}
+			case <-time.After(time.Second):
+				t.Fatal("cached read waited for background fetch")
+			}
+			release.Do(func() { close(blocked.release) })
+			service.refreshWG.Wait()
+			if kind == "performer" {
+				_, stale, err := service.ResolvePerformer(ctx, blocked, "https://box", "p1", StaleWhileRevalidate)
+				if err != nil || stale || client.performerCalls != 2 {
+					t.Fatalf("background performer refresh: stale=%v err=%v calls=%d", stale, err, client.performerCalls)
+				}
+			} else {
+				r, err := service.Load(ctx, blocked, "https://box", "p1", 40, StaleWhileRevalidate)
+				if err != nil || r.Stale || len(client.queryCalls) != 2 {
+					t.Fatalf("background scene refresh: result=%+v err=%v calls=%d", r, err, len(client.queryCalls))
+				}
+			}
+		})
+	}
+}

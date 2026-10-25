@@ -25,6 +25,12 @@ type Service struct {
 	statusMu    sync.RWMutex
 	lastCleanup *time.Time
 	lastError   string
+	refreshMu   sync.Mutex
+	refreshes   map[string]time.Time
+	refreshWG   sync.WaitGroup
+	refreshCtx  context.Context
+	stopRefresh context.CancelFunc
+	closed      bool
 }
 
 func New(path string, provider ConfigProvider) (*Service, error) {
@@ -35,13 +41,19 @@ func New(path string, provider ConfigProvider) (*Service, error) {
 	if provider == nil {
 		provider = func() Config { return Config{} }
 	}
-	return &Service{store: store, config: provider, now: time.Now}, nil
+	refreshCtx, stop := context.WithCancel(context.Background())
+	return &Service{store: store, config: provider, now: time.Now, refreshes: map[string]time.Time{}, refreshCtx: refreshCtx, stopRefresh: stop}, nil
 }
 
 func (s *Service) Close() error {
 	if s == nil || s.store == nil || s.store.db == nil {
 		return nil
 	}
+	s.refreshMu.Lock()
+	s.closed = true
+	s.stopRefresh()
+	s.refreshMu.Unlock()
+	s.refreshWG.Wait()
 	s.opsMu.Lock()
 	defer s.opsMu.Unlock()
 	return s.store.db.Close()
@@ -60,6 +72,26 @@ func (s *Service) ResolvePerformer(ctx context.Context, client Client, endpoint,
 	key := PerformerKey{Endpoint: normalizeEndpoint(endpoint), PerformerID: strings.TrimSpace(performerID)}
 	if client == nil || key.Endpoint == "" || key.PerformerID == "" {
 		return nil, false, errors.New("stashboxcache: invalid performer lookup")
+	}
+	if policy == StaleWhileRevalidate {
+		cached, fetched, accessed, found, err := s.store.getPerformer(ctx, key)
+		if err != nil {
+			return nil, false, err
+		}
+		if found {
+			now := s.now().UTC()
+			if shouldTouch(accessed, now) {
+				s.store.touchPerformer(ctx, key, now)
+			}
+			stale := now.Sub(fetched) >= s.config().normalize().TTL
+			if stale {
+				s.refresh("performer:"+key.Endpoint+":"+key.PerformerID, func(ctx context.Context) {
+					_, _, _ = s.ResolvePerformer(ctx, client, endpoint, performerID, CachePreferred)
+				})
+			}
+			return cached.toGraphQL(), stale, nil
+		}
+		policy = CachePreferred
 	}
 	mutex := s.lockFor(key)
 	mutex.Lock()
@@ -101,6 +133,29 @@ func (s *Service) Load(ctx context.Context, client Client, endpoint, performerID
 	}
 	if minimum < PageSize {
 		minimum = PageSize
+	}
+	if policy == StaleWhileRevalidate {
+		cached, err := s.store.getSnapshot(ctx, key, true)
+		if err != nil {
+			return Result{}, err
+		}
+		if cached != nil && (cached.Complete || cached.loadedCount() >= minimum) {
+			now := s.now().UTC()
+			if shouldTouch(cached.LastAccessed, now) {
+				s.store.touchSnapshot(ctx, cached, now)
+			}
+			stale := false
+			for _, page := range cached.Pages {
+				if now.Sub(page.FetchedAt) >= s.config().normalize().TTL {
+					stale = true
+				}
+			}
+			if stale {
+				s.refresh("scenes:"+key.Endpoint+":"+key.PerformerID, func(ctx context.Context) { _, _ = s.Load(ctx, client, endpoint, performerID, minimum, CachePreferred) })
+			}
+			return resultFromSnapshot(cached, stale), nil
+		}
+		policy = CachePreferred
 	}
 	groupKey := fmt.Sprintf("%s\x00%s\x00%d\x00%s", key.Endpoint, key.PerformerID, minimum, policy)
 	value, err, _ := s.group.Do(groupKey, func() (any, error) {

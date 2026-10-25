@@ -5,6 +5,9 @@ extend type Query {
   "Load the actor list and subscription state from one Stash snapshot"
   performerWorkspace(search: String, page: Int = 1, pageSize: Int = 24, options: PerformerListOptions): PerformerWorkspaceSnapshot!
 
+  "Fetch basic performer information from Stash without external metadata requests"
+  stashPerformerProfile(id: ID!): StashPerformerProfile!
+
   "Fetch Stash performer detail with Moji / StashBox context"
   stashPerformerDetail(id: ID!): StashPerformerDetail!
 
@@ -74,6 +77,18 @@ type StashPerformer {
   subscribed: Boolean!
 }
 
+type StashPerformerProfile {
+  performer: StashPerformer!
+  disambiguation: String
+  birthdate: String
+  ethnicity: String
+  country: String
+  eyeColor: String
+  heightCm: Int
+  rating100: Int
+  urls: [String!]!
+}
+
 type StashPerformerDetail {
   performer: StashPerformer!
   disambiguation: String
@@ -93,6 +108,8 @@ type StashPerformerDetail {
   activeTaskCount: Int!
   "Whether the source catalog used for the task count is fully loaded"
   sceneStatsComplete: Boolean!
+  "Whether the displayed source snapshot is awaiting background refresh"
+  sceneStatsStale: Boolean!
 }
 
 type MatchedStashBox {

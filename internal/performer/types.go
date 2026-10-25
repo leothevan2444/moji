@@ -116,4 +116,5 @@ type Detail struct {
 	TotalSceneCount, StashSceneCount, StashBoxSceneCount, DedupedSceneCount int
 	ActiveTaskCount                                                         int
 	SceneStatsComplete                                                      bool
+	SceneStatsStale                                                         bool
 }

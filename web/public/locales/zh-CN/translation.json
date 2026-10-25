@@ -329,8 +329,7 @@
   "performerCacheUi": {
     "loadedItems": "已发现条目：{{count}}",
     "loadingMorePages": "第 {{page}} 页 · 数据按需加载中",
-    "pageUnknownTotal": "第 {{page}} 页",
-    "stale": "StashBox 刷新失败，当前显示上次缓存的数据。"
+    "pageUnknownTotal": "第 {{page}} 页"
   },
   "mediaFiles": {
     "selected": "已选",
@@ -1319,6 +1318,8 @@
     "clearFilters": "清除搜索与筛选"
   },
   "performerUi": {
+    "selectScenes": "多选作品",
+    "exitSceneSelection": "退出多选",
     "firstPage": "首页",
     "lastPage": "尾页",
     "targetPage": "跳转页码",

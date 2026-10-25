@@ -19,9 +19,9 @@ import {
   stashPerformerURL
 } from "../../utils";
 
-import type { PerformersPageProps, StashPerformerDetail, SubscribedPerformerEntry } from "./types";
+import type { PerformerSummary, PerformersPageProps, StashPerformerDetail, SubscribedPerformerEntry } from "./types";
 
-export function PerformerOverview({ performerDetail, performerSubscription, page }: { performerDetail: NonNullable<StashPerformerDetail>; performerSubscription: SubscribedPerformerEntry | null; page: Pick<PerformersPageProps, "stashBaseURL" | "reviewCounts" | "pendingSubscriptionID" | "onToggle" | "onRefreshOne">; }) {
+export function PerformerOverview({ performerDetail, performerSummary, performerSubscription, page }: { performerDetail: NonNullable<StashPerformerDetail>; performerSummary?: PerformerSummary | null; performerSubscription: SubscribedPerformerEntry | null; page: Pick<PerformersPageProps, "stashBaseURL" | "reviewCounts" | "pendingSubscriptionID" | "onToggle" | "onRefreshOne" | "fetchingPerformerSummary">; }) {
   const { t } = useTranslation();
   const [showCheckError, setShowCheckError] = useState(false);
   const { stashBaseURL, reviewCounts = {}, pendingSubscriptionID, onToggle, onRefreshOne } = page;
@@ -54,9 +54,9 @@ export function PerformerOverview({ performerDetail, performerSubscription, page
                 <FontAwesomeIcon icon={faBookmark} />
                 Moji {t(performerDetail.performer.subscribed ? "performerUi.subscribed" : "performerUi.unsubscribed")}
               </button>
-              <span className="performer-detail-hero__stashbox" title={performerDetail.matchedStashBox?.name ?? t("performerUi.noPreferredBox")}>
+              <span className="performer-detail-hero__stashbox" title={performerSummary?.matchedStashBox?.name ?? t("performerUi.noPreferredBox")}>
                 <span>{t("performerUi.preferredBox")}</span>
-                <strong>{performerDetail.matchedStashBox?.name ?? t("performerUi.unmatched")}</strong>
+                <strong>{performerSummary?.matchedStashBox?.name ?? (performerSummary ? t("performerUi.unmatched") : page.fetchingPerformerSummary ? "…" : "—")}</strong>
               </span>
             </div>
 
@@ -140,18 +140,18 @@ export function PerformerOverview({ performerDetail, performerSubscription, page
               <dl className="performer-summary-metrics performer-summary-metrics--works">
                 <div>
                   <dt>{t("performerWorkspace.libraryWorks")}</dt>
-                  <dd>{performerDetail.stashSceneCount}</dd>
+                  <dd>{performerSummary?.stashSceneCount ?? performerDetail.performer.sceneCount}</dd>
                 </div>
                 <div>
-                  <dt title={performerDetail.matchedStashBox?.name ?? ""}>{t("performerWorkspace.sourceWorks")}</dt>
-                  <dd>{performerDetail.stashBoxSceneCount}</dd>
+                  <dt title={performerSummary?.matchedStashBox?.name ?? ""}>{t("performerWorkspace.sourceWorks")}</dt>
+                  <dd>{performerSummary?.stashBoxSceneCount ?? "—"}</dd>
                 </div>
                 <div>
                   <dt title={t("performerWorkspace.activeTasksHelp")}>{t("performerWorkspace.activeTasks")}</dt>
-                  <dd title={t(performerDetail.sceneStatsComplete ? "performerWorkspace.activeTasksHelp" : "performerWorkspace.partialTasksHelp")}>{performerDetail.sceneStatsComplete ? performerDetail.activeTaskCount : `≥ ${performerDetail.activeTaskCount}`}</dd>
+                  <dd title={performerSummary ? t(performerSummary.sceneStatsComplete ? "performerWorkspace.activeTasksHelp" : "performerWorkspace.partialTasksHelp") : undefined}>{performerSummary ? performerSummary.sceneStatsComplete ? performerSummary.activeTaskCount : `≥ ${performerSummary.activeTaskCount}` : "—"}</dd>
                 </div>
               </dl>
-              {!performerDetail.sceneStatsComplete ? <p className="performer-summary-note">{t("performerWorkspace.partialTasksHelp")}</p> : null}
+              {performerSummary && !performerSummary.sceneStatsComplete ? <p className="performer-summary-note">{t("performerWorkspace.partialTasksHelp")}</p> : null}
             </section>
           </div>
         </div>

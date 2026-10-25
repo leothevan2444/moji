@@ -391,6 +391,7 @@ type ComplexityRoot struct {
 		SettingsStatus               func(childComplexity int) int
 		StashJob                     func(childComplexity int, id string) int
 		StashPerformerDetail         func(childComplexity int, id string) int
+		StashPerformerProfile        func(childComplexity int, id string) int
 		StashPerformerScenes         func(childComplexity int, id string, input model.StashPerformerScenesInput) int
 		StashPerformers              func(childComplexity int, search *string, page *int, pageSize *int) int
 		SubscribedPerformers         func(childComplexity int) int
@@ -582,10 +583,23 @@ type ComplexityRoot struct {
 		Performer          func(childComplexity int) int
 		Rating100          func(childComplexity int) int
 		SceneStatsComplete func(childComplexity int) int
+		SceneStatsStale    func(childComplexity int) int
 		StashBoxSceneCount func(childComplexity int) int
 		StashSceneCount    func(childComplexity int) int
 		TotalSceneCount    func(childComplexity int) int
 		Urls               func(childComplexity int) int
+	}
+
+	StashPerformerProfile struct {
+		Birthdate      func(childComplexity int) int
+		Country        func(childComplexity int) int
+		Disambiguation func(childComplexity int) int
+		Ethnicity      func(childComplexity int) int
+		EyeColor       func(childComplexity int) int
+		HeightCm       func(childComplexity int) int
+		Performer      func(childComplexity int) int
+		Rating100      func(childComplexity int) int
+		Urls           func(childComplexity int) int
 	}
 
 	StashPerformerScene struct {
@@ -888,6 +902,7 @@ type QueryResolver interface {
 	DashboardStats(ctx context.Context) (*model.DashboardStats, error)
 	StashPerformers(ctx context.Context, search *string, page *int, pageSize *int) (*model.StashPerformerConnection, error)
 	PerformerWorkspace(ctx context.Context, search *string, page *int, pageSize *int, options *model.PerformerListOptions) (*model.PerformerWorkspaceSnapshot, error)
+	StashPerformerProfile(ctx context.Context, id string) (*model.StashPerformerProfile, error)
 	StashPerformerDetail(ctx context.Context, id string) (*model.StashPerformerDetail, error)
 	StashPerformerScenes(ctx context.Context, id string, input model.StashPerformerScenesInput) (*model.StashPerformerSceneConnection, error)
 	SubscribedPerformers(ctx context.Context) ([]*model.SubscribedPerformer, error)
@@ -2713,6 +2728,18 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.Query.StashPerformerDetail(childComplexity, args["id"].(string)), true
 
+	case "Query.stashPerformerProfile":
+		if e.complexity.Query.StashPerformerProfile == nil {
+			break
+		}
+
+		args, err := ec.field_Query_stashPerformerProfile_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Query.StashPerformerProfile(childComplexity, args["id"].(string)), true
+
 	case "Query.stashPerformerScenes":
 		if e.complexity.Query.StashPerformerScenes == nil {
 			break
@@ -3629,6 +3656,13 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.StashPerformerDetail.SceneStatsComplete(childComplexity), true
 
+	case "StashPerformerDetail.sceneStatsStale":
+		if e.complexity.StashPerformerDetail.SceneStatsStale == nil {
+			break
+		}
+
+		return e.complexity.StashPerformerDetail.SceneStatsStale(childComplexity), true
+
 	case "StashPerformerDetail.stashBoxSceneCount":
 		if e.complexity.StashPerformerDetail.StashBoxSceneCount == nil {
 			break
@@ -3656,6 +3690,69 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.StashPerformerDetail.Urls(childComplexity), true
+
+	case "StashPerformerProfile.birthdate":
+		if e.complexity.StashPerformerProfile.Birthdate == nil {
+			break
+		}
+
+		return e.complexity.StashPerformerProfile.Birthdate(childComplexity), true
+
+	case "StashPerformerProfile.country":
+		if e.complexity.StashPerformerProfile.Country == nil {
+			break
+		}
+
+		return e.complexity.StashPerformerProfile.Country(childComplexity), true
+
+	case "StashPerformerProfile.disambiguation":
+		if e.complexity.StashPerformerProfile.Disambiguation == nil {
+			break
+		}
+
+		return e.complexity.StashPerformerProfile.Disambiguation(childComplexity), true
+
+	case "StashPerformerProfile.ethnicity":
+		if e.complexity.StashPerformerProfile.Ethnicity == nil {
+			break
+		}
+
+		return e.complexity.StashPerformerProfile.Ethnicity(childComplexity), true
+
+	case "StashPerformerProfile.eyeColor":
+		if e.complexity.StashPerformerProfile.EyeColor == nil {
+			break
+		}
+
+		return e.complexity.StashPerformerProfile.EyeColor(childComplexity), true
+
+	case "StashPerformerProfile.heightCm":
+		if e.complexity.StashPerformerProfile.HeightCm == nil {
+			break
+		}
+
+		return e.complexity.StashPerformerProfile.HeightCm(childComplexity), true
+
+	case "StashPerformerProfile.performer":
+		if e.complexity.StashPerformerProfile.Performer == nil {
+			break
+		}
+
+		return e.complexity.StashPerformerProfile.Performer(childComplexity), true
+
+	case "StashPerformerProfile.rating100":
+		if e.complexity.StashPerformerProfile.Rating100 == nil {
+			break
+		}
+
+		return e.complexity.StashPerformerProfile.Rating100(childComplexity), true
+
+	case "StashPerformerProfile.urls":
+		if e.complexity.StashPerformerProfile.Urls == nil {
+			break
+		}
+
+		return e.complexity.StashPerformerProfile.Urls(childComplexity), true
 
 	case "StashPerformerScene.code":
 		if e.complexity.StashPerformerScene.Code == nil {
@@ -5890,6 +5987,9 @@ type DashboardStats {
   "Load the actor list and subscription state from one Stash snapshot"
   performerWorkspace(search: String, page: Int = 1, pageSize: Int = 24, options: PerformerListOptions): PerformerWorkspaceSnapshot!
 
+  "Fetch basic performer information from Stash without external metadata requests"
+  stashPerformerProfile(id: ID!): StashPerformerProfile!
+
   "Fetch Stash performer detail with Moji / StashBox context"
   stashPerformerDetail(id: ID!): StashPerformerDetail!
 
@@ -5959,6 +6059,18 @@ type StashPerformer {
   subscribed: Boolean!
 }
 
+type StashPerformerProfile {
+  performer: StashPerformer!
+  disambiguation: String
+  birthdate: String
+  ethnicity: String
+  country: String
+  eyeColor: String
+  heightCm: Int
+  rating100: Int
+  urls: [String!]!
+}
+
 type StashPerformerDetail {
   performer: StashPerformer!
   disambiguation: String
@@ -5978,6 +6090,8 @@ type StashPerformerDetail {
   activeTaskCount: Int!
   "Whether the source catalog used for the task count is fully loaded"
   sceneStatsComplete: Boolean!
+  "Whether the displayed source snapshot is awaiting background refresh"
+  sceneStatsStale: Boolean!
 }
 
 type MatchedStashBox {
@@ -7728,6 +7842,34 @@ func (ec *executionContext) field_Query_stashPerformerDetail_args(ctx context.Co
 	return args, nil
 }
 func (ec *executionContext) field_Query_stashPerformerDetail_argsID(
+	ctx context.Context,
+	rawArgs map[string]any,
+) (string, error) {
+	if _, ok := rawArgs["id"]; !ok {
+		var zeroVal string
+		return zeroVal, nil
+	}
+
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
+	if tmp, ok := rawArgs["id"]; ok {
+		return ec.unmarshalNID2string(ctx, tmp)
+	}
+
+	var zeroVal string
+	return zeroVal, nil
+}
+
+func (ec *executionContext) field_Query_stashPerformerProfile_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := ec.field_Query_stashPerformerProfile_argsID(ctx, rawArgs)
+	if err != nil {
+		return nil, err
+	}
+	args["id"] = arg0
+	return args, nil
+}
+func (ec *executionContext) field_Query_stashPerformerProfile_argsID(
 	ctx context.Context,
 	rawArgs map[string]any,
 ) (string, error) {
@@ -20350,6 +20492,81 @@ func (ec *executionContext) fieldContext_Query_performerWorkspace(ctx context.Co
 	return fc, nil
 }
 
+func (ec *executionContext) _Query_stashPerformerProfile(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Query_stashPerformerProfile(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Query().StashPerformerProfile(rctx, fc.Args["id"].(string))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*model.StashPerformerProfile)
+	fc.Result = res
+	return ec.marshalNStashPerformerProfile2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐStashPerformerProfile(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Query_stashPerformerProfile(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "performer":
+				return ec.fieldContext_StashPerformerProfile_performer(ctx, field)
+			case "disambiguation":
+				return ec.fieldContext_StashPerformerProfile_disambiguation(ctx, field)
+			case "birthdate":
+				return ec.fieldContext_StashPerformerProfile_birthdate(ctx, field)
+			case "ethnicity":
+				return ec.fieldContext_StashPerformerProfile_ethnicity(ctx, field)
+			case "country":
+				return ec.fieldContext_StashPerformerProfile_country(ctx, field)
+			case "eyeColor":
+				return ec.fieldContext_StashPerformerProfile_eyeColor(ctx, field)
+			case "heightCm":
+				return ec.fieldContext_StashPerformerProfile_heightCm(ctx, field)
+			case "rating100":
+				return ec.fieldContext_StashPerformerProfile_rating100(ctx, field)
+			case "urls":
+				return ec.fieldContext_StashPerformerProfile_urls(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type StashPerformerProfile", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Query_stashPerformerProfile_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _Query_stashPerformerDetail(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_Query_stashPerformerDetail(ctx, field)
 	if err != nil {
@@ -20421,6 +20638,8 @@ func (ec *executionContext) fieldContext_Query_stashPerformerDetail(ctx context.
 				return ec.fieldContext_StashPerformerDetail_activeTaskCount(ctx, field)
 			case "sceneStatsComplete":
 				return ec.fieldContext_StashPerformerDetail_sceneStatsComplete(ctx, field)
+			case "sceneStatsStale":
+				return ec.fieldContext_StashPerformerDetail_sceneStatsStale(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type StashPerformerDetail", field.Name)
 		},
@@ -27079,6 +27298,441 @@ func (ec *executionContext) fieldContext_StashPerformerDetail_sceneStatsComplete
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _StashPerformerDetail_sceneStatsStale(ctx context.Context, field graphql.CollectedField, obj *model.StashPerformerDetail) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_StashPerformerDetail_sceneStatsStale(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.SceneStatsStale, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(bool)
+	fc.Result = res
+	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_StashPerformerDetail_sceneStatsStale(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "StashPerformerDetail",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _StashPerformerProfile_performer(ctx context.Context, field graphql.CollectedField, obj *model.StashPerformerProfile) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_StashPerformerProfile_performer(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Performer, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*model.StashPerformer)
+	fc.Result = res
+	return ec.marshalNStashPerformer2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐStashPerformer(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_StashPerformerProfile_performer(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "StashPerformerProfile",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_StashPerformer_id(ctx, field)
+			case "name":
+				return ec.fieldContext_StashPerformer_name(ctx, field)
+			case "aliasList":
+				return ec.fieldContext_StashPerformer_aliasList(ctx, field)
+			case "favorite":
+				return ec.fieldContext_StashPerformer_favorite(ctx, field)
+			case "imagePath":
+				return ec.fieldContext_StashPerformer_imagePath(ctx, field)
+			case "sceneCount":
+				return ec.fieldContext_StashPerformer_sceneCount(ctx, field)
+			case "subscribed":
+				return ec.fieldContext_StashPerformer_subscribed(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type StashPerformer", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _StashPerformerProfile_disambiguation(ctx context.Context, field graphql.CollectedField, obj *model.StashPerformerProfile) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_StashPerformerProfile_disambiguation(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Disambiguation, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*string)
+	fc.Result = res
+	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_StashPerformerProfile_disambiguation(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "StashPerformerProfile",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _StashPerformerProfile_birthdate(ctx context.Context, field graphql.CollectedField, obj *model.StashPerformerProfile) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_StashPerformerProfile_birthdate(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Birthdate, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*string)
+	fc.Result = res
+	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_StashPerformerProfile_birthdate(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "StashPerformerProfile",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _StashPerformerProfile_ethnicity(ctx context.Context, field graphql.CollectedField, obj *model.StashPerformerProfile) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_StashPerformerProfile_ethnicity(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Ethnicity, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*string)
+	fc.Result = res
+	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_StashPerformerProfile_ethnicity(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "StashPerformerProfile",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _StashPerformerProfile_country(ctx context.Context, field graphql.CollectedField, obj *model.StashPerformerProfile) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_StashPerformerProfile_country(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Country, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*string)
+	fc.Result = res
+	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_StashPerformerProfile_country(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "StashPerformerProfile",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _StashPerformerProfile_eyeColor(ctx context.Context, field graphql.CollectedField, obj *model.StashPerformerProfile) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_StashPerformerProfile_eyeColor(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.EyeColor, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*string)
+	fc.Result = res
+	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_StashPerformerProfile_eyeColor(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "StashPerformerProfile",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _StashPerformerProfile_heightCm(ctx context.Context, field graphql.CollectedField, obj *model.StashPerformerProfile) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_StashPerformerProfile_heightCm(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.HeightCm, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*int)
+	fc.Result = res
+	return ec.marshalOInt2ᚖint(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_StashPerformerProfile_heightCm(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "StashPerformerProfile",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _StashPerformerProfile_rating100(ctx context.Context, field graphql.CollectedField, obj *model.StashPerformerProfile) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_StashPerformerProfile_rating100(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Rating100, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*int)
+	fc.Result = res
+	return ec.marshalOInt2ᚖint(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_StashPerformerProfile_rating100(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "StashPerformerProfile",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _StashPerformerProfile_urls(ctx context.Context, field graphql.CollectedField, obj *model.StashPerformerProfile) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_StashPerformerProfile_urls(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Urls, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]string)
+	fc.Result = res
+	return ec.marshalNString2ᚕstringᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_StashPerformerProfile_urls(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "StashPerformerProfile",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
 		},
 	}
 	return fc, nil
@@ -41440,6 +42094,28 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 			}
 
 			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
+		case "stashPerformerProfile":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_stashPerformerProfile(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			rrm := func(ctx context.Context) graphql.Marshaler {
+				return ec.OperationContext.RootResolverMiddleware(ctx,
+					func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
 		case "stashPerformerDetail":
 			field := field
 
@@ -42854,6 +43530,69 @@ func (ec *executionContext) _StashPerformerDetail(ctx context.Context, sel ast.S
 			}
 		case "sceneStatsComplete":
 			out.Values[i] = ec._StashPerformerDetail_sceneStatsComplete(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "sceneStatsStale":
+			out.Values[i] = ec._StashPerformerDetail_sceneStatsStale(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var stashPerformerProfileImplementors = []string{"StashPerformerProfile"}
+
+func (ec *executionContext) _StashPerformerProfile(ctx context.Context, sel ast.SelectionSet, obj *model.StashPerformerProfile) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, stashPerformerProfileImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("StashPerformerProfile")
+		case "performer":
+			out.Values[i] = ec._StashPerformerProfile_performer(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "disambiguation":
+			out.Values[i] = ec._StashPerformerProfile_disambiguation(ctx, field, obj)
+		case "birthdate":
+			out.Values[i] = ec._StashPerformerProfile_birthdate(ctx, field, obj)
+		case "ethnicity":
+			out.Values[i] = ec._StashPerformerProfile_ethnicity(ctx, field, obj)
+		case "country":
+			out.Values[i] = ec._StashPerformerProfile_country(ctx, field, obj)
+		case "eyeColor":
+			out.Values[i] = ec._StashPerformerProfile_eyeColor(ctx, field, obj)
+		case "heightCm":
+			out.Values[i] = ec._StashPerformerProfile_heightCm(ctx, field, obj)
+		case "rating100":
+			out.Values[i] = ec._StashPerformerProfile_rating100(ctx, field, obj)
+		case "urls":
+			out.Values[i] = ec._StashPerformerProfile_urls(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
@@ -46356,6 +47095,20 @@ func (ec *executionContext) marshalNStashPerformerDetail2ᚖgithubᚗcomᚋleoth
 		return graphql.Null
 	}
 	return ec._StashPerformerDetail(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNStashPerformerProfile2githubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐStashPerformerProfile(ctx context.Context, sel ast.SelectionSet, v model.StashPerformerProfile) graphql.Marshaler {
+	return ec._StashPerformerProfile(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNStashPerformerProfile2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐStashPerformerProfile(ctx context.Context, sel ast.SelectionSet, v *model.StashPerformerProfile) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._StashPerformerProfile(ctx, sel, v)
 }
 
 func (ec *executionContext) marshalNStashPerformerScene2ᚕᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐStashPerformerSceneᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.StashPerformerScene) graphql.Marshaler {

@@ -1720,6 +1720,10 @@ type fakeLogReader struct {
 	entries []logging.Entry
 }
 
+func (s *fakePerformerService) GetPerformerProfile(ctx context.Context, id string) (performerdomain.Detail, error) {
+	return s.GetPerformerDetail(ctx, id)
+}
+
 func (f *fakeLogReader) Entries(limit int, _ string) []logging.Entry {
 	if limit <= 0 || limit >= len(f.entries) {
 		return append([]logging.Entry(nil), f.entries...)

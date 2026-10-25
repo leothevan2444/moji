@@ -331,8 +331,7 @@
   "performerCacheUi": {
     "loadedItems": "Discovered items: {{count}}",
     "loadingMorePages": "Page {{page}} · Loading on demand",
-    "pageUnknownTotal": "Page {{page}}",
-    "stale": "StashBox refresh failed. Showing the last cached data."
+    "pageUnknownTotal": "Page {{page}}"
   },
   "mediaFiles": {
     "selected": "Selected",
@@ -1329,6 +1328,8 @@
     "clearFilters": "Clear search and filters"
   },
   "performerUi": {
+    "selectScenes": "Select scenes",
+    "exitSceneSelection": "Exit selection",
     "firstPage": "First page",
     "lastPage": "Last page",
     "targetPage": "Page number",

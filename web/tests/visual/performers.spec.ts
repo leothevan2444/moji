@@ -17,7 +17,7 @@ const scenes = Array.from({ length: 30 }, (_, index) => ({
 }));
 
 const graphqlOverrides = {
-  performerWorkspace: ({ search = "", page = 1, pageSize = 24, options }: { search?: string | null; page?: number; pageSize?: number; options?: { filter: string; sort: string } }) => {
+  performerWorkspace: ({ search = "", page = 1, pageSize = 24, options }: { search?: string | null; page?: number; pageSize?: number; options?: { filter: string; sort: string; }; }) => {
     let items = actors.filter(actor => actor.name.toLowerCase().includes((search ?? "").toLowerCase()));
     if (options?.filter === "SUBSCRIBED") items = items.filter(actor => actor.subscribed);
     if (options?.filter === "FAVORITE") items = items.filter(actor => actor.favorite);
@@ -26,10 +26,10 @@ const graphqlOverrides = {
     if (options?.sort === "NAME") items.sort((a, b) => a.name.localeCompare(b.name));
     return { performers: { items: items.slice((page - 1) * pageSize, page * pageSize), page, pageSize, totalCount: items.length, totalPages: Math.ceil(items.length / pageSize), hasPrevPage: page > 1, hasNextPage: page * pageSize < items.length }, subscribedPerformers: states };
   },
-  stashPerformerDetail: { performer: actors[0], disambiguation: "Profile information remains readable on small screens.", birthdate: "2000-01-01", ethnicity: null, country: "JP", eyeColor: null, heightCm: 165, rating100: null, urls: [], matchedStashBox: { name: "Example StashBox", endpoint: "https://example.com/graphql", performerId: "remote-0", performerName: actors[0].name }, totalSceneCount: 30, stashSceneCount: 10, stashBoxSceneCount: 30, dedupedSceneCount: 30, activeTaskCount: 2, sceneStatsComplete: true },
-  stashPerformerScenes: ({ input }: { input: { page?: number } }) => { const page = input.page ?? 1; return { items: scenes.slice((page - 1) * 24, page * 24), page, pageSize: 24, totalCount: 30, totalPages: 2, hasPrevPage: page > 1, hasNextPage: page < 2, stashSceneCount: 10, stashBoxCount: 30, dedupedCount: 30, totalCountExact: true, stashBoxRemoteCount: 30, stashBoxLoadedCount: 30, cacheComplete: true, cacheUpdatedAt: "2026-01-15T11:30:00Z", cacheStale: false }; },
+  stashPerformerDetail: { performer: actors[0], disambiguation: "Profile information remains readable on small screens.", birthdate: "2000-01-01", ethnicity: null, country: "JP", eyeColor: null, heightCm: 165, rating100: null, urls: [], matchedStashBox: { name: "Example StashBox", endpoint: "https://example.com/graphql", performerId: "remote-0", performerName: actors[0].name }, totalSceneCount: 30, stashSceneCount: 10, stashBoxSceneCount: 30, dedupedSceneCount: 30, activeTaskCount: 2, sceneStatsComplete: true, sceneStatsStale: false },
+  stashPerformerScenes: ({ input }: { input: { page?: number; }; }) => { const page = input.page ?? 1; return { items: scenes.slice((page - 1) * 24, page * 24), page, pageSize: 24, totalCount: 30, totalPages: 2, hasPrevPage: page > 1, hasNextPage: page < 2, stashSceneCount: 10, stashBoxCount: 30, dedupedCount: 30, totalCountExact: true, stashBoxRemoteCount: 30, stashBoxLoadedCount: 30, cacheComplete: true, cacheUpdatedAt: "2026-01-15T11:30:00Z", cacheStale: false }; },
 };
-test.use({ graphqlOverrides });
+test.use({ graphqlOverrides: { ...graphqlOverrides, stashPerformerProfile: graphqlOverrides.stashPerformerDetail } });
 
 for (const locale of ["zh-CN", "en"] as const) {
   test(`${locale} performer list with records`, async ({ page }) => {
@@ -102,13 +102,16 @@ test("performer selection survives pagination and filters", async ({ page }) => 
 
 
 test.describe("failed performer check", () => {
-  test.use({ graphqlOverrides: {
-    ...graphqlOverrides,
-    performerWorkspace: (args: Parameters<typeof graphqlOverrides.performerWorkspace>[0]) => ({
-      ...graphqlOverrides.performerWorkspace(args),
-      subscribedPerformers: states.map(state => ({ ...state, lastError: states[1].lastError })),
-    }),
-  } });
+  test.use({
+    graphqlOverrides: {
+      ...graphqlOverrides,
+      stashPerformerProfile: graphqlOverrides.stashPerformerDetail,
+      performerWorkspace: (args: Parameters<typeof graphqlOverrides.performerWorkspace>[0]) => ({
+        ...graphqlOverrides.performerWorkspace(args),
+        subscribedPerformers: states.map(state => ({ ...state, lastError: states[1].lastError })),
+      }),
+    }
+  });
 
   for (const locale of ["zh-CN", "en"] as const) {
     test(`${locale} check reason stays beside failure status`, async ({ page }) => {
@@ -132,4 +135,63 @@ test.describe("failed performer check", () => {
       await expect(reason).toBeFocused();
     });
   }
+});
+
+
+for (const delayed of ["metadata", "profile"] as const) {
+  test(`performer ${delayed} loading does not block other detail regions`, async ({ page }) => {
+    await page.addInitScript(() => localStorage.setItem("moji:locale", "en"));
+    let release!: () => void;
+    const pending = new Promise<void>(resolve => { release = resolve; });
+    await page.route("**/graphql", async route => {
+      const body = route.request().postDataJSON();
+      const shouldDelay = delayed === "metadata"
+        ? /query StashPerformer(Detail|Scenes)\b/.test(body.query)
+        : /query StashPerformerProfile\b/.test(body.query);
+      if (shouldDelay) await pending;
+      await route.fallback();
+    });
+    try {
+      await page.goto("/performers/actor-0");
+      await expect(page.getByRole("combobox", { name: "Scene source" })).toBeVisible();
+      if (delayed === "metadata") {
+        await expect(page.locator(".performer-detail-hero__name")).toHaveText(actors[0].name);
+        await expect(page.locator(".performer-summary-metrics--works dd")).toHaveText(["25", "—", "—"]);
+        await expect(page.locator(".performer-scene-card")).toHaveCount(0);
+      } else {
+        await expect(page.locator(".performer-scene-card")).toHaveCount(24);
+        await expect(page.locator(".performer-detail-hero__name")).toHaveCount(0);
+      }
+    } finally { release(); }
+    await expect(page.locator(".performer-detail-hero__name")).toHaveText(actors[0].name);
+    await expect(page.locator(".performer-summary-metrics--works dd")).toHaveText(["10", "30", "2"]);
+    await expect(page.locator(".performer-scene-card")).toHaveCount(24);
+  });
+}
+
+
+test("scene multi-select is optional and clears when exited", async ({ page }) => {
+  await page.addInitScript(() => localStorage.setItem("moji:locale", "en"));
+  await page.goto("/performers/actor-0");
+  await expect(page.locator(".performer-scene-card")).toHaveCount(24);
+  await expect(page.locator(".performer-scene-selection")).toHaveCount(0);
+  await expect(page.locator(".performer-scene-card__selector")).toHaveCount(0);
+  await page.locator(".performer-scene-card").nth(3).click();
+  await expect(page.locator(".performer-scene-card.is-selected")).toHaveCount(0);
+
+  await page.getByRole("button", { name: "Select scenes", exact: true }).click();
+  await expect(page.locator(".performer-scene-card__selector")).toHaveCount(21);
+  await page.getByRole("button", { name: "Select this page (21)", exact: true }).click();
+  await page.getByRole("button", { name: "Next", exact: true }).click();
+  await expect(page.locator(".performer-scene-card")).toHaveCount(6);
+  await page.getByRole("button", { name: "Select this page (6)", exact: true }).click();
+  await expect(page.getByRole("button", { name: "Create download tasks (27)" })).toBeVisible();
+  await expect(page).toHaveScreenshot("en-performer-scene-selection.png");
+
+  await page.getByRole("button", { name: "Exit selection", exact: true }).click();
+  await expect(page.locator(".performer-scene-selection")).toHaveCount(0);
+  await expect(page.locator(".performer-scene-card__selector")).toHaveCount(0);
+  await page.getByRole("button", { name: "Select scenes", exact: true }).click();
+  await expect(page.locator(".performer-scene-card.is-selected")).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Create download tasks", exact: true })).toBeDisabled();
 });

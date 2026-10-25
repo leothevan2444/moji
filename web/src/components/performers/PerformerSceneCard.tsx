@@ -30,12 +30,12 @@ function performerSceneSourceLabel(scene: StashPerformerSceneEntry) {
   return "Stash";
 }
 
-export function PerformerSceneCard({ scene, page }: { scene: StashPerformerSceneEntry; page: Pick<PerformersPageProps, "selectedSceneKeys" | "pendingSceneKeys" | "onToggleSceneSelection" | "onOpenTask" | "onQueueScene">; }) {
+export function PerformerSceneCard({ scene, page }: { scene: StashPerformerSceneEntry; page: Pick<PerformersPageProps, "sceneSelectionMode" | "selectedSceneKeys" | "pendingSceneKeys" | "onToggleSceneSelection" | "onOpenTask" | "onQueueScene">; }) {
   const { t } = useTranslation();
-  const { selectedSceneKeys, pendingSceneKeys, onToggleSceneSelection, onOpenTask, onQueueScene } = page;
-  const selected = selectedSceneKeys.includes(scene.key);
+  const { sceneSelectionMode, selectedSceneKeys, pendingSceneKeys, onToggleSceneSelection, onOpenTask, onQueueScene } = page;
+  const selected = sceneSelectionMode && selectedSceneKeys.includes(scene.key);
   const pendingSingleQueue = pendingSceneKeys.includes(scene.key);
-  const selectable = !scene.inLibrary && !scene.mojiTask && !pendingSingleQueue;
+  const selectable = sceneSelectionMode && !scene.inLibrary && !scene.mojiTask && !pendingSingleQueue;
   return (
     <article
       key={scene.key}

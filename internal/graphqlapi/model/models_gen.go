@@ -660,6 +660,20 @@ type StashPerformerDetail struct {
 	ActiveTaskCount int `json:"activeTaskCount"`
 	// Whether the source catalog used for the task count is fully loaded
 	SceneStatsComplete bool `json:"sceneStatsComplete"`
+	// Whether the displayed source snapshot is awaiting background refresh
+	SceneStatsStale bool `json:"sceneStatsStale"`
+}
+
+type StashPerformerProfile struct {
+	Performer      *StashPerformer `json:"performer"`
+	Disambiguation *string         `json:"disambiguation,omitempty"`
+	Birthdate      *string         `json:"birthdate,omitempty"`
+	Ethnicity      *string         `json:"ethnicity,omitempty"`
+	Country        *string         `json:"country,omitempty"`
+	EyeColor       *string         `json:"eyeColor,omitempty"`
+	HeightCm       *int            `json:"heightCm,omitempty"`
+	Rating100      *int            `json:"rating100,omitempty"`
+	Urls           []string        `json:"urls"`
 }
 
 type StashPerformerScene struct {

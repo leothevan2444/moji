@@ -1,5 +1,6 @@
 import { faArrowLeft } from "@fortawesome/free-solid-svg-icons/faArrowLeft";
 import { faArrowsRotate } from "@fortawesome/free-solid-svg-icons/faArrowsRotate";
+import { faListCheck } from "@fortawesome/free-solid-svg-icons/faListCheck";
 import { faBookmark } from "@fortawesome/free-solid-svg-icons/faBookmark";
 import { faXmark } from "@fortawesome/free-solid-svg-icons/faXmark";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
@@ -43,6 +44,8 @@ export function PerformersPage(props: PerformersPageProps) {
     performerSceneLibraryFilter,
     performerScenePageSize,
     selectedSceneKeys,
+    sceneSelectionMode,
+    onToggleSceneSelectionMode,
     selectedPerformerIds,
     performerSelectionMode,
     lastRefreshedAt,
@@ -98,109 +101,107 @@ export function PerformersPage(props: PerformersPageProps) {
         {performerScenesError ? <PerformerError error={performerScenesError} onRetry={props.onRetryScenes} /> : null}
 
         {performerDetail ? (
-          <>
-            <PerformerOverview performerDetail={performerDetail} performerSubscription={performerSubscription} page={props} />
+          <PerformerOverview performerDetail={performerDetail} performerSubscription={performerSubscription} performerSummary={props.performerSummary} page={props} />
+        ) : fetchingPerformerDetail ? <PerformerLoading detail /> : !performerDetailError ? <article className="empty-card empty-card--wide"><h3>{t("performerUi.detailMissing")}</h3><p>{t("performerUi.detailMissingHelp")}</p></article> : null}
 
-            <div className="toolbar-inline toolbar-inline--subscription performer-scene-filters">
-              <input
-                aria-label={t("performerUi.sceneSearch")}
-                placeholder={t("performerUi.sceneSearch")}
-                value={performerSceneSearch}
-                onChange={(event) => onPerformerSceneSearchChange(event.target.value)}
-              />
-              <select aria-label={t("performerWorkspace.sourceFilter")} value={performerSceneSourceFilter} onChange={(event) => onPerformerSceneSourceChange(event.target.value as SceneSourceFilter)}>
-                <option value={SceneSourceFilter.All}>{t("performerUi.allSources")}</option>
-                <option value={SceneSourceFilter.Stash}>Stash</option>
-                <option value={SceneSourceFilter.Stashbox}>StashBox</option>
-              </select>
-              <select aria-label={t("performerWorkspace.libraryFilter")} value={performerSceneLibraryFilter} onChange={(event) => onPerformerSceneLibraryChange(event.target.value as LibraryFilter)}>
-                <option value={LibraryFilter.All}>{t("performerUi.allStates")}</option>
-                <option value={LibraryFilter.InLibrary}>{t("performerUi.inLibrary")}</option>
-                <option value={LibraryFilter.NotInLibrary}>{t("performerUi.notInLibrary")}</option>
-              </select>
-              <select aria-label={t("performerWorkspace.pageSize")} value={performerScenePageSize} onChange={(event) => onPerformerScenePageSizeChange(Number(event.target.value))}>
-                {SUBSCRIPTION_PAGE_SIZE_OPTIONS.map((size) => (
-                  <option key={size} value={size}>
-                    {t("performerUi.pageSize", { size })}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div className="performer-scene-selection">
-              <button
-                type="button"
-                className="ghost-button"
-                disabled={currentPageKeys.length === 0 || fetchingPerformerScenes}
-                onClick={() => onSelectCurrentScenePage(currentPageKeys)}
-              >
-                {t("performerUi.selectPage", { count: currentPageKeys.length })}
-              </button>
-              <button
-                type="button"
-                className="ghost-button"
-                disabled={selectedSceneKeys.length === 0 || queueingPerformerScenes}
-                onClick={onClearSceneSelection}
-              >
-                {t("performerUi.clearSelection")}
-              </button>
-              <button
-                type="button"
-                className="primary-button"
-                disabled={selectedSceneKeys.length === 0 || queueingPerformerScenes || fetchingPerformerScenes}
-                onClick={onQueueSelectedScenes}
-              >
-                {queueingPerformerScenes
-                  ? t("performerUi.creatingMany", { count: selectedSceneKeys.length })
-                  : selectedSceneKeys.length > 0
-                    ? t("performerUi.createMany", { count: selectedSceneKeys.length })
-                    : t("performerUi.createDownload")}
-              </button>
-            </div>
+        {props.performerSummaryError ? <PerformerError error={props.performerSummaryError} onRetry={props.onRetrySummary} /> : null}
+        {props.fetchingPerformerSummary && !props.performerSummary ? <p className="settings-meta" role="status">{t("performerWorkspace.summaryLoading")}</p> : null}
+        <div className="toolbar-inline toolbar-inline--subscription performer-scene-filters">
+          <input
+            aria-label={t("performerUi.sceneSearch")}
+            placeholder={t("performerUi.sceneSearch")}
+            value={performerSceneSearch}
+            onChange={(event) => onPerformerSceneSearchChange(event.target.value)}
+          />
+          <select aria-label={t("performerWorkspace.sourceFilter")} value={performerSceneSourceFilter} onChange={(event) => onPerformerSceneSourceChange(event.target.value as SceneSourceFilter)}>
+            <option value={SceneSourceFilter.All}>{t("performerUi.allSources")}</option>
+            <option value={SceneSourceFilter.Stash}>Stash</option>
+            <option value={SceneSourceFilter.Stashbox}>StashBox</option>
+          </select>
+          <select aria-label={t("performerWorkspace.libraryFilter")} value={performerSceneLibraryFilter} onChange={(event) => onPerformerSceneLibraryChange(event.target.value as LibraryFilter)}>
+            <option value={LibraryFilter.All}>{t("performerUi.allStates")}</option>
+            <option value={LibraryFilter.InLibrary}>{t("performerUi.inLibrary")}</option>
+            <option value={LibraryFilter.NotInLibrary}>{t("performerUi.notInLibrary")}</option>
+          </select>
+          <select aria-label={t("performerWorkspace.pageSize")} value={performerScenePageSize} onChange={(event) => onPerformerScenePageSizeChange(Number(event.target.value))}>
+            {SUBSCRIPTION_PAGE_SIZE_OPTIONS.map((size) => (
+              <option key={size} value={size}>
+                {t("performerUi.pageSize", { size })}
+              </option>
+            ))}
+          </select>
+          <button type="button" className="ghost-button task-icon-button task-icon-button--bordered performer-scene-selection-toggle" aria-pressed={sceneSelectionMode} aria-label={t(sceneSelectionMode ? "performerUi.exitSceneSelection" : "performerUi.selectScenes")} title={t(sceneSelectionMode ? "performerUi.exitSceneSelection" : "performerUi.selectScenes")} onClick={onToggleSceneSelectionMode} disabled={queueingPerformerScenes}>
+            <FontAwesomeIcon icon={sceneSelectionMode ? faXmark : faListCheck} />
+          </button>
+        </div>
+        {sceneSelectionMode ? <div className="performer-scene-selection">
+          <button
+            type="button"
+            className="ghost-button"
+            disabled={currentPageKeys.length === 0 || fetchingPerformerScenes}
+            onClick={() => onSelectCurrentScenePage(currentPageKeys)}
+          >
+            {t("performerUi.selectPage", { count: currentPageKeys.length })}
+          </button>
+          <button
+            type="button"
+            className="ghost-button"
+            disabled={selectedSceneKeys.length === 0 || queueingPerformerScenes}
+            onClick={onClearSceneSelection}
+          >
+            {t("performerUi.clearSelection")}
+          </button>
+          <button
+            type="button"
+            className="primary-button"
+            disabled={selectedSceneKeys.length === 0 || queueingPerformerScenes || fetchingPerformerScenes}
+            onClick={onQueueSelectedScenes}
+          >
+            {queueingPerformerScenes
+              ? t("performerUi.creatingMany", { count: selectedSceneKeys.length })
+              : selectedSceneKeys.length > 0
+                ? t("performerUi.createMany", { count: selectedSceneKeys.length })
+                : t("performerUi.createDownload")}
+          </button>
+        </div> : null}
 
-            {selectedSceneKeys.length ? <p className="performer-selection-summary" role="status">{t("performerWorkspace.selectedScenes", { count: selectedSceneKeys.length })}{selectedSceneKeys.some(key => !performerScenes.some(scene => scene.key === key)) ? ` · ${t("performerWorkspace.hiddenScenes", { count: selectedSceneKeys.filter(key => !performerScenes.some(scene => scene.key === key)).length })}` : ""}</p> : null}
-            <div className="settings-meta performer-results-meta" aria-live="polite">
-              <span>{t(performerScenePage?.totalCountExact ? "performerWorkspace.total" : "performerCacheUi.loadedItems", { count: performerScenePage?.totalCount ?? 0 })}</span>
-              <span>{t("performerWorkspace.visible", { count: performerScenes.length })}</span>
-              <span>{performerScenePage?.totalPages != null ? t("performerUi.pagination", { page: performerScenePage.page, pages: performerScenePage.totalPages }) : t("performerCacheUi.loadingMorePages", { page: performerScenePage?.page ?? 1 })}</span>
-              <span>{t("performerUi.state", { state: t(fetchingPerformerDetail || fetchingPerformerScenes ? "performerUi.loading" : "performerUi.ready") })}</span>
-            </div>
-            {performerScenePage?.cacheStale ? <p className="settings-feedback tone-warn">{t("performerCacheUi.stale")}</p> : null}
+        {sceneSelectionMode && selectedSceneKeys.length ? <p className="performer-selection-summary" role="status">{t("performerWorkspace.selectedScenes", { count: selectedSceneKeys.length })}{selectedSceneKeys.some(key => !performerScenes.some(scene => scene.key === key)) ? ` · ${t("performerWorkspace.hiddenScenes", { count: selectedSceneKeys.filter(key => !performerScenes.some(scene => scene.key === key)).length })}` : ""}</p> : null}
+        <div className="settings-meta performer-results-meta" aria-live="polite">
+          <span>{t(performerScenePage?.totalCountExact ? "performerWorkspace.total" : "performerCacheUi.loadedItems", { count: performerScenePage?.totalCount ?? 0 })}</span>
+          <span>{t("performerWorkspace.visible", { count: performerScenes.length })}</span>
+          <span>{performerScenePage?.totalPages != null ? t("performerUi.pagination", { page: performerScenePage.page, pages: performerScenePage.totalPages }) : t("performerCacheUi.loadingMorePages", { page: performerScenePage?.page ?? 1 })}</span>
+          <span>{t("performerUi.state", { state: t(fetchingPerformerDetail || fetchingPerformerScenes ? "performerUi.loading" : "performerUi.ready") })}</span>
+        </div>
 
-            {fetchingPerformerScenes && performerScenes.length === 0 ? <PerformerLoading /> : null}
-            <div
-              className="card-grid"
-              style={{ marginTop: 16 }}
-            >
-              {performerScenes.map((scene) => <PerformerSceneCard key={scene.key} scene={scene} page={props} />)}
+        {fetchingPerformerScenes && performerScenes.length === 0 ? <PerformerLoading /> : null}
+        <div
+          className="card-grid"
+          style={{ marginTop: 16 }}
+        >
+          {performerScenes.map((scene) => <PerformerSceneCard key={scene.key} scene={scene} page={props} />)}
 
-              {!fetchingPerformerScenes && !performerScenesError && performerScenes.length === 0 ? (
-                <article className="empty-card empty-card--wide">
-                  <h3>{t("performerUi.noScenes")}</h3>
-                  <p>{t("performerUi.noScenesDetail")}</p>
-                </article>
-              ) : null}
-            </div>
+          {!fetchingPerformerScenes && !performerScenesError && performerScenes.length === 0 ? (
+            <article className="empty-card empty-card--wide">
+              <h3>{t("performerUi.noScenes")}</h3>
+              <p>{t("performerUi.noScenesDetail")}</p>
+            </article>
+          ) : null}
+        </div>
 
-            {performerScenePage && (performerScenePage.hasPrevPage || performerScenePage.hasNextPage) ? (
-              <div className="pagination-bar">
-                <button type="button" className="ghost-button" disabled={!performerScenePage.hasPrevPage || fetchingPerformerScenes} onClick={onPrevPerformerScenePage}>
-                  {t("performerUi.previous")}
-                </button>
-                <span className="status-chip tone-neutral">
-                  {performerScenePage.totalPages != null ? t("performerUi.page", { page: performerScenePage.page, pages: performerScenePage.totalPages }) : t("performerCacheUi.pageUnknownTotal", { page: performerScenePage.page })}
-                </span>
-                <button type="button" className="ghost-button" disabled={!performerScenePage.hasNextPage || fetchingPerformerScenes} onClick={onNextPerformerScenePage}>
-                  {t("performerUi.next")}
-                </button>
-              </div>
-            ) : null}
-          </>
-        ) : fetchingPerformerDetail ? <PerformerLoading detail /> : !performerDetailError ? (
-          <article className="empty-card empty-card--wide">
-            <h3>{t(fetchingPerformerDetail ? "performerUi.detailLoading" : "performerUi.detailMissing")}</h3>
-            <p>{t("performerUi.detailMissingHelp")}</p>
-          </article>
+        {performerScenePage && (performerScenePage.hasPrevPage || performerScenePage.hasNextPage) ? (
+          <div className="pagination-bar">
+            <button type="button" className="ghost-button" disabled={!performerScenePage.hasPrevPage || fetchingPerformerScenes} onClick={onPrevPerformerScenePage}>
+              {t("performerUi.previous")}
+            </button>
+            <span className="status-chip tone-neutral">
+              {performerScenePage.totalPages != null ? t("performerUi.page", { page: performerScenePage.page, pages: performerScenePage.totalPages }) : t("performerCacheUi.pageUnknownTotal", { page: performerScenePage.page })}
+            </span>
+            <button type="button" className="ghost-button" disabled={!performerScenePage.hasNextPage || fetchingPerformerScenes} onClick={onNextPerformerScenePage}>
+              {t("performerUi.next")}
+            </button>
+          </div>
         ) : null}
+
       </section>
     );
   }

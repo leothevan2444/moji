@@ -325,6 +325,7 @@ type StatsProvider interface {
 type PerformerService interface {
 	List(ctx context.Context, search string) ([]performer.Performer, error)
 	QueuePerformerScenes(ctx context.Context, performerID string, selections []performer.QueueSceneSelection) (performer.QueueScenesResult, error)
+	GetPerformerProfile(ctx context.Context, performerID string) (performer.Detail, error)
 	GetPerformerDetail(ctx context.Context, performerID string) (performer.Detail, error)
 	ListPerformerScenes(ctx context.Context, performerID string, query performer.SceneQuery) (performer.ScenePage, error)
 	RefreshPerformerScenes(ctx context.Context, performerID string, query performer.SceneQuery) (performer.ScenePage, error)

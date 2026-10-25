@@ -48,10 +48,11 @@ func (s *Service) HasCache() bool                        { return s != nil && s.
 type CachePolicy = stashboxcache.FreshnessPolicy
 
 const (
-	CachePreferred = stashboxcache.CachePreferred
-	RequireFresh   = stashboxcache.RequireFresh
-	ForceRefresh   = stashboxcache.ForceRefresh
-	RefreshHead    = stashboxcache.RefreshHead
+	CachePreferred       = stashboxcache.CachePreferred
+	StaleWhileRevalidate = stashboxcache.StaleWhileRevalidate
+	RequireFresh         = stashboxcache.RequireFresh
+	ForceRefresh         = stashboxcache.ForceRefresh
+	RefreshHead          = stashboxcache.RefreshHead
 )
 
 func NewService(loader EndpointLoader, registry *Registry) *Service {

@@ -41,9 +41,11 @@ type FreshnessPolicy string
 
 const (
 	CachePreferred FreshnessPolicy = "CACHE_PREFERRED"
-	RequireFresh   FreshnessPolicy = "REQUIRE_FRESH"
-	ForceRefresh   FreshnessPolicy = "FORCE_REFRESH"
-	RefreshHead    FreshnessPolicy = "REFRESH_HEAD"
+	// Browsing may display an expired snapshot while refreshing it in the background.
+	StaleWhileRevalidate FreshnessPolicy = "STALE_WHILE_REVALIDATE"
+	RequireFresh         FreshnessPolicy = "REQUIRE_FRESH"
+	ForceRefresh         FreshnessPolicy = "FORCE_REFRESH"
+	RefreshHead          FreshnessPolicy = "REFRESH_HEAD"
 )
 
 type PerformerKey struct {

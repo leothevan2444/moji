@@ -188,6 +188,10 @@ export const graphcacheKeys: KeyingConfig = {
     const performer = data.performer as { id?: unknown } | undefined;
     return typeof performer?.id === "string" ? performer.id : null;
   },
+  StashPerformerProfile: (data) => {
+    const performer = data.performer as { id?: unknown } | undefined;
+    return typeof performer?.id === "string" ? performer.id : null;
+  },
   StashPerformerDetail: (data) => {
     const performer = data.performer as { id?: unknown } | undefined;
     return typeof performer?.id === "string" ? performer.id : null;

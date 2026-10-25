@@ -63,6 +63,28 @@ query PerformerWorkspace($search: String, $page: Int, $pageSize: Int, $options: 
   }
 }
 
+query StashPerformerProfile($id: ID!) {
+  stashPerformerProfile(id: $id) {
+    performer {
+      id
+      name
+      aliasList
+      favorite
+      imagePath
+      sceneCount
+      subscribed
+    }
+    disambiguation
+    birthdate
+    ethnicity
+    country
+    eyeColor
+    heightCm
+    rating100
+    urls
+  }
+}
+
 query StashPerformerDetail($id: ID!) {
   stashPerformerDetail(id: $id) {
     performer {
@@ -94,6 +116,7 @@ query StashPerformerDetail($id: ID!) {
     dedupedSceneCount
     activeTaskCount
     sceneStatsComplete
+    sceneStatsStale
   }
 }
 

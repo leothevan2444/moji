@@ -72,7 +72,8 @@
   .performer-check-reason:hover { color: var(--text); text-decoration: underline; }
   .performer-summary-metrics .tone-danger dd { color: var(--danger, #b54332); }
   .performer-summary-note { margin: 4px 0 0; color: var(--muted); font-size: 11px; line-height: 14px; }
-  .performer-scene-filters { display: grid; grid-template-columns: minmax(200px, 1fr) repeat(3, minmax(120px, 160px)); }
+  .performer-scene-filters { display: grid; grid-template-columns: minmax(200px, 1fr) repeat(3, minmax(120px, 160px)) auto; }
+  .performer-scene-selection-toggle { display: inline-flex; align-items: center; justify-content: center; gap: 6px; white-space: nowrap; }
   .performer-scene-selection { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 12px; }
   .performer-scene-selection .primary-button { margin-inline-start: auto; }
   .performer-selection-summary, .performer-selection-help { color: var(--muted); font-size: 13px; line-height: 1.5; }

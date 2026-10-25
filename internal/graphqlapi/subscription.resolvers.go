@@ -244,6 +244,22 @@ func (r *queryResolver) PerformerWorkspace(ctx context.Context, search *string, 
 	return &model.PerformerWorkspaceSnapshot{Performers: stashPerformerPageToModel(buildStashPerformerPage(items, needle, page, pageSize)), SubscribedPerformers: subscribed}, nil
 }
 
+// StashPerformerProfile is the resolver for the stashPerformerProfile field.
+func (r *queryResolver) StashPerformerProfile(ctx context.Context, id string) (*model.StashPerformerProfile, error) {
+	if r.Performer == nil {
+		return nil, errors.New("performer service is not configured")
+	}
+	item, err := r.Performer.GetPerformerProfile(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+	return &model.StashPerformerProfile{
+		Performer: stashPerformerToModel(item.Performer), Disambiguation: nilIfEmpty(item.Disambiguation),
+		Birthdate: nilIfEmpty(item.Birthdate), Ethnicity: nilIfEmpty(item.Ethnicity), Country: nilIfEmpty(item.Country), EyeColor: nilIfEmpty(item.EyeColor),
+		HeightCm: item.HeightCm, Rating100: item.Rating100, Urls: append([]string(nil), item.URLs...),
+	}, nil
+}
+
 // StashPerformerDetail is the resolver for the stashPerformerDetail field.
 func (r *queryResolver) StashPerformerDetail(ctx context.Context, id string) (*model.StashPerformerDetail, error) {
 	if r.Performer == nil {

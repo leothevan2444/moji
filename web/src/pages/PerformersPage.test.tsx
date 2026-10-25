@@ -39,6 +39,8 @@ function props(overrides: Partial<ComponentProps<typeof PerformersPage>> = {}): 
     performerSceneLibraryFilter: LibraryFilter.All,
     performerScenePageSize: 24,
     selectedSceneKeys: [],
+    sceneSelectionMode: false,
+    onToggleSceneSelectionMode: noop,
     selectedPerformerIds: [],
     performerSelectionMode: false,
     lastRefreshedAt: null,
