@@ -1008,8 +1008,8 @@ func TestRefreshPerformerKeepsFailedAutoDownloadsPending(t *testing.T) {
 	})
 	registry.Replace([]stash.StashBoxEndpoint{{Name: "javstash", Endpoint: endpoint, APIKey: "ignored"}})
 
-	taskRuntime := &fakeTaskRuntime{err: errors.New("temporary add failure")}
-	service, err := newServiceForTest(stashClient, registry, taskRuntime, NewMemoryStore())
+	creator := &fakeTaskCreator{subscriptionErr: errors.New("temporary add failure")}
+	service, err := NewService(stashClient, metadata.NewService(nil, registry), creator, NewMemoryStore())
 	if err != nil {
 		t.Fatalf("NewService failed: %v", err)
 	}
@@ -1026,8 +1026,8 @@ func TestRefreshPerformerKeepsFailedAutoDownloadsPending(t *testing.T) {
 	if first.PendingReleaseCount != 1 || second.PendingReleaseCount != 1 {
 		t.Fatalf("expected failed release to remain pending once, got first=%d second=%d", first.PendingReleaseCount, second.PendingReleaseCount)
 	}
-	if taskRuntime.calls != 1 {
-		t.Fatalf("expected taskRuntime to be called once for the new release, got %d", taskRuntime.calls)
+	if len(creator.subscriptionCalls) != 1 {
+		t.Fatalf("expected task creator to be called once for the new release, got %d", len(creator.subscriptionCalls))
 	}
 	if second.LastError == "" {
 		t.Fatalf("expected last error to be preserved after auto-download failure")

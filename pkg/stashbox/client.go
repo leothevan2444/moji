@@ -6,7 +6,6 @@ package stashbox
 import (
 	"context"
 	"net/http"
-	"time"
 
 	"github.com/Yamashou/gqlgenc/clientv2"
 	"github.com/leothevan2444/moji/pkg/stashbox/graphql"
@@ -57,12 +56,6 @@ func rateLimit(n int) clientv2.RequestInterceptor {
 	}
 }
 
-func requestDeadline(ctx context.Context, req *http.Request, info *clientv2.GQLRequestInfo, res interface{}, next clientv2.RequestInterceptorFunc) error {
-	bounded, cancel := context.WithTimeout(ctx, 10*time.Second)
-	defer cancel()
-	return next(bounded, req.WithContext(bounded), info, res)
-}
-
 // NewClient creates a new Stash-Box client bound to the given endpoint. The
 // API key is sent as the `ApiKey` header on every request. Pass an empty
 // `endpoint` to skip constructing a usable client (the caller can still hold
@@ -71,7 +64,7 @@ func requestDeadline(ctx context.Context, req *http.Request, info *clientv2.GQLR
 func NewClient(endpoint, apiKey string, opts ...ClientOption) *Client {
 	ret := &Client{
 		endpoint:             endpoint,
-		httpClient:           &http.Client{Timeout: 10 * time.Second},
+		httpClient:           http.DefaultClient,
 		maxRequestsPerMinute: DefaultMaxRequestsPerMinute,
 	}
 	for _, opt := range opts {
@@ -82,7 +75,7 @@ func NewClient(endpoint, apiKey string, opts ...ClientOption) *Client {
 	limitRequests := rateLimit(ret.maxRequestsPerMinute)
 
 	gql := graphql.Client{
-		Client: clientv2.NewClient(ret.httpClient, endpoint, nil, requestDeadline, authHeader, limitRequests),
+		Client: clientv2.NewClient(ret.httpClient, endpoint, nil, authHeader, limitRequests),
 	}
 	ret.graphql = &gql
 

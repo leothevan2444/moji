@@ -135,6 +135,7 @@ func (s *Service) SetTaskCreator(creator TaskCreator) {
 		return
 	}
 	s.taskCreator = creator
+	s.reviewTasks, _ = creator.(ReviewTaskLister)
 }
 
 func (s *Service) SetEventPublisher(publisher PerformerSubscriptionEventPublisher) {
@@ -284,7 +285,6 @@ func (s *Service) refreshSubscribedPerformer(ctx context.Context, performerID st
 
 	now := s.now().UTC()
 	state.LastCheckedAt = &now
-	previousLastError := state.LastError
 	state.LastError = ""
 
 	releases, err := s.fetchReleases(ctx, performer, state)
@@ -309,6 +309,13 @@ func (s *Service) refreshSubscribedPerformer(ctx context.Context, performerID st
 	defer s.reviewMu.Unlock()
 	reviewRecords, err := s.reviewRecordsLocked(ctx)
 	if err != nil {
+		return SubscribedPerformer{}, err
+	}
+	tasks, err := s.reviewTaskMap(ctx)
+	if err != nil {
+		return SubscribedPerformer{}, err
+	}
+	if err := s.reconcileReviewTasks(ctx, reviewRecords, tasks); err != nil {
 		return SubscribedPerformer{}, err
 	}
 
@@ -396,10 +403,8 @@ func (s *Service) refreshSubscribedPerformer(ctx context.Context, performerID st
 				nextPending = append(nextPending, pending[i])
 				continue
 			}
-			task, err := s.taskCreator.QueueSubscriptionRelease(ctx, pending[i].Code, pending[i].Title)
-			if err != nil {
-				state.LastError = err.Error()
-				review := reviewRecords[pending[i].Key]
+			review := reviewRecords[pending[i].Key]
+			if err := s.queueReviewTaskLocked(ctx, &review, tasks); err != nil {
 				review.Status = ReviewFailed
 				review.Error = err.Error()
 				reviewRecords[pending[i].Key] = review
@@ -408,17 +413,12 @@ func (s *Service) refreshSubscribedPerformer(ctx context.Context, performerID st
 				nextPending = append(nextPending, pending[i])
 				continue
 			}
-			if task != nil {
-				pending[i].TaskID = task.ID
-				logging.Infof("subscription: auto-download created task %s for performer %s code %q", task.ID, performerID, pending[i].Code)
+			if review.TaskID != "" {
+				logging.Infof("subscription: auto-download associated task %s for performer %s code %q", review.TaskID, performerID, pending[i].Code)
 			}
-			review := reviewRecords[pending[i].Key]
-			review.RecordedRelease = pending[i]
-			review.Status = ReviewDownloaded
-			review.Error = ""
 			reviewRecords[pending[i].Key] = review
 			reviewUpdates[pending[i].Key] = review
-			state.ProcessedReleases = append([]RecordedRelease{pending[i]}, state.ProcessedReleases...)
+			state.ProcessedReleases = append([]RecordedRelease{review.RecordedRelease}, state.ProcessedReleases...)
 		}
 		state.PendingReleases = nextPending
 	} else {
@@ -427,8 +427,30 @@ func (s *Service) refreshSubscribedPerformer(ctx context.Context, performerID st
 			logging.Infof("subscription: queued %d pending releases for performer %s (%s)", len(pending), performerID, performer.Name)
 		}
 	}
-	if state.LastError == "" && len(state.PendingReleases) > 0 && previousLastError != "" {
-		state.LastError = previousLastError
+	// Historical pending snapshots may already have a task or a resolved review.
+	// Keep them consistent and retain only errors from releases still failed.
+	nextPending := make([]RecordedRelease, 0, len(state.PendingReleases))
+	for _, release := range state.PendingReleases {
+		review := reviewRecords[release.Key]
+		if review.Status == ReviewDownloaded || review.Status == ReviewInLibrary {
+			state.ProcessedReleases = append(state.ProcessedReleases, review.RecordedRelease)
+		} else {
+			nextPending = append(nextPending, release)
+		}
+	}
+	state.PendingReleases = nextPending
+	var lastFailedReview ReleaseReview
+	for _, review := range reviewRecords {
+		if review.Status != ReviewFailed || review.Error == "" {
+			continue
+		}
+		for _, actor := range review.Performers {
+			if actor.ID == performerID && (state.LastError == "" || review.SeenAt.After(lastFailedReview.SeenAt) ||
+				(review.SeenAt.Equal(lastFailedReview.SeenAt) && review.Key > lastFailedReview.Key)) {
+				state.LastError = review.Error
+				lastFailedReview = review
+			}
+		}
 	}
 
 	archive = archive[:0]

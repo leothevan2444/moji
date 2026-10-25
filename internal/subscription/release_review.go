@@ -128,6 +128,10 @@ func (s *Service) reconcileReviewTasksLocked(ctx context.Context, records map[st
 	if err != nil {
 		return err
 	}
+	return s.reconcileReviewTasks(ctx, records, tasks)
+}
+
+func (s *Service) reconcileReviewTasks(ctx context.Context, records map[string]ReleaseReview, tasks map[string]*taskruntime.Task) error {
 	changed := make([]ReleaseReview, 0)
 	for key, record := range records {
 		if task := tasks[reviewCode(record.Code)]; task != nil && (record.TaskID != task.ID || record.Status != ReviewDownloaded) {
@@ -261,11 +265,8 @@ func (s *Service) downloadReviewLocked(ctx context.Context, record *ReleaseRevie
 	if err != nil {
 		return err
 	}
-	if task := tasks[reviewCode(record.Code)]; task != nil {
-		record.TaskID = task.ID
-		record.Status = ReviewDownloaded
-		record.Error = ""
-		return nil
+	if tasks[reviewCode(record.Code)] != nil {
+		return s.queueReviewTaskLocked(ctx, record, tasks)
 	}
 	sceneID := record.SceneID
 	if sceneID == "" {
@@ -284,11 +285,26 @@ func (s *Service) downloadReviewLocked(ctx context.Context, record *ReleaseRevie
 		record.Error = ""
 		return nil
 	}
+	return s.queueReviewTaskLocked(ctx, record, tasks)
+}
+
+// Both callers have checked library membership before requesting a task.
+func (s *Service) queueReviewTaskLocked(ctx context.Context, record *ReleaseReview, tasks map[string]*taskruntime.Task) error {
+	if strings.TrimSpace(record.Code) == "" {
+		return errors.New("subscription: release code is missing")
+	}
+	if task := tasks[reviewCode(record.Code)]; task != nil {
+		record.TaskID = task.ID
+		record.Status = ReviewDownloaded
+		record.Error = ""
+		return nil
+	}
 	if s.taskCreator == nil {
 		return errors.New("subscription: task creation is not configured")
 	}
 	task, err := s.taskCreator.QueueSubscriptionRelease(ctx, record.Code, record.Title)
 	if task != nil {
+		tasks[reviewCode(record.Code)] = task
 		record.TaskID = task.ID
 		record.Status = ReviewDownloaded
 		record.Decision = ReleaseDecisionDownloaded
@@ -301,11 +317,12 @@ func (s *Service) downloadReviewLocked(ctx context.Context, record *ReleaseRevie
 		return nil
 	}
 	if errors.Is(err, taskruntime.ErrDuplicateCodeTask) {
-		tasks, listErr := s.reviewTaskMap(ctx)
+		currentTasks, listErr := s.reviewTaskMap(ctx)
 		if listErr != nil {
 			return listErr
 		}
-		if existing := tasks[reviewCode(record.Code)]; existing != nil {
+		if existing := currentTasks[reviewCode(record.Code)]; existing != nil {
+			tasks[reviewCode(record.Code)] = existing
 			record.TaskID = existing.ID
 			record.Status = ReviewDownloaded
 			record.Error = ""
