@@ -115,7 +115,7 @@ describe("PerformersPage list selection", () => {
     render(<PerformersPage {...props({ performerSelectionMode: true, selectedPerformerIds: ["p1"] })} />);
     const actions = within(screen.getByRole("region", { name: "Selected performer actions" }));
     expect((actions.getByRole("button", { name: "Subscribe (1)" }) as HTMLButtonElement).disabled).toBe(false);
-    expect((actions.getByRole("button", { name: "Check selected (0)" }) as HTMLButtonElement).disabled).toBe(true);
+    expect((actions.getByRole("button", { name: "Check selected (1)" }) as HTMLButtonElement).disabled).toBe(false);
     expect(screen.queryByRole("button", { name: "Check Alpha for updates" })).toBeNull();
   });
 
@@ -289,7 +289,7 @@ describe("persistent subscription check state", () => {
     expect((screen.getByRole("button", { name: "Check Alpha for updates" }) as HTMLButtonElement).disabled).toBe(false);
   });
 
-  it("reserves all actors while a check-all is still enumerating subscriptions", () => {
+  it("blocks overlapping checks without marking excluded actors as queued", () => {
     const performer = { ...props().stashPerformers[0], subscribed: true };
     render(<PerformersPage {...props({ stashPerformers: [performer], checkActivity: { activeCount: 1, allRunId: run.id, performers: [] } })} />);
     expect((screen.getByRole("button", { name: "Check Alpha for updates" }) as HTMLButtonElement).disabled).toBe(true);

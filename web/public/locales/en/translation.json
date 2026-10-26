@@ -1,5 +1,6 @@
 {
   "subscriptionChecks": {
+    "allBusy": "A check of all subscriptions is running. Please try again shortly.",
     "title": "Release checks",
     "followRun": "Follow this check on Home",
     "openRun": "View {{trigger}} · {{time}}",
@@ -1332,12 +1333,16 @@
     "skipped": "Skipped",
     "failed": "Failed",
     "confirm": {
+      "checkTitle": "Confirm update check",
+      "checkAction": "Start check",
+      "checkName": "Check {{name}} for updates?",
+      "unsubscribed": "Unsubscribed performers: {{count}}. This is a one-time manual check and will not enable automatic checks.",
       "unsubscribe": {
         "title": "Unsubscribe {{count}} performers?",
         "detail": "This removes the Moji subscription marker in Stash and clears local subscription state. Existing tasks and files are not deleted."
       },
       "refresh": {
-        "title": "Check {{count}} subscribed performers for updates?",
+        "title": "Check {{count}} performers for updates?",
         "detail": "Newly found scenes will be handled according to subscription rules and may create download tasks."
       }
     },
@@ -1422,7 +1427,6 @@
     "checkNow": "Check for updates",
     "checkUpdatesHelp": "Check for scene updates and apply subscription rules",
     "checkAllHelp": "Check all subscribed performers for scene updates and apply subscription rules",
-    "checkRequiresSubscription": "Subscribe before checking for updates",
     "checkName": "Check {{name}} for updates",
     "stashHome": "Open Stash profile",
     "stashHomeName": "Open {{name}} in Stash",

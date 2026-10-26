@@ -88,48 +88,13 @@ func (s *Service) RefreshSubscribedPerformers(ctx context.Context, ids []string)
 		defer func() { s.finishCheck(ctx, resultErr) }()
 	}
 
-	return s.runPerformerBatch(ctx, "refresh", cleaned, func(ctx context.Context, id string) (result PerformerBatchResult) {
-		if err := s.startCheckItem(ctx, id); err != nil {
-			return PerformerBatchResult{PerformerID: id, Status: PerformerBatchStatusFailed, ReasonCode: PerformerBatchReasonRefreshFailed}
-		}
-		defer func() {
-			name, message := "", ""
-			if result.Performer != nil {
-				name = result.Performer.Name
-			}
-			if result.Status != PerformerBatchStatusSucceeded {
-				message = result.ReasonCode
-			}
-			if result.State != nil && result.State.LastError != "" {
-				message = result.State.LastError
-				result.Status = PerformerBatchStatusFailed
-				result.ReasonCode = PerformerBatchReasonRefreshFailed
-			}
-			status := string(result.Status)
-			if ctx.Err() != nil && result.Status == PerformerBatchStatusFailed {
-				status = "INTERRUPTED"
-			}
-			if err := s.finishCheckItem(ctx, id, name, status, message); err != nil {
-				result.Status = PerformerBatchStatusFailed
-				result.ReasonCode = PerformerBatchReasonRefreshFailed
-			}
-		}()
-
-		unlock := s.lockPerformerOperation(id)
-		defer unlock()
-		item, found, err := s.loadBatchPerformer(ctx, id)
-		if err != nil {
-			return PerformerBatchResult{PerformerID: id, Status: PerformerBatchStatusFailed, ReasonCode: PerformerBatchReasonRefreshFailed}
-		}
-		if !found {
+	return s.runPerformerBatch(ctx, "refresh", cleaned, func(ctx context.Context, id string) PerformerBatchResult {
+		state, err := s.executeCheckItem(ctx, id)
+		if errors.Is(err, errCheckPerformerNotFound) {
 			return PerformerBatchResult{PerformerID: id, Status: PerformerBatchStatusSkipped, ReasonCode: PerformerBatchReasonPerformerNotFound}
 		}
-		if !item.Subscribed {
-			return PerformerBatchResult{PerformerID: id, Status: PerformerBatchStatusSkipped, ReasonCode: PerformerBatchReasonNotSubscribed, Performer: &item}
-		}
-		state, err := s.refreshSubscribedPerformer(ctx, id)
-		if err != nil {
-			return PerformerBatchResult{PerformerID: id, Status: PerformerBatchStatusFailed, ReasonCode: PerformerBatchReasonRefreshFailed, Performer: &item, State: &state}
+		if err != nil || state.LastError != "" {
+			return PerformerBatchResult{PerformerID: id, Status: PerformerBatchStatusFailed, ReasonCode: PerformerBatchReasonRefreshFailed, Performer: &state.Performer, State: &state}
 		}
 		return PerformerBatchResult{PerformerID: id, Status: PerformerBatchStatusSucceeded, ReasonCode: PerformerBatchReasonRefreshed, Performer: &state.Performer, State: &state}
 	})

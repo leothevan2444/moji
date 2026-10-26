@@ -228,3 +228,43 @@ for (const workspace of ["scenes", "performers"] as const) {
   });
 
 }
+
+
+test.describe("manual checks for unsubscribed performers", () => {
+  test.use({
+    graphqlOverrides: {
+      ...graphqlOverrides,
+      stashPerformerProfile: { ...graphqlOverrides.stashPerformerDetail, performer: actors[3] },
+      stashPerformerDetail: { ...graphqlOverrides.stashPerformerDetail, performer: actors[3] },
+      startSubscriptionCheck: { id: "manual-check" },
+    }
+  });
+  for (const locale of ["zh-CN", "en"] as const) {
+    for (const location of ["list", "detail"] as const) {
+      test(`${locale} ${location} confirms an unsubscribed performer check`, async ({ page }) => {
+        await page.addInitScript(value => localStorage.setItem("moji:locale", value), locale);
+        const submissions: string[][] = [];
+        page.on("request", request => {
+          if (!request.url().endsWith("/graphql") || request.method() !== "POST") return;
+          const body = request.postDataJSON();
+          if (body.query?.includes("mutation StartSubscriptionCheck")) submissions.push(body.variables.ids);
+        });
+        await page.goto(location === "list" ? "/performers" : "/performers/actor-3");
+        const check = page.getByRole("button", { name: locale === "en" ? "Check Performer 03 for updates" : "检查 Performer 03 的作品更新", exact: true });
+        await expect(check).toBeEnabled();
+        await check.click();
+        const dialog = page.getByRole("dialog");
+        await expect(dialog).toContainText(locale === "en" ? "one-time manual check" : "本次仅进行手动检查");
+        expect(submissions).toEqual([]);
+        if (location === "list") await expect(dialog).toHaveScreenshot(`${locale}-manual-check-confirm.png`);
+        await dialog.getByRole("button", { name: locale === "en" ? "Cancel" : "取消", exact: true }).click();
+        await expect(dialog).toHaveCount(0);
+        expect(submissions).toEqual([]);
+        await check.click();
+        await dialog.getByRole("button", { name: locale === "en" ? "Start check" : "开始检查", exact: true }).click();
+        await expect.poll(() => submissions).toEqual([["actor-3"]]);
+        await expect(dialog).toHaveCount(0);
+      });
+    }
+  }
+});

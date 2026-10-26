@@ -262,3 +262,81 @@ func TestCheckHistoryRetentionKeepsActiveAndLatestScheduledRuns(t *testing.T) {
 		})
 	}
 }
+
+func TestUnsubscribedManualCheckDoesNotEnableAutomaticChecks(t *testing.T) {
+	ctx := context.Background()
+	store := NewMemoryStore()
+	service := refreshTaskService(t, store, &reviewTestTasks{})
+	base := service.stash.(*fakeStashClient)
+	base.performers["p1"].CustomFields = nil
+	run, err := service.StartSubscriptionCheck(ctx, []string{"p1"}, "MANUAL")
+	if err != nil {
+		t.Fatal(err)
+	}
+	finished := waitCheck(t, service, run.ID)
+	if finished.Status != "SUCCEEDED" || len(finished.Items) != 1 || finished.Items[0].Status != "SUCCEEDED" {
+		t.Fatalf("manual check was skipped: %+v", finished)
+	}
+	state, err := store.Get(ctx, "p1")
+	if err != nil || state == nil || state.LastCheckedAt == nil {
+		t.Fatalf("missing manual check result: %+v err=%v", state, err)
+	}
+	if performerFromStash(base.performers["p1"], DefaultCustomFieldKey).Subscribed {
+		t.Fatal("manual check subscribed the actor")
+	}
+	for _, ids := range [][]string{nil, {"p1"}} {
+		automatic, err := service.StartSubscriptionCheck(ctx, ids, "SCHEDULED")
+		if err != nil {
+			t.Fatal(err)
+		}
+		if done := waitCheck(t, service, automatic.ID); len(done.Items) != 0 || done.Status != "SUCCEEDED" {
+			t.Fatalf("unsubscribed actor entered automatic check: %+v", done)
+		}
+	}
+	// The legacy all-subscription entry must use Stash markers, not persisted manual state.
+	if results, err := service.RefreshAll(ctx); err != nil || len(results) != 0 {
+		t.Fatalf("legacy automatic fallback checked an unsubscribed actor: %+v err=%v", results, err)
+	}
+}
+
+func TestAutomaticAdmissionOnlyIncludesCurrentSubscriptions(t *testing.T) {
+	for _, trigger := range []string{"SCHEDULED", "MANUAL"} {
+		t.Run(trigger, func(t *testing.T) {
+			service := refreshTaskService(t, NewMemoryStore(), &reviewTestTasks{})
+			base := service.stash.(*fakeStashClient)
+			base.performers["unsubscribed"] = &stashgraphql.PerformerFragment{ID: "unsubscribed", Name: "Excluded"}
+			run, err := service.StartSubscriptionCheck(context.Background(), nil, trigger)
+			if err != nil {
+				t.Fatal(err)
+			}
+			done := waitCheck(t, service, run.ID)
+			if len(done.Items) != 1 || done.Items[0].PerformerID != "p1" || done.Items[0].Status != "SUCCEEDED" {
+				t.Fatalf("wrong admission snapshot: %+v", done)
+			}
+		})
+	}
+}
+
+func TestAdmittedActorCompletesAfterUnsubscribe(t *testing.T) {
+	service := refreshTaskService(t, NewMemoryStore(), &reviewTestTasks{})
+	base := service.stash.(*fakeStashClient)
+	blocked := &blockedCheckStash{fakeStashClient: base, entered: make(chan struct{}, 1), release: make(chan struct{})}
+	service.stash = blocked
+	run, err := service.StartSubscriptionCheck(context.Background(), nil, "SCHEDULED")
+	if err != nil {
+		t.Fatal(err)
+	}
+	select {
+	case <-blocked.entered:
+	case <-time.After(time.Second):
+		t.Fatal("check did not reach execution")
+	}
+	actor := *base.performers["p1"]
+	actor.CustomFields = nil
+	base.performers["p1"] = &actor
+	close(blocked.release)
+	done := waitCheck(t, service, run.ID)
+	if done.Status != "SUCCEEDED" || len(done.Items) != 1 || done.Items[0].Status != "SUCCEEDED" {
+		t.Fatalf("admitted actor was filtered again: %+v", done)
+	}
+}

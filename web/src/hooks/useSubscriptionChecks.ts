@@ -1,6 +1,6 @@
 import { useCallback, useMemo } from "react";
 import { useMutation, useQuery } from "urql";
-import { StartSubscriptionCheckDocument, SubscriptionCheckActivityDocument, SubscriptionCheckStatus, type SubscriptionCheckActivityQuery } from "../graphql/generated/graphql";
+import { StartSubscriptionCheckDocument, SubscriptionCheckActivityDocument, type SubscriptionCheckActivityQuery } from "../graphql/generated/graphql";
 import { useSubscriptionCheckPolling } from "./useSubscriptionCheckPolling";
 import { describeQueryError } from "../services/queryError";
 
@@ -24,5 +24,5 @@ export function useSubscriptionChecks(enabled: boolean, performerIds: string[] =
 }
 
 export function performerCheckRun(activity: SubscriptionCheckActivityView | null | undefined, id: string) {
-  return activity?.performers.find(item => item.performerId === id) ?? (activity?.allRunId ? { performerId: id, runId: activity.allRunId, status: SubscriptionCheckStatus.Pending } : undefined);
+  return activity?.performers.find(item => item.performerId === id);
 }

@@ -19,7 +19,7 @@ export function PerformerCard({ performer, subscription, reviewCount, page }: { 
   const pending = pendingSubscriptionID === performer.id;
   const checkRun = performerCheckRun(page.checkActivity, performer.id);
   const checkItem = checkRun;
-  const checkDisabled = pending || Boolean(checkRun || page.checkStarting || page.checksLoading || page.checksError);
+  const checkDisabled = pending || Boolean(checkRun || page.checkActivity?.allRunId || page.checkStarting || page.checksLoading || page.checksError);
   const imageURL = performerImageURL(performer.imagePath, stashBaseURL);
   const stashURL = stashPerformerURL(performer.id, stashBaseURL);
   const aliases = performer.aliasList.join(" / ");
@@ -75,7 +75,7 @@ export function PerformerCard({ performer, subscription, reviewCount, page }: { 
             {reviewCount > 0 || !performerSelectionMode ? <div className="profile-actions">
               {reviewCount > 0 ? <Link className="profile-action-icon profile-action-icon--count" aria-label={t("releaseReview.actorEntry", { count: reviewCount })} title={t("releaseReview.actorEntry", { count: reviewCount })} to={`/performers/review?performer=${encodeURIComponent(performer.id)}`}><FontAwesomeIcon icon={faClipboardQuestion} /><span aria-hidden="true">{reviewCount}</span></Link> : null}
               {!performerSelectionMode ? <>
-                {performer.subscribed ? <button type="button" className="profile-action-icon" title={t(checkRun ? "subscriptionChecks.inRun" : "performerUi.checkUpdatesHelp")} aria-busy={Boolean(checkRun || page.checkStarting)} aria-label={t("performerUi.checkName", { name: performer.name })} disabled={checkDisabled} onClick={() => onRefreshOne(performer)}><FontAwesomeIcon icon={faBinoculars} /></button> : null}
+                <button type="button" className="profile-action-icon" title={t(checkRun ? "subscriptionChecks.inRun" : page.checkActivity?.allRunId ? "subscriptionChecks.allBusy" : "performerUi.checkUpdatesHelp")} aria-busy={Boolean(checkRun || page.checkStarting)} aria-label={t("performerUi.checkName", { name: performer.name })} disabled={checkDisabled} onClick={() => onRefreshOne(performer)}><FontAwesomeIcon icon={faBinoculars} /></button>
                 {stashURL ? <a className="profile-action-icon profile-action-icon--count" href={stashURL} target="_blank" rel="noreferrer" title={t("performerWorkspace.stashLibrary", { name: performer.name, count: performer.sceneCount })} aria-label={t("performerWorkspace.stashLibrary", { name: performer.name, count: performer.sceneCount })}><FontAwesomeIcon icon={faPlayCircle} /><span aria-hidden="true">{performer.sceneCount}</span></a> : null}
               </> : null}
             </div> : null}

@@ -35,11 +35,11 @@ export function Component() {
   const sceneSelectionMode = Boolean(performerId && sceneSelectionPerformerId === performerId);
   const [performerSelectionMode, setPerformerSelectionMode] = useState(false);
   const [selectedPerformerIds, setSelectedPerformerIds] = useState<string[]>([]);
-  const [batchConfirm, setBatchConfirm] = useState<{ action: PerformerBatchConfirmAction; ids: string[] } | null>(null);
+  const [batchConfirm, setBatchConfirm] = useState<{ action: PerformerBatchConfirmAction; ids: string[]; unsubscribedCount?: number; performerName?: string; } | null>(null);
   const [batchResult, setBatchResult] = useState<PerformerBatchResultView | null>(null);
   const [lastRefreshedAt, setLastRefreshedAt] = useState<string | null>(null);
   const [reloadingList, setReloadingList] = useState(false);
-  useEffect(() => { setSceneSelectionPerformerId(null); setPerformerSelectionMode(false); setSelectedPerformerIds([]); }, [performerId]);
+  useEffect(() => { setSceneSelectionPerformerId(null); setPerformerSelectionMode(false); setSelectedPerformerIds([]); setBatchConfirm(null); }, [performerId]);
   const source = state.source === "stash" ? SceneSourceFilter.Stash : state.source === "stashbox" ? SceneSourceFilter.Stashbox : SceneSourceFilter.All;
   const library = state.library === "in-library" ? LibraryFilter.InLibrary : state.library === "not-in-library" ? LibraryFilter.NotInLibrary : LibraryFilter.All;
   const [{ data: config }] = useQuery({ query: PerformersConfigDocumentDocument, requestPolicy: "cache-and-network" });
@@ -69,7 +69,7 @@ export function Component() {
       else { setLastRefreshedAt(new Date().toISOString()); pushToast("tone-success", t("performerRoute.reloaded")); }
     } finally { setReloadingList(false); }
   };
-  const toggle = async (performer: { id: string; name: string; subscribed: boolean }) => {
+  const toggle = async (performer: { id: string; name: string; subscribed: boolean; }) => {
     setPendingSubscription(performer.id);
     try { const result = performer.subscribed ? await subscription.unsubscribePerformer({ stashPerformerID: performer.id }) : await subscription.subscribePerformer({ stashPerformerID: performer.id }); if (result.error) pushToast("tone-danger", describeQueryError(result.error)); else { pushToast("tone-success", t(performer.subscribed ? "performerRoute.unsubscribed" : "performerRoute.subscribed", { name: performer.name })); } }
     finally { setPendingSubscription(null); }
@@ -80,7 +80,13 @@ export function Component() {
     else if (result.run) pushToast("tone-info", t("subscriptionChecks.started"));
     return !result.error;
   };
-  const refreshOne = (performer: { id: string }) => startCheck([performer.id]);
+  const refreshOne = (performer: { id: string; name: string; subscribed: boolean; }) => {
+    if (!performer.subscribed) {
+      setBatchConfirm({ action: "refresh", ids: [performer.id], unsubscribedCount: 1, performerName: performer.name });
+      return;
+    }
+    void startCheck([performer.id]);
+  };
   const refreshAll = () => startCheck();
   const showPerformerBatchResult = (payload: PerformerBatchResultView | undefined) => {
     if (!payload) { pushToast("tone-danger", t("performerBatch.noResult")); return; }
@@ -134,12 +140,12 @@ export function Component() {
   return <><PerformersPage
     checkActivity={subscription.checkActivity} checksLoading={subscription.checksLoading} checksError={subscription.checksError} checkStarting={subscription.startingCheck} onRefreshChecks={subscription.refreshChecks}
     sceneSelectionMode={sceneSelectionMode} onToggleSceneSelectionMode={toggleSceneSelectionMode}
-    performerSummary={subscription.performerSummary} fetchingPerformerSummary={subscription.fetchingPerformerSummary} performerSummaryError={subscription.performerSummaryError ? new Error(describeQueryError(subscription.performerSummaryError)) : null} onRetrySummary={() => subscription.refreshPerformerSummary({ requestPolicy: "network-only" })} listFilter={state.filter} listSort={state.sort} onClearListFilters={() => update({ q: "", filter: "all", page: 1 })} onListFilterChange={(filter) => update({ filter, page: 1 })} onListSortChange={(sort) => update({ sort, page: 1 })} onRetryDetail={() => subscription.refreshPerformerDetail({ requestPolicy: "network-only" })} onRetryScenes={() => subscription.refreshPerformerScenes({ requestPolicy: "network-only" })} reviewPendingCount={reviewSummary?.releaseReviews?.pendingCount ?? 0} reviewCounts={Object.fromEntries((reviewSummary?.releaseReviews?.performers ?? []).map(actor => [actor.id,actor.pendingCount]))} stashBaseURL={config?.settings.stash.url ?? null} stashPerformerPage={subscription.stashPerformerPage} stashPerformers={subscription.stashPerformers} subscribedPerformers={subscription.subscribedPerformers}
+    performerSummary={subscription.performerSummary} fetchingPerformerSummary={subscription.fetchingPerformerSummary} performerSummaryError={subscription.performerSummaryError ? new Error(describeQueryError(subscription.performerSummaryError)) : null} onRetrySummary={() => subscription.refreshPerformerSummary({ requestPolicy: "network-only" })} listFilter={state.filter} listSort={state.sort} onClearListFilters={() => update({ q: "", filter: "all", page: 1 })} onListFilterChange={(filter) => update({ filter, page: 1 })} onListSortChange={(sort) => update({ sort, page: 1 })} onRetryDetail={() => subscription.refreshPerformerDetail({ requestPolicy: "network-only" })} onRetryScenes={() => subscription.refreshPerformerScenes({ requestPolicy: "network-only" })} reviewPendingCount={reviewSummary?.releaseReviews?.pendingCount ?? 0} reviewCounts={Object.fromEntries((reviewSummary?.releaseReviews?.performers ?? []).map(actor => [actor.id, actor.pendingCount]))} stashBaseURL={config?.settings.stash.url ?? null} stashPerformerPage={subscription.stashPerformerPage} stashPerformers={subscription.stashPerformers} subscribedPerformers={subscription.subscribedPerformers}
     fetchingStashPerformers={subscription.fetchingStashPerformers} fetchingSubscription={subscription.fetchingSubscription} performerDetail={subscription.performerDetail} performerScenePage={subscription.performerScenePage} performerScenes={subscription.performerScenes}
     fetchingPerformerDetail={subscription.fetchingPerformerDetail} fetchingPerformerScenes={subscription.fetchingPerformerScenes} refreshingSubscriptionNow={Boolean(subscription.checkActivity?.allRunId)} refreshingList={reloadingList || subscription.fetchingStashPerformers} performerBatchPending={subscription.subscribingPerformers || subscription.unsubscribingPerformers || subscription.startingCheck} queueingPerformerScenes={subscription.queueingPerformerScenes}
     subscriptionSearch={state.q} subscriptionPageSize={state.pageSize} selectedPerformerId={performerId ?? null} performerSceneSearch={state.sceneQ} performerSceneSourceFilter={source} performerSceneLibraryFilter={library} performerScenePageSize={state.scenePageSize}
     selectedSceneKeys={sceneSelection.selectedKeys} selectedPerformerIds={selectedPerformerIds} performerSelectionMode={performerSelectionMode} lastRefreshedAt={lastRefreshedAt} pendingSceneKeys={pendingKeys} pendingSubscriptionID={pendingSubscription} subscriptionError={subscription.subscriptionError ?? null} stashPerformersError={subscription.stashPerformersError ?? null} performerDetailError={subscription.performerDetailError ?? null} performerScenesError={subscription.performerScenesError ?? null}
-    onSearchChange={(q) => update({ q, page: 1 })} onPageSizeChange={(pageSize) => update({ pageSize, page: 1 })} onReload={() => void reload()} onRefreshAll={() => void refreshAll()} onTogglePerformerSelectionMode={() => { if (performerSelectionMode) setSelectedPerformerIds([]); setPerformerSelectionMode((current) => !current); }} onTogglePerformerSelection={togglePerformerSelection} onSelectVisiblePerformers={selectVisiblePerformers} onClearPerformerSelection={() => setSelectedPerformerIds([])} onBatchSubscribePerformers={(ids) => void runBatchSubscribe(ids)} onBatchUnsubscribePerformers={(ids) => setBatchConfirm({ action: "unsubscribe", ids })} onBatchRefreshPerformers={(ids) => setBatchConfirm({ action: "refresh", ids })} onToggle={(p) => void toggle(p)} onRefreshOne={(p) => void refreshOne(p)}
+    onSearchChange={(q) => update({ q, page: 1 })} onPageSizeChange={(pageSize) => update({ pageSize, page: 1 })} onReload={() => void reload()} onRefreshAll={() => void refreshAll()} onTogglePerformerSelectionMode={() => { if (performerSelectionMode) setSelectedPerformerIds([]); setPerformerSelectionMode((current) => !current); }} onTogglePerformerSelection={togglePerformerSelection} onSelectVisiblePerformers={selectVisiblePerformers} onClearPerformerSelection={() => setSelectedPerformerIds([])} onBatchSubscribePerformers={(ids) => void runBatchSubscribe(ids)} onBatchUnsubscribePerformers={(ids) => setBatchConfirm({ action: "unsubscribe", ids })} onBatchRefreshPerformers={(ids) => setBatchConfirm({ action: "refresh", ids, unsubscribedCount: ids.filter(id => !subscription.subscribedPerformers.some(item => item.performer.id === id)).length })} onToggle={(p) => void toggle(p)} onRefreshOne={(p) => void refreshOne(p)}
     onPageChange={(page) => update({ page })}
     onPrevPage={() => update({ page: Math.max(1, state.page - 1) })} onNextPage={() => update({ page: state.page + 1 })}
     onOpenPerformer={(id) => { const next = serializePerformerSearchParams(state); navigate(`/performers/${encodeURIComponent(id)}${next.size ? `?${next}` : ""}`, { state: { backgroundLocation: location } }); }}
@@ -149,7 +155,7 @@ export function Component() {
     onPrevPerformerScenePage={() => update({ scenePage: Math.max(1, state.scenePage - 1) })} onNextPerformerScenePage={() => update({ scenePage: state.scenePage + 1 })}
     onToggleSceneSelection={sceneSelection.toggle} onSelectCurrentScenePage={sceneSelection.addVisible} onClearSceneSelection={sceneSelection.clear}
     onQueueSelectedScenes={() => void queueSelected()} onQueueScene={(scene) => void queueOne(scene)} />
-    {batchConfirm ? <Drawer visibleDrawer="performer-batch-confirm" closing={false} title={t("performerBatch.confirmTitle")} onClose={() => { if (!(subscription.unsubscribingPerformers || subscription.startingCheck)) setBatchConfirm(null); }}><Suspense fallback={null}><PerformerBatchConfirmDrawer action={batchConfirm.action} count={batchConfirm.ids.length} pending={subscription.unsubscribingPerformers || subscription.startingCheck} onConfirm={() => batchConfirm.action === "unsubscribe" ? void runBatchUnsubscribe(batchConfirm.ids) : void runBatchRefresh(batchConfirm.ids)} onCancel={() => setBatchConfirm(null)} /></Suspense></Drawer> : null}
+    {batchConfirm ? <Drawer visibleDrawer={batchConfirm.action === "refresh" ? "confirm" : "performer-batch-confirm"} closing={false} title={t(batchConfirm.action === "refresh" ? "performerBatch.confirm.checkTitle" : "performerBatch.confirmTitle")} closeDisabled={Boolean(subscription.unsubscribingPerformers || subscription.startingCheck)} onClose={() => { if (!(subscription.unsubscribingPerformers || subscription.startingCheck)) setBatchConfirm(null); }}><Suspense fallback={null}><PerformerBatchConfirmDrawer action={batchConfirm.action} count={batchConfirm.ids.length} unsubscribedCount={batchConfirm.unsubscribedCount} performerName={batchConfirm.performerName} pending={subscription.unsubscribingPerformers || subscription.startingCheck} onConfirm={() => batchConfirm.action === "unsubscribe" ? void runBatchUnsubscribe(batchConfirm.ids) : void runBatchRefresh(batchConfirm.ids)} onCancel={() => setBatchConfirm(null)} /></Suspense></Drawer> : null}
     {batchResult ? <Drawer visibleDrawer="performer-batch-result" closing={false} title={t("performerBatch.resultTitle")} onClose={() => setBatchResult(null)}><Suspense fallback={null}><PerformerBatchResultDrawer payload={batchResult} /></Suspense></Drawer> : null}
   </>;
 }

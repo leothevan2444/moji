@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import { graphcacheKeys, graphcacheUpdates } from "./cache";
 
-function fakeCache(initial: Record<string, unknown> = {}, inspectedFields: Array<{ fieldName: string; arguments?: Record<string, unknown> }> = []) {
+function fakeCache(initial: Record<string, unknown> = {}, inspectedFields: Array<{ fieldName: string; arguments?: Record<string, unknown>; }> = []) {
   const fields = new Map(Object.entries(initial));
   const links = vi.fn((entity: string, field: string, value: unknown) => fields.set(`${entity}.${field}`, value));
   const cache = {
@@ -77,6 +77,15 @@ describe("graphcache configuration", () => {
     updates.Mutation.unsubscribePerformer({}, { stashPerformerID: "p1" }, cache);
     expect(fields.get("Query.subscribedPerformers")).toEqual([]);
     expect(cache.writeFragment).toHaveBeenCalledWith(expect.anything(), expect.objectContaining({ id: "p1", subscribed: false }));
+  });
+
+  it("does not add an unsubscribed actor to subscriptions after a manual check", () => {
+    const { cache, fields } = fakeCache({ "Query.subscribedPerformers": ["SubscribedPerformer:p1"], "SubscribedPerformer:p1.performer": "StashPerformer:p1", "StashPerformer:p1.id": "p1" });
+    updates.Subscription.performerSubscriptionEvents({ performerSubscriptionEvents: { type: "UPDATED", performerId: "p1", state: { __typename: "SubscribedPerformer", performer: { id: "p1", subscribed: false } } } }, {}, cache);
+    expect(fields.get("Query.subscribedPerformers")).toEqual([]);
+    expect(cache.writeFragment).toHaveBeenCalledWith(expect.anything(), expect.objectContaining({ id: "p1", subscribed: false }));
+    updates.Mutation.refreshSubscriptionsNow({ refreshSubscriptionsNow: [{ __typename: "SubscribedPerformer", performer: { id: "p1", subscribed: false } }] }, {}, cache);
+    expect(fields.get("Query.subscribedPerformers")).toEqual([]);
   });
 
   it("refreshes filtered and sorted performer pages after subscription changes", () => {

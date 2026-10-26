@@ -388,7 +388,10 @@ export type Mutation = {
   refreshStashBoxes: Settings;
   /** Force-refresh one performer StashBox cache and return the requested page */
   refreshStashPerformerScenes: StashPerformerSceneConnection;
-  /** Refresh a subscribed performer against the configured release source */
+  /**
+   * Legacy synchronous performer check; prefer startSubscriptionCheck for background execution
+   * @deprecated Use startSubscriptionCheck(ids: [...]) for tracked background checks.
+   */
   refreshSubscribedPerformer: SubscribedPerformer;
   /** Refresh selected subscribed performers against the configured release source */
   refreshSubscribedPerformers: PerformerBatchPayload;

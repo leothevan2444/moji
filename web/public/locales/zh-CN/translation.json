@@ -1,5 +1,6 @@
 {
   "subscriptionChecks": {
+    "allBusy": "全部订阅检查正在运行，请稍后再试。",
     "title": "作品检查",
     "followRun": "在主页查看本次检查进度",
     "openRun": "查看{{trigger}} · {{time}}",
@@ -1322,12 +1323,16 @@
     "skipped": "跳过",
     "failed": "失败",
     "confirm": {
+      "checkTitle": "确认作品检查",
+      "checkAction": "开始检查",
+      "checkName": "检查 {{name}} 的作品更新？",
+      "unsubscribed": "其中 {{count}} 位演员尚未订阅。本次仅进行手动检查，不会开启自动检查。",
       "unsubscribe": {
         "title": "取消订阅 {{count}} 位演员？",
         "detail": "将移除 Stash 中的 Moji 订阅标记并清理本地订阅状态，但不会删除已有任务或文件。"
       },
       "refresh": {
-        "title": "检查 {{count}} 位已订阅演员的作品更新？",
+        "title": "检查 {{count}} 位演员的作品更新？",
         "detail": "发现的作品将按订阅规则处理，可能创建下载任务。"
       }
     },
@@ -1412,7 +1417,6 @@
     "checkNow": "检查更新",
     "checkUpdatesHelp": "检查作品更新，并按订阅规则处理",
     "checkAllHelp": "检查全部已订阅演员的作品更新，并按订阅规则处理",
-    "checkRequiresSubscription": "订阅后才能检查更新",
     "checkName": "检查 {{name}} 的作品更新",
     "stashHome": "前往 Stash 主页",
     "stashHomeName": "前往 {{name}} 的 Stash 主页",

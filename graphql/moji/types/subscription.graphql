@@ -45,8 +45,8 @@ extend type Mutation {
   "Remove Moji subscription mark from a Stash performer"
   unsubscribePerformer(stashPerformerID: ID!): Boolean!
 
-  "Refresh a subscribed performer against the configured release source"
-  refreshSubscribedPerformer(stashPerformerID: ID!): SubscribedPerformer!
+  "Legacy synchronous performer check; prefer startSubscriptionCheck for background execution"
+  refreshSubscribedPerformer(stashPerformerID: ID!): SubscribedPerformer! @deprecated(reason: "Use startSubscriptionCheck(ids: [...]) for tracked background checks.")
 
   "Refresh all subscribed performers against the configured release source"
   refreshSubscriptionsNow: [SubscribedPerformer!]!

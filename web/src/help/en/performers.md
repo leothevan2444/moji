@@ -27,3 +27,5 @@ Open Release review from the Performers page, or use a performer’s review coun
 Only Download release creates a task. Do not download saves a persistent decision; Reconsider explicitly returns rejected or policy-skipped releases to review. Batch results are reported individually and failed or unchanged selections are retained. Task creation failures have their own view and retry action. Existing tasks and library items are not duplicated.
 
 Performer details load basic information directly from Stash, independently of scene statistics and the scene list. Existing StashBox data appears immediately while expired snapshots are refreshed in the background.
+
+Unsubscribed performers can be checked manually after confirmation. A manual check does not enable automatic checks. Scheduled runs only admit performers who are subscribed when the run is queued; admitted performers finish their current check even if they are later unsubscribed.

@@ -260,6 +260,8 @@ func (s *Service) unsubscribePerformer(ctx context.Context, performerID string) 
 	return nil
 }
 
+// RefreshSubscribedPerformer preserves the synchronous compatibility contract.
+// Deprecated: use StartSubscriptionCheck for tracked background execution.
 func (s *Service) RefreshSubscribedPerformer(ctx context.Context, performerID string) (result SubscribedPerformer, resultErr error) {
 	ids, err := normalizeCheckID(performerID)
 	if err != nil {
@@ -273,6 +275,12 @@ func (s *Service) RefreshSubscribedPerformer(ctx context.Context, performerID st
 	if owner {
 		defer func() { s.finishCheck(ctx, resultErr) }()
 	}
+	return s.executeCheckItem(ctx, performerID)
+}
+
+// All manual and scheduled entry points share the same per-item execution.
+// Subscription eligibility belongs to admission, never to an admitted item.
+func (s *Service) executeCheckItem(ctx context.Context, performerID string) (result SubscribedPerformer, resultErr error) {
 	if err := s.startCheckItem(ctx, performerID); err != nil {
 		return result, err
 	}
@@ -283,6 +291,9 @@ func (s *Service) RefreshSubscribedPerformer(ctx context.Context, performerID st
 		}
 		if message != "" {
 			status = "FAILED"
+		}
+		if errors.Is(resultErr, errCheckPerformerNotFound) {
+			status, message = "SKIPPED", PerformerBatchReasonPerformerNotFound
 		}
 		if ctx.Err() != nil && status == "FAILED" {
 			status = "INTERRUPTED"
@@ -304,7 +315,7 @@ func (s *Service) refreshSubscribedPerformer(ctx context.Context, performerID st
 		return SubscribedPerformer{}, err
 	}
 	if performer == nil {
-		return SubscribedPerformer{}, fmt.Errorf("subscription: performer %q not found", performerID)
+		return SubscribedPerformer{}, fmt.Errorf("%w: %q", errCheckPerformerNotFound, performerID)
 	}
 
 	if err := s.updateCheck(ctx, func(run *CheckRun) {

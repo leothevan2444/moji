@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 
-import { act, cleanup, fireEvent, render, renderHook, screen, waitFor } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, renderHook, screen, waitFor, within } from "@testing-library/react";
 import { Outlet, RouterProvider, createMemoryRouter } from "react-router";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { buildPerformerSceneQueueInput, type SceneSnapshotSource, usePerformerSceneSelection } from "./performerSceneSelection";
@@ -9,6 +9,7 @@ const mocks = vi.hoisted(() => ({
   pushToast: vi.fn(),
   queuePerformerScenes: vi.fn(),
   queueSinglePerformerScene: vi.fn(),
+  startCheck: vi.fn(),
   workspace: vi.fn()
 }));
 
@@ -125,7 +126,7 @@ function workspaceForPage(page: number) {
     refreshSubscriptionsNow: vi.fn(),
     subscribePerformers: vi.fn(),
     unsubscribePerformers: vi.fn(),
-    startCheck: vi.fn().mockResolvedValue({ run: { id: "check-1" } }),
+    startCheck: mocks.startCheck,
     refreshChecks: vi.fn(),
     refreshSubscribedPerformers: vi.fn()
   };
@@ -188,8 +189,57 @@ describe("PerformersRoute mutation integration", () => {
     mocks.pushToast.mockReset();
     mocks.queuePerformerScenes.mockReset();
     mocks.queueSinglePerformerScene.mockReset();
+    mocks.startCheck.mockReset();
+    mocks.startCheck.mockResolvedValue({ run: { id: "check-1" } });
     mocks.workspace.mockReset();
     mocks.workspace.mockImplementation((options: any) => workspaceForPage(options.performerScenePage));
+  });
+
+  it("confirms an unsubscribed actor check before submitting and leaves cancellation harmless", async () => {
+    const router = createMemoryRouter([{ element: <TestLayout />, children: [{ path: "/performers/:performerId", element: <PerformersRoute /> }] }], { initialEntries: ["/performers/performer-1"] });
+    render(<RouterProvider router={router} />);
+    fireEvent.click(screen.getByRole("button", { name: "Check Alpha for updates" }));
+    let dialog = await screen.findByRole("dialog");
+    expect(await within(dialog).findByText("Check Alpha for updates?")).toBeTruthy();
+    expect(within(dialog).getByText(/one-time manual check/)).toBeTruthy();
+    expect(mocks.startCheck).not.toHaveBeenCalled();
+    fireEvent.click(within(dialog).getByRole("button", { name: "Cancel" }));
+    expect(screen.queryByRole("dialog")).toBeNull();
+    expect(mocks.startCheck).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole("button", { name: "Check Alpha for updates" }));
+    dialog = await screen.findByRole("dialog");
+    fireEvent.click(await within(dialog).findByRole("button", { name: "Start check" }));
+    await waitFor(() => expect(mocks.startCheck).toHaveBeenCalledExactlyOnceWith(["performer-1"]));
+    await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+  });
+
+  it("includes unsubscribed actors in an explicitly confirmed batch", async () => {
+    mocks.workspace.mockImplementation((options: any) => {
+      const view = workspaceForPage(options.performerScenePage);
+      const first = view.performerDetail.performer;
+      const second = { ...first, id: "performer-2", name: "Beta", subscribed: true };
+      return { ...view, stashPerformers: [first, second], subscribedPerformers: [{ performer: second, recentReleases: [] }] };
+    });
+    const router = createMemoryRouter([{ element: <TestLayout />, children: [{ path: "/performers", element: <PerformersRoute /> }] }], { initialEntries: ["/performers"] });
+    render(<RouterProvider router={router} />);
+    fireEvent.click(screen.getByRole("button", { name: "Select multiple performers" }));
+    const actions = within(screen.getByRole("region", { name: "Selected performer actions" }));
+    fireEvent.click(actions.getByRole("button", { name: "Select this page (2)" }));
+    fireEvent.click(actions.getByRole("button", { name: "Check selected (2)" }));
+    const dialog = await screen.findByRole("dialog");
+    expect(await within(dialog).findByText(/Unsubscribed performers: 1/)).toBeTruthy();
+    expect(mocks.startCheck).not.toHaveBeenCalled();
+    fireEvent.click(within(dialog).getByRole("button", { name: "Start check" }));
+    await waitFor(() => expect(mocks.startCheck).toHaveBeenCalledExactlyOnceWith(["performer-1", "performer-2"]));
+  });
+
+  it("checks a subscribed actor immediately", async () => {
+    mocks.workspace.mockImplementation((options: any) => { const view = workspaceForPage(options.performerScenePage); view.performerDetail.performer.subscribed = true; return view; });
+    const router = createMemoryRouter([{ element: <TestLayout />, children: [{ path: "/performers/:performerId", element: <PerformersRoute /> }] }], { initialEntries: ["/performers/performer-1"] });
+    render(<RouterProvider router={router} />);
+    fireEvent.click(screen.getByRole("button", { name: "Check Alpha for updates" }));
+    await waitFor(() => expect(mocks.startCheck).toHaveBeenCalledExactlyOnceWith(["performer-1"]));
+    expect(screen.queryByRole("dialog")).toBeNull();
   });
 
   it("submits both pages through the route mutation and clears only queued scenes", async () => {

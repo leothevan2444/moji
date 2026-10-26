@@ -77,9 +77,9 @@ export function PerformerOverview({ performerDetail, performerSummary, performer
                 type="button"
                 className="profile-action-icon"
                 aria-busy={Boolean(checkRun || page.checkStarting)}
-                title={t(checkRun ? "subscriptionChecks.inRun" : performerDetail.performer.subscribed ? "performerUi.checkUpdatesHelp" : "performerUi.checkRequiresSubscription")}
+                title={t(checkRun ? "subscriptionChecks.inRun" : page.checkActivity?.allRunId ? "subscriptionChecks.allBusy" : "performerUi.checkUpdatesHelp")}
                 aria-label={t("performerUi.checkName", { name: performerDetail.performer.name })}
-                disabled={!performerDetail.performer.subscribed || pendingSubscriptionID === performerDetail.performer.id || Boolean(checkRun || page.checkStarting || page.checksLoading || page.checksError)}
+                disabled={pendingSubscriptionID === performerDetail.performer.id || Boolean(checkRun || page.checkActivity?.allRunId || page.checkStarting || page.checksLoading || page.checksError)}
                 onClick={() => onRefreshOne(performerDetail.performer)}
               >
                 <FontAwesomeIcon icon={faBinoculars} />

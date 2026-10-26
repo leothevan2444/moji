@@ -19,7 +19,7 @@ const PERFORMER_SCENE_TASK_FRAGMENT = gql`
   }
 `;
 
-type Entity = Data & { __typename: string };
+type Entity = Data & { __typename: string; };
 
 function existingLinks(cache: Cache, fieldName: string): string[] | null {
   const value = cache.resolve("Query", fieldName);
@@ -82,7 +82,7 @@ function subscribedPerformerID(cache: Cache, link: string): string | null {
 }
 
 function replaceSubscribedPerformers(cache: Cache, performers: Entity[]) {
-  const links = performers.map((item) => cache.keyOfEntity(item)).filter((key): key is string => Boolean(key));
+  const links = performers.filter(item => (item.performer as { subscribed?: boolean; } | undefined)?.subscribed !== false).map((item) => cache.keyOfEntity(item)).filter((key): key is string => Boolean(key));
   for (const parent of subscriptionParents) {
     if (subscriptionLinks(cache, parent)) cache.link(parent, "subscribedPerformers", links);
   }
@@ -92,7 +92,7 @@ function replaceSubscribedPerformers(cache: Cache, performers: Entity[]) {
 function invalidatePerformerListOptions(cache: Cache) {
   for (const field of cache.inspectFields("Query")) {
     if (field.fieldName !== "performerWorkspace") continue;
-    const options = field.arguments?.options as { filter?: string; sort?: string } | undefined;
+    const options = field.arguments?.options as { filter?: string; sort?: string; } | undefined;
     if ((options?.filter && options.filter !== "ALL") || (options?.sort && options.sort !== "DEFAULT")) {
       cache.invalidate("Query", field.fieldName, field.arguments ?? {});
     }
@@ -101,6 +101,8 @@ function invalidatePerformerListOptions(cache: Cache) {
 
 function upsertSubscribedPerformer(cache: Cache, performer: Entity | null | undefined) {
   if (!performer) return;
+  const actor = performer.performer as { id?: string; subscribed?: boolean; } | undefined;
+  if (actor?.subscribed === false && actor.id) { removeSubscribedPerformer(cache, actor.id); return; }
   const key = cache.keyOfEntity(performer);
   if (!key) return;
   for (const parent of subscriptionParents) {
@@ -190,15 +192,15 @@ export const graphcacheKeys: KeyingConfig = {
   SubscriptionRelease: (data) => typeof data.key === "string" ? data.key : null,
   QueuePerformerSceneResult: (data) => typeof data.key === "string" ? data.key : null,
   SubscribedPerformer: (data) => {
-    const performer = data.performer as { id?: unknown } | undefined;
+    const performer = data.performer as { id?: unknown; } | undefined;
     return typeof performer?.id === "string" ? performer.id : null;
   },
   StashPerformerProfile: (data) => {
-    const performer = data.performer as { id?: unknown } | undefined;
+    const performer = data.performer as { id?: unknown; } | undefined;
     return typeof performer?.id === "string" ? performer.id : null;
   },
   StashPerformerDetail: (data) => {
-    const performer = data.performer as { id?: unknown } | undefined;
+    const performer = data.performer as { id?: unknown; } | undefined;
     return typeof performer?.id === "string" ? performer.id : null;
   },
   MatchedStashBox: (data) => typeof data.endpoint === "string" && typeof data.performerId === "string" ? `${data.endpoint}:${data.performerId}` : null,
