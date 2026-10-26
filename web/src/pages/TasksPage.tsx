@@ -10,6 +10,7 @@ import {
 import { useDeferredValue, useMemo, useState } from "react";
 import type { TaskSortKey, TaskStatusFilter } from "../types";
 import { useTranslation } from "react-i18next";
+import { qbittorrentStateLabel } from "../utils/qbittorrentState";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faArrowsRotate } from "@fortawesome/free-solid-svg-icons/faArrowsRotate";
 import { faRotate } from "@fortawesome/free-solid-svg-icons/faRotate";
@@ -99,6 +100,7 @@ export function TasksPage({
         task.stageLabel,
         task.stageStatusLabel,
         task.qbittorrentState,
+        task.qbittorrentState ? qbittorrentStateLabel(task.qbittorrentState, t) : "",
         task.stashScanJobId,
         task.torrentHash,
         task.contentPath,
@@ -124,7 +126,7 @@ export function TasksPage({
       next = next.filter(task => task.stage === "COMPLETED" && task.ingestCompletedAt && Date.parse(task.ingestCompletedAt) >= now - 86400000 && Date.parse(task.ingestCompletedAt) <= now);
     }
     return [...next].sort(sorters[taskSort]);
-  }, [deferredTaskSearch, taskSort, taskStatus, tasks, completedWithin24Hours]);
+  }, [deferredTaskSearch, taskSort, taskStatus, tasks, completedWithin24Hours, t]);
 
   const taskGroups = useMemo(() => {
     const order: TaskGroupKey[] = ["attention", "waiting", "active", "completed"];

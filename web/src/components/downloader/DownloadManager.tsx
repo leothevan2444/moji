@@ -7,6 +7,7 @@ import { faRotate } from "@fortawesome/free-solid-svg-icons/faRotate";
 import { settingsClient } from "../../graphql/client";
 import { ControlTorrentDocumentDocument, DownloaderDocumentDocument, RefreshDownloaderDocumentDocument, TorrentAction, type DownloaderDocumentQuery } from "../../graphql/generated/graphql";
 import { formatBytesRate, formatDurationSeconds } from "../../utils/formatters";
+import { qbittorrentStateLabel } from "../../utils/qbittorrentState";
 import { describeQueryError } from "../../services/queryError";
 import { TorrentTable } from "./TorrentTable";
 import { TorrentDetails, TorrentNotice } from "./TorrentDetails";
@@ -87,7 +88,7 @@ function TorrentCard({ torrent: torrent, disabled, pending, onAction }: { torren
   const problem = torrent.needsAttention;
   const run = (next: TorrentAction) => { setConfirm(null); void onAction(torrent.hash, next); };
   return <article className={`drawer-card download-torrent ${problem ? "download-torrent--attention" : ""}`}>
-    <div className="drawer-card__head download-manager__toolbar"><h3>{torrent.name || torrent.hash}</h3><span className={`status-chip ${problem ? "tone-danger" : "tone-neutral"}`}>{t(`downloader.states.${torrent.state}`, { defaultValue: torrent.state })}</span></div>
+    <div className="drawer-card__head download-manager__toolbar"><h3>{torrent.name || torrent.hash}</h3><span className={`status-chip ${problem ? "tone-danger" : "tone-neutral"}`}>{qbittorrentStateLabel(torrent.state, t)}</span></div>
     <p>{torrent.taskIds.length ? torrent.taskIds.map((id, index) => <Link key={id} to={`/tasks/${encodeURIComponent(id)}`}>{torrent.taskCodes[index] || id} </Link>) : t("downloader.unmanaged")}</p>
     <TorrentNotice torrent={torrent} />
     <div className="home-progress" role="progressbar" aria-label={t("downloader.progress")} aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(torrent.progress * 100)}><span style={{ width: `${torrent.progress * 100}%` }} /></div>

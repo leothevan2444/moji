@@ -14,6 +14,29 @@ Moji 在主页提供下载器统计，通过“查看种子列表”打开种子
 - 下载中的种子丢失或出现 error/missingFiles 时，任务进入受阻状态；恢复后自动继续。其他入库阶段仍显示种子状态，不会因此回退已完成的入库工作。已完成任务的种子丢失和源文件缺失显示为中性信息，不计入异常。
 - qB 连接失败不会视为全部种子丢失；显示最近成功快照和过期提示，停用操作按钮。
 
+## 种子状态文案规范（全项目）
+
+所有展示 qBittorrent 种子状态的页面、弹窗、任务卡片、生命周期详情及后续新增入口，
+必须使用 qBittorrent 官方 WebUI 的状态映射和简体中文翻译，逐字一致，
+包括 `[F]` 前缀、大小写和空格；不得自行改写为近义词或直接展示 API 状态码。
+统一调用 `web/src/utils/qbittorrentState.ts` 的 `qbittorrentStateLabel`，
+任务搜索同时支持官方文案与原始状态码。
+
+当前依据 qBittorrent `release-5.3.0` 的
+[状态映射](https://github.com/qbittorrent/qBittorrent/blob/release-5.3.0/src/webui/www/private/scripts/dynamicTable.js)
+及 [官方简体中文翻译](https://github.com/qbittorrent/qBittorrent/blob/release-5.3.0/src/webui/www/translations/webui_zh_CN.ts)
+（`TransferListDelegate` 上下文；未知状态使用 `HttpServer` 的 `Unknown`）。
+兼容旧版 `pausedDL`、`pausedUP` 时使用 `release-4.6.7` 同路径的官方映射及翻译。
+例如 `stalledUP` 显示“做种”，`stalledDL` 显示“等待”，`pausedUP` 与 `stoppedUP` 均显示“完成”。
+未识别状态使用官方默认文案“未知”。
+
+`web/src/utils/__fixtures__/qbittorrent-statuses.json` 保存独立提取的官方文案、
+版本链接和源文件 SHA-256；`qbittorrentState.test.ts` 校验每个状态的中文及英文文案，
+并覆盖任务摘要和生命周期显示。升级文案时应从官方状态分支及对应翻译上下文重新核对并更新这些依据。
+Moji 的 `missing`（种子丢失）、`removed`（已移除）属于自身观测状态，
+Moji 工作流的下载、入库等阶段属于任务生命周期，均不冒充 qB 官方状态。
+API、数据库、日志及诊断导出保留原始状态码，供状态判断和排障使用。
+
 ## 自动清理
 
 默认关闭。触发条件包括分享率、累计做种小时数、任一条件达到、全部条件达到，以及入库后立刻清理。

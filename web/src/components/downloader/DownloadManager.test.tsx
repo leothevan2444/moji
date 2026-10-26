@@ -3,6 +3,7 @@ import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-li
 import { MemoryRouter } from "react-router";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import i18n from "../../i18n/i18n";
+import official from "../../utils/__fixtures__/qbittorrent-statuses.json";
 const mocks = vi.hoisted(() => ({ command: vi.fn(), requery: vi.fn(), snapshot: { current: null as unknown } }));
 vi.mock("../../graphql/client", () => ({ settingsClient: {} }));
 vi.mock("urql", () => ({
@@ -19,6 +20,19 @@ beforeEach(async () => {
 });
 afterEach(() => {cleanup();vi.restoreAllMocks();});
 describe("download management", () => {
+  it.each(["en", "zh-CN"] as const)("uses official %s status copy in both the global table and task card", async locale => {
+    await i18n.changeLanguage(locale);
+    const snap = mocks.snapshot.current as { torrents: Array<typeof torrent> };
+    snap.torrents = [{ ...torrent, state: "forcedMetaDL" }];
+    const expected = official.releases[0].states.forcedMetaDL[locale === "en" ? 0 : 1];
+    const table = setup();
+    expect(screen.getByText(expected)).toBeTruthy();
+    expect(screen.queryByText("forcedMetaDL")).toBeNull();
+    table.unmount();
+    setup("task");
+    expect(screen.getByText(expected)).toBeTruthy();
+    expect(screen.queryByText("forcedMetaDL")).toBeNull();
+  });
   it("starts a stopped torrent and requires explicit confirmation before file removal", async () => {
     setup();
     fireEvent.click(await screen.findByRole("button", { name: "Start" }));

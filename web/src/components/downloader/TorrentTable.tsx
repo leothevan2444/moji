@@ -6,6 +6,7 @@ import { faEllipsisVertical, faPause, faPlay } from "@fortawesome/free-solid-svg
 import { TorrentAction } from "../../graphql/generated/graphql";
 import { useClickOutside } from "../../hooks/useClickOutside";
 import { formatBytesRate } from "../../utils/formatters";
+import { qbittorrentStateLabel } from "../../utils/qbittorrentState";
 import { TorrentDetails, type Torrent } from "./TorrentDetails";
 import "../../styles/settings-shell.scss";
 
@@ -26,7 +27,7 @@ function TorrentRow({ torrent, disabled, pending, onAction }: { torrent: Torrent
   const [confirm, setConfirm] = useState<TorrentAction | null>(null);
   const confirmRef = useRef<HTMLDivElement>(null);
   const progress = Math.round(Math.max(0, Math.min(1, torrent.progress)) * 100);
-  const stateLabel = t(`downloader.states.${torrent.state}`, { defaultValue: torrent.state });
+  const stateLabel = qbittorrentStateLabel(torrent.state, t);
   useEffect(() => { if (confirm) confirmRef.current?.querySelector<HTMLButtonElement>("button")?.focus(); }, [confirm]);
   return <Fragment>
     <tr className={`torrent-row${torrent.needsAttention ? " torrent-row--attention" : ""}`}>

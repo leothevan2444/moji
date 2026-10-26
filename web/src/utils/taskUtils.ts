@@ -4,6 +4,7 @@
 
 import type { TasksOverviewDocumentQuery } from "../graphql/generated/graphql";
 import { transferActionLabel } from "./ingestUtils";
+import { qbittorrentStateLabel } from "./qbittorrentState";
 import i18n from "../i18n/i18n";
 
 const tr = (key: string, options?: Record<string, unknown>) => i18n.t(key, options);
@@ -189,8 +190,8 @@ function simplifyMessage(message: string) {
 }
 
 export function taskFailureSummary(task: DashboardTask): TaskFailureSummary {
- if (task.stageErrorCode === "TORRENT_MISSING") return {title: tr("downloader.states.missing"), detail: tr("downloader.missingHint"), tone: "tone-danger"};
- if (task.stageErrorCode === "TORRENT_ERROR") return {title: tr("downloader.states.error"), detail: tr("downloader.torrentErrorHint"), tone: "tone-danger"};
+  if (task.stageErrorCode === "TORRENT_MISSING") return {title: qbittorrentStateLabel("missing"), detail: tr("downloader.missingHint"), tone: "tone-danger"};
+  if (task.stageErrorCode === "TORRENT_ERROR") return {title: qbittorrentStateLabel(normalizeStatus(task.qbittorrentState) === "missingfiles" ? "missingFiles" : "error"), detail: tr("downloader.torrentErrorHint"), tone: "tone-danger"};
   if (task.stageErrorCode === "MANUAL_SOURCE_REQUIRED") return { title: tr("taskRestart.choose"), detail: tr("taskRestart.chooseDetail"), tone: "tone-warn" };
   if (task.stageErrorCode === "TASK_RESTART_CLEANUP_PENDING") return { title: tr("taskRestart.cleanup"), detail: tr("taskRestart.cleanupDetail"), tone: "tone-danger" };
   const sourcingFailures: Record<string, string> = {
@@ -250,7 +251,7 @@ export function taskFailureSummary(task: DashboardTask): TaskFailureSummary {
   if (qbtState) {
     return {
       title: tr("taskModel.failure.downloading"),
-      detail: task.qbittorrentState || tr("taskModel.failure.downloadingDetail"),
+      detail: qbittorrentStateLabel(task.qbittorrentState),
       tone: "tone-info"
     };
   }
@@ -477,7 +478,7 @@ function lifecycleDetail(task: DashboardTask, stage: TaskStageKey, failure: Task
     if (currentStage === "sourcing") return tr("taskModel.lifecycle.downloadUpcoming");
     if (isCurrent) {
       return task.qbittorrentState
-        ? `${task.qbittorrentState} · ${progress}%`
+        ? `${qbittorrentStateLabel(task.qbittorrentState)} · ${progress}%`
         : tr("taskModel.lifecycle.downloadProgress", { progress });
     }
     if (task.contentPath) return tr("taskModel.lifecycle.landed", { path: task.contentPath });
