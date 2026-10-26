@@ -3,6 +3,7 @@ package graphqlapi
 import (
 	"context"
 	"errors"
+	"github.com/leothevan2444/moji/internal/downloader"
 	"log/slog"
 	"net/http"
 	"net/url"
@@ -113,6 +114,18 @@ func classifyError(err error) string {
 		return code
 	}
 	switch {
+	case errors.Is(err, downloader.ErrObservationPending):
+		return "TORRENT_COMMAND_UNCONFIRMED"
+	case errors.Is(err, downloader.ErrInvalidPolicy):
+		return "DOWNLOADER_POLICY_INVALID"
+	case errors.Is(err, downloader.ErrInvalidLimit):
+		return "DOWNLOADER_LIMIT_INVALID"
+	case errors.Is(err, downloader.ErrNotFound):
+		return "TORRENT_NOT_FOUND"
+	case errors.Is(err, downloader.ErrIngestActive):
+		return "TORRENT_INGEST_ACTIVE"
+	case errors.Is(err, downloader.ErrUnsafeFiles):
+		return "TORRENT_FILES_PROTECTED"
 	case errors.Is(err, taskruntime.ErrInvalidTorrentInput):
 		return "INVALID_TORRENT_INPUT"
 	case errors.Is(err, taskruntime.ErrSourcingUnavailable):

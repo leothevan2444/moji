@@ -189,6 +189,8 @@ function simplifyMessage(message: string) {
 }
 
 export function taskFailureSummary(task: DashboardTask): TaskFailureSummary {
+ if (task.stageErrorCode === "TORRENT_MISSING") return {title: tr("downloader.states.missing"), detail: tr("downloader.missingHint"), tone: "tone-danger"};
+ if (task.stageErrorCode === "TORRENT_ERROR") return {title: tr("downloader.states.error"), detail: tr("downloader.torrentErrorHint"), tone: "tone-danger"};
   if (task.stageErrorCode === "MANUAL_SOURCE_REQUIRED") return { title: tr("taskRestart.choose"), detail: tr("taskRestart.chooseDetail"), tone: "tone-warn" };
   if (task.stageErrorCode === "TASK_RESTART_CLEANUP_PENDING") return { title: tr("taskRestart.cleanup"), detail: tr("taskRestart.cleanupDetail"), tone: "tone-danger" };
   const sourcingFailures: Record<string, string> = {

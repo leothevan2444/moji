@@ -6,6 +6,7 @@ package graphqlapi
 
 import (
 	"context"
+	"github.com/leothevan2444/moji/internal/downloader"
 
 	"github.com/leothevan2444/moji/internal/discovery"
 	"github.com/leothevan2444/moji/internal/imagecache"
@@ -363,6 +364,7 @@ type LogReader interface {
 }
 
 type Resolver struct {
+	Downloader                       *downloader.Service
 	Tracker                          tracker.Tracker
 	Torrent                          TorrentClient
 	TaskRuntime                      TaskRuntimeService

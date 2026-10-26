@@ -27,8 +27,34 @@ export const homeOverview = {
 };
 // Execute the real queries against the schema so missing non-null fields fail
 // the test instead of silently producing an error page or a loading skeleton.
+export const downloaderSnapshot = {
+    checkedAt: now, connected: true, stale: false, storageAvailable: true, freeSpace: 230000000000,
+    downloadSpeed: 12500000, uploadSpeed: 2400000, downloadLimit: 0, uploadLimit: 0,
+    connectionStatus: "connected", dhtNodes: 230, completedBytes: 19440000000, remainingBytes: 4560000000,
+    total: 2, attentionCount: 0, policy: { enabled: false, ratio: 2, seedHours: 72, matchAll: true, deleteFiles: true, afterIngest: false },
+    torrents: [
+      { hash: "a".repeat(40), name: "MOJI-301 - Completed and seeding", state: "uploading", present: true,
+        taskIds: ["MOJI-301"], taskCodes: ["MOJI-301"], allCompleted: true, canDeleteFiles: true,
+        progress: 1, downloadSpeed: 0, uploadSpeed: 2400000, size: 12000000000, completedBytes: 12000000000,
+        downloaded: 12000000000, uploaded: 32000000000, ratio: 2.67, seedingSeconds: 90000, eta: 0, seeds: 8, peers: 12,
+        availability: 3.4, savePath: "/downloads/MOJI-301", category: "moji", tags: "subscription",
+        lastSeenAt: now, removedAt: "", removalReason: "", cleanupError: false, needsAttention: false },
+      { hash: "b".repeat(40), name: "An independently added qB torrent", state: "downloading", present: true,
+        taskIds: [], taskCodes: [], allCompleted: false, canDeleteFiles: false,
+        progress: .62, downloadSpeed: 12500000, uploadSpeed: 0, size: 12000000000, completedBytes: 7440000000,
+        downloaded: 7440000000, uploaded: 2000000000, ratio: .27, seedingSeconds: 0, eta: 0, seeds: 0, peers: 0,
+        availability: 0, savePath: "/downloads/MOJI-201", category: "moji", tags: "subscription",
+        lastSeenAt: now, removedAt: "", removalReason: "", cleanupError: false, needsAttention: false }
+    ]
+  };
+
 const rootValue = {
   version: "0.0.0-visual",
+  refreshDownloader: true,
+  setDownloaderSpeedLimit: true,
+  controlTorrent: true,
+  updateDownloaderPolicy: ({input}: {input: Record<string,unknown>}) => input,
+  downloader: downloaderSnapshot,
   homeOverview,
   homeSubscriptionSummary: { total: 24, attention: 1, unchecked: 0, lastCheckedAt: "2026-01-15T11:30:00Z", attentionPerformerIds: ["p1"] },
   tasks: [],

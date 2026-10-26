@@ -1,0 +1,62 @@
+extend type Query {
+  downloader(offset: Int = 0, limit: Int = 50, search: String, taskId: ID, attentionOnly: Boolean = false): DownloaderOverview!
+}
+extend type Mutation {
+  refreshDownloader: Boolean!
+  updateDownloaderPolicy(input: DownloaderPolicyInput!): DownloaderPolicy!
+  controlTorrent(hash: String!, action: TorrentAction!): Boolean!
+  setDownloaderSpeedLimit(upload: Boolean!, kibPerSecond: Int!): Boolean!
+}
+enum TorrentAction { PAUSE RESUME RECHECK REANNOUNCE REMOVE REMOVE_FILES }
+input DownloaderPolicyInput { afterIngest: Boolean! = false, enabled: Boolean!, ratio: Float!, seedHours: Float!, matchAll: Boolean!, deleteFiles: Boolean! }
+type DownloaderPolicy { afterIngest: Boolean!, enabled: Boolean!, ratio: Float!, seedHours: Float!, matchAll: Boolean!, deleteFiles: Boolean! }
+type DownloaderOverview {
+  checkedAt: String!
+  connected: Boolean!
+  stale: Boolean!
+  storageAvailable: Boolean!
+  freeSpace: Long
+  downloadSpeed: Long!
+  uploadSpeed: Long!
+  downloadLimit: Long!
+  uploadLimit: Long!
+  connectionStatus: String!
+  dhtNodes: Long!
+  completedBytes: Long!
+  remainingBytes: Long!
+  total: Int!
+  attentionCount: Int!
+  torrents: [ManagedTorrent!]!
+  policy: DownloaderPolicy!
+}
+type ManagedTorrent {
+  hash: String!
+  name: String!
+  state: String!
+  present: Boolean!
+  taskIds: [ID!]!
+  taskCodes: [String!]!
+  allCompleted: Boolean!
+  canDeleteFiles: Boolean!
+  progress: Float!
+  downloadSpeed: Long!
+  uploadSpeed: Long!
+  size: Long!
+  completedBytes: Long!
+  downloaded: Long!
+  uploaded: Long!
+  ratio: Float!
+  seedingSeconds: Long!
+  eta: Long!
+  seeds: Long!
+  peers: Long!
+  availability: Float!
+  savePath: String!
+  category: String!
+  tags: String!
+  lastSeenAt: String!
+  removedAt: String!
+  removalReason: String!
+  cleanupError: Boolean!
+  needsAttention: Boolean!
+}

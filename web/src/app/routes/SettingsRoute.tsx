@@ -11,6 +11,7 @@ import "../../styles/settings-shell.scss";
 
 const tabs = {
   connections: lazy(() => import("../../components/settings/ConnectionsSettingsTab")),
+  downloader: lazy(() => import("../../components/settings/DownloaderSettingsTab")),
   ingest: lazy(() => import("../../components/settings/IngestSettingsTab")),
   automation: lazy(() => import("../../components/settings/AutomationSettingsTab")),
   system: lazy(() => import("../../components/settings/SystemSettingsTab")),

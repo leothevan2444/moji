@@ -1,21 +1,23 @@
 import { createContext, useCallback, useContext, useEffect, useRef, useState, type Dispatch, type PropsWithChildren, type SetStateAction } from "react";
 import type { SettingsTab } from "../../types";
 
+type DraftKey = SettingsTab | `${SettingsTab}:${string}`;
+
 interface DraftEntry<T> { value: T; dirty: boolean }
-interface DraftStore { read<T>(tab: SettingsTab): DraftEntry<T> | undefined; write<T>(tab: SettingsTab, entry: DraftEntry<T>): void }
+interface DraftStore { read<T>(tab: DraftKey): DraftEntry<T> | undefined; write<T>(tab: DraftKey, entry: DraftEntry<T>): void }
 
 const SettingsDraftContext = createContext<DraftStore | null>(null);
 
 export function SettingsDraftProvider({ children }: PropsWithChildren) {
-  const drafts = useRef(new Map<SettingsTab, DraftEntry<unknown>>());
+  const drafts = useRef(new Map<DraftKey, DraftEntry<unknown>>());
   const store = useRef<DraftStore>({
-    read: <T,>(tab: SettingsTab) => drafts.current.get(tab) as DraftEntry<T> | undefined,
-    write: <T,>(tab: SettingsTab, entry: DraftEntry<T>) => { drafts.current.set(tab, entry as DraftEntry<unknown>); }
+    read: <T,>(tab: DraftKey) => drafts.current.get(tab) as DraftEntry<T> | undefined,
+    write: <T,>(tab: DraftKey, entry: DraftEntry<T>) => { drafts.current.set(tab, entry as DraftEntry<unknown>); }
   });
   return <SettingsDraftContext.Provider value={store.current}>{children}</SettingsDraftContext.Provider>;
 }
 
-export function useSettingsDraft<T>(tab: SettingsTab, initial: T): [T, Dispatch<SetStateAction<T>>, boolean, (value: T) => void] {
+export function useSettingsDraft<T>(tab: DraftKey, initial: T): [T, Dispatch<SetStateAction<T>>, boolean, (value: T) => void] {
   const store = useContext(SettingsDraftContext);
   if (!store) throw new Error("useSettingsDraft must be used inside SettingsDraftProvider");
   const saved = store.read<T>(tab);

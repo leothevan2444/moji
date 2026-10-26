@@ -1,0 +1,74 @@
+.download-manager { display: grid; gap: 16px; min-width: 0; }
+.download-manager__toolbar { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.download-manager__toolbar h3 { margin: 0; margin-inline-end: auto; overflow-wrap: anywhere; }
+.download-manager__toolbar label { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--muted); }
+.download-manager__list { display: grid; gap: 12px; }
+.download-metrics { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+.download-metrics > div { display: grid; gap: 4px; }
+.download-metrics .muted { font-size: 11px; color: var(--muted); }
+.download-metrics strong { font-size: 13px; font-variant-numeric: tabular-nums; }
+.download-torrent { display: grid; gap: 12px; min-width: 0; box-shadow: none; }
+.download-torrent h3 { font-size: 14px; }
+.download-torrent p { margin: 0; font-size: 12px; overflow-wrap: anywhere; }
+.download-torrent--attention { border-color: var(--line-strong); }
+.download-details { display: grid; grid-template-columns: minmax(80px, auto) 1fr; gap: 8px 16px; margin: 0; font-size: 12px; }
+.download-details dd { margin: 0; overflow-wrap: anywhere; }
+.download-manager > *, .download-manager__toolbar > * { min-width: 0; }
+.download-manager { overflow-wrap: anywhere; }
+.download-manager input[type=checkbox] { min-height: auto; flex-shrink: 0; }
+@media (max-width: 600px) {
+ .download-manager__toolbar input[type=search] { width: 100%; min-width: 0; }
+ .download-manager__toolbar label { flex-wrap: wrap; }
+ .download-metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+.download-torrent .home-progress { max-width: none; width: 100%; }
+
+.torrent-table { width: 100%; table-layout: fixed; border-collapse: collapse; font-size: 12px; }
+.torrent-col--torrent { width: 25%; }
+.torrent-col--linkedTasks { width: 12%; }
+.torrent-col--stateProgress { width: 19%; }
+.torrent-col--transferSpeeds { width: 13%; }
+.torrent-col--ratio { width: 7%; }
+.torrent-col--seedTime { width: 11%; }
+.torrent-col--actions { width: 13%; }
+.torrent-table th { padding: 10px 8px; text-align: start; color: var(--muted); font-weight: 600; background: var(--bg-2); border-block-end: 1px solid var(--line); }
+.torrent-table td { padding: 12px 8px; vertical-align: middle; border-block-end: 1px solid var(--line); font-variant-numeric: tabular-nums; }
+.torrent-name { display: block; width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-align: start; font-size: 12px; }
+.torrent-cell--tasks a { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.torrent-state { display: flex; align-items: center; justify-content: space-between; gap: 6px; margin-block-end: 6px; font-size: 11px; }
+.torrent-state > span:first-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.torrent-state > span:last-child { flex-shrink: 0; }
+.torrent-table .home-progress { width: 100%; max-width: none; }
+.torrent-cell--speed > span { display: block; white-space: nowrap; line-height: 1.7; }
+.torrent-row--attention > td { background: color-mix(in srgb, var(--accent) 3%, var(--surface)); }
+.torrent-actions { position: relative; display: flex; align-items: center; gap: 4px; justify-content: flex-end; }
+.torrent-actions .icon-button { width: 28px; min-width: 28px; height: 28px; min-height: 28px; padding: 0; font-size: 11px; }
+.torrent-action-menu { position: absolute; top: calc(100% + 6px); inset-inline-end: 0; z-index: 10; width: max-content; max-width: min(280px, calc(100vw - 72px)); display: grid; gap: 2px; padding: 6px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface-strong); box-shadow: var(--shadow-soft); }
+.torrent-action-menu > button { min-height: 32px; padding: 7px 10px; text-align: start; border: 0; background: transparent; font-size: 12px; }
+.torrent-action-menu > button:hover, .torrent-action-menu > button:focus-visible { background: var(--bg-2); }
+.torrent-expanded-row > td { padding: 12px; background: var(--bg-2); }
+.torrent-details { display: grid; gap: 10px; }
+.torrent-details p { margin: 0; font-size: 12px; }
+.torrent-expanded-row .image-cache-confirm { margin-block-end: 8px; }
+@media (max-width: 720px) {
+ .torrent-table, .torrent-table tbody { display: block; }
+ .torrent-table colgroup { display: none; }
+ .torrent-table thead { position: absolute; width: 1px; height: 1px; padding: 0; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+ .torrent-table tbody { display: grid; gap: 8px; }
+ .torrent-table .torrent-row { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px 12px; padding: 12px; border: 1px solid var(--line); border-radius: 10px; }
+ .torrent-table .torrent-row > td { display: block; padding: 0; border: 0; }
+ .torrent-table .torrent-row > td::before { content: attr(data-label); display: block; margin-block-end: 4px; color: var(--muted); font-size: 11px; }
+ .torrent-table .torrent-row > .torrent-cell--name, .torrent-table .torrent-row > .torrent-cell--tasks, .torrent-table .torrent-row > .torrent-cell--state { grid-column: 1 / -1; }
+ .torrent-table .torrent-row > .torrent-cell--name::before, .torrent-table .torrent-row > .torrent-cell--actions::before { display: none; }
+ .torrent-name { white-space: normal; overflow-wrap: anywhere; }
+ .torrent-cell--tasks a { display: inline-block; margin-inline-end: 8px; }
+ .torrent-table .torrent-row > .torrent-cell--actions { align-self: end; }
+ .torrent-expanded-row, .torrent-expanded-row > td { display: block; min-width: 0; }
+ .torrent-expanded-row > td { border: 1px solid var(--line); border-radius: 10px; }
+}
+.torrent-table .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+
+.download-manager__filters { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; gap: 10px; }
+.download-manager__filters label { flex-wrap: nowrap; white-space: nowrap; }
+.download-manager__filters input[type=search] { width: 100%; }

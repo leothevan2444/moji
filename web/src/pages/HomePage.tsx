@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type FormEvent } from "react";
+import { useEffect, useRef, useState, type FormEvent, type ReactNode } from "react";
 import { Link } from "react-router";
 import { useTranslation } from "react-i18next";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
@@ -13,6 +13,7 @@ import type { HomePageDocumentQuery, HomeServiceStatusQuery, HomeSubscriptionSum
 import { useGlobalSlashShortcut } from "../hooks/useGlobalSlashShortcut";
 
 export interface HomePageProps {
+ downloader?: ReactNode;
   checks?: HomeChecksView | null;
   checksError?: string | null;
   onRefreshChecks?: () => void;
@@ -134,6 +135,7 @@ export function HomePage(props: HomePageProps) {
         {!status ? !props.statusError && loading : <><ul className="home-service-list">{(["jackett", "qbittorrent", "stash"] as const).map(service => <li key={service}><span>{serviceNames[service]}</span><span className={status[service].ready ? "home-success" : "home-warning"}><FontAwesomeIcon icon={status[service].ready ? faCheck : faCircleExclamation} aria-hidden="true" />{t(!status[service].configured ? "workbench.unconfigured" : status[service].ready ? "workbench.ready" : "workbench.unavailable")}</span></li>)}<li><span>{t("workbench.delivery")}</span><button type="button" className="home-inline-button" onClick={() => props.onOpenSettings("ingest")}>{t(status.ingest?.configured ? "workbench.configured" : "workbench.unconfigured")} <FontAwesomeIcon icon={faArrowRight} aria-hidden="true" /></button></li></ul>
           {settings ? <div className="home-automation"><FontAwesomeIcon icon={faBolt} aria-hidden="true" /><span>{t(settings?.automation.taskProcessingEnabled === false ? "workbench.automationPaused" : "workbench.automationEnabled")}</span><button type="button" onClick={() => props.onOpenSettings("automation")} aria-label={t("automationUi.openSettings")}><FontAwesomeIcon icon={faArrowRight} /></button></div> : null}
           {settings ? <details className="home-diagnostics"><summary>{t("workbench.systemDetails")}</summary><div className="home-diagnostics-content"><ServiceCard service="stash" title="Stash" status={status.stash} config={[{ key: "URL", value: settings.stash.url }]} stats={status.stashStats} okAt={status.stashStats?.okAt ?? null} lastError={status.stashStats?.lastError ?? null} cta={{ kind: "open-settings", label: t("home.configure"), tab: "connections" }} onOpenSettings={props.onOpenSettings} /><ServiceCard service="jackett" title="Jackett" status={status.jackett} config={buildJackettConfig(settings)} stats={status.jackettStats ? { ...status.jackettStats, hasIndexerSearch: true } : null} okAt={status.jackettStats?.okAt ?? null} lastError={status.jackettStats?.lastError ?? null} cta={{ kind: "open-settings", label: t("home.configure"), tab: "connections" }} onOpenSettings={props.onOpenSettings} /><ServiceCard service="qbittorrent" title="qBittorrent" status={status.qbittorrent} config={buildQBittorrentConfig(settings)} stats={status.qbittorrentStats ? { ...status.qbittorrentStats, hasIndexerSearch: false } : null} okAt={status.qbittorrentStats?.okAt ?? null} lastError={status.qbittorrentStats?.lastError ?? null} cta={{ kind: "open-settings", label: t("home.configure"), tab: "connections" }} onOpenSettings={props.onOpenSettings} /><IngestCard ingest={settings.ingest} ingestStatus={status.ingest} onOpenSettings={props.onOpenSettings} /></div></details> : null}</>}
+      {props.downloader}
       </section>
       </aside>
     </div>

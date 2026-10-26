@@ -1,3 +1,4 @@
+import { DownloadManager } from "../downloader/DownloadManager";
 import { TaskDetail } from "../tasks";
 import type { DashboardTask } from "../../utils";
 import { useTranslation } from "react-i18next";
@@ -29,6 +30,7 @@ export function TaskDrawer({
   return (
     <div className="drawer-stack">
       {task ? (
+        <>
         <TaskDetail
           task={task}
           pendingRetry={pendingRetry}
@@ -40,6 +42,8 @@ export function TaskDrawer({
           onRestartTask={onRestartTask}
           pendingRestart={pendingRestart}
         />
+        {task.torrentHash ? <DownloadManager key={task.id} taskId={task.id} /> : null}
+        </>
       ) : (
         <article className="drawer-card">
           <h3>{t("taskUi.noneSelected")}</h3>

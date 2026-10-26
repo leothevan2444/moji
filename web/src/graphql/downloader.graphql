@@ -1,0 +1,25 @@
+query DownloaderDocument($offset: Int = 0, $limit: Int = 50, $search: String, $taskId: ID, $attentionOnly: Boolean = false) {
+  downloader(offset: $offset, limit: $limit, search: $search, taskId: $taskId, attentionOnly: $attentionOnly) {
+    checkedAt connected stale storageAvailable freeSpace downloadSpeed uploadSpeed downloadLimit uploadLimit connectionStatus dhtNodes completedBytes remainingBytes total attentionCount
+    policy { enabled ratio seedHours matchAll deleteFiles afterIngest }
+    torrents {
+      hash name state present taskIds taskCodes allCompleted canDeleteFiles progress downloadSpeed uploadSpeed size completedBytes downloaded uploaded ratio seedingSeconds eta seeds peers availability savePath category tags lastSeenAt removedAt removalReason cleanupError needsAttention
+    }
+  }
+}
+mutation RefreshDownloaderDocument { refreshDownloader }
+mutation UpdateDownloaderPolicyDocument($input: DownloaderPolicyInput!) { updateDownloaderPolicy(input: $input) { enabled ratio seedHours matchAll deleteFiles afterIngest } }
+mutation ControlTorrentDocument($hash: String!, $action: TorrentAction!) { controlTorrent(hash: $hash, action: $action) }
+mutation SetDownloaderSpeedLimitDocument($upload: Boolean!, $kibPerSecond: Int!) { setDownloaderSpeedLimit(upload: $upload, kibPerSecond: $kibPerSecond) }
+
+query DownloaderSummaryDocument {
+ downloader {
+  checkedAt connected stale storageAvailable freeSpace downloadSpeed uploadSpeed completedBytes remainingBytes total attentionCount connectionStatus
+ }
+}
+query DownloaderSettingsDocument {
+ downloader {
+  stale downloadLimit uploadLimit storageAvailable
+  policy {enabled ratio seedHours matchAll deleteFiles afterIngest}
+ }
+}

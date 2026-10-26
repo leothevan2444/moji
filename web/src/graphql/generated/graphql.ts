@@ -120,6 +120,46 @@ export type DownloadMediaInput = {
   trackers?: InputMaybe<Array<Scalars['String']['input']>>;
 };
 
+export type DownloaderOverview = {
+  __typename?: 'DownloaderOverview';
+  attentionCount: Scalars['Int']['output'];
+  checkedAt: Scalars['String']['output'];
+  completedBytes: Scalars['Long']['output'];
+  connected: Scalars['Boolean']['output'];
+  connectionStatus: Scalars['String']['output'];
+  dhtNodes: Scalars['Long']['output'];
+  downloadLimit: Scalars['Long']['output'];
+  downloadSpeed: Scalars['Long']['output'];
+  freeSpace?: Maybe<Scalars['Long']['output']>;
+  policy: DownloaderPolicy;
+  remainingBytes: Scalars['Long']['output'];
+  stale: Scalars['Boolean']['output'];
+  storageAvailable: Scalars['Boolean']['output'];
+  torrents: Array<ManagedTorrent>;
+  total: Scalars['Int']['output'];
+  uploadLimit: Scalars['Long']['output'];
+  uploadSpeed: Scalars['Long']['output'];
+};
+
+export type DownloaderPolicy = {
+  __typename?: 'DownloaderPolicy';
+  afterIngest: Scalars['Boolean']['output'];
+  deleteFiles: Scalars['Boolean']['output'];
+  enabled: Scalars['Boolean']['output'];
+  matchAll: Scalars['Boolean']['output'];
+  ratio: Scalars['Float']['output'];
+  seedHours: Scalars['Float']['output'];
+};
+
+export type DownloaderPolicyInput = {
+  afterIngest?: Scalars['Boolean']['input'];
+  deleteFiles: Scalars['Boolean']['input'];
+  enabled: Scalars['Boolean']['input'];
+  matchAll: Scalars['Boolean']['input'];
+  ratio: Scalars['Float']['input'];
+  seedHours: Scalars['Float']['input'];
+};
+
 export type DownloadsIngestSettings = {
   __typename?: 'DownloadsIngestSettings';
   mojiRoot: Scalars['String']['output'];
@@ -350,6 +390,39 @@ export enum LogLevel {
   Warning = 'Warning'
 }
 
+export type ManagedTorrent = {
+  __typename?: 'ManagedTorrent';
+  allCompleted: Scalars['Boolean']['output'];
+  availability: Scalars['Float']['output'];
+  canDeleteFiles: Scalars['Boolean']['output'];
+  category: Scalars['String']['output'];
+  cleanupError: Scalars['Boolean']['output'];
+  completedBytes: Scalars['Long']['output'];
+  downloadSpeed: Scalars['Long']['output'];
+  downloaded: Scalars['Long']['output'];
+  eta: Scalars['Long']['output'];
+  hash: Scalars['String']['output'];
+  lastSeenAt: Scalars['String']['output'];
+  name: Scalars['String']['output'];
+  needsAttention: Scalars['Boolean']['output'];
+  peers: Scalars['Long']['output'];
+  present: Scalars['Boolean']['output'];
+  progress: Scalars['Float']['output'];
+  ratio: Scalars['Float']['output'];
+  removalReason: Scalars['String']['output'];
+  removedAt: Scalars['String']['output'];
+  savePath: Scalars['String']['output'];
+  seedingSeconds: Scalars['Long']['output'];
+  seeds: Scalars['Long']['output'];
+  size: Scalars['Long']['output'];
+  state: Scalars['String']['output'];
+  tags: Scalars['String']['output'];
+  taskCodes: Array<Scalars['String']['output']>;
+  taskIds: Array<Scalars['ID']['output']>;
+  uploadSpeed: Scalars['Long']['output'];
+  uploaded: Scalars['Long']['output'];
+};
+
 export type MatchedStashBox = {
   __typename?: 'MatchedStashBox';
   endpoint: Scalars['String']['output'];
@@ -366,6 +439,7 @@ export type Mutation = {
   clearImageCache: ImageCacheStatus;
   /** Delete all cached StashBox metadata snapshots and entities */
   clearStashBoxDataCache: StashBoxDataCacheStatus;
+  controlTorrent: Scalars['Boolean']['output'];
   /** Delete a persisted Moji task record */
   deleteTask: Task;
   /** Delete selected tasks using the configured deletion policy */
@@ -384,6 +458,7 @@ export type Mutation = {
   queueDiscoveredScene: Task;
   /** Queue selected performer scenes into the standard Moji download workflow */
   queuePerformerScenes: QueuePerformerScenesPayload;
+  refreshDownloader: Scalars['Boolean']['output'];
   /** Re-fetch the Stash-Box list from the configured Stash server. The updated list and load status are reflected in the returned Settings snapshot. */
   refreshStashBoxes: Settings;
   /** Force-refresh one performer StashBox cache and return the requested page */
@@ -407,6 +482,7 @@ export type Mutation = {
   retryTask: Task;
   /** Retry blocked tasks or check waiting resources with per-task results */
   retryTasks: TaskBatchPayload;
+  setDownloaderSpeedLimit: Scalars['Boolean']['output'];
   /** Start a background check. Omit ids to check all subscriptions. Duplicate active checks return the existing run. */
   startSubscriptionCheck: SubscriptionCheckRun;
   /** Start a Stash metadata scan */
@@ -427,6 +503,7 @@ export type Mutation = {
   unsubscribePerformers: PerformerBatchPayload;
   /** Update automation settings and persist them to backend config */
   updateAutomationSettings: Settings;
+  updateDownloaderPolicy: DownloaderPolicy;
   /** Update ingest settings and persist them to backend config */
   updateIngestSettings: Settings;
   /** Update Jackett settings and persist them to backend config */
@@ -442,6 +519,12 @@ export type Mutation = {
 
 export type MutationAddTorrentArgs = {
   input: QBittorrentAddInput;
+};
+
+
+export type MutationControlTorrentArgs = {
+  action: TorrentAction;
+  hash: Scalars['String']['input'];
 };
 
 
@@ -528,6 +611,12 @@ export type MutationRetryTasksArgs = {
 };
 
 
+export type MutationSetDownloaderSpeedLimitArgs = {
+  kibPerSecond: Scalars['Int']['input'];
+  upload: Scalars['Boolean']['input'];
+};
+
+
 export type MutationStartSubscriptionCheckArgs = {
   ids?: InputMaybe<Array<Scalars['ID']['input']>>;
 };
@@ -565,6 +654,11 @@ export type MutationUnsubscribePerformersArgs = {
 
 export type MutationUpdateAutomationSettingsArgs = {
   input: UpdateAutomationSettingsInput;
+};
+
+
+export type MutationUpdateDownloaderPolicyArgs = {
+  input: DownloaderPolicyInput;
 };
 
 
@@ -796,6 +890,7 @@ export type Query = {
   dashboardStats: DashboardStats;
   /** Search scene metadata from preferred StashBox sources */
   discoverScenes: DiscoverSceneConnection;
+  downloader: DownloaderOverview;
   health: Health;
   /** Bounded task lists and mutually exclusive operational counts for Home. */
   homeOverview: HomeOverview;
@@ -853,6 +948,15 @@ export type QueryBlockedTaskTorrentCandidatesArgs = {
 
 export type QueryDiscoverScenesArgs = {
   input: DiscoverScenesInput;
+};
+
+
+export type QueryDownloaderArgs = {
+  attentionOnly?: InputMaybe<Scalars['Boolean']['input']>;
+  limit?: InputMaybe<Scalars['Int']['input']>;
+  offset?: InputMaybe<Scalars['Int']['input']>;
+  search?: InputMaybe<Scalars['String']['input']>;
+  taskId?: InputMaybe<Scalars['ID']['input']>;
 };
 
 
@@ -1646,6 +1750,15 @@ export type TitleMatchRuleInput = {
   clauses: Array<TitleMatchClauseInput>;
 };
 
+export enum TorrentAction {
+  Pause = 'PAUSE',
+  Reannounce = 'REANNOUNCE',
+  Recheck = 'RECHECK',
+  Remove = 'REMOVE',
+  RemoveFiles = 'REMOVE_FILES',
+  Resume = 'RESUME'
+}
+
 export enum TorrentFileMatchEffect {
   Avoid = 'AVOID',
   Lock = 'LOCK',
@@ -1782,6 +1895,55 @@ export type UpdateSystemSettingsInput = {
   stashBoxDataCache?: InputMaybe<StashBoxDataCacheSettingsInput>;
   taskDeletePolicy: TaskDeletePolicy;
 };
+
+export type DownloaderDocumentQueryVariables = Exact<{
+  offset?: InputMaybe<Scalars['Int']['input']>;
+  limit?: InputMaybe<Scalars['Int']['input']>;
+  search?: InputMaybe<Scalars['String']['input']>;
+  taskId?: InputMaybe<Scalars['ID']['input']>;
+  attentionOnly?: InputMaybe<Scalars['Boolean']['input']>;
+}>;
+
+
+export type DownloaderDocumentQuery = { __typename?: 'Query', downloader: { __typename?: 'DownloaderOverview', checkedAt: string, connected: boolean, stale: boolean, storageAvailable: boolean, freeSpace?: any | null, downloadSpeed: any, uploadSpeed: any, downloadLimit: any, uploadLimit: any, connectionStatus: string, dhtNodes: any, completedBytes: any, remainingBytes: any, total: number, attentionCount: number, policy: { __typename?: 'DownloaderPolicy', enabled: boolean, ratio: number, seedHours: number, matchAll: boolean, deleteFiles: boolean, afterIngest: boolean }, torrents: Array<{ __typename?: 'ManagedTorrent', hash: string, name: string, state: string, present: boolean, taskIds: Array<string>, taskCodes: Array<string>, allCompleted: boolean, canDeleteFiles: boolean, progress: number, downloadSpeed: any, uploadSpeed: any, size: any, completedBytes: any, downloaded: any, uploaded: any, ratio: number, seedingSeconds: any, eta: any, seeds: any, peers: any, availability: number, savePath: string, category: string, tags: string, lastSeenAt: string, removedAt: string, removalReason: string, cleanupError: boolean, needsAttention: boolean }> } };
+
+export type RefreshDownloaderDocumentMutationVariables = Exact<{ [key: string]: never; }>;
+
+
+export type RefreshDownloaderDocumentMutation = { __typename?: 'Mutation', refreshDownloader: boolean };
+
+export type UpdateDownloaderPolicyDocumentMutationVariables = Exact<{
+  input: DownloaderPolicyInput;
+}>;
+
+
+export type UpdateDownloaderPolicyDocumentMutation = { __typename?: 'Mutation', updateDownloaderPolicy: { __typename?: 'DownloaderPolicy', enabled: boolean, ratio: number, seedHours: number, matchAll: boolean, deleteFiles: boolean, afterIngest: boolean } };
+
+export type ControlTorrentDocumentMutationVariables = Exact<{
+  hash: Scalars['String']['input'];
+  action: TorrentAction;
+}>;
+
+
+export type ControlTorrentDocumentMutation = { __typename?: 'Mutation', controlTorrent: boolean };
+
+export type SetDownloaderSpeedLimitDocumentMutationVariables = Exact<{
+  upload: Scalars['Boolean']['input'];
+  kibPerSecond: Scalars['Int']['input'];
+}>;
+
+
+export type SetDownloaderSpeedLimitDocumentMutation = { __typename?: 'Mutation', setDownloaderSpeedLimit: boolean };
+
+export type DownloaderSummaryDocumentQueryVariables = Exact<{ [key: string]: never; }>;
+
+
+export type DownloaderSummaryDocumentQuery = { __typename?: 'Query', downloader: { __typename?: 'DownloaderOverview', checkedAt: string, connected: boolean, stale: boolean, storageAvailable: boolean, freeSpace?: any | null, downloadSpeed: any, uploadSpeed: any, completedBytes: any, remainingBytes: any, total: number, attentionCount: number, connectionStatus: string } };
+
+export type DownloaderSettingsDocumentQueryVariables = Exact<{ [key: string]: never; }>;
+
+
+export type DownloaderSettingsDocumentQuery = { __typename?: 'Query', downloader: { __typename?: 'DownloaderOverview', stale: boolean, downloadLimit: any, uploadLimit: any, storageAvailable: boolean, policy: { __typename?: 'DownloaderPolicy', enabled: boolean, ratio: number, seedHours: number, matchAll: boolean, deleteFiles: boolean, afterIngest: boolean } } };
 
 export type HomePageDocumentQueryVariables = Exact<{ [key: string]: never; }>;
 
@@ -2270,6 +2432,13 @@ export const HomeTaskFragmentDoc = {"kind":"Document","definitions":[{"kind":"Fr
 export const HomeSubscriptionCheckRunFieldsFragmentDoc = {"kind":"Document","definitions":[{"kind":"FragmentDefinition","name":{"kind":"Name","value":"HomeSubscriptionCheckRunFields"},"typeCondition":{"kind":"NamedType","name":{"kind":"Name","value":"HomeSubscriptionCheckRun"}},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"trigger"}},{"kind":"Field","name":{"kind":"Name","value":"scope"}},{"kind":"Field","name":{"kind":"Name","value":"status"}},{"kind":"Field","name":{"kind":"Name","value":"startedAt"}},{"kind":"Field","name":{"kind":"Name","value":"finishedAt"}},{"kind":"Field","name":{"kind":"Name","value":"totalCount"}},{"kind":"Field","name":{"kind":"Name","value":"completedCount"}},{"kind":"Field","name":{"kind":"Name","value":"succeededCount"}},{"kind":"Field","name":{"kind":"Name","value":"failedCount"}},{"kind":"Field","name":{"kind":"Name","value":"skippedCount"}},{"kind":"Field","name":{"kind":"Name","value":"currentPerformers"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"performerId"}},{"kind":"Field","name":{"kind":"Name","value":"name"}}]}}]}}]} as unknown as DocumentNode<HomeSubscriptionCheckRunFieldsFragment, unknown>;
 export const SubscriptionCheckFieldsFragmentDoc = {"kind":"Document","definitions":[{"kind":"FragmentDefinition","name":{"kind":"Name","value":"SubscriptionCheckFields"},"typeCondition":{"kind":"NamedType","name":{"kind":"Name","value":"SubscriptionCheckRun"}},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"trigger"}},{"kind":"Field","name":{"kind":"Name","value":"scope"}},{"kind":"Field","name":{"kind":"Name","value":"status"}},{"kind":"Field","name":{"kind":"Name","value":"startedAt"}},{"kind":"Field","name":{"kind":"Name","value":"finishedAt"}},{"kind":"Field","name":{"kind":"Name","value":"error"}},{"kind":"Field","name":{"kind":"Name","value":"totalCount"}},{"kind":"Field","name":{"kind":"Name","value":"completedCount"}},{"kind":"Field","name":{"kind":"Name","value":"succeededCount"}},{"kind":"Field","name":{"kind":"Name","value":"failedCount"}},{"kind":"Field","name":{"kind":"Name","value":"skippedCount"}},{"kind":"Field","name":{"kind":"Name","value":"items"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"performerId"}},{"kind":"Field","name":{"kind":"Name","value":"name"}},{"kind":"Field","name":{"kind":"Name","value":"status"}},{"kind":"Field","name":{"kind":"Name","value":"error"}},{"kind":"Field","name":{"kind":"Name","value":"startedAt"}},{"kind":"Field","name":{"kind":"Name","value":"finishedAt"}}]}}]}}]} as unknown as DocumentNode<SubscriptionCheckFieldsFragment, unknown>;
 export const PerformerBatchFieldsFragmentDoc = {"kind":"Document","definitions":[{"kind":"FragmentDefinition","name":{"kind":"Name","value":"PerformerBatchFields"},"typeCondition":{"kind":"NamedType","name":{"kind":"Name","value":"PerformerBatchPayload"}},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"batchId"}},{"kind":"Field","name":{"kind":"Name","value":"summary"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"requestedCount"}},{"kind":"Field","name":{"kind":"Name","value":"succeededCount"}},{"kind":"Field","name":{"kind":"Name","value":"skippedCount"}},{"kind":"Field","name":{"kind":"Name","value":"failedCount"}}]}},{"kind":"Field","name":{"kind":"Name","value":"results"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"performerId"}},{"kind":"Field","name":{"kind":"Name","value":"status"}},{"kind":"Field","name":{"kind":"Name","value":"reasonCode"}},{"kind":"Field","name":{"kind":"Name","value":"performer"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"name"}},{"kind":"Field","name":{"kind":"Name","value":"aliasList"}},{"kind":"Field","name":{"kind":"Name","value":"favorite"}},{"kind":"Field","name":{"kind":"Name","value":"imagePath"}},{"kind":"Field","name":{"kind":"Name","value":"sceneCount"}},{"kind":"Field","name":{"kind":"Name","value":"subscribed"}}]}},{"kind":"Field","name":{"kind":"Name","value":"state"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"performer"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"name"}},{"kind":"Field","name":{"kind":"Name","value":"aliasList"}},{"kind":"Field","name":{"kind":"Name","value":"favorite"}},{"kind":"Field","name":{"kind":"Name","value":"imagePath"}},{"kind":"Field","name":{"kind":"Name","value":"sceneCount"}},{"kind":"Field","name":{"kind":"Name","value":"subscribed"}}]}},{"kind":"Field","name":{"kind":"Name","value":"lastCheckedAt"}},{"kind":"Field","name":{"kind":"Name","value":"lastError"}},{"kind":"Field","name":{"kind":"Name","value":"reviewReleaseCount"}},{"kind":"Field","name":{"kind":"Name","value":"pendingReleaseCount"}},{"kind":"Field","name":{"kind":"Name","value":"processedReleaseCount"}},{"kind":"Field","name":{"kind":"Name","value":"recentReleases"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"key"}},{"kind":"Field","name":{"kind":"Name","value":"title"}},{"kind":"Field","name":{"kind":"Name","value":"code"}},{"kind":"Field","name":{"kind":"Name","value":"date"}},{"kind":"Field","name":{"kind":"Name","value":"seenAt"}}]}}]}}]}}]}}]} as unknown as DocumentNode<PerformerBatchFieldsFragment, unknown>;
+export const DownloaderDocumentDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"DownloaderDocument"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"offset"}},"type":{"kind":"NamedType","name":{"kind":"Name","value":"Int"}},"defaultValue":{"kind":"IntValue","value":"0"}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"limit"}},"type":{"kind":"NamedType","name":{"kind":"Name","value":"Int"}},"defaultValue":{"kind":"IntValue","value":"50"}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"search"}},"type":{"kind":"NamedType","name":{"kind":"Name","value":"String"}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"taskId"}},"type":{"kind":"NamedType","name":{"kind":"Name","value":"ID"}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"attentionOnly"}},"type":{"kind":"NamedType","name":{"kind":"Name","value":"Boolean"}},"defaultValue":{"kind":"BooleanValue","value":false}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"downloader"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"offset"},"value":{"kind":"Variable","name":{"kind":"Name","value":"offset"}}},{"kind":"Argument","name":{"kind":"Name","value":"limit"},"value":{"kind":"Variable","name":{"kind":"Name","value":"limit"}}},{"kind":"Argument","name":{"kind":"Name","value":"search"},"value":{"kind":"Variable","name":{"kind":"Name","value":"search"}}},{"kind":"Argument","name":{"kind":"Name","value":"taskId"},"value":{"kind":"Variable","name":{"kind":"Name","value":"taskId"}}},{"kind":"Argument","name":{"kind":"Name","value":"attentionOnly"},"value":{"kind":"Variable","name":{"kind":"Name","value":"attentionOnly"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"checkedAt"}},{"kind":"Field","name":{"kind":"Name","value":"connected"}},{"kind":"Field","name":{"kind":"Name","value":"stale"}},{"kind":"Field","name":{"kind":"Name","value":"storageAvailable"}},{"kind":"Field","name":{"kind":"Name","value":"freeSpace"}},{"kind":"Field","name":{"kind":"Name","value":"downloadSpeed"}},{"kind":"Field","name":{"kind":"Name","value":"uploadSpeed"}},{"kind":"Field","name":{"kind":"Name","value":"downloadLimit"}},{"kind":"Field","name":{"kind":"Name","value":"uploadLimit"}},{"kind":"Field","name":{"kind":"Name","value":"connectionStatus"}},{"kind":"Field","name":{"kind":"Name","value":"dhtNodes"}},{"kind":"Field","name":{"kind":"Name","value":"completedBytes"}},{"kind":"Field","name":{"kind":"Name","value":"remainingBytes"}},{"kind":"Field","name":{"kind":"Name","value":"total"}},{"kind":"Field","name":{"kind":"Name","value":"attentionCount"}},{"kind":"Field","name":{"kind":"Name","value":"policy"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"enabled"}},{"kind":"Field","name":{"kind":"Name","value":"ratio"}},{"kind":"Field","name":{"kind":"Name","value":"seedHours"}},{"kind":"Field","name":{"kind":"Name","value":"matchAll"}},{"kind":"Field","name":{"kind":"Name","value":"deleteFiles"}},{"kind":"Field","name":{"kind":"Name","value":"afterIngest"}}]}},{"kind":"Field","name":{"kind":"Name","value":"torrents"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"hash"}},{"kind":"Field","name":{"kind":"Name","value":"name"}},{"kind":"Field","name":{"kind":"Name","value":"state"}},{"kind":"Field","name":{"kind":"Name","value":"present"}},{"kind":"Field","name":{"kind":"Name","value":"taskIds"}},{"kind":"Field","name":{"kind":"Name","value":"taskCodes"}},{"kind":"Field","name":{"kind":"Name","value":"allCompleted"}},{"kind":"Field","name":{"kind":"Name","value":"canDeleteFiles"}},{"kind":"Field","name":{"kind":"Name","value":"progress"}},{"kind":"Field","name":{"kind":"Name","value":"downloadSpeed"}},{"kind":"Field","name":{"kind":"Name","value":"uploadSpeed"}},{"kind":"Field","name":{"kind":"Name","value":"size"}},{"kind":"Field","name":{"kind":"Name","value":"completedBytes"}},{"kind":"Field","name":{"kind":"Name","value":"downloaded"}},{"kind":"Field","name":{"kind":"Name","value":"uploaded"}},{"kind":"Field","name":{"kind":"Name","value":"ratio"}},{"kind":"Field","name":{"kind":"Name","value":"seedingSeconds"}},{"kind":"Field","name":{"kind":"Name","value":"eta"}},{"kind":"Field","name":{"kind":"Name","value":"seeds"}},{"kind":"Field","name":{"kind":"Name","value":"peers"}},{"kind":"Field","name":{"kind":"Name","value":"availability"}},{"kind":"Field","name":{"kind":"Name","value":"savePath"}},{"kind":"Field","name":{"kind":"Name","value":"category"}},{"kind":"Field","name":{"kind":"Name","value":"tags"}},{"kind":"Field","name":{"kind":"Name","value":"lastSeenAt"}},{"kind":"Field","name":{"kind":"Name","value":"removedAt"}},{"kind":"Field","name":{"kind":"Name","value":"removalReason"}},{"kind":"Field","name":{"kind":"Name","value":"cleanupError"}},{"kind":"Field","name":{"kind":"Name","value":"needsAttention"}}]}}]}}]}}]} as unknown as DocumentNode<DownloaderDocumentQuery, DownloaderDocumentQueryVariables>;
+export const RefreshDownloaderDocumentDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"mutation","name":{"kind":"Name","value":"RefreshDownloaderDocument"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"refreshDownloader"}}]}}]} as unknown as DocumentNode<RefreshDownloaderDocumentMutation, RefreshDownloaderDocumentMutationVariables>;
+export const UpdateDownloaderPolicyDocumentDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"mutation","name":{"kind":"Name","value":"UpdateDownloaderPolicyDocument"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"input"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"DownloaderPolicyInput"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"updateDownloaderPolicy"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"input"},"value":{"kind":"Variable","name":{"kind":"Name","value":"input"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"enabled"}},{"kind":"Field","name":{"kind":"Name","value":"ratio"}},{"kind":"Field","name":{"kind":"Name","value":"seedHours"}},{"kind":"Field","name":{"kind":"Name","value":"matchAll"}},{"kind":"Field","name":{"kind":"Name","value":"deleteFiles"}},{"kind":"Field","name":{"kind":"Name","value":"afterIngest"}}]}}]}}]} as unknown as DocumentNode<UpdateDownloaderPolicyDocumentMutation, UpdateDownloaderPolicyDocumentMutationVariables>;
+export const ControlTorrentDocumentDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"mutation","name":{"kind":"Name","value":"ControlTorrentDocument"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"hash"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"String"}}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"action"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"TorrentAction"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"controlTorrent"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"hash"},"value":{"kind":"Variable","name":{"kind":"Name","value":"hash"}}},{"kind":"Argument","name":{"kind":"Name","value":"action"},"value":{"kind":"Variable","name":{"kind":"Name","value":"action"}}}]}]}}]} as unknown as DocumentNode<ControlTorrentDocumentMutation, ControlTorrentDocumentMutationVariables>;
+export const SetDownloaderSpeedLimitDocumentDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"mutation","name":{"kind":"Name","value":"SetDownloaderSpeedLimitDocument"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"upload"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"Boolean"}}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"kibPerSecond"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"Int"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"setDownloaderSpeedLimit"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"upload"},"value":{"kind":"Variable","name":{"kind":"Name","value":"upload"}}},{"kind":"Argument","name":{"kind":"Name","value":"kibPerSecond"},"value":{"kind":"Variable","name":{"kind":"Name","value":"kibPerSecond"}}}]}]}}]} as unknown as DocumentNode<SetDownloaderSpeedLimitDocumentMutation, SetDownloaderSpeedLimitDocumentMutationVariables>;
+export const DownloaderSummaryDocumentDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"DownloaderSummaryDocument"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"downloader"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"checkedAt"}},{"kind":"Field","name":{"kind":"Name","value":"connected"}},{"kind":"Field","name":{"kind":"Name","value":"stale"}},{"kind":"Field","name":{"kind":"Name","value":"storageAvailable"}},{"kind":"Field","name":{"kind":"Name","value":"freeSpace"}},{"kind":"Field","name":{"kind":"Name","value":"downloadSpeed"}},{"kind":"Field","name":{"kind":"Name","value":"uploadSpeed"}},{"kind":"Field","name":{"kind":"Name","value":"completedBytes"}},{"kind":"Field","name":{"kind":"Name","value":"remainingBytes"}},{"kind":"Field","name":{"kind":"Name","value":"total"}},{"kind":"Field","name":{"kind":"Name","value":"attentionCount"}},{"kind":"Field","name":{"kind":"Name","value":"connectionStatus"}}]}}]}}]} as unknown as DocumentNode<DownloaderSummaryDocumentQuery, DownloaderSummaryDocumentQueryVariables>;
+export const DownloaderSettingsDocumentDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"DownloaderSettingsDocument"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"downloader"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"stale"}},{"kind":"Field","name":{"kind":"Name","value":"downloadLimit"}},{"kind":"Field","name":{"kind":"Name","value":"uploadLimit"}},{"kind":"Field","name":{"kind":"Name","value":"storageAvailable"}},{"kind":"Field","name":{"kind":"Name","value":"policy"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"enabled"}},{"kind":"Field","name":{"kind":"Name","value":"ratio"}},{"kind":"Field","name":{"kind":"Name","value":"seedHours"}},{"kind":"Field","name":{"kind":"Name","value":"matchAll"}},{"kind":"Field","name":{"kind":"Name","value":"deleteFiles"}},{"kind":"Field","name":{"kind":"Name","value":"afterIngest"}}]}}]}}]}}]} as unknown as DocumentNode<DownloaderSettingsDocumentQuery, DownloaderSettingsDocumentQueryVariables>;
 export const HomePageDocumentDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"HomePageDocument"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"settings"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"system"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"taskDeletePolicy"}}]}},{"kind":"Field","name":{"kind":"Name","value":"automation"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"taskProcessingEnabled"}}]}},{"kind":"Field","name":{"kind":"Name","value":"stash"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"url"}}]}},{"kind":"Field","name":{"kind":"Name","value":"ingest"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"keepSubtitles"}},{"kind":"Field","name":{"kind":"Name","value":"downloads"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"qbRoot"}},{"kind":"Field","name":{"kind":"Name","value":"mojiRoot"}}]}},{"kind":"Field","name":{"kind":"Name","value":"library"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"mojiRoot"}},{"kind":"Field","name":{"kind":"Name","value":"stashRoot"}}]}},{"kind":"Field","name":{"kind":"Name","value":"transfer"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"action"}}]}}]}},{"kind":"Field","name":{"kind":"Name","value":"jackett"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"url"}}]}},{"kind":"Field","name":{"kind":"Name","value":"qbittorrent"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"url"}},{"kind":"Field","name":{"kind":"Name","value":"username"}},{"kind":"Field","name":{"kind":"Name","value":"defaultSavePath"}}]}}]}},{"kind":"Field","name":{"kind":"Name","value":"homeOverview"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"total"}},{"kind":"Field","name":{"kind":"Name","value":"attention"}},{"kind":"Field","name":{"kind":"Name","value":"active"}},{"kind":"Field","name":{"kind":"Name","value":"waiting"}},{"kind":"Field","name":{"kind":"Name","value":"completedLast24Hours"}},{"kind":"Field","name":{"kind":"Name","value":"attentionTasks"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"FragmentSpread","name":{"kind":"Name","value":"HomeTask"}}]}},{"kind":"Field","name":{"kind":"Name","value":"activeTasks"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"FragmentSpread","name":{"kind":"Name","value":"HomeTask"}}]}},{"kind":"Field","name":{"kind":"Name","value":"recentTasks"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"FragmentSpread","name":{"kind":"Name","value":"HomeTask"}}]}}]}}]}},{"kind":"FragmentDefinition","name":{"kind":"Name","value":"HomeTask"},"typeCondition":{"kind":"NamedType","name":{"kind":"Name","value":"Task"}},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"source"}},{"kind":"Field","name":{"kind":"Name","value":"code"}},{"kind":"Field","name":{"kind":"Name","value":"stage"}},{"kind":"Field","name":{"kind":"Name","value":"stageStatus"}},{"kind":"Field","name":{"kind":"Name","value":"stageLabel"}},{"kind":"Field","name":{"kind":"Name","value":"stageStatusLabel"}},{"kind":"Field","name":{"kind":"Name","value":"stageErrorCode"}},{"kind":"Field","name":{"kind":"Name","value":"stageErrorMessage"}},{"kind":"Field","name":{"kind":"Name","value":"files"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"index"}},{"kind":"Field","name":{"kind":"Name","value":"path"}},{"kind":"Field","name":{"kind":"Name","value":"size"}},{"kind":"Field","name":{"kind":"Name","value":"kind"}},{"kind":"Field","name":{"kind":"Name","value":"part"}},{"kind":"Field","name":{"kind":"Name","value":"selected"}},{"kind":"Field","name":{"kind":"Name","value":"reason"}}]}},{"kind":"Field","name":{"kind":"Name","value":"torrentUrl"}},{"kind":"Field","name":{"kind":"Name","value":"torrentName"}},{"kind":"Field","name":{"kind":"Name","value":"progress"}},{"kind":"Field","name":{"kind":"Name","value":"qbittorrentState"}},{"kind":"Field","name":{"kind":"Name","value":"contentPath"}},{"kind":"Field","name":{"kind":"Name","value":"torrentHash"}},{"kind":"Field","name":{"kind":"Name","value":"savePath"}},{"kind":"Field","name":{"kind":"Name","value":"category"}},{"kind":"Field","name":{"kind":"Name","value":"tags"}},{"kind":"Field","name":{"kind":"Name","value":"downloadCompletedAt"}},{"kind":"Field","name":{"kind":"Name","value":"sourcingCompletedAt"}},{"kind":"Field","name":{"kind":"Name","value":"ingestCompletedAt"}},{"kind":"Field","name":{"kind":"Name","value":"mojiSourcePath"}},{"kind":"Field","name":{"kind":"Name","value":"transferAction"}},{"kind":"Field","name":{"kind":"Name","value":"mojiTransferPath"}},{"kind":"Field","name":{"kind":"Name","value":"transferError"}},{"kind":"Field","name":{"kind":"Name","value":"stashIngestPhase"}},{"kind":"Field","name":{"kind":"Name","value":"stashGenerateJobId"}},{"kind":"Field","name":{"kind":"Name","value":"stashIdentifyJobId"}},{"kind":"Field","name":{"kind":"Name","value":"stashSceneIds"}},{"kind":"Field","name":{"kind":"Name","value":"stashScanJobId"}},{"kind":"Field","name":{"kind":"Name","value":"stashScanPath"}},{"kind":"Field","name":{"kind":"Name","value":"stashScanError"}},{"kind":"Field","name":{"kind":"Name","value":"stashScanHint"}},{"kind":"Field","name":{"kind":"Name","value":"stashScanStartedAt"}},{"kind":"Field","name":{"kind":"Name","value":"createdAt"}},{"kind":"Field","name":{"kind":"Name","value":"updatedAt"}},{"kind":"Field","name":{"kind":"Name","value":"lastProgressAt"}},{"kind":"Field","name":{"kind":"Name","value":"sourcingLastCheckedAt"}},{"kind":"Field","name":{"kind":"Name","value":"sourcingNextCheckAt"}}]}}]} as unknown as DocumentNode<HomePageDocumentQuery, HomePageDocumentQueryVariables>;
 export const HomeSubscriptionSummaryDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"HomeSubscriptionSummary"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"homeSubscriptionSummary"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"total"}},{"kind":"Field","name":{"kind":"Name","value":"attention"}},{"kind":"Field","name":{"kind":"Name","value":"unchecked"}},{"kind":"Field","name":{"kind":"Name","value":"lastCheckedAt"}},{"kind":"Field","name":{"kind":"Name","value":"attentionPerformerIds"}}]}}]}}]} as unknown as DocumentNode<HomeSubscriptionSummaryQuery, HomeSubscriptionSummaryQueryVariables>;
 export const HomeSubscriptionChecksDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"HomeSubscriptionChecks"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"homeSubscriptionChecks"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"enabled"}},{"kind":"Field","name":{"kind":"Name","value":"nextRunAt"}},{"kind":"Field","name":{"kind":"Name","value":"activeCount"}},{"kind":"Field","name":{"kind":"Name","value":"latestScheduled"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"FragmentSpread","name":{"kind":"Name","value":"HomeSubscriptionCheckRunFields"}}]}},{"kind":"Field","name":{"kind":"Name","value":"activeRuns"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"FragmentSpread","name":{"kind":"Name","value":"HomeSubscriptionCheckRunFields"}}]}},{"kind":"Field","name":{"kind":"Name","value":"recentRuns"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"FragmentSpread","name":{"kind":"Name","value":"HomeSubscriptionCheckRunFields"}}]}}]}}]}},{"kind":"FragmentDefinition","name":{"kind":"Name","value":"HomeSubscriptionCheckRunFields"},"typeCondition":{"kind":"NamedType","name":{"kind":"Name","value":"HomeSubscriptionCheckRun"}},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"trigger"}},{"kind":"Field","name":{"kind":"Name","value":"scope"}},{"kind":"Field","name":{"kind":"Name","value":"status"}},{"kind":"Field","name":{"kind":"Name","value":"startedAt"}},{"kind":"Field","name":{"kind":"Name","value":"finishedAt"}},{"kind":"Field","name":{"kind":"Name","value":"totalCount"}},{"kind":"Field","name":{"kind":"Name","value":"completedCount"}},{"kind":"Field","name":{"kind":"Name","value":"succeededCount"}},{"kind":"Field","name":{"kind":"Name","value":"failedCount"}},{"kind":"Field","name":{"kind":"Name","value":"skippedCount"}},{"kind":"Field","name":{"kind":"Name","value":"currentPerformers"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"performerId"}},{"kind":"Field","name":{"kind":"Name","value":"name"}}]}}]}}]} as unknown as DocumentNode<HomeSubscriptionChecksQuery, HomeSubscriptionChecksQueryVariables>;

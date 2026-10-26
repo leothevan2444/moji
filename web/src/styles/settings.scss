@@ -1803,3 +1803,18 @@
   .settings-field small { color: var(--muted); font-size: 12px; line-height: 1.6; }
   &__paused { padding: 10px 12px; border-radius: 8px; background: color-mix(in srgb, #b46918 8%, var(--surface)); color: #a15c13; font-size: 13px; line-height: 1.6; }
 }
+
+// Anchor help to the field label so it fits narrow settings panels.
+.downloader-cleanup .settings-field__label {
+  position: relative;
+  .settings-info { position: static; }
+  .settings-info__tooltip {
+    left: auto;
+    right: auto;
+    inset-inline-start: 0;
+    inset-inline-end: auto;
+    top: auto;
+    bottom: calc(100% + 8px);
+    transform: none;
+  }
+}

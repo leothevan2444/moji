@@ -2,6 +2,7 @@ import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } fro
 import { Link, useNavigate, useOutletContext, useSearchParams } from "react-router";
 import { useQuery } from "urql";
 import { useTranslation } from "react-i18next";
+import { HomeDownloader } from "../../components/home/HomeDownloader";
 import { HomePage } from "../../pages/HomePage";
 import { Drawer } from "../../components/layout/Drawer";
 import { useSubscriptionCheckPolling } from "../../hooks/useSubscriptionCheckPolling";
@@ -21,7 +22,11 @@ const TaskDrawer = lazy(() => import("../../components/drawers/TaskDrawer").then
 const SourcingResolutionDrawer = lazy(() => import("../../components/drawers/SourcingResolutionDrawer").then(m => ({ default: m.SourcingResolutionDrawer })));
 const ConfirmDeleteDrawer = lazy(() => import("../../components/drawers/ConfirmDeleteDrawer").then(m => ({ default: m.ConfirmDeleteDrawer })));
 
+const DownloadManager = lazy(() => import("../../components/downloader/DownloadManager").then(m => ({default:m.DownloadManager})));
+
 export function Component() {
+ const [torrentsOpen,setTorrentsOpen]=useState(false);
+ const [torrentCount,setTorrentCount]=useState<number|null>(null);
   const { t } = useTranslation();
   const navigate = useNavigate();
   const [params, setParams] = useSearchParams();
@@ -129,12 +134,13 @@ export function Component() {
   const closeCheck = () => { const next = new URLSearchParams(params); next.delete("check"); setParams(next, { replace: true, preventScrollReset: true }); };
   const refreshAll = () => { refreshRef.current(); refreshStatus({ requestPolicy: "network-only" }); refreshSubscriptions({ requestPolicy: "network-only" }); refreshHomeChecks(); };
   return <>
-    <HomePage checks={checks} checksError={checksError ? describeQueryError(checksError) : null} onRefreshChecks={refreshHomeChecks} onOpenCheck={openCheck} listUpdatePending={listUpdatePending} onApplyUpdates={() => { setDisplayed(overview); setListUpdatePending(false); }} interactionOpen={Boolean(taskId || checkId)} overview={displayed ?? overview} runtimeSettings={data?.settings ?? null} runtimeStatus={status?.settingsStatus ?? null} subscription={subscriptions?.homeSubscriptionSummary ?? null}
+    <HomePage downloader={<HomeDownloader onOpenList={() => { setTorrentCount(null); setTorrentsOpen(true); }} />} checks={checks} checksError={checksError ? describeQueryError(checksError) : null} onRefreshChecks={refreshHomeChecks} onOpenCheck={openCheck} listUpdatePending={listUpdatePending} onApplyUpdates={() => { setDisplayed(overview); setListUpdatePending(false); }} interactionOpen={Boolean(taskId || checkId || torrentsOpen)} overview={displayed ?? overview} runtimeSettings={data?.settings ?? null} runtimeStatus={status?.settingsStatus ?? null} subscription={subscriptions?.homeSubscriptionSummary ?? null}
       overviewError={error ? describeQueryError(error) : null} statusError={statusError ? describeQueryError(statusError) : null} subscriptionError={subscriptionError ? describeQueryError(subscriptionError) : null}
       fetching={fetching || statusFetching} connectionStatus={taskEvents.error || serviceEvents.error || subscriptionEvents.error ? "error" : taskEvents.connectionStatus} pendingTaskRetryId={pendingRetry}
       onRefresh={refreshAll} onRefreshStatus={() => refreshStatus({ requestPolicy: "network-only" })} onRefreshSubscription={() => refreshSubscriptions({ requestPolicy: "network-only" })}
       onSearch={(q, source) => navigate(`/discover?${new URLSearchParams({ q, source })}`)} onOpenTask={id => openTask(id)} onConfirmFiles={id => openTask(id, false, true)} onRetryTask={id => void retry(id)} onResolveTask={id => openTask(id, true)}
       onOpenQueue={() => navigate("/tasks?status=failed&workbench=1", { state: { backgroundLocation: { pathname: "/", search: "" } } })} onOpenSettings={tab => navigate(`/settings/${tab}`)} />
+    {torrentsOpen ? <Drawer visibleDrawer="torrents" closing={false} title={torrentCount === null ? t("downloader.torrentList") : t("downloader.torrentListCount", { count: torrentCount })} onClose={() => setTorrentsOpen(false)}><Suspense fallback={<div className="skeleton skeleton-card" aria-label={t("common.loading")} />}><DownloadManager onCountChange={setTorrentCount} /></Suspense></Drawer> : null}
     {checkId ? <Drawer visibleDrawer="subscription-check" closing={false} title={t("subscriptionChecks.title")} onClose={closeCheck}>
       <Suspense fallback={<div className="home-loading" aria-label={t("common.loading")}><span /><span /><span /></div>}>
         {checkDetailError ? <div className="home-module-error" role="alert"><p>{describeQueryError(checkDetailError)}</p><button type="button" onClick={refreshHomeChecks}>{t("common.retry")}</button></div> : null}

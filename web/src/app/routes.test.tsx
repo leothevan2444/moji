@@ -23,6 +23,7 @@ describe("SPA route boundaries", () => {
     ["/tasks/task-1/resolve", "/tasks/:taskId/resolve"],
     ["/performers/review", "/performers/review"],
     ["/performers/performer-1", "/performers/:performerId"],
+    ["/settings/downloader", "/settings/:section"],
     ["/settings/automation", "/settings/:section"]
   ])("matches deep link %s to its lazy route", (url, expectedPath) => {
     expect(matchRoutes(appRoutes, url)?.at(-1)?.route.path).toBe(expectedPath);

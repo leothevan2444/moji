@@ -98,6 +98,44 @@ type DownloadMediaInput struct {
 	Paused     *bool    `json:"paused,omitempty"`
 }
 
+type DownloaderOverview struct {
+	CheckedAt        string            `json:"checkedAt"`
+	Connected        bool              `json:"connected"`
+	Stale            bool              `json:"stale"`
+	StorageAvailable bool              `json:"storageAvailable"`
+	FreeSpace        *int64            `json:"freeSpace,omitempty"`
+	DownloadSpeed    int64             `json:"downloadSpeed"`
+	UploadSpeed      int64             `json:"uploadSpeed"`
+	DownloadLimit    int64             `json:"downloadLimit"`
+	UploadLimit      int64             `json:"uploadLimit"`
+	ConnectionStatus string            `json:"connectionStatus"`
+	DhtNodes         int64             `json:"dhtNodes"`
+	CompletedBytes   int64             `json:"completedBytes"`
+	RemainingBytes   int64             `json:"remainingBytes"`
+	Total            int               `json:"total"`
+	AttentionCount   int               `json:"attentionCount"`
+	Torrents         []*ManagedTorrent `json:"torrents"`
+	Policy           *DownloaderPolicy `json:"policy"`
+}
+
+type DownloaderPolicy struct {
+	AfterIngest bool    `json:"afterIngest"`
+	Enabled     bool    `json:"enabled"`
+	Ratio       float64 `json:"ratio"`
+	SeedHours   float64 `json:"seedHours"`
+	MatchAll    bool    `json:"matchAll"`
+	DeleteFiles bool    `json:"deleteFiles"`
+}
+
+type DownloaderPolicyInput struct {
+	AfterIngest bool    `json:"afterIngest"`
+	Enabled     bool    `json:"enabled"`
+	Ratio       float64 `json:"ratio"`
+	SeedHours   float64 `json:"seedHours"`
+	MatchAll    bool    `json:"matchAll"`
+	DeleteFiles bool    `json:"deleteFiles"`
+}
+
 type DownloadsIngestSettings struct {
 	QbRoot   string `json:"qbRoot"`
 	MojiRoot string `json:"mojiRoot"`
@@ -281,6 +319,38 @@ type LogEntry struct {
 type LogEvent struct {
 	Sequence int       `json:"sequence"`
 	Entry    *LogEntry `json:"entry"`
+}
+
+type ManagedTorrent struct {
+	Hash           string   `json:"hash"`
+	Name           string   `json:"name"`
+	State          string   `json:"state"`
+	Present        bool     `json:"present"`
+	TaskIds        []string `json:"taskIds"`
+	TaskCodes      []string `json:"taskCodes"`
+	AllCompleted   bool     `json:"allCompleted"`
+	CanDeleteFiles bool     `json:"canDeleteFiles"`
+	Progress       float64  `json:"progress"`
+	DownloadSpeed  int64    `json:"downloadSpeed"`
+	UploadSpeed    int64    `json:"uploadSpeed"`
+	Size           int64    `json:"size"`
+	CompletedBytes int64    `json:"completedBytes"`
+	Downloaded     int64    `json:"downloaded"`
+	Uploaded       int64    `json:"uploaded"`
+	Ratio          float64  `json:"ratio"`
+	SeedingSeconds int64    `json:"seedingSeconds"`
+	Eta            int64    `json:"eta"`
+	Seeds          int64    `json:"seeds"`
+	Peers          int64    `json:"peers"`
+	Availability   float64  `json:"availability"`
+	SavePath       string   `json:"savePath"`
+	Category       string   `json:"category"`
+	Tags           string   `json:"tags"`
+	LastSeenAt     string   `json:"lastSeenAt"`
+	RemovedAt      string   `json:"removedAt"`
+	RemovalReason  string   `json:"removalReason"`
+	CleanupError   bool     `json:"cleanupError"`
+	NeedsAttention bool     `json:"needsAttention"`
 }
 
 type MatchedStashBox struct {
@@ -2671,6 +2741,69 @@ func (e *TitleMatchPatternMode) UnmarshalJSON(b []byte) error {
 }
 
 func (e TitleMatchPatternMode) MarshalJSON() ([]byte, error) {
+	var buf bytes.Buffer
+	e.MarshalGQL(&buf)
+	return buf.Bytes(), nil
+}
+
+type TorrentAction string
+
+const (
+	TorrentActionPause       TorrentAction = "PAUSE"
+	TorrentActionResume      TorrentAction = "RESUME"
+	TorrentActionRecheck     TorrentAction = "RECHECK"
+	TorrentActionReannounce  TorrentAction = "REANNOUNCE"
+	TorrentActionRemove      TorrentAction = "REMOVE"
+	TorrentActionRemoveFiles TorrentAction = "REMOVE_FILES"
+)
+
+var AllTorrentAction = []TorrentAction{
+	TorrentActionPause,
+	TorrentActionResume,
+	TorrentActionRecheck,
+	TorrentActionReannounce,
+	TorrentActionRemove,
+	TorrentActionRemoveFiles,
+}
+
+func (e TorrentAction) IsValid() bool {
+	switch e {
+	case TorrentActionPause, TorrentActionResume, TorrentActionRecheck, TorrentActionReannounce, TorrentActionRemove, TorrentActionRemoveFiles:
+		return true
+	}
+	return false
+}
+
+func (e TorrentAction) String() string {
+	return string(e)
+}
+
+func (e *TorrentAction) UnmarshalGQL(v any) error {
+	str, ok := v.(string)
+	if !ok {
+		return fmt.Errorf("enums must be strings")
+	}
+
+	*e = TorrentAction(str)
+	if !e.IsValid() {
+		return fmt.Errorf("%s is not a valid TorrentAction", str)
+	}
+	return nil
+}
+
+func (e TorrentAction) MarshalGQL(w io.Writer) {
+	fmt.Fprint(w, strconv.Quote(e.String()))
+}
+
+func (e *TorrentAction) UnmarshalJSON(b []byte) error {
+	s, err := strconv.Unquote(string(b))
+	if err != nil {
+		return err
+	}
+	return e.UnmarshalGQL(s)
+}
+
+func (e TorrentAction) MarshalJSON() ([]byte, error) {
 	var buf bytes.Buffer
 	e.MarshalGQL(&buf)
 	return buf.Bytes(), nil

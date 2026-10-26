@@ -579,11 +579,27 @@ func (s *Service) syncTaskProgress(ctx context.Context, snapshot *Task, torrents
 	if err != nil {
 		return snapshot, nil
 	}
-	if task.Stage != TaskStageDownloading || task.RestartStateJSON != "" {
+	if task.RestartStateJSON != "" || task.Stage == TaskStageSourcing || taskHashForMonitoring(task) == "" && task.Stage != TaskStageDownloading {
 		return task, nil
 	}
-	// Recover older submissions that were marked downloading without ever
-	// reaching qB. Do not attach a fuzzy candidate to an unrelated torrent.
+	torrent, ok := matchTaskTorrent(task, torrents)
+	if task.Stage != TaskStageDownloading {
+		state := "missing"
+		if ok {
+			state = string(torrent.State)
+		}
+		if task.QBittorrentState == state {
+			return task, nil
+		}
+		next := cloneTask(task)
+		next.QBittorrentState = state
+		next.UpdatedAt = s.now().UTC()
+		if err := s.store.Update(ctx, next); err != nil {
+			return task, err
+		}
+		return next, nil
+	}
+	// Recover older submissions without ever attaching an unrelated fuzzy candidate.
 	if task.TorrentHash == "" && task.Progress == 0 {
 		if _, err := validateCodeEvidence(task.Code, task.Candidate.Title, magnetDisplayName(task.TorrentURL)); err != nil {
 			next := cloneTask(task)
@@ -593,15 +609,42 @@ func (s *Service) syncTaskProgress(ctx context.Context, snapshot *Task, torrents
 			return next, nil
 		}
 	}
-	torrent, ok := matchTaskTorrent(task, torrents)
+	problem := ""
 	if !ok {
-		return task, nil
+		if taskHashForMonitoring(task) == "" {
+			return task, nil
+		}
+		problem = "TORRENT_MISSING"
+	} else if torrent.State == qbittorrent.TorrentStateError || torrent.State == qbittorrent.TorrentStateMissingFiles {
+		problem = "TORRENT_ERROR"
+	}
+	if problem != "" {
+		state := "missing"
+		if ok {
+			state = string(torrent.State)
+		}
+		if task.QBittorrentState == state && task.StageErrorCode == problem {
+			return task, nil
+		}
+		next := cloneTask(task)
+		next.QBittorrentState = state
+		// Preserve file-review and other independent blockers.
+		if task.StageStatus != TaskStageStatusBlocked || task.StageErrorCode == "TORRENT_MISSING" || task.StageErrorCode == "TORRENT_ERROR" {
+			blockTask(next, problem, problem, s.now().UTC())
+		}
+		if err := s.store.Update(ctx, next); err != nil {
+			return task, err
+		}
+		return next, nil
 	}
 
 	next := cloneTask(task)
 	prevStage := next.Stage
 	prevStageStatus := next.StageStatus
 	prevProgress := next.Progress
+	if next.StageErrorCode == "TORRENT_MISSING" || next.StageErrorCode == "TORRENT_ERROR" {
+		clearTaskStageError(next)
+	}
 	applyTorrentProgress(next, torrent, s.now().UTC())
 	if s.mediaConfig != nil {
 		if task.StageStatus == TaskStageStatusBlocked && task.StageErrorCode == TaskStageErrorFileReview {
@@ -1045,6 +1088,7 @@ func matchTaskTorrent(task *Task, torrents []qbittorrent.Torrent) (qbittorrent.T
 				return torrent, true
 			}
 		}
+		return qbittorrent.Torrent{}, false
 	}
 	if task.TorrentIdentityHash != "" {
 		for _, torrent := range torrents {
@@ -1099,9 +1143,13 @@ func applyTorrentProgress(task *Task, torrent qbittorrent.Torrent, now time.Time
 	setTaskStage(task, TaskStageDownloading, TaskStageStatusRunning)
 }
 
+func taskHashForMonitoring(task *Task) string {
+	return firstNonEmpty([]string{task.TorrentHash, task.TorrentIdentityHash})
+}
+
 func isCompletedTorrentState(state qbittorrent.TorrentState) bool {
 	switch state {
-	case qbittorrent.TorrentStateUploading,
+	case qbittorrent.TorrentState("stoppedUP"), qbittorrent.TorrentStateUploading,
 		qbittorrent.TorrentStatePausedUP,
 		qbittorrent.TorrentStateQueuedUP,
 		qbittorrent.TorrentStateStalledUP,

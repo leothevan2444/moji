@@ -159,17 +159,23 @@ func (c *Client) GetTorrentList(ctx context.Context, options *TorrentListOptions
 		return nil, err
 	}
 
-	resp, err := httpClient.Do(req)
+	resp, err := c.doAuthenticated(req, httpClient)
 	if err != nil {
 		return nil, err
 	}
 	defer resp.Body.Close()
 
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("qB torrent list: HTTP %d", resp.StatusCode)
+	}
 	var torrents []Torrent
 	if err := json.NewDecoder(resp.Body).Decode(&torrents); err != nil {
 		return nil, err
 	}
 
+	if torrents == nil {
+		return nil, fmt.Errorf("qB torrent list: expected an array")
+	}
 	return torrents, nil
 }
 
@@ -225,7 +231,7 @@ func (c *Client) GetTorrentGenericProperties(ctx context.Context, hash string) (
 		return nil, err
 	}
 
-	resp, err := httpClient.Do(req)
+	resp, err := c.doAuthenticated(req, httpClient)
 	if err != nil {
 		return nil, err
 	}
@@ -275,7 +281,7 @@ func (c *Client) GetTorrentTrackers(ctx context.Context, hash string) ([]Torrent
 		return nil, err
 	}
 
-	resp, err := httpClient.Do(req)
+	resp, err := c.doAuthenticated(req, httpClient)
 	if err != nil {
 		return nil, err
 	}
@@ -304,7 +310,7 @@ func (c *Client) GetTorrentWebSeeds(ctx context.Context, hash string) ([]string,
 		return nil, err
 	}
 
-	resp, err := httpClient.Do(req)
+	resp, err := c.doAuthenticated(req, httpClient)
 	if err != nil {
 		return nil, err
 	}
@@ -356,7 +362,7 @@ func (c *Client) GetTorrentContents(ctx context.Context, hash string, indexes []
 		return nil, err
 	}
 
-	resp, err := httpClient.Do(req)
+	resp, err := c.doAuthenticated(req, httpClient)
 	if err != nil {
 		return nil, err
 	}
@@ -396,7 +402,7 @@ func (c *Client) GetTorrentPiecesStates(ctx context.Context, hash string) ([]int
 		return nil, err
 	}
 
-	resp, err := httpClient.Do(req)
+	resp, err := c.doAuthenticated(req, httpClient)
 	if err != nil {
 		return nil, err
 	}
@@ -425,7 +431,7 @@ func (c *Client) GetTorrentPiecesHashes(ctx context.Context, hash string) ([]str
 		return nil, err
 	}
 
-	resp, err := httpClient.Do(req)
+	resp, err := c.doAuthenticated(req, httpClient)
 	if err != nil {
 		return nil, err
 	}
@@ -440,139 +446,24 @@ func (c *Client) GetTorrentPiecesHashes(ctx context.Context, hash string) ([]str
 }
 
 func (c *Client) PauseTorrents(ctx context.Context, hashes []string) error {
-	baseURL, httpClient := c.resolve()
-	params := url.Values{}
-	params.Set("hashes", strings.Join(hashes, "|"))
-
-	req, err := http.NewRequestWithContext(
-		ctx,
-		http.MethodPost,
-		baseURL+"/api/v2/torrents/stop",
-		strings.NewReader(params.Encode()),
-	)
-	if err != nil {
-		return err
-	}
-	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-
-	resp, err := httpClient.Do(req)
-	if err != nil {
-		return err
-	}
-	defer resp.Body.Close()
-	if resp.StatusCode != http.StatusOK {
-		return fmt.Errorf("qB PauseTorrents: HTTP %d", resp.StatusCode)
-	}
-
-	return nil
+	return c.changeRunning(ctx, hashes, false)
 }
 
 func (c *Client) ResumeTorrents(ctx context.Context, hashes []string) error {
-	baseURL, httpClient := c.resolve()
-	params := url.Values{}
-	params.Set("hashes", strings.Join(hashes, "|"))
-
-	req, err := http.NewRequestWithContext(
-		ctx,
-		http.MethodPost,
-		baseURL+"/api/v2/torrents/start",
-		strings.NewReader(params.Encode()),
-	)
-	if err != nil {
-		return err
-	}
-	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-
-	resp, err := httpClient.Do(req)
-	if err != nil {
-		return err
-	}
-	defer resp.Body.Close()
-	if resp.StatusCode != http.StatusOK {
-		return fmt.Errorf("qB ResumeTorrents: HTTP %d", resp.StatusCode)
-	}
-
-	return nil
+	return c.changeRunning(ctx, hashes, true)
 }
 
 func (c *Client) DeleteTorrents(ctx context.Context, hashes []string, deleteFiles bool) error {
-	baseURL, httpClient := c.resolve()
-	params := url.Values{}
-	params.Set("hashes", strings.Join(hashes, "|"))
-	if deleteFiles {
-		params.Set("deleteFiles", "true")
-	} else {
-		params.Set("deleteFiles", "false")
-	}
-
-	req, err := http.NewRequestWithContext(
-		ctx,
-		http.MethodPost,
-		baseURL+"/api/v2/torrents/delete",
-		strings.NewReader(params.Encode()),
-	)
-	if err != nil {
-		return err
-	}
-	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-
-	resp, err := httpClient.Do(req)
-	if err != nil {
-		return err
-	}
-	defer resp.Body.Close()
-
-	return nil
+	_, err := c.postDownloadCommand(ctx, "torrents/delete", url.Values{"hashes": {strings.Join(hashes, "|")}, "deleteFiles": {strconv.FormatBool(deleteFiles)}})
+	return err
 }
-
 func (c *Client) RecheckTorrents(ctx context.Context, hashes []string) error {
-	baseURL, httpClient := c.resolve()
-	params := url.Values{}
-	params.Set("hashes", strings.Join(hashes, "|"))
-
-	req, err := http.NewRequestWithContext(
-		ctx,
-		http.MethodPost,
-		baseURL+"/api/v2/torrents/recheck",
-		strings.NewReader(params.Encode()),
-	)
-	if err != nil {
-		return err
-	}
-	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-
-	resp, err := httpClient.Do(req)
-	if err != nil {
-		return err
-	}
-	defer resp.Body.Close()
-
-	return nil
+	_, err := c.postDownloadCommand(ctx, "torrents/recheck", url.Values{"hashes": {strings.Join(hashes, "|")}})
+	return err
 }
-
 func (c *Client) ReannounceTorrents(ctx context.Context, hashes []string) error {
-	baseURL, httpClient := c.resolve()
-	params := url.Values{}
-	params.Set("hashes", strings.Join(hashes, "|"))
-
-	req, err := http.NewRequestWithContext(
-		ctx,
-		http.MethodPost,
-		baseURL+"/api/v2/torrents/reannounce",
-		strings.NewReader(params.Encode()),
-	)
-	if err != nil {
-		return err
-	}
-	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-
-	resp, err := httpClient.Do(req)
-	if err != nil {
-		return err
-	}
-	defer resp.Body.Close()
-
-	return nil
+	_, err := c.postDownloadCommand(ctx, "torrents/reannounce", url.Values{"hashes": {strings.Join(hashes, "|")}})
+	return err
 }
 
 type TorrentFile struct {
@@ -675,7 +566,7 @@ func (c *Client) AddNewTorrent(ctx context.Context, opts AddTorrentOptions) erro
 
 	req.Header.Set("Content-Type", writer.FormDataContentType())
 
-	resp, err := httpClient.Do(req)
+	resp, err := c.doAuthenticated(req, httpClient)
 	if err != nil {
 		return err
 	}
@@ -712,7 +603,7 @@ func (c *Client) AddTrackers(ctx context.Context, hash string, urls []string) er
 	}
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 
-	resp, err := httpClient.Do(req)
+	resp, err := c.doAuthenticated(req, httpClient)
 	if err != nil {
 		return err
 	}
@@ -739,7 +630,7 @@ func (c *Client) EditTrackers(ctx context.Context, hash string, oldURL string, n
 	}
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 
-	resp, err := httpClient.Do(req)
+	resp, err := c.doAuthenticated(req, httpClient)
 	if err != nil {
 		return err
 	}
@@ -765,7 +656,7 @@ func (c *Client) RemoveTrackers(ctx context.Context, hash string, urls []string)
 	}
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 
-	resp, err := httpClient.Do(req)
+	resp, err := c.doAuthenticated(req, httpClient)
 	if err != nil {
 		return err
 	}
@@ -791,7 +682,7 @@ func (c *Client) AddPeers(ctx context.Context, hash string, peers []string) erro
 	}
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 
-	resp, err := httpClient.Do(req)
+	resp, err := c.doAuthenticated(req, httpClient)
 	if err != nil {
 		return err
 	}
@@ -816,7 +707,7 @@ func (c *Client) IncreaseTorrentPriority(ctx context.Context, hash string) error
 	}
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 
-	resp, err := httpClient.Do(req)
+	resp, err := c.doAuthenticated(req, httpClient)
 	if err != nil {
 		return err
 	}
@@ -841,7 +732,7 @@ func (c *Client) DecreaseTorrentPriority(ctx context.Context, hash string) error
 	}
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 
-	resp, err := httpClient.Do(req)
+	resp, err := c.doAuthenticated(req, httpClient)
 	if err != nil {
 		return err
 	}
@@ -866,7 +757,7 @@ func (c *Client) MaximalTorrentPriority(ctx context.Context, hash string) error 
 	}
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 
-	resp, err := httpClient.Do(req)
+	resp, err := c.doAuthenticated(req, httpClient)
 	if err != nil {
 		return err
 	}
@@ -891,7 +782,7 @@ func (c *Client) MinimalTorrentPriority(ctx context.Context, hash string) error 
 	}
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 
-	resp, err := httpClient.Do(req)
+	resp, err := c.doAuthenticated(req, httpClient)
 	if err != nil {
 		return err
 	}
@@ -922,7 +813,7 @@ func (c *Client) SetTorrentFilePriority(ctx context.Context, hash string, fileIn
 	}
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 
-	resp, err := httpClient.Do(req)
+	resp, err := c.doAuthenticated(req, httpClient)
 	if err != nil {
 		return err
 	}
@@ -951,7 +842,7 @@ func (c *Client) GetTorrentDownloadLimit(ctx context.Context, hashes []string) (
 		return nil, err
 	}
 
-	resp, err := httpClient.Do(req)
+	resp, err := c.doAuthenticated(req, httpClient)
 	if err != nil {
 		return nil, err
 	}
@@ -982,7 +873,7 @@ func (c *Client) SetTorrentDownloadLimit(ctx context.Context, hashes []string, l
 	}
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 
-	resp, err := httpClient.Do(req)
+	resp, err := c.doAuthenticated(req, httpClient)
 	if err != nil {
 		return err
 	}
@@ -1016,7 +907,7 @@ func (c *Client) SetTorrentShareLimits(ctx context.Context, hashes []string, lim
 	}
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 
-	resp, err := httpClient.Do(req)
+	resp, err := c.doAuthenticated(req, httpClient)
 	if err != nil {
 		return err
 	}
@@ -1042,7 +933,7 @@ func (c *Client) GetTorrentUploadLimit(ctx context.Context, hashes []string) (*T
 		return nil, err
 	}
 
-	resp, err := httpClient.Do(req)
+	resp, err := c.doAuthenticated(req, httpClient)
 	if err != nil {
 		return nil, err
 	}
@@ -1073,7 +964,7 @@ func (c *Client) SetTorrentUploadLimit(ctx context.Context, hashes []string, lim
 	}
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 
-	resp, err := httpClient.Do(req)
+	resp, err := c.doAuthenticated(req, httpClient)
 	if err != nil {
 		return err
 	}
@@ -1099,7 +990,7 @@ func (c *Client) SetTorrentLocation(ctx context.Context, hashes []string, locati
 	}
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 
-	resp, err := httpClient.Do(req)
+	resp, err := c.doAuthenticated(req, httpClient)
 	if err != nil {
 		return err
 	}
@@ -1125,7 +1016,7 @@ func (c *Client) SetTorrentName(ctx context.Context, hash string, newName string
 	}
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 
-	resp, err := httpClient.Do(req)
+	resp, err := c.doAuthenticated(req, httpClient)
 	if err != nil {
 		return err
 	}
@@ -1151,7 +1042,7 @@ func (c *Client) SetTorrentCategory(ctx context.Context, hashes []string, catego
 	}
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 
-	resp, err := httpClient.Do(req)
+	resp, err := c.doAuthenticated(req, httpClient)
 	if err != nil {
 		return err
 	}
@@ -1177,7 +1068,7 @@ func (c *Client) GetAllCategories(ctx context.Context) (map[string]Category, err
 		return nil, err
 	}
 
-	resp, err := httpClient.Do(req)
+	resp, err := c.doAuthenticated(req, httpClient)
 	if err != nil {
 		return nil, err
 	}
@@ -1208,7 +1099,7 @@ func (c *Client) AddNewCategory(ctx context.Context, category Category) error {
 	}
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 
-	resp, err := httpClient.Do(req)
+	resp, err := c.doAuthenticated(req, httpClient)
 	if err != nil {
 		return err
 	}
@@ -1234,7 +1125,7 @@ func (c *Client) EditCategory(ctx context.Context, category Category) error {
 	}
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 
-	resp, err := httpClient.Do(req)
+	resp, err := c.doAuthenticated(req, httpClient)
 	if err != nil {
 		return err
 	}
@@ -1259,7 +1150,7 @@ func (c *Client) RemoveCategory(ctx context.Context, categoryName string) error 
 	}
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 
-	resp, err := httpClient.Do(req)
+	resp, err := c.doAuthenticated(req, httpClient)
 	if err != nil {
 		return err
 	}
@@ -1285,7 +1176,7 @@ func (c *Client) AddTorrentTags(ctx context.Context, hashes []string, tags []str
 	}
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 
-	resp, err := httpClient.Do(req)
+	resp, err := c.doAuthenticated(req, httpClient)
 	if err != nil {
 		return err
 	}
@@ -1311,7 +1202,7 @@ func (c *Client) RemoveTorrentTags(ctx context.Context, hashes []string, tags []
 	}
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 
-	resp, err := httpClient.Do(req)
+	resp, err := c.doAuthenticated(req, httpClient)
 	if err != nil {
 		return err
 	}
@@ -1334,7 +1225,7 @@ func (c *Client) GetAllTags(ctx context.Context) ([]TorrentTag, error) {
 		return nil, err
 	}
 
-	resp, err := httpClient.Do(req)
+	resp, err := c.doAuthenticated(req, httpClient)
 	if err != nil {
 		return nil, err
 	}
@@ -1370,7 +1261,7 @@ func (c *Client) CreateTag(ctx context.Context, tags []TorrentTag) error {
 	}
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 
-	resp, err := httpClient.Do(req)
+	resp, err := c.doAuthenticated(req, httpClient)
 	if err != nil {
 		return err
 	}
@@ -1401,7 +1292,7 @@ func (c *Client) DeleteTags(ctx context.Context, tags []TorrentTag) error {
 	}
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 
-	resp, err := httpClient.Do(req)
+	resp, err := c.doAuthenticated(req, httpClient)
 	if err != nil {
 		return err
 	}
@@ -1427,7 +1318,7 @@ func (c *Client) SetAutomaticTorrentManagement(ctx context.Context, hashes []str
 	}
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 
-	resp, err := httpClient.Do(req)
+	resp, err := c.doAuthenticated(req, httpClient)
 	if err != nil {
 		return err
 	}
@@ -1452,7 +1343,7 @@ func (c *Client) ToggleSequentialDownload(ctx context.Context, hashes []string) 
 	}
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 
-	resp, err := httpClient.Do(req)
+	resp, err := c.doAuthenticated(req, httpClient)
 	if err != nil {
 		return err
 	}
@@ -1477,7 +1368,7 @@ func (c *Client) SetFirstLastPiecePriority(ctx context.Context, hashes []string)
 	}
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 
-	resp, err := httpClient.Do(req)
+	resp, err := c.doAuthenticated(req, httpClient)
 	if err != nil {
 		return err
 	}
@@ -1503,7 +1394,7 @@ func (c *Client) SetForceStart(ctx context.Context, hashes []string, enable bool
 	}
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 
-	resp, err := httpClient.Do(req)
+	resp, err := c.doAuthenticated(req, httpClient)
 	if err != nil {
 		return err
 	}
@@ -1529,7 +1420,7 @@ func (c *Client) SetSuperSeeding(ctx context.Context, hashes []string, enable bo
 	}
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 
-	resp, err := httpClient.Do(req)
+	resp, err := c.doAuthenticated(req, httpClient)
 	if err != nil {
 		return err
 	}
@@ -1556,7 +1447,7 @@ func (c *Client) RenameTorrentFile(ctx context.Context, hash string, oldPath str
 	}
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 
-	resp, err := httpClient.Do(req)
+	resp, err := c.doAuthenticated(req, httpClient)
 	if err != nil {
 		return err
 	}
@@ -1583,7 +1474,7 @@ func (c *Client) RenameFolder(ctx context.Context, hash string, oldPath string, 
 	}
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 
-	resp, err := httpClient.Do(req)
+	resp, err := c.doAuthenticated(req, httpClient)
 	if err != nil {
 		return err
 	}

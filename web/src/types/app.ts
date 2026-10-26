@@ -2,7 +2,7 @@
  * Application-level type definitions shared across components.
  */
 
-export type DrawerKey = "stats" | "settings" | "help" | "task" | "task-resolution" | "task-queue" | "task-batch-result" | "performer-batch-result" | "performer-batch-confirm" | "subscription-check" | "discovery" | "confirm" | null;
+export type DrawerKey = "stats" | "settings" | "help" | "task" | "task-resolution" | "task-queue" | "task-batch-result" | "performer-batch-result" | "performer-batch-confirm" | "subscription-check" | "discovery" | "torrents" | "confirm" | null;
 
 export type ToastTone = "tone-success" | "tone-danger" | "tone-info";
 export type ToastPhase = "entering" | "leaving";
@@ -15,7 +15,7 @@ export type ToastItem = {
   lifetimeMs?: number;
 };
 
-export type SettingsTab = "connections" | "ingest" | "automation" | "system" | "logs" | "about";
+export type SettingsTab = "connections" | "downloader" | "ingest" | "automation" | "system" | "logs" | "about";
 
 export type TaskStatusFilter = "all" | "running" | "completed" | "failed" | "waiting";
 export type TaskSortKey = "createdAt" | "updatedAt" | "progress";

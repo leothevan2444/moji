@@ -6,6 +6,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"net/http/cookiejar"
 	"net/url"
@@ -33,6 +34,7 @@ type Client struct {
 	// provider's identity changes (different URL or credentials), so the
 	// qBittorrent session cookie survives config reads that return the same
 	// values.
+	authMu     sync.Mutex
 	mu         sync.RWMutex
 	baseURL    string
 	httpClient *http.Client
@@ -129,6 +131,13 @@ func (c *Client) Login(ctx context.Context, username, password string) error {
 		return fmt.Errorf("login failed with status: %s", resp.Status)
 	}
 
+	body, err := io.ReadAll(io.LimitReader(resp.Body, 1024))
+	if err != nil {
+		return err
+	}
+	if strings.TrimSpace(string(body)) != "Ok." {
+		return fmt.Errorf("qB authentication rejected")
+	}
 	return nil
 }
 

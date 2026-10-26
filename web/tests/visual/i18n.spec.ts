@@ -6,7 +6,8 @@ const routes = [
   ["tasks", "/tasks"],
   ["performers", "/performers"],
   ["discover", "/discover"],
-  ["settings", "/settings/system"]
+  ["settings", "/settings/system"],
+  ["downloader-settings", "/settings/downloader"]
 ] as const;
 
 async function prepare(page: Page, locale: "zh-CN" | "en") {
@@ -30,7 +31,7 @@ for (const locale of ["zh-CN", "en"] as const) {
       await expect(page.locator("html")).toHaveAttribute("lang", locale);
       await expectReady(page);
       if (name === "home") await expect(page.locator(".home-metrics .home-metric")).toHaveCount(4);
-      if (name === "settings") await expect(page.locator(".settings-form")).toBeVisible();
+      if (name === "settings" || name === "downloader-settings") await expect(page.locator(".settings-form").first()).toBeVisible();
       // Fractional desktop card positions can vary glyph edges by 217 pixels
       // in Chromium; keep this allowance local to the affected screenshot.
       const homeGlyphTolerance = locale === "zh-CN" && name === "home" && testInfo.project.name === "desktop"

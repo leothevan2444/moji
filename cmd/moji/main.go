@@ -5,6 +5,7 @@ import (
 	"errors"
 	"flag"
 	"fmt"
+	"github.com/leothevan2444/moji/internal/downloader"
 	"log/slog"
 	"net"
 	"net/http"
@@ -125,6 +126,9 @@ func main() {
 	if worker, ok := runtime.taskRuntimeService.(interface{ RunSourcingWorker(context.Context) }); ok {
 		go worker.RunSourcingWorker(ctx)
 	}
+	if runtime.downloader != nil {
+		go runtime.downloader.Run(ctx)
+	}
 	startTaskSyncWorker(ctx, runtime.taskRuntimeService, runtime.stashService, configureProgressSyncIntervalProvider(configStore, cfg))
 	startSubscriptionWorker(ctx, runtime.subscriptionService, configureSubscriptionPollIntervalProvider(configStore, cfg))
 	if runtime.stashBoxCacheService != nil {
@@ -158,6 +162,7 @@ func newHTTPHandler(cfg *config.Config, version string) http.Handler {
 }
 
 type httpRuntime struct {
+	downloader                    *downloader.Service
 	handler                       http.Handler
 	taskRuntimeService            graphqlapi.TaskRuntimeService
 	stashService                  graphqlapi.StashService
@@ -234,6 +239,12 @@ func newHTTPRuntime(cfg *config.Config, version string, configStore *config.Stor
 	serviceStatusEventBus := stats.NewServiceStatusEventBus(8)
 	statsCollector.SetEventPublisher(serviceStatusEventBus)
 	resolver := graphqlapi.NewResolver(jackettTracker, torrentClient, taskRuntimeService, stashService, version)
+	if qbittorrentClient != nil {
+		resolver.Downloader, err = downloader.New(qbittorrentClient, taskRuntimeService, runtimeDatabasePath())
+		if err != nil {
+			logging.Fatalf("configure downloader: %v", err)
+		}
+	}
 	resolver.TaskFlow = taskFlowService
 	if metadataService != nil {
 		stashImage := func(ctx context.Context, raw string) string {
@@ -309,6 +320,7 @@ func newHTTPRuntime(cfg *config.Config, version string, configStore *config.Stor
 	})
 
 	return &httpRuntime{
+		downloader:                    resolver.Downloader,
 		handler:                       router,
 		taskRuntimeService:            taskRuntimeService,
 		stashService:                  stashService,
@@ -370,9 +382,9 @@ func configureQBittorrent(cfg *config.Config, store *config.Store) (*qbittorrent
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 	if err := client.Login(ctx, cfg.Connection.QBittorrent.Username, cfg.Connection.QBittorrent.Password); err != nil {
-		logging.Fatalf("login qBittorrent: %v", err)
+		logging.Warnf("initial qBittorrent login failed; background monitoring will reconnect: %v", err)
 	}
-	logging.Infof("runtime: qBittorrent client connected to %s as %s", cfg.Connection.QBittorrent.URL, cfg.Connection.QBittorrent.Username)
+	logging.Infof("runtime: qBittorrent client configured for %s as %s", cfg.Connection.QBittorrent.URL, cfg.Connection.QBittorrent.Username)
 
 	defaultsProvider := func() taskruntime.TorrentDefaults {
 		current := storeQBittorrent(cfg, store)

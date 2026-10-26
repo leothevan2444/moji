@@ -7,4 +7,4 @@ export const NAV_ITEMS = [
   { labelKey: "navigation.discover", to: "/discover", end: false }
 ] as const;
 
-export const SETTINGS_TABS: SettingsTab[] = ["connections", "ingest", "automation", "system", "logs", "about"];
+export const SETTINGS_TABS: SettingsTab[] = ["connections", "downloader", "ingest", "automation", "system", "logs", "about"];

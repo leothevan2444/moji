@@ -112,6 +112,35 @@ type ComplexityRoot struct {
 		Tracker   func(childComplexity int) int
 	}
 
+	DownloaderOverview struct {
+		AttentionCount   func(childComplexity int) int
+		CheckedAt        func(childComplexity int) int
+		CompletedBytes   func(childComplexity int) int
+		Connected        func(childComplexity int) int
+		ConnectionStatus func(childComplexity int) int
+		DhtNodes         func(childComplexity int) int
+		DownloadLimit    func(childComplexity int) int
+		DownloadSpeed    func(childComplexity int) int
+		FreeSpace        func(childComplexity int) int
+		Policy           func(childComplexity int) int
+		RemainingBytes   func(childComplexity int) int
+		Stale            func(childComplexity int) int
+		StorageAvailable func(childComplexity int) int
+		Torrents         func(childComplexity int) int
+		Total            func(childComplexity int) int
+		UploadLimit      func(childComplexity int) int
+		UploadSpeed      func(childComplexity int) int
+	}
+
+	DownloaderPolicy struct {
+		AfterIngest func(childComplexity int) int
+		DeleteFiles func(childComplexity int) int
+		Enabled     func(childComplexity int) int
+		MatchAll    func(childComplexity int) int
+		Ratio       func(childComplexity int) int
+		SeedHours   func(childComplexity int) int
+	}
+
 	DownloadsIngestSettings struct {
 		MojiRoot func(childComplexity int) int
 		QbRoot   func(childComplexity int) int
@@ -257,6 +286,38 @@ type ComplexityRoot struct {
 		Sequence func(childComplexity int) int
 	}
 
+	ManagedTorrent struct {
+		AllCompleted   func(childComplexity int) int
+		Availability   func(childComplexity int) int
+		CanDeleteFiles func(childComplexity int) int
+		Category       func(childComplexity int) int
+		CleanupError   func(childComplexity int) int
+		CompletedBytes func(childComplexity int) int
+		DownloadSpeed  func(childComplexity int) int
+		Downloaded     func(childComplexity int) int
+		Eta            func(childComplexity int) int
+		Hash           func(childComplexity int) int
+		LastSeenAt     func(childComplexity int) int
+		Name           func(childComplexity int) int
+		NeedsAttention func(childComplexity int) int
+		Peers          func(childComplexity int) int
+		Present        func(childComplexity int) int
+		Progress       func(childComplexity int) int
+		Ratio          func(childComplexity int) int
+		RemovalReason  func(childComplexity int) int
+		RemovedAt      func(childComplexity int) int
+		SavePath       func(childComplexity int) int
+		SeedingSeconds func(childComplexity int) int
+		Seeds          func(childComplexity int) int
+		Size           func(childComplexity int) int
+		State          func(childComplexity int) int
+		Tags           func(childComplexity int) int
+		TaskCodes      func(childComplexity int) int
+		TaskIds        func(childComplexity int) int
+		UploadSpeed    func(childComplexity int) int
+		Uploaded       func(childComplexity int) int
+	}
+
 	MatchedStashBox struct {
 		Endpoint      func(childComplexity int) int
 		Name          func(childComplexity int) int
@@ -268,6 +329,7 @@ type ComplexityRoot struct {
 		AddTorrent                  func(childComplexity int, input model.QBittorrentAddInput) int
 		ClearImageCache             func(childComplexity int) int
 		ClearStashBoxDataCache      func(childComplexity int) int
+		ControlTorrent              func(childComplexity int, hash string, action model.TorrentAction) int
 		DeleteTask                  func(childComplexity int, id string) int
 		DeleteTasks                 func(childComplexity int, ids []string) int
 		DownloadMedia               func(childComplexity int, input model.DownloadMediaInput) int
@@ -276,6 +338,7 @@ type ComplexityRoot struct {
 		QbittorrentAdd              func(childComplexity int, input model.QBittorrentAddInput) int
 		QueueDiscoveredScene        func(childComplexity int, input model.QueueDiscoveredSceneInput) int
 		QueuePerformerScenes        func(childComplexity int, input model.QueuePerformerScenesInput) int
+		RefreshDownloader           func(childComplexity int) int
 		RefreshStashBoxes           func(childComplexity int) int
 		RefreshStashPerformerScenes func(childComplexity int, id string, input model.StashPerformerScenesInput) int
 		RefreshSubscribedPerformer  func(childComplexity int, stashPerformerID string) int
@@ -286,6 +349,7 @@ type ComplexityRoot struct {
 		RestartTaskSourcing         func(childComplexity int, id string) int
 		RetryTask                   func(childComplexity int, id string) int
 		RetryTasks                  func(childComplexity int, ids []string) int
+		SetDownloaderSpeedLimit     func(childComplexity int, upload bool, kibPerSecond int) int
 		StartSubscriptionCheck      func(childComplexity int, ids []string) int
 		StashMetadataScan           func(childComplexity int, input model.StashMetadataScanInput) int
 		SubscribePerformer          func(childComplexity int, stashPerformerID string) int
@@ -296,6 +360,7 @@ type ComplexityRoot struct {
 		UnsubscribePerformer        func(childComplexity int, stashPerformerID string) int
 		UnsubscribePerformers       func(childComplexity int, ids []string) int
 		UpdateAutomationSettings    func(childComplexity int, input model.UpdateAutomationSettingsInput) int
+		UpdateDownloaderPolicy      func(childComplexity int, input model.DownloaderPolicyInput) int
 		UpdateIngestSettings        func(childComplexity int, input model.UpdateIngestSettingsInput) int
 		UpdateJackettSettings       func(childComplexity int, input model.UpdateJackettSettingsInput) int
 		UpdateQBittorrentSettings   func(childComplexity int, input model.UpdateQBittorrentSettingsInput) int
@@ -413,6 +478,7 @@ type ComplexityRoot struct {
 		BlockedTaskTorrentCandidates func(childComplexity int, id string, limit *int) int
 		DashboardStats               func(childComplexity int) int
 		DiscoverScenes               func(childComplexity int, input model.DiscoverScenesInput) int
+		Downloader                   func(childComplexity int, offset *int, limit *int, search *string, taskID *string, attentionOnly *bool) int
 		Health                       func(childComplexity int) int
 		HomeOverview                 func(childComplexity int) int
 		HomeSubscriptionChecks       func(childComplexity int) int
@@ -932,6 +998,10 @@ type MutationResolver interface {
 	RetryTasks(ctx context.Context, ids []string) (*model.TaskBatchPayload, error)
 	ProcessTaskIngest(ctx context.Context, ids []string) (*model.TaskBatchPayload, error)
 	DeleteTasks(ctx context.Context, ids []string) (*model.TaskBatchPayload, error)
+	RefreshDownloader(ctx context.Context) (bool, error)
+	UpdateDownloaderPolicy(ctx context.Context, input model.DownloaderPolicyInput) (*model.DownloaderPolicy, error)
+	ControlTorrent(ctx context.Context, hash string, action model.TorrentAction) (bool, error)
+	SetDownloaderSpeedLimit(ctx context.Context, upload bool, kibPerSecond int) (bool, error)
 	ProcessReleaseReviews(ctx context.Context, input model.ProcessReleaseReviewsInput) (*model.ReleaseReviewPayload, error)
 	QueueDiscoveredScene(ctx context.Context, input model.QueueDiscoveredSceneInput) (*model.Task, error)
 	UpdateStashSettings(ctx context.Context, input model.UpdateStashSettingsInput) (*model.Settings, error)
@@ -958,6 +1028,7 @@ type MutationResolver interface {
 type QueryResolver interface {
 	Health(ctx context.Context) (*model.Health, error)
 	Version(ctx context.Context) (string, error)
+	Downloader(ctx context.Context, offset *int, limit *int, search *string, taskID *string, attentionOnly *bool) (*model.DownloaderOverview, error)
 	HomeOverview(ctx context.Context) (*model.HomeOverview, error)
 	HomeSubscriptionSummary(ctx context.Context) (*model.HomeSubscriptionSummary, error)
 	HomeSubscriptionChecks(ctx context.Context) (*model.HomeSubscriptionChecks, error)
@@ -1311,6 +1382,167 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.DownloadCandidate.Tracker(childComplexity), true
+
+	case "DownloaderOverview.attentionCount":
+		if e.complexity.DownloaderOverview.AttentionCount == nil {
+			break
+		}
+
+		return e.complexity.DownloaderOverview.AttentionCount(childComplexity), true
+
+	case "DownloaderOverview.checkedAt":
+		if e.complexity.DownloaderOverview.CheckedAt == nil {
+			break
+		}
+
+		return e.complexity.DownloaderOverview.CheckedAt(childComplexity), true
+
+	case "DownloaderOverview.completedBytes":
+		if e.complexity.DownloaderOverview.CompletedBytes == nil {
+			break
+		}
+
+		return e.complexity.DownloaderOverview.CompletedBytes(childComplexity), true
+
+	case "DownloaderOverview.connected":
+		if e.complexity.DownloaderOverview.Connected == nil {
+			break
+		}
+
+		return e.complexity.DownloaderOverview.Connected(childComplexity), true
+
+	case "DownloaderOverview.connectionStatus":
+		if e.complexity.DownloaderOverview.ConnectionStatus == nil {
+			break
+		}
+
+		return e.complexity.DownloaderOverview.ConnectionStatus(childComplexity), true
+
+	case "DownloaderOverview.dhtNodes":
+		if e.complexity.DownloaderOverview.DhtNodes == nil {
+			break
+		}
+
+		return e.complexity.DownloaderOverview.DhtNodes(childComplexity), true
+
+	case "DownloaderOverview.downloadLimit":
+		if e.complexity.DownloaderOverview.DownloadLimit == nil {
+			break
+		}
+
+		return e.complexity.DownloaderOverview.DownloadLimit(childComplexity), true
+
+	case "DownloaderOverview.downloadSpeed":
+		if e.complexity.DownloaderOverview.DownloadSpeed == nil {
+			break
+		}
+
+		return e.complexity.DownloaderOverview.DownloadSpeed(childComplexity), true
+
+	case "DownloaderOverview.freeSpace":
+		if e.complexity.DownloaderOverview.FreeSpace == nil {
+			break
+		}
+
+		return e.complexity.DownloaderOverview.FreeSpace(childComplexity), true
+
+	case "DownloaderOverview.policy":
+		if e.complexity.DownloaderOverview.Policy == nil {
+			break
+		}
+
+		return e.complexity.DownloaderOverview.Policy(childComplexity), true
+
+	case "DownloaderOverview.remainingBytes":
+		if e.complexity.DownloaderOverview.RemainingBytes == nil {
+			break
+		}
+
+		return e.complexity.DownloaderOverview.RemainingBytes(childComplexity), true
+
+	case "DownloaderOverview.stale":
+		if e.complexity.DownloaderOverview.Stale == nil {
+			break
+		}
+
+		return e.complexity.DownloaderOverview.Stale(childComplexity), true
+
+	case "DownloaderOverview.storageAvailable":
+		if e.complexity.DownloaderOverview.StorageAvailable == nil {
+			break
+		}
+
+		return e.complexity.DownloaderOverview.StorageAvailable(childComplexity), true
+
+	case "DownloaderOverview.torrents":
+		if e.complexity.DownloaderOverview.Torrents == nil {
+			break
+		}
+
+		return e.complexity.DownloaderOverview.Torrents(childComplexity), true
+
+	case "DownloaderOverview.total":
+		if e.complexity.DownloaderOverview.Total == nil {
+			break
+		}
+
+		return e.complexity.DownloaderOverview.Total(childComplexity), true
+
+	case "DownloaderOverview.uploadLimit":
+		if e.complexity.DownloaderOverview.UploadLimit == nil {
+			break
+		}
+
+		return e.complexity.DownloaderOverview.UploadLimit(childComplexity), true
+
+	case "DownloaderOverview.uploadSpeed":
+		if e.complexity.DownloaderOverview.UploadSpeed == nil {
+			break
+		}
+
+		return e.complexity.DownloaderOverview.UploadSpeed(childComplexity), true
+
+	case "DownloaderPolicy.afterIngest":
+		if e.complexity.DownloaderPolicy.AfterIngest == nil {
+			break
+		}
+
+		return e.complexity.DownloaderPolicy.AfterIngest(childComplexity), true
+
+	case "DownloaderPolicy.deleteFiles":
+		if e.complexity.DownloaderPolicy.DeleteFiles == nil {
+			break
+		}
+
+		return e.complexity.DownloaderPolicy.DeleteFiles(childComplexity), true
+
+	case "DownloaderPolicy.enabled":
+		if e.complexity.DownloaderPolicy.Enabled == nil {
+			break
+		}
+
+		return e.complexity.DownloaderPolicy.Enabled(childComplexity), true
+
+	case "DownloaderPolicy.matchAll":
+		if e.complexity.DownloaderPolicy.MatchAll == nil {
+			break
+		}
+
+		return e.complexity.DownloaderPolicy.MatchAll(childComplexity), true
+
+	case "DownloaderPolicy.ratio":
+		if e.complexity.DownloaderPolicy.Ratio == nil {
+			break
+		}
+
+		return e.complexity.DownloaderPolicy.Ratio(childComplexity), true
+
+	case "DownloaderPolicy.seedHours":
+		if e.complexity.DownloaderPolicy.SeedHours == nil {
+			break
+		}
+
+		return e.complexity.DownloaderPolicy.SeedHours(childComplexity), true
 
 	case "DownloadsIngestSettings.mojiRoot":
 		if e.complexity.DownloadsIngestSettings.MojiRoot == nil {
@@ -1928,6 +2160,209 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.LogEvent.Sequence(childComplexity), true
 
+	case "ManagedTorrent.allCompleted":
+		if e.complexity.ManagedTorrent.AllCompleted == nil {
+			break
+		}
+
+		return e.complexity.ManagedTorrent.AllCompleted(childComplexity), true
+
+	case "ManagedTorrent.availability":
+		if e.complexity.ManagedTorrent.Availability == nil {
+			break
+		}
+
+		return e.complexity.ManagedTorrent.Availability(childComplexity), true
+
+	case "ManagedTorrent.canDeleteFiles":
+		if e.complexity.ManagedTorrent.CanDeleteFiles == nil {
+			break
+		}
+
+		return e.complexity.ManagedTorrent.CanDeleteFiles(childComplexity), true
+
+	case "ManagedTorrent.category":
+		if e.complexity.ManagedTorrent.Category == nil {
+			break
+		}
+
+		return e.complexity.ManagedTorrent.Category(childComplexity), true
+
+	case "ManagedTorrent.cleanupError":
+		if e.complexity.ManagedTorrent.CleanupError == nil {
+			break
+		}
+
+		return e.complexity.ManagedTorrent.CleanupError(childComplexity), true
+
+	case "ManagedTorrent.completedBytes":
+		if e.complexity.ManagedTorrent.CompletedBytes == nil {
+			break
+		}
+
+		return e.complexity.ManagedTorrent.CompletedBytes(childComplexity), true
+
+	case "ManagedTorrent.downloadSpeed":
+		if e.complexity.ManagedTorrent.DownloadSpeed == nil {
+			break
+		}
+
+		return e.complexity.ManagedTorrent.DownloadSpeed(childComplexity), true
+
+	case "ManagedTorrent.downloaded":
+		if e.complexity.ManagedTorrent.Downloaded == nil {
+			break
+		}
+
+		return e.complexity.ManagedTorrent.Downloaded(childComplexity), true
+
+	case "ManagedTorrent.eta":
+		if e.complexity.ManagedTorrent.Eta == nil {
+			break
+		}
+
+		return e.complexity.ManagedTorrent.Eta(childComplexity), true
+
+	case "ManagedTorrent.hash":
+		if e.complexity.ManagedTorrent.Hash == nil {
+			break
+		}
+
+		return e.complexity.ManagedTorrent.Hash(childComplexity), true
+
+	case "ManagedTorrent.lastSeenAt":
+		if e.complexity.ManagedTorrent.LastSeenAt == nil {
+			break
+		}
+
+		return e.complexity.ManagedTorrent.LastSeenAt(childComplexity), true
+
+	case "ManagedTorrent.name":
+		if e.complexity.ManagedTorrent.Name == nil {
+			break
+		}
+
+		return e.complexity.ManagedTorrent.Name(childComplexity), true
+
+	case "ManagedTorrent.needsAttention":
+		if e.complexity.ManagedTorrent.NeedsAttention == nil {
+			break
+		}
+
+		return e.complexity.ManagedTorrent.NeedsAttention(childComplexity), true
+
+	case "ManagedTorrent.peers":
+		if e.complexity.ManagedTorrent.Peers == nil {
+			break
+		}
+
+		return e.complexity.ManagedTorrent.Peers(childComplexity), true
+
+	case "ManagedTorrent.present":
+		if e.complexity.ManagedTorrent.Present == nil {
+			break
+		}
+
+		return e.complexity.ManagedTorrent.Present(childComplexity), true
+
+	case "ManagedTorrent.progress":
+		if e.complexity.ManagedTorrent.Progress == nil {
+			break
+		}
+
+		return e.complexity.ManagedTorrent.Progress(childComplexity), true
+
+	case "ManagedTorrent.ratio":
+		if e.complexity.ManagedTorrent.Ratio == nil {
+			break
+		}
+
+		return e.complexity.ManagedTorrent.Ratio(childComplexity), true
+
+	case "ManagedTorrent.removalReason":
+		if e.complexity.ManagedTorrent.RemovalReason == nil {
+			break
+		}
+
+		return e.complexity.ManagedTorrent.RemovalReason(childComplexity), true
+
+	case "ManagedTorrent.removedAt":
+		if e.complexity.ManagedTorrent.RemovedAt == nil {
+			break
+		}
+
+		return e.complexity.ManagedTorrent.RemovedAt(childComplexity), true
+
+	case "ManagedTorrent.savePath":
+		if e.complexity.ManagedTorrent.SavePath == nil {
+			break
+		}
+
+		return e.complexity.ManagedTorrent.SavePath(childComplexity), true
+
+	case "ManagedTorrent.seedingSeconds":
+		if e.complexity.ManagedTorrent.SeedingSeconds == nil {
+			break
+		}
+
+		return e.complexity.ManagedTorrent.SeedingSeconds(childComplexity), true
+
+	case "ManagedTorrent.seeds":
+		if e.complexity.ManagedTorrent.Seeds == nil {
+			break
+		}
+
+		return e.complexity.ManagedTorrent.Seeds(childComplexity), true
+
+	case "ManagedTorrent.size":
+		if e.complexity.ManagedTorrent.Size == nil {
+			break
+		}
+
+		return e.complexity.ManagedTorrent.Size(childComplexity), true
+
+	case "ManagedTorrent.state":
+		if e.complexity.ManagedTorrent.State == nil {
+			break
+		}
+
+		return e.complexity.ManagedTorrent.State(childComplexity), true
+
+	case "ManagedTorrent.tags":
+		if e.complexity.ManagedTorrent.Tags == nil {
+			break
+		}
+
+		return e.complexity.ManagedTorrent.Tags(childComplexity), true
+
+	case "ManagedTorrent.taskCodes":
+		if e.complexity.ManagedTorrent.TaskCodes == nil {
+			break
+		}
+
+		return e.complexity.ManagedTorrent.TaskCodes(childComplexity), true
+
+	case "ManagedTorrent.taskIds":
+		if e.complexity.ManagedTorrent.TaskIds == nil {
+			break
+		}
+
+		return e.complexity.ManagedTorrent.TaskIds(childComplexity), true
+
+	case "ManagedTorrent.uploadSpeed":
+		if e.complexity.ManagedTorrent.UploadSpeed == nil {
+			break
+		}
+
+		return e.complexity.ManagedTorrent.UploadSpeed(childComplexity), true
+
+	case "ManagedTorrent.uploaded":
+		if e.complexity.ManagedTorrent.Uploaded == nil {
+			break
+		}
+
+		return e.complexity.ManagedTorrent.Uploaded(childComplexity), true
+
 	case "MatchedStashBox.endpoint":
 		if e.complexity.MatchedStashBox.Endpoint == nil {
 			break
@@ -1981,6 +2416,18 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.Mutation.ClearStashBoxDataCache(childComplexity), true
+
+	case "Mutation.controlTorrent":
+		if e.complexity.Mutation.ControlTorrent == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_controlTorrent_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.ControlTorrent(childComplexity, args["hash"].(string), args["action"].(model.TorrentAction)), true
 
 	case "Mutation.deleteTask":
 		if e.complexity.Mutation.DeleteTask == nil {
@@ -2077,6 +2524,13 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.Mutation.QueuePerformerScenes(childComplexity, args["input"].(model.QueuePerformerScenesInput)), true
+
+	case "Mutation.refreshDownloader":
+		if e.complexity.Mutation.RefreshDownloader == nil {
+			break
+		}
+
+		return e.complexity.Mutation.RefreshDownloader(childComplexity), true
 
 	case "Mutation.refreshStashBoxes":
 		if e.complexity.Mutation.RefreshStashBoxes == nil {
@@ -2188,6 +2642,18 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.Mutation.RetryTasks(childComplexity, args["ids"].([]string)), true
 
+	case "Mutation.setDownloaderSpeedLimit":
+		if e.complexity.Mutation.SetDownloaderSpeedLimit == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_setDownloaderSpeedLimit_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.SetDownloaderSpeedLimit(childComplexity, args["upload"].(bool), args["kibPerSecond"].(int)), true
+
 	case "Mutation.startSubscriptionCheck":
 		if e.complexity.Mutation.StartSubscriptionCheck == nil {
 			break
@@ -2297,6 +2763,18 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.Mutation.UpdateAutomationSettings(childComplexity, args["input"].(model.UpdateAutomationSettingsInput)), true
+
+	case "Mutation.updateDownloaderPolicy":
+		if e.complexity.Mutation.UpdateDownloaderPolicy == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_updateDownloaderPolicy_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.UpdateDownloaderPolicy(childComplexity, args["input"].(model.DownloaderPolicyInput)), true
 
 	case "Mutation.updateIngestSettings":
 		if e.complexity.Mutation.UpdateIngestSettings == nil {
@@ -2836,6 +3314,18 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.Query.DiscoverScenes(childComplexity, args["input"].(model.DiscoverScenesInput)), true
+
+	case "Query.downloader":
+		if e.complexity.Query.Downloader == nil {
+			break
+		}
+
+		args, err := ec.field_Query_downloader_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Query.Downloader(childComplexity, args["offset"].(*int), args["limit"].(*int), args["search"].(*string), args["taskId"].(*string), args["attentionOnly"].(*bool)), true
 
 	case "Query.health":
 		if e.complexity.Query.Health == nil {
@@ -5401,6 +5891,7 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 		ec.unmarshalInputDirectionRuleInput,
 		ec.unmarshalInputDiscoverScenesInput,
 		ec.unmarshalInputDownloadMediaInput,
+		ec.unmarshalInputDownloaderPolicyInput,
 		ec.unmarshalInputDownloadsIngestSettingsInput,
 		ec.unmarshalInputImageCacheSettingsInput,
 		ec.unmarshalInputIndexerPreferenceRuleInput,
@@ -5550,6 +6041,69 @@ var sources = []*ast.Source{
   query: Query
   mutation: Mutation
   subscription: Subscription
+}
+`, BuiltIn: false},
+	{Name: "../../../graphql/moji/types/downloader.graphql", Input: `extend type Query {
+  downloader(offset: Int = 0, limit: Int = 50, search: String, taskId: ID, attentionOnly: Boolean = false): DownloaderOverview!
+}
+extend type Mutation {
+  refreshDownloader: Boolean!
+  updateDownloaderPolicy(input: DownloaderPolicyInput!): DownloaderPolicy!
+  controlTorrent(hash: String!, action: TorrentAction!): Boolean!
+  setDownloaderSpeedLimit(upload: Boolean!, kibPerSecond: Int!): Boolean!
+}
+enum TorrentAction { PAUSE RESUME RECHECK REANNOUNCE REMOVE REMOVE_FILES }
+input DownloaderPolicyInput { afterIngest: Boolean! = false, enabled: Boolean!, ratio: Float!, seedHours: Float!, matchAll: Boolean!, deleteFiles: Boolean! }
+type DownloaderPolicy { afterIngest: Boolean!, enabled: Boolean!, ratio: Float!, seedHours: Float!, matchAll: Boolean!, deleteFiles: Boolean! }
+type DownloaderOverview {
+  checkedAt: String!
+  connected: Boolean!
+  stale: Boolean!
+  storageAvailable: Boolean!
+  freeSpace: Long
+  downloadSpeed: Long!
+  uploadSpeed: Long!
+  downloadLimit: Long!
+  uploadLimit: Long!
+  connectionStatus: String!
+  dhtNodes: Long!
+  completedBytes: Long!
+  remainingBytes: Long!
+  total: Int!
+  attentionCount: Int!
+  torrents: [ManagedTorrent!]!
+  policy: DownloaderPolicy!
+}
+type ManagedTorrent {
+  hash: String!
+  name: String!
+  state: String!
+  present: Boolean!
+  taskIds: [ID!]!
+  taskCodes: [String!]!
+  allCompleted: Boolean!
+  canDeleteFiles: Boolean!
+  progress: Float!
+  downloadSpeed: Long!
+  uploadSpeed: Long!
+  size: Long!
+  completedBytes: Long!
+  downloaded: Long!
+  uploaded: Long!
+  ratio: Float!
+  seedingSeconds: Long!
+  eta: Long!
+  seeds: Long!
+  peers: Long!
+  availability: Float!
+  savePath: String!
+  category: String!
+  tags: String!
+  lastSeenAt: String!
+  removedAt: String!
+  removalReason: String!
+  cleanupError: Boolean!
+  needsAttention: Boolean!
 }
 `, BuiltIn: false},
 	{Name: "../../../graphql/moji/types/health.graphql", Input: `"Basic service health"
@@ -7121,6 +7675,57 @@ func (ec *executionContext) field_Mutation_addTorrent_argsInput(
 	return zeroVal, nil
 }
 
+func (ec *executionContext) field_Mutation_controlTorrent_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := ec.field_Mutation_controlTorrent_argsHash(ctx, rawArgs)
+	if err != nil {
+		return nil, err
+	}
+	args["hash"] = arg0
+	arg1, err := ec.field_Mutation_controlTorrent_argsAction(ctx, rawArgs)
+	if err != nil {
+		return nil, err
+	}
+	args["action"] = arg1
+	return args, nil
+}
+func (ec *executionContext) field_Mutation_controlTorrent_argsHash(
+	ctx context.Context,
+	rawArgs map[string]any,
+) (string, error) {
+	if _, ok := rawArgs["hash"]; !ok {
+		var zeroVal string
+		return zeroVal, nil
+	}
+
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("hash"))
+	if tmp, ok := rawArgs["hash"]; ok {
+		return ec.unmarshalNString2string(ctx, tmp)
+	}
+
+	var zeroVal string
+	return zeroVal, nil
+}
+
+func (ec *executionContext) field_Mutation_controlTorrent_argsAction(
+	ctx context.Context,
+	rawArgs map[string]any,
+) (model.TorrentAction, error) {
+	if _, ok := rawArgs["action"]; !ok {
+		var zeroVal model.TorrentAction
+		return zeroVal, nil
+	}
+
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("action"))
+	if tmp, ok := rawArgs["action"]; ok {
+		return ec.unmarshalNTorrentAction2githubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐTorrentAction(ctx, tmp)
+	}
+
+	var zeroVal model.TorrentAction
+	return zeroVal, nil
+}
+
 func (ec *executionContext) field_Mutation_deleteTask_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
@@ -7638,6 +8243,57 @@ func (ec *executionContext) field_Mutation_retryTasks_argsIds(
 	return zeroVal, nil
 }
 
+func (ec *executionContext) field_Mutation_setDownloaderSpeedLimit_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := ec.field_Mutation_setDownloaderSpeedLimit_argsUpload(ctx, rawArgs)
+	if err != nil {
+		return nil, err
+	}
+	args["upload"] = arg0
+	arg1, err := ec.field_Mutation_setDownloaderSpeedLimit_argsKibPerSecond(ctx, rawArgs)
+	if err != nil {
+		return nil, err
+	}
+	args["kibPerSecond"] = arg1
+	return args, nil
+}
+func (ec *executionContext) field_Mutation_setDownloaderSpeedLimit_argsUpload(
+	ctx context.Context,
+	rawArgs map[string]any,
+) (bool, error) {
+	if _, ok := rawArgs["upload"]; !ok {
+		var zeroVal bool
+		return zeroVal, nil
+	}
+
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("upload"))
+	if tmp, ok := rawArgs["upload"]; ok {
+		return ec.unmarshalNBoolean2bool(ctx, tmp)
+	}
+
+	var zeroVal bool
+	return zeroVal, nil
+}
+
+func (ec *executionContext) field_Mutation_setDownloaderSpeedLimit_argsKibPerSecond(
+	ctx context.Context,
+	rawArgs map[string]any,
+) (int, error) {
+	if _, ok := rawArgs["kibPerSecond"]; !ok {
+		var zeroVal int
+		return zeroVal, nil
+	}
+
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("kibPerSecond"))
+	if tmp, ok := rawArgs["kibPerSecond"]; ok {
+		return ec.unmarshalNInt2int(ctx, tmp)
+	}
+
+	var zeroVal int
+	return zeroVal, nil
+}
+
 func (ec *executionContext) field_Mutation_startSubscriptionCheck_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
@@ -7859,6 +8515,34 @@ func (ec *executionContext) field_Mutation_updateAutomationSettings_argsInput(
 	}
 
 	var zeroVal model.UpdateAutomationSettingsInput
+	return zeroVal, nil
+}
+
+func (ec *executionContext) field_Mutation_updateDownloaderPolicy_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := ec.field_Mutation_updateDownloaderPolicy_argsInput(ctx, rawArgs)
+	if err != nil {
+		return nil, err
+	}
+	args["input"] = arg0
+	return args, nil
+}
+func (ec *executionContext) field_Mutation_updateDownloaderPolicy_argsInput(
+	ctx context.Context,
+	rawArgs map[string]any,
+) (model.DownloaderPolicyInput, error) {
+	if _, ok := rawArgs["input"]; !ok {
+		var zeroVal model.DownloaderPolicyInput
+		return zeroVal, nil
+	}
+
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
+	if tmp, ok := rawArgs["input"]; ok {
+		return ec.unmarshalNDownloaderPolicyInput2githubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐDownloaderPolicyInput(ctx, tmp)
+	}
+
+	var zeroVal model.DownloaderPolicyInput
 	return zeroVal, nil
 }
 
@@ -8106,6 +8790,126 @@ func (ec *executionContext) field_Query_discoverScenes_argsInput(
 	}
 
 	var zeroVal model.DiscoverScenesInput
+	return zeroVal, nil
+}
+
+func (ec *executionContext) field_Query_downloader_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := ec.field_Query_downloader_argsOffset(ctx, rawArgs)
+	if err != nil {
+		return nil, err
+	}
+	args["offset"] = arg0
+	arg1, err := ec.field_Query_downloader_argsLimit(ctx, rawArgs)
+	if err != nil {
+		return nil, err
+	}
+	args["limit"] = arg1
+	arg2, err := ec.field_Query_downloader_argsSearch(ctx, rawArgs)
+	if err != nil {
+		return nil, err
+	}
+	args["search"] = arg2
+	arg3, err := ec.field_Query_downloader_argsTaskID(ctx, rawArgs)
+	if err != nil {
+		return nil, err
+	}
+	args["taskId"] = arg3
+	arg4, err := ec.field_Query_downloader_argsAttentionOnly(ctx, rawArgs)
+	if err != nil {
+		return nil, err
+	}
+	args["attentionOnly"] = arg4
+	return args, nil
+}
+func (ec *executionContext) field_Query_downloader_argsOffset(
+	ctx context.Context,
+	rawArgs map[string]any,
+) (*int, error) {
+	if _, ok := rawArgs["offset"]; !ok {
+		var zeroVal *int
+		return zeroVal, nil
+	}
+
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("offset"))
+	if tmp, ok := rawArgs["offset"]; ok {
+		return ec.unmarshalOInt2ᚖint(ctx, tmp)
+	}
+
+	var zeroVal *int
+	return zeroVal, nil
+}
+
+func (ec *executionContext) field_Query_downloader_argsLimit(
+	ctx context.Context,
+	rawArgs map[string]any,
+) (*int, error) {
+	if _, ok := rawArgs["limit"]; !ok {
+		var zeroVal *int
+		return zeroVal, nil
+	}
+
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("limit"))
+	if tmp, ok := rawArgs["limit"]; ok {
+		return ec.unmarshalOInt2ᚖint(ctx, tmp)
+	}
+
+	var zeroVal *int
+	return zeroVal, nil
+}
+
+func (ec *executionContext) field_Query_downloader_argsSearch(
+	ctx context.Context,
+	rawArgs map[string]any,
+) (*string, error) {
+	if _, ok := rawArgs["search"]; !ok {
+		var zeroVal *string
+		return zeroVal, nil
+	}
+
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("search"))
+	if tmp, ok := rawArgs["search"]; ok {
+		return ec.unmarshalOString2ᚖstring(ctx, tmp)
+	}
+
+	var zeroVal *string
+	return zeroVal, nil
+}
+
+func (ec *executionContext) field_Query_downloader_argsTaskID(
+	ctx context.Context,
+	rawArgs map[string]any,
+) (*string, error) {
+	if _, ok := rawArgs["taskId"]; !ok {
+		var zeroVal *string
+		return zeroVal, nil
+	}
+
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("taskId"))
+	if tmp, ok := rawArgs["taskId"]; ok {
+		return ec.unmarshalOID2ᚖstring(ctx, tmp)
+	}
+
+	var zeroVal *string
+	return zeroVal, nil
+}
+
+func (ec *executionContext) field_Query_downloader_argsAttentionOnly(
+	ctx context.Context,
+	rawArgs map[string]any,
+) (*bool, error) {
+	if _, ok := rawArgs["attentionOnly"]; !ok {
+		var zeroVal *bool
+		return zeroVal, nil
+	}
+
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("attentionOnly"))
+	if tmp, ok := rawArgs["attentionOnly"]; ok {
+		return ec.unmarshalOBoolean2ᚖbool(ctx, tmp)
+	}
+
+	var zeroVal *bool
 	return zeroVal, nil
 }
 
@@ -10738,6 +11542,1089 @@ func (ec *executionContext) fieldContext_DownloadCandidate_peers(_ context.Conte
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _DownloaderOverview_checkedAt(ctx context.Context, field graphql.CollectedField, obj *model.DownloaderOverview) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_DownloaderOverview_checkedAt(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.CheckedAt, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_DownloaderOverview_checkedAt(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "DownloaderOverview",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _DownloaderOverview_connected(ctx context.Context, field graphql.CollectedField, obj *model.DownloaderOverview) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_DownloaderOverview_connected(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Connected, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(bool)
+	fc.Result = res
+	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_DownloaderOverview_connected(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "DownloaderOverview",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _DownloaderOverview_stale(ctx context.Context, field graphql.CollectedField, obj *model.DownloaderOverview) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_DownloaderOverview_stale(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Stale, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(bool)
+	fc.Result = res
+	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_DownloaderOverview_stale(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "DownloaderOverview",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _DownloaderOverview_storageAvailable(ctx context.Context, field graphql.CollectedField, obj *model.DownloaderOverview) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_DownloaderOverview_storageAvailable(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.StorageAvailable, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(bool)
+	fc.Result = res
+	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_DownloaderOverview_storageAvailable(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "DownloaderOverview",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _DownloaderOverview_freeSpace(ctx context.Context, field graphql.CollectedField, obj *model.DownloaderOverview) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_DownloaderOverview_freeSpace(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.FreeSpace, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*int64)
+	fc.Result = res
+	return ec.marshalOLong2ᚖint64(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_DownloaderOverview_freeSpace(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "DownloaderOverview",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Long does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _DownloaderOverview_downloadSpeed(ctx context.Context, field graphql.CollectedField, obj *model.DownloaderOverview) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_DownloaderOverview_downloadSpeed(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.DownloadSpeed, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int64)
+	fc.Result = res
+	return ec.marshalNLong2int64(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_DownloaderOverview_downloadSpeed(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "DownloaderOverview",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Long does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _DownloaderOverview_uploadSpeed(ctx context.Context, field graphql.CollectedField, obj *model.DownloaderOverview) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_DownloaderOverview_uploadSpeed(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.UploadSpeed, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int64)
+	fc.Result = res
+	return ec.marshalNLong2int64(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_DownloaderOverview_uploadSpeed(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "DownloaderOverview",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Long does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _DownloaderOverview_downloadLimit(ctx context.Context, field graphql.CollectedField, obj *model.DownloaderOverview) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_DownloaderOverview_downloadLimit(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.DownloadLimit, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int64)
+	fc.Result = res
+	return ec.marshalNLong2int64(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_DownloaderOverview_downloadLimit(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "DownloaderOverview",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Long does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _DownloaderOverview_uploadLimit(ctx context.Context, field graphql.CollectedField, obj *model.DownloaderOverview) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_DownloaderOverview_uploadLimit(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.UploadLimit, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int64)
+	fc.Result = res
+	return ec.marshalNLong2int64(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_DownloaderOverview_uploadLimit(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "DownloaderOverview",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Long does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _DownloaderOverview_connectionStatus(ctx context.Context, field graphql.CollectedField, obj *model.DownloaderOverview) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_DownloaderOverview_connectionStatus(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.ConnectionStatus, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_DownloaderOverview_connectionStatus(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "DownloaderOverview",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _DownloaderOverview_dhtNodes(ctx context.Context, field graphql.CollectedField, obj *model.DownloaderOverview) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_DownloaderOverview_dhtNodes(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.DhtNodes, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int64)
+	fc.Result = res
+	return ec.marshalNLong2int64(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_DownloaderOverview_dhtNodes(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "DownloaderOverview",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Long does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _DownloaderOverview_completedBytes(ctx context.Context, field graphql.CollectedField, obj *model.DownloaderOverview) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_DownloaderOverview_completedBytes(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.CompletedBytes, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int64)
+	fc.Result = res
+	return ec.marshalNLong2int64(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_DownloaderOverview_completedBytes(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "DownloaderOverview",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Long does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _DownloaderOverview_remainingBytes(ctx context.Context, field graphql.CollectedField, obj *model.DownloaderOverview) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_DownloaderOverview_remainingBytes(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.RemainingBytes, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int64)
+	fc.Result = res
+	return ec.marshalNLong2int64(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_DownloaderOverview_remainingBytes(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "DownloaderOverview",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Long does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _DownloaderOverview_total(ctx context.Context, field graphql.CollectedField, obj *model.DownloaderOverview) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_DownloaderOverview_total(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Total, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int)
+	fc.Result = res
+	return ec.marshalNInt2int(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_DownloaderOverview_total(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "DownloaderOverview",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _DownloaderOverview_attentionCount(ctx context.Context, field graphql.CollectedField, obj *model.DownloaderOverview) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_DownloaderOverview_attentionCount(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.AttentionCount, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int)
+	fc.Result = res
+	return ec.marshalNInt2int(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_DownloaderOverview_attentionCount(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "DownloaderOverview",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _DownloaderOverview_torrents(ctx context.Context, field graphql.CollectedField, obj *model.DownloaderOverview) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_DownloaderOverview_torrents(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Torrents, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]*model.ManagedTorrent)
+	fc.Result = res
+	return ec.marshalNManagedTorrent2ᚕᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐManagedTorrentᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_DownloaderOverview_torrents(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "DownloaderOverview",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "hash":
+				return ec.fieldContext_ManagedTorrent_hash(ctx, field)
+			case "name":
+				return ec.fieldContext_ManagedTorrent_name(ctx, field)
+			case "state":
+				return ec.fieldContext_ManagedTorrent_state(ctx, field)
+			case "present":
+				return ec.fieldContext_ManagedTorrent_present(ctx, field)
+			case "taskIds":
+				return ec.fieldContext_ManagedTorrent_taskIds(ctx, field)
+			case "taskCodes":
+				return ec.fieldContext_ManagedTorrent_taskCodes(ctx, field)
+			case "allCompleted":
+				return ec.fieldContext_ManagedTorrent_allCompleted(ctx, field)
+			case "canDeleteFiles":
+				return ec.fieldContext_ManagedTorrent_canDeleteFiles(ctx, field)
+			case "progress":
+				return ec.fieldContext_ManagedTorrent_progress(ctx, field)
+			case "downloadSpeed":
+				return ec.fieldContext_ManagedTorrent_downloadSpeed(ctx, field)
+			case "uploadSpeed":
+				return ec.fieldContext_ManagedTorrent_uploadSpeed(ctx, field)
+			case "size":
+				return ec.fieldContext_ManagedTorrent_size(ctx, field)
+			case "completedBytes":
+				return ec.fieldContext_ManagedTorrent_completedBytes(ctx, field)
+			case "downloaded":
+				return ec.fieldContext_ManagedTorrent_downloaded(ctx, field)
+			case "uploaded":
+				return ec.fieldContext_ManagedTorrent_uploaded(ctx, field)
+			case "ratio":
+				return ec.fieldContext_ManagedTorrent_ratio(ctx, field)
+			case "seedingSeconds":
+				return ec.fieldContext_ManagedTorrent_seedingSeconds(ctx, field)
+			case "eta":
+				return ec.fieldContext_ManagedTorrent_eta(ctx, field)
+			case "seeds":
+				return ec.fieldContext_ManagedTorrent_seeds(ctx, field)
+			case "peers":
+				return ec.fieldContext_ManagedTorrent_peers(ctx, field)
+			case "availability":
+				return ec.fieldContext_ManagedTorrent_availability(ctx, field)
+			case "savePath":
+				return ec.fieldContext_ManagedTorrent_savePath(ctx, field)
+			case "category":
+				return ec.fieldContext_ManagedTorrent_category(ctx, field)
+			case "tags":
+				return ec.fieldContext_ManagedTorrent_tags(ctx, field)
+			case "lastSeenAt":
+				return ec.fieldContext_ManagedTorrent_lastSeenAt(ctx, field)
+			case "removedAt":
+				return ec.fieldContext_ManagedTorrent_removedAt(ctx, field)
+			case "removalReason":
+				return ec.fieldContext_ManagedTorrent_removalReason(ctx, field)
+			case "cleanupError":
+				return ec.fieldContext_ManagedTorrent_cleanupError(ctx, field)
+			case "needsAttention":
+				return ec.fieldContext_ManagedTorrent_needsAttention(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type ManagedTorrent", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _DownloaderOverview_policy(ctx context.Context, field graphql.CollectedField, obj *model.DownloaderOverview) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_DownloaderOverview_policy(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Policy, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*model.DownloaderPolicy)
+	fc.Result = res
+	return ec.marshalNDownloaderPolicy2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐDownloaderPolicy(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_DownloaderOverview_policy(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "DownloaderOverview",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "afterIngest":
+				return ec.fieldContext_DownloaderPolicy_afterIngest(ctx, field)
+			case "enabled":
+				return ec.fieldContext_DownloaderPolicy_enabled(ctx, field)
+			case "ratio":
+				return ec.fieldContext_DownloaderPolicy_ratio(ctx, field)
+			case "seedHours":
+				return ec.fieldContext_DownloaderPolicy_seedHours(ctx, field)
+			case "matchAll":
+				return ec.fieldContext_DownloaderPolicy_matchAll(ctx, field)
+			case "deleteFiles":
+				return ec.fieldContext_DownloaderPolicy_deleteFiles(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type DownloaderPolicy", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _DownloaderPolicy_afterIngest(ctx context.Context, field graphql.CollectedField, obj *model.DownloaderPolicy) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_DownloaderPolicy_afterIngest(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.AfterIngest, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(bool)
+	fc.Result = res
+	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_DownloaderPolicy_afterIngest(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "DownloaderPolicy",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _DownloaderPolicy_enabled(ctx context.Context, field graphql.CollectedField, obj *model.DownloaderPolicy) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_DownloaderPolicy_enabled(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Enabled, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(bool)
+	fc.Result = res
+	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_DownloaderPolicy_enabled(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "DownloaderPolicy",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _DownloaderPolicy_ratio(ctx context.Context, field graphql.CollectedField, obj *model.DownloaderPolicy) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_DownloaderPolicy_ratio(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Ratio, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(float64)
+	fc.Result = res
+	return ec.marshalNFloat2float64(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_DownloaderPolicy_ratio(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "DownloaderPolicy",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Float does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _DownloaderPolicy_seedHours(ctx context.Context, field graphql.CollectedField, obj *model.DownloaderPolicy) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_DownloaderPolicy_seedHours(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.SeedHours, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(float64)
+	fc.Result = res
+	return ec.marshalNFloat2float64(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_DownloaderPolicy_seedHours(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "DownloaderPolicy",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Float does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _DownloaderPolicy_matchAll(ctx context.Context, field graphql.CollectedField, obj *model.DownloaderPolicy) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_DownloaderPolicy_matchAll(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.MatchAll, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(bool)
+	fc.Result = res
+	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_DownloaderPolicy_matchAll(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "DownloaderPolicy",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _DownloaderPolicy_deleteFiles(ctx context.Context, field graphql.CollectedField, obj *model.DownloaderPolicy) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_DownloaderPolicy_deleteFiles(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.DeleteFiles, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(bool)
+	fc.Result = res
+	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_DownloaderPolicy_deleteFiles(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "DownloaderPolicy",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
 		},
 	}
 	return fc, nil
@@ -14947,6 +16834,1282 @@ func (ec *executionContext) fieldContext_LogEvent_entry(_ context.Context, field
 	return fc, nil
 }
 
+func (ec *executionContext) _ManagedTorrent_hash(ctx context.Context, field graphql.CollectedField, obj *model.ManagedTorrent) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_ManagedTorrent_hash(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Hash, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_ManagedTorrent_hash(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ManagedTorrent",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ManagedTorrent_name(ctx context.Context, field graphql.CollectedField, obj *model.ManagedTorrent) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_ManagedTorrent_name(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Name, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_ManagedTorrent_name(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ManagedTorrent",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ManagedTorrent_state(ctx context.Context, field graphql.CollectedField, obj *model.ManagedTorrent) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_ManagedTorrent_state(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.State, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_ManagedTorrent_state(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ManagedTorrent",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ManagedTorrent_present(ctx context.Context, field graphql.CollectedField, obj *model.ManagedTorrent) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_ManagedTorrent_present(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Present, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(bool)
+	fc.Result = res
+	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_ManagedTorrent_present(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ManagedTorrent",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ManagedTorrent_taskIds(ctx context.Context, field graphql.CollectedField, obj *model.ManagedTorrent) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_ManagedTorrent_taskIds(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.TaskIds, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]string)
+	fc.Result = res
+	return ec.marshalNID2ᚕstringᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_ManagedTorrent_taskIds(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ManagedTorrent",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type ID does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ManagedTorrent_taskCodes(ctx context.Context, field graphql.CollectedField, obj *model.ManagedTorrent) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_ManagedTorrent_taskCodes(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.TaskCodes, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]string)
+	fc.Result = res
+	return ec.marshalNString2ᚕstringᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_ManagedTorrent_taskCodes(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ManagedTorrent",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ManagedTorrent_allCompleted(ctx context.Context, field graphql.CollectedField, obj *model.ManagedTorrent) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_ManagedTorrent_allCompleted(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.AllCompleted, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(bool)
+	fc.Result = res
+	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_ManagedTorrent_allCompleted(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ManagedTorrent",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ManagedTorrent_canDeleteFiles(ctx context.Context, field graphql.CollectedField, obj *model.ManagedTorrent) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_ManagedTorrent_canDeleteFiles(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.CanDeleteFiles, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(bool)
+	fc.Result = res
+	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_ManagedTorrent_canDeleteFiles(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ManagedTorrent",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ManagedTorrent_progress(ctx context.Context, field graphql.CollectedField, obj *model.ManagedTorrent) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_ManagedTorrent_progress(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Progress, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(float64)
+	fc.Result = res
+	return ec.marshalNFloat2float64(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_ManagedTorrent_progress(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ManagedTorrent",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Float does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ManagedTorrent_downloadSpeed(ctx context.Context, field graphql.CollectedField, obj *model.ManagedTorrent) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_ManagedTorrent_downloadSpeed(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.DownloadSpeed, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int64)
+	fc.Result = res
+	return ec.marshalNLong2int64(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_ManagedTorrent_downloadSpeed(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ManagedTorrent",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Long does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ManagedTorrent_uploadSpeed(ctx context.Context, field graphql.CollectedField, obj *model.ManagedTorrent) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_ManagedTorrent_uploadSpeed(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.UploadSpeed, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int64)
+	fc.Result = res
+	return ec.marshalNLong2int64(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_ManagedTorrent_uploadSpeed(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ManagedTorrent",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Long does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ManagedTorrent_size(ctx context.Context, field graphql.CollectedField, obj *model.ManagedTorrent) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_ManagedTorrent_size(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Size, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int64)
+	fc.Result = res
+	return ec.marshalNLong2int64(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_ManagedTorrent_size(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ManagedTorrent",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Long does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ManagedTorrent_completedBytes(ctx context.Context, field graphql.CollectedField, obj *model.ManagedTorrent) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_ManagedTorrent_completedBytes(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.CompletedBytes, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int64)
+	fc.Result = res
+	return ec.marshalNLong2int64(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_ManagedTorrent_completedBytes(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ManagedTorrent",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Long does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ManagedTorrent_downloaded(ctx context.Context, field graphql.CollectedField, obj *model.ManagedTorrent) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_ManagedTorrent_downloaded(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Downloaded, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int64)
+	fc.Result = res
+	return ec.marshalNLong2int64(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_ManagedTorrent_downloaded(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ManagedTorrent",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Long does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ManagedTorrent_uploaded(ctx context.Context, field graphql.CollectedField, obj *model.ManagedTorrent) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_ManagedTorrent_uploaded(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Uploaded, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int64)
+	fc.Result = res
+	return ec.marshalNLong2int64(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_ManagedTorrent_uploaded(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ManagedTorrent",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Long does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ManagedTorrent_ratio(ctx context.Context, field graphql.CollectedField, obj *model.ManagedTorrent) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_ManagedTorrent_ratio(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Ratio, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(float64)
+	fc.Result = res
+	return ec.marshalNFloat2float64(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_ManagedTorrent_ratio(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ManagedTorrent",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Float does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ManagedTorrent_seedingSeconds(ctx context.Context, field graphql.CollectedField, obj *model.ManagedTorrent) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_ManagedTorrent_seedingSeconds(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.SeedingSeconds, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int64)
+	fc.Result = res
+	return ec.marshalNLong2int64(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_ManagedTorrent_seedingSeconds(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ManagedTorrent",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Long does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ManagedTorrent_eta(ctx context.Context, field graphql.CollectedField, obj *model.ManagedTorrent) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_ManagedTorrent_eta(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Eta, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int64)
+	fc.Result = res
+	return ec.marshalNLong2int64(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_ManagedTorrent_eta(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ManagedTorrent",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Long does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ManagedTorrent_seeds(ctx context.Context, field graphql.CollectedField, obj *model.ManagedTorrent) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_ManagedTorrent_seeds(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Seeds, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int64)
+	fc.Result = res
+	return ec.marshalNLong2int64(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_ManagedTorrent_seeds(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ManagedTorrent",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Long does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ManagedTorrent_peers(ctx context.Context, field graphql.CollectedField, obj *model.ManagedTorrent) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_ManagedTorrent_peers(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Peers, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int64)
+	fc.Result = res
+	return ec.marshalNLong2int64(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_ManagedTorrent_peers(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ManagedTorrent",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Long does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ManagedTorrent_availability(ctx context.Context, field graphql.CollectedField, obj *model.ManagedTorrent) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_ManagedTorrent_availability(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Availability, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(float64)
+	fc.Result = res
+	return ec.marshalNFloat2float64(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_ManagedTorrent_availability(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ManagedTorrent",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Float does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ManagedTorrent_savePath(ctx context.Context, field graphql.CollectedField, obj *model.ManagedTorrent) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_ManagedTorrent_savePath(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.SavePath, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_ManagedTorrent_savePath(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ManagedTorrent",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ManagedTorrent_category(ctx context.Context, field graphql.CollectedField, obj *model.ManagedTorrent) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_ManagedTorrent_category(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Category, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_ManagedTorrent_category(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ManagedTorrent",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ManagedTorrent_tags(ctx context.Context, field graphql.CollectedField, obj *model.ManagedTorrent) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_ManagedTorrent_tags(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Tags, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_ManagedTorrent_tags(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ManagedTorrent",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ManagedTorrent_lastSeenAt(ctx context.Context, field graphql.CollectedField, obj *model.ManagedTorrent) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_ManagedTorrent_lastSeenAt(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.LastSeenAt, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_ManagedTorrent_lastSeenAt(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ManagedTorrent",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ManagedTorrent_removedAt(ctx context.Context, field graphql.CollectedField, obj *model.ManagedTorrent) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_ManagedTorrent_removedAt(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.RemovedAt, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_ManagedTorrent_removedAt(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ManagedTorrent",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ManagedTorrent_removalReason(ctx context.Context, field graphql.CollectedField, obj *model.ManagedTorrent) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_ManagedTorrent_removalReason(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.RemovalReason, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_ManagedTorrent_removalReason(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ManagedTorrent",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ManagedTorrent_cleanupError(ctx context.Context, field graphql.CollectedField, obj *model.ManagedTorrent) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_ManagedTorrent_cleanupError(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.CleanupError, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(bool)
+	fc.Result = res
+	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_ManagedTorrent_cleanupError(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ManagedTorrent",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ManagedTorrent_needsAttention(ctx context.Context, field graphql.CollectedField, obj *model.ManagedTorrent) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_ManagedTorrent_needsAttention(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.NeedsAttention, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(bool)
+	fc.Result = res
+	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_ManagedTorrent_needsAttention(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ManagedTorrent",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _MatchedStashBox_name(ctx context.Context, field graphql.CollectedField, obj *model.MatchedStashBox) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_MatchedStashBox_name(ctx, field)
 	if err != nil {
@@ -16729,6 +19892,229 @@ func (ec *executionContext) fieldContext_Mutation_deleteTasks(ctx context.Contex
 	}()
 	ctx = graphql.WithFieldContext(ctx, fc)
 	if fc.Args, err = ec.field_Mutation_deleteTasks_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_refreshDownloader(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Mutation_refreshDownloader(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().RefreshDownloader(rctx)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(bool)
+	fc.Result = res
+	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Mutation_refreshDownloader(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_updateDownloaderPolicy(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Mutation_updateDownloaderPolicy(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().UpdateDownloaderPolicy(rctx, fc.Args["input"].(model.DownloaderPolicyInput))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*model.DownloaderPolicy)
+	fc.Result = res
+	return ec.marshalNDownloaderPolicy2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐDownloaderPolicy(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Mutation_updateDownloaderPolicy(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "afterIngest":
+				return ec.fieldContext_DownloaderPolicy_afterIngest(ctx, field)
+			case "enabled":
+				return ec.fieldContext_DownloaderPolicy_enabled(ctx, field)
+			case "ratio":
+				return ec.fieldContext_DownloaderPolicy_ratio(ctx, field)
+			case "seedHours":
+				return ec.fieldContext_DownloaderPolicy_seedHours(ctx, field)
+			case "matchAll":
+				return ec.fieldContext_DownloaderPolicy_matchAll(ctx, field)
+			case "deleteFiles":
+				return ec.fieldContext_DownloaderPolicy_deleteFiles(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type DownloaderPolicy", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_updateDownloaderPolicy_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_controlTorrent(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Mutation_controlTorrent(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().ControlTorrent(rctx, fc.Args["hash"].(string), fc.Args["action"].(model.TorrentAction))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(bool)
+	fc.Result = res
+	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Mutation_controlTorrent(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_controlTorrent_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_setDownloaderSpeedLimit(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Mutation_setDownloaderSpeedLimit(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().SetDownloaderSpeedLimit(rctx, fc.Args["upload"].(bool), fc.Args["kibPerSecond"].(int))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(bool)
+	fc.Result = res
+	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Mutation_setDownloaderSpeedLimit(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_setDownloaderSpeedLimit_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return fc, err
 	}
@@ -21292,6 +24678,97 @@ func (ec *executionContext) fieldContext_Query_version(_ context.Context, field 
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("field of type String does not have child fields")
 		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Query_downloader(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Query_downloader(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Query().Downloader(rctx, fc.Args["offset"].(*int), fc.Args["limit"].(*int), fc.Args["search"].(*string), fc.Args["taskId"].(*string), fc.Args["attentionOnly"].(*bool))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*model.DownloaderOverview)
+	fc.Result = res
+	return ec.marshalNDownloaderOverview2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐDownloaderOverview(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Query_downloader(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "checkedAt":
+				return ec.fieldContext_DownloaderOverview_checkedAt(ctx, field)
+			case "connected":
+				return ec.fieldContext_DownloaderOverview_connected(ctx, field)
+			case "stale":
+				return ec.fieldContext_DownloaderOverview_stale(ctx, field)
+			case "storageAvailable":
+				return ec.fieldContext_DownloaderOverview_storageAvailable(ctx, field)
+			case "freeSpace":
+				return ec.fieldContext_DownloaderOverview_freeSpace(ctx, field)
+			case "downloadSpeed":
+				return ec.fieldContext_DownloaderOverview_downloadSpeed(ctx, field)
+			case "uploadSpeed":
+				return ec.fieldContext_DownloaderOverview_uploadSpeed(ctx, field)
+			case "downloadLimit":
+				return ec.fieldContext_DownloaderOverview_downloadLimit(ctx, field)
+			case "uploadLimit":
+				return ec.fieldContext_DownloaderOverview_uploadLimit(ctx, field)
+			case "connectionStatus":
+				return ec.fieldContext_DownloaderOverview_connectionStatus(ctx, field)
+			case "dhtNodes":
+				return ec.fieldContext_DownloaderOverview_dhtNodes(ctx, field)
+			case "completedBytes":
+				return ec.fieldContext_DownloaderOverview_completedBytes(ctx, field)
+			case "remainingBytes":
+				return ec.fieldContext_DownloaderOverview_remainingBytes(ctx, field)
+			case "total":
+				return ec.fieldContext_DownloaderOverview_total(ctx, field)
+			case "attentionCount":
+				return ec.fieldContext_DownloaderOverview_attentionCount(ctx, field)
+			case "torrents":
+				return ec.fieldContext_DownloaderOverview_torrents(ctx, field)
+			case "policy":
+				return ec.fieldContext_DownloaderOverview_policy(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type DownloaderOverview", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Query_downloader_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
 	}
 	return fc, nil
 }
@@ -40746,6 +44223,72 @@ func (ec *executionContext) unmarshalInputDownloadMediaInput(ctx context.Context
 	return it, nil
 }
 
+func (ec *executionContext) unmarshalInputDownloaderPolicyInput(ctx context.Context, obj any) (model.DownloaderPolicyInput, error) {
+	var it model.DownloaderPolicyInput
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	if _, present := asMap["afterIngest"]; !present {
+		asMap["afterIngest"] = false
+	}
+
+	fieldsInOrder := [...]string{"afterIngest", "enabled", "ratio", "seedHours", "matchAll", "deleteFiles"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "afterIngest":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("afterIngest"))
+			data, err := ec.unmarshalNBoolean2bool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.AfterIngest = data
+		case "enabled":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("enabled"))
+			data, err := ec.unmarshalNBoolean2bool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Enabled = data
+		case "ratio":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("ratio"))
+			data, err := ec.unmarshalNFloat2float64(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Ratio = data
+		case "seedHours":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("seedHours"))
+			data, err := ec.unmarshalNFloat2float64(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.SeedHours = data
+		case "matchAll":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("matchAll"))
+			data, err := ec.unmarshalNBoolean2bool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.MatchAll = data
+		case "deleteFiles":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("deleteFiles"))
+			data, err := ec.unmarshalNBoolean2bool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.DeleteFiles = data
+		}
+	}
+
+	return it, nil
+}
+
 func (ec *executionContext) unmarshalInputDownloadsIngestSettingsInput(ctx context.Context, obj any) (model.DownloadsIngestSettingsInput, error) {
 	var it model.DownloadsIngestSettingsInput
 	asMap := map[string]any{}
@@ -42733,6 +46276,186 @@ func (ec *executionContext) _DownloadCandidate(ctx context.Context, sel ast.Sele
 	return out
 }
 
+var downloaderOverviewImplementors = []string{"DownloaderOverview"}
+
+func (ec *executionContext) _DownloaderOverview(ctx context.Context, sel ast.SelectionSet, obj *model.DownloaderOverview) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, downloaderOverviewImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("DownloaderOverview")
+		case "checkedAt":
+			out.Values[i] = ec._DownloaderOverview_checkedAt(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "connected":
+			out.Values[i] = ec._DownloaderOverview_connected(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "stale":
+			out.Values[i] = ec._DownloaderOverview_stale(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "storageAvailable":
+			out.Values[i] = ec._DownloaderOverview_storageAvailable(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "freeSpace":
+			out.Values[i] = ec._DownloaderOverview_freeSpace(ctx, field, obj)
+		case "downloadSpeed":
+			out.Values[i] = ec._DownloaderOverview_downloadSpeed(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "uploadSpeed":
+			out.Values[i] = ec._DownloaderOverview_uploadSpeed(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "downloadLimit":
+			out.Values[i] = ec._DownloaderOverview_downloadLimit(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "uploadLimit":
+			out.Values[i] = ec._DownloaderOverview_uploadLimit(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "connectionStatus":
+			out.Values[i] = ec._DownloaderOverview_connectionStatus(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "dhtNodes":
+			out.Values[i] = ec._DownloaderOverview_dhtNodes(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "completedBytes":
+			out.Values[i] = ec._DownloaderOverview_completedBytes(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "remainingBytes":
+			out.Values[i] = ec._DownloaderOverview_remainingBytes(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "total":
+			out.Values[i] = ec._DownloaderOverview_total(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "attentionCount":
+			out.Values[i] = ec._DownloaderOverview_attentionCount(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "torrents":
+			out.Values[i] = ec._DownloaderOverview_torrents(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "policy":
+			out.Values[i] = ec._DownloaderOverview_policy(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var downloaderPolicyImplementors = []string{"DownloaderPolicy"}
+
+func (ec *executionContext) _DownloaderPolicy(ctx context.Context, sel ast.SelectionSet, obj *model.DownloaderPolicy) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, downloaderPolicyImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("DownloaderPolicy")
+		case "afterIngest":
+			out.Values[i] = ec._DownloaderPolicy_afterIngest(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "enabled":
+			out.Values[i] = ec._DownloaderPolicy_enabled(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "ratio":
+			out.Values[i] = ec._DownloaderPolicy_ratio(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "seedHours":
+			out.Values[i] = ec._DownloaderPolicy_seedHours(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "matchAll":
+			out.Values[i] = ec._DownloaderPolicy_matchAll(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "deleteFiles":
+			out.Values[i] = ec._DownloaderPolicy_deleteFiles(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
 var downloadsIngestSettingsImplementors = []string{"DownloadsIngestSettings"}
 
 func (ec *executionContext) _DownloadsIngestSettings(ctx context.Context, sel ast.SelectionSet, obj *model.DownloadsIngestSettings) graphql.Marshaler {
@@ -43789,6 +47512,185 @@ func (ec *executionContext) _LogEvent(ctx context.Context, sel ast.SelectionSet,
 	return out
 }
 
+var managedTorrentImplementors = []string{"ManagedTorrent"}
+
+func (ec *executionContext) _ManagedTorrent(ctx context.Context, sel ast.SelectionSet, obj *model.ManagedTorrent) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, managedTorrentImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("ManagedTorrent")
+		case "hash":
+			out.Values[i] = ec._ManagedTorrent_hash(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "name":
+			out.Values[i] = ec._ManagedTorrent_name(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "state":
+			out.Values[i] = ec._ManagedTorrent_state(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "present":
+			out.Values[i] = ec._ManagedTorrent_present(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "taskIds":
+			out.Values[i] = ec._ManagedTorrent_taskIds(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "taskCodes":
+			out.Values[i] = ec._ManagedTorrent_taskCodes(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "allCompleted":
+			out.Values[i] = ec._ManagedTorrent_allCompleted(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "canDeleteFiles":
+			out.Values[i] = ec._ManagedTorrent_canDeleteFiles(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "progress":
+			out.Values[i] = ec._ManagedTorrent_progress(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "downloadSpeed":
+			out.Values[i] = ec._ManagedTorrent_downloadSpeed(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "uploadSpeed":
+			out.Values[i] = ec._ManagedTorrent_uploadSpeed(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "size":
+			out.Values[i] = ec._ManagedTorrent_size(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "completedBytes":
+			out.Values[i] = ec._ManagedTorrent_completedBytes(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "downloaded":
+			out.Values[i] = ec._ManagedTorrent_downloaded(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "uploaded":
+			out.Values[i] = ec._ManagedTorrent_uploaded(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "ratio":
+			out.Values[i] = ec._ManagedTorrent_ratio(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "seedingSeconds":
+			out.Values[i] = ec._ManagedTorrent_seedingSeconds(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "eta":
+			out.Values[i] = ec._ManagedTorrent_eta(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "seeds":
+			out.Values[i] = ec._ManagedTorrent_seeds(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "peers":
+			out.Values[i] = ec._ManagedTorrent_peers(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "availability":
+			out.Values[i] = ec._ManagedTorrent_availability(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "savePath":
+			out.Values[i] = ec._ManagedTorrent_savePath(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "category":
+			out.Values[i] = ec._ManagedTorrent_category(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "tags":
+			out.Values[i] = ec._ManagedTorrent_tags(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "lastSeenAt":
+			out.Values[i] = ec._ManagedTorrent_lastSeenAt(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "removedAt":
+			out.Values[i] = ec._ManagedTorrent_removedAt(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "removalReason":
+			out.Values[i] = ec._ManagedTorrent_removalReason(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "cleanupError":
+			out.Values[i] = ec._ManagedTorrent_cleanupError(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "needsAttention":
+			out.Values[i] = ec._ManagedTorrent_needsAttention(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
 var matchedStashBoxImplementors = []string{"MatchedStashBox"}
 
 func (ec *executionContext) _MatchedStashBox(ctx context.Context, sel ast.SelectionSet, obj *model.MatchedStashBox) graphql.Marshaler {
@@ -43956,6 +47858,34 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 		case "deleteTasks":
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
 				return ec._Mutation_deleteTasks(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "refreshDownloader":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_refreshDownloader(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "updateDownloaderPolicy":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_updateDownloaderPolicy(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "controlTorrent":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_controlTorrent(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "setDownloaderSpeedLimit":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_setDownloaderSpeedLimit(ctx, field)
 			})
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
@@ -44969,6 +48899,28 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 					}
 				}()
 				res = ec._Query_version(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			rrm := func(ctx context.Context) graphql.Marshaler {
+				return ec.OperationContext.RootResolverMiddleware(ctx,
+					func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
+		case "downloader":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_downloader(ctx, field)
 				if res == graphql.Null {
 					atomic.AddUint32(&fs.Invalids, 1)
 				}
@@ -49062,6 +53014,39 @@ func (ec *executionContext) unmarshalNDownloadMediaInput2githubᚗcomᚋleotheva
 	return res, graphql.ErrorOnPath(ctx, err)
 }
 
+func (ec *executionContext) marshalNDownloaderOverview2githubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐDownloaderOverview(ctx context.Context, sel ast.SelectionSet, v model.DownloaderOverview) graphql.Marshaler {
+	return ec._DownloaderOverview(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNDownloaderOverview2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐDownloaderOverview(ctx context.Context, sel ast.SelectionSet, v *model.DownloaderOverview) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._DownloaderOverview(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNDownloaderPolicy2githubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐDownloaderPolicy(ctx context.Context, sel ast.SelectionSet, v model.DownloaderPolicy) graphql.Marshaler {
+	return ec._DownloaderPolicy(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNDownloaderPolicy2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐDownloaderPolicy(ctx context.Context, sel ast.SelectionSet, v *model.DownloaderPolicy) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._DownloaderPolicy(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalNDownloaderPolicyInput2githubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐDownloaderPolicyInput(ctx context.Context, v any) (model.DownloaderPolicyInput, error) {
+	res, err := ec.unmarshalInputDownloaderPolicyInput(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
 func (ec *executionContext) marshalNDownloadsIngestSettings2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐDownloadsIngestSettings(ctx context.Context, sel ast.SelectionSet, v *model.DownloadsIngestSettings) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
@@ -49712,6 +53697,60 @@ func (ec *executionContext) marshalNLong2int64(ctx context.Context, sel ast.Sele
 		}
 	}
 	return res
+}
+
+func (ec *executionContext) marshalNManagedTorrent2ᚕᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐManagedTorrentᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.ManagedTorrent) graphql.Marshaler {
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalNManagedTorrent2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐManagedTorrent(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
+}
+
+func (ec *executionContext) marshalNManagedTorrent2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐManagedTorrent(ctx context.Context, sel ast.SelectionSet, v *model.ManagedTorrent) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._ManagedTorrent(ctx, sel, v)
 }
 
 func (ec *executionContext) marshalNPerformerBatchPayload2githubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐPerformerBatchPayload(ctx context.Context, sel ast.SelectionSet, v model.PerformerBatchPayload) graphql.Marshaler {
@@ -51640,6 +55679,16 @@ func (ec *executionContext) marshalNTitleMatchRule2ᚖgithubᚗcomᚋleothevan24
 		return graphql.Null
 	}
 	return ec._TitleMatchRule(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalNTorrentAction2githubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐTorrentAction(ctx context.Context, v any) (model.TorrentAction, error) {
+	var res model.TorrentAction
+	err := res.UnmarshalGQL(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNTorrentAction2githubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐTorrentAction(ctx context.Context, sel ast.SelectionSet, v model.TorrentAction) graphql.Marshaler {
+	return v
 }
 
 func (ec *executionContext) unmarshalNTorrentFileMatchEffect2githubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐTorrentFileMatchEffect(ctx context.Context, v any) (model.TorrentFileMatchEffect, error) {

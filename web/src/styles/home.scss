@@ -166,3 +166,15 @@
   .home-check-history > summary { padding-inline: 16px; }
   .home-check-detail .home-check-schedule { padding-inline: 0; }
 }
+
+.home-downloader { border-block-start: 1px solid var(--line); }
+.home-downloader .home-panel-heading { padding: 12px 22px; }
+.home-downloader .home-panel-heading h3 { margin: 0; font-size: 13px; font-weight: 600; }
+.home-downloader-metrics { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px 16px; margin: 0; padding: 0 22px 12px; }
+.home-downloader-metrics dt { display: flex; align-items: center; gap: 5px; color: var(--muted); font-size: 11px; line-height: 1.5; }
+.home-downloader-metrics dd { margin: 2px 0 0; font-size: 13px; font-weight: 600; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+.home-downloader-info { display: inline-flex; align-items: center; min-height: 20px; min-width: 20px; padding: 0; flex-shrink: 0; }
+.home-downloader-status { display: flex; flex-wrap: wrap; gap: 6px 12px; margin: 0 22px 12px; font-size: 11px; line-height: 1.6; }
+.home-downloader-footer { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px; padding: 10px 22px; }
+.home-downloader-footer .home-downloader-status { margin: 0; }
+.home-downloader-footer .home-more { margin: 0; padding: 0; border: 0; }
