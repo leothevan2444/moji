@@ -51,6 +51,7 @@ export const resources = {
         config: { user: "用户", savePath: "保存路径", action: "交付动作", qbRoot: "qB 下载根", mojiDownloadRoot: "Moji 下载根", mojiLibraryRoot: "Moji 媒体库根", stashRoot: "Stash 媒体库根" },
         ingest: { title: "入库", missing: "缺少：{{fields}}", incomplete: "请补齐四个根目录，并选择复制或移动。", none: "未选择", transfer: "文件交付", copy: "复制", move: "移动", guideTransfer: "Moji 筛选、去重下载文件，单文件保留原格式，多分段合并为 MKV，再通知 Stash 扫描。", cautionTransfer: "请配置 qB 下载、Moji 下载、Moji 媒体库和 Stash 媒体库四个根目录，确保挂载对应；已有影片不会被覆盖。", blockerQb: "qB 下载根路径未映射", blockerStash: "Stash 媒体库根路径未映射", blockerScan: "任务完成后无法闭环换算扫描路径" }
       },
+      taskList: { hiddenSelection: "{{count}} 项已选在其他页或筛选结果之外", pageSize: "每页条数", page: "第 {{page}} / {{pages}} 页 · 共 {{count}} 项", updates: "列表有更新，刷新", selectPage: "选择本页 {{count}} 项" },
       tasks: {
         title: "工作台", metrics: "进行中 {{active}} · 等待资源 {{waiting}} · 已完成 {{completed}} · 需处理 {{failed}}",
         searchPlaceholder: "搜索任务、番号、tracker、状态",
@@ -132,6 +133,7 @@ export const resources = {
         config: { user: "User", savePath: "Save path", action: "Delivery action", qbRoot: "qB download root", mojiDownloadRoot: "Moji download root", mojiLibraryRoot: "Moji library root", stashRoot: "Stash library root" },
         ingest: { title: "Ingest", missing: "Missing: {{fields}}", incomplete: "Configure all four roots and choose Copy or Move.", none: "Not selected", transfer: "File delivery", copy: "Copy", move: "Move", guideTransfer: "Moji filters and deduplicates downloaded files, preserves single-file formats, and merges parts into MKV before asking Stash to scan.", cautionTransfer: "Configure qB download, Moji download, Moji library, and Stash library roots with matching mounts. Existing movies are not overwritten.", blockerQb: "qB download root is not mapped", blockerStash: "Stash library root is not mapped", blockerScan: "Completed tasks cannot resolve a scan path" }
       },
+      taskList: { hiddenSelection: "{{count}} selected on other pages or outside the current filter", pageSize: "Items per page", page: "Page {{page}} / {{pages}} · {{count}} items", updates: "List updates available · Refresh", selectPage: "Select this page ({{count}})" },
       tasks: {
         title: "Workspace", metrics: "In progress {{active}} · Waiting for resources {{waiting}} · Completed {{completed}} · Needs attention {{failed}}",
         searchPlaceholder: "Search tasks, codes, trackers, or statuses",

@@ -64,7 +64,7 @@ func timePointer(value string) (*time.Time, error) {
 func (s *RelationalTaskStore) Find(ctx context.Context, id string) (*Task, error) {
 	task, err := s.read(ctx, s.core.Reader, " WHERE id=?", id)
 	if errors.Is(err, sql.ErrNoRows) {
-		return nil, fmt.Errorf("taskruntime: task %q not found", id)
+		return nil, fmt.Errorf("%w (%q)", ErrTaskNotFound, id)
 	}
 	return task, err
 }
@@ -385,13 +385,15 @@ func writeRelationalFilePlan(ctx context.Context, tx *sqlx.Tx, task *Task) error
 
 // TaskStats reads only the indexed lifecycle columns, never checkpoints or blobs.
 func (s *RelationalTaskStore) TaskStats(ctx context.Context) (TaskStats, error) {
-	var total, active, completed, downloading, pending, failed int
+	var total, active, completed, downloading, pending, failed, attention, waiting int
 	err := s.core.Reader.QueryRowContext(ctx, `SELECT count(*),
  COALESCE(sum(stage<>'COMPLETED'),0),COALESCE(sum(stage='COMPLETED'),0),
  COALESCE(sum(stage='DOWNLOADING' AND stage_status='RUNNING'),0),
  COALESCE(sum(stage IN ('PENDING_INGEST','TRANSFERRING','SCANNING')),0),
- COALESCE(sum(stage_status='BLOCKED'),0) FROM tasks`).Scan(&total, &active, &completed, &downloading, &pending, &failed)
-	return TaskStats{Total: total, Active: active, Completed: completed, Downloading: downloading, PendingScans: pending, Failed: failed}, err
+ COALESCE(sum(stage_status='BLOCKED'),0),
+ COALESCE(sum(stage<>'COMPLETED' AND stage_status='BLOCKED'),0),
+ COALESCE(sum(stage='SOURCING' AND stage_status='PENDING' AND k.sourcing_next_check_at IS NOT NULL),0) FROM tasks LEFT JOIN task_checkpoints k ON k.task_id=tasks.id`).Scan(&total, &active, &completed, &downloading, &pending, &failed, &attention, &waiting)
+	return TaskStats{Total: total, Active: active, Completed: completed, Downloading: downloading, PendingScans: pending, Failed: failed, Attention: attention, Waiting: waiting}, err
 }
 
 func strictFilePlan(value string) (mediafiles.Plan, error) {

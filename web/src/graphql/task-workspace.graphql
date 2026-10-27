@@ -1,0 +1,17 @@
+fragment TaskListSummary on TaskSummary {
+  id version revision source code stage stageStatus stageLabel stageStatusLabel
+  stageErrorCode stageErrorMessage torrentName progress qbittorrentState stashIngestPhase stashSceneId
+  sourcingNextCheckAt sourcingLastCheckedAt sourcingCompletedAt downloadCompletedAt ingestCompletedAt
+  lastProgressAt createdAt updatedAt
+}
+query TasksWorkspace($input: TaskPageInput!) {
+  taskPage(input: $input) {
+    items { ...TaskListSummary }
+    totalCount page pageSize totalPages sequence streamId
+    stats { total active completed downloading pendingScans failed attention waiting }
+  }
+  settings { system { taskDeletePolicy } automation { taskProcessingEnabled } }
+  settingsStatus { automation { taskProgressSyncIntervalSeconds taskProgressSyncEnabled } }
+}
+query TaskSelectionSummaries($ids: [ID!]!) { taskSelection: taskPage(input: {ids: $ids, pageSize:100}) {items { ...TaskListSummary } sequence streamId} }
+query TaskAttentionQueue { taskAttentionQueue { items { id version revision source code stage stageStatus progress createdAt updatedAt } sequence streamId } }

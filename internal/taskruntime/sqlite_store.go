@@ -104,7 +104,7 @@ func (s *SQLiteTaskStore) Find(ctx context.Context, id string) (*Task, error) {
 	var row sqliteTaskRow
 	if err := s.db.GetContext(ctx, &row, taskSelectSQL+` WHERE id = ?`, id); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			return nil, fmt.Errorf("taskruntime: task %q not found", id)
+			return nil, fmt.Errorf("%w (%q)", ErrTaskNotFound, id)
 		}
 		return nil, fmt.Errorf("taskruntime: find task %q: %w", id, err)
 	}

@@ -3,6 +3,7 @@ package taskruntime
 import (
 	"context"
 	"errors"
+	"github.com/google/uuid"
 	"log/slog"
 	"reflect"
 	"sync"
@@ -15,18 +16,20 @@ import (
 type TaskEventType string
 
 const (
+	TaskEventReady   TaskEventType = "READY"
 	TaskEventCreated TaskEventType = "CREATED"
 	TaskEventUpdated TaskEventType = "UPDATED"
 	TaskEventDeleted TaskEventType = "DELETED"
 )
 
 type TaskStats struct {
-	Total        int
-	Active       int
-	Completed    int
-	Downloading  int
-	PendingScans int
-	Failed       int
+	Attention, Waiting int
+	Total              int
+	Active             int
+	Completed          int
+	Downloading        int
+	PendingScans       int
+	Failed             int
 }
 
 // TaskStatsProvider avoids loading cold task payloads for each event.
@@ -35,6 +38,8 @@ type TaskStatsProvider interface {
 }
 
 type TaskEvent struct {
+	StreamID       string
+	ListChanged    bool
 	Sequence       int
 	Type           TaskEventType
 	TaskID         string
@@ -51,6 +56,7 @@ type TaskEventPublisher interface {
 }
 
 type TaskEventBus struct {
+	streamID    string
 	mu          sync.RWMutex
 	subscribers map[uint64]taskEventSubscriber
 	nextID      atomic.Uint64
@@ -71,6 +77,7 @@ type TaskEventBusStats struct {
 type taskEventSubscriber struct {
 	channel chan *TaskEvent
 	done    chan struct{}
+	ready   bool
 }
 
 func NewTaskEventBus(bufferSize int) *TaskEventBus {
@@ -78,12 +85,25 @@ func NewTaskEventBus(bufferSize int) *TaskEventBus {
 		bufferSize = 32
 	}
 	return &TaskEventBus{
+		streamID:    uuid.NewString(),
 		subscribers: make(map[uint64]taskEventSubscriber),
 		bufferSize:  bufferSize,
 	}
 }
 
 func (b *TaskEventBus) Subscribe(ctx context.Context) <-chan *TaskEvent {
+	return b.subscribe(ctx, false)
+}
+
+func (b *TaskEventBus) SubscribeWithReady(ctx context.Context) <-chan *TaskEvent {
+	return b.subscribe(ctx, true)
+}
+func (b *TaskEventBus) Cursor() (int, string) {
+	b.mu.RLock()
+	defer b.mu.RUnlock()
+	return int(b.sequence.Load()), b.streamID
+}
+func (b *TaskEventBus) subscribe(ctx context.Context, ready bool) <-chan *TaskEvent {
 	channel := make(chan *TaskEvent, b.bufferSize)
 	if ctx == nil {
 		ctx = context.Background()
@@ -96,8 +116,11 @@ func (b *TaskEventBus) Subscribe(ctx context.Context) <-chan *TaskEvent {
 		return channel
 	}
 	id := b.nextID.Add(1)
-	subscriber := taskEventSubscriber{channel: channel, done: make(chan struct{})}
+	subscriber := taskEventSubscriber{channel: channel, done: make(chan struct{}), ready: ready}
 	b.subscribers[id] = subscriber
+	if ready {
+		channel <- &TaskEvent{Type: TaskEventReady, Sequence: int(b.sequence.Load()), StreamID: b.streamID}
+	}
 	b.mu.Unlock()
 	slog.Info("task events: subscriber connected", "subscriber_id", id)
 
@@ -129,23 +152,37 @@ func (b *TaskEventBus) Publish(event *TaskEvent) {
 	if event == nil {
 		return
 	}
-	b.mu.RLock()
+	b.mu.Lock()
 	if b.closed {
-		b.mu.RUnlock()
+		b.mu.Unlock()
 		return
 	}
 	next := cloneTaskEvent(event)
 	next.Sequence = int(b.sequence.Add(1))
+	next.StreamID = b.streamID
 	b.published.Add(1)
 	for id, subscriber := range b.subscribers {
 		select {
 		case subscriber.channel <- cloneTaskEvent(next):
 		default:
 			b.dropped.Add(1)
+			// A final dropped update must not leave the UI stale forever. Replace
+			// this protocol subscriber's backlog with an explicit resync boundary.
+			if subscriber.ready {
+			drain:
+				for {
+					select {
+					case <-subscriber.channel:
+					default:
+						break drain
+					}
+				}
+				subscriber.channel <- &TaskEvent{Type: TaskEventReady, Sequence: next.Sequence, StreamID: b.streamID}
+			}
 			slog.Warn("task events: event dropped because subscriber buffer is full", "subscriber_id", id, "sequence", next.Sequence, "task_id", next.TaskID)
 		}
 	}
-	b.mu.RUnlock()
+	b.mu.Unlock()
 
 	if next.Type == TaskEventUpdated {
 		slog.Debug("task events: event published", "sequence", next.Sequence, "type", next.Type, "task_id", next.TaskID)
@@ -249,11 +286,21 @@ func (s *EventingTaskStore) Create(ctx context.Context, task *Task) error {
 func (s *EventingTaskStore) Update(ctx context.Context, task *Task) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
+	var previous *Task
+	if s.lastPublished[task.ID].task == nil {
+		if source, ok := s.store.(interface {
+			FindSummary(context.Context, string) (*Task, error)
+		}); ok {
+			previous, _ = source.FindSummary(ctx, task.ID)
+		} else {
+			previous, _ = s.store.Find(ctx, task.ID)
+		}
+	}
 	if err := s.store.Update(ctx, task); err != nil {
 		return err
 	}
 	if s.shouldPublishUpdateLocked(task) {
-		s.publishLocked(ctx, TaskEventUpdated, task.ID, task)
+		s.publishLocked(ctx, TaskEventUpdated, task.ID, task, previous)
 	}
 	return nil
 }
@@ -315,17 +362,23 @@ func taskChangedBeyondProgress(previous, next *Task) bool {
 	return !reflect.DeepEqual(left, right)
 }
 
-func (s *EventingTaskStore) publishLocked(ctx context.Context, eventType TaskEventType, taskID string, task *Task) {
+func (s *EventingTaskStore) publishLocked(ctx context.Context, eventType TaskEventType, taskID string, task *Task, before ...*Task) {
 	stats, err := s.TaskStats(ctx)
 	if err != nil {
 		logging.Errorf("task events: calculate dashboard stats after %s task_id=%s: %v", eventType, taskID, err)
 		return
 	}
+	previous := s.lastPublished[taskID].task
+	if len(before) > 0 && before[0] != nil {
+		previous = before[0]
+	}
+	listChanged := eventType != TaskEventUpdated || previous == nil || task == nil || taskWorkspaceGroup(previous) != taskWorkspaceGroup(task) || previous.Code != task.Code || previous.TorrentName != task.TorrentName || !reflect.DeepEqual(previous.IngestCompletedAt, task.IngestCompletedAt)
 	now := s.now()
 	if task != nil {
 		s.lastPublished[taskID] = publishedTaskState{task: cloneTask(task), at: now}
 	}
 	s.publisher.Publish(&TaskEvent{
+		ListChanged:    listChanged,
 		Type:           eventType,
 		TaskID:         taskID,
 		Task:           cloneTask(task),
@@ -349,6 +402,12 @@ func CalculateTaskStats(tasks []*Task) TaskStats {
 	for _, task := range tasks {
 		if task == nil {
 			continue
+		}
+		if taskWorkspaceGroup(task) == "ATTENTION" {
+			stats.Attention++
+		}
+		if taskWorkspaceGroup(task) == "WAITING" {
+			stats.Waiting++
 		}
 		if task.Stage != TaskStageCompleted {
 			stats.Active++

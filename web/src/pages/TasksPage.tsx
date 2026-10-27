@@ -20,6 +20,12 @@ import { faListCheck } from "@fortawesome/free-solid-svg-icons/faListCheck";
 import { faClipboardCheck } from "@fortawesome/free-solid-svg-icons/faClipboardCheck";
 
 interface TasksPageProps {
+  serverPage?: { page: number; pageSize: number; totalPages: number; totalCount: number; stats: { total: number; active: number; completed: number; attention: number; waiting: number } };
+  selectedTasks?: DashboardTask[];
+  selectionLoading?: boolean;
+  updatesPending?: boolean;
+  onPageChange?: (page: number) => void;
+  onPageSizeChange?: (size: number) => void;
   tasks: DashboardTask[];
   completedWithin24Hours?: boolean;
   onClearCompletedWindow?: () => void;
@@ -53,7 +59,7 @@ interface TasksPageProps {
 }
 
 export function TasksPage({
-  tasks,
+  tasks, serverPage, selectedTasks: selectedSnapshots, selectionLoading = false, updatesPending = false, onPageChange, onPageSizeChange,
   completedWithin24Hours = false,
   onClearCompletedWindow,
   taskSearch,
@@ -89,6 +95,7 @@ export function TasksPage({
   const [selectionMode, setSelectionMode] = useState(false);
 
   const visibleTasks = useMemo(() => {
+    if (serverPage) return tasks;
     const search = deferredTaskSearch;
     let next = tasks.filter((task) => {
       if (!search) return true;
@@ -126,7 +133,7 @@ export function TasksPage({
       next = next.filter(task => task.stage === "COMPLETED" && task.ingestCompletedAt && Date.parse(task.ingestCompletedAt) >= now - 86400000 && Date.parse(task.ingestCompletedAt) <= now);
     }
     return [...next].sort(sorters[taskSort]);
-  }, [deferredTaskSearch, taskSort, taskStatus, tasks, completedWithin24Hours, t]);
+  }, [deferredTaskSearch, taskSort, taskStatus, tasks, completedWithin24Hours, t, serverPage]);
 
   const taskGroups = useMemo(() => {
     const order: TaskGroupKey[] = ["attention", "waiting", "active", "completed"];
@@ -138,19 +145,20 @@ export function TasksPage({
     }));
   }, [t, visibleTasks]);
   const metrics = useMemo(() => {
+    if (serverPage) return { active: serverPage.stats.total - serverPage.stats.completed - serverPage.stats.attention - serverPage.stats.waiting, waiting: serverPage.stats.waiting, completed: serverPage.stats.completed, failed: serverPage.stats.attention };
     const counts = { active: 0, waiting: 0, completed: 0, failed: 0 };
     for (const task of tasks) {
       const group = taskGroup(task);
       counts[group === "attention" ? "failed" : group]++;
     }
     return counts;
-  }, [tasks]);
-  const selectedTasks = tasks.filter((task) => selectedTaskIds.includes(task.id));
+  }, [tasks, serverPage]);
+  const selectedTasks = selectedSnapshots ?? tasks.filter((task) => selectedTaskIds.includes(task.id));
   const { retryIds: retryableIds } = taskBatchEligibility(selectedTasks);
   const hiddenSelectedCount = selectedTaskIds.filter((id) => !visibleTasks.some((task) => task.id === id)).length;
 
   return (
-    <section className="section-band">
+    <section className="section-band section-band--tasks">
       <div className="band-head">
         <div>
           <h2>{t("tasks.title")}</h2>
@@ -203,13 +211,20 @@ export function TasksPage({
 
       {selectionMode ? <div className="task-selection-bar" role="region" aria-label={t("taskBatch.selectionActions")}>
         <strong>{t("taskBatch.selected", { count: selectedTaskIds.length })}</strong>
-        {hiddenSelectedCount ? <span>{t("taskBatch.hidden", { count: hiddenSelectedCount })}</span> : null}
-        <button type="button" className="ghost-button" disabled={batchPending || visibleTasks.length === 0} onClick={() => onSelectVisibleTasks(visibleTasks.map((task) => task.id))}>{t("taskBatch.selectVisible", { count: visibleTasks.length })}</button>
-        <button type="button" className="ghost-button" disabled={batchPending || retryableIds.length === 0} onClick={() => onBatchRetry(retryableIds)}><FontAwesomeIcon icon={faArrowsRotate} /> {t("taskBatch.retry", { count: retryableIds.length })}</button>
+        {hiddenSelectedCount ? <span>{t(serverPage ? "taskList.hiddenSelection" : "taskBatch.hidden", { count: hiddenSelectedCount })}</span> : null}
+        <button type="button" className="ghost-button" disabled={batchPending || visibleTasks.length === 0} onClick={() => onSelectVisibleTasks(visibleTasks.map((task) => task.id))}>{t(serverPage ? "taskList.selectPage" : "taskBatch.selectVisible", { count: visibleTasks.length })}</button>
+        <button type="button" className="ghost-button" disabled={batchPending || selectionLoading || retryableIds.length === 0} onClick={() => onBatchRetry(retryableIds)}><FontAwesomeIcon icon={faArrowsRotate} /> {t("taskBatch.retry", { count: retryableIds.length })}</button>
         <button type="button" className="ghost-button task-ops__button--danger" disabled={batchPending || selectedTaskIds.length === 0} onClick={() => onBatchDelete(selectedTaskIds)}><FontAwesomeIcon icon={faTrashCan} /> {t("taskBatch.delete", { count: selectedTaskIds.length })}</button>
         <button type="button" className="ghost-button" disabled={batchPending || selectedTaskIds.length === 0} onClick={onClearTaskSelection} aria-label={t("taskBatch.clear")}><FontAwesomeIcon icon={faXmark} /> {t("taskBatch.clear")}</button>
       </div> : null}
 
+      {serverPage ? <div className="pagination-bar">
+        <label>{t("taskList.pageSize")} <select aria-label={t("taskList.pageSize")} value={serverPage.pageSize} onChange={event => onPageSizeChange?.(Number(event.target.value))}>{[12,24,48].map(size => <option key={size} value={size}>{size}</option>)}</select></label>
+        <button type="button" className="ghost-button" disabled={refreshing || serverPage.page <= 1} onClick={() => onPageChange?.(serverPage.page - 1)}>{t("performerUi.previous")}</button>
+        <span role="status">{t("taskList.page", { page: serverPage.page, pages: serverPage.totalPages, count: serverPage.totalCount })}</span>
+        <button type="button" className="ghost-button" disabled={refreshing || serverPage.page >= serverPage.totalPages} onClick={() => onPageChange?.(serverPage.page + 1)}>{t("performerUi.next")}</button>
+        {updatesPending ? <button type="button" className="ghost-button" disabled={refreshing} onClick={onRefresh}>{t("taskList.updates")}</button> : null}
+      </div> : null}
       <p className="task-sync-meta">
         {t(autoSyncEnabled ? "taskBatch.autoSyncOn" : "taskBatch.autoSyncOff", { seconds: autoSyncIntervalSeconds })}
         {lastRefreshedAt ? ` · ${t("taskBatch.updatedAt", { time: lastRefreshedAt.toLocaleTimeString() })}` : ""}

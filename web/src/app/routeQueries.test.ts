@@ -11,7 +11,7 @@ import {
   PerformersConfigDocumentDocument,
   StatsPageDocumentDocument,
   SystemSettingsTabDocument,
-  TasksOverviewDocumentDocument
+  TasksWorkspaceDocument
 } from "../graphql/generated/graphql";
 
 function rootFields(document: { definitions: readonly unknown[] }) {
@@ -21,9 +21,9 @@ function rootFields(document: { definitions: readonly unknown[] }) {
 
 describe("route-owned GraphQL operations", () => {
   it("keeps each route query scoped to its surface", () => {
-    expect(rootFields(HomePageDocumentDocument)).toEqual(["homeOverview", "settings"]);
+    expect(rootFields(HomePageDocumentDocument)).toEqual(["homeTaskSnapshot", "settings"]);
     expect(rootFields(HomeServiceStatusDocument)).toEqual(["settingsStatus"]);
-    expect(rootFields(TasksOverviewDocumentDocument)).toEqual(["dashboardStats", "settings", "settingsStatus", "tasks"]);
+    expect(rootFields(TasksWorkspaceDocument)).toEqual(["settings", "settingsStatus", "taskPage"]);
     expect(rootFields(ConnectionsSettingsDocument)).toEqual(["settings"]);
     expect(rootFields(ConnectionsStatusDocument)).toEqual(["settingsStatus"]);
     expect(rootFields(IngestSettingsTabDocument)).toEqual(["settings", "settingsStatus"]);

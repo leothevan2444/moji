@@ -31,6 +31,8 @@ type AutomationStatus struct {
 }
 
 type DashboardStats struct {
+	Attention    int `json:"attention"`
+	Waiting      int `json:"waiting"`
 	Total        int `json:"total"`
 	Active       int `json:"active"`
 	Completed    int `json:"completed"`
@@ -198,6 +200,19 @@ type HomeSubscriptionSummary struct {
 	Unchecked             int      `json:"unchecked"`
 	LastCheckedAt         *string  `json:"lastCheckedAt,omitempty"`
 	AttentionPerformerIds []string `json:"attentionPerformerIds"`
+}
+
+type HomeTaskSnapshot struct {
+	Sequence             int            `json:"sequence"`
+	StreamID             string         `json:"streamId"`
+	Total                int            `json:"total"`
+	Attention            int            `json:"attention"`
+	Active               int            `json:"active"`
+	Waiting              int            `json:"waiting"`
+	CompletedLast24Hours int            `json:"completedLast24Hours"`
+	AttentionTasks       []*TaskSummary `json:"attentionTasks"`
+	ActiveTasks          []*TaskSummary `json:"activeTasks"`
+	RecentTasks          []*TaskSummary `json:"recentTasks"`
 }
 
 type ImageCacheSettings struct {
@@ -944,6 +959,8 @@ type SystemSettings struct {
 }
 
 type Task struct {
+	Version           string             `json:"version"`
+	Revision          int64              `json:"revision"`
 	ID                string             `json:"id"`
 	Files             []*TaskFile        `json:"files"`
 	Source            TaskSource         `json:"source"`
@@ -993,6 +1010,12 @@ type Task struct {
 	LastProgressAt *string `json:"lastProgressAt,omitempty"`
 }
 
+type TaskAttentionQueue struct {
+	Items    []*TaskSummary `json:"items"`
+	Sequence int            `json:"sequence"`
+	StreamID string         `json:"streamId"`
+}
+
 type TaskBatchPayload struct {
 	BatchID string             `json:"batchId"`
 	Summary *TaskBatchSummary  `json:"summary"`
@@ -1013,12 +1036,21 @@ type TaskBatchSummary struct {
 	FailedCount    int `json:"failedCount"`
 }
 
+type TaskDetailSnapshot struct {
+	Task     *Task  `json:"task,omitempty"`
+	Sequence int    `json:"sequence"`
+	StreamID string `json:"streamId"`
+}
+
 type TaskEvent struct {
+	StreamID       string          `json:"streamId"`
+	ListChanged    bool            `json:"listChanged"`
+	Summary        *TaskSummary    `json:"summary,omitempty"`
 	Sequence       int             `json:"sequence"`
 	Type           TaskEventType   `json:"type"`
 	TaskID         string          `json:"taskId"`
 	Task           *Task           `json:"task,omitempty"`
-	DashboardStats *DashboardStats `json:"dashboardStats"`
+	DashboardStats *DashboardStats `json:"dashboardStats,omitempty"`
 }
 
 // A classified qBittorrent file; order applies to selected main video parts
@@ -1032,6 +1064,27 @@ type TaskFile struct {
 	Reason   string `json:"reason"`
 }
 
+type TaskPage struct {
+	Items      []*TaskSummary  `json:"items"`
+	TotalCount int             `json:"totalCount"`
+	Page       int             `json:"page"`
+	PageSize   int             `json:"pageSize"`
+	TotalPages int             `json:"totalPages"`
+	Sequence   int             `json:"sequence"`
+	StreamID   string          `json:"streamId"`
+	Stats      *DashboardStats `json:"stats"`
+}
+
+type TaskPageInput struct {
+	Ids                    []string        `json:"ids,omitempty"`
+	Search                 *string         `json:"search,omitempty"`
+	Status                 *TaskListStatus `json:"status,omitempty"`
+	Sort                   *TaskListSort   `json:"sort,omitempty"`
+	Page                   *int            `json:"page,omitempty"`
+	PageSize               *int            `json:"pageSize,omitempty"`
+	CompletedWithin24Hours *bool           `json:"completedWithin24Hours,omitempty"`
+}
+
 // A Stash scene linked to a task's ingest result.
 type TaskStashScene struct {
 	ID         string   `json:"id"`
@@ -1042,6 +1095,34 @@ type TaskStashScene struct {
 	Performers []string `json:"performers"`
 	ImageURL   *string  `json:"imageUrl,omitempty"`
 	URL        *string  `json:"url,omitempty"`
+}
+
+// Small list/event projection. File plans, candidates and paths belong to task details.
+type TaskSummary struct {
+	ID                    string          `json:"id"`
+	Version               string          `json:"version"`
+	Revision              int64           `json:"revision"`
+	Source                TaskSource      `json:"source"`
+	Code                  string          `json:"code"`
+	Stage                 TaskStage       `json:"stage"`
+	StageStatus           TaskStageStatus `json:"stageStatus"`
+	StageLabel            string          `json:"stageLabel"`
+	StageStatusLabel      string          `json:"stageStatusLabel"`
+	StageErrorCode        *string         `json:"stageErrorCode,omitempty"`
+	StageErrorMessage     *string         `json:"stageErrorMessage,omitempty"`
+	TorrentName           *string         `json:"torrentName,omitempty"`
+	Progress              float64         `json:"progress"`
+	QbittorrentState      *string         `json:"qbittorrentState,omitempty"`
+	StashSceneID          *string         `json:"stashSceneId,omitempty"`
+	StashIngestPhase      *string         `json:"stashIngestPhase,omitempty"`
+	SourcingNextCheckAt   *string         `json:"sourcingNextCheckAt,omitempty"`
+	SourcingLastCheckedAt *string         `json:"sourcingLastCheckedAt,omitempty"`
+	SourcingCompletedAt   *string         `json:"sourcingCompletedAt,omitempty"`
+	DownloadCompletedAt   *string         `json:"downloadCompletedAt,omitempty"`
+	IngestCompletedAt     *string         `json:"ingestCompletedAt,omitempty"`
+	LastProgressAt        *string         `json:"lastProgressAt,omitempty"`
+	CreatedAt             string          `json:"createdAt"`
+	UpdatedAt             string          `json:"updatedAt"`
 }
 
 type TitleMatchClause struct {
@@ -2405,12 +2486,14 @@ func (e TaskDeletePolicy) MarshalJSON() ([]byte, error) {
 type TaskEventType string
 
 const (
+	TaskEventTypeReady   TaskEventType = "READY"
 	TaskEventTypeCreated TaskEventType = "CREATED"
 	TaskEventTypeUpdated TaskEventType = "UPDATED"
 	TaskEventTypeDeleted TaskEventType = "DELETED"
 )
 
 var AllTaskEventType = []TaskEventType{
+	TaskEventTypeReady,
 	TaskEventTypeCreated,
 	TaskEventTypeUpdated,
 	TaskEventTypeDeleted,
@@ -2418,7 +2501,7 @@ var AllTaskEventType = []TaskEventType{
 
 func (e TaskEventType) IsValid() bool {
 	switch e {
-	case TaskEventTypeCreated, TaskEventTypeUpdated, TaskEventTypeDeleted:
+	case TaskEventTypeReady, TaskEventTypeCreated, TaskEventTypeUpdated, TaskEventTypeDeleted:
 		return true
 	}
 	return false
@@ -2454,6 +2537,124 @@ func (e *TaskEventType) UnmarshalJSON(b []byte) error {
 }
 
 func (e TaskEventType) MarshalJSON() ([]byte, error) {
+	var buf bytes.Buffer
+	e.MarshalGQL(&buf)
+	return buf.Bytes(), nil
+}
+
+type TaskListSort string
+
+const (
+	TaskListSortCreated  TaskListSort = "CREATED"
+	TaskListSortUpdated  TaskListSort = "UPDATED"
+	TaskListSortProgress TaskListSort = "PROGRESS"
+)
+
+var AllTaskListSort = []TaskListSort{
+	TaskListSortCreated,
+	TaskListSortUpdated,
+	TaskListSortProgress,
+}
+
+func (e TaskListSort) IsValid() bool {
+	switch e {
+	case TaskListSortCreated, TaskListSortUpdated, TaskListSortProgress:
+		return true
+	}
+	return false
+}
+
+func (e TaskListSort) String() string {
+	return string(e)
+}
+
+func (e *TaskListSort) UnmarshalGQL(v any) error {
+	str, ok := v.(string)
+	if !ok {
+		return fmt.Errorf("enums must be strings")
+	}
+
+	*e = TaskListSort(str)
+	if !e.IsValid() {
+		return fmt.Errorf("%s is not a valid TaskListSort", str)
+	}
+	return nil
+}
+
+func (e TaskListSort) MarshalGQL(w io.Writer) {
+	fmt.Fprint(w, strconv.Quote(e.String()))
+}
+
+func (e *TaskListSort) UnmarshalJSON(b []byte) error {
+	s, err := strconv.Unquote(string(b))
+	if err != nil {
+		return err
+	}
+	return e.UnmarshalGQL(s)
+}
+
+func (e TaskListSort) MarshalJSON() ([]byte, error) {
+	var buf bytes.Buffer
+	e.MarshalGQL(&buf)
+	return buf.Bytes(), nil
+}
+
+type TaskListStatus string
+
+const (
+	TaskListStatusAll       TaskListStatus = "ALL"
+	TaskListStatusAttention TaskListStatus = "ATTENTION"
+	TaskListStatusActive    TaskListStatus = "ACTIVE"
+	TaskListStatusWaiting   TaskListStatus = "WAITING"
+	TaskListStatusCompleted TaskListStatus = "COMPLETED"
+)
+
+var AllTaskListStatus = []TaskListStatus{
+	TaskListStatusAll,
+	TaskListStatusAttention,
+	TaskListStatusActive,
+	TaskListStatusWaiting,
+	TaskListStatusCompleted,
+}
+
+func (e TaskListStatus) IsValid() bool {
+	switch e {
+	case TaskListStatusAll, TaskListStatusAttention, TaskListStatusActive, TaskListStatusWaiting, TaskListStatusCompleted:
+		return true
+	}
+	return false
+}
+
+func (e TaskListStatus) String() string {
+	return string(e)
+}
+
+func (e *TaskListStatus) UnmarshalGQL(v any) error {
+	str, ok := v.(string)
+	if !ok {
+		return fmt.Errorf("enums must be strings")
+	}
+
+	*e = TaskListStatus(str)
+	if !e.IsValid() {
+		return fmt.Errorf("%s is not a valid TaskListStatus", str)
+	}
+	return nil
+}
+
+func (e TaskListStatus) MarshalGQL(w io.Writer) {
+	fmt.Fprint(w, strconv.Quote(e.String()))
+}
+
+func (e *TaskListStatus) UnmarshalJSON(b []byte) error {
+	s, err := strconv.Unquote(string(b))
+	if err != nil {
+		return err
+	}
+	return e.UnmarshalGQL(s)
+}
+
+func (e TaskListStatus) MarshalJSON() ([]byte, error) {
 	var buf bytes.Buffer
 	e.MarshalGQL(&buf)
 	return buf.Bytes(), nil

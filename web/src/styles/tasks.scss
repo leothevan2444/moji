@@ -1754,6 +1754,10 @@ button.profile-icon {
     pointer-events: none;
   }
 }
+// A page may show many live downloads. Keep real width transitions, without
+// continuously compositing a decorative sheen on every list card.
+.section-band--tasks .progress-fill.is-animating::after { display: none; }
+
 @keyframes task-progress-sheen {
   from { transform: translateX(-100%); }
   to { transform: translateX(100%); }

@@ -71,7 +71,7 @@ func (s *JSONTaskStore) Find(_ context.Context, id string) (*Task, error) {
 
 	task, exists := s.tasks[id]
 	if !exists {
-		return nil, fmt.Errorf("taskruntime: task %q not found", id)
+		return nil, fmt.Errorf("%w (%q)", ErrTaskNotFound, id)
 	}
 	return cloneTask(task), nil
 }

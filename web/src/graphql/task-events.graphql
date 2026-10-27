@@ -1,53 +1,7 @@
 subscription TaskEvents {
-  taskEvents {
-    sequence
-    type
-    taskId
-    task {
-      id
-      source
-      code
-      stage
-      stageStatus
-      stageLabel
-      stageStatusLabel
-      stageErrorCode
-      stageErrorMessage
-    files { index path size kind part selected reason }
-      torrentUrl
-      torrentName
-      progress
-      qbittorrentState
-      contentPath
-      torrentHash
-      savePath
-      category
-      tags
-      downloadCompletedAt
-    sourcingCompletedAt ingestCompletedAt
-      mojiSourcePath
-      transferAction
-      mojiTransferPath
-      transferError
-      stashIngestPhase
-      stashGenerateJobId
-      stashIdentifyJobId
-      stashSceneIds
-      stashScanJobId
-      stashScanPath
-      stashScanError
-      stashScanHint
-      stashScanStartedAt
-      createdAt
-      updatedAt lastProgressAt sourcingLastCheckedAt sourcingNextCheckAt
-    }
-    dashboardStats {
-      total
-      active
-      completed
-      downloading
-      pendingScans
-      failed
-    }
-  }
+ taskEvents {
+  sequence streamId type taskId listChanged
+  task: summary { ...TaskListSummary }
+  dashboardStats { total active completed downloading pendingScans failed attention waiting }
+ }
 }

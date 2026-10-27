@@ -1,12 +1,13 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faClipboardCheck } from "@fortawesome/free-solid-svg-icons/faClipboardCheck";
-import { useMutation, useQuery } from "urql";
+import { useMutation } from "urql";
 import { useTranslation } from "react-i18next";
 import { Drawer } from "../layout/Drawer";
 import { BlockedSourcingResolution } from "../tasks/BlockedSourcingResolution";
 import { TaskFiles } from "../tasks/TaskFiles";
-import { RetryTaskDocumentDocument, TaskDetailDocumentDocument } from "../../graphql/generated/graphql";
+import { RetryTaskDocumentDocument } from "../../graphql/generated/graphql";
+import { useTaskDetail } from "../../hooks/useTaskDetail";
 import { describeQueryError } from "../../services/queryError";
 import { needsTaskFileSelection, taskFailureSummary, taskGroup, taskSummary, type DashboardTask } from "../../utils";
 import { taskProcessingQueue, type TaskQueueDraft } from "../../utils/taskProcessingQueue";
@@ -116,8 +117,7 @@ function TaskQueueItem({ task: snapshot, draft, onDraftChange, onBusyChange, onC
   onDone: () => void;
 }) {
   const { t } = useTranslation();
-  const [{ data, fetching, error }, refresh] = useQuery({ query: TaskDetailDocumentDocument,
-    variables: { id: snapshot.id }, requestPolicy: "cache-and-network" });
+  const [{ data, fetching, error }, refresh] = useTaskDetail(snapshot.id);
   const [{ fetching: retrying }, retry] = useMutation(RetryTaskDocumentDocument);
   const [message, setMessage] = useState("");
   const [submitting, setSubmitting] = useState(false);

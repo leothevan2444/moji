@@ -1026,6 +1026,13 @@
       "blockerScan": "任务完成后无法闭环换算扫描路径"
     }
   },
+  "taskList": {
+    "hiddenSelection": "{{count}} 项已选在其他页或筛选结果之外",
+    "pageSize": "每页条数",
+    "page": "第 {{page}} / {{pages}} 页 · 共 {{count}} 项",
+    "updates": "列表有更新，刷新",
+    "selectPage": "选择本页 {{count}} 项"
+  },
   "tasks": {
     "title": "工作台",
     "metrics": "进行中 {{active}} · 等待资源 {{waiting}} · 已完成 {{completed}} · 需处理 {{failed}}",

@@ -7,8 +7,10 @@ package graphqlapi
 import (
 	"context"
 
+	"github.com/99designs/gqlgen/graphql"
 	"github.com/leothevan2444/moji/internal/graphqlapi/generated"
 	"github.com/leothevan2444/moji/internal/graphqlapi/model"
+	"github.com/leothevan2444/moji/internal/taskruntime"
 )
 
 // TaskEvents is the resolver for the taskEvents field.
@@ -18,7 +20,23 @@ func (r *subscriptionResolver) TaskEvents(ctx context.Context) (<-chan *model.Ta
 		close(out)
 		return out, nil
 	}
-	events := r.TaskEventSource.Subscribe(ctx)
+	var events <-chan *taskruntime.TaskEvent
+	if ready, ok := r.TaskEventSource.(interface {
+		SubscribeWithReady(context.Context) <-chan *taskruntime.TaskEvent
+	}); ok {
+		events = ready.SubscribeWithReady(ctx)
+	} else {
+		events = r.TaskEventSource.Subscribe(ctx)
+	}
+	includeTask := true
+	if graphql.HasOperationContext(ctx) {
+		includeTask = false
+		for _, field := range graphql.CollectFieldsCtx(ctx, nil) {
+			if field.Name == "task" {
+				includeTask = true
+			}
+		}
+	}
 	go func() {
 		defer close(out)
 		for {
@@ -29,7 +47,7 @@ func (r *subscriptionResolver) TaskEvents(ctx context.Context) (<-chan *model.Ta
 				if !ok {
 					return
 				}
-				mapped := taskEventToModel(event)
+				mapped := taskEventToModel(event, includeTask)
 				select {
 				case <-ctx.Done():
 					return

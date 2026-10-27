@@ -8,12 +8,16 @@ import { Drawer } from "../../components/layout/Drawer";
 import { useSubscriptionCheckPolling } from "../../hooks/useSubscriptionCheckPolling";
 import { useTaskMutations } from "../../hooks/useTaskMutations";
 import { useServiceStatusEvents } from "../../hooks/useServiceStatusEvents";
+import { useTaskSnapshotRecoveryGeneration } from "../../graphql/taskRecovery";
+import { subscribeTaskBatches, taskStreamCursor } from "../../graphql/taskRealtime";
+import { useTaskDetail } from "../../hooks/useTaskDetail";
+import { taskSummaryToDashboard } from "../../utils/taskSummary";
 import { useTaskEvents } from "../../hooks/useTaskEvents";
 import { usePerformerSubscriptionEvents } from "../../hooks/usePerformerSubscriptionEvents";
 import { describeQueryError } from "../../services/queryError";
 import { taskSummary } from "../../utils/taskUtils";
 import { useFragment as readFragment } from "../../graphql/generated/fragment-masking";
-import { HomePageDocumentDocument, HomeSubscriptionChecksDocument, HomeSubscriptionCheckRunFieldsFragmentDoc, SubscriptionCheckDetailDocument, SubscriptionCheckFieldsFragmentDoc, HomeServiceStatusDocument, HomeSubscriptionSummaryDocument, HomeTaskFragmentDoc, TaskDetailDocumentDocument, TaskDeletePolicy } from "../../graphql/generated/graphql";
+import { HomePageDocumentDocument, HomeSubscriptionChecksDocument, HomeSubscriptionCheckRunFieldsFragmentDoc, SubscriptionCheckDetailDocument, SubscriptionCheckFieldsFragmentDoc, HomeServiceStatusDocument, HomeSubscriptionSummaryDocument, HomeTaskFragmentDoc, TaskDeletePolicy } from "../../graphql/generated/graphql";
 import type { AppOutletContext } from "../AppLayout";
 
 const SubscriptionCheckDrawer = lazy(() => import("../../components/drawers/SubscriptionCheckDrawer").then(m => ({ default: m.SubscriptionCheckDrawer })));
@@ -53,7 +57,7 @@ export function Component() {
   } : null, [checkData?.homeSubscriptionChecks]);
   const refreshHomeChecks = useCallback(() => { refreshChecks({ requestPolicy: "network-only" }); if (checkId) refreshCheckDetail({ requestPolicy: "network-only" }); }, [refreshChecks, refreshCheckDetail, checkId]);
   useSubscriptionCheckPolling(true, Boolean(checks?.activeCount || checkRun?.status === "RUNNING"), refreshHomeChecks);
-  const [{ data: detail, error: detailError, fetching: detailFetching }, refreshDetail] = useQuery({ query: TaskDetailDocumentDocument, variables: { id: taskId ?? "" }, pause: !taskId, requestPolicy: "cache-and-network" });
+  const [{ data: detail, error: detailError, fetching: detailFetching }, refreshDetail] = useTaskDetail(taskId);
   const { retryTask, deleteTask, deletingTask } = useTaskMutations();
   const timer = useRef<number | null>(null);
   const refreshRef = useRef(() => {});
@@ -62,7 +66,23 @@ export function Component() {
     if (timer.current !== null) return;
     timer.current = window.setTimeout(() => { timer.current = null; refreshRef.current(); }, 800);
   }, []);
-  const taskEvents = useTaskEvents({ onEvent: scheduleRefresh, onReconnect: scheduleRefresh, onSequenceGap: scheduleRefresh });
+  const taskEvents = useTaskEvents();
+  useEffect(() => subscribeTaskBatches(events => { if (events.some(event => event.listChanged)) scheduleRefresh(); }), [scheduleRefresh]);
+  const recovery = useTaskSnapshotRecoveryGeneration();
+  const previousRecovery = useRef(recovery);
+  const recoveryPending = useRef<{streamId:string;sequence:number} | null>(null);
+  useEffect(() => {
+    if (previousRecovery.current !== recovery) {
+      previousRecovery.current = recovery;
+      const cursor = taskStreamCursor();
+      recoveryPending.current = {streamId:cursor.streamId,sequence:cursor.sequence};
+    }
+    const cursor = taskStreamCursor();
+    const boundary = recoveryPending.current;
+    if (boundary && data?.homeOverview && data.homeOverview.streamId === boundary.streamId && data.homeOverview.sequence >= boundary.sequence) recoveryPending.current=null;
+    if (data?.homeOverview && cursor.readyGeneration && (data.homeOverview.streamId !== cursor.streamId || data.homeOverview.sequence < cursor.journalFloor)) recoveryPending.current = {streamId:cursor.streamId,sequence:cursor.journalFloor};
+    if (!fetching && recoveryPending.current) { recoveryPending.current = null; scheduleRefresh(); }
+  }, [recovery, data, fetching, scheduleRefresh]);
   const serviceEvents = useServiceStatusEvents({ onRefresh: () => refreshStatus({ requestPolicy: "network-only" }) });
   const subscriptionEvents = usePerformerSubscriptionEvents({ enabled: true, onRefresh: () => refreshSubscriptions({ requestPolicy: "network-only" }) });
   useEffect(() => { if (subscriptionEvents.event) { refreshSubscriptions({ requestPolicy: "network-only" }); refreshHomeChecks(); } }, [subscriptionEvents.event, refreshSubscriptions, refreshHomeChecks]);
@@ -81,9 +101,9 @@ export function Component() {
   }, [refreshStatus, refreshSubscriptions]);
   const overview = useMemo(() => data?.homeOverview ? {
     ...data.homeOverview,
-    attentionTasks: data.homeOverview.attentionTasks.map(task => readFragment(HomeTaskFragmentDoc, task)),
-    activeTasks: data.homeOverview.activeTasks.map(task => readFragment(HomeTaskFragmentDoc, task)),
-    recentTasks: data.homeOverview.recentTasks.map(task => readFragment(HomeTaskFragmentDoc, task))
+    attentionTasks: data.homeOverview.attentionTasks.map(task => taskSummaryToDashboard(readFragment(HomeTaskFragmentDoc, task))),
+    activeTasks: data.homeOverview.activeTasks.map(task => taskSummaryToDashboard(readFragment(HomeTaskFragmentDoc, task))),
+    recentTasks: data.homeOverview.recentTasks.map(task => taskSummaryToDashboard(readFragment(HomeTaskFragmentDoc, task)))
   } : null, [data?.homeOverview]);
   // Opening a task preserves the home list and scroll context behind its drawer.
   const [displayed, setDisplayed] = useState(overview);

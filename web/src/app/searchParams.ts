@@ -21,12 +21,16 @@ export interface TaskSearchState {
   q: string;
   status: TaskStatusFilter;
   sort: TaskSortKey;
+  page?: number;
+  pageSize?: number;
 }
 
 export function parseTaskSearchParams(params: URLSearchParams): TaskSearchState {
   const status = params.get("status") as TaskStatusParam | "pending-scan" | null;
   const sort = params.get("sort") as TaskSortParam | null;
   return {
+    page: positiveInt(params.get("page"), 1),
+    pageSize: [12,24,48].includes(positiveInt(params.get("pageSize"),24)) ? positiveInt(params.get("pageSize"),24) : 24,
     q: params.get("q")?.trim() ?? "",
     status: status === "pending-scan" ? "running" : status && taskStatusFromParam[status] ? taskStatusFromParam[status] : "all",
     sort: sort && taskSortFromParam[sort] ? taskSortFromParam[sort] : "createdAt"
@@ -35,6 +39,8 @@ export function parseTaskSearchParams(params: URLSearchParams): TaskSearchState 
 
 export function serializeTaskSearchParams(state: TaskSearchState): URLSearchParams {
   const params = new URLSearchParams();
+  if ((state.page ?? 1) !== 1) params.set("page", String(state.page));
+  if ((state.pageSize ?? 24) !== 24) params.set("pageSize", String(state.pageSize));
   if (state.q.trim()) params.set("q", state.q.trim());
   if (state.status !== "all") params.set("status", taskStatusToParam[state.status]);
   if (state.sort !== "createdAt") params.set("sort", taskSortToParam[state.sort]);

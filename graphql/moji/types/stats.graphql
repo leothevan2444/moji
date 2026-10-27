@@ -4,6 +4,8 @@ extend type Query {
 }
 
 type DashboardStats {
+  attention: Int!
+  waiting: Int!
   total: Int!
   active: Int!
   completed: Int!

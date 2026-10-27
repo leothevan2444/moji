@@ -5,13 +5,15 @@ import {
   subscribeGraphQLConnection
 } from "../graphql/client";
 import {
-  TaskEventsDocument,
+  TaskEventsDocument, TaskListSummaryFragmentDoc,
   type TaskEventsSubscription
 } from "../graphql/generated/graphql";
 
 import { getTaskEventGapGeneration, subscribeTaskEventGaps } from "../graphql/taskEventSequence";
 
-export type TaskEvent = TaskEventsSubscription["taskEvents"];
+import { subscribeTaskBatches } from "../graphql/taskRealtime";
+import { useFragment } from "../graphql/generated/fragment-masking";
+export type TaskEvent = Omit<TaskEventsSubscription["taskEvents"], "task"> & { task: import("../graphql/generated/graphql").TaskListSummaryFragment | null };
 
 interface UseTaskEventsOptions {
   onEvent?: (event: TaskEvent) => void;
@@ -50,11 +52,9 @@ export function useTaskEvents(options: UseTaskEventsOptions = {}) {
     }
   }, [connection.generation, connection.status]);
 
-  useEffect(() => {
-    const event = data?.taskEvents;
-    if (!event) return;
-    callbacks.current.onEvent?.(event);
-  }, [data]);
+  useEffect(() => subscribeTaskBatches(events => {
+    for (const event of events) callbacks.current.onEvent?.(event as unknown as TaskEvent);
+  }), []);
 
   useEffect(() => {
     if (observedGapGeneration.current === gapGeneration) return;
@@ -68,7 +68,7 @@ export function useTaskEvents(options: UseTaskEventsOptions = {}) {
   }, [error]);
 
   return {
-    event: data?.taskEvents ?? null,
+    event: data?.taskEvents ? { ...data.taskEvents, task: data.taskEvents.task ? useFragment(TaskListSummaryFragmentDoc, data.taskEvents.task) : null } : null,
     error,
     fetching,
     connectionStatus: connection.status,

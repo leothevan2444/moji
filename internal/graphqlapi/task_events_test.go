@@ -6,6 +6,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/leothevan2444/moji/internal/graphqlapi/model"
 	"github.com/leothevan2444/moji/internal/taskruntime"
 )
 
@@ -17,6 +18,9 @@ func TestTaskEventsResolverMapsEventsAndStopsOnCancellation(t *testing.T) {
 	channel, err := resolver.TaskEvents(ctx)
 	if err != nil {
 		t.Fatalf("TaskEvents: %v", err)
+	}
+	if ready := <-channel; ready.Type != model.TaskEventTypeReady {
+		t.Fatal("missing subscription ready marker")
 	}
 	task := &taskruntime.Task{ID: "task-1", Stage: taskruntime.TaskStageDownloading, StageStatus: taskruntime.TaskStageStatusRunning}
 	bus.Publish(&taskruntime.TaskEvent{
@@ -95,6 +99,9 @@ func TestTaskEventsOverGraphQLTransportWebSocket(t *testing.T) {
 		} `json:"data"`
 	}
 	client.readNext(t, "task-events", &payload)
+	if payload.Data.TaskEvents.Type == "READY" {
+		client.readNext(t, "task-events", &payload)
+	}
 	if payload.Data.TaskEvents.Sequence != 1 || payload.Data.TaskEvents.Type != "CREATED" || payload.Data.TaskEvents.TaskID != "task-1" {
 		t.Fatalf("unexpected subscription payload: %#v", payload)
 	}

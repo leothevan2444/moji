@@ -28,16 +28,22 @@ func jackettSearchResultToModel(result jackett.SearchResult) *model.JackettSearc
 	}
 }
 
-func taskEventToModel(event *taskruntime.TaskEvent) *model.TaskEvent {
+func taskEventToModel(event *taskruntime.TaskEvent, includeTask ...bool) *model.TaskEvent {
 	if event == nil {
 		return nil
 	}
-	return &model.TaskEvent{
+	var legacyTask *model.Task
+	if len(includeTask) == 0 || includeTask[0] {
+		legacyTask = taskToModel(event.Task)
+	}
+	result := &model.TaskEvent{
+		StreamID: event.StreamID, ListChanged: event.ListChanged, Summary: taskSummaryToModel(event.Task),
 		Sequence: event.Sequence,
 		Type:     model.TaskEventType(event.Type),
 		TaskID:   event.TaskID,
-		Task:     taskToModel(event.Task),
+		Task:     legacyTask,
 		DashboardStats: &model.DashboardStats{
+			Attention: event.DashboardStats.Attention, Waiting: event.DashboardStats.Waiting,
 			Total:        event.DashboardStats.Total,
 			Active:       event.DashboardStats.Active,
 			Completed:    event.DashboardStats.Completed,
@@ -46,6 +52,10 @@ func taskEventToModel(event *taskruntime.TaskEvent) *model.TaskEvent {
 			Failed:       event.DashboardStats.Failed,
 		},
 	}
+	if event.Type == taskruntime.TaskEventReady {
+		result.DashboardStats = nil
+	}
+	return result
 }
 
 func jackettSearchResultsToModel(results []jackett.SearchResult) []*model.JackettSearchResult {
@@ -169,6 +179,7 @@ func taskToModel(task *taskruntime.Task) *model.Task {
 		files = append(files, &model.TaskFile{Index: file.Index, Path: file.Path, Size: file.Size, Kind: string(file.Kind), Part: file.Part, Selected: file.Selected, Reason: file.Reason})
 	}
 	return &model.Task{
+		Version: taskVersion(task), Revision: task.Revision,
 		Files:                 files,
 		ID:                    task.ID,
 		Source:                model.TaskSource(source),

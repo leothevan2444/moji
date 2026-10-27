@@ -14,8 +14,8 @@ export function evaluateTaskEventSequence(previous: number | null, next: number)
 export function createTaskEventSequenceObserver(onGap: () => void) {
   let generation: number | null = null;
   let previous: number | null = null;
-  return (sequence: number, connectionGeneration: number) => {
-    if (generation !== connectionGeneration) {
+  return (sequence: number, connectionGeneration: number, reset = false) => {
+    if (generation !== connectionGeneration || reset) {
       generation = connectionGeneration;
       previous = null;
     }

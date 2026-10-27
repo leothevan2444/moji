@@ -34,7 +34,7 @@ function subscriptionLinks(cache: Cache, parent: string): string[] | null {
 }
 
 function linkTask(cache: Cache, task: Entity | null | undefined, prepend = false) {
-  if (!task) return;
+  if (!task || task.__typename === "TaskSummary") return;
   const taskKey = cache.keyOfEntity(task);
   const links = existingLinks(cache, "tasks");
   if (!taskKey || !links) return;
@@ -175,6 +175,10 @@ export const graphcacheKeys: KeyingConfig = {
   ImageCacheStatus: singleton,
   DashboardStats: singleton,
   HomeOverview: singleton,
+  HomeTaskSnapshot: singleton,
+  TaskPage: () => null,
+  TaskDetailSnapshot: () => null,
+  TaskAttentionQueue: () => null,
   SubscriptionCheckActivity: () => null,
   PerformerCheckActivity: () => null,
   HomeSubscriptionChecks: singleton,
@@ -219,7 +223,7 @@ export const graphcacheUpdates: UpdatesConfig = {
   Subscription: {
     taskEvents(result: any, _args, cache) {
       const event = result.taskEvents;
-      if (!event) return;
+      if (!event || event.type === "READY") return;
       if (event.type === "DELETED") unlinkTask(cache, event.taskId);
       else {
         linkTask(cache, event.task, event.type === "CREATED");
@@ -230,7 +234,7 @@ export const graphcacheUpdates: UpdatesConfig = {
         invalidatePerformerDetailQueries(cache);
         for (const field of cache.inspectFields("Query")) if (field.fieldName === "releaseReviews") cache.invalidate("Query", field.fieldName, field.arguments ?? {});
       }
-      else if (event.task?.stage === "COMPLETED") invalidatePerformerDetailQueries(cache);
+      else if (event.listChanged !== false && event.task?.stage === "COMPLETED") invalidatePerformerDetailQueries(cache);
     },
     performerSubscriptionEvents(result: any, _args, cache) {
       const event = result.performerSubscriptionEvents;

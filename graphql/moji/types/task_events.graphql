@@ -1,15 +1,19 @@
 enum TaskEventType {
+  READY
   CREATED
   UPDATED
   DELETED
 }
 
 type TaskEvent {
+  streamId: String!
+  listChanged: Boolean!
+  summary: TaskSummary
   sequence: Int!
   type: TaskEventType!
   taskId: ID!
   task: Task
-  dashboardStats: DashboardStats!
+  dashboardStats: DashboardStats
 }
 
 type Subscription {

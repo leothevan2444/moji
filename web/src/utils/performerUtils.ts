@@ -31,6 +31,15 @@ export function performerImageURL(imagePath?: string | null, stashURL?: string |
   }
 }
 
+/** List avatars use a bounded cached derivative; detail URLs keep the original. */
+export function performerThumbnailURL(imagePath?: string | null, stashURL?: string | null) {
+  const original = performerImageURL(imagePath, stashURL);
+  if (!original?.startsWith("/api/images/")) return original;
+  const url = new URL(original, "http://moji.local");
+  url.searchParams.set("variant", "avatar");
+  return `${url.pathname}${url.search}${url.hash}`;
+}
+
 /** Build the matching performer detail URL in the configured Stash instance. */
 export function stashPerformerURL(performerID: string, stashURL?: string | null) {
   if (!stashURL) return null;

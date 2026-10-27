@@ -89,6 +89,7 @@ type Service struct {
 	statusMu         sync.RWMutex
 	lastCleanupAt    *time.Time
 	lastError        string
+	thumbnailSlots   chan struct{}
 	now              func() time.Time
 }
 
@@ -109,6 +110,7 @@ func New(cacheDir string, provider ConfigProvider) (*Service, error) {
 		config:           provider,
 		credentials:      map[string]string{},
 		cleanupCh:        make(chan struct{}, 1),
+		thumbnailSlots:   make(chan struct{}, 2),
 		now:              time.Now,
 	}
 	for _, dir := range []string{s.registrationsDir, s.objectsDir} {
@@ -232,7 +234,21 @@ func (s *Service) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		http.NotFound(w, r)
 		return
 	}
-	v, err, _ := s.group.Do(key, func() (any, error) { return s.load(r.Context(), key) })
+	variant := r.URL.Query().Get("variant")
+	if variant != "" && variant != "avatar" {
+		http.Error(w, "unsupported image variant", http.StatusBadRequest)
+		return
+	}
+	responseKey := key
+	if variant == "avatar" {
+		responseKey = key + avatarSuffix
+	}
+	v, err, _ := s.group.Do(responseKey, func() (any, error) {
+		if variant == "avatar" {
+			return s.loadAvatar(r.Context(), key)
+		}
+		return s.load(r.Context(), key)
+	})
 	if err != nil {
 		if errors.Is(err, os.ErrNotExist) {
 			http.NotFound(w, r)
@@ -242,7 +258,7 @@ func (s *Service) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, http.StatusText(http.StatusBadGateway), http.StatusBadGateway)
 		return
 	}
-	if err := serveImage(w, r, key, v.(imageResponse)); err != nil {
+	if err := serveImage(w, r, responseKey, v.(imageResponse)); err != nil {
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 	}
 }
@@ -539,6 +555,9 @@ func (s *Service) Cleanup(_ context.Context) error {
 
 func (s *Service) hasObject(key string) bool {
 	_, _, ok := s.findObject(key)
+	if !ok {
+		_, _, ok = s.findObject(key + avatarSuffix)
+	}
 	return ok
 }
 

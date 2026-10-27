@@ -17,6 +17,10 @@ func (r *queryResolver) DashboardStats(ctx context.Context) (*model.DashboardSta
 		return &model.DashboardStats{}, nil
 	}
 
+	if source, ok := r.TaskRuntime.(taskruntime.TaskStatsProvider); ok {
+		stats, err := source.TaskStats(ctx)
+		return workspaceStatsToModel(stats), err
+	}
 	tasks, err := r.TaskRuntime.ListTasks(ctx)
 	if err != nil {
 		return nil, err

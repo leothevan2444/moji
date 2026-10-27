@@ -1,5 +1,8 @@
 import { createClient as createWSClient } from "graphql-ws";
 import { createClient, fetchExchange, subscriptionExchange } from "urql";
+import { pipe, map } from "wonka";
+import type { Exchange } from "urql";
+import { recordTaskEvent, publishTaskBatch, protectTaskSnapshot, type TaskRealtimeEvent } from "./taskRealtime";
 import type { ExecutionResult } from "@urql/core";
 import { graphcacheExchange } from "./cache";
 import { createTaskEventSequenceObserver, notifyTaskEventGap } from "./taskEventSequence";
@@ -56,27 +59,50 @@ const realtimeExchange = subscriptionExchange({
     return {
       subscribe(sink) {
         const observeSequence = createTaskEventSequenceObserver(notifyTaskEventGap);
+        let timer: ReturnType<typeof setTimeout> | undefined;
+        const pending = new Map<string, any>();
+        const flush = () => {
+          timer = undefined;
+          const events: TaskRealtimeEvent[] = [];
+          for (const payload of [...pending.values()].sort((a, b) => a.data.taskEvents.sequence - b.data.taskEvents.sequence)) { sink.next(payload); events.push(payload.data.taskEvents); }
+          pending.clear();
+          if (events.length) publishTaskBatch(events);
+        };
         const dispose = wsClient.subscribe<Record<string, unknown>, ExecutionResult["extensions"]>(input, {
           ...sink,
           next(payload) {
-            const taskEvent = payload.data?.taskEvents as { sequence?: number } | undefined;
+            const taskEvent = payload.data?.taskEvents as TaskRealtimeEvent | undefined;
             if (typeof taskEvent?.sequence === "number") {
-              const decision = observeSequence(taskEvent.sequence, connectionSnapshot.generation);
-              if (!decision.accept) return;
+              const decision = observeSequence(taskEvent.sequence, connectionSnapshot.generation, taskEvent.type === "READY");
+              if (!decision.accept && taskEvent.type !== "READY") return;
+              if (taskEvent.type === "READY") { if (timer) clearTimeout(timer); timer = undefined; pending.clear(); }
+              recordTaskEvent(taskEvent);
+              if (taskEvent.type !== "READY") {
+                // Coalesce repeated updates for one task, but retain membership changes.
+                const before = pending.get(taskEvent.taskId)?.data?.taskEvents;
+                const next = { ...payload, data: { ...payload.data, taskEvents: { ...taskEvent, listChanged: taskEvent.listChanged || before?.listChanged } } };
+                pending.set(taskEvent.taskId, next);
+                if (!timer) timer = setTimeout(flush, 100);
+                return;
+              }
             }
             sink.next(payload);
           }
         });
-        return { unsubscribe: dispose };
+        return { unsubscribe() { if (timer) clearTimeout(timer); pending.clear(); dispose(); } };
       }
     };
   }
 });
 
+const taskSnapshotExchange: Exchange = ({ forward }) => operations => pipe(forward(operations), map(result =>
+  result.data ? { ...result, data: protectTaskSnapshot(result.data) } : result
+));
+
 export const client = createClient({
   url: "/graphql",
   preferGetMethod: false,
-  exchanges: [graphcacheExchange, realtimeExchange, fetchExchange]
+  exchanges: [graphcacheExchange, taskSnapshotExchange, realtimeExchange, fetchExchange]
 });
 
 // Settings always read from the server, including lists and status queries.

@@ -29,7 +29,8 @@ query HomePageDocument {
       defaultSavePath
     }
   }
-  homeOverview {
+  homeOverview: homeTaskSnapshot {
+    sequence streamId
     total attention active waiting completedLast24Hours
     attentionTasks { ...HomeTask }
     activeTasks { ...HomeTask }
@@ -37,44 +38,7 @@ query HomePageDocument {
   }
 }
 
-fragment HomeTask on Task {
-    id
-    source
-    code
-    stage
-    stageStatus
-    stageLabel
-    stageStatusLabel
-    stageErrorCode
-    stageErrorMessage
-    files { index path size kind part selected reason }
-    torrentUrl
-    torrentName
-    progress
-    qbittorrentState
-    contentPath
-    torrentHash
-    savePath
-    category
-    tags
-    downloadCompletedAt
-    sourcingCompletedAt ingestCompletedAt
-    mojiSourcePath
-    transferAction
-    mojiTransferPath
-    transferError
-    stashIngestPhase
-    stashGenerateJobId
-    stashIdentifyJobId
-    stashSceneIds
-    stashScanJobId
-    stashScanPath
-    stashScanError
-    stashScanHint
-    stashScanStartedAt
-    createdAt
-    updatedAt lastProgressAt sourcingLastCheckedAt sourcingNextCheckAt
-  }
+fragment HomeTask on TaskSummary { ...TaskListSummary }
 
 query HomeSubscriptionSummary {
   homeSubscriptionSummary { total attention unchecked lastCheckedAt attentionPerformerIds }

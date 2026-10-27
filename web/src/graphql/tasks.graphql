@@ -1,5 +1,8 @@
 query TaskDetailDocument($id: ID!) {
-  task(id: $id) {
+  taskDetailSnapshot(id: $id) {
+   sequence streamId
+   task {
+    version revision
     id
     source
     code
@@ -38,6 +41,7 @@ query TaskDetailDocument($id: ID!) {
     createdAt
     updatedAt lastProgressAt sourcingLastCheckedAt sourcingNextCheckAt
   }
+}
 }
 
 mutation AddTorrentDocument($input: QBittorrentAddInput!) {

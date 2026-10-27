@@ -11,11 +11,14 @@ import { parseTaskSearchParams, serializeTaskSearchParams } from "../searchParam
 import { mergeTaskSelection, taskSummary, type TaskGroupKey } from "../../utils/taskUtils";
 import {
   TaskDeletePolicy,
-  TaskDetailDocumentDocument,
-  TasksOverviewDocumentDocument
+  TasksWorkspaceDocument, TaskListStatus, TaskListSort, TaskSelectionSummariesDocument, TaskAttentionQueueDocument
 } from "../../graphql/generated/graphql";
 import type { TaskSortKey, TaskStatusFilter } from "../../types";
 import type { AppOutletContext } from "../AppLayout";
+import { useDebounce } from "../../hooks/useDebounce";
+import { useTaskDetail } from "../../hooks/useTaskDetail";
+import { latestTaskEvent, subscribeTaskBatches, taskStreamCursor } from "../../graphql/taskRealtime";
+import { taskSummaryToDashboard } from "../../utils/taskSummary";
 import { useTranslation } from "react-i18next";
 import type { TaskBatchResultView } from "../../components/drawers/TaskBatchResultDrawer";
 
@@ -40,7 +43,7 @@ export function Component() {
   const recoveryGeneration = useTaskSnapshotRecoveryGeneration();
   const observedRecoveryGeneration = useRef(recoveryGeneration);
   const filter = parseTaskSearchParams(searchParams);
-  const [groups, setGroups] = useState<Record<TaskGroupKey, boolean>>({ attention: true, waiting: true, active: true, completed: false });
+  const [groups, setGroups] = useState<Record<TaskGroupKey, boolean>>({ attention: true, waiting: true, active: true, completed: true });
   const [restartTargetId, setRestartTargetId] = useState<string | null>(null);
   const [pendingRetry, setPendingRetry] = useState<string | null>(null);
   const [pendingDelete, setPendingDelete] = useState<string | null>(null);
@@ -50,37 +53,82 @@ export function Component() {
   const [lastRefreshedAt, setLastRefreshedAt] = useState<Date | null>(null);
   const [queueOpen, setQueueOpen] = useState(searchParams.get("workbench") === "1");
 
-  const [{ data, fetching, error }, refresh] = useQuery({ query: TasksOverviewDocumentDocument, requestPolicy: "cache-and-network" });
-  const [{ data: detailData, fetching: detailFetching, error: detailError }, refreshDetail] = useQuery({
-    query: TaskDetailDocumentDocument,
-    variables: { id: taskId ?? "" },
-    pause: !taskId,
-    requestPolicy: "cache-and-network"
-  });
+  const search = useDebounce(filter.q, 250);
+  const [deleteGeneration, setDeleteGeneration] = useState(0);
+  const [updatesPending, setUpdatesPending] = useState(false);
+  const input = useMemo(() => ({ search, page: filter.page ?? 1, pageSize: filter.pageSize ?? 24,
+    status: ({ all: TaskListStatus.All, running: TaskListStatus.Active, failed: TaskListStatus.Attention, waiting: TaskListStatus.Waiting, completed: TaskListStatus.Completed })[filter.status],
+    sort: ({ createdAt: TaskListSort.Created, updatedAt: TaskListSort.Updated, progress: TaskListSort.Progress })[filter.sort],
+    completedWithin24Hours: searchParams.get("completedWithin") === "24h" && filter.status === "completed"
+  }), [search, filter.page, filter.pageSize, filter.status, filter.sort, searchParams]);
+  const [{ data, fetching, error }, refresh] = useQuery({ query: TasksWorkspaceDocument, variables: { input }, requestPolicy: "cache-and-network" });
+  const [{ data: detailData, fetching: detailFetching, error: detailError }] = useTaskDetail(taskId);
+  const selectionKey = selectedTaskIds.slice().sort().join("\u0000");
+  const selectionIDs = useMemo(() => selectionKey ? selectionKey.split("\u0000") : [], [selectionKey]);
+  const [{ data: selectionData, fetching: selectionFetching }, refreshSelection] = useQuery({ query: TaskSelectionSummariesDocument, variables: { ids: selectionIDs }, pause: !selectionIDs.length, requestPolicy: "cache-and-network" });
+  useEffect(() => {
+    const snapshot = selectionData?.taskSelection; const cursor = taskStreamCursor();
+    if (!selectionFetching && snapshot && cursor.readyGeneration && (snapshot.streamId !== cursor.streamId || snapshot.sequence < cursor.journalFloor)) refreshSelection({requestPolicy:"network-only"});
+  }, [selectionData, selectionFetching, refreshSelection]);
+  const selectedTasks = useMemo(() => (selectionData?.taskSelection.items ?? []).map(taskSummaryToDashboard).filter(task => selectedTaskIds.includes(task.id)), [selectionData, selectedTaskIds]);
   const { restartTaskSourcing, restartingTaskSourcing, deleteTask, retryTask, retryTasks, retryingTasks, deleteTasks, deletingTasks } = useTaskMutations();
-  const tasks = useMemo(() => data?.tasks ?? [], [data?.tasks]);
-  const activeTask = detailData?.task ?? (taskId ? tasks.find((task) => task.id === taskId) ?? null : null);
+  const tasks = useMemo(() => (data?.taskPage.items ?? []).map(taskSummaryToDashboard).filter(task => latestTaskEvent(task.id)?.type !== "DELETED"), [data?.taskPage.items, deleteGeneration]);
+  const activeTask = detailData?.task ?? null;
   const deleteTarget = confirmDeleteIds.length === 1 ? tasks.find((task) => task.id === confirmDeleteIds[0]) ?? null : null;
   const deletePolicy = data?.settings.system.taskDeletePolicy ?? TaskDeletePolicy.KeepOnly;
   const isResolution = Boolean(taskId && location.pathname.endsWith("/resolve"));
 
-  const requery = () => refresh({ requestPolicy: "network-only" });
+  const requery = () => { setUpdatesPending(false); refresh({ requestPolicy: "network-only" }); };
   useEffect(() => { if (!fetching && data) setLastRefreshedAt(new Date()); }, [data, fetching]);
+  const recoveryRef = useRef({ fetching, data, refresh, selectionIDs, refreshSelection, input, taskId, queueOpen, selectedTaskIds });
+  recoveryRef.current = { fetching, data, refresh, selectionIDs, refreshSelection, input, taskId, queueOpen, selectedTaskIds };
+  const deferredRefresh = useRef(false);
+  const recoveryBoundary = useRef<{streamId:string;sequence:number} | null>(null);
+  const refreshTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => subscribeTaskBatches(events => {
+    const state = recoveryRef.current;
+    const deleted = new Set(events.filter(e => e.type === "DELETED").map(e => e.taskId));
+    if (deleted.size) { setSelectedTaskIds(ids => ids.filter(id => !deleted.has(id))); setDeleteGeneration(value => value+1); }
+    const affectsMembership = events.some(event => event.listChanged);
+    if (!affectsMembership && state.input.sort === TaskListSort.Created) return;
+    setUpdatesPending(true);
+    // Reordering a progress/updated sort is an explicit refresh; ordinary progress
+    // never moves a card. Membership refreshes automatically when the list is idle.
+    if (state.input.sort !== TaskListSort.Created || state.taskId || state.queueOpen || state.selectedTaskIds.length || document.activeElement?.closest(".task-grid")) return;
+    deferredRefresh.current = true;
+    if (!state.fetching && !refreshTimer.current) refreshTimer.current = setTimeout(() => {
+      refreshTimer.current = null;
+      if (!recoveryRef.current.fetching) { deferredRefresh.current = false; recoveryBoundary.current = null; setUpdatesPending(false); recoveryRef.current.refresh({ requestPolicy: "network-only" }); }
+    }, 300);
+  }), []);
+  useEffect(() => () => { if (refreshTimer.current) clearTimeout(refreshTimer.current); }, []);
   useEffect(() => {
-    const ids = new Set(tasks.map(task => task.id));
-    setSelectedTaskIds(current => current.every(id => ids.has(id)) ? current : current.filter(id => ids.has(id)));
-  }, [tasks]);
+    const page = data?.taskPage;
+    const cursor = taskStreamCursor();
+    if (observedRecoveryGeneration.current !== recoveryGeneration) {
+      observedRecoveryGeneration.current = recoveryGeneration;
+      recoveryBoundary.current = {streamId:cursor.streamId,sequence:cursor.sequence};
+      if (selectionIDs.length) refreshSelection({ requestPolicy: "network-only" });
+    }
+    const boundary = recoveryBoundary.current;
+    if (boundary && page && page.streamId === boundary.streamId && page.sequence >= boundary.sequence) recoveryBoundary.current = null;
+    const needsRecovery = Boolean(recoveryBoundary.current) || Boolean(page && cursor.readyGeneration && (page.streamId !== cursor.streamId || page.sequence < cursor.journalFloor));
+    if (!fetching && (deferredRefresh.current || needsRecovery) && !refreshTimer.current) refreshTimer.current = setTimeout(() => {
+      refreshTimer.current = null;
+      if (!recoveryRef.current.fetching) { deferredRefresh.current = false; recoveryBoundary.current = null; setUpdatesPending(false); recoveryRef.current.refresh({ requestPolicy: "network-only" }); }
+    }, 300);
+    else if (page && cursor.streamId === page.streamId && cursor.membershipSequence > page.sequence) setUpdatesPending(true);
+  }, [data, fetching, recoveryGeneration, refresh, refreshSelection, selectionIDs]);
   useEffect(() => {
-    if (observedRecoveryGeneration.current === recoveryGeneration) return;
-    observedRecoveryGeneration.current = recoveryGeneration;
-    if (taskId) void refreshDetail({ requestPolicy: "network-only" });
-  }, [recoveryGeneration, refreshDetail, taskId]);
-  const openTask = (id: string, resolve = false) => navigate(`/tasks/${encodeURIComponent(id)}${resolve ? "/resolve" : ""}`, { state: { backgroundLocation: location } });
+    if (!data?.taskPage || fetching || data.taskPage.page === (filter.page ?? 1)) return;
+    const next=serializeTaskSearchParams({ ...filter, page: data.taskPage.page }); if (input.completedWithin24Hours) next.set("completedWithin","24h"); setSearchParams(next, { replace: true });
+  }, [data?.taskPage.page, fetching, filter.page]);
+  const openTask = (id: string, resolve = false) => navigate(`/tasks/${encodeURIComponent(id)}${resolve ? "/resolve" : ""}${location.search}`, { state: { backgroundLocation: location } });
   const closeTask = () => {
     navigate(taskCloseTarget(location.state, searchParams));
   };
   const updateFilter = (patch: Partial<{ q: string; status: TaskStatusFilter; sort: TaskSortKey }>) => {
-    const next = serializeTaskSearchParams({ ...filter, ...patch });
+    const next = serializeTaskSearchParams({ ...filter, ...patch, page: 1 });
     if (searchParams.get("completedWithin") === "24h" && (!patch.status || patch.status === "completed")) next.set("completedWithin", "24h");
     setSearchParams(next);
   };
@@ -91,7 +139,7 @@ export function Component() {
       const result = await retryTask({ id });
       if (result.error) pushToast("tone-danger", describeQueryError(result.error));
       else if (!result.data?.retryTask?.id) pushToast("tone-danger", t("taskRoute.retryNoResult"));
-      else pushToast("tone-success", t("taskRoute.retried", { task: tasks.find((task) => task.id === id) ? taskSummary(tasks.find((task) => task.id === id)!) : id }));
+      else { pushToast("tone-success", t("taskRoute.retried", { task: tasks.find((task) => task.id === id) ? taskSummary(tasks.find((task) => task.id === id)!) : id })); requery(); if (selectionIDs.length) refreshSelection({requestPolicy:"network-only"}); }
     } finally { setPendingRetry(null); }
   };
   const runRestart = async (id: string) => {
@@ -100,8 +148,9 @@ export function Component() {
     const restartedTask = result.data?.restartTaskSourcing;
     if (!restartedTask?.id) { pushToast("tone-danger", t("taskRestart.noResult")); return; }
     setRestartTargetId(null);
+    requery();
     pushToast("tone-success", t("taskRestart.ready", { task: taskSummary(restartedTask) }));
-    navigate(`/tasks/${encodeURIComponent(id)}/resolve`, { replace: true, state: location.state });
+    navigate(`/tasks/${encodeURIComponent(id)}/resolve${location.search}`, { replace: true, state: location.state });
   };
   const runDelete = async (id: string) => {
     setPendingDelete(id);
@@ -110,7 +159,8 @@ export function Component() {
       if (result.error) { pushToast("tone-danger", describeQueryError(result.error)); return; }
       if (!result.data?.deleteTask?.id) { pushToast("tone-danger", t("taskRoute.deleteNoResult")); return; }
       pushToast("tone-success", t("taskRoute.deleted", { task: deleteTarget ? taskSummary(deleteTarget) : id }));
-      setConfirmDeleteIds([]); if (taskId === id) navigate("/tasks", { replace: true });
+      setSelectedTaskIds(ids => ids.filter(item => item !== id)); requery();
+      setConfirmDeleteIds([]); if (taskId === id) navigate(taskCloseTarget(location.state, searchParams), { replace: true });
     } finally { setPendingDelete(null); }
   };
   const showBatchResult = (payload: TaskBatchResultView | undefined) => {
@@ -118,7 +168,7 @@ export function Component() {
     if (payload.summary.failedCount || payload.summary.skippedCount) setBatchResult(payload);
     else pushToast("tone-success", t("taskBatch.batchComplete", { count: payload.summary.succeededCount }));
   };
-  const runBatchRetry = async (ids: string[]) => { const result = await retryTasks({ ids }); if (result.error) pushToast("tone-danger", describeQueryError(result.error)); else showBatchResult(result.data?.retryTasks); };
+  const runBatchRetry = async (ids: string[]) => { const result = await retryTasks({ ids }); if (result.error) pushToast("tone-danger", describeQueryError(result.error)); else { showBatchResult(result.data?.retryTasks); requery(); refreshSelection({requestPolicy:"network-only"}); } };
   const runBatchDelete = async (ids: string[]) => {
     const result = await deleteTasks({ ids });
     if (result.error) { pushToast("tone-danger", describeQueryError(result.error)); return; }
@@ -129,6 +179,7 @@ export function Component() {
       showBatchResult(payload);
     }
     setConfirmDeleteIds([]);
+    requery();
   };
   const toggleSelection = (id: string) => setSelectedTaskIds((current) => current.includes(id) ? current.filter((item) => item !== id) : current.length >= 100 ? (pushToast("tone-info", t("taskBatch.limit", { count: 100 })), current) : [...current, id]);
   const selectVisible = (ids: string[]) => {
@@ -145,7 +196,10 @@ export function Component() {
 
   if (error && !data) return <div className="empty-card"><h3>{t("taskRoute.loadFailed")}</h3><p>{describeQueryError(error)}</p><button type="button" onClick={requery}>{t("common.retry")}</button></div>;
   return <>
-    <TasksPage tasks={tasks} completedWithin24Hours={searchParams.get("completedWithin") === "24h" && filter.status === "completed"}
+    <TasksPage tasks={tasks} serverPage={data?.taskPage ? { ...data.taskPage, stats: data.taskPage.stats } : undefined}
+      selectedTasks={selectedTasks} selectionLoading={selectionFetching} updatesPending={updatesPending}
+      onPageChange={page => { const next = serializeTaskSearchParams({ ...filter, page }); if (input.completedWithin24Hours) next.set("completedWithin", "24h"); setSearchParams(next); }}
+      onPageSizeChange={pageSize => { const next = serializeTaskSearchParams({ ...filter, pageSize, page: 1 }); if (input.completedWithin24Hours) next.set("completedWithin", "24h"); setSearchParams(next); }} completedWithin24Hours={searchParams.get("completedWithin") === "24h" && filter.status === "completed"}
       onClearCompletedWindow={() => { const next = new URLSearchParams(searchParams); next.delete("completedWithin"); setSearchParams(next); }}
       taskSearch={filter.q} taskStatus={filter.status} taskSort={filter.sort} taskGroupOpen={groups}
       pendingTaskRetryId={pendingRetry} pendingTaskDeleteId={pendingDelete} selectedTaskIds={selectedTaskIds}
@@ -160,12 +214,12 @@ export function Component() {
       onDeleteTask={handleDeleteTask} onToggleTaskSelection={handleToggleSelection} onSelectVisibleTasks={selectVisible} onClearTaskSelection={() => setSelectedTaskIds([])}
       onBatchRetry={(ids) => void runBatchRetry(ids)} onBatchDelete={setConfirmDeleteIds} />
     {queueOpen && data ? <Suspense fallback={<Drawer visibleDrawer="task-queue" closing={false} title={t("taskProcessingQueue.title")} onClose={() => { setQueueOpen(false); if (searchParams.get("workbench") === "1") navigate(taskCloseTarget(location.state, new URLSearchParams("status=failed")), { replace: true }); }}><div className="skeleton skeleton-card" /></Drawer>}>
-      <TaskProcessingQueueDrawer tasks={tasks} autoAdvance={searchParams.get("workbench") !== "1"} onCopy={copyText} onNotify={pushToast} onClose={() => { setQueueOpen(false); if (searchParams.get("workbench") === "1") navigate(taskCloseTarget(location.state, new URLSearchParams("status=failed")), { replace: true }); }} />
+      <TaskQueueLoader autoAdvance={searchParams.get("workbench") !== "1"} onCopy={copyText} onNotify={pushToast} onClose={() => { requery(); setQueueOpen(false); if (searchParams.get("workbench") === "1") navigate(taskCloseTarget(location.state, new URLSearchParams("status=failed")), { replace: true }); }} />
     </Suspense> : null}
     {taskId ? <Drawer visibleDrawer={isResolution ? "task-resolution" : "task"} closing={false} title={isResolution ? t("taskRoute.resolutionTitle", { task: activeTask ? taskSummary(activeTask) : t("taskRoute.task") }) : activeTask ? taskSummary(activeTask) : t("taskRoute.details")} onClose={closeTask}>
       <Suspense fallback={<div className="skeleton skeleton-card" />}>
         {detailFetching && !activeTask ? <p>{t("taskRoute.loading")}</p> : detailError ? <div className="empty-card"><h3>{t("taskRoute.loadFailed")}</h3><p>{describeQueryError(detailError)}</p></div> : !activeTask ? <div className="empty-card"><h3>{t("taskRoute.notFound")}</h3></div> : isResolution ?
-          <SourcingResolutionDrawer task={activeTask} onNotify={pushToast} onResolved={async () => { navigate(`/tasks/${encodeURIComponent(taskId)}`); }} /> :
+          <SourcingResolutionDrawer task={activeTask} onNotify={pushToast} onResolved={async () => { requery(); navigate(`/tasks/${encodeURIComponent(taskId)}${location.search}`); }} /> :
           <TaskDrawer onRestartTask={setRestartTargetId} pendingRestart={restartingTaskSourcing} task={activeTask} pendingRetry={pendingRetry === taskId} pendingDelete={pendingDelete === taskId} onCopy={copyText} onResolveTask={(id) => openTask(id, true)} onRetryTask={(id) => void runRetry(id)} onDeleteTask={(id) => setConfirmDeleteIds([id])} />}
       </Suspense>
     </Drawer> : null}
@@ -185,4 +239,14 @@ export function Component() {
     {confirmDeleteIds.length ? <Drawer visibleDrawer="confirm" closing={false} title={t("taskRoute.deleteTitle")} onClose={() => { if (!pendingDelete && !deletingTasks) setConfirmDeleteIds([]); }}><Suspense fallback={null}><ConfirmDeleteDrawer taskLabel={deleteTarget ? taskSummary(deleteTarget) : undefined} count={confirmDeleteIds.length > 1 ? confirmDeleteIds.length : undefined} deletePolicy={deletePolicy} pending={Boolean(pendingDelete) || deletingTasks} onConfirm={() => confirmDeleteIds.length === 1 ? void runDelete(confirmDeleteIds[0]) : void runBatchDelete(confirmDeleteIds)} onCancel={() => { if (!pendingDelete && !deletingTasks) setConfirmDeleteIds([]); }} /></Suspense></Drawer> : null}
     {batchResult ? <Drawer visibleDrawer="task-batch-result" closing={false} title={t("taskBatch.resultTitle")} onClose={() => setBatchResult(null)}><Suspense fallback={null}><TaskBatchResultDrawer payload={batchResult} onOpenTask={(id) => { setBatchResult(null); openTask(id); }} /></Suspense></Drawer> : null}
   </>;
+}
+
+function TaskQueueLoader(props: Omit<React.ComponentProps<typeof TaskProcessingQueueDrawer>, "tasks">) {
+ const { t } = useTranslation();
+ const [{data, fetching, error}, refresh] = useQuery({query:TaskAttentionQueueDocument,requestPolicy:"network-only"});
+ const recovery = useTaskSnapshotRecoveryGeneration();
+ const previous = useRef(recovery);
+ useEffect(() => { if (previous.current !== recovery) { previous.current = recovery; refresh({requestPolicy:"network-only"}); } },[recovery,refresh]);
+ if (!data) return <Drawer visibleDrawer="task-queue" closing={false} title={t("taskProcessingQueue.title")} onClose={props.onClose}>{error ? <><p role="alert">{describeQueryError(error)}</p><button type="button" disabled={fetching} onClick={() => refresh({requestPolicy:"network-only"})}>{t("common.retry")}</button></> : <div className="skeleton skeleton-card" />}</Drawer>;
+ return <TaskProcessingQueueDrawer {...props} tasks={data.taskAttentionQueue.items.map(entry => taskSummaryToDashboard({ ...entry, stageLabel:"", stageStatusLabel:"" }))} />;
 }

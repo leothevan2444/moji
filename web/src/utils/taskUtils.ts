@@ -2,7 +2,7 @@
  * Task-related utility functions and types.
  */
 
-import type { TasksOverviewDocumentQuery } from "../graphql/generated/graphql";
+import type { TaskDetailDocumentQuery } from "../graphql/generated/graphql";
 import { transferActionLabel } from "./ingestUtils";
 import { qbittorrentStateLabel } from "./qbittorrentState";
 import i18n from "../i18n/i18n";
@@ -11,7 +11,7 @@ const tr = (key: string, options?: Record<string, unknown>) => i18n.t(key, optio
 
 // ── Re-usable type aliases ──────────────────────────────────────────
 
-export type DashboardTask = TasksOverviewDocumentQuery["tasks"][number];
+export type DashboardTask = Omit<NonNullable<TaskDetailDocumentQuery["taskDetailSnapshot"]["task"]>, "candidate" | "revision" | "version"> & { revision?: number; version?: string };
 
 export type TaskGroupKey = "attention" | "waiting" | "active" | "completed";
 

@@ -5,7 +5,7 @@ import { createPortal } from "react-dom";
 import { Drawer } from "../layout/Drawer";
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router";
-import { formatDateTime, formatRelative, performerImageURL, performerInitials, stashPerformerURL } from "../../utils";
+import { formatDateTime, formatRelative, performerThumbnailURL, performerInitials, stashPerformerURL } from "../../utils";
 import { performerCheckRun } from "../../hooks/useSubscriptionChecks";
 import type { PerformersPageProps, StashPerformerEntry, SubscribedPerformerEntry } from "./types";
 
@@ -20,7 +20,7 @@ export function PerformerCard({ performer, subscription, reviewCount, page }: { 
   const checkRun = performerCheckRun(page.checkActivity, performer.id);
   const checkItem = checkRun;
   const checkDisabled = pending || Boolean(checkRun || page.checkActivity?.allRunId || page.checkStarting || page.checksLoading || page.checksError);
-  const imageURL = performerImageURL(performer.imagePath, stashBaseURL);
+  const imageURL = performerThumbnailURL(performer.imagePath, stashBaseURL);
   const stashURL = stashPerformerURL(performer.id, stashBaseURL);
   const aliases = performer.aliasList.join(" / ");
   return (
@@ -32,7 +32,7 @@ export function PerformerCard({ performer, subscription, reviewCount, page }: { 
       }}>
         <div className="avatar avatar--frame">
           <span className="avatar__fallback" aria-hidden="true">{performerInitials(performer.name)}</span>
-          {imageURL ? <img className="avatar__image" src={imageURL} alt="" loading="lazy" onError={event => { event.currentTarget.style.display = "none"; }} /> : null}
+          {imageURL ? <img className="avatar__image" src={imageURL} alt="" loading="lazy" decoding="async" onError={event => { event.currentTarget.style.display = "none"; }} /> : null}
         </div>
         <div className="profile-card__body">
           <div className="profile-card__head">

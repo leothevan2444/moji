@@ -12,7 +12,7 @@ const schema = buildSchema([
 
 const now = "2026-01-15T12:00:00Z";
 function homeTask(id: string, stage: string, status = "RUNNING", extra: Record<string, unknown> = {}) {
-  return { id, code: id, source: "SUBSCRIPTION", stage, stageStatus: status, stageLabel: stage, stageStatusLabel: status,
+  return { version:"00000000000000000001",revision:1,stashSceneId: (extra.stashSceneIds as string[] | undefined)?.[0] ?? null, id, code: id, source: "SUBSCRIPTION", stage, stageStatus: status, stageLabel: stage, stageStatusLabel: status,
     candidate: { title: id, tracker: "", infoHash: "", link: "", magnetUri: "", size: 0, seeders: 0, peers: 0 }, files: [], torrentUrl: "", progress: 0, stashSceneIds: [], createdAt: "2026-01-14T12:00:00Z", updatedAt: now, ...extra };
 }
 export const homeOverview = {
@@ -160,10 +160,28 @@ export const test = base.extend<{ graphqlOverrides: Record<string, unknown> }>({
       if (message.type() === "error") errors.push(message.text());
     });
     await page.clock.setFixedTime(new Date(now));
+    const effective = { ...rootValue, ...graphqlOverrides } as Record<string, any>;
+    const cursor = () => effective.taskSnapshotCursor?.() ?? {sequence:0,streamId:"visual"};
+    const taskDefaults = (task: any) => ({version:"00000000000000000001",revision:1,stashSceneId:task.stashSceneIds?.[0] ?? null,...task});
+    const taskArray = () => (typeof effective.tasks === "function" ? effective.tasks() : effective.tasks) as any[];
+    effective.homeTaskSnapshot ??= { ...cursor(),...effective.homeOverview };
+    effective.taskDetailSnapshot ??= ({id}:{id:string}) => ({...cursor(),task: (()=>{const task=typeof effective.task === "function" ? effective.task({id}) : effective.task;return task?taskDefaults(task):null})()});
+    effective.taskSummaries ??= ({ids}:{ids:string[]}) => taskArray().filter(task=>ids.includes(task.id)).map(taskDefaults);
+    const group=(task:any)=>task.stage==="COMPLETED"?"COMPLETED":task.stageStatus==="BLOCKED"?"ATTENTION":task.stage==="SOURCING"&&task.stageStatus==="PENDING"&&task.sourcingNextCheckAt?"WAITING":"ACTIVE";
+    effective.taskAttentionQueue ??= () => ({...cursor(),items:taskArray().filter(task=>group(task)==="ATTENTION").sort((a,b)=>a.createdAt.localeCompare(b.createdAt)||a.id.localeCompare(b.id)).map(taskDefaults)});
+    effective.taskPage ??= ({input}:{input:{page:number;pageSize:number;status:string;sort:string;search?:string;completedWithin24Hours?:boolean;ids?:string[]}}) => {
+      input=Object.assign({page:1,pageSize:24,status:"ALL",sort:"CREATED"},input);
+      const all=taskArray(); let items=all.filter(task=>(input.status==="ALL"||group(task)===input.status)&&(!input.ids||input.ids.includes(task.id))&&(!input.search||`${task.code} ${task.torrentName??""}`.toLowerCase().includes(input.search.toLowerCase())));
+      if(input.completedWithin24Hours)items=items.filter(task=>task.stage==="COMPLETED"&&Date.parse(task.ingestCompletedAt)>=Date.parse(now)-86400000);
+      items.sort((a,b)=> input.sort==="PROGRESS"?(b.progress-a.progress||a.id.localeCompare(b.id)):input.sort==="UPDATED"?b.updatedAt.localeCompare(a.updatedAt)||a.id.localeCompare(b.id):b.createdAt.localeCompare(a.createdAt)||a.id.localeCompare(b.id));
+      const totalPages=Math.max(1,Math.ceil(items.length/input.pageSize)); const page=Math.min(input.page,totalPages);
+      const completed=all.filter(t=>group(t)==="COMPLETED").length,attention=all.filter(t=>group(t)==="ATTENTION").length,waiting=all.filter(t=>group(t)==="WAITING").length;
+      return {items:items.slice((page-1)*input.pageSize,page*input.pageSize).map(taskDefaults),page,pageSize:input.pageSize,totalPages,totalCount:items.length,...cursor(),stats:{total:all.length,active:all.length-completed,completed,attention,waiting,downloading:0,pendingScans:0,failed:attention}};
+    };
     await page.route("**/graphql", async (route) => {
       const request = route.request().postDataJSON();
       const result = graphqlSync({
-        schema, rootValue: { ...rootValue, ...graphqlOverrides }, source: request.query,
+        schema, rootValue: effective, source: request.query,
         variableValues: request.variables, operationName: request.operationName,
       });
       errors.push(...(result.errors ?? []).map((error) => error.message));
@@ -174,6 +192,7 @@ export const test = base.extend<{ graphqlOverrides: Record<string, unknown> }>({
       socket.onMessage((data) => {
         const message = JSON.parse(String(data));
         if (message.type === "connection_init") socket.send(JSON.stringify({ type: "connection_ack" }));
+        if (message.type === "subscribe" && message.payload?.query?.includes("subscription TaskEvents")) socket.send(JSON.stringify({id:message.id,type:"next",payload:{data:{taskEvents:{__typename:"TaskEvent",type:"READY",sequence:0,streamId:"visual",taskId:"",listChanged:false,task:null,dashboardStats:null}}}}));
         if (message.type === "ping") socket.send(JSON.stringify({ type: "pong" }));
         if (message.type === "subscribe" && message.payload?.query?.includes("subscription DatabasePerformanceDocument")) {
           const result = graphqlSync({ schema, rootValue: { ...rootValue, ...graphqlOverrides }, source: message.payload.query, variableValues: message.payload.variables, operationName: message.payload.operationName });

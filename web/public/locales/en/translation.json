@@ -1035,6 +1035,13 @@
       "blockerScan": "Completed tasks cannot resolve a scan path"
     }
   },
+  "taskList": {
+    "hiddenSelection": "{{count}} selected on other pages or outside the current filter",
+    "pageSize": "Items per page",
+    "page": "Page {{page}} / {{pages}} · {{count}} items",
+    "updates": "List updates available · Refresh",
+    "selectPage": "Select this page ({{count}})"
+  },
   "tasks": {
     "title": "Workspace",
     "metrics": "In progress {{active}} · Waiting for resources {{waiting}} · Completed {{completed}} · Needs attention {{failed}}",

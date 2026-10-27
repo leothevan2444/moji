@@ -1,0 +1,78 @@
+enum TaskListStatus { ALL ATTENTION ACTIVE WAITING COMPLETED }
+enum TaskListSort { CREATED UPDATED PROGRESS }
+input TaskPageInput {
+  ids: [ID!]
+  search: String
+  status: TaskListStatus = ALL
+  sort: TaskListSort = CREATED
+  page: Int = 1
+  pageSize: Int = 24
+  completedWithin24Hours: Boolean = false
+}
+"Small list/event projection. File plans, candidates and paths belong to task details."
+type TaskSummary {
+  id: ID!
+  version: String!
+  revision: Long!
+  source: TaskSource!
+  code: String!
+  stage: TaskStage!
+  stageStatus: TaskStageStatus!
+  stageLabel: String!
+  stageStatusLabel: String!
+  stageErrorCode: String
+  stageErrorMessage: String
+  torrentName: String
+  progress: Float!
+  qbittorrentState: String
+  stashSceneId: ID
+  stashIngestPhase: String
+  sourcingNextCheckAt: String
+  sourcingLastCheckedAt: String
+  sourcingCompletedAt: String
+  downloadCompletedAt: String
+  ingestCompletedAt: String
+  lastProgressAt: String
+  createdAt: String!
+  updatedAt: String!
+}
+type TaskPage {
+  items: [TaskSummary!]!
+  totalCount: Int!
+  page: Int!
+  pageSize: Int!
+  totalPages: Int!
+  sequence: Int!
+  streamId: String!
+  stats: DashboardStats!
+}
+type TaskAttentionQueue {
+  items: [TaskSummary!]!
+  sequence: Int!
+  streamId: String!
+}
+type TaskDetailSnapshot {
+  task: Task
+  sequence: Int!
+  streamId: String!
+}
+type HomeTaskSnapshot {
+  sequence: Int!
+  streamId: String!
+  total: Int!
+  attention: Int!
+  active: Int!
+  waiting: Int!
+  completedLast24Hours: Int!
+  attentionTasks: [TaskSummary!]!
+  activeTasks: [TaskSummary!]!
+  recentTasks: [TaskSummary!]!
+}
+extend type Query {
+  taskDetailSnapshot(id: ID!): TaskDetailSnapshot!
+  taskPage(input: TaskPageInput!): TaskPage!
+  taskSummaries(ids: [ID!]!): [TaskSummary!]!
+  "A stable oldest-first review session, independent of list filters/pages."
+  taskAttentionQueue: TaskAttentionQueue!
+  homeTaskSnapshot: HomeTaskSnapshot!
+}

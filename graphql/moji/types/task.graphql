@@ -111,6 +111,8 @@ enum TaskSource {
 }
 
 type Task {
+  version: String!
+  revision: Long!
   id: ID!
   files: [TaskFile!]!
   source: TaskSource!

@@ -2,6 +2,14 @@ import { describe, expect, it, vi } from "vitest";
 import { createTaskEventSequenceObserver } from "./taskEventSequence";
 
 describe("task event transport sequences", () => {
+  it("accepts a READY boundary that restarts the sequence within a connection", () => {
+    const gap = vi.fn();
+    const observe = createTaskEventSequenceObserver(gap);
+    observe(100, 1);
+    expect(observe(0, 1, true)).toEqual({ accept: true, gap: false, nextSequence: 0 });
+    expect(observe(1, 1)).toEqual({ accept: true, gap: false, nextSequence: 1 });
+    expect(gap).not.toHaveBeenCalled();
+  });
   it("checks every event in a burst even if React later renders only the last value", () => {
     const gap = vi.fn();
     const observe = createTaskEventSequenceObserver(gap);

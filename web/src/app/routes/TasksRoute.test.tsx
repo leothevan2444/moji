@@ -8,7 +8,7 @@ const mocks = vi.hoisted(() => ({
   overview: {} as any, detail: {} as any
 }));
 vi.mock("urql", () => ({
-  useQuery: ({ variables }: { variables?: { id: string } }) => [{ data: variables ? mocks.detail : mocks.overview, fetching: false }, mocks.refresh]
+  useQuery: ({ query }: any) => [{ data: query.definitions[0].name.value === "TaskDetailDocument" ? mocks.detail : mocks.overview, fetching: false }, mocks.refresh]
 }));
 vi.mock("../../hooks/useTaskMutations", () => ({
   useTaskMutations: () => ({ restartTaskSourcing: mocks.restart, restartingTaskSourcing: false })
@@ -28,8 +28,8 @@ beforeEach(async () => {
   vi.clearAllMocks();
   await i18n.changeLanguage("en");
   const task = { id: "task-184", code: "SNOS-184", stage: "SCANNING", stageStatus: "BLOCKED" };
-  mocks.overview = { tasks: [task], settingsStatus: { automation: {} }, settings: { system: { taskDeletePolicy: "REMOVE_TORRENT_AND_FILES" } } };
-  mocks.detail = { task };
+  mocks.overview = { taskSelection:{items:[],sequence:0,streamId:""}, taskPage: {items:[task],page:1,pageSize:24,totalPages:1,totalCount:1,sequence:0,streamId:"",stats:{}}, settingsStatus: { automation: {} }, settings: { system: { taskDeletePolicy: "REMOVE_TORRENT_AND_FILES" } } };
+  mocks.detail = { taskDetailSnapshot: { task: { ...task, revision: 1, version: "1" }, sequence:0,streamId:"" } };
 });
 afterEach(cleanup);
 

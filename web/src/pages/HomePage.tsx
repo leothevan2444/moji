@@ -21,7 +21,7 @@ export interface HomePageProps {
   interactionOpen?: boolean;
   listUpdatePending?: boolean;
   onApplyUpdates?: () => void;
-  overview: (Omit<HomePageDocumentQuery["homeOverview"], "attentionTasks" | "activeTasks" | "recentTasks"> & { attentionTasks: DashboardTask[]; activeTasks: DashboardTask[]; recentTasks: DashboardTask[] }) | null;
+  overview: (Omit<HomePageDocumentQuery["homeOverview"], "attentionTasks" | "activeTasks" | "recentTasks" | "sequence" | "streamId"> & { attentionTasks: DashboardTask[]; activeTasks: DashboardTask[]; recentTasks: DashboardTask[] }) | null;
   runtimeSettings: HomePageDocumentQuery["settings"] | null;
   runtimeStatus: HomeServiceStatusQuery["settingsStatus"] | null;
   subscription: HomeSubscriptionSummaryQuery["homeSubscriptionSummary"] | null;
