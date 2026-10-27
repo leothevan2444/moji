@@ -84,7 +84,13 @@ func TestRestorePreservesDamagedCoreBeforeRecovery(t *testing.T) {
 	}
 	damaged := t.TempDir()
 	original := []byte("damaged SQLite header with irreplaceable original bytes")
-	if err := os.WriteFile(filepath.Join(damaged, "moji.db"), original, 0o600); err != nil {
+	if err := os.Mkdir(filepath.Join(damaged, "broken"), 0700); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(damaged, layoutFile), []byte("broken\n"), 0600); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(damaged, "broken", "moji.db"), original, 0o600); err != nil {
 		t.Fatal(err)
 	}
 	restored, err := RestoreCore(ctx, damaged, manifest)

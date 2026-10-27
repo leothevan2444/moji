@@ -4,9 +4,30 @@ Moji uses embedded SQLite (modernc driver, SQLite 3.51.3), with no database serv
 
 ## Files and ownership
 
-Start the application with `-data-dir /path/to/moji`. Only one application or maintenance process may own that directory; an OS lock, not the PID written in the lock file, enforces this. Stale PID text after a crash is harmless.
+Without `-data-dir`, Moji uses `.storage/database` relative to the process working directory. An explicit `-data-dir /path/to/database` replaces that root. Configuration remains selected independently through `-config` / `MOJI_CONFIG`.
 
-Fresh installations create databases directly in the data directory. Migrated/restored installations use `.moji-storage.json` to select **all** files from `.storage/generations/<generation>/`. Do not infer the active database from a leftover root `moji.db`; use the storage tool and the configured data directory.
+Every instance uses the same structure:
+
+```text
+.storage/database/
+  CURRENT                         # plain text: initial-example plus optional newline
+  .moji-storage.lock
+  initial-example/
+    moji.db
+    runtime.db
+    cache/stashbox/cache.db
+    legacy-task-events.jsonl.gz    # required only when referenced by the core
+  restore-example/                # another isolated generation
+  backups/
+```
+
+`CURRENT` and generation directories are siblings. The pointer contains only one directory name, with no JSON or format version. Names must be safe single path components; symlinks, traversal, multiline values and reserved names are rejected. Moji reads the pointer once at startup; changing it requires stopping the instance first.
+
+A nonexistent or empty root initializes a complete generation, closes and validates its databases, fsyncs the files and atomically publishes `CURRENT`. Only one application or maintenance process may own the root; an OS lock enforces this. An existing lock file without a pointer is evidence of an incomplete initialization, not a fresh instance. A stale lock in an otherwise complete instance does not prevent restart.
+
+Existing incomplete structures stop startup. There is **no flat-layout fallback and no support for the old JSON pointer**. Missing/invalid pointers require explicit activation, restore or migration. Missing generations/core databases require restore, migration or manual recovery. Missing, empty or damaged runtime/cache databases require an explicit offline rebuild; startup never silently replaces them. Referenced history archives must exist and match their checksums. SQLite WAL/SHM files are transient and are not required layout files.
+
+The following database paths are relative to the selected generation:
 
 | File | Contents | Durability / recovery |
 | --- | --- | --- |
@@ -31,13 +52,13 @@ For a legacy schema-16 installation, first stop Moji and preserve verified raw D
 go run ./cmd/moji-storage prepare \
   -source /safe/backup/core.sqlite \
   -cache /safe/backup/stashbox.sqlite \
-  -destination /path/to/moji/.storage/generations/initial-v2
+  -destination /path/to/database/initial-v2
 ```
 
 Preparation compares every task domain field, review and check item, hashes every copied entity/cache table in primary-key order, and streams/validates the entire old event archive. Failed preparation leaves an unpublished staging directory; inspect it, then choose a new destination for another attempt. Activation is separate and offline:
 
 ```sh
-go run ./cmd/moji-storage activate -data-dir /path/to/moji -generation initial-v2
+go run ./cmd/moji-storage activate -data-dir /path/to/database -generation initial-v2
 ```
 
 Activation protects the selected previous core physically and validates the staged schemas, integrity, closed WALs and synced files before atomically replacing one pointer. Existing originals/generations remain available for recovery. After new writes are accepted, restore/reconcile deliberately; pointing at a stale generation would discard those newer decisions from the active view.
@@ -53,14 +74,29 @@ Retention keeps the newest regular snapshot and the newest in 24 hourly, 14 dail
 Offline manual operations:
 
 ```sh
-go run ./cmd/moji-storage backup -data-dir /path/to/moji -config /path/to/config.yaml -protect -reason before-maintenance
+go run ./cmd/moji-storage backup -data-dir /path/to/database -config /path/to/config.yaml -protect -reason before-maintenance
 go run ./cmd/moji-storage verify-backup -manifest /backup/path/snapshot.sqlite.json
-go run ./cmd/moji-storage restore -data-dir /path/to/moji -manifest /backup/path/snapshot.sqlite.json
+go run ./cmd/moji-storage restore -data-dir /path/to/database -manifest /backup/path/snapshot.sqlite.json
 ```
+
+If the pointer is broken, recovery preserves its raw bytes when available and leaves every unselected generation untouched; it never guesses which old generation was active.
 
 Restore verifies the snapshot and all referenced assets, preserves the existing core even if damaged, copies into a new generation, applies supported known upgrades, creates fresh runtime/cache files and atomically selects the result. It initializes no qB/Stash client and replays no commands. Configuration/receipts from the backup are available inside the returned generation under `configuration/` and `receipts/`; restore them to the intended configured locations before restarting if those files were lost. A normal database-only restore keeps existing configuration/media in place.
 
 Video files, image caches, Stash's database/custom-field subscription markers and upstream services are not contained in a Moji core backup. Back up Stash/media independently. Once running, qB observations reconcile pending add/removal intentions; an unavailable upstream never proves a torrent is missing or a mutation failed.
+
+## Explicit recovery of disposable files
+
+Stop Moji and repair one role at a time:
+
+```sh
+go run ./cmd/moji-storage repair-derived -data-dir /path/to/database -role runtime -config /path/to/config.yaml
+go run ./cmd/moji-storage repair-derived -data-dir /path/to/database -role cache -config /path/to/config.yaml
+```
+
+The tool validates the core/history, preserves checksum-verified physical copies of the core, pointer and damaged derived files, then publishes a freshly migrated derived database. Core decisions remain unchanged. Runtime observations refill from qB; cache data refills from upstream. A missing core or broken pointer cannot be repaired this way: use `restore`, or `activate` a known complete generation. Failed preparation/initialization leaves its directory for inspection and requires an explicit recovery action.
+
+To relocate an already normalized generation from an old layout, stop the old binary, take a protected backup with its matching storage tool, copy the **complete closed generation** into the new root as a direct child, then use the new `activate` command. Preserve the old pointer, generation and backups separately until acceptance. Do not copy only the main database while its WAL is open, or start the new binary against the old root expecting automatic compatibility.
 
 ## Retention and performance
 
@@ -73,8 +109,8 @@ Background work uses indexed lifecycle queries and keyset batches of 128. Idle m
 Inspect or explicitly compact during a stopped maintenance window:
 
 ```sh
-go run ./cmd/moji-storage status -data-dir /path/to/moji
-go run ./cmd/moji-storage compact -data-dir /path/to/moji
+go run ./cmd/moji-storage status -data-dir /path/to/database
+go run ./cmd/moji-storage compact -data-dir /path/to/database
 ```
 
 Compaction first makes a protected backup, checks for held snapshots, then runs SQLite VACUUM and a truncating checkpoint. Online maintenance uses passive checkpoints; no code manually removes a live WAL. A reader may delay truncation, so investigate a sustained WAL rather than deleting it. Status reports engine/schema versions, page/free/WAL sizes, reader/writer pools, queue, busy retries and timing metrics.

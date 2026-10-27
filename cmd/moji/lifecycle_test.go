@@ -24,7 +24,7 @@ func TestHTTPRuntimeProcessHelper(t *testing.T) {
 		t.Skip("subprocess helper")
 	}
 	flag.CommandLine = flag.NewFlagSet("moji-lifecycle", flag.ExitOnError)
-	os.Args = []string{"moji", "-config", filepath.Join(root, "config.yaml"), "-data-dir", root, "-addr", "127.0.0.1:0"}
+	os.Args = []string{"moji", "-config", filepath.Join(root, "config.yaml"), "-addr", "127.0.0.1:0"}
 	main()
 }
 func TestHTTPRuntimeStopsWithOpenWebsocketAndReleasesStorage(t *testing.T) {
@@ -86,7 +86,7 @@ func TestHTTPRuntimeStopsWithOpenWebsocketAndReleasesStorage(t *testing.T) {
 	if err := connection.ReadJSON(&ack); err != nil || ack.Type != "connection_ack" {
 		t.Fatal("websocket initialization failed", err)
 	}
-	if duplicate, err := storage.OpenManager(context.Background(), storage.DefaultManagerOptions(root)); !errors.Is(err, storage.ErrDirectoryInUse) {
+	if duplicate, err := storage.OpenManager(context.Background(), storage.DefaultManagerOptions(filepath.Join(root, storage.DefaultDirectory))); !errors.Is(err, storage.ErrDirectoryInUse) {
 		if duplicate != nil {
 			duplicate.Close()
 		}
@@ -104,7 +104,7 @@ func TestHTTPRuntimeStopsWithOpenWebsocketAndReleasesStorage(t *testing.T) {
 	case <-time.After(10 * time.Second):
 		t.Fatal("open websocket prevented database shutdown")
 	}
-	reopened, err := storage.OpenManager(context.Background(), storage.DefaultManagerOptions(root))
+	reopened, err := storage.OpenManager(context.Background(), storage.DefaultManagerOptions(filepath.Join(root, storage.DefaultDirectory)))
 	if err != nil {
 		t.Fatal("storage was not cleanly released", err)
 	}

@@ -88,7 +88,10 @@ func TestResolvedDownloadPathSurvivesRuntimeLossBeforeIngest(t *testing.T) {
 	if err := m.Close(); err != nil {
 		t.Fatal(err)
 	}
-	if err := os.Remove(filepath.Join(root, "runtime.db")); err != nil {
+	if err := os.Remove(m.Runtime.Path); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := storage.RepairDerived(ctx, root, "runtime"); err != nil {
 		t.Fatal(err)
 	}
 	m, err = storage.OpenManager(ctx, storage.DefaultManagerOptions(root))

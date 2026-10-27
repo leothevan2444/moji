@@ -31,6 +31,16 @@ those Stash operations rather than writing movie metadata itself.
 See [media delivery](docs/media-delivery.md) for classification, merging,
 subtitle handling, and recovery behavior.
 
+## Database storage
+
+Moji defaults to `.storage/database` under its working directory; use `-data-dir`
+to choose another root. The root contains a plain text `CURRENT` pointer and
+isolated generation directories at the same level. New instances initialize this
+structure. Incomplete existing instances stop for explicit recovery; flat database
+layouts and the old JSON pointer are not supported at startup.
+See [database operations](docs/database-operations.md) for migration, backup and recovery.
+In Docker the default resolves to `/data/.storage/database`, inside the data volume.
+
 ## Docker quick start
 
 Docker Compose is the recommended deployment method. The image includes the

@@ -40,8 +40,17 @@ func TestNormalizedSchemasKeepDecisionsDurableAndObservationsDisposable(t *testi
 		t.Fatal(err)
 	}
 	for _, path := range []string{"runtime.db", filepath.Join("cache", "stashbox", "cache.db")} {
-		if err := os.Remove(filepath.Join(dir, path)); err != nil {
+		if err := os.Remove(filepath.Join(filepath.Dir(m.Core.Path), path)); err != nil {
 			t.Fatal(err)
+		}
+	}
+	if failed, e := OpenManager(ctx, DefaultManagerOptions(dir)); e == nil {
+		failed.Close()
+		t.Fatal("missing derived databases silently recreated")
+	}
+	for _, role := range []string{"runtime", "cache"} {
+		if _, e := RepairDerived(ctx, dir, role); e != nil {
+			t.Fatal(e)
 		}
 	}
 	m, err = OpenManager(ctx, DefaultManagerOptions(dir))
@@ -78,7 +87,7 @@ func TestManagerInitializationFailureReleasesLockAndPreservesSource(t *testing.T
 		t.Fatal(err)
 	}
 	d.Close()
-	if _, err := OpenManager(context.Background(), DefaultManagerOptions(dir)); !errors.Is(err, ErrUnrecognizedSchema) {
+	if _, err := OpenManager(context.Background(), DefaultManagerOptions(dir)); err == nil {
 		t.Fatalf("legacy database silently initialized: %v", err)
 	}
 	lock, err = AcquireDirectory(dir)

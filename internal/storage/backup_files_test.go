@@ -17,7 +17,7 @@ func TestBackupIncludesAndVerifiesReferencedHistory(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer m.Close()
-	archive := filepath.Join(root, "history.gz")
+	archive := filepath.Join(filepath.Dir(m.Core.Path), "history.gz")
 	if err := os.WriteFile(archive, []byte("immutable historical events"), 0o600); err != nil {
 		t.Fatal(err)
 	}

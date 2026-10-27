@@ -18,11 +18,16 @@ func preserveRawCore(ctx context.Context, root, active string, extra []BackupFil
 	directory := filepath.Join(root, "backups", "before-restore-raw-"+time.Now().UTC().Format("20060102T150405Z")+"-"+uuid.NewString())
 	files := []BackupFile{}
 	for _, name := range []string{"moji.db", "moji.db-wal", "moji.db-shm"} {
+		if active == "" {
+			break
+		}
 		path := filepath.Join(active, name)
-		if _, err := os.Stat(path); errors.Is(err, os.ErrNotExist) {
+		if info, err := os.Lstat(path); errors.Is(err, os.ErrNotExist) {
 			continue
 		} else if err != nil {
 			return "", err
+		} else if !info.Mode().IsRegular() {
+			return "", layoutError("unsafe recovery file", path, "repair the path manually before recovery")
 		}
 		files = append(files, BackupFile{Name: name, Path: path})
 	}
@@ -71,4 +76,18 @@ func preserveRawCore(ctx context.Context, root, active string, extra []BackupFil
 		return "", err
 	}
 	return directory, syncDirectory(filepath.Dir(directory))
+}
+
+// A broken pointer never authorizes guessing an old generation. Preserve the
+// pointer itself and leave every unselected generation untouched for recovery.
+func preserveSelected(ctx context.Context, root string, extra []BackupFile) (string, error) {
+	active, err := resolveDirectory(root)
+	if err != nil {
+		var layout *LayoutError
+		if !errors.As(err, &layout) {
+			return "", err
+		}
+		active = ""
+	}
+	return preserveRawCore(ctx, root, active, extra)
 }

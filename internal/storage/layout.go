@@ -2,58 +2,168 @@ package storage
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/jmoiron/sqlx"
 	"os"
 	"path/filepath"
 	"strings"
+	"unicode"
+
+	"github.com/jmoiron/sqlx"
 )
 
-const layoutFile = ".moji-storage.json"
+const (
+	DefaultDirectory = ".storage/database"
+	layoutFile       = "CURRENT"
+)
 
-type ActiveLayout struct {
-	Format     int    `json:"format"`
-	Generation string `json:"generation"`
+// LayoutError requires an explicit recovery action. Startup never guesses a
+// generation or creates replacement databases inside an existing instance.
+type LayoutError struct{ Kind, Path, Recovery string }
+
+func (e *LayoutError) Error() string {
+	return fmt.Sprintf("storage: %s: %s; %s", e.Kind, e.Path, e.Recovery)
+}
+func layoutError(kind, path, recovery string) error { return &LayoutError{kind, path, recovery} }
+
+func validGeneration(name string) bool {
+	return name != "" && name != "." && name != ".." && name != "backups" && name != layoutFile && !strings.HasPrefix(name, ".") && strings.TrimSpace(name) == name && !strings.ContainsAny(name, "/\\:{}\"") && !strings.ContainsFunc(name, unicode.IsControl)
 }
 
-// ResolveActiveDirectory chooses all database files through one atomic pointer.
-// A published generation without a core is an error, never a new empty install.
 func ResolveActiveDirectory(root string) (string, error) {
-	return resolveDirectory(root, true)
+	directory, err := resolveDirectory(root)
+	if err != nil {
+		return "", err
+	}
+	if err := validateGenerationFiles(directory); err != nil {
+		return "", err
+	}
+	return directory, nil
 }
-func resolveDirectory(root string, requireCore bool) (string, error) {
+func resolveDirectory(root string) (string, error) {
 	root, err := filepath.Abs(root)
 	if err != nil {
 		return "", err
 	}
-	raw, err := os.ReadFile(filepath.Join(root, layoutFile))
+	pointer := filepath.Join(root, layoutFile)
+	info, err := os.Lstat(pointer)
 	if errors.Is(err, os.ErrNotExist) {
-		return root, nil
+		return "", layoutError("missing pointer", pointer, "use activate for a verified generation, restore a backup, or explicitly migrate legacy data")
 	}
 	if err != nil {
 		return "", err
 	}
-	var layout ActiveLayout
-	if err := json.Unmarshal(raw, &layout); err != nil {
-		return "", fmt.Errorf("storage: invalid active layout: %w", err)
+	if !info.Mode().IsRegular() || info.Size() > 255 {
+		return "", layoutError("invalid pointer", pointer, "repair CURRENT manually or restore a backup")
 	}
-	if layout.Format != 1 || layout.Generation == "" || layout.Generation == "." || layout.Generation == ".." || strings.ContainsAny(layout.Generation, "/\\") {
-		return "", errors.New("storage: unsupported or invalid active layout")
-	}
-	directory := filepath.Join(root, ".storage", "generations", layout.Generation)
-	if !requireCore {
-		return directory, nil
-	}
-	info, err := os.Stat(filepath.Join(directory, "moji.db"))
+	raw, err := os.ReadFile(pointer)
 	if err != nil {
-		return "", fmt.Errorf("storage: active core is missing; explicit restore required: %w", err)
+		return "", err
 	}
-	if !info.Mode().IsRegular() || info.Size() == 0 {
-		return "", errors.New("storage: active core is empty or not a regular file")
+	name := strings.TrimSuffix(strings.TrimSuffix(string(raw), "\n"), "\r")
+	if !validGeneration(name) {
+		return "", layoutError("invalid pointer", pointer, "CURRENT must contain only a generation directory name; repair manually or restore a backup")
+	}
+	directory := filepath.Join(root, name)
+	info, err = os.Lstat(directory)
+	if err != nil || !info.IsDir() || info.Mode()&os.ModeSymlink != 0 {
+		return "", layoutError("missing or unsafe generation", directory, "activate another verified generation or restore a backup")
 	}
 	return directory, nil
+}
+
+func regularGenerationFile(directory, relative string) error {
+	if !filepath.IsLocal(relative) || relative == "." || strings.Contains(relative, "\\") {
+		return errors.New("storage: invalid generation file path")
+	}
+	parts := strings.Split(filepath.Clean(relative), string(filepath.Separator))
+	path := directory
+	for i, part := range parts {
+		path = filepath.Join(path, part)
+		info, err := os.Lstat(path)
+		if err != nil {
+			return err
+		}
+		if info.Mode()&os.ModeSymlink != 0 {
+			return errors.New("storage: symlink in generation")
+		}
+		if i < len(parts)-1 {
+			if !info.IsDir() {
+				return errors.New("storage: invalid generation subdirectory")
+			}
+		} else if !info.Mode().IsRegular() || info.Size() == 0 {
+			return errors.New("storage: empty or irregular generation file")
+		}
+	}
+	return nil
+}
+func validateGenerationFiles(directory string) error {
+	info, err := os.Lstat(directory)
+	if err != nil || !info.IsDir() || info.Mode()&os.ModeSymlink != 0 {
+		return layoutError("missing or unsafe generation", directory, "restore or activate a complete generation")
+	}
+	for _, role := range []string{"moji.db", "runtime.db", filepath.Join("cache", "stashbox", "cache.db")} {
+		if err := regularGenerationFile(directory, role); err != nil {
+			recovery := "restore a verified backup or explicitly migrate data"
+			if role != "moji.db" {
+				name := "runtime"
+				if role != "runtime.db" {
+					name = "cache"
+				}
+				recovery = "run moji-storage repair-derived -role " + name + " while Moji is stopped"
+			}
+			return layoutError("missing or invalid database", filepath.Join(directory, role), recovery)
+		}
+		for _, suffix := range []string{"-wal", "-shm"} {
+			path := filepath.Join(directory, role) + suffix
+			info, err := os.Lstat(path)
+			if errors.Is(err, os.ErrNotExist) {
+				continue
+			}
+			if err != nil {
+				return err
+			}
+			if !info.Mode().IsRegular() {
+				return layoutError("unsafe SQLite sidecar", path, "repair the path manually while Moji is stopped")
+			}
+		}
+	}
+	return nil
+}
+
+// validateHistory ensures the immutable history referenced by the core remains
+// part of the selected generation, including after preparation or recovery.
+func validateHistory(ctx context.Context, corePath string) error {
+	db, err := sqlx.Open("sqlite", readOnlyURI(corePath))
+	if err != nil {
+		return err
+	}
+	defer db.Close()
+	var exists int
+	if err := db.GetContext(ctx, &exists, "SELECT count(*) FROM sqlite_master WHERE type='table' AND name='history_archives'"); err != nil {
+		return err
+	}
+	if exists == 0 {
+		return nil
+	}
+	var rows []struct{ Path, SHA256 string }
+	if err := db.SelectContext(ctx, &rows, "SELECT path,sha256 FROM history_archives"); err != nil {
+		return err
+	}
+	for _, row := range rows {
+		path := filepath.Join(filepath.Dir(corePath), row.Path)
+		if err := regularGenerationFile(filepath.Dir(corePath), row.Path); err != nil {
+			return layoutError("missing or unsafe history archive", path, "restore the referenced archive from a verified backup")
+		}
+		digest, _, err := fileDigest(path)
+		if err != nil {
+			return err
+		}
+		if digest != row.SHA256 {
+			return layoutError("history checksum mismatch", path, "restore the referenced archive from a verified backup")
+		}
+	}
+	return nil
 }
 
 // PublishGeneration requires the caller to hold root's DirectoryLock and to
@@ -65,14 +175,16 @@ func PublishGeneration(ctx context.Context, root, generation string) error {
 		return err
 	}
 	root = absolute
-	if generation == "" || generation == "." || generation == ".." || strings.ContainsAny(generation, "/\\") {
+	if !validGeneration(generation) {
 		return errors.New("storage: invalid generation name")
 	}
-	directory := filepath.Join(root, ".storage", "generations", generation)
+	directory := filepath.Join(root, generation)
+	if err := validateGenerationFiles(directory); err != nil {
+		return err
+	}
 	corePath := filepath.Join(directory, "moji.db")
-	info, err := os.Stat(corePath)
-	if err != nil || !info.Mode().IsRegular() || info.Size() == 0 {
-		return fmt.Errorf("storage: staged core missing or empty: %v", err)
+	if err := validateHistory(ctx, corePath); err != nil {
+		return err
 	}
 	if err := validatePublishedCore(ctx, corePath); err != nil {
 		return err
@@ -89,16 +201,6 @@ func PublishGeneration(ctx context.Context, root, generation string) error {
 		Migrations []Migration
 	}{{"runtime.db", RuntimeMigrations()}, {filepath.Join("cache", "stashbox", "cache.db"), CacheMigrations()}} {
 		path := filepath.Join(directory, role.Path)
-		info, err := os.Stat(path)
-		if errors.Is(err, os.ErrNotExist) {
-			continue
-		}
-		if err != nil {
-			return err
-		}
-		if info.Size() == 0 {
-			continue
-		}
 		if err := validateCoreBundle(ctx, path, role.Migrations, false); err != nil {
 			return fmt.Errorf("storage: invalid staged %s: %w", role.Path, err)
 		}
@@ -134,11 +236,7 @@ func PublishGeneration(ctx context.Context, root, generation string) error {
 			return err
 		}
 	}
-	raw, err := json.Marshal(ActiveLayout{Format: 1, Generation: generation})
-	if err != nil {
-		return err
-	}
-	return atomicWrite(filepath.Join(root, layoutFile), raw, 0o600)
+	return atomicWrite(filepath.Join(root, layoutFile), []byte(generation+"\n"), 0o600)
 }
 
 func validatePublishedCore(ctx context.Context, path string) error {
@@ -157,7 +255,10 @@ func validateCoreBundle(ctx context.Context, path string, expected []Migration, 
 	if err := db.SelectContext(ctx, &applied, "SELECT version,name,checksum FROM schema_migrations ORDER BY version"); err != nil {
 		return ErrUnrecognizedSchema
 	}
-	if len(applied) == 0 || len(applied) > len(expected) {
+	if len(applied) == 0 {
+		return ErrUnrecognizedSchema
+	}
+	if len(applied) > len(expected) {
 		return ErrSchemaTooNew
 	}
 	if !allowOlder && len(applied) != len(expected) {
@@ -180,17 +281,8 @@ func ActivateGeneration(ctx context.Context, root, generation string, extra ...B
 	}
 	defer lock.Close()
 	root = lock.Directory
-	active, err := resolveDirectory(root, false)
+	preserved, err := preserveSelected(ctx, root, extra)
 	if err != nil {
-		return "", err
-	}
-	preserved := ""
-	if _, err := os.Stat(filepath.Join(active, "moji.db")); err == nil {
-		preserved, err = preserveRawCore(ctx, root, active, extra)
-		if err != nil {
-			return "", err
-		}
-	} else if !errors.Is(err, os.ErrNotExist) {
 		return "", err
 	}
 	if err := PublishGeneration(ctx, root, generation); err != nil {

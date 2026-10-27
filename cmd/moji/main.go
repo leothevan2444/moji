@@ -52,7 +52,7 @@ func main() {
 		configPath      = flag.String("config", "", "path to config yaml (or set MOJI_CONFIG)")
 		addr            = flag.String("addr", ":10000", "http listen address")
 		backupDirectory = flag.String("backup-dir", "", "backup directory (default: data-dir/backups; may be an independently mounted backup volume)")
-		dataDirectory   = flag.String("data-dir", ".", "directory containing Moji databases and recovery generations")
+		dataDirectory   = flag.String("data-dir", storage.DefaultDirectory, "directory containing Moji databases and recovery generations")
 		showVersion     = flag.Bool("version", false, "print version and exit")
 	)
 	flag.Parse()
@@ -242,9 +242,6 @@ func newHTTPRuntime(cfg *config.Config, version string, configStore *config.Stor
 	}
 	imageService.StartCleanup(context.Background())
 	cachePath := fmt.Sprintf("file:moji-stashbox-cache-%d?mode=memory&cache=shared", runtimeCacheSequence.Add(1))
-	if configStore != nil {
-		cachePath = stashBoxCacheDatabasePath()
-	}
 	cacheProvider := func() stashboxcache.Config {
 		current := cfg.System.StashBoxDataCache.Normalize()
 		if configStore != nil {
@@ -304,7 +301,7 @@ func newHTTPRuntime(cfg *config.Config, version string, configStore *config.Stor
 		if manager != nil {
 			resolver.Downloader, err = downloader.NewManaged(qbittorrentClient, taskRuntimeService, manager)
 		} else {
-			resolver.Downloader, err = downloader.New(qbittorrentClient, taskRuntimeService, runtimeDatabasePath())
+			resolver.Downloader, err = downloader.New(qbittorrentClient, taskRuntimeService, ":memory:")
 		}
 		if err != nil {
 			logging.Fatalf("configure downloader: %v", err)
@@ -540,7 +537,7 @@ func configureTaskStore(cfg *config.Config, managers ...*storage.Manager) (taskr
 	if len(managers) > 0 && managers[0] != nil {
 		return taskruntime.NewRelationalTaskStore(managers[0].Core, managers[0].Observations), nil
 	}
-	return taskruntime.NewSQLiteTaskStore(runtimeDatabasePath())
+	return taskruntime.NewMemoryTaskStore(), nil
 }
 
 func configureProgressSyncInterval(cfg *config.Config) time.Duration {
@@ -1058,7 +1055,7 @@ func configureSubscriptionStore(cfg *config.Config, managers ...*storage.Manager
 		return subscription.NewManagedStore(managers[0].Core), nil
 	}
 	_ = cfg
-	return subscription.NewSQLiteStore(runtimeDatabasePath())
+	return subscription.NewMemoryStore(), nil
 }
 
 func configureSubscriptionPollInterval(cfg *config.Config) time.Duration {
@@ -1184,12 +1181,6 @@ func startSubscriptionWorker(ctx context.Context, service graphqlapi.Subscriptio
 	}()
 	return done
 }
-
-func runtimeDatabasePath() string {
-	return "moji.db"
-}
-
-func stashBoxCacheDatabasePath() string { return "cache/stashbox/cache.db" }
 
 func effectiveTaskProgressSyncIntervalSeconds(cfg *config.Config) int {
 	seconds := cfg.Automation.TaskProgressSyncIntervalSeconds

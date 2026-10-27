@@ -44,6 +44,9 @@ func TestManagedRemovalIntentSurvivesRuntimeLoss(t *testing.T) {
 	if err := os.Remove(runtimePath); err != nil {
 		t.Fatal(err)
 	}
+	if _, err := storage.RepairDerived(ctx, root, "runtime"); err != nil {
+		t.Fatal(err)
+	}
 	m, err = storage.OpenManager(ctx, storage.DefaultManagerOptions(root))
 	if err != nil {
 		t.Fatal(err)

@@ -10,7 +10,6 @@ import (
 	"fmt"
 	"os"
 	"os/signal"
-	"path/filepath"
 	"syscall"
 
 	"github.com/leothevan2444/moji/internal/config"
@@ -26,29 +25,30 @@ func main() {
 }
 func run() error {
 	if len(os.Args) < 2 {
-		return fmt.Errorf("usage: moji-storage prepare|backup|verify-backup|restore|status|activate|compact [flags]")
+		return fmt.Errorf("usage: moji-storage prepare|backup|verify-backup|restore|status|activate|repair-derived|compact [flags]")
 	}
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
 	flags := flag.NewFlagSet(os.Args[1], flag.ContinueOnError)
 	source := flags.String("source", "", "standalone consistent legacy core backup")
 	cache := flags.String("cache", "", "standalone consistent legacy cache backup")
-	destination := flags.String("destination", "", "new staging directory (must not exist)")
+	destination := flags.String("destination", "", "new generation directory directly beneath the data root (must not exist)")
 	manifest := flags.String("manifest", "", "backup manifest path")
 	protectBackup := flags.Bool("protect", false, "retain this backup until explicitly removed")
 	backupReason := flags.String("reason", "manual", "reason recorded in the backup manifest")
 	backupDirectory := flags.String("backup-dir", "", "core backup target directory (default: data-dir/backups)")
-	generation := flags.String("generation", "", "prepared generation name beneath data-dir/.storage/generations")
-	configPath := flags.String("config", "", "config YAML to include with core backups (defaults to data-dir/config.yaml when present)")
-	directory := flags.String("data-dir", ".", "Moji data directory")
+	role := flags.String("role", "", "derived database to rebuild explicitly: runtime or cache")
+	generation := flags.String("generation", "", "prepared generation name beneath data-dir")
+	configPath := flags.String("config", "", "config YAML to include with core backups (default: MOJI_CONFIG or config.yaml when present)")
+	directory := flags.String("data-dir", storage.DefaultDirectory, "Moji data directory")
 	if err := flags.Parse(os.Args[2:]); err != nil {
 		return err
 	}
 	supplemental := func(work context.Context) ([]storage.BackupFile, error) {
 		path := *configPath
 		if path == "" {
-			path = filepath.Join(*directory, "config.yaml")
-			if _, err := os.Stat(path); errors.Is(err, os.ErrNotExist) {
+			path = config.DefaultPath()
+			if _, err := os.Stat(path); errors.Is(err, os.ErrNotExist) && os.Getenv("MOJI_CONFIG") == "" {
 				return nil, nil
 			} else if err != nil {
 				return nil, err
@@ -62,6 +62,16 @@ func run() error {
 	}
 	var result any
 	switch os.Args[1] {
+	case "repair-derived":
+		files, err := supplemental(ctx)
+		if err != nil {
+			return err
+		}
+		preserved, err := storage.RepairDerived(ctx, *directory, *role, files...)
+		if err != nil {
+			return err
+		}
+		result = struct{ Role, PreviousRawBackup string }{*role, preserved}
 	case "prepare":
 		if *source == "" || *destination == "" {
 			return fmt.Errorf("prepare requires -source and -destination")
@@ -106,20 +116,13 @@ func run() error {
 			return err
 		}
 		result = struct {
-			Layout            storage.ActiveLayout
+			Generation        string
 			PreviousRawBackup string
-		}{storage.ActiveLayout{Format: 1, Generation: *generation}, preserved}
+		}{*generation, preserved}
 	case "backup", "status", "compact":
-		active, err := storage.ResolveActiveDirectory(*directory)
+		_, err := storage.ResolveActiveDirectory(*directory)
 		if err != nil {
 			return err
-		}
-		info, err := os.Stat(filepath.Join(active, "moji.db"))
-		if err != nil {
-			return err
-		}
-		if !info.Mode().IsRegular() || info.Size() == 0 {
-			return fmt.Errorf("backup requires an existing nonempty core")
 		}
 		options := storage.DefaultManagerOptions(*directory)
 		options.Supplemental = supplemental

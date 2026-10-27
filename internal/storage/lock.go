@@ -15,6 +15,7 @@ type DirectoryLock struct {
 	file      *os.File
 	mu        sync.Mutex
 	Directory string
+	Created   bool
 }
 
 // AcquireDirectory uses an OS advisory lock, not the existence of a PID file.
@@ -27,7 +28,18 @@ func AcquireDirectory(directory string) (*DirectoryLock, error) {
 	if err = os.MkdirAll(absolute, 0700); err != nil {
 		return nil, err
 	}
-	file, err := os.OpenFile(filepath.Join(absolute, ".moji-storage.lock"), os.O_CREATE|os.O_RDWR, 0600)
+	file, err := os.OpenFile(filepath.Join(absolute, ".moji-storage.lock"), os.O_CREATE|os.O_EXCL|os.O_RDWR, 0600)
+	created := err == nil
+	if errors.Is(err, os.ErrExist) {
+		info, statErr := os.Lstat(filepath.Join(absolute, ".moji-storage.lock"))
+		if statErr != nil {
+			return nil, statErr
+		}
+		if !info.Mode().IsRegular() {
+			return nil, layoutError("invalid lock file", filepath.Join(absolute, ".moji-storage.lock"), "remove the unsafe lock path manually after confirming no instance is running")
+		}
+		file, err = os.OpenFile(filepath.Join(absolute, ".moji-storage.lock"), os.O_RDWR, 0600)
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -46,7 +58,7 @@ func AcquireDirectory(directory string) (*DirectoryLock, error) {
 		file.Close()
 		return nil, err
 	}
-	return &DirectoryLock{file: file, Directory: absolute}, nil
+	return &DirectoryLock{file: file, Directory: absolute, Created: created}, nil
 }
 func (l *DirectoryLock) Close() error {
 	l.mu.Lock()

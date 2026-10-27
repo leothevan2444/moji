@@ -40,20 +40,24 @@ func RestoreCore(ctx context.Context, root, manifestPath string, extra ...Backup
 	}
 	defer lock.Close()
 	root = lock.Directory
-	active, err := resolveDirectory(root, false)
+	active, resolveErr := resolveDirectory(root)
+	if resolveErr != nil {
+		var layout *LayoutError
+		if !errors.As(resolveErr, &layout) {
+			return result, resolveErr
+		}
+		active = ""
+	}
+	raw, err := preserveSelected(ctx, root, extra)
 	if err != nil {
 		return result, err
 	}
+	result.PreviousRawBackup = raw
 	currentPath := filepath.Join(active, "moji.db")
-	if info, statErr := os.Stat(currentPath); statErr == nil {
+	if info, statErr := os.Stat(currentPath); active != "" && statErr == nil {
 		if !info.Mode().IsRegular() {
 			return result, errors.New("storage: existing core is not a regular file")
 		}
-		raw, err := preserveRawCore(ctx, root, active, extra)
-		if err != nil {
-			return result, err
-		}
-		result.PreviousRawBackup = raw
 		// Even an invalid/damaged old core is preserved before recovery. A logical
 		// backup is attempted in addition; failure cannot prevent disaster recovery.
 		old, openErr := Open(ctx, Options{Path: currentPath, Durability: Durable})
@@ -67,12 +71,12 @@ func RestoreCore(ctx context.Context, root, manifestPath string, extra ...Backup
 		if err := ctx.Err(); err != nil {
 			return result, err
 		}
-	} else if !errors.Is(statErr, os.ErrNotExist) {
+	} else if active != "" && !errors.Is(statErr, os.ErrNotExist) {
 		return result, statErr
 	}
 
 	result.Generation = "restore-" + time.Now().UTC().Format("20060102T150405Z") + "-" + uuid.NewString()
-	result.Directory = filepath.Join(root, ".storage", "generations", result.Generation)
+	result.Directory = filepath.Join(root, result.Generation)
 	if err := copyPrivateFile(ctx, source, filepath.Join(result.Directory, "moji.db")); err != nil {
 		return result, err
 	}
@@ -106,7 +110,7 @@ func RestoreCore(ctx context.Context, root, manifestPath string, extra ...Backup
 	if actual.SHA256 != saved.SHA256 {
 		return result, fmt.Errorf("storage: backup changed while restoring")
 	}
-	staged, err := OpenManager(ctx, DefaultManagerOptions(result.Directory))
+	staged, err := openGeneration(ctx, DefaultManagerOptions(root), result.Directory, nil)
 	if err != nil {
 		return result, err
 	}

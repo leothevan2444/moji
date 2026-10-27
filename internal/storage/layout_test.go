@@ -22,17 +22,18 @@ func TestGenerationPublicationPreservesOldUntilValidated(t *testing.T) {
 	}); err != nil {
 		t.Fatal(err)
 	}
+	oldDirectory := filepath.Dir(old.Core.Path)
 	if err := old.Close(); err != nil {
 		t.Fatal(err)
 	}
 	if err := PublishGeneration(ctx, root, "incomplete"); err == nil {
 		t.Fatal("published missing generation")
 	}
-	if active, err := ResolveActiveDirectory(root); err != nil || active != root {
+	if active, err := ResolveActiveDirectory(root); err != nil || active != oldDirectory {
 		t.Fatalf("failed preparation changed old layout: %s %v", active, err)
 	}
-	staged := filepath.Join(root, ".storage", "generations", "new")
-	next, err := OpenManager(ctx, DefaultManagerOptions(staged))
+	staged := filepath.Join(root, "new")
+	next, err := OpenNewGeneration(ctx, staged)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -59,7 +60,7 @@ func TestGenerationPublicationPreservesOldUntilValidated(t *testing.T) {
 	if err := opened.Close(); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := os.Stat(filepath.Join(root, "moji.db")); err != nil {
+	if _, err := os.Stat(filepath.Join(oldDirectory, "moji.db")); err != nil {
 		t.Fatal("old core was removed")
 	}
 	if err := os.Remove(filepath.Join(staged, "moji.db")); err != nil {

@@ -62,9 +62,9 @@ Validation evidence:
 - Original core/WAL/config/cache-main hashes remain unchanged. SHM is a rebuildable runtime index and its reader bookkeeping differs; raw originals and verified standalone backups are preserved.
 - Full backend suite passed (`/tmp/moji-database-final-suite.log`); the last batched-read changes passed focused validation, including the main process under the required localhost-test permissions.
 
-## Production acceptance
+## Initial normalized migration acceptance (historical)
 
-Implementation commits: `c1fd5a4` (storage redesign), `a28bbeb` (protected manual backups), `13ab389` (split-table duplicate identity errors), `f69b976` (atomic cache snapshot reads). The final runtime is built from `f69b976`.
+Implementation commits: `c1fd5a4` (storage redesign), `a28bbeb` (protected manual backups), `13ab389` (split-table duplicate identity errors), `f69b976` (atomic cache snapshot reads). At that acceptance, the runtime was built from `f69b976`; the layout below was subsequently replaced by the strict layout described in the next section.
 
 - Final prepared generation: `/home/wangqi/services/moji/.storage/generations/initial-v2-20261027`; selected atomically through `.moji-storage.json`.
 - Preserved original files and executable: `backups/before-storage-v2-20261027T030816Z`. A further verified physical pre-activation copy is in `backups/before-restore-raw-20261027T072847Z-43136806-cbc1-40d1-b862-da00ed0646d3`. The old root database files remain recovery originals, not active application databases.
@@ -79,3 +79,19 @@ Implementation commits: `c1fd5a4` (storage redesign), `a28bbeb` (protected manua
 - Detailed local acceptance artifacts are under `.storage/verification/`; operational commands and recovery scope are documented in `docs/database-operations.md`.
 
 The requested database implementation, source-preserving migration, cleanup, backup/restore and performance work has been deployed and verified. Automatic backups currently use the local backup directory; an independent off-host destination has not been configured. `-backup-dir` supports an independently mounted backup target without introducing a database service.
+
+
+## Strict generation layout acceptance (2026-10-27)
+
+This supersedes the historical pointer/path details above. The data root now defaults to `/home/wangqi/services/moji/.storage/database` when Moji starts from this checkout without `-data-dir`. `CURRENT` contains only `initial-v2-20261027` and a newline; the selected generation is a direct sibling of the pointer. No JSON pointer decoder, pointer format version, nested generation path or flat startup fallback remains.
+
+- The real generation was copied offline. Every file checksum and every stored row across all 21 core tables matched before activation. All 277 task IDs and 435 reviews were retained. Evidence: `.storage/verification/current-layout-relocation.json`.
+- Isolated real-data rehearsal passed activation, status, protected backup, broken-pointer restore, refusal of a missing runtime database and explicit derived repair. Evidence: `.storage/verification/current-layout-rehearsal.json`.
+- Raw generation/config/pointer/executable preservation: `backups/before-current-layout-20261027T092729Z`. Protected logical snapshots exist both before relocation (`backups/20261027T092730.345087112Z-00bfc60ba1715702.sqlite.json`) and under the new root (`.storage/database/backups/20261027T092950.889820281Z-e2064b8533ecadbd.sqlite.json`).
+- The old JSON pointer and nested generations were retired into the protected archive recorded by `.storage/verification/retired-layout.json`. Earlier original database files and protected migration backups remain recovery material.
+- The replacement runtime was started without `-data-dir`; `/proc` arguments and every open database descriptor confirm the new default root. Its PID and launch metadata are in `.storage/runtime.json`. The running executable includes this working tree's strict-layout changes.
+- Live acceptance retained every task ID, returned 277 tasks/11 subscriptions and a fresh connected qB observation of 150 torrents. Core/runtime/cache integrity and foreign keys passed; runtime logs had no SQLite busy/full, locked database, schema/column, constraint or storage-maintenance errors. Evidence: `.storage/verification/current-layout-live.json`.
+- The new runtime's scheduled backup was independently verified, including its referenced assets. Evidence: `.storage/verification/current-layout-scheduled-backup.json`.
+- Full Go tests, focused race tests for storage/datamigration/downloader/taskruntime, and vet for storage/import/application/maintenance packages passed. The default-path HTTP subprocess lifecycle test also passed. Strict-layout tests cover interrupted initialization, missing/invalid pointers and files, unsafe paths, schema refusal, history loss, explicit restore and repair without core changes.
+
+Current operational rules and commands are in `docs/database-operations.md`. Database migration/import remains explicit and offline; normal startup never chooses a generation by scanning directories or creates replacement files for an incomplete existing instance.

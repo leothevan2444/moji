@@ -89,7 +89,7 @@ func Prepare(ctx context.Context, sourcePath, cachePath, destination string) (re
 	if err != nil {
 		return result, err
 	}
-	manager, err := storage.OpenManager(ctx, storage.DefaultManagerOptions(destination))
+	manager, err := storage.OpenNewGeneration(ctx, destination)
 	if err != nil {
 		return result, err
 	}
