@@ -205,13 +205,16 @@ func firstImageCache(current ImageCacheConfig, values []ImageCacheConfig) ImageC
 	return current
 }
 
-func (s *Store) UpdateSystemWithDataCache(taskDeletePolicy TaskDeletePolicy, imageCache ImageCacheConfig, stashBoxCache StashBoxDataCacheConfig) (*Config, error) {
+func (s *Store) UpdateSystemWithDataCache(taskDeletePolicy TaskDeletePolicy, imageCache ImageCacheConfig, stashBoxCache StashBoxDataCacheConfig, developerMode ...bool) (*Config, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	return s.updateSystemLocked(taskDeletePolicy, imageCache, stashBoxCache)
+	return s.updateSystemLocked(taskDeletePolicy, imageCache, stashBoxCache, developerMode...)
 }
 
-func (s *Store) updateSystemLocked(taskDeletePolicy TaskDeletePolicy, imageCache ImageCacheConfig, stashBoxCache StashBoxDataCacheConfig) (*Config, error) {
+func (s *Store) updateSystemLocked(taskDeletePolicy TaskDeletePolicy, imageCache ImageCacheConfig, stashBoxCache StashBoxDataCacheConfig, developerMode ...bool) (*Config, error) {
+	if len(developerMode) > 0 {
+		s.cfg.System.DeveloperMode = developerMode[0]
+	}
 	s.cfg.System.TaskDeletePolicy = NormalizeTaskDeletePolicy(string(taskDeletePolicy))
 	s.cfg.System.ImageCache = imageCache.Normalize()
 	if stashBoxCache.MaxSizeMB == 0 {
@@ -291,6 +294,7 @@ func (s *Store) updateConfigNode() (resultErr error) {
 	setNodeValue(mapValue(top, "automation"), "subscription_release_policy", s.cfg.Automation.SubscriptionReleasePolicy.Effective())
 	setNodeValue(mapValue(top, "automation"), "torrent_selection", s.cfg.Automation.TorrentSelection.Effective())
 	system := mapValue(top, "system")
+	setBoolScalar(system, "developer_mode", s.cfg.System.DeveloperMode)
 	setScalar(system, "task_delete_policy", string(s.cfg.System.EffectiveTaskDeletePolicy()))
 	imageCache := mapValue(system, "image_cache")
 	setBoolScalar(imageCache, "enabled", s.cfg.System.ImageCache.EffectiveEnabled())

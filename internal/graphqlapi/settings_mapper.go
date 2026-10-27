@@ -125,6 +125,7 @@ func settingsSnapshotToModel(snapshot *SettingsSnapshot, appVersion string) *mod
 			TorrentSelection:                torrentSelectionSettingsToModel(snapshot.Automation.TorrentSelection),
 		},
 		System: &model.SystemSettings{
+			DeveloperMode:     snapshot.System.DeveloperMode,
 			TaskDeletePolicy:  model.TaskDeletePolicy(snapshot.System.TaskDeletePolicy),
 			ImageCache:        &model.ImageCacheSettings{Enabled: snapshot.System.ImageCache.Enabled, MaxSizeMb: snapshot.System.ImageCache.MaxSizeMB, RetentionDays: snapshot.System.ImageCache.RetentionDays},
 			StashBoxDataCache: &model.StashBoxDataCacheSettings{TTLHours: snapshot.System.StashBoxDataCache.TTLHours},

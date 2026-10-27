@@ -464,3 +464,59 @@ func TestFailedDurableWriteDoesNotActivateNewConfiguration(t *testing.T) {
 		t.Fatal("failed write changed the previous file", err)
 	}
 }
+
+func TestDeveloperModePersistsAndUnrelatedSystemUpdatesPreserveIt(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "config.yaml")
+	if err := os.WriteFile(path, []byte("system:\n  developer_mode: false\n"), 0600); err != nil {
+		t.Fatal(err)
+	}
+	store, err := OpenStore(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err = store.UpdateSystemWithDataCache(TaskDeletePolicyKeepOnly, DefaultImageCacheConfig(), StashBoxDataCacheConfig{TTLHours: 24}, true); err != nil {
+		t.Fatal(err)
+	}
+	reopened, err := OpenStore(path)
+	if err != nil || !reopened.Config().System.DeveloperMode {
+		t.Fatal("developer mode was not persisted", err)
+	}
+	if _, err = store.UpdateSystem(TaskDeletePolicyRemoveTorrent); err != nil {
+		t.Fatal(err)
+	}
+	reopened, err = OpenStore(path)
+	if err != nil || !reopened.Config().System.DeveloperMode {
+		t.Fatal("unrelated update reset developer mode", err)
+	}
+	if _, err = store.UpdateSystemWithDataCache(TaskDeletePolicyKeepOnly, DefaultImageCacheConfig(), StashBoxDataCacheConfig{TTLHours: 24}, false); err != nil {
+		t.Fatal(err)
+	}
+	reopened, err = OpenStore(path)
+	if err != nil || reopened.Config().System.DeveloperMode {
+		t.Fatal("developer mode was not disabled", err)
+	}
+}
+
+func TestDeveloperModeFailedSaveDoesNotEnableItInMemory(t *testing.T) {
+	parent := filepath.Join(t.TempDir(), "settings")
+	if err := os.Mkdir(parent, 0700); err != nil {
+		t.Fatal(err)
+	}
+	path := filepath.Join(parent, "config.yaml")
+	if err := os.WriteFile(path, []byte("system:\n  developer_mode: false\n"), 0600); err != nil {
+		t.Fatal(err)
+	}
+	store, err := OpenStore(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err = os.Rename(parent, parent+".offline"); err != nil {
+		t.Fatal(err)
+	}
+	if _, err = store.UpdateSystemWithDataCache(TaskDeletePolicyKeepOnly, DefaultImageCacheConfig(), StashBoxDataCacheConfig{TTLHours: 24}, true); err == nil {
+		t.Fatal("save to missing directory succeeded")
+	}
+	if store.Config().System.DeveloperMode {
+		t.Fatal("failed save enabled developer mode")
+	}
+}

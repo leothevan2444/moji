@@ -29,7 +29,7 @@ func TestHTTPRuntimeProcessHelper(t *testing.T) {
 }
 func TestHTTPRuntimeStopsWithOpenWebsocketAndReleasesStorage(t *testing.T) {
 	root := t.TempDir()
-	raw := []byte("connection:\n  jackett:\n    url: http://127.0.0.1:9\n    api_key: local-test\nautomation:\n  task_processing_enabled: false\n  subscription_poll_interval_hours: -1\n")
+	raw := []byte("connection:\n  jackett:\n    url: http://127.0.0.1:9\n    api_key: local-test\nautomation:\n  task_processing_enabled: false\n  subscription_poll_interval_hours: -1\nsystem:\n  developer_mode: true\n")
 	if err := os.WriteFile(filepath.Join(root, "config.yaml"), raw, 0o600); err != nil {
 		t.Fatal(err)
 	}
@@ -85,6 +85,15 @@ func TestHTTPRuntimeStopsWithOpenWebsocketAndReleasesStorage(t *testing.T) {
 	var ack struct{ Type string }
 	if err := connection.ReadJSON(&ack); err != nil || ack.Type != "connection_ack" {
 		t.Fatal("websocket initialization failed", err)
+	}
+	// Keep a real performance subscription open during SIGTERM. Its owner must
+	// complete it before waiting for HTTP/WebSocket requests and closing SQLite.
+	if err := connection.WriteJSON(map[string]any{"id": "performance", "type": "subscribe", "payload": map[string]any{"query": "subscription {databasePerformance{startedAt}}"}}); err != nil {
+		t.Fatal(err)
+	}
+	var event struct{ Type string }
+	if err := connection.ReadJSON(&event); err != nil || event.Type != "next" {
+		t.Fatal("performance subscription did not start", err, event)
 	}
 	if duplicate, err := storage.OpenManager(context.Background(), storage.DefaultManagerOptions(filepath.Join(root, storage.DefaultDirectory))); !errors.Is(err, storage.ErrDirectoryInUse) {
 		if duplicate != nil {

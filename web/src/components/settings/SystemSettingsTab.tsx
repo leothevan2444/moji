@@ -10,18 +10,18 @@ import { useSettingsDraft } from "./SettingsDraftStore";
 import { FieldLabel, SettingsCard, SettingsError, SettingsLoading } from "./SettingsTabCommon";
 import "../../styles/settings-system.scss";
 
-interface SystemDraft { taskDeletePolicy: TaskDeletePolicy; enabled: boolean; maxSizeMb: string; retentionDays: string; stashBoxTtlHours: string }
+interface SystemDraft { developerMode: boolean; taskDeletePolicy: TaskDeletePolicy; enabled: boolean; maxSizeMb: string; retentionDays: string; stashBoxTtlHours: string }
 
 export default function SystemSettingsTab() {
   const { t } = useTranslation();
-  const { pushToast } = useOutletContext<AppOutletContext>();
+  const { pushToast, onDeveloperModeChange } = useOutletContext<AppOutletContext>();
   const [{ data, fetching, error }, refresh] = useQuery({ query: SystemSettingsTabDocument });
   const [{ fetching: saving }, updateSystem] = useMutation(UpdateSystemSettingsDocumentDocument);
   const [{ fetching: clearing }, clearImageCache] = useMutation(ClearImageCacheDocumentDocument);
   const [{ fetching: clearingStashBox }, clearStashBoxCache] = useMutation(ClearStashBoxDataCacheDocumentDocument);
   const [confirming, setConfirming] = useState(false);
   const [confirmingStashBox, setConfirmingStashBox] = useState(false);
-  const initial = useMemo<SystemDraft>(() => ({ taskDeletePolicy: data?.settings.system.taskDeletePolicy ?? TaskDeletePolicy.KeepOnly, enabled: data?.settings.system.imageCache.enabled ?? true, maxSizeMb: String(data?.settings.system.imageCache.maxSizeMb ?? 1024), retentionDays: String(data?.settings.system.imageCache.retentionDays ?? 30), stashBoxTtlHours: String(data?.settings.system.stashBoxDataCache?.ttlHours ?? 24) }), [data]);
+  const initial = useMemo<SystemDraft>(() => ({ developerMode: data?.settings.system.developerMode ?? false, taskDeletePolicy: data?.settings.system.taskDeletePolicy ?? TaskDeletePolicy.KeepOnly, enabled: data?.settings.system.imageCache.enabled ?? true, maxSizeMb: String(data?.settings.system.imageCache.maxSizeMb ?? 1024), retentionDays: String(data?.settings.system.imageCache.retentionDays ?? 30), stashBoxTtlHours: String(data?.settings.system.stashBoxDataCache?.ttlHours ?? 24) }), [data]);
   const [form, setForm, , markSaved] = useSettingsDraft("system", initial);
 
   if (fetching && !data) return <SettingsLoading title={t("settings.tabs.system")} />;
@@ -31,8 +31,10 @@ export default function SystemSettingsTab() {
 
   const save = async (event: FormEvent) => {
     event.preventDefault();
-    const result = await updateSystem({ input: { taskDeletePolicy: form.taskDeletePolicy, imageCache: { enabled: form.enabled, maxSizeMb: Number(form.maxSizeMb), retentionDays: Number(form.retentionDays) }, stashBoxDataCache: { ttlHours: Number(form.stashBoxTtlHours) } } });
+    const result = await updateSystem({ input: { developerMode: form.developerMode, taskDeletePolicy: form.taskDeletePolicy, imageCache: { enabled: form.enabled, maxSizeMb: Number(form.maxSizeMb), retentionDays: Number(form.retentionDays) }, stashBoxDataCache: { ttlHours: Number(form.stashBoxTtlHours) } } });
     if (result.error) { pushToast("tone-danger", describeQueryError(result.error)); return; }
+    const savedSystem = result.data?.updateSystemSettings?.system;
+    if (savedSystem) onDeveloperModeChange?.(savedSystem.developerMode);
     markSaved(form); pushToast("tone-success", t("systemUi.saved"));
     refresh();
   };
@@ -50,6 +52,7 @@ export default function SystemSettingsTab() {
   };
 
   return <SettingsCard title={t("settings.tabs.system")}><form className="settings-form" onSubmit={(event) => void save(event)}>
+    <div className="settings-field"><FieldLabel text={t("systemUi.developerMode")} info={t("systemUi.developerModeInfo")} /><label className="switch-row image-cache-switch developer-mode-switch"><span className="switch-row__label">{t("systemUi.enableDeveloperMode")}</span><span className="switch"><input role="switch" type="checkbox" aria-checked={form.developerMode} checked={form.developerMode} aria-label={t("systemUi.developerMode")} onChange={(event) => setForm((current) => ({ ...current, developerMode: event.target.checked }))} /><span className="switch__track" aria-hidden="true" /><span className="switch__thumb" aria-hidden="true" /></span></label></div>
     <label className="settings-field"><FieldLabel text={t("systemUi.deletePolicy")} info={t("systemUi.deleteInfo")} /><select value={form.taskDeletePolicy} onChange={(event) => setForm((current) => ({ ...current, taskDeletePolicy: event.target.value as TaskDeletePolicy }))}><option value={TaskDeletePolicy.KeepOnly}>{t("systemUi.keep")}</option><option value={TaskDeletePolicy.RemoveTorrent}>{t("systemUi.removeTorrent")}</option><option value={TaskDeletePolicy.RemoveTorrentAndFiles}>{t("systemUi.removeFiles")}</option></select></label>
     <div className="settings-field"><FieldLabel text={t("systemUi.cache")} info={t("systemUi.cacheInfo")} /><label className="switch-row image-cache-switch"><span className="switch-row__label">{t("systemUi.enableCache")}</span><span className="switch" role="switch" aria-checked={form.enabled}><input type="checkbox" checked={form.enabled} aria-label={t("systemUi.enableCache")} onChange={(event) => setForm((current) => ({ ...current, enabled: event.target.checked }))} /><span className="switch__track" aria-hidden="true" /><span className="switch__thumb" aria-hidden="true" /></span></label></div>
     <div className={`image-cache-config${form.enabled ? "" : " is-disabled"}`} aria-disabled={!form.enabled}>

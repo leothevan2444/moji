@@ -144,9 +144,11 @@ func (r *mutationResolver) UpdateSystemSettings(ctx context.Context, input model
 		return nil, errors.New("settings editor is not configured")
 	}
 
+	developerMode := false
 	cacheSettings := ImageCacheSettingsSnapshot{Enabled: true, MaxSizeMB: 1024, RetentionDays: 30}
 	stashBoxCacheSettings := StashBoxDataCacheSettingsSnapshot{TTLHours: 24}
 	if current := r.SettingsEditor.Snapshot(); current != nil {
+		developerMode = current.System.DeveloperMode
 		cacheSettings = current.System.ImageCache
 		stashBoxCacheSettings = current.System.StashBoxDataCache
 	}
@@ -165,7 +167,10 @@ func (r *mutationResolver) UpdateSystemSettings(ctx context.Context, input model
 		}
 		stashBoxCacheSettings = StashBoxDataCacheSettingsSnapshot{TTLHours: input.StashBoxDataCache.TTLHours}
 	}
-	snapshot, err := r.SettingsEditor.UpdateSystemSettings(UpdateSystemSettingsInput{TaskDeletePolicy: string(input.TaskDeletePolicy), ImageCache: cacheSettings, StashBoxDataCache: stashBoxCacheSettings})
+	if input.DeveloperMode != nil {
+		developerMode = *input.DeveloperMode
+	}
+	snapshot, err := r.SettingsEditor.UpdateSystemSettings(UpdateSystemSettingsInput{DeveloperMode: developerMode, TaskDeletePolicy: string(input.TaskDeletePolicy), ImageCache: cacheSettings, StashBoxDataCache: stashBoxCacheSettings})
 	if err != nil {
 		return nil, err
 	}

@@ -1,0 +1,16 @@
+query DeveloperMode {
+  settings { system { developerMode } }
+}
+subscription DatabasePerformanceDocument {
+  databasePerformance {
+    startedAt sampledAt intervalSeconds lastError
+    databases {
+      role databaseBytes walBytes freeBytes
+      writeAttempts writeErrors busyRetries queueRejected queueCanceled
+      queued queueCapacity writesPerSecond averageWaitMilliseconds averageExecutionMilliseconds
+      totalWaitMilliseconds totalExecutionMilliseconds
+      reader { open inUse idle limit waitCount waitMilliseconds }
+      writer { open inUse idle limit waitCount waitMilliseconds }
+    }
+  }
+}

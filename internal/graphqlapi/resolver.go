@@ -7,6 +7,7 @@ package graphqlapi
 import (
 	"context"
 	"github.com/leothevan2444/moji/internal/downloader"
+	"github.com/leothevan2444/moji/internal/storage"
 
 	"github.com/leothevan2444/moji/internal/discovery"
 	"github.com/leothevan2444/moji/internal/imagecache"
@@ -123,6 +124,7 @@ type UpdateAutomationSettingsInput struct {
 }
 
 type UpdateSystemSettingsInput struct {
+	DeveloperMode     bool
 	TaskDeletePolicy  string
 	ImageCache        ImageCacheSettingsSnapshot
 	StashBoxDataCache StashBoxDataCacheSettingsSnapshot
@@ -261,6 +263,7 @@ type SubscriptionReleasePolicySnapshot struct {
 }
 
 type SystemSettingsSnapshot struct {
+	DeveloperMode     bool
 	TaskDeletePolicy  string
 	ImageCache        ImageCacheSettingsSnapshot
 	StashBoxDataCache StashBoxDataCacheSettingsSnapshot
@@ -363,7 +366,12 @@ type LogReader interface {
 	Entries(limit int, minLevel string) []logging.Entry
 }
 
+type DatabasePerformanceSource interface {
+	SubscribePerformance(context.Context) <-chan *storage.DatabasePerformanceSnapshot
+}
+
 type Resolver struct {
+	DatabasePerformanceSource        DatabasePerformanceSource
 	Downloader                       *downloader.Service
 	Tracker                          tracker.Tracker
 	Torrent                          TorrentClient

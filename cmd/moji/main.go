@@ -147,6 +147,7 @@ func main() {
 
 	var workers sync.WaitGroup
 	launch := func(work func()) { workers.Add(1); go func() { defer workers.Done(); work() }() }
+	launch(func() { manager.MonitorPerformance(ctx) })
 	launch(func() {
 		manager.Maintain(ctx, func(result storage.MaintenanceResult) {
 			if result.Err != nil && !errors.Is(result.Err, context.Canceled) {
@@ -177,6 +178,7 @@ func main() {
 	go func() {
 		defer close(shutdownDone)
 		<-ctx.Done()
+		manager.ClosePerformanceSubscriptions()
 		runtime.taskEventBus.Close()
 		runtime.serviceStatusEventBus.Close()
 		runtime.performerSubscriptionEventBus.Close()
@@ -297,6 +299,9 @@ func newHTTPRuntime(cfg *config.Config, version string, configStore *config.Stor
 	serviceStatusEventBus := stats.NewServiceStatusEventBus(8)
 	statsCollector.SetEventPublisher(serviceStatusEventBus)
 	resolver := graphqlapi.NewResolver(jackettTracker, torrentClient, taskRuntimeService, stashService, version)
+	if manager != nil {
+		resolver.DatabasePerformanceSource = manager
+	}
 	if qbittorrentClient != nil {
 		if manager != nil {
 			resolver.Downloader, err = downloader.NewManaged(qbittorrentClient, taskRuntimeService, manager)
@@ -689,6 +694,7 @@ func buildSettingsSnapshot(cfg *config.Config, version string) *graphqlapi.Setti
 			TorrentSelection: torrentSelectionSnapshot(cfg.Automation.TorrentSelection.Effective()),
 		},
 		System: graphqlapi.SystemSettingsSnapshot{
+			DeveloperMode:     cfg.System.DeveloperMode,
 			TaskDeletePolicy:  string(cfg.System.EffectiveTaskDeletePolicy()),
 			ImageCache:        graphqlapi.ImageCacheSettingsSnapshot{Enabled: cfg.System.ImageCache.EffectiveEnabled(), MaxSizeMB: cfg.System.ImageCache.Normalize().MaxSizeMB, RetentionDays: cfg.System.ImageCache.Normalize().RetentionDays},
 			StashBoxDataCache: graphqlapi.StashBoxDataCacheSettingsSnapshot{TTLHours: cfg.System.StashBoxDataCache.Normalize().TTLHours},

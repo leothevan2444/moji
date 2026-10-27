@@ -1,4 +1,5 @@
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { faGaugeHigh } from "@fortawesome/free-solid-svg-icons/faGaugeHigh";
 import { faChartColumn } from "@fortawesome/free-solid-svg-icons/faChartColumn";
 import { faCircleQuestion } from "@fortawesome/free-solid-svg-icons/faCircleQuestion";
 import { faGear } from "@fortawesome/free-solid-svg-icons/faGear";
@@ -10,6 +11,8 @@ import type { RefObject } from "react";
 import { useTranslation } from "react-i18next";
 
 interface HeaderProps {
+  developerMode?: boolean;
+  onOpenPerformance?: () => void;
   onOpenHelp: () => void;
   theme: {
     preference: ThemePreference;
@@ -22,7 +25,7 @@ interface HeaderProps {
   };
 }
 
-export function Header({ onOpenHelp, theme }: HeaderProps) {
+export function Header({ onOpenHelp, theme, developerMode = false, onOpenPerformance }: HeaderProps) {
   const navigate = useNavigate();
   const { t } = useTranslation();
   return (
@@ -50,6 +53,7 @@ export function Header({ onOpenHelp, theme }: HeaderProps) {
 
         <div className="masthead__toolgroup">
           <div className="utility-group">
+            {developerMode ? <button type="button" className="utility-button utility-icon-button" onClick={onOpenPerformance} aria-label={t("performance.title")} title={t("performance.title")}><FontAwesomeIcon icon={faGaugeHigh} aria-hidden="true" /></button> : null}
             <button
               type="button"
               className="utility-button utility-icon-button"

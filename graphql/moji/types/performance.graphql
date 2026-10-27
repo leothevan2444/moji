@@ -1,0 +1,39 @@
+extend type Subscription {
+  "Latest database metrics pushed by the live owner. Available only while developer mode is enabled."
+  databasePerformance: DatabasePerformanceSnapshot!
+}
+type DatabasePerformanceSnapshot {
+  startedAt: String!
+  sampledAt: String!
+  intervalSeconds: Float!
+  lastError: String!
+  databases: [DatabasePerformance!]!
+}
+type DatabasePerformance {
+  role: String!
+  databaseBytes: Long!
+  walBytes: Long!
+  freeBytes: Long!
+  writeAttempts: Long!
+  writeErrors: Long!
+  busyRetries: Long!
+  queueRejected: Long!
+  queueCanceled: Long!
+  queued: Int!
+  queueCapacity: Int!
+  writesPerSecond: Float!
+  averageWaitMilliseconds: Float!
+  averageExecutionMilliseconds: Float!
+  totalWaitMilliseconds: Float!
+  totalExecutionMilliseconds: Float!
+  reader: DatabasePoolMetrics!
+  writer: DatabasePoolMetrics!
+}
+type DatabasePoolMetrics {
+  open: Int!
+  inUse: Int!
+  idle: Int!
+  limit: Int!
+  waitCount: Long!
+  waitMilliseconds: Float!
+}

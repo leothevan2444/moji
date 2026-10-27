@@ -102,6 +102,7 @@ const rootValue = {
       torrentSelection: { enabled: false, inspectionCandidateLimit: 5, fastRules: [], torrentRules: [] },
     },
     system: {
+      developerMode: false,
       taskDeletePolicy: "KEEP_ONLY",
       imageCache: { enabled: true, maxSizeMb: 1024, retentionDays: 30 },
       stashBoxDataCache: { ttlHours: 24 },
@@ -148,6 +149,8 @@ const rootValue = {
   },
 };
 
+export const settingsSnapshot = rootValue.settings;
+
 export const test = base.extend<{ graphqlOverrides: Record<string, unknown> }>({
   graphqlOverrides: [{}, { option: true }],
   page: async ({ page, graphqlOverrides }, use) => {
@@ -172,6 +175,11 @@ export const test = base.extend<{ graphqlOverrides: Record<string, unknown> }>({
         const message = JSON.parse(String(data));
         if (message.type === "connection_init") socket.send(JSON.stringify({ type: "connection_ack" }));
         if (message.type === "ping") socket.send(JSON.stringify({ type: "pong" }));
+        if (message.type === "subscribe" && message.payload?.query?.includes("subscription DatabasePerformanceDocument")) {
+          const result = graphqlSync({ schema, rootValue: { ...rootValue, ...graphqlOverrides }, source: message.payload.query, variableValues: message.payload.variables, operationName: message.payload.operationName });
+          errors.push(...(result.errors ?? []).map(error => error.message));
+          socket.send(JSON.stringify({ id: message.id, type: "next", payload: result }));
+        }
       });
     });
     await use(page);

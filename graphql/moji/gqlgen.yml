@@ -22,3 +22,12 @@ models:
   Long:
     model:
     - github.com/99designs/gqlgen/graphql.Int64
+  DatabasePerformanceSnapshot:
+    model:
+    - github.com/leothevan2444/moji/internal/storage.DatabasePerformanceSnapshot
+  DatabasePerformance:
+    model:
+    - github.com/leothevan2444/moji/internal/storage.DatabasePerformance
+  DatabasePoolMetrics:
+    model:
+    - github.com/leothevan2444/moji/internal/storage.DatabasePoolMetrics

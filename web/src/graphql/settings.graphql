@@ -146,6 +146,7 @@ mutation UpdateAutomationSettingsDocument($input: UpdateAutomationSettingsInput!
 mutation UpdateSystemSettingsDocument($input: UpdateSystemSettingsInput!) {
   updateSystemSettings(input: $input) {
     system {
+      developerMode
       taskDeletePolicy
       imageCache {
         enabled

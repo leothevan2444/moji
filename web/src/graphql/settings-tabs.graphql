@@ -70,7 +70,8 @@ query AutomationSettingsTab {
 
 query SystemSettingsTab {
   settings {
-    system { taskDeletePolicy imageCache { enabled maxSizeMb retentionDays } stashBoxDataCache { ttlHours } }
+    system { developerMode
+      taskDeletePolicy imageCache { enabled maxSizeMb retentionDays } stashBoxDataCache { ttlHours } }
   }
   settingsStatus {
     imageCache { usedBytes entryCount cacheDirectory lastCleanupAt lastError }

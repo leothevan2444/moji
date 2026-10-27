@@ -206,6 +206,7 @@ func NormalizeTaskDeletePolicy(value string) TaskDeletePolicy {
 }
 
 type SystemConfig struct {
+	DeveloperMode     bool                    `yaml:"developer_mode"`
 	TaskDeletePolicy  TaskDeletePolicy        `yaml:"task_delete_policy"`
 	ImageCache        ImageCacheConfig        `yaml:"image_cache"`
 	StashBoxDataCache StashBoxDataCacheConfig `yaml:"stash_box_data_cache"`

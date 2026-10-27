@@ -313,6 +313,7 @@ enum TaskDeletePolicy {
 }
 
 type SystemSettings {
+  developerMode: Boolean!
   taskDeletePolicy: TaskDeletePolicy!
   imageCache: ImageCacheSettings!
   stashBoxDataCache: StashBoxDataCacheSettings!
@@ -487,6 +488,7 @@ input SubscriptionReleasePolicyInput {
 }
 
 input UpdateSystemSettingsInput {
+  developerMode: Boolean
   taskDeletePolicy: TaskDeletePolicy!
   imageCache: ImageCacheSettingsInput
   stashBoxDataCache: StashBoxDataCacheSettingsInput

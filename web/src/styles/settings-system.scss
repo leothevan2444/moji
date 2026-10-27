@@ -20,3 +20,5 @@
   &:hover input:checked:not(:disabled) ~ .switch__track { background: color-mix(in srgb, var(--accent) 85%, var(--line-strong)); }
 }
 .switch-row { display: inline-flex; align-items: center; gap: $space-2; font-size: 13px; color: var(--text); cursor: pointer; user-select: none; .switch { margin-left: auto; } &__label { font-weight: 600; } }
+
+.developer-mode-switch .switch__track { pointer-events: none; }

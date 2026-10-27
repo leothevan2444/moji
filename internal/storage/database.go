@@ -52,17 +52,22 @@ type Database struct {
 	executionNanos atomic.Uint64
 	busyTimeout    time.Duration
 	busyRetries    atomic.Uint64
+	queueRejected  atomic.Uint64
+	queueCanceled  atomic.Uint64
 }
 
 type Metrics struct {
-	Writes      uint64
-	BusyRetries uint64
-	WriteErrors uint64
-	Queued      int
-	Wait        time.Duration
-	Execution   time.Duration
-	Reader      sql.DBStats
-	Writer      sql.DBStats
+	QueueRejected uint64
+	QueueCanceled uint64
+	QueueCapacity int
+	Writes        uint64
+	BusyRetries   uint64
+	WriteErrors   uint64
+	Queued        int
+	Wait          time.Duration
+	Execution     time.Duration
+	Reader        sql.DBStats
+	Writer        sql.DBStats
 }
 
 func Open(ctx context.Context, options Options) (*Database, error) {
@@ -176,6 +181,7 @@ func (d *Database) WithWrite(ctx context.Context, work func(*sqlx.Tx) error) err
 	select {
 	case d.admission <- struct{}{}:
 	default:
+		d.queueRejected.Add(1)
 		return ErrWriteQueueFull
 	}
 	defer func() { <-d.admission }()
@@ -183,10 +189,11 @@ func (d *Database) WithWrite(ctx context.Context, work func(*sqlx.Tx) error) err
 	select {
 	case d.writerGate <- struct{}{}:
 	case <-ctx.Done():
+		d.queueCanceled.Add(1)
 		return ctx.Err()
 	}
 	defer func() { <-d.writerGate }()
-	d.waitNanos.Add(uint64(time.Since(start)))
+	wait := time.Since(start)
 	if d.closed.Load() {
 		return ErrClosed
 	}
@@ -202,6 +209,7 @@ func (d *Database) WithWrite(ctx context.Context, work func(*sqlx.Tx) error) err
 		}
 		return tx.Commit()
 	}()
+	d.waitNanos.Add(uint64(wait))
 	d.executionNanos.Add(uint64(time.Since(begin)))
 	d.writes.Add(1)
 	if err != nil {
@@ -211,7 +219,7 @@ func (d *Database) WithWrite(ctx context.Context, work func(*sqlx.Tx) error) err
 }
 
 func (d *Database) Metrics() Metrics {
-	return Metrics{Writes: d.writes.Load(), BusyRetries: d.busyRetries.Load(), WriteErrors: d.writeErrors.Load(), Queued: len(d.admission), Wait: time.Duration(d.waitNanos.Load()), Execution: time.Duration(d.executionNanos.Load()), Reader: d.Reader.Stats(), Writer: d.writer.Stats()}
+	return Metrics{QueueRejected: d.queueRejected.Load(), QueueCanceled: d.queueCanceled.Load(), QueueCapacity: cap(d.admission), Writes: d.writes.Load(), BusyRetries: d.busyRetries.Load(), WriteErrors: d.writeErrors.Load(), Queued: len(d.admission), Wait: time.Duration(d.waitNanos.Load()), Execution: time.Duration(d.executionNanos.Load()), Reader: d.Reader.Stats(), Writer: d.writer.Stats()}
 }
 
 // Close refuses new writes, waits for the current write and closes both pools.

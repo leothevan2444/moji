@@ -15,6 +15,7 @@ import (
 	"github.com/99designs/gqlgen/graphql"
 	"github.com/99designs/gqlgen/graphql/introspection"
 	"github.com/leothevan2444/moji/internal/graphqlapi/model"
+	"github.com/leothevan2444/moji/internal/storage"
 	gqlparser "github.com/vektah/gqlparser/v2"
 	"github.com/vektah/gqlparser/v2/ast"
 )
@@ -72,6 +73,44 @@ type ComplexityRoot struct {
 		Failed       func(childComplexity int) int
 		PendingScans func(childComplexity int) int
 		Total        func(childComplexity int) int
+	}
+
+	DatabasePerformance struct {
+		AverageExecutionMilliseconds func(childComplexity int) int
+		AverageWaitMilliseconds      func(childComplexity int) int
+		BusyRetries                  func(childComplexity int) int
+		DatabaseBytes                func(childComplexity int) int
+		FreeBytes                    func(childComplexity int) int
+		QueueCanceled                func(childComplexity int) int
+		QueueCapacity                func(childComplexity int) int
+		QueueRejected                func(childComplexity int) int
+		Queued                       func(childComplexity int) int
+		Reader                       func(childComplexity int) int
+		Role                         func(childComplexity int) int
+		TotalExecutionMilliseconds   func(childComplexity int) int
+		TotalWaitMilliseconds        func(childComplexity int) int
+		WALBytes                     func(childComplexity int) int
+		WriteAttempts                func(childComplexity int) int
+		WriteErrors                  func(childComplexity int) int
+		Writer                       func(childComplexity int) int
+		WritesPerSecond              func(childComplexity int) int
+	}
+
+	DatabasePerformanceSnapshot struct {
+		Databases       func(childComplexity int) int
+		IntervalSeconds func(childComplexity int) int
+		LastError       func(childComplexity int) int
+		SampledAt       func(childComplexity int) int
+		StartedAt       func(childComplexity int) int
+	}
+
+	DatabasePoolMetrics struct {
+		Idle             func(childComplexity int) int
+		InUse            func(childComplexity int) int
+		Limit            func(childComplexity int) int
+		Open             func(childComplexity int) int
+		WaitCount        func(childComplexity int) int
+		WaitMilliseconds func(childComplexity int) int
 	}
 
 	DirectionRule struct {
@@ -782,6 +821,7 @@ type ComplexityRoot struct {
 	}
 
 	Subscription struct {
+		DatabasePerformance         func(childComplexity int) int
 		LogEvents                   func(childComplexity int) int
 		PerformerSubscriptionEvents func(childComplexity int) int
 		ServiceStatusEvents         func(childComplexity int) int
@@ -842,6 +882,7 @@ type ComplexityRoot struct {
 	}
 
 	SystemSettings struct {
+		DeveloperMode     func(childComplexity int) int
 		ImageCache        func(childComplexity int) int
 		StashBoxDataCache func(childComplexity int) int
 		TaskDeletePolicy  func(childComplexity int) int
@@ -1059,6 +1100,7 @@ type QueryResolver interface {
 type SubscriptionResolver interface {
 	TaskEvents(ctx context.Context) (<-chan *model.TaskEvent, error)
 	LogEvents(ctx context.Context) (<-chan *model.LogEvent, error)
+	DatabasePerformance(ctx context.Context) (<-chan *storage.DatabasePerformanceSnapshot, error)
 	PerformerSubscriptionEvents(ctx context.Context) (<-chan *model.PerformerSubscriptionEvent, error)
 	ServiceStatusEvents(ctx context.Context) (<-chan *model.ServiceStatusEvent, error)
 }
@@ -1200,6 +1242,209 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.DashboardStats.Total(childComplexity), true
+
+	case "DatabasePerformance.averageExecutionMilliseconds":
+		if e.complexity.DatabasePerformance.AverageExecutionMilliseconds == nil {
+			break
+		}
+
+		return e.complexity.DatabasePerformance.AverageExecutionMilliseconds(childComplexity), true
+
+	case "DatabasePerformance.averageWaitMilliseconds":
+		if e.complexity.DatabasePerformance.AverageWaitMilliseconds == nil {
+			break
+		}
+
+		return e.complexity.DatabasePerformance.AverageWaitMilliseconds(childComplexity), true
+
+	case "DatabasePerformance.busyRetries":
+		if e.complexity.DatabasePerformance.BusyRetries == nil {
+			break
+		}
+
+		return e.complexity.DatabasePerformance.BusyRetries(childComplexity), true
+
+	case "DatabasePerformance.databaseBytes":
+		if e.complexity.DatabasePerformance.DatabaseBytes == nil {
+			break
+		}
+
+		return e.complexity.DatabasePerformance.DatabaseBytes(childComplexity), true
+
+	case "DatabasePerformance.freeBytes":
+		if e.complexity.DatabasePerformance.FreeBytes == nil {
+			break
+		}
+
+		return e.complexity.DatabasePerformance.FreeBytes(childComplexity), true
+
+	case "DatabasePerformance.queueCanceled":
+		if e.complexity.DatabasePerformance.QueueCanceled == nil {
+			break
+		}
+
+		return e.complexity.DatabasePerformance.QueueCanceled(childComplexity), true
+
+	case "DatabasePerformance.queueCapacity":
+		if e.complexity.DatabasePerformance.QueueCapacity == nil {
+			break
+		}
+
+		return e.complexity.DatabasePerformance.QueueCapacity(childComplexity), true
+
+	case "DatabasePerformance.queueRejected":
+		if e.complexity.DatabasePerformance.QueueRejected == nil {
+			break
+		}
+
+		return e.complexity.DatabasePerformance.QueueRejected(childComplexity), true
+
+	case "DatabasePerformance.queued":
+		if e.complexity.DatabasePerformance.Queued == nil {
+			break
+		}
+
+		return e.complexity.DatabasePerformance.Queued(childComplexity), true
+
+	case "DatabasePerformance.reader":
+		if e.complexity.DatabasePerformance.Reader == nil {
+			break
+		}
+
+		return e.complexity.DatabasePerformance.Reader(childComplexity), true
+
+	case "DatabasePerformance.role":
+		if e.complexity.DatabasePerformance.Role == nil {
+			break
+		}
+
+		return e.complexity.DatabasePerformance.Role(childComplexity), true
+
+	case "DatabasePerformance.totalExecutionMilliseconds":
+		if e.complexity.DatabasePerformance.TotalExecutionMilliseconds == nil {
+			break
+		}
+
+		return e.complexity.DatabasePerformance.TotalExecutionMilliseconds(childComplexity), true
+
+	case "DatabasePerformance.totalWaitMilliseconds":
+		if e.complexity.DatabasePerformance.TotalWaitMilliseconds == nil {
+			break
+		}
+
+		return e.complexity.DatabasePerformance.TotalWaitMilliseconds(childComplexity), true
+
+	case "DatabasePerformance.walBytes":
+		if e.complexity.DatabasePerformance.WALBytes == nil {
+			break
+		}
+
+		return e.complexity.DatabasePerformance.WALBytes(childComplexity), true
+
+	case "DatabasePerformance.writeAttempts":
+		if e.complexity.DatabasePerformance.WriteAttempts == nil {
+			break
+		}
+
+		return e.complexity.DatabasePerformance.WriteAttempts(childComplexity), true
+
+	case "DatabasePerformance.writeErrors":
+		if e.complexity.DatabasePerformance.WriteErrors == nil {
+			break
+		}
+
+		return e.complexity.DatabasePerformance.WriteErrors(childComplexity), true
+
+	case "DatabasePerformance.writer":
+		if e.complexity.DatabasePerformance.Writer == nil {
+			break
+		}
+
+		return e.complexity.DatabasePerformance.Writer(childComplexity), true
+
+	case "DatabasePerformance.writesPerSecond":
+		if e.complexity.DatabasePerformance.WritesPerSecond == nil {
+			break
+		}
+
+		return e.complexity.DatabasePerformance.WritesPerSecond(childComplexity), true
+
+	case "DatabasePerformanceSnapshot.databases":
+		if e.complexity.DatabasePerformanceSnapshot.Databases == nil {
+			break
+		}
+
+		return e.complexity.DatabasePerformanceSnapshot.Databases(childComplexity), true
+
+	case "DatabasePerformanceSnapshot.intervalSeconds":
+		if e.complexity.DatabasePerformanceSnapshot.IntervalSeconds == nil {
+			break
+		}
+
+		return e.complexity.DatabasePerformanceSnapshot.IntervalSeconds(childComplexity), true
+
+	case "DatabasePerformanceSnapshot.lastError":
+		if e.complexity.DatabasePerformanceSnapshot.LastError == nil {
+			break
+		}
+
+		return e.complexity.DatabasePerformanceSnapshot.LastError(childComplexity), true
+
+	case "DatabasePerformanceSnapshot.sampledAt":
+		if e.complexity.DatabasePerformanceSnapshot.SampledAt == nil {
+			break
+		}
+
+		return e.complexity.DatabasePerformanceSnapshot.SampledAt(childComplexity), true
+
+	case "DatabasePerformanceSnapshot.startedAt":
+		if e.complexity.DatabasePerformanceSnapshot.StartedAt == nil {
+			break
+		}
+
+		return e.complexity.DatabasePerformanceSnapshot.StartedAt(childComplexity), true
+
+	case "DatabasePoolMetrics.idle":
+		if e.complexity.DatabasePoolMetrics.Idle == nil {
+			break
+		}
+
+		return e.complexity.DatabasePoolMetrics.Idle(childComplexity), true
+
+	case "DatabasePoolMetrics.inUse":
+		if e.complexity.DatabasePoolMetrics.InUse == nil {
+			break
+		}
+
+		return e.complexity.DatabasePoolMetrics.InUse(childComplexity), true
+
+	case "DatabasePoolMetrics.limit":
+		if e.complexity.DatabasePoolMetrics.Limit == nil {
+			break
+		}
+
+		return e.complexity.DatabasePoolMetrics.Limit(childComplexity), true
+
+	case "DatabasePoolMetrics.open":
+		if e.complexity.DatabasePoolMetrics.Open == nil {
+			break
+		}
+
+		return e.complexity.DatabasePoolMetrics.Open(childComplexity), true
+
+	case "DatabasePoolMetrics.waitCount":
+		if e.complexity.DatabasePoolMetrics.WaitCount == nil {
+			break
+		}
+
+		return e.complexity.DatabasePoolMetrics.WaitCount(childComplexity), true
+
+	case "DatabasePoolMetrics.waitMilliseconds":
+		if e.complexity.DatabasePoolMetrics.WaitMilliseconds == nil {
+			break
+		}
+
+		return e.complexity.DatabasePoolMetrics.WaitMilliseconds(childComplexity), true
 
 	case "DirectionRule.direction":
 		if e.complexity.DirectionRule.Direction == nil {
@@ -4914,6 +5159,13 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.SubscribedPerformer.ReviewReleaseCount(childComplexity), true
 
+	case "Subscription.databasePerformance":
+		if e.complexity.Subscription.DatabasePerformance == nil {
+			break
+		}
+
+		return e.complexity.Subscription.DatabasePerformance(childComplexity), true
+
 	case "Subscription.logEvents":
 		if e.complexity.Subscription.LogEvents == nil {
 			break
@@ -5207,6 +5459,13 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.SubscriptionReleasePolicy.VrBehavior(childComplexity), true
+
+	case "SystemSettings.developerMode":
+		if e.complexity.SystemSettings.DeveloperMode == nil {
+			break
+		}
+
+		return e.complexity.SystemSettings.DeveloperMode(childComplexity), true
 
 	case "SystemSettings.imageCache":
 		if e.complexity.SystemSettings.ImageCache == nil {
@@ -6206,6 +6465,46 @@ extend type Subscription {
   logEvents: LogEvent!
 }
 `, BuiltIn: false},
+	{Name: "../../../graphql/moji/types/performance.graphql", Input: `extend type Subscription {
+  "Latest database metrics pushed by the live owner. Available only while developer mode is enabled."
+  databasePerformance: DatabasePerformanceSnapshot!
+}
+type DatabasePerformanceSnapshot {
+  startedAt: String!
+  sampledAt: String!
+  intervalSeconds: Float!
+  lastError: String!
+  databases: [DatabasePerformance!]!
+}
+type DatabasePerformance {
+  role: String!
+  databaseBytes: Long!
+  walBytes: Long!
+  freeBytes: Long!
+  writeAttempts: Long!
+  writeErrors: Long!
+  busyRetries: Long!
+  queueRejected: Long!
+  queueCanceled: Long!
+  queued: Int!
+  queueCapacity: Int!
+  writesPerSecond: Float!
+  averageWaitMilliseconds: Float!
+  averageExecutionMilliseconds: Float!
+  totalWaitMilliseconds: Float!
+  totalExecutionMilliseconds: Float!
+  reader: DatabasePoolMetrics!
+  writer: DatabasePoolMetrics!
+}
+type DatabasePoolMetrics {
+  open: Int!
+  inUse: Int!
+  idle: Int!
+  limit: Int!
+  waitCount: Long!
+  waitMilliseconds: Float!
+}
+`, BuiltIn: false},
 	{Name: "../../../graphql/moji/types/performer_subscription_events.graphql", Input: `enum PerformerSubscriptionEventType {
   CREATED
   UPDATED
@@ -6763,6 +7062,7 @@ enum TaskDeletePolicy {
 }
 
 type SystemSettings {
+  developerMode: Boolean!
   taskDeletePolicy: TaskDeletePolicy!
   imageCache: ImageCacheSettings!
   stashBoxDataCache: StashBoxDataCacheSettings!
@@ -6937,6 +7237,7 @@ input SubscriptionReleasePolicyInput {
 }
 
 input UpdateSystemSettingsInput {
+  developerMode: Boolean
   taskDeletePolicy: TaskDeletePolicy!
   imageCache: ImageCacheSettingsInput
   stashBoxDataCache: StashBoxDataCacheSettingsInput
@@ -10381,6 +10682,1348 @@ func (ec *executionContext) fieldContext_DashboardStats_failed(_ context.Context
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _DatabasePerformance_role(ctx context.Context, field graphql.CollectedField, obj *storage.DatabasePerformance) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_DatabasePerformance_role(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Role, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_DatabasePerformance_role(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "DatabasePerformance",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _DatabasePerformance_databaseBytes(ctx context.Context, field graphql.CollectedField, obj *storage.DatabasePerformance) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_DatabasePerformance_databaseBytes(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.DatabaseBytes, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int64)
+	fc.Result = res
+	return ec.marshalNLong2int64(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_DatabasePerformance_databaseBytes(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "DatabasePerformance",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Long does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _DatabasePerformance_walBytes(ctx context.Context, field graphql.CollectedField, obj *storage.DatabasePerformance) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_DatabasePerformance_walBytes(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.WALBytes, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int64)
+	fc.Result = res
+	return ec.marshalNLong2int64(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_DatabasePerformance_walBytes(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "DatabasePerformance",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Long does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _DatabasePerformance_freeBytes(ctx context.Context, field graphql.CollectedField, obj *storage.DatabasePerformance) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_DatabasePerformance_freeBytes(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.FreeBytes, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int64)
+	fc.Result = res
+	return ec.marshalNLong2int64(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_DatabasePerformance_freeBytes(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "DatabasePerformance",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Long does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _DatabasePerformance_writeAttempts(ctx context.Context, field graphql.CollectedField, obj *storage.DatabasePerformance) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_DatabasePerformance_writeAttempts(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.WriteAttempts, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int64)
+	fc.Result = res
+	return ec.marshalNLong2int64(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_DatabasePerformance_writeAttempts(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "DatabasePerformance",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Long does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _DatabasePerformance_writeErrors(ctx context.Context, field graphql.CollectedField, obj *storage.DatabasePerformance) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_DatabasePerformance_writeErrors(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.WriteErrors, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int64)
+	fc.Result = res
+	return ec.marshalNLong2int64(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_DatabasePerformance_writeErrors(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "DatabasePerformance",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Long does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _DatabasePerformance_busyRetries(ctx context.Context, field graphql.CollectedField, obj *storage.DatabasePerformance) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_DatabasePerformance_busyRetries(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.BusyRetries, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int64)
+	fc.Result = res
+	return ec.marshalNLong2int64(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_DatabasePerformance_busyRetries(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "DatabasePerformance",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Long does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _DatabasePerformance_queueRejected(ctx context.Context, field graphql.CollectedField, obj *storage.DatabasePerformance) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_DatabasePerformance_queueRejected(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.QueueRejected, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int64)
+	fc.Result = res
+	return ec.marshalNLong2int64(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_DatabasePerformance_queueRejected(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "DatabasePerformance",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Long does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _DatabasePerformance_queueCanceled(ctx context.Context, field graphql.CollectedField, obj *storage.DatabasePerformance) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_DatabasePerformance_queueCanceled(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.QueueCanceled, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int64)
+	fc.Result = res
+	return ec.marshalNLong2int64(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_DatabasePerformance_queueCanceled(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "DatabasePerformance",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Long does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _DatabasePerformance_queued(ctx context.Context, field graphql.CollectedField, obj *storage.DatabasePerformance) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_DatabasePerformance_queued(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Queued, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int)
+	fc.Result = res
+	return ec.marshalNInt2int(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_DatabasePerformance_queued(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "DatabasePerformance",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _DatabasePerformance_queueCapacity(ctx context.Context, field graphql.CollectedField, obj *storage.DatabasePerformance) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_DatabasePerformance_queueCapacity(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.QueueCapacity, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int)
+	fc.Result = res
+	return ec.marshalNInt2int(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_DatabasePerformance_queueCapacity(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "DatabasePerformance",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _DatabasePerformance_writesPerSecond(ctx context.Context, field graphql.CollectedField, obj *storage.DatabasePerformance) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_DatabasePerformance_writesPerSecond(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.WritesPerSecond, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(float64)
+	fc.Result = res
+	return ec.marshalNFloat2float64(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_DatabasePerformance_writesPerSecond(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "DatabasePerformance",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Float does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _DatabasePerformance_averageWaitMilliseconds(ctx context.Context, field graphql.CollectedField, obj *storage.DatabasePerformance) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_DatabasePerformance_averageWaitMilliseconds(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.AverageWaitMilliseconds, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(float64)
+	fc.Result = res
+	return ec.marshalNFloat2float64(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_DatabasePerformance_averageWaitMilliseconds(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "DatabasePerformance",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Float does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _DatabasePerformance_averageExecutionMilliseconds(ctx context.Context, field graphql.CollectedField, obj *storage.DatabasePerformance) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_DatabasePerformance_averageExecutionMilliseconds(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.AverageExecutionMilliseconds, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(float64)
+	fc.Result = res
+	return ec.marshalNFloat2float64(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_DatabasePerformance_averageExecutionMilliseconds(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "DatabasePerformance",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Float does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _DatabasePerformance_totalWaitMilliseconds(ctx context.Context, field graphql.CollectedField, obj *storage.DatabasePerformance) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_DatabasePerformance_totalWaitMilliseconds(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.TotalWaitMilliseconds, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(float64)
+	fc.Result = res
+	return ec.marshalNFloat2float64(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_DatabasePerformance_totalWaitMilliseconds(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "DatabasePerformance",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Float does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _DatabasePerformance_totalExecutionMilliseconds(ctx context.Context, field graphql.CollectedField, obj *storage.DatabasePerformance) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_DatabasePerformance_totalExecutionMilliseconds(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.TotalExecutionMilliseconds, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(float64)
+	fc.Result = res
+	return ec.marshalNFloat2float64(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_DatabasePerformance_totalExecutionMilliseconds(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "DatabasePerformance",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Float does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _DatabasePerformance_reader(ctx context.Context, field graphql.CollectedField, obj *storage.DatabasePerformance) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_DatabasePerformance_reader(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Reader, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*storage.DatabasePoolMetrics)
+	fc.Result = res
+	return ec.marshalNDatabasePoolMetrics2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋstorageᚐDatabasePoolMetrics(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_DatabasePerformance_reader(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "DatabasePerformance",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "open":
+				return ec.fieldContext_DatabasePoolMetrics_open(ctx, field)
+			case "inUse":
+				return ec.fieldContext_DatabasePoolMetrics_inUse(ctx, field)
+			case "idle":
+				return ec.fieldContext_DatabasePoolMetrics_idle(ctx, field)
+			case "limit":
+				return ec.fieldContext_DatabasePoolMetrics_limit(ctx, field)
+			case "waitCount":
+				return ec.fieldContext_DatabasePoolMetrics_waitCount(ctx, field)
+			case "waitMilliseconds":
+				return ec.fieldContext_DatabasePoolMetrics_waitMilliseconds(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type DatabasePoolMetrics", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _DatabasePerformance_writer(ctx context.Context, field graphql.CollectedField, obj *storage.DatabasePerformance) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_DatabasePerformance_writer(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Writer, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*storage.DatabasePoolMetrics)
+	fc.Result = res
+	return ec.marshalNDatabasePoolMetrics2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋstorageᚐDatabasePoolMetrics(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_DatabasePerformance_writer(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "DatabasePerformance",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "open":
+				return ec.fieldContext_DatabasePoolMetrics_open(ctx, field)
+			case "inUse":
+				return ec.fieldContext_DatabasePoolMetrics_inUse(ctx, field)
+			case "idle":
+				return ec.fieldContext_DatabasePoolMetrics_idle(ctx, field)
+			case "limit":
+				return ec.fieldContext_DatabasePoolMetrics_limit(ctx, field)
+			case "waitCount":
+				return ec.fieldContext_DatabasePoolMetrics_waitCount(ctx, field)
+			case "waitMilliseconds":
+				return ec.fieldContext_DatabasePoolMetrics_waitMilliseconds(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type DatabasePoolMetrics", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _DatabasePerformanceSnapshot_startedAt(ctx context.Context, field graphql.CollectedField, obj *storage.DatabasePerformanceSnapshot) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_DatabasePerformanceSnapshot_startedAt(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.StartedAt, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_DatabasePerformanceSnapshot_startedAt(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "DatabasePerformanceSnapshot",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _DatabasePerformanceSnapshot_sampledAt(ctx context.Context, field graphql.CollectedField, obj *storage.DatabasePerformanceSnapshot) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_DatabasePerformanceSnapshot_sampledAt(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.SampledAt, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_DatabasePerformanceSnapshot_sampledAt(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "DatabasePerformanceSnapshot",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _DatabasePerformanceSnapshot_intervalSeconds(ctx context.Context, field graphql.CollectedField, obj *storage.DatabasePerformanceSnapshot) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_DatabasePerformanceSnapshot_intervalSeconds(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.IntervalSeconds, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(float64)
+	fc.Result = res
+	return ec.marshalNFloat2float64(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_DatabasePerformanceSnapshot_intervalSeconds(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "DatabasePerformanceSnapshot",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Float does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _DatabasePerformanceSnapshot_lastError(ctx context.Context, field graphql.CollectedField, obj *storage.DatabasePerformanceSnapshot) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_DatabasePerformanceSnapshot_lastError(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.LastError, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_DatabasePerformanceSnapshot_lastError(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "DatabasePerformanceSnapshot",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _DatabasePerformanceSnapshot_databases(ctx context.Context, field graphql.CollectedField, obj *storage.DatabasePerformanceSnapshot) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_DatabasePerformanceSnapshot_databases(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Databases, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]*storage.DatabasePerformance)
+	fc.Result = res
+	return ec.marshalNDatabasePerformance2ᚕᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋstorageᚐDatabasePerformanceᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_DatabasePerformanceSnapshot_databases(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "DatabasePerformanceSnapshot",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "role":
+				return ec.fieldContext_DatabasePerformance_role(ctx, field)
+			case "databaseBytes":
+				return ec.fieldContext_DatabasePerformance_databaseBytes(ctx, field)
+			case "walBytes":
+				return ec.fieldContext_DatabasePerformance_walBytes(ctx, field)
+			case "freeBytes":
+				return ec.fieldContext_DatabasePerformance_freeBytes(ctx, field)
+			case "writeAttempts":
+				return ec.fieldContext_DatabasePerformance_writeAttempts(ctx, field)
+			case "writeErrors":
+				return ec.fieldContext_DatabasePerformance_writeErrors(ctx, field)
+			case "busyRetries":
+				return ec.fieldContext_DatabasePerformance_busyRetries(ctx, field)
+			case "queueRejected":
+				return ec.fieldContext_DatabasePerformance_queueRejected(ctx, field)
+			case "queueCanceled":
+				return ec.fieldContext_DatabasePerformance_queueCanceled(ctx, field)
+			case "queued":
+				return ec.fieldContext_DatabasePerformance_queued(ctx, field)
+			case "queueCapacity":
+				return ec.fieldContext_DatabasePerformance_queueCapacity(ctx, field)
+			case "writesPerSecond":
+				return ec.fieldContext_DatabasePerformance_writesPerSecond(ctx, field)
+			case "averageWaitMilliseconds":
+				return ec.fieldContext_DatabasePerformance_averageWaitMilliseconds(ctx, field)
+			case "averageExecutionMilliseconds":
+				return ec.fieldContext_DatabasePerformance_averageExecutionMilliseconds(ctx, field)
+			case "totalWaitMilliseconds":
+				return ec.fieldContext_DatabasePerformance_totalWaitMilliseconds(ctx, field)
+			case "totalExecutionMilliseconds":
+				return ec.fieldContext_DatabasePerformance_totalExecutionMilliseconds(ctx, field)
+			case "reader":
+				return ec.fieldContext_DatabasePerformance_reader(ctx, field)
+			case "writer":
+				return ec.fieldContext_DatabasePerformance_writer(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type DatabasePerformance", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _DatabasePoolMetrics_open(ctx context.Context, field graphql.CollectedField, obj *storage.DatabasePoolMetrics) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_DatabasePoolMetrics_open(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Open, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int)
+	fc.Result = res
+	return ec.marshalNInt2int(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_DatabasePoolMetrics_open(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "DatabasePoolMetrics",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _DatabasePoolMetrics_inUse(ctx context.Context, field graphql.CollectedField, obj *storage.DatabasePoolMetrics) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_DatabasePoolMetrics_inUse(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.InUse, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int)
+	fc.Result = res
+	return ec.marshalNInt2int(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_DatabasePoolMetrics_inUse(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "DatabasePoolMetrics",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _DatabasePoolMetrics_idle(ctx context.Context, field graphql.CollectedField, obj *storage.DatabasePoolMetrics) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_DatabasePoolMetrics_idle(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Idle, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int)
+	fc.Result = res
+	return ec.marshalNInt2int(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_DatabasePoolMetrics_idle(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "DatabasePoolMetrics",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _DatabasePoolMetrics_limit(ctx context.Context, field graphql.CollectedField, obj *storage.DatabasePoolMetrics) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_DatabasePoolMetrics_limit(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Limit, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int)
+	fc.Result = res
+	return ec.marshalNInt2int(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_DatabasePoolMetrics_limit(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "DatabasePoolMetrics",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _DatabasePoolMetrics_waitCount(ctx context.Context, field graphql.CollectedField, obj *storage.DatabasePoolMetrics) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_DatabasePoolMetrics_waitCount(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.WaitCount, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int64)
+	fc.Result = res
+	return ec.marshalNLong2int64(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_DatabasePoolMetrics_waitCount(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "DatabasePoolMetrics",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Long does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _DatabasePoolMetrics_waitMilliseconds(ctx context.Context, field graphql.CollectedField, obj *storage.DatabasePoolMetrics) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_DatabasePoolMetrics_waitMilliseconds(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.WaitMilliseconds, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(float64)
+	fc.Result = res
+	return ec.marshalNFloat2float64(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_DatabasePoolMetrics_waitMilliseconds(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "DatabasePoolMetrics",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Float does not have child fields")
 		},
 	}
 	return fc, nil
@@ -29700,6 +31343,8 @@ func (ec *executionContext) fieldContext_Settings_system(_ context.Context, fiel
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			switch field.Name {
+			case "developerMode":
+				return ec.fieldContext_SystemSettings_developerMode(ctx, field)
 			case "taskDeletePolicy":
 				return ec.fieldContext_SystemSettings_taskDeletePolicy(ctx, field)
 			case "imageCache":
@@ -35868,6 +37513,76 @@ func (ec *executionContext) fieldContext_Subscription_logEvents(_ context.Contex
 	return fc, nil
 }
 
+func (ec *executionContext) _Subscription_databasePerformance(ctx context.Context, field graphql.CollectedField) (ret func(ctx context.Context) graphql.Marshaler) {
+	fc, err := ec.fieldContext_Subscription_databasePerformance(ctx, field)
+	if err != nil {
+		return nil
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = nil
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Subscription().DatabasePerformance(rctx)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return nil
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return nil
+	}
+	return func(ctx context.Context) graphql.Marshaler {
+		select {
+		case res, ok := <-resTmp.(<-chan *storage.DatabasePerformanceSnapshot):
+			if !ok {
+				return nil
+			}
+			return graphql.WriterFunc(func(w io.Writer) {
+				w.Write([]byte{'{'})
+				graphql.MarshalString(field.Alias).MarshalGQL(w)
+				w.Write([]byte{':'})
+				ec.marshalNDatabasePerformanceSnapshot2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋstorageᚐDatabasePerformanceSnapshot(ctx, field.Selections, res).MarshalGQL(w)
+				w.Write([]byte{'}'})
+			})
+		case <-ctx.Done():
+			return nil
+		}
+	}
+}
+
+func (ec *executionContext) fieldContext_Subscription_databasePerformance(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Subscription",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "startedAt":
+				return ec.fieldContext_DatabasePerformanceSnapshot_startedAt(ctx, field)
+			case "sampledAt":
+				return ec.fieldContext_DatabasePerformanceSnapshot_sampledAt(ctx, field)
+			case "intervalSeconds":
+				return ec.fieldContext_DatabasePerformanceSnapshot_intervalSeconds(ctx, field)
+			case "lastError":
+				return ec.fieldContext_DatabasePerformanceSnapshot_lastError(ctx, field)
+			case "databases":
+				return ec.fieldContext_DatabasePerformanceSnapshot_databases(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type DatabasePerformanceSnapshot", field.Name)
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _Subscription_performerSubscriptionEvents(ctx context.Context, field graphql.CollectedField) (ret func(ctx context.Context) graphql.Marshaler) {
 	fc, err := ec.fieldContext_Subscription_performerSubscriptionEvents(ctx, field)
 	if err != nil {
@@ -37661,6 +39376,50 @@ func (ec *executionContext) fieldContext_SubscriptionReleasePolicy_releaseDateRa
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("field of type SubscriptionReleaseDateRange does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _SystemSettings_developerMode(ctx context.Context, field graphql.CollectedField, obj *model.SystemSettings) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_SystemSettings_developerMode(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.DeveloperMode, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(bool)
+	fc.Result = res
+	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_SystemSettings_developerMode(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "SystemSettings",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
 		},
 	}
 	return fc, nil
@@ -45802,13 +47561,20 @@ func (ec *executionContext) unmarshalInputUpdateSystemSettingsInput(ctx context.
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"taskDeletePolicy", "imageCache", "stashBoxDataCache"}
+	fieldsInOrder := [...]string{"developerMode", "taskDeletePolicy", "imageCache", "stashBoxDataCache"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
 			continue
 		}
 		switch k {
+		case "developerMode":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("developerMode"))
+			data, err := ec.unmarshalOBoolean2ᚖbool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.DeveloperMode = data
 		case "taskDeletePolicy":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("taskDeletePolicy"))
 			data, err := ec.unmarshalNTaskDeletePolicy2githubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐTaskDeletePolicy(ctx, v)
@@ -46005,6 +47771,253 @@ func (ec *executionContext) _DashboardStats(ctx context.Context, sel ast.Selecti
 			}
 		case "failed":
 			out.Values[i] = ec._DashboardStats_failed(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var databasePerformanceImplementors = []string{"DatabasePerformance"}
+
+func (ec *executionContext) _DatabasePerformance(ctx context.Context, sel ast.SelectionSet, obj *storage.DatabasePerformance) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, databasePerformanceImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("DatabasePerformance")
+		case "role":
+			out.Values[i] = ec._DatabasePerformance_role(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "databaseBytes":
+			out.Values[i] = ec._DatabasePerformance_databaseBytes(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "walBytes":
+			out.Values[i] = ec._DatabasePerformance_walBytes(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "freeBytes":
+			out.Values[i] = ec._DatabasePerformance_freeBytes(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "writeAttempts":
+			out.Values[i] = ec._DatabasePerformance_writeAttempts(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "writeErrors":
+			out.Values[i] = ec._DatabasePerformance_writeErrors(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "busyRetries":
+			out.Values[i] = ec._DatabasePerformance_busyRetries(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "queueRejected":
+			out.Values[i] = ec._DatabasePerformance_queueRejected(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "queueCanceled":
+			out.Values[i] = ec._DatabasePerformance_queueCanceled(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "queued":
+			out.Values[i] = ec._DatabasePerformance_queued(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "queueCapacity":
+			out.Values[i] = ec._DatabasePerformance_queueCapacity(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "writesPerSecond":
+			out.Values[i] = ec._DatabasePerformance_writesPerSecond(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "averageWaitMilliseconds":
+			out.Values[i] = ec._DatabasePerformance_averageWaitMilliseconds(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "averageExecutionMilliseconds":
+			out.Values[i] = ec._DatabasePerformance_averageExecutionMilliseconds(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "totalWaitMilliseconds":
+			out.Values[i] = ec._DatabasePerformance_totalWaitMilliseconds(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "totalExecutionMilliseconds":
+			out.Values[i] = ec._DatabasePerformance_totalExecutionMilliseconds(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "reader":
+			out.Values[i] = ec._DatabasePerformance_reader(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "writer":
+			out.Values[i] = ec._DatabasePerformance_writer(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var databasePerformanceSnapshotImplementors = []string{"DatabasePerformanceSnapshot"}
+
+func (ec *executionContext) _DatabasePerformanceSnapshot(ctx context.Context, sel ast.SelectionSet, obj *storage.DatabasePerformanceSnapshot) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, databasePerformanceSnapshotImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("DatabasePerformanceSnapshot")
+		case "startedAt":
+			out.Values[i] = ec._DatabasePerformanceSnapshot_startedAt(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "sampledAt":
+			out.Values[i] = ec._DatabasePerformanceSnapshot_sampledAt(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "intervalSeconds":
+			out.Values[i] = ec._DatabasePerformanceSnapshot_intervalSeconds(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "lastError":
+			out.Values[i] = ec._DatabasePerformanceSnapshot_lastError(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "databases":
+			out.Values[i] = ec._DatabasePerformanceSnapshot_databases(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var databasePoolMetricsImplementors = []string{"DatabasePoolMetrics"}
+
+func (ec *executionContext) _DatabasePoolMetrics(ctx context.Context, sel ast.SelectionSet, obj *storage.DatabasePoolMetrics) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, databasePoolMetricsImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("DatabasePoolMetrics")
+		case "open":
+			out.Values[i] = ec._DatabasePoolMetrics_open(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "inUse":
+			out.Values[i] = ec._DatabasePoolMetrics_inUse(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "idle":
+			out.Values[i] = ec._DatabasePoolMetrics_idle(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "limit":
+			out.Values[i] = ec._DatabasePoolMetrics_limit(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "waitCount":
+			out.Values[i] = ec._DatabasePoolMetrics_waitCount(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "waitMilliseconds":
+			out.Values[i] = ec._DatabasePoolMetrics_waitMilliseconds(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
@@ -51295,6 +53308,8 @@ func (ec *executionContext) _Subscription(ctx context.Context, sel ast.Selection
 		return ec._Subscription_taskEvents(ctx, fields[0])
 	case "logEvents":
 		return ec._Subscription_logEvents(ctx, fields[0])
+	case "databasePerformance":
+		return ec._Subscription_databasePerformance(ctx, fields[0])
 	case "performerSubscriptionEvents":
 		return ec._Subscription_performerSubscriptionEvents(ctx, fields[0])
 	case "serviceStatusEvents":
@@ -51645,6 +53660,11 @@ func (ec *executionContext) _SystemSettings(ctx context.Context, sel ast.Selecti
 		switch field.Name {
 		case "__typename":
 			out.Values[i] = graphql.MarshalString("SystemSettings")
+		case "developerMode":
+			out.Values[i] = ec._SystemSettings_developerMode(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
 		case "taskDeletePolicy":
 			out.Values[i] = ec._SystemSettings_taskDeletePolicy(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
@@ -52914,6 +54934,84 @@ func (ec *executionContext) marshalNDashboardStats2ᚖgithubᚗcomᚋleothevan24
 		return graphql.Null
 	}
 	return ec._DashboardStats(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNDatabasePerformance2ᚕᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋstorageᚐDatabasePerformanceᚄ(ctx context.Context, sel ast.SelectionSet, v []*storage.DatabasePerformance) graphql.Marshaler {
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalNDatabasePerformance2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋstorageᚐDatabasePerformance(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
+}
+
+func (ec *executionContext) marshalNDatabasePerformance2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋstorageᚐDatabasePerformance(ctx context.Context, sel ast.SelectionSet, v *storage.DatabasePerformance) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._DatabasePerformance(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNDatabasePerformanceSnapshot2githubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋstorageᚐDatabasePerformanceSnapshot(ctx context.Context, sel ast.SelectionSet, v storage.DatabasePerformanceSnapshot) graphql.Marshaler {
+	return ec._DatabasePerformanceSnapshot(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNDatabasePerformanceSnapshot2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋstorageᚐDatabasePerformanceSnapshot(ctx context.Context, sel ast.SelectionSet, v *storage.DatabasePerformanceSnapshot) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._DatabasePerformanceSnapshot(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNDatabasePoolMetrics2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋstorageᚐDatabasePoolMetrics(ctx context.Context, sel ast.SelectionSet, v *storage.DatabasePoolMetrics) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._DatabasePoolMetrics(ctx, sel, v)
 }
 
 func (ec *executionContext) marshalNDirectionRule2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐDirectionRule(ctx context.Context, sel ast.SelectionSet, v *model.DirectionRule) graphql.Marshaler {

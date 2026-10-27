@@ -33,6 +33,17 @@ import AutomationSettingsTab from "./AutomationSettingsTab";
 afterEach(cleanup);
 
 describe("settings tab visual contracts", () => {
+  it("saves developer mode through the system settings switch", async () => {
+    updateSettings.mockClear();
+    render(<SettingsDraftProvider><SystemSettingsTab /></SettingsDraftProvider>);
+    const toggle = screen.getByRole("switch", { name: "systemUi.developerMode" });
+    expect(toggle.getAttribute("aria-checked")).toBe("false");
+    fireEvent.click(toggle);
+    expect(toggle.getAttribute("aria-checked")).toBe("true");
+    fireEvent.click(screen.getByText("systemUi.save"));
+    await waitFor(() => expect(updateSettings).toHaveBeenCalledWith({ input: expect.objectContaining({ developerMode: true }) }));
+  });
+
   it("saves the VR policy and preserves its draft across tabs", async () => {
     updateSettings.mockClear();
     const view = render(<SettingsDraftProvider><AutomationSettingsTab /></SettingsDraftProvider>);

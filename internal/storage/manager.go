@@ -12,6 +12,7 @@ import (
 )
 
 type Manager struct {
+	performance          performanceMonitor
 	Core, Runtime, Cache *Database
 	Observations         *ObservationStore
 	lock                 *DirectoryLock
@@ -111,7 +112,7 @@ func openGeneration(ctx context.Context, o ManagerOptions, activeDirectory strin
 	if err != nil {
 		return nil, err
 	}
-	m = &Manager{lock: lock, BackupDirectory: filepath.Join(root, "backups"), Supplemental: o.Supplemental}
+	m = &Manager{performance: performanceMonitor{snapshot: DatabasePerformanceSnapshot{StartedAt: time.Now().UTC().Format(time.RFC3339Nano), Databases: []*DatabasePerformance{}}}, lock: lock, BackupDirectory: filepath.Join(root, "backups"), Supplemental: o.Supplemental}
 	if o.BackupDirectory != "" {
 		directory, e := filepath.Abs(o.BackupDirectory)
 		if e != nil {
@@ -177,6 +178,7 @@ func openGeneration(ctx context.Context, o ManagerOptions, activeDirectory strin
 	return m, nil
 }
 func (m *Manager) Close() error {
+	m.ClosePerformanceSubscriptions()
 	var errs []error
 	if m.Observations != nil {
 		flushCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)

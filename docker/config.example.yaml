@@ -39,3 +39,7 @@ automation:
 logging:
   level: info
   file_path: /data/moji.log
+
+# Developer tools are hidden by default.
+system:
+  developer_mode: false

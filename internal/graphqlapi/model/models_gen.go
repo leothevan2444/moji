@@ -937,6 +937,7 @@ type SubscriptionReleasePolicyInput struct {
 }
 
 type SystemSettings struct {
+	DeveloperMode     bool                       `json:"developerMode"`
 	TaskDeletePolicy  TaskDeletePolicy           `json:"taskDeletePolicy"`
 	ImageCache        *ImageCacheSettings        `json:"imageCache"`
 	StashBoxDataCache *StashBoxDataCacheSettings `json:"stashBoxDataCache"`
@@ -1168,6 +1169,7 @@ type UpdateStashSettingsInput struct {
 }
 
 type UpdateSystemSettingsInput struct {
+	DeveloperMode     *bool                           `json:"developerMode,omitempty"`
 	TaskDeletePolicy  TaskDeletePolicy                `json:"taskDeletePolicy"`
 	ImageCache        *ImageCacheSettingsInput        `json:"imageCache,omitempty"`
 	StashBoxDataCache *StashBoxDataCacheSettingsInput `json:"stashBoxDataCache,omitempty"`

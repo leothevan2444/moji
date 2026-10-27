@@ -114,3 +114,14 @@ go run ./cmd/moji-storage compact -data-dir /path/to/database
 ```
 
 Compaction first makes a protected backup, checks for held snapshots, then runs SQLite VACUUM and a truncating checkpoint. Online maintenance uses passive checkpoints; no code manually removes a live WAL. A reader may delay truncation, so investigate a sustained WAL rather than deleting it. Status reports engine/schema versions, page/free/WAL sizes, reader/writer pools, queue, busy retries and timing metrics.
+
+
+## Online database performance
+
+Enable **Settings → System → Developer mode** and save. This persists `system.developer_mode: true` in the selected YAML configuration. The performance button (Font Awesome gauge icon) appears immediately to the left of Statistics; disabling the saved setting removes the button and closes an open performance window. It is disabled by default.
+
+The running manager samples all three databases every five seconds, independently of offline maintenance and regardless of whether a browser is viewing the data. The GraphQL `databasePerformance` subscription uses `graphql-transport-ws` at `/graphql` and requires developer mode. It immediately sends the cached snapshot and then pushes each new successful or failed sample; subscribing never opens another manager, acquires its directory lock, or runs a backup/checkpoint. Metadata sampling has a two-second context budget. Sampling failures preserve the last successful data/timestamp and expose an error.
+
+The window receives pushed snapshots without HTTP polling. It pauses its subscription in a hidden browser tab and unsubscribes when closed; reopening or reconnecting immediately receives the current snapshot. Each subscriber has a bounded latest-value buffer, so slow clients cannot stall sampling or accumulate a backlog. The displayed sampling timestamp has been removed. It shows per-database write attempts/errors, lock retries, occupied write slots and capacity, admission rejections/cancellations, latest-interval write rate and average wait/execution time, cumulative timings, reader/writer pool usage and waits, main/WAL size and reusable space. Average execution includes beginning the transaction, SQLite lock retries, callback execution and commit; it is not per-SQL query latency. Slot occupancy includes the active writer. Sampling itself uses the reader pools, so their statistics include those metadata reads.
+
+Counters reset when the process restarts. The first successful sample establishes a baseline; rates and interval averages are shown after the next sample, with no execution average shown for an idle interval. The UI marks data older than fifteen seconds or a failed sample/subscription or disconnected transport as awaiting update while retaining prior values. There is no historical time-series store, slow-query tracing or percentile calculation in this feature.
