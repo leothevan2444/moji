@@ -644,7 +644,9 @@ func translateTaskConstraintError(err error) error {
 	case strings.Contains(message, "idx_tasks_torrent_identity_hash_unique"),
 		strings.Contains(message, "idx_tasks_torrent_identity_magnet_unique"),
 		strings.Contains(message, "tasks.torrent_identity_hash"),
-		strings.Contains(message, "tasks.torrent_identity_magnet"):
+		strings.Contains(message, "tasks.torrent_identity_magnet"),
+		strings.Contains(message, "task_downloads.torrent_identity_hash"),
+		strings.Contains(message, "task_downloads.torrent_identity_magnet"):
 		return ErrDuplicateTorrentTask
 	default:
 		return err

@@ -181,3 +181,36 @@ func TestRelationalStatsMatchExistingSemantics(t *testing.T) {
 		t.Fatalf("stats=%+v want=%+v", got, want)
 	}
 }
+
+func TestRelationalDuplicateIdentityRetainsBusinessErrorAndNoPartialTask(t *testing.T) {
+	s, m := relationalStore(t)
+	ctx := context.Background()
+	first := richRelationalTask()
+	if err := s.Create(ctx, first); err != nil {
+		t.Fatal(err)
+	}
+	for _, kind := range []string{"code", "hash", "magnet"} {
+		candidate := richRelationalTask()
+		candidate.ID = "duplicate-" + kind
+		want := ErrDuplicateTorrentTask
+		if kind == "code" {
+			candidate.TorrentIdentityHash = "other-hash"
+			candidate.TorrentIdentityMagnet = "other-magnet"
+			want = ErrDuplicateCodeTask
+		} else {
+			candidate.Code = "OTHER-123"
+			if kind == "hash" {
+				candidate.TorrentIdentityMagnet = "other-magnet"
+			} else {
+				candidate.TorrentIdentityHash = "other-hash"
+			}
+		}
+		if err := s.Create(ctx, candidate); !errors.Is(err, want) {
+			t.Fatalf("%s identity error=%v expected=%v", kind, err, want)
+		}
+	}
+	var count int
+	if err := m.Core.Reader.Get(&count, "SELECT count(*) FROM tasks"); err != nil || count != 1 {
+		t.Fatal("duplicate left a partial task", err)
+	}
+}
