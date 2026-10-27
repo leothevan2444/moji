@@ -53,7 +53,7 @@ Retention keeps the newest regular snapshot and the newest in 24 hourly, 14 dail
 Offline manual operations:
 
 ```sh
-go run ./cmd/moji-storage backup -data-dir /path/to/moji -config /path/to/config.yaml
+go run ./cmd/moji-storage backup -data-dir /path/to/moji -config /path/to/config.yaml -protect -reason before-maintenance
 go run ./cmd/moji-storage verify-backup -manifest /backup/path/snapshot.sqlite.json
 go run ./cmd/moji-storage restore -data-dir /path/to/moji -manifest /backup/path/snapshot.sqlite.json
 ```

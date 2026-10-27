@@ -35,6 +35,8 @@ func run() error {
 	cache := flags.String("cache", "", "standalone consistent legacy cache backup")
 	destination := flags.String("destination", "", "new staging directory (must not exist)")
 	manifest := flags.String("manifest", "", "backup manifest path")
+	protectBackup := flags.Bool("protect", false, "retain this backup until explicitly removed")
+	backupReason := flags.String("reason", "manual", "reason recorded in the backup manifest")
 	backupDirectory := flags.String("backup-dir", "", "core backup target directory (default: data-dir/backups)")
 	generation := flags.String("generation", "", "prepared generation name beneath data-dir/.storage/generations")
 	configPath := flags.String("config", "", "config YAML to include with core backups (defaults to data-dir/config.yaml when present)")
@@ -135,7 +137,7 @@ func run() error {
 			result = status
 			break
 		}
-		reason, protected := "manual", false
+		reason, protected := *backupReason, *protectBackup
 		if os.Args[1] == "compact" {
 			reason, protected = "before-compaction", true
 		}
