@@ -190,6 +190,8 @@ type Service struct {
 	taskDeletePolicy   func() config.TaskDeletePolicy
 	now                func() time.Time
 	newID              func() string
+	metadataHostsMu    sync.Mutex
+	metadataHosts      map[string]*torrentMetadataHost
 	inspectionCacheMu  sync.Mutex
 	inspectionCache    map[string]cachedTorrentInspection
 	taskLocksMu        sync.Mutex
@@ -675,6 +677,9 @@ func (s *Service) syncTaskProgress(ctx context.Context, snapshot *Task, torrents
 			}
 		}
 	}
+	if !taskChangedBeyondProgress(task, next) && task.Progress == next.Progress {
+		return task, nil
+	}
 	if err := s.store.Update(ctx, next); err != nil {
 		return task, fmt.Errorf("update task %q: %w", next.ID, err)
 	}
@@ -1005,7 +1010,7 @@ func (s *Service) submitPreparedTaskTorrent(ctx context.Context, task *Task, tor
 	if err := ctx.Err(); err != nil {
 		return err
 	}
-	if err := s.qbt.AddNewTorrent(ctx, addOptions); err != nil {
+	if err := s.qbt.AddNewTorrent(ctx, addOptions); err != nil && !s.adoptExistingTorrent(ctx, task) {
 		setTaskStage(task, TaskStageDownloading, TaskStageStatusBlocked)
 		blockTask(task, TaskStageErrorTorrentSubmit, err.Error(), s.now().UTC())
 		_ = s.store.Update(ctx, task)
@@ -1025,6 +1030,35 @@ func (s *Service) submitPreparedTaskTorrent(ctx context.Context, task *Task, tor
 		return fmt.Errorf("update task: %w", err)
 	}
 	return nil
+}
+
+// A rejected add can be a retry after qB already accepted the same torrent.
+// Reconcile only an exact validated info hash; never adopt a fuzzy title match.
+func (s *Service) adoptExistingTorrent(ctx context.Context, task *Task) bool {
+	hash := normalizeInfoHash(task.TorrentIdentityHash)
+	if hash == "" || ctx.Err() != nil {
+		return false
+	}
+	lookupCtx, cancel := context.WithTimeout(ctx, 5*time.Second)
+	defer cancel()
+	torrents, err := s.qbt.GetTorrentList(lookupCtx, &qbittorrent.TorrentListOptions{Hashes: []string{hash}})
+	if err != nil {
+		return false
+	}
+	for _, torrent := range torrents {
+		if normalizeInfoHash(torrent.Hash) != hash {
+			continue
+		}
+		task.TorrentHash = strings.ToLower(torrent.Hash)
+		task.TorrentName = torrent.Name
+		task.Progress = torrent.Progress
+		task.QBittorrentState = string(torrent.State)
+		task.ContentPath = torrent.ContentPath
+		task.SavePath = torrent.SavePath
+		logging.Infof("taskruntime: reconciled existing qB torrent for task %s", task.ID)
+		return true
+	}
+	return false
 }
 
 func preferredTorrentURL(result jackett.SearchResult) string {

@@ -142,7 +142,7 @@ func TestDownloadPollingDoesNotAdvanceProgressClock(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if !second[0].UpdatedAt.Equal(clock) || !second[0].LastProgressAt.Equal(progressAt) {
+	if !second[0].UpdatedAt.Equal(first[0].UpdatedAt) || !second[0].LastProgressAt.Equal(progressAt) {
 		t.Fatal("unchanged downloader poll changed progress clock")
 	}
 	qbt.torrents[0].Progress = .6

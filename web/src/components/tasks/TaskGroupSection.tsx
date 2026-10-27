@@ -63,8 +63,8 @@ export function TaskGroupSection({
             <TaskCard
               key={task.id}
               task={task}
-              pendingRetryId={pendingTaskRetryId}
-              pendingDeleteId={pendingTaskDeleteId}
+              pendingRetryId={pendingTaskRetryId === task.id ? task.id : null}
+              pendingDeleteId={pendingTaskDeleteId === task.id ? task.id : null}
               onOpen={onOpenTask}
               onRetry={onRetryTask}
               onResolve={onResolveTask}

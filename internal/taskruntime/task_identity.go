@@ -210,7 +210,7 @@ func (s *Service) resolveManualTorrent(ctx context.Context, torrentURL string) (
 	return candidate, code, identity, &metadata, nil
 }
 
-func (s *Service) fetchTorrentMetadata(ctx context.Context, torrentURL string) (downloadedTorrentMetadata, error) {
+func (s *Service) fetchTorrentMetadata(ctx context.Context, torrentURL string) (metadata downloadedTorrentMetadata, resultErr error) {
 	if s.httpClient == nil {
 		return downloadedTorrentMetadata{}, errors.New("taskruntime: http client is not configured")
 	}
@@ -218,11 +218,22 @@ func (s *Service) fetchTorrentMetadata(ctx context.Context, torrentURL string) (
 	if err != nil {
 		return downloadedTorrentMetadata{}, fmt.Errorf("taskruntime: build torrent metadata request: %w", err)
 	}
+	finish, err := s.acquireTorrentMetadataHost(ctx, req.URL)
+	if err != nil {
+		return downloadedTorrentMetadata{}, err
+	}
+	status := 0
+	retryAfter := ""
+	defer func() { finish(status, retryAfter, resultErr) }()
 	resp, err := s.httpClient.Do(req)
 	if err != nil {
-		return downloadedTorrentMetadata{}, fmt.Errorf("taskruntime: fetch torrent metadata: %w", err)
+		if urlErr, ok := err.(*url.Error); ok {
+			err = urlErr.Err
+		}
+		return downloadedTorrentMetadata{}, fmt.Errorf("taskruntime: fetch torrent metadata from %s: %w", req.URL.Hostname(), err)
 	}
 	defer resp.Body.Close()
+	status, retryAfter = resp.StatusCode, resp.Header.Get("Retry-After")
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
 		return downloadedTorrentMetadata{}, fmt.Errorf("taskruntime: fetch torrent metadata: unexpected status %d", resp.StatusCode)
 	}

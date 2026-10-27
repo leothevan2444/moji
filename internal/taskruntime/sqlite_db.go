@@ -32,7 +32,14 @@ func OpenSQLiteDatabase(path string) (*sqlx.DB, error) {
 		}
 	}
 
-	db, err := sqlx.Open("sqlite", trimmed)
+	// Acquire the writer reservation before a read-modify-write transaction.
+	// Deferred transactions can fail immediately while upgrading an old WAL snapshot.
+	separator := "?"
+	if strings.Contains(trimmed, "?") {
+		separator = "&"
+	}
+	dsn := trimmed + separator + "_txlock=immediate&_pragma=busy_timeout%285000%29&_pragma=foreign_keys%281%29"
+	db, err := sqlx.Open("sqlite", dsn)
 	if err != nil {
 		return nil, fmt.Errorf("taskruntime: open sqlite db %q: %w", trimmed, err)
 	}

@@ -2,6 +2,7 @@ package taskruntime
 
 import (
 	"context"
+	"database/sql"
 	"sort"
 	"time"
 )
@@ -75,7 +76,7 @@ func summarizeHomeTasks(tasks []*Task, now time.Time) HomeOverview {
 }
 
 func (s *SQLiteTaskStore) HomeOverview(ctx context.Context, now time.Time) (HomeOverview, error) {
-	tx, err := s.db.BeginTxx(ctx, nil)
+	tx, err := s.db.BeginTxx(ctx, &sql.TxOptions{ReadOnly: true})
 	if err != nil {
 		return HomeOverview{}, err
 	}

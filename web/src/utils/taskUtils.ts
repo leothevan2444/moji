@@ -531,7 +531,7 @@ function lifecycleDetail(task: DashboardTask, stage: TaskStageKey, failure: Task
   return tr("taskModel.lifecycle.completeUpcoming");
 }
 
-export function taskLifecycle(task: DashboardTask, failure: TaskFailureSummary): TaskLifecycleStep[] {
+export function taskLifecycle(task: DashboardTask, failure: TaskFailureSummary = taskFailureSummary(task)): TaskLifecycleStep[] {
   const progress = taskProgressPercent(task);
   const currentStage = lifecycleStageValue(task);
   const currentStatus = stageStatusValue(task);
@@ -573,7 +573,7 @@ export function taskLifecycle(task: DashboardTask, failure: TaskFailureSummary):
   });
 }
 
-export function taskPresentation(task: DashboardTask): TaskPresentation {
+export function taskCardPresentation(task: DashboardTask): Omit<TaskPresentation, "lifecycle"> {
   const primary = taskPrimaryState(task);
   const failure = taskFailureSummary(task);
   const progress = taskProgressPercent(task);
@@ -618,9 +618,13 @@ export function taskPresentation(task: DashboardTask): TaskPresentation {
     progressLabel: showDownloadProgress
       ? tr("taskExperience.downloadProgress", { progress })
       : primary.label,
-    metaLine: taskMetaLine(task),
-    lifecycle: taskLifecycle(task, failure)
+    metaLine: taskMetaLine(task)
   };
+}
+
+// Detail views explicitly opt into the full lifecycle calculation.
+export function taskPresentation(task: DashboardTask): TaskPresentation {
+  return { ...taskCardPresentation(task), lifecycle: taskLifecycle(task) };
 }
 
 /**

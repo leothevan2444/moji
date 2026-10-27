@@ -9,6 +9,8 @@ import {
   type TaskEventsSubscription
 } from "../graphql/generated/graphql";
 
+import { getTaskEventGapGeneration, subscribeTaskEventGaps } from "../graphql/taskEventSequence";
+
 export type TaskEvent = TaskEventsSubscription["taskEvents"];
 
 interface UseTaskEventsOptions {
@@ -17,17 +19,7 @@ interface UseTaskEventsOptions {
   onReconnect?: () => void;
 }
 
-export interface SequenceDecision {
-  accept: boolean;
-  gap: boolean;
-  nextSequence: number | null;
-}
-
-export function evaluateTaskEventSequence(previous: number | null, next: number): SequenceDecision {
-  if (previous === null) return { accept: true, gap: false, nextSequence: next };
-  if (next <= previous) return { accept: false, gap: false, nextSequence: previous };
-  return { accept: true, gap: next !== previous + 1, nextSequence: next };
-}
+export { evaluateTaskEventSequence } from "../graphql/taskEventSequence";
 
 export function useTaskEvents(options: UseTaskEventsOptions = {}) {
   const [{ data, error, fetching }] = useSubscription({ query: TaskEventsDocument });
@@ -37,7 +29,8 @@ export function useTaskEvents(options: UseTaskEventsOptions = {}) {
     getGraphQLConnectionSnapshot
   );
   const callbacks = useRef(options);
-  const lastSequence = useRef<number | null>(null);
+  const gapGeneration = useSyncExternalStore(subscribeTaskEventGaps, getTaskEventGapGeneration, getTaskEventGapGeneration);
+  const observedGapGeneration = useRef(gapGeneration);
   const connectionGeneration = useRef<number | null>(null);
 
   useEffect(() => {
@@ -52,7 +45,6 @@ export function useTaskEvents(options: UseTaskEventsOptions = {}) {
     }
     if (connection.generation !== connectionGeneration.current) {
       connectionGeneration.current = connection.generation;
-      lastSequence.current = null;
       if (import.meta.env.DEV) console.info("GraphQL task subscription recovered; refreshing snapshots");
       callbacks.current.onReconnect?.();
     }
@@ -61,15 +53,15 @@ export function useTaskEvents(options: UseTaskEventsOptions = {}) {
   useEffect(() => {
     const event = data?.taskEvents;
     if (!event) return;
-    const decision = evaluateTaskEventSequence(lastSequence.current, event.sequence);
-    if (!decision.accept) return;
-    lastSequence.current = decision.nextSequence;
-    if (decision.gap) {
-      if (import.meta.env.DEV) console.warn("GraphQL task subscription sequence gap; refreshing snapshots", event.sequence);
-      callbacks.current.onSequenceGap?.();
-    }
     callbacks.current.onEvent?.(event);
   }, [data]);
+
+  useEffect(() => {
+    if (observedGapGeneration.current === gapGeneration) return;
+    observedGapGeneration.current = gapGeneration;
+    if (import.meta.env.DEV) console.warn("GraphQL task transport sequence gap; refreshing snapshots");
+    callbacks.current.onSequenceGap?.();
+  }, [gapGeneration]);
 
   useEffect(() => {
     if (error && import.meta.env.DEV) console.error("GraphQL task subscription error", error);
@@ -80,6 +72,6 @@ export function useTaskEvents(options: UseTaskEventsOptions = {}) {
     error,
     fetching,
     connectionStatus: connection.status,
-    lastSequence: lastSequence.current
+    lastSequence: data?.taskEvents.sequence ?? null
   };
 }

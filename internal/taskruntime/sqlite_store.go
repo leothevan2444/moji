@@ -71,6 +71,12 @@ func (s *SQLiteTaskStore) Update(ctx context.Context, task *Task) error {
 	if err != nil {
 		return err
 	}
+	// Routine polls must not rewrite identical rows or append history events.
+	if !taskChangedBeyondProgress(previous, task) && previous.Progress == task.Progress {
+		task.UpdatedAt = previous.UpdatedAt
+		task.LastProgressAt = cloneTime(previous.LastProgressAt)
+		return nil
+	}
 	previousStage := string(previous.Stage)
 	trackTaskProgress(previous, task)
 	if err := upsertTaskRow(ctx, tx, task, true); err != nil {
@@ -81,8 +87,11 @@ func (s *SQLiteTaskStore) Update(ctx context.Context, task *Task) error {
 	if previousStage != string(task.Stage) {
 		message = fmt.Sprintf("task stage %s -> %s", previousStage, task.Stage)
 	}
-	if err := insertTaskEvent(ctx, tx, task.ID, "updated", previousStage, string(task.Stage), message); err != nil {
-		return err
+	// Live progress is persisted on the task; history records meaningful state changes.
+	if taskChangedBeyondProgress(previous, task) {
+		if err := insertTaskEvent(ctx, tx, task.ID, "updated", previousStage, string(task.Stage), message); err != nil {
+			return err
+		}
 	}
 
 	if err := tx.Commit(); err != nil {

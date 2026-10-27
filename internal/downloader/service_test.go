@@ -322,3 +322,172 @@ func TestImmediateCleanupHandlesCompletedMoveWithMissingSourceFiles(t *testing.T
 		t.Fatal("completed move retained its unusable torrent")
 	}
 }
+
+type unavailableTasks struct{ fakeTasks }
+
+func (f *unavailableTasks) ListTasks(context.Context) ([]*taskruntime.Task, error) {
+	return nil, errors.New("task database unavailable")
+}
+
+func TestFreshQBListingSurvivesTaskDatabaseFailureWithoutCleanup(t *testing.T) {
+	s, q, _, _ := newTest(t)
+	ctx := context.Background()
+	if err := s.Refresh(ctx); err != nil {
+		t.Fatal(err)
+	}
+	if err := s.SetPolicy(ctx, Policy{Enabled: true, Ratio: 1}); err != nil {
+		t.Fatal(err)
+	}
+	s.tasks = &unavailableTasks{}
+	q.torrents[0].DLSpeed = 12345
+	if err := s.Cycle(ctx); err != nil {
+		t.Fatal(err)
+	}
+	snap, err := s.Snapshot(ctx)
+	if err != nil || !snap.Connected || snap.Torrents[0].DownloadSpeed != 12345 {
+		t.Fatalf("fresh qB observation lost: %+v %v", snap, err)
+	}
+	if q.deleted != 0 || snap.Torrents[0].CanDeleteFiles || snap.Torrents[0].AllCompleted {
+		t.Fatal("cleanup allowed without authoritative tasks")
+	}
+	if len(snap.Torrents[0].TaskIDs) != 1 {
+		t.Fatal("last known associations lost")
+	}
+}
+
+type blockedObserver struct {
+	fakeTasks
+	entered chan struct{}
+}
+
+func (f *blockedObserver) ObserveTorrentStates(ctx context.Context, _ []qbittorrent.Torrent) error {
+	select {
+	case f.entered <- struct{}{}:
+	default:
+	}
+	<-ctx.Done()
+	return ctx.Err()
+}
+func TestTaskObserverDoesNotBlockFreshSnapshots(t *testing.T) {
+	s, q, tasks, _ := newTest(t)
+	observer := &blockedObserver{fakeTasks: *tasks, entered: make(chan struct{}, 1)}
+	s.tasks = observer
+	ctx, cancel := context.WithCancel(context.Background())
+	done := make(chan struct{})
+	go func() { defer close(done); s.runTaskObserver(ctx) }()
+	defer func() { cancel(); <-done }()
+	if err := s.Refresh(ctx); err != nil {
+		t.Fatal(err)
+	}
+	select {
+	case <-observer.entered:
+	case <-time.After(time.Second):
+		t.Fatal("observer did not start")
+	}
+	q.torrents[0].Progress = .42
+	if err := s.Refresh(ctx); err != nil {
+		t.Fatal(err)
+	}
+	snap, err := s.Snapshot(ctx)
+	if err != nil || snap.Torrents[0].Progress != .42 {
+		t.Fatalf("blocked observer prevented fresh listing: %+v %v", snap, err)
+	}
+	// Responses must not expose mutable cached slices.
+	snap.Torrents[0].TaskIDs[0] = "changed"
+	next, _ := s.Snapshot(ctx)
+	if next.Torrents[0].TaskIDs[0] == "changed" {
+		t.Fatal("snapshot shares mutable state")
+	}
+}
+
+type waitingClient struct {
+	*fakeClient
+	entered, release chan struct{}
+}
+
+func (f *waitingClient) GetTorrentList(ctx context.Context, opts *qbittorrent.TorrentListOptions) ([]qbittorrent.Torrent, error) {
+	close(f.entered)
+	select {
+	case <-f.release:
+		return f.fakeClient.GetTorrentList(ctx, opts)
+	case <-ctx.Done():
+		return nil, ctx.Err()
+	}
+}
+func TestReadingSnapshotDoesNotWaitForQBRequest(t *testing.T) {
+	s, q, _, _ := newTest(t)
+	if err := s.Refresh(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+	client := &waitingClient{fakeClient: q, entered: make(chan struct{}), release: make(chan struct{})}
+	s.client = client
+	done := make(chan error, 1)
+	go func() { done <- s.Refresh(context.Background()) }()
+	<-client.entered
+	defer func() {
+		close(client.release)
+		if err := <-done; err != nil {
+			t.Error(err)
+		}
+	}()
+	readDone := make(chan error, 1)
+	go func() { _, err := s.Snapshot(context.Background()); readDone <- err }()
+	select {
+	case err := <-readDone:
+		if err != nil {
+			t.Fatal(err)
+		}
+	case <-time.After(time.Second):
+		t.Fatal("snapshot blocked behind qB network request")
+	}
+}
+
+func TestFreshObservationRemainsReadableWhenPersistenceFails(t *testing.T) {
+	s, q, _, _ := newTest(t)
+	ctx := context.Background()
+	if err := s.Refresh(ctx); err != nil {
+		t.Fatal(err)
+	}
+	if err := s.db.Close(); err != nil {
+		t.Fatal(err)
+	}
+	q.torrents[0].DLSpeed = 9876
+	if err := s.Refresh(ctx); err == nil || !strings.Contains(err.Error(), "persist downloader snapshot") {
+		t.Fatalf("persistence failure was not reported separately: %v", err)
+	}
+	snap, err := s.Snapshot(ctx)
+	if err != nil || !snap.Connected || snap.Torrents[0].DownloadSpeed != 9876 {
+		t.Fatalf("persistence failure discarded live observation: %+v %v", snap, err)
+	}
+}
+
+type persistenceFailureClient struct {
+	*fakeClient
+	fail func()
+}
+
+func (q *persistenceFailureClient) GetDownloadServerState(ctx context.Context) (*qbittorrent.DownloadServerState, error) {
+	q.fail()
+	return q.fakeClient.GetDownloadServerState(ctx)
+}
+func TestCleanupNeverRunsWithoutDurableIntent(t *testing.T) {
+	s, q, _, _ := newTest(t)
+	ctx := context.Background()
+	if err := s.Refresh(ctx); err != nil {
+		t.Fatal(err)
+	}
+	if err := s.SetPolicy(ctx, Policy{Enabled: true, Ratio: 1}); err != nil {
+		t.Fatal(err)
+	}
+	s.client = &persistenceFailureClient{fakeClient: q, fail: func() { _ = s.db.Close() }}
+	if err := s.Cycle(ctx); err == nil {
+		t.Fatal("expected failed intent persistence")
+	}
+	if q.deleted != 0 {
+		t.Fatal("qB deletion executed before intent was durable")
+	}
+	snap, _ := s.Snapshot(ctx)
+	if snap.Torrents[0].RemovalReason != "" {
+		t.Fatal("failed intent was published as accepted")
+	}
+}

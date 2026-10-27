@@ -1,6 +1,8 @@
 import { createClient as createWSClient } from "graphql-ws";
 import { createClient, fetchExchange, subscriptionExchange } from "urql";
+import type { ExecutionResult } from "@urql/core";
 import { graphcacheExchange } from "./cache";
+import { createTaskEventSequenceObserver, notifyTaskEventGap } from "./taskEventSequence";
 
 export type GraphQLConnectionStatus = "idle" | "connecting" | "connected" | "disconnected" | "error";
 
@@ -53,7 +55,18 @@ const realtimeExchange = subscriptionExchange({
     const input = { ...request, query: request.query };
     return {
       subscribe(sink) {
-        const dispose = wsClient.subscribe(input, sink);
+        const observeSequence = createTaskEventSequenceObserver(notifyTaskEventGap);
+        const dispose = wsClient.subscribe<Record<string, unknown>, ExecutionResult["extensions"]>(input, {
+          ...sink,
+          next(payload) {
+            const taskEvent = payload.data?.taskEvents as { sequence?: number } | undefined;
+            if (typeof taskEvent?.sequence === "number") {
+              const decision = observeSequence(taskEvent.sequence, connectionSnapshot.generation);
+              if (!decision.accept) return;
+            }
+            sink.next(payload);
+          }
+        });
         return { unsubscribe: dispose };
       }
     };

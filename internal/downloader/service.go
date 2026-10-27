@@ -101,11 +101,15 @@ type Snapshot struct {
 	Torrents         []Torrent
 }
 type Service struct {
-	mu     sync.Mutex
-	db     *sql.DB
-	client Client
-	tasks  Tasks
-	now    func() time.Time
+	mu           sync.Mutex
+	stateMu      sync.RWMutex
+	snapshot     Snapshot
+	observations chan []qbittorrent.Torrent
+	groupsFailed bool
+	db           *sql.DB
+	client       Client
+	tasks        Tasks
+	now          func() time.Time
 }
 
 func New(client Client, tasks Tasks, path string) (*Service, error) {
@@ -122,7 +126,12 @@ func New(client Client, tasks Tasks, path string) (*Service, error) {
 		db.Close()
 		return nil, err
 	}
-	return &Service{db: db, client: client, tasks: tasks, now: time.Now}, nil
+	s := &Service{db: db, client: client, tasks: tasks, now: time.Now, observations: make(chan []qbittorrent.Torrent, 1)}
+	if err := s.read(context.Background(), "snapshot", &s.snapshot); err != nil {
+		db.Close()
+		return nil, err
+	}
+	return s, nil
 }
 func (s *Service) Close() error { return s.db.Close() }
 func (s *Service) read(ctx context.Context, key string, out any) error {
@@ -142,11 +151,28 @@ func (s *Service) write(ctx context.Context, key string, value any) error {
 		return err
 	}
 	_, err = s.db.ExecContext(ctx, `INSERT INTO downloader_state(key,value) VALUES(?,?) ON CONFLICT(key) DO UPDATE SET value=excluded.value`, key, string(raw))
+	if err == nil && key == "snapshot" {
+		s.cacheSnapshot(value.(Snapshot))
+	}
 	return err
 }
+func (s *Service) cacheSnapshot(snapshot Snapshot) {
+	s.stateMu.Lock()
+	s.snapshot = cloneSnapshot(snapshot)
+	s.stateMu.Unlock()
+}
+
+// Observations remain available even if persisting the restart snapshot fails.
+// Mutation intents still use write directly and require durable storage first.
+func (s *Service) publishSnapshot(ctx context.Context, snapshot Snapshot) error {
+	s.cacheSnapshot(snapshot)
+	if err := s.write(ctx, "snapshot", snapshot); err != nil {
+		return fmt.Errorf("persist downloader snapshot: %w", err)
+	}
+	return nil
+}
+
 func (s *Service) Policy(ctx context.Context) (Policy, error) {
-	s.mu.Lock()
-	defer s.mu.Unlock()
 	p := DefaultPolicy()
 	err := s.read(ctx, "policy", &p)
 	return p, err
@@ -159,15 +185,27 @@ func (s *Service) SetPolicy(ctx context.Context, p Policy) error {
 	defer s.mu.Unlock()
 	return s.write(ctx, "policy", p)
 }
+
+// Snapshot reads the last observation without waiting for network calls or task writes.
 func (s *Service) Snapshot(ctx context.Context) (Snapshot, error) {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	var v Snapshot
-	err := s.read(ctx, "snapshot", &v)
-	if v.Torrents == nil {
-		v.Torrents = []Torrent{}
+	if err := ctx.Err(); err != nil {
+		return Snapshot{}, err
 	}
-	return v, err
+	s.stateMu.RLock()
+	defer s.stateMu.RUnlock()
+	return cloneSnapshot(s.snapshot), nil
+}
+func cloneSnapshot(v Snapshot) Snapshot {
+	v.Torrents = append([]Torrent{}, v.Torrents...)
+	for i := range v.Torrents {
+		v.Torrents[i].TaskIDs = append([]string{}, v.Torrents[i].TaskIDs...)
+		v.Torrents[i].TaskCodes = append([]string{}, v.Torrents[i].TaskCodes...)
+	}
+	if v.FreeSpace != nil {
+		space := *v.FreeSpace
+		v.FreeSpace = &space
+	}
+	return v
 }
 func taskHash(t *taskruntime.Task) string {
 	if t.TorrentHash != "" {
@@ -244,38 +282,42 @@ func threshold(p Policy, t Torrent) bool {
 	return result
 }
 func (s *Service) refresh(ctx context.Context, cleanup bool) error {
-	var previous Snapshot
-	if err := s.read(ctx, "snapshot", &previous); err != nil {
+	previous, err := s.Snapshot(ctx)
+	if err != nil {
 		return err
 	}
 	torrents, err := s.client.GetTorrentList(ctx, nil)
 	if err != nil {
 		previous.Connected = false
-		if e := s.write(ctx, "snapshot", previous); e != nil {
+		if e := s.publishSnapshot(ctx, previous); e != nil {
 			return e
 		}
-		return err
+		return fmt.Errorf("qB torrent listing: %w", err)
 	}
-	// Reuse this qB listing to keep task states current without running media work.
-	if observer, ok := s.tasks.(interface {
-		ObserveTorrentStates(context.Context, []qbittorrent.Torrent) error
-	}); ok {
-		if err := observer.ObserveTorrentStates(ctx, torrents); err != nil {
-			return err
-		}
+	// Task database work has its own budget and cannot discard a successful qB listing.
+	groupCtx, cancelGroups := context.WithTimeout(ctx, time.Second)
+	groups, groupErr := s.taskGroups(groupCtx)
+	cancelGroups()
+	if groupErr != nil && !s.groupsFailed {
+		logging.Warnf("downloader: task associations unavailable; cleanup suspended: %v", groupErr)
 	}
-	groups, err := s.taskGroups(ctx)
-	if err != nil {
-		return err
+	if groupErr == nil && s.groupsFailed {
+		logging.Infof("downloader: task associations recovered")
 	}
+	s.groupsFailed = groupErr != nil
 	policy := DefaultPolicy()
-	if err = s.read(ctx, "policy", &policy); err != nil {
-		return err
+	policyCtx, cancelPolicy := context.WithTimeout(ctx, time.Second)
+	policyErr := s.read(policyCtx, "policy", &policy)
+	cancelPolicy()
+	if policyErr != nil {
+		cleanup = false
 	}
 	now := s.now().UTC().Format(time.RFC3339)
 	out := Snapshot{Connected: true, CheckedAt: now, Torrents: []Torrent{}}
 	// Storage failures do not turn a successful torrent listing into mass deletion.
-	server, serverErr := s.client.GetDownloadServerState(ctx)
+	serverCtx, cancelServer := context.WithTimeout(ctx, 3*time.Second)
+	server, serverErr := s.client.GetDownloadServerState(serverCtx)
+	cancelServer()
 	if serverErr == nil && server != nil {
 		out.StorageAvailable = true
 		out.FreeSpace = server.FreeSpace
@@ -302,6 +344,10 @@ func (s *Service) refresh(ctx context.Context, cleanup bool) error {
 			t.RemovalReason = prev.RemovalReason
 		}
 		attach(&t, groups[hash])
+		if groupErr != nil {
+			t.TaskIDs = append([]string{}, old[hash].TaskIDs...)
+			t.TaskCodes = append([]string{}, old[hash].TaskCodes...)
+		}
 		t.CanDeleteFiles = t.CanDeleteFiles && isolatedContent(raw, torrents)
 		if serverErr != nil {
 			out.DownloadSpeed += raw.DLSpeed
@@ -309,7 +355,7 @@ func (s *Service) refresh(ctx context.Context, cleanup bool) error {
 		}
 		out.CompletedBytes += raw.Completed
 		out.RemainingBytes += raw.AmountLeft
-		if cleanup && policy.Enabled && t.AllCompleted && (raw.Progress >= 1 || policy.AfterIngest) && threshold(policy, t) && (!policy.DeleteFiles || t.CanDeleteFiles) && (removableState(t.State) || policy.AfterIngest && raw.State == qbittorrent.TorrentStateMissingFiles) {
+		if cleanup && groupErr == nil && policy.Enabled && t.AllCompleted && (raw.Progress >= 1 || policy.AfterIngest) && threshold(policy, t) && (!policy.DeleteFiles || t.CanDeleteFiles) && (removableState(t.State) || policy.AfterIngest && raw.State == qbittorrent.TorrentStateMissingFiles) {
 			// Persist intent before the external mutation. If qB is unavailable after
 			// deletion, the following cycle can still distinguish our removal from a missing torrent.
 			t.RemovalReason = "POLICY_PENDING"
@@ -379,7 +425,43 @@ func (s *Service) refresh(ctx context.Context, cleanup bool) error {
 		out.Torrents = append(out.Torrents, t)
 	}
 	sort.Slice(out.Torrents, func(i, j int) bool { return out.Torrents[i].Hash < out.Torrents[j].Hash })
-	return s.write(ctx, "snapshot", out)
+	err = s.publishSnapshot(ctx, out)
+	// Keep only the latest listing while the task observer is busy.
+	select {
+	case <-s.observations:
+	default:
+	}
+	select {
+	case s.observations <- torrents:
+	default:
+	}
+	return err
+}
+func (s *Service) runTaskObserver(ctx context.Context) {
+	observer, ok := s.tasks.(interface {
+		ObserveTorrentStates(context.Context, []qbittorrent.Torrent) error
+	})
+	if !ok {
+		return
+	}
+	failed := false
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case torrents := <-s.observations:
+			workCtx, cancel := context.WithTimeout(ctx, 10*time.Second)
+			err := observer.ObserveTorrentStates(workCtx, torrents)
+			cancel()
+			if err != nil && !failed && ctx.Err() == nil {
+				logging.Warnf("downloader: task synchronization failed: %v", err)
+			}
+			if err == nil && failed {
+				logging.Infof("downloader: task synchronization recovered")
+			}
+			failed = err != nil
+		}
+	}
 }
 func removableState(state string) bool {
 	switch state {
@@ -404,6 +486,10 @@ func (s *Service) Cycle(ctx context.Context) error {
 }
 func (s *Service) Run(ctx context.Context) {
 	defer s.Close()
+	observerCtx, cancelObserver := context.WithCancel(ctx)
+	observerDone := make(chan struct{})
+	go func() { defer close(observerDone); s.runTaskObserver(observerCtx) }()
+	defer func() { cancelObserver(); <-observerDone }()
 	ticker := time.NewTicker(SyncInterval)
 	defer ticker.Stop()
 	failed := false
@@ -490,8 +576,9 @@ func (s *Service) Action(ctx context.Context, hash, action string) error {
 		if action == "REMOVE_FILES" && !t.CanDeleteFiles {
 			return ErrUnsafeFiles
 		}
-		var snapshot Snapshot
-		if err = s.read(ctx, "snapshot", &snapshot); err != nil {
+		snapshot, snapshotErr := s.Snapshot(ctx)
+		if snapshotErr != nil {
+			err = snapshotErr
 			return err
 		}
 		marked := false

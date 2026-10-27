@@ -1,5 +1,6 @@
+import { memo, useSyncExternalStore } from "react";
 import {
-  formatDateTime, formatRelative, taskFailureSummary, taskPresentation,
+  formatDateTime, formatRelative, taskFailureSummary, taskCardPresentation,
   taskSourceLabel, taskSummary, type DashboardTask
 } from "../../utils";
 import { taskProgressTime } from "../../utils/taskProgressTime";
@@ -7,6 +8,36 @@ import { useTranslation } from "react-i18next";
 import { TaskPrimaryAction } from "./TaskPrimaryAction";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faTrashCan } from "@fortawesome/free-solid-svg-icons/faTrashCan";
+
+// Only the relative labels tick; stable cards need no task events to age correctly.
+let clockSnapshot = Date.now();
+let clockTimer: number | undefined;
+const clockListeners = new Set<() => void>();
+const getClockSnapshot = () => clockSnapshot;
+function subscribeClock(listener: () => void) {
+  clockListeners.add(listener);
+  if (clockTimer === undefined) {
+    clockSnapshot = Date.now();
+    clockTimer = window.setInterval(() => {
+      clockSnapshot = Date.now();
+      clockListeners.forEach(notify => notify());
+    }, 60_000);
+  }
+  return () => {
+    clockListeners.delete(listener);
+    if (clockListeners.size === 0) {
+      window.clearInterval(clockTimer);
+      clockTimer = undefined;
+    }
+  };
+}
+function TaskCardTime({ value, label }: { value: string; label: string }) {
+  const { t } = useTranslation();
+  useSyncExternalStore(subscribeClock, getClockSnapshot, getClockSnapshot);
+  return <time dateTime={value} title={t(label, { time: formatDateTime(value) })}>
+    {t(label, { time: formatRelative(value) ?? formatDateTime(value) })}
+  </time>;
+}
 
 interface TaskCardProps {
   task: DashboardTask;
@@ -22,11 +53,11 @@ interface TaskCardProps {
   onToggleSelection?: (taskId: string) => void;
 }
 
-export function TaskCard({ task, compact = false, pendingRetryId, pendingDeleteId,
+export const TaskCard = memo(function TaskCard({ task, compact = false, pendingRetryId, pendingDeleteId,
   onOpen, onRetry, onResolve, onDelete, selectionMode = false, selected = false, onToggleSelection
 }: TaskCardProps) {
   const { t } = useTranslation();
-  const presentation = taskPresentation(task);
+  const presentation = taskCardPresentation(task);
   const failure = taskFailureSummary(task);
   const progressTime = taskProgressTime(task);
   const cardTime = progressTime ?? task.createdAt;
@@ -75,9 +106,7 @@ export function TaskCard({ task, compact = false, pendingRetryId, pendingDeleteI
       {t("resourceTracking.nextCheck", { time: formatDateTime(task.sourcingNextCheckAt) })}
     </p> : null}
     <div className="task-card__actions">
-      <time dateTime={cardTime} title={t(timeLabel, { time: formatDateTime(cardTime) })}>
-        {t(timeLabel, { time: formatRelative(cardTime) ?? formatDateTime(cardTime) })}
-      </time>
+      <TaskCardTime value={cardTime} label={timeLabel} />
       {!selectionMode ? <div className="task-card__right" onClick={event => event.stopPropagation()}>
         <TaskPrimaryAction task={task} compact pendingRetry={pendingRetryId === task.id}
           onResolve={onResolve} onFiles={onOpen} onRetry={onRetry} />
@@ -91,4 +120,4 @@ export function TaskCard({ task, compact = false, pendingRetryId, pendingDeleteI
       </div> : null}
     </div>
   </article>;
-}
+});

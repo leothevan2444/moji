@@ -35,6 +35,7 @@ export {
   taskMetaLine,
   taskLifecycle,
   taskPresentation,
+  taskCardPresentation,
   taskCardState,
   type DashboardTask,
   type TaskGroupKey,

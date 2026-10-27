@@ -365,7 +365,9 @@ func inspectTopTorrentCandidates(ctx context.Context, candidates []rankedCandida
 			defer func() { <-sem }()
 			inspection, err := inspector(ctx, torrentURL)
 			if err != nil {
-				logging.Infof("taskruntime: inspect torrent candidate %q failed: %v", candidate.result.Title, err)
+				if !errors.Is(err, errTorrentMetadataCoolingDown) {
+					logging.Infof("taskruntime: inspect torrent candidate %q failed: %v", candidate.result.Title, err)
+				}
 				return
 			}
 			outMu.Lock()

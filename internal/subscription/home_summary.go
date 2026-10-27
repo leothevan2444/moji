@@ -47,7 +47,7 @@ func (s *Service) HomeSummary(ctx context.Context) (HomeSummary, error) {
 }
 
 func (s *SQLiteStore) HomeSummary(ctx context.Context) (HomeSummary, error) {
-	tx, err := s.db.BeginTxx(ctx, nil)
+	tx, err := s.db.BeginTxx(ctx, &sql.TxOptions{ReadOnly: true})
 	if err != nil {
 		return HomeSummary{}, err
 	}

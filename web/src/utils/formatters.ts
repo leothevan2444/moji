@@ -5,6 +5,32 @@ function activeLocale() {
   return i18n.resolvedLanguage?.toLowerCase().startsWith("zh") ? "zh-CN" : "en";
 }
 
+const dateTimeFormatters = new Map<string, Intl.DateTimeFormat>();
+const relativeTimeFormatters = new Map<string, Intl.RelativeTimeFormat>();
+
+function dateTimeFormatter(short = false) {
+  const locale = activeLocale();
+  const key = `${locale}:${short ? "short" : "full"}`;
+  let formatter = dateTimeFormatters.get(key);
+  if (!formatter) {
+    formatter = new Intl.DateTimeFormat(locale, short
+      ? { month: "short", day: "numeric" }
+      : { year: "numeric", month: "short", day: "numeric", hour: "2-digit", minute: "2-digit", second: "2-digit" });
+    dateTimeFormatters.set(key, formatter);
+  }
+  return formatter;
+}
+
+function relativeTimeFormatter() {
+  const locale = activeLocale();
+  let formatter = relativeTimeFormatters.get(locale);
+  if (!formatter) {
+    formatter = new Intl.RelativeTimeFormat(locale, { numeric: "auto" });
+    relativeTimeFormatters.set(locale, formatter);
+  }
+  return formatter;
+}
+
 export function formatBytes(size: number) {
   if (!size) return "0 B";
   const units = ["B", "KB", "MB", "GB", "TB"];
@@ -26,14 +52,7 @@ export function formatDateTime(value?: string | null) {
   if (!value) return "—";
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return value;
-  return new Intl.DateTimeFormat(activeLocale(), {
-    year: "numeric",
-    month: "short",
-    day: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-    second: "2-digit"
-  }).format(date);
+  return dateTimeFormatter().format(date);
 }
 
 export function formatLogEntries(entries: LogsDocumentQuery["logs"]) {
@@ -46,10 +65,7 @@ export function formatRelativeDate(value?: string | null) {
   if (!value) return "—";
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return value;
-  return new Intl.DateTimeFormat(activeLocale(), {
-    month: "short",
-    day: "numeric"
-  }).format(date);
+  return dateTimeFormatter(true).format(date);
 }
 
 /**
@@ -94,7 +110,7 @@ export function formatRelative(iso?: string | null): string | null {
   const then = new Date(iso).getTime();
   if (Number.isNaN(then)) return null;
   const diffMs = Date.now() - then;
-  const formatter = new Intl.RelativeTimeFormat(activeLocale(), { numeric: "auto" });
+  const formatter = relativeTimeFormatter();
   if (diffMs < 0) return formatter.format(0, "second");
   const sec = Math.floor(diffMs / 1000);
   if (sec < 10) return formatter.format(0, "second");

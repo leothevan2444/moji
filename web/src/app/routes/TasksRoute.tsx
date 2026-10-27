@@ -3,6 +3,7 @@ import { useLocation, useNavigate, useOutletContext, useParams, useSearchParams 
 import { useQuery } from "urql";
 import { Drawer } from "../../components/layout/Drawer";
 import { TasksPage } from "../../pages/TasksPage";
+import { useEventCallback } from "../../hooks/useEventCallback";
 import { useTaskMutations } from "../../hooks/useTaskMutations";
 import { useTaskSnapshotRecoveryGeneration } from "../../graphql/taskRecovery";
 import { describeQueryError } from "../../services/queryError";
@@ -65,7 +66,10 @@ export function Component() {
 
   const requery = () => refresh({ requestPolicy: "network-only" });
   useEffect(() => { if (!fetching && data) setLastRefreshedAt(new Date()); }, [data, fetching]);
-  useEffect(() => { setSelectedTaskIds((current) => current.filter((id) => tasks.some((task) => task.id === id))); }, [tasks]);
+  useEffect(() => {
+    const ids = new Set(tasks.map(task => task.id));
+    setSelectedTaskIds(current => current.every(id => ids.has(id)) ? current : current.filter(id => ids.has(id)));
+  }, [tasks]);
   useEffect(() => {
     if (observedRecoveryGeneration.current === recoveryGeneration) return;
     observedRecoveryGeneration.current = recoveryGeneration;
@@ -133,6 +137,12 @@ export function Component() {
     setSelectedTaskIds((current) => mergeTaskSelection(current, ids));
   };
 
+  const handleOpenTask = useEventCallback((id: string) => openTask(id));
+  const handleResolveTask = useEventCallback((id: string) => openTask(id, true));
+  const handleRetryTask = useEventCallback((id: string) => { void runRetry(id); });
+  const handleDeleteTask = useEventCallback((id: string) => setConfirmDeleteIds([id]));
+  const handleToggleSelection = useEventCallback(toggleSelection);
+
   if (error && !data) return <div className="empty-card"><h3>{t("taskRoute.loadFailed")}</h3><p>{describeQueryError(error)}</p><button type="button" onClick={requery}>{t("common.retry")}</button></div>;
   return <>
     <TasksPage tasks={tasks} completedWithin24Hours={searchParams.get("completedWithin") === "24h" && filter.status === "completed"}
@@ -145,9 +155,9 @@ export function Component() {
       onToggleGroup={(group) => setGroups((current) => ({ ...current, [group]: !current[group] }))}
       onRefresh={requery}
       onOpenQueue={() => setQueueOpen(true)}
-      onOpenTask={(id) => openTask(id)}
-      onRetryTask={(id) => void runRetry(id)} onResolveTask={(id) => openTask(id, true)}
-      onDeleteTask={(id) => setConfirmDeleteIds([id])} onToggleTaskSelection={toggleSelection} onSelectVisibleTasks={selectVisible} onClearTaskSelection={() => setSelectedTaskIds([])}
+      onOpenTask={handleOpenTask}
+      onRetryTask={handleRetryTask} onResolveTask={handleResolveTask}
+      onDeleteTask={handleDeleteTask} onToggleTaskSelection={handleToggleSelection} onSelectVisibleTasks={selectVisible} onClearTaskSelection={() => setSelectedTaskIds([])}
       onBatchRetry={(ids) => void runBatchRetry(ids)} onBatchDelete={setConfirmDeleteIds} />
     {queueOpen && data ? <Suspense fallback={<Drawer visibleDrawer="task-queue" closing={false} title={t("taskProcessingQueue.title")} onClose={() => { setQueueOpen(false); if (searchParams.get("workbench") === "1") navigate(taskCloseTarget(location.state, new URLSearchParams("status=failed")), { replace: true }); }}><div className="skeleton skeleton-card" /></Drawer>}>
       <TaskProcessingQueueDrawer tasks={tasks} autoAdvance={searchParams.get("workbench") !== "1"} onCopy={copyText} onNotify={pushToast} onClose={() => { setQueueOpen(false); if (searchParams.get("workbench") === "1") navigate(taskCloseTarget(location.state, new URLSearchParams("status=failed")), { replace: true }); }} />
