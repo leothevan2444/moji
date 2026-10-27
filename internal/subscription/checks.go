@@ -42,6 +42,7 @@ type CheckRunStore interface {
 }
 
 type checkTracker struct {
+	wg        sync.WaitGroup
 	mu        sync.Mutex
 	runs      []CheckRun
 	store     CheckRunStore
@@ -375,8 +376,10 @@ func (s *Service) StartSubscriptionCheck(ctx context.Context, ids []string, trig
 	}
 	s.checks.mu.Lock()
 	parent := s.checks.ctx
+	s.checks.wg.Add(1)
 	s.checks.mu.Unlock()
 	go func() {
+		defer s.checks.wg.Done()
 		workCtx, cancel := context.WithTimeout(parent, checkTimeout)
 		defer cancel()
 		workCtx = context.WithValue(workCtx, checkRunContextKey{}, run.ID)
@@ -405,4 +408,11 @@ func normalizeCheckID(id string) ([]string, error) {
 
 func sortCheckRuns(runs []CheckRun) {
 	sort.Slice(runs, func(i, j int) bool { return runs[i].StartedAt.After(runs[j].StartedAt) })
+}
+
+// WaitBackground joins checks after the runtime context and HTTP admission stop.
+func (s *Service) WaitBackground() {
+	if s.checks != nil {
+		s.checks.wg.Wait()
+	}
 }

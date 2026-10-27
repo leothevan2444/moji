@@ -11,7 +11,7 @@ import (
 	"time"
 )
 
-func TestOpenSQLiteDatabaseResetsLegacyTasksTableToNewSchema(t *testing.T) {
+func TestOpenSQLiteDatabaseRefusesLegacySchemaWithoutReset(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "moji.db")
 
 	db, err := sql.Open("sqlite", path)
@@ -63,37 +63,21 @@ INSERT INTO task_store_meta (key, value) VALUES ('schema_version', '1');
 	_ = db.Close()
 
 	opened, err := OpenSQLiteDatabase(path)
+	if opened != nil || !errors.Is(err, ErrUnsupportedDatabase) {
+		t.Fatalf("expected non-destructive refusal, got db=%v err=%v", opened, err)
+	}
+	preserved, err := sql.Open("sqlite", path)
 	if err != nil {
-		t.Fatalf("migrate sqlite db: %v", err)
+		t.Fatal(err)
 	}
-	defer opened.Close()
-
-	for _, column := range []string{
-		"code",
-		"moji_source_path",
-		"transfer_action",
-		"moji_transfer_path",
-		"transfer_error",
-		"stash_scan_path",
-		"stash_scan_hint",
-		"torrent_identity_hash",
-		"torrent_identity_magnet",
-	} {
-		exists, err := sqliteColumnExists(opened, "tasks", column)
-		if err != nil {
-			t.Fatalf("check column %s: %v", column, err)
-		}
-		if !exists {
-			t.Fatalf("expected migrated column %s to exist", column)
-		}
+	defer preserved.Close()
+	var version string
+	if err := preserved.QueryRow("SELECT value FROM task_store_meta WHERE key='schema_version'").Scan(&version); err != nil || version != "1" {
+		t.Fatalf("original marker changed: %s %v", version, err)
 	}
-
-	version, err := readSQLiteSchemaVersion(opened)
-	if err != nil {
-		t.Fatalf("read schema version: %v", err)
-	}
-	if version != sqliteSchemaVersion {
-		t.Fatalf("expected schema version 7, got %q", version)
+	var query string
+	if err := preserved.QueryRow("SELECT name FROM pragma_table_info('tasks') WHERE name='query'").Scan(&query); err != nil {
+		t.Fatal("original table was replaced", err)
 	}
 }
 
@@ -195,7 +179,7 @@ func TestSQLiteTaskStoreRejectsDuplicateBusinessKeys(t *testing.T) {
 	}
 }
 
-func TestOpenSQLiteDatabaseResetsLegacyRowsOnSchemaMismatch(t *testing.T) {
+func TestOpenSQLiteDatabasePreservesLegacyRowsOnSchemaMismatch(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "nullable-migration.db")
 
 	db, err := sql.Open("sqlite", path)
@@ -308,24 +292,19 @@ INSERT INTO subscription_release_entities (
 	_ = db.Close()
 
 	opened, err := OpenSQLiteDatabase(path)
+	if opened != nil || !errors.Is(err, ErrUnsupportedDatabase) {
+		t.Fatalf("expected refusal without data loss, got %v", err)
+	}
+	preserved, err := sql.Open("sqlite", path)
 	if err != nil {
-		t.Fatalf("migrate sqlite db: %v", err)
+		t.Fatal(err)
 	}
-	defer opened.Close()
-
-	var taskCount int
-	if err := opened.QueryRow(`SELECT COUNT(*) FROM tasks`).Scan(&taskCount); err != nil {
-		t.Fatalf("count tasks after reset: %v", err)
-	}
-	if taskCount != 0 {
-		t.Fatalf("expected legacy tasks to be dropped during schema reset, got %d", taskCount)
-	}
-	var releaseCount int
-	if err := opened.QueryRow(`SELECT COUNT(*) FROM subscription_release_entities`).Scan(&releaseCount); err != nil {
-		t.Fatalf("count subscription releases after task runtime reset: %v", err)
-	}
-	if releaseCount != 1 {
-		t.Fatalf("expected task runtime reset to preserve subscription rows, got %d", releaseCount)
+	defer preserved.Close()
+	for _, table := range []string{"tasks", "subscription_release_entities"} {
+		var count int
+		if err := preserved.QueryRow("SELECT count(*) FROM " + table).Scan(&count); err != nil || count != 1 {
+			t.Fatalf("%s data lost: count=%d err=%v", table, count, err)
+		}
 	}
 }
 

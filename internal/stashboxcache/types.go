@@ -18,6 +18,7 @@ const (
 type Config struct {
 	TTL            time.Duration
 	StaleRetention time.Duration
+	MaxBytes       int64
 }
 
 func (c Config) normalize() Config {
@@ -26,6 +27,9 @@ func (c Config) normalize() Config {
 	}
 	if c.StaleRetention <= 0 {
 		c.StaleRetention = DefaultStaleRetention
+	}
+	if c.MaxBytes <= 0 {
+		c.MaxBytes = 512 << 20
 	}
 	return c
 }

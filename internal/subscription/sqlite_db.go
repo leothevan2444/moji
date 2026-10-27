@@ -35,28 +35,7 @@ func resetLegacySubscriptionSchemaIfNeeded(db *sqlx.DB) error {
 		return nil
 	}
 
-	tx, err := db.Beginx()
-	if err != nil {
-		return fmt.Errorf("subscription: begin sqlite schema reset: %w", err)
-	}
-	defer tx.Rollback()
-
-	statements := []string{
-		`PRAGMA foreign_keys = OFF`,
-		`DROP TABLE IF EXISTS subscription_performer_releases`,
-		`DROP TABLE IF EXISTS subscription_release_entities`,
-		`DROP TABLE IF EXISTS subscription_performer_state`,
-		`PRAGMA foreign_keys = ON`,
-	}
-	for _, statement := range statements {
-		if _, err := tx.Exec(statement); err != nil {
-			return fmt.Errorf("subscription: reset sqlite schema with %q: %w", statement, err)
-		}
-	}
-	if err := tx.Commit(); err != nil {
-		return fmt.Errorf("subscription: commit sqlite schema reset: %w", err)
-	}
-	return nil
+	return fmt.Errorf("subscription: legacy schema requires explicit migration; existing records preserved")
 }
 
 func subscriptionSchemaNeedsReset(db *sqlx.DB) (bool, error) {

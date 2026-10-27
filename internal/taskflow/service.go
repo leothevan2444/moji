@@ -186,3 +186,17 @@ func (s *Service) createFromCode(ctx context.Context, source taskruntime.TaskSou
 func buildReleaseCode(code, _ string) string {
 	return strings.TrimSpace(code)
 }
+
+// ListReviewTasks exposes the narrow identity projection used by subscription
+// reconciliation; it never needs file plans, checkpoints or attachments.
+func (s *Service) ListReviewTasks(ctx context.Context) ([]*taskruntime.Task, error) {
+	if s == nil || s.taskRuntime == nil {
+		return nil, nil
+	}
+	if provider, ok := s.taskRuntime.(interface {
+		ListReviewTasks(context.Context) ([]*taskruntime.Task, error)
+	}); ok {
+		return provider.ListReviewTasks(ctx)
+	}
+	return s.ListTasks(ctx)
+}

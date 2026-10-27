@@ -11,11 +11,32 @@ import (
 	"time"
 
 	"github.com/jmoiron/sqlx"
+	"github.com/leothevan2444/moji/internal/storage"
 	"github.com/leothevan2444/moji/internal/taskruntime"
 )
 
 type SQLiteStore struct {
-	db *sqlx.DB
+	db   *sqlx.DB
+	core *storage.Database
+}
+
+// NewManagedStore shares the application storage owner; it never opens a pool.
+func NewManagedStore(core *storage.Database) *SQLiteStore {
+	return &SQLiteStore{db: core.Reader, core: core}
+}
+func (s *SQLiteStore) withWrite(ctx context.Context, work func(*sqlx.Tx) error) error {
+	if s.core != nil {
+		return s.core.WithWrite(ctx, work)
+	}
+	tx, err := s.db.BeginTxx(ctx, nil)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+	if err = work(tx); err != nil {
+		return err
+	}
+	return tx.Commit()
 }
 
 func NewSQLiteStore(path string) (*SQLiteStore, error) {
@@ -91,115 +112,147 @@ func (s *SQLiteStore) Put(ctx context.Context, state *PerformerState) error {
 		return errors.New("subscription: performer state is nil")
 	}
 
-	tx, err := s.db.BeginTxx(ctx, nil)
-	if err != nil {
-		return fmt.Errorf("subscription: begin put state tx: %w", err)
-	}
-	defer tx.Rollback()
+	return s.withWrite(ctx, func(tx *sqlx.Tx) error {
 
-	now := time.Now().UTC()
-	if _, err := tx.NamedExecContext(ctx, `
+		now := time.Now().UTC()
+		if _, err := tx.NamedExecContext(ctx, `
 INSERT INTO subscription_performer_state (performer_id, last_checked_at, last_error, created_at, updated_at)
 VALUES (:performer_id, :last_checked_at, :last_error, :created_at, :updated_at)
 ON CONFLICT(performer_id) DO UPDATE SET
   last_checked_at = excluded.last_checked_at,
   last_error = excluded.last_error,
-  updated_at = excluded.updated_at`,
-		map[string]any{
-			"performer_id":    state.PerformerID,
-			"last_checked_at": formatOptionalTimestamp(state.LastCheckedAt),
-			"last_error":      nullableStringParam(state.LastError),
-			"created_at":      formatTimestamp(now),
-			"updated_at":      formatTimestamp(now),
-		},
-	); err != nil {
-		return fmt.Errorf("subscription: upsert performer state %q: %w", state.PerformerID, err)
-	}
-
-	if _, err := tx.ExecContext(ctx, `DELETE FROM subscription_performer_releases WHERE performer_id = ?`, state.PerformerID); err != nil {
-		return fmt.Errorf("subscription: clear release links for %q: %w", state.PerformerID, err)
-	}
-
-	writeRelease := func(status string, release RecordedRelease) error {
-		releaseID, err := upsertReleaseEntity(ctx, tx, status, release, now)
-		if err != nil {
-			return err
-		}
-		linkedAt := release.SeenAt
-		if linkedAt.IsZero() {
-			linkedAt = now
-		}
-		if _, err := tx.NamedExecContext(ctx, `
-INSERT INTO subscription_performer_releases (performer_id, release_id, linked_at)
-VALUES (:performer_id, :release_id, :linked_at)`,
+  updated_at = excluded.updated_at
+WHERE subscription_performer_state.last_checked_at IS NOT excluded.last_checked_at OR subscription_performer_state.last_error IS NOT excluded.last_error`,
 			map[string]any{
-				"performer_id": state.PerformerID,
-				"release_id":   releaseID,
-				"linked_at":    formatTimestamp(linkedAt),
+				"performer_id":    state.PerformerID,
+				"last_checked_at": formatOptionalTimestamp(state.LastCheckedAt),
+				"last_error":      nullableStringParam(state.LastError),
+				"created_at":      formatTimestamp(now),
+				"updated_at":      formatTimestamp(now),
 			},
 		); err != nil {
-			return fmt.Errorf("subscription: insert performer-release link %q/%q: %w", state.PerformerID, release.Key, err)
+			return fmt.Errorf("subscription: upsert performer state %q: %w", state.PerformerID, err)
 		}
+
+		existingLinks := []int64{}
+		if err := tx.SelectContext(ctx, &existingLinks, "SELECT release_id FROM subscription_performer_releases WHERE performer_id=?", state.PerformerID); err != nil {
+			return err
+		}
+		retained := map[int64]bool{}
+
+		writeRelease := func(status string, release RecordedRelease) error {
+			releaseID, err := upsertReleaseEntity(ctx, tx, status, release, now)
+			if err != nil {
+				return err
+			}
+			retained[releaseID] = true
+			linkedAt := release.SeenAt
+			if linkedAt.IsZero() {
+				linkedAt = now
+			}
+			if _, err := tx.NamedExecContext(ctx, `
+INSERT INTO subscription_performer_releases (performer_id, release_id, linked_at)
+VALUES (:performer_id, :release_id, :linked_at) ON CONFLICT(performer_id,release_id) DO NOTHING`,
+				map[string]any{
+					"performer_id": state.PerformerID,
+					"release_id":   releaseID,
+					"linked_at":    formatTimestamp(linkedAt),
+				},
+			); err != nil {
+				return fmt.Errorf("subscription: insert performer-release link %q/%q: %w", state.PerformerID, release.Key, err)
+			}
+			return nil
+		}
+
+		for _, release := range state.ProcessedReleases {
+			if err := writeRelease("processed", release); err != nil {
+				return err
+			}
+		}
+		for _, release := range state.PendingReleases {
+			if err := writeRelease("pending", release); err != nil {
+				return err
+			}
+		}
+
+		for _, id := range existingLinks {
+			if !retained[id] {
+				if _, err := tx.ExecContext(ctx, "DELETE FROM subscription_performer_releases WHERE performer_id=? AND release_id=?", state.PerformerID, id); err != nil {
+					return err
+				}
+			}
+		}
+
+		if s.core == nil {
+			if err := deleteOrphanReleaseEntities(ctx, tx); err != nil {
+				return err
+			}
+		}
+
 		return nil
-	}
-
-	for _, release := range state.ProcessedReleases {
-		if err := writeRelease("processed", release); err != nil {
-			return err
-		}
-	}
-	for _, release := range state.PendingReleases {
-		if err := writeRelease("pending", release); err != nil {
-			return err
-		}
-	}
-
-	if err := deleteOrphanReleaseEntities(ctx, tx); err != nil {
-		return err
-	}
-
-	if err := tx.Commit(); err != nil {
-		return fmt.Errorf("subscription: commit put state tx: %w", err)
-	}
-	return nil
+	})
 }
 
 func (s *SQLiteStore) Delete(ctx context.Context, performerID string) error {
-	tx, err := s.db.BeginTxx(ctx, nil)
-	if err != nil {
-		return fmt.Errorf("subscription: begin delete state tx: %w", err)
-	}
-	defer tx.Rollback()
+	return s.withWrite(ctx, func(tx *sqlx.Tx) error {
 
-	if _, err := tx.ExecContext(ctx, `DELETE FROM subscription_performer_state WHERE performer_id = ?`, performerID); err != nil {
-		return fmt.Errorf("subscription: delete performer state %q: %w", performerID, err)
-	}
-	if err := deleteOrphanReleaseEntities(ctx, tx); err != nil {
-		return err
-	}
-	if err := tx.Commit(); err != nil {
-		return fmt.Errorf("subscription: commit delete state tx: %w", err)
-	}
-	return nil
+		if _, err := tx.ExecContext(ctx, `DELETE FROM subscription_performer_state WHERE performer_id = ?`, performerID); err != nil {
+			return fmt.Errorf("subscription: delete performer state %q: %w", performerID, err)
+		}
+		if s.core == nil {
+			if err := deleteOrphanReleaseEntities(ctx, tx); err != nil {
+				return err
+			}
+		}
+		return nil
+	})
 }
 
 func (s *SQLiteStore) List(ctx context.Context) ([]*PerformerState, error) {
-	ids := make([]string, 0)
-	if err := s.db.SelectContext(ctx, &ids, `SELECT performer_id FROM subscription_performer_state ORDER BY last_checked_at DESC, performer_id ASC`); err != nil {
-		return nil, fmt.Errorf("subscription: list performer states: %w", err)
+	tx, err := s.db.BeginTxx(ctx, &sql.TxOptions{ReadOnly: true})
+	if err != nil {
+		return nil, err
 	}
-
-	states := make([]*PerformerState, 0, len(ids))
-	for _, performerID := range ids {
-		state, err := s.Get(ctx, performerID)
+	defer tx.Rollback()
+	var rows []sqlitePerformerStateRow
+	if err := tx.SelectContext(ctx, &rows, "SELECT performer_id,last_checked_at,last_error FROM subscription_performer_state ORDER BY performer_id"); err != nil {
+		return nil, err
+	}
+	states := make([]*PerformerState, 0, len(rows))
+	byID := map[string]*PerformerState{}
+	for _, row := range rows {
+		state, err := row.toState()
 		if err != nil {
 			return nil, err
 		}
-		if state != nil {
-			states = append(states, state)
+		states = append(states, state)
+		byID[state.PerformerID] = state
+	}
+	var releases []struct {
+		PerformerID string `db:"performer_id"`
+		sqliteReleaseRow
+	}
+	if err := tx.SelectContext(ctx, &releases, `SELECT spr.performer_id,sre.status,sre.release_key,sre.source,sre.title,sre.code,sre.release_date,sre.url,sre.task_id,sre.performer_count,sre.performer_names,sre.classification,sre.decision,sre.decision_reason,sre.seen_at FROM subscription_performer_releases spr JOIN subscription_release_entities sre ON sre.id=spr.release_id ORDER BY spr.performer_id,sre.seen_at DESC,sre.release_key`); err != nil {
+		return nil, err
+	}
+	for _, row := range releases {
+		state := byID[row.PerformerID]
+		if state == nil {
+			continue
+		}
+		status, release, err := row.toRecordedRelease()
+		if err != nil {
+			return nil, err
+		}
+		if status == "processed" {
+			state.ProcessedReleases = append(state.ProcessedReleases, release)
+		} else {
+			state.PendingReleases = append(state.PendingReleases, release)
 		}
 	}
-
+	if err := tx.Commit(); err != nil {
+		return nil, err
+	}
 	sortStates(states)
 	return states, nil
 }
@@ -314,6 +367,7 @@ ON CONFLICT(release_key) DO UPDATE SET
   decision_reason = excluded.decision_reason,
   seen_at = excluded.seen_at,
   updated_at = excluded.updated_at
+WHERE subscription_release_entities.status IS NOT excluded.status OR subscription_release_entities.source IS NOT excluded.source OR subscription_release_entities.title IS NOT excluded.title OR subscription_release_entities.code IS NOT excluded.code OR subscription_release_entities.release_date IS NOT excluded.release_date OR subscription_release_entities.url IS NOT excluded.url OR subscription_release_entities.performer_count IS NOT excluded.performer_count OR subscription_release_entities.performer_names IS NOT excluded.performer_names OR subscription_release_entities.classification IS NOT excluded.classification OR subscription_release_entities.decision IS NOT excluded.decision OR subscription_release_entities.decision_reason IS NOT excluded.decision_reason OR subscription_release_entities.seen_at IS NOT excluded.seen_at OR (excluded.task_id IS NOT NULL AND subscription_release_entities.task_id IS NOT excluded.task_id)
 RETURNING id`, params)
 	if err != nil {
 		return 0, fmt.Errorf("subscription: upsert release entity %q: %w", release.Key, err)
@@ -328,6 +382,14 @@ RETURNING id`, params)
 	}
 	if err := rows.Err(); err != nil {
 		return 0, fmt.Errorf("subscription: finalize release entity upsert %q: %w", release.Key, err)
+	}
+	if id == 0 {
+		if err := rows.Close(); err != nil {
+			return 0, err
+		}
+		if err := tx.GetContext(ctx, &id, "SELECT id FROM subscription_release_entities WHERE release_key=?", release.Key); err != nil {
+			return 0, err
+		}
 	}
 	return id, nil
 }
@@ -391,7 +453,7 @@ WHERE NOT EXISTS (
 }
 
 func formatTimestamp(value time.Time) string {
-	return value.UTC().Format(time.RFC3339Nano)
+	return value.UTC().Format("2006-01-02T15:04:05.000000000Z")
 }
 
 func formatOptionalTimestamp(value *time.Time) any {
@@ -441,3 +503,7 @@ func nullableStringParam(value string) any {
 	}
 	return value
 }
+
+// NewLegacyReader is used only by explicit migrations, with a mode=ro,
+// query_only connection. It does not initialize or alter the source schema.
+func NewLegacyReader(db *sqlx.DB) *SQLiteStore { return &SQLiteStore{db: db} }

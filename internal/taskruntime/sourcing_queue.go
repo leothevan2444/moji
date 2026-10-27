@@ -85,38 +85,49 @@ func (s *Service) RunSourcingWorker(ctx context.Context) {
 	defer ticker.Stop()
 	inflight := map[string]bool{}
 	scan := func() {
-		tasks, err := s.store.List(ctx)
-		if err != nil {
-			logging.Errorf("taskruntime: list sourcing queue: %v", err)
-			return
-		}
-		for _, task := range tasks {
-			if task.Stage != TaskStageSourcing || task.StageStatus == TaskStageStatusDone || inflight[task.ID] {
-				continue
+		err := walkTaskWork(ctx, s.store, "SOURCING", func(task *Task) error {
+			if task == nil {
+				return nil
 			}
-			task, err = s.prepareResourceTracking(ctx, task)
+			if task.Stage == "" {
+				var err error
+				task, err = s.store.Find(ctx, task.ID)
+				if err != nil {
+					return err
+				}
+			}
+
+			if task.Stage != TaskStageSourcing || task.StageStatus == TaskStageStatusDone || inflight[task.ID] {
+				return nil
+			}
+			task, err := s.prepareResourceTracking(ctx, task)
 			if err != nil {
 				logging.Errorf("taskruntime: prepare resource tracking: %v", err)
-				continue
+				return nil
 			}
 			if task.Stage != TaskStageSourcing || (task.StageStatus == TaskStageStatusBlocked && task.SourcingNextCheckAt == nil) {
-				continue
+				return nil
 			}
 			if task.SourcingNextCheckAt != nil && task.SourcingNextCheckAt.After(s.now().UTC()) {
-				continue
+				return nil
 			}
 			// Old synchronous requests are not queue jobs; only resume persisted intents.
 			if task.SourcingRequestJSON == "" {
-				continue
+				return nil
 			}
 			select {
 			case jobs <- task.ID:
 				inflight[task.ID] = true
 			case <-ctx.Done():
-				return
+				return ctx.Err()
 			default:
-				return
+				return errWorkBatchFull
 			}
+
+			return nil
+		})
+		if err != nil && !errors.Is(err, errWorkBatchFull) && !errors.Is(err, context.Canceled) {
+			logging.Errorf("taskruntime: scan sourcing work: %v", err)
 		}
 	}
 	scan()

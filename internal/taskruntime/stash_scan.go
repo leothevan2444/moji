@@ -30,21 +30,29 @@ type StashIntegrationPlan struct {
 }
 
 func (s *Service) TriggerStashScans(ctx context.Context, scanner StashScanner) ([]*Task, error) {
+	return s.triggerStashScans(ctx, scanner, false)
+}
+func (s *Service) TriggerActiveStashScans(ctx context.Context, scanner StashScanner) error {
+	_, err := s.triggerStashScans(ctx, scanner, true)
+	return err
+}
+func (s *Service) triggerStashScans(ctx context.Context, scanner StashScanner, bounded bool) ([]*Task, error) {
 	if scanner == nil {
 		return nil, errors.New("taskruntime: stash scanner is required")
 	}
 
-	tasks, err := s.store.List(ctx)
-	if err != nil {
-		return nil, err
-	}
-
-	updated := make([]*Task, 0, len(tasks))
+	updated := make([]*Task, 0)
 	var firstErr error
-	for _, task := range tasks {
-		if task == nil {
+	remember := func(task *Task) {
+		if !bounded {
 			updated = append(updated, task)
-			continue
+		}
+	}
+	visit := func(task *Task) error {
+
+		if task == nil {
+			remember(task)
+			return nil
 		}
 		unlock := s.lockTask(task.ID)
 		latest, findErr := s.store.Find(ctx, task.ID)
@@ -53,21 +61,25 @@ func (s *Service) TriggerStashScans(ctx context.Context, scanner StashScanner) (
 				firstErr = fmt.Errorf("refresh task %q: %w", task.ID, findErr)
 			}
 			unlock()
-			continue
+			return nil
 		}
 		if latest == nil {
 			unlock()
-			continue
+			return nil
 		}
 		task = latest
+		if bounded && task.Stage == TaskStagePendingIngest && task.ContentPath == "" && taskHashForMonitoring(task) != "" {
+			unlock()
+			return nil
+		}
 		if s.mediaConfig != nil && task.Stage == TaskStageTransferring && (task.StageStatus == TaskStageStatusRunning || task.StageStatus == TaskStageStatusPending) {
 			next, prepErr := s.startMediaPreparation(ctx, cloneTask(task))
-			updated = append(updated, next)
+			remember(next)
 			if prepErr != nil && firstErr == nil {
 				firstErr = prepErr
 			}
 			unlock()
-			continue
+			return nil
 		}
 		if task.Stage == TaskStageScanning && (task.StageStatus == TaskStageStatusRunning || task.StageStatus == TaskStageStatusPending) {
 			next, pollErr := s.syncStashScanJob(ctx, cloneTask(task), scanner)
@@ -80,14 +92,14 @@ func (s *Service) TriggerStashScans(ctx context.Context, scanner StashScanner) (
 			if pollErr != nil && firstErr == nil {
 				firstErr = pollErr
 			}
-			updated = append(updated, next)
+			remember(next)
 			unlock()
-			continue
+			return nil
 		}
 		if !shouldTriggerStashScan(task) {
-			updated = append(updated, task)
+			remember(task)
 			unlock()
-			continue
+			return nil
 		}
 
 		next, execErr := s.executeTaskStashIntegration(ctx, cloneTask(task), scanner)
@@ -100,8 +112,28 @@ func (s *Service) TriggerStashScans(ctx context.Context, scanner StashScanner) (
 		if execErr != nil && firstErr == nil {
 			firstErr = execErr
 		}
-		updated = append(updated, next)
+		remember(next)
 		unlock()
+
+		return nil
+	}
+	var walkErr error
+	if bounded {
+		walkErr = walkTaskWork(ctx, s.store, "INGEST", visit)
+	} else {
+		var tasks []*Task
+		tasks, walkErr = s.store.List(ctx)
+		if walkErr == nil {
+			for _, task := range tasks {
+				if err := visit(task); err != nil {
+					walkErr = err
+					break
+				}
+			}
+		}
+	}
+	if firstErr == nil {
+		firstErr = walkErr
 	}
 
 	return updated, firstErr

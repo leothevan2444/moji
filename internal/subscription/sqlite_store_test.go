@@ -39,7 +39,7 @@ func TestNewSQLiteStoreInitializesSubscriptionTables(t *testing.T) {
 	}
 }
 
-func TestNewSQLiteStoreUpgradesLegacySubscriptionSchema(t *testing.T) {
+func TestNewSQLiteStorePreservesUnsupportedLegacySubscriptionSchema(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "legacy-subscription.db")
 
 	db, err := sql.Open("sqlite", path)
@@ -99,49 +99,19 @@ VALUES ('performer-1', 1, ?, ?, ?);
 	_ = db.Close()
 
 	store, err := NewSQLiteStore(path)
+	if store != nil || err == nil {
+		t.Fatal("unsupported schema must require explicit migration")
+	}
+	preserved, err := sql.Open("sqlite", path)
 	if err != nil {
-		t.Fatalf("NewSQLiteStore upgrade failed: %v", err)
+		t.Fatal(err)
 	}
-	defer store.db.Close()
-
-	hasQuery, err := sqliteColumnExists(store.db, "subscription_release_entities", "query")
-	if err != nil {
-		t.Fatalf("check legacy query column: %v", err)
-	}
-	if hasQuery {
-		t.Fatal("expected legacy query column to be removed")
-	}
-
-	hasID, err := sqliteColumnExists(store.db, "subscription_performer_releases", "id")
-	if err != nil {
-		t.Fatalf("check legacy performer_release id column: %v", err)
-	}
-	if hasID {
-		t.Fatal("expected legacy performer_release id column to be removed")
-	}
-
-	var releaseCount int
-	if err := store.db.QueryRow(`SELECT COUNT(*) FROM subscription_release_entities`).Scan(&releaseCount); err != nil {
-		t.Fatalf("count release entities: %v", err)
-	}
-	if releaseCount != 0 {
-		t.Fatalf("expected legacy subscription rows to be reset, got %d", releaseCount)
-	}
-
-	if _, err := store.db.Exec(`INSERT INTO subscription_performer_state (performer_id, created_at, updated_at) VALUES ('performer-1', ?, ?)`, now, now); err != nil {
-		t.Fatalf("insert upgraded performer state: %v", err)
-	}
-	if _, err := store.db.Exec(`
-INSERT INTO subscription_release_entities (
-  release_key, status, source, title, code, performer_count, performer_names, classification, decision, decision_reason, seen_at, created_at, updated_at
-) VALUES ('release-1', 'pending', 'stash-box:test', 'Title', 'ABCD-123', 1, '[]', '', '', '', ?, ?, ?)`, now, now, now); err != nil {
-		t.Fatalf("insert upgraded release entity: %v", err)
-	}
-	if _, err := store.db.Exec(`INSERT INTO subscription_performer_releases (performer_id, release_id, linked_at) VALUES ('performer-1', 1, ?)`, now); err != nil {
-		t.Fatalf("insert upgraded performer-release link: %v", err)
-	}
-	if _, err := store.db.Exec(`INSERT INTO subscription_performer_releases (performer_id, release_id, linked_at) VALUES ('performer-1', 1, ?)`, now); err == nil {
-		t.Fatal("expected composite primary key to reject duplicate performer-release link")
+	defer preserved.Close()
+	for _, table := range []string{"subscription_performer_state", "subscription_release_entities", "subscription_performer_releases"} {
+		var count int
+		if err := preserved.QueryRow("SELECT count(*) FROM " + table).Scan(&count); err != nil || count != 1 {
+			t.Fatalf("original %s was changed: count=%d err=%v", table, count, err)
+		}
 	}
 }
 

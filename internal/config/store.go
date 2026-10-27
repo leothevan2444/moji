@@ -6,14 +6,16 @@ import (
 	"strconv"
 	"sync"
 
+	"github.com/leothevan2444/moji/internal/durablefile"
 	"gopkg.in/yaml.v3"
 )
 
 type Store struct {
-	mu   sync.RWMutex
-	path string
-	cfg  *Config
-	root yaml.Node
+	mu    sync.RWMutex
+	path  string
+	cfg   *Config
+	root  yaml.Node
+	saved []byte
 }
 
 func DefaultPath() string {
@@ -29,6 +31,9 @@ func OpenStore(path string) (*Store, error) {
 	if err != nil {
 		return nil, fmt.Errorf("read config %q: %w", path, err)
 	}
+	return parseStore(path, file)
+}
+func parseStore(path string, file []byte) (*Store, error) {
 
 	var cfg Config
 	if err := yaml.Unmarshal(file, &cfg); err != nil {
@@ -50,9 +55,10 @@ func OpenStore(path string) (*Store, error) {
 	}
 
 	return &Store{
-		path: path,
-		cfg:  &cfg,
-		root: root,
+		path:  path,
+		cfg:   &cfg,
+		root:  root,
+		saved: append([]byte(nil), file...),
 	}, nil
 }
 
@@ -208,6 +214,9 @@ func (s *Store) UpdateSystemWithDataCache(taskDeletePolicy TaskDeletePolicy, ima
 func (s *Store) updateSystemLocked(taskDeletePolicy TaskDeletePolicy, imageCache ImageCacheConfig, stashBoxCache StashBoxDataCacheConfig) (*Config, error) {
 	s.cfg.System.TaskDeletePolicy = NormalizeTaskDeletePolicy(string(taskDeletePolicy))
 	s.cfg.System.ImageCache = imageCache.Normalize()
+	if stashBoxCache.MaxSizeMB == 0 {
+		stashBoxCache.MaxSizeMB = s.cfg.System.StashBoxDataCache.Normalize().MaxSizeMB
+	}
 	s.cfg.System.StashBoxDataCache = stashBoxCache.Normalize()
 
 	if err := s.updateConfigNode(); err != nil {
@@ -217,7 +226,25 @@ func (s *Store) updateSystemLocked(taskDeletePolicy TaskDeletePolicy, imageCache
 	return &clone, nil
 }
 
-func (s *Store) updateConfigNode() error {
+func (s *Store) updateConfigNode() (resultErr error) {
+	defer func() {
+		if resultErr == nil {
+			return
+		}
+		// A failed pre-publication write must not activate unpersisted settings.
+		// If rename succeeded but directory fsync failed, match the actual valid
+		// file; the returned I/O error still reports uncertain crash durability.
+		previous, _ := parseStore(s.path, s.saved)
+		if raw, err := os.ReadFile(s.path); err == nil {
+			if actual, err := parseStore(s.path, raw); err == nil {
+				previous = actual
+			}
+		}
+		if previous != nil {
+			s.cfg, s.root, s.saved = previous.cfg, previous.root, previous.saved
+		}
+	}()
+
 	doc := documentNode(&s.root)
 	top := ensureMapValue(doc)
 	connection := mapValue(top, "connection")
@@ -271,6 +298,7 @@ func (s *Store) updateConfigNode() error {
 	setIntScalar(imageCache, "retention_days", s.cfg.System.ImageCache.Normalize().RetentionDays)
 	stashBoxDataCache := mapValue(system, "stash_box_data_cache")
 	setIntScalar(stashBoxDataCache, "ttl_hours", s.cfg.System.StashBoxDataCache.Normalize().TTLHours)
+	setIntScalar(stashBoxDataCache, "max_size_mb", s.cfg.System.StashBoxDataCache.Normalize().MaxSizeMB)
 	deleteMapKey(top, "stash")
 	deleteMapKey(top, "jackett")
 	deleteMapKey(top, "qbittorrent")
@@ -294,9 +322,10 @@ func (s *Store) updateConfigNode() error {
 	if err != nil {
 		return fmt.Errorf("marshal config %q: %w", s.path, err)
 	}
-	if err := os.WriteFile(s.path, data, 0o644); err != nil {
+	if err := durablefile.Write(s.path, data, 0o600); err != nil {
 		return fmt.Errorf("write config %q: %w", s.path, err)
 	}
+	s.saved = append(s.saved[:0], data...)
 	return nil
 }
 

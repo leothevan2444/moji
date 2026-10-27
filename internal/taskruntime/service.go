@@ -66,6 +66,8 @@ const (
 )
 
 type Task struct {
+	Revision                int64
+	Generation              int64
 	RestartStateJSON        string
 	TorrentFileData         []byte
 	SourcingLastCheckedAt   *time.Time
@@ -176,6 +178,7 @@ type Service struct {
 	mediaPreparer         mediafiles.Preparer
 	mediaContext          context.Context
 	mediaMu               sync.Mutex
+	mediaWG               sync.WaitGroup
 	mediaJobs             map[string]context.CancelFunc
 	mediaSlots            chan struct{}
 
@@ -401,7 +404,7 @@ func (s *Service) DeleteTask(ctx context.Context, id string) (*Task, error) {
 
 	if hash := strings.TrimSpace(task.TorrentHash); hash != "" && policy != config.TaskDeletePolicyKeepOnly {
 		deleteFiles := policy == config.TaskDeletePolicyRemoveTorrentAndFiles
-		if err := s.qbt.DeleteTorrents(ctx, []string{hash}, deleteFiles); err != nil {
+		if err := s.runTaskCommand(ctx, task, "TASK_DELETE", hash, map[string]any{"delete_files": deleteFiles}, func() error { return s.qbt.DeleteTorrents(ctx, []string{hash}, deleteFiles) }); err != nil {
 			return nil, fmt.Errorf("delete qBittorrent torrent %q with policy %s: %w", hash, policy, err)
 		}
 	}
@@ -590,11 +593,16 @@ func (s *Service) syncTaskProgress(ctx context.Context, snapshot *Task, torrents
 		if ok {
 			state = string(torrent.State)
 		}
-		if task.QBittorrentState == state {
+		contentPath := task.ContentPath
+		if ok && torrent.ContentPath != "" {
+			contentPath = torrent.ContentPath
+		}
+		if task.QBittorrentState == state && contentPath == task.ContentPath {
 			return task, nil
 		}
 		next := cloneTask(task)
 		next.QBittorrentState = state
+		next.ContentPath = contentPath
 		next.UpdatedAt = s.now().UTC()
 		if err := s.store.Update(ctx, next); err != nil {
 			return task, err
@@ -1010,7 +1018,7 @@ func (s *Service) submitPreparedTaskTorrent(ctx context.Context, task *Task, tor
 	if err := ctx.Err(); err != nil {
 		return err
 	}
-	if err := s.qbt.AddNewTorrent(ctx, addOptions); err != nil && !s.adoptExistingTorrent(ctx, task) {
+	if err := s.runTaskCommand(ctx, task, "TASK_ADD", task.TorrentIdentityHash, map[string]any{"torrent_url": torrentURL}, func() error { return s.qbt.AddNewTorrent(ctx, addOptions) }); err != nil && !s.adoptExistingTorrent(ctx, task) {
 		setTaskStage(task, TaskStageDownloading, TaskStageStatusBlocked)
 		blockTask(task, TaskStageErrorTorrentSubmit, err.Error(), s.now().UTC())
 		_ = s.store.Update(ctx, task)
@@ -1500,4 +1508,14 @@ func (r *contextReader) Read(p []byte) (int, error) {
 
 func isCrossDeviceError(err error) bool {
 	return strings.Contains(strings.ToLower(err.Error()), "cross-device link")
+}
+
+// WaitBackground is called after HTTP admission and queue workers have stopped.
+func (s *Service) WaitBackground() {
+	s.mediaMu.Lock()
+	for _, cancel := range s.mediaJobs {
+		cancel()
+	}
+	s.mediaMu.Unlock()
+	s.mediaWG.Wait()
 }

@@ -29,6 +29,11 @@ type TaskStats struct {
 	Failed       int
 }
 
+// TaskStatsProvider avoids loading cold task payloads for each event.
+type TaskStatsProvider interface {
+	TaskStats(context.Context) (TaskStats, error)
+}
+
 type TaskEvent struct {
 	Sequence       int
 	Type           TaskEventType
@@ -311,7 +316,7 @@ func taskChangedBeyondProgress(previous, next *Task) bool {
 }
 
 func (s *EventingTaskStore) publishLocked(ctx context.Context, eventType TaskEventType, taskID string, task *Task) {
-	tasks, err := s.store.List(ctx)
+	stats, err := s.TaskStats(ctx)
 	if err != nil {
 		logging.Errorf("task events: calculate dashboard stats after %s task_id=%s: %v", eventType, taskID, err)
 		return
@@ -324,8 +329,19 @@ func (s *EventingTaskStore) publishLocked(ctx context.Context, eventType TaskEve
 		Type:           eventType,
 		TaskID:         taskID,
 		Task:           cloneTask(task),
-		DashboardStats: CalculateTaskStats(tasks),
+		DashboardStats: stats,
 	})
+}
+
+func (s *EventingTaskStore) TaskStats(ctx context.Context) (TaskStats, error) {
+	if provider, ok := s.store.(TaskStatsProvider); ok {
+		return provider.TaskStats(ctx)
+	}
+	tasks, err := s.store.List(ctx)
+	if err != nil {
+		return TaskStats{}, err
+	}
+	return CalculateTaskStats(tasks), nil
 }
 
 func CalculateTaskStats(tasks []*Task) TaskStats {

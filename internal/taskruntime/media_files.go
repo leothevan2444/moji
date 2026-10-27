@@ -79,6 +79,19 @@ func (s *Service) applyFileSelection(ctx context.Context, t *Task, p *mediafiles
 	if err != nil {
 		return err
 	}
+	// Persist the chosen order/policy and unapplied checkpoint before qB can
+	// pause, change priorities or resume. A failed acknowledgment is retried
+	// from this durable intent; these qB settings are idempotent.
+	p.Applied = false
+	if p.Validate() == nil && t.Stage == TaskStageDownloading {
+		setTaskStage(t, TaskStageDownloading, TaskStageStatusRunning)
+		clearTaskStageError(t)
+	}
+	t.setFilePlan(*p)
+	t.UpdatedAt = s.now().UTC()
+	if err := s.store.Update(ctx, t); err != nil {
+		return fmt.Errorf("persist file selection before qB changes: %w", err)
+	}
 	if err := client.PauseTorrents(ctx, []string{t.TorrentHash}); err != nil {
 		return err
 	}
@@ -284,6 +297,7 @@ func (s *Service) startMediaPreparation(ctx context.Context, task *Task) (*Task,
 	}
 	workerCtx, cancel := context.WithTimeout(s.mediaContext, 6*time.Hour)
 	s.mediaJobs[task.ID] = cancel
+	s.mediaWG.Add(1)
 	s.mediaMu.Unlock()
 	setTaskStage(task, TaskStageTransferring, TaskStageStatusRunning)
 	clearTaskStageError(task)
@@ -291,12 +305,14 @@ func (s *Service) startMediaPreparation(ctx context.Context, task *Task) (*Task,
 	task.UpdatedAt = s.now().UTC()
 	if err := s.store.Update(ctx, task); err != nil {
 		s.finishMediaJob(task.ID, cancel)
+		s.mediaWG.Done()
 		<-s.mediaSlots
 		return task, err
 	}
 	snapshot := cloneTask(task)
 	request := mediafiles.Request{TaskID: task.ID, Code: task.Code, SourceRoot: filepath.Join(cfg.Downloads.MojiRoot, relative), TargetRoot: cfg.Library.MojiRoot, Action: string(cfg.Transfer.Action), Plan: p}
 	go func() {
+		defer s.mediaWG.Done()
 		// Clear the in-flight marker before releasing the task lock, so an immediate
 		// retry cannot observe a finished worker and leave a PENDING task stranded.
 		var unlock func()
@@ -329,7 +345,7 @@ func (s *Service) startMediaPreparation(ctx context.Context, task *Task) (*Task,
 		}
 		unlock = s.lockTask(snapshot.ID)
 		latest, findErr := s.store.Find(context.Background(), snapshot.ID)
-		if findErr != nil || latest.Stage != TaskStageTransferring {
+		if findErr != nil || latest.Stage != TaskStageTransferring || latest.Generation != snapshot.Generation {
 			return
 		}
 		if prepErr != nil {

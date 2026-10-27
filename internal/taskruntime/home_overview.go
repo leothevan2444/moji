@@ -123,3 +123,63 @@ func (s *SQLiteTaskStore) HomeOverview(ctx context.Context, now time.Time) (Home
 	}
 	return result, nil
 }
+
+func (s *RelationalTaskStore) HomeOverview(ctx context.Context, now time.Time) (HomeOverview, error) {
+	tx, err := s.core.Reader.BeginTxx(ctx, &sql.TxOptions{ReadOnly: true})
+	if err != nil {
+		return HomeOverview{}, err
+	}
+	defer tx.Rollback()
+	var counts struct {
+		Total     int `db:"total"`
+		Attention int `db:"attention"`
+		Waiting   int `db:"waiting"`
+		Completed int `db:"completed"`
+		Recent    int `db:"recent"`
+	}
+	err = tx.GetContext(ctx, &counts, `SELECT COUNT(*) total,
+		COUNT(CASE WHEN stage != 'COMPLETED' AND stage_status = 'BLOCKED' THEN 1 END) attention,
+		COUNT(CASE WHEN stage = 'SOURCING' AND stage_status = 'PENDING' AND sourcing_next_check_at IS NOT NULL THEN 1 END) waiting,
+		COUNT(CASE WHEN stage = 'COMPLETED' THEN 1 END) completed,
+		COUNT(CASE WHEN stage = 'COMPLETED' AND julianday(ingest_completed_at) BETWEEN julianday(?) AND julianday(?) THEN 1 END) recent FROM tasks t LEFT JOIN task_checkpoints k ON k.task_id=t.id`, now.Add(-24*time.Hour).UTC().Format(time.RFC3339Nano), now.UTC().Format(time.RFC3339Nano))
+	if err != nil {
+		return HomeOverview{}, err
+	}
+	result := HomeOverview{Total: counts.Total, Attention: counts.Attention, Waiting: counts.Waiting, Active: counts.Total - counts.Attention - counts.Waiting - counts.Completed, CompletedLast24Hours: counts.Recent}
+	queries := []struct {
+		suffix string
+		target *[]*Task
+	}{
+		{` WHERE stage != 'COMPLETED' AND stage_status = 'BLOCKED' ORDER BY created_at ASC, id ASC LIMIT 3`, &result.AttentionTasks},
+		{` WHERE stage != 'COMPLETED' AND stage_status != 'BLOCKED' AND NOT (stage = 'SOURCING' AND stage_status = 'PENDING' AND sourcing_next_check_at IS NOT NULL) ORDER BY created_at ASC, id ASC LIMIT 5`, &result.ActiveTasks},
+		{` WHERE stage = 'COMPLETED' AND ingest_completed_at IS NOT NULL ORDER BY julianday(ingest_completed_at) DESC, id ASC LIMIT 3`, &result.RecentTasks},
+	}
+	for _, query := range queries {
+		var rows []sqliteTaskRow
+		if err := tx.SelectContext(ctx, &rows, relationalTaskSelectSQL+query.suffix); err != nil {
+			return HomeOverview{}, err
+		}
+		for _, row := range rows {
+			task, err := row.toTask()
+			if err != nil {
+				return HomeOverview{}, err
+			}
+			*query.target = append(*query.target, s.overlay(task))
+		}
+	}
+	if err := tx.Commit(); err != nil {
+		return HomeOverview{}, err
+	}
+	return result, nil
+}
+
+func (s *EventingTaskStore) HomeOverview(ctx context.Context, now time.Time) (HomeOverview, error) {
+	if provider, ok := s.store.(homeOverviewStore); ok {
+		return provider.HomeOverview(ctx, now)
+	}
+	tasks, err := s.store.List(ctx)
+	if err != nil {
+		return HomeOverview{}, err
+	}
+	return summarizeHomeTasks(tasks, now), nil
+}

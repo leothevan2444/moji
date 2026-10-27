@@ -44,6 +44,9 @@ func (s *MemoryStore) SaveCheckRun(_ context.Context, run CheckRun) error {
 }
 
 func (s *SQLiteStore) LoadCheckRuns(ctx context.Context) ([]CheckRun, error) {
+	if s.core != nil {
+		return s.loadTypedCheckRuns(ctx)
+	}
 	var records []string
 	if err := s.db.SelectContext(ctx, &records, `SELECT payload FROM subscription_check_runs ORDER BY started_at DESC`); err != nil {
 		return nil, err
@@ -60,6 +63,9 @@ func (s *SQLiteStore) LoadCheckRuns(ctx context.Context) ([]CheckRun, error) {
 }
 
 func (s *SQLiteStore) SaveCheckRun(ctx context.Context, run CheckRun) error {
+	if s.core != nil {
+		return s.saveTypedCheckRun(ctx, run)
+	}
 	payload, err := json.Marshal(run)
 	if err != nil {
 		return err

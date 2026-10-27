@@ -17,6 +17,7 @@ func TestHomeOverviewSeparatesAttentionAndAutomaticWork(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer sqlite.db.Close()
+	relational, _ := relationalStore(t)
 	memory := NewMemoryTaskStore()
 	var fixture []*Task
 	add := func(id string, stage TaskStage, status TaskStageStatus, complete, next *time.Time) {
@@ -44,12 +45,15 @@ func TestHomeOverviewSeparatesAttentionAndAutomaticWork(t *testing.T) {
 		if err := sqlite.Create(ctx, task); err != nil {
 			t.Fatal(err)
 		}
+		if err := relational.Create(ctx, cloneTask(task)); err != nil {
+			t.Fatal(err)
+		}
 		if err := memory.Create(ctx, task); err != nil {
 			t.Fatal(err)
 		}
 	}
 	var previous HomeOverview
-	for name, store := range map[string]TaskStore{"sqlite": sqlite, "memory": memory} {
+	for name, store := range map[string]TaskStore{"sqlite": sqlite, "memory": memory, "relational": relational} {
 		t.Run(name, func(t *testing.T) {
 			service := &Service{store: store}
 			got, err := service.HomeOverview(ctx, now)

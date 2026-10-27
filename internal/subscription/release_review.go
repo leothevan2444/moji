@@ -111,7 +111,13 @@ func (s *Service) reviewTaskMap(ctx context.Context) (map[string]*taskruntime.Ta
 	if s.reviewTasks == nil {
 		return out, nil
 	}
-	tasks, err := s.reviewTasks.ListTasks(ctx)
+	list := s.reviewTasks.ListTasks
+	if provider, ok := s.reviewTasks.(interface {
+		ListReviewTasks(context.Context) ([]*taskruntime.Task, error)
+	}); ok {
+		list = provider.ListReviewTasks
+	}
+	tasks, err := list(ctx)
 	if err != nil {
 		return nil, err
 	}

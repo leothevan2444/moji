@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	_ "embed"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -18,6 +19,8 @@ import (
 var sqliteSchema string
 
 const sqliteSchemaVersion = "16"
+
+var ErrUnsupportedDatabase = errors.New("taskruntime: database requires an explicit supported migration; source was preserved")
 
 func OpenSQLiteDatabase(path string) (*sqlx.DB, error) {
 	trimmed := strings.TrimSpace(path)
@@ -77,47 +80,20 @@ func configureSQLiteDatabase(db *sqlx.DB) error {
 		return err
 	}
 
+	if versionBeforeInit != "" && versionBeforeInit != sqliteSchemaVersion && versionBeforeInit != "7" && versionBeforeInit != "8" && versionBeforeInit != "9" && versionBeforeInit != "10" && versionBeforeInit != "11" && versionBeforeInit != "12" && versionBeforeInit != "13" && versionBeforeInit != "14" && versionBeforeInit != "15" {
+		return fmt.Errorf("%w: schema version %q", ErrUnsupportedDatabase, versionBeforeInit)
+	}
 	if !hadSchema || versionBeforeInit == sqliteSchemaVersion || versionBeforeInit == "7" || versionBeforeInit == "8" || versionBeforeInit == "9" || versionBeforeInit == "10" || versionBeforeInit == "11" || versionBeforeInit == "12" || versionBeforeInit == "13" || versionBeforeInit == "14" || versionBeforeInit == "15" {
 		if _, err := db.Exec(sqliteSchema); err != nil {
 			return fmt.Errorf("taskruntime: initialize sqlite schema: %w", err)
 		}
 	} else {
-		if err := resetSQLiteDatabase(db); err != nil {
-			return err
-		}
-		if _, err := db.Exec(sqliteSchema); err != nil {
-			return fmt.Errorf("taskruntime: reinitialize sqlite schema: %w", err)
-		}
+		return fmt.Errorf("%w: schema version %q", ErrUnsupportedDatabase, versionBeforeInit)
 	}
 	if err := ensureSQLiteRuntimeState(db); err != nil {
 		return err
 	}
 
-	return nil
-}
-
-func resetSQLiteDatabase(db *sqlx.DB) error {
-	tx, err := db.Beginx()
-	if err != nil {
-		return fmt.Errorf("taskruntime: begin sqlite schema reset: %w", err)
-	}
-	defer tx.Rollback()
-
-	statements := []string{
-		`PRAGMA foreign_keys = OFF`,
-		`DROP TABLE IF EXISTS task_events`,
-		`DROP TABLE IF EXISTS tasks`,
-		`DROP TABLE IF EXISTS task_store_meta`,
-		`PRAGMA foreign_keys = ON`,
-	}
-	for _, statement := range statements {
-		if _, err := tx.Exec(statement); err != nil {
-			return fmt.Errorf("taskruntime: reset sqlite schema with %q: %w", statement, err)
-		}
-	}
-	if err := tx.Commit(); err != nil {
-		return fmt.Errorf("taskruntime: commit sqlite schema reset: %w", err)
-	}
 	return nil
 }
 

@@ -25,3 +25,11 @@ docker/data/
 docker/downloads/
 docker/library/
 docker/.env
+
+# Local database recovery snapshots (contain private data).
+/backups/
+/.storage/
+/.moji-storage.json
+/.moji-storage.lock
+/runtime.db*
+/moji-storage

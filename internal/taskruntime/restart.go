@@ -23,6 +23,7 @@ const TaskStageErrorManualSource = "MANUAL_SOURCE_REQUIRED"
 
 type restartState struct {
 	Version           int
+	Generation        int64 `json:",omitempty"`
 	Delivery          *mediafiles.DeliveryRemoval
 	Downloads         *mediafiles.DownloadRemoval
 	DownloaderRemoved bool
@@ -78,7 +79,7 @@ func (s *Service) restartTaskSourcingLocked(ctx context.Context, task *Task, sca
 		if err := json.Unmarshal([]byte(task.RestartStateJSON), &state); err != nil {
 			return task, err
 		}
-		if state.Version != 1 {
+		if state.Version != 1 || (task.Revision > 0 && state.Generation != task.Generation) {
 			return task, fmt.Errorf("%w: unsupported cleanup checkpoint", ErrRestartCleanup)
 		}
 	} else {
@@ -116,6 +117,12 @@ func (s *Service) restartTaskSourcingLocked(ctx context.Context, task *Task, sca
 		if err != nil {
 			return task, fmt.Errorf("%w: %v", ErrRestartCleanup, err)
 		}
+		// A new durable generation invalidates old worker/file-selection snapshots.
+		// Legacy development stores have no revision protocol; imports start at zero.
+		if task.Revision > 0 {
+			task.Generation++
+			state.Generation = task.Generation
+		}
 		data, _ := json.Marshal(state)
 		task.RestartStateJSON = string(data)
 		blockTask(task, TaskStageErrorRestartPending, ErrRestartCleanup.Error(), s.now().UTC())
@@ -134,7 +141,7 @@ func (s *Service) restartTaskSourcingLocked(ctx context.Context, task *Task, sca
 		if hash := restartTorrentHash(task); hash != "" {
 			// A restart always deletes downloaded bytes, independently of the
 			// ordinary task deletion policy.
-			if err := s.qbt.DeleteTorrents(ctx, []string{hash}, true); err != nil {
+			if err := s.runTaskCommand(ctx, task, "TASK_RESTART_DELETE", hash, map[string]any{"delete_files": true}, func() error { return s.qbt.DeleteTorrents(ctx, []string{hash}, true) }); err != nil {
 				return fail(err)
 			}
 			if err := s.waitRestartTorrentRemoval(ctx, hash); err != nil {
@@ -168,7 +175,7 @@ func (s *Service) restartTaskSourcingLocked(ctx context.Context, task *Task, sca
 		}
 	}
 	now := s.now().UTC()
-	next := &Task{ID: task.ID, Source: task.Source, Code: task.Code, SavePath: task.SavePath,
+	next := &Task{Revision: task.Revision, Generation: task.Generation, ID: task.ID, Source: task.Source, Code: task.Code, SavePath: task.SavePath,
 		Category: task.Category, Tags: task.Tags, CreatedAt: task.CreatedAt, UpdatedAt: now,
 		LastProgressAt: &now, SourcingRequestJSON: task.SourcingRequestJSON}
 	if err := ensureSourcingRequest(next); err != nil {

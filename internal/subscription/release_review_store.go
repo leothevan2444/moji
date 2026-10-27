@@ -45,6 +45,9 @@ func cloneReleaseReview(record ReleaseReview) ReleaseReview {
 }
 
 func (s *SQLiteStore) ListReleaseReviews(ctx context.Context) ([]ReleaseReview, error) {
+	if s.core != nil {
+		return s.listTypedReviews(ctx)
+	}
 	var rows []string
 	if err := s.db.SelectContext(ctx, &rows, `SELECT record_json FROM subscription_release_reviews ORDER BY release_key`); err != nil {
 		return nil, fmt.Errorf("subscription: list release reviews: %w", err)
@@ -61,6 +64,9 @@ func (s *SQLiteStore) ListReleaseReviews(ctx context.Context) ([]ReleaseReview, 
 }
 
 func (s *SQLiteStore) PutReleaseReviews(ctx context.Context, records []ReleaseReview) error {
+	if s.core != nil {
+		return s.putTypedReviews(ctx, records)
+	}
 	if len(records) == 0 {
 		return nil
 	}

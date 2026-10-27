@@ -212,10 +212,17 @@ type SystemConfig struct {
 }
 
 type StashBoxDataCacheConfig struct {
-	TTLHours int `yaml:"ttl_hours"`
+	MaxSizeMB int `yaml:"max_size_mb"`
+	TTLHours  int `yaml:"ttl_hours"`
 }
 
 func (c StashBoxDataCacheConfig) Normalize() StashBoxDataCacheConfig {
+	if c.MaxSizeMB <= 0 {
+		c.MaxSizeMB = 512
+	}
+	if c.MaxSizeMB > 65536 {
+		c.MaxSizeMB = 65536
+	}
 	if c.TTLHours == 0 {
 		c.TTLHours = 24
 	}

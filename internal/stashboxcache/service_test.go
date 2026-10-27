@@ -418,3 +418,27 @@ func TestBrowsingReturnsExpiredCacheWhileRefreshIsBlocked(t *testing.T) {
 		})
 	}
 }
+
+func TestCacheCapacityEvictsOldSnapshotsWithoutChangingBusinessData(t *testing.T) {
+	now := time.Now().UTC()
+	service := newTestService(t, &now)
+	client := &fakeClient{scenes: testScenes(40), performer: &stashboxgraphql.PerformerFragment{ID: "p1", Name: "Alice"}}
+	if _, err := service.Load(context.Background(), client, "https://box", "p1", 40, CachePreferred); err != nil {
+		t.Fatal(err)
+	}
+	service.config = func() Config { return Config{MaxBytes: 1} }
+	if err := service.Cleanup(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+	status, err := service.Status(context.Background())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if status.SceneCount != 0 || status.SnapshotCount != 0 {
+		t.Fatalf("cache capacity not enforced: %+v", status)
+	}
+	// Cache eviction is recoverable through the normal remote-loading path.
+	if _, err := service.Load(context.Background(), client, "https://box", "p1", 40, CachePreferred); err != nil {
+		t.Fatal(err)
+	}
+}

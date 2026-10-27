@@ -15,6 +15,7 @@ import (
 	"time"
 
 	"github.com/leothevan2444/moji/internal/logging"
+	"github.com/leothevan2444/moji/internal/storage"
 	"github.com/leothevan2444/moji/internal/taskruntime"
 	"github.com/leothevan2444/moji/pkg/qbittorrent"
 	_ "modernc.org/sqlite"
@@ -101,6 +102,7 @@ type Snapshot struct {
 	Torrents         []Torrent
 }
 type Service struct {
+	manager      *storage.Manager
 	mu           sync.Mutex
 	stateMu      sync.RWMutex
 	snapshot     Snapshot
@@ -133,8 +135,16 @@ func New(client Client, tasks Tasks, path string) (*Service, error) {
 	}
 	return s, nil
 }
-func (s *Service) Close() error { return s.db.Close() }
+func (s *Service) Close() error {
+	if s.manager != nil {
+		return nil
+	}
+	return s.db.Close()
+}
 func (s *Service) read(ctx context.Context, key string, out any) error {
+	if s.manager != nil {
+		return s.readManaged(ctx, key, out)
+	}
 	var raw string
 	err := s.db.QueryRowContext(ctx, `SELECT value FROM downloader_state WHERE key=?`, key).Scan(&raw)
 	if errors.Is(err, sql.ErrNoRows) {
@@ -146,6 +156,9 @@ func (s *Service) read(ctx context.Context, key string, out any) error {
 	return json.Unmarshal([]byte(raw), out)
 }
 func (s *Service) write(ctx context.Context, key string, value any) error {
+	if s.manager != nil {
+		return s.writeManaged(ctx, key, value)
+	}
 	raw, err := json.Marshal(value)
 	if err != nil {
 		return err
@@ -218,7 +231,13 @@ func (s *Service) taskGroups(ctx context.Context) (map[string][]*taskruntime.Tas
 	if s.tasks == nil {
 		return groups, nil
 	}
-	tasks, err := s.tasks.ListTasks(ctx)
+	listTasks := s.tasks.ListTasks
+	if provider, ok := s.tasks.(interface {
+		ListDownloaderTasks(context.Context) ([]*taskruntime.Task, error)
+	}); ok {
+		listTasks = provider.ListDownloaderTasks
+	}
+	tasks, err := listTasks(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -332,6 +351,15 @@ func (s *Service) refresh(ctx context.Context, cleanup bool) error {
 		out.DHTNodes = server.DHTNodes
 	}
 	seen := map[string]bool{}
+	if s.manager != nil {
+		present := map[string]bool{}
+		for _, torrent := range torrents {
+			present[strings.ToLower(torrent.Hash)] = true
+		}
+		if err := s.manager.ReconcileTaskCommands(ctx, present); err != nil {
+			return err
+		}
+	}
 	old := map[string]Torrent{}
 	for _, t := range previous.Torrents {
 		old[t.Hash] = t
@@ -372,9 +400,11 @@ func (s *Service) refresh(ctx context.Context, cleanup bool) error {
 			if err = s.write(ctx, "snapshot", intentSnapshot); err != nil {
 				return err
 			}
-			if deleteErr := s.client.DeleteTorrents(ctx, []string{hash}, policy.DeleteFiles); deleteErr != nil {
+			if deleteErr := s.removeTorrent(ctx, hash, policy.DeleteFiles, "POLICY"); deleteErr != nil {
 				t.CleanupError = true
-				t.RemovalReason = ""
+				if s.manager == nil {
+					t.RemovalReason = ""
+				}
 			} else {
 				t.RemovalReason = "POLICY_PENDING"
 				observed, observeErr := s.client.GetTorrentList(ctx, &qbittorrent.TorrentListOptions{Hashes: []string{hash}})
@@ -424,6 +454,24 @@ func (s *Service) refresh(ctx context.Context, cleanup bool) error {
 		}
 		out.Torrents = append(out.Torrents, t)
 	}
+	if s.manager != nil {
+		// Commands for torrents without Moji tasks also survive runtime cache loss.
+		for hash, saved := range old {
+			if seen[hash] || len(groups[hash]) > 0 || saved.RemovalReason == "" {
+				continue
+			}
+			saved.Present = false
+			saved.DownloadSpeed = 0
+			saved.UploadSpeed = 0
+			saved.State = "removed"
+			saved.RemovalReason = strings.TrimSuffix(saved.RemovalReason, "_PENDING")
+			if saved.RemovedAt == "" {
+				saved.RemovedAt = now
+			}
+			out.Torrents = append(out.Torrents, saved)
+		}
+	}
+
 	sort.Slice(out.Torrents, func(i, j int) bool { return out.Torrents[i].Hash < out.Torrents[j].Hash })
 	err = s.publishSnapshot(ctx, out)
 	// Keep only the latest listing while the task observer is busy.
@@ -599,8 +647,8 @@ func (s *Service) Action(ctx context.Context, hash, action string) error {
 		if err = s.write(ctx, "snapshot", snapshot); err != nil {
 			return err
 		}
-		err = s.client.DeleteTorrents(ctx, []string{hash}, action == "REMOVE_FILES")
-		if err != nil {
+		err = s.removeTorrent(ctx, hash, action == "REMOVE_FILES", "MANUAL")
+		if err != nil && s.manager == nil {
 			for i := range snapshot.Torrents {
 				if snapshot.Torrents[i].Hash == hash {
 					snapshot.Torrents[i].RemovalReason = ""

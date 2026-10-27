@@ -432,3 +432,35 @@ func TestTaskProcessingSwitchPersistsAndRejectsUnsupportedIntervals(t *testing.T
 		}
 	}
 }
+
+func TestFailedDurableWriteDoesNotActivateNewConfiguration(t *testing.T) {
+	parent := filepath.Join(t.TempDir(), "settings")
+	if err := os.Mkdir(parent, 0o700); err != nil {
+		t.Fatal(err)
+	}
+	path := filepath.Join(parent, "config.yaml")
+	original := []byte("connection:\n  stash:\n    url: http://old.invalid/graphql\n")
+	if err := os.WriteFile(path, original, 0o600); err != nil {
+		t.Fatal(err)
+	}
+	store, err := OpenStore(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	oldURL := store.Config().Connection.Stash.URL
+	offline := parent + ".offline"
+	if err := os.Rename(parent, offline); err != nil {
+		t.Fatal(err)
+	}
+	defer os.Rename(offline, parent)
+	if _, err := store.UpdateStash("http://new.invalid/graphql", ""); err == nil {
+		t.Fatal("write to unavailable storage succeeded")
+	}
+	if store.Config().Connection.Stash.URL != oldURL {
+		t.Fatal("failed setting was activated in memory")
+	}
+	raw, err := os.ReadFile(filepath.Join(offline, "config.yaml"))
+	if err != nil || string(raw) != string(original) {
+		t.Fatal("failed write changed the previous file", err)
+	}
+}

@@ -260,6 +260,10 @@ SELECT
 FROM tasks`
 
 type sqliteTaskRow struct {
+	CheckpointVersion       int            `db:"checkpoint_version"`
+	FilePlanVersion         int            `db:"file_plan_version"`
+	Revision                int64          `db:"revision"`
+	Generation              int64          `db:"generation"`
 	RestartStateJSON        sql.NullString `db:"restart_state_json"`
 	TorrentFileData         []byte         `db:"torrent_file_data"`
 	SourcingLastCheckedAt   sql.NullString `db:"sourcing_last_checked_at"`
@@ -315,7 +319,12 @@ type sqliteTaskRow struct {
 }
 
 func (r sqliteTaskRow) toTask() (*Task, error) {
+	if r.CheckpointVersion > 1 || r.FilePlanVersion > 1 {
+		return nil, fmt.Errorf("taskruntime: unsupported checkpoint version for task %q", r.ID)
+	}
 	task := &Task{
+		Revision:                r.Revision,
+		Generation:              r.Generation,
 		RestartStateJSON:        nullableStringValue(r.RestartStateJSON),
 		TorrentFileData:         r.TorrentFileData,
 		SourcingRequestJSON:     r.SourcingRequestJSON.String,

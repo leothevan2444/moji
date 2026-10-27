@@ -6,12 +6,14 @@ import (
 	"flag"
 	"fmt"
 	"github.com/leothevan2444/moji/internal/downloader"
+	"github.com/leothevan2444/moji/internal/storage"
 	"log/slog"
 	"net"
 	"net/http"
 	"os"
 	"os/signal"
 	"strings"
+	"sync"
 	"sync/atomic"
 	"syscall"
 	"time"
@@ -47,9 +49,11 @@ var runtimeCacheSequence atomic.Uint64
 func main() {
 	version := moji.Version()
 	var (
-		configPath  = flag.String("config", "", "path to config yaml (or set MOJI_CONFIG)")
-		addr        = flag.String("addr", ":10000", "http listen address")
-		showVersion = flag.Bool("version", false, "print version and exit")
+		configPath      = flag.String("config", "", "path to config yaml (or set MOJI_CONFIG)")
+		addr            = flag.String("addr", ":10000", "http listen address")
+		backupDirectory = flag.String("backup-dir", "", "backup directory (default: data-dir/backups; may be an independently mounted backup volume)")
+		dataDirectory   = flag.String("data-dir", ".", "directory containing Moji databases and recovery generations")
+		showVersion     = flag.Bool("version", false, "print version and exit")
 	)
 	flag.Parse()
 	if *showVersion {
@@ -98,13 +102,38 @@ func main() {
 		logging.Fatalf("invalid config: connection.jackett.api_key is required")
 	}
 
-	// Dependencies
-	runtime := newHTTPRuntime(cfg, version, configStore)
+	// Dependencies: the storage owner is acquired before any background work.
+	managerOptions := storage.DefaultManagerOptions(*dataDirectory)
+	managerOptions.BackupDirectory = *backupDirectory
+	managerOptions.Supplemental = func(ctx context.Context) ([]storage.BackupFile, error) {
+		return storage.SupplementalFiles(ctx, configStore.Path(), configStore.Config().Ingest.Library.MojiRoot)
+	}
+	manager, err := storage.OpenManager(context.Background(), managerOptions)
+	if err != nil {
+		logging.Fatalf("open storage (legacy installations require explicit migration): %v", err)
+	}
+	defer func() {
+		if err := manager.Close(); err != nil {
+			logging.Errorf("close storage: %v", err)
+		}
+	}()
+	runtime := newHTTPRuntime(cfg, version, configStore, manager)
 	defer runtime.stashBoxCacheService.Close()
 
+	// Graceful shutdown
+	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	defer stop()
+
+	var requests sync.WaitGroup
+	requestHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		requests.Add(1)
+		defer requests.Done()
+		runtime.handler.ServeHTTP(w, r)
+	})
 	server := &http.Server{
 		Addr:              *addr,
-		Handler:           runtime.handler,
+		Handler:           requestHandler,
+		BaseContext:       func(net.Listener) context.Context { return ctx },
 		ReadHeaderTimeout: 5 * time.Second,
 		IdleTimeout:       60 * time.Second,
 	}
@@ -116,27 +145,37 @@ func main() {
 
 	logging.Infof("moji listening on %s", ln.Addr().String())
 
-	// Graceful shutdown
-	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
-	defer stop()
-
+	var workers sync.WaitGroup
+	launch := func(work func()) { workers.Add(1); go func() { defer workers.Done(); work() }() }
+	launch(func() {
+		manager.Maintain(ctx, func(result storage.MaintenanceResult) {
+			if result.Err != nil && !errors.Is(result.Err, context.Canceled) {
+				logging.Errorf("storage maintenance: %v", result.Err)
+			}
+		})
+	})
+	defer workers.Wait()
 	if preparer, ok := runtime.taskRuntimeService.(interface{ SetMediaPreparationContext(context.Context) }); ok {
 		preparer.SetMediaPreparationContext(ctx)
 	}
 	if worker, ok := runtime.taskRuntimeService.(interface{ RunSourcingWorker(context.Context) }); ok {
-		go worker.RunSourcingWorker(ctx)
+		launch(func() { worker.RunSourcingWorker(ctx) })
 	}
 	if runtime.downloader != nil {
-		go runtime.downloader.Run(ctx)
+		launch(func() { runtime.downloader.Run(ctx) })
 	}
-	startTaskSyncWorker(ctx, runtime.taskRuntimeService, runtime.stashService, configureProgressSyncIntervalProvider(configStore, cfg))
-	startSubscriptionWorker(ctx, runtime.subscriptionService, configureSubscriptionPollIntervalProvider(configStore, cfg))
+	taskSyncDone := startTaskSyncWorker(ctx, runtime.taskRuntimeService, runtime.stashService, configureProgressSyncIntervalProvider(configStore, cfg))
+	launch(func() { <-taskSyncDone })
+	subscriptionDone := startSubscriptionWorker(ctx, runtime.subscriptionService, configureSubscriptionPollIntervalProvider(configStore, cfg))
+	launch(func() { <-subscriptionDone })
 	if runtime.stashBoxCacheService != nil {
 		runtime.stashBoxCacheService.StartCleanup(ctx)
 	}
-	go runtime.statsCollector.Run(ctx)
+	launch(func() { runtime.statsCollector.Run(ctx) })
 
+	shutdownDone := make(chan struct{})
 	go func() {
+		defer close(shutdownDone)
 		<-ctx.Done()
 		runtime.taskEventBus.Close()
 		runtime.serviceStatusEventBus.Close()
@@ -149,12 +188,24 @@ func main() {
 		defer cancel()
 		if err := server.Shutdown(shutdownCtx); err != nil {
 			logging.Warnf("shutdown: %v", err)
+			_ = server.Close()
 		}
 	}()
 
 	if err := server.Serve(ln); err != nil && !errors.Is(err, http.ErrServerClosed) {
 		logging.Fatalf("serve: %v", err)
 	}
+	stop()
+	<-shutdownDone
+	requests.Wait()
+	workers.Wait()
+	if service, ok := runtime.subscriptionService.(interface{ WaitBackground() }); ok {
+		service.WaitBackground()
+	}
+	if service, ok := runtime.taskRuntimeService.(interface{ WaitBackground() }); ok {
+		service.WaitBackground()
+	}
+
 }
 
 func newHTTPHandler(cfg *config.Config, version string) http.Handler {
@@ -174,7 +225,11 @@ type httpRuntime struct {
 	stashBoxCacheService          *stashboxcache.Service
 }
 
-func newHTTPRuntime(cfg *config.Config, version string, configStore *config.Store) *httpRuntime {
+func newHTTPRuntime(cfg *config.Config, version string, configStore *config.Store, managers ...*storage.Manager) *httpRuntime {
+	var manager *storage.Manager
+	if len(managers) > 0 {
+		manager = managers[0]
+	}
 	imageService, err := imagecache.New("cache/image", func() imagecache.Config {
 		current := cfg.System.ImageCache.Normalize()
 		if configStore != nil {
@@ -190,13 +245,19 @@ func newHTTPRuntime(cfg *config.Config, version string, configStore *config.Stor
 	if configStore != nil {
 		cachePath = stashBoxCacheDatabasePath()
 	}
-	stashBoxCacheService, err := stashboxcache.New(cachePath, func() stashboxcache.Config {
+	cacheProvider := func() stashboxcache.Config {
 		current := cfg.System.StashBoxDataCache.Normalize()
 		if configStore != nil {
 			current = configStore.Config().System.StashBoxDataCache.Normalize()
 		}
-		return stashboxcache.Config{TTL: time.Duration(current.TTLHours) * time.Hour, StaleRetention: stashboxcache.DefaultStaleRetention}
-	})
+		return stashboxcache.Config{TTL: time.Duration(current.TTLHours) * time.Hour, StaleRetention: stashboxcache.DefaultStaleRetention, MaxBytes: int64(current.MaxSizeMB) << 20}
+	}
+	var stashBoxCacheService *stashboxcache.Service
+	if manager != nil {
+		stashBoxCacheService = stashboxcache.NewManaged(manager.Cache, cacheProvider)
+	} else {
+		stashBoxCacheService, err = stashboxcache.New(cachePath, cacheProvider)
+	}
 	if err != nil {
 		logging.Fatalf("configure StashBox data cache: %v", err)
 	}
@@ -212,7 +273,7 @@ func newHTTPRuntime(cfg *config.Config, version string, configStore *config.Stor
 	qbittorrentClient, torrentClient := configureQBittorrent(cfg, configStore)
 	stashClient := configureStashClient(cfg, configStore)
 	taskEventBus := taskruntime.NewTaskEventBus(32)
-	taskRuntimeService := configureTaskRuntime(cfg, configStore, jackettTracker, torrentClient, stashClient, taskEventBus)
+	taskRuntimeService := configureTaskRuntime(cfg, configStore, jackettTracker, torrentClient, stashClient, taskEventBus, manager)
 	taskFlowService := configureTaskFlow(taskRuntimeService)
 	stashService := configureStashService(cfg, configStore, stashClient)
 	metadataService := configureMetadata(stashClient)
@@ -220,7 +281,7 @@ func newHTTPRuntime(cfg *config.Config, version string, configStore *config.Stor
 		metadataService.SetCache(stashBoxCacheService)
 	}
 	performerSubscriptionEventBus := subscription.NewPerformerSubscriptionEventBus(16)
-	subscriptionService := configureSubscription(cfg, configStore, stashClient, metadataService, taskFlowService, imageService)
+	subscriptionService := configureSubscription(cfg, configStore, stashClient, metadataService, taskFlowService, imageService, manager)
 	if subscriptionService != nil {
 		subscriptionService.SetEventPublisher(performerSubscriptionEventBus)
 	}
@@ -240,7 +301,11 @@ func newHTTPRuntime(cfg *config.Config, version string, configStore *config.Stor
 	statsCollector.SetEventPublisher(serviceStatusEventBus)
 	resolver := graphqlapi.NewResolver(jackettTracker, torrentClient, taskRuntimeService, stashService, version)
 	if qbittorrentClient != nil {
-		resolver.Downloader, err = downloader.New(qbittorrentClient, taskRuntimeService, runtimeDatabasePath())
+		if manager != nil {
+			resolver.Downloader, err = downloader.NewManaged(qbittorrentClient, taskRuntimeService, manager)
+		} else {
+			resolver.Downloader, err = downloader.New(qbittorrentClient, taskRuntimeService, runtimeDatabasePath())
+		}
 		if err != nil {
 			logging.Fatalf("configure downloader: %v", err)
 		}
@@ -418,13 +483,13 @@ func jackettClientOf(tr tracker.Tracker) *jackett.Client {
 	return nil
 }
 
-func configureTaskRuntime(cfg *config.Config, configStore *config.Store, tr tracker.Tracker, torrent graphqlapi.TorrentClient, stashClient *stash.Client, taskEvents *taskruntime.TaskEventBus) graphqlapi.TaskRuntimeService {
+func configureTaskRuntime(cfg *config.Config, configStore *config.Store, tr tracker.Tracker, torrent graphqlapi.TorrentClient, stashClient *stash.Client, taskEvents *taskruntime.TaskEventBus, managers ...*storage.Manager) graphqlapi.TaskRuntimeService {
 	if torrent == nil {
 		logging.Infof("runtime: task runtime disabled because qBittorrent client is not available")
 		return nil
 	}
 
-	store, err := configureTaskStore(cfg)
+	store, err := configureTaskStore(cfg, managers...)
 	if err != nil {
 		logging.Fatalf("configure task store: %v", err)
 	}
@@ -471,7 +536,10 @@ func configureTorrentSelectionProvider(store *config.Store, cfg *config.Config) 
 	}
 }
 
-func configureTaskStore(cfg *config.Config) (taskruntime.TaskStore, error) {
+func configureTaskStore(cfg *config.Config, managers ...*storage.Manager) (taskruntime.TaskStore, error) {
+	if len(managers) > 0 && managers[0] != nil {
+		return taskruntime.NewRelationalTaskStore(managers[0].Core, managers[0].Observations), nil
+	}
 	return taskruntime.NewSQLiteTaskStore(runtimeDatabasePath())
 }
 
@@ -769,11 +837,14 @@ func loadStashLibraries(stashConfigured bool, stashClient *stash.Client) ([]grap
 	return out, ""
 }
 
-func startTaskSyncWorker(ctx context.Context, service graphqlapi.TaskRuntimeService, stash graphqlapi.StashService, intervalProvider func() time.Duration) {
+func startTaskSyncWorker(ctx context.Context, service graphqlapi.TaskRuntimeService, stash graphqlapi.StashService, intervalProvider func() time.Duration) <-chan struct{} {
+	done := make(chan struct{})
 	if service == nil || intervalProvider == nil {
-		return
+		close(done)
+		return done
 	}
 	go func() {
+		defer close(done)
 		// Keep observing configuration while paused so enabling never needs a restart.
 		check := time.NewTicker(500 * time.Millisecond)
 		defer check.Stop()
@@ -817,11 +888,23 @@ func startTaskSyncWorker(ctx context.Context, service graphqlapi.TaskRuntimeServ
 					continue
 				}
 				syncCtx, cancel := context.WithTimeout(ctx, 30*time.Second)
-				if _, err := service.SyncProgress(syncCtx); err != nil && !errors.Is(err, context.Canceled) {
+				syncProgress := service.SyncProgress
+				if bounded, ok := service.(interface {
+					SyncActiveProgress(context.Context) error
+				}); ok {
+					syncProgress = func(ctx context.Context) ([]*taskruntime.Task, error) { return nil, bounded.SyncActiveProgress(ctx) }
+				}
+				if _, err := syncProgress(syncCtx); err != nil && !errors.Is(err, context.Canceled) {
 					logging.Errorf("sync download progress: %v", err)
 				}
 				if stash != nil {
-					if _, err := service.TriggerStashScans(syncCtx, stash); err != nil && !errors.Is(err, context.Canceled) {
+					triggerScans := func() error { _, err := service.TriggerStashScans(syncCtx, stash); return err }
+					if bounded, ok := service.(interface {
+						TriggerActiveStashScans(context.Context, taskruntime.StashScanner) error
+					}); ok {
+						triggerScans = func() error { return bounded.TriggerActiveStashScans(syncCtx, stash) }
+					}
+					if err := triggerScans(); err != nil && !errors.Is(err, context.Canceled) {
 						logging.Errorf("trigger stash scans: %v", err)
 					}
 				}
@@ -831,6 +914,7 @@ func startTaskSyncWorker(ctx context.Context, service graphqlapi.TaskRuntimeServ
 			}
 		}
 	}()
+	return done
 }
 
 func configureStashClient(cfg *config.Config, store *config.Store) *stash.Client {
@@ -950,13 +1034,13 @@ func configureMetadata(stashClient *stash.Client) *metadata.Service {
 	return service
 }
 
-func configureSubscription(cfg *config.Config, configStore *config.Store, stashClient *stash.Client, metadataService *metadata.Service, taskFlowService *taskflow.Service, imageService *imagecache.Service) *subscription.Service {
+func configureSubscription(cfg *config.Config, configStore *config.Store, stashClient *stash.Client, metadataService *metadata.Service, taskFlowService *taskflow.Service, imageService *imagecache.Service, managers ...*storage.Manager) *subscription.Service {
 	if stashClient == nil || metadataService == nil {
 		logging.Infof("runtime: subscription service disabled because required metadata services are not available")
 		return nil
 	}
 
-	store, err := configureSubscriptionStore(cfg)
+	store, err := configureSubscriptionStore(cfg, managers...)
 	if err != nil {
 		logging.Fatalf("configure subscription store: %v", err)
 	}
@@ -969,7 +1053,10 @@ func configureSubscription(cfg *config.Config, configStore *config.Store, stashC
 	return service
 }
 
-func configureSubscriptionStore(cfg *config.Config) (subscription.Store, error) {
+func configureSubscriptionStore(cfg *config.Config, managers ...*storage.Manager) (subscription.Store, error) {
+	if len(managers) > 0 && managers[0] != nil {
+		return subscription.NewManagedStore(managers[0].Core), nil
+	}
 	_ = cfg
 	return subscription.NewSQLiteStore(runtimeDatabasePath())
 }
@@ -1003,9 +1090,11 @@ func storeAutomation(cfg *config.Config, store *config.Store) *config.Config {
 	return cfg
 }
 
-func startSubscriptionWorker(ctx context.Context, service graphqlapi.SubscriptionService, intervalProvider func() time.Duration) {
+func startSubscriptionWorker(ctx context.Context, service graphqlapi.SubscriptionService, intervalProvider func() time.Duration) <-chan struct{} {
+	done := make(chan struct{})
 	if service == nil || intervalProvider == nil {
-		return
+		close(done)
+		return done
 	}
 	tracked, hasTracking := service.(interface {
 		ConfigureCheckRuntime(context.Context)
@@ -1029,6 +1118,7 @@ func startSubscriptionWorker(ctx context.Context, service graphqlapi.Subscriptio
 	}
 	publishSchedule(current)
 	go func() {
+		defer close(done)
 		// Reconcile settings even while disabled, so enabling polling needs no restart.
 		settingsTicker := time.NewTicker(5 * time.Second)
 		defer settingsTicker.Stop()
@@ -1092,6 +1182,7 @@ func startSubscriptionWorker(ctx context.Context, service graphqlapi.Subscriptio
 			}
 		}
 	}()
+	return done
 }
 
 func runtimeDatabasePath() string {

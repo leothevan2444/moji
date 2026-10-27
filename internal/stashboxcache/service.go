@@ -9,6 +9,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/leothevan2444/moji/internal/storage"
 	"golang.org/x/sync/singleflight"
 
 	stashboxgraphql "github.com/leothevan2444/moji/pkg/stashbox/graphql"
@@ -28,6 +29,7 @@ type Service struct {
 	refreshMu   sync.Mutex
 	refreshes   map[string]time.Time
 	refreshWG   sync.WaitGroup
+	cleanupWG   sync.WaitGroup
 	refreshCtx  context.Context
 	stopRefresh context.CancelFunc
 	closed      bool
@@ -38,11 +40,19 @@ func New(path string, provider ConfigProvider) (*Service, error) {
 	if err != nil {
 		return nil, err
 	}
+	return newService(store, provider), nil
+}
+
+func NewManaged(db *storage.Database, provider ConfigProvider) *Service {
+	return newService(&sqliteStore{db: db.Reader, path: db.Path, owner: db}, provider)
+}
+
+func newService(store *sqliteStore, provider ConfigProvider) *Service {
 	if provider == nil {
 		provider = func() Config { return Config{} }
 	}
 	refreshCtx, stop := context.WithCancel(context.Background())
-	return &Service{store: store, config: provider, now: time.Now, refreshes: map[string]time.Time{}, refreshCtx: refreshCtx, stopRefresh: stop}, nil
+	return &Service{store: store, config: provider, now: time.Now, refreshes: map[string]time.Time{}, refreshCtx: refreshCtx, stopRefresh: stop}
 }
 
 func (s *Service) Close() error {
@@ -54,8 +64,12 @@ func (s *Service) Close() error {
 	s.stopRefresh()
 	s.refreshMu.Unlock()
 	s.refreshWG.Wait()
+	s.cleanupWG.Wait()
 	s.opsMu.Lock()
 	defer s.opsMu.Unlock()
+	if s.store.owner != nil {
+		return nil
+	}
 	return s.store.db.Close()
 }
 
@@ -346,7 +360,7 @@ func (s *Service) Cleanup(ctx context.Context) error {
 	s.opsMu.RLock()
 	defer s.opsMu.RUnlock()
 	now := s.now().UTC()
-	err := s.store.cleanup(ctx, now.Add(-s.config().normalize().StaleRetention))
+	err := s.store.cleanup(ctx, now.Add(-s.config().normalize().StaleRetention), s.config().normalize().MaxBytes)
 	s.statusMu.Lock()
 	defer s.statusMu.Unlock()
 	if err != nil {
@@ -359,9 +373,22 @@ func (s *Service) Cleanup(ctx context.Context) error {
 }
 
 func (s *Service) StartCleanup(ctx context.Context) {
+	s.refreshMu.Lock()
+	if s.closed {
+		s.refreshMu.Unlock()
+		return
+	}
+	s.cleanupWG.Add(1)
+	s.refreshMu.Unlock()
 	go func() {
+		defer s.cleanupWG.Done()
+		work, cancel := context.WithCancel(ctx)
+		defer cancel()
+		stop := context.AfterFunc(s.refreshCtx, cancel)
+		defer stop()
+		ctx = work
 		_ = s.Cleanup(ctx)
-		ticker := time.NewTicker(6 * time.Hour)
+		ticker := time.NewTicker(5 * time.Minute)
 		defer ticker.Stop()
 		for {
 			select {
