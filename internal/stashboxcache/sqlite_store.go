@@ -138,6 +138,12 @@ func (s *sqliteStore) putPerformer(ctx context.Context, key PerformerKey, value 
 }
 
 func (s *sqliteStore) getSnapshot(ctx context.Context, key PerformerKey, active bool) (*snapshot, error) {
+	tx, err := s.db.BeginTxx(ctx, &sql.TxOptions{ReadOnly: true})
+	if err != nil {
+		return nil, err
+	}
+	defer tx.Rollback()
+
 	query := `SELECT generation,remote_count,complete,updated_at,last_accessed_at FROM stashbox_cache_snapshots WHERE endpoint=? AND performer_id=? AND active=? ORDER BY generation DESC LIMIT 1`
 	var row struct {
 		Generation   int64  `db:"generation"`
@@ -146,13 +152,12 @@ func (s *sqliteStore) getSnapshot(ctx context.Context, key PerformerKey, active 
 		UpdatedAt    string `db:"updated_at"`
 		LastAccessed string `db:"last_accessed_at"`
 	}
-	if err := s.db.GetContext(ctx, &row, query, key.Endpoint, key.PerformerID, active); errors.Is(err, sql.ErrNoRows) {
+	if err := tx.GetContext(ctx, &row, query, key.Endpoint, key.PerformerID, active); errors.Is(err, sql.ErrNoRows) {
 		return nil, nil
 	} else if err != nil {
 		return nil, err
 	}
 	out := &snapshot{Key: key, Generation: row.Generation, RemoteCount: row.RemoteCount, Complete: row.Complete, Scenes: map[string]sceneDTO{}}
-	var err error
 	out.UpdatedAt, err = time.Parse(time.RFC3339Nano, row.UpdatedAt)
 	if err != nil {
 		return nil, fmt.Errorf("stashboxcache: parse snapshot updated time: %w", err)
@@ -165,7 +170,7 @@ func (s *sqliteStore) getSnapshot(ctx context.Context, key PerformerKey, active 
 		Number    int    `db:"page_number"`
 		FetchedAt string `db:"fetched_at"`
 	}
-	if err := s.db.SelectContext(ctx, &pages, `SELECT page_number,fetched_at FROM stashbox_cache_snapshot_pages WHERE endpoint=? AND performer_id=? AND generation=? ORDER BY page_number`, key.Endpoint, key.PerformerID, row.Generation); err != nil {
+	if err := tx.SelectContext(ctx, &pages, `SELECT page_number,fetched_at FROM stashbox_cache_snapshot_pages WHERE endpoint=? AND performer_id=? AND generation=? ORDER BY page_number`, key.Endpoint, key.PerformerID, row.Generation); err != nil {
 		return nil, err
 	}
 	pageByNumber := map[int]int{}
@@ -182,7 +187,7 @@ func (s *sqliteStore) getSnapshot(ctx context.Context, key PerformerKey, active 
 		SceneID  string `db:"scene_id"`
 		Payload  []byte `db:"payload_json"`
 	}
-	if err := s.db.SelectContext(ctx, &items, `SELECT i.position,i.scene_id,s.payload_json FROM stashbox_cache_snapshot_items i JOIN stashbox_cache_scenes s ON s.endpoint=i.endpoint AND s.scene_id=i.scene_id WHERE i.endpoint=? AND i.performer_id=? AND i.generation=? ORDER BY i.position`, key.Endpoint, key.PerformerID, row.Generation); err != nil {
+	if err := tx.SelectContext(ctx, &items, `SELECT i.position,i.scene_id,s.payload_json FROM stashbox_cache_snapshot_items i JOIN stashbox_cache_scenes s ON s.endpoint=i.endpoint AND s.scene_id=i.scene_id WHERE i.endpoint=? AND i.performer_id=? AND i.generation=? ORDER BY i.position`, key.Endpoint, key.PerformerID, row.Generation); err != nil {
 		return nil, err
 	}
 	for _, item := range items {
@@ -195,6 +200,9 @@ func (s *sqliteStore) getSnapshot(ctx context.Context, key PerformerKey, active 
 		if pageIndex, ok := pageByNumber[pageNumber]; ok {
 			out.Pages[pageIndex].SceneIDs = append(out.Pages[pageIndex].SceneIDs, item.SceneID)
 		}
+	}
+	if err := tx.Commit(); err != nil {
+		return nil, err
 	}
 	return out, nil
 }
