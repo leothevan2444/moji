@@ -6,7 +6,7 @@ export type HelpTopicId =
   | "discover"
   | "performers"
   | "tasks"
-  | "connections-ingest"
-  | "automation"
+  | "services-and-delivery"
+  | "tasks-and-subscriptions"
   | "system"
   | "troubleshooting";

@@ -1,6 +1,8 @@
 import { Provider } from "urql";
 import { settingsClient } from "../graphql/client";
-import { useDeveloperMode } from "../hooks/useDeveloperMode";
+import { useLocale } from "../i18n/LocaleProvider";
+import type { LocalePreference } from "../i18n/locales";
+import { useInterfaceSettings } from "../hooks/useInterfaceSettings";
 import { lazy, Suspense, useEffect, useState } from "react";
 import { Outlet, useLocation } from "react-router";
 import { Drawer } from "../components/layout/Drawer";
@@ -18,6 +20,9 @@ const PerformanceDrawer = lazy(() => import("../components/drawers/PerformanceDr
 const HelpDrawer = lazy(() => import("../components/drawers/HelpDrawer").then((module) => ({ default: module.HelpDrawer })));
 
 export interface AppOutletContext {
+  localeLoadError?: boolean;
+  retryLocale?: () => void;
+  onLanguageChange?: (language: LocalePreference) => void;
   onDeveloperModeChange?: (enabled: boolean) => void;
   pushToast: ReturnType<typeof useToast>["pushToast"];
   copyText: ReturnType<typeof useToast>["copyText"];
@@ -30,9 +35,11 @@ export function AppLayout() {
   const theme = useTheme();
   const { toasts, pushToast, dismissToast, copyText } = useToast();
   const [helpOpen, setHelpOpen] = useState(false);
-  const developerMode = useDeveloperMode();
+  const interfaceSettings = useInterfaceSettings();
+  const { setPreference, loadError: localeLoadError, retry: retryLocale } = useLocale();
+  useEffect(() => { if (interfaceSettings.language) setPreference(interfaceSettings.language); }, [interfaceSettings.language, setPreference]);
   const [performanceOpen, setPerformanceOpen] = useState(false);
-  useEffect(() => { if (!developerMode.enabled) setPerformanceOpen(false); }, [developerMode.enabled]);
+  useEffect(() => { if (!interfaceSettings.developerMode) setPerformanceOpen(false); }, [interfaceSettings.developerMode]);
   const [helpTopicId, setHelpTopicId] = useState<HelpTopicId>("introduction");
   useEffect(() => {
     const path = location.pathname;
@@ -47,14 +54,14 @@ export function AppLayout() {
       <div className="ambient ambient-a" />
       <div className="ambient ambient-b" />
       <div className="ambient ambient-c" />
-      <Header developerMode={developerMode.enabled} onOpenPerformance={() => setPerformanceOpen(true)} onOpenHelp={() => setHelpOpen(true)} theme={theme} />
+      <Header developerMode={interfaceSettings.developerMode} onOpenPerformance={() => setPerformanceOpen(true)} onOpenHelp={() => setHelpOpen(true)} theme={theme} />
       <main className="content">
         <TaskProcessingNotice />
         <Suspense fallback={<div className="skeleton skeleton-card" aria-label={t("common.loading")} />}>
-          <Outlet context={{ pushToast, copyText, openHelp: () => setHelpOpen(true), onDeveloperModeChange: developerMode.update } satisfies AppOutletContext} />
+          <Outlet context={{ pushToast, copyText, openHelp: () => setHelpOpen(true), onDeveloperModeChange: interfaceSettings.updateDeveloperMode, onLanguageChange: interfaceSettings.updateLanguage, localeLoadError, retryLocale } satisfies AppOutletContext} />
         </Suspense>
       </main>
-      {developerMode.enabled && performanceOpen ? (
+      {interfaceSettings.developerMode && performanceOpen ? (
         <Drawer visibleDrawer="performance" closing={false} title={t("performance.title")} onClose={() => setPerformanceOpen(false)}>
           <Provider value={settingsClient}><Suspense fallback={<div className="skeleton skeleton-card" aria-label={t("common.loading")} />}><PerformanceDrawer /></Suspense></Provider>
         </Drawer>

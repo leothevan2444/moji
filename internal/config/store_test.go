@@ -182,8 +182,8 @@ automation:
 	if got.InspectionCandidateLimit != 8 {
 		t.Fatalf("expected persisted inspection candidate limit, got %+v", got)
 	}
-	if ordered[0].Type != TorrentSelectionRuleTypeIndexerPreference || len(ordered[0].IndexerPreference.TrackerIDs) != 2 {
-		t.Fatalf("expected persisted indexer preference rule, got %+v", ordered[0])
+	if len(got.FastRules.IndexerPreference.TrackerIDs) != 2 {
+		t.Fatalf("expected persisted indexer query order, got %+v", got.FastRules.IndexerPreference)
 	}
 }
 

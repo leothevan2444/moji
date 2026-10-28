@@ -1,3 +1,4 @@
+import ServiceConnectionSettings from "./ServiceConnectionSettings";
 import { useMemo, type FormEvent } from "react";
 import { useTranslation } from "react-i18next";
 import { useOutletContext } from "react-router";
@@ -16,9 +17,9 @@ export default function DownloaderSettingsTab() {
   const { t } = useTranslation();
   const [{ data, fetching, error }, refresh] = useQuery({ query: DownloaderSettingsDocumentDocument, requestPolicy: "network-only" });
   if (fetching && !data) return <SettingsLoading title={t("settings.tabs.downloader")} />;
-  if (error && !data) return <SettingsError title={t("settings.tabs.downloader")} error={error} onRetry={() => refresh({ requestPolicy: "network-only" })} />;
+  if (error && !data) return <><ServiceConnectionSettings service="qbittorrent" /><SettingsError title={t("settings.tabs.downloader")} error={error} onRetry={() => refresh({ requestPolicy: "network-only" })} /></>;
   if (!data) return null;
-  return <div className="drawer-stack"><CleanupSettings snapshot={data.downloader} onSaved={() => refresh({ requestPolicy: "network-only" })} /><SettingsCard title={t("downloader.speedLimits")}><p className="settings-note">{t("downloader.limitHelp")}</p><div className="settings-grid"><SpeedLimit snapshot={data.downloader} upload={false} /><SpeedLimit snapshot={data.downloader} upload /></div></SettingsCard></div>;
+  return <div className="drawer-stack"><ServiceConnectionSettings service="qbittorrent" /><CleanupSettings snapshot={data.downloader} onSaved={() => refresh({ requestPolicy: "network-only" })} /><SettingsCard title={t("downloader.speedLimits")}><p className="settings-note">{t("downloader.limitHelp")}</p><div className="settings-grid"><SpeedLimit snapshot={data.downloader} upload={false} /><SpeedLimit snapshot={data.downloader} upload /></div></SettingsCard></div>;
 }
 function CleanupSettings({ snapshot, onSaved }: { snapshot: Snapshot; onSaved: () => void }) {
   const { t } = useTranslation();

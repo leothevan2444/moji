@@ -4,8 +4,8 @@ import homeEn from "./en/home.md?raw";
 import discoverEn from "./en/discover.md?raw";
 import performersEn from "./en/performers.md?raw";
 import tasksEn from "./en/tasks.md?raw";
-import connectionsIngestEn from "./en/connections-ingest.md?raw";
-import automationEn from "./en/automation.md?raw";
+import servicesDeliveryEn from "./en/services-and-delivery.md?raw";
+import taskSubscriptionEn from "./en/tasks-and-subscriptions.md?raw";
 import systemEn from "./en/system.md?raw";
 import troubleshootingEn from "./en/troubleshooting.md?raw";
 import introductionZh from "./zh/introduction.md?raw";
@@ -14,8 +14,8 @@ import homeZh from "./zh/home.md?raw";
 import discoverZh from "./zh/discover.md?raw";
 import performersZh from "./zh/performers.md?raw";
 import tasksZh from "./zh/tasks.md?raw";
-import connectionsIngestZh from "./zh/connections-ingest.md?raw";
-import automationZh from "./zh/automation.md?raw";
+import servicesDeliveryZh from "./zh/services-and-delivery.md?raw";
+import taskSubscriptionZh from "./zh/tasks-and-subscriptions.md?raw";
 import systemZh from "./zh/system.md?raw";
 import troubleshootingZh from "./zh/troubleshooting.md?raw";
 
@@ -57,8 +57,8 @@ export const HELP_CATEGORIES: readonly HelpCategory[] = [
     id: "configuration",
     title: { en: "Configuration", zh: "配置" },
     topics: [
-      { id: "connections-ingest", title: { en: "Connections & ingest", zh: "连接与入库" }, markdown: { en: connectionsIngestEn, zh: connectionsIngestZh } },
-      { id: "automation", title: { en: "Automation", zh: "自动化" }, markdown: { en: automationEn, zh: automationZh } },
+      { id: "services-and-delivery", title: { en: "Services & delivery", zh: "服务与交付" }, markdown: { en: servicesDeliveryEn, zh: servicesDeliveryZh } },
+      { id: "tasks-and-subscriptions", title: { en: "Tasks & subscriptions", zh: "任务与订阅" }, markdown: { en: taskSubscriptionEn, zh: taskSubscriptionZh } },
       { id: "system", title: { en: "System", zh: "系统" }, markdown: { en: systemEn, zh: systemZh } }
     ]
   },

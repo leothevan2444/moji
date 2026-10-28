@@ -952,6 +952,7 @@ type SubscriptionReleasePolicyInput struct {
 }
 
 type SystemSettings struct {
+	Language          string                     `json:"language"`
 	DeveloperMode     bool                       `json:"developerMode"`
 	TaskDeletePolicy  TaskDeletePolicy           `json:"taskDeletePolicy"`
 	ImageCache        *ImageCacheSettings        `json:"imageCache"`
@@ -1085,6 +1086,14 @@ type TaskPageInput struct {
 	CompletedWithin24Hours *bool           `json:"completedWithin24Hours,omitempty"`
 }
 
+type TaskSettingsInput struct {
+	TaskProcessingEnabled           bool                            `json:"taskProcessingEnabled"`
+	TaskProgressSyncIntervalSeconds int                             `json:"taskProgressSyncIntervalSeconds"`
+	SubscriptionPollIntervalHours   int                             `json:"subscriptionPollIntervalHours"`
+	SourcingRetryIntervalHours      int                             `json:"sourcingRetryIntervalHours"`
+	SubscriptionReleasePolicy       *SubscriptionReleasePolicyInput `json:"subscriptionReleasePolicy"`
+}
+
 // A Stash scene linked to a task's ingest result.
 type TaskStashScene struct {
 	ID         string   `json:"id"`
@@ -1210,6 +1219,7 @@ type TransferIngestSettingsInput struct {
 }
 
 type UpdateAutomationSettingsInput struct {
+	Section *AutomationSettingsSection `json:"section,omitempty"`
 	// Independent switch; omitted by legacy clients to preserve the current setting
 	TaskProcessingEnabled           *bool                           `json:"taskProcessingEnabled,omitempty"`
 	SourcingRetryIntervalHours      int                             `json:"sourcingRetryIntervalHours"`
@@ -1244,16 +1254,90 @@ type UpdateQBittorrentSettingsInput struct {
 	Tags            string  `json:"tags"`
 }
 
+type UpdateSettingsSectionInput struct {
+	TaskDeletePolicy *TaskDeletePolicy              `json:"taskDeletePolicy,omitempty"`
+	Section          SettingsSection                `json:"section"`
+	Tasks            *TaskSettingsInput             `json:"tasks,omitempty"`
+	Resources        *TorrentSelectionSettingsInput `json:"resources,omitempty"`
+	MetadataPriority []string                       `json:"metadataPriority,omitempty"`
+	QueryOrder       []string                       `json:"queryOrder,omitempty"`
+}
+
 type UpdateStashSettingsInput struct {
 	URL    string  `json:"url"`
 	APIKey *string `json:"apiKey,omitempty"`
 }
 
 type UpdateSystemSettingsInput struct {
+	Language          *string                         `json:"language,omitempty"`
 	DeveloperMode     *bool                           `json:"developerMode,omitempty"`
-	TaskDeletePolicy  TaskDeletePolicy                `json:"taskDeletePolicy"`
+	TaskDeletePolicy  *TaskDeletePolicy               `json:"taskDeletePolicy,omitempty"`
 	ImageCache        *ImageCacheSettingsInput        `json:"imageCache,omitempty"`
 	StashBoxDataCache *StashBoxDataCacheSettingsInput `json:"stashBoxDataCache,omitempty"`
+}
+
+// Legacy aggregate mutation input; new section mutations use SettingsSection.
+type AutomationSettingsSection string
+
+const (
+	AutomationSettingsSectionAll          AutomationSettingsSection = "ALL"
+	AutomationSettingsSectionTasks        AutomationSettingsSection = "TASKS"
+	AutomationSettingsSectionResources    AutomationSettingsSection = "RESOURCES"
+	AutomationSettingsSectionMetadata     AutomationSettingsSection = "METADATA"
+	AutomationSettingsSectionIndexers     AutomationSettingsSection = "INDEXERS"
+	AutomationSettingsSectionTaskDeletion AutomationSettingsSection = "TASK_DELETION"
+)
+
+var AllAutomationSettingsSection = []AutomationSettingsSection{
+	AutomationSettingsSectionAll,
+	AutomationSettingsSectionTasks,
+	AutomationSettingsSectionResources,
+	AutomationSettingsSectionMetadata,
+	AutomationSettingsSectionIndexers,
+	AutomationSettingsSectionTaskDeletion,
+}
+
+func (e AutomationSettingsSection) IsValid() bool {
+	switch e {
+	case AutomationSettingsSectionAll, AutomationSettingsSectionTasks, AutomationSettingsSectionResources, AutomationSettingsSectionMetadata, AutomationSettingsSectionIndexers, AutomationSettingsSectionTaskDeletion:
+		return true
+	}
+	return false
+}
+
+func (e AutomationSettingsSection) String() string {
+	return string(e)
+}
+
+func (e *AutomationSettingsSection) UnmarshalGQL(v any) error {
+	str, ok := v.(string)
+	if !ok {
+		return fmt.Errorf("enums must be strings")
+	}
+
+	*e = AutomationSettingsSection(str)
+	if !e.IsValid() {
+		return fmt.Errorf("%s is not a valid AutomationSettingsSection", str)
+	}
+	return nil
+}
+
+func (e AutomationSettingsSection) MarshalGQL(w io.Writer) {
+	fmt.Fprint(w, strconv.Quote(e.String()))
+}
+
+func (e *AutomationSettingsSection) UnmarshalJSON(b []byte) error {
+	s, err := strconv.Unquote(string(b))
+	if err != nil {
+		return err
+	}
+	return e.UnmarshalGQL(s)
+}
+
+func (e AutomationSettingsSection) MarshalJSON() ([]byte, error) {
+	var buf bytes.Buffer
+	e.MarshalGQL(&buf)
+	return buf.Bytes(), nil
 }
 
 type DiscoverSortBy string
@@ -2074,6 +2158,69 @@ func (e SceneSourceFilter) MarshalJSON() ([]byte, error) {
 	return buf.Bytes(), nil
 }
 
+type SettingsSection string
+
+const (
+	SettingsSectionAll          SettingsSection = "ALL"
+	SettingsSectionTasks        SettingsSection = "TASKS"
+	SettingsSectionResources    SettingsSection = "RESOURCES"
+	SettingsSectionMetadata     SettingsSection = "METADATA"
+	SettingsSectionIndexers     SettingsSection = "INDEXERS"
+	SettingsSectionTaskDeletion SettingsSection = "TASK_DELETION"
+)
+
+var AllSettingsSection = []SettingsSection{
+	SettingsSectionAll,
+	SettingsSectionTasks,
+	SettingsSectionResources,
+	SettingsSectionMetadata,
+	SettingsSectionIndexers,
+	SettingsSectionTaskDeletion,
+}
+
+func (e SettingsSection) IsValid() bool {
+	switch e {
+	case SettingsSectionAll, SettingsSectionTasks, SettingsSectionResources, SettingsSectionMetadata, SettingsSectionIndexers, SettingsSectionTaskDeletion:
+		return true
+	}
+	return false
+}
+
+func (e SettingsSection) String() string {
+	return string(e)
+}
+
+func (e *SettingsSection) UnmarshalGQL(v any) error {
+	str, ok := v.(string)
+	if !ok {
+		return fmt.Errorf("enums must be strings")
+	}
+
+	*e = SettingsSection(str)
+	if !e.IsValid() {
+		return fmt.Errorf("%s is not a valid SettingsSection", str)
+	}
+	return nil
+}
+
+func (e SettingsSection) MarshalGQL(w io.Writer) {
+	fmt.Fprint(w, strconv.Quote(e.String()))
+}
+
+func (e *SettingsSection) UnmarshalJSON(b []byte) error {
+	s, err := strconv.Unquote(string(b))
+	if err != nil {
+		return err
+	}
+	return e.UnmarshalGQL(s)
+}
+
+func (e SettingsSection) MarshalJSON() ([]byte, error) {
+	var buf bytes.Buffer
+	e.MarshalGQL(&buf)
+	return buf.Bytes(), nil
+}
+
 type SubscriptionCheckScope string
 
 const (
@@ -2842,18 +2989,24 @@ func (e TaskStageStatus) MarshalJSON() ([]byte, error) {
 type TitleMatchEffect string
 
 const (
-	TitleMatchEffectPrefer TitleMatchEffect = "PREFER"
-	TitleMatchEffectAvoid  TitleMatchEffect = "AVOID"
+	TitleMatchEffectRequire TitleMatchEffect = "REQUIRE"
+	TitleMatchEffectExclude TitleMatchEffect = "EXCLUDE"
+	TitleMatchEffectDemote  TitleMatchEffect = "DEMOTE"
+	TitleMatchEffectPrefer  TitleMatchEffect = "PREFER"
+	TitleMatchEffectAvoid   TitleMatchEffect = "AVOID"
 )
 
 var AllTitleMatchEffect = []TitleMatchEffect{
+	TitleMatchEffectRequire,
+	TitleMatchEffectExclude,
+	TitleMatchEffectDemote,
 	TitleMatchEffectPrefer,
 	TitleMatchEffectAvoid,
 }
 
 func (e TitleMatchEffect) IsValid() bool {
 	switch e {
-	case TitleMatchEffectPrefer, TitleMatchEffectAvoid:
+	case TitleMatchEffectRequire, TitleMatchEffectExclude, TitleMatchEffectDemote, TitleMatchEffectPrefer, TitleMatchEffectAvoid:
 		return true
 	}
 	return false
@@ -3015,12 +3168,18 @@ func (e TorrentAction) MarshalJSON() ([]byte, error) {
 type TorrentFileMatchEffect string
 
 const (
-	TorrentFileMatchEffectPrefer TorrentFileMatchEffect = "PREFER"
-	TorrentFileMatchEffectAvoid  TorrentFileMatchEffect = "AVOID"
-	TorrentFileMatchEffectLock   TorrentFileMatchEffect = "LOCK"
+	TorrentFileMatchEffectRequire TorrentFileMatchEffect = "REQUIRE"
+	TorrentFileMatchEffectExclude TorrentFileMatchEffect = "EXCLUDE"
+	TorrentFileMatchEffectDemote  TorrentFileMatchEffect = "DEMOTE"
+	TorrentFileMatchEffectPrefer  TorrentFileMatchEffect = "PREFER"
+	TorrentFileMatchEffectAvoid   TorrentFileMatchEffect = "AVOID"
+	TorrentFileMatchEffectLock    TorrentFileMatchEffect = "LOCK"
 )
 
 var AllTorrentFileMatchEffect = []TorrentFileMatchEffect{
+	TorrentFileMatchEffectRequire,
+	TorrentFileMatchEffectExclude,
+	TorrentFileMatchEffectDemote,
 	TorrentFileMatchEffectPrefer,
 	TorrentFileMatchEffectAvoid,
 	TorrentFileMatchEffectLock,
@@ -3028,7 +3187,7 @@ var AllTorrentFileMatchEffect = []TorrentFileMatchEffect{
 
 func (e TorrentFileMatchEffect) IsValid() bool {
 	switch e {
-	case TorrentFileMatchEffectPrefer, TorrentFileMatchEffectAvoid, TorrentFileMatchEffectLock:
+	case TorrentFileMatchEffectRequire, TorrentFileMatchEffectExclude, TorrentFileMatchEffectDemote, TorrentFileMatchEffectPrefer, TorrentFileMatchEffectAvoid, TorrentFileMatchEffectLock:
 		return true
 	}
 	return false

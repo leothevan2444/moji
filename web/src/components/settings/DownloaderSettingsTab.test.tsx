@@ -5,6 +5,7 @@ import i18n from "../../i18n/i18n";
 import { SettingsDraftProvider } from "./SettingsDraftStore";
 const mocks=vi.hoisted(()=>({save:vi.fn(),refresh:vi.fn(),toast:vi.fn()}));
 vi.mock("react-router",()=>({useOutletContext:()=>({pushToast:mocks.toast})}));
+vi.mock("./ServiceConnectionSettings",()=>({default:()=>null}));
 vi.mock("urql",()=>({
  useQuery:()=>[{data:{downloader:{stale:false,storageAvailable:true,downloadLimit:2048,uploadLimit:1024,policy:{enabled:false,ratio:0,seedHours:0,matchAll:false,deleteFiles:true,afterIngest:false}}},fetching:false},mocks.refresh],
  useMutation:()=>[{fetching:false},mocks.save]

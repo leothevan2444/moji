@@ -1829,3 +1829,11 @@ func TestTaskResourceScheduleIsExposedWithoutDownloadCompletion(t *testing.T) {
 		t.Fatal("new task received fabricated schedule")
 	}
 }
+
+func (f *fakeSettingsEditor) UpdateStashBoxCacheSettings(ttlHours int) (*SettingsSnapshot, error) {
+	return f.Snapshot(), nil
+}
+
+func (f *fakeSettingsEditor) UpdateSettingsSection(input SettingsSectionUpdate) (*SettingsSnapshot, error) {
+	return f.UpdateAutomationSettings(input)
+}

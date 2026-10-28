@@ -96,10 +96,10 @@ func main() {
 	}
 
 	if cfg.Connection.Jackett.URL == "" {
-		logging.Fatalf("invalid config: connection.jackett.url is required")
+		logging.Fatalf("invalid config: indexers.jackett.url is required")
 	}
 	if cfg.Connection.Jackett.APIKey == "" {
-		logging.Fatalf("invalid config: connection.jackett.api_key is required")
+		logging.Fatalf("invalid config: indexers.jackett.api_key is required")
 	}
 
 	// Dependencies: the storage owner is acquired before any background work.
@@ -265,7 +265,7 @@ func newHTTPRuntime(cfg *config.Config, version string, configStore *config.Stor
 		current := storeJackett(cfg, configStore)
 		logging.Infof("runtime: jackett tracker configured for %s", current.URL)
 		if current.Password == "" {
-			logging.Warn("runtime: jackett.password is empty; the home service card will report Jackett as 运行异常 because /api/v2.0/indexers requires a session cookie. Set jackett.password in config.yaml to enable it.")
+			logging.Warn("runtime: indexers.jackett.password is empty; the home service card will report Jackett as 运行异常 because /api/v2.0/indexers requires a session cookie. Set indexers.jackett.password in config.yaml to enable it.")
 		}
 	}
 	apiHandler := api.NewHandler(jackettTracker, api.WithLogFilePath(cfg.EffectiveLogFilePath()))
@@ -409,15 +409,20 @@ func configureTaskFlow(taskRuntimeService graphqlapi.TaskRuntimeService) *taskfl
 }
 
 // configureJackettConfigProvider returns the latest JackettConfig on every
-// invocation so Web UI edits to jackett.url / api_key / password take
+// invocation so Web UI edits to indexers.jackett.url / api_key / password take
 // effect on the next search/indexer refresh without restarting Moji.
 func configureJackettConfigProvider(store *config.Store, cfg *config.Config) tracker.JackettConfigProvider {
 	return func() tracker.JackettConfig {
-		current := storeJackett(cfg, store)
+		currentConfig := cfg
+		if store != nil {
+			currentConfig = store.Config()
+		}
+		current := currentConfig.Connection.Jackett
 		return tracker.JackettConfig{
-			URL:      current.URL,
-			APIKey:   current.APIKey,
-			Password: current.Password,
+			QueryOrder: currentConfig.Automation.TorrentSelection.FastRules.IndexerPreference.TrackerIDs,
+			URL:        current.URL,
+			APIKey:     current.APIKey,
+			Password:   current.Password,
 		}
 	}
 }
@@ -433,7 +438,7 @@ func storeJackett(cfg *config.Config, store *config.Store) *config.JackettConfig
 
 func configureQBittorrent(cfg *config.Config, store *config.Store) (*qbittorrent.Client, graphqlapi.TorrentClient) {
 	if cfg.Connection.QBittorrent.URL == "" {
-		logging.Infof("runtime: qBittorrent client disabled because qbittorrent.url is empty")
+		logging.Infof("runtime: qBittorrent client disabled because downloader.qbittorrent.url is empty")
 		return nil, nil
 	}
 	if cfg.Connection.QBittorrent.Username == "" {
@@ -695,6 +700,7 @@ func buildSettingsSnapshot(cfg *config.Config, version string) *graphqlapi.Setti
 		},
 		System: graphqlapi.SystemSettingsSnapshot{
 			DeveloperMode:     cfg.System.DeveloperMode,
+			Language:          cfg.System.EffectiveLanguage(),
 			TaskDeletePolicy:  string(cfg.System.EffectiveTaskDeletePolicy()),
 			ImageCache:        graphqlapi.ImageCacheSettingsSnapshot{Enabled: cfg.System.ImageCache.EffectiveEnabled(), MaxSizeMB: cfg.System.ImageCache.Normalize().MaxSizeMB, RetentionDays: cfg.System.ImageCache.Normalize().RetentionDays},
 			StashBoxDataCache: graphqlapi.StashBoxDataCacheSettingsSnapshot{TTLHours: cfg.System.StashBoxDataCache.Normalize().TTLHours},
@@ -924,7 +930,7 @@ func configureStashClient(cfg *config.Config, store *config.Store) *stash.Client
 	current := storeStash(cfg, store)
 	graphqlURL := current.GraphQLEndpoint()
 	if graphqlURL == "" {
-		logging.Infof("runtime: stash client disabled because stash.url is empty")
+		logging.Infof("runtime: stash client disabled because stash.connection.url is empty")
 		return nil
 	}
 	logging.Infof("runtime: stash client configured for %s", graphqlURL)
@@ -932,7 +938,7 @@ func configureStashClient(cfg *config.Config, store *config.Store) *stash.Client
 }
 
 // configureStashConfigProvider returns the latest Stash config block on
-// every invocation so Web UI edits to stash.url / api_key take effect on
+// every invocation so Web UI edits to stash.connection.url / api_key take effect on
 // the next GraphQL call without restarting Moji.
 func configureStashConfigProvider(store *config.Store, cfg *config.Config) stash.ConfigProvider {
 	return func() stash.Config {

@@ -178,10 +178,27 @@ export const test = base.extend<{ graphqlOverrides: Record<string, unknown> }>({
       const completed=all.filter(t=>group(t)==="COMPLETED").length,attention=all.filter(t=>group(t)==="ATTENTION").length,waiting=all.filter(t=>group(t)==="WAITING").length;
       return {items:items.slice((page-1)*input.pageSize,page*input.pageSize).map(taskDefaults),page,pageSize:input.pageSize,totalPages,totalCount:items.length,...cursor(),stats:{total:all.length,active:all.length-completed,completed,attention,waiting,downloading:0,pendingScans:0,failed:attention}};
     };
+    await page.addInitScript(() => {
+      const originalFetch = window.fetch.bind(window);
+      window.fetch = (input, init) => {
+        const url = typeof input === "string" ? input : input instanceof URL ? input.href : input.url;
+        if (url.includes("/graphql")) {
+          const headers = new Headers(init?.headers ?? (input instanceof Request ? input.headers : undefined));
+          headers.set("x-moji-test-locale", localStorage.getItem("moji:locale") ?? "auto");
+          init = { ...init, headers };
+        }
+        return originalFetch(input, init);
+      };
+    });
     await page.route("**/graphql", async (route) => {
       const request = route.request().postDataJSON();
+      // Locale-oriented tests use their requested browser preference unless
+      // an explicit saved instance language was supplied by the test.
+      const browserPreference = route.request().headers()["x-moji-test-locale"] ?? "auto";
+      const settings = typeof effective.settings === "function" ? effective.settings() : effective.settings;
+      const requestRoot = { ...effective, settings: { ...settings, system: { ...settings.system, language: settings.system.language ?? browserPreference } } };
       const result = graphqlSync({
-        schema, rootValue: effective, source: request.query,
+        schema, rootValue: requestRoot, source: request.query,
         variableValues: request.variables, operationName: request.operationName,
       });
       errors.push(...(result.errors ?? []).map((error) => error.message));

@@ -60,13 +60,11 @@ export function LocaleProvider({ children }: PropsWithChildren) {
     setRetryVersion((value) => value + 1);
   }, [requestedLocale]);
 
-  const value = useMemo<LocaleContextValue>(() => ({
-    preference, locale, loadError, retry,
-    setPreference(next) {
+  const setPreference = useCallback((next: LocalePreference) => {
       setPreferenceState(next);
       try { localStorage.setItem(LOCALE_STORAGE_KEY, next); } catch { /* storage is optional */ }
-    }
-  }), [loadError, locale, preference, retry]);
+  }, []);
+  const value = useMemo<LocaleContextValue>(() => ({ preference, locale, loadError, retry, setPreference }), [loadError, locale, preference, retry, setPreference]);
 
   return <LocaleContext.Provider value={value}>{children}</LocaleContext.Provider>;
 }

@@ -18,7 +18,7 @@ Moji 是自托管的 Stash 自动化伴侣：跟踪演员与发行，通过 Jack
 | SQLite、迁移、备份、恢复、性能观测 | [存储](modules/storage.md) |
 | qB 管理、清理、配置、客户端、运行和发布 | [集成与运维](modules/operations.md) |
 | 路由、交互、缓存、设置、本地化、无障碍 | [Web UI](modules/web.md) |
-| 设置页重构、配置结构调整与实际旧配置迁移 | [用户需求与设计计划](plans/settings-redesign.md)；尚未实施 |
+| 设置页重构、配置结构调整与实际旧配置迁移 | [设置契约](plans/settings-redesign.md)；[实施复核](reviews/2026-10-28-settings.md) |
 | 演员历史全量检查 | [未实现的设计提案](plans/performer-full-scan.md)；不要将其当作已有能力 |
 | 整理或新增指引 | [文档组织与维护](README.md) |
 

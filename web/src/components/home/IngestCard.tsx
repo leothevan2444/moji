@@ -49,7 +49,7 @@ export function IngestCard({ ingest, ingestStatus, onOpenSettings }: IngestCardP
   let tone: "tone-neutral" | "tone-warn" | "tone-success";
   let label: string;
   let ctaLabel: string | null = null;
-  const ctaTab: SettingsTab = "ingest";
+  const ctaTab: SettingsTab = "stash";
 
   if (!ingest) {
     tone = "tone-neutral";

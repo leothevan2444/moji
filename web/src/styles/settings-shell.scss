@@ -81,10 +81,51 @@
 .log-list { display: grid; gap: $space-2; margin-top: $space-3; }
 .log-row { display: grid; grid-template-columns: auto auto minmax(0, 1fr); gap: $space-2; padding: 10px $space-3; border: 1px solid var(--line); border-radius: $radius-lg; font-size: 12px; time { color: var(--muted); } code { white-space: pre-wrap; overflow-wrap: anywhere; } }
 
-.locale-select { display: flex; justify-content: flex-end; align-items: center; gap: $space-2; label { color: var(--muted); font-size: 12px; font-weight: 700; } }
 
 @media (max-width: 640px) {
   .image-cache-management, .image-cache-confirm { align-items: stretch; flex-direction: column; }
   .image-cache-confirm__actions, .image-cache-confirm__actions button { width: 100%; }
   .log-row { grid-template-columns: 1fr; }
+}
+
+// Settings design contract: all tabs inherit one type scale and field rhythm.
+.settings-workspace {
+  max-width: 1120px;
+  margin-inline: auto;
+  .drawer-card { min-width: 0; padding: clamp(16px, 3vw, 28px); }
+  .drawer-card__head { margin-bottom: 20px; }
+  .drawer-card__head h3 { margin: 0; font-size: 18px; font-weight: 650; line-height: 1.4; }
+  h4 { margin: 0; font-size: 15px; font-weight: 650; line-height: 1.5; }
+  .settings-form { gap: 20px; }
+  .settings-field > span, .settings-field__label { font-size: 13px; line-height: 1.5; font-weight: 600; }
+  .settings-note, .settings-section__hint, .torrent-rule__hint, .torrent-rules__sub, .stashbox-source__sub,
+  .settings-field small { font-size: 13px; line-height: 1.6; font-weight: 400; color: var(--muted); overflow-wrap: anywhere; }
+  input:not([type="checkbox"]), select { width: 100%; min-width: 0; min-height: 40px; font: inherit; font-size: 14px; }
+  button { min-height: 36px; font-size: 13px; line-height: 1.4; }
+  .settings-actions { margin-top: 4px; }
+  .settings-workspace__head {
+    flex-direction: row;
+    align-items: flex-start;
+    > div { flex-shrink: 0; }
+  }
+  .settings-tabs {
+    min-width: 0;
+    margin-inline-start: auto;
+    justify-content: flex-end;
+    gap: 8px;
+    padding-bottom: 0;
+  }
+  .settings-order { display: grid; gap: 8px; padding-inline-start: 24px; }
+  .settings-order li { padding: 10px; border-bottom: 1px solid var(--line); overflow-wrap: anywhere; }
+  .settings-order li > span { display: inline-block; padding-block: 6px; }
+  .settings-info__tooltip { inset-inline-start: 0; left: auto; top: 100%; transform: none; }
+  .torrent-rule, .stashbox-card { min-width: 0; }
+  @media (max-width: 640px) {
+    .settings-workspace__head { flex-wrap: wrap; gap: 12px; }
+    .settings-tabs { flex-basis: 100%; }
+    .settings-tabs > button { flex: 0 0 auto; }
+    .settings-actions { flex-wrap: wrap; }
+    .settings-actions > button { flex-grow: 1; }
+    .stashbox-source__head, .torrent-rules__head { align-items: stretch; flex-direction: column; }
+  }
 }

@@ -12,10 +12,10 @@ The Moji server must be able to reach all three services. If you use file delive
 
 ## First setup
 
-1. Open **Settings > Connections** and save the URL and credentials for each service.
+1. Save Jackett under **Settings > Indexers**, qBittorrent under **Settings > Downloader**, and Stash under **Settings > Stash**.
 2. Return to **Home**. A service is ready only after a recent probe succeeds; “configured” alone does not prove connectivity.
-3. Open **Settings > Ingest**. Configure the qB download, Moji download, Moji library, and Stash library roots, then choose Copy or Move.
-4. Open **Settings > Automation**. Set progress and subscription intervals, refresh the StashBox list, and review the release and torrent-selection policies.
+3. Open **Settings > Stash**. Configure the qB download, Moji download, Moji library, and Stash library roots, then choose Copy or Move.
+4. Open **Settings > Tasks & subscriptions**. Set progress and subscription intervals and review release and resource policies. StashBox priority is under **Settings > Stash**.
 5. Search in **Discover**, or open **Performers** and queue a scene. Follow the resulting item in **Tasks** until Stash scanning completes.
 
 ## A safe first run

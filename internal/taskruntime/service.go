@@ -828,25 +828,9 @@ func (s *Service) runSourcingFlow(ctx context.Context, task *Task, req DownloadR
 		searchOptions = append(searchOptions, tracker.WithLimit(req.Limit))
 	}
 
-	results, err := s.tracker.Search(code, searchOptions...)
-	if ctx.Err() != nil {
-		return task, ctx.Err()
-	}
-	if err != nil {
-		blockTask(task, TaskStageErrorSearch, err.Error(), s.now().UTC())
-		_ = s.store.Update(ctx, task)
-		logging.Errorf("taskruntime: search failed for code %q: %v", code, err)
-		return task, fmt.Errorf("search torrents: %w", err)
-	}
-	logging.Infof("taskruntime: search returned %d results for code %q", len(results), code)
-	if len(results) == 0 {
-		err = errors.New("no candidate found for the current code")
-		if persistErr := s.recordSourcingFailure(ctx, task, TaskStageErrorNoCandidate, err.Error()); persistErr != nil {
-			return task, persistErr
-		}
-		return task, err
-	}
-
+	var result jackett.SearchResult
+	var prepared preparedTorrent
+	var err error
 	selectionConfig := config.DefaultCandidateSelectionConfig()
 	if s.candidateSelection != nil {
 		selectionConfig = s.candidateSelection().Effective()
@@ -855,8 +839,52 @@ func (s *Service) runSourcingFlow(ctx context.Context, task *Task, req DownloadR
 	if selector == nil {
 		selector = defaultCandidateSelector{inspectTorrent: s.inspectSearchResultTorrent}
 	}
-	result, prepared, err := s.selectVerifiedCandidate(ctx, selector, code, results, selectionConfig)
+	if sequential, ok := s.tracker.(tracker.SequentialSearcher); ok {
+		var selectionErr error
+		accepted := false
+		err = sequential.SearchSequential(ctx, code, func(batch []jackett.SearchResult) (bool, error) {
+			if len(batch) == 0 {
+				return false, nil
+			}
+			result, prepared, selectionErr = s.selectVerifiedCandidate(ctx, selector, code, batch, selectionConfig, task.ID)
+			if ctx.Err() != nil {
+				return false, ctx.Err()
+			}
+			accepted = selectionErr == nil
+			return accepted, nil
+		}, searchOptions...)
+		if err == nil && !accepted {
+			err = selectionErr
+			if err == nil {
+				err = errors.New("taskruntime: no downloadable torrent candidate found")
+			}
+		}
+	} else {
+		var results []jackett.SearchResult
+		results, err = s.tracker.Search(code, searchOptions...)
+		if err == nil && len(results) == 0 {
+			err = errors.New("no candidate found for the current code")
+			if persistErr := s.recordSourcingFailure(ctx, task, TaskStageErrorNoCandidate, err.Error()); persistErr != nil {
+				return task, persistErr
+			}
+			return task, err
+		}
+		if err == nil {
+			result, prepared, err = s.selectVerifiedCandidate(ctx, selector, code, results, selectionConfig, task.ID)
+		}
+	}
+	if ctx.Err() != nil {
+		return task, ctx.Err()
+	}
+
 	if err != nil {
+		if errors.Is(err, ErrDuplicateTorrentTask) {
+			blockTask(task, TaskStageErrorDuplicateTorrent, err.Error(), s.now().UTC())
+			if persistErr := s.store.Update(ctx, task); persistErr != nil {
+				return task, persistErr
+			}
+			return task, err
+		}
 		var validation *candidateValidationError
 		if errors.As(err, &validation) {
 			return task, s.blockSourcingValidation(ctx, task, err)

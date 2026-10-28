@@ -23,9 +23,15 @@ export function FieldLabel({ text, info }: { text: string; info?: string }) {
 
 export function SecretInput({ value, onChange, placeholder }: { value: string; onChange: (value: string) => void; placeholder?: string }) {
   const [visible, setVisible] = useState(false);
-  return <div className="secret-input"><input className="secret-input__field" type={visible ? "text" : "password"} value={value} onChange={(event) => onChange(event.target.value)} placeholder={placeholder} autoComplete="off" spellCheck={false} /><button type="button" className="secret-input__toggle" onClick={() => setVisible((current) => !current)}><FontAwesomeIcon icon={visible ? faEyeSlash : faEye} aria-hidden="true" /></button></div>;
+  const { t } = useTranslation();
+  return <div className="secret-input"><input className="secret-input__field" type={visible ? "text" : "password"} value={value} onChange={(event) => onChange(event.target.value)} placeholder={placeholder} autoComplete="off" spellCheck={false} /><button type="button" className="secret-input__toggle" aria-label={t(visible ? "settings.hideSecret" : "settings.showSecret")} onClick={() => setVisible((current) => !current)}><FontAwesomeIcon icon={visible ? faEyeSlash : faEye} aria-hidden="true" /></button></div>;
 }
 
 export function SettingsCard({ title, children }: { title: string; children: ReactNode }) {
   return <article className="drawer-card"><div className="drawer-card__head"><h3>{title}</h3></div>{children}</article>;
+}
+
+export function SettingsDraftNotice({ dirty }: { dirty: boolean }) {
+ const { t } = useTranslation();
+ return dirty ? <p className="settings-note" role="status">{t("settings.unsaved")}</p> : null;
 }

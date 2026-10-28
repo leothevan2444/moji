@@ -56,42 +56,7 @@ export const DEFAULT_TORRENT_FILE_INSPECTION_RULES = [
   makeDefaultTorrentSelectionRule(TorrentSelectionRuleType.TorrentFileNameMatch)
 ];
 
-export const EMPTY_STASH_FORM = {
-  url: "",
-  apiKey: ""
-};
-
-export const EMPTY_INGEST_FORM = {
-
-  downloads: {
-    qbRoot: "",
-    mojiRoot: ""
-  },
-  library: {
-    mojiRoot: "",
-    stashRoot: ""
-  },
-  transfer: {
-    action: ""
-  }
-};
-
-export const EMPTY_JACKETT_FORM = {
-  url: "",
-  apiKey: "",
-  password: ""
-};
-
-export const EMPTY_QBITTORRENT_FORM = {
-  url: "",
-  username: "",
-  password: "",
-  defaultSavePath: "",
-  category: "",
-  tags: ""
-};
-
-export const EMPTY_AUTOMATION_FORM = {
+export const EMPTY_POLICY_SETTINGS_FORM = {
   taskProcessingEnabled: true,
   sourcingRetryIntervalHours: "6",
   taskProgressSyncIntervalSeconds: "60",
@@ -111,13 +76,6 @@ export const EMPTY_AUTOMATION_FORM = {
     fastRules: DEFAULT_TORRENT_SELECTION_RULES.map((rule) => structuredClone(rule)),
     torrentRules: DEFAULT_TORRENT_FILE_INSPECTION_RULES.map((rule) => structuredClone(rule))
   }
-};
-
-export const EMPTY_SYSTEM_FORM = {
-  taskDeletePolicy: "KEEP_ONLY",
-  imageCacheEnabled: true,
-  imageCacheMaxSizeMb: "1024",
-  imageCacheRetentionDays: "30"
 };
 
 export const SUBSCRIPTION_PAGE_SIZE_OPTIONS = [12, 24, 48, 96] as const;

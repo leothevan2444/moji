@@ -8,7 +8,7 @@
 
 `pkg/stash`、`pkg/stashbox`、`pkg/jackett`、`pkg/qbittorrent` 处理协议；领域服务处理资格和编排。请求传递 context，有界并发和超时；凭据通过配置 provider 使用，不在源码或前端文案里硬编码。
 
-配置路径优先 `-config`，否则 `MOJI_CONFIG` 或 `config.yaml`。当前必须配置 Jackett URL/API key；qB/Stash 未配置时相关能力受限。qB 首次登录失败允许启动并由后续观测重连。配置 store 通过临时文件、fsync 和原子 rename 保存，失败恢复内存中的最近有效值；连接 provider 在后续调用读取已保存设置。
+配置路径优先 `-config`，否则 `MOJI_CONFIG` 或 `config.yaml`。当前必须配置 Jackett URL/API key；qB/Stash 未配置时相关能力受限。qB 首次登录失败允许启动并由后续观测重连。YAML v2 按 indexers/downloader/stash/tasks/system/logging 分组；旧格式可读取但启动不重写，成功保存写 v2，未知版本或混用字段拒绝。字段映射与离线工具见 [设置说明](../../docs/settings.md)。配置 store 通过临时文件、fsync 和原子 rename 保存，失败恢复内存中的最近有效值；连接 provider 在后续调用读取已保存设置。
 
 qB 明确 403 时重新认证再试；写操作超时可能已被执行，不能一概自动重放。qB 5 start/stop 的 404 回退 resume/pause 是明确兼容行为。
 
@@ -50,4 +50,6 @@ CI 在原生 amd64/arm64 runner 构建及 smoke test，通过后发布复用同�
 
 ## 已记录的后续需求
 
-[设置与实际配置迁移](../plans/settings-redesign.md)、[Jackett 逐站查询](../TODO.md#r-001) 和 [日志文件布局](../TODO.md#o-001) 是 2026-10-28 新增用户需求，尚未实施。逐站查询不同于当前元数据请求的主机排队，也不同于聚合结果的站点偏好排序。
+设置、实际配置迁移及 Jackett 逐站搜索已交付，见 [专项复核](../reviews/2026-10-28-settings.md)。自动寻源的停止由 runtime 候选资格决定；手动搜索逐站收集，错误回退及取消有 fake HTTP 覆盖。逐站查询不等同于元数据下载主机队列。
+
+[日志布局与跟随](../TODO.md#o-001) 仍待设计。

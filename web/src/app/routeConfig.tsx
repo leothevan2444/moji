@@ -5,7 +5,7 @@ import { AppLayout } from "./AppLayout";
 import { RouteErrorPage } from "./RouteErrorPage";
 
 export const appRoutes: RouteObject[] = [
-  { path: "/settings", element: <Navigate replace to="/settings/connections" /> },
+  { path: "/settings", element: <Navigate replace to="/settings/indexers" /> },
   {
     element: <AppLayout />,
     errorElement: <RouteErrorPage />,

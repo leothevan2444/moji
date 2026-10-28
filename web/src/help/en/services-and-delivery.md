@@ -1,8 +1,10 @@
-# Connections and ingest
+# Service connections and Stash delivery
 
 These settings define how Moji reaches its dependencies and how a completed download becomes visible to Stash. Save each form independently.
 
-## Connections
+## Service connections
+
+Jackett is under Indexers, qBittorrent under Downloader, and Stash under Stash.
 
 Configure the base URL and credentials for Stash, Jackett, and qBittorrent. Moji derives the required API endpoints from those base URLs. A service is **configured** when its minimum fields are present and **ready** only after a recent probe succeeds.
 

@@ -155,6 +155,10 @@ func (s *Store) UpdateAutomationProcessing(enabled *bool, taskProgressSyncInterv
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
+	return s.updateAutomationLocked(enabled, taskProgressSyncIntervalSeconds, subscriptionPollIntervalHours, stashBoxEndpoints, subscriptionReleasePolicy, torrentSelection, sourcingRetryIntervalHours...)
+}
+
+func (s *Store) updateAutomationLocked(enabled *bool, taskProgressSyncIntervalSeconds, subscriptionPollIntervalHours int, stashBoxEndpoints []string, subscriptionReleasePolicy SubscriptionReleasePolicyConfig, torrentSelection TorrentSelectionConfig, sourcingRetryIntervalHours ...int) (*Config, error) {
 	if enabled != nil {
 		switch taskProgressSyncIntervalSeconds {
 		case 30, 60, 120, 300:
@@ -248,6 +252,9 @@ func (s *Store) updateConfigNode() (resultErr error) {
 		}
 	}()
 
+	if err := legacyConfigNode(&s.root); err != nil {
+		return err
+	}
 	doc := documentNode(&s.root)
 	top := ensureMapValue(doc)
 	connection := mapValue(top, "connection")
@@ -294,6 +301,7 @@ func (s *Store) updateConfigNode() (resultErr error) {
 	setNodeValue(mapValue(top, "automation"), "subscription_release_policy", s.cfg.Automation.SubscriptionReleasePolicy.Effective())
 	setNodeValue(mapValue(top, "automation"), "torrent_selection", s.cfg.Automation.TorrentSelection.Effective())
 	system := mapValue(top, "system")
+	setScalar(system, "language", s.cfg.System.EffectiveLanguage())
 	setBoolScalar(system, "developer_mode", s.cfg.System.DeveloperMode)
 	setScalar(system, "task_delete_policy", string(s.cfg.System.EffectiveTaskDeletePolicy()))
 	imageCache := mapValue(system, "image_cache")
@@ -303,11 +311,9 @@ func (s *Store) updateConfigNode() (resultErr error) {
 	stashBoxDataCache := mapValue(system, "stash_box_data_cache")
 	setIntScalar(stashBoxDataCache, "ttl_hours", s.cfg.System.StashBoxDataCache.Normalize().TTLHours)
 	setIntScalar(stashBoxDataCache, "max_size_mb", s.cfg.System.StashBoxDataCache.Normalize().MaxSizeMB)
-	deleteMapKey(top, "stash")
 	deleteMapKey(top, "jackett")
 	deleteMapKey(top, "qbittorrent")
 	deleteMapKey(top, "tasks")
-	deleteMapKey(top, "logging")
 	deleteMapKey(top, "subscription")
 	if stash := existingMapValue(connection, "stash"); stash != nil {
 		deleteMapKey(stash, "graphql_url")
@@ -322,6 +328,7 @@ func (s *Store) updateConfigNode() (resultErr error) {
 		deleteMapKey(jackett, "candidate_selection")
 	}
 
+	canonicalizeConfigNode(top)
 	data, err := yaml.Marshal(&s.root)
 	if err != nil {
 		return fmt.Errorf("marshal config %q: %w", s.path, err)
@@ -470,4 +477,92 @@ func deleteMapKey(parent *yaml.Node, key string) {
 			return
 		}
 	}
+}
+
+// UpdateAutomationSection merges under the store lock: stale fields from other
+// tabs never replace a more recently persisted section.
+func (s *Store) UpdateAutomationSection(section string, update AutomationConfig) (*Config, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	current := s.cfg.Automation
+	switch section {
+	case "", "ALL":
+		current = update
+	case "TASKS":
+		current.TaskProcessingEnabled = update.TaskProcessingEnabled
+		current.TaskProgressSyncIntervalSeconds = update.TaskProgressSyncIntervalSeconds
+		current.SourcingRetryIntervalHours = update.SourcingRetryIntervalHours
+		current.SubscriptionPollIntervalHours = update.SubscriptionPollIntervalHours
+		current.SubscriptionReleasePolicy = update.SubscriptionReleasePolicy
+	case "RESOURCES":
+		preference := current.TorrentSelection.FastRules.IndexerPreference
+		current.TorrentSelection = update.TorrentSelection
+		current.TorrentSelection.FastRules.IndexerPreference = preference
+	case "METADATA":
+		current.StashBoxEndpoints = update.StashBoxEndpoints
+	case "INDEXERS":
+		current.TorrentSelection.FastRules.IndexerPreference = update.TorrentSelection.FastRules.IndexerPreference
+	default:
+		return nil, fmt.Errorf("unknown settings section %q", section)
+	}
+	return s.updateAutomationLocked(current.TaskProcessingEnabled, current.TaskProgressSyncIntervalSeconds, current.SubscriptionPollIntervalHours, current.StashBoxEndpoints, current.SubscriptionReleasePolicy, current.TorrentSelection, current.EffectiveSourcingRetryIntervalHours())
+}
+
+func (s *Store) UpdateStashBoxCache(ttl int) (*Config, error) {
+	if ttl < 12 || ttl > 360 {
+		return nil, fmt.Errorf("StashBox data cache ttlHours must be between 12 and 360")
+	}
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.cfg.System.StashBoxDataCache.TTLHours = ttl
+	if err := s.updateConfigNode(); err != nil {
+		return nil, err
+	}
+	clone := *s.cfg
+	return &clone, nil
+}
+func (s *Store) UpdateSystemSection(policy TaskDeletePolicy, image ImageCacheConfig, cache *StashBoxDataCacheConfig, developer bool) (*Config, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	current := s.cfg.System.StashBoxDataCache
+	if cache != nil {
+		current = *cache
+	}
+	return s.updateSystemLocked(policy, image, current, developer)
+}
+
+func (s *Store) UpdateTaskDeletePolicy(policy TaskDeletePolicy) (*Config, error) {
+	switch policy {
+	case TaskDeletePolicyKeepOnly, TaskDeletePolicyRemoveTorrent, TaskDeletePolicyRemoveTorrentAndFiles:
+	default:
+		return nil, ErrInvalidSettings
+	}
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.cfg.System.TaskDeletePolicy = policy
+	if err := s.updateConfigNode(); err != nil {
+		return nil, err
+	}
+	clone := *s.cfg
+	return &clone, nil
+}
+func (s *Store) UpdateSystemPreferences(policy TaskDeletePolicy, image ImageCacheConfig, cache *StashBoxDataCacheConfig, developer bool, language *string, preservePolicy bool) (*Config, error) {
+	if language != nil {
+		if err := ValidateLanguage(*language); err != nil {
+			return nil, err
+		}
+	}
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	current := s.cfg.System.StashBoxDataCache
+	if cache != nil {
+		current = *cache
+	}
+	if preservePolicy {
+		policy = s.cfg.System.EffectiveTaskDeletePolicy()
+	}
+	if language != nil {
+		s.cfg.System.Language = *language
+	}
+	return s.updateSystemLocked(policy, image, current, developer)
 }

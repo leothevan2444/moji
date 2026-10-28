@@ -16,7 +16,7 @@ React 19、React Router 7、TypeScript、Vite、urql graphcache、graphql-ws、i
 | `/performers/review` | 发行决定，放在动态 performer 路由前 |
 | `/discover` | StashBox 与 Jackett 发现和手动创建 |
 | `/stats` | 统计入口 |
-| `/settings/:section` | 分区设置；`/settings` 跳连接页 |
+| `/settings/:section` | 分区设置；`/settings` 跳索引器；旧 connections/ingest/automation 路由分别重定向 indexers/stash/tasks |
 | 帮助、种子列表、数据库性能 | 共享抽屉/弹窗；性能入口需已保存开发者模式 |
 
 路由层持有 URL 和组合 hooks，页面/组件负责显示与交互。GraphQL documents 按页面/设置 tab 拆分；详情、候选、文件与历史按需加载，不恢复早期巨型 dashboard 查询。
@@ -61,4 +61,10 @@ React 19、React Router 7、TypeScript、Vite、urql graphcache、graphql-ws、i
 
 ## 已记录的后续需求
 
-2026-10-28 用户提出的 [设置重构](../plans/settings-redesign.md)、[手动候选链接与做种数](../TODO.md#u-003)、[任务种子分区整合](../TODO.md#u-004)、[日志滚动](../TODO.md#o-001) 和 [参考 Stash 的导航整理](../TODO.md#u-005) 尚未实施。状态、范围与下一步只在 TODO/相关计划维护；本模块上面的路由和组件描述仍是当前实现。
+设置结构、独立分区保存、固定排版与实际配置迁移已完成，见 [设置复核](../reviews/2026-10-28-settings.md)。当前 tab 为 indexers/downloader/stash/tasks/system/logs/about；共享 shell 与字段组件统一状态、说明、加载和敏感值显隐。后台四种资源效果与逐站停止语义见 [任务](tasks.md)。
+
+[手动候选链接](../TODO.md#u-003)、[任务种子分区](../TODO.md#u-004)、[日志滚动](../TODO.md#o-001) 和 [顶栏整理](../TODO.md#u-005) 仍未实施，不因设置重构完成而自动关闭。
+
+2026-10-28 设置跟进：任务删除策略位于“任务与订阅”，独立保存。语言选择仅在“系统”，写入 `system.language`（auto/zh-CN/en），成功保存后生效；初次和窗口恢复焦点读取已保存配置，并防止迟到响应覆盖新保存值。
+
+设置分区加载/错误标题来自当前服务或业务分区映射；禁止引用退休的 connections/automation/ingest tab 翻译。当前共享编辑器为 SettingsPolicySection/PolicySettingsEditor，连接和交付分别为 ServiceConnectionSettings/LibraryDeliverySettings；公共兼容字段在 GraphQL documents 边界使用业务别名。

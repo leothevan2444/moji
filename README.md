@@ -112,21 +112,21 @@ set `MOJI_DOWNLOADS_DIR` and `MOJI_LIBRARY_DIR` to their absolute host paths in
 
 The same host files may have different paths in each service:
 
-- `ingest.downloads.qb_root` is the download root reported by qBittorrent;
-  `ingest.downloads.moji_root` is that directory as seen inside Moji.
-- `ingest.library.moji_root` is the destination inside Moji;
-  `ingest.library.stash_root` is that same directory inside Stash. Add the Stash
+- `stash.ingest.downloads.qb_root` is the download root reported by qBittorrent;
+  `stash.ingest.downloads.moji_root` is that directory as seen inside Moji.
+- `stash.ingest.library.moji_root` is the destination inside Moji;
+  `stash.ingest.library.stash_root` is that same directory inside Stash. Add the Stash
   path to Stash's configured libraries.
 
 All four roots must be configured for delivery. The example uses `/downloads`
 for both download roots and `/library` for both library roots. Moji and Stash
 must share the actual library directory, not just use matching path names.
 
-`ingest.transfer.action` accepts `COPY` or `MOVE`. COPY retains downloaded
+`stash.ingest.transfer.action` accepts `COPY` or `MOVE`. COPY retains downloaded
 sources. MOVE stops the torrent and removes selected sources after the prepared
 movie and subtitles have been delivered; it also requires write permission to
-the download directory. `ingest.keep_subtitles` controls subtitle retention.
-`ingest.generate_transcodes` defaults to `false`. Enable **Generate video transcodes**
+the download directory. `stash.ingest.keep_subtitles` controls subtitle retention.
+`stash.ingest.generate_transcodes` defaults to `false`. Enable **Generate video transcodes**
 under **Settings → Ingest** to ask Stash to generate necessary video transcodes
 during ingest. Covers, previews, timeline sprites, and pHash are generated regardless.
 
@@ -270,3 +270,5 @@ pseudo/RTL visual review, and review by a fluent speaker before being added to
 GraphQL UI errors use `extensions.code`, `params`, and `correlationId`. Translate
 the stable error code instead of displaying raw server diagnostics; unknown codes
 use a generic localized message, with the correlation ID available for log lookup.
+
+Settings layout, resource rules and offline configuration migration are documented in [Settings](docs/settings.md).

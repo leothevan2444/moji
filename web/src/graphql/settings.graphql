@@ -9,8 +9,8 @@ mutation UpdateStashSettingsDocument($input: UpdateStashSettingsInput!) {
   }
 }
 
-mutation UpdateIngestSettingsDocument($input: UpdateIngestSettingsInput!) {
-  updateIngestSettings(input: $input) {
+mutation UpdateLibraryDeliverySettings($input: UpdateIngestSettingsInput!) {
+  updateLibraryDeliverySettings: updateIngestSettings(input: $input) {
     ingest {
       keepSubtitles
       generateTranscodes
@@ -59,93 +59,10 @@ mutation UpdateQBittorrentSettingsDocument($input: UpdateQBittorrentSettingsInpu
   }
 }
 
-mutation UpdateAutomationSettingsDocument($input: UpdateAutomationSettingsInput!) {
-  updateAutomationSettings(input: $input) {
-    automation {
-      taskProcessingEnabled
-      taskProgressSyncIntervalSeconds
-      subscriptionPollIntervalHours
-      sourcingRetryIntervalHours
-      stashBoxEndpoints
-      subscriptionReleasePolicy {
-        soloBehavior
-        groupBehavior
-        compilationBehavior
-        vrBehavior
-        maxGroupPerformerCount
-        releaseDateRange
-      }
-      torrentSelection {
-        enabled
-        inspectionCandidateLimit
-        fastRules {
-          type
-          enabled
-          publishDate {
-            direction
-          }
-          seeders {
-            direction
-          }
-          size {
-            direction
-          }
-          indexerPreference {
-            trackerIds
-          }
-          titleMatch {
-            clauses {
-              pattern
-              patternMode
-              effect
-            }
-          }
-          torrentFileNameMatch {
-            clauses {
-              pattern
-              patternMode
-              effect
-            }
-          }
-        }
-        torrentRules {
-          type
-          enabled
-          publishDate {
-            direction
-          }
-          seeders {
-            direction
-          }
-          size {
-            direction
-          }
-          indexerPreference {
-            trackerIds
-          }
-          titleMatch {
-            clauses {
-              pattern
-              patternMode
-              effect
-            }
-          }
-          torrentFileNameMatch {
-            clauses {
-              pattern
-              patternMode
-              effect
-            }
-          }
-        }
-      }
-    }
-  }
-}
-
 mutation UpdateSystemSettingsDocument($input: UpdateSystemSettingsInput!) {
   updateSystemSettings(input: $input) {
     system {
+      language
       developerMode
       taskDeletePolicy
       imageCache {
@@ -196,4 +113,12 @@ query LogsDocument($limit: Int, $minLevel: LogLevel) {
     level
     message
   }
+}
+
+mutation UpdateSettingsSection($input: UpdateSettingsSectionInput!) {
+ updateSettingsSection(input: $input) { automation { taskProcessingEnabled } }
+}
+
+mutation UpdateStashBoxCacheSettings($ttlHours: Int!) {
+ updateStashBoxCacheSettings(ttlHours: $ttlHours) { system { stashBoxDataCache { ttlHours } } }
 }

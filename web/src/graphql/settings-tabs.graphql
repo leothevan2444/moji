@@ -1,4 +1,4 @@
-query ConnectionsSettings {
+query ServiceConnectionSettings {
   settings {
     stash { configured url apiKeyConfigured apiKey }
     jackett { configured url apiKeyConfigured apiKey passwordConfigured password }
@@ -6,7 +6,7 @@ query ConnectionsSettings {
   }
 }
 
-query ConnectionsStatus {
+query ServiceConnectionStatus {
   settingsStatus {
     stash { configured ready }
     jackett { configured ready }
@@ -17,9 +17,9 @@ query ConnectionsStatus {
   }
 }
 
-query IngestSettingsTab {
+query LibraryDeliverySettings {
   settings {
-    ingest {
+    delivery: ingest {
       keepSubtitles
       generateTranscodes
 
@@ -35,9 +35,9 @@ query IngestSettingsTab {
   }
 }
 
-query AutomationSettingsTab {
+query SettingsPolicySection {
   settings {
-    automation {
+    policies: automation {
       taskProcessingEnabled
       taskProgressSyncIntervalSeconds
       subscriptionPollIntervalHours
@@ -63,14 +63,14 @@ query AutomationSettingsTab {
     }
   }
   settingsStatus {
-    automation { taskProgressSyncIntervalSeconds taskProgressSyncEnabled subscriptionPollIntervalHours subscriptionPollEnabled }
-    stashBox { stashBoxes { name endpoint apiKeyConfigured } stashBoxesLoaded stashBoxesLoadError }
+    taskProcessing: automation { taskProgressSyncIntervalSeconds taskProgressSyncEnabled subscriptionPollIntervalHours subscriptionPollEnabled }
+    metadataSources: stashBox { stashBoxes { name endpoint apiKeyConfigured } stashBoxesLoaded stashBoxesLoadError }
   }
 }
 
 query SystemSettingsTab {
   settings {
-    system { developerMode
+    system { language developerMode
       taskDeletePolicy imageCache { enabled maxSizeMb retentionDays } stashBoxDataCache { ttlHours } }
   }
   settingsStatus {
@@ -82,3 +82,5 @@ query SystemSettingsTab {
 query AboutSettingsTab {
   version
 }
+
+query TaskDeletionSettings { settings { system { taskDeletePolicy } } }

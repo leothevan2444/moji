@@ -9,9 +9,9 @@ export function TaskProcessingNotice() {
   if (data?.settings.automation.taskProcessingEnabled !== false) return null;
   return <aside className="task-processing-notice" role="status">
     <div>
-      <strong>{t("automationUi.pausedTitle")}</strong>
-      <p>{t("automationUi.pausedDetail")}</p>
+      <strong>{t("taskSettings.pausedTitle")}</strong>
+      <p>{t("taskSettings.pausedDetail")}</p>
     </div>
-    <Link className="ghost-button" to="/settings/automation">{t("automationUi.openSettings")}</Link>
+    <Link className="ghost-button" to="/settings/tasks">{t("taskSettings.openSettings")}</Link>
   </aside>;
 }

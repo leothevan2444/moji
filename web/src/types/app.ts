@@ -15,7 +15,7 @@ export type ToastItem = {
   lifetimeMs?: number;
 };
 
-export type SettingsTab = "connections" | "downloader" | "ingest" | "automation" | "system" | "logs" | "about";
+export type SettingsTab = "indexers" | "stash" | "tasks" | "downloader" | "system" | "logs" | "about";
 
 export type TaskStatusFilter = "all" | "running" | "completed" | "failed" | "waiting";
 export type TaskSortKey = "createdAt" | "updatedAt" | "progress";

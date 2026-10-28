@@ -14,7 +14,7 @@ function Editor({ visible, initial = "server" }: { visible: boolean; initial?: s
 
 function DraftField({ initial }: { initial: string }) {
   const value = useMemo(() => ({ text: initial }), [initial]);
-  const [draft, setDraft, dirty] = useSettingsDraft("connections", value);
+  const [draft, setDraft, dirty] = useSettingsDraft("stash:connection", value);
   return <><input aria-label="draft" value={draft.text} onChange={(event) => setDraft({ text: event.target.value })} /><output>{dirty ? "dirty" : "clean"}</output></>;
 }
 

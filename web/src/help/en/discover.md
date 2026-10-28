@@ -4,7 +4,7 @@ Discover creates download tasks from either structured StashBox metadata or raw 
 
 ## StashBox search
 
-Use StashBox for release codes, titles, or performer names. Moji queries configured StashBox endpoints in the priority saved under **Settings > Automation**. It stops at the first endpoint that returns results; the source badge identifies that endpoint.
+Use StashBox for release codes, titles, or performer names. Moji queries configured StashBox endpoints in the priority saved under **Settings > Stash**. It stops at the first endpoint that returns results; the source badge identifies that endpoint.
 
 Results may include the release code, studio, performers, date, duration, image, and source page. **Add to task queue** resolves the selected scene and creates a standard task. A usable release code is required for automatic torrent sourcing. Duplicate release codes, torrents, and codes already present in Stash are rejected.
 

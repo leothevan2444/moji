@@ -66,7 +66,7 @@ export function Header({ onOpenHelp, theme, developerMode = false, onOpenPerform
             <button
               type="button"
               className="utility-button utility-icon-button"
-              onClick={() => navigate("/settings/connections")}
+              onClick={() => navigate("/settings/indexers")}
               aria-label={t("navigation.settings")}
               title={t("navigation.settings")}
             >

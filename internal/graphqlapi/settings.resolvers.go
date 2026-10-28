@@ -7,11 +7,44 @@ package graphqlapi
 import (
 	"context"
 	"errors"
+	"fmt"
 	"strings"
 
+	"github.com/leothevan2444/moji/internal/config"
 	"github.com/leothevan2444/moji/internal/graphqlapi/model"
 	"github.com/leothevan2444/moji/internal/stats"
 )
+
+// UpdateStashBoxCacheSettings is the resolver for the updateStashBoxCacheSettings field.
+func (r *mutationResolver) UpdateStashBoxCacheSettings(ctx context.Context, ttlHours int) (*model.Settings, error) {
+	if r.SettingsEditor == nil {
+		return nil, errors.New("settings editor is not configured")
+	}
+	if ttlHours < 12 || ttlHours > 360 {
+		return nil, errors.New("StashBox data cache ttlHours must be between 12 and 360")
+	}
+	snapshot, err := r.SettingsEditor.UpdateStashBoxCacheSettings(ttlHours)
+	if err != nil {
+		return nil, err
+	}
+	return settingsSnapshotToModel(snapshot, r.AppVersion), nil
+}
+
+// UpdateSettingsSection is the resolver for the updateSettingsSection field.
+func (r *mutationResolver) UpdateSettingsSection(ctx context.Context, input model.UpdateSettingsSectionInput) (*model.Settings, error) {
+	if r.SettingsEditor == nil {
+		return nil, errors.New("settings editor is not configured")
+	}
+	update, err := settingsSectionInput(input)
+	if err != nil {
+		return nil, fmt.Errorf("%w: %v", config.ErrInvalidSettings, err)
+	}
+	snapshot, err := r.SettingsEditor.UpdateSettingsSection(update)
+	if err != nil {
+		return nil, err
+	}
+	return settingsSnapshotToModel(snapshot, r.AppVersion), nil
+}
 
 // UpdateStashSettings is the resolver for the updateStashSettings field.
 func (r *mutationResolver) UpdateStashSettings(ctx context.Context, input model.UpdateStashSettingsInput) (*model.Settings, error) {
@@ -110,11 +143,16 @@ func (r *mutationResolver) UpdateAutomationSettings(ctx context.Context, input m
 		return nil, errors.New("settings editor is not configured")
 	}
 
+	section := "ALL"
+	if input.Section != nil {
+		section = string(*input.Section)
+	}
 	vrBehavior := ""
 	if input.SubscriptionReleasePolicy.VrBehavior != nil {
 		vrBehavior = string(*input.SubscriptionReleasePolicy.VrBehavior)
 	}
 	snapshot, err := r.SettingsEditor.UpdateAutomationSettings(UpdateAutomationSettingsInput{
+		Section:                         section,
 		TaskProcessingEnabled:           input.TaskProcessingEnabled,
 		SourcingRetryIntervalHours:      input.SourcingRetryIntervalHours,
 		TaskProgressSyncIntervalSeconds: input.TaskProgressSyncIntervalSeconds,
@@ -170,7 +208,16 @@ func (r *mutationResolver) UpdateSystemSettings(ctx context.Context, input model
 	if input.DeveloperMode != nil {
 		developerMode = *input.DeveloperMode
 	}
-	snapshot, err := r.SettingsEditor.UpdateSystemSettings(UpdateSystemSettingsInput{DeveloperMode: developerMode, TaskDeletePolicy: string(input.TaskDeletePolicy), ImageCache: cacheSettings, StashBoxDataCache: stashBoxCacheSettings})
+	policy := ""
+	if input.TaskDeletePolicy != nil {
+		policy = string(*input.TaskDeletePolicy)
+	}
+	if input.Language != nil {
+		if err := config.ValidateLanguage(*input.Language); err != nil {
+			return nil, err
+		}
+	}
+	snapshot, err := r.SettingsEditor.UpdateSystemSettings(UpdateSystemSettingsInput{Language: input.Language, PreserveTaskDeletePolicy: input.TaskDeletePolicy == nil, PreserveStashBoxCache: input.StashBoxDataCache == nil, DeveloperMode: developerMode, TaskDeletePolicy: policy, ImageCache: cacheSettings, StashBoxDataCache: stashBoxCacheSettings})
 	if err != nil {
 		return nil, err
 	}

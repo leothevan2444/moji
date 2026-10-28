@@ -1,45 +1,93 @@
-# Replace connection values before starting. These are container-visible URLs.
-connection:
-  jackett:
-    url: http://host.docker.internal:9117
-    api_key: ""
-    password: ""
-  qbittorrent:
-    url: http://host.docker.internal:8080
-    username: ""
-    password: ""
-    default_save_path: /downloads
-    category: moji
-    tags: moji
-  stash:
-    url: http://host.docker.internal:9999
-    api_key: ""
-
-ingest:
-  keep_subtitles: false
-  generate_transcodes: false
-  downloads:
-    # Path reported by qBittorrent, and the same files as seen by Moji.
-    qb_root: /downloads
-    moji_root: /downloads
-  library:
-    # The SAME host directory must also be mounted into Stash.
-    moji_root: /library
-    stash_root: /library
-  transfer:
-    action: COPY
-
-automation:
-  # Independently pause/resume automatic download checks and Stash ingest.
-  task_processing_enabled: true
-  # Task heartbeat in seconds: 30, 60 (recommended), 120, or 300.
-  task_progress_sync_interval_seconds: 60
-  subscription_poll_interval_hours: 24
-
-logging:
-  level: info
-  file_path: /data/moji.log
-
-# Developer tools are hidden by default.
+indexers:
+    jackett:
+        url: http://host.docker.internal:9117
+        api_key: ""
+        password: ""
+    query_order: []
+downloader:
+    qbittorrent:
+        url: http://host.docker.internal:8080
+        username: ""
+        password: ""
+        default_save_path: /downloads
+        category: moji
+        tags: moji
+stash:
+    connection:
+        url: http://host.docker.internal:9999
+        api_key: ""
+    ingest:
+        keep_subtitles: false
+        generate_transcodes: false
+        downloads:
+            # Path reported by qBittorrent, and the same files as seen by Moji.
+            qb_root: /downloads
+            moji_root: /downloads
+        library:
+            # The SAME host directory must also be mounted into Stash.
+            moji_root: /library
+            stash_root: /library
+        transfer:
+            action: COPY
+    metadata_priority: []
+    data_cache:
+        ttl_hours: 24
+        max_size_mb: 512
 system:
-  developer_mode: false
+    developer_mode: false
+    image_cache:
+        enabled: true
+        max_size_mb: 1024
+        retention_days: 30
+    language: auto
+logging:
+    level: info
+    file_path: /data/moji.log
+# Developer tools are hidden by default.
+
+tasks:
+    # Independently pause/resume automatic download checks and Stash ingest.
+    task_processing_enabled: true
+    # Task heartbeat in seconds: 30, 60 (recommended), 120, or 300.
+    task_progress_sync_interval_seconds: 60
+    subscription_poll_interval_hours: 24
+    sourcing_retry_interval_hours: 6
+    subscription_release_policy:
+        solo_behavior: REVIEW
+        group_behavior: REVIEW
+        compilation_behavior: REVIEW
+        vr_behavior: REVIEW
+        max_group_performer_count: 3
+        release_date_range: ALL
+    torrent_selection:
+        enabled: true
+        inspection_candidate_limit: 5
+        fast_rule_order:
+            - TITLE_MATCH
+            - PUBLISH_DATE
+            - TITLE_SIMILARITY
+            - SEEDERS
+            - SIZE
+        fast_rules:
+            title_match:
+                enabled: true
+                clauses: []
+            publish_date:
+                enabled: true
+                direction: DESC
+            title_similarity:
+                enabled: true
+            seeders:
+                enabled: true
+                direction: DESC
+            size:
+                enabled: true
+                direction: DESC
+        torrent_rules:
+            torrent_single_video:
+                enabled: true
+            torrent_file_name_match:
+                enabled: true
+                clauses: []
+    task_delete_policy: KEEP_ONLY
+config_version: 2

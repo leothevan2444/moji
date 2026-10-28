@@ -25,7 +25,7 @@ func TestDefaultCandidateSelectorRejectsUndownloadableResults(t *testing.T) {
 	}
 }
 
-func TestDefaultCandidateSelectorUsesIndexerPreference(t *testing.T) {
+func TestDefaultCandidateSelectorLeavesSiteOrderToSearch(t *testing.T) {
 	selector := defaultCandidateSelector{}
 	result, err := selector.Select(context.Background(), "ABCD-123", []jackett.SearchResult{
 		{Title: "beta", MagnetURI: "magnet:?xt=urn:btih:beta", TrackerID: "beta", Seeders: 100},
@@ -42,8 +42,8 @@ func TestDefaultCandidateSelectorUsesIndexerPreference(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Select failed: %v", err)
 	}
-	if result.TrackerID != "alpha" {
-		t.Fatalf("expected alpha to win, got %+v", result)
+	if result.TrackerID != "beta" {
+		t.Fatalf("legacy site ranking must not override sequential search, got %+v", result)
 	}
 }
 
@@ -256,7 +256,8 @@ func TestDefaultCandidateSelectorPreviewUsesFastRulesOnly(t *testing.T) {
 		{Title: "alpha", MagnetURI: "magnet:?xt=urn:btih:alpha", TrackerID: "alpha", Seeders: 1},
 	}, candidateSelectionConfig(true, 0, []config.CandidateSelectionRule{
 		{
-			Type:    config.CandidateSelectionRuleTypeIndexerPreference,
+			Type:    config.CandidateSelectionRuleTypeSeeders,
+			Seeders: config.SeedersRuleConfig{Direction: config.CandidateSelectionDirectionAsc},
 			Enabled: true,
 			IndexerPreference: config.IndexerPreferenceRuleConfig{
 				TrackerIDs: []string{"alpha", "beta"},

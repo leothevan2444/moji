@@ -1,13 +1,17 @@
 package config
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 
 	"gopkg.in/yaml.v3"
 )
+
+var ErrInvalidSettings = errors.New("invalid settings")
 
 type JackettConfig struct {
 	URL      string `yaml:"url"`
@@ -61,16 +65,22 @@ const (
 type TitleMatchEffect string
 
 const (
-	TitleMatchEffectPrefer TitleMatchEffect = "PREFER"
-	TitleMatchEffectAvoid  TitleMatchEffect = "AVOID"
+	TitleMatchEffectPrefer  TitleMatchEffect = "PREFER"
+	TitleMatchEffectAvoid   TitleMatchEffect = "AVOID" // Legacy alias for DEMOTE.
+	TitleMatchEffectRequire TitleMatchEffect = "REQUIRE"
+	TitleMatchEffectExclude TitleMatchEffect = "EXCLUDE"
+	TitleMatchEffectDemote  TitleMatchEffect = "DEMOTE"
 )
 
 type TorrentFileMatchEffect string
 
 const (
-	TorrentFileMatchEffectPrefer TorrentFileMatchEffect = "PREFER"
-	TorrentFileMatchEffectAvoid  TorrentFileMatchEffect = "AVOID"
-	TorrentFileMatchEffectLock   TorrentFileMatchEffect = "LOCK"
+	TorrentFileMatchEffectPrefer  TorrentFileMatchEffect = "PREFER"
+	TorrentFileMatchEffectAvoid   TorrentFileMatchEffect = "AVOID"
+	TorrentFileMatchEffectLock    TorrentFileMatchEffect = "LOCK" // Legacy alias for REQUIRE.
+	TorrentFileMatchEffectRequire TorrentFileMatchEffect = "REQUIRE"
+	TorrentFileMatchEffectExclude TorrentFileMatchEffect = "EXCLUDE"
+	TorrentFileMatchEffectDemote  TorrentFileMatchEffect = "DEMOTE"
 )
 
 type TorrentSelectionConfig struct {
@@ -206,6 +216,7 @@ func NormalizeTaskDeletePolicy(value string) TaskDeletePolicy {
 }
 
 type SystemConfig struct {
+	Language          string                  `yaml:"language"`
 	DeveloperMode     bool                    `yaml:"developer_mode"`
 	TaskDeletePolicy  TaskDeletePolicy        `yaml:"task_delete_policy"`
 	ImageCache        ImageCacheConfig        `yaml:"image_cache"`
@@ -439,19 +450,24 @@ func NormalizeTitleMatchPatternMode(value TitleMatchPatternMode) TitleMatchPatte
 
 func NormalizeTitleMatchEffect(value TitleMatchEffect) TitleMatchEffect {
 	switch TitleMatchEffect(strings.TrimSpace(string(value))) {
-	case TitleMatchEffectAvoid:
-		return TitleMatchEffectAvoid
+	case TitleMatchEffectAvoid, TitleMatchEffectDemote:
+		return TitleMatchEffectDemote
+	case TitleMatchEffectRequire:
+		return TitleMatchEffectRequire
+	case TitleMatchEffectExclude:
+		return TitleMatchEffectExclude
 	default:
 		return TitleMatchEffectPrefer
 	}
 }
-
 func NormalizeTorrentFileMatchEffect(value TorrentFileMatchEffect) TorrentFileMatchEffect {
 	switch TorrentFileMatchEffect(strings.TrimSpace(string(value))) {
-	case TorrentFileMatchEffectAvoid:
-		return TorrentFileMatchEffectAvoid
-	case TorrentFileMatchEffectLock:
-		return TorrentFileMatchEffectLock
+	case TorrentFileMatchEffectAvoid, TorrentFileMatchEffectDemote:
+		return TorrentFileMatchEffectDemote
+	case TorrentFileMatchEffectLock, TorrentFileMatchEffectRequire:
+		return TorrentFileMatchEffectRequire
+	case TorrentFileMatchEffectExclude:
+		return TorrentFileMatchEffectExclude
 	default:
 		return TorrentFileMatchEffectPrefer
 	}
@@ -577,17 +593,58 @@ func (r TorrentSelectionRule) normalized() TorrentSelectionRule {
 	return r
 }
 
-func (c TorrentSelectionConfig) Validate() error {
+func (c TorrentSelectionConfig) Validate() (err error) {
+	defer func() {
+		if err != nil {
+			err = fmt.Errorf("%w: %v", ErrInvalidSettings, err)
+		}
+	}()
+	for _, clause := range c.FastRules.TitleMatch.Clauses {
+		switch clause.Effect {
+		case "", TitleMatchEffectPrefer, TitleMatchEffectDemote, TitleMatchEffectAvoid, TitleMatchEffectRequire, TitleMatchEffectExclude:
+		default:
+			return fmt.Errorf("unknown title match effect %q", clause.Effect)
+		}
+		if (clause.Effect == TitleMatchEffectRequire || clause.Effect == TitleMatchEffectExclude) && strings.TrimSpace(clause.Pattern) == "" {
+			return fmt.Errorf("hard title conditions require a pattern")
+		}
+	}
+	for _, clause := range c.TorrentRules.TorrentFileNameMatch.Clauses {
+		switch clause.Effect {
+		case "", TorrentFileMatchEffectPrefer, TorrentFileMatchEffectDemote, TorrentFileMatchEffectAvoid, TorrentFileMatchEffectRequire, TorrentFileMatchEffectLock, TorrentFileMatchEffectExclude:
+		default:
+			return fmt.Errorf("unknown file match effect %q", clause.Effect)
+		}
+		if (clause.Effect == TorrentFileMatchEffectRequire || clause.Effect == TorrentFileMatchEffectLock || clause.Effect == TorrentFileMatchEffectExclude) && strings.TrimSpace(clause.Pattern) == "" {
+			return fmt.Errorf("hard file conditions require a pattern")
+		}
+	}
 	seen := make(map[TorrentSelectionRuleType]struct{}, len(c.FastRuleOrder))
 	for _, ruleType := range c.FastRuleOrder {
 		normalizedType := NormalizeTorrentSelectionRuleType(ruleType)
 		if isTorrentInspectionRuleType(normalizedType) {
-			return fmt.Errorf("automation.torrent_selection.fast_rule_order contains non-fast rule type %s", normalizedType)
+			return fmt.Errorf("tasks.torrent_selection.fast_rule_order contains non-fast rule type %s", normalizedType)
 		}
 		if _, exists := seen[normalizedType]; exists {
-			return fmt.Errorf("automation.torrent_selection.fast_rule_order contains duplicate type %s", normalizedType)
+			return fmt.Errorf("tasks.torrent_selection.fast_rule_order contains duplicate type %s", normalizedType)
 		}
 		seen[normalizedType] = struct{}{}
+	}
+	for _, rule := range c.OrderedRules() {
+		for _, clause := range rule.TitleMatch.Clauses {
+			if clause.PatternMode == TitleMatchPatternModeRegex {
+				if _, err := regexp.Compile(clause.Pattern); err != nil {
+					return fmt.Errorf("invalid title matching regular expression: %w", err)
+				}
+			}
+		}
+		for _, clause := range rule.TorrentFileNameMatch.Clauses {
+			if clause.PatternMode == TitleMatchPatternModeRegex {
+				if _, err := regexp.Compile(clause.Pattern); err != nil {
+					return fmt.Errorf("invalid file matching regular expression: %w", err)
+				}
+			}
+		}
 	}
 	return nil
 }
@@ -1028,4 +1085,19 @@ func trimGraphQLSuffix(raw string) string {
 		return strings.TrimSuffix(base, "/graphql")
 	}
 	return base
+}
+
+func (s SystemConfig) EffectiveLanguage() string {
+	if s.Language == "" {
+		return "auto"
+	}
+	return s.Language
+}
+func ValidateLanguage(language string) error {
+	switch language {
+	case "", "auto", "zh-CN", "en":
+		return nil
+	default:
+		return fmt.Errorf("%w: unsupported interface language", ErrInvalidSettings)
+	}
 }

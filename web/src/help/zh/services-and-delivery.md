@@ -1,8 +1,10 @@
-# 连接与入库
+# 服务连接与 Stash 交付
 
 这些设置决定 Moji 如何访问依赖服务，以及完成的下载如何对 Stash 可见。每个表单需要独立保存。
 
-## 连接
+## 服务连接
+
+Jackett 位于索引器，qBittorrent 位于下载器，Stash 位于 Stash。
 
 分别配置 Stash、Jackett 和 qBittorrent 的基础 URL 与凭据，Moji 会据此生成所需 API 地址。最少字段完整时服务为“已配置”；只有最近一次探测成功才是“就绪”。
 

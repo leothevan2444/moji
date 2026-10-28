@@ -155,7 +155,7 @@ func validateTorrentCode(code string, metadata downloadedTorrentMetadata) error 
 	return nil
 }
 
-func (s *Service) selectVerifiedCandidate(ctx context.Context, selector CandidateSelector, code string, results []jackett.SearchResult, cfg config.CandidateSelectionConfig) (jackett.SearchResult, preparedTorrent, error) {
+func (s *Service) selectVerifiedCandidate(ctx context.Context, selector CandidateSelector, code string, results []jackett.SearchResult, cfg config.CandidateSelectionConfig, taskID string) (jackett.SearchResult, preparedTorrent, error) {
 	remaining := make([]jackett.SearchResult, 0, len(results))
 	var rejected error
 	for _, result := range results {
@@ -178,7 +178,11 @@ func (s *Service) selectVerifiedCandidate(ctx context.Context, selector Candidat
 		}
 		prepared, err := s.prepareTorrent(ctx, code, candidateFromSearchResult(result), preferredTorrentURL(result))
 		if err == nil {
-			return result, prepared, nil
+			identity := torrentIdentityFromCandidate(prepared.candidate, preferredTorrentURL(result))
+			err = s.ensureTaskIdentityAvailable(ctx, taskID, identity)
+			if err == nil {
+				return result, prepared, nil
+			}
 		}
 		rejected = err
 		logging.Infof("taskruntime: rejected candidate for code %s: %v", code, err)

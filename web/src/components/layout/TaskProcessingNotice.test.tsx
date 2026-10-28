@@ -17,7 +17,7 @@ it("shows a persistent pause notice with a settings link and clears it after ena
   view.rerender(<MemoryRouter><TaskProcessingNotice /></MemoryRouter>);
   expect(screen.getByRole("status").textContent).toContain("Automatic task processing is paused");
   expect(screen.getByRole("status").textContent).toContain("Resource searches and subscription checks are unaffected");
-  expect(screen.getByRole("link", { name: "Open automation settings" }).getAttribute("href")).toBe("/settings/automation");
+  expect(screen.getByRole("link", { name: "Open tasks & subscriptions settings" }).getAttribute("href")).toBe("/settings/tasks");
   state.enabled = true;
   view.rerender(<MemoryRouter><TaskProcessingNotice /></MemoryRouter>);
   expect(screen.queryByRole("status")).toBeNull();

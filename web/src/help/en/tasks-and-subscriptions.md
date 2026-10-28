@@ -1,6 +1,6 @@
-# Automation
+# Tasks and subscriptions
 
-Automation controls background polling, StashBox priority, subscription decisions, and automatic torrent ranking. Changes affect subsequent operations.
+Tasks & subscriptions controls background scheduling, release decisions, and resource selection. StashBox priority and data cache are under Stash. Changes affect subsequent operations.
 
 ## Scheduling and release policy
 
@@ -22,6 +22,12 @@ Saving settings affects newly discovered releases without reprocessing existing 
 
 ## Sources and torrent rules
 
-StashBox endpoints are loaded from Stash. Discovery stops at the first endpoint with results; subscription lookups try endpoints in saved order. Endpoints omitted from the custom order are appended in Stash order.
+StashBox endpoints and their priority are managed under Settings > Stash. Discovery stops at the first endpoint with results; subscription lookups try endpoints in saved order. Endpoints omitted from the custom order are appended in Stash order.
 
-Torrent selection is a lexicographic rule chain: the first rule that distinguishes candidates wins, and later rules break ties. Fast rules use indexer, title, date, similarity, seeders, or size. File rules inspect only the configured number of leading candidates and can prefer a single video or internal filename patterns. `PREFER` moves matches up, `AVOID` moves them down, and filename `LOCK` supplies the strongest preference. Invalid regular expressions do not match.
+Automatic sourcing queries enabled Jackett sites sequentially in the order saved under Indexers. It continues after empty, rejected, timed-out or failed sites, and stops only after a verified eligible resource. Other enabled sites are appended. Manual search collects results sequentially for user choice.
+
+Resource clauses support **Require**, **Exclude**, **Prefer**, and **Demote**. Every requirement must match and any exclusion rejects a candidate. Preferences and demotions adjust rank, with later rules breaking ties. File checks apply only within the inspection budget; failed or unchecked files cannot pass hard conditions. Disabling rules keeps upstream order and still enforces identity and duplicate checks. Invalid regular expressions cannot be saved. Legacy AVOID becomes DEMOTE and LOCK becomes a mandatory REQUIRE. Manual selection retains identity checks without forcing automatic preferences.
+
+## Task deletion
+
+The policy can delete only the Moji task record, also remove the corresponding qBittorrent item, or remove both the torrent item and its downloaded files. It is evaluated when a task is deleted and does not apply retroactively. The delete confirmation shows the current effect.

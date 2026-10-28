@@ -9,5 +9,5 @@ export default function AboutSettingsTab() {
   const [{ data, fetching, error }, refresh] = useQuery({ query: AboutSettingsTabDocument });
   if (fetching && !data) return <SettingsLoading title={t("settings.tabs.about")} />;
   if (error && !data) return <SettingsError title={t("settings.tabs.about")} error={error} onRetry={() => refresh({ requestPolicy: "network-only" })} />;
-  return <SettingsCard title={t("systemUi.about")}><dl className="settings-grid"><div><dt>{t("systemUi.version")}</dt><dd>{data?.version || APP_VERSION}</dd></div></dl></SettingsCard>;
+  return <SettingsCard title={t("settings.tabs.about")}><dl className="settings-grid"><div><dt>{t("aboutSettings.version")}</dt><dd>{data?.version || APP_VERSION}</dd></div></dl></SettingsCard>;
 }

@@ -193,9 +193,9 @@ Mount the entire `/data` directory: the UI saves config changes by replacing the
 config file. A standalone config-file bind mount can prevent those writes.
 Container removal or replacement preserves host bind-mount data.
 
-`ingest.downloads.qb_root` must match the path **reported by qBittorrent**;
+`stash.ingest.downloads.qb_root` must match the path **reported by qBittorrent**;
 `moji_root` is the corresponding path inside Moji. Similarly,
-`ingest.library.stash_root` is the shared library path **inside Stash**, while
+`stash.ingest.library.stash_root` is the shared library path **inside Stash**, while
 `moji_root` is its path inside Moji. For example, Stash can see `/media/moji`
 while Moji sees `/library`, provided both mount the same host directory. Add
 that path to Stash's library configuration. Stash still owns metadata scanning,

@@ -126,6 +126,7 @@ func settingsSnapshotToModel(snapshot *SettingsSnapshot, appVersion string) *mod
 		},
 		System: &model.SystemSettings{
 			DeveloperMode:     snapshot.System.DeveloperMode,
+			Language:          effectiveSnapshotLanguage(snapshot.System.Language),
 			TaskDeletePolicy:  model.TaskDeletePolicy(snapshot.System.TaskDeletePolicy),
 			ImageCache:        &model.ImageCacheSettings{Enabled: snapshot.System.ImageCache.Enabled, MaxSizeMb: snapshot.System.ImageCache.MaxSizeMB, RetentionDays: snapshot.System.ImageCache.RetentionDays},
 			StashBoxDataCache: &model.StashBoxDataCacheSettings{TTLHours: snapshot.System.StashBoxDataCache.TTLHours},
@@ -389,4 +390,11 @@ func formatOKAt(t time.Time) *string {
 	}
 	s := t.UTC().Format(time.RFC3339)
 	return &s
+}
+
+func effectiveSnapshotLanguage(language string) string {
+	if language == "" {
+		return "auto"
+	}
+	return language
 }

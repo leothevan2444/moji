@@ -3,71 +3,64 @@ import { useTranslation } from "react-i18next";
 import { useOutletContext } from "react-router";
 import { useMutation, useQuery } from "urql";
 import type { AppOutletContext } from "../../app/AppLayout";
-import { ClearImageCacheDocumentDocument, ClearStashBoxDataCacheDocumentDocument, SystemSettingsTabDocument, TaskDeletePolicy, UpdateSystemSettingsDocumentDocument } from "../../graphql/generated/graphql";
+import { ClearImageCacheDocumentDocument, SystemSettingsTabDocument, UpdateSystemSettingsDocumentDocument } from "../../graphql/generated/graphql";
+import { SUPPORTED_LOCALES, isLocalePreference, type LocalePreference } from "../../i18n/locales";
 import { describeQueryError } from "../../services/queryError";
 import { formatBytes, formatDateTime } from "../../utils";
 import { useSettingsDraft } from "./SettingsDraftStore";
-import { FieldLabel, SettingsCard, SettingsError, SettingsLoading } from "./SettingsTabCommon";
+import { FieldLabel, SettingsCard, SettingsDraftNotice, SettingsError, SettingsLoading } from "./SettingsTabCommon";
 import "../../styles/settings-system.scss";
 
-interface SystemDraft { developerMode: boolean; taskDeletePolicy: TaskDeletePolicy; enabled: boolean; maxSizeMb: string; retentionDays: string; stashBoxTtlHours: string }
+interface SystemDraft { developerMode: boolean; language: LocalePreference; enabled: boolean; maxSizeMb: string; retentionDays: string }
 
 export default function SystemSettingsTab() {
   const { t } = useTranslation();
-  const { pushToast, onDeveloperModeChange } = useOutletContext<AppOutletContext>();
+  const { pushToast, onDeveloperModeChange, onLanguageChange, localeLoadError, retryLocale } = useOutletContext<AppOutletContext>();
   const [{ data, fetching, error }, refresh] = useQuery({ query: SystemSettingsTabDocument });
   const [{ fetching: saving }, updateSystem] = useMutation(UpdateSystemSettingsDocumentDocument);
   const [{ fetching: clearing }, clearImageCache] = useMutation(ClearImageCacheDocumentDocument);
-  const [{ fetching: clearingStashBox }, clearStashBoxCache] = useMutation(ClearStashBoxDataCacheDocumentDocument);
+
   const [confirming, setConfirming] = useState(false);
-  const [confirmingStashBox, setConfirmingStashBox] = useState(false);
-  const initial = useMemo<SystemDraft>(() => ({ developerMode: data?.settings.system.developerMode ?? false, taskDeletePolicy: data?.settings.system.taskDeletePolicy ?? TaskDeletePolicy.KeepOnly, enabled: data?.settings.system.imageCache.enabled ?? true, maxSizeMb: String(data?.settings.system.imageCache.maxSizeMb ?? 1024), retentionDays: String(data?.settings.system.imageCache.retentionDays ?? 30), stashBoxTtlHours: String(data?.settings.system.stashBoxDataCache?.ttlHours ?? 24) }), [data]);
-  const [form, setForm, , markSaved] = useSettingsDraft("system", initial);
+
+  const initial = useMemo<SystemDraft>(() => ({ developerMode: data?.settings.system.developerMode ?? false, language: isLocalePreference(data?.settings.system.language) ? data.settings.system.language : "auto", enabled: data?.settings.system.imageCache.enabled ?? true, maxSizeMb: String(data?.settings.system.imageCache.maxSizeMb ?? 1024), retentionDays: String(data?.settings.system.imageCache.retentionDays ?? 30) }), [data]);
+  const [form, setForm, dirty, markSaved] = useSettingsDraft("system", initial);
 
   if (fetching && !data) return <SettingsLoading title={t("settings.tabs.system")} />;
   if (error && !data) return <SettingsError title={t("settings.tabs.system")} error={error} onRetry={() => refresh({ requestPolicy: "network-only" })} />;
   const image = data?.settingsStatus.imageCache;
-  const stashBox = data?.settingsStatus.stashBoxDataCache;
 
   const save = async (event: FormEvent) => {
     event.preventDefault();
-    const result = await updateSystem({ input: { developerMode: form.developerMode, taskDeletePolicy: form.taskDeletePolicy, imageCache: { enabled: form.enabled, maxSizeMb: Number(form.maxSizeMb), retentionDays: Number(form.retentionDays) }, stashBoxDataCache: { ttlHours: Number(form.stashBoxTtlHours) } } });
+    const result = await updateSystem({ input: { developerMode: form.developerMode, language: form.language, imageCache: { enabled: form.enabled, maxSizeMb: Number(form.maxSizeMb), retentionDays: Number(form.retentionDays) } } });
     if (result.error) { pushToast("tone-danger", describeQueryError(result.error)); return; }
     const savedSystem = result.data?.updateSystemSettings?.system;
     if (savedSystem) onDeveloperModeChange?.(savedSystem.developerMode);
-    markSaved(form); pushToast("tone-success", t("systemUi.saved"));
+    onLanguageChange?.(form.language);
+    markSaved(form); pushToast("tone-success", t("systemSettings.saved"));
     refresh();
-  };
-  const clearStashBox = async () => {
-    const result = await clearStashBoxCache({});
-    if (result.error) { pushToast("tone-danger", describeQueryError(result.error)); return; }
-    setConfirmingStashBox(false); pushToast("tone-success", t("stashBoxCacheUi.cleared")); refresh({ requestPolicy: "network-only" });
   };
   const clear = async () => {
     const released = Number(image?.usedBytes ?? 0);
     const result = await clearImageCache({});
     if (result.error) { pushToast("tone-danger", describeQueryError(result.error)); return; }
-    setConfirming(false); pushToast("tone-success", released ? t("systemUi.clearedBytes", { size: formatBytes(released) }) : t("systemUi.cleared"));
+    setConfirming(false); pushToast("tone-success", released ? t("systemSettings.clearedBytes", { size: formatBytes(released) }) : t("systemSettings.cleared"));
     refresh();
   };
 
   return <SettingsCard title={t("settings.tabs.system")}><form className="settings-form" onSubmit={(event) => void save(event)}>
-    <div className="settings-field"><FieldLabel text={t("systemUi.developerMode")} info={t("systemUi.developerModeInfo")} /><label className="switch-row image-cache-switch developer-mode-switch"><span className="switch-row__label">{t("systemUi.enableDeveloperMode")}</span><span className="switch"><input role="switch" type="checkbox" aria-checked={form.developerMode} checked={form.developerMode} aria-label={t("systemUi.developerMode")} onChange={(event) => setForm((current) => ({ ...current, developerMode: event.target.checked }))} /><span className="switch__track" aria-hidden="true" /><span className="switch__thumb" aria-hidden="true" /></span></label></div>
-    <label className="settings-field"><FieldLabel text={t("systemUi.deletePolicy")} info={t("systemUi.deleteInfo")} /><select value={form.taskDeletePolicy} onChange={(event) => setForm((current) => ({ ...current, taskDeletePolicy: event.target.value as TaskDeletePolicy }))}><option value={TaskDeletePolicy.KeepOnly}>{t("systemUi.keep")}</option><option value={TaskDeletePolicy.RemoveTorrent}>{t("systemUi.removeTorrent")}</option><option value={TaskDeletePolicy.RemoveTorrentAndFiles}>{t("systemUi.removeFiles")}</option></select></label>
-    <div className="settings-field"><FieldLabel text={t("systemUi.cache")} info={t("systemUi.cacheInfo")} /><label className="switch-row image-cache-switch"><span className="switch-row__label">{t("systemUi.enableCache")}</span><span className="switch" role="switch" aria-checked={form.enabled}><input type="checkbox" checked={form.enabled} aria-label={t("systemUi.enableCache")} onChange={(event) => setForm((current) => ({ ...current, enabled: event.target.checked }))} /><span className="switch__track" aria-hidden="true" /><span className="switch__thumb" aria-hidden="true" /></span></label></div>
+    <label className="settings-field"><FieldLabel text={t("common.language")} /><select aria-label={t("common.language")} aria-describedby="system-language-help" value={form.language} onChange={event => setForm(current => ({...current,language:event.target.value as LocalePreference}))}><option value="auto">{t("common.auto")}</option>{Object.entries(SUPPORTED_LOCALES).map(([value,meta]) => <option key={value} value={value}>{meta.label}</option>)}</select><small id="system-language-help">{t("systemSettings.languageHelp")}</small></label>
+    {localeLoadError ? <p className="settings-feedback tone-danger" role="alert">{t("localeUi.loadFailed")} <button type="button" onClick={retryLocale}>{t("localeUi.retry")}</button></p> : null}
+    <div className="settings-field"><FieldLabel text={t("systemSettings.developerMode")} info={t("systemSettings.developerModeInfo")} /><label className="switch-row image-cache-switch developer-mode-switch"><span className="switch-row__label">{t("systemSettings.enableDeveloperMode")}</span><span className="switch"><input role="switch" type="checkbox" aria-checked={form.developerMode} checked={form.developerMode} aria-label={t("systemSettings.developerMode")} onChange={(event) => setForm((current) => ({ ...current, developerMode: event.target.checked }))} /><span className="switch__track" aria-hidden="true" /><span className="switch__thumb" aria-hidden="true" /></span></label></div>
+
+    <div className="settings-field"><FieldLabel text={t("systemSettings.cache")} info={t("systemSettings.cacheInfo")} /><label className="switch-row image-cache-switch"><span className="switch-row__label">{t("systemSettings.enableCache")}</span><span className="switch" role="switch" aria-checked={form.enabled}><input type="checkbox" checked={form.enabled} aria-label={t("systemSettings.enableCache")} onChange={(event) => setForm((current) => ({ ...current, enabled: event.target.checked }))} /><span className="switch__track" aria-hidden="true" /><span className="switch__thumb" aria-hidden="true" /></span></label></div>
     <div className={`image-cache-config${form.enabled ? "" : " is-disabled"}`} aria-disabled={!form.enabled}>
-      <label className="settings-field"><FieldLabel text={t("systemUi.maxSize")} info={t("systemUi.maxSizeInfo")} /><input type="number" min="64" max="20480" disabled={!form.enabled} value={form.maxSizeMb} onChange={(event) => setForm((current) => ({ ...current, maxSizeMb: event.target.value }))} /></label>
-      <label className="settings-field"><FieldLabel text={t("systemUi.retention")} info={t("systemUi.retentionInfo")} /><input type="number" min="1" max="365" disabled={!form.enabled} value={form.retentionDays} onChange={(event) => setForm((current) => ({ ...current, retentionDays: event.target.value }))} /></label>
-      {!form.enabled ? <p className="image-cache-config__note">{t("systemUi.disabled")}</p> : null}
+      <label className="settings-field"><FieldLabel text={t("systemSettings.maxSize")} info={t("systemSettings.maxSizeInfo")} /><input type="number" min="64" max="20480" disabled={!form.enabled} value={form.maxSizeMb} onChange={(event) => setForm((current) => ({ ...current, maxSizeMb: event.target.value }))} /></label>
+      <label className="settings-field"><FieldLabel text={t("systemSettings.retention")} info={t("systemSettings.retentionInfo")} /><input type="number" min="1" max="365" disabled={!form.enabled} value={form.retentionDays} onChange={(event) => setForm((current) => ({ ...current, retentionDays: event.target.value }))} /></label>
+      {!form.enabled ? <p className="image-cache-config__note">{t("systemSettings.disabled")}</p> : null}
     </div>
-    <div className="image-cache-management"><div><div className="settings-meta"><span>{t("systemUi.usage", { size: formatBytes(Number(image?.usedBytes ?? 0)) })}</span><span>{t("systemUi.images", { count: image?.entryCount ?? 0 })}</span><span>{t("systemUi.cleanup", { time: formatDateTime(image?.lastCleanupAt) })}</span></div><p className="image-cache-management__hint">{t("systemUi.clearHint")}</p></div><button type="button" className="image-cache-management__clear" disabled={clearing || !image?.entryCount} onClick={() => setConfirming(true)}>{clearing ? t("systemUi.clearing") : image?.entryCount ? t("systemUi.clear") : t("systemUi.noCache")}</button></div>
-    {confirming ? <div className="image-cache-confirm" role="alertdialog"><div><strong>{t("systemUi.clearTitle")}</strong><p>{t("systemUi.clearDescription", { count: image?.entryCount ?? 0, size: formatBytes(Number(image?.usedBytes ?? 0)) })}</p></div><div className="image-cache-confirm__actions"><button type="button" className="ghost-button" onClick={() => setConfirming(false)}>{t("systemUi.cancel")}</button><button type="button" className="image-cache-confirm__submit" onClick={() => void clear()}>{t("systemUi.confirm")}</button></div></div> : null}
+    <div className="image-cache-management"><div><div className="settings-meta"><span>{t("systemSettings.usage", { size: formatBytes(Number(image?.usedBytes ?? 0)) })}</span><span>{t("systemSettings.images", { count: image?.entryCount ?? 0 })}</span><span>{t("systemSettings.cleanup", { time: formatDateTime(image?.lastCleanupAt) })}</span></div><p className="image-cache-management__hint">{t("systemSettings.clearHint")}</p></div><button type="button" className="image-cache-management__clear" disabled={clearing || !image?.entryCount} onClick={() => setConfirming(true)}>{clearing ? t("systemSettings.clearing") : image?.entryCount ? t("systemSettings.clear") : t("systemSettings.noCache")}</button></div>
+    {confirming ? <div className="image-cache-confirm" role="alertdialog"><div><strong>{t("systemSettings.clearTitle")}</strong><p>{t("systemSettings.clearDescription", { count: image?.entryCount ?? 0, size: formatBytes(Number(image?.usedBytes ?? 0)) })}</p></div><div className="image-cache-confirm__actions"><button type="button" className="ghost-button" onClick={() => setConfirming(false)}>{t("systemSettings.cancel")}</button><button type="button" className="image-cache-confirm__submit" onClick={() => void clear()}>{t("systemSettings.confirm")}</button></div></div> : null}
     {image?.lastError ? <p className="settings-feedback tone-danger">{image.lastError}</p> : null}
-    <div className="settings-field"><FieldLabel text={t("stashBoxCacheUi.title")} info={t("stashBoxCacheUi.info")} /></div>
-    <div className="image-cache-config"><label className="settings-field"><FieldLabel text={t("stashBoxCacheUi.ttl")} info={t("stashBoxCacheUi.ttlInfo")} /><input type="number" min="12" max="360" value={form.stashBoxTtlHours} onChange={(event) => setForm((current) => ({ ...current, stashBoxTtlHours: event.target.value }))} /></label></div>
-    <div className="image-cache-management"><div><div className="settings-meta"><span>{t("systemUi.usage", { size: formatBytes(Number(stashBox?.usedBytes ?? 0)) })}</span><span>{t("stashBoxCacheUi.scenes", { count: stashBox?.sceneCount ?? 0 })}</span><span>{t("stashBoxCacheUi.performers", { count: stashBox?.performerCount ?? 0 })}</span><span>{t("stashBoxCacheUi.snapshots", { count: stashBox?.snapshotCount ?? 0 })}</span><span>{t("systemUi.cleanup", { time: formatDateTime(stashBox?.lastCleanupAt) })}</span></div></div><button type="button" className="image-cache-management__clear" disabled={clearingStashBox || (!stashBox?.sceneCount && !stashBox?.performerCount)} onClick={() => setConfirmingStashBox(true)}>{clearingStashBox ? t("systemUi.clearing") : t("stashBoxCacheUi.clear")}</button></div>
-    {confirmingStashBox ? <div className="image-cache-confirm" role="alertdialog"><div><strong>{t("stashBoxCacheUi.clearTitle")}</strong><p>{t("stashBoxCacheUi.clearDescription")}</p></div><div className="image-cache-confirm__actions"><button type="button" className="ghost-button" onClick={() => setConfirmingStashBox(false)}>{t("systemUi.cancel")}</button><button type="button" className="image-cache-confirm__submit" onClick={() => void clearStashBox()}>{t("systemUi.confirm")}</button></div></div> : null}
-    {stashBox?.lastError ? <p className="settings-feedback tone-danger">{stashBox.lastError}</p> : null}
-    <div className="settings-actions"><button type="submit" disabled={saving}>{saving ? t("settings.saving") : t("systemUi.save")}</button></div>
+    <SettingsDraftNotice dirty={dirty} /><div className="settings-actions"><button type="submit" disabled={saving}>{saving ? t("settings.saving") : t("systemSettings.save")}</button></div>
   </form></SettingsCard>;
 }

@@ -17,6 +17,7 @@ import (
 	"github.com/99designs/gqlgen/graphql/handler/transport"
 	"github.com/google/uuid"
 	"github.com/gorilla/websocket"
+	"github.com/leothevan2444/moji/internal/config"
 	"github.com/leothevan2444/moji/internal/performer"
 	"github.com/leothevan2444/moji/internal/subscription"
 	"github.com/leothevan2444/moji/internal/taskruntime"
@@ -114,6 +115,8 @@ func classifyError(err error) string {
 		return code
 	}
 	switch {
+	case errors.Is(err, config.ErrInvalidSettings):
+		return "SETTINGS_INVALID"
 	case errors.Is(err, downloader.ErrObservationPending):
 		return "TORRENT_COMMAND_UNCONFIRMED"
 	case errors.Is(err, downloader.ErrInvalidPolicy):

@@ -88,7 +88,7 @@ describe("Home workspace", () => {
     const props = setup({ runtimeStatus: status });
     expect(screen.getByText(/Stash is unavailable/)).toBeTruthy();
     await userEvent.setup().click(screen.getByRole("button", { name: "Check connections" }));
-    expect(props.onOpenSettings).toHaveBeenCalledWith("connections");
+    expect(props.onOpenSettings).toHaveBeenCalledWith("stash");
     expect(screen.queryByText("Finish setup to start processing")).toBeNull();
   });
 

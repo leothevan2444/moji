@@ -69,7 +69,9 @@ type SettingsEditor interface {
 	UpdateIngestSettings(input UpdateIngestSettingsInput) (*SettingsSnapshot, error)
 	UpdateJackettSettings(input UpdateJackettSettingsInput) (*SettingsSnapshot, error)
 	UpdateQBittorrentSettings(input UpdateQBittorrentSettingsInput) (*SettingsSnapshot, error)
+	UpdateSettingsSection(input SettingsSectionUpdate) (*SettingsSnapshot, error)
 	UpdateAutomationSettings(input UpdateAutomationSettingsInput) (*SettingsSnapshot, error)
+	UpdateStashBoxCacheSettings(ttlHours int) (*SettingsSnapshot, error)
 	UpdateSystemSettings(input UpdateSystemSettingsInput) (*SettingsSnapshot, error)
 }
 
@@ -113,7 +115,12 @@ type UpdateQBittorrentSettingsInput struct {
 	Tags            string
 }
 
-type UpdateAutomationSettingsInput struct {
+// UpdateAutomationSettingsInput is the compatibility name for the old aggregate mutation.
+type UpdateAutomationSettingsInput = SettingsSectionUpdate
+
+type SettingsSectionUpdate struct {
+	TaskDeletePolicy                *string
+	Section                         string
 	TaskProcessingEnabled           *bool
 	SourcingRetryIntervalHours      int
 	TaskProgressSyncIntervalSeconds int
@@ -124,10 +131,13 @@ type UpdateAutomationSettingsInput struct {
 }
 
 type UpdateSystemSettingsInput struct {
-	DeveloperMode     bool
-	TaskDeletePolicy  string
-	ImageCache        ImageCacheSettingsSnapshot
-	StashBoxDataCache StashBoxDataCacheSettingsSnapshot
+	Language                 *string
+	PreserveTaskDeletePolicy bool
+	PreserveStashBoxCache    bool
+	DeveloperMode            bool
+	TaskDeletePolicy         string
+	ImageCache               ImageCacheSettingsSnapshot
+	StashBoxDataCache        StashBoxDataCacheSettingsSnapshot
 }
 
 type StashBoxDataCacheSettingsSnapshot struct{ TTLHours int }
@@ -263,6 +273,7 @@ type SubscriptionReleasePolicySnapshot struct {
 }
 
 type SystemSettingsSnapshot struct {
+	Language          string
 	DeveloperMode     bool
 	TaskDeletePolicy  string
 	ImageCache        ImageCacheSettingsSnapshot

@@ -27,6 +27,6 @@ In progress shows up to five tasks. Download percentages use real progress; othe
 
 Subscription health comes from persisted check results. It includes subscribed performers, failed checks, first checks still pending, and links to affected performers. Reading Home does not trigger subscription checks.
 
-Healthy services use a compact summary. Expand Connection & ingest details for paths and diagnostics. **Configured** means required fields exist; **Ready** means a recent probe succeeded. First-run guidance links to connection and delivery settings.
+Healthy services use a compact summary. Expand Service & delivery details for paths and diagnostics. **Configured** means required fields exist; **Ready** means a recent probe succeeded. First-run guidance links to connection and delivery settings.
 
 Paused automatic processing remains visible. Home hides connection details, the global update time, and manual refresh during normal operation. An interrupted connection shows a notice and retry action until recovery. Home refreshes snapshots every 30 seconds. Background tabs pause polling and refresh when visible again. A failed module leaves other modules usable and retains available data with a retry notice.

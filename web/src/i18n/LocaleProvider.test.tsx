@@ -3,9 +3,9 @@ import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { Suspense, useState } from "react";
 import { beforeEach, describe, expect, it } from "vitest";
-import { LocaleSelect } from "../components/common/LocaleSelect";
-import { LocaleProvider } from "./LocaleProvider";
-import { LOCALE_STORAGE_KEY } from "./locales";
+import { useTranslation } from "react-i18next";
+import { LocaleProvider, useLocale } from "./LocaleProvider";
+import { LOCALE_STORAGE_KEY, type LocalePreference } from "./locales";
 import "./i18n";
 
 describe("LocaleProvider", () => {
@@ -14,8 +14,10 @@ describe("LocaleProvider", () => {
   it("switches immediately, persists preference, and updates document metadata", async () => {
     const user = userEvent.setup();
     function StatefulProbe() {
+      const { preference, setPreference } = useLocale();
+      const { t } = useTranslation();
       const [count, setCount] = useState(0);
-      return <><LocaleSelect /><button type="button" onClick={() => setCount((value) => value + 1)}>state:{count}</button></>;
+      return <><label>{t("common.language")}<select value={preference} onChange={event=>setPreference(event.target.value as LocalePreference)}><option value="auto">{t("common.auto")}</option><option value="en">English</option></select></label><button type="button" onClick={() => setCount((value) => value + 1)}>state:{count}</button></>;
     }
     render(<Suspense fallback={<span>loading</span>}><LocaleProvider><StatefulProbe /></LocaleProvider></Suspense>);
     await user.click(await screen.findByRole("button", { name: "state:0" }));

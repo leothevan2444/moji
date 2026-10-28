@@ -69,7 +69,7 @@ func (r *queryResolver) JackettSearch(ctx context.Context, input model.JackettSe
 		options = append(options, tracker.WithLimit(*input.Limit))
 	}
 
-	results, err := r.Tracker.Search(query, options...)
+	results, err := r.Tracker.Search(query, append(options, tracker.WithContext(ctx))...)
 	if err != nil {
 		return nil, err
 	}
@@ -160,7 +160,7 @@ func (r *queryResolver) BlockedTaskTorrentCandidates(ctx context.Context, id str
 	if limit != nil {
 		options = append(options, tracker.WithLimit(*limit))
 	}
-	results, err := r.Tracker.Search(task.Code, options...)
+	results, err := r.Tracker.Search(task.Code, append(options, tracker.WithContext(ctx))...)
 	if err != nil {
 		return nil, err
 	}

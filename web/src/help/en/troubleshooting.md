@@ -5,7 +5,7 @@ Start with **Home** for service readiness, open the affected task for its stage 
 ## Connection and search problems
 
 - **Configured but not ready:** the fields are present, but the latest probe failed or is stale. Verify the URL from the Moji server or container, credentials, TLS trust, and reverse-proxy path.
-- **No StashBox results:** confirm that Stash has at least one StashBox endpoint, refresh the list in Automation, and check its API key. Moji tries endpoints in order and returns results from the first successful match.
+- **No StashBox results:** confirm that Stash has at least one StashBox endpoint, refresh metadata sources under Settings > Stash, and check its API key. Moji tries endpoints in order and returns results from the first successful match.
 - **No Jackett results:** confirm Jackett is ready, at least one indexer is configured, and active filters are not excluding it. Clear tracker filters and retry the exact release code.
 - **No downloadable candidate:** results existed but did not expose a usable magnet or torrent URL, or selection rules ranked no usable item. Resolve the blocked task manually or adjust the rules.
 - **Duplicate rejected:** Moji prevents a second task for the same code or torrent and checks whether the code already exists in Stash. Use the existing task or library item.

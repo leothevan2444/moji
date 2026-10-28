@@ -2,6 +2,7 @@
 package jackett
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -10,6 +11,7 @@ import (
 	"net/url"
 	"strings"
 	"sync"
+	"time"
 )
 
 // IndexerStatus captures the per-indexer response Jackett returns alongside a
@@ -69,6 +71,7 @@ func NewClient(baseURL string, apiKey string, password string) *Client {
 		password: password,
 		httpClient: &http.Client{
 			Jar:       jar,
+			Timeout:   30 * time.Second,
 			Transport: &http.Transport{Proxy: nil},
 		},
 	}
@@ -191,6 +194,16 @@ func (c *Client) SearchWithIndexerStatus(req SearchRequest) ([]SearchResult, []I
 }
 
 func (c *Client) searchInternal(req SearchRequest) ([]SearchResult, []IndexerStatus, error) {
+	return c.searchContext(context.Background(), req)
+}
+func (c *Client) SearchContext(ctx context.Context, req SearchRequest) ([]SearchResult, error) {
+	results, statuses, err := c.searchContext(ctx, req)
+	if err == nil {
+		fireIndexerStatusHook(statuses, req.Query)
+	}
+	return results, err
+}
+func (c *Client) searchContext(ctx context.Context, req SearchRequest) ([]SearchResult, []IndexerStatus, error) {
 	u, err := url.Parse(fmt.Sprintf("%s/api/v2.0/indexers/all/results", c.baseURL))
 	if err != nil {
 		return nil, nil, err
@@ -214,15 +227,18 @@ func (c *Client) searchInternal(req SearchRequest) ([]SearchResult, []IndexerSta
 
 	u.RawQuery = q.Encode()
 
-	resp, err := c.httpClient.Get(u.String())
+	request, err := http.NewRequestWithContext(ctx, http.MethodGet, u.String(), nil)
+	if err != nil {
+		return nil, nil, err
+	}
+	resp, err := c.httpClient.Do(request)
 	if err != nil {
 		return nil, nil, err
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		body, _ := io.ReadAll(resp.Body)
-		return nil, nil, fmt.Errorf("jackett API error: %s, body: %s", resp.Status, string(body))
+		return nil, nil, fmt.Errorf("jackett API error: %s", resp.Status)
 	}
 
 	var searchResults struct {
@@ -272,7 +288,8 @@ type Indexer struct {
 	} `json:"caps"`
 }
 
-func (c *Client) GetIndexers() ([]Indexer, error) {
+func (c *Client) GetIndexers() ([]Indexer, error) { return c.GetIndexersContext(context.Background()) }
+func (c *Client) GetIndexersContext(ctx context.Context) ([]Indexer, error) {
 	u, err := url.Parse(fmt.Sprintf("%s/api/v2.0/indexers", c.baseURL))
 	if err != nil {
 		return nil, err
@@ -282,7 +299,11 @@ func (c *Client) GetIndexers() ([]Indexer, error) {
 	q.Set("apikey", c.apiKey)
 	u.RawQuery = q.Encode()
 
-	resp, err := c.httpClient.Get(u.String())
+	request, err := http.NewRequestWithContext(ctx, http.MethodGet, u.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+	resp, err := c.httpClient.Do(request)
 	if err != nil {
 		return nil, err
 	}

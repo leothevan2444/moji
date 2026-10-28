@@ -8,7 +8,7 @@ completion checks.
 
 Movies with no verified resource remain in sourcing as normal pending work.
 The sourcing worker searches again every six hours by default, without an
-attempt limit or expiry. Change `automation.sourcing_retry_interval_hours`
+attempt limit or expiry. Change `tasks.sourcing_retry_interval_hours`
 (1–168 hours) in the Automation settings to adjust this interval independently
 of performer metadata polling. The task card and details show the next check;
 "Check resources now" bypasses the wait. Search options and the last/next check

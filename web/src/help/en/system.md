@@ -1,10 +1,11 @@
 # System
 
-System settings control destructive task deletion and Moji's upstream image cache. Review the active deletion policy before removing a task.
+System settings control the instance interface language, developer mode and upstream image cache. Task deletion policy is under Tasks & subscriptions.
 
-## Task deletion
 
-The policy can delete only the Moji task record, also remove the corresponding qBittorrent item, or remove both the torrent item and its downloaded files. It is evaluated when a task is deleted and does not apply retroactively. The delete confirmation shows the current effect.
+## Interface language
+
+Choose browser language, 简体中文 or English and save the system form. The saved instance language is applied only after a successful save and loaded on refresh; browser language follows each browser’s preferences.
 
 ## Image cache and diagnostics
 

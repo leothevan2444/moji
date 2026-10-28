@@ -7,6 +7,8 @@ extend type Query {
 }
 
 extend type Mutation {
+  updateStashBoxCacheSettings(ttlHours: Int!): Settings!
+  updateSettingsSection(input: UpdateSettingsSectionInput!): Settings!
   "Update Stash settings and persist them to backend config"
   updateStashSettings(input: UpdateStashSettingsInput!): Settings!
 
@@ -20,7 +22,7 @@ extend type Mutation {
   updateQBittorrentSettings(input: UpdateQBittorrentSettingsInput!): Settings!
 
   "Update automation settings and persist them to backend config"
-  updateAutomationSettings(input: UpdateAutomationSettingsInput!): Settings!
+  updateAutomationSettings(input: UpdateAutomationSettingsInput!): Settings! @deprecated(reason: "Use updateSettingsSection to save independent business sections.")
 
   "Update system settings and persist them to backend config"
   updateSystemSettings(input: UpdateSystemSettingsInput!): Settings!
@@ -209,11 +211,17 @@ enum TitleMatchPatternMode {
 }
 
 enum TitleMatchEffect {
+  REQUIRE
+  EXCLUDE
+  DEMOTE
   PREFER
   AVOID
 }
 
 enum TorrentFileMatchEffect {
+  REQUIRE
+  EXCLUDE
+  DEMOTE
   PREFER
   AVOID
   LOCK
@@ -313,6 +321,7 @@ enum TaskDeletePolicy {
 }
 
 type SystemSettings {
+ language: String!
   developerMode: Boolean!
   taskDeletePolicy: TaskDeletePolicy!
   imageCache: ImageCacheSettings!
@@ -466,7 +475,12 @@ input UpdateQBittorrentSettingsInput {
   tags: String!
 }
 
+enum SettingsSection { ALL TASKS RESOURCES METADATA INDEXERS TASK_DELETION }
+"Legacy aggregate mutation input; new section mutations use SettingsSection."
+enum AutomationSettingsSection { ALL TASKS RESOURCES METADATA INDEXERS TASK_DELETION }
+
 input UpdateAutomationSettingsInput {
+  section: AutomationSettingsSection = ALL
   "Independent switch; omitted by legacy clients to preserve the current setting"
   taskProcessingEnabled: Boolean
   sourcingRetryIntervalHours: Int! = 6
@@ -488,8 +502,9 @@ input SubscriptionReleasePolicyInput {
 }
 
 input UpdateSystemSettingsInput {
+ language: String
   developerMode: Boolean
-  taskDeletePolicy: TaskDeletePolicy!
+  taskDeletePolicy: TaskDeletePolicy
   imageCache: ImageCacheSettingsInput
   stashBoxDataCache: StashBoxDataCacheSettingsInput
 }
@@ -502,4 +517,20 @@ input ImageCacheSettingsInput {
   enabled: Boolean!
   maxSizeMb: Int!
   retentionDays: Int!
+}
+
+input UpdateSettingsSectionInput {
+ taskDeletePolicy: TaskDeletePolicy
+ section: SettingsSection!
+ tasks: TaskSettingsInput
+ resources: TorrentSelectionSettingsInput
+ metadataPriority: [String!]
+ queryOrder: [String!]
+}
+input TaskSettingsInput {
+ taskProcessingEnabled: Boolean!
+ taskProgressSyncIntervalSeconds: Int!
+ subscriptionPollIntervalHours: Int!
+ sourcingRetryIntervalHours: Int!
+ subscriptionReleasePolicy: SubscriptionReleasePolicyInput!
 }

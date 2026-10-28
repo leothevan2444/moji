@@ -185,7 +185,17 @@ func (s *runtimeSettingsEditor) UpdateQBittorrentSettings(input graphqlapi.Updat
 	return buildSettingsSnapshot(cfg, s.version), nil
 }
 
-func (s *runtimeSettingsEditor) UpdateAutomationSettings(input graphqlapi.UpdateAutomationSettingsInput) (*graphqlapi.SettingsSnapshot, error) {
+func (s *runtimeSettingsEditor) UpdateSettingsSection(input graphqlapi.SettingsSectionUpdate) (*graphqlapi.SettingsSnapshot, error) {
+	if input.Section == "TASK_DELETION" {
+		if input.TaskDeletePolicy == nil {
+			return nil, config.ErrInvalidSettings
+		}
+		cfg, err := s.store.UpdateTaskDeletePolicy(config.TaskDeletePolicy(*input.TaskDeletePolicy))
+		if err != nil {
+			return nil, err
+		}
+		return buildSettingsSnapshot(cfg, s.version), nil
+	}
 	if input.SubscriptionReleasePolicy.VRBehavior == "" {
 		input.SubscriptionReleasePolicy.VRBehavior = string(s.store.Config().Automation.SubscriptionReleasePolicy.Effective().VRBehavior)
 	}
@@ -193,25 +203,22 @@ func (s *runtimeSettingsEditor) UpdateAutomationSettings(input graphqlapi.Update
 	if interval == 0 {
 		interval = s.store.Config().Automation.EffectiveSourcingRetryIntervalHours()
 	}
-	cfg, err := s.store.UpdateAutomationProcessing(
-		input.TaskProcessingEnabled,
-		input.TaskProgressSyncIntervalSeconds,
-		input.SubscriptionPollIntervalHours,
-		input.StashBoxEndpoints,
-		subscriptionReleasePolicyConfigFromSnapshot(input.SubscriptionReleasePolicy),
-		config.NewTorrentSelectionConfig(
-			input.TorrentSelection.Enabled,
-			input.TorrentSelection.InspectionCandidateLimit,
-			torrentSelectionConfigRulesFromSnapshot(input.TorrentSelection),
-		),
-		interval,
-	)
+	cfg, err := s.store.UpdateAutomationSection(input.Section, config.AutomationConfig{
+		TaskProcessingEnabled:           input.TaskProcessingEnabled,
+		TaskProgressSyncIntervalSeconds: input.TaskProgressSyncIntervalSeconds,
+		SubscriptionPollIntervalHours:   input.SubscriptionPollIntervalHours,
+		StashBoxEndpoints:               input.StashBoxEndpoints,
+		SubscriptionReleasePolicy:       subscriptionReleasePolicyConfigFromSnapshot(input.SubscriptionReleasePolicy),
+		TorrentSelection:                config.NewTorrentSelectionConfig(input.TorrentSelection.Enabled, input.TorrentSelection.InspectionCandidateLimit, torrentSelectionConfigRulesFromSnapshot(input.TorrentSelection)),
+		SourcingRetryIntervalHours:      interval,
+	})
 	if err != nil {
-		logging.Errorf("settings: save automation settings failed: %v", err)
+		logging.Errorf("settings: save policy section failed: %v", err)
 		return nil, err
 	}
 	logging.Infof(
-		"settings: automation settings saved task_sync_interval=%d subscription_poll_interval_hours=%d selected_endpoints=%d",
+		"settings: policy section %s saved task_sync_interval=%d subscription_poll_interval_hours=%d selected_endpoints=%d",
+		input.Section,
 		cfg.Automation.TaskProgressSyncIntervalSeconds,
 		cfg.Automation.SubscriptionPollIntervalHours,
 		len(cfg.Automation.StashBoxEndpoints),
@@ -223,11 +230,31 @@ func (s *runtimeSettingsEditor) UpdateAutomationSettings(input graphqlapi.Update
 func (s *runtimeSettingsEditor) UpdateSystemSettings(input graphqlapi.UpdateSystemSettingsInput) (*graphqlapi.SettingsSnapshot, error) {
 	policy := config.NormalizeTaskDeletePolicy(input.TaskDeletePolicy)
 	enabled := input.ImageCache.Enabled
-	cfg, err := s.store.UpdateSystemWithDataCache(policy, config.ImageCacheConfig{Enabled: &enabled, MaxSizeMB: input.ImageCache.MaxSizeMB, RetentionDays: input.ImageCache.RetentionDays}, config.StashBoxDataCacheConfig{TTLHours: input.StashBoxDataCache.TTLHours}, input.DeveloperMode)
+	var cache *config.StashBoxDataCacheConfig
+	if !input.PreserveStashBoxCache {
+		cache = &config.StashBoxDataCacheConfig{TTLHours: input.StashBoxDataCache.TTLHours}
+	}
+	cfg, err := s.store.UpdateSystemPreferences(policy, config.ImageCacheConfig{Enabled: &enabled, MaxSizeMB: input.ImageCache.MaxSizeMB, RetentionDays: input.ImageCache.RetentionDays}, cache, input.DeveloperMode, input.Language, input.PreserveTaskDeletePolicy)
 	if err != nil {
 		logging.Errorf("settings: save system settings failed: %v", err)
 		return nil, err
 	}
-	logging.Infof("settings: system settings saved task_delete_policy=%s", cfg.System.EffectiveTaskDeletePolicy())
+	logging.Infof("settings: system settings saved language=%s developer_mode=%t", cfg.System.EffectiveLanguage(), cfg.System.DeveloperMode)
 	return buildSettingsSnapshot(cfg, s.version), nil
+}
+
+func (s *runtimeSettingsEditor) UpdateStashBoxCacheSettings(ttlHours int) (*graphqlapi.SettingsSnapshot, error) {
+	cfg, err := s.store.UpdateStashBoxCache(ttlHours)
+	if err != nil {
+		return nil, err
+	}
+	return buildSettingsSnapshot(cfg, s.version), nil
+}
+
+// UpdateAutomationSettings adapts legacy clients to the current section editor.
+func (s *runtimeSettingsEditor) UpdateAutomationSettings(input graphqlapi.UpdateAutomationSettingsInput) (*graphqlapi.SettingsSnapshot, error) {
+	if input.Section == "" {
+		input.Section = "ALL"
+	}
+	return s.UpdateSettingsSection(input)
 }

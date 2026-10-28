@@ -1,23 +1,29 @@
 package tracker
 
 import (
+	"context"
+	"errors"
+	"github.com/leothevan2444/moji/internal/logging"
+	"net/url"
+	"strings"
 	"sync"
 
 	"github.com/leothevan2444/moji/pkg/jackett"
 )
 
 // JackettConfig captures the runtime Jackett connection fields. Mirroring
-// the config.Config.Jackett block as a typed struct lets callers hand a
+// the config.Config.Connection.Jackett compatibility view as a typed struct lets callers hand a
 // provider to NewJackettService instead of capturing values at startup.
 type JackettConfig struct {
-	URL      string
-	APIKey   string
-	Password string
+	QueryOrder []string
+	URL        string
+	APIKey     string
+	Password   string
 }
 
 // JackettConfigProvider supplies the latest JackettConfig at the moment of
 // each operation. Reading the config lazily means Web UI edits to
-// jackett.url / api_key / password take effect on the next search without
+// indexers.jackett.url / api_key / password take effect on the next search without
 // restarting Moji.
 type JackettConfigProvider func() JackettConfig
 
@@ -98,31 +104,96 @@ func (s *JackettService) ListIndexers() ([]jackett.Indexer, error) {
 
 func (s *JackettService) Search(query string, options ...SearchOption) ([]jackett.SearchResult, error) {
 	opts := &SearchOptions{}
-	for _, opt := range options {
-		opt(opts)
+	for _, option := range options {
+		option(opts)
 	}
-
-	req := jackett.SearchRequest{
-		Query:      query,
-		Categories: opts.Categories,
-		Trackers:   opts.Trackers,
+	ctx := opts.Context
+	if ctx == nil {
+		ctx = context.Background()
 	}
+	var results []jackett.SearchResult
+	err := s.SearchSequential(ctx, query, func(batch []jackett.SearchResult) (bool, error) {
+		results = append(results, batch...)
+		return false, nil
+	}, options...)
+	return results, err
+}
 
+func (s *JackettService) SearchSequential(ctx context.Context, query string, accept func([]jackett.SearchResult) (bool, error), options ...SearchOption) error {
+	if err := ctx.Err(); err != nil {
+		return err
+	}
+	opts := &SearchOptions{}
+	for _, option := range options {
+		option(opts)
+	}
 	client := s.currentClient()
 	if client == nil {
-		return nil, nil
+		return nil
 	}
-
-	// Use SearchWithIndexerStatus so the global indexer-status hook (if any)
-	// can observe per-indexer latency and errors for the stats collector.
-	results, _, err := client.SearchWithIndexerStatus(req)
+	sites, err := client.GetIndexersContext(ctx)
 	if err != nil {
-		return nil, err
+		return err
 	}
-
-	if opts.Limit > 0 && len(results) > opts.Limit {
-		results = results[:opts.Limit]
+	eligible := map[string]bool{}
+	for _, site := range sites {
+		if site.Configured {
+			eligible[site.ID] = true
+		}
 	}
-
-	return results, nil
+	priority := s.configProvider().QueryOrder
+	requested := map[string]bool{}
+	for _, id := range opts.Trackers {
+		requested[strings.ToLower(id)] = true
+	}
+	ordered := []string{}
+	seen := map[string]bool{}
+	add := func(id string) {
+		if !eligible[id] || seen[id] || len(requested) > 0 && !requested[strings.ToLower(id)] {
+			return
+		}
+		ordered = append(ordered, id)
+		seen[id] = true
+	}
+	for _, id := range priority {
+		add(id)
+	}
+	for _, site := range sites {
+		add(site.ID)
+	}
+	var failures []error
+	successful := false
+	for _, id := range ordered {
+		if err := ctx.Err(); err != nil {
+			return err
+		}
+		batch, err := client.SearchContext(ctx, jackett.SearchRequest{Query: query, Trackers: []string{id}, Categories: opts.Categories})
+		if err != nil {
+			if ctx.Err() != nil {
+				return ctx.Err()
+			}
+			var requestError *url.Error
+			if errors.As(err, &requestError) {
+				err = requestError.Err
+			}
+			logging.Infof("tracker: indexer %s search failed (%v); continuing to next site", id, err)
+			failures = append(failures, errors.New("indexer "+id+" search failed"))
+			continue
+		}
+		successful = true
+		if opts.Limit > 0 && len(batch) > opts.Limit {
+			batch = batch[:opts.Limit]
+		}
+		accepted, err := accept(batch)
+		if err != nil {
+			return err
+		}
+		if accepted {
+			return nil
+		}
+	}
+	if !successful && len(failures) > 0 {
+		return errors.Join(failures...)
+	}
+	return ctx.Err()
 }

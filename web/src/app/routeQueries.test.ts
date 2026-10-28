@@ -2,12 +2,12 @@ import { describe, expect, it } from "vitest";
 import {
   DiscoverConfigDocumentDocument,
   AboutSettingsTabDocument,
-  AutomationSettingsTabDocument,
-  ConnectionsSettingsDocument,
-  ConnectionsStatusDocument,
+  SettingsPolicySectionDocument,
+  ServiceConnectionSettingsDocument,
+  ServiceConnectionStatusDocument,
   HomePageDocumentDocument,
   HomeServiceStatusDocument,
-  IngestSettingsTabDocument,
+  LibraryDeliverySettingsDocument,
   PerformersConfigDocumentDocument,
   StatsPageDocumentDocument,
   SystemSettingsTabDocument,
@@ -24,10 +24,10 @@ describe("route-owned GraphQL operations", () => {
     expect(rootFields(HomePageDocumentDocument)).toEqual(["homeTaskSnapshot", "settings"]);
     expect(rootFields(HomeServiceStatusDocument)).toEqual(["settingsStatus"]);
     expect(rootFields(TasksWorkspaceDocument)).toEqual(["settings", "settingsStatus", "taskPage"]);
-    expect(rootFields(ConnectionsSettingsDocument)).toEqual(["settings"]);
-    expect(rootFields(ConnectionsStatusDocument)).toEqual(["settingsStatus"]);
-    expect(rootFields(IngestSettingsTabDocument)).toEqual(["settings", "settingsStatus"]);
-    expect(rootFields(AutomationSettingsTabDocument)).toEqual(["settings", "settingsStatus"]);
+    expect(rootFields(ServiceConnectionSettingsDocument)).toEqual(["settings"]);
+    expect(rootFields(ServiceConnectionStatusDocument)).toEqual(["settingsStatus"]);
+    expect(rootFields(LibraryDeliverySettingsDocument)).toEqual(["settings", "settingsStatus"]);
+    expect(rootFields(SettingsPolicySectionDocument)).toEqual(["settings", "settingsStatus"]);
     expect(rootFields(SystemSettingsTabDocument)).toEqual(["settings", "settingsStatus"]);
     expect(rootFields(AboutSettingsTabDocument)).toEqual(["version"]);
     expect(rootFields(StatsPageDocumentDocument)).toEqual(["dashboardStats"]);
