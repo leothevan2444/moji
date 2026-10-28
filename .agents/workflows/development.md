@@ -1,0 +1,84 @@
+# 开发与验证
+
+状态：2026-10-27 按 `86f69e5` 的 Makefile、package scripts、CI 和生成配置核对。命令均从仓库根目录运行。
+
+## 环境与起步
+
+Go 最低版本看 [go.mod](../../go.mod)（当前 1.25）；前端 CI 显式使用 Node 22，依赖按 `web/package-lock.json` 安装；真实多部件媒体测试需要 FFmpeg/ffprobe。Docker 构建镜像的 Go 版本与最低开发版本可以不同。
+
+```sh
+git status --short
+git log -5 --oneline
+npm --prefix web ci
+```
+
+已具备依赖时无需反复安装。原生开发使用 `make web-dev`，Vite 默认 5173、代理后端 10000，可通过 `VITE_MOJI_API_TARGET` 改代理。后端启动参数、示例配置和完整部署步骤见 [README](../../README.md)。
+
+此工作区可能已有真实实例和本地数据；检查代码不需要启动第二个实例。集成演练用单独配置、端口、临时 data root 和假服务，不能只换数据库目录却仍连真实 qB/Stash 执行操作。
+
+## 按范围选择检查
+
+| 变更 | 必要检查 |
+| --- | --- |
+| `.agents` 文档和入口 | `python3 .agents/scripts/check_docs.py`、`git diff --check`、人工语义核对 |
+| Go 业务局部 | `GOCACHE=/tmp/moji-go-cache go test ./internal/<package>`；有跨模块影响再全量 |
+| 后端公共契约、持久化或生命周期 | `GOCACHE=/tmp/moji-go-cache go test ./...`；并发风险加受影响包 `-race` |
+| React 数据或交互 | `npm --prefix web test -- <相关文件>`、`npm --prefix web run build` |
+| 文案、错误映射、locale | `npm --prefix web run i18n:export`（资源改动时），再 `npm --prefix web run i18n:check` |
+| 可见布局、焦点或移动交互 | 相关 Playwright spec；固定环境检查实际截图及浏览器错误 |
+| 媒体合并、字幕、FFmpeg 调用 | `make test-media`，确认工具集成没有跳过 |
+| 版本/发布脚本 | `python3 scripts/version_test.py`、`python3 scripts/docker_publish_test.py` |
+| Docker/路径挂载/镜像运行 | `make docker-build`、`make docker-test`，按平台分别记录 |
+
+测试应证明行为或关键不变量；不为文档或低影响格式调整补镜像实现的测试。每项检查说明通过、失败、skip 或环境受阻，不能扩大结论。
+
+## GraphQL 与生成文件
+
+Moji schema 源在 `graphql/moji/schema.graphql` 和 `graphql/moji/types/`，gqlgen 配置在 [gqlgen.yml](../../graphql/moji/gqlgen.yml)。Web 操作源在 `web/src/**/*.graphql`。
+
+```sh
+make generate-moji-graphql
+```
+
+该 target 同时更新后端 executable/model 和 Web bindings。仅修改 Web 操作也可 `npm --prefix web run codegen`。Stash/StashBox 查询源和 schema 在各自 `graphql/` 目录，使用 `make generate-stash-client` 或 `make generate-stashbox-client`。不要为改 Moji API 无差别刷新全部外部 schema。
+
+生成代码放在 `internal/graphqlapi/generated`、`internal/graphqlapi/model`、`pkg/*/graphql`、`web/src/graphql/generated`；修改生成源并运行工具，检查 resolver 实现是否被保留。schema 改完先生成再运行依赖生成类型的全量测试。
+
+## 前端环境限制与视觉验证
+
+视觉基线要求 `@playwright/test`、CI 和 wrapper 中的 `mcr.microsoft.com/playwright:v1.61.1-noble` 一致。
+
+```sh
+npm --prefix web run test:visual:docker -- task-workspace.spec.ts
+# 只有确认是有意 UI 改动，才更新并逐张复核：
+npm --prefix web run test:visual:docker -- --update-snapshots=all
+```
+
+本机 Vite 若报 `spawnSync sh EPERM`，先核对错误发生在 `scripts/version.sh` 调用及执行权限/沙箱，不修改业务代码掩盖环境错误。可在固定 Playwright 容器运行检查；同时核对 Node 版本，容器内置 Node 不一定等于 CI 的 setup-node 22。本轮容器内实际为 Node 24.17，测试通过但不能据此声称 Node 22 完整复现。
+
+若只需容器隔离检查，可复用下面的命令；它不会自动切换 Node 版本：
+
+```sh
+docker run --rm --ipc=host \
+  --user "$(id -u):$(id -g)" --env HOME=/tmp --env CI=1 \
+  --mount "type=bind,source=$PWD,target=/work" --workdir /work/web \
+  mcr.microsoft.com/playwright:v1.61.1-noble /bin/sh -c \
+  'git config --global --add safe.directory /work && node --version && npm test && npm run i18n:check && npm run build'
+```
+
+权限受限时按工具权限机制执行。`httptest` socket/IPv6 被拒绝、浏览器系统库缺失、镜像拉取 429 都要区分环境问题与产品回归；未完成的检查仍应明确记录。
+
+## 实际 CI 范围
+
+[ci.yml](../../.github/workflows/ci.yml) 当前配置：
+
+- Web：固定 Playwright 容器，setup-node 22，npm ci、i18n、Vitest、build、Chromium 视觉。
+- Go：两个 Python 脚本测试，以及 `go test ./internal/graphqlapi ./internal/taskruntime ./cmd/moji`。它不是 `go test ./...`，例如 storage 自身测试并不会因此自动执行。
+- Docker：原生 amd64/arm64 各构建与 smoke，适用事件导出已测镜像。
+- Publish：依赖上面三个 jobs，通过 [发布工作流](../../.github/workflows/docker-publish.yml) 合并制品发布。
+
+增加全量 Go 覆盖是 TODO 中的改进建议，本次只校准文档，不偷偷修改 CI。
+
+## 交付
+
+检查 diff、未跟踪文件和敏感数据；在改变行为的同一变更更新对应模块。用户要求提交时再创建提交并报告 hash。阶段复核按 [复核流程](review.md) 记录证据，活动 TODO 只留未完事项。

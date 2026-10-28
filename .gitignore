@@ -1,14 +1,13 @@
 .vscode/
 .github/*
 !.github/workflows/
+!.github/copilot-instructions.md
 .claude/
 .codex/
-.agents/
 config.yaml
 main
 moji
 !moji/
-AGENTS.md
 docs/agent_guidence
 moji.log
 moji.log.*
