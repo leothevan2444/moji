@@ -258,3 +258,13 @@ func (s *runtimeSettingsEditor) UpdateAutomationSettings(input graphqlapi.Update
 	}
 	return s.UpdateSettingsSection(input)
 }
+
+// PatchSettings applies only changed fields; Store owns atomic read/merge/write.
+func (s *runtimeSettingsEditor) PatchSettings(patch map[string]any) (*graphqlapi.SettingsSnapshot, error) {
+	cfg, err := s.store.ApplyPatch(patch)
+	if err != nil {
+		return nil, err
+	}
+	applyAutomationSettings(cfg, s.subscriptionService, s.metadataService)
+	return buildSettingsSnapshot(cfg, s.version), nil
+}

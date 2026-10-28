@@ -686,7 +686,7 @@ func buildSettingsSnapshot(cfg *config.Config, version string) *graphqlapi.Setti
 			TaskProcessingEnabled:           cfg.Automation.EffectiveTaskProcessingEnabled(),
 			SourcingRetryIntervalHours:      cfg.Automation.EffectiveSourcingRetryIntervalHours(),
 			TaskProgressSyncIntervalSeconds: effectiveTaskProgressSyncIntervalSeconds(cfg),
-			SubscriptionPollIntervalHours:   effectiveSubscriptionPollIntervalHours(cfg),
+			SubscriptionPollIntervalHours:   editableSubscriptionPollIntervalHours(cfg),
 			StashBoxEndpoints:               append([]string(nil), cfg.Automation.StashBoxEndpoints...),
 			SubscriptionReleasePolicy: graphqlapi.SubscriptionReleasePolicySnapshot{
 				SoloBehavior:           string(cfg.Automation.SubscriptionReleasePolicy.Effective().SoloBehavior),
@@ -1211,4 +1211,11 @@ func effectiveSubscriptionPollIntervalHours(cfg *config.Config) int {
 		return 1
 	}
 	return hours
+}
+
+func editableSubscriptionPollIntervalHours(cfg *config.Config) int {
+	if cfg.Automation.SubscriptionPollIntervalHours < 0 {
+		return cfg.Automation.SubscriptionPollIntervalHours
+	}
+	return effectiveSubscriptionPollIntervalHours(cfg)
 }

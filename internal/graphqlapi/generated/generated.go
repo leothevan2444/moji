@@ -387,6 +387,7 @@ type ComplexityRoot struct {
 		DeleteTask                  func(childComplexity int, id string) int
 		DeleteTasks                 func(childComplexity int, ids []string) int
 		DownloadMedia               func(childComplexity int, input model.DownloadMediaInput) int
+		PatchSettings               func(childComplexity int, input model.SettingsPatchInput) int
 		ProcessReleaseReviews       func(childComplexity int, input model.ProcessReleaseReviewsInput) int
 		ProcessTaskIngest           func(childComplexity int, ids []string) int
 		QbittorrentAdd              func(childComplexity int, input model.QBittorrentAddInput) int
@@ -1123,6 +1124,7 @@ type MutationResolver interface {
 	SetDownloaderSpeedLimit(ctx context.Context, upload bool, kibPerSecond int) (bool, error)
 	ProcessReleaseReviews(ctx context.Context, input model.ProcessReleaseReviewsInput) (*model.ReleaseReviewPayload, error)
 	QueueDiscoveredScene(ctx context.Context, input model.QueueDiscoveredSceneInput) (*model.Task, error)
+	PatchSettings(ctx context.Context, input model.SettingsPatchInput) (*model.Settings, error)
 	UpdateStashBoxCacheSettings(ctx context.Context, ttlHours int) (*model.Settings, error)
 	UpdateSettingsSection(ctx context.Context, input model.UpdateSettingsSectionInput) (*model.Settings, error)
 	UpdateStashSettings(ctx context.Context, input model.UpdateStashSettingsInput) (*model.Settings, error)
@@ -2878,6 +2880,18 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.Mutation.DownloadMedia(childComplexity, args["input"].(model.DownloadMediaInput)), true
+
+	case "Mutation.patchSettings":
+		if e.complexity.Mutation.PatchSettings == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_patchSettings_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.PatchSettings(childComplexity, args["input"].(model.SettingsPatchInput)), true
 
 	case "Mutation.processReleaseReviews":
 		if e.complexity.Mutation.ProcessReleaseReviews == nil {
@@ -6698,37 +6712,62 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 	opCtx := graphql.GetOperationContext(ctx)
 	ec := executionContext{opCtx, e, 0, 0, make(chan graphql.DeferredResult)}
 	inputUnmarshalMap := graphql.BuildUnmarshalerMap(
+		ec.unmarshalInputDeliveryPatchInput,
 		ec.unmarshalInputDirectionRuleInput,
+		ec.unmarshalInputDirectionRulePatchInput,
 		ec.unmarshalInputDiscoverScenesInput,
 		ec.unmarshalInputDownloadMediaInput,
+		ec.unmarshalInputDownloadRootsPatchInput,
+		ec.unmarshalInputDownloaderConnectionPatchInput,
 		ec.unmarshalInputDownloaderPolicyInput,
 		ec.unmarshalInputDownloadsIngestSettingsInput,
+		ec.unmarshalInputFastRulesPatchInput,
+		ec.unmarshalInputFileClausePatchInput,
+		ec.unmarshalInputFileNameRulePatchInput,
+		ec.unmarshalInputFileRulesPatchInput,
+		ec.unmarshalInputImageCachePatchInput,
 		ec.unmarshalInputImageCacheSettingsInput,
 		ec.unmarshalInputIndexerPreferenceRuleInput,
+		ec.unmarshalInputIndexersPatchInput,
+		ec.unmarshalInputJackettPatchInput,
 		ec.unmarshalInputJackettSearchInput,
 		ec.unmarshalInputLibraryIngestSettingsInput,
+		ec.unmarshalInputLibraryRootsPatchInput,
 		ec.unmarshalInputPerformerListOptions,
 		ec.unmarshalInputPreviewJackettSelectionCandidateInput,
 		ec.unmarshalInputPreviewJackettSelectionInput,
 		ec.unmarshalInputProcessReleaseReviewsInput,
+		ec.unmarshalInputQBConnectionPatchInput,
 		ec.unmarshalInputQBittorrentAddInput,
 		ec.unmarshalInputQueueDiscoveredSceneInput,
 		ec.unmarshalInputQueuePerformerScenesInput,
+		ec.unmarshalInputReleasePolicyPatchInput,
 		ec.unmarshalInputReleaseReviewQueryInput,
 		ec.unmarshalInputResolveBlockedSourcingTaskInput,
+		ec.unmarshalInputResourceRulesPatchInput,
+		ec.unmarshalInputSettingsPatchInput,
 		ec.unmarshalInputStashBoxDataCacheSettingsInput,
+		ec.unmarshalInputStashCachePatchInput,
+		ec.unmarshalInputStashConnectionPatchInput,
 		ec.unmarshalInputStashMetadataScanInput,
+		ec.unmarshalInputStashPatchInput,
 		ec.unmarshalInputStashPerformerScenesInput,
 		ec.unmarshalInputSubscriptionReleasePolicyInput,
+		ec.unmarshalInputSystemPatchInput,
 		ec.unmarshalInputTaskPageInput,
 		ec.unmarshalInputTaskSettingsInput,
+		ec.unmarshalInputTasksPatchInput,
+		ec.unmarshalInputTitleClausePatchInput,
 		ec.unmarshalInputTitleMatchClauseInput,
 		ec.unmarshalInputTitleMatchRuleInput,
+		ec.unmarshalInputTitleRulePatchInput,
+		ec.unmarshalInputToggleRulePatchInput,
 		ec.unmarshalInputTorrentFileNameMatchClauseInput,
 		ec.unmarshalInputTorrentFileNameMatchRuleInput,
 		ec.unmarshalInputTorrentSelectionRuleInput,
 		ec.unmarshalInputTorrentSelectionSettingsInput,
 		ec.unmarshalInputTransferIngestSettingsInput,
+		ec.unmarshalInputTransferPatchInput,
 		ec.unmarshalInputUpdateAutomationSettingsInput,
 		ec.unmarshalInputUpdateIngestSettingsInput,
 		ec.unmarshalInputUpdateJackettSettingsInput,
@@ -6866,7 +6905,7 @@ extend type Mutation {
   setDownloaderSpeedLimit(upload: Boolean!, kibPerSecond: Int!): Boolean!
 }
 enum TorrentAction { PAUSE RESUME RECHECK REANNOUNCE REMOVE REMOVE_FILES }
-input DownloaderPolicyInput { afterIngest: Boolean! = false, enabled: Boolean!, ratio: Float!, seedHours: Float!, matchAll: Boolean!, deleteFiles: Boolean! }
+input DownloaderPolicyInput { afterIngest: Boolean, enabled: Boolean, ratio: Float, seedHours: Float, matchAll: Boolean, deleteFiles: Boolean }
 type DownloaderPolicy { afterIngest: Boolean!, enabled: Boolean!, ratio: Float!, seedHours: Float!, matchAll: Boolean!, deleteFiles: Boolean! }
 type DownloaderOverview {
   checkedAt: String!
@@ -7310,6 +7349,9 @@ extend type Subscription {
 }
 
 extend type Mutation {
+  "Merge only supplied configuration fields and persist atomically. Objects merge; lists replace."
+  patchSettings(input: SettingsPatchInput!): Settings!
+
   updateStashBoxCacheSettings(ttlHours: Int!): Settings!
   updateSettingsSection(input: UpdateSettingsSectionInput!): Settings!
   "Update Stash settings and persist them to backend config"
@@ -7836,6 +7878,159 @@ input TaskSettingsInput {
  subscriptionPollIntervalHours: Int!
  sourcingRetryIntervalHours: Int!
  subscriptionReleasePolicy: SubscriptionReleasePolicyInput!
+}
+
+input SettingsPatchInput {
+  indexers: IndexersPatchInput
+  downloader: DownloaderConnectionPatchInput
+  stash: StashPatchInput
+  tasks: TasksPatchInput
+  system: SystemPatchInput
+}
+
+input IndexersPatchInput {
+  jackett: JackettPatchInput
+  query_order: [String!]
+}
+
+input JackettPatchInput {
+  url: String
+  api_key: String
+  password: String
+}
+
+input DownloaderConnectionPatchInput {
+  qbittorrent: QBConnectionPatchInput
+}
+
+input QBConnectionPatchInput {
+  url: String
+  username: String
+  password: String
+  default_save_path: String
+  category: String
+  tags: String
+}
+
+input StashPatchInput {
+  connection: StashConnectionPatchInput
+  ingest: DeliveryPatchInput
+  metadata_priority: [String!]
+  data_cache: StashCachePatchInput
+}
+
+input StashConnectionPatchInput {
+  url: String
+  api_key: String
+}
+
+input DeliveryPatchInput {
+  keep_subtitles: Boolean
+  generate_transcodes: Boolean
+  downloads: DownloadRootsPatchInput
+  library: LibraryRootsPatchInput
+  transfer: TransferPatchInput
+}
+
+input DownloadRootsPatchInput {
+  qb_root: String
+  moji_root: String
+}
+
+input LibraryRootsPatchInput {
+  moji_root: String
+  stash_root: String
+}
+
+input TransferPatchInput {
+  action: String
+}
+
+input StashCachePatchInput {
+  ttl_hours: Int
+}
+
+input TasksPatchInput {
+  task_processing_enabled: Boolean
+  task_progress_sync_interval_seconds: Int
+  sourcing_retry_interval_hours: Int
+  subscription_poll_interval_hours: Int
+  task_delete_policy: TaskDeletePolicy
+  subscription_release_policy: ReleasePolicyPatchInput
+  torrent_selection: ResourceRulesPatchInput
+}
+
+input ReleasePolicyPatchInput {
+  solo_behavior: SubscriptionReleaseBehavior
+  group_behavior: SubscriptionReleaseBehavior
+  compilation_behavior: SubscriptionReleaseBehavior
+  vr_behavior: SubscriptionReleaseBehavior
+  max_group_performer_count: Int
+  release_date_range: SubscriptionReleaseDateRange
+}
+
+input ResourceRulesPatchInput {
+  enabled: Boolean
+  inspection_candidate_limit: Int
+  fast_rule_order: [TorrentSelectionRuleType!]
+  fast_rules: FastRulesPatchInput
+  torrent_rules: FileRulesPatchInput
+}
+
+input FastRulesPatchInput {
+  title_match: TitleRulePatchInput
+  publish_date: DirectionRulePatchInput
+  title_similarity: ToggleRulePatchInput
+  seeders: DirectionRulePatchInput
+  size: DirectionRulePatchInput
+}
+
+input FileRulesPatchInput {
+  torrent_single_video: ToggleRulePatchInput
+  torrent_file_name_match: FileNameRulePatchInput
+}
+
+input TitleRulePatchInput {
+  enabled: Boolean
+  clauses: [TitleClausePatchInput!]
+}
+
+input FileNameRulePatchInput {
+  enabled: Boolean
+  clauses: [FileClausePatchInput!]
+}
+
+input DirectionRulePatchInput {
+  enabled: Boolean
+  direction: TorrentSelectionDirection
+}
+
+input ToggleRulePatchInput {
+  enabled: Boolean
+}
+
+input SystemPatchInput {
+  language: String
+  developer_mode: Boolean
+  image_cache: ImageCachePatchInput
+}
+
+input ImageCachePatchInput {
+  enabled: Boolean
+  max_size_mb: Int
+  retention_days: Int
+}
+
+input TitleClausePatchInput {
+  pattern: String!
+  pattern_mode: TitleMatchPatternMode!
+  effect: TitleMatchEffect!
+}
+
+input FileClausePatchInput {
+  pattern: String!
+  pattern_mode: TitleMatchPatternMode!
+  effect: TorrentFileMatchEffect!
 }
 `, BuiltIn: false},
 	{Name: "../../../graphql/moji/types/stash.graphql", Input: `extend type Query {
@@ -8780,6 +8975,34 @@ func (ec *executionContext) field_Mutation_downloadMedia_argsInput(
 	}
 
 	var zeroVal model.DownloadMediaInput
+	return zeroVal, nil
+}
+
+func (ec *executionContext) field_Mutation_patchSettings_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := ec.field_Mutation_patchSettings_argsInput(ctx, rawArgs)
+	if err != nil {
+		return nil, err
+	}
+	args["input"] = arg0
+	return args, nil
+}
+func (ec *executionContext) field_Mutation_patchSettings_argsInput(
+	ctx context.Context,
+	rawArgs map[string]any,
+) (model.SettingsPatchInput, error) {
+	if _, ok := rawArgs["input"]; !ok {
+		var zeroVal model.SettingsPatchInput
+		return zeroVal, nil
+	}
+
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
+	if tmp, ok := rawArgs["input"]; ok {
+		return ec.unmarshalNSettingsPatchInput2githubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐSettingsPatchInput(ctx, tmp)
+	}
+
+	var zeroVal model.SettingsPatchInput
 	return zeroVal, nil
 }
 
@@ -23508,6 +23731,75 @@ func (ec *executionContext) fieldContext_Mutation_queueDiscoveredScene(ctx conte
 	}()
 	ctx = graphql.WithFieldContext(ctx, fc)
 	if fc.Args, err = ec.field_Mutation_queueDiscoveredScene_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_patchSettings(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Mutation_patchSettings(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().PatchSettings(rctx, fc.Args["input"].(model.SettingsPatchInput))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*model.Settings)
+	fc.Result = res
+	return ec.marshalNSettings2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐSettings(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Mutation_patchSettings(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "stash":
+				return ec.fieldContext_Settings_stash(ctx, field)
+			case "ingest":
+				return ec.fieldContext_Settings_ingest(ctx, field)
+			case "jackett":
+				return ec.fieldContext_Settings_jackett(ctx, field)
+			case "qbittorrent":
+				return ec.fieldContext_Settings_qbittorrent(ctx, field)
+			case "automation":
+				return ec.fieldContext_Settings_automation(ctx, field)
+			case "system":
+				return ec.fieldContext_Settings_system(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type Settings", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_patchSettings_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return fc, err
 	}
@@ -50061,6 +50353,61 @@ func (ec *executionContext) fieldContext___Type_isOneOf(_ context.Context, field
 
 // region    **************************** input.gotpl *****************************
 
+func (ec *executionContext) unmarshalInputDeliveryPatchInput(ctx context.Context, obj any) (model.DeliveryPatchInput, error) {
+	var it model.DeliveryPatchInput
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"keep_subtitles", "generate_transcodes", "downloads", "library", "transfer"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "keep_subtitles":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("keep_subtitles"))
+			data, err := ec.unmarshalOBoolean2ᚖbool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.KeepSubtitles = data
+		case "generate_transcodes":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("generate_transcodes"))
+			data, err := ec.unmarshalOBoolean2ᚖbool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.GenerateTranscodes = data
+		case "downloads":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("downloads"))
+			data, err := ec.unmarshalODownloadRootsPatchInput2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐDownloadRootsPatchInput(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Downloads = data
+		case "library":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("library"))
+			data, err := ec.unmarshalOLibraryRootsPatchInput2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐLibraryRootsPatchInput(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Library = data
+		case "transfer":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("transfer"))
+			data, err := ec.unmarshalOTransferPatchInput2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐTransferPatchInput(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Transfer = data
+		}
+	}
+
+	return it, nil
+}
+
 func (ec *executionContext) unmarshalInputDirectionRuleInput(ctx context.Context, obj any) (model.DirectionRuleInput, error) {
 	var it model.DirectionRuleInput
 	asMap := map[string]any{}
@@ -50078,6 +50425,40 @@ func (ec *executionContext) unmarshalInputDirectionRuleInput(ctx context.Context
 		case "direction":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("direction"))
 			data, err := ec.unmarshalNTorrentSelectionDirection2githubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐTorrentSelectionDirection(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Direction = data
+		}
+	}
+
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputDirectionRulePatchInput(ctx context.Context, obj any) (model.DirectionRulePatchInput, error) {
+	var it model.DirectionRulePatchInput
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"enabled", "direction"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "enabled":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("enabled"))
+			data, err := ec.unmarshalOBoolean2ᚖbool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Enabled = data
+		case "direction":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("direction"))
+			data, err := ec.unmarshalOTorrentSelectionDirection2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐTorrentSelectionDirection(ctx, v)
 			if err != nil {
 				return it, err
 			}
@@ -50212,15 +50593,72 @@ func (ec *executionContext) unmarshalInputDownloadMediaInput(ctx context.Context
 	return it, nil
 }
 
-func (ec *executionContext) unmarshalInputDownloaderPolicyInput(ctx context.Context, obj any) (model.DownloaderPolicyInput, error) {
-	var it model.DownloaderPolicyInput
+func (ec *executionContext) unmarshalInputDownloadRootsPatchInput(ctx context.Context, obj any) (model.DownloadRootsPatchInput, error) {
+	var it model.DownloadRootsPatchInput
 	asMap := map[string]any{}
 	for k, v := range obj.(map[string]any) {
 		asMap[k] = v
 	}
 
-	if _, present := asMap["afterIngest"]; !present {
-		asMap["afterIngest"] = false
+	fieldsInOrder := [...]string{"qb_root", "moji_root"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "qb_root":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("qb_root"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.QbRoot = data
+		case "moji_root":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("moji_root"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.MojiRoot = data
+		}
+	}
+
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputDownloaderConnectionPatchInput(ctx context.Context, obj any) (model.DownloaderConnectionPatchInput, error) {
+	var it model.DownloaderConnectionPatchInput
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"qbittorrent"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "qbittorrent":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("qbittorrent"))
+			data, err := ec.unmarshalOQBConnectionPatchInput2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐQBConnectionPatchInput(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Qbittorrent = data
+		}
+	}
+
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputDownloaderPolicyInput(ctx context.Context, obj any) (model.DownloaderPolicyInput, error) {
+	var it model.DownloaderPolicyInput
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
 	}
 
 	fieldsInOrder := [...]string{"afterIngest", "enabled", "ratio", "seedHours", "matchAll", "deleteFiles"}
@@ -50232,42 +50670,42 @@ func (ec *executionContext) unmarshalInputDownloaderPolicyInput(ctx context.Cont
 		switch k {
 		case "afterIngest":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("afterIngest"))
-			data, err := ec.unmarshalNBoolean2bool(ctx, v)
+			data, err := ec.unmarshalOBoolean2ᚖbool(ctx, v)
 			if err != nil {
 				return it, err
 			}
 			it.AfterIngest = data
 		case "enabled":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("enabled"))
-			data, err := ec.unmarshalNBoolean2bool(ctx, v)
+			data, err := ec.unmarshalOBoolean2ᚖbool(ctx, v)
 			if err != nil {
 				return it, err
 			}
 			it.Enabled = data
 		case "ratio":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("ratio"))
-			data, err := ec.unmarshalNFloat2float64(ctx, v)
+			data, err := ec.unmarshalOFloat2ᚖfloat64(ctx, v)
 			if err != nil {
 				return it, err
 			}
 			it.Ratio = data
 		case "seedHours":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("seedHours"))
-			data, err := ec.unmarshalNFloat2float64(ctx, v)
+			data, err := ec.unmarshalOFloat2ᚖfloat64(ctx, v)
 			if err != nil {
 				return it, err
 			}
 			it.SeedHours = data
 		case "matchAll":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("matchAll"))
-			data, err := ec.unmarshalNBoolean2bool(ctx, v)
+			data, err := ec.unmarshalOBoolean2ᚖbool(ctx, v)
 			if err != nil {
 				return it, err
 			}
 			it.MatchAll = data
 		case "deleteFiles":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("deleteFiles"))
-			data, err := ec.unmarshalNBoolean2bool(ctx, v)
+			data, err := ec.unmarshalOBoolean2ᚖbool(ctx, v)
 			if err != nil {
 				return it, err
 			}
@@ -50306,6 +50744,211 @@ func (ec *executionContext) unmarshalInputDownloadsIngestSettingsInput(ctx conte
 				return it, err
 			}
 			it.MojiRoot = data
+		}
+	}
+
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputFastRulesPatchInput(ctx context.Context, obj any) (model.FastRulesPatchInput, error) {
+	var it model.FastRulesPatchInput
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"title_match", "publish_date", "title_similarity", "seeders", "size"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "title_match":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("title_match"))
+			data, err := ec.unmarshalOTitleRulePatchInput2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐTitleRulePatchInput(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.TitleMatch = data
+		case "publish_date":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("publish_date"))
+			data, err := ec.unmarshalODirectionRulePatchInput2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐDirectionRulePatchInput(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.PublishDate = data
+		case "title_similarity":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("title_similarity"))
+			data, err := ec.unmarshalOToggleRulePatchInput2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐToggleRulePatchInput(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.TitleSimilarity = data
+		case "seeders":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("seeders"))
+			data, err := ec.unmarshalODirectionRulePatchInput2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐDirectionRulePatchInput(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Seeders = data
+		case "size":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("size"))
+			data, err := ec.unmarshalODirectionRulePatchInput2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐDirectionRulePatchInput(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Size = data
+		}
+	}
+
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputFileClausePatchInput(ctx context.Context, obj any) (model.FileClausePatchInput, error) {
+	var it model.FileClausePatchInput
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"pattern", "pattern_mode", "effect"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "pattern":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("pattern"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Pattern = data
+		case "pattern_mode":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("pattern_mode"))
+			data, err := ec.unmarshalNTitleMatchPatternMode2githubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐTitleMatchPatternMode(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.PatternMode = data
+		case "effect":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("effect"))
+			data, err := ec.unmarshalNTorrentFileMatchEffect2githubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐTorrentFileMatchEffect(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Effect = data
+		}
+	}
+
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputFileNameRulePatchInput(ctx context.Context, obj any) (model.FileNameRulePatchInput, error) {
+	var it model.FileNameRulePatchInput
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"enabled", "clauses"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "enabled":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("enabled"))
+			data, err := ec.unmarshalOBoolean2ᚖbool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Enabled = data
+		case "clauses":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("clauses"))
+			data, err := ec.unmarshalOFileClausePatchInput2ᚕᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐFileClausePatchInputᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Clauses = data
+		}
+	}
+
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputFileRulesPatchInput(ctx context.Context, obj any) (model.FileRulesPatchInput, error) {
+	var it model.FileRulesPatchInput
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"torrent_single_video", "torrent_file_name_match"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "torrent_single_video":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("torrent_single_video"))
+			data, err := ec.unmarshalOToggleRulePatchInput2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐToggleRulePatchInput(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.TorrentSingleVideo = data
+		case "torrent_file_name_match":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("torrent_file_name_match"))
+			data, err := ec.unmarshalOFileNameRulePatchInput2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐFileNameRulePatchInput(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.TorrentFileNameMatch = data
+		}
+	}
+
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputImageCachePatchInput(ctx context.Context, obj any) (model.ImageCachePatchInput, error) {
+	var it model.ImageCachePatchInput
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"enabled", "max_size_mb", "retention_days"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "enabled":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("enabled"))
+			data, err := ec.unmarshalOBoolean2ᚖbool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Enabled = data
+		case "max_size_mb":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("max_size_mb"))
+			data, err := ec.unmarshalOInt2ᚖint(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.MaxSizeMb = data
+		case "retention_days":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("retention_days"))
+			data, err := ec.unmarshalOInt2ᚖint(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.RetentionDays = data
 		}
 	}
 
@@ -50374,6 +51017,81 @@ func (ec *executionContext) unmarshalInputIndexerPreferenceRuleInput(ctx context
 				return it, err
 			}
 			it.TrackerIds = data
+		}
+	}
+
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputIndexersPatchInput(ctx context.Context, obj any) (model.IndexersPatchInput, error) {
+	var it model.IndexersPatchInput
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"jackett", "query_order"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "jackett":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("jackett"))
+			data, err := ec.unmarshalOJackettPatchInput2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐJackettPatchInput(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Jackett = data
+		case "query_order":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("query_order"))
+			data, err := ec.unmarshalOString2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.QueryOrder = data
+		}
+	}
+
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputJackettPatchInput(ctx context.Context, obj any) (model.JackettPatchInput, error) {
+	var it model.JackettPatchInput
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"url", "api_key", "password"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "url":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("url"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.URL = data
+		case "api_key":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("api_key"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.APIKey = data
+		case "password":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("password"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Password = data
 		}
 	}
 
@@ -50463,6 +51181,40 @@ func (ec *executionContext) unmarshalInputLibraryIngestSettingsInput(ctx context
 		case "stashRoot":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("stashRoot"))
 			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.StashRoot = data
+		}
+	}
+
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputLibraryRootsPatchInput(ctx context.Context, obj any) (model.LibraryRootsPatchInput, error) {
+	var it model.LibraryRootsPatchInput
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"moji_root", "stash_root"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "moji_root":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("moji_root"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.MojiRoot = data
+		case "stash_root":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("stash_root"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
 			if err != nil {
 				return it, err
 			}
@@ -50707,6 +51459,68 @@ func (ec *executionContext) unmarshalInputProcessReleaseReviewsInput(ctx context
 	return it, nil
 }
 
+func (ec *executionContext) unmarshalInputQBConnectionPatchInput(ctx context.Context, obj any) (model.QBConnectionPatchInput, error) {
+	var it model.QBConnectionPatchInput
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"url", "username", "password", "default_save_path", "category", "tags"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "url":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("url"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.URL = data
+		case "username":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("username"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Username = data
+		case "password":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("password"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Password = data
+		case "default_save_path":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("default_save_path"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.DefaultSavePath = data
+		case "category":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("category"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Category = data
+		case "tags":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("tags"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Tags = data
+		}
+	}
+
+	return it, nil
+}
+
 func (ec *executionContext) unmarshalInputQBittorrentAddInput(ctx context.Context, obj any) (model.QBittorrentAddInput, error) {
 	var it model.QBittorrentAddInput
 	asMap := map[string]any{}
@@ -50824,6 +51638,68 @@ func (ec *executionContext) unmarshalInputQueuePerformerScenesInput(ctx context.
 				return it, err
 			}
 			it.SceneKeys = data
+		}
+	}
+
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputReleasePolicyPatchInput(ctx context.Context, obj any) (model.ReleasePolicyPatchInput, error) {
+	var it model.ReleasePolicyPatchInput
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"solo_behavior", "group_behavior", "compilation_behavior", "vr_behavior", "max_group_performer_count", "release_date_range"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "solo_behavior":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("solo_behavior"))
+			data, err := ec.unmarshalOSubscriptionReleaseBehavior2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐSubscriptionReleaseBehavior(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.SoloBehavior = data
+		case "group_behavior":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("group_behavior"))
+			data, err := ec.unmarshalOSubscriptionReleaseBehavior2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐSubscriptionReleaseBehavior(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.GroupBehavior = data
+		case "compilation_behavior":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("compilation_behavior"))
+			data, err := ec.unmarshalOSubscriptionReleaseBehavior2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐSubscriptionReleaseBehavior(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.CompilationBehavior = data
+		case "vr_behavior":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("vr_behavior"))
+			data, err := ec.unmarshalOSubscriptionReleaseBehavior2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐSubscriptionReleaseBehavior(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.VrBehavior = data
+		case "max_group_performer_count":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("max_group_performer_count"))
+			data, err := ec.unmarshalOInt2ᚖint(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.MaxGroupPerformerCount = data
+		case "release_date_range":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("release_date_range"))
+			data, err := ec.unmarshalOSubscriptionReleaseDateRange2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐSubscriptionReleaseDateRange(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ReleaseDateRange = data
 		}
 	}
 
@@ -50985,6 +51861,116 @@ func (ec *executionContext) unmarshalInputResolveBlockedSourcingTaskInput(ctx co
 	return it, nil
 }
 
+func (ec *executionContext) unmarshalInputResourceRulesPatchInput(ctx context.Context, obj any) (model.ResourceRulesPatchInput, error) {
+	var it model.ResourceRulesPatchInput
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"enabled", "inspection_candidate_limit", "fast_rule_order", "fast_rules", "torrent_rules"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "enabled":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("enabled"))
+			data, err := ec.unmarshalOBoolean2ᚖbool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Enabled = data
+		case "inspection_candidate_limit":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("inspection_candidate_limit"))
+			data, err := ec.unmarshalOInt2ᚖint(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.InspectionCandidateLimit = data
+		case "fast_rule_order":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("fast_rule_order"))
+			data, err := ec.unmarshalOTorrentSelectionRuleType2ᚕgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐTorrentSelectionRuleTypeᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.FastRuleOrder = data
+		case "fast_rules":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("fast_rules"))
+			data, err := ec.unmarshalOFastRulesPatchInput2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐFastRulesPatchInput(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.FastRules = data
+		case "torrent_rules":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("torrent_rules"))
+			data, err := ec.unmarshalOFileRulesPatchInput2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐFileRulesPatchInput(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.TorrentRules = data
+		}
+	}
+
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputSettingsPatchInput(ctx context.Context, obj any) (model.SettingsPatchInput, error) {
+	var it model.SettingsPatchInput
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"indexers", "downloader", "stash", "tasks", "system"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "indexers":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("indexers"))
+			data, err := ec.unmarshalOIndexersPatchInput2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐIndexersPatchInput(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Indexers = data
+		case "downloader":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("downloader"))
+			data, err := ec.unmarshalODownloaderConnectionPatchInput2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐDownloaderConnectionPatchInput(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Downloader = data
+		case "stash":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("stash"))
+			data, err := ec.unmarshalOStashPatchInput2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐStashPatchInput(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Stash = data
+		case "tasks":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("tasks"))
+			data, err := ec.unmarshalOTasksPatchInput2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐTasksPatchInput(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Tasks = data
+		case "system":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("system"))
+			data, err := ec.unmarshalOSystemPatchInput2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐSystemPatchInput(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.System = data
+		}
+	}
+
+	return it, nil
+}
+
 func (ec *executionContext) unmarshalInputStashBoxDataCacheSettingsInput(ctx context.Context, obj any) (model.StashBoxDataCacheSettingsInput, error) {
 	var it model.StashBoxDataCacheSettingsInput
 	asMap := map[string]any{}
@@ -51006,6 +51992,67 @@ func (ec *executionContext) unmarshalInputStashBoxDataCacheSettingsInput(ctx con
 				return it, err
 			}
 			it.TTLHours = data
+		}
+	}
+
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputStashCachePatchInput(ctx context.Context, obj any) (model.StashCachePatchInput, error) {
+	var it model.StashCachePatchInput
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"ttl_hours"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "ttl_hours":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("ttl_hours"))
+			data, err := ec.unmarshalOInt2ᚖint(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.TTLHours = data
+		}
+	}
+
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputStashConnectionPatchInput(ctx context.Context, obj any) (model.StashConnectionPatchInput, error) {
+	var it model.StashConnectionPatchInput
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"url", "api_key"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "url":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("url"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.URL = data
+		case "api_key":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("api_key"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.APIKey = data
 		}
 	}
 
@@ -51089,6 +52136,54 @@ func (ec *executionContext) unmarshalInputStashMetadataScanInput(ctx context.Con
 				return it, err
 			}
 			it.ScanGenerateClipPreviews = data
+		}
+	}
+
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputStashPatchInput(ctx context.Context, obj any) (model.StashPatchInput, error) {
+	var it model.StashPatchInput
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"connection", "ingest", "metadata_priority", "data_cache"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "connection":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("connection"))
+			data, err := ec.unmarshalOStashConnectionPatchInput2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐStashConnectionPatchInput(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Connection = data
+		case "ingest":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("ingest"))
+			data, err := ec.unmarshalODeliveryPatchInput2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐDeliveryPatchInput(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Ingest = data
+		case "metadata_priority":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("metadata_priority"))
+			data, err := ec.unmarshalOString2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.MetadataPriority = data
+		case "data_cache":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("data_cache"))
+			data, err := ec.unmarshalOStashCachePatchInput2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐStashCachePatchInput(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.DataCache = data
 		}
 	}
 
@@ -51219,6 +52314,47 @@ func (ec *executionContext) unmarshalInputSubscriptionReleasePolicyInput(ctx con
 				return it, err
 			}
 			it.ReleaseDateRange = data
+		}
+	}
+
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputSystemPatchInput(ctx context.Context, obj any) (model.SystemPatchInput, error) {
+	var it model.SystemPatchInput
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"language", "developer_mode", "image_cache"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "language":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("language"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Language = data
+		case "developer_mode":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("developer_mode"))
+			data, err := ec.unmarshalOBoolean2ᚖbool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.DeveloperMode = data
+		case "image_cache":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("image_cache"))
+			data, err := ec.unmarshalOImageCachePatchInput2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐImageCachePatchInput(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ImageCache = data
 		}
 	}
 
@@ -51365,6 +52501,116 @@ func (ec *executionContext) unmarshalInputTaskSettingsInput(ctx context.Context,
 	return it, nil
 }
 
+func (ec *executionContext) unmarshalInputTasksPatchInput(ctx context.Context, obj any) (model.TasksPatchInput, error) {
+	var it model.TasksPatchInput
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"task_processing_enabled", "task_progress_sync_interval_seconds", "sourcing_retry_interval_hours", "subscription_poll_interval_hours", "task_delete_policy", "subscription_release_policy", "torrent_selection"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "task_processing_enabled":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("task_processing_enabled"))
+			data, err := ec.unmarshalOBoolean2ᚖbool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.TaskProcessingEnabled = data
+		case "task_progress_sync_interval_seconds":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("task_progress_sync_interval_seconds"))
+			data, err := ec.unmarshalOInt2ᚖint(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.TaskProgressSyncIntervalSeconds = data
+		case "sourcing_retry_interval_hours":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("sourcing_retry_interval_hours"))
+			data, err := ec.unmarshalOInt2ᚖint(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.SourcingRetryIntervalHours = data
+		case "subscription_poll_interval_hours":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("subscription_poll_interval_hours"))
+			data, err := ec.unmarshalOInt2ᚖint(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.SubscriptionPollIntervalHours = data
+		case "task_delete_policy":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("task_delete_policy"))
+			data, err := ec.unmarshalOTaskDeletePolicy2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐTaskDeletePolicy(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.TaskDeletePolicy = data
+		case "subscription_release_policy":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("subscription_release_policy"))
+			data, err := ec.unmarshalOReleasePolicyPatchInput2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐReleasePolicyPatchInput(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.SubscriptionReleasePolicy = data
+		case "torrent_selection":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("torrent_selection"))
+			data, err := ec.unmarshalOResourceRulesPatchInput2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐResourceRulesPatchInput(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.TorrentSelection = data
+		}
+	}
+
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputTitleClausePatchInput(ctx context.Context, obj any) (model.TitleClausePatchInput, error) {
+	var it model.TitleClausePatchInput
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"pattern", "pattern_mode", "effect"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "pattern":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("pattern"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Pattern = data
+		case "pattern_mode":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("pattern_mode"))
+			data, err := ec.unmarshalNTitleMatchPatternMode2githubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐTitleMatchPatternMode(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.PatternMode = data
+		case "effect":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("effect"))
+			data, err := ec.unmarshalNTitleMatchEffect2githubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐTitleMatchEffect(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Effect = data
+		}
+	}
+
+	return it, nil
+}
+
 func (ec *executionContext) unmarshalInputTitleMatchClauseInput(ctx context.Context, obj any) (model.TitleMatchClauseInput, error) {
 	var it model.TitleMatchClauseInput
 	asMap := map[string]any{}
@@ -51427,6 +52673,67 @@ func (ec *executionContext) unmarshalInputTitleMatchRuleInput(ctx context.Contex
 				return it, err
 			}
 			it.Clauses = data
+		}
+	}
+
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputTitleRulePatchInput(ctx context.Context, obj any) (model.TitleRulePatchInput, error) {
+	var it model.TitleRulePatchInput
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"enabled", "clauses"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "enabled":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("enabled"))
+			data, err := ec.unmarshalOBoolean2ᚖbool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Enabled = data
+		case "clauses":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("clauses"))
+			data, err := ec.unmarshalOTitleClausePatchInput2ᚕᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐTitleClausePatchInputᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Clauses = data
+		}
+	}
+
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputToggleRulePatchInput(ctx context.Context, obj any) (model.ToggleRulePatchInput, error) {
+	var it model.ToggleRulePatchInput
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"enabled"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "enabled":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("enabled"))
+			data, err := ec.unmarshalOBoolean2ᚖbool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Enabled = data
 		}
 	}
 
@@ -51642,6 +52949,33 @@ func (ec *executionContext) unmarshalInputTransferIngestSettingsInput(ctx contex
 		case "action":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("action"))
 			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Action = data
+		}
+	}
+
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputTransferPatchInput(ctx context.Context, obj any) (model.TransferPatchInput, error) {
+	var it model.TransferPatchInput
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"action"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "action":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("action"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
 			if err != nil {
 				return it, err
 			}
@@ -54456,6 +55790,13 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 		case "queueDiscoveredScene":
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
 				return ec._Mutation_queueDiscoveredScene(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "patchSettings":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_patchSettings(ctx, field)
 			})
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
@@ -60207,6 +61548,11 @@ func (ec *executionContext) marshalNExternalService2ᚕgithubᚗcomᚋleothevan2
 	return ret
 }
 
+func (ec *executionContext) unmarshalNFileClausePatchInput2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐFileClausePatchInput(ctx context.Context, v any) (*model.FileClausePatchInput, error) {
+	res, err := ec.unmarshalInputFileClausePatchInput(ctx, v)
+	return &res, graphql.ErrorOnPath(ctx, err)
+}
+
 func (ec *executionContext) unmarshalNFloat2float64(ctx context.Context, v any) (float64, error) {
 	res, err := graphql.UnmarshalFloatContext(ctx, v)
 	return res, graphql.ErrorOnPath(ctx, err)
@@ -61630,6 +62976,11 @@ func (ec *executionContext) marshalNSettings2ᚖgithubᚗcomᚋleothevan2444ᚋm
 	return ec._Settings(ctx, sel, v)
 }
 
+func (ec *executionContext) unmarshalNSettingsPatchInput2githubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐSettingsPatchInput(ctx context.Context, v any) (model.SettingsPatchInput, error) {
+	res, err := ec.unmarshalInputSettingsPatchInput(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
 func (ec *executionContext) unmarshalNSettingsSection2githubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐSettingsSection(ctx context.Context, v any) (model.SettingsSection, error) {
 	var res model.SettingsSection
 	err := res.UnmarshalGQL(v)
@@ -62778,6 +64129,11 @@ func (ec *executionContext) marshalNTaskSummary2ᚖgithubᚗcomᚋleothevan2444�
 	return ec._TaskSummary(ctx, sel, v)
 }
 
+func (ec *executionContext) unmarshalNTitleClausePatchInput2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐTitleClausePatchInput(ctx context.Context, v any) (*model.TitleClausePatchInput, error) {
+	res, err := ec.unmarshalInputTitleClausePatchInput(ctx, v)
+	return &res, graphql.ErrorOnPath(ctx, err)
+}
+
 func (ec *executionContext) marshalNTitleMatchClause2ᚕᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐTitleMatchClauseᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.TitleMatchClause) graphql.Marshaler {
 	ret := make(graphql.Array, len(v))
 	var wg sync.WaitGroup
@@ -63436,11 +64792,27 @@ func (ec *executionContext) marshalODashboardStats2ᚖgithubᚗcomᚋleothevan24
 	return ec._DashboardStats(ctx, sel, v)
 }
 
+func (ec *executionContext) unmarshalODeliveryPatchInput2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐDeliveryPatchInput(ctx context.Context, v any) (*model.DeliveryPatchInput, error) {
+	if v == nil {
+		return nil, nil
+	}
+	res, err := ec.unmarshalInputDeliveryPatchInput(ctx, v)
+	return &res, graphql.ErrorOnPath(ctx, err)
+}
+
 func (ec *executionContext) unmarshalODirectionRuleInput2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐDirectionRuleInput(ctx context.Context, v any) (*model.DirectionRuleInput, error) {
 	if v == nil {
 		return nil, nil
 	}
 	res, err := ec.unmarshalInputDirectionRuleInput(ctx, v)
+	return &res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) unmarshalODirectionRulePatchInput2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐDirectionRulePatchInput(ctx context.Context, v any) (*model.DirectionRulePatchInput, error) {
+	if v == nil {
+		return nil, nil
+	}
+	res, err := ec.unmarshalInputDirectionRulePatchInput(ctx, v)
 	return &res, graphql.ErrorOnPath(ctx, err)
 }
 
@@ -63458,6 +64830,64 @@ func (ec *executionContext) marshalODiscoverSortBy2ᚖgithubᚗcomᚋleothevan24
 		return graphql.Null
 	}
 	return v
+}
+
+func (ec *executionContext) unmarshalODownloadRootsPatchInput2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐDownloadRootsPatchInput(ctx context.Context, v any) (*model.DownloadRootsPatchInput, error) {
+	if v == nil {
+		return nil, nil
+	}
+	res, err := ec.unmarshalInputDownloadRootsPatchInput(ctx, v)
+	return &res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) unmarshalODownloaderConnectionPatchInput2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐDownloaderConnectionPatchInput(ctx context.Context, v any) (*model.DownloaderConnectionPatchInput, error) {
+	if v == nil {
+		return nil, nil
+	}
+	res, err := ec.unmarshalInputDownloaderConnectionPatchInput(ctx, v)
+	return &res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) unmarshalOFastRulesPatchInput2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐFastRulesPatchInput(ctx context.Context, v any) (*model.FastRulesPatchInput, error) {
+	if v == nil {
+		return nil, nil
+	}
+	res, err := ec.unmarshalInputFastRulesPatchInput(ctx, v)
+	return &res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) unmarshalOFileClausePatchInput2ᚕᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐFileClausePatchInputᚄ(ctx context.Context, v any) ([]*model.FileClausePatchInput, error) {
+	if v == nil {
+		return nil, nil
+	}
+	var vSlice []any
+	vSlice = graphql.CoerceList(v)
+	var err error
+	res := make([]*model.FileClausePatchInput, len(vSlice))
+	for i := range vSlice {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithIndex(i))
+		res[i], err = ec.unmarshalNFileClausePatchInput2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐFileClausePatchInput(ctx, vSlice[i])
+		if err != nil {
+			return nil, err
+		}
+	}
+	return res, nil
+}
+
+func (ec *executionContext) unmarshalOFileNameRulePatchInput2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐFileNameRulePatchInput(ctx context.Context, v any) (*model.FileNameRulePatchInput, error) {
+	if v == nil {
+		return nil, nil
+	}
+	res, err := ec.unmarshalInputFileNameRulePatchInput(ctx, v)
+	return &res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) unmarshalOFileRulesPatchInput2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐFileRulesPatchInput(ctx context.Context, v any) (*model.FileRulesPatchInput, error) {
+	if v == nil {
+		return nil, nil
+	}
+	res, err := ec.unmarshalInputFileRulesPatchInput(ctx, v)
+	return &res, graphql.ErrorOnPath(ctx, err)
 }
 
 func (ec *executionContext) unmarshalOFloat2ᚖfloat64(ctx context.Context, v any) (*float64, error) {
@@ -63538,6 +64968,14 @@ func (ec *executionContext) marshalOID2ᚖstring(ctx context.Context, sel ast.Se
 	return res
 }
 
+func (ec *executionContext) unmarshalOImageCachePatchInput2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐImageCachePatchInput(ctx context.Context, v any) (*model.ImageCachePatchInput, error) {
+	if v == nil {
+		return nil, nil
+	}
+	res, err := ec.unmarshalInputImageCachePatchInput(ctx, v)
+	return &res, graphql.ErrorOnPath(ctx, err)
+}
+
 func (ec *executionContext) unmarshalOImageCacheSettingsInput2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐImageCacheSettingsInput(ctx context.Context, v any) (*model.ImageCacheSettingsInput, error) {
 	if v == nil {
 		return nil, nil
@@ -63551,6 +64989,14 @@ func (ec *executionContext) unmarshalOIndexerPreferenceRuleInput2ᚖgithubᚗcom
 		return nil, nil
 	}
 	res, err := ec.unmarshalInputIndexerPreferenceRuleInput(ctx, v)
+	return &res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) unmarshalOIndexersPatchInput2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐIndexersPatchInput(ctx context.Context, v any) (*model.IndexersPatchInput, error) {
+	if v == nil {
+		return nil, nil
+	}
+	res, err := ec.unmarshalInputIndexersPatchInput(ctx, v)
 	return &res, graphql.ErrorOnPath(ctx, err)
 }
 
@@ -63608,6 +65054,14 @@ func (ec *executionContext) marshalOInt2ᚖint(ctx context.Context, sel ast.Sele
 	return res
 }
 
+func (ec *executionContext) unmarshalOJackettPatchInput2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐJackettPatchInput(ctx context.Context, v any) (*model.JackettPatchInput, error) {
+	if v == nil {
+		return nil, nil
+	}
+	res, err := ec.unmarshalInputJackettPatchInput(ctx, v)
+	return &res, graphql.ErrorOnPath(ctx, err)
+}
+
 func (ec *executionContext) unmarshalOJackettSortBy2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐJackettSortBy(ctx context.Context, v any) (*model.JackettSortBy, error) {
 	if v == nil {
 		return nil, nil
@@ -63638,6 +65092,14 @@ func (ec *executionContext) marshalOLibraryFilter2ᚖgithubᚗcomᚋleothevan244
 		return graphql.Null
 	}
 	return v
+}
+
+func (ec *executionContext) unmarshalOLibraryRootsPatchInput2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐLibraryRootsPatchInput(ctx context.Context, v any) (*model.LibraryRootsPatchInput, error) {
+	if v == nil {
+		return nil, nil
+	}
+	res, err := ec.unmarshalInputLibraryRootsPatchInput(ctx, v)
+	return &res, graphql.ErrorOnPath(ctx, err)
 }
 
 func (ec *executionContext) unmarshalOLogLevel2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐLogLevel(ctx context.Context, v any) (*model.LogLevel, error) {
@@ -63728,6 +65190,22 @@ func (ec *executionContext) marshalOPerformerSceneTask2ᚖgithubᚗcomᚋleothev
 	return ec._PerformerSceneTask(ctx, sel, v)
 }
 
+func (ec *executionContext) unmarshalOQBConnectionPatchInput2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐQBConnectionPatchInput(ctx context.Context, v any) (*model.QBConnectionPatchInput, error) {
+	if v == nil {
+		return nil, nil
+	}
+	res, err := ec.unmarshalInputQBConnectionPatchInput(ctx, v)
+	return &res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) unmarshalOReleasePolicyPatchInput2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐReleasePolicyPatchInput(ctx context.Context, v any) (*model.ReleasePolicyPatchInput, error) {
+	if v == nil {
+		return nil, nil
+	}
+	res, err := ec.unmarshalInputReleasePolicyPatchInput(ctx, v)
+	return &res, graphql.ErrorOnPath(ctx, err)
+}
+
 func (ec *executionContext) marshalOReleaseReview2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐReleaseReview(ctx context.Context, sel ast.SelectionSet, v *model.ReleaseReview) graphql.Marshaler {
 	if v == nil {
 		return graphql.Null
@@ -63749,6 +65227,14 @@ func (ec *executionContext) marshalOReleaseReviewStatus2ᚖgithubᚗcomᚋleothe
 		return graphql.Null
 	}
 	return v
+}
+
+func (ec *executionContext) unmarshalOResourceRulesPatchInput2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐResourceRulesPatchInput(ctx context.Context, v any) (*model.ResourceRulesPatchInput, error) {
+	if v == nil {
+		return nil, nil
+	}
+	res, err := ec.unmarshalInputResourceRulesPatchInput(ctx, v)
+	return &res, graphql.ErrorOnPath(ctx, err)
 }
 
 func (ec *executionContext) unmarshalOSceneSourceFilter2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐSceneSourceFilter(ctx context.Context, v any) (*model.SceneSourceFilter, error) {
@@ -63775,11 +65261,35 @@ func (ec *executionContext) unmarshalOStashBoxDataCacheSettingsInput2ᚖgithub�
 	return &res, graphql.ErrorOnPath(ctx, err)
 }
 
+func (ec *executionContext) unmarshalOStashCachePatchInput2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐStashCachePatchInput(ctx context.Context, v any) (*model.StashCachePatchInput, error) {
+	if v == nil {
+		return nil, nil
+	}
+	res, err := ec.unmarshalInputStashCachePatchInput(ctx, v)
+	return &res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) unmarshalOStashConnectionPatchInput2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐStashConnectionPatchInput(ctx context.Context, v any) (*model.StashConnectionPatchInput, error) {
+	if v == nil {
+		return nil, nil
+	}
+	res, err := ec.unmarshalInputStashConnectionPatchInput(ctx, v)
+	return &res, graphql.ErrorOnPath(ctx, err)
+}
+
 func (ec *executionContext) marshalOStashJob2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐStashJob(ctx context.Context, sel ast.SelectionSet, v *model.StashJob) graphql.Marshaler {
 	if v == nil {
 		return graphql.Null
 	}
 	return ec._StashJob(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalOStashPatchInput2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐStashPatchInput(ctx context.Context, v any) (*model.StashPatchInput, error) {
+	if v == nil {
+		return nil, nil
+	}
+	res, err := ec.unmarshalInputStashPatchInput(ctx, v)
+	return &res, graphql.ErrorOnPath(ctx, err)
 }
 
 func (ec *executionContext) marshalOStashPerformer2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐStashPerformer(ctx context.Context, sel ast.SelectionSet, v *model.StashPerformer) graphql.Marshaler {
@@ -63873,6 +65383,30 @@ func (ec *executionContext) marshalOSubscriptionReleaseBehavior2ᚖgithubᚗcom�
 	return v
 }
 
+func (ec *executionContext) unmarshalOSubscriptionReleaseDateRange2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐSubscriptionReleaseDateRange(ctx context.Context, v any) (*model.SubscriptionReleaseDateRange, error) {
+	if v == nil {
+		return nil, nil
+	}
+	var res = new(model.SubscriptionReleaseDateRange)
+	err := res.UnmarshalGQL(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalOSubscriptionReleaseDateRange2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐSubscriptionReleaseDateRange(ctx context.Context, sel ast.SelectionSet, v *model.SubscriptionReleaseDateRange) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return v
+}
+
+func (ec *executionContext) unmarshalOSystemPatchInput2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐSystemPatchInput(ctx context.Context, v any) (*model.SystemPatchInput, error) {
+	if v == nil {
+		return nil, nil
+	}
+	res, err := ec.unmarshalInputSystemPatchInput(ctx, v)
+	return &res, graphql.ErrorOnPath(ctx, err)
+}
+
 func (ec *executionContext) marshalOTask2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐTask(ctx context.Context, sel ast.SelectionSet, v *model.Task) graphql.Marshaler {
 	if v == nil {
 		return graphql.Null
@@ -63943,11 +65477,53 @@ func (ec *executionContext) marshalOTaskSummary2ᚖgithubᚗcomᚋleothevan2444�
 	return ec._TaskSummary(ctx, sel, v)
 }
 
+func (ec *executionContext) unmarshalOTasksPatchInput2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐTasksPatchInput(ctx context.Context, v any) (*model.TasksPatchInput, error) {
+	if v == nil {
+		return nil, nil
+	}
+	res, err := ec.unmarshalInputTasksPatchInput(ctx, v)
+	return &res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) unmarshalOTitleClausePatchInput2ᚕᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐTitleClausePatchInputᚄ(ctx context.Context, v any) ([]*model.TitleClausePatchInput, error) {
+	if v == nil {
+		return nil, nil
+	}
+	var vSlice []any
+	vSlice = graphql.CoerceList(v)
+	var err error
+	res := make([]*model.TitleClausePatchInput, len(vSlice))
+	for i := range vSlice {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithIndex(i))
+		res[i], err = ec.unmarshalNTitleClausePatchInput2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐTitleClausePatchInput(ctx, vSlice[i])
+		if err != nil {
+			return nil, err
+		}
+	}
+	return res, nil
+}
+
 func (ec *executionContext) unmarshalOTitleMatchRuleInput2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐTitleMatchRuleInput(ctx context.Context, v any) (*model.TitleMatchRuleInput, error) {
 	if v == nil {
 		return nil, nil
 	}
 	res, err := ec.unmarshalInputTitleMatchRuleInput(ctx, v)
+	return &res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) unmarshalOTitleRulePatchInput2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐTitleRulePatchInput(ctx context.Context, v any) (*model.TitleRulePatchInput, error) {
+	if v == nil {
+		return nil, nil
+	}
+	res, err := ec.unmarshalInputTitleRulePatchInput(ctx, v)
+	return &res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) unmarshalOToggleRulePatchInput2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐToggleRulePatchInput(ctx context.Context, v any) (*model.ToggleRulePatchInput, error) {
+	if v == nil {
+		return nil, nil
+	}
+	res, err := ec.unmarshalInputToggleRulePatchInput(ctx, v)
 	return &res, graphql.ErrorOnPath(ctx, err)
 }
 
@@ -63957,6 +65533,22 @@ func (ec *executionContext) unmarshalOTorrentFileNameMatchRuleInput2ᚖgithubᚗ
 	}
 	res, err := ec.unmarshalInputTorrentFileNameMatchRuleInput(ctx, v)
 	return &res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) unmarshalOTorrentSelectionDirection2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐTorrentSelectionDirection(ctx context.Context, v any) (*model.TorrentSelectionDirection, error) {
+	if v == nil {
+		return nil, nil
+	}
+	var res = new(model.TorrentSelectionDirection)
+	err := res.UnmarshalGQL(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalOTorrentSelectionDirection2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐTorrentSelectionDirection(ctx context.Context, sel ast.SelectionSet, v *model.TorrentSelectionDirection) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return v
 }
 
 func (ec *executionContext) unmarshalOTorrentSelectionRuleInput2ᚕᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐTorrentSelectionRuleInputᚄ(ctx context.Context, v any) ([]*model.TorrentSelectionRuleInput, error) {
@@ -63977,11 +65569,84 @@ func (ec *executionContext) unmarshalOTorrentSelectionRuleInput2ᚕᚖgithubᚗc
 	return res, nil
 }
 
+func (ec *executionContext) unmarshalOTorrentSelectionRuleType2ᚕgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐTorrentSelectionRuleTypeᚄ(ctx context.Context, v any) ([]model.TorrentSelectionRuleType, error) {
+	if v == nil {
+		return nil, nil
+	}
+	var vSlice []any
+	vSlice = graphql.CoerceList(v)
+	var err error
+	res := make([]model.TorrentSelectionRuleType, len(vSlice))
+	for i := range vSlice {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithIndex(i))
+		res[i], err = ec.unmarshalNTorrentSelectionRuleType2githubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐTorrentSelectionRuleType(ctx, vSlice[i])
+		if err != nil {
+			return nil, err
+		}
+	}
+	return res, nil
+}
+
+func (ec *executionContext) marshalOTorrentSelectionRuleType2ᚕgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐTorrentSelectionRuleTypeᚄ(ctx context.Context, sel ast.SelectionSet, v []model.TorrentSelectionRuleType) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalNTorrentSelectionRuleType2githubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐTorrentSelectionRuleType(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
+}
+
 func (ec *executionContext) unmarshalOTorrentSelectionSettingsInput2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐTorrentSelectionSettingsInput(ctx context.Context, v any) (*model.TorrentSelectionSettingsInput, error) {
 	if v == nil {
 		return nil, nil
 	}
 	res, err := ec.unmarshalInputTorrentSelectionSettingsInput(ctx, v)
+	return &res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) unmarshalOTransferPatchInput2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐTransferPatchInput(ctx context.Context, v any) (*model.TransferPatchInput, error) {
+	if v == nil {
+		return nil, nil
+	}
+	res, err := ec.unmarshalInputTransferPatchInput(ctx, v)
 	return &res, graphql.ErrorOnPath(ctx, err)
 }
 

@@ -1,80 +1,3 @@
-mutation UpdateStashSettingsDocument($input: UpdateStashSettingsInput!) {
-  updateStashSettings(input: $input) {
-    stash {
-      configured
-      url
-      apiKeyConfigured
-      apiKey
-    }
-  }
-}
-
-mutation UpdateLibraryDeliverySettings($input: UpdateIngestSettingsInput!) {
-  updateLibraryDeliverySettings: updateIngestSettings(input: $input) {
-    ingest {
-      keepSubtitles
-      generateTranscodes
-
-      downloads {
-        qbRoot
-        mojiRoot
-      }
-      library {
-        mojiRoot
-        stashRoot
-      }
-      transfer {
-        action
-      }
-    }
-  }
-}
-
-mutation UpdateJackettSettingsDocument($input: UpdateJackettSettingsInput!) {
-  updateJackettSettings(input: $input) {
-    jackett {
-      configured
-      url
-      apiKeyConfigured
-      apiKey
-      passwordConfigured
-      password
-    }
-  }
-}
-
-mutation UpdateQBittorrentSettingsDocument($input: UpdateQBittorrentSettingsInput!) {
-  updateQBittorrentSettings(input: $input) {
-    qbittorrent {
-      configured
-      url
-      username
-      usernameConfigured
-      passwordConfigured
-      password
-      defaultSavePath
-      category
-      tags
-    }
-  }
-}
-
-mutation UpdateSystemSettingsDocument($input: UpdateSystemSettingsInput!) {
-  updateSystemSettings(input: $input) {
-    system {
-      language
-      developerMode
-      taskDeletePolicy
-      imageCache {
-        enabled
-        maxSizeMb
-        retentionDays
-      }
-      stashBoxDataCache { ttlHours }
-    }
-  }
-}
-
 mutation ClearImageCacheDocument {
   clearImageCache {
     usedBytes
@@ -115,10 +38,6 @@ query LogsDocument($limit: Int, $minLevel: LogLevel) {
   }
 }
 
-mutation UpdateSettingsSection($input: UpdateSettingsSectionInput!) {
- updateSettingsSection(input: $input) { automation { taskProcessingEnabled } }
-}
-
-mutation UpdateStashBoxCacheSettings($ttlHours: Int!) {
- updateStashBoxCacheSettings(ttlHours: $ttlHours) { system { stashBoxDataCache { ttlHours } } }
+mutation PatchSettings($input: SettingsPatchInput!) {
+  patchSettings(input: $input) { system { language developerMode } }
 }

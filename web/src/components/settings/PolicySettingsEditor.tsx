@@ -1,4 +1,4 @@
-import { FormEvent, useEffect, useState } from "react";
+import { useMemo, useState } from "react";
 import { useMutation, useQuery } from "urql";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faArrowDown } from "@fortawesome/free-solid-svg-icons/faArrowDown";
@@ -14,13 +14,11 @@ import {
   RefreshStashBoxesDocument,
   SubscriptionReleaseBehavior,
   SubscriptionReleaseDateRange,
-  SettingsSection,
   TorrentFileMatchEffect,
   TitleMatchEffect,
   TitleMatchPatternMode,
   TorrentSelectionDirection,
   TorrentSelectionRuleType,
-  UpdateSettingsSectionDocument,
   type SettingsPolicySectionQuery,
   type JackettIndexersDocumentQuery,
   type JackettIndexersDocumentQueryVariables,
@@ -35,8 +33,8 @@ import {
 import { describeQueryError } from "../../services/queryError";
 import { useTranslation } from "react-i18next";
 import type { TFunction } from "i18next";
-import { useSettingsDraft } from "./SettingsDraftStore";
-import { SettingsDraftNotice, SettingsLoading } from "./SettingsTabCommon";
+import { useSettingsAutosave } from "./useSettingsAutosave";
+import { SettingsSaveStatus, SettingsLoading } from "./SettingsTabCommon";
 
 export const POLICY_SECTION_TITLE_KEYS = { tasks: "taskSettings.title", resources: "resourceRules.title", metadata: "metadataSources.title", indexers: "indexerSettings.title" } as const;
 export type SettingsPolicyArea = keyof typeof POLICY_SECTION_TITLE_KEYS;
@@ -100,101 +98,29 @@ type PolicySettingsForm = typeof EMPTY_POLICY_SETTINGS_FORM;
 type TorrentSelectionRuleDraft = PolicySettingsForm["torrentSelection"]["fastRules"][number];
 type PolicySettingsFormShape = PolicySettingsForm;
 
-function serializeTorrentSelectionRule(rule: TorrentSelectionRuleDraft) {
-  const payload: {
-    type: TorrentSelectionRuleType;
-    enabled: boolean;
-    indexerPreference?: { trackerIds: string[] };
-    publishDate?: { direction: TorrentSelectionDirection };
-    seeders?: { direction: TorrentSelectionDirection };
-    size?: { direction: TorrentSelectionDirection };
-    titleMatch?: {
-      clauses: Array<{
-        pattern: string;
-        patternMode: TitleMatchPatternMode;
-        effect: TitleMatchEffect;
-      }>;
-    };
-    torrentFileNameMatch?: {
-      clauses: Array<{
-        pattern: string;
-        patternMode: TitleMatchPatternMode;
-        effect: TorrentFileMatchEffect;
-      }>;
-    };
-  } = {
-    type: rule.type,
-    enabled: rule.enabled,
+const numeric = (value: string) => value.trim() ? Number(value) : NaN;
+function encodePolicy(form: PolicySettingsForm, area: SettingsPolicyArea) {
+  if (area === "metadata") return {stash:{metadata_priority:form.stashBoxEndpoints}};
+  const rules = form.torrentSelection.fastRules;
+  if (area === "indexers") return {indexers:{query_order:rules.find(rule=>rule.type===TorrentSelectionRuleType.IndexerPreference)?.indexerPreference.trackerIds ?? []}};
+  if (area === "tasks") return {tasks:{
+    task_processing_enabled:form.taskProcessingEnabled,
+    task_progress_sync_interval_seconds:numeric(form.taskProgressSyncIntervalSeconds),
+    subscription_poll_interval_hours:numeric(form.subscriptionPollIntervalHours),
+    sourcing_retry_interval_hours:numeric(form.sourcingRetryIntervalHours),
+    subscription_release_policy:{solo_behavior:form.subscriptionReleasePolicy.soloBehavior,group_behavior:form.subscriptionReleasePolicy.groupBehavior,compilation_behavior:form.subscriptionReleasePolicy.compilationBehavior,vr_behavior:form.subscriptionReleasePolicy.vrBehavior,max_group_performer_count:numeric(form.subscriptionReleasePolicy.maxGroupPerformerCount),release_date_range:form.subscriptionReleasePolicy.releaseDateRange}
+  }};
+  const clause = (item: {pattern:string;patternMode:TitleMatchPatternMode;effect:TitleMatchEffect | TorrentFileMatchEffect})=>({pattern:item.pattern,pattern_mode:item.patternMode,effect:item.effect});
+  const names: Partial<Record<TorrentSelectionRuleType,string>> = {
+    [TorrentSelectionRuleType.TitleMatch]:"title_match",[TorrentSelectionRuleType.PublishDate]:"publish_date",[TorrentSelectionRuleType.TitleSimilarity]:"title_similarity",[TorrentSelectionRuleType.Seeders]:"seeders",[TorrentSelectionRuleType.Size]:"size",[TorrentSelectionRuleType.TorrentSingleVideo]:"torrent_single_video",[TorrentSelectionRuleType.TorrentFileNameMatch]:"torrent_file_name_match"
   };
-
-  switch (rule.type) {
-    case TorrentSelectionRuleType.IndexerPreference:
-      payload.indexerPreference = { trackerIds: [...rule.indexerPreference.trackerIds] };
-      break;
-    case TorrentSelectionRuleType.TitleMatch:
-      payload.titleMatch = {
-        clauses: rule.titleMatch.clauses.map((clause) => ({
-          pattern: clause.pattern,
-          patternMode: clause.patternMode,
-          effect: clause.effect
-        }))
-      };
-      break;
-    case TorrentSelectionRuleType.PublishDate:
-      payload.publishDate = { direction: rule.publishDate.direction || TorrentSelectionDirection.Desc };
-      break;
-    case TorrentSelectionRuleType.Seeders:
-      payload.seeders = { direction: rule.seeders.direction || TorrentSelectionDirection.Desc };
-      break;
-    case TorrentSelectionRuleType.Size:
-      payload.size = { direction: rule.size.direction || TorrentSelectionDirection.Desc };
-      break;
-    case TorrentSelectionRuleType.TorrentFileNameMatch:
-      payload.torrentFileNameMatch = {
-        clauses: rule.torrentFileNameMatch.clauses.map((clause) => ({
-          pattern: clause.pattern,
-          patternMode: clause.patternMode,
-          effect: clause.effect
-        }))
-      };
-      break;
-    default:
-      break;
-  }
-
-  return payload;
-}
-
-/**
- * 把 PolicySettingsForm 表单数据编码为 GraphQL mutation 所需的 input。
- * 列表保存与抽屉保存都通过此函数构造 payload，保证前后端协议一致。
- */
-function buildPolicySectionPayload(form: PolicySettingsFormShape) {
-  const taskProgressSyncIntervalSeconds = Number.parseInt(form.taskProgressSyncIntervalSeconds.trim(), 10);
-  const subscriptionPollIntervalHours = Number.parseInt(form.subscriptionPollIntervalHours.trim(), 10);
-  const inspectionCandidateLimit = Number.parseInt(form.torrentSelection.inspectionCandidateLimit.trim(), 10);
-  const maxGroupPerformerCount = Number.parseInt(form.subscriptionReleasePolicy.maxGroupPerformerCount.trim(), 10);
-  return {
-    taskProcessingEnabled: form.taskProcessingEnabled,
-    taskProgressSyncIntervalSeconds: Number.isNaN(taskProgressSyncIntervalSeconds) ? 60 : taskProgressSyncIntervalSeconds,
-    sourcingRetryIntervalHours: Number.parseInt(form.sourcingRetryIntervalHours.trim(), 10) || 6,
-    subscriptionPollIntervalHours: Number.isNaN(subscriptionPollIntervalHours) ? 1 : subscriptionPollIntervalHours,
-    stashBoxEndpoints: form.stashBoxEndpoints,
-    subscriptionReleasePolicy: {
-      soloBehavior: form.subscriptionReleasePolicy.soloBehavior,
-      groupBehavior: form.subscriptionReleasePolicy.groupBehavior,
-      compilationBehavior: form.subscriptionReleasePolicy.compilationBehavior,
-      vrBehavior: form.subscriptionReleasePolicy.vrBehavior,
-      maxGroupPerformerCount: Number.isNaN(maxGroupPerformerCount) ? 3 : maxGroupPerformerCount,
-      releaseDateRange: form.subscriptionReleasePolicy.releaseDateRange
-    },
-    torrentSelection: {
-      enabled: form.torrentSelection.enabled,
-      inspectionCandidateLimit: Number.isNaN(inspectionCandidateLimit) ? 5 : inspectionCandidateLimit,
-      fastRules: form.torrentSelection.fastRules.map(serializeTorrentSelectionRule),
-      torrentRules: form.torrentSelection.torrentRules.map(serializeTorrentSelectionRule)
-    }
-  };
+  const encodeRules = (items:TorrentSelectionRuleDraft[]) => Object.fromEntries(items.filter(rule=>rule.type!==TorrentSelectionRuleType.IndexerPreference).map(rule=>[names[rule.type]!,{
+    enabled:rule.enabled,
+    ...(usesRuleDirection(rule.type)?{direction:getRuleDirection(rule)}:{}),
+    ...(rule.type===TorrentSelectionRuleType.TitleMatch?{clauses:rule.titleMatch.clauses.map(clause)}:{}),
+    ...(rule.type===TorrentSelectionRuleType.TorrentFileNameMatch?{clauses:rule.torrentFileNameMatch.clauses.map(clause)}:{})
+  }]));
+  return {tasks:{torrent_selection:{enabled:form.torrentSelection.enabled,inspection_candidate_limit:numeric(form.torrentSelection.inspectionCandidateLimit),fast_rule_order:rules.filter(rule=>rule.type!==TorrentSelectionRuleType.IndexerPreference).map(rule=>rule.type),fast_rules:encodeRules(rules),torrent_rules:encodeRules(form.torrentSelection.torrentRules)}}};
 }
 
 function releasePolicySummary(form: PolicySettingsFormShape["subscriptionReleasePolicy"], t: TFunction) {
@@ -359,7 +285,17 @@ export function PolicySettingsEditor({
   const { t } = useTranslation();
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
-  const [policyForm, setPolicySettingsForm, policyDirty, markPolicySaved] = useSettingsDraft(`${area === "metadata" ? "stash" : area === "indexers" ? "indexers" : "tasks"}:${area}`, EMPTY_POLICY_SETTINGS_FORM);
+  const initial = useMemo<PolicySettingsForm>(() => runtimeSettings ? ({
+      taskProcessingEnabled: runtimeSettings.policies.taskProcessingEnabled ?? true,
+      taskProgressSyncIntervalSeconds: String([30,60,120,300].includes(runtimeSettings.policies.taskProgressSyncIntervalSeconds) ? runtimeSettings.policies.taskProgressSyncIntervalSeconds : 60),
+      sourcingRetryIntervalHours: String(runtimeSettings.policies.sourcingRetryIntervalHours || 6),
+      subscriptionPollIntervalHours: String(runtimeSettings.policies.subscriptionPollIntervalHours || 1),
+      stashBoxEndpoints:[...(runtimeSettings.policies.stashBoxEndpoints ?? [])],
+      subscriptionReleasePolicy:{...runtimeSettings.policies.subscriptionReleasePolicy,vrBehavior:runtimeSettings.policies.subscriptionReleasePolicy.vrBehavior ?? SubscriptionReleaseBehavior.Review,maxGroupPerformerCount:String(runtimeSettings.policies.subscriptionReleasePolicy.maxGroupPerformerCount || 3)},
+      torrentSelection:torrentSelectionFromRuntime(runtimeSettings)
+  }) : EMPTY_POLICY_SETTINGS_FORM,[runtimeSettings]);
+  const autosave = useSettingsAutosave(`${area}:policies`,initial,value=>encodePolicy(value,area));
+  const {value:policyForm,setValue:setPolicySettingsForm}=autosave;
   // 规则列表的展开/收起是 UI 偏好：默认按「启用规则链」决定首屏可见性，
   // 之后用户的展开/收起操作与开关状态相互独立，不被开关重置。
   const [rulesExpanded, setRulesExpanded] = useState(() => policyForm.torrentSelection.enabled);
@@ -372,64 +308,9 @@ export function PolicySettingsEditor({
   });
   const jackettIndexers = (jackettIndexersData?.jackettIndexers ?? []).filter((indexer: JackettIndexer) => indexer.enabled);
 
-  const [{ fetching: savingPolicy }, updateSettingsSection] = useMutation(UpdateSettingsSectionDocument);
   const [{ fetching: refreshingStashBoxes }, refreshStashBoxesMutation] = useMutation<
     RefreshStashBoxesMutation
   >(RefreshStashBoxesDocument);
-
-  useEffect(() => {
-    if (!runtimeSettings) return;
-
-    if (!policyDirty) markPolicySaved({
-      taskProcessingEnabled: runtimeSettings.policies.taskProcessingEnabled ?? true,
-      taskProgressSyncIntervalSeconds: String([30, 60, 120, 300].includes(runtimeSettings.policies.taskProgressSyncIntervalSeconds) ? runtimeSettings.policies.taskProgressSyncIntervalSeconds : 60),
-      sourcingRetryIntervalHours: String(runtimeSettings.policies.sourcingRetryIntervalHours || 6),
-      subscriptionPollIntervalHours: String(runtimeSettings.policies.subscriptionPollIntervalHours || 1),
-      stashBoxEndpoints: [...(runtimeSettings.policies.stashBoxEndpoints ?? [])],
-      subscriptionReleasePolicy: {
-        soloBehavior: runtimeSettings.policies.subscriptionReleasePolicy.soloBehavior,
-        groupBehavior: runtimeSettings.policies.subscriptionReleasePolicy.groupBehavior,
-        compilationBehavior: runtimeSettings.policies.subscriptionReleasePolicy.compilationBehavior,
-        vrBehavior: runtimeSettings.policies.subscriptionReleasePolicy.vrBehavior ?? SubscriptionReleaseBehavior.Review,
-        maxGroupPerformerCount: String(runtimeSettings.policies.subscriptionReleasePolicy.maxGroupPerformerCount || 3),
-        releaseDateRange: runtimeSettings.policies.subscriptionReleasePolicy.releaseDateRange
-      },
-      torrentSelection: torrentSelectionFromRuntime(runtimeSettings)
-    });
-  }, [policyDirty, markPolicySaved, runtimeSettings]);
-
-  const savePolicySection = async (successMessage: string) => {
-    const payload = buildPolicySectionPayload(policyForm);
-    const input = area === "tasks" ? {
-      section: SettingsSection.Tasks,
-      tasks: { taskProcessingEnabled: payload.taskProcessingEnabled ?? true, taskProgressSyncIntervalSeconds: payload.taskProgressSyncIntervalSeconds, subscriptionPollIntervalHours: payload.subscriptionPollIntervalHours, sourcingRetryIntervalHours: payload.sourcingRetryIntervalHours, subscriptionReleasePolicy: payload.subscriptionReleasePolicy }
-    } : area === "resources" ? { section: SettingsSection.Resources, resources: payload.torrentSelection }
-      : area === "metadata" ? { section: SettingsSection.Metadata, metadataPriority: payload.stashBoxEndpoints }
-      : { section: SettingsSection.Indexers, queryOrder: policyForm.torrentSelection.fastRules.find(rule => rule.type === TorrentSelectionRuleType.IndexerPreference)?.indexerPreference.trackerIds ?? [] };
-    const result = await updateSettingsSection({ input });
-    if (result.error) {
-      pushToast("tone-danger", describeQueryError(result.error));
-      return;
-    }
-    markPolicySaved(policyForm);
-    pushToast("tone-success", successMessage);
-    await refreshSection({ requestPolicy: "network-only" });
-  };
-
-  const saveTaskSettings = async (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    await savePolicySection(t("taskSettings.saved"));
-  };
-
-  const saveTorrentSelectionSettings = async (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    await savePolicySection(t("resourceRules.saved"));
-  };
-
-  const saveStashBoxPrioritySettings = async (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    await savePolicySection(t("metadataSources.saved"));
-  };
 
   const moveCandidateRuleInSection = (section: "fast" | "file", from: number, to: number) => {
     setPolicySettingsForm((current) => {
@@ -576,12 +457,13 @@ export function PolicySettingsEditor({
       setPolicySettingsForm(current => ({ ...current, torrentSelection: { ...current.torrentSelection, fastRules: current.torrentSelection.fastRules.map(rule => rule.type === TorrentSelectionRuleType.IndexerPreference ? { ...rule, indexerPreference: { trackerIds: next } } : rule) } }));
     };
     return <article className="drawer-card"><div className="drawer-card__head"><h3>{t("indexerSettings.title")}</h3></div>
-      <p className="settings-note">{t("indexerSettings.detail")}</p><SettingsDraftNotice dirty={policyDirty} />
+      <p className="settings-note">{t("indexerSettings.detail")}</p>
       {fetchingJackettIndexers ? <p role="status">{t("common.loading")}</p> : null}
-      <form className="settings-form" onSubmit={event => { event.preventDefault(); void savePolicySection(t("settings.saved")); }}>
+      <form className="settings-form" onSubmit={event => event.preventDefault()}>
+          <SettingsSaveStatus {...autosave} />
         <ol className="settings-order">{order.map((id,index) => <li key={id}><span>{jackettIndexers.find(site => site.id === id)?.name ?? id}</span><div className="settings-actions"><button type="button" disabled={index === 0} onClick={() => moveSite(index,index-1)} aria-label={`${t("settings.moveUp")} ${id}`}>↑</button><button type="button" disabled={index === order.length-1} onClick={() => moveSite(index,index+1)} aria-label={`${t("settings.moveDown")} ${id}`}>↓</button></div></li>)}</ol>
         {!order.length ? <p className="settings-note">{t("indexerSettings.empty")}</p> : null}
-        <div className="settings-actions"><button type="submit" disabled={savingPolicy}>{t(savingPolicy ? "settings.saving" : "settings.save")}</button></div>
+
       </form></article>;
   }
 
@@ -619,10 +501,11 @@ export function PolicySettingsEditor({
         <div className="drawer-card__head">
           <h3>{t(POLICY_SECTION_TITLE_KEYS[area])}</h3>
         </div>
-        <SettingsDraftNotice dirty={policyDirty} />
+
 
         {area === "tasks" ? <>
-        <form className="settings-form" onSubmit={(event) => void saveTaskSettings(event)}>
+        <form className="settings-form" onSubmit={event => event.preventDefault()}>
+          <SettingsSaveStatus {...autosave} />
           <section className="task-processing-settings">
             <label className="switch-row">
               <span className="switch-row__label">{t("taskSettings.processingEnabled")}</span>
@@ -764,16 +647,12 @@ export function PolicySettingsEditor({
             <p className="settings-section__hint">{t("taskSettings.priorityHelp")}</p>
             <p className="settings-section__hint">{t("taskSettings.reviewHelp")}</p>
           </section>
-          <div className="settings-actions">
-            <button type="submit" disabled={savingPolicy}>
-              {savingPolicy ? t("settings.saving") : t("taskSettings.save")}
-            </button>
-          </div>
         </form>
 
         </> : null}
         {area === "metadata" ? <>
-        <form className="settings-form" onSubmit={(event) => void saveStashBoxPrioritySettings(event)}>
+        <form className="settings-form" onSubmit={event => event.preventDefault()}>
+          <SettingsSaveStatus {...autosave} />
           <section className="stashbox-source">
             <header className="stashbox-source__head">
               <div>
@@ -790,9 +669,6 @@ export function PolicySettingsEditor({
                 >
                   <FontAwesomeIcon icon={faRotate} className={refreshingStashBoxes ? "is-spinning" : undefined} />
                   <span>{refreshingStashBoxes ? t("metadataSources.refreshing") : t("metadataSources.refresh")}</span>
-                </button>
-                <button type="submit" disabled={savingPolicy}>
-                  {savingPolicy ? t("settings.saving") : t("metadataSources.save")}
                 </button>
               </div>
             </header>
@@ -900,7 +776,8 @@ export function PolicySettingsEditor({
 
         </> : null}
         {area === "resources" ? <>
-        <form className="settings-form" onSubmit={(event) => void saveTorrentSelectionSettings(event)}>
+        <form className="settings-form" onSubmit={event => event.preventDefault()}>
+          <SettingsSaveStatus {...autosave} />
           <section className="torrent-rules">
             <header className="torrent-rules__head">
               <div>
@@ -908,11 +785,6 @@ export function PolicySettingsEditor({
                 <p className="torrent-rules__sub">
                   {t("resourceRules.detail")}
                 </p>
-              </div>
-              <div className="torrent-rules__save">
-                <button type="submit" disabled={savingPolicy}>
-                  {savingPolicy ? t("settings.saving") : t("resourceRules.save")}
-                </button>
               </div>
             </header>
 

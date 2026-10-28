@@ -7,6 +7,9 @@ extend type Query {
 }
 
 extend type Mutation {
+  "Merge only supplied configuration fields and persist atomically. Objects merge; lists replace."
+  patchSettings(input: SettingsPatchInput!): Settings!
+
   updateStashBoxCacheSettings(ttlHours: Int!): Settings!
   updateSettingsSection(input: UpdateSettingsSectionInput!): Settings!
   "Update Stash settings and persist them to backend config"
@@ -533,4 +536,157 @@ input TaskSettingsInput {
  subscriptionPollIntervalHours: Int!
  sourcingRetryIntervalHours: Int!
  subscriptionReleasePolicy: SubscriptionReleasePolicyInput!
+}
+
+input SettingsPatchInput {
+  indexers: IndexersPatchInput
+  downloader: DownloaderConnectionPatchInput
+  stash: StashPatchInput
+  tasks: TasksPatchInput
+  system: SystemPatchInput
+}
+
+input IndexersPatchInput {
+  jackett: JackettPatchInput
+  query_order: [String!]
+}
+
+input JackettPatchInput {
+  url: String
+  api_key: String
+  password: String
+}
+
+input DownloaderConnectionPatchInput {
+  qbittorrent: QBConnectionPatchInput
+}
+
+input QBConnectionPatchInput {
+  url: String
+  username: String
+  password: String
+  default_save_path: String
+  category: String
+  tags: String
+}
+
+input StashPatchInput {
+  connection: StashConnectionPatchInput
+  ingest: DeliveryPatchInput
+  metadata_priority: [String!]
+  data_cache: StashCachePatchInput
+}
+
+input StashConnectionPatchInput {
+  url: String
+  api_key: String
+}
+
+input DeliveryPatchInput {
+  keep_subtitles: Boolean
+  generate_transcodes: Boolean
+  downloads: DownloadRootsPatchInput
+  library: LibraryRootsPatchInput
+  transfer: TransferPatchInput
+}
+
+input DownloadRootsPatchInput {
+  qb_root: String
+  moji_root: String
+}
+
+input LibraryRootsPatchInput {
+  moji_root: String
+  stash_root: String
+}
+
+input TransferPatchInput {
+  action: String
+}
+
+input StashCachePatchInput {
+  ttl_hours: Int
+}
+
+input TasksPatchInput {
+  task_processing_enabled: Boolean
+  task_progress_sync_interval_seconds: Int
+  sourcing_retry_interval_hours: Int
+  subscription_poll_interval_hours: Int
+  task_delete_policy: TaskDeletePolicy
+  subscription_release_policy: ReleasePolicyPatchInput
+  torrent_selection: ResourceRulesPatchInput
+}
+
+input ReleasePolicyPatchInput {
+  solo_behavior: SubscriptionReleaseBehavior
+  group_behavior: SubscriptionReleaseBehavior
+  compilation_behavior: SubscriptionReleaseBehavior
+  vr_behavior: SubscriptionReleaseBehavior
+  max_group_performer_count: Int
+  release_date_range: SubscriptionReleaseDateRange
+}
+
+input ResourceRulesPatchInput {
+  enabled: Boolean
+  inspection_candidate_limit: Int
+  fast_rule_order: [TorrentSelectionRuleType!]
+  fast_rules: FastRulesPatchInput
+  torrent_rules: FileRulesPatchInput
+}
+
+input FastRulesPatchInput {
+  title_match: TitleRulePatchInput
+  publish_date: DirectionRulePatchInput
+  title_similarity: ToggleRulePatchInput
+  seeders: DirectionRulePatchInput
+  size: DirectionRulePatchInput
+}
+
+input FileRulesPatchInput {
+  torrent_single_video: ToggleRulePatchInput
+  torrent_file_name_match: FileNameRulePatchInput
+}
+
+input TitleRulePatchInput {
+  enabled: Boolean
+  clauses: [TitleClausePatchInput!]
+}
+
+input FileNameRulePatchInput {
+  enabled: Boolean
+  clauses: [FileClausePatchInput!]
+}
+
+input DirectionRulePatchInput {
+  enabled: Boolean
+  direction: TorrentSelectionDirection
+}
+
+input ToggleRulePatchInput {
+  enabled: Boolean
+}
+
+input SystemPatchInput {
+  language: String
+  developer_mode: Boolean
+  image_cache: ImageCachePatchInput
+}
+
+input ImageCachePatchInput {
+  enabled: Boolean
+  max_size_mb: Int
+  retention_days: Int
+}
+
+input TitleClausePatchInput {
+  pattern: String!
+  pattern_mode: TitleMatchPatternMode!
+  effect: TitleMatchEffect!
+}
+
+input FileClausePatchInput {
+  pattern: String!
+  pattern_mode: TitleMatchPatternMode!
+  effect: TorrentFileMatchEffect!
 }

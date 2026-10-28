@@ -28,8 +28,8 @@ func (r *mutationResolver) UpdateDownloaderPolicy(ctx context.Context, input mod
 	if r.Resolver.Downloader == nil {
 		return nil, errors.New("qBittorrent client is not configured")
 	}
-	p := downloader.Policy{AfterIngest: input.AfterIngest, Enabled: input.Enabled, Ratio: input.Ratio, SeedHours: input.SeedHours, MatchAll: input.MatchAll, DeleteFiles: input.DeleteFiles}
-	if err := r.Resolver.Downloader.SetPolicy(ctx, p); err != nil {
+	p, err := r.Resolver.Downloader.PatchPolicy(ctx, input.Enabled, input.AfterIngest, input.MatchAll, input.DeleteFiles, input.Ratio, input.SeedHours)
+	if err != nil {
 		return nil, err
 	}
 	return downloaderPolicyModel(p), nil

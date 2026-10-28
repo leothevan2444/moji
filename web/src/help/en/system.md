@@ -5,7 +5,7 @@ System settings control the instance interface language, developer mode and upst
 
 ## Interface language
 
-Choose browser language, 简体中文 or English and save the system form. The saved instance language is applied only after a successful save and loaded on refresh; browser language follows each browser’s preferences.
+Choose browser language, 简体中文 or English ; changes save automatically after a 500 ms pause. The saved instance language is applied only after a successful save and loaded on refresh; browser language follows each browser’s preferences.
 
 ## Image cache and diagnostics
 

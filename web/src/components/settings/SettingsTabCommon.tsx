@@ -31,7 +31,9 @@ export function SettingsCard({ title, children }: { title: string; children: Rea
   return <article className="drawer-card"><div className="drawer-card__head"><h3>{title}</h3></div>{children}</article>;
 }
 
-export function SettingsDraftNotice({ dirty }: { dirty: boolean }) {
- const { t } = useTranslation();
- return dirty ? <p className="settings-note" role="status">{t("settings.unsaved")}</p> : null;
+export function SettingsSaveStatus({ state, error, retry }: { state: import("./settingsAutosave").SaveState; error: unknown; retry: () => void }) {
+  const { t } = useTranslation();
+  return <div className={`settings-save-status ${state === "error" ? "tone-danger" : "settings-note"}`} role={state === "error" ? "alert" : "status"} aria-live="polite">
+    {t(`settings.autosave.${state}`)}{state === "error" ? <> {describeQueryError(error as Error)} <button type="button" onClick={retry}>{t("common.retry")}</button></> : null}
+  </div>;
 }

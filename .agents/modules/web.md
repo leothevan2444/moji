@@ -42,7 +42,7 @@ React 19、React Router 7、TypeScript、Vite、urql graphcache、graphql-ws、i
 
 不为每个组件另加 timer；扩展已有领域 hook。也不把“禁止任何轮询”作为全局规则。任务快照协议详见 [任务](tasks.md)，Home 细节见 [主页说明](../../docs/home-workspace.md)。
 
-设置使用分区客户端与 draft provider：重新进入读取新设置，独立 loading/error 不污染草稿。保存成功后再以持久设置控制全局能力，例如开发者模式按钮。
+设置使用分区客户端与 SettingsAutosaveProvider：重新进入读取新设置，独立 loading/error 不污染待保存状态。字段编辑立即更新本地值，500ms 防抖发送 pending 增量；同一表单串行提交，确认只清除本次已提交的改动，失败保留并可重试。分区切换不取消队列，不将凭据或 pending 写入浏览器存储。成功后再以持久设置控制全局能力，例如语言和开发者模式按钮。
 
 ## 文案与无障碍
 
@@ -68,3 +68,5 @@ React 19、React Router 7、TypeScript、Vite、urql graphcache、graphql-ws、i
 2026-10-28 设置跟进：任务删除策略位于“任务与订阅”，独立保存。语言选择仅在“系统”，写入 `system.language`（auto/zh-CN/en），成功保存后生效；初次和窗口恢复焦点读取已保存配置，并防止迟到响应覆盖新保存值。
 
 设置分区加载/错误标题来自当前服务或业务分区映射；禁止引用退休的 connections/automation/ingest tab 翻译。当前共享编辑器为 SettingsPolicySection/PolicySettingsEditor，连接和交付分别为 ServiceConnectionSettings/LibraryDeliverySettings；公共兼容字段在 GraphQL documents 边界使用业务别名。
+
+2026-10-28 自动保存：表单统一使用 useSettingsAutosave 与 SettingsSaveStatus，不再显示保存按钮。普通配置通过 typed patchSettings 的 YAML v2 字段增量更新；下载器策略使用可选字段输入，速度限制仍为单字段命令。列表按整体替换、对象递归合并；清缓存、刷新来源等副作用仍需显式操作。

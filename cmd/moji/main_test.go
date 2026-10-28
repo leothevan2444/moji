@@ -632,3 +632,14 @@ func (fakeConfiguredStashService) FindJob(context.Context, string) (*stashsync.J
 func (fakeConfiguredStashService) CurrentConfig() stashsync.IntegrationConfig {
 	return stashsync.IntegrationConfig{}
 }
+
+func TestEditableSubscriptionIntervalPreservesDisabledConfiguration(t *testing.T) {
+	cfg := &config.Config{}
+	cfg.Automation.SubscriptionPollIntervalHours = -1
+	if got := editableSubscriptionPollIntervalHours(cfg); got != -1 {
+		t.Fatalf("disabled configuration became %d", got)
+	}
+	if got := effectiveSubscriptionPollIntervalHours(cfg); got != 0 {
+		t.Fatalf("disabled runtime interval became %d", got)
+	}
+}

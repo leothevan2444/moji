@@ -434,6 +434,7 @@
   }
 
   &__track {
+    pointer-events: none;
     position: absolute;
     inset: 0;
     border-radius: $radius-full;

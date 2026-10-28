@@ -32,23 +32,47 @@ for (const locale of ["qps-ploc", "ar-XB"] as const) {
   });
 }
 
-test.describe("partition saves", () => {
+test.describe("incremental autosave", () => {
   const saves: any[] = [];
+  let current: any;
   test.use({ graphqlOverrides: {
-    updateSettingsSection: ({ input }: any) => { saves.push(input); return settingsSnapshot; },
-  } });
-  test("saving resources preserves the unsaved task draft", async ({ page }) => {
-    saves.length = 0;
+    settings: () => current ?? settingsSnapshot,
+    patchSettings: ({ input }: any) => {
+      saves.push(input);
+      if(input.tasks?.sourcing_retry_interval_hours !== undefined) current.automation.sourcingRetryIntervalHours=input.tasks.sourcing_retry_interval_hours;
+      if(input.tasks?.torrent_selection?.enabled !== undefined) current.automation.torrentSelection.enabled=input.tasks.torrent_selection.enabled;
+      return current;
+    }
+  }});
+  test("debounces edits, saves independent fields, and continues across tab navigation", async ({ page }) => {
+    saves.length=0;current=structuredClone(settingsSnapshot);current.system.language="en";
     await page.goto("/settings/tasks");
-    const interval = page.getByRole("spinbutton", { name: /Resource search interval/ });
-    await interval.fill("12");
-    await page.getByRole("button", { name: "Save resource rules", exact: true }).click();
-    await expect.poll(() => saves.length).toBe(1);
-    expect(Object.keys(saves[0]).sort()).toEqual(["resources", "section"]);
-    await expect(interval).toHaveValue("12");
-    await page.locator(".settings-tabs").getByRole("button", { name: "Stash", exact: true }).click();
-    await page.locator(".settings-tabs").getByRole("button", { name: "Tasks & subscriptions", exact: true }).click();
-    await expect(page.getByRole("spinbutton", { name: /Resource search interval/ })).toHaveValue("12");
+    await expect(page.locator('.settings-form button[type="submit"]')).toHaveCount(0);
+    const interval=page.getByRole("spinbutton",{name:/Resource search interval/});
+    await interval.fill("12");await interval.fill("18");
+    await page.getByLabel("Enable rule chain",{exact:true}).check();
+    await page.locator(".settings-tabs").getByRole("button",{name:"Stash",exact:true}).click();
+    await expect.poll(()=>saves.length).toBe(2);
+    expect(saves).toContainEqual({tasks:{sourcing_retry_interval_hours:18}});
+    expect(saves).toContainEqual({tasks:{torrent_selection:{enabled:true}}});
+    await page.locator(".settings-tabs").getByRole("button",{name:"Tasks & subscriptions",exact:true}).click();
+    await expect(page.getByRole("spinbutton",{name:/Resource search interval/})).toHaveValue("18");
+    await expect(page.getByLabel("Enable rule chain",{exact:true})).toBeChecked();
+  });
+  test("keeps failed edits and retries the same incremental fields",async({page})=>{
+    saves.length=0;current=structuredClone(settingsSnapshot);current.system.language="en";let failed=false;
+    await page.route("**/graphql",async route=>{
+      if(route.request().postDataJSON().operationName==="PatchSettings" && !failed){failed=true;await route.fulfill({status:200,contentType:"application/json",body:JSON.stringify({errors:[{message:"Temporary save failure"}]})});return;}
+      await route.fallback();
+    });
+    await page.goto("/settings/tasks");
+    await page.getByRole("spinbutton",{name:/Resource search interval/}).fill("12");
+    await expect(page.getByRole("alert")).toContainText("Your changes are retained");
+    await expect(page.getByRole("spinbutton",{name:/Resource search interval/})).toHaveValue("12");
+    await page.getByRole("button",{name:"Retry",exact:true}).click();
+    await expect.poll(()=>saves.length).toBe(1);
+    expect(saves[0]).toEqual({tasks:{sourcing_retry_interval_hours:12}});
+    await expect(page.getByRole("alert")).toHaveCount(0);
   });
 });
 
@@ -69,8 +93,11 @@ test.describe("system language and task deletion ownership", () => {
   let policy = "KEEP_ONLY";
   test.use({graphqlOverrides:{
     settings: () => ({...settingsSnapshot,system:{...settingsSnapshot.system,language,taskDeletePolicy:policy}}),
-    updateSystemSettings: ({input}:any) => { language=input.language;return {...settingsSnapshot,system:{...settingsSnapshot.system,language}}; },
-    updateSettingsSection: ({input}:any) => {policy=input.taskDeletePolicy;return settingsSnapshot;},
+    patchSettings: ({input}:any) => {
+      if(input.system?.language !== undefined)language=input.system.language;
+      if(input.tasks?.task_delete_policy !== undefined)policy=input.tasks.task_delete_policy;
+      return {...settingsSnapshot,system:{...settingsSnapshot.system,language,taskDeletePolicy:policy}};
+    },
   }});
   test("saves instance language, refreshes it and keeps deletion in tasks",async({page})=>{
     language="en";policy="KEEP_ONLY";
@@ -79,13 +106,11 @@ test.describe("system language and task deletion ownership", () => {
     await page.goto("/settings/tasks");
     const deletion=page.getByRole("combobox",{name:/Task deletion policy/});
     await deletion.selectOption("REMOVE_TORRENT");
-    await page.getByRole("button",{name:"Save changes",exact:true}).click();
     await expect.poll(()=>policy).toBe("REMOVE_TORRENT");
     await page.goto("/settings/system");
     await expect(page.getByRole("combobox",{name:/Task deletion policy/})).toHaveCount(0);
     await page.getByRole("combobox",{name:"Language",exact:true}).selectOption("zh-CN");
     await expect(page.locator("html")).toHaveAttribute("lang","en");
-    await page.getByRole("button",{name:"Save system settings",exact:true}).click();
     await expect(page.locator("html")).toHaveAttribute("lang","zh-CN");
     await page.reload();
     await expect(page.locator("html")).toHaveAttribute("lang","zh-CN");

@@ -15,6 +15,11 @@ import (
 	"github.com/leothevan2444/moji/internal/stats"
 )
 
+// PatchSettings is the resolver for the patchSettings field.
+func (r *mutationResolver) PatchSettings(ctx context.Context, input model.SettingsPatchInput) (*model.Settings, error) {
+	return r.applySettingsPatch(input)
+}
+
 // UpdateStashBoxCacheSettings is the resolver for the updateStashBoxCacheSettings field.
 func (r *mutationResolver) UpdateStashBoxCacheSettings(ctx context.Context, ttlHours int) (*model.Settings, error) {
 	if r.SettingsEditor == nil {

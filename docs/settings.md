@@ -2,7 +2,7 @@
 
 Settings are grouped into **Indexers**, **Downloader**, **Stash**, **Tasks & subscriptions**, **System**, **Logs**, and **About**. Service connections are edited in their business tab. Existing `/settings/connections`, `/settings/ingest`, and `/settings/automation` bookmarks redirect to Indexers, Stash, and Tasks & subscriptions respectively.
 
-Each form saves its own section. Unsaved drafts survive tab changes; a failed save retains the draft. Reopening settings reads fresh server data. Download speed limits remain qBittorrent settings and cleanup policies remain in Moji's core database.
+Settings initialize from fresh GraphQL queries and save automatically after 500 ms without further edits. Only changed fields are sent through the typed `patchSettings` mutation. Objects merge recursively; lists replace. Pending edits survive tab changes and edits made during a request are submitted afterwards. A failed save retains pending edits and offers retry. Reopening settings reads fresh server data. Download speed limits remain qBittorrent settings and cleanup policies remain in Moji's core database.
 
 ## Configuration v2
 
@@ -61,10 +61,21 @@ StashBox source priority is configured under Stash. Sources omitted from the pri
 
 Task deletion policy is edited and saved independently under Tasks & subscriptions. Its YAML field is `tasks.task_delete_policy`; legacy `system.task_delete_policy` is read and moved on the next save, with mixed duplicate fields rejected. Compatibility GraphQL reads retain `settings.system.taskDeletePolicy`.
 
-Interface language is edited under System and persisted as `system.language`: `auto` (default), `zh-CN`, or `en`. It applies after a successful save and loads on refresh/focus. Browser storage is only the initial display fallback while the saved configuration loads. Choosing `auto` follows each browser's language preferences. Failed saves preserve the draft and active language. System saves omit task deletion policy and preserve the current policy under the configuration lock.
+Interface language is edited under System and persisted as `system.language`: `auto` (default), `zh-CN`, or `en`. It applies after a successful automatic save and loads on refresh/focus. Browser storage is only the initial display fallback while the saved configuration loads. Choosing `auto` follows each browser's language preferences. Failed saves preserve the draft and active language. System saves omit task deletion policy and preserve the current policy under the configuration lock.
 
 ## Compatibility names
 
 Current UI components, query operations and translations use business names: service connections, media delivery, task/subscription settings, metadata sources and resource rules. Loading and failure states use these same current titles. The removed Connections, Ingest and Automation tabs have no active translation entries.
 
 The following names are intentional compatibility contracts: legacy `/settings/connections`, `/settings/ingest` and `/settings/automation` redirects; old YAML fields consumed by the migration adapter; existing GraphQL `Settings.automation`, `Settings.ingest`, `Settings.system.taskDeletePolicy` and the deprecated `updateAutomationSettings` aggregate mutation and enum. New code uses `updateSettingsSection` with `SettingsSection`. These protocol names do not imply an old UI tab still exists. Task ingest and automatic processing remain real workflow concepts.
+
+
+## Incremental automatic saving
+
+`patchSettings(input: SettingsPatchInput!)` accepts optional fields grouped by the canonical v2 ownership (`indexers`, `downloader`, `stash`, `tasks`, `system`). Omitted or null fields remain unchanged; explicit empty strings clear strings, empty lists replace lists with an empty list, and `false` remains an explicit value. Nested objects merge; lists are atomic ordered values. The previous full-section mutations remain available for compatibility.
+
+The settings provider retains each form's local value, acknowledged baseline and pending delta across tab changes. A 500 ms quiet period merges rapid edits. Requests for the same form are serialized; an acknowledgement clears only the submitted changes, so edits made during a slow request remain pending. Saving failures retain pending state and offer retry without a request loop. Queues continue when navigating within the application; closing or reloading the browser while work is pending invokes the browser's unsaved-change prompt. Pending values and credentials are not copied into browser storage.
+
+The Go configuration store locks the full read/merge/validate/write operation, using the latest saved document and preserving unrelated and unknown fields. Validation failures leave the current document unchanged; persistence failures are surfaced to the caller. Configuration values become visible in memory after durable writing succeeds. As with existing atomic file writes, a directory-sync error after rename is reported as uncertain durability; retry is safe because patches set values rather than replaying external actions.
+
+Downloader cleanup uses a separate partial policy mutation and serializes read/merge/write under its policy lock. Speed-limit edits use the existing single-field qBittorrent command. Cache clearing, source refresh and other explicit operations remain buttons; they are not configuration saves.

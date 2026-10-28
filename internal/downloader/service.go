@@ -191,11 +191,15 @@ func (s *Service) Policy(ctx context.Context) (Policy, error) {
 	return p, err
 }
 func (s *Service) SetPolicy(ctx context.Context, p Policy) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return s.setPolicyLocked(ctx, p)
+}
+
+func (s *Service) setPolicyLocked(ctx context.Context, p Policy) error {
 	if math.IsNaN(p.Ratio) || math.IsInf(p.Ratio, 0) || math.IsNaN(p.SeedHours) || math.IsInf(p.SeedHours, 0) || p.Ratio < 0 || p.Ratio > 9999 || p.SeedHours < 0 || p.SeedHours > 87600 || (p.Enabled && !p.AfterIngest && p.Ratio == 0 && p.SeedHours == 0) {
 		return ErrInvalidPolicy
 	}
-	s.mu.Lock()
-	defer s.mu.Unlock()
 	return s.write(ctx, "policy", p)
 }
 
@@ -713,4 +717,33 @@ func (t Torrent) NeedsAttention() bool {
 		return false
 	}
 	return t.CleanupError || t.State == "error" || (!t.AllCompleted && (t.State == "missingFiles" || t.State == "missing"))
+}
+
+// PatchPolicy serializes read/merge/write with full policy updates.
+func (s *Service) PatchPolicy(ctx context.Context, enabled, afterIngest, matchAll, deleteFiles *bool, ratio, seedHours *float64) (Policy, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	p, err := s.Policy(ctx)
+	if err != nil {
+		return p, err
+	}
+	if enabled != nil {
+		p.Enabled = *enabled
+	}
+	if afterIngest != nil {
+		p.AfterIngest = *afterIngest
+	}
+	if matchAll != nil {
+		p.MatchAll = *matchAll
+	}
+	if deleteFiles != nil {
+		p.DeleteFiles = *deleteFiles
+	}
+	if ratio != nil {
+		p.Ratio = *ratio
+	}
+	if seedHours != nil {
+		p.SeedHours = *seedHours
+	}
+	return p, s.setPolicyLocked(ctx, p)
 }

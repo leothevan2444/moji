@@ -491,3 +491,27 @@ func TestCleanupNeverRunsWithoutDurableIntent(t *testing.T) {
 		t.Fatal("failed intent was published as accepted")
 	}
 }
+
+func TestPolicyPatchMergesOmittedThresholdsAndExplicitFalse(t *testing.T) {
+	s, _, _, _ := newTest(t)
+	ctx := context.Background()
+	if err := s.SetPolicy(ctx, Policy{Enabled: true, Ratio: 2, SeedHours: 72, MatchAll: true, DeleteFiles: true}); err != nil {
+		t.Fatal(err)
+	}
+	disabled := false
+	p, err := s.PatchPolicy(ctx, nil, nil, nil, &disabled, nil, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if p.DeleteFiles || !p.Enabled || p.Ratio != 2 || p.SeedHours != 72 || !p.MatchAll {
+		t.Fatalf("partial update lost fields: %+v", p)
+	}
+	zero := 0.0
+	if _, err = s.PatchPolicy(ctx, nil, nil, nil, nil, &zero, &zero); err == nil {
+		t.Fatal("invalid thresholds accepted")
+	}
+	retained, err := s.Policy(ctx)
+	if err != nil || retained != p {
+		t.Fatalf("invalid patch changed policy: %+v %v", retained, err)
+	}
+}

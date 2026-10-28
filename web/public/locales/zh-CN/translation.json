@@ -1,7 +1,6 @@
 {
   "settings": {
     "title": "设置",
-    "saving": "保存中...",
     "tabs": {
       "indexers": "索引器",
       "stash": "Stash",
@@ -11,13 +10,19 @@
       "logs": "日志",
       "about": "关于"
     },
-    "save": "保存",
-    "unsaved": "有未保存的更改",
     "showSecret": "显示凭据",
     "hideSecret": "隐藏凭据",
     "moveUp": "上移",
     "moveDown": "下移",
-    "saved": "设置已保存。"
+    "autosave": {
+      "idle": "修改后自动保存",
+      "pending": "等待自动保存…",
+      "saving": "正在自动保存…",
+      "saved": "已自动保存",
+      "error": "自动保存失败，更改已保留。",
+      "invalid": "请输入有效的数值。",
+      "noAcknowledgement": "未收到保存确认，请重试。"
+    }
   },
   "taskSettings": {
     "vr": "VR 影片",
@@ -54,8 +59,6 @@
     "compilationInfo": "优先按标题、详情、标签中的合集关键词，或演员数不少于 10 判断；合集不再使用单人／多人设置。",
     "dateRange": "单人／多人作品自动下载时间范围",
     "dateRangeInfo": "仅在单人／多人作品原本允许下载时生效；超出范围或发行日期不明确时，改为人工确认。合集不受此时间范围限制。",
-    "save": "保存任务与订阅设置",
-    "saved": "任务与订阅设置已保存。",
     "title": "任务与订阅"
   },
   "metadataSources": {
@@ -63,8 +66,6 @@
     "detail": "在 Stash 中配置的 StashBox 会出现在这里。所有端点都会参与订阅查询，拖动卡片即可调整优先级。",
     "refreshing": "刷新中...",
     "refresh": "刷新",
-    "save": "保存优先级",
-    "saved": "StashBox 优先级已保存。",
     "loading": "正在从 Stash 拉取 StashBox 端点…",
     "loadingDetail": "这一过程由后端在启动时自动完成，请稍候。",
     "empty": "Stash 中尚未配置任何 StashBox",
@@ -77,8 +78,6 @@
   "resourceRules": {
     "title": "资源选择",
     "detail": "硬排除优先，每条硬锁定条件都必须满足。升权与降权按规则顺序比较；关闭后仅保留身份与重复校验。文件硬条件无法检查或超过检查预算时不视为通过。手动选择保留身份校验，不强制应用自动偏好。",
-    "save": "保存资源选择规则",
-    "saved": "资源选择规则已保存。",
     "enableChain": "启用规则链",
     "configured": "当前已配置 {{count}} 条规则，启用后才会生效。",
     "drag": "拖动以重新排序",
@@ -133,7 +132,6 @@
     "developerMode": "开发者模式",
     "developerModeInfo": "启用后在顶部显示性能监控入口，用于查看数据库在线性能。",
     "enableDeveloperMode": "启用开发者模式",
-    "saved": "系统设置已保存。",
     "cache": "图片缓存",
     "cacheInfo": "图片始终由 Moji 代理。关闭后仍会读取已有缓存，但新下载的图片不再写入磁盘。",
     "enableCache": "启用图片缓存",
@@ -153,25 +151,21 @@
     "clearDescription": "将删除 {{count}} 张本地图片并释放 {{size}}。来源登记会保留。",
     "cancel": "取消",
     "confirm": "确认清空",
-    "save": "保存系统设置",
     "cleared": "图片缓存已清空。",
     "clearedBytes": "图片缓存已清空，释放 {{size}}。",
-    "languageHelp": "保存后应用于此实例。选择跟随浏览器时，根据各浏览器的语言偏好显示。"
+    "languageHelp": "自动保存成功后应用于此实例。选择跟随浏览器时，根据各浏览器的语言偏好显示。"
   },
   "taskDeletion": {
     "title": "删除任务策略",
     "info": "控制删除 Moji 任务时，是否联动删除 qBittorrent 里的对应下载项，以及是否同时删除下载文件。",
     "keep": "仅删除 Moji 任务记录",
     "removeTorrent": "同时删除 qBittorrent 下载任务",
-    "removeFiles": "同时删除 qBittorrent 下载任务和文件",
-    "saved": "任务删除策略已保存。"
+    "removeFiles": "同时删除 qBittorrent 下载任务和文件"
   },
   "aboutSettings": {
     "version": "版本"
   },
   "serviceConnection": {
-    "save": "保存 {{service}} 连接",
-    "saved": "{{service}} 设置已保存。",
     "dashboardPassword": "Dashboard 密码",
     "dashboardPasswordPlaceholder": "Jackett 管理界面登录密码",
     "username": "用户名",
@@ -183,8 +177,6 @@
   "libraryDelivery": {
     "generateTranscodes": "生成视频转码",
     "generateTranscodesInfo": "默认关闭。开启后，入库时请求 Stash 按需生成完整视频转码，可能增加处理时间和磁盘占用。关闭不影响封面、预览、时间轴导航图和 pHash 的生成。",
-    "saved": "交付设置已保存。",
-    "save": "保存交付设置",
     "qbRoot": "qB 下载根目录",
     "stashRoot": "Stash 媒体库根目录",
     "action": "交付动作",
@@ -199,10 +191,6 @@
     "actionInfo": "复制保留下载源文件；移动先停止 qB 任务，在影片和字幕交付成功后删除所选源文件。两者都会整理输出，且不会覆盖其他任务或用户已有的影片。",
     "selectStashRoot": "请选择 Stash 媒体库根目录",
     "noStashRoot": "暂无可用媒体库路径",
-    "initTitle": "初始化 qB 下载根目录",
-    "initQuestion": "是否使用 qB 默认下载目录 {{path}} 初始化？",
-    "useAndSave": "使用默认目录并保存",
-    "keepEmpty": "保持为空并保存",
     "title": "媒体交付"
   },
   "indexerSettings": {
@@ -289,14 +277,10 @@
     "matchAll": "所有启用条件均达到才清理",
     "policyDeleteFiles": "同时删除下载文件",
     "copyGuard": "开启后，清理种子时一并删除下载源文件，保留已入库文件。仅在入库完成、源目录与入库目录独立，且没有其他种子共用源文件时执行；不满足条件则跳过清理。",
-    "savePolicy": "保存自动清理策略",
-    "saved": "已保存。",
-    "commandSent": "命令已提交；qB 实际状态将在后续同步中确认。",
     "speedLimits": "全局速度限制",
     "currentLimits": "当前下载限制：{{download}}；上传限制：{{upload}}（0 表示不限速）",
     "direction": "方向",
     "limit": "限制（KiB/s，0 表示不限速）",
-    "saveLimit": "保存速度限制",
     "connections": {
       "connected": "已连接",
       "firewalled": "连接受限",
@@ -360,7 +344,8 @@
     "transferSpeeds": "下载／上传",
     "actions": "操作",
     "moreActions": "更多操作",
-    "torrentListCount": "种子列表（{{count}}）"
+    "torrentListCount": "种子列表（{{count}}）",
+    "unavailable": "下载器暂不可用，请稍后重试。"
   },
   "subscriptionChecks": {
     "allBusy": "全部订阅检查正在运行，请稍后再试。",

@@ -41,12 +41,25 @@ type DashboardStats struct {
 	Failed       int `json:"failed"`
 }
 
+type DeliveryPatchInput struct {
+	KeepSubtitles      *bool                    `json:"keep_subtitles,omitempty"`
+	GenerateTranscodes *bool                    `json:"generate_transcodes,omitempty"`
+	Downloads          *DownloadRootsPatchInput `json:"downloads,omitempty"`
+	Library            *LibraryRootsPatchInput  `json:"library,omitempty"`
+	Transfer           *TransferPatchInput      `json:"transfer,omitempty"`
+}
+
 type DirectionRule struct {
 	Direction TorrentSelectionDirection `json:"direction"`
 }
 
 type DirectionRuleInput struct {
 	Direction TorrentSelectionDirection `json:"direction"`
+}
+
+type DirectionRulePatchInput struct {
+	Enabled   *bool                      `json:"enabled,omitempty"`
+	Direction *TorrentSelectionDirection `json:"direction,omitempty"`
 }
 
 type DiscoverSceneConnection struct {
@@ -100,6 +113,15 @@ type DownloadMediaInput struct {
 	Paused     *bool    `json:"paused,omitempty"`
 }
 
+type DownloadRootsPatchInput struct {
+	QbRoot   *string `json:"qb_root,omitempty"`
+	MojiRoot *string `json:"moji_root,omitempty"`
+}
+
+type DownloaderConnectionPatchInput struct {
+	Qbittorrent *QBConnectionPatchInput `json:"qbittorrent,omitempty"`
+}
+
 type DownloaderOverview struct {
 	CheckedAt        string            `json:"checkedAt"`
 	Connected        bool              `json:"connected"`
@@ -130,12 +152,12 @@ type DownloaderPolicy struct {
 }
 
 type DownloaderPolicyInput struct {
-	AfterIngest bool    `json:"afterIngest"`
-	Enabled     bool    `json:"enabled"`
-	Ratio       float64 `json:"ratio"`
-	SeedHours   float64 `json:"seedHours"`
-	MatchAll    bool    `json:"matchAll"`
-	DeleteFiles bool    `json:"deleteFiles"`
+	AfterIngest *bool    `json:"afterIngest,omitempty"`
+	Enabled     *bool    `json:"enabled,omitempty"`
+	Ratio       *float64 `json:"ratio,omitempty"`
+	SeedHours   *float64 `json:"seedHours,omitempty"`
+	MatchAll    *bool    `json:"matchAll,omitempty"`
+	DeleteFiles *bool    `json:"deleteFiles,omitempty"`
 }
 
 type DownloadsIngestSettings struct {
@@ -146,6 +168,30 @@ type DownloadsIngestSettings struct {
 type DownloadsIngestSettingsInput struct {
 	QbRoot   string `json:"qbRoot"`
 	MojiRoot string `json:"mojiRoot"`
+}
+
+type FastRulesPatchInput struct {
+	TitleMatch      *TitleRulePatchInput     `json:"title_match,omitempty"`
+	PublishDate     *DirectionRulePatchInput `json:"publish_date,omitempty"`
+	TitleSimilarity *ToggleRulePatchInput    `json:"title_similarity,omitempty"`
+	Seeders         *DirectionRulePatchInput `json:"seeders,omitempty"`
+	Size            *DirectionRulePatchInput `json:"size,omitempty"`
+}
+
+type FileClausePatchInput struct {
+	Pattern     string                 `json:"pattern"`
+	PatternMode TitleMatchPatternMode  `json:"pattern_mode"`
+	Effect      TorrentFileMatchEffect `json:"effect"`
+}
+
+type FileNameRulePatchInput struct {
+	Enabled *bool                   `json:"enabled,omitempty"`
+	Clauses []*FileClausePatchInput `json:"clauses,omitempty"`
+}
+
+type FileRulesPatchInput struct {
+	TorrentSingleVideo   *ToggleRulePatchInput   `json:"torrent_single_video,omitempty"`
+	TorrentFileNameMatch *FileNameRulePatchInput `json:"torrent_file_name_match,omitempty"`
 }
 
 // Basic service health
@@ -215,6 +261,12 @@ type HomeTaskSnapshot struct {
 	RecentTasks          []*TaskSummary `json:"recentTasks"`
 }
 
+type ImageCachePatchInput struct {
+	Enabled       *bool `json:"enabled,omitempty"`
+	MaxSizeMb     *int  `json:"max_size_mb,omitempty"`
+	RetentionDays *int  `json:"retention_days,omitempty"`
+}
+
 type ImageCacheSettings struct {
 	Enabled       bool `json:"enabled"`
 	MaxSizeMb     int  `json:"maxSizeMb"`
@@ -243,6 +295,11 @@ type IndexerPreferenceRuleInput struct {
 	TrackerIds []string `json:"trackerIds"`
 }
 
+type IndexersPatchInput struct {
+	Jackett    *JackettPatchInput `json:"jackett,omitempty"`
+	QueryOrder []string           `json:"query_order,omitempty"`
+}
+
 type IngestSettings struct {
 	GenerateTranscodes bool                     `json:"generateTranscodes"`
 	KeepSubtitles      bool                     `json:"keepSubtitles"`
@@ -261,6 +318,12 @@ type JackettIndexer struct {
 	Name string `json:"name"`
 	// Mirrors Jackett's Configured flag — indexers not yet configured are hidden by Jackett's UI.
 	Enabled bool `json:"enabled"`
+}
+
+type JackettPatchInput struct {
+	URL      *string `json:"url,omitempty"`
+	APIKey   *string `json:"api_key,omitempty"`
+	Password *string `json:"password,omitempty"`
 }
 
 type JackettSearchInput struct {
@@ -322,6 +385,11 @@ type LibraryIngestSettings struct {
 type LibraryIngestSettingsInput struct {
 	MojiRoot  string `json:"mojiRoot"`
 	StashRoot string `json:"stashRoot"`
+}
+
+type LibraryRootsPatchInput struct {
+	MojiRoot  *string `json:"moji_root,omitempty"`
+	StashRoot *string `json:"stash_root,omitempty"`
 }
 
 type LogEntry struct {
@@ -481,6 +549,15 @@ type ProcessReleaseReviewsInput struct {
 	Action ReleaseReviewAction `json:"action"`
 }
 
+type QBConnectionPatchInput struct {
+	URL             *string `json:"url,omitempty"`
+	Username        *string `json:"username,omitempty"`
+	Password        *string `json:"password,omitempty"`
+	DefaultSavePath *string `json:"default_save_path,omitempty"`
+	Category        *string `json:"category,omitempty"`
+	Tags            *string `json:"tags,omitempty"`
+}
+
 type QBTorrent struct {
 	Hash     string  `json:"hash"`
 	Name     string  `json:"name"`
@@ -567,6 +644,15 @@ type QueuePerformerScenesSummary struct {
 	FailedCount    int `json:"failedCount"`
 }
 
+type ReleasePolicyPatchInput struct {
+	SoloBehavior           *SubscriptionReleaseBehavior  `json:"solo_behavior,omitempty"`
+	GroupBehavior          *SubscriptionReleaseBehavior  `json:"group_behavior,omitempty"`
+	CompilationBehavior    *SubscriptionReleaseBehavior  `json:"compilation_behavior,omitempty"`
+	VrBehavior             *SubscriptionReleaseBehavior  `json:"vr_behavior,omitempty"`
+	MaxGroupPerformerCount *int                          `json:"max_group_performer_count,omitempty"`
+	ReleaseDateRange       *SubscriptionReleaseDateRange `json:"release_date_range,omitempty"`
+}
+
 type ReleaseReview struct {
 	Key            string                    `json:"key"`
 	Code           string                    `json:"code"`
@@ -639,6 +725,14 @@ type ResolveBlockedSourcingTaskInput struct {
 	Paused      *bool           `json:"paused,omitempty"`
 }
 
+type ResourceRulesPatchInput struct {
+	Enabled                  *bool                      `json:"enabled,omitempty"`
+	InspectionCandidateLimit *int                       `json:"inspection_candidate_limit,omitempty"`
+	FastRuleOrder            []TorrentSelectionRuleType `json:"fast_rule_order,omitempty"`
+	FastRules                *FastRulesPatchInput       `json:"fast_rules,omitempty"`
+	TorrentRules             *FileRulesPatchInput       `json:"torrent_rules,omitempty"`
+}
+
 type ServiceStatus struct {
 	// True iff the minimum connection fields are present, so the backend can attempt to talk to the upstream service.
 	Configured bool `json:"configured"`
@@ -659,6 +753,14 @@ type Settings struct {
 	Qbittorrent *QBittorrentSettings `json:"qbittorrent"`
 	Automation  *AutomationSettings  `json:"automation"`
 	System      *SystemSettings      `json:"system"`
+}
+
+type SettingsPatchInput struct {
+	Indexers   *IndexersPatchInput             `json:"indexers,omitempty"`
+	Downloader *DownloaderConnectionPatchInput `json:"downloader,omitempty"`
+	Stash      *StashPatchInput                `json:"stash,omitempty"`
+	Tasks      *TasksPatchInput                `json:"tasks,omitempty"`
+	System     *SystemPatchInput               `json:"system,omitempty"`
 }
 
 type SettingsStatus struct {
@@ -713,6 +815,15 @@ type StashBoxStatus struct {
 	StashBoxesLoadError *string `json:"stashBoxesLoadError,omitempty"`
 }
 
+type StashCachePatchInput struct {
+	TTLHours *int `json:"ttl_hours,omitempty"`
+}
+
+type StashConnectionPatchInput struct {
+	URL    *string `json:"url,omitempty"`
+	APIKey *string `json:"api_key,omitempty"`
+}
+
 type StashJob struct {
 	ID          string   `json:"id"`
 	Status      string   `json:"status"`
@@ -739,6 +850,13 @@ type StashMetadataScanInput struct {
 	ScanGeneratePhashes       *bool    `json:"scanGeneratePhashes,omitempty"`
 	ScanGenerateThumbnails    *bool    `json:"scanGenerateThumbnails,omitempty"`
 	ScanGenerateClipPreviews  *bool    `json:"scanGenerateClipPreviews,omitempty"`
+}
+
+type StashPatchInput struct {
+	Connection       *StashConnectionPatchInput `json:"connection,omitempty"`
+	Ingest           *DeliveryPatchInput        `json:"ingest,omitempty"`
+	MetadataPriority []string                   `json:"metadata_priority,omitempty"`
+	DataCache        *StashCachePatchInput      `json:"data_cache,omitempty"`
 }
 
 type StashPerformer struct {
@@ -951,6 +1069,12 @@ type SubscriptionReleasePolicyInput struct {
 	ReleaseDateRange       SubscriptionReleaseDateRange `json:"releaseDateRange"`
 }
 
+type SystemPatchInput struct {
+	Language      *string               `json:"language,omitempty"`
+	DeveloperMode *bool                 `json:"developer_mode,omitempty"`
+	ImageCache    *ImageCachePatchInput `json:"image_cache,omitempty"`
+}
+
 type SystemSettings struct {
 	Language          string                     `json:"language"`
 	DeveloperMode     bool                       `json:"developerMode"`
@@ -1134,6 +1258,22 @@ type TaskSummary struct {
 	UpdatedAt             string          `json:"updatedAt"`
 }
 
+type TasksPatchInput struct {
+	TaskProcessingEnabled           *bool                    `json:"task_processing_enabled,omitempty"`
+	TaskProgressSyncIntervalSeconds *int                     `json:"task_progress_sync_interval_seconds,omitempty"`
+	SourcingRetryIntervalHours      *int                     `json:"sourcing_retry_interval_hours,omitempty"`
+	SubscriptionPollIntervalHours   *int                     `json:"subscription_poll_interval_hours,omitempty"`
+	TaskDeletePolicy                *TaskDeletePolicy        `json:"task_delete_policy,omitempty"`
+	SubscriptionReleasePolicy       *ReleasePolicyPatchInput `json:"subscription_release_policy,omitempty"`
+	TorrentSelection                *ResourceRulesPatchInput `json:"torrent_selection,omitempty"`
+}
+
+type TitleClausePatchInput struct {
+	Pattern     string                `json:"pattern"`
+	PatternMode TitleMatchPatternMode `json:"pattern_mode"`
+	Effect      TitleMatchEffect      `json:"effect"`
+}
+
 type TitleMatchClause struct {
 	Pattern     string                `json:"pattern"`
 	PatternMode TitleMatchPatternMode `json:"patternMode"`
@@ -1152,6 +1292,15 @@ type TitleMatchRule struct {
 
 type TitleMatchRuleInput struct {
 	Clauses []*TitleMatchClauseInput `json:"clauses"`
+}
+
+type TitleRulePatchInput struct {
+	Enabled *bool                    `json:"enabled,omitempty"`
+	Clauses []*TitleClausePatchInput `json:"clauses,omitempty"`
+}
+
+type ToggleRulePatchInput struct {
+	Enabled *bool `json:"enabled,omitempty"`
 }
 
 type TorrentFileNameMatchClause struct {
@@ -1216,6 +1365,10 @@ type TransferIngestSettings struct {
 
 type TransferIngestSettingsInput struct {
 	Action string `json:"action"`
+}
+
+type TransferPatchInput struct {
+	Action *string `json:"action,omitempty"`
 }
 
 type UpdateAutomationSettingsInput struct {

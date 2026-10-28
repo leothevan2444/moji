@@ -8,7 +8,7 @@ extend type Mutation {
   setDownloaderSpeedLimit(upload: Boolean!, kibPerSecond: Int!): Boolean!
 }
 enum TorrentAction { PAUSE RESUME RECHECK REANNOUNCE REMOVE REMOVE_FILES }
-input DownloaderPolicyInput { afterIngest: Boolean! = false, enabled: Boolean!, ratio: Float!, seedHours: Float!, matchAll: Boolean!, deleteFiles: Boolean! }
+input DownloaderPolicyInput { afterIngest: Boolean, enabled: Boolean, ratio: Float, seedHours: Float, matchAll: Boolean, deleteFiles: Boolean }
 type DownloaderPolicy { afterIngest: Boolean!, enabled: Boolean!, ratio: Float!, seedHours: Float!, matchAll: Boolean!, deleteFiles: Boolean! }
 type DownloaderOverview {
   checkedAt: String!

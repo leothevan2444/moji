@@ -1,8 +1,8 @@
 // @vitest-environment jsdom
 
-import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
-import { afterEach, describe, expect, it, vi } from "vitest";
-import { SettingsDraftProvider } from "./SettingsDraftStore";
+import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { SettingsAutosaveProvider } from "./SettingsAutosaveProvider";
 
 const { updateSettings, languageChanged } = vi.hoisted(() => ({ updateSettings: vi.fn().mockResolvedValue({ data: {} }), languageChanged: vi.fn() }));
 
@@ -31,50 +31,53 @@ import LogsSettingsTab from "./LogsSettingsTab";
 import SystemSettingsTab from "./SystemSettingsTab";
 import TaskSubscriptionSettingsTab from "./TaskSubscriptionSettingsTab";
 
-afterEach(cleanup);
+const flush = async () => { await act(async () => { await vi.advanceTimersByTimeAsync(500); }); };
+beforeEach(()=>{ vi.useFakeTimers();updateSettings.mockReset().mockResolvedValue({data:{}});languageChanged.mockClear(); });
+afterEach(()=>{cleanup();vi.clearAllTimers();vi.useRealTimers();});
 
 describe("settings tab visual contracts", () => {
   it("saves language only with the system form and applies it after success", async () => {
     updateSettings.mockClear(); languageChanged.mockClear();
-    render(<SettingsDraftProvider><SystemSettingsTab /></SettingsDraftProvider>);
+    render(<SettingsAutosaveProvider><SystemSettingsTab /></SettingsAutosaveProvider>);
     expect(screen.queryByLabelText(/taskDeletion.title/)).toBeNull();
     fireEvent.change(screen.getByRole("combobox",{name:"common.language"}),{target:{value:"en"}});
     expect(languageChanged).not.toHaveBeenCalled();
     updateSettings.mockResolvedValueOnce({error:new Error("save failed")});
-    fireEvent.click(screen.getByText("systemSettings.save"));
-    await waitFor(()=>expect(updateSettings).toHaveBeenCalledTimes(1));
+    await flush();
+    expect(updateSettings).toHaveBeenCalledTimes(1);
     expect(languageChanged).not.toHaveBeenCalled();
     expect((screen.getByRole("combobox",{name:"common.language"}) as HTMLSelectElement).value).toBe("en");
-    fireEvent.click(screen.getByText("systemSettings.save"));
-    await waitFor(()=>expect(languageChanged).toHaveBeenCalledWith("en"));
-    expect(updateSettings.mock.calls[1][0].input.language).toBe("en");
+    fireEvent.click(screen.getByText("common.retry"));
+    await flush();
+    expect(languageChanged).toHaveBeenCalledWith("en");
+    expect(updateSettings.mock.calls[1][0].input.system.language).toBe("en");
     expect(updateSettings.mock.calls[1][0].input).not.toHaveProperty("taskDeletePolicy");
   });
 
   it("saves task deletion policy independently in tasks and subscriptions", async () => {
     updateSettings.mockClear();
-    render(<SettingsDraftProvider><TaskSubscriptionSettingsTab /></SettingsDraftProvider>);
+    render(<SettingsAutosaveProvider><TaskSubscriptionSettingsTab /></SettingsAutosaveProvider>);
     const policy=screen.getByRole("combobox",{name:/taskDeletion.title/});
     fireEvent.change(policy,{target:{value:"REMOVE_TORRENT"}});
-    fireEvent.click(screen.getByText("settings.save"));
-    await waitFor(()=>expect(updateSettings).toHaveBeenCalledWith({input:{section:"TASK_DELETION",taskDeletePolicy:"REMOVE_TORRENT"}}));
+    await flush();
+    expect(updateSettings).toHaveBeenCalledWith({input:{tasks:{task_delete_policy:"REMOVE_TORRENT"}}});
     expect(screen.queryByRole("combobox",{name:"common.language"})).toBeNull();
   });
 
   it("saves developer mode through the system settings switch", async () => {
     updateSettings.mockClear();
-    render(<SettingsDraftProvider><SystemSettingsTab /></SettingsDraftProvider>);
+    render(<SettingsAutosaveProvider><SystemSettingsTab /></SettingsAutosaveProvider>);
     const toggle = screen.getByRole("switch", { name: "systemSettings.developerMode" });
     expect(toggle.getAttribute("aria-checked")).toBe("false");
     fireEvent.click(toggle);
     expect(toggle.getAttribute("aria-checked")).toBe("true");
-    fireEvent.click(screen.getByText("systemSettings.save"));
-    await waitFor(() => expect(updateSettings).toHaveBeenCalledWith({ input: expect.objectContaining({ developerMode: true }) }));
+    await flush();
+    expect(updateSettings).toHaveBeenCalledWith({input:{system:{developer_mode:true}}});
   });
 
   it("saves the VR policy and preserves its draft across tabs", async () => {
     updateSettings.mockClear();
-    const view = render(<SettingsDraftProvider><TaskSubscriptionSettingsTab /></SettingsDraftProvider>);
+    const view = render(<SettingsAutosaveProvider><TaskSubscriptionSettingsTab /></SettingsAutosaveProvider>);
     const vr = screen.getByRole("combobox", { name: /taskSettings.vr/ }) as HTMLSelectElement;
     expect(vr.value).toBe("REVIEW");
     expect(Array.from(vr.options, option => option.value)).toEqual(["DOWNLOAD", "REVIEW", "BLOCK"]);
@@ -83,54 +86,52 @@ describe("settings tab visual contracts", () => {
       expect(screen.getByText(`taskSettings.${key}`)).toBeTruthy();
     }
     fireEvent.change(vr, { target: { value: "BLOCK" } });
-    view.rerender(<SettingsDraftProvider><SystemSettingsTab /></SettingsDraftProvider>);
-    view.rerender(<SettingsDraftProvider><TaskSubscriptionSettingsTab /></SettingsDraftProvider>);
+    view.rerender(<SettingsAutosaveProvider><SystemSettingsTab /></SettingsAutosaveProvider>);
+    view.rerender(<SettingsAutosaveProvider><TaskSubscriptionSettingsTab /></SettingsAutosaveProvider>);
     expect((screen.getByRole("combobox", { name: /taskSettings.vr/ }) as HTMLSelectElement).value).toBe("BLOCK");
-    fireEvent.click(screen.getByText("taskSettings.save"));
-    await waitFor(() => expect(updateSettings).toHaveBeenCalledWith({ input: expect.objectContaining({
-      section: "TASKS", tasks: expect.objectContaining({ subscriptionReleasePolicy: expect.objectContaining({ vrBehavior: "BLOCK", maxGroupPerformerCount: 3 }) })
-    }) }));
+    await flush();
+    expect(updateSettings).toHaveBeenCalledWith({input:{tasks:{subscription_release_policy:{vr_behavior:"BLOCK"}}}});
   });
 
   it("retains a failed save as an unsaved draft across tabs", async () => {
     updateSettings.mockClear();
     updateSettings.mockResolvedValueOnce({ error: new Error("unavailable") });
-    const view = render(<SettingsDraftProvider><TaskSubscriptionSettingsTab /></SettingsDraftProvider>);
+    const view = render(<SettingsAutosaveProvider><TaskSubscriptionSettingsTab /></SettingsAutosaveProvider>);
     fireEvent.change(screen.getByLabelText(/resourceTracking.interval/), { target: { value: "18" } });
-    fireEvent.click(screen.getByText("taskSettings.save"));
-    await waitFor(() => expect(updateSettings).toHaveBeenCalledTimes(1));
-    expect(screen.getByText("settings.unsaved")).toBeTruthy();
-    view.rerender(<SettingsDraftProvider><SystemSettingsTab /></SettingsDraftProvider>);
-    view.rerender(<SettingsDraftProvider><TaskSubscriptionSettingsTab /></SettingsDraftProvider>);
+    await flush();
+    expect(updateSettings).toHaveBeenCalledTimes(1);
+    expect(screen.getByRole("alert").textContent).toContain("settings.autosave.error");
+    view.rerender(<SettingsAutosaveProvider><SystemSettingsTab /></SettingsAutosaveProvider>);
+    view.rerender(<SettingsAutosaveProvider><TaskSubscriptionSettingsTab /></SettingsAutosaveProvider>);
     expect((screen.getByLabelText(/resourceTracking.interval/) as HTMLInputElement).value).toBe("18");
   });
 
   it("offers exactly four clause effects and scopes the resource save", async () => {
     updateSettings.mockClear();
-    render(<SettingsDraftProvider><TaskSubscriptionSettingsTab /></SettingsDraftProvider>);
+    render(<SettingsAutosaveProvider><TaskSubscriptionSettingsTab /></SettingsAutosaveProvider>);
     fireEvent.click(screen.getAllByText("common.add")[0]);
     const effect = screen.getByRole("combobox", { name: "resourceRules.effect" }) as HTMLSelectElement;
     expect(Array.from(effect.options, option => option.value)).toEqual(["REQUIRE", "EXCLUDE", "PREFER", "DEMOTE"]);
     fireEvent.change(effect, { target: { value: "EXCLUDE" } });
-    fireEvent.click(screen.getByText("resourceRules.save"));
-    await waitFor(() => expect(updateSettings).toHaveBeenCalled());
-    expect(Object.keys(updateSettings.mock.calls[0][0].input).sort()).toEqual(["resources", "section"]);
+    await flush();
+    expect(updateSettings).toHaveBeenCalled();
+    expect(updateSettings.mock.calls[0][0].input).toEqual({tasks:{torrent_selection:{fast_rules:{title_match:{clauses:[{pattern:"",pattern_mode:"PLAIN",effect:"EXCLUDE"}]}}}}});
   });
 
   it("loads and saves the resource search interval independently of metadata polling", async () => {
     updateSettings.mockClear();
-    render(<SettingsDraftProvider><TaskSubscriptionSettingsTab /></SettingsDraftProvider>);
+    render(<SettingsAutosaveProvider><TaskSubscriptionSettingsTab /></SettingsAutosaveProvider>);
     const input = screen.getByLabelText(/resourceTracking.interval/) as HTMLInputElement;
     expect(input.value).toBe("6");
     expect(input.min).toBe("1");
     expect(input.max).toBe("168");
     fireEvent.change(input, { target: { value: "12" } });
-    fireEvent.click(screen.getByText("taskSettings.save"));
-    await waitFor(() => expect(updateSettings).toHaveBeenCalledWith({ input: expect.objectContaining({ section: "TASKS", tasks: expect.objectContaining({ sourcingRetryIntervalHours: 12, subscriptionPollIntervalHours: 48 }) }) }));
+    await flush();
+    expect(updateSettings).toHaveBeenCalledWith({input:{tasks:{sourcing_retry_interval_hours:12}}});
   });
   it("offers preset heartbeat intervals and saves the processing switch independently", async () => {
     updateSettings.mockClear();
-    render(<SettingsDraftProvider><TaskSubscriptionSettingsTab /></SettingsDraftProvider>);
+    render(<SettingsAutosaveProvider><TaskSubscriptionSettingsTab /></SettingsAutosaveProvider>);
     const toggle = screen.getByLabelText("taskSettings.processingEnabled") as HTMLInputElement;
     const interval = screen.getByLabelText(/taskSettings.syncInterval/) as HTMLSelectElement;
     expect(toggle.closest('[role="switch"]')).toBeTruthy();
@@ -141,12 +142,12 @@ describe("settings tab visual contracts", () => {
     expect(interval.disabled).toBe(true);
     expect(interval.value).toBe("120");
     expect(screen.getByText("taskSettings.processingOffHelp")).toBeTruthy();
-    fireEvent.click(screen.getByText("taskSettings.save"));
-    await waitFor(() => expect(updateSettings).toHaveBeenCalledWith({ input: expect.objectContaining({ section: "TASKS", tasks: expect.objectContaining({ taskProcessingEnabled: false, taskProgressSyncIntervalSeconds: 120 }) }) }));
+    await flush();
+    expect(updateSettings).toHaveBeenCalledWith({input:{tasks:{task_processing_enabled:false,task_progress_sync_interval_seconds:120}}});
   });
 
   it("offers four roots and Copy or Move, and saves without an ingest mode", async () => {
-    const view = render(<SettingsDraftProvider><LibraryDeliverySettings /></SettingsDraftProvider>);
+    const view = render(<SettingsAutosaveProvider><LibraryDeliverySettings /></SettingsAutosaveProvider>);
     expect(screen.queryByText("libraryDelivery.mode")).toBeNull();
     const actionSelect = view.container.querySelector('select:has(option[value="COPY"])') as HTMLSelectElement;
     expect(Array.from(actionSelect.options, option => option.value)).toEqual(["COPY", "MOVE"]);
@@ -154,34 +155,28 @@ describe("settings tab visual contracts", () => {
       expect(screen.getByDisplayValue(root)).toBeTruthy();
     }
     fireEvent.change(actionSelect, { target: { value: "MOVE" } });
-    fireEvent.click(screen.getByText("libraryDelivery.save"));
-    await waitFor(() => expect(updateSettings).toHaveBeenCalledWith({ input: {
-      keepSubtitles: true,
-      generateTranscodes: false,
-      downloads: { qbRoot: "/q/downloads", mojiRoot: "/moji/downloads" },
-      library: { mojiRoot: "/moji/library", stashRoot: "/stash/library" },
-      transfer: { action: "MOVE" }
-    } }));
+    await flush();
+    expect(updateSettings).toHaveBeenCalledWith({input:{stash:{ingest:{transfer:{action:"MOVE"}}}}});
   });
 
   it("defaults transcodes off and preserves the choice across tab changes before saving", async () => {
     updateSettings.mockClear();
-    const view = render(<SettingsDraftProvider><LibraryDeliverySettings /></SettingsDraftProvider>);
+    const view = render(<SettingsAutosaveProvider><LibraryDeliverySettings /></SettingsAutosaveProvider>);
     const toggle = screen.getByLabelText("libraryDelivery.generateTranscodes") as HTMLInputElement;
     expect(toggle.checked).toBe(false);
     fireEvent.click(toggle);
-    view.rerender(<SettingsDraftProvider><SystemSettingsTab /></SettingsDraftProvider>);
-    view.rerender(<SettingsDraftProvider><LibraryDeliverySettings /></SettingsDraftProvider>);
+    view.rerender(<SettingsAutosaveProvider><SystemSettingsTab /></SettingsAutosaveProvider>);
+    view.rerender(<SettingsAutosaveProvider><LibraryDeliverySettings /></SettingsAutosaveProvider>);
     expect((screen.getByLabelText("libraryDelivery.generateTranscodes") as HTMLInputElement).checked).toBe(true);
-    fireEvent.click(screen.getByText("libraryDelivery.save"));
-    await waitFor(() => expect(updateSettings).toHaveBeenCalledWith({ input: expect.objectContaining({ generateTranscodes: true, keepSubtitles: true }) }));
+    await flush();
+    expect(updateSettings).toHaveBeenCalledWith({input:{stash:{ingest:{generate_transcodes:true}}}});
     fireEvent.click(screen.getByLabelText("libraryDelivery.generateTranscodes"));
-    fireEvent.click(screen.getByText("libraryDelivery.save"));
-    await waitFor(() => expect(updateSettings).toHaveBeenLastCalledWith({ input: expect.objectContaining({ generateTranscodes: false }) }));
+    await flush();
+    expect(updateSettings).toHaveBeenLastCalledWith({input:{stash:{ingest:{generate_transcodes:false}}}});
   });
 
   it("renders image cache as a switch and disables dependent inputs", () => {
-    const view = render(<SettingsDraftProvider><SystemSettingsTab /></SettingsDraftProvider>);
+    const view = render(<SettingsAutosaveProvider><SystemSettingsTab /></SettingsAutosaveProvider>);
     const toggle = screen.getByLabelText("systemSettings.enableCache");
     expect(toggle.closest('[role="switch"]')).toBeTruthy();
     expect((screen.getByDisplayValue("1024") as HTMLInputElement).disabled).toBe(false);
@@ -203,5 +198,5 @@ describe("settings tab visual contracts", () => {
 });
 
 function SettingsCardWrapper({ children }: { children: React.ReactNode }) {
-  return <SettingsDraftProvider>{children}</SettingsDraftProvider>;
+  return <SettingsAutosaveProvider>{children}</SettingsAutosaveProvider>;
 }

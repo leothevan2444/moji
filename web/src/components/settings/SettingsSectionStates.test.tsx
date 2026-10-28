@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { cleanup, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
-import { SettingsDraftProvider } from "./SettingsDraftStore";
+import { SettingsAutosaveProvider } from "./SettingsAutosaveProvider";
 
 const { state } = vi.hoisted(()=>({state:{fetching:true,error:undefined as Error|undefined}}));
 vi.mock("react-i18next",async(importOriginal)=>({...await importOriginal<typeof import("react-i18next")>(),useTranslation:()=>({t:(key:string)=>key})}));
@@ -16,7 +16,7 @@ afterEach(cleanup);
 for(const service of ["stash","jackett","qbittorrent"] as const) {
  for(const failed of [false,true])it(`${service} ${failed?"failure":"loading"} uses its actual service title`,()=>{
   state.fetching=!failed;state.error=failed?new Error("offline"):undefined;
-  render(<SettingsDraftProvider><ServiceConnectionSettings service={service}/></SettingsDraftProvider>);
+  render(<SettingsAutosaveProvider><ServiceConnectionSettings service={service}/></SettingsAutosaveProvider>);
   expect(screen.getByRole("heading",{name:service==="stash"?"Stash":service==="jackett"?"Jackett":"qBittorrent"})).toBeTruthy();
   expect(screen.queryByText("settings.tabs.connections")).toBeNull();
  });

@@ -1,6 +1,6 @@
 # Service connections and Stash delivery
 
-These settings define how Moji reaches its dependencies and how a completed download becomes visible to Stash. Save each form independently.
+These settings define how Moji reaches its dependencies and how a completed download becomes visible to Stash. Changes save automatically after a 500 ms pause. Only changed fields are submitted; failed saves retain your edits and offer retry.
 
 ## Service connections
 

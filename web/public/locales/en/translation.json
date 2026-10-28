@@ -1,7 +1,6 @@
 {
   "settings": {
     "title": "Configuration & system",
-    "saving": "Saving...",
     "tabs": {
       "indexers": "Indexers",
       "stash": "Stash",
@@ -11,13 +10,19 @@
       "logs": "Logs",
       "about": "About"
     },
-    "save": "Save changes",
-    "unsaved": "Unsaved changes",
     "showSecret": "Show credential",
     "hideSecret": "Hide credential",
     "moveUp": "Move up",
     "moveDown": "Move down",
-    "saved": "Settings saved."
+    "autosave": {
+      "idle": "Changes save automatically",
+      "pending": "Waiting to save…",
+      "saving": "Saving automatically…",
+      "saved": "Saved automatically",
+      "error": "Automatic save failed. Your changes are retained.",
+      "invalid": "Enter a valid number.",
+      "noAcknowledgement": "No save acknowledgement received. Please retry."
+    }
   },
   "taskSettings": {
     "vr": "VR releases",
@@ -54,8 +59,6 @@
     "compilationInfo": "Classified first using compilation keywords in the title, details or tags, or at least 10 performers. Single- and multiple-performer settings do not apply to compilations.",
     "dateRange": "Automatic download date range for single- and multiple-performer releases",
     "dateRangeInfo": "Applies only when a single- or multiple-performer release would otherwise download. Older releases or unknown dates are recorded for review. Compilations are exempt from this date range.",
-    "save": "Save tasks & subscriptions settings",
-    "saved": "Tasks & subscriptions settings saved.",
     "title": "Tasks & subscriptions"
   },
   "metadataSources": {
@@ -63,8 +66,6 @@
     "detail": "StashBox endpoints configured in Stash appear here. All endpoints participate in subscription queries; drag cards to change priority.",
     "refreshing": "Refreshing...",
     "refresh": "Refresh",
-    "save": "Save priority",
-    "saved": "StashBox priority saved.",
     "loading": "Loading StashBox endpoints from Stash…",
     "loadingDetail": "The server performs this automatically during startup. Please wait.",
     "empty": "No StashBox endpoints are configured in Stash",
@@ -77,8 +78,6 @@
   "resourceRules": {
     "title": "Resource selection",
     "detail": "Exclusions take precedence; every required condition must match. Preferences and demotions follow rule order. Disabling rules keeps identity and duplicate checks. Unchecked files cannot pass hard conditions. Manual selection keeps identity checks without enforcing automatic preferences.",
-    "save": "Save resource rules",
-    "saved": "Resource rules saved.",
     "enableChain": "Enable rule chain",
     "configured": "{{count}} rule configured; enable the chain to apply it.",
     "configured_other": "{{count}} rules configured; enable the chain to apply them.",
@@ -136,7 +135,6 @@
     "developerMode": "Developer mode",
     "developerModeInfo": "Show the performance monitoring button to inspect live database performance.",
     "enableDeveloperMode": "Enable developer mode",
-    "saved": "System settings saved.",
     "cache": "Image cache",
     "cacheInfo": "Images are always proxied by Moji. When disabled, existing cache entries remain readable but new images are not persisted.",
     "enableCache": "Enable image cache",
@@ -156,25 +154,21 @@
     "clearDescription": "Delete {{count}} local images and release {{size}}. Source registrations will remain.",
     "cancel": "Cancel",
     "confirm": "Confirm clear",
-    "save": "Save system settings",
     "cleared": "Image cache cleared.",
     "clearedBytes": "Image cache cleared, releasing {{size}}.",
-    "languageHelp": "Applied to this instance after saving. Browser language follows each browser’s language preferences."
+    "languageHelp": "Applies to this instance after automatic saving succeeds. Browser language follows each browser’s preferences."
   },
   "taskDeletion": {
     "title": "Task deletion policy",
     "info": "Controls whether deleting a Moji task also removes its qBittorrent item and downloaded files.",
     "keep": "Delete only the Moji task record",
     "removeTorrent": "Also remove the qBittorrent task",
-    "removeFiles": "Also remove the qBittorrent task and files",
-    "saved": "Task deletion policy saved."
+    "removeFiles": "Also remove the qBittorrent task and files"
   },
   "aboutSettings": {
     "version": "Version"
   },
   "serviceConnection": {
-    "save": "Save {{service}} connection",
-    "saved": "{{service}} settings saved.",
     "dashboardPassword": "Dashboard password",
     "dashboardPasswordPlaceholder": "Jackett administration password",
     "username": "Username",
@@ -186,8 +180,6 @@
   "libraryDelivery": {
     "generateTranscodes": "Generate video transcodes",
     "generateTranscodesInfo": "Off by default. When enabled, ingest asks Stash to generate full video transcodes when needed, which may use more processing time and disk space. Covers, previews, timeline sprites, and pHash are generated regardless.",
-    "saved": "Delivery settings saved.",
-    "save": "Save delivery settings",
     "qbRoot": "qB download root",
     "stashRoot": "Stash library root",
     "action": "Delivery action",
@@ -202,10 +194,6 @@
     "actionInfo": "Copy retains downloaded sources. Move stops the qB task and removes selected sources after the full movie and subtitles are delivered. Neither overwrites another task's or a user's existing movie.",
     "selectStashRoot": "Select a Stash library root",
     "noStashRoot": "No library paths available",
-    "initTitle": "Initialize qB download root",
-    "initQuestion": "Initialize it with qB's default directory, {{path}}?",
-    "useAndSave": "Use default and save",
-    "keepEmpty": "Keep empty and save",
     "title": "Media delivery"
   },
   "indexerSettings": {
@@ -292,14 +280,10 @@
     "matchAll": "Clean when all enabled thresholds are reached",
     "policyDeleteFiles": "Permanently delete downloaded files too",
     "copyGuard": "When enabled, cleanup also deletes download source files while preserving library files. Cleanup requires completed ingest, separate source and library paths, and no other torrents sharing the source files; otherwise it is skipped.",
-    "savePolicy": "Save cleanup policy",
-    "saved": "Saved.",
-    "commandSent": "Command submitted. Later syncs will confirm the actual qB state.",
     "speedLimits": "Global speed limits",
     "currentLimits": "Download limit: {{download}}; upload limit: {{upload}} (0 means unlimited)",
     "direction": "Direction",
     "limit": "Limit (KiB/s; 0 means unlimited)",
-    "saveLimit": "Save speed limit",
     "connections": {
       "connected": "Connected",
       "firewalled": "Firewalled",
@@ -363,7 +347,8 @@
     "transferSpeeds": "Download / upload",
     "actions": "Actions",
     "moreActions": "More actions",
-    "torrentListCount": "Torrent list ({{count}})"
+    "torrentListCount": "Torrent list ({{count}})",
+    "unavailable": "Downloader is unavailable. Please retry later."
   },
   "subscriptionChecks": {
     "allBusy": "A check of all subscriptions is running. Please try again shortly.",

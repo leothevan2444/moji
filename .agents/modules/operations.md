@@ -53,3 +53,5 @@ CI 在原生 amd64/arm64 runner 构建及 smoke test，通过后发布复用同�
 设置、实际配置迁移及 Jackett 逐站搜索已交付，见 [专项复核](../reviews/2026-10-28-settings.md)。自动寻源的停止由 runtime 候选资格决定；手动搜索逐站收集，错误回退及取消有 fake HTTP 覆盖。逐站查询不等同于元数据下载主机队列。
 
 [日志布局与跟随](../TODO.md#o-001) 仍待设计。
+
+2026-10-28 增量设置：config.Store.ApplyPatch 在同一配置锁内读取最新已保存 YAML、合并、验证并原子持久化，成功后发布内存值；失败不提前更新内存。patchSettings 使用与 YAML v2 相同的 typed 可选字段，省略/null 保持原值，空串/空列表/false 明确保留。下载器 PatchPolicy 的 read/merge/write 同样与 SetPolicy 共用策略锁。

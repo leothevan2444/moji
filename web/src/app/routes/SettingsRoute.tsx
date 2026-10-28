@@ -4,7 +4,7 @@ import { useTranslation } from "react-i18next";
 import { Provider } from "urql";
 import { settingsClient } from "../../graphql/client";
 import { SettingsLoading } from "../../components/settings/SettingsTabCommon";
-import { SettingsDraftProvider } from "../../components/settings/SettingsDraftStore";
+import { SettingsAutosaveProvider } from "../../components/settings/SettingsAutosaveProvider";
 import { SETTINGS_TABS } from "../../constants";
 import type { SettingsTab } from "../../types";
 import "../../styles/settings-shell.scss";
@@ -44,7 +44,7 @@ export function Component() {
       <nav className="settings-tabs" aria-label={t("settings.title")}>{SETTINGS_TABS.map((tab) => <button key={tab} type="button" aria-current={active === tab ? "page" : undefined} className={`chip ${active === tab ? "is-active" : ""}`} onClick={() => navigate(`/settings/${tab}`)}>{t(`settings.tabs.${tab}`)}</button>)}</nav>
     </div>
     <div className="drawer-stack">
-      <Provider value={settingsClient}><SettingsDraftProvider><TabErrorBoundary resetKey={active} fallback={failed}><Suspense fallback={loading}><ActiveTab /></Suspense></TabErrorBoundary></SettingsDraftProvider></Provider>
+      <Provider value={settingsClient}><SettingsAutosaveProvider><TabErrorBoundary resetKey={active} fallback={failed}><Suspense fallback={loading}><ActiveTab /></Suspense></TabErrorBoundary></SettingsAutosaveProvider></Provider>
     </div>
   </section>;
 }
