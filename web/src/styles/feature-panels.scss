@@ -14,7 +14,7 @@ $ingest-guide-tones: (
   &__panel {
     position: absolute;
     top: calc(100% + 6px);
-    right: 0;
+    inset-inline-end: 0;
     z-index: $z-drawer;
     display: flex;
     min-width: 168px;
@@ -37,7 +37,7 @@ $ingest-guide-tones: (
     background: transparent;
     padding: 6px 10px;
     color: var(--text);
-    text-align: left;
+    text-align: start;
     cursor: pointer;
     font: inherit;
     font-size: 13px;
@@ -261,7 +261,7 @@ $ingest-guide-tones: (
 @media (max-width: 640px) {
   .theme-menu {
     &__panel {
-      right: -6px;
+      inset-inline-end: -6px;
     }
   }
 }

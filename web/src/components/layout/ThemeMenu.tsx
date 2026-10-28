@@ -3,7 +3,7 @@ import { faCheck } from "@fortawesome/free-solid-svg-icons/faCheck";
 import { faCircleHalfStroke } from "@fortawesome/free-solid-svg-icons/faCircleHalfStroke";
 import { faMoon } from "@fortawesome/free-solid-svg-icons/faMoon";
 import { faSun } from "@fortawesome/free-solid-svg-icons/faSun";
-import type { RefObject } from "react";
+import { useEffect, type RefObject } from "react";
 import type { ThemePreference } from "../../hooks/useTheme";
 import { useTranslation } from "react-i18next";
 
@@ -41,13 +41,26 @@ export function ThemeMenu({
   const label = (value: ThemePreference | "light" | "dark") => t(`theme.${value}`);
   const buttonLabel = t("theme.label", { theme: label(preference) });
 
+  useEffect(() => {
+    if (open) menuRef.current?.querySelector<HTMLButtonElement>('[aria-checked="true"]')?.focus();
+  }, [open, menuRef]);
+  const close = () => { setOpen(false); buttonRef.current?.focus(); };
+
   return (
-    <div className="theme-menu">
+    <div className="theme-menu" onBlur={event => {
+      if (!event.currentTarget.contains(event.relatedTarget)) setOpen(false);
+    }}>
       <button
         ref={buttonRef}
         type="button"
         className="utility-button utility-icon-button"
         onClick={() => setOpen(!open)}
+        onKeyDown={event => {
+          if (event.key === "ArrowDown" || event.key === "ArrowUp") {
+            event.preventDefault();
+            setOpen(true);
+          }
+        }}
         aria-haspopup="menu"
         aria-expanded={open}
         aria-label={buttonLabel}
@@ -62,6 +75,21 @@ export function ThemeMenu({
           className="theme-menu__panel"
           role="menu"
           aria-label={t("theme.choose")}
+          onKeyDown={event => {
+            const items = Array.from(menuRef.current?.querySelectorAll<HTMLButtonElement>("button") ?? []);
+            const index = items.indexOf(document.activeElement as HTMLButtonElement);
+            let next: number;
+            switch (event.key) {
+              case "ArrowDown": next = (index + 1) % items.length; break;
+              case "ArrowUp": next = (index - 1 + items.length) % items.length; break;
+              case "Home": next = 0; break;
+              case "End": next = items.length - 1; break;
+              case "Escape": event.preventDefault(); event.stopPropagation(); close(); return;
+              default: return;
+            }
+            event.preventDefault();
+            items[next]?.focus();
+          }}
         >
           {OPTIONS.map((option) => {
             const Icon = PREFERENCE_ICONS[option];
@@ -70,10 +98,11 @@ export function ThemeMenu({
               <button
                 key={option}
                 type="button"
-                role="menuitem"
+                role="menuitemradio"
+                tabIndex={-1}
                 className={`theme-menu__item ${isActive ? "is-active" : ""}`}
-                aria-current={isActive ? "true" : undefined}
-                onClick={() => onSelect(option)}
+                aria-checked={isActive}
+                onClick={() => { onSelect(option); close(); }}
               >
                 <FontAwesomeIcon icon={Icon} aria-hidden="true" />
                 <span>{label(option)}</span>

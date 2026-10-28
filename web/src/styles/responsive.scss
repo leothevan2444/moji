@@ -29,7 +29,6 @@
 }
 
 @media (max-width: 860px) {
-  .masthead,
   .band-head,
   .surface,
   .preview-panel,
@@ -37,22 +36,6 @@
   .task-group-section__head {
     align-items: start;
     flex-direction: column;
-  }
-
-  .utility-group,
-  .tab-group,
-  .masthead__actions {
-    width: 100%;
-  }
-
-  .masthead__actions {
-    justify-content: flex-start;
-  }
-
-  .utility-group button,
-  .tab-group button,
-  .tab-group .nav-tab {
-    flex: 1 1 auto;
   }
 
   .lede {
@@ -107,7 +90,7 @@
 
 @media (max-width: 640px) {
   .app-shell {
-    padding: 16px 14px 36px;
+    padding: 0 14px 36px;
   }
 
   .card-grid,

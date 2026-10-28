@@ -16,21 +16,19 @@ const metrics = {
 
 test("developer mode is hidden by default", async ({ page }) => {
   await page.goto("/?__locale=en");
-  await expect(page.getByRole("button", { name: "Statistics", exact: true })).toBeVisible();
+  await expect(page.getByRole("link", { name: "Statistics", exact: true })).toBeVisible();
   await expect(page.getByRole("button", { name: "Performance monitoring", exact: true })).toHaveCount(0);
 });
 
 for (const locale of ["en", "zh-CN"] as const) {
   test.describe(locale, () => {
-    test.use({ graphqlOverrides: { settings: { ...settingsSnapshot, system: { ...settingsSnapshot.system, developerMode: true } }, databasePerformance: metrics } });
+    test.use({ graphqlOverrides: { settings: { ...settingsSnapshot, system: { ...settingsSnapshot.system, developerMode: true, language: locale } }, databasePerformance: metrics } });
     test(`${locale} database performance modal`, async ({ page }, info) => {
       await page.addInitScript(value => localStorage.setItem("moji:locale", value), locale);
       await page.goto(`/?__locale=${locale}`);
       const name = locale === "en" ? "Performance monitoring" : "性能监控";
       const opener = page.getByRole("button", { name, exact: true });
       await expect(opener).toBeVisible();
-      const order = await page.locator(".utility-group > button").evaluateAll(buttons => buttons.map(button => button.getAttribute("aria-label")));
-      expect(order.slice(0, 2)).toEqual([name, locale === "en" ? "Statistics" : "统计"]);
       await opener.click();
       const dialog = page.getByRole("dialog", { name, exact: true });
       await expect(dialog).toBeVisible();
@@ -52,10 +50,10 @@ test.describe("developer configuration", () => {
   let developerMode = false;
   test.beforeEach(() => { developerMode = false; });
   test.use({ graphqlOverrides: {
-    settings: () => ({ ...settingsSnapshot, system: { ...settingsSnapshot.system, developerMode } }),
-    updateSystemSettings: ({ input }: { input: { developerMode: boolean } }) => {
-      developerMode = input.developerMode;
-      return { ...settingsSnapshot, system: { ...settingsSnapshot.system, developerMode } };
+    settings: () => ({ ...settingsSnapshot, system: { ...settingsSnapshot.system, developerMode, language: "en" } }),
+    patchSettings: ({ input }: { input: { system: { developer_mode: boolean } } }) => {
+      developerMode = input.system.developer_mode;
+      return { ...settingsSnapshot, system: { ...settingsSnapshot.system, developerMode, language: "en" } };
     }
   } });
   test("saved switch controls the header immediately and survives refresh", async ({ page }) => {
@@ -63,18 +61,16 @@ test.describe("developer configuration", () => {
     await page.goto("/settings/system");
     const toggle = page.getByRole("switch", { name: "Developer mode", exact: true });
     const entry = page.getByRole("button", { name: "Performance monitoring", exact: true });
-    const save = page.getByRole("button", { name: "Save system settings", exact: true });
     await expect(toggle).not.toBeChecked();
     await expect(entry).toHaveCount(0);
     await toggle.check();
     await expect(entry).toHaveCount(0);
-    await save.click();
     await expect(entry).toBeVisible();
     await page.reload();
     await expect(toggle).toBeChecked();
     await expect(entry).toBeVisible();
     await toggle.uncheck();
-    await save.click();
+    await expect.poll(() => developerMode).toBe(false);
     await expect(entry).toHaveCount(0);
     await page.reload();
     await expect(toggle).not.toBeChecked();
