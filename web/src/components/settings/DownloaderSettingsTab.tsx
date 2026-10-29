@@ -1,3 +1,4 @@
+import { SettingsSubpanel } from "./SettingsPanels";
 import ServiceConnectionSettings from "./ServiceConnectionSettings";
 import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
@@ -14,9 +15,9 @@ export default function DownloaderSettingsTab() {
   const { t } = useTranslation();
   const [{ data, fetching, error }, refresh] = useQuery({ query: DownloaderSettingsDocumentDocument, requestPolicy: "network-only" });
   if (fetching && !data) return <SettingsLoading title={t("settings.tabs.downloader")} />;
-  if (error && !data) return <><ServiceConnectionSettings service="qbittorrent" /><SettingsError title={t("settings.tabs.downloader")} error={error} onRetry={() => refresh({ requestPolicy: "network-only" })} /></>;
+  if (error && !data) return <><SettingsSubpanel id="connection"><ServiceConnectionSettings service="qbittorrent" /></SettingsSubpanel><SettingsSubpanel id={["cleanup","speed"]}><SettingsError title={t("settings.tabs.downloader")} error={error} onRetry={() => refresh({ requestPolicy: "network-only" })} /></SettingsSubpanel></>;
   if (!data) return null;
-  return <div className="drawer-stack"><ServiceConnectionSettings service="qbittorrent" /><CleanupSettings snapshot={data.downloader} onSaved={() => refresh({ requestPolicy: "network-only" })} /><SettingsCard title={t("downloader.speedLimits")}><p className="settings-note">{t("downloader.limitHelp")}</p><div className="settings-grid"><SpeedLimit snapshot={data.downloader} upload={false} /><SpeedLimit snapshot={data.downloader} upload /></div></SettingsCard></div>;
+  return <div className="drawer-stack"><SettingsSubpanel id="connection"><ServiceConnectionSettings service="qbittorrent" /></SettingsSubpanel><SettingsSubpanel id="cleanup"><CleanupSettings snapshot={data.downloader} onSaved={() => refresh({ requestPolicy: "network-only" })} /></SettingsSubpanel><SettingsSubpanel id="speed"><SettingsCard title={t("downloader.speedLimits")}><p className="settings-note">{t("downloader.limitHelp")}</p><div className="settings-grid"><SpeedLimit snapshot={data.downloader} upload={false} /><SpeedLimit snapshot={data.downloader} upload /></div></SettingsCard></SettingsSubpanel></div>;
 }
 function CleanupSettings({ snapshot, onSaved }: { snapshot: Snapshot; onSaved: () => void }) {
   const { t } = useTranslation();
@@ -35,7 +36,7 @@ function CleanupSettings({ snapshot, onSaved }: { snapshot: Snapshot; onSaved: (
   const timeEnabled = ["SEED_TIME", "ANY", "ALL"].includes(draft.trigger);
   const patch = (value: Partial<PolicyDraft>) => setDraft(current => ({ ...current, ...value }));
   return <SettingsCard title={t("downloader.policy")}><form className="settings-form downloader-cleanup" onSubmit={event => event.preventDefault()}>
-    <label className="switch-row"><span className="switch-row__label">{t("downloader.enablePolicy")}</span><span className="switch" role="switch" aria-checked={draft.enabled}><input type="checkbox" aria-label={t("downloader.enablePolicy")} checked={draft.enabled} onChange={event => patch({ enabled: event.target.checked, ...(event.target.checked ? { ratio: Number(draft.ratio) > 0 ? draft.ratio : "2", hours: Number(draft.hours) > 0 ? draft.hours : "72" } : {}) })} /><span className="switch__track" aria-hidden="true" /><span className="switch__thumb" aria-hidden="true" /></span></label>
+    <label className="switch-row"><span className="switch-row__label"><FieldLabel text={t("downloader.enablePolicy")} info={t("downloader.policyScope")} /></span><span className="switch" role="switch" aria-checked={draft.enabled}><input type="checkbox" aria-label={t("downloader.enablePolicy")} checked={draft.enabled} onChange={event => patch({ enabled: event.target.checked, ...(event.target.checked ? { ratio: Number(draft.ratio) > 0 ? draft.ratio : "2", hours: Number(draft.hours) > 0 ? draft.hours : "72" } : {}) })} /><span className="switch__track" aria-hidden="true" /><span className="switch__thumb" aria-hidden="true" /></span></label>
     {draft.enabled ? <>
     <label className="settings-field"><FieldLabel text={t("downloader.trigger")} info={draft.trigger === "AFTER_INGEST" ? t("downloader.afterIngestHint") : undefined} /><select value={draft.trigger} onChange={event => patch({ trigger: event.target.value as Trigger })}>{(["RATIO", "SEED_TIME", "ANY", "ALL", "AFTER_INGEST"] as const).map(mode => <option key={mode} value={mode}>{t(`downloader.triggers.${mode}`)}</option>)}</select></label>
     <div className="settings-grid">

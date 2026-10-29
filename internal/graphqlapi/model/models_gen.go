@@ -314,8 +314,11 @@ type IngestStatus struct {
 }
 
 type JackettIndexer struct {
-	ID   string `json:"id"`
-	Name string `json:"name"`
+	SiteURL  string `json:"siteUrl"`
+	SiteType string `json:"siteType"`
+	Language string `json:"language"`
+	ID       string `json:"id"`
+	Name     string `json:"name"`
 	// Mirrors Jackett's Configured flag — indexers not yet configured are hidden by Jackett's UI.
 	Enabled bool `json:"enabled"`
 }
@@ -731,6 +734,10 @@ type ResourceRulesPatchInput struct {
 	FastRuleOrder            []TorrentSelectionRuleType `json:"fast_rule_order,omitempty"`
 	FastRules                *FastRulesPatchInput       `json:"fast_rules,omitempty"`
 	TorrentRules             *FileRulesPatchInput       `json:"torrent_rules,omitempty"`
+}
+
+type ServiceConnectionTestResult struct {
+	Code ServiceConnectionTestCode `json:"code"`
 }
 
 type ServiceStatus struct {
@@ -1266,6 +1273,14 @@ type TasksPatchInput struct {
 	TaskDeletePolicy                *TaskDeletePolicy        `json:"task_delete_policy,omitempty"`
 	SubscriptionReleasePolicy       *ReleasePolicyPatchInput `json:"subscription_release_policy,omitempty"`
 	TorrentSelection                *ResourceRulesPatchInput `json:"torrent_selection,omitempty"`
+}
+
+type TestServiceConnectionInput struct {
+	Service  SettingsConnectionService `json:"service"`
+	URL      string                    `json:"url"`
+	APIKey   *string                   `json:"apiKey,omitempty"`
+	Username *string                   `json:"username,omitempty"`
+	Password *string                   `json:"password,omitempty"`
 }
 
 type TitleClausePatchInput struct {
@@ -2306,6 +2321,122 @@ func (e *SceneSourceFilter) UnmarshalJSON(b []byte) error {
 }
 
 func (e SceneSourceFilter) MarshalJSON() ([]byte, error) {
+	var buf bytes.Buffer
+	e.MarshalGQL(&buf)
+	return buf.Bytes(), nil
+}
+
+type ServiceConnectionTestCode string
+
+const (
+	ServiceConnectionTestCodeOk         ServiceConnectionTestCode = "OK"
+	ServiceConnectionTestCodeInvalidURL ServiceConnectionTestCode = "INVALID_URL"
+	ServiceConnectionTestCodeTimeout    ServiceConnectionTestCode = "TIMEOUT"
+	ServiceConnectionTestCodeFailed     ServiceConnectionTestCode = "FAILED"
+)
+
+var AllServiceConnectionTestCode = []ServiceConnectionTestCode{
+	ServiceConnectionTestCodeOk,
+	ServiceConnectionTestCodeInvalidURL,
+	ServiceConnectionTestCodeTimeout,
+	ServiceConnectionTestCodeFailed,
+}
+
+func (e ServiceConnectionTestCode) IsValid() bool {
+	switch e {
+	case ServiceConnectionTestCodeOk, ServiceConnectionTestCodeInvalidURL, ServiceConnectionTestCodeTimeout, ServiceConnectionTestCodeFailed:
+		return true
+	}
+	return false
+}
+
+func (e ServiceConnectionTestCode) String() string {
+	return string(e)
+}
+
+func (e *ServiceConnectionTestCode) UnmarshalGQL(v any) error {
+	str, ok := v.(string)
+	if !ok {
+		return fmt.Errorf("enums must be strings")
+	}
+
+	*e = ServiceConnectionTestCode(str)
+	if !e.IsValid() {
+		return fmt.Errorf("%s is not a valid ServiceConnectionTestCode", str)
+	}
+	return nil
+}
+
+func (e ServiceConnectionTestCode) MarshalGQL(w io.Writer) {
+	fmt.Fprint(w, strconv.Quote(e.String()))
+}
+
+func (e *ServiceConnectionTestCode) UnmarshalJSON(b []byte) error {
+	s, err := strconv.Unquote(string(b))
+	if err != nil {
+		return err
+	}
+	return e.UnmarshalGQL(s)
+}
+
+func (e ServiceConnectionTestCode) MarshalJSON() ([]byte, error) {
+	var buf bytes.Buffer
+	e.MarshalGQL(&buf)
+	return buf.Bytes(), nil
+}
+
+type SettingsConnectionService string
+
+const (
+	SettingsConnectionServiceStash       SettingsConnectionService = "STASH"
+	SettingsConnectionServiceJackett     SettingsConnectionService = "JACKETT"
+	SettingsConnectionServiceQbittorrent SettingsConnectionService = "QBITTORRENT"
+)
+
+var AllSettingsConnectionService = []SettingsConnectionService{
+	SettingsConnectionServiceStash,
+	SettingsConnectionServiceJackett,
+	SettingsConnectionServiceQbittorrent,
+}
+
+func (e SettingsConnectionService) IsValid() bool {
+	switch e {
+	case SettingsConnectionServiceStash, SettingsConnectionServiceJackett, SettingsConnectionServiceQbittorrent:
+		return true
+	}
+	return false
+}
+
+func (e SettingsConnectionService) String() string {
+	return string(e)
+}
+
+func (e *SettingsConnectionService) UnmarshalGQL(v any) error {
+	str, ok := v.(string)
+	if !ok {
+		return fmt.Errorf("enums must be strings")
+	}
+
+	*e = SettingsConnectionService(str)
+	if !e.IsValid() {
+		return fmt.Errorf("%s is not a valid SettingsConnectionService", str)
+	}
+	return nil
+}
+
+func (e SettingsConnectionService) MarshalGQL(w io.Writer) {
+	fmt.Fprint(w, strconv.Quote(e.String()))
+}
+
+func (e *SettingsConnectionService) UnmarshalJSON(b []byte) error {
+	s, err := strconv.Unquote(string(b))
+	if err != nil {
+		return err
+	}
+	return e.UnmarshalGQL(s)
+}
+
+func (e SettingsConnectionService) MarshalJSON() ([]byte, error) {
 	var buf bytes.Buffer
 	e.MarshalGQL(&buf)
 	return buf.Bytes(), nil

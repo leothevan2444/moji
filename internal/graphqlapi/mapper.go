@@ -110,9 +110,12 @@ func candidateSelectionPreviewToModel(preview *taskruntime.CandidateSelectionPre
 
 func jackettIndexerToModel(indexer jackett.Indexer) *model.JackettIndexer {
 	return &model.JackettIndexer{
-		ID:      indexer.ID,
-		Name:    indexer.Name,
-		Enabled: indexer.Configured,
+		SiteURL:  indexer.SiteLink,
+		SiteType: indexer.Type,
+		Language: indexer.Language,
+		ID:       indexer.ID,
+		Name:     indexer.Name,
+		Enabled:  indexer.Configured,
 	}
 }
 

@@ -1,3 +1,5 @@
+import IndexerOrderList from "./IndexerOrderList";
+import { SettingsSubpanel, useSettingsPanel } from "./SettingsPanels";
 import { useMemo, useState } from "react";
 import { useMutation, useQuery } from "urql";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
@@ -123,57 +125,12 @@ function encodePolicy(form: PolicySettingsForm, area: SettingsPolicyArea) {
   return {tasks:{torrent_selection:{enabled:form.torrentSelection.enabled,inspection_candidate_limit:numeric(form.torrentSelection.inspectionCandidateLimit),fast_rule_order:rules.filter(rule=>rule.type!==TorrentSelectionRuleType.IndexerPreference).map(rule=>rule.type),fast_rules:encodeRules(rules),torrent_rules:encodeRules(form.torrentSelection.torrentRules)}}};
 }
 
-function releasePolicySummary(form: PolicySettingsFormShape["subscriptionReleasePolicy"], t: TFunction) {
-  return t("releasePolicy.summary", {
-    solo: t(`releasePolicy.behaviors.${SUBSCRIPTION_RELEASE_BEHAVIOR_KEYS[form.soloBehavior]}`),
-    group: t(`releasePolicy.behaviors.${SUBSCRIPTION_RELEASE_BEHAVIOR_KEYS[form.groupBehavior]}`),
-    compilation: t(`releasePolicy.behaviors.${SUBSCRIPTION_RELEASE_BEHAVIOR_KEYS[form.compilationBehavior]}`),
-    vr: t(`releasePolicy.behaviors.${SUBSCRIPTION_RELEASE_BEHAVIOR_KEYS[form.vrBehavior]}`),
-    range: t(`releasePolicy.ranges.${SUBSCRIPTION_RELEASE_DATE_RANGE_KEYS[form.releaseDateRange]}`)
-  });
-}
-
 function renderSubscriptionReleaseBehaviorOptions(t: TFunction) {
   return SUBSCRIPTION_RELEASE_BEHAVIOR_OPTIONS.map((behavior) => (
     <option key={behavior} value={behavior}>
       {t(`releasePolicy.behaviors.${SUBSCRIPTION_RELEASE_BEHAVIOR_KEYS[behavior]}`)}
     </option>
   ));
-}
-
-/**
- * 单条规则的只读摘要：按 type 反映关键配置，紧凑展示给列表页。
- */
-function buildRuleSummary(rule: TorrentSelectionRuleDraft, t: TFunction): string {
-  if (rule.type === TorrentSelectionRuleType.TitleMatch) {
-    const count = rule.titleMatch.clauses.length;
-    return count === 0
-      ? t("resourceRules.summary.noTitleRules")
-      : t("resourceRules.summary.titleRules", { count });
-  }
-  if (rule.type === TorrentSelectionRuleType.PublishDate) {
-    return t(rule.publishDate.direction === TorrentSelectionDirection.Asc ? "resourceRules.summary.dateAsc" : "resourceRules.summary.dateDesc");
-  }
-  if (rule.type === TorrentSelectionRuleType.TitleSimilarity) {
-    return t("resourceRules.summary.similarity");
-  }
-  if (rule.type === TorrentSelectionRuleType.Seeders) {
-    return t(rule.seeders.direction === TorrentSelectionDirection.Asc ? "resourceRules.summary.seedersAsc" : "resourceRules.summary.seedersDesc");
-  }
-  if (rule.type === TorrentSelectionRuleType.Size) {
-    return t(rule.size.direction === TorrentSelectionDirection.Asc ? "resourceRules.summary.sizeAsc" : "resourceRules.summary.sizeDesc");
-  }
-  if (rule.type === TorrentSelectionRuleType.TorrentSingleVideo) {
-    return t("resourceRules.summary.singleVideo");
-  }
-  if (rule.type === TorrentSelectionRuleType.TorrentFileNameMatch) {
-    const count = rule.torrentFileNameMatch.clauses.length;
-    const hasRequirement = rule.torrentFileNameMatch.clauses.some((clause) => clause.effect === TorrentFileMatchEffect.Require);
-    return count === 0
-      ? t("resourceRules.summary.noFileRules")
-      : t("resourceRules.summary.fileRules", { count, requirement: hasRequirement ? t("resourceRules.summary.requirement") : "" });
-  }
-  return "";
 }
 
 function cloneTorrentSelectionRule(rule: TorrentSelectionRuleDraft): TorrentSelectionRuleDraft {
@@ -283,6 +240,7 @@ export function PolicySettingsEditor({
   area = "tasks"
 }: PolicySettingsEditorProps) {
   const { t } = useTranslation();
+  const panel = useSettingsPanel();
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
   const initial = useMemo<PolicySettingsForm>(() => runtimeSettings ? ({
@@ -442,7 +400,8 @@ export function PolicySettingsEditor({
 
   const fastRules = policyForm.torrentSelection.fastRules;
   const fileInspectionRules = policyForm.torrentSelection.torrentRules;
-  const totalRuleCount = fastRules.length + fileInspectionRules.length;
+  const visibleFastRules = fastRules.filter(rule => rule.type !== TorrentSelectionRuleType.IndexerPreference);
+  const totalRuleCount = visibleFastRules.length + fileInspectionRules.length;
 
   if (!runtimeSettings || !runtimeStatus) {
     return <SettingsLoading title={t(POLICY_SECTION_TITLE_KEYS[area])} />;
@@ -461,7 +420,7 @@ export function PolicySettingsEditor({
       {fetchingJackettIndexers ? <p role="status">{t("common.loading")}</p> : null}
       <form className="settings-form" onSubmit={event => event.preventDefault()}>
           <SettingsSaveStatus {...autosave} />
-        <ol className="settings-order">{order.map((id,index) => <li key={id}><span>{jackettIndexers.find(site => site.id === id)?.name ?? id}</span><div className="settings-actions"><button type="button" disabled={index === 0} onClick={() => moveSite(index,index-1)} aria-label={`${t("settings.moveUp")} ${id}`}>↑</button><button type="button" disabled={index === order.length-1} onClick={() => moveSite(index,index+1)} aria-label={`${t("settings.moveDown")} ${id}`}>↓</button></div></li>)}</ol>
+        <IndexerOrderList order={order} indexers={jackettIndexers} onMove={moveSite} />
         {!order.length ? <p className="settings-note">{t("indexerSettings.empty")}</p> : null}
 
       </form></article>;
@@ -497,15 +456,16 @@ export function PolicySettingsEditor({
     };
 
     return (
-      <article className="drawer-card">
-        <div className="drawer-card__head">
-          <h3>{t(POLICY_SECTION_TITLE_KEYS[area])}</h3>
-        </div>
+      <article className={area === "resources" ? "settings-resource-editor" : "drawer-card"}>
+        {area !== "resources" ? <div className="drawer-card__head">
+          <h3>{t(area === "tasks" && panel ? `settingsLayout.panels.${panel}` : POLICY_SECTION_TITLE_KEYS[area])}</h3>
+        </div> : null}
 
 
         {area === "tasks" ? <>
         <form className="settings-form" onSubmit={event => event.preventDefault()}>
           <SettingsSaveStatus {...autosave} />
+          <SettingsSubpanel id="schedule">
           <section className="task-processing-settings">
             <label className="switch-row">
               <span className="switch-row__label">{t("taskSettings.processingEnabled")}</span>
@@ -517,14 +477,12 @@ export function PolicySettingsEditor({
               </span>
             </label>
             <p className="settings-section__hint">{t("taskSettings.processingHelp")}</p>
-            {!policyForm.taskProcessingEnabled ? <p className="task-processing-settings__paused" role="status">{t("taskSettings.processingOffHelp")}</p> : null}
             <label className="settings-field">
               <span>{t("taskSettings.syncInterval")}</span>
               <select value={policyForm.taskProgressSyncIntervalSeconds} disabled={!policyForm.taskProcessingEnabled}
                 onChange={event => setPolicySettingsForm(current => ({ ...current, taskProgressSyncIntervalSeconds: event.target.value }))}>
                 {[30, 60, 120, 300].map(seconds => <option value={seconds} key={seconds}>{t(`taskSettings.intervalOptions.${seconds}`)}</option>)}
               </select>
-              <small>{t("taskSettings.intervalHelp")}</small>
             </label>
           </section>
           <label className="settings-field">
@@ -541,21 +499,20 @@ export function PolicySettingsEditor({
               onChange={(event) => setPolicySettingsForm((current) => ({ ...current, subscriptionPollIntervalHours: event.target.value }))}
               placeholder="1"
             />
+            <small>{t("taskSettings.pollIntervalHelp")}</small>
           </label>
-          <div className="settings-meta">
-            <span>{t("taskSettings.taskSync", { state: t(runtimeStatus.taskProcessing.taskProgressSyncEnabled ? "taskSettings.enabled" : "taskSettings.disabled") })}</span>
-            <span>{t("taskSettings.poll", { state: t(runtimeStatus.taskProcessing.subscriptionPollEnabled ? "taskSettings.enabled" : "taskSettings.disabled") })}</span>
-          </div>
+
+          </SettingsSubpanel>
+          <SettingsSubpanel id="releases">
           <section className="settings-section settings-section--nested">
             <header className="settings-section__head">
               <div>
                 <h4>{t("taskSettings.policyTitle")}</h4>
                 <p className="settings-section__hint">{t("taskSettings.policyScope")}</p>
-                <p className="settings-section__hint">{releasePolicySummary(policyForm.subscriptionReleasePolicy, t)}</p>
               </div>
             </header>
             <label className="settings-field">
-              <FieldLabel text={t("taskSettings.solo")} info={t("taskSettings.soloInfo")} />
+              <FieldLabel text={t("taskSettings.solo")}  />
               <select
                 value={policyForm.subscriptionReleasePolicy.soloBehavior}
                 onChange={(event) =>
@@ -572,7 +529,7 @@ export function PolicySettingsEditor({
               </select>
             </label>
             <label className="settings-field">
-              <FieldLabel text={t("taskSettings.group")} info={t("taskSettings.groupInfo")} />
+              <FieldLabel text={t("taskSettings.group")}  />
               <select
                 value={policyForm.subscriptionReleasePolicy.groupBehavior}
                 onChange={(event) =>
@@ -647,6 +604,7 @@ export function PolicySettingsEditor({
             <p className="settings-section__hint">{t("taskSettings.priorityHelp")}</p>
             <p className="settings-section__hint">{t("taskSettings.reviewHelp")}</p>
           </section>
+          </SettingsSubpanel>
         </form>
 
         </> : null}
@@ -678,7 +636,7 @@ export function PolicySettingsEditor({
                 <div className="stashbox-source__spinner" aria-hidden="true" />
                 <div>
                   <strong>{t("metadataSources.loading")}</strong>
-                  <p>{t("metadataSources.loadingDetail")}</p>
+
                 </div>
               </div>
             ) : display.length === 0 ? (
@@ -779,12 +737,14 @@ export function PolicySettingsEditor({
         <form className="settings-form" onSubmit={event => event.preventDefault()}>
           <SettingsSaveStatus {...autosave} />
           <section className="torrent-rules">
+            <div className="settings-rule-engine drawer-card">
             <header className="torrent-rules__head">
               <div>
-                <h4>{t("resourceRules.title")}</h4>
+                <h4>{t("settingsLayout.groups.selectionEngine")}</h4>
                 <p className="torrent-rules__sub">
                   {t("resourceRules.detail")}
                 </p>
+                <p className="torrent-rules__sub">{t("resourceRules.clauseHelp")}</p>
               </div>
             </header>
 
@@ -831,6 +791,7 @@ export function PolicySettingsEditor({
               </p>
             ) : null}
 
+            </div>
             <div
               id="torrent-rules-list"
               className="torrent-rules__list"
@@ -879,7 +840,7 @@ export function PolicySettingsEditor({
                     <span className="torrent-rule__handle" aria-hidden="true" title={t("resourceRules.drag")}>
                       <FontAwesomeIcon icon={faGripVertical} />
                     </span>
-                    <span className="torrent-rule__order">{ruleIndex + 1}</span>
+                    <span className="torrent-rule__order">{visibleFastRules.indexOf(rule) + 1}</span>
                     <h3 className="torrent-rule__name">{t(`resourceRules.names.${TORRENT_SELECTION_RULE_KEYS[rule.type]}`)}</h3>
                     <div className="torrent-rule__inline-readonly" aria-hidden="true">
                       <span className="torrent-rule__badge torrent-rule__badge--type">
@@ -906,7 +867,7 @@ export function PolicySettingsEditor({
                         <span className="switch__track" aria-hidden="true" />
                         <span className="switch__thumb" aria-hidden="true" />
                       </label>
-                      <button type="button" className="ghost-button ghost-button--icon" onClick={() => moveCandidateRuleInSection("fast", ruleIndex, ruleIndex - 1)} disabled={ruleIndex === 0} aria-label={t("common.moveUp")}>
+                      <button type="button" className="ghost-button ghost-button--icon" onClick={() => moveCandidateRuleInSection("fast", ruleIndex, ruleIndex - 1)} disabled={visibleFastRules.indexOf(rule) === 0} aria-label={t("common.moveUp")}>
                         <FontAwesomeIcon icon={faArrowUp} />
                       </button>
                       <button
@@ -923,7 +884,6 @@ export function PolicySettingsEditor({
 
                     {rule.enabled ? (
                       <>
-                        <p className="torrent-rule__summary">{buildRuleSummary(rule, t)}</p>
                         <div className="torrent-rule__body">
                           {usesRuleDirection(rule.type) ? (
                             <label className="torrent-rule__inline-field">
@@ -946,14 +906,10 @@ export function PolicySettingsEditor({
                                   })
                                 }
                               >
-                                <option value={TorrentSelectionDirection.Desc}>DESC</option>
-                                <option value={TorrentSelectionDirection.Asc}>ASC</option>
+                                <option value={TorrentSelectionDirection.Desc}>{t(`resourceRules.directions.${TORRENT_SELECTION_RULE_KEYS[rule.type]}.desc`)}</option>
+                                <option value={TorrentSelectionDirection.Asc}>{t(`resourceRules.directions.${TORRENT_SELECTION_RULE_KEYS[rule.type]}.asc`)}</option>
                               </select>
                             </label>
-                          ) : null}
-
-                          {rule.type === TorrentSelectionRuleType.TitleSimilarity ? (
-                            <p className="torrent-rule__hint">{t("resourceRules.similarityHint")}</p>
                           ) : null}
 
                           {rule.type === TorrentSelectionRuleType.TitleMatch ? (
@@ -998,8 +954,8 @@ export function PolicySettingsEditor({
                                         }
                                         aria-label={t("resourceRules.patternMode")}
                                       >
-                                        <option value={TitleMatchPatternMode.Plain}>PLAIN</option>
-                                        <option value={TitleMatchPatternMode.Regex}>REGEX</option>
+                                        <option value={TitleMatchPatternMode.Plain}>{t("resourceRules.modes.PLAIN")}</option>
+                                        <option value={TitleMatchPatternMode.Regex}>{t("resourceRules.modes.REGEX")}</option>
                                       </select>
                                       <select
                                         className="torrent-rule__clause-effect"
@@ -1057,9 +1013,6 @@ export function PolicySettingsEditor({
 
               <div className="torrent-rules__divider" aria-hidden="true" />
               <div className="torrent-rules__inspection-row">
-                <p className="torrent-rules__note">
-                  {t("resourceRules.inspectionIntro", { count: policyForm.torrentSelection.inspectionCandidateLimit || "5" })}
-                </p>
                 <label className="torrent-rules__limit-inline">
                   <FieldLabel text={t("resourceRules.inspectionScope")} info={t("resourceRules.inspectionInfo")} />
                   <input
@@ -1082,7 +1035,7 @@ export function PolicySettingsEditor({
               </div>
 
               {fileInspectionRules.map((rule: TorrentSelectionRuleDraft, ruleIndex: number) => {
-                const displayIndex = fastRules.length + ruleIndex + 1;
+                const displayIndex = visibleFastRules.length + ruleIndex + 1;
                 return (
                   <article key={rule.type} className={`torrent-rule${rule.enabled ? "" : " is-disabled"}`}>
                     <header className="torrent-rule__head">
@@ -1118,7 +1071,6 @@ export function PolicySettingsEditor({
 
                     {rule.enabled ? (
                       <>
-                        <p className="torrent-rule__summary">{buildRuleSummary(rule, t)}</p>
                         <div className="settings-form">
                           {rule.type === TorrentSelectionRuleType.TorrentSingleVideo ? (
                             <p className="torrent-rule__hint">
@@ -1169,8 +1121,8 @@ export function PolicySettingsEditor({
                                         }
                                         aria-label={t("resourceRules.patternMode")}
                                       >
-                                        <option value={TitleMatchPatternMode.Plain}>PLAIN</option>
-                                        <option value={TitleMatchPatternMode.Regex}>REGEX</option>
+                                        <option value={TitleMatchPatternMode.Plain}>{t("resourceRules.modes.PLAIN")}</option>
+                                        <option value={TitleMatchPatternMode.Regex}>{t("resourceRules.modes.REGEX")}</option>
                                       </select>
                                       <select
                                         className="torrent-rule__clause-effect"

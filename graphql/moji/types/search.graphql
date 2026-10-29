@@ -35,6 +35,9 @@ input DiscoverScenesInput {
 }
 
 type JackettIndexer {
+  siteUrl: String!
+  siteType: String!
+  language: String!
   id: String!
   name: String!
   "Mirrors Jackett's Configured flag — indexers not yet configured are hidden by Jackett's UI."

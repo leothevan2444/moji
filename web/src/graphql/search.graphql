@@ -70,6 +70,9 @@ query PreviewJackettSelectionDocument($input: PreviewJackettSelectionInput!) {
 
 query JackettIndexersDocument {
   jackettIndexers {
+    siteUrl
+    siteType
+    language
     id
     name
     enabled

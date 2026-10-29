@@ -33,6 +33,7 @@ export function SettingsCard({ title, children }: { title: string; children: Rea
 
 export function SettingsSaveStatus({ state, error, retry }: { state: import("./settingsAutosave").SaveState; error: unknown; retry: () => void }) {
   const { t } = useTranslation();
+  if (state === "idle" || state === "saved") return null;
   return <div className={`settings-save-status ${state === "error" ? "tone-danger" : "settings-note"}`} role={state === "error" ? "alert" : "status"} aria-live="polite">
     {t(`settings.autosave.${state}`)}{state === "error" ? <> {describeQueryError(error as Error)} <button type="button" onClick={retry}>{t("common.retry")}</button></> : null}
   </div>;

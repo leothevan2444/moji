@@ -40,7 +40,7 @@ type Client struct {
 	httpClient *http.Client
 
 	maxRequestsPerMinute int
-	lastConfig          Config
+	lastConfig           Config
 }
 
 type ClientOption func(*Client)
@@ -232,4 +232,11 @@ func (c *Client) GetStashLibraries(ctx context.Context) ([]StashLibrary, error) 
 		out = append(out, StashLibrary{Path: stashConfig.Path})
 	}
 	return out, nil
+}
+
+// CloseIdleConnections releases idle connections held by a short-lived client.
+func (c *Client) CloseIdleConnections() {
+	c.mu.RLock()
+	defer c.mu.RUnlock()
+	c.httpClient.CloseIdleConnections()
 }

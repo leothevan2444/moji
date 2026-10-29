@@ -28,7 +28,7 @@ StashBox 优先级不是禁用名单；未列出源按 Stash 顺序追加。
 
 ## 固定 UI 规范
 
-共享 [shell](../../web/src/styles/settings-shell.scss) 与 [字段/状态组件](../../web/src/components/settings/SettingsTabCommon.tsx)：固定内容宽度、卡片分区，18px 分区标题、15px 子标题、13px 标签/说明、14px 输入及统一间距/行高。说明表达作用范围、失败与下一步；敏感显隐有可访问名称。
+共享 [shell](../../web/src/styles/settings-shell.scss) 与 [字段/状态组件](../../web/src/components/settings/SettingsTabCommon.tsx)：2026-10-29 按用户限定的设计参考调整为固定侧栏、右侧二级页签与分组表单；26px 页面标题、14px 分组标题、12–13px 字段/说明、38px 输入及统一间距/行高，详见[布局复核](../reviews/2026-10-29-settings-layout.md)。说明表达作用范围、失败与下一步；敏感显隐有可访问名称。
 
 保持新鲜读取、独立草稿、失败恢复、保存中防重复、未保存状态、reduced-motion loading。旧路由与首页入口同步，当前位置导航、移动折行；中英、深浅色、宽窄屏、键盘、pseudo/RTL 一并验证。
 

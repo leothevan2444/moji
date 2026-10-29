@@ -50,10 +50,11 @@ export const downloaderSnapshot = {
 
 const rootValue = {
   version: "0.0.0-visual",
+  testServiceConnection: {code:"OK"},
   refreshDownloader: true,
   setDownloaderSpeedLimit: true,
   controlTorrent: true,
-  updateDownloaderPolicy: ({input}: {input: Record<string,unknown>}) => input,
+  updateDownloaderPolicy: ({input}: {input: Record<string,unknown>}) => ({...downloaderSnapshot.policy,...input}),
   downloader: downloaderSnapshot,
   homeOverview,
   homeSubscriptionSummary: { total: 24, attention: 1, unchecked: 0, lastCheckedAt: "2026-01-15T11:30:00Z", attentionPerformerIds: ["p1"] },

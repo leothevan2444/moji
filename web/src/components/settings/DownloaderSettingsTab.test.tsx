@@ -17,7 +17,7 @@ afterEach(()=>{cleanup();vi.clearAllTimers();vi.useRealTimers();});
 describe("downloader settings",()=>{
  it("defaults to deleting download files and saves immediate cleanup without thresholds",async()=>{
   render(<SettingsAutosaveProvider><DownloaderSettingsTab/></SettingsAutosaveProvider>);
-  fireEvent.click(screen.getByLabelText("Enable automatic cleanup (off by default)"));
+  fireEvent.click(screen.getByLabelText("Enable automatic cleanup"));
   expect((screen.getByLabelText("Permanently delete downloaded files too") as HTMLInputElement).checked).toBe(true);
   fireEvent.change(screen.getByLabelText("Cleanup trigger"),{target:{value:"AFTER_INGEST"}});
   expect(screen.queryByLabelText("Share ratio threshold")).toBeNull();
@@ -29,15 +29,15 @@ describe("downloader settings",()=>{
   const view=render(<SettingsAutosaveProvider><DownloaderSettingsTab/></SettingsAutosaveProvider>);
   expect(screen.queryByLabelText("Cleanup trigger")).toBeNull();
   expect(screen.queryByLabelText("Permanently delete downloaded files too")).toBeNull();
-  expect(screen.queryByText(/Only torrents whose linked/u)).toBeNull();
-  const toggle=screen.getByLabelText("Enable automatic cleanup (off by default)");
+  expect(screen.getByText(/Only torrents whose linked/u)).toBeTruthy();
+  const toggle=screen.getByLabelText("Enable automatic cleanup");
   expect(toggle.parentElement?.querySelector(".switch__thumb")).toBeTruthy();
   fireEvent.click(toggle);
   fireEvent.change(screen.getByLabelText("Share ratio threshold"),{target:{value:"5"}});
   const files=screen.getByLabelText("Permanently delete downloaded files too") as HTMLInputElement;
   expect(files.parentElement?.querySelector(".switch__thumb")).toBeTruthy();
-  const info=view.container.querySelector(".settings-info")!;
-  expect(info.getAttribute("aria-label")).toMatch(/also deletes download source files/u);
+  const info=view.container.querySelectorAll(".settings-info").item(1)!;
+  expect(info.getAttribute("aria-label")).toMatch(/download source files/u);
   fireEvent.click(info);
   expect(files.checked).toBe(true);
   fireEvent.click(toggle);
@@ -47,7 +47,7 @@ describe("downloader settings",()=>{
  });
  it("preserves policy and speed drafts independently across tab switches",async()=>{
   const view=render(<SettingsAutosaveProvider><DownloaderSettingsTab/></SettingsAutosaveProvider>);
-  fireEvent.click(screen.getByLabelText("Enable automatic cleanup (off by default)"));
+  fireEvent.click(screen.getByLabelText("Enable automatic cleanup"));
   fireEvent.change(screen.getByLabelText("Share ratio threshold"),{target:{value:"4"}});
   fireEvent.change(screen.getByLabelText("Upload limit (KiB/s)"),{target:{value:"512"}});
   view.rerender(<SettingsAutosaveProvider><div/></SettingsAutosaveProvider>);

@@ -48,15 +48,17 @@ test.describe("incremental autosave", () => {
     saves.length=0;current=structuredClone(settingsSnapshot);current.system.language="en";
     await page.goto("/settings/tasks");
     await expect(page.locator('.settings-form button[type="submit"]')).toHaveCount(0);
-    const interval=page.getByRole("spinbutton",{name:/Resource search interval/});
+    const interval=page.getByRole("spinbutton",{name:/Resource retry interval/});
     await interval.fill("12");await interval.fill("18");
+    await page.getByRole("tab",{name:"Resource selection",exact:true}).click();
     await page.getByLabel("Enable rule chain",{exact:true}).check();
     await page.locator(".settings-tabs").getByRole("button",{name:"Stash",exact:true}).click();
     await expect.poll(()=>saves.length).toBe(2);
     expect(saves).toContainEqual({tasks:{sourcing_retry_interval_hours:18}});
     expect(saves).toContainEqual({tasks:{torrent_selection:{enabled:true}}});
     await page.locator(".settings-tabs").getByRole("button",{name:"Tasks & subscriptions",exact:true}).click();
-    await expect(page.getByRole("spinbutton",{name:/Resource search interval/})).toHaveValue("18");
+    await expect(page.getByRole("spinbutton",{name:/Resource retry interval/})).toHaveValue("18");
+    await page.getByRole("tab",{name:"Resource selection",exact:true}).click();
     await expect(page.getByLabel("Enable rule chain",{exact:true})).toBeChecked();
   });
   test("keeps failed edits and retries the same incremental fields",async({page})=>{
@@ -66,9 +68,9 @@ test.describe("incremental autosave", () => {
       await route.fallback();
     });
     await page.goto("/settings/tasks");
-    await page.getByRole("spinbutton",{name:/Resource search interval/}).fill("12");
+    await page.getByRole("spinbutton",{name:/Resource retry interval/}).fill("12");
     await expect(page.getByRole("alert")).toContainText("Your changes are retained");
-    await expect(page.getByRole("spinbutton",{name:/Resource search interval/})).toHaveValue("12");
+    await expect(page.getByRole("spinbutton",{name:/Resource retry interval/})).toHaveValue("12");
     await page.getByRole("button",{name:"Retry",exact:true}).click();
     await expect.poll(()=>saves.length).toBe(1);
     expect(saves[0]).toEqual({tasks:{sourcing_retry_interval_hours:12}});
@@ -104,6 +106,7 @@ test.describe("system language and task deletion ownership", () => {
     await page.goto("/settings/indexers");
     await expect(page.getByRole("combobox",{name:"Language",exact:true})).toHaveCount(0);
     await page.goto("/settings/tasks");
+    await page.getByRole("tab",{name:"Deletion policy",exact:true}).click();
     const deletion=page.getByRole("combobox",{name:/Task deletion policy/});
     await deletion.selectOption("REMOVE_TORRENT");
     await expect.poll(()=>policy).toBe("REMOVE_TORRENT");
@@ -130,6 +133,7 @@ test("slow settings queries keep the current service and section titles",async({
   await page.goto("/settings/indexers",{waitUntil:"domcontentloaded"});
   try {
     await expect(page.getByRole("heading",{name:"Jackett",exact:true})).toBeVisible();
+    await page.getByRole("tab",{name:"Query order",exact:true}).click();
     await expect(page.getByRole("heading",{name:"Indexer query order",exact:true})).toBeVisible();
     await expect(page.getByRole("heading",{name:"Connections",exact:true})).toHaveCount(0);
     await expect(page.getByRole("heading",{name:"Automation",exact:true})).toHaveCount(0);

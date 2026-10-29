@@ -4,6 +4,7 @@ package jackett
 import (
 	"context"
 	"encoding/json"
+	"encoding/xml"
 	"fmt"
 	"io"
 	"net/http"
@@ -320,4 +321,57 @@ func (c *Client) GetIndexersContext(ctx context.Context) ([]Indexer, error) {
 	}
 
 	return indexers, nil
+}
+
+// CloseIdleConnections releases idle connections held by a short-lived client.
+func (c *Client) CloseIdleConnections() { c.httpClient.CloseIdleConnections() }
+
+// GetAPIIndexersContext checks the same API-key authentication used by searches.
+// t=indexers reads local definitions; it does not send searches to tracker sites.
+// The dashboard /indexers endpoint uses a separate management login session.
+func (c *Client) GetAPIIndexersContext(ctx context.Context) ([]Indexer, error) {
+	u, err := url.Parse(c.baseURL + "/api/v2.0/indexers/all/results/torznab/api")
+	if err != nil {
+		return nil, err
+	}
+	q := u.Query()
+	q.Set("apikey", c.apiKey)
+	q.Set("t", "indexers")
+	q.Set("configured", "true")
+	u.RawQuery = q.Encode()
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, u.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+	resp, err := c.httpClient.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("Jackett API status: %d", resp.StatusCode)
+	}
+	var result struct {
+		XMLName xml.Name `xml:"indexers"`
+		Items   []struct {
+			ID          string `xml:"id,attr"`
+			Configured  bool   `xml:"configured,attr"`
+			Name        string `xml:"title"`
+			Description string `xml:"description"`
+			SiteLink    string `xml:"link"`
+			Language    string `xml:"language"`
+			Type        string `xml:"type"`
+		} `xml:"indexer"`
+	}
+	if err := xml.NewDecoder(resp.Body).Decode(&result); err != nil {
+		return nil, fmt.Errorf("invalid Jackett indexers response: %w", err)
+	}
+	sites := make([]Indexer, 0, len(result.Items))
+	for _, item := range result.Items {
+		if item.ID == "" || item.Name == "" {
+			return nil, fmt.Errorf("invalid Jackett indexer")
+		}
+		sites = append(sites, Indexer{ID: item.ID, Configured: item.Configured, Name: item.Name, Description: item.Description, SiteLink: item.SiteLink, Language: item.Language, Type: item.Type})
+	}
+	return sites, nil
 }

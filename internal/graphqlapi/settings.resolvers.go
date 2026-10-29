@@ -15,6 +15,11 @@ import (
 	"github.com/leothevan2444/moji/internal/stats"
 )
 
+// TestServiceConnection is the resolver for the testServiceConnection field.
+func (r *mutationResolver) TestServiceConnection(ctx context.Context, input model.TestServiceConnectionInput) (*model.ServiceConnectionTestResult, error) {
+	return testServiceConnection(ctx, input), nil
+}
+
 // PatchSettings is the resolver for the patchSettings field.
 func (r *mutationResolver) PatchSettings(ctx context.Context, input model.SettingsPatchInput) (*model.Settings, error) {
 	return r.applySettingsPatch(input)

@@ -412,7 +412,10 @@ export type JackettIndexer = {
   /** Mirrors Jackett's Configured flag — indexers not yet configured are hidden by Jackett's UI. */
   enabled: Scalars['Boolean']['output'];
   id: Scalars['String']['output'];
+  language: Scalars['String']['output'];
   name: Scalars['String']['output'];
+  siteType: Scalars['String']['output'];
+  siteUrl: Scalars['String']['output'];
 };
 
 export type JackettPatchInput = {
@@ -630,6 +633,8 @@ export type Mutation = {
   subscribePerformers: PerformerBatchPayload;
   /** Synchronize downloads and advance file preparation and Stash ingest, matching one background processing cycle */
   syncTaskProgress: Array<Task>;
+  /** Test the supplied credentials without saving configuration or updating runtime state. */
+  testServiceConnection: ServiceConnectionTestResult;
   /** Trigger Stash metadata scans for completed Moji tasks */
   triggerStashScans: Array<Task>;
   /** Trigger a Stash metadata scan for a single completed Moji task */
@@ -781,6 +786,11 @@ export type MutationSubscribePerformerArgs = {
 
 export type MutationSubscribePerformersArgs = {
   ids: Array<Scalars['ID']['input']>;
+};
+
+
+export type MutationTestServiceConnectionArgs = {
+  input: TestServiceConnectionInput;
 };
 
 
@@ -1389,6 +1399,18 @@ export enum SceneSourceFilter {
   Stashbox = 'STASHBOX'
 }
 
+export enum ServiceConnectionTestCode {
+  Failed = 'FAILED',
+  InvalidUrl = 'INVALID_URL',
+  Ok = 'OK',
+  Timeout = 'TIMEOUT'
+}
+
+export type ServiceConnectionTestResult = {
+  __typename?: 'ServiceConnectionTestResult';
+  code: ServiceConnectionTestCode;
+};
+
 export type ServiceStatus = {
   __typename?: 'ServiceStatus';
   /** True iff the minimum connection fields are present, so the backend can attempt to talk to the upstream service. */
@@ -1413,6 +1435,12 @@ export type Settings = {
   stash: StashSettings;
   system: SystemSettings;
 };
+
+export enum SettingsConnectionService {
+  Jackett = 'JACKETT',
+  Qbittorrent = 'QBITTORRENT',
+  Stash = 'STASH'
+}
 
 export type SettingsPatchInput = {
   downloader?: InputMaybe<DownloaderConnectionPatchInput>;
@@ -2068,6 +2096,14 @@ export type TasksPatchInput = {
   torrent_selection?: InputMaybe<ResourceRulesPatchInput>;
 };
 
+export type TestServiceConnectionInput = {
+  apiKey?: InputMaybe<Scalars['String']['input']>;
+  password?: InputMaybe<Scalars['String']['input']>;
+  service: SettingsConnectionService;
+  url: Scalars['String']['input'];
+  username?: InputMaybe<Scalars['String']['input']>;
+};
+
 export type TitleClausePatchInput = {
   effect: TitleMatchEffect;
   pattern: Scalars['String']['input'];
@@ -2460,7 +2496,7 @@ export type PreviewJackettSelectionDocumentQuery = { __typename?: 'Query', previ
 export type JackettIndexersDocumentQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type JackettIndexersDocumentQuery = { __typename?: 'Query', jackettIndexers: Array<{ __typename?: 'JackettIndexer', id: string, name: string, enabled: boolean }> };
+export type JackettIndexersDocumentQuery = { __typename?: 'Query', jackettIndexers: Array<{ __typename?: 'JackettIndexer', siteUrl: string, siteType: string, language: string, id: string, name: string, enabled: boolean }> };
 
 export type BlockedTaskTorrentCandidatesDocumentQueryVariables = Exact<{
   id: Scalars['ID']['input'];
@@ -2516,6 +2552,13 @@ export type TaskDeletionSettingsQueryVariables = Exact<{ [key: string]: never; }
 
 
 export type TaskDeletionSettingsQuery = { __typename?: 'Query', settings: { __typename?: 'Settings', system: { __typename?: 'SystemSettings', taskDeletePolicy: TaskDeletePolicy } } };
+
+export type TestServiceConnectionMutationVariables = Exact<{
+  input: TestServiceConnectionInput;
+}>;
+
+
+export type TestServiceConnectionMutation = { __typename?: 'Mutation', testServiceConnection: { __typename?: 'ServiceConnectionTestResult', code: ServiceConnectionTestCode } };
 
 export type ClearImageCacheDocumentMutationVariables = Exact<{ [key: string]: never; }>;
 
@@ -2853,7 +2896,7 @@ export const TaskProcessingStateDocument = {"kind":"Document","definitions":[{"k
 export const DiscoverScenesDocumentDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"DiscoverScenesDocument"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"input"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"DiscoverScenesInput"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"discoverScenes"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"input"},"value":{"kind":"Variable","name":{"kind":"Name","value":"input"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"items"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"key"}},{"kind":"Field","name":{"kind":"Name","value":"sceneId"}},{"kind":"Field","name":{"kind":"Name","value":"stashBoxEndpoint"}},{"kind":"Field","name":{"kind":"Name","value":"stashBoxName"}},{"kind":"Field","name":{"kind":"Name","value":"title"}},{"kind":"Field","name":{"kind":"Name","value":"durationSeconds"}},{"kind":"Field","name":{"kind":"Name","value":"code"}},{"kind":"Field","name":{"kind":"Name","value":"date"}},{"kind":"Field","name":{"kind":"Name","value":"studioName"}},{"kind":"Field","name":{"kind":"Name","value":"imageUrl"}},{"kind":"Field","name":{"kind":"Name","value":"url"}},{"kind":"Field","name":{"kind":"Name","value":"performerNames"}},{"kind":"Field","name":{"kind":"Name","value":"derivedQuery"}}]}},{"kind":"Field","name":{"kind":"Name","value":"usedStashBox"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"name"}},{"kind":"Field","name":{"kind":"Name","value":"endpoint"}},{"kind":"Field","name":{"kind":"Name","value":"performerId"}},{"kind":"Field","name":{"kind":"Name","value":"performerName"}}]}},{"kind":"Field","name":{"kind":"Name","value":"fallbackCount"}},{"kind":"Field","name":{"kind":"Name","value":"searchedQuery"}}]}}]}}]} as unknown as DocumentNode<DiscoverScenesDocumentQuery, DiscoverScenesDocumentQueryVariables>;
 export const SearchDocumentDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"SearchDocument"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"input"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"JackettSearchInput"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"jackettSearch"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"input"},"value":{"kind":"Variable","name":{"kind":"Name","value":"input"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"title"}},{"kind":"Field","name":{"kind":"Name","value":"size"}},{"kind":"Field","name":{"kind":"Name","value":"seeders"}},{"kind":"Field","name":{"kind":"Name","value":"peers"}},{"kind":"Field","name":{"kind":"Name","value":"tracker"}},{"kind":"Field","name":{"kind":"Name","value":"trackerId"}},{"kind":"Field","name":{"kind":"Name","value":"categoryDesc"}},{"kind":"Field","name":{"kind":"Name","value":"publishDate"}},{"kind":"Field","name":{"kind":"Name","value":"details"}},{"kind":"Field","name":{"kind":"Name","value":"link"}},{"kind":"Field","name":{"kind":"Name","value":"magnetUri"}},{"kind":"Field","name":{"kind":"Name","value":"infoHash"}}]}}]}}]} as unknown as DocumentNode<SearchDocumentQuery, SearchDocumentQueryVariables>;
 export const PreviewJackettSelectionDocumentDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"PreviewJackettSelectionDocument"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"input"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"PreviewJackettSelectionInput"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"previewJackettSelection"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"input"},"value":{"kind":"Variable","name":{"kind":"Name","value":"input"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"results"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"title"}},{"kind":"Field","name":{"kind":"Name","value":"size"}},{"kind":"Field","name":{"kind":"Name","value":"seeders"}},{"kind":"Field","name":{"kind":"Name","value":"peers"}},{"kind":"Field","name":{"kind":"Name","value":"tracker"}},{"kind":"Field","name":{"kind":"Name","value":"trackerId"}},{"kind":"Field","name":{"kind":"Name","value":"categoryDesc"}},{"kind":"Field","name":{"kind":"Name","value":"publishDate"}},{"kind":"Field","name":{"kind":"Name","value":"details"}},{"kind":"Field","name":{"kind":"Name","value":"link"}},{"kind":"Field","name":{"kind":"Name","value":"magnetUri"}},{"kind":"Field","name":{"kind":"Name","value":"infoHash"}}]}},{"kind":"Field","name":{"kind":"Name","value":"previewMeta"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"appliedFastRules"}},{"kind":"Field","name":{"kind":"Name","value":"appliedFileRules"}},{"kind":"Field","name":{"kind":"Name","value":"inspectedCount"}},{"kind":"Field","name":{"kind":"Name","value":"inspectableCount"}}]}}]}}]}}]} as unknown as DocumentNode<PreviewJackettSelectionDocumentQuery, PreviewJackettSelectionDocumentQueryVariables>;
-export const JackettIndexersDocumentDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"JackettIndexersDocument"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"jackettIndexers"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"name"}},{"kind":"Field","name":{"kind":"Name","value":"enabled"}}]}}]}}]} as unknown as DocumentNode<JackettIndexersDocumentQuery, JackettIndexersDocumentQueryVariables>;
+export const JackettIndexersDocumentDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"JackettIndexersDocument"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"jackettIndexers"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"siteUrl"}},{"kind":"Field","name":{"kind":"Name","value":"siteType"}},{"kind":"Field","name":{"kind":"Name","value":"language"}},{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"name"}},{"kind":"Field","name":{"kind":"Name","value":"enabled"}}]}}]}}]} as unknown as DocumentNode<JackettIndexersDocumentQuery, JackettIndexersDocumentQueryVariables>;
 export const BlockedTaskTorrentCandidatesDocumentDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"BlockedTaskTorrentCandidatesDocument"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"id"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"ID"}}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"limit"}},"type":{"kind":"NamedType","name":{"kind":"Name","value":"Int"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"blockedTaskTorrentCandidates"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"id"},"value":{"kind":"Variable","name":{"kind":"Name","value":"id"}}},{"kind":"Argument","name":{"kind":"Name","value":"limit"},"value":{"kind":"Variable","name":{"kind":"Name","value":"limit"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"title"}},{"kind":"Field","name":{"kind":"Name","value":"size"}},{"kind":"Field","name":{"kind":"Name","value":"seeders"}},{"kind":"Field","name":{"kind":"Name","value":"peers"}},{"kind":"Field","name":{"kind":"Name","value":"tracker"}},{"kind":"Field","name":{"kind":"Name","value":"trackerId"}},{"kind":"Field","name":{"kind":"Name","value":"categoryDesc"}},{"kind":"Field","name":{"kind":"Name","value":"publishDate"}},{"kind":"Field","name":{"kind":"Name","value":"details"}},{"kind":"Field","name":{"kind":"Name","value":"link"}},{"kind":"Field","name":{"kind":"Name","value":"magnetUri"}},{"kind":"Field","name":{"kind":"Name","value":"infoHash"}}]}}]}}]} as unknown as DocumentNode<BlockedTaskTorrentCandidatesDocumentQuery, BlockedTaskTorrentCandidatesDocumentQueryVariables>;
 export const QueueDiscoveredSceneDocumentDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"mutation","name":{"kind":"Name","value":"QueueDiscoveredSceneDocument"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"input"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"QueueDiscoveredSceneInput"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"queueDiscoveredScene"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"input"},"value":{"kind":"Variable","name":{"kind":"Name","value":"input"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"source"}},{"kind":"Field","name":{"kind":"Name","value":"stage"}},{"kind":"Field","name":{"kind":"Name","value":"stageStatus"}},{"kind":"Field","name":{"kind":"Name","value":"stageLabel"}},{"kind":"Field","name":{"kind":"Name","value":"stageStatusLabel"}},{"kind":"Field","name":{"kind":"Name","value":"code"}},{"kind":"Field","name":{"kind":"Name","value":"torrentName"}},{"kind":"Field","name":{"kind":"Name","value":"progress"}},{"kind":"Field","name":{"kind":"Name","value":"createdAt"}}]}}]}}]} as unknown as DocumentNode<QueueDiscoveredSceneDocumentMutation, QueueDiscoveredSceneDocumentMutationVariables>;
 export const ServiceStatusEventsDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"subscription","name":{"kind":"Name","value":"ServiceStatusEvents"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"serviceStatusEvents"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"sequence"}},{"kind":"Field","name":{"kind":"Name","value":"services"}},{"kind":"Field","name":{"kind":"Name","value":"observedAt"}}]}}]}}]} as unknown as DocumentNode<ServiceStatusEventsSubscription, ServiceStatusEventsSubscriptionVariables>;
@@ -2864,6 +2907,7 @@ export const SettingsPolicySectionDocument = {"kind":"Document","definitions":[{
 export const SystemSettingsTabDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"SystemSettingsTab"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"settings"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"system"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"language"}},{"kind":"Field","name":{"kind":"Name","value":"developerMode"}},{"kind":"Field","name":{"kind":"Name","value":"taskDeletePolicy"}},{"kind":"Field","name":{"kind":"Name","value":"imageCache"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"enabled"}},{"kind":"Field","name":{"kind":"Name","value":"maxSizeMb"}},{"kind":"Field","name":{"kind":"Name","value":"retentionDays"}}]}},{"kind":"Field","name":{"kind":"Name","value":"stashBoxDataCache"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"ttlHours"}}]}}]}}]}},{"kind":"Field","name":{"kind":"Name","value":"settingsStatus"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"imageCache"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"usedBytes"}},{"kind":"Field","name":{"kind":"Name","value":"entryCount"}},{"kind":"Field","name":{"kind":"Name","value":"cacheDirectory"}},{"kind":"Field","name":{"kind":"Name","value":"lastCleanupAt"}},{"kind":"Field","name":{"kind":"Name","value":"lastError"}}]}},{"kind":"Field","name":{"kind":"Name","value":"stashBoxDataCache"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"usedBytes"}},{"kind":"Field","name":{"kind":"Name","value":"sceneCount"}},{"kind":"Field","name":{"kind":"Name","value":"performerCount"}},{"kind":"Field","name":{"kind":"Name","value":"snapshotCount"}},{"kind":"Field","name":{"kind":"Name","value":"databasePath"}},{"kind":"Field","name":{"kind":"Name","value":"lastCleanupAt"}},{"kind":"Field","name":{"kind":"Name","value":"lastError"}}]}}]}}]}}]} as unknown as DocumentNode<SystemSettingsTabQuery, SystemSettingsTabQueryVariables>;
 export const AboutSettingsTabDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"AboutSettingsTab"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"version"}}]}}]} as unknown as DocumentNode<AboutSettingsTabQuery, AboutSettingsTabQueryVariables>;
 export const TaskDeletionSettingsDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"TaskDeletionSettings"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"settings"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"system"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"taskDeletePolicy"}}]}}]}}]}}]} as unknown as DocumentNode<TaskDeletionSettingsQuery, TaskDeletionSettingsQueryVariables>;
+export const TestServiceConnectionDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"mutation","name":{"kind":"Name","value":"TestServiceConnection"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"input"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"TestServiceConnectionInput"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"testServiceConnection"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"input"},"value":{"kind":"Variable","name":{"kind":"Name","value":"input"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"code"}}]}}]}}]} as unknown as DocumentNode<TestServiceConnectionMutation, TestServiceConnectionMutationVariables>;
 export const ClearImageCacheDocumentDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"mutation","name":{"kind":"Name","value":"ClearImageCacheDocument"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"clearImageCache"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"usedBytes"}},{"kind":"Field","name":{"kind":"Name","value":"entryCount"}},{"kind":"Field","name":{"kind":"Name","value":"cacheDirectory"}},{"kind":"Field","name":{"kind":"Name","value":"lastCleanupAt"}},{"kind":"Field","name":{"kind":"Name","value":"lastError"}}]}}]}}]} as unknown as DocumentNode<ClearImageCacheDocumentMutation, ClearImageCacheDocumentMutationVariables>;
 export const ClearStashBoxDataCacheDocumentDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"mutation","name":{"kind":"Name","value":"ClearStashBoxDataCacheDocument"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"clearStashBoxDataCache"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"usedBytes"}},{"kind":"Field","name":{"kind":"Name","value":"sceneCount"}},{"kind":"Field","name":{"kind":"Name","value":"performerCount"}},{"kind":"Field","name":{"kind":"Name","value":"snapshotCount"}},{"kind":"Field","name":{"kind":"Name","value":"databasePath"}},{"kind":"Field","name":{"kind":"Name","value":"lastCleanupAt"}},{"kind":"Field","name":{"kind":"Name","value":"lastError"}}]}}]}}]} as unknown as DocumentNode<ClearStashBoxDataCacheDocumentMutation, ClearStashBoxDataCacheDocumentMutationVariables>;
 export const RefreshStashBoxesDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"mutation","name":{"kind":"Name","value":"RefreshStashBoxes"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"refreshStashBoxes"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"automation"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"sourcingRetryIntervalHours"}},{"kind":"Field","name":{"kind":"Name","value":"stashBoxEndpoints"}}]}}]}}]}}]} as unknown as DocumentNode<RefreshStashBoxesMutation, RefreshStashBoxesMutationVariables>;

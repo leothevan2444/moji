@@ -1,3 +1,4 @@
+import { SettingsSubpanel, useSettingsPanel } from "./SettingsPanels";
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useOutletContext } from "react-router";
@@ -15,6 +16,7 @@ interface SystemDraft { developerMode: boolean; language: LocalePreference; enab
 
 export default function SystemSettingsTab() {
   const { t } = useTranslation();
+  const panel = useSettingsPanel();
   const { pushToast, onDeveloperModeChange, onLanguageChange, localeLoadError, retryLocale } = useOutletContext<AppOutletContext>();
   const [{ data, fetching, error }, refresh] = useQuery({ query: SystemSettingsTabDocument });
   const [{ fetching: clearing }, clearImageCache] = useMutation(ClearImageCacheDocumentDocument);
@@ -44,20 +46,23 @@ export default function SystemSettingsTab() {
     refresh();
   };
 
-  return <SettingsCard title={t("settings.tabs.system")}><form className="settings-form" onSubmit={event => event.preventDefault()}>
+  return <SettingsCard title={t(panel ? `settingsLayout.panels.${panel}` : "settings.tabs.system")}><form className="settings-form" onSubmit={event => event.preventDefault()}>
+    <SettingsSubpanel id="general">
     <label className="settings-field"><FieldLabel text={t("common.language")} /><select aria-label={t("common.language")} aria-describedby="system-language-help" value={form.language} onChange={event => setForm(current => ({...current,language:event.target.value as LocalePreference}))}><option value="auto">{t("common.auto")}</option>{Object.entries(SUPPORTED_LOCALES).map(([value,meta]) => <option key={value} value={value}>{meta.label}</option>)}</select><small id="system-language-help">{t("systemSettings.languageHelp")}</small></label>
     {localeLoadError ? <p className="settings-feedback tone-danger" role="alert">{t("localeUi.loadFailed")} <button type="button" onClick={retryLocale}>{t("localeUi.retry")}</button></p> : null}
-    <div className="settings-field"><FieldLabel text={t("systemSettings.developerMode")} info={t("systemSettings.developerModeInfo")} /><label className="switch-row image-cache-switch developer-mode-switch"><span className="switch-row__label">{t("systemSettings.enableDeveloperMode")}</span><span className="switch"><input role="switch" type="checkbox" aria-checked={form.developerMode} checked={form.developerMode} aria-label={t("systemSettings.developerMode")} onChange={(event) => setForm((current) => ({ ...current, developerMode: event.target.checked }))} /><span className="switch__track" aria-hidden="true" /><span className="switch__thumb" aria-hidden="true" /></span></label></div>
+    <div className="settings-field"><label className="switch-row image-cache-switch developer-mode-switch"><FieldLabel text={t("systemSettings.developerMode")} info={t("systemSettings.developerModeInfo")} /><span className="switch"><input role="switch" type="checkbox" aria-checked={form.developerMode} checked={form.developerMode} aria-label={t("systemSettings.developerMode")} onChange={(event) => setForm((current) => ({ ...current, developerMode: event.target.checked }))} /><span className="switch__track" aria-hidden="true" /><span className="switch__thumb" aria-hidden="true" /></span></label></div>
 
-    <div className="settings-field"><FieldLabel text={t("systemSettings.cache")} info={t("systemSettings.cacheInfo")} /><label className="switch-row image-cache-switch"><span className="switch-row__label">{t("systemSettings.enableCache")}</span><span className="switch" role="switch" aria-checked={form.enabled}><input type="checkbox" checked={form.enabled} aria-label={t("systemSettings.enableCache")} onChange={(event) => setForm((current) => ({ ...current, enabled: event.target.checked }))} /><span className="switch__track" aria-hidden="true" /><span className="switch__thumb" aria-hidden="true" /></span></label></div>
-    <div className={`image-cache-config${form.enabled ? "" : " is-disabled"}`} aria-disabled={!form.enabled}>
-      <label className="settings-field"><FieldLabel text={t("systemSettings.maxSize")} info={t("systemSettings.maxSizeInfo")} /><input type="number" min="64" max="20480" disabled={!form.enabled} value={form.maxSizeMb} onChange={(event) => setForm((current) => ({ ...current, maxSizeMb: event.target.value }))} /></label>
-      <label className="settings-field"><FieldLabel text={t("systemSettings.retention")} info={t("systemSettings.retentionInfo")} /><input type="number" min="1" max="365" disabled={!form.enabled} value={form.retentionDays} onChange={(event) => setForm((current) => ({ ...current, retentionDays: event.target.value }))} /></label>
-      {!form.enabled ? <p className="image-cache-config__note">{t("systemSettings.disabled")}</p> : null}
+    </SettingsSubpanel>
+    <SettingsSubpanel id="imageCache">
+    <div className="settings-field"><label className="switch-row image-cache-switch"><FieldLabel text={t("systemSettings.enableCache")} info={t("systemSettings.cacheInfo")} /><span className="switch" role="switch" aria-checked={form.enabled}><input type="checkbox" checked={form.enabled} aria-label={t("systemSettings.enableCache")} onChange={(event) => setForm((current) => ({ ...current, enabled: event.target.checked }))} /><span className="switch__track" aria-hidden="true" /><span className="switch__thumb" aria-hidden="true" /></span></label></div>
+    <div className="image-cache-config">
+      <label className="settings-field"><FieldLabel text={t("systemSettings.maxSize")} info={t("systemSettings.maxSizeInfo")} /><input type="number" min="64" max="20480" value={form.maxSizeMb} onChange={(event) => setForm((current) => ({ ...current, maxSizeMb: event.target.value }))} /></label>
+      <label className="settings-field"><FieldLabel text={t("systemSettings.retention")} info={t("systemSettings.retentionInfo")} /><input type="number" min="1" max="365" value={form.retentionDays} onChange={(event) => setForm((current) => ({ ...current, retentionDays: event.target.value }))} /></label>
     </div>
-    <div className="image-cache-management"><div><div className="settings-meta"><span>{t("systemSettings.usage", { size: formatBytes(Number(image?.usedBytes ?? 0)) })}</span><span>{t("systemSettings.images", { count: image?.entryCount ?? 0 })}</span><span>{t("systemSettings.cleanup", { time: formatDateTime(image?.lastCleanupAt) })}</span></div><p className="image-cache-management__hint">{t("systemSettings.clearHint")}</p></div><button type="button" className="image-cache-management__clear" disabled={clearing || !image?.entryCount} onClick={() => setConfirming(true)}>{clearing ? t("systemSettings.clearing") : image?.entryCount ? t("systemSettings.clear") : t("systemSettings.noCache")}</button></div>
+    <div className="image-cache-management"><div><div className="settings-meta"><span>{t("systemSettings.usage", { size: formatBytes(Number(image?.usedBytes ?? 0)) })}</span><span>{t("systemSettings.images", { count: image?.entryCount ?? 0 })}</span><span>{t("systemSettings.cleanup", { time: formatDateTime(image?.lastCleanupAt) })}</span></div></div><button type="button" className="image-cache-management__clear" disabled={clearing || !image?.entryCount} onClick={() => setConfirming(true)}>{clearing ? t("systemSettings.clearing") : t("systemSettings.clear")}</button></div>
     {confirming ? <div className="image-cache-confirm" role="alertdialog"><div><strong>{t("systemSettings.clearTitle")}</strong><p>{t("systemSettings.clearDescription", { count: image?.entryCount ?? 0, size: formatBytes(Number(image?.usedBytes ?? 0)) })}</p></div><div className="image-cache-confirm__actions"><button type="button" className="ghost-button" onClick={() => setConfirming(false)}>{t("systemSettings.cancel")}</button><button type="button" className="image-cache-confirm__submit" onClick={() => void clear()}>{t("systemSettings.confirm")}</button></div></div> : null}
     {image?.lastError ? <p className="settings-feedback tone-danger">{image.lastError}</p> : null}
+    </SettingsSubpanel>
     <SettingsSaveStatus {...autosave} />
   </form></SettingsCard>;
 }

@@ -6,7 +6,21 @@ extend type Query {
   settingsStatus: SettingsStatus!
 }
 
+enum SettingsConnectionService { STASH JACKETT QBITTORRENT }
+enum ServiceConnectionTestCode { OK INVALID_URL TIMEOUT FAILED }
+input TestServiceConnectionInput {
+  service: SettingsConnectionService!
+  url: String!
+  apiKey: String
+  username: String
+  password: String
+}
+type ServiceConnectionTestResult { code: ServiceConnectionTestCode! }
+
 extend type Mutation {
+  "Test the supplied credentials without saving configuration or updating runtime state."
+  testServiceConnection(input: TestServiceConnectionInput!): ServiceConnectionTestResult!
+
   "Merge only supplied configuration fields and persist atomically. Objects merge; lists replace."
   patchSettings(input: SettingsPatchInput!): Settings!
 

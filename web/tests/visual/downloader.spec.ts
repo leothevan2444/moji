@@ -60,20 +60,22 @@ for (const locale of ["en", "zh-CN"] as const) {
 }
 
 test("downloader settings keep file removal selected and support cleanup immediately after ingest", async ({ page }) => {
- await page.goto("/settings/downloader");
+ await page.goto("/settings/downloader?panel=cleanup");
  await expect(page.getByLabel("Cleanup trigger")).toHaveCount(0);
- await page.getByText("Enable automatic cleanup (off by default)", {exact:true}).click();
+ await page.getByText("Enable automatic cleanup", {exact:true}).click();
  await expect(page.getByRole("checkbox", { name: "Permanently delete downloaded files too" })).toBeChecked();
- await expect(page.locator(".switch__thumb")).toHaveCount(2);
- const info=page.locator(".settings-info");
+ await expect(page.locator(".downloader-cleanup .switch__thumb")).toHaveCount(2);
+ const info=page.locator(".downloader-cleanup .settings-info").last();
  await info.hover();
  await expect(page.getByRole("tooltip")).toBeVisible();
- await expect(page.getByRole("tooltip")).toContainText("also deletes download source files");
+ await expect(page.getByRole("tooltip")).toContainText("download source files");
+ const saved = page.waitForResponse(response => response.url().endsWith("/graphql") && response.request().postDataJSON().operationName === "UpdateDownloaderPolicyDocument" && response.request().postDataJSON().variables.input.afterIngest === true);
  await page.getByLabel("Cleanup trigger").selectOption("AFTER_INGEST");
  await expect(page.getByLabel("Share ratio threshold")).toHaveCount(0);
  await expect(page.getByLabel("Seeding threshold (hours)")).toHaveCount(0);
- await page.getByRole("button", { name: "Save cleanup policy" }).click();
- await expect(page.getByRole("status").filter({hasText:"Saved."})).toBeVisible();
+ await saved;
+ await expect(page.locator(".downloader-cleanup").getByRole("alert")).toHaveCount(0);
+ await page.getByRole("tab", {name:"Speed limits",exact:true}).click();
  await expect(page.getByLabel("Upload limit (KiB/s)")).toBeVisible();
 });
 
@@ -98,11 +100,11 @@ test.describe("current qB sources", () => {
 
 for (const locale of ["en", "zh-CN"] as const) {
  test(`${locale} enabled cleanup file removal tooltip`, async ({ page }) => {
-  await page.goto("/settings/downloader");
-  const enable = locale === "en" ? "Enable automatic cleanup (off by default)" : "启用自动清理";
+  await page.goto("/settings/downloader?panel=cleanup");
+  const enable = locale === "en" ? "Enable automatic cleanup" : "启用自动清理";
   await page.getByText(enable, {exact:true}).click();
   const panel=page.locator(".downloader-cleanup");
-  await panel.locator(".settings-info").hover();
+  await panel.locator(".settings-info").last().hover();
   const tooltip=panel.getByRole("tooltip");
   await expect(tooltip).toBeVisible();
   const bounds=await tooltip.boundingBox();

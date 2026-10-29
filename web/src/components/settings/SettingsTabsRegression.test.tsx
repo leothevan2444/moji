@@ -141,7 +141,7 @@ describe("settings tab visual contracts", () => {
     fireEvent.click(toggle);
     expect(interval.disabled).toBe(true);
     expect(interval.value).toBe("120");
-    expect(screen.getByText("taskSettings.processingOffHelp")).toBeTruthy();
+    expect(screen.getByText("taskSettings.processingHelp")).toBeTruthy();
     await flush();
     expect(updateSettings).toHaveBeenCalledWith({input:{tasks:{task_processing_enabled:false,task_progress_sync_interval_seconds:120}}});
   });
@@ -175,17 +175,17 @@ describe("settings tab visual contracts", () => {
     expect(updateSettings).toHaveBeenLastCalledWith({input:{stash:{ingest:{generate_transcodes:false}}}});
   });
 
-  it("renders image cache as a switch and disables dependent inputs", () => {
+  it("keeps existing-cache cleanup limits editable while image writes are disabled", () => {
     const view = render(<SettingsAutosaveProvider><SystemSettingsTab /></SettingsAutosaveProvider>);
     const toggle = screen.getByLabelText("systemSettings.enableCache");
     expect(toggle.closest('[role="switch"]')).toBeTruthy();
     expect((screen.getByDisplayValue("1024") as HTMLInputElement).disabled).toBe(false);
     fireEvent.click(toggle);
-    expect((screen.getByDisplayValue("1024") as HTMLInputElement).disabled).toBe(true);
-    expect((screen.getByDisplayValue("30") as HTMLInputElement).disabled).toBe(true);
+    expect((screen.getByDisplayValue("1024") as HTMLInputElement).disabled).toBe(false);
+    expect((screen.getByDisplayValue("30") as HTMLInputElement).disabled).toBe(false);
     expect(screen.queryByText("stashBoxCacheUi.title")).toBeNull();
-    expect(view.container.querySelector(".image-cache-config.is-disabled")).toBeTruthy();
-    expect(screen.getByText("systemSettings.disabled")).toBeTruthy();
+    expect(view.container.querySelector(".image-cache-config.is-disabled")).toBeNull();
+    expect(screen.queryByText("systemSettings.disabled")).toBeNull();
   });
 
   it("renders log entries as rows within one shared log viewport", () => {

@@ -284,9 +284,12 @@ type ComplexityRoot struct {
 	}
 
 	JackettIndexer struct {
-		Enabled func(childComplexity int) int
-		ID      func(childComplexity int) int
-		Name    func(childComplexity int) int
+		Enabled  func(childComplexity int) int
+		ID       func(childComplexity int) int
+		Language func(childComplexity int) int
+		Name     func(childComplexity int) int
+		SiteType func(childComplexity int) int
+		SiteURL  func(childComplexity int) int
 	}
 
 	JackettSearchResult struct {
@@ -410,6 +413,7 @@ type ComplexityRoot struct {
 		SubscribePerformer          func(childComplexity int, stashPerformerID string) int
 		SubscribePerformers         func(childComplexity int, ids []string) int
 		SyncTaskProgress            func(childComplexity int) int
+		TestServiceConnection       func(childComplexity int, input model.TestServiceConnectionInput) int
 		TriggerStashScans           func(childComplexity int) int
 		TriggerTaskStashScan        func(childComplexity int, id string) int
 		UnsubscribePerformer        func(childComplexity int, stashPerformerID string) int
@@ -637,6 +641,10 @@ type ComplexityRoot struct {
 		Outcome    func(childComplexity int) int
 		ReasonCode func(childComplexity int) int
 		Release    func(childComplexity int) int
+	}
+
+	ServiceConnectionTestResult struct {
+		Code func(childComplexity int) int
 	}
 
 	ServiceStatus struct {
@@ -1124,6 +1132,7 @@ type MutationResolver interface {
 	SetDownloaderSpeedLimit(ctx context.Context, upload bool, kibPerSecond int) (bool, error)
 	ProcessReleaseReviews(ctx context.Context, input model.ProcessReleaseReviewsInput) (*model.ReleaseReviewPayload, error)
 	QueueDiscoveredScene(ctx context.Context, input model.QueueDiscoveredSceneInput) (*model.Task, error)
+	TestServiceConnection(ctx context.Context, input model.TestServiceConnectionInput) (*model.ServiceConnectionTestResult, error)
 	PatchSettings(ctx context.Context, input model.SettingsPatchInput) (*model.Settings, error)
 	UpdateStashBoxCacheSettings(ctx context.Context, ttlHours int) (*model.Settings, error)
 	UpdateSettingsSection(ctx context.Context, input model.UpdateSettingsSectionInput) (*model.Settings, error)
@@ -2338,12 +2347,33 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.JackettIndexer.ID(childComplexity), true
 
+	case "JackettIndexer.language":
+		if e.complexity.JackettIndexer.Language == nil {
+			break
+		}
+
+		return e.complexity.JackettIndexer.Language(childComplexity), true
+
 	case "JackettIndexer.name":
 		if e.complexity.JackettIndexer.Name == nil {
 			break
 		}
 
 		return e.complexity.JackettIndexer.Name(childComplexity), true
+
+	case "JackettIndexer.siteType":
+		if e.complexity.JackettIndexer.SiteType == nil {
+			break
+		}
+
+		return e.complexity.JackettIndexer.SiteType(childComplexity), true
+
+	case "JackettIndexer.siteUrl":
+		if e.complexity.JackettIndexer.SiteURL == nil {
+			break
+		}
+
+		return e.complexity.JackettIndexer.SiteURL(childComplexity), true
 
 	case "JackettSearchResult.categoryDesc":
 		if e.complexity.JackettSearchResult.CategoryDesc == nil {
@@ -3136,6 +3166,18 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.Mutation.SyncTaskProgress(childComplexity), true
+
+	case "Mutation.testServiceConnection":
+		if e.complexity.Mutation.TestServiceConnection == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_testServiceConnection_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.TestServiceConnection(childComplexity, args["input"].(model.TestServiceConnectionInput)), true
 
 	case "Mutation.triggerStashScans":
 		if e.complexity.Mutation.TriggerStashScans == nil {
@@ -4407,6 +4449,13 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.ReleaseReviewResult.Release(childComplexity), true
+
+	case "ServiceConnectionTestResult.code":
+		if e.complexity.ServiceConnectionTestResult.Code == nil {
+			break
+		}
+
+		return e.complexity.ServiceConnectionTestResult.Code(childComplexity), true
 
 	case "ServiceStatus.configured":
 		if e.complexity.ServiceStatus.Configured == nil {
@@ -6757,6 +6806,7 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 		ec.unmarshalInputTaskPageInput,
 		ec.unmarshalInputTaskSettingsInput,
 		ec.unmarshalInputTasksPatchInput,
+		ec.unmarshalInputTestServiceConnectionInput,
 		ec.unmarshalInputTitleClausePatchInput,
 		ec.unmarshalInputTitleMatchClauseInput,
 		ec.unmarshalInputTitleMatchRuleInput,
@@ -7225,6 +7275,9 @@ input DiscoverScenesInput {
 }
 
 type JackettIndexer {
+  siteUrl: String!
+  siteType: String!
+  language: String!
   id: String!
   name: String!
   "Mirrors Jackett's Configured flag — indexers not yet configured are hidden by Jackett's UI."
@@ -7348,7 +7401,21 @@ extend type Subscription {
   settingsStatus: SettingsStatus!
 }
 
+enum SettingsConnectionService { STASH JACKETT QBITTORRENT }
+enum ServiceConnectionTestCode { OK INVALID_URL TIMEOUT FAILED }
+input TestServiceConnectionInput {
+  service: SettingsConnectionService!
+  url: String!
+  apiKey: String
+  username: String
+  password: String
+}
+type ServiceConnectionTestResult { code: ServiceConnectionTestCode! }
+
 extend type Mutation {
+  "Test the supplied credentials without saving configuration or updating runtime state."
+  testServiceConnection(input: TestServiceConnectionInput!): ServiceConnectionTestResult!
+
   "Merge only supplied configuration fields and persist atomically. Objects merge; lists replace."
   patchSettings(input: SettingsPatchInput!): Settings!
 
@@ -9599,6 +9666,34 @@ func (ec *executionContext) field_Mutation_subscribePerformers_argsIds(
 	}
 
 	var zeroVal []string
+	return zeroVal, nil
+}
+
+func (ec *executionContext) field_Mutation_testServiceConnection_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := ec.field_Mutation_testServiceConnection_argsInput(ctx, rawArgs)
+	if err != nil {
+		return nil, err
+	}
+	args["input"] = arg0
+	return args, nil
+}
+func (ec *executionContext) field_Mutation_testServiceConnection_argsInput(
+	ctx context.Context,
+	rawArgs map[string]any,
+) (model.TestServiceConnectionInput, error) {
+	if _, ok := rawArgs["input"]; !ok {
+		var zeroVal model.TestServiceConnectionInput
+		return zeroVal, nil
+	}
+
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
+	if tmp, ok := rawArgs["input"]; ok {
+		return ec.unmarshalNTestServiceConnectionInput2githubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐTestServiceConnectionInput(ctx, tmp)
+	}
+
+	var zeroVal model.TestServiceConnectionInput
 	return zeroVal, nil
 }
 
@@ -18620,6 +18715,138 @@ func (ec *executionContext) fieldContext_IngestStatus_configured(_ context.Conte
 	return fc, nil
 }
 
+func (ec *executionContext) _JackettIndexer_siteUrl(ctx context.Context, field graphql.CollectedField, obj *model.JackettIndexer) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_JackettIndexer_siteUrl(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.SiteURL, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_JackettIndexer_siteUrl(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "JackettIndexer",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _JackettIndexer_siteType(ctx context.Context, field graphql.CollectedField, obj *model.JackettIndexer) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_JackettIndexer_siteType(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.SiteType, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_JackettIndexer_siteType(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "JackettIndexer",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _JackettIndexer_language(ctx context.Context, field graphql.CollectedField, obj *model.JackettIndexer) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_JackettIndexer_language(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Language, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_JackettIndexer_language(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "JackettIndexer",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _JackettIndexer_id(ctx context.Context, field graphql.CollectedField, obj *model.JackettIndexer) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_JackettIndexer_id(ctx, field)
 	if err != nil {
@@ -23731,6 +23958,65 @@ func (ec *executionContext) fieldContext_Mutation_queueDiscoveredScene(ctx conte
 	}()
 	ctx = graphql.WithFieldContext(ctx, fc)
 	if fc.Args, err = ec.field_Mutation_queueDiscoveredScene_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_testServiceConnection(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Mutation_testServiceConnection(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().TestServiceConnection(rctx, fc.Args["input"].(model.TestServiceConnectionInput))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*model.ServiceConnectionTestResult)
+	fc.Result = res
+	return ec.marshalNServiceConnectionTestResult2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐServiceConnectionTestResult(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Mutation_testServiceConnection(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "code":
+				return ec.fieldContext_ServiceConnectionTestResult_code(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type ServiceConnectionTestResult", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_testServiceConnection_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return fc, err
 	}
@@ -28952,6 +29238,12 @@ func (ec *executionContext) fieldContext_Query_jackettIndexers(_ context.Context
 		IsResolver: true,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			switch field.Name {
+			case "siteUrl":
+				return ec.fieldContext_JackettIndexer_siteUrl(ctx, field)
+			case "siteType":
+				return ec.fieldContext_JackettIndexer_siteType(ctx, field)
+			case "language":
+				return ec.fieldContext_JackettIndexer_language(ctx, field)
 			case "id":
 				return ec.fieldContext_JackettIndexer_id(ctx, field)
 			case "name":
@@ -33142,6 +33434,50 @@ func (ec *executionContext) fieldContext_ReleaseReviewResult_release(_ context.C
 				return ec.fieldContext_ReleaseReview_performerNames(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type ReleaseReview", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ServiceConnectionTestResult_code(ctx context.Context, field graphql.CollectedField, obj *model.ServiceConnectionTestResult) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_ServiceConnectionTestResult_code(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Code, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(model.ServiceConnectionTestCode)
+	fc.Result = res
+	return ec.marshalNServiceConnectionTestCode2githubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐServiceConnectionTestCode(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_ServiceConnectionTestResult_code(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ServiceConnectionTestResult",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type ServiceConnectionTestCode does not have child fields")
 		},
 	}
 	return fc, nil
@@ -52570,6 +52906,61 @@ func (ec *executionContext) unmarshalInputTasksPatchInput(ctx context.Context, o
 	return it, nil
 }
 
+func (ec *executionContext) unmarshalInputTestServiceConnectionInput(ctx context.Context, obj any) (model.TestServiceConnectionInput, error) {
+	var it model.TestServiceConnectionInput
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"service", "url", "apiKey", "username", "password"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "service":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("service"))
+			data, err := ec.unmarshalNSettingsConnectionService2githubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐSettingsConnectionService(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Service = data
+		case "url":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("url"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.URL = data
+		case "apiKey":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("apiKey"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.APIKey = data
+		case "username":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("username"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Username = data
+		case "password":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("password"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Password = data
+		}
+	}
+
+	return it, nil
+}
+
 func (ec *executionContext) unmarshalInputTitleClausePatchInput(ctx context.Context, obj any) (model.TitleClausePatchInput, error) {
 	var it model.TitleClausePatchInput
 	asMap := map[string]any{}
@@ -55007,6 +55398,21 @@ func (ec *executionContext) _JackettIndexer(ctx context.Context, sel ast.Selecti
 		switch field.Name {
 		case "__typename":
 			out.Values[i] = graphql.MarshalString("JackettIndexer")
+		case "siteUrl":
+			out.Values[i] = ec._JackettIndexer_siteUrl(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "siteType":
+			out.Values[i] = ec._JackettIndexer_siteType(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "language":
+			out.Values[i] = ec._JackettIndexer_language(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
 		case "id":
 			out.Values[i] = ec._JackettIndexer_id(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
@@ -55790,6 +56196,13 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 		case "queueDiscoveredScene":
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
 				return ec._Mutation_queueDiscoveredScene(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "testServiceConnection":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_testServiceConnection(ctx, field)
 			})
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
@@ -58005,6 +58418,45 @@ func (ec *executionContext) _ReleaseReviewResult(ctx context.Context, sel ast.Se
 			}
 		case "release":
 			out.Values[i] = ec._ReleaseReviewResult_release(ctx, field, obj)
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var serviceConnectionTestResultImplementors = []string{"ServiceConnectionTestResult"}
+
+func (ec *executionContext) _ServiceConnectionTestResult(ctx context.Context, sel ast.SelectionSet, obj *model.ServiceConnectionTestResult) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, serviceConnectionTestResultImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("ServiceConnectionTestResult")
+		case "code":
+			out.Values[i] = ec._ServiceConnectionTestResult_code(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -62938,6 +63390,30 @@ func (ec *executionContext) marshalNSceneSource2githubᚗcomᚋleothevan2444ᚋm
 	return v
 }
 
+func (ec *executionContext) unmarshalNServiceConnectionTestCode2githubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐServiceConnectionTestCode(ctx context.Context, v any) (model.ServiceConnectionTestCode, error) {
+	var res model.ServiceConnectionTestCode
+	err := res.UnmarshalGQL(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNServiceConnectionTestCode2githubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐServiceConnectionTestCode(ctx context.Context, sel ast.SelectionSet, v model.ServiceConnectionTestCode) graphql.Marshaler {
+	return v
+}
+
+func (ec *executionContext) marshalNServiceConnectionTestResult2githubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐServiceConnectionTestResult(ctx context.Context, sel ast.SelectionSet, v model.ServiceConnectionTestResult) graphql.Marshaler {
+	return ec._ServiceConnectionTestResult(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNServiceConnectionTestResult2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐServiceConnectionTestResult(ctx context.Context, sel ast.SelectionSet, v *model.ServiceConnectionTestResult) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._ServiceConnectionTestResult(ctx, sel, v)
+}
+
 func (ec *executionContext) marshalNServiceStatus2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐServiceStatus(ctx context.Context, sel ast.SelectionSet, v *model.ServiceStatus) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
@@ -62974,6 +63450,16 @@ func (ec *executionContext) marshalNSettings2ᚖgithubᚗcomᚋleothevan2444ᚋm
 		return graphql.Null
 	}
 	return ec._Settings(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalNSettingsConnectionService2githubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐSettingsConnectionService(ctx context.Context, v any) (model.SettingsConnectionService, error) {
+	var res model.SettingsConnectionService
+	err := res.UnmarshalGQL(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNSettingsConnectionService2githubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐSettingsConnectionService(ctx context.Context, sel ast.SelectionSet, v model.SettingsConnectionService) graphql.Marshaler {
+	return v
 }
 
 func (ec *executionContext) unmarshalNSettingsPatchInput2githubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐSettingsPatchInput(ctx context.Context, v any) (model.SettingsPatchInput, error) {
@@ -64127,6 +64613,11 @@ func (ec *executionContext) marshalNTaskSummary2ᚖgithubᚗcomᚋleothevan2444�
 		return graphql.Null
 	}
 	return ec._TaskSummary(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalNTestServiceConnectionInput2githubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐTestServiceConnectionInput(ctx context.Context, v any) (model.TestServiceConnectionInput, error) {
+	res, err := ec.unmarshalInputTestServiceConnectionInput(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
 }
 
 func (ec *executionContext) unmarshalNTitleClausePatchInput2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐTitleClausePatchInput(ctx context.Context, v any) (*model.TitleClausePatchInput, error) {

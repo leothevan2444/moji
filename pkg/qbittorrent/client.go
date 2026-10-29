@@ -324,3 +324,10 @@ func (c *Client) GetMainData(ctx context.Context, rid *SyncRID) (*MainData, erro
 
 	return &mainData, nil
 }
+
+// CloseIdleConnections releases idle connections held by a short-lived client.
+func (c *Client) CloseIdleConnections() {
+	c.mu.RLock()
+	defer c.mu.RUnlock()
+	c.httpClient.CloseIdleConnections()
+}

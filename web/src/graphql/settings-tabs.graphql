@@ -84,3 +84,7 @@ query AboutSettingsTab {
 }
 
 query TaskDeletionSettings { settings { system { taskDeletePolicy } } }
+
+mutation TestServiceConnection($input: TestServiceConnectionInput!) {
+  testServiceConnection(input: $input) { code }
+}

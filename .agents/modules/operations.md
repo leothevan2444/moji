@@ -55,3 +55,5 @@ CI 在原生 amd64/arm64 runner 构建及 smoke test，通过后发布复用同�
 [日志布局与跟随](../TODO.md#o-001) 仍待设计。
 
 2026-10-28 增量设置：config.Store.ApplyPatch 在同一配置锁内读取最新已保存 YAML、合并、验证并原子持久化，成功后发布内存值；失败不提前更新内存。patchSettings 使用与 YAML v2 相同的 typed 可选字段，省略/null 保持原值，空串/空列表/false 明确保留。下载器 PatchPolicy 的 read/merge/write 同样与 SetPolicy 共用策略锁。
+
+2026-10-29 连接测试：testServiceConnection 使用请求传入的当前字段创建短生命周期客户端，不写配置或更新运行依赖状态。Stash 读取版本，Jackett 使用 API key 调用 `/api/v2.0/indexers/all/results/torznab/api?t=indexers&configured=true` 读取站点定义，不查询各站资源；不能用需要后台登录会话的 `/api/v2.0/indexers` 来验证搜索密钥，qB 使用独立登录会话读取版本。请求受 10 秒 context 截止约束，结束释放闲置连接，结果只包含稳定枚举，不输出上游响应原文或凭据。协议及认证/错误/超时由[httptest](../../internal/graphqlapi/connection_test_service_test.go)验证。

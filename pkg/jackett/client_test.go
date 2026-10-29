@@ -1,6 +1,9 @@
 package jackett
 
 import (
+	"context"
+	"net/http"
+	"net/http/httptest"
 	"os"
 	"testing"
 )
@@ -58,4 +61,46 @@ func TestClient_GetIndexersReal(t *testing.T) {
 		}
 	}
 	t.Logf("GetIndexers completed successfully with %d indexers", len(indexers))
+}
+
+func TestAPIIndexerListingUsesKeyWithoutDashboardSession(t *testing.T) {
+	for _, body := range []string{
+		`<indexers><indexer id="site" configured="true"><title>Site</title><description>A tracker</description><link>https://tracker.example/</link><language>en-US</language><type>private</type></indexer></indexers>`,
+		`<indexers />`,
+	} {
+		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			if r.URL.Path != "/prefix/api/v2.0/indexers/all/results/torznab/api" || r.URL.Query().Get("apikey") != "key" || r.URL.Query().Get("t") != "indexers" || r.URL.Query().Get("configured") != "true" {
+				t.Errorf("unexpected request path: %s", r.URL.Path)
+				http.Error(w, "dashboard requires login", http.StatusUnauthorized)
+				return
+			}
+			if len(r.Cookies()) != 0 {
+				t.Error("unexpected dashboard cookie")
+			}
+			_, _ = w.Write([]byte(body))
+		}))
+		client := NewClient(server.URL+"/prefix", "key", "")
+		sites, err := client.GetAPIIndexersContext(context.Background())
+		client.CloseIdleConnections()
+		server.Close()
+		if err != nil || sites == nil {
+			t.Fatalf("sites=%v err=%v", sites, err)
+		}
+		if len(sites) > 0 && (sites[0].Type != "private" || sites[0].SiteLink != "https://tracker.example/" || sites[0].Language != "en-US" || !sites[0].Configured) {
+			t.Fatalf("metadata missing: %+v", sites[0])
+		}
+	}
+}
+
+func TestAPIIndexerListingRejectsErrorAndLoginPages(t *testing.T) {
+	for _, body := range []string{`<error code="100" description="Invalid API Key"/>`, `<html>Login</html>`, `null`, `<indexers><indexer id="missing-title"/></indexers>`} {
+		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { _, _ = w.Write([]byte(body)) }))
+		client := NewClient(server.URL, "key", "")
+		_, err := client.GetAPIIndexersContext(context.Background())
+		client.CloseIdleConnections()
+		server.Close()
+		if err == nil {
+			t.Errorf("accepted invalid response: %s", body)
+		}
+	}
 }
