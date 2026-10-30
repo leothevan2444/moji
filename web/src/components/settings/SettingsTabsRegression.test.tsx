@@ -111,11 +111,11 @@ describe("settings tab visual contracts", () => {
     render(<SettingsAutosaveProvider><TaskSubscriptionSettingsTab /></SettingsAutosaveProvider>);
     fireEvent.click(screen.getAllByText("common.add")[0]);
     const effect = screen.getByRole("combobox", { name: "resourceRules.effect" }) as HTMLSelectElement;
-    expect(Array.from(effect.options, option => option.value)).toEqual(["REQUIRE", "EXCLUDE", "PREFER", "DEMOTE"]);
-    fireEvent.change(effect, { target: { value: "EXCLUDE" } });
+    expect(Array.from(effect.options, option => option.value)).toEqual(["LOCK", "EXCLUDE", "PREFER", "DEMOTE"]);
+    fireEvent.change(effect, { target: { value: "LOCK" } });
     await flush();
     expect(updateSettings).toHaveBeenCalled();
-    expect(updateSettings.mock.calls[0][0].input).toEqual({tasks:{torrent_selection:{fast_rules:{title_match:{clauses:[{pattern:"",pattern_mode:"PLAIN",effect:"EXCLUDE"}]}}}}});
+    expect(updateSettings.mock.calls[0][0].input).toEqual({tasks:{torrent_selection:{fast_rules:{title_match:{clauses:[{pattern:"",pattern_mode:"PLAIN",effect:"LOCK"}]}}}}});
   });
 
   it("loads and saves the resource search interval independently of metadata polling", async () => {

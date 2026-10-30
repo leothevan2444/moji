@@ -3273,7 +3273,7 @@ func (e TaskStageStatus) MarshalJSON() ([]byte, error) {
 type TitleMatchEffect string
 
 const (
-	TitleMatchEffectRequire TitleMatchEffect = "REQUIRE"
+	TitleMatchEffectLock    TitleMatchEffect = "LOCK"
 	TitleMatchEffectExclude TitleMatchEffect = "EXCLUDE"
 	TitleMatchEffectDemote  TitleMatchEffect = "DEMOTE"
 	TitleMatchEffectPrefer  TitleMatchEffect = "PREFER"
@@ -3281,7 +3281,7 @@ const (
 )
 
 var AllTitleMatchEffect = []TitleMatchEffect{
-	TitleMatchEffectRequire,
+	TitleMatchEffectLock,
 	TitleMatchEffectExclude,
 	TitleMatchEffectDemote,
 	TitleMatchEffectPrefer,
@@ -3290,7 +3290,7 @@ var AllTitleMatchEffect = []TitleMatchEffect{
 
 func (e TitleMatchEffect) IsValid() bool {
 	switch e {
-	case TitleMatchEffectRequire, TitleMatchEffectExclude, TitleMatchEffectDemote, TitleMatchEffectPrefer, TitleMatchEffectAvoid:
+	case TitleMatchEffectLock, TitleMatchEffectExclude, TitleMatchEffectDemote, TitleMatchEffectPrefer, TitleMatchEffectAvoid:
 		return true
 	}
 	return false
@@ -3452,26 +3452,24 @@ func (e TorrentAction) MarshalJSON() ([]byte, error) {
 type TorrentFileMatchEffect string
 
 const (
-	TorrentFileMatchEffectRequire TorrentFileMatchEffect = "REQUIRE"
+	TorrentFileMatchEffectLock    TorrentFileMatchEffect = "LOCK"
 	TorrentFileMatchEffectExclude TorrentFileMatchEffect = "EXCLUDE"
 	TorrentFileMatchEffectDemote  TorrentFileMatchEffect = "DEMOTE"
 	TorrentFileMatchEffectPrefer  TorrentFileMatchEffect = "PREFER"
 	TorrentFileMatchEffectAvoid   TorrentFileMatchEffect = "AVOID"
-	TorrentFileMatchEffectLock    TorrentFileMatchEffect = "LOCK"
 )
 
 var AllTorrentFileMatchEffect = []TorrentFileMatchEffect{
-	TorrentFileMatchEffectRequire,
+	TorrentFileMatchEffectLock,
 	TorrentFileMatchEffectExclude,
 	TorrentFileMatchEffectDemote,
 	TorrentFileMatchEffectPrefer,
 	TorrentFileMatchEffectAvoid,
-	TorrentFileMatchEffectLock,
 }
 
 func (e TorrentFileMatchEffect) IsValid() bool {
 	switch e {
-	case TorrentFileMatchEffectRequire, TorrentFileMatchEffectExclude, TorrentFileMatchEffectDemote, TorrentFileMatchEffectPrefer, TorrentFileMatchEffectAvoid, TorrentFileMatchEffectLock:
+	case TorrentFileMatchEffectLock, TorrentFileMatchEffectExclude, TorrentFileMatchEffectDemote, TorrentFileMatchEffectPrefer, TorrentFileMatchEffectAvoid:
 		return true
 	}
 	return false

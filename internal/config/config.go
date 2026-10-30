@@ -67,7 +67,7 @@ type TitleMatchEffect string
 const (
 	TitleMatchEffectPrefer  TitleMatchEffect = "PREFER"
 	TitleMatchEffectAvoid   TitleMatchEffect = "AVOID" // Legacy alias for DEMOTE.
-	TitleMatchEffectRequire TitleMatchEffect = "REQUIRE"
+	TitleMatchEffectLock    TitleMatchEffect = "LOCK"
 	TitleMatchEffectExclude TitleMatchEffect = "EXCLUDE"
 	TitleMatchEffectDemote  TitleMatchEffect = "DEMOTE"
 )
@@ -77,8 +77,7 @@ type TorrentFileMatchEffect string
 const (
 	TorrentFileMatchEffectPrefer  TorrentFileMatchEffect = "PREFER"
 	TorrentFileMatchEffectAvoid   TorrentFileMatchEffect = "AVOID"
-	TorrentFileMatchEffectLock    TorrentFileMatchEffect = "LOCK" // Legacy alias for REQUIRE.
-	TorrentFileMatchEffectRequire TorrentFileMatchEffect = "REQUIRE"
+	TorrentFileMatchEffectLock    TorrentFileMatchEffect = "LOCK"
 	TorrentFileMatchEffectExclude TorrentFileMatchEffect = "EXCLUDE"
 	TorrentFileMatchEffectDemote  TorrentFileMatchEffect = "DEMOTE"
 )
@@ -452,8 +451,8 @@ func NormalizeTitleMatchEffect(value TitleMatchEffect) TitleMatchEffect {
 	switch TitleMatchEffect(strings.TrimSpace(string(value))) {
 	case TitleMatchEffectAvoid, TitleMatchEffectDemote:
 		return TitleMatchEffectDemote
-	case TitleMatchEffectRequire:
-		return TitleMatchEffectRequire
+	case TitleMatchEffectLock:
+		return TitleMatchEffectLock
 	case TitleMatchEffectExclude:
 		return TitleMatchEffectExclude
 	default:
@@ -464,8 +463,8 @@ func NormalizeTorrentFileMatchEffect(value TorrentFileMatchEffect) TorrentFileMa
 	switch TorrentFileMatchEffect(strings.TrimSpace(string(value))) {
 	case TorrentFileMatchEffectAvoid, TorrentFileMatchEffectDemote:
 		return TorrentFileMatchEffectDemote
-	case TorrentFileMatchEffectLock, TorrentFileMatchEffectRequire:
-		return TorrentFileMatchEffectRequire
+	case TorrentFileMatchEffectLock:
+		return TorrentFileMatchEffectLock
 	case TorrentFileMatchEffectExclude:
 		return TorrentFileMatchEffectExclude
 	default:
@@ -601,22 +600,22 @@ func (c TorrentSelectionConfig) Validate() (err error) {
 	}()
 	for _, clause := range c.FastRules.TitleMatch.Clauses {
 		switch clause.Effect {
-		case "", TitleMatchEffectPrefer, TitleMatchEffectDemote, TitleMatchEffectAvoid, TitleMatchEffectRequire, TitleMatchEffectExclude:
+		case "", TitleMatchEffectPrefer, TitleMatchEffectDemote, TitleMatchEffectAvoid, TitleMatchEffectLock, TitleMatchEffectExclude:
 		default:
 			return fmt.Errorf("unknown title match effect %q", clause.Effect)
 		}
-		if (clause.Effect == TitleMatchEffectRequire || clause.Effect == TitleMatchEffectExclude) && strings.TrimSpace(clause.Pattern) == "" {
-			return fmt.Errorf("hard title conditions require a pattern")
+		if (NormalizeTitleMatchEffect(clause.Effect) == TitleMatchEffectLock || clause.Effect == TitleMatchEffectExclude) && strings.TrimSpace(clause.Pattern) == "" {
+			return fmt.Errorf("title lock and exclusion conditions need a pattern")
 		}
 	}
 	for _, clause := range c.TorrentRules.TorrentFileNameMatch.Clauses {
 		switch clause.Effect {
-		case "", TorrentFileMatchEffectPrefer, TorrentFileMatchEffectDemote, TorrentFileMatchEffectAvoid, TorrentFileMatchEffectRequire, TorrentFileMatchEffectLock, TorrentFileMatchEffectExclude:
+		case "", TorrentFileMatchEffectPrefer, TorrentFileMatchEffectDemote, TorrentFileMatchEffectAvoid, TorrentFileMatchEffectLock, TorrentFileMatchEffectExclude:
 		default:
 			return fmt.Errorf("unknown file match effect %q", clause.Effect)
 		}
-		if (clause.Effect == TorrentFileMatchEffectRequire || clause.Effect == TorrentFileMatchEffectLock || clause.Effect == TorrentFileMatchEffectExclude) && strings.TrimSpace(clause.Pattern) == "" {
-			return fmt.Errorf("hard file conditions require a pattern")
+		if (NormalizeTorrentFileMatchEffect(clause.Effect) == TorrentFileMatchEffectLock || clause.Effect == TorrentFileMatchEffectExclude) && strings.TrimSpace(clause.Pattern) == "" {
+			return fmt.Errorf("file lock and exclusion conditions need a pattern")
 		}
 	}
 	seen := make(map[TorrentSelectionRuleType]struct{}, len(c.FastRuleOrder))

@@ -81,7 +81,7 @@ func (s defaultCandidateSelector) Preview(ctx context.Context, query string, res
 	compiled := compileSelectionRules(cfg.OrderedRules())
 	fastRules, fileRules := splitCompiledRules(compiled)
 	if applyFastRules {
-		candidates = filterCandidates(candidates, func(c rankedCandidate) bool { return titleHardRulesAccept(c.result.Title, fastRules) })
+		candidates = filterCandidates(candidates, func(c rankedCandidate) bool { return titleExclusionsAccept(c.result.Title, fastRules) })
 	}
 	if applyFastRules && len(fastRules) > 0 {
 		sort.SliceStable(candidates, func(i, j int) bool {
@@ -98,16 +98,18 @@ func (s defaultCandidateSelector) Preview(ctx context.Context, query string, res
 			AppliedFileRules: applyFileRules && len(fileRules) > 0 && s.inspectTorrent != nil,
 		},
 	}
-	if applyFileRules && hasHardFileRules(fileRules) && s.inspectTorrent == nil {
+	if applyFileRules && hasFileExclusions(fileRules) && s.inspectTorrent == nil {
 		candidates = nil
 	}
+	inspections := map[int]inspectedCandidate{}
 	if preview.Meta.AppliedFileRules {
 		inspectionLimit := config.NormalizeTorrentInspectionCandidateLimit(cfg.InspectionCandidateLimit)
-		inspections, inspectableCount := inspectTopTorrentCandidates(ctx, candidates, s.inspectTorrent, inspectionLimit)
+		var inspectableCount int
+		inspections, inspectableCount = inspectTopTorrentCandidates(ctx, candidates, s.inspectTorrent, inspectionLimit)
 		preview.Meta.InspectableCount = inspectableCount
 		preview.Meta.InspectedCount = len(inspections)
-		if hasHardFileRules(fileRules) {
-			candidates = filterCandidates(candidates, func(c rankedCandidate) bool { return fileHardRulesAccept(inspections[c.index], fileRules) })
+		if hasFileExclusions(fileRules) {
+			candidates = filterCandidates(candidates, func(c rankedCandidate) bool { return fileExclusionsAccept(inspections[c.index], fileRules) })
 		}
 		limit := minInt(len(candidates), inspectionLimit)
 		sort.SliceStable(candidates[:limit], func(i, j int) bool {
@@ -116,6 +118,19 @@ func (s defaultCandidateSelector) Preview(ctx context.Context, query string, res
 		for i := range candidates {
 			candidates[i].rank = i
 		}
+	}
+
+	// Locking is OR across title and file clauses, after all exclusions. Keep
+	// ordinary ranking within the locked set; no matches leave results intact.
+	locked := make([]rankedCandidate, 0, len(candidates))
+	for _, candidate := range candidates {
+		if applyFastRules && titleLockMatches(candidate.result.Title, fastRules) ||
+			preview.Meta.AppliedFileRules && fileLockMatches(inspections[candidate.index], fileRules) {
+			locked = append(locked, candidate)
+		}
+	}
+	if len(locked) > 0 {
+		candidates = locked
 	}
 
 	out := make([]jackett.SearchResult, 0, len(results))
@@ -412,8 +427,8 @@ func indexerPreferenceRank(result jackett.SearchResult, rule config.CandidateSel
 	return len(rule.IndexerPreference.TrackerIDs) + 1
 }
 
-// Positive ranks demote; negative ranks prefer. Hard conditions are filtered
-// independently so a preceding preference cannot override an exclusion.
+// Positive ranks demote; negative ranks prefer. Exclusions and locks are
+// applied independently so preferences cannot override them.
 func titleMatchRank(title string, rule compiledRule) int {
 	score := 0
 	for i, clause := range rule.rule.TitleMatch.Clauses {
@@ -462,43 +477,72 @@ func filterCandidates(in []rankedCandidate, accept func(rankedCandidate) bool) [
 	}
 	return out
 }
-func titleHardRulesAccept(title string, rules []compiledRule) bool {
+func titleExclusionsAccept(title string, rules []compiledRule) bool {
 	for _, rule := range rules {
 		if rule.rule.Type != config.CandidateSelectionRuleTypeTitleMatch {
 			continue
 		}
 		for i, clause := range rule.rule.TitleMatch.Clauses {
 			matched := matchesTitleClause(strings.ToLower(title), clause, rule.regexMatchers, i)
-			if clause.Effect == config.TitleMatchEffectRequire && !matched || clause.Effect == config.TitleMatchEffectExclude && matched {
+			if clause.Effect == config.TitleMatchEffectExclude && matched {
 				return false
 			}
 		}
 	}
 	return true
 }
-func hasHardFileRules(rules []compiledRule) bool {
+func hasFileExclusions(rules []compiledRule) bool {
 	for _, rule := range rules {
 		for _, clause := range rule.rule.TorrentFileNameMatch.Clauses {
-			if clause.Effect == config.TorrentFileMatchEffectRequire || clause.Effect == config.TorrentFileMatchEffectExclude || clause.Effect == config.TorrentFileMatchEffectLock {
+			if clause.Effect == config.TorrentFileMatchEffectExclude {
 				return true
 			}
 		}
 	}
 	return false
 }
-func fileHardRulesAccept(candidate inspectedCandidate, rules []compiledRule) bool {
+func fileExclusionsAccept(candidate inspectedCandidate, rules []compiledRule) bool {
 	if !candidate.ok {
 		return false
 	}
 	for _, rule := range rules {
 		for i, clause := range rule.rule.TorrentFileNameMatch.Clauses {
 			matched := matchesTorrentFileClause(candidate.inspection.Paths, clause, rule.regexMatchers, i)
-			if (clause.Effect == config.TorrentFileMatchEffectRequire || clause.Effect == config.TorrentFileMatchEffectLock) && !matched || clause.Effect == config.TorrentFileMatchEffectExclude && matched {
+			if clause.Effect == config.TorrentFileMatchEffectExclude && matched {
 				return false
 			}
 		}
 	}
 	return true
+}
+
+// Locks match any clause, with no restriction when no candidate matches.
+func titleLockMatches(title string, rules []compiledRule) bool {
+	for _, rule := range rules {
+		if rule.rule.Type != config.CandidateSelectionRuleTypeTitleMatch {
+			continue
+		}
+		for i, clause := range rule.rule.TitleMatch.Clauses {
+			if clause.Effect == config.TitleMatchEffectLock && matchesTitleClause(strings.ToLower(title), clause, rule.regexMatchers, i) {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+func fileLockMatches(candidate inspectedCandidate, rules []compiledRule) bool {
+	if !candidate.ok {
+		return false
+	}
+	for _, rule := range rules {
+		for i, clause := range rule.rule.TorrentFileNameMatch.Clauses {
+			if clause.Effect == config.TorrentFileMatchEffectLock && matchesTorrentFileClause(candidate.inspection.Paths, clause, rule.regexMatchers, i) {
+				return true
+			}
+		}
+	}
+	return false
 }
 
 func matchesTitleClause(title string, clause config.TitleMatchClause, regexMatchers []*regexp.Regexp, index int) bool {

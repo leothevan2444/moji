@@ -46,14 +46,14 @@ Title and internal filename clauses support:
 
 | Effect | Meaning |
 | --- | --- |
-| `REQUIRE` | Every required clause must match. |
+| `LOCK` | Lock on any match (OR across title and file clauses); no matches leave normal selection unchanged. |
 | `EXCLUDE` | Any matching exclusion rejects the candidate. |
 | `PREFER` | Each match improves its rank within that rule. |
 | `DEMOTE` | Each match worsens its rank within that rule. |
 
-Exclusions take precedence over preferences. Fast rules compare candidates in configured order; later rules break ties. File inspection reranks the leading candidates within the configured budget. Hard file clauses reject failed, unavailable or uninspected candidates, including magnets that have no inspectable torrent file. A single-video preference remains a preference and does not forbid multipart movies. Invalid regular expressions are rejected when loading or saving configuration.
+Exclusions take precedence over locks and preferences. After exclusions, if any candidate matches a lock, selection is restricted to the matching candidates, with the other rules deciding among them. Identity, duplicate and torrent validation remain mandatory. Fast rules compare candidates in configured order; later rules break ties. File inspection reranks the leading candidates within the configured budget. File exclusions reject failed, unavailable or uninspected candidates, including magnets that have no inspectable torrent file. File locks only match successfully inspected paths; inspection failure or no match does not prevent normal fallback. A single-video preference remains a preference and does not forbid multipart movies. Invalid regular expressions are rejected when loading or saving configuration.
 
-Disabling resource rules preserves upstream result order while retaining identity and duplicate checks. Old `AVOID` is normalized to `DEMOTE`; old filename `LOCK` becomes `REQUIRE`. This strengthens LOCK from a ranking preference to a mandatory condition. Indexer preference becomes actual sequential query order, so a later site's better-ranked resource no longer displaces an acceptable resource from an earlier site.
+Disabling resource rules preserves upstream result order while retaining identity and duplicate checks. Old `AVOID` is normalized to `DEMOTE`. Code, GraphQL and canonical configuration use `LOCK` for lock on match. Indexer preference becomes actual sequential query order, so a later site's better-ranked resource no longer displaces an acceptable resource from an earlier site.
 
 StashBox source priority is configured under Stash. Sources omitted from the priority list are still appended in Stash order; priority is not an enable/disable list.
 

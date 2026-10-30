@@ -85,7 +85,7 @@
     "noFileRules": "暂无条件",
     "filePattern": "文件路径关键词或正则",
     "effects": {
-      "REQUIRE": "必须匹配",
+      "LOCK": "命中锁定",
       "EXCLUDE": "排除匹配",
       "PREFER": "优先匹配",
       "DEMOTE": "降低优先级"
@@ -100,7 +100,7 @@
       "fileNameMatch": "种子内文件匹配"
     },
     "enableLabel": "启用{{rule}}",
-    "clauseHelp": "所有“必须匹配”条件都要满足；命中任一“排除匹配”条件即淘汰。优先和降级只影响排序。",
+    "clauseHelp": "命中任一锁定条件后，仅在命中的合格资源中按其他规则选择；全部未命中则正常选择。排除匹配优先于锁定，优先和降级只影响排序。",
     "modes": {
       "PLAIN": "普通文本",
       "REGEX": "正则表达式"
@@ -943,7 +943,7 @@
   },
   "errorCorrelation": "关联 ID：{{id}}",
   "errorExtra": {
-    "SETTINGS_INVALID": "设置无效。请检查字段、硬条件及正则表达式后重试。",
+    "SETTINGS_INVALID": "设置无效。请检查字段、匹配条件及正则表达式后重试。",
     "TORRENT_COMMAND_UNCONFIRMED": "qB 已接受命令，但暂时无法确认最新状态，请刷新查看。",
     "DOWNLOADER_POLICY_INVALID": "请设置有效的清理阈值，启用时至少填写一个大于 0 的条件。",
     "DOWNLOADER_LIMIT_INVALID": "请输入有效的非负整数速度限制。",

@@ -12,7 +12,7 @@ import (
 	"testing"
 )
 
-func TestSourcingContinuesSitesUntilIdentityAndHardRulesPass(t *testing.T) {
+func TestSourcingRejectsInvalidLocksAndFallsBackNormally(t *testing.T) {
 	calls := []string{}
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path == "/api/v2.0/indexers" {
@@ -21,7 +21,7 @@ func TestSourcingContinuesSitesUntilIdentityAndHardRulesPass(t *testing.T) {
 		}
 		site := r.URL.Query().Get("Tracker[]")
 		calls = append(calls, site)
-		titles := map[string]string{"a": "WRONG-456 required", "b": "ABCD-123 excluded required", "c": "ABCD-123 required", "d": "ABCD-123 required"}
+		titles := map[string]string{"a": "WRONG-456 required", "b": "ABCD-123 excluded required", "c": "ABCD-123 ordinary", "d": "ABCD-123 required"}
 		_ = json.NewEncoder(w).Encode(map[string]any{"Results": []jackett.SearchResult{{Title: titles[site], MagnetURI: "magnet:?xt=urn:btih:1111111111111111111111111111111111111111"}}})
 	}))
 	defer server.Close()
@@ -30,7 +30,7 @@ func TestSourcingContinuesSitesUntilIdentityAndHardRulesPass(t *testing.T) {
 	})
 	service, err := NewService(tr, &fakeTorrentAdder{}, NewMemoryTaskStore(), WithCandidateSelectionProvider(func() config.CandidateSelectionConfig {
 		return candidateSelectionConfig(true, 1, []config.CandidateSelectionRule{{Type: config.CandidateSelectionRuleTypeTitleMatch, Enabled: true, TitleMatch: config.TitleMatchRuleConfig{Clauses: []config.TitleMatchClause{
-			{Pattern: "required", PatternMode: config.TitleMatchPatternModePlain, Effect: config.TitleMatchEffectRequire},
+			{Pattern: "required", PatternMode: config.TitleMatchPatternModePlain, Effect: config.TitleMatchEffectLock},
 			{Pattern: "excluded", PatternMode: config.TitleMatchPatternModePlain, Effect: config.TitleMatchEffectExclude},
 		}}}})
 	}))

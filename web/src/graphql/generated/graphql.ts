@@ -2127,8 +2127,8 @@ export enum TitleMatchEffect {
   Avoid = 'AVOID',
   Demote = 'DEMOTE',
   Exclude = 'EXCLUDE',
-  Prefer = 'PREFER',
-  Require = 'REQUIRE'
+  Lock = 'LOCK',
+  Prefer = 'PREFER'
 }
 
 export enum TitleMatchPatternMode {
@@ -2168,8 +2168,7 @@ export enum TorrentFileMatchEffect {
   Demote = 'DEMOTE',
   Exclude = 'EXCLUDE',
   Lock = 'LOCK',
-  Prefer = 'PREFER',
-  Require = 'REQUIRE'
+  Prefer = 'PREFER'
 }
 
 export type TorrentFileNameMatchClause = {

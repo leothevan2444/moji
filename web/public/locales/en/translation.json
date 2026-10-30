@@ -86,7 +86,7 @@
     "noFileRules": "No conditions added",
     "filePattern": "File path text or regular expression",
     "effects": {
-      "REQUIRE": "Require match",
+      "LOCK": "Lock on match",
       "EXCLUDE": "Exclude match",
       "PREFER": "Prefer match",
       "DEMOTE": "Lower priority"
@@ -101,7 +101,7 @@
       "fileNameMatch": "Torrent path matching"
     },
     "enableLabel": "Enable {{rule}}",
-    "clauseHelp": "Every required condition must match; any excluded match rejects the torrent. Preferences and demotions only affect ranking.",
+    "clauseHelp": "Any lock match restricts selection to eligible matching torrents, ranked by the other rules. With no matches, selection continues normally. Exclusions override locks; preferences and demotions only affect ranking.",
     "modes": {
       "PLAIN": "Plain text",
       "REGEX": "Regular expression"
@@ -947,7 +947,7 @@
   },
   "errorCorrelation": "Correlation ID: {{id}}",
   "errorExtra": {
-    "SETTINGS_INVALID": "Invalid settings. Check the fields, hard conditions and regular expressions, then retry.",
+    "SETTINGS_INVALID": "Invalid settings. Check the fields, match conditions and regular expressions, then retry.",
     "TORRENT_COMMAND_UNCONFIRMED": "qB accepted the command, but its latest state could not be confirmed. Refresh to check.",
     "DOWNLOADER_POLICY_INVALID": "Enter valid cleanup thresholds, with at least one positive threshold when enabled.",
     "DOWNLOADER_LIMIT_INVALID": "Enter a valid nonnegative integer speed limit.",

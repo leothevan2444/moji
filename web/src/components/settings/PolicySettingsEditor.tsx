@@ -968,7 +968,7 @@ export function PolicySettingsEditor({
                                         }
                                         aria-label={t("resourceRules.effect")}
                                       >
-                                        {[TitleMatchEffect.Require, TitleMatchEffect.Exclude, TitleMatchEffect.Prefer, TitleMatchEffect.Demote].map(effect => <option key={effect} value={effect}>{t(`resourceRules.effects.${effect}`)}</option>)}
+                                        {[TitleMatchEffect.Lock, TitleMatchEffect.Exclude, TitleMatchEffect.Prefer, TitleMatchEffect.Demote].map(effect => <option key={effect} value={effect}>{t(`resourceRules.effects.${effect}`)}</option>)}
                                       </select>
                                       <div className="torrent-rule__clause-actions">
                                         <button
@@ -1135,7 +1135,7 @@ export function PolicySettingsEditor({
                                         }
                                         aria-label={t("resourceRules.effect")}
                                       >
-                                        {[TorrentFileMatchEffect.Require, TorrentFileMatchEffect.Exclude, TorrentFileMatchEffect.Prefer, TorrentFileMatchEffect.Demote].map(effect => <option key={effect} value={effect}>{t(`resourceRules.effects.${effect}`)}</option>)}
+                                        {[TorrentFileMatchEffect.Lock, TorrentFileMatchEffect.Exclude, TorrentFileMatchEffect.Prefer, TorrentFileMatchEffect.Demote].map(effect => <option key={effect} value={effect}>{t(`resourceRules.effects.${effect}`)}</option>)}
                                       </select>
                                       <div className="torrent-rule__clause-actions">
                                         <button

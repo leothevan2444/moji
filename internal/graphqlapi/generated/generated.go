@@ -7623,7 +7623,7 @@ enum TitleMatchPatternMode {
 }
 
 enum TitleMatchEffect {
-  REQUIRE
+  LOCK
   EXCLUDE
   DEMOTE
   PREFER
@@ -7631,12 +7631,11 @@ enum TitleMatchEffect {
 }
 
 enum TorrentFileMatchEffect {
-  REQUIRE
+  LOCK
   EXCLUDE
   DEMOTE
   PREFER
   AVOID
-  LOCK
 }
 
 type TorrentSelectionRule {

@@ -56,7 +56,7 @@ custom: {untouched: true}
 	if err != nil {
 		t.Fatal(err)
 	}
-	for _, expected := range []string{"config_version: 2", "indexers:", "query_order:", "downloader:", "metadata_priority:", "tasks:", "DEMOTE", "REQUIRE", "logging:", "untouched: true"} {
+	for _, expected := range []string{"config_version: 2", "indexers:", "query_order:", "downloader:", "metadata_priority:", "tasks:", "DEMOTE", "LOCK", "logging:", "untouched: true"} {
 		if !strings.Contains(string(data), expected) {
 			t.Fatalf("missing canonical field %s", expected)
 		}
