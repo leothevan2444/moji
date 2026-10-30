@@ -72,3 +72,10 @@
 .download-manager__filters { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; gap: 10px; }
 .download-manager__filters label { flex-wrap: nowrap; white-space: nowrap; }
 .download-manager__filters input[type=search] { width: 100%; }
+
+.download-manager__toolbar h4 { margin: 0; margin-inline-end: auto; font-size: 13px; }
+.download-torrent h4 { margin: 0; font-size: 13px; overflow-wrap: anywhere; }
+.download-manager--embedded { border-block-start: 1px solid var(--line); padding-block-start: 14px; gap: 12px; }
+.download-torrent--embedded { padding: 0; border: 0; background: transparent; }
+.download-torrent--embedded .download-manager__toolbar > .ghost-button { font-size: 12px; }
+.download-torrent--embedded .image-cache-confirm { margin: 0; }

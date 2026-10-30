@@ -5,7 +5,7 @@ import { faClosedCaptioning } from "@fortawesome/free-solid-svg-icons/faClosedCa
 import { faFile } from "@fortawesome/free-solid-svg-icons/faFile";
 import { faArrowUp } from "@fortawesome/free-solid-svg-icons/faArrowUp";
 import { faArrowDown } from "@fortawesome/free-solid-svg-icons/faArrowDown";
-import { useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { type ReactNode, useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { useMutation } from "urql";
 import { useTranslation } from "react-i18next";
 import { ResolveTaskFilesDocumentDocument } from "../../graphql/generated/graphql";
@@ -18,8 +18,9 @@ const isVideo = (file: TaskFile) => ["MAIN", "UNKNOWN_VIDEO"].includes(file.kind
 const filename = (path: string) => path.split(/[\\/]/).pop() || path;
 const fileSize = (file: TaskFile) => Math.max(0, Number(file.size) || 0);
 
-export function TaskFiles({ task, onCopy, initialSelection, onSelectionChange, onBusyChange, onResolved }: {
+export function TaskFiles({ task, onCopy, initialSelection, onSelectionChange, onBusyChange, onResolved, torrentControls }: {
   task: DashboardTask;
+  torrentControls?: ReactNode;
   onCopy?: (value: string, message: string) => void | Promise<void>;
   initialSelection?: number[];
   onSelectionChange?: (selection: number[]) => void;
@@ -97,6 +98,7 @@ export function TaskFiles({ task, onCopy, initialSelection, onSelectionChange, o
       {downloadLocation ? <TaskValue label={t("taskInfo.downloadLocation")} value={downloadLocation} onCopy={onCopy} /> : null}
       {task.tags?.trim() ? <TaskValue label={t("taskDetail.tags")} value={task.tags.trim()} onCopy={onCopy} /> : null}
     </dl>
+    {torrentControls}
     {files.length > 0 ? <div className="task-files__groups">
       {groups.filter(group => group.files.length > 0).map(group => <section key={group.key} className={`task-file-group task-file-group--${group.key}`} aria-label={group.label}>
         <div className="task-file-group__heading">

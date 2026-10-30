@@ -63,7 +63,7 @@ React 19、React Router 7、TypeScript、Vite、urql graphcache、graphql-ws、i
 
 设置结构、独立分区保存、固定排版与实际配置迁移已完成，见 [设置复核](../reviews/2026-10-28-settings.md)。当前 tab 为 indexers/downloader/stash/tasks/system/logs/about；共享 shell 与字段组件统一状态、说明、加载和敏感值显隐。后台四种资源效果与逐站停止语义见 [任务](tasks.md)。
 
-[手动候选链接](../TODO.md#u-003)、[任务种子分区](../TODO.md#u-004)、[日志滚动](../TODO.md#o-001) 仍未实施，不因设置重构完成而自动关闭。
+[日志滚动](../TODO.md#o-001) 仍未实施。手动候选链接和任务种子分区已完成，见[种子交互复核](../reviews/2026-10-29-task-torrents.md)。
 
 2026-10-28 设置跟进：任务删除策略位于“任务与订阅”，独立保存。语言选择仅在“系统”，写入 `system.language`（auto/zh-CN/en），成功保存后生效；初次和窗口恢复焦点读取已保存配置，并防止迟到响应覆盖新保存值。
 
@@ -78,3 +78,7 @@ React 19、React Router 7、TypeScript、Vite、urql graphcache、graphql-ws、i
 2026-10-29 设置跟进：说明只保留功能范围、非直观行为和操作后果，并以领域源码核实；不重复标题、不显示空闲或已保存提示，保留保存中与失败重试。服务连接移除启用胶囊与后台状态订阅，三个面板通过 testServiceConnection 测试当前填写内容；输入修订后丢弃过期结果。开关在设置作用域统一几何变量，正常 38×22、小号 32×18，输入、轨道和滑块共享尺寸。图片缓存关闭仅禁用新图片落盘，已有缓存仍被清理，因此容量/保留期继续可编辑。文案依据见[审核记录](../reviews/2026-10-29-settings-copy.md)。
 
 2026-10-29 设置跟进：连接测试结果为无背景纯文字，返回后 5 秒自动清除；改动输入或新测试仍隔离旧结果。索引站点顺序支持桌面原生拖拽、移动触摸手柄与上下按钮，列表显示 Jackett 提供的站点 URL、public/private/semi-private 类型和语言；仅 HTTP(S) 地址呈现链接，缺失信息不补造。拖拽落定后仍仅自动保存 `indexers.query_order`。
+
+2026-10-29 种子交互（U-003/U-004）：任务寻源处理（含处理台）与发现页共用 TorrentCandidateLinks/CandidateSeeders。分别提供磁力、种子下载、站点详情；只使用上游原始地址，拒绝非对应协议、相对地址及 userinfo，HTTP(S) 链接以 noreferrer/no-referrer 打开，不预取、不展开含授权参数的下载地址，也不将下载地址推断为详情地址。链接与选用按钮独立；无链接明确提示，缺失/null/负数做种数显示未知，真实 0 仍显示 0。Jackett 解码以 -1 保留未知数，GraphQL 搜索结果仍沿用整数契约。
+
+任务详情由 TaskDetail 将单一 DownloadManager 作为 torrentControls 插槽放入 TaskFiles 的种子信息中，位于静态标识与文件组之间；TaskDrawer 不再额外渲染。内嵌模式去除第二层卡片与当前任务回链，保留 qB 名称、官方状态、真实进度、刷新、失联/缺失提示及危险操作确认；仍只使用原有一组查询与可见性轮询。独立文件选择抽屉不加载下载器观测。

@@ -606,7 +606,12 @@
     "fileHelp": "选择 .torrent 文件，最大 8 MiB。Moji 会校验种子名称和视频番号。",
     "useFile": "使用种子文件",
     "invalidFile": "请选择非空的 .torrent 文件，大小不能超过 8 MiB。",
-    "seeders": "{{count}} 个做种者"
+    "seeders": "{{count}} 个做种者",
+    "unknownSeeders": "做种数未知",
+    "magnet": "磁力链接",
+    "download": "下载种子",
+    "details": "站点详情",
+    "noLinks": "暂无可用链接"
   },
   "taskActionHints": {
     "resolve": "搜索并选择种子，或补充磁力链接",

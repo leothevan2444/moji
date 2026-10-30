@@ -1,3 +1,4 @@
+import { CandidateSeeders, TorrentCandidateLinks, candidateURL } from "./TorrentCandidateLinks";
 import { type FormEvent, useId, useRef, useState } from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faArrowUpFromBracket } from "@fortawesome/free-solid-svg-icons/faArrowUpFromBracket";
@@ -145,7 +146,7 @@ export function BlockedSourcingResolution({ task, onResolved, onNotify, onBusyCh
       {data && !fetching && !error && candidates.length === 0 ? <p className="sourcing-resolution__empty">{t("taskUi.resolution.none")}</p> : null}
       {candidates.length > 0 ? <ul className="sourcing-resolution__candidates">
         {candidates.map((candidate, index) => {
-          const torrentURL = candidate.magnetUri || candidate.link;
+          const torrentURL = candidateURL(candidate.magnetUri, true) || candidateURL(candidate.link, true) || candidateURL(candidate.link);
           const key = `${candidate.tracker}-${candidate.infoHash || torrentURL}-${index}`;
           return <li className="sourcing-candidate" key={key}>
             <span className="sourcing-candidate__rank" aria-hidden="true">{String(index + 1).padStart(2, "0")}</span>
@@ -154,11 +155,12 @@ export function BlockedSourcingResolution({ task, onResolved, onNotify, onBusyCh
               <div className="sourcing-candidate__meta">
                 {candidate.tracker ? <span className="sourcing-candidate__tracker" title={candidate.tracker}>{candidate.tracker}</span> : null}
                 <span>{formatBytes(Number(candidate.size) || 0)}</span>
-                <span className={candidate.seeders > 0 ? "has-seeders" : undefined}>{t("sourcingManual.seeders", { count: candidate.seeders })}</span>
+                <CandidateSeeders seeders={candidate.seeders} />
               </div>
+              <TorrentCandidateLinks candidate={candidate} />
             </div>
             <button type="button" className="ghost-button task-primary-action" disabled={!torrentURL || busy} aria-busy={resolvingKey === key}
-              aria-label={t("sourcingManual.selectCandidate", { title: candidate.title })} onClick={() => void resolve(torrentURL, candidate, key)}>
+              aria-label={t("sourcingManual.selectCandidate", { title: candidate.title })} onClick={() => void resolve(torrentURL ?? "", candidate, key)}>
               {t(resolvingKey === key ? "taskUi.resolution.selecting" : "taskUi.resolution.select")}
             </button>
           </li>;

@@ -2379,3 +2379,22 @@ summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
   .task-queue-nav { gap: 6px; }
   .task-queue-nav > button { padding-inline: 10px; font-size: 13px; }
 }
+
+.torrent-candidate-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 14px;
+  min-width: 0;
+  font-size: 12px;
+  line-height: 1.6;
+  color: var(--muted);
+  a { color: var(--accent); overflow-wrap: anywhere; text-underline-offset: 3px; }
+}
+
+.candidate-card--jackett {
+  height: auto;
+  min-height: 132px;
+  .candidate-card__foot { position: static; }
+  .candidate-card__foot, .inline-actions { margin-top: 0; }
+  .candidate-card__head h3 { overflow-wrap: anywhere; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; }
+}

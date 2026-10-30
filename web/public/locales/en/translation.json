@@ -607,7 +607,12 @@
     "fileHelp": "Choose a .torrent file up to 8 MiB. Moji checks its name and video codes.",
     "useFile": "Use torrent file",
     "invalidFile": "Choose a non-empty .torrent file no larger than 8 MiB.",
-    "seeders": "{{count}} seeders"
+    "seeders": "{{count}} seeders",
+    "unknownSeeders": "Seeders unknown",
+    "magnet": "Magnet link",
+    "download": "Download torrent",
+    "details": "Indexer details",
+    "noLinks": "No links available"
   },
   "taskActionHints": {
     "resolve": "Search for a seed or provide a magnet link",

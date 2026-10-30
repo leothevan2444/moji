@@ -81,6 +81,7 @@ query JackettIndexersDocument {
 
 query BlockedTaskTorrentCandidatesDocument($id: ID!, $limit: Int) {
   blockedTaskTorrentCandidates(id: $id, limit: $limit) {
+    details
     title
     size
     seeders

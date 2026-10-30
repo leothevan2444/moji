@@ -8,7 +8,7 @@ import type { DashboardTask } from "../../utils";
 import { SourcingResolutionDrawer } from "../drawers/SourcingResolutionDrawer";
 
 const mocks = vi.hoisted(() => ({ resolve: vi.fn(), search: vi.fn(), queryCalls: vi.fn(), result: null as any }));
-const candidate = { title: "OFJE657 indexed", tracker: "indexer", link: "http://indexer.invalid/file", magnetUri: "magnet:?xt=urn:btih:657&dn=OFJE657", infoHash: "657", size: 100, seeders: 5, peers: 1 };
+const candidate = { details: "https://indexer.invalid/details/657", title: "OFJE657 indexed", tracker: "indexer", link: "http://indexer.invalid/file", magnetUri: "magnet:?xt=urn:btih:657&dn=OFJE657", infoHash: "657", size: 100, seeders: 5, peers: 1 };
 vi.mock("urql", async importOriginal => ({
   ...await importOriginal<typeof import("urql")>(),
   useMutation: () => [{ fetching: false }, mocks.resolve],
@@ -76,6 +76,23 @@ describe("manual resources for waiting tasks", () => {
     expect(mocks.search).toHaveBeenCalledWith({ requestPolicy: "network-only" });
     await userEvent.setup().click(screen.getByRole("button", { name: "Select: OFJE657 indexed" }));
     expect(mocks.resolve).toHaveBeenCalledWith({ id: task.id, input: expect.objectContaining({ torrentUrl: candidate.magnetUri, title: candidate.title, tracker: candidate.tracker }) });
+  });
+
+  it("keeps resource links independent from selection and distinguishes zero from unknown seeders", async () => {
+    mocks.result = { fetching: false, data: { blockedTaskTorrentCandidates: [candidate, { ...candidate, title: "Unknown", seeders: -1, magnetUri: "", link: "", details: "" }, { ...candidate, title: "Zero", seeders: 0 }] } };
+    render(<SourcingResolutionDrawer task={task} onResolved={vi.fn()} />);
+    expect(screen.getByText("5 seeders")).toBeTruthy();
+    expect(screen.getByText("0 seeders")).toBeTruthy();
+    expect(screen.getByText("Seeders unknown")).toBeTruthy();
+    expect(screen.getByText("No links available")).toBeTruthy();
+    const links = screen.getAllByRole("link", { name: "Download torrent" });
+    expect(links[0].getAttribute("href")).toBe(candidate.link);
+    expect(links[0].getAttribute("rel")).toContain("noreferrer");
+    expect(screen.getAllByRole("link", { name: "Indexer details" })[0].getAttribute("href")).toBe(candidate.details);
+    links[0].addEventListener("click", event => event.preventDefault());
+    await userEvent.setup().click(links[0]);
+    expect(mocks.resolve).not.toHaveBeenCalled();
+    expect((screen.getByRole("button", { name: "Select: Unknown" }) as HTMLButtonElement).disabled).toBe(true);
   });
 
   it("rejects empty, oversized or wrong-extension files before submission", () => {

@@ -1,9 +1,8 @@
+import { CandidateSeeders, TorrentCandidateLinks, candidateURL } from "../tasks/TorrentCandidateLinks";
 import { formatBytes, formatDurationSeconds, formatPublishDate } from "../../utils";
 import { SkeletonCardList } from "../common/Skeleton";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faArrowUpRightFromSquare } from "@fortawesome/free-solid-svg-icons/faArrowUpRightFromSquare";
-import { faDownload } from "@fortawesome/free-solid-svg-icons/faDownload";
-import { faMagnet } from "@fortawesome/free-solid-svg-icons/faMagnet";
 import type {
   DiscoverScenesDocumentQuery,
   SearchDocumentQuery
@@ -153,9 +152,9 @@ export function DiscoveryDrawer({
               <div className="candidate-card__content">
                 <div className="candidate-card__head">
                   <div>
-                    <h3>{result.title}</h3>
+                    <h3 title={result.title}>{result.title}</h3>
                     <p>
-                      {result.tracker} · {formatBytes(Number(result.size) || 0)} · {result.seeders} seeders
+                      {result.tracker} · {formatBytes(Number(result.size) || 0)} · <CandidateSeeders seeders={result.seeders} />
                     </p>
                   </div>
                   <span className="status-chip tone-warn">Jackett</span>
@@ -163,30 +162,11 @@ export function DiscoveryDrawer({
                 <div className="candidate-card__foot">
                   <span>{formatPublishDate(result.publishDate)}</span>
                   <div className="inline-actions">
-                    {result.magnetUri ? (
-                      <a
-                        href={result.magnetUri}
-                        className="icon-button"
-                        title={t("discoverUi.result.magnet")}
-                        aria-label={t("discoverUi.result.magnet")}
-                      >
-                        <FontAwesomeIcon icon={faMagnet} />
-                      </a>
-                    ) : null}
-                    <a
-                      href={result.link}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="icon-button"
-                      title={t("discoverUi.result.originalDownload")}
-                      aria-label={t("discoverUi.result.originalDownload")}
-                    >
-                      <FontAwesomeIcon icon={faDownload} />
-                    </a>
+                    <TorrentCandidateLinks candidate={result} />
                     <button
                       type="button"
                       onClick={() => onAddJackett(result)}
-                      disabled={pendingAddId === result.link}
+                      disabled={pendingAddId === result.link || !(candidateURL(result.magnetUri, true) || candidateURL(result.link, true) || candidateURL(result.link))}
                     >
                       {pendingAddId === result.link ? t("discoverUi.result.adding") : t("discoverUi.result.create")}
                     </button>

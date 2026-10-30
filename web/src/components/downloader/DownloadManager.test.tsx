@@ -11,6 +11,8 @@ vi.mock("urql", () => ({
   useQuery: () => [{ data: { downloader: mocks.snapshot.current }, fetching: false }, mocks.requery],
   useMutation: () => [{ fetching: false }, mocks.command]
 }));
+import { TaskFiles } from "../tasks/TaskFiles";
+import type { DashboardTask } from "../../utils";
 import { DownloadManager } from "./DownloadManager";
 const torrent = { hash: "a".repeat(40), name: "ABCD-123", state: "stoppedUP", present: true, taskIds: ["task"], taskCodes: ["ABCD-123"], allCompleted: true, canDeleteFiles: true, progress: 1, downloadSpeed: 0, uploadSpeed: 0, size: 1024, completedBytes: 1024, downloaded: 1024, uploaded: 2048, ratio: 2, seedingSeconds: 7200, eta: 0, seeds: 1, peers: 2, availability: 1, savePath: "/downloads", category: "moji", tags: "", lastSeenAt: "2026-10-26T00:00:00Z", removedAt: "", removalReason: "", cleanupError: false, needsAttention: false };
 function setup(taskId?: string, onCountChange?: (count:number)=>void) { return render(<MemoryRouter><DownloadManager taskId={taskId} onCountChange={onCountChange} /></MemoryRouter>); }
@@ -41,6 +43,24 @@ describe("download management", () => {
     mocks.command.mockClear();
     fireEvent.click(screen.getByRole("button",{name:"More actions"}));
     fireEvent.click(screen.getByRole("menuitem",{name:"Remove torrent and download files"}));
+    expect(mocks.command).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole("button", { name: "Confirm" }));
+    await waitFor(() => expect(mocks.command).toHaveBeenCalledWith({ hash: torrent.hash, action: "REMOVE_FILES" }));
+  });
+  it("embeds qB controls in torrent information with one polling loop and retains removal confirmation", async () => {
+    const timer = vi.spyOn(window, "setInterval");
+    const { container } = render(<MemoryRouter><TaskFiles task={{ id: "task", torrentHash: torrent.hash, torrentName: torrent.name, files: [], stage: "COMPLETED", stageStatus: "DONE" } as unknown as DashboardTask} torrentControls={<DownloadManager taskId="task" embedded />} /></MemoryRouter>);
+    const section = container.querySelector(".task-files")!;
+    expect(within(section as HTMLElement).getByRole("heading", { name: "Torrent information" })).toBeTruthy();
+    expect(section.querySelectorAll(".download-manager")).toHaveLength(1);
+    expect(section.querySelector(".download-torrent.drawer-card")).toBeNull();
+    expect(timer).toHaveBeenCalledTimes(1);
+    expect(screen.queryByRole("link")).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: "Refresh qB status" }));
+    await waitFor(() => expect(mocks.command).toHaveBeenCalledWith({}));
+    await waitFor(() => expect((screen.getByRole("button", { name: "Remove torrent and download files" }) as HTMLButtonElement).disabled).toBe(false));
+    mocks.command.mockClear();
+    fireEvent.click(screen.getByRole("button", { name: "Remove torrent and download files" }));
     expect(mocks.command).not.toHaveBeenCalled();
     fireEvent.click(screen.getByRole("button", { name: "Confirm" }));
     await waitFor(() => expect(mocks.command).toHaveBeenCalledWith({ hash: torrent.hash, action: "REMOVE_FILES" }));

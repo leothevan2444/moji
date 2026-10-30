@@ -16,12 +16,12 @@ import "../../styles/downloader.scss";
 type Overview = DownloaderDocumentQuery["downloader"];
 type Torrent = Overview["torrents"][number];
 
-interface DownloadManagerProps { taskId?: string; onCountChange?: (count: number) => void }
-export function DownloadManager({ taskId, onCountChange }: DownloadManagerProps) {
-  return <Provider value={settingsClient}><Manager taskId={taskId} onCountChange={onCountChange} /></Provider>;
+interface DownloadManagerProps { embedded?: boolean; taskId?: string; onCountChange?: (count: number) => void }
+export function DownloadManager({ taskId, onCountChange, embedded }: DownloadManagerProps) {
+  return <Provider value={settingsClient}><Manager taskId={taskId} onCountChange={onCountChange} embedded={embedded} /></Provider>;
 }
 
-function Manager({ taskId, onCountChange }: DownloadManagerProps) {
+function Manager({ taskId, onCountChange, embedded }: DownloadManagerProps) {
   const { t } = useTranslation();
   const [offset, setOffset] = useState(0);
   const [search, setSearch] = useState("");
@@ -59,8 +59,8 @@ function Manager({ taskId, onCountChange }: DownloadManagerProps) {
     } finally { setPending(null); }
   };
   const refreshButton = <button type="button" className="icon-button" title={t("downloader.refresh")} aria-label={t("downloader.refresh")} aria-busy={pending === "refresh"} disabled={Boolean(pending) || fetching} onClick={() => void refresh()}><FontAwesomeIcon icon={faRotate} aria-hidden="true" /></button>;
-  return <section className="download-manager" aria-label={t("downloader.title")}>
-    {taskId ? <div className="download-manager__toolbar"><h3>{t("downloader.taskTitle")}</h3>{refreshButton}</div> : <div className="download-manager__toolbar download-manager__filters">
+  return <section className={`download-manager${embedded ? " download-manager--embedded" : ""}`} aria-label={t(taskId ? "downloader.taskTitle" : "downloader.title")}>
+    {taskId ? <div className="download-manager__toolbar"><h4>{t("downloader.taskTitle")}</h4>{refreshButton}</div> : <div className="download-manager__toolbar download-manager__filters">
       <input type="search" aria-label={t("downloader.search")} placeholder={t("downloader.search")} value={search} onChange={event => { setSearch(event.target.value); setOffset(0); }} />
       <label><input type="checkbox" checked={attentionOnly} onChange={event => { setAttentionOnly(event.target.checked); setOffset(0); }} />{t("downloader.attention", { count: snapshot?.attentionCount ?? 0 })}</label>
       {refreshButton}
@@ -70,7 +70,7 @@ function Manager({ taskId, onCountChange }: DownloadManagerProps) {
     {snapshot?.stale ? <p className="tone-danger" role="status">{t("downloader.stale")}</p> : null}
     {!snapshot ? <p role="status">{t("common.loading")}</p> : <>
       <div className="download-manager__list">
-        {torrents.length ? taskId ? torrents.map(torrent => <TorrentCard key={torrent.hash} torrent={torrent} disabled={disabled} pending={pending === torrent.hash} onAction={action} />) : <TorrentTable torrents={torrents} disabled={disabled} pending={pending} onAction={action} /> : <p>{t("downloader.empty")}</p>}
+        {torrents.length ? taskId ? torrents.map(torrent => <TorrentCard key={torrent.hash} torrent={torrent} embedded={embedded} disabled={disabled} pending={pending === torrent.hash} onAction={action} />) : <TorrentTable torrents={torrents} disabled={disabled} pending={pending} onAction={action} /> : <p>{t("downloader.empty")}</p>}
       </div>
       {snapshot.total > 30 ? <div className="download-manager__toolbar">
         <button type="button" disabled={fetching || offset === 0} onClick={() => setOffset(Math.max(0, offset - 30))}>{t("downloader.previous")}</button>
@@ -80,16 +80,16 @@ function Manager({ taskId, onCountChange }: DownloadManagerProps) {
   </section>;
 }
 function Metric({ label, value }: { label: string; value: string }) { return <div><span className="muted">{label}</span><strong>{value}</strong></div>; }
-function TorrentCard({ torrent: torrent, disabled, pending, onAction }: { torrent: Torrent; disabled: boolean; pending: boolean; onAction: (hash: string, action: TorrentAction) => Promise<void> }) {
+function TorrentCard({ torrent: torrent, disabled, pending, onAction, embedded }: { embedded?: boolean; torrent: Torrent; disabled: boolean; pending: boolean; onAction: (hash: string, action: TorrentAction) => Promise<void> }) {
   const { t } = useTranslation();
   const [confirm, setConfirm] = useState<TorrentAction | null>(null);
   const [details, setDetails] = useState(false);
   const paused = /^(paused|stopped)/u.test(torrent.state);
   const problem = torrent.needsAttention;
   const run = (next: TorrentAction) => { setConfirm(null); void onAction(torrent.hash, next); };
-  return <article className={`drawer-card download-torrent ${problem ? "download-torrent--attention" : ""}`}>
-    <div className="drawer-card__head download-manager__toolbar"><h3>{torrent.name || torrent.hash}</h3><span className={`status-chip ${problem ? "tone-danger" : "tone-neutral"}`}>{qbittorrentStateLabel(torrent.state, t)}</span></div>
-    <p>{torrent.taskIds.length ? torrent.taskIds.map((id, index) => <Link key={id} to={`/tasks/${encodeURIComponent(id)}`}>{torrent.taskCodes[index] || id} </Link>) : t("downloader.unmanaged")}</p>
+  return <article className={`${embedded ? "download-torrent--embedded" : "drawer-card"} download-torrent ${problem ? "download-torrent--attention" : ""}`}>
+    <div className="drawer-card__head download-manager__toolbar"><h4>{torrent.name || torrent.hash}</h4><span className={`status-chip ${problem ? "tone-danger" : "tone-neutral"}`}>{qbittorrentStateLabel(torrent.state, t)}</span></div>
+    {!embedded ? <p>{torrent.taskIds.length ? torrent.taskIds.map((id, index) => <Link key={id} to={`/tasks/${encodeURIComponent(id)}`}>{torrent.taskCodes[index] || id} </Link>) : t("downloader.unmanaged")}</p> : null}
     <TorrentNotice torrent={torrent} />
     <div className="home-progress" role="progressbar" aria-label={t("downloader.progress")} aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(torrent.progress * 100)}><span style={{ width: `${torrent.progress * 100}%` }} /></div>
     <div className="download-metrics">

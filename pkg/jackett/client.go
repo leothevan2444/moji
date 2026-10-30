@@ -168,6 +168,24 @@ type SearchResult struct {
 	Gain                 float64  `json:"Gain"`
 }
 
+// UnmarshalJSON preserves missing/null seeder counts as -1. Zero is a real
+// observation and must not be used to represent an unknown count.
+func (r *SearchResult) UnmarshalJSON(data []byte) error {
+	type plain SearchResult
+	decoded := struct {
+		*plain
+		Seeders *int `json:"Seeders"`
+	}{plain: (*plain)(r)}
+	if err := json.Unmarshal(data, &decoded); err != nil {
+		return err
+	}
+	r.Seeders = -1
+	if decoded.Seeders != nil && *decoded.Seeders >= 0 {
+		r.Seeders = *decoded.Seeders
+	}
+	return nil
+}
+
 // SearchResultEnvelope is the parsed shape of a Jackett search response.
 // Returning the raw Indexers array alongside the Results lets callers expose
 // per-indexer latency and errors to the stats collector without a second HTTP

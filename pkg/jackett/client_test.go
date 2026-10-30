@@ -2,6 +2,7 @@ package jackett
 
 import (
 	"context"
+	"encoding/json"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -102,5 +103,28 @@ func TestAPIIndexerListingRejectsErrorAndLoginPages(t *testing.T) {
 		if err == nil {
 			t.Errorf("accepted invalid response: %s", body)
 		}
+	}
+}
+
+func TestSearchResultSeederPresence(t *testing.T) {
+	for _, tc := range []struct {
+		body string
+		want int
+	}{
+		{`{"Title":"sample","Seeders":0}`, 0},
+		{`{"Title":"sample","Seeders":17}`, 17},
+		{`{"Title":"sample"}`, -1},
+		{`{"Title":"sample","Seeders":null}`, -1},
+		{`{"Title":"sample","Seeders":-5}`, -1},
+	} {
+		t.Run(tc.body, func(t *testing.T) {
+			var result SearchResult
+			if err := json.Unmarshal([]byte(tc.body), &result); err != nil {
+				t.Fatal(err)
+			}
+			if result.Seeders != tc.want || result.Title != "sample" {
+				t.Fatalf("unexpected result: %+v", result)
+			}
+		})
 	}
 }

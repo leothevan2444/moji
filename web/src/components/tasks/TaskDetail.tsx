@@ -1,3 +1,4 @@
+import { DownloadManager } from "../downloader/DownloadManager";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faCopy } from "@fortawesome/free-solid-svg-icons/faCopy";
 import { faTrashCan } from "@fortawesome/free-solid-svg-icons/faTrashCan";
@@ -35,7 +36,8 @@ export function TaskDetail({ task, pendingRetry, pendingDelete,
   const selectFiles = needsTaskFileSelection(task);
   const filesRef = useRef<HTMLDivElement>(null);
   const files = <div ref={filesRef} tabIndex={-1} className="task-detail-files">
-    <TaskFiles key={task.id} task={task} onCopy={onCopy} />
+    <TaskFiles key={task.id} task={task} onCopy={onCopy}
+      torrentControls={task.torrentHash?.trim() ? <DownloadManager key={task.id} taskId={task.id} embedded /> : undefined} />
   </div>;
 
   return <>
