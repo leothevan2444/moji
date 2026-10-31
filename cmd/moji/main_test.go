@@ -35,14 +35,23 @@ func TestHTTPHandlerServesConfiguredWebDist(t *testing.T) {
 }
 
 func TestDockerExampleConfig(t *testing.T) {
-	cfg, err := config.LoadFromPath("../../docker/config.example.yaml")
+	data, err := os.ReadFile("../../docker/config.example.yaml")
+	if err != nil {
+		t.Fatal(err)
+	}
+	dataRoot := t.TempDir()
+	configPath := filepath.Join(dataRoot, "config.yaml")
+	if err := os.WriteFile(configPath, data, 0o600); err != nil {
+		t.Fatal(err)
+	}
+	cfg, err := config.LoadFromPath(configPath)
 	if err != nil {
 		t.Fatal(err)
 	}
 	if cfg.Ingest.Downloads.MojiRoot != "/downloads" || cfg.Ingest.Library.MojiRoot != "/library" || cfg.Ingest.Transfer.Action != "COPY" {
 		t.Fatalf("unexpected container ingest paths: %+v", cfg.Ingest)
 	}
-	if cfg.EffectiveLogFilePath() != "/data/moji.log" {
+	if cfg.EffectiveLogFilePath() != filepath.Join(dataRoot, "logs", "moji.log") {
 		t.Fatalf("logs must stay in the persistent data mount: %q", cfg.EffectiveLogFilePath())
 	}
 }
@@ -94,8 +103,18 @@ func TestHTTPHandlerServesGraphQLHealth(t *testing.T) {
 }
 
 func TestHTTPHandlerServesCurrentLogFile(t *testing.T) {
-	cfg := testConfig()
-	path := "moji.log"
+	configPath := filepath.Join(t.TempDir(), "config.yaml")
+	if err := os.WriteFile(configPath, []byte("{}\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	cfg, err := config.LoadFromPath(configPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	path := cfg.EffectiveLogFilePath()
+	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+		t.Fatal(err)
+	}
 	if err := os.WriteFile(path, []byte("test log\n"), 0o644); err != nil {
 		t.Fatalf("write log file: %v", err)
 	}

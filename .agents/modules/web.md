@@ -63,7 +63,7 @@ React 19、React Router 7、TypeScript、Vite、urql graphcache、graphql-ws、i
 
 设置结构、独立分区保存、固定排版与实际配置迁移已完成，见 [设置复核](../reviews/2026-10-28-settings.md)。当前 tab 为 indexers/downloader/stash/tasks/system/logs/about；共享 shell 与字段组件统一状态、说明、加载和敏感值显隐。后台四种资源效果与逐站停止语义见 [任务](tasks.md)。
 
-[日志滚动](../TODO.md#o-001) 仍未实施。手动候选链接和任务种子分区已完成，见[种子交互复核](../reviews/2026-10-29-task-torrents.md)。
+日志（O-001）按旧到新显示最近 200 条匹配记录并向下跟随。上滚超过底部 24px 或点击暂停时冻结当前显示列表，WebSocket 与 200 条有界缓存继续更新；恢复按钮回到最新列表底部。切换级别重置跟随，重连/缺口沿用快照恢复；复制采用当前可见顺序，下载是活动文件全部级别。日志区支持键盘滚动、暂停时关闭 live 宣告，移动端消息换到第二行。证据见[日志复核](../reviews/2026-10-31-logs.md)。手动候选链接和任务种子分区已完成，见[种子交互复核](../reviews/2026-10-29-task-torrents.md)。
 
 2026-10-28 设置跟进：任务删除策略位于“任务与订阅”，独立保存。语言选择仅在“系统”，写入 `system.language`（auto/zh-CN/en），成功保存后生效；初次和窗口恢复焦点读取已保存配置，并防止迟到响应覆盖新保存值。
 

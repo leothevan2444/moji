@@ -42,7 +42,6 @@ system:
     language: auto
 logging:
     level: info
-    file_path: /data/moji.log
 # Developer tools are hidden by default.
 
 tasks:

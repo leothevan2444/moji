@@ -880,6 +880,12 @@
     "navigation": "Help documentation"
   },
   "logsUi": {
+    "following": "Following latest logs",
+    "readingHistory": "Reading history",
+    "pauseFollow": "Pause following",
+    "resumeFollow": "Resume following",
+    "resumeNew": "New logs · Resume following",
+    "scope": "Oldest first, up to 200 recent matching entries. Download includes all levels in the current file, excluding rotated backups.",
     "refreshing": "Refreshing...",
     "refresh": "Refresh logs",
     "copy": "Copy current list",

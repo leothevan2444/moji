@@ -4,10 +4,10 @@ import (
 	"errors"
 	"fmt"
 	"os"
-	"path/filepath"
 	"regexp"
 	"strings"
 
+	"github.com/leothevan2444/moji/internal/logging"
 	"github.com/leothevan2444/moji/internal/releasedate"
 	"gopkg.in/yaml.v3"
 )
@@ -379,7 +379,6 @@ type TransferIngestConfig struct {
 
 type LoggingConfig struct {
 	Level            string `yaml:"level"`
-	FilePath         string `yaml:"file_path"`
 	MaxEntries       int    `yaml:"max_entries"`
 	MaxFileSizeBytes int64  `yaml:"max_file_size_bytes"`
 	MaxFileBackups   int    `yaml:"max_file_backups"`
@@ -1025,10 +1024,7 @@ func (c Config) EffectiveLogLevel() string {
 }
 
 func (c Config) EffectiveLogFilePath() string {
-	if strings.TrimSpace(c.Logging.FilePath) != "" {
-		return strings.TrimSpace(c.Logging.FilePath)
-	}
-	return defaultLogFilePathForConfig(c.path)
+	return logging.DefaultLogFilePath(c.path)
 }
 
 func (c Config) EffectiveLogMaxEntries() int {
@@ -1050,18 +1046,6 @@ func (c Config) EffectiveLogMaxFileBackups() int {
 		return c.Logging.MaxFileBackups
 	}
 	return 5
-}
-
-func defaultLogFilePathForConfig(path string) string {
-	trimmed := strings.TrimSpace(path)
-	if trimmed == "" {
-		return "moji.log"
-	}
-	dir := filepath.Dir(trimmed)
-	if dir == "" || dir == "." {
-		return "moji.log"
-	}
-	return filepath.Join(dir, "moji.log")
 }
 
 func buildStashGraphQLEndpoint(raw string) string {

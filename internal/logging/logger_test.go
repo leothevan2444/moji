@@ -73,3 +73,49 @@ func TestRollingFileWriterRotates(t *testing.T) {
 		t.Fatalf("expected backup to contain rotated content, got %q", string(backup))
 	}
 }
+
+func TestDefaultLogFilePath(t *testing.T) {
+	for _, tc := range []struct{ config, want string }{
+		{"", "logs/moji.log"},
+		{"config.yaml", "logs/moji.log"},
+		{" /data/config.yaml ", "/data/logs/moji.log"},
+	} {
+		if got := DefaultLogFilePath(tc.config); got != tc.want {
+			t.Errorf("DefaultLogFilePath(%q) = %q, want %q", tc.config, got, tc.want)
+		}
+	}
+}
+
+func TestRollingFileLayoutRetentionAndRestart(t *testing.T) {
+	path := DefaultLogFilePath(filepath.Join(t.TempDir(), "config.yaml"))
+	writer, err := newRollingFileWriter(path, 4, 2)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, line := range []string{"aaa\n", "bbb\n", "ccc\n", "ddd\n"} {
+		if _, err := writer.Write([]byte(line)); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if err := writer.Close(); err != nil {
+		t.Fatal(err)
+	}
+	writer, err = newRollingFileWriter(path, 4, 2)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer writer.Close()
+	if _, err := writer.Write([]byte("eee\n")); err != nil {
+		t.Fatal(err)
+	}
+	for name, want := range map[string]string{path: "eee\n", path + ".1": "ddd\n", path + ".2": "ccc\n"} {
+		got, err := os.ReadFile(name)
+		if err != nil || string(got) != want {
+			t.Fatalf("read %s = %q, %v; want %q", name, got, err, want)
+		}
+	}
+	files, err := os.ReadDir(filepath.Dir(path))
+	if err != nil || len(files) != 3 {
+		t.Fatalf("expected current + 2 backups, got %d, %v", len(files), err)
+	}
+}

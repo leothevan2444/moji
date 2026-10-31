@@ -79,3 +79,28 @@ The settings provider retains each form's local value, acknowledged baseline and
 The Go configuration store locks the full read/merge/validate/write operation, using the latest saved document and preserving unrelated and unknown fields. Validation failures leave the current document unchanged; persistence failures are surfaced to the caller. Configuration values become visible in memory after durable writing succeeds. As with existing atomic file writes, a directory-sync error after rename is reported as uncertain durability; retry is safe because patches set values rather than replaying external actions.
 
 Downloader cleanup uses a separate partial policy mutation and serializes read/merge/write under its policy lock. Speed-limit edits use the existing single-field qBittorrent command. Cache clearing, source refresh and other explicit operations remain buttons; they are not configuration saves.
+
+## Log files and live viewer
+
+Logs are always stored beside the configuration in `logs/moji.log`; no file
+path setting is required or supported. The bootstrap logger, configured logger
+and current-file download use the same fixed location. In Docker this is
+`/data/logs/moji.log` inside the persistent mount. The retired
+`logging.file_path` field is ignored when reading old configurations and removed
+on the next successful save. Old log files and backups are not moved or deleted
+automatically; archive them separately when upgrading.
+
+The active file appends across restarts and rotates by size (default 10 MiB).
+Backups stay in the same directory as `moji.log.1` through `moji.log.5` by default;
+`.1` is the newest backup. `logging.max_file_size_bytes` and
+`logging.max_file_backups` control these limits. A single log entry is not split
+across files. Retention applies to this file set, not files left at an old path.
+
+The logs tab shows up to 200 recent matching in-memory entries, oldest first,
+and follows new entries at the bottom. Scrolling upward or choosing Pause
+following freezes the visible list while the bounded live cache keeps updating.
+Resume following returns to the latest list. Changing the minimum level resets
+following; reconnects and sequence gaps refresh the snapshot. The viewer is not
+a reader for rotated files or logs from previous processes. Copy uses the visible
+list in display order; Download retrieves only the active file, with all recorded
+levels, via `/api/logs/current`. Rotated backups can be read from the log directory.

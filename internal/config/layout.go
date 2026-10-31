@@ -85,6 +85,10 @@ func moveConfigNode(from *yaml.Node, key string, to *yaml.Node, target string) {
 // canonicalizeConfigNode converts an already normalized legacy-shaped tree.
 // Moving nodes preserves unmodeled fields and YAML comments within sections.
 func canonicalizeConfigNode(top *yaml.Node) {
+	// Log files have a fixed location; drop the retired override on save.
+	if logs := existingMapValue(top, "logging"); logs != nil {
+		deleteMapKey(logs, "file_path")
+	}
 	conn := ensureMapValue(mapValue(top, "connection"))
 	indexers := ensureMapValue(mapValue(top, "indexers"))
 	stash := ensureMapValue(mapValue(top, "stash"))

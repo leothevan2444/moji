@@ -6,7 +6,8 @@ import type { AppOutletContext } from "../../app/AppLayout";
 import { LogLevel, LogsDocumentDocument } from "../../graphql/generated/graphql";
 import { mergeLogEntries, type StreamedLogEntry } from "../../hooks/useLogEvents";
 import { describeQueryError } from "../../services/queryError";
-import { formatDateTime, formatLogEntries } from "../../utils";
+import { formatLogEntries } from "../../utils";
+import { LogViewer } from "./LogViewer";
 import { LogEventStream } from "./LogEventStream";
 import { SettingsCard } from "./SettingsTabCommon";
 import "../../styles/settings-logs.scss";
@@ -33,10 +34,32 @@ export default function LogsSettingsTab() {
   };
 
   return <SettingsCard title={t("settings.tabs.logs")}>
-    <LogEventStream pause={false} onEntries={(entries) => setStreamed((current) => mergeLogEntries([], [...entries, ...current]))} onResync={() => { setStreamed([]); void refresh({ requestPolicy: "network-only" }); }} />
-    <div className="toolbar-inline toolbar-inline--logs"><select aria-label={t("logsUi.level")} value={level} onChange={(event) => { setLevel(event.target.value as LogLevel); setStreamed([]); }}><option value={LogLevel.Debug}>DEBUG</option><option value={LogLevel.Info}>INFO</option><option value={LogLevel.Warning}>WARNING</option><option value={LogLevel.Error}>ERROR</option></select><button type="button" className="ghost-button" onClick={() => void refresh({ requestPolicy: "network-only" })}>{fetching ? t("logsUi.refreshing") : t("logsUi.refresh")}</button><button type="button" className="ghost-button" onClick={() => void copyText(formatLogEntries(logs), t("logsUi.copy"))}>{t("logsUi.copy")}</button><button type="button" className="ghost-button" disabled={downloading} onClick={() => void download()}>{downloading ? t("logsUi.downloading") : t("logsUi.download")}</button></div>
-    <div className="settings-meta"><span>{t("logsUi.loaded", { count: logs.length })}</span></div>
+    <LogEventStream
+      pause={false}
+      onEntries={(entries) => setStreamed((current) => mergeLogEntries([], [...entries, ...current]))}
+      onResync={() => {
+        setStreamed([]);
+        void refresh({ requestPolicy: "network-only" });
+      }}
+    />
+    <div className="toolbar-inline toolbar-inline--logs">
+      <select aria-label={t("logsUi.level")} value={level} onChange={(event) => {
+        setLevel(event.target.value as LogLevel);
+        setStreamed([]);
+      }}>
+        <option value={LogLevel.Debug}>DEBUG</option>
+        <option value={LogLevel.Info}>INFO</option>
+        <option value={LogLevel.Warning}>WARNING</option>
+        <option value={LogLevel.Error}>ERROR</option>
+      </select>
+      <button type="button" className="ghost-button" onClick={() => void refresh({ requestPolicy: "network-only" })}>
+        {fetching ? t("logsUi.refreshing") : t("logsUi.refresh")}
+      </button>
+      <button type="button" className="ghost-button" disabled={downloading} onClick={() => void download()}>
+        {downloading ? t("logsUi.downloading") : t("logsUi.download")}
+      </button>
+    </div>
     {error ? <p className="settings-feedback tone-danger">{describeQueryError(error)}</p> : null}
-    {!logs.length && !fetching ? <article className="empty-card empty-card--wide"><h3>{t("logsUi.empty")}</h3></article> : <div className="log-stream" role="log" aria-live="polite">{logs.map((entry) => <div key={entry.sequence} className={`log-line ${entry.level === LogLevel.Error ? "log-line--error" : entry.level === LogLevel.Warning ? "log-line--warn" : entry.level === LogLevel.Debug ? "log-line--debug" : "log-line--info"}`}><span className="log-line__time">{formatDateTime(entry.time)}</span><span className="log-line__level">[{entry.level}]</span><span className="log-line__message">{entry.message}</span></div>)}</div>}
+    <LogViewer key={level} entries={logs} loading={fetching} onCopy={(entries) => void copyText(formatLogEntries(entries), t("logsUi.copy"))} />
   </SettingsCard>;
 }

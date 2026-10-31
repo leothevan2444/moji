@@ -52,7 +52,7 @@ CI 在原生 amd64/arm64 runner 构建及 smoke test，通过后发布复用同�
 
 设置、实际配置迁移及 Jackett 逐站搜索已交付，见 [专项复核](../reviews/2026-10-28-settings.md)。自动寻源的停止由 runtime 候选资格决定；手动搜索逐站收集，错误回退及取消有 fake HTTP 覆盖。逐站查询不等同于元数据下载主机队列。
 
-[日志布局与跟随](../TODO.md#o-001) 仍待设计。
+2026-10-31 日志（O-001）：路径固定为配置目录下 `logs/moji.log`，启动早期和配置加载后共用路径解析，不提供用户路径配置；旧 logging.file_path 读取时忽略，成功保存时移除。按大小轮转沿用 `moji.log.1`（最新）到 `.5` 的默认保留方式，默认单文件 10 MiB。旧目录文件不自动搬迁或删除；保留范围只覆盖当前路径对应的文件组。`/api/logs/current` 读取当前配置的活动文件，不合并备份；日志页不是磁盘历史查询。升级与读取说明见[设置文档](../../docs/settings.md#log-files-and-live-viewer)，验证见[日志复核](../reviews/2026-10-31-logs.md)。
 
 2026-10-28 增量设置：config.Store.ApplyPatch 在同一配置锁内读取最新已保存 YAML、合并、验证并原子持久化，成功后发布内存值；失败不提前更新内存。patchSettings 使用与 YAML v2 相同的 typed 可选字段，省略/null 保持原值，空串/空列表/false 明确保留。下载器 PatchPolicy 的 read/merge/write 同样与 SetPolicy 共用策略锁。
 

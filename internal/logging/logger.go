@@ -275,15 +275,9 @@ func Fatal(args ...any) {
 	os.Exit(1)
 }
 
+// DefaultLogFilePath keeps active and rotated logs together beside the config.
 func DefaultLogFilePath(configPath string) string {
-	if strings.TrimSpace(configPath) == "" {
-		return "moji.log"
-	}
-	dir := filepath.Dir(configPath)
-	if dir == "" || dir == "." {
-		return "moji.log"
-	}
-	return filepath.Join(dir, "moji.log")
+	return filepath.Join(filepath.Dir(strings.TrimSpace(configPath)), "logs", "moji.log")
 }
 
 func parseLevel(level string) slog.Level {

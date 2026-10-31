@@ -65,7 +65,7 @@ func TestHTTPRuntimeStopsWithOpenWebsocketAndReleasesStorage(t *testing.T) {
 		case <-deadline.C:
 			t.Fatal("runtime did not start")
 		case <-tick.C:
-			if data, err := os.ReadFile(filepath.Join(root, "moji.log")); err == nil {
+			if data, err := os.ReadFile(filepath.Join(root, "logs", "moji.log")); err == nil {
 				if match := listenPattern.FindSubmatch(data); len(match) > 1 {
 					address = string(match[1])
 				}

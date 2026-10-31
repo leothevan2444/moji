@@ -876,6 +876,12 @@
     "navigation": "帮助文档"
   },
   "logsUi": {
+    "following": "正在跟随最新日志",
+    "readingHistory": "正在阅读历史",
+    "pauseFollow": "暂停跟随",
+    "resumeFollow": "恢复跟随",
+    "resumeNew": "有新日志 · 恢复跟随",
+    "scope": "从旧到新显示最近 200 条匹配日志；下载包含当前文件的全部级别，不包含轮转备份。",
     "refreshing": "刷新中...",
     "refresh": "刷新日志",
     "copy": "复制当前列表",
