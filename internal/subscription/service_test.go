@@ -1000,6 +1000,7 @@ func TestRefreshPerformerKeepsFailedAutoDownloadsPending(t *testing.T) {
 		client: &fakeStashboxClient{
 			performer: &stashboxgraphql.PerformerFragment{ID: "js-1", Name: "Rara Anzai"},
 			scenes: []*stashboxgraphql.SceneFragment{{
+				Date:  stringPointer("2026-01-01"),
 				ID:    "js-scene-1",
 				Title: &title,
 				Code:  &code,

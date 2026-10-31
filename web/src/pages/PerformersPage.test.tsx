@@ -5,7 +5,7 @@ import { fireEvent, render as baseRender, screen, within } from "@testing-librar
 import type { ComponentProps } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import userEvent from "@testing-library/user-event";
-import { LibraryFilter, SceneSourceFilter, TaskStage, TaskStageStatus, SubscriptionCheckTrigger, SubscriptionCheckScope, SubscriptionCheckStatus } from "../graphql/generated/graphql";
+import { SceneSource, LibraryFilter, SceneSourceFilter, TaskStage, TaskStageStatus, SubscriptionCheckTrigger, SubscriptionCheckScope, SubscriptionCheckStatus } from "../graphql/generated/graphql";
 import i18n from "../i18n/i18n";
 import { PerformerSceneCard } from "../components/performers/PerformerSceneCard";
 import type { StashPerformerSceneEntry } from "../components/performers/types";
@@ -313,4 +313,20 @@ describe("persistent subscription check state", () => {
     expect(screen.queryByRole("region", { name: "Release checks" })).toBeNull();
     expect(screen.queryByText("Latest scheduled run")).toBeNull();
   });
+});
+
+
+describe("persisted upcoming scene state", () => {
+ beforeEach(async () => i18n.changeLanguage("en"));
+ afterEach(() => document.body.replaceChildren());
+ it.each([["WAITING", "Upcoming"], ["UNCONFIRMED", "Unconfirmed"], ["HANDOFF_PENDING", "Processing release"]])("shows %s without creation or selection controls", (upcomingState, label) => {
+  const scene: StashPerformerSceneEntry = {key:"future",primarySource:SceneSource.Stashbox,sourceSceneId:"future",title:"Future film",code:"ABC-123",date:"2026-11-12",studioName:"Studio",performerCount:1,tagCount:0,performers:[],tags:[],imageUrl:null,url:null,inLibrary:false,matchedStashSceneId:null,hasStashSource:false,hasStashBoxSource:true,stashBoxSceneId:"future",stashBoxEndpoint:"https://example.org/graphql",sourceLabels:["StashBox"],stashIds:[],mojiTask:null,upcomingState};
+  const page = props({sceneSelectionMode:true,selectedSceneKeys:["future"]});
+  render(<PerformerSceneCard scene={scene} page={page}/>);
+  expect(screen.getByText(label)).toBeTruthy();
+  expect(screen.queryByRole("button",{name:/Create|Select|Deselect/})).toBeNull();
+  fireEvent.click(screen.getByText("ABC-123"));
+  expect(page.onQueueScene).not.toHaveBeenCalled();
+  expect(page.onToggleSceneSelection).not.toHaveBeenCalled();
+ });
 });

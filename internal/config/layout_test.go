@@ -1,6 +1,7 @@
 package config
 
 import (
+	"github.com/leothevan2444/moji/internal/releasedate"
 	"gopkg.in/yaml.v3"
 	"os"
 	"path/filepath"
@@ -186,5 +187,18 @@ func TestLanguageValidationAndDeletionConflict(t *testing.T) {
 	var cfg Config
 	if err := yaml.Unmarshal([]byte("system: {}\n"), &cfg); err != nil || cfg.System.EffectiveLanguage() != "auto" {
 		t.Fatal("missing language did not default to auto")
+	}
+}
+
+func TestReleaseTimezoneDefaultsAndValidation(t *testing.T) {
+	for _, tc := range []struct{ raw, want string }{{"config_version: 2\nsystem: {}\n", releasedate.EffectiveTimezone("auto")}, {"config_version: 2\nsystem: {release_timezone: Asia/Tokyo}\n", "Asia/Tokyo"}, {"system: {release_timezone: UTC}\n", "UTC"}} {
+		var cfg Config
+		if err := yaml.Unmarshal([]byte(tc.raw), &cfg); err != nil || cfg.System.EffectiveReleaseTimezone() != tc.want {
+			t.Fatalf("timezone %+v %v", cfg.System, err)
+		}
+	}
+	var cfg Config
+	if err := yaml.Unmarshal([]byte("config_version: 2\nsystem: {release_timezone: invalid/timezone}\n"), &cfg); err == nil {
+		t.Fatal("invalid timezone accepted")
 	}
 }

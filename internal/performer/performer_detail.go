@@ -189,6 +189,9 @@ func (s *Service) buildPerformerScenePageWithPolicy(ctx context.Context, perform
 	}
 
 	pageItems := append([]Scene(nil), filtered[start:end]...)
+	if err := s.attachPerformerSceneUpcoming(ctx, pageItems); err != nil {
+		return ScenePage{}, err
+	}
 	if err := s.attachPerformerSceneTasks(ctx, pageItems); err != nil {
 		return ScenePage{}, err
 	}
@@ -640,4 +643,27 @@ func sceneLookupKey(endpoint, stashID string) string {
 		return ""
 	}
 	return endpoint + "::" + stashID
+}
+
+func (s *Service) attachPerformerSceneUpcoming(ctx context.Context, scenes []Scene) error {
+	if s.upcomingStates == nil {
+		return nil
+	}
+	keys := make([]string, 0, len(scenes))
+	for _, scene := range scenes {
+		if scene.HasStashBoxSource && !scene.InLibrary {
+			keys = append(keys, scene.Key)
+		}
+	}
+	if len(keys) == 0 {
+		return nil
+	}
+	states, err := s.upcomingStates.UpcomingReleaseStates(ctx, keys)
+	if err != nil {
+		return fmt.Errorf("performer: read upcoming scene states: %w", err)
+	}
+	for index := range scenes {
+		scenes[index].UpcomingState = states[scenes[index].Key]
+	}
+	return nil
 }

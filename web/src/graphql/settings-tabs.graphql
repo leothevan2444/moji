@@ -70,7 +70,7 @@ query SettingsPolicySection {
 
 query SystemSettingsTab {
   settings {
-    system { language developerMode
+    system { language releaseTimezone effectiveReleaseTimezone developerMode
       taskDeletePolicy imageCache { enabled maxSizeMb retentionDays } stashBoxDataCache { ttlHours } }
   }
   settingsStatus {

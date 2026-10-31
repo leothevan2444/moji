@@ -109,7 +109,7 @@ func validatePatch(patch map[string]any, cfg *Config) error {
 	if action := cfg.Ingest.Transfer.Action; action != "" && action != "COPY" && action != "MOVE" {
 		return fmt.Errorf("transfer action must be COPY or MOVE")
 	}
-	return ValidateLanguage(cfg.System.Language)
+	return validateSystemCalendar(cfg.System)
 }
 
 func patchNumber(patch map[string]any, keys ...string) int {

@@ -1,4 +1,42 @@
 {
+  "upcoming": {
+    "timezoneLabel": "Release date timezone",
+    "timezoneHelp": "Enter auto to follow the Moji runtime timezone, or an IANA timezone such as Asia/Shanghai. Effective timezone: {{timezone}}.",
+    "title": "Upcoming releases",
+    "viewAll": "View all",
+    "collapse": "Collapse list",
+    "unconfirmed": "Unconfirmed",
+    "handedOff": "Sent to release processing",
+    "paused": "Automatic checks paused",
+    "settings": "Settings",
+    "search": "Code or title",
+    "performer": "Performer",
+    "allPerformers": "All performers",
+    "range": "Release window",
+    "allDates": "All dates",
+    "week": "Next 7 days",
+    "month": "Next 30 days",
+    "loadFailed": "Unable to load releases",
+    "retry": "Retry",
+    "loading": "Loading…",
+    "noSubscriptions": "No subscribed performers",
+    "noMatch": "No matching releases",
+    "empty": "No upcoming releases",
+    "performers": "View performers",
+    "unknownCode": "Code pending",
+    "expected": "Expected {{date}}",
+    "pagination": "Upcoming release pages",
+    "previous": "Previous",
+    "next": "Next",
+    "source": "Source",
+    "update": "Refresh",
+    "updating": "Refreshing…",
+    "updated": "Updated",
+    "review": "Release review",
+    "open": "View {{name}}",
+    "trailer": "Trailer",
+    "noTrailer": "No trailer available"
+  },
   "settings": {
     "title": "Configuration & system",
     "tabs": {
@@ -947,6 +985,7 @@
   },
   "errorCorrelation": "Correlation ID: {{id}}",
   "errorExtra": {
+    "RELEASE_NOT_AVAILABLE": "This film has not been released. No task was created.",
     "SETTINGS_INVALID": "Invalid settings. Check the fields, match conditions and regular expressions, then retry.",
     "TORRENT_COMMAND_UNCONFIRMED": "qB accepted the command, but its latest state could not be confirmed. Refresh to check.",
     "DOWNLOADER_POLICY_INVALID": "Enter valid cleanup thresholds, with at least one positive threshold when enabled.",
@@ -1487,6 +1526,7 @@
   },
   "performerSceneQueue": {
     "reasons": {
+      "RELEASE_NOT_AVAILABLE": "This film has not been released. No task was created.",
       "QUEUED": "Created the download task.",
       "ALREADY_IN_LIBRARY": "This scene is already in the Stash library.",
       "DUPLICATE_CODE_TASK": "A download task already exists for this code.",
@@ -1596,6 +1636,8 @@
     "clearFilters": "Clear search and filters"
   },
   "performerUi": {
+    "upcoming": "Upcoming",
+    "releaseProcessing": "Processing release",
     "selectScenes": "Select scenes",
     "exitSceneSelection": "Exit selection",
     "firstPage": "First page",

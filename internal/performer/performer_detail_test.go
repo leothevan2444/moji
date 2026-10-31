@@ -99,12 +99,17 @@ func TestListPerformerScenesLoadsFortyItemBatchesOnDemand(t *testing.T) {
 		t.Fatal(err)
 	}
 
+	reader := &testUpcomingStateReader{}
+	service.SetUpcomingStateReader(reader)
 	first, err := service.ListPerformerScenes(context.Background(), stashPerformer.ID, SceneQuery{Source: SceneSourceFilterStashBox, Page: 1, PageSize: 24})
 	if err != nil {
 		t.Fatal(err)
 	}
 	if len(first.Items) != 24 || first.TotalCount != 85 || first.TotalPages != 4 || !first.TotalCountExact || first.StashBoxLoadedCount != 40 || len(client.inputs) != 1 {
 		t.Fatalf("unexpected first page: %+v calls=%+v", first, client.inputs)
+	}
+	if len(reader.keys) != 24 || first.Items[0].UpcomingState != "WAITING" || first.Items[1].UpcomingState != "" {
+		t.Fatalf("upcoming lookup must be bounded to visible page: keys=%v items=%+v", reader.keys, first.Items)
 	}
 	detail, err := service.GetPerformerDetail(context.Background(), stashPerformer.ID)
 	if err != nil {
@@ -160,4 +165,11 @@ func TestProfileDoesNotContactMetadataOrLoadScenes(t *testing.T) {
 	if err != nil || profile.Performer.Name != "Alice" {
 		t.Fatalf("profile=%+v error=%v", profile, err)
 	}
+}
+
+type testUpcomingStateReader struct{ keys []string }
+
+func (r *testUpcomingStateReader) UpcomingReleaseStates(_ context.Context, keys []string) (map[string]string, error) {
+	r.keys = append([]string(nil), keys...)
+	return map[string]string{keys[0]: "WAITING"}, nil
 }

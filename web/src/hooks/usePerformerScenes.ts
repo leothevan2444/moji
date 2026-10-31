@@ -1,3 +1,5 @@
+import { useCallback, useEffect } from "react";
+import { usePerformerSubscriptionEvents } from "./usePerformerSubscriptionEvents";
 import { useQuery } from "urql";
 import { StashPerformerScenesDocument, type LibraryFilter, type SceneSourceFilter, type StashPerformerScenesQuery, type StashPerformerScenesQueryVariables } from "../graphql/generated/graphql";
 
@@ -9,5 +11,15 @@ export function usePerformerScenes({ enabled, performerId, search, source, libra
     variables: { id: performerId ?? "", input: { search, source, inLibrary: library, page, pageSize } },
     requestPolicy: "cache-and-network", pause: !enabled || !performerId
   });
+  const refresh = useCallback(() => {
+    if (enabled && performerId) refreshPerformerScenes({ requestPolicy: "network-only" });
+  }, [enabled, performerId, refreshPerformerScenes]);
+  const { event } = usePerformerSubscriptionEvents({ enabled: enabled && Boolean(performerId), onRefresh: refresh });
+  useEffect(() => {
+    if (!enabled || !performerId || event?.performerId !== performerId) return;
+    // One page read for a burst of release updates; never one request per card.
+    const timer = window.setTimeout(refresh, 200);
+    return () => window.clearTimeout(timer);
+  }, [enabled, performerId, event?.performerId, event?.sequence, refresh]);
   return { performerScenePage: data?.stashPerformerScenes ?? null, performerScenes: data?.stashPerformerScenes.items ?? [], fetchingPerformerScenes, performerScenesError, refreshPerformerScenes };
 }

@@ -7,6 +7,7 @@ import {
   SEARCH_PLACEHOLDERS,
   type DiscoveryMode
 } from "../constants";
+import { UpcomingReleases } from "../components/discovery/UpcomingReleases";
 import { useTranslation } from "react-i18next";
 
 interface DiscoveryPageProps {
@@ -124,6 +125,7 @@ export function DiscoveryPage({
         </form>
       </section>
 
+      <UpcomingReleases />
       <section className="section-band section-band--preview">
         <div className="band-head">
           <div>

@@ -12,15 +12,16 @@ interface DrawerProps {
   children: ReactNode;
   footer?: ReactNode;
   closeDisabled?: boolean;
+  variant?: "media";
 }
 
-export function Drawer({ visibleDrawer, closing, title, titleIcon, onClose, children, footer, closeDisabled = false }: DrawerProps) {
+export function Drawer({ visibleDrawer, closing, title, titleIcon, onClose, children, footer, closeDisabled = false, variant: variantOverride }: DrawerProps) {
   const { t } = useTranslation();
   const panelRef = useRef<HTMLElement>(null);
   const titleId = useId();
   useModalFocus(panelRef, onClose);
   const isTaskDrawer = visibleDrawer === "task" || visibleDrawer === "task-resolution" || visibleDrawer === "task-queue";
-  const variant = isTaskDrawer ? "task" : visibleDrawer === "confirm" ? "confirm" : "modal";
+  const variant = variantOverride ?? (isTaskDrawer ? "task" : visibleDrawer === "confirm" ? "confirm" : "modal");
   return (
     <div
       className={`drawer-scrim ${isTaskDrawer ? "drawer-scrim--task" : "drawer-scrim--modal"} ${closing ? "is-closing" : ""}`}

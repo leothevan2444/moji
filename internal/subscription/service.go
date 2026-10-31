@@ -13,6 +13,7 @@ import (
 	"github.com/leothevan2444/moji/internal/logging"
 	"github.com/leothevan2444/moji/internal/metadata"
 	"github.com/leothevan2444/moji/internal/performer"
+	"github.com/leothevan2444/moji/internal/releasedate"
 	"github.com/leothevan2444/moji/internal/taskruntime"
 	stashgraphql "github.com/leothevan2444/moji/pkg/stash/graphql"
 	stashboxgraphql "github.com/leothevan2444/moji/pkg/stashbox/graphql"
@@ -47,6 +48,8 @@ type Service struct {
 	releasePolicy ReleasePolicyConfig
 	operationMu   sync.Mutex
 	operations    map[string]*performerOperationLock
+	upcomingMu    sync.Mutex
+	timezone      func() string
 	reviewMu      sync.Mutex
 	reviews       ReleaseReviewStore
 	reviewTasks   ReviewTaskLister
@@ -360,6 +363,17 @@ func (s *Service) refreshSubscribedPerformer(ctx context.Context, performerID st
 	}
 	logging.Infof("subscription: refresh fetched %d releases for performer %s (%s)", len(releases), performerID, performer.Name)
 
+	filtered := make([]Release, 0, len(releases))
+	for _, release := range releases {
+		held, holdErr := s.captureUpcoming(ctx, release, performerID, item.Name)
+		if holdErr != nil {
+			return SubscribedPerformer{}, holdErr
+		}
+		if !held {
+			filtered = append(filtered, release)
+		}
+	}
+	releases = filtered
 	s.reviewMu.Lock()
 	defer s.reviewMu.Unlock()
 	reviewRecords, err := s.reviewRecordsLocked(ctx)
@@ -649,7 +663,7 @@ func (s *Service) fetchReleases(ctx context.Context, performer *stashgraphql.Per
 				continue
 			}
 			code := strings.TrimSpace(stringValue(scene.Code))
-			if code == "" {
+			if code == "" && releasedate.Check(stringValue(scene.Date), now, s.releaseTimezone()) != releasedate.ErrNotReleased {
 				return nil, fmt.Errorf("subscription: stash-box scene %q is missing code", scene.ID)
 			}
 			pageReleaseCount++

@@ -24,18 +24,23 @@ type TaskCreator interface {
 type TaskLister interface {
 	ListTasks(context.Context) ([]*taskruntime.Task, error)
 }
+type UpcomingStateReader interface {
+	UpcomingReleaseStates(context.Context, []string) (map[string]string, error)
+}
 type StashImageProxy func(context.Context, string) string
 type StashBoxImageProxy func(context.Context, string, string) string
 
 type Service struct {
-	reads          singleflight.Group
-	stash          StashClient
-	metadata       *metadata.Service
-	taskCreator    TaskCreator
-	taskLister     TaskLister
-	customFieldKey string
-	stashImage     StashImageProxy
-	stashBoxImage  StashBoxImageProxy
+	upcomingStates  UpcomingStateReader
+	releaseTimezone func() string
+	reads           singleflight.Group
+	stash           StashClient
+	metadata        *metadata.Service
+	taskCreator     TaskCreator
+	taskLister      TaskLister
+	customFieldKey  string
+	stashImage      StashImageProxy
+	stashBoxImage   StashBoxImageProxy
 }
 
 func NewService(stash StashClient, source *metadata.Service, creator TaskCreator, lister TaskLister, stashImage StashImageProxy, stashBoxImage StashBoxImageProxy) (*Service, error) {
@@ -118,3 +123,7 @@ func stringValue(v *string) string {
 func endpointKey(v string) string {
 	return strings.NewReplacer("/", "_", ":", "_").Replace(strings.ToLower(strings.TrimSpace(v)))
 }
+
+func (s *Service) SetReleaseTimezone(provider func() string) { s.releaseTimezone = provider }
+
+func (s *Service) SetUpcomingStateReader(reader UpcomingStateReader) { s.upcomingStates = reader }

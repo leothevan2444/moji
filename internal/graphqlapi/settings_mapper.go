@@ -6,6 +6,7 @@ import (
 	"github.com/leothevan2444/moji/internal/config"
 	"github.com/leothevan2444/moji/internal/graphqlapi/model"
 	"github.com/leothevan2444/moji/internal/imagecache"
+	"github.com/leothevan2444/moji/internal/releasedate"
 	"github.com/leothevan2444/moji/internal/stashboxcache"
 	"github.com/leothevan2444/moji/internal/stats"
 )
@@ -70,7 +71,7 @@ func settingsSnapshotToModel(snapshot *SettingsSnapshot, appVersion string) *mod
 			Jackett:     &model.JackettSettings{},
 			Qbittorrent: &model.QBittorrentSettings{},
 			Automation:  &model.AutomationSettings{},
-			System:      &model.SystemSettings{ImageCache: &model.ImageCacheSettings{}, StashBoxDataCache: &model.StashBoxDataCacheSettings{TTLHours: 24}},
+			System:      &model.SystemSettings{ReleaseTimezone: "auto", EffectiveReleaseTimezone: releasedate.EffectiveTimezone(""), ImageCache: &model.ImageCacheSettings{}, StashBoxDataCache: &model.StashBoxDataCacheSettings{TTLHours: 24}},
 		}
 	}
 
@@ -125,11 +126,13 @@ func settingsSnapshotToModel(snapshot *SettingsSnapshot, appVersion string) *mod
 			TorrentSelection:                torrentSelectionSettingsToModel(snapshot.Automation.TorrentSelection),
 		},
 		System: &model.SystemSettings{
-			DeveloperMode:     snapshot.System.DeveloperMode,
-			Language:          effectiveSnapshotLanguage(snapshot.System.Language),
-			TaskDeletePolicy:  model.TaskDeletePolicy(snapshot.System.TaskDeletePolicy),
-			ImageCache:        &model.ImageCacheSettings{Enabled: snapshot.System.ImageCache.Enabled, MaxSizeMb: snapshot.System.ImageCache.MaxSizeMB, RetentionDays: snapshot.System.ImageCache.RetentionDays},
-			StashBoxDataCache: &model.StashBoxDataCacheSettings{TTLHours: snapshot.System.StashBoxDataCache.TTLHours},
+			ReleaseTimezone:          effectiveReleaseTimezoneMode(snapshot.System.ReleaseTimezone),
+			EffectiveReleaseTimezone: releasedate.EffectiveTimezone(snapshot.System.ReleaseTimezone),
+			DeveloperMode:            snapshot.System.DeveloperMode,
+			Language:                 effectiveSnapshotLanguage(snapshot.System.Language),
+			TaskDeletePolicy:         model.TaskDeletePolicy(snapshot.System.TaskDeletePolicy),
+			ImageCache:               &model.ImageCacheSettings{Enabled: snapshot.System.ImageCache.Enabled, MaxSizeMb: snapshot.System.ImageCache.MaxSizeMB, RetentionDays: snapshot.System.ImageCache.RetentionDays},
+			StashBoxDataCache:        &model.StashBoxDataCacheSettings{TTLHours: snapshot.System.StashBoxDataCache.TTLHours},
 		},
 	}
 }
@@ -397,4 +400,11 @@ func effectiveSnapshotLanguage(language string) string {
 		return "auto"
 	}
 	return language
+}
+
+func effectiveReleaseTimezoneMode(value string) string {
+	if value == "" {
+		return "auto"
+	}
+	return value
 }

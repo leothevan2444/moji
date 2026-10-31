@@ -131,7 +131,7 @@ export function Component() {
     sceneSelection.applyResults(results);
   };
   const queueOne = async (scene: (typeof subscription.performerScenes)[number]) => {
-    if (!performerId || scene.inLibrary || scene.mojiTask || pendingKeys.includes(scene.key)) return;
+    if (!performerId || scene.inLibrary || scene.mojiTask || scene.upcomingState || pendingKeys.includes(scene.key)) return;
     setPendingKeys((current) => [...current, scene.key]);
     try { const result = await subscription.queueSinglePerformerScene({ input: { performerId, sceneKeys: [scene.key] } }); if (result.error) { pushToast("tone-danger", describeQueryError(result.error)); return; } const item = result.data?.queuePerformerScenes.results[0]; if (!item) pushToast("tone-danger", t("performerRoute.createNoResult")); else { pushToast(item.status === "QUEUED" ? "tone-success" : item.status === "SKIPPED" ? "tone-info" : "tone-danger", item.status === "QUEUED" ? t("performerRoute.created", { scene: item.resolvedCode || scene.code || scene.title || t("performerRoute.scene") }) : describePerformerSceneQueueResult(item.reasonCode)); if (item.status === "QUEUED") sceneSelection.applyResults([item]); } }
     finally { setPendingKeys((current) => current.filter((key) => key !== scene.key)); }

@@ -249,3 +249,13 @@ func TestQueueOnlyLooksUpSelectedSceneAndChecksMembership(t *testing.T) {
 		t.Fatalf("resolved scene was not reused: %+v", creator)
 	}
 }
+
+func TestFutureSceneSelectionDoesNotCreateTask(t *testing.T) {
+	creator := &queueTestTaskCreator{}
+	s := &Service{taskCreator: creator}
+	scene := Scene{Key: "future", Code: "ABC-123", Date: "2999-01-01", HasStashBoxSource: true, StashBoxSceneID: "scene", StashBoxEndpoint: "https://example.org/graphql"}
+	result := s.queuePerformerSceneSelection(context.Background(), map[string]Scene{"future": scene}, QueueSceneSelection{Key: "future"})
+	if result.ReasonCode != "RELEASE_NOT_AVAILABLE" || result.Status != QueueSceneStatusSkipped || creator.calls != 0 {
+		t.Fatalf("future scene queued: %+v calls=%d", result, creator.calls)
+	}
+}

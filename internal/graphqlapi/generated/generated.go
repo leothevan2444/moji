@@ -402,6 +402,7 @@ type ComplexityRoot struct {
 		RefreshSubscribedPerformer  func(childComplexity int, stashPerformerID string) int
 		RefreshSubscribedPerformers func(childComplexity int, ids []string) int
 		RefreshSubscriptionsNow     func(childComplexity int) int
+		RefreshUpcomingRelease      func(childComplexity int, key string) int
 		ResolveBlockedSourcingTask  func(childComplexity int, id string, input model.ResolveBlockedSourcingTaskInput) int
 		ResolveTaskFiles            func(childComplexity int, id string, videoIndices []int) int
 		RestartTaskSourcing         func(childComplexity int, id string) int
@@ -569,6 +570,7 @@ type ComplexityRoot struct {
 		TaskStashScenes              func(childComplexity int, id string) int
 		TaskSummaries                func(childComplexity int, ids []string) int
 		Tasks                        func(childComplexity int) int
+		UpcomingReleases             func(childComplexity int, input model.UpcomingReleaseQueryInput) int
 		Version                      func(childComplexity int) int
 	}
 
@@ -800,6 +802,7 @@ type ComplexityRoot struct {
 		Tags                func(childComplexity int) int
 		Title               func(childComplexity int) int
 		URL                 func(childComplexity int) int
+		UpcomingState       func(childComplexity int) int
 	}
 
 	StashPerformerSceneConnection struct {
@@ -913,11 +916,13 @@ type ComplexityRoot struct {
 	}
 
 	SystemSettings struct {
-		DeveloperMode     func(childComplexity int) int
-		ImageCache        func(childComplexity int) int
-		Language          func(childComplexity int) int
-		StashBoxDataCache func(childComplexity int) int
-		TaskDeletePolicy  func(childComplexity int) int
+		DeveloperMode            func(childComplexity int) int
+		EffectiveReleaseTimezone func(childComplexity int) int
+		ImageCache               func(childComplexity int) int
+		Language                 func(childComplexity int) int
+		ReleaseTimezone          func(childComplexity int) int
+		StashBoxDataCache        func(childComplexity int) int
+		TaskDeletePolicy         func(childComplexity int) int
 	}
 
 	Task struct {
@@ -1109,6 +1114,38 @@ type ComplexityRoot struct {
 	TransferIngestSettings struct {
 		Action func(childComplexity int) int
 	}
+
+	UpcomingPerformer struct {
+		ID   func(childComplexity int) int
+		Name func(childComplexity int) int
+	}
+
+	UpcomingRelease struct {
+		Code              func(childComplexity int) int
+		Date              func(childComplexity int) int
+		Decision          func(childComplexity int) int
+		ErrorCode         func(childComplexity int) int
+		ImageURL          func(childComplexity int) int
+		Key               func(childComplexity int) int
+		MetadataCheckedAt func(childComplexity int) int
+		Performers        func(childComplexity int) int
+		SourceURL         func(childComplexity int) int
+		State             func(childComplexity int) int
+		Title             func(childComplexity int) int
+	}
+
+	UpcomingReleaseConnection struct {
+		Automatic       func(childComplexity int) int
+		Items           func(childComplexity int) int
+		Page            func(childComplexity int) int
+		PageSize        func(childComplexity int) int
+		Performers      func(childComplexity int) int
+		SubscribedCount func(childComplexity int) int
+		Timezone        func(childComplexity int) int
+		Today           func(childComplexity int) int
+		TotalCount      func(childComplexity int) int
+		TotalPages      func(childComplexity int) int
+	}
 }
 
 type MutationResolver interface {
@@ -1156,6 +1193,7 @@ type MutationResolver interface {
 	QueuePerformerScenes(ctx context.Context, input model.QueuePerformerScenesInput) (*model.QueuePerformerScenesPayload, error)
 	RefreshStashPerformerScenes(ctx context.Context, id string, input model.StashPerformerScenesInput) (*model.StashPerformerSceneConnection, error)
 	StartSubscriptionCheck(ctx context.Context, ids []string) (*model.SubscriptionCheckRun, error)
+	RefreshUpcomingRelease(ctx context.Context, key string) (*model.UpcomingRelease, error)
 }
 type QueryResolver interface {
 	Health(ctx context.Context) (*model.Health, error)
@@ -1192,6 +1230,7 @@ type QueryResolver interface {
 	TaskSummaries(ctx context.Context, ids []string) ([]*model.TaskSummary, error)
 	TaskAttentionQueue(ctx context.Context) (*model.TaskAttentionQueue, error)
 	HomeTaskSnapshot(ctx context.Context) (*model.HomeTaskSnapshot, error)
+	UpcomingReleases(ctx context.Context, input model.UpcomingReleaseQueryInput) (*model.UpcomingReleaseConnection, error)
 }
 type SubscriptionResolver interface {
 	TaskEvents(ctx context.Context) (<-chan *model.TaskEvent, error)
@@ -3040,6 +3079,18 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.Mutation.RefreshSubscriptionsNow(childComplexity), true
 
+	case "Mutation.refreshUpcomingRelease":
+		if e.complexity.Mutation.RefreshUpcomingRelease == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_refreshUpcomingRelease_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.RefreshUpcomingRelease(childComplexity, args["key"].(string)), true
+
 	case "Mutation.resolveBlockedSourcingTask":
 		if e.complexity.Mutation.ResolveBlockedSourcingTask == nil {
 			break
@@ -4113,6 +4164,18 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.Query.Tasks(childComplexity), true
+
+	case "Query.upcomingReleases":
+		if e.complexity.Query.UpcomingReleases == nil {
+			break
+		}
+
+		args, err := ec.field_Query_upcomingReleases_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Query.UpcomingReleases(childComplexity, args["input"].(model.UpcomingReleaseQueryInput)), true
 
 	case "Query.version":
 		if e.complexity.Query.Version == nil {
@@ -5227,6 +5290,13 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.StashPerformerScene.URL(childComplexity), true
 
+	case "StashPerformerScene.upcomingState":
+		if e.complexity.StashPerformerScene.UpcomingState == nil {
+			break
+		}
+
+		return e.complexity.StashPerformerScene.UpcomingState(childComplexity), true
+
 	case "StashPerformerSceneConnection.cacheComplete":
 		if e.complexity.StashPerformerSceneConnection.CacheComplete == nil {
 			break
@@ -5773,6 +5843,13 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.SystemSettings.DeveloperMode(childComplexity), true
 
+	case "SystemSettings.effectiveReleaseTimezone":
+		if e.complexity.SystemSettings.EffectiveReleaseTimezone == nil {
+			break
+		}
+
+		return e.complexity.SystemSettings.EffectiveReleaseTimezone(childComplexity), true
+
 	case "SystemSettings.imageCache":
 		if e.complexity.SystemSettings.ImageCache == nil {
 			break
@@ -5786,6 +5863,13 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.SystemSettings.Language(childComplexity), true
+
+	case "SystemSettings.releaseTimezone":
+		if e.complexity.SystemSettings.ReleaseTimezone == nil {
+			break
+		}
+
+		return e.complexity.SystemSettings.ReleaseTimezone(childComplexity), true
 
 	case "SystemSettings.stashBoxDataCache":
 		if e.complexity.SystemSettings.StashBoxDataCache == nil {
@@ -6753,6 +6837,167 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.TransferIngestSettings.Action(childComplexity), true
 
+	case "UpcomingPerformer.id":
+		if e.complexity.UpcomingPerformer.ID == nil {
+			break
+		}
+
+		return e.complexity.UpcomingPerformer.ID(childComplexity), true
+
+	case "UpcomingPerformer.name":
+		if e.complexity.UpcomingPerformer.Name == nil {
+			break
+		}
+
+		return e.complexity.UpcomingPerformer.Name(childComplexity), true
+
+	case "UpcomingRelease.code":
+		if e.complexity.UpcomingRelease.Code == nil {
+			break
+		}
+
+		return e.complexity.UpcomingRelease.Code(childComplexity), true
+
+	case "UpcomingRelease.date":
+		if e.complexity.UpcomingRelease.Date == nil {
+			break
+		}
+
+		return e.complexity.UpcomingRelease.Date(childComplexity), true
+
+	case "UpcomingRelease.decision":
+		if e.complexity.UpcomingRelease.Decision == nil {
+			break
+		}
+
+		return e.complexity.UpcomingRelease.Decision(childComplexity), true
+
+	case "UpcomingRelease.errorCode":
+		if e.complexity.UpcomingRelease.ErrorCode == nil {
+			break
+		}
+
+		return e.complexity.UpcomingRelease.ErrorCode(childComplexity), true
+
+	case "UpcomingRelease.imageUrl":
+		if e.complexity.UpcomingRelease.ImageURL == nil {
+			break
+		}
+
+		return e.complexity.UpcomingRelease.ImageURL(childComplexity), true
+
+	case "UpcomingRelease.key":
+		if e.complexity.UpcomingRelease.Key == nil {
+			break
+		}
+
+		return e.complexity.UpcomingRelease.Key(childComplexity), true
+
+	case "UpcomingRelease.metadataCheckedAt":
+		if e.complexity.UpcomingRelease.MetadataCheckedAt == nil {
+			break
+		}
+
+		return e.complexity.UpcomingRelease.MetadataCheckedAt(childComplexity), true
+
+	case "UpcomingRelease.performers":
+		if e.complexity.UpcomingRelease.Performers == nil {
+			break
+		}
+
+		return e.complexity.UpcomingRelease.Performers(childComplexity), true
+
+	case "UpcomingRelease.sourceUrl":
+		if e.complexity.UpcomingRelease.SourceURL == nil {
+			break
+		}
+
+		return e.complexity.UpcomingRelease.SourceURL(childComplexity), true
+
+	case "UpcomingRelease.state":
+		if e.complexity.UpcomingRelease.State == nil {
+			break
+		}
+
+		return e.complexity.UpcomingRelease.State(childComplexity), true
+
+	case "UpcomingRelease.title":
+		if e.complexity.UpcomingRelease.Title == nil {
+			break
+		}
+
+		return e.complexity.UpcomingRelease.Title(childComplexity), true
+
+	case "UpcomingReleaseConnection.automatic":
+		if e.complexity.UpcomingReleaseConnection.Automatic == nil {
+			break
+		}
+
+		return e.complexity.UpcomingReleaseConnection.Automatic(childComplexity), true
+
+	case "UpcomingReleaseConnection.items":
+		if e.complexity.UpcomingReleaseConnection.Items == nil {
+			break
+		}
+
+		return e.complexity.UpcomingReleaseConnection.Items(childComplexity), true
+
+	case "UpcomingReleaseConnection.page":
+		if e.complexity.UpcomingReleaseConnection.Page == nil {
+			break
+		}
+
+		return e.complexity.UpcomingReleaseConnection.Page(childComplexity), true
+
+	case "UpcomingReleaseConnection.pageSize":
+		if e.complexity.UpcomingReleaseConnection.PageSize == nil {
+			break
+		}
+
+		return e.complexity.UpcomingReleaseConnection.PageSize(childComplexity), true
+
+	case "UpcomingReleaseConnection.performers":
+		if e.complexity.UpcomingReleaseConnection.Performers == nil {
+			break
+		}
+
+		return e.complexity.UpcomingReleaseConnection.Performers(childComplexity), true
+
+	case "UpcomingReleaseConnection.subscribedCount":
+		if e.complexity.UpcomingReleaseConnection.SubscribedCount == nil {
+			break
+		}
+
+		return e.complexity.UpcomingReleaseConnection.SubscribedCount(childComplexity), true
+
+	case "UpcomingReleaseConnection.timezone":
+		if e.complexity.UpcomingReleaseConnection.Timezone == nil {
+			break
+		}
+
+		return e.complexity.UpcomingReleaseConnection.Timezone(childComplexity), true
+
+	case "UpcomingReleaseConnection.today":
+		if e.complexity.UpcomingReleaseConnection.Today == nil {
+			break
+		}
+
+		return e.complexity.UpcomingReleaseConnection.Today(childComplexity), true
+
+	case "UpcomingReleaseConnection.totalCount":
+		if e.complexity.UpcomingReleaseConnection.TotalCount == nil {
+			break
+		}
+
+		return e.complexity.UpcomingReleaseConnection.TotalCount(childComplexity), true
+
+	case "UpcomingReleaseConnection.totalPages":
+		if e.complexity.UpcomingReleaseConnection.TotalPages == nil {
+			break
+		}
+
+		return e.complexity.UpcomingReleaseConnection.TotalPages(childComplexity), true
+
 	}
 	return 0, false
 }
@@ -6818,6 +7063,7 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 		ec.unmarshalInputTorrentSelectionSettingsInput,
 		ec.unmarshalInputTransferIngestSettingsInput,
 		ec.unmarshalInputTransferPatchInput,
+		ec.unmarshalInputUpcomingReleaseQueryInput,
 		ec.unmarshalInputUpdateAutomationSettingsInput,
 		ec.unmarshalInputUpdateIngestSettingsInput,
 		ec.unmarshalInputUpdateJackettSettingsInput,
@@ -7732,6 +7978,8 @@ enum TaskDeletePolicy {
 }
 
 type SystemSettings {
+ releaseTimezone: String!
+ effectiveReleaseTimezone: String!
  language: String!
   developerMode: Boolean!
   taskDeletePolicy: TaskDeletePolicy!
@@ -8076,6 +8324,7 @@ input ToggleRulePatchInput {
 }
 
 input SystemPatchInput {
+ release_timezone: String
   language: String
   developer_mode: Boolean
   image_cache: ImageCachePatchInput
@@ -8352,6 +8601,7 @@ type StashPerformerScene {
   sourceLabels: [String!]!
   stashIds: [StashSceneID!]!
   mojiTask: PerformerSceneTask
+  upcomingState: String
 }
 
 type PerformerScenePerson {
@@ -8874,6 +9124,49 @@ extend type Query {
   homeTaskSnapshot: HomeTaskSnapshot!
 }
 `, BuiltIn: false},
+	{Name: "../../../graphql/moji/types/upcoming.graphql", Input: `extend type Query {
+  upcomingReleases(input: UpcomingReleaseQueryInput!): UpcomingReleaseConnection!
+}
+extend type Mutation {
+  refreshUpcomingRelease(key: ID!): UpcomingRelease!
+}
+input UpcomingReleaseQueryInput {
+  search: String
+  performerId: ID
+  days: Int
+  page: Int = 1
+  pageSize: Int = 24
+}
+type UpcomingRelease {
+  key: ID!
+  code: String!
+  title: String!
+  date: String!
+  imageUrl: String!
+  sourceUrl: String!
+  state: String!
+  decision: String!
+  errorCode: String!
+  metadataCheckedAt: String!
+  performers: [UpcomingPerformer!]!
+}
+type UpcomingPerformer {
+  id: ID!
+  name: String!
+}
+type UpcomingReleaseConnection {
+  items: [UpcomingRelease!]!
+  performers: [UpcomingPerformer!]!
+  totalCount: Int!
+  page: Int!
+  pageSize: Int!
+  totalPages: Int!
+  subscribedCount: Int!
+  automatic: Boolean!
+  timezone: String!
+  today: String!
+}
+`, BuiltIn: false},
 }
 var parsedSchema = gqlparser.MustLoadSchema(sources...)
 
@@ -9316,6 +9609,34 @@ func (ec *executionContext) field_Mutation_refreshSubscribedPerformers_argsIds(
 	}
 
 	var zeroVal []string
+	return zeroVal, nil
+}
+
+func (ec *executionContext) field_Mutation_refreshUpcomingRelease_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := ec.field_Mutation_refreshUpcomingRelease_argsKey(ctx, rawArgs)
+	if err != nil {
+		return nil, err
+	}
+	args["key"] = arg0
+	return args, nil
+}
+func (ec *executionContext) field_Mutation_refreshUpcomingRelease_argsKey(
+	ctx context.Context,
+	rawArgs map[string]any,
+) (string, error) {
+	if _, ok := rawArgs["key"]; !ok {
+		var zeroVal string
+		return zeroVal, nil
+	}
+
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("key"))
+	if tmp, ok := rawArgs["key"]; ok {
+		return ec.unmarshalNID2string(ctx, tmp)
+	}
+
+	var zeroVal string
 	return zeroVal, nil
 }
 
@@ -10921,6 +11242,34 @@ func (ec *executionContext) field_Query_task_argsID(
 	}
 
 	var zeroVal string
+	return zeroVal, nil
+}
+
+func (ec *executionContext) field_Query_upcomingReleases_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := ec.field_Query_upcomingReleases_argsInput(ctx, rawArgs)
+	if err != nil {
+		return nil, err
+	}
+	args["input"] = arg0
+	return args, nil
+}
+func (ec *executionContext) field_Query_upcomingReleases_argsInput(
+	ctx context.Context,
+	rawArgs map[string]any,
+) (model.UpcomingReleaseQueryInput, error) {
+	if _, ok := rawArgs["input"]; !ok {
+		var zeroVal model.UpcomingReleaseQueryInput
+		return zeroVal, nil
+	}
+
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
+	if tmp, ok := rawArgs["input"]; ok {
+		return ec.unmarshalNUpcomingReleaseQueryInput2githubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐUpcomingReleaseQueryInput(ctx, tmp)
+	}
+
+	var zeroVal model.UpcomingReleaseQueryInput
 	return zeroVal, nil
 }
 
@@ -25553,6 +25902,85 @@ func (ec *executionContext) fieldContext_Mutation_startSubscriptionCheck(ctx con
 	return fc, nil
 }
 
+func (ec *executionContext) _Mutation_refreshUpcomingRelease(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Mutation_refreshUpcomingRelease(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().RefreshUpcomingRelease(rctx, fc.Args["key"].(string))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*model.UpcomingRelease)
+	fc.Result = res
+	return ec.marshalNUpcomingRelease2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐUpcomingRelease(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Mutation_refreshUpcomingRelease(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "key":
+				return ec.fieldContext_UpcomingRelease_key(ctx, field)
+			case "code":
+				return ec.fieldContext_UpcomingRelease_code(ctx, field)
+			case "title":
+				return ec.fieldContext_UpcomingRelease_title(ctx, field)
+			case "date":
+				return ec.fieldContext_UpcomingRelease_date(ctx, field)
+			case "imageUrl":
+				return ec.fieldContext_UpcomingRelease_imageUrl(ctx, field)
+			case "sourceUrl":
+				return ec.fieldContext_UpcomingRelease_sourceUrl(ctx, field)
+			case "state":
+				return ec.fieldContext_UpcomingRelease_state(ctx, field)
+			case "decision":
+				return ec.fieldContext_UpcomingRelease_decision(ctx, field)
+			case "errorCode":
+				return ec.fieldContext_UpcomingRelease_errorCode(ctx, field)
+			case "metadataCheckedAt":
+				return ec.fieldContext_UpcomingRelease_metadataCheckedAt(ctx, field)
+			case "performers":
+				return ec.fieldContext_UpcomingRelease_performers(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type UpcomingRelease", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_refreshUpcomingRelease_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _PerformerBatchPayload_batchId(ctx context.Context, field graphql.CollectedField, obj *model.PerformerBatchPayload) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_PerformerBatchPayload_batchId(ctx, field)
 	if err != nil {
@@ -30974,6 +31402,83 @@ func (ec *executionContext) fieldContext_Query_homeTaskSnapshot(_ context.Contex
 	return fc, nil
 }
 
+func (ec *executionContext) _Query_upcomingReleases(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Query_upcomingReleases(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Query().UpcomingReleases(rctx, fc.Args["input"].(model.UpcomingReleaseQueryInput))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*model.UpcomingReleaseConnection)
+	fc.Result = res
+	return ec.marshalNUpcomingReleaseConnection2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐUpcomingReleaseConnection(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Query_upcomingReleases(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "items":
+				return ec.fieldContext_UpcomingReleaseConnection_items(ctx, field)
+			case "performers":
+				return ec.fieldContext_UpcomingReleaseConnection_performers(ctx, field)
+			case "totalCount":
+				return ec.fieldContext_UpcomingReleaseConnection_totalCount(ctx, field)
+			case "page":
+				return ec.fieldContext_UpcomingReleaseConnection_page(ctx, field)
+			case "pageSize":
+				return ec.fieldContext_UpcomingReleaseConnection_pageSize(ctx, field)
+			case "totalPages":
+				return ec.fieldContext_UpcomingReleaseConnection_totalPages(ctx, field)
+			case "subscribedCount":
+				return ec.fieldContext_UpcomingReleaseConnection_subscribedCount(ctx, field)
+			case "automatic":
+				return ec.fieldContext_UpcomingReleaseConnection_automatic(ctx, field)
+			case "timezone":
+				return ec.fieldContext_UpcomingReleaseConnection_timezone(ctx, field)
+			case "today":
+				return ec.fieldContext_UpcomingReleaseConnection_today(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type UpcomingReleaseConnection", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Query_upcomingReleases_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _Query___type(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_Query___type(ctx, field)
 	if err != nil {
@@ -34033,6 +34538,10 @@ func (ec *executionContext) fieldContext_Settings_system(_ context.Context, fiel
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			switch field.Name {
+			case "releaseTimezone":
+				return ec.fieldContext_SystemSettings_releaseTimezone(ctx, field)
+			case "effectiveReleaseTimezone":
+				return ec.fieldContext_SystemSettings_effectiveReleaseTimezone(ctx, field)
 			case "language":
 				return ec.fieldContext_SystemSettings_language(ctx, field)
 			case "developerMode":
@@ -38515,6 +39024,47 @@ func (ec *executionContext) fieldContext_StashPerformerScene_mojiTask(_ context.
 	return fc, nil
 }
 
+func (ec *executionContext) _StashPerformerScene_upcomingState(ctx context.Context, field graphql.CollectedField, obj *model.StashPerformerScene) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_StashPerformerScene_upcomingState(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.UpcomingState, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*string)
+	fc.Result = res
+	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_StashPerformerScene_upcomingState(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "StashPerformerScene",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _StashPerformerSceneConnection_items(ctx context.Context, field graphql.CollectedField, obj *model.StashPerformerSceneConnection) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_StashPerformerSceneConnection_items(ctx, field)
 	if err != nil {
@@ -38598,6 +39148,8 @@ func (ec *executionContext) fieldContext_StashPerformerSceneConnection_items(_ c
 				return ec.fieldContext_StashPerformerScene_stashIds(ctx, field)
 			case "mojiTask":
 				return ec.fieldContext_StashPerformerScene_mojiTask(ctx, field)
+			case "upcomingState":
+				return ec.fieldContext_StashPerformerScene_upcomingState(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type StashPerformerScene", field.Name)
 		},
@@ -42074,6 +42626,94 @@ func (ec *executionContext) fieldContext_SubscriptionReleasePolicy_releaseDateRa
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("field of type SubscriptionReleaseDateRange does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _SystemSettings_releaseTimezone(ctx context.Context, field graphql.CollectedField, obj *model.SystemSettings) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_SystemSettings_releaseTimezone(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.ReleaseTimezone, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_SystemSettings_releaseTimezone(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "SystemSettings",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _SystemSettings_effectiveReleaseTimezone(ctx context.Context, field graphql.CollectedField, obj *model.SystemSettings) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_SystemSettings_effectiveReleaseTimezone(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.EffectiveReleaseTimezone, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_SystemSettings_effectiveReleaseTimezone(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "SystemSettings",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
 		},
 	}
 	return fc, nil
@@ -48737,6 +49377,1054 @@ func (ec *executionContext) fieldContext_TransferIngestSettings_action(_ context
 	return fc, nil
 }
 
+func (ec *executionContext) _UpcomingPerformer_id(ctx context.Context, field graphql.CollectedField, obj *model.UpcomingPerformer) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_UpcomingPerformer_id(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.ID, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNID2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_UpcomingPerformer_id(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "UpcomingPerformer",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type ID does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _UpcomingPerformer_name(ctx context.Context, field graphql.CollectedField, obj *model.UpcomingPerformer) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_UpcomingPerformer_name(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Name, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_UpcomingPerformer_name(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "UpcomingPerformer",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _UpcomingRelease_key(ctx context.Context, field graphql.CollectedField, obj *model.UpcomingRelease) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_UpcomingRelease_key(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Key, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNID2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_UpcomingRelease_key(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "UpcomingRelease",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type ID does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _UpcomingRelease_code(ctx context.Context, field graphql.CollectedField, obj *model.UpcomingRelease) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_UpcomingRelease_code(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Code, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_UpcomingRelease_code(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "UpcomingRelease",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _UpcomingRelease_title(ctx context.Context, field graphql.CollectedField, obj *model.UpcomingRelease) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_UpcomingRelease_title(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Title, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_UpcomingRelease_title(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "UpcomingRelease",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _UpcomingRelease_date(ctx context.Context, field graphql.CollectedField, obj *model.UpcomingRelease) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_UpcomingRelease_date(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Date, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_UpcomingRelease_date(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "UpcomingRelease",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _UpcomingRelease_imageUrl(ctx context.Context, field graphql.CollectedField, obj *model.UpcomingRelease) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_UpcomingRelease_imageUrl(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.ImageURL, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_UpcomingRelease_imageUrl(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "UpcomingRelease",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _UpcomingRelease_sourceUrl(ctx context.Context, field graphql.CollectedField, obj *model.UpcomingRelease) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_UpcomingRelease_sourceUrl(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.SourceURL, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_UpcomingRelease_sourceUrl(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "UpcomingRelease",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _UpcomingRelease_state(ctx context.Context, field graphql.CollectedField, obj *model.UpcomingRelease) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_UpcomingRelease_state(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.State, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_UpcomingRelease_state(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "UpcomingRelease",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _UpcomingRelease_decision(ctx context.Context, field graphql.CollectedField, obj *model.UpcomingRelease) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_UpcomingRelease_decision(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Decision, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_UpcomingRelease_decision(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "UpcomingRelease",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _UpcomingRelease_errorCode(ctx context.Context, field graphql.CollectedField, obj *model.UpcomingRelease) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_UpcomingRelease_errorCode(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.ErrorCode, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_UpcomingRelease_errorCode(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "UpcomingRelease",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _UpcomingRelease_metadataCheckedAt(ctx context.Context, field graphql.CollectedField, obj *model.UpcomingRelease) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_UpcomingRelease_metadataCheckedAt(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.MetadataCheckedAt, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_UpcomingRelease_metadataCheckedAt(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "UpcomingRelease",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _UpcomingRelease_performers(ctx context.Context, field graphql.CollectedField, obj *model.UpcomingRelease) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_UpcomingRelease_performers(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Performers, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]*model.UpcomingPerformer)
+	fc.Result = res
+	return ec.marshalNUpcomingPerformer2ᚕᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐUpcomingPerformerᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_UpcomingRelease_performers(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "UpcomingRelease",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_UpcomingPerformer_id(ctx, field)
+			case "name":
+				return ec.fieldContext_UpcomingPerformer_name(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type UpcomingPerformer", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _UpcomingReleaseConnection_items(ctx context.Context, field graphql.CollectedField, obj *model.UpcomingReleaseConnection) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_UpcomingReleaseConnection_items(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Items, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]*model.UpcomingRelease)
+	fc.Result = res
+	return ec.marshalNUpcomingRelease2ᚕᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐUpcomingReleaseᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_UpcomingReleaseConnection_items(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "UpcomingReleaseConnection",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "key":
+				return ec.fieldContext_UpcomingRelease_key(ctx, field)
+			case "code":
+				return ec.fieldContext_UpcomingRelease_code(ctx, field)
+			case "title":
+				return ec.fieldContext_UpcomingRelease_title(ctx, field)
+			case "date":
+				return ec.fieldContext_UpcomingRelease_date(ctx, field)
+			case "imageUrl":
+				return ec.fieldContext_UpcomingRelease_imageUrl(ctx, field)
+			case "sourceUrl":
+				return ec.fieldContext_UpcomingRelease_sourceUrl(ctx, field)
+			case "state":
+				return ec.fieldContext_UpcomingRelease_state(ctx, field)
+			case "decision":
+				return ec.fieldContext_UpcomingRelease_decision(ctx, field)
+			case "errorCode":
+				return ec.fieldContext_UpcomingRelease_errorCode(ctx, field)
+			case "metadataCheckedAt":
+				return ec.fieldContext_UpcomingRelease_metadataCheckedAt(ctx, field)
+			case "performers":
+				return ec.fieldContext_UpcomingRelease_performers(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type UpcomingRelease", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _UpcomingReleaseConnection_performers(ctx context.Context, field graphql.CollectedField, obj *model.UpcomingReleaseConnection) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_UpcomingReleaseConnection_performers(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Performers, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]*model.UpcomingPerformer)
+	fc.Result = res
+	return ec.marshalNUpcomingPerformer2ᚕᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐUpcomingPerformerᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_UpcomingReleaseConnection_performers(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "UpcomingReleaseConnection",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_UpcomingPerformer_id(ctx, field)
+			case "name":
+				return ec.fieldContext_UpcomingPerformer_name(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type UpcomingPerformer", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _UpcomingReleaseConnection_totalCount(ctx context.Context, field graphql.CollectedField, obj *model.UpcomingReleaseConnection) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_UpcomingReleaseConnection_totalCount(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.TotalCount, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int)
+	fc.Result = res
+	return ec.marshalNInt2int(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_UpcomingReleaseConnection_totalCount(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "UpcomingReleaseConnection",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _UpcomingReleaseConnection_page(ctx context.Context, field graphql.CollectedField, obj *model.UpcomingReleaseConnection) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_UpcomingReleaseConnection_page(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Page, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int)
+	fc.Result = res
+	return ec.marshalNInt2int(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_UpcomingReleaseConnection_page(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "UpcomingReleaseConnection",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _UpcomingReleaseConnection_pageSize(ctx context.Context, field graphql.CollectedField, obj *model.UpcomingReleaseConnection) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_UpcomingReleaseConnection_pageSize(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.PageSize, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int)
+	fc.Result = res
+	return ec.marshalNInt2int(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_UpcomingReleaseConnection_pageSize(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "UpcomingReleaseConnection",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _UpcomingReleaseConnection_totalPages(ctx context.Context, field graphql.CollectedField, obj *model.UpcomingReleaseConnection) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_UpcomingReleaseConnection_totalPages(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.TotalPages, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int)
+	fc.Result = res
+	return ec.marshalNInt2int(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_UpcomingReleaseConnection_totalPages(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "UpcomingReleaseConnection",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _UpcomingReleaseConnection_subscribedCount(ctx context.Context, field graphql.CollectedField, obj *model.UpcomingReleaseConnection) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_UpcomingReleaseConnection_subscribedCount(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.SubscribedCount, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int)
+	fc.Result = res
+	return ec.marshalNInt2int(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_UpcomingReleaseConnection_subscribedCount(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "UpcomingReleaseConnection",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _UpcomingReleaseConnection_automatic(ctx context.Context, field graphql.CollectedField, obj *model.UpcomingReleaseConnection) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_UpcomingReleaseConnection_automatic(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Automatic, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(bool)
+	fc.Result = res
+	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_UpcomingReleaseConnection_automatic(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "UpcomingReleaseConnection",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _UpcomingReleaseConnection_timezone(ctx context.Context, field graphql.CollectedField, obj *model.UpcomingReleaseConnection) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_UpcomingReleaseConnection_timezone(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Timezone, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_UpcomingReleaseConnection_timezone(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "UpcomingReleaseConnection",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _UpcomingReleaseConnection_today(ctx context.Context, field graphql.CollectedField, obj *model.UpcomingReleaseConnection) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_UpcomingReleaseConnection_today(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Today, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_UpcomingReleaseConnection_today(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "UpcomingReleaseConnection",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) ___Directive_name(ctx context.Context, field graphql.CollectedField, obj *introspection.Directive) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext___Directive_name(ctx, field)
 	if err != nil {
@@ -52662,13 +54350,20 @@ func (ec *executionContext) unmarshalInputSystemPatchInput(ctx context.Context, 
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"language", "developer_mode", "image_cache"}
+	fieldsInOrder := [...]string{"release_timezone", "language", "developer_mode", "image_cache"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
 			continue
 		}
 		switch k {
+		case "release_timezone":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("release_timezone"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ReleaseTimezone = data
 		case "language":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("language"))
 			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
@@ -53370,6 +55065,68 @@ func (ec *executionContext) unmarshalInputTransferPatchInput(ctx context.Context
 				return it, err
 			}
 			it.Action = data
+		}
+	}
+
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputUpcomingReleaseQueryInput(ctx context.Context, obj any) (model.UpcomingReleaseQueryInput, error) {
+	var it model.UpcomingReleaseQueryInput
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	if _, present := asMap["page"]; !present {
+		asMap["page"] = 1
+	}
+	if _, present := asMap["pageSize"]; !present {
+		asMap["pageSize"] = 24
+	}
+
+	fieldsInOrder := [...]string{"search", "performerId", "days", "page", "pageSize"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "search":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("search"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Search = data
+		case "performerId":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("performerId"))
+			data, err := ec.unmarshalOID2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.PerformerID = data
+		case "days":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("days"))
+			data, err := ec.unmarshalOInt2ᚖint(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Days = data
+		case "page":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("page"))
+			data, err := ec.unmarshalOInt2ᚖint(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Page = data
+		case "pageSize":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("pageSize"))
+			data, err := ec.unmarshalOInt2ᚖint(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.PageSize = data
 		}
 	}
 
@@ -56367,6 +58124,13 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
+		case "refreshUpcomingRelease":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_refreshUpcomingRelease(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -57929,6 +59693,28 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 			}
 
 			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
+		case "upcomingReleases":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_upcomingReleases(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			rrm := func(ctx context.Context) graphql.Marshaler {
+				return ec.OperationContext.RootResolverMiddleware(ctx,
+					func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
 		case "__type":
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
 				return ec._Query___type(ctx, field)
@@ -59411,6 +61197,8 @@ func (ec *executionContext) _StashPerformerScene(ctx context.Context, sel ast.Se
 			}
 		case "mojiTask":
 			out.Values[i] = ec._StashPerformerScene_mojiTask(ctx, field, obj)
+		case "upcomingState":
+			out.Values[i] = ec._StashPerformerScene_upcomingState(ctx, field, obj)
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -60119,6 +61907,16 @@ func (ec *executionContext) _SystemSettings(ctx context.Context, sel ast.Selecti
 		switch field.Name {
 		case "__typename":
 			out.Values[i] = graphql.MarshalString("SystemSettings")
+		case "releaseTimezone":
+			out.Values[i] = ec._SystemSettings_releaseTimezone(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "effectiveReleaseTimezone":
+			out.Values[i] = ec._SystemSettings_effectiveReleaseTimezone(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
 		case "language":
 			out.Values[i] = ec._SystemSettings_language(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
@@ -61295,6 +63093,223 @@ func (ec *executionContext) _TransferIngestSettings(ctx context.Context, sel ast
 			out.Values[i] = graphql.MarshalString("TransferIngestSettings")
 		case "action":
 			out.Values[i] = ec._TransferIngestSettings_action(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var upcomingPerformerImplementors = []string{"UpcomingPerformer"}
+
+func (ec *executionContext) _UpcomingPerformer(ctx context.Context, sel ast.SelectionSet, obj *model.UpcomingPerformer) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, upcomingPerformerImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("UpcomingPerformer")
+		case "id":
+			out.Values[i] = ec._UpcomingPerformer_id(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "name":
+			out.Values[i] = ec._UpcomingPerformer_name(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var upcomingReleaseImplementors = []string{"UpcomingRelease"}
+
+func (ec *executionContext) _UpcomingRelease(ctx context.Context, sel ast.SelectionSet, obj *model.UpcomingRelease) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, upcomingReleaseImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("UpcomingRelease")
+		case "key":
+			out.Values[i] = ec._UpcomingRelease_key(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "code":
+			out.Values[i] = ec._UpcomingRelease_code(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "title":
+			out.Values[i] = ec._UpcomingRelease_title(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "date":
+			out.Values[i] = ec._UpcomingRelease_date(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "imageUrl":
+			out.Values[i] = ec._UpcomingRelease_imageUrl(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "sourceUrl":
+			out.Values[i] = ec._UpcomingRelease_sourceUrl(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "state":
+			out.Values[i] = ec._UpcomingRelease_state(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "decision":
+			out.Values[i] = ec._UpcomingRelease_decision(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "errorCode":
+			out.Values[i] = ec._UpcomingRelease_errorCode(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "metadataCheckedAt":
+			out.Values[i] = ec._UpcomingRelease_metadataCheckedAt(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "performers":
+			out.Values[i] = ec._UpcomingRelease_performers(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var upcomingReleaseConnectionImplementors = []string{"UpcomingReleaseConnection"}
+
+func (ec *executionContext) _UpcomingReleaseConnection(ctx context.Context, sel ast.SelectionSet, obj *model.UpcomingReleaseConnection) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, upcomingReleaseConnectionImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("UpcomingReleaseConnection")
+		case "items":
+			out.Values[i] = ec._UpcomingReleaseConnection_items(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "performers":
+			out.Values[i] = ec._UpcomingReleaseConnection_performers(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "totalCount":
+			out.Values[i] = ec._UpcomingReleaseConnection_totalCount(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "page":
+			out.Values[i] = ec._UpcomingReleaseConnection_page(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "pageSize":
+			out.Values[i] = ec._UpcomingReleaseConnection_pageSize(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "totalPages":
+			out.Values[i] = ec._UpcomingReleaseConnection_totalPages(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "subscribedCount":
+			out.Values[i] = ec._UpcomingReleaseConnection_subscribedCount(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "automatic":
+			out.Values[i] = ec._UpcomingReleaseConnection_automatic(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "timezone":
+			out.Values[i] = ec._UpcomingReleaseConnection_timezone(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "today":
+			out.Values[i] = ec._UpcomingReleaseConnection_today(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
@@ -64939,6 +66954,137 @@ func (ec *executionContext) marshalNTransferIngestSettings2ᚖgithubᚗcomᚋleo
 func (ec *executionContext) unmarshalNTransferIngestSettingsInput2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐTransferIngestSettingsInput(ctx context.Context, v any) (*model.TransferIngestSettingsInput, error) {
 	res, err := ec.unmarshalInputTransferIngestSettingsInput(ctx, v)
 	return &res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNUpcomingPerformer2ᚕᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐUpcomingPerformerᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.UpcomingPerformer) graphql.Marshaler {
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalNUpcomingPerformer2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐUpcomingPerformer(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
+}
+
+func (ec *executionContext) marshalNUpcomingPerformer2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐUpcomingPerformer(ctx context.Context, sel ast.SelectionSet, v *model.UpcomingPerformer) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._UpcomingPerformer(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNUpcomingRelease2githubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐUpcomingRelease(ctx context.Context, sel ast.SelectionSet, v model.UpcomingRelease) graphql.Marshaler {
+	return ec._UpcomingRelease(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNUpcomingRelease2ᚕᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐUpcomingReleaseᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.UpcomingRelease) graphql.Marshaler {
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalNUpcomingRelease2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐUpcomingRelease(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
+}
+
+func (ec *executionContext) marshalNUpcomingRelease2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐUpcomingRelease(ctx context.Context, sel ast.SelectionSet, v *model.UpcomingRelease) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._UpcomingRelease(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNUpcomingReleaseConnection2githubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐUpcomingReleaseConnection(ctx context.Context, sel ast.SelectionSet, v model.UpcomingReleaseConnection) graphql.Marshaler {
+	return ec._UpcomingReleaseConnection(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNUpcomingReleaseConnection2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐUpcomingReleaseConnection(ctx context.Context, sel ast.SelectionSet, v *model.UpcomingReleaseConnection) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._UpcomingReleaseConnection(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalNUpcomingReleaseQueryInput2githubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐUpcomingReleaseQueryInput(ctx context.Context, v any) (model.UpcomingReleaseQueryInput, error) {
+	res, err := ec.unmarshalInputUpcomingReleaseQueryInput(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
 }
 
 func (ec *executionContext) unmarshalNUpdateAutomationSettingsInput2githubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐUpdateAutomationSettingsInput(ctx context.Context, v any) (model.UpdateAutomationSettingsInput, error) {

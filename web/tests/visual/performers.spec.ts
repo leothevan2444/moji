@@ -268,3 +268,32 @@ test.describe("manual checks for unsubscribed performers", () => {
     }
   }
 });
+
+for (const locale of ["zh-CN", "en"] as const) {
+ for (const theme of ["light", "dark"] as const) {
+  test.describe(`${locale} ${theme} persisted upcoming cards`, () => {
+   test.use({graphqlOverrides:{...graphqlOverrides,stashPerformerProfile:graphqlOverrides.stashPerformerDetail,
+    stashPerformerScenes:(args:{input:{page?:number}})=>{
+     const connection=graphqlOverrides.stashPerformerScenes(args);
+     return {...connection,items:connection.items.map((scene,index)=>({...scene,upcomingState:index===3?"WAITING":index===4?"UNCONFIRMED":index===5?"HANDOFF_PENDING":null,date:index>=3&&index<=5?"2026-11-12":scene.date}))};
+    }
+   }});
+   test("state replaces creation and is excluded from page selection",async({page},info)=>{
+    await page.addInitScript(({locale,theme})=>{localStorage.setItem("moji:locale",locale);localStorage.setItem("moji:theme",theme);},{locale,theme});
+    await page.goto("/performers/actor-0");
+    const cards=page.locator(".performer-scene-card");await expect(cards).toHaveCount(24);
+    for (const [index,label] of [[3,locale==="en"?"Upcoming":"待发行"],[4,locale==="en"?"Unconfirmed":"待确认"],[5,locale==="en"?"Processing release":"发行处理中"]] as const) {
+     await expect(cards.nth(index).locator(".performer-scene-card__business-state")).toHaveText(label);
+     await expect(cards.nth(index).locator(".performer-scene-card__create-task")).toHaveCount(0);
+    }
+    await page.getByRole("button",{name:locale==="en"?"Select scenes":"多选作品",exact:true}).click();
+    await expect(page.getByRole("button",{name:locale==="en"?"Select this page (18)":"全选本页（18）",exact:true})).toBeVisible();
+    await expect(cards.nth(3).locator(".performer-scene-card__selector")).toHaveCount(0);
+    await cards.nth(3).click();await expect(cards.nth(3)).not.toHaveClass(/is-selected/);
+    await expect.poll(()=>page.evaluate(()=>document.documentElement.scrollWidth<=document.documentElement.clientWidth)).toBe(true);
+    await cards.nth(3).screenshot({path:info.outputPath(`${locale}-${theme}-performer-upcoming.png`)});
+    await page.reload();await expect(cards.nth(3).locator(".performer-scene-card__business-state")).toHaveText(locale==="en"?"Upcoming":"待发行");
+   });
+  });
+ }
+}

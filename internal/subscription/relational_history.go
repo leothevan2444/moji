@@ -12,78 +12,79 @@ import (
 )
 
 func (s *SQLiteStore) putTypedReviews(ctx context.Context, records []ReleaseReview) error {
-	return s.withWrite(ctx, func(tx *sqlx.Tx) error {
-		for _, record := range records {
-			raw, err := json.Marshal(record)
-			if err != nil {
-				return err
-			}
-			taskID, err := sanitizeReleaseTaskID(ctx, tx, record.Key, record.TaskID)
-			if err != nil {
-				return err
-			}
-			// A review must never accidentally inherit an unrelated release association.
-			if record.TaskID == "" {
-				taskID = nil
-			}
-			var previous sql.NullString
-			var previousVersion int
-			err = tx.QueryRowContext(ctx, "SELECT record_json,payload_version FROM subscription_release_reviews WHERE release_key=?", record.Key).Scan(&previous, &previousVersion)
-			if err == nil && previousVersion != 1 {
-				return errors.New("subscription: unsupported review payload version")
-			}
-			if err != nil && !errors.Is(err, sql.ErrNoRows) {
-				return err
-			}
-			if previous.Valid && previous.String == string(raw) {
-				continue
-			}
-			_, err = tx.ExecContext(ctx, `INSERT INTO subscription_release_reviews(release_key,status,code,title,source,release_date,task_id,decision,reviewed_at,seen_at,record_json)
+	return s.withWrite(ctx, func(tx *sqlx.Tx) error { return s.putTypedReviewsTx(ctx, tx, records) })
+}
+func (s *SQLiteStore) putTypedReviewsTx(ctx context.Context, tx *sqlx.Tx, records []ReleaseReview) error {
+	for _, record := range records {
+		raw, err := json.Marshal(record)
+		if err != nil {
+			return err
+		}
+		taskID, err := sanitizeReleaseTaskID(ctx, tx, record.Key, record.TaskID)
+		if err != nil {
+			return err
+		}
+		// A review must never accidentally inherit an unrelated release association.
+		if record.TaskID == "" {
+			taskID = nil
+		}
+		var previous sql.NullString
+		var previousVersion int
+		err = tx.QueryRowContext(ctx, "SELECT record_json,payload_version FROM subscription_release_reviews WHERE release_key=?", record.Key).Scan(&previous, &previousVersion)
+		if err == nil && previousVersion != 1 {
+			return errors.New("subscription: unsupported review payload version")
+		}
+		if err != nil && !errors.Is(err, sql.ErrNoRows) {
+			return err
+		}
+		if previous.Valid && previous.String == string(raw) {
+			continue
+		}
+		_, err = tx.ExecContext(ctx, `INSERT INTO subscription_release_reviews(release_key,status,code,title,source,release_date,task_id,decision,reviewed_at,seen_at,record_json)
    VALUES(?,?,?,?,?,?,?,?,?,?,?) ON CONFLICT(release_key) DO UPDATE SET status=excluded.status,code=excluded.code,title=excluded.title,source=excluded.source,release_date=excluded.release_date,task_id=excluded.task_id,decision=excluded.decision,reviewed_at=excluded.reviewed_at,seen_at=excluded.seen_at,record_json=excluded.record_json`,
-				record.Key, record.Status, record.Code, record.Title, record.Source, nullableStringParam(record.Date), taskID, record.Decision, formatOptionalTimestamp(record.ReviewedAt), formatTimestamp(record.SeenAt), string(raw))
-			if err != nil {
+			record.Key, record.Status, record.Code, record.Title, record.Source, nullableStringParam(record.Date), taskID, record.Decision, formatOptionalTimestamp(record.ReviewedAt), formatTimestamp(record.SeenAt), string(raw))
+		if err != nil {
+			return err
+		}
+		// The performer relation survives unsubscribing: no FK to subscription state.
+		var existing []string
+		if err := tx.SelectContext(ctx, &existing, "SELECT performer_id FROM subscription_review_performers WHERE release_key=?", record.Key); err != nil {
+			return err
+		}
+		retained := map[string]bool{}
+		for position, performer := range record.Performers {
+			if retained[performer.ID] {
+				return fmt.Errorf("subscription: duplicate review performer %q", performer.ID)
+			}
+			retained[performer.ID] = true
+			if _, err := tx.ExecContext(ctx, `INSERT INTO subscription_review_performers(release_key,performer_id,name,position) VALUES(?,?,?,?) ON CONFLICT(release_key,performer_id) DO UPDATE SET name=excluded.name,position=excluded.position WHERE name IS NOT excluded.name OR position IS NOT excluded.position`, record.Key, performer.ID, performer.Name, position); err != nil {
 				return err
 			}
-			// The performer relation survives unsubscribing: no FK to subscription state.
-			var existing []string
-			if err := tx.SelectContext(ctx, &existing, "SELECT performer_id FROM subscription_review_performers WHERE release_key=?", record.Key); err != nil {
-				return err
-			}
-			retained := map[string]bool{}
-			for position, performer := range record.Performers {
-				if retained[performer.ID] {
-					return fmt.Errorf("subscription: duplicate review performer %q", performer.ID)
-				}
-				retained[performer.ID] = true
-				if _, err := tx.ExecContext(ctx, `INSERT INTO subscription_review_performers(release_key,performer_id,name,position) VALUES(?,?,?,?) ON CONFLICT(release_key,performer_id) DO UPDATE SET name=excluded.name,position=excluded.position WHERE name IS NOT excluded.name OR position IS NOT excluded.position`, record.Key, performer.ID, performer.Name, position); err != nil {
-					return err
-				}
-			}
-			for _, id := range existing {
-				if !retained[id] {
-					if _, err := tx.ExecContext(ctx, "DELETE FROM subscription_review_performers WHERE release_key=? AND performer_id=?", record.Key, id); err != nil {
-						return err
-					}
-				}
-			}
-			// Decisions and their durable audit entry commit together.
-			changedDecision := true
-			if previous.Valid {
-				var old ReleaseReview
-				if err := json.Unmarshal([]byte(previous.String), &old); err != nil {
-					return err
-				}
-				changedDecision = old.Status != record.Status || old.Decision != record.Decision || !equalReviewTime(old.ReviewedAt, record.ReviewedAt)
-			}
-			if changedDecision {
-				_, err = tx.ExecContext(ctx, `INSERT INTO audit_events(subject_id,event_type,level,message,payload_json,created_at) VALUES(?,'release-review','info','release review decision',?,?)`, record.Key, string(raw), formatTimestamp(time.Now().UTC()))
-				if err != nil {
+		}
+		for _, id := range existing {
+			if !retained[id] {
+				if _, err := tx.ExecContext(ctx, "DELETE FROM subscription_review_performers WHERE release_key=? AND performer_id=?", record.Key, id); err != nil {
 					return err
 				}
 			}
 		}
-		return nil
-	})
+		// Decisions and their durable audit entry commit together.
+		changedDecision := true
+		if previous.Valid {
+			var old ReleaseReview
+			if err := json.Unmarshal([]byte(previous.String), &old); err != nil {
+				return err
+			}
+			changedDecision = old.Status != record.Status || old.Decision != record.Decision || !equalReviewTime(old.ReviewedAt, record.ReviewedAt)
+		}
+		if changedDecision {
+			_, err = tx.ExecContext(ctx, `INSERT INTO audit_events(subject_id,event_type,level,message,payload_json,created_at) VALUES(?,'release-review','info','release review decision',?,?)`, record.Key, string(raw), formatTimestamp(time.Now().UTC()))
+			if err != nil {
+				return err
+			}
+		}
+	}
+	return nil
 }
 func equalReviewTime(a, b *time.Time) bool {
 	if a == nil || b == nil {

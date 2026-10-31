@@ -11,6 +11,7 @@ export type SceneSnapshotSource = {
   code?: string | null;
   title?: string | null;
   inLibrary: boolean;
+  upcomingState?: string | null;
 };
 
 const emptySelection: PerformerSceneSelectionMap = new Map();
@@ -18,13 +19,13 @@ const emptySelection: PerformerSceneSelectionMap = new Map();
 export function togglePerformerSceneSelection(current: PerformerSceneSelectionMap, scene: SceneSnapshotSource) {
   const next = new Map(current);
   if (next.has(scene.key)) next.delete(scene.key);
-  else next.set(scene.key, scene.key);
+  else if (!scene.upcomingState) next.set(scene.key, scene.key);
   return next;
 }
 
 export function addPerformerSceneSelections(current: PerformerSceneSelectionMap, scenes: SceneSnapshotSource[]) {
   const next = new Map(current);
-  for (const scene of scenes) next.set(scene.key, scene.key);
+  for (const scene of scenes) if (!scene.upcomingState) next.set(scene.key, scene.key);
   return next;
 }
 
@@ -42,6 +43,17 @@ export function usePerformerSceneSelection(performerId: string | null, visibleSc
   const selected = state.performerId === performerId ? state.selected : emptySelection;
 
   useEffect(() => setState({ performerId, selected: new Map() }), [performerId]);
+
+  // Drop newly deferred scenes that were selected before the subscription event.
+  // Selections on other pages remain intact.
+  useEffect(() => {
+    const deferred = new Set(visibleScenes.filter(scene => scene.upcomingState).map(scene => scene.key));
+    if (!deferred.size) return;
+    setState(current => {
+      if (current.performerId !== performerId || ![...current.selected.keys()].some(key => deferred.has(key))) return current;
+      return { ...current, selected: new Map([...current.selected].filter(([key]) => !deferred.has(key))) };
+    });
+  }, [performerId, visibleScenes]);
 
   const update = (transform: (current: PerformerSceneSelectionMap) => PerformerSceneSelectionMap) => {
     setState((current) => ({

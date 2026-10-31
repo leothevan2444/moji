@@ -19,6 +19,7 @@ import (
 	"github.com/gorilla/websocket"
 	"github.com/leothevan2444/moji/internal/config"
 	"github.com/leothevan2444/moji/internal/performer"
+	"github.com/leothevan2444/moji/internal/releasedate"
 	"github.com/leothevan2444/moji/internal/subscription"
 	"github.com/leothevan2444/moji/internal/taskruntime"
 	"github.com/vektah/gqlparser/v2/ast"
@@ -129,6 +130,8 @@ func classifyError(err error) string {
 		return "TORRENT_INGEST_ACTIVE"
 	case errors.Is(err, downloader.ErrUnsafeFiles):
 		return "TORRENT_FILES_PROTECTED"
+	case errors.Is(err, releasedate.ErrNotReleased):
+		return "RELEASE_NOT_AVAILABLE"
 	case errors.Is(err, taskruntime.ErrInvalidTorrentInput):
 		return "INVALID_TORRENT_INPUT"
 	case errors.Is(err, taskruntime.ErrSourcingUnavailable):

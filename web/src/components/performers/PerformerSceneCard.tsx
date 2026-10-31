@@ -1,6 +1,6 @@
 import { faArrowUpRightFromSquare } from "@fortawesome/free-solid-svg-icons/faArrowUpRightFromSquare";
 import { faCheck } from "@fortawesome/free-solid-svg-icons/faCheck";
-import { faFilm } from "@fortawesome/free-solid-svg-icons/faFilm";
+import { SceneArtwork } from "../common/SceneArtwork";
 import { faPlus } from "@fortawesome/free-solid-svg-icons/faPlus";
 import { faTags } from "@fortawesome/free-solid-svg-icons/faTags";
 import { faUsers } from "@fortawesome/free-solid-svg-icons/faUsers";
@@ -33,9 +33,9 @@ function performerSceneSourceLabel(scene: StashPerformerSceneEntry) {
 export function PerformerSceneCard({ scene, page }: { scene: StashPerformerSceneEntry; page: Pick<PerformersPageProps, "sceneSelectionMode" | "selectedSceneKeys" | "pendingSceneKeys" | "onToggleSceneSelection" | "onOpenTask" | "onQueueScene">; }) {
   const { t } = useTranslation();
   const { sceneSelectionMode, selectedSceneKeys, pendingSceneKeys, onToggleSceneSelection, onOpenTask, onQueueScene } = page;
-  const selected = sceneSelectionMode && selectedSceneKeys.includes(scene.key);
+  const selected = sceneSelectionMode && !scene.upcomingState && selectedSceneKeys.includes(scene.key);
   const pendingSingleQueue = pendingSceneKeys.includes(scene.key);
-  const selectable = sceneSelectionMode && !scene.inLibrary && !scene.mojiTask && !pendingSingleQueue;
+  const selectable = sceneSelectionMode && !scene.inLibrary && !scene.mojiTask && !scene.upcomingState && !pendingSingleQueue;
   return (
     <article
       key={scene.key}
@@ -45,19 +45,7 @@ export function PerformerSceneCard({ scene, page }: { scene: StashPerformerScene
       }}
     >
       <div className="performer-scene-card__media">
-        {scene.imageUrl ? (
-          <img
-            src={scene.imageUrl}
-            alt={scene.title || scene.code || "scene"}
-            loading="lazy"
-            onError={(event) => { event.currentTarget.style.display = "none"; }}
-            className="performer-scene-card__image"
-          />
-        ) : (
-          <div className="performer-scene-card__image-placeholder" aria-hidden="true">
-            <FontAwesomeIcon icon={faFilm} />
-          </div>
-        )}
+        <SceneArtwork src={scene.imageUrl} alt={scene.title || scene.code || "scene"} />
         <span
           className="performer-scene-card__source-badge"
           title={t("performerUi.source", { sources: scene.sourceLabels.join(" + ") })}
@@ -124,6 +112,10 @@ export function PerformerSceneCard({ scene, page }: { scene: StashPerformerScene
             >
               {performerSceneTaskLabel(scene.mojiTask)}
             </button>
+          ) : scene.upcomingState ? (
+            <span className={`status-chip performer-scene-card__business-state performer-scene-card__upcoming ${scene.upcomingState === "UNCONFIRMED" ? "tone-warn" : "tone-info"}`}>
+              {t(scene.upcomingState === "UNCONFIRMED" ? "upcoming.unconfirmed" : scene.upcomingState === "HANDOFF_PENDING" ? "performerUi.releaseProcessing" : "performerUi.upcoming")}
+            </span>
           ) : (
             <button
               type="button"

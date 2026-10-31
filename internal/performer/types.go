@@ -42,6 +42,7 @@ const (
 )
 
 type Scene struct {
+	UpcomingState                                string
 	Key                                          string
 	PrimarySource                                SceneSource
 	SourceSceneID, Title, Code, Date, StudioName string

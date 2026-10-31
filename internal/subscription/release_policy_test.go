@@ -53,6 +53,7 @@ func TestVRPolicyUsesOnlyCodeAndCannotRelaxOtherPolicies(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			target := &stashboxgraphql.PerformerFragment{ID: "p1", Name: "Actor"}
 			scene := releasePolicyScene("s1", target, target)
+			scene.Date = stringPointer("2026-01-01")
 			scene.Code, scene.Title = stringPointer(tc.code), stringPointer(tc.title)
 			scene.Tags = []*stashboxgraphql.TagFragment{{ID: "vr", Name: "VR"}}
 			policy := config.DefaultSubscriptionReleasePolicyConfig()

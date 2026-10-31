@@ -1,0 +1,12 @@
+query UpcomingReleases($input: UpcomingReleaseQueryInput!) {
+  upcomingReleases(input: $input) {
+    totalCount page pageSize totalPages subscribedCount automatic timezone today
+    performers { id name }
+    items { key code title date imageUrl sourceUrl state decision errorCode metadataCheckedAt performers { id name } }
+  }
+}
+mutation RefreshUpcomingRelease($key: ID!) {
+  refreshUpcomingRelease(key: $key) {
+    key code title date imageUrl sourceUrl state decision errorCode metadataCheckedAt performers { id name }
+  }
+}

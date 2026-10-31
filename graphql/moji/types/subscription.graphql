@@ -201,6 +201,7 @@ type StashPerformerScene {
   sourceLabels: [String!]!
   stashIds: [StashSceneID!]!
   mojiTask: PerformerSceneTask
+  upcomingState: String
 }
 
 type PerformerScenePerson {

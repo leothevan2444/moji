@@ -153,6 +153,7 @@ query StashPerformerScenes($id: ID!, $input: StashPerformerScenesInput!) {
         endpoint
         stashId
       }
+      upcomingState
       mojiTask {
         id
         stage

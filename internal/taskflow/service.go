@@ -4,7 +4,9 @@ import (
 	"context"
 	"errors"
 	"strings"
+	"time"
 
+	"github.com/leothevan2444/moji/internal/releasedate"
 	"github.com/leothevan2444/moji/internal/taskruntime"
 )
 
@@ -21,11 +23,13 @@ type DiscoveredSceneResolver interface {
 }
 
 type ResolvedScene struct {
+	Date  string
 	Code  string
 	Title string
 }
 
 type Service struct {
+	timezone                func() string
 	taskRuntime             TaskRuntime
 	discoveredSceneResolver DiscoveredSceneResolver
 }
@@ -136,6 +140,9 @@ func (s *Service) CreateFromDiscoveredSceneRef(ctx context.Context, input Create
 	if err != nil {
 		return nil, err
 	}
+	if err := releasedate.Check(resolved.Date, time.Now(), s.releaseTimezone()); err == releasedate.ErrNotReleased {
+		return nil, err
+	}
 	return s.CreateFromDiscoveredScene(ctx, CreateFromDiscoveredSceneInput{
 		Code:  resolved.Code,
 		Title: resolved.Title,
@@ -199,4 +206,12 @@ func (s *Service) ListReviewTasks(ctx context.Context) ([]*taskruntime.Task, err
 		return provider.ListReviewTasks(ctx)
 	}
 	return s.ListTasks(ctx)
+}
+
+func (s *Service) SetReleaseTimezone(provider func() string) { s.timezone = provider }
+func (s *Service) releaseTimezone() string {
+	if s.timezone != nil {
+		return s.timezone()
+	}
+	return releasedate.DefaultTimezone
 }

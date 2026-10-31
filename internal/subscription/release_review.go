@@ -3,6 +3,7 @@ package subscription
 import (
 	"context"
 	"errors"
+	"github.com/leothevan2444/moji/internal/releasedate"
 	"sort"
 	"strings"
 
@@ -291,11 +292,32 @@ func (s *Service) downloadReviewLocked(ctx context.Context, record *ReleaseRevie
 		record.Error = ""
 		return nil
 	}
+	if record.SceneID != "" {
+		client, ok := s.metadata.Get(strings.TrimPrefix(record.Source, "stash-box:"))
+		if !ok {
+			return errors.New("subscription: release metadata source unavailable")
+		}
+		scene, err := client.FindSceneByID(ctx, record.SceneID)
+		if err != nil {
+			return err
+		}
+		if scene == nil {
+			return errors.New("subscription: release metadata not found")
+		}
+		record.Date = stringValue(scene.Date)
+		if err := releasedate.Check(record.Date, s.now(), s.releaseTimezone()); err == releasedate.ErrNotReleased {
+			return err
+		}
+	}
 	return s.queueReviewTaskLocked(ctx, record, tasks)
 }
 
 // Both callers have checked library membership before requesting a task.
 func (s *Service) queueReviewTaskLocked(ctx context.Context, record *ReleaseReview, tasks map[string]*taskruntime.Task) error {
+	if err := releasedate.Check(record.Date, s.now(), s.releaseTimezone()); err == releasedate.ErrNotReleased {
+		return err
+	}
+
 	if strings.TrimSpace(record.Code) == "" {
 		return errors.New("subscription: release code is missing")
 	}

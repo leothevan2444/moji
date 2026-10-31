@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/leothevan2444/moji/internal/config"
+	"github.com/leothevan2444/moji/internal/releasedate"
 	stashboxgraphql "github.com/leothevan2444/moji/pkg/stashbox/graphql"
 )
 
@@ -53,6 +54,12 @@ func evaluateReleasePolicy(policy ReleasePolicyConfig, now time.Time, targetPerf
 			applyBehavior(&evaluation, policy.GroupBehavior, "group_behavior")
 		}
 		applyReleaseDateRange(&evaluation, policy.ReleaseDateRange, now, scene)
+	}
+	if evaluation.Decision == ReleaseDecisionDownloaded {
+		if err := releasedate.Check(stringValue(scene.Date), now, releasedate.DefaultTimezone); err == releasedate.ErrUnknown {
+			evaluation.Decision = ReleaseDecisionQueued
+			evaluation.DecisionReason = "release_date_unknown_review"
+		}
 	}
 	// VR is determined solely by the release code, independently of the scene's
 	// classification. It can restrict, but never relax, another policy decision.

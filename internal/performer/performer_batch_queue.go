@@ -5,8 +5,10 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/leothevan2444/moji/internal/logging"
+	"github.com/leothevan2444/moji/internal/releasedate"
 	"github.com/leothevan2444/moji/internal/taskruntime"
 	stashgraphql "github.com/leothevan2444/moji/pkg/stash/graphql"
 )
@@ -120,6 +122,13 @@ func (s *Service) queuePerformerSceneSelection(ctx context.Context, byKey map[st
 		}
 	}
 
+	zone := releasedate.DefaultTimezone
+	if s.releaseTimezone != nil {
+		zone = s.releaseTimezone()
+	}
+	if err := releasedate.Check(current.Date, time.Now(), zone); err == releasedate.ErrNotReleased {
+		return QueueSceneResult{Key: selection.Key, Status: QueueSceneStatusSkipped, ReasonCode: "RELEASE_NOT_AVAILABLE"}
+	}
 	resolvedCode := buildReleaseCode(current.Code, current.Title)
 	if resolvedCode == "" {
 		return QueueSceneResult{

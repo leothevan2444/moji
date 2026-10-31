@@ -84,7 +84,7 @@ export function PerformersPage(props: PerformersPageProps) {
   const { subscribedIDs: selectedSubscribedIds, unsubscribedIDs: selectedUnsubscribedIds } = performerBatchEligibility(selectedPerformerIds, subscribedPerformers.map((item) => item.performer.id));
   const hiddenSelectedPerformerCount = selectedPerformerIds.filter((id) => !stashPerformers.some((performer) => performer.id === id)).length;
   const currentPageKeys = performerScenes
-    .filter((scene) => !scene.inLibrary && !scene.mojiTask && !pendingSceneKeys.includes(scene.key))
+    .filter((scene) => !scene.inLibrary && !scene.mojiTask && !scene.upcomingState && !pendingSceneKeys.includes(scene.key))
     .map((scene) => scene.key);
 
   if (selectedPerformerId) {

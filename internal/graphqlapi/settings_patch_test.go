@@ -45,3 +45,12 @@ func TestPatchSettingsGraphQLDistinguishesOmissionFalseEmptyAndNull(t *testing.T
 		t.Fatal("empty patch accepted")
 	}
 }
+
+func TestSettingsPatchReleaseTimezone(t *testing.T) {
+	manual := "America/New_York"
+	value := settingsPatchValue(reflect.ValueOf(model.SettingsPatchInput{System: &model.SystemPatchInput{ReleaseTimezone: &manual}}))
+	patch := value.(map[string]any)
+	if patch["system"].(map[string]any)["release_timezone"] != manual {
+		t.Fatalf("timezone lost: %+v", patch)
+	}
+}

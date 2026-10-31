@@ -49,6 +49,7 @@ export const downloaderSnapshot = {
   };
 
 const rootValue = {
+ upcomingReleases: () => ({items:[],performers:[],totalCount:0,page:1,pageSize:24,totalPages:0,subscribedCount:2,automatic:true,timezone:"Asia/Shanghai",today:"2026-10-31"}),
   version: "0.0.0-visual",
   testServiceConnection: {code:"OK"},
   refreshDownloader: true,
@@ -102,7 +103,7 @@ const rootValue = {
       },
       torrentSelection: { enabled: false, inspectionCandidateLimit: 5, fastRules: [], torrentRules: [] },
     },
-    system: {
+    system: { releaseTimezone:"auto",effectiveReleaseTimezone:"Asia/Shanghai",
       developerMode: false,
       taskDeletePolicy: "KEEP_ONLY",
       imageCache: { enabled: true, maxSizeMb: 1024, retentionDays: 30 },

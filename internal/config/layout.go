@@ -2,6 +2,9 @@ package config
 
 import (
 	"fmt"
+	"time"
+	_ "time/tzdata"
+
 	"gopkg.in/yaml.v3"
 )
 
@@ -29,7 +32,7 @@ func (c *Config) UnmarshalYAML(node *yaml.Node) error {
 		if err := node.Decode((*plain)(c)); err != nil {
 			return err
 		}
-		return ValidateLanguage(c.System.Language)
+		return validateSystemCalendar(c.System)
 	}
 	if version.Version != 2 {
 		return fmt.Errorf("unsupported config_version: %d", version.Version)
@@ -69,7 +72,7 @@ func (c *Config) UnmarshalYAML(node *yaml.Node) error {
 	if err := top.Decode((*plain)(c)); err != nil {
 		return err
 	}
-	return ValidateLanguage(c.System.Language)
+	return validateSystemCalendar(c.System)
 }
 
 func moveConfigNode(from *yaml.Node, key string, to *yaml.Node, target string) {
@@ -163,4 +166,11 @@ func decanonicalizeConfigNode(top *yaml.Node) {
 	for _, key := range []string{"config_version"} {
 		deleteMapKey(top, key)
 	}
+}
+
+func validateSystemCalendar(system SystemConfig) error {
+	if _, err := time.LoadLocation(system.ReleaseTimezoneMode()); system.ReleaseTimezoneMode() != "auto" && err != nil {
+		return fmt.Errorf("invalid release timezone: %w", err)
+	}
+	return ValidateLanguage(system.Language)
 }

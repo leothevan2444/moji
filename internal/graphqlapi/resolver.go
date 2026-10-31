@@ -273,11 +273,13 @@ type SubscriptionReleasePolicySnapshot struct {
 }
 
 type SystemSettingsSnapshot struct {
-	Language          string
-	DeveloperMode     bool
-	TaskDeletePolicy  string
-	ImageCache        ImageCacheSettingsSnapshot
-	StashBoxDataCache StashBoxDataCacheSettingsSnapshot
+	ReleaseTimezone          string
+	EffectiveReleaseTimezone string
+	Language                 string
+	DeveloperMode            bool
+	TaskDeletePolicy         string
+	ImageCache               ImageCacheSettingsSnapshot
+	StashBoxDataCache        StashBoxDataCacheSettingsSnapshot
 }
 
 type StashLibrarySnapshot struct {

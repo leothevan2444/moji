@@ -12,7 +12,7 @@ import { useSettingsAutosave } from "./useSettingsAutosave";
 import { FieldLabel, SettingsCard, SettingsSaveStatus, SettingsError, SettingsLoading } from "./SettingsTabCommon";
 import "../../styles/settings-system.scss";
 
-interface SystemDraft { developerMode: boolean; language: LocalePreference; enabled: boolean; maxSizeMb: string; retentionDays: string }
+interface SystemDraft { releaseTimezone: string; developerMode: boolean; language: LocalePreference; enabled: boolean; maxSizeMb: string; retentionDays: string }
 
 export default function SystemSettingsTab() {
   const { t } = useTranslation();
@@ -23,9 +23,9 @@ export default function SystemSettingsTab() {
 
   const [confirming, setConfirming] = useState(false);
 
-  const initial = useMemo<SystemDraft>(() => ({ developerMode: data?.settings.system.developerMode ?? false, language: isLocalePreference(data?.settings.system.language) ? data.settings.system.language : "auto", enabled: data?.settings.system.imageCache.enabled ?? true, maxSizeMb: String(data?.settings.system.imageCache.maxSizeMb ?? 1024), retentionDays: String(data?.settings.system.imageCache.retentionDays ?? 30) }), [data]);
+  const initial = useMemo<SystemDraft>(() => ({ releaseTimezone: data?.settings.system.releaseTimezone ?? "auto", developerMode: data?.settings.system.developerMode ?? false, language: isLocalePreference(data?.settings.system.language) ? data.settings.system.language : "auto", enabled: data?.settings.system.imageCache.enabled ?? true, maxSizeMb: String(data?.settings.system.imageCache.maxSizeMb ?? 1024), retentionDays: String(data?.settings.system.imageCache.retentionDays ?? 30) }), [data]);
   const autosave = useSettingsAutosave("system", initial, value => ({system:{
-    language:value.language,developer_mode:value.developerMode,
+    release_timezone:value.releaseTimezone,language:value.language,developer_mode:value.developerMode,
     image_cache:{enabled:value.enabled,max_size_mb:value.maxSizeMb.trim() ? Number(value.maxSizeMb) : NaN,retention_days:value.retentionDays.trim() ? Number(value.retentionDays) : NaN}
   }}), {onSaved:(value, patch)=>{
     const system = patch.system as Record<string,unknown>;
@@ -49,6 +49,7 @@ export default function SystemSettingsTab() {
   return <SettingsCard title={t(panel ? `settingsLayout.panels.${panel}` : "settings.tabs.system")}><form className="settings-form" onSubmit={event => event.preventDefault()}>
     <SettingsSubpanel id="general">
     <label className="settings-field"><FieldLabel text={t("common.language")} /><select aria-label={t("common.language")} aria-describedby="system-language-help" value={form.language} onChange={event => setForm(current => ({...current,language:event.target.value as LocalePreference}))}><option value="auto">{t("common.auto")}</option>{Object.entries(SUPPORTED_LOCALES).map(([value,meta]) => <option key={value} value={value}>{meta.label}</option>)}</select><small id="system-language-help">{t("systemSettings.languageHelp")}</small></label>
+    <label className="settings-field"><FieldLabel text={t("upcoming.timezoneLabel")} /><input aria-label={t("upcoming.timezoneLabel")} list="release-timezones" value={form.releaseTimezone} onChange={event => setForm(current => ({...current,releaseTimezone:event.target.value}))} /><datalist id="release-timezones"><option value="auto" /><option value="UTC" /><option value="Asia/Shanghai" /><option value="Asia/Tokyo" /><option value="America/New_York" /><option value="Europe/London" /></datalist><small>{t("upcoming.timezoneHelp", { timezone: data?.settings.system.effectiveReleaseTimezone ?? "" })}</small></label>
     {localeLoadError ? <p className="settings-feedback tone-danger" role="alert">{t("localeUi.loadFailed")} <button type="button" onClick={retryLocale}>{t("localeUi.retry")}</button></p> : null}
     <div className="settings-field"><label className="switch-row image-cache-switch developer-mode-switch"><FieldLabel text={t("systemSettings.developerMode")} info={t("systemSettings.developerModeInfo")} /><span className="switch"><input role="switch" type="checkbox" aria-checked={form.developerMode} checked={form.developerMode} aria-label={t("systemSettings.developerMode")} onChange={(event) => setForm((current) => ({ ...current, developerMode: event.target.checked }))} /><span className="switch__track" aria-hidden="true" /><span className="switch__thumb" aria-hidden="true" /></span></label></div>
 

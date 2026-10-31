@@ -11,6 +11,7 @@ type MemoryStore struct {
 	states    map[string]*PerformerState
 	checkRuns map[string]CheckRun
 	reviews   map[string]ReleaseReview
+	upcoming  map[string]UpcomingRelease
 }
 
 func NewMemoryStore() *MemoryStore {

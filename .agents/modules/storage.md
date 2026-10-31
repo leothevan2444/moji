@@ -60,3 +60,5 @@ restore/activate/compact/repair-derived 需要停实例并保留原数据，在�
 - managed repository、并发 CAS、选择与外部意图原子性、runtime 丢失后的恢复、关闭等待。
 - backup manifest/资产完整性、离线恢复、保护备份保留；磁盘错误/busy/context 限期与失败不丢原状态。
 - 数据修复、迁移或清理是独立运行操作。本轮文档核对和本地测试不授权再次对真实数据执行这些操作。
+
+2026-10-31 核心 schema 新增 v3：[待发行迁移](../../internal/storage/schema/core_v3.sql)。subscription_upcoming_releases 保存可恢复生命周期及快照，subscription_upcoming_performers 独立保存演员关系，不级联依赖订阅检查状态。SQL 分页、发行日期/到期索引及 revision 写保护；发行决定和移交状态共用核心事务。纳入现有保护备份与恢复，回归见[待发行测试](../../internal/subscription/upcoming_test.go)。

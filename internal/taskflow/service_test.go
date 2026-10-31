@@ -5,6 +5,7 @@ import (
 	"errors"
 	"testing"
 
+	"github.com/leothevan2444/moji/internal/releasedate"
 	"github.com/leothevan2444/moji/internal/taskruntime"
 )
 
@@ -190,5 +191,15 @@ func TestCreateFromSearchCodePropagatesTaskRuntimeErrors(t *testing.T) {
 	_, err := service.CreateFromSearchCode(context.Background(), CreateFromSearchCodeInput{Code: "ABCD-123"})
 	if err == nil || err.Error() != "boom" {
 		t.Fatalf("expected taskRuntime error, got %v", err)
+	}
+}
+
+func TestDiscoveredFutureSceneDoesNotCreateTask(t *testing.T) {
+	runtime := &fakeTaskRuntime{}
+	s := NewService(runtime)
+	s.SetDiscoveredSceneResolver(&fakeDiscoveredSceneResolver{resolved: ResolvedScene{Code: "ABC-123", Date: "2999-01-01"}})
+	task, err := s.QueueDiscoveredScene(context.Background(), "scene", "https://example.org/graphql")
+	if task != nil || !errors.Is(err, releasedate.ErrNotReleased) || runtime.downloadRequest.Code != "" {
+		t.Fatalf("future scene queued: %+v %v", task, err)
 	}
 }

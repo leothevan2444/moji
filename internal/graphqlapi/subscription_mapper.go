@@ -190,6 +190,7 @@ func performerSceneToModel(item performerdomain.Scene) *model.StashPerformerScen
 		SourceLabels:        append([]string(nil), item.SourceLabels...),
 		StashIds:            stashIDs,
 		MojiTask:            mojiTask,
+		UpcomingState:       nilIfEmpty(item.UpcomingState),
 	}
 }
 

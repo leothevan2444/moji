@@ -26,7 +26,7 @@ func TestVRReviewAndSkipNeverCreateTasksAcrossChecks(t *testing.T) {
 			}}
 			registry := metadata.NewRegistry(stubFactory{client: &fakeStashboxClient{
 				performer: &stashboxgraphql.PerformerFragment{ID: "box-p1", Name: "Actor"},
-				scenes:    []*stashboxgraphql.SceneFragment{{ID: "s1", Code: stringPointer("ABC-VR-123"), Title: stringPointer("Movie")}},
+				scenes:    []*stashboxgraphql.SceneFragment{{Date: stringPointer("2026-01-01"), ID: "s1", Code: stringPointer("ABC-VR-123"), Title: stringPointer("Movie")}},
 			}})
 			registry.Replace([]stash.StashBoxEndpoint{{Name: "metadata", Endpoint: endpoint}})
 			creator := &fakeTaskCreator{subscriptionTask: &taskruntime.Task{ID: "task-vr"}}

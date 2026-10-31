@@ -8,6 +8,7 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/leothevan2444/moji/internal/releasedate"
 	"gopkg.in/yaml.v3"
 )
 
@@ -215,6 +216,7 @@ func NormalizeTaskDeletePolicy(value string) TaskDeletePolicy {
 }
 
 type SystemConfig struct {
+	ReleaseTimezone   string                  `yaml:"release_timezone,omitempty"`
 	Language          string                  `yaml:"language"`
 	DeveloperMode     bool                    `yaml:"developer_mode"`
 	TaskDeletePolicy  TaskDeletePolicy        `yaml:"task_delete_policy"`
@@ -1099,4 +1101,15 @@ func ValidateLanguage(language string) error {
 	default:
 		return fmt.Errorf("%w: unsupported interface language", ErrInvalidSettings)
 	}
+}
+
+// EffectiveReleaseTimezone controls date-only release gates, independently of browser timezone.
+func (s SystemConfig) EffectiveReleaseTimezone() string {
+	return releasedate.EffectiveTimezone(s.ReleaseTimezone)
+}
+func (s SystemConfig) ReleaseTimezoneMode() string {
+	if strings.TrimSpace(s.ReleaseTimezone) == "" {
+		return "auto"
+	}
+	return strings.TrimSpace(s.ReleaseTimezone)
 }

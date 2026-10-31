@@ -1,0 +1,42 @@
+extend type Query {
+  upcomingReleases(input: UpcomingReleaseQueryInput!): UpcomingReleaseConnection!
+}
+extend type Mutation {
+  refreshUpcomingRelease(key: ID!): UpcomingRelease!
+}
+input UpcomingReleaseQueryInput {
+  search: String
+  performerId: ID
+  days: Int
+  page: Int = 1
+  pageSize: Int = 24
+}
+type UpcomingRelease {
+  key: ID!
+  code: String!
+  title: String!
+  date: String!
+  imageUrl: String!
+  sourceUrl: String!
+  state: String!
+  decision: String!
+  errorCode: String!
+  metadataCheckedAt: String!
+  performers: [UpcomingPerformer!]!
+}
+type UpcomingPerformer {
+  id: ID!
+  name: String!
+}
+type UpcomingReleaseConnection {
+  items: [UpcomingRelease!]!
+  performers: [UpcomingPerformer!]!
+  totalCount: Int!
+  page: Int!
+  pageSize: Int!
+  totalPages: Int!
+  subscribedCount: Int!
+  automatic: Boolean!
+  timezone: String!
+  today: String!
+}

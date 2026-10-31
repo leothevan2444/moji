@@ -1,4 +1,42 @@
 {
+  "upcoming": {
+    "timezoneLabel": "发行日期时区",
+    "timezoneHelp": "输入 auto 跟随 Moji 运行环境时区，或填写 Asia/Shanghai 等 IANA 时区。当前生效：{{timezone}}。",
+    "title": "待发行",
+    "viewAll": "查看全部",
+    "collapse": "收起列表",
+    "unconfirmed": "待确认",
+    "handedOff": "已转入发行流程",
+    "paused": "自动检查已关闭",
+    "settings": "设置",
+    "search": "番号或标题",
+    "performer": "演员",
+    "allPerformers": "全部演员",
+    "range": "发行时间",
+    "allDates": "全部日期",
+    "week": "未来 7 天",
+    "month": "未来 30 天",
+    "loadFailed": "加载失败",
+    "retry": "重试",
+    "loading": "加载中…",
+    "noSubscriptions": "暂无订阅演员",
+    "noMatch": "没有匹配的影片",
+    "empty": "暂无待发行影片",
+    "performers": "查看演员",
+    "unknownCode": "番号待定",
+    "expected": "预计 {{date}}",
+    "pagination": "待发行影片分页",
+    "previous": "上一页",
+    "next": "下一页",
+    "source": "来源",
+    "update": "刷新",
+    "updating": "刷新中…",
+    "updated": "已更新",
+    "review": "发行复核",
+    "open": "查看 {{name}}",
+    "trailer": "预告片",
+    "noTrailer": "暂无预告片"
+  },
   "settings": {
     "title": "设置",
     "tabs": {
@@ -943,6 +981,7 @@
   },
   "errorCorrelation": "关联 ID：{{id}}",
   "errorExtra": {
+    "RELEASE_NOT_AVAILABLE": "影片尚未发行，暂不创建任务。",
     "SETTINGS_INVALID": "设置无效。请检查字段、匹配条件及正则表达式后重试。",
     "TORRENT_COMMAND_UNCONFIRMED": "qB 已接受命令，但暂时无法确认最新状态，请刷新查看。",
     "DOWNLOADER_POLICY_INVALID": "请设置有效的清理阈值，启用时至少填写一个大于 0 的条件。",
@@ -1479,6 +1518,7 @@
   },
   "performerSceneQueue": {
     "reasons": {
+      "RELEASE_NOT_AVAILABLE": "影片尚未发行，暂不创建任务。",
       "QUEUED": "已创建下载任务。",
       "ALREADY_IN_LIBRARY": "作品已在 Stash 库中。",
       "DUPLICATE_CODE_TASK": "同一番号已存在下载任务。",
@@ -1588,6 +1628,8 @@
     "clearFilters": "清除搜索与筛选"
   },
   "performerUi": {
+    "upcoming": "待发行",
+    "releaseProcessing": "发行处理中",
     "selectScenes": "多选作品",
     "exitSceneSelection": "退出多选",
     "firstPage": "首页",

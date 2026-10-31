@@ -82,3 +82,11 @@ React 19、React Router 7、TypeScript、Vite、urql graphcache、graphql-ws、i
 2026-10-29 种子交互（U-003/U-004）：任务寻源处理（含处理台）与发现页共用 TorrentCandidateLinks/CandidateSeeders。分别提供磁力、种子下载、站点详情；只使用上游原始地址，拒绝非对应协议、相对地址及 userinfo，HTTP(S) 链接以 noreferrer/no-referrer 打开，不预取、不展开含授权参数的下载地址，也不将下载地址推断为详情地址。链接与选用按钮独立；无链接明确提示，缺失/null/负数做种数显示未知，真实 0 仍显示 0。Jackett 解码以 -1 保留未知数，GraphQL 搜索结果仍沿用整数契约。
 
 任务详情由 TaskDetail 将单一 DownloadManager 作为 torrentControls 插槽放入 TaskFiles 的种子信息中，位于静态标识与文件组之间；TaskDrawer 不再额外渲染。内嵌模式去除第二层卡片与当前任务回链，保留 qB 名称、官方状态、真实进度、刷新、失联/缺失提示及危险操作确认；仍只使用原有一组查询与可见性轮询。独立文件选择抽屉不加载下载器观测。
+
+2026-10-31 待发行专区位于发现页搜索与推荐之间，复用主题与 Drawer；领域 WebSocket 事件合并后定向重读当前分页，重连、焦点及恢复可见性重新读取，无新增定时 HTTP 列表轮询。section=upcoming 和 upcomingSearch/upcomingPerformer/upcomingDays/upcomingPage 保存展开状态与筛选。日期按服务端业务时区显示，核验失败保留内容，已移交记录移出列表。没有下载按钮，预告片尚未接入。实现：[UpcomingReleases](../../web/src/components/discovery/UpcomingReleases.tsx)。
+
+2026-10-31 时区跟进：系统常规增加发行日期时区输入，auto/留空跟随运行环境，手动值通过 typed system.release_timezone 增量保存并验证。服务端返回 effectiveReleaseTimezone 和待发行 today；相对天数使用服务器日历日期，包括无法映射为浏览器 IANA 名称的系统 Local 时区。
+
+2026-10-31 待发行 UI：卡片复用演员详情的 card-grid / performer-scene-card 主题、16:9 封面和字级，共享 SceneArtwork 处理空封面及加载失败；演员链接与详情按钮独立。只显示番号、日期、两行标题和演员，异常才显示待确认。详情使用 Drawer media 变体与播放器展示区，保留完整标题、预计日期、演员、来源及刷新图标，预告片尚未接入；沿用模态焦点约束、Escape 和焦点恢复。移交后仅 QUEUED 决策显示发行复核入口。
+
+2026-10-31 演员详情新增 upcomingState：状态来自核心库记录，非浏览器日期推断。卡片原状态位置显示待发行、待确认或发行处理中；创建入口和本页全选排除这些影片。已选项在可见快照转为待发行后移除，其他分页选择保留。usePerformerScenes 复用领域 WebSocket，按演员过滤并合并 200ms 内的事件后重读当前分页，复用重连/丢事件校准，不增加列表轮询。

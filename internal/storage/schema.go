@@ -8,6 +8,9 @@ var coreSchema string
 //go:embed schema/core_v2.sql
 var coreV2 string
 
+//go:embed schema/core_v3.sql
+var coreV3 string
+
 //go:embed schema/runtime.sql
 var runtimeSchema string
 
@@ -15,7 +18,7 @@ var runtimeSchema string
 var cacheSchema string
 
 func CoreMigrations() []Migration {
-	return []Migration{{1, "normalized durable workflow", coreSchema}, {2, "durable resolved download location", coreV2}}
+	return []Migration{{1, "normalized durable workflow", coreSchema}, {2, "durable resolved download location", coreV2}, {3, "upcoming subscription releases", coreV3}}
 }
 func RuntimeMigrations() []Migration {
 	return []Migration{{1, "replaceable observations", runtimeSchema}}

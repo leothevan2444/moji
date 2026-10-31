@@ -54,6 +54,7 @@ func (r discoveredSceneResolver) ResolveDiscoveredScene(ctx context.Context, sce
 
 	return taskflow.ResolvedScene{
 		Code:  code,
+		Date:  value(scene.Date),
 		Title: value(scene.Title),
 	}, nil
 }

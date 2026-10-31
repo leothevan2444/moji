@@ -944,6 +944,7 @@ type StashPerformerScene struct {
 	SourceLabels        []string                `json:"sourceLabels"`
 	StashIds            []*StashSceneID         `json:"stashIds"`
 	MojiTask            *PerformerSceneTask     `json:"mojiTask,omitempty"`
+	UpcomingState       *string                 `json:"upcomingState,omitempty"`
 }
 
 type StashPerformerSceneConnection struct {
@@ -1077,17 +1078,20 @@ type SubscriptionReleasePolicyInput struct {
 }
 
 type SystemPatchInput struct {
-	Language      *string               `json:"language,omitempty"`
-	DeveloperMode *bool                 `json:"developer_mode,omitempty"`
-	ImageCache    *ImageCachePatchInput `json:"image_cache,omitempty"`
+	ReleaseTimezone *string               `json:"release_timezone,omitempty"`
+	Language        *string               `json:"language,omitempty"`
+	DeveloperMode   *bool                 `json:"developer_mode,omitempty"`
+	ImageCache      *ImageCachePatchInput `json:"image_cache,omitempty"`
 }
 
 type SystemSettings struct {
-	Language          string                     `json:"language"`
-	DeveloperMode     bool                       `json:"developerMode"`
-	TaskDeletePolicy  TaskDeletePolicy           `json:"taskDeletePolicy"`
-	ImageCache        *ImageCacheSettings        `json:"imageCache"`
-	StashBoxDataCache *StashBoxDataCacheSettings `json:"stashBoxDataCache"`
+	ReleaseTimezone          string                     `json:"releaseTimezone"`
+	EffectiveReleaseTimezone string                     `json:"effectiveReleaseTimezone"`
+	Language                 string                     `json:"language"`
+	DeveloperMode            bool                       `json:"developerMode"`
+	TaskDeletePolicy         TaskDeletePolicy           `json:"taskDeletePolicy"`
+	ImageCache               *ImageCacheSettings        `json:"imageCache"`
+	StashBoxDataCache        *StashBoxDataCacheSettings `json:"stashBoxDataCache"`
 }
 
 type Task struct {
@@ -1384,6 +1388,46 @@ type TransferIngestSettingsInput struct {
 
 type TransferPatchInput struct {
 	Action *string `json:"action,omitempty"`
+}
+
+type UpcomingPerformer struct {
+	ID   string `json:"id"`
+	Name string `json:"name"`
+}
+
+type UpcomingRelease struct {
+	Key               string               `json:"key"`
+	Code              string               `json:"code"`
+	Title             string               `json:"title"`
+	Date              string               `json:"date"`
+	ImageURL          string               `json:"imageUrl"`
+	SourceURL         string               `json:"sourceUrl"`
+	State             string               `json:"state"`
+	Decision          string               `json:"decision"`
+	ErrorCode         string               `json:"errorCode"`
+	MetadataCheckedAt string               `json:"metadataCheckedAt"`
+	Performers        []*UpcomingPerformer `json:"performers"`
+}
+
+type UpcomingReleaseConnection struct {
+	Items           []*UpcomingRelease   `json:"items"`
+	Performers      []*UpcomingPerformer `json:"performers"`
+	TotalCount      int                  `json:"totalCount"`
+	Page            int                  `json:"page"`
+	PageSize        int                  `json:"pageSize"`
+	TotalPages      int                  `json:"totalPages"`
+	SubscribedCount int                  `json:"subscribedCount"`
+	Automatic       bool                 `json:"automatic"`
+	Timezone        string               `json:"timezone"`
+	Today           string               `json:"today"`
+}
+
+type UpcomingReleaseQueryInput struct {
+	Search      *string `json:"search,omitempty"`
+	PerformerID *string `json:"performerId,omitempty"`
+	Days        *int    `json:"days,omitempty"`
+	Page        *int    `json:"page,omitempty"`
+	PageSize    *int    `json:"pageSize,omitempty"`
 }
 
 type UpdateAutomationSettingsInput struct {

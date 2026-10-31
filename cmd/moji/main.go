@@ -167,6 +167,9 @@ func main() {
 	}
 	taskSyncDone := startTaskSyncWorker(ctx, runtime.taskRuntimeService, runtime.stashService, configureProgressSyncIntervalProvider(configStore, cfg))
 	launch(func() { <-taskSyncDone })
+	launch(func() {
+		runUpcomingWorker(ctx, runtime.subscriptionService, configureSubscriptionPollIntervalProvider(configStore, cfg))
+	})
 	subscriptionDone := startSubscriptionWorker(ctx, runtime.subscriptionService, configureSubscriptionPollIntervalProvider(configStore, cfg))
 	launch(func() { <-subscriptionDone })
 	if runtime.stashBoxCacheService != nil {
@@ -273,7 +276,16 @@ func newHTTPRuntime(cfg *config.Config, version string, configStore *config.Stor
 	stashClient := configureStashClient(cfg, configStore)
 	taskEventBus := taskruntime.NewTaskEventBus(32)
 	taskRuntimeService := configureTaskRuntime(cfg, configStore, jackettTracker, torrentClient, stashClient, taskEventBus, manager)
+	releaseTimezone := func() string {
+		if configStore != nil {
+			return configStore.Config().System.EffectiveReleaseTimezone()
+		}
+		return cfg.System.EffectiveReleaseTimezone()
+	}
 	taskFlowService := configureTaskFlow(taskRuntimeService)
+	if taskFlowService != nil {
+		taskFlowService.SetReleaseTimezone(releaseTimezone)
+	}
 	stashService := configureStashService(cfg, configStore, stashClient)
 	metadataService := configureMetadata(stashClient)
 	if metadataService != nil {
@@ -283,6 +295,7 @@ func newHTTPRuntime(cfg *config.Config, version string, configStore *config.Stor
 	subscriptionService := configureSubscription(cfg, configStore, stashClient, metadataService, taskFlowService, imageService, manager)
 	if subscriptionService != nil {
 		subscriptionService.SetEventPublisher(performerSubscriptionEventBus)
+		subscriptionService.SetReleaseTimezone(releaseTimezone)
 	}
 	applyAutomationSettings(cfg, subscriptionService, metadataService)
 	if taskFlowService != nil && metadataService != nil {
@@ -340,6 +353,8 @@ func newHTTPRuntime(cfg *config.Config, version string, configStore *config.Stor
 		if err != nil {
 			logging.Fatalf("configure performer: %v", err)
 		}
+		performerService.SetReleaseTimezone(releaseTimezone)
+		performerService.SetUpcomingStateReader(subscriptionService)
 		resolver.Performer = performerService
 		resolver.Discovery = discovery.NewService(metadataService, taskFlowService, stashBoxImage)
 	}
@@ -699,11 +714,13 @@ func buildSettingsSnapshot(cfg *config.Config, version string) *graphqlapi.Setti
 			TorrentSelection: torrentSelectionSnapshot(cfg.Automation.TorrentSelection.Effective()),
 		},
 		System: graphqlapi.SystemSettingsSnapshot{
-			DeveloperMode:     cfg.System.DeveloperMode,
-			Language:          cfg.System.EffectiveLanguage(),
-			TaskDeletePolicy:  string(cfg.System.EffectiveTaskDeletePolicy()),
-			ImageCache:        graphqlapi.ImageCacheSettingsSnapshot{Enabled: cfg.System.ImageCache.EffectiveEnabled(), MaxSizeMB: cfg.System.ImageCache.Normalize().MaxSizeMB, RetentionDays: cfg.System.ImageCache.Normalize().RetentionDays},
-			StashBoxDataCache: graphqlapi.StashBoxDataCacheSettingsSnapshot{TTLHours: cfg.System.StashBoxDataCache.Normalize().TTLHours},
+			ReleaseTimezone:          cfg.System.ReleaseTimezoneMode(),
+			EffectiveReleaseTimezone: cfg.System.EffectiveReleaseTimezone(),
+			DeveloperMode:            cfg.System.DeveloperMode,
+			Language:                 cfg.System.EffectiveLanguage(),
+			TaskDeletePolicy:         string(cfg.System.EffectiveTaskDeletePolicy()),
+			ImageCache:               graphqlapi.ImageCacheSettingsSnapshot{Enabled: cfg.System.ImageCache.EffectiveEnabled(), MaxSizeMB: cfg.System.ImageCache.Normalize().MaxSizeMB, RetentionDays: cfg.System.ImageCache.Normalize().RetentionDays},
+			StashBoxDataCache:        graphqlapi.StashBoxDataCacheSettingsSnapshot{TTLHours: cfg.System.StashBoxDataCache.Normalize().TTLHours},
 		},
 	}
 }

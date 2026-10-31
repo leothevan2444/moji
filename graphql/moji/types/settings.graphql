@@ -337,6 +337,8 @@ enum TaskDeletePolicy {
 }
 
 type SystemSettings {
+ releaseTimezone: String!
+ effectiveReleaseTimezone: String!
  language: String!
   developerMode: Boolean!
   taskDeletePolicy: TaskDeletePolicy!
@@ -681,6 +683,7 @@ input ToggleRulePatchInput {
 }
 
 input SystemPatchInput {
+ release_timezone: String
   language: String
   developer_mode: Boolean
   image_cache: ImageCachePatchInput

@@ -18,7 +18,7 @@ func refreshTaskService(t *testing.T, store Store, tasks TaskCreator, codes ...s
 	t.Helper()
 	scenes := make([]*stashboxgraphql.SceneFragment, 0, len(codes))
 	for _, code := range codes {
-		scenes = append(scenes, &stashboxgraphql.SceneFragment{ID: code, Code: stringPtr(code), Title: stringPtr("Movie")})
+		scenes = append(scenes, &stashboxgraphql.SceneFragment{Date: stringPtr("2026-01-01"), ID: code, Code: stringPtr(code), Title: stringPtr("Movie")})
 	}
 	registry := metadata.NewRegistry(stubFactory{client: &fakeStashboxClient{
 		performer: &stashboxgraphql.PerformerFragment{ID: "box-p1", Name: "Actor"}, scenes: scenes,
