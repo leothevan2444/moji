@@ -38,7 +38,7 @@ OS 目录锁保证单实例/维护所有权。新目录完成初始化、验证�
 
 ## schema 的唯一生产来源
 
-当前注册为 core v1/v2、runtime v1、cache v1，由 `internal/storage/schema.go` 嵌入 `schema/` SQL。领域目录下旧 `sqlite_schema.sql` 仍存在于兼容/测试路径，不是生产 Manager 的迁移入口。
+2026-11-01 核对 [schema 注册](../../internal/storage/schema.go)：当前为 core v1/v2/v3、runtime v1、cache v1，由该文件嵌入 `schema/` SQL。领域目录下旧 `sqlite_schema.sql` 仍存在于兼容/测试路径，不是生产 Manager 的迁移入口。
 
 `schema_migrations` 保存有序版本、名称和不可变 checksum。未知/更新版本、未识别非空库、已应用迁移内容变化必须拒绝，不允许 reset/drop。新增迁移并更新注册、managed row mapping、索引和升级/恢复测试；DDL 与 ledger 同事务。
 

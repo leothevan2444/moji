@@ -46,6 +46,7 @@ def main():
     documents += [ROOT / "AGENTS.md", ROOT / ".github/copilot-instructions.md"]
     required = [
         "AGENTS.md", "README.md", "architecture.md", "TODO.md",
+        "standards/product.md", "standards/engineering.md",
         "workflows/development.md", "workflows/review.md",
     ]
     errors = [f"missing required guide: {name}" for name in required if not (GUIDES / name).is_file()]
@@ -74,9 +75,10 @@ def main():
                     if url.fragment and unquote(url.fragment) not in anchors(target):
                         errors.append(f"{label}: missing anchor: {raw}")
     entry = GUIDES / "AGENTS.md"
-    for module in (GUIDES / "modules").glob("*.md"):
-        if module not in edges.get(entry, set()):
-            errors.append(f"module not routed from main entry: {module.relative_to(ROOT)}")
+    for folder in ("modules", "standards"):
+        for guide in (GUIDES / folder).glob("*.md"):
+            if guide not in edges.get(entry, set()):
+                errors.append(f"{folder} guide not routed from main entry: {guide.relative_to(ROOT)}")
     for pointer in (ROOT / "AGENTS.md", ROOT / ".github/copilot-instructions.md"):
         if entry not in edges.get(pointer, set()):
             errors.append(f"entry must point to .agents/AGENTS.md: {pointer.relative_to(ROOT)}")

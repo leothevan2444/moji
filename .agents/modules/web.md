@@ -1,6 +1,8 @@
 # Web UI 与交互约定
 
-核对日期：2026-10-27；代码基线：`86f69e5`；状态：当前实现。
+最近边界核对：2026-11-01，代码基线 `71ef6fa`；功能实现证据见文内日期专项。
+
+新增、重构、修复与文案修改必须遵守 [产品体验规范](../standards/product.md) 和 [工程规范](../standards/engineering.md)。本文件描述当前 Web 契约与功能证据，具体控件/视觉/文案的通用要求只在规范中维护。当前样式或旧截图不是保留无效文案、另造设计或跳过产品复核的理由。
 
 主要源码：[路由](../../web/src/app/routeConfig.tsx)、[providers](../../web/src/app/AppProviders.tsx)、[GraphQL client](../../web/src/graphql/client.ts)、[graphcache](../../web/src/graphql/cache.ts)、[AppLayout](../../web/src/app/AppLayout.tsx)。
 

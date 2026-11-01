@@ -1,6 +1,14 @@
 # 开发与验证
 
-状态：2026-10-27 按 `86f69e5` 的 Makefile、package scripts、CI 和生成配置核对。命令均从仓库根目录运行。
+状态：2026-11-01 按 `71ef6fa` 的 package scripts、CI 和现有构建/生成入口核对。命令均从仓库根目录运行。代码变更遵守 [工程规范](../standards/engineering.md)，界面和用户流程另遵守 [产品体验规范](../standards/product.md)。
+
+## 从用户结果到验证
+
+1. 先说明用户目标、当前事实与期望行为，核对已有产品决定；涉及默认策略、名称、主流程或精度/耗时取舍时先向用户复核，常规技术选择自主推进。
+2. 找到受影响领域、状态所有者、契约和最接近的既有界面/组件；涉及新功能或流程变化时写一段内部用户路径及成功、失败、返回/刷新场景，局部修复核对已有路径，不自动把设计文字放进 UI。
+3. 在已有架构和设计语言上实现；需要调整 API、配置、数据或恢复协议时同步闭合，不能只让页面先假定后端支持。
+4. 按下表选择验证，并逐句检查新增用户文案的依据、必要性和表达；界面变化对照邻近区域及相关状态人工走查，不能只看测试数量或孤立截图。
+5. 检查 diff，更新当前契约/未完成清单与必要交接；记录用户确认、验证结果、局限和剩余项。文档任务按文档范围验证，不无故重跑业务 suite。
 
 ## 环境与起步
 
@@ -54,7 +62,7 @@ npm --prefix web run test:visual:docker -- task-workspace.spec.ts
 npm --prefix web run test:visual:docker -- --update-snapshots=all
 ```
 
-本机 Vite 若报 `spawnSync sh EPERM`，先核对错误发生在 `scripts/version.sh` 调用及执行权限/沙箱，不修改业务代码掩盖环境错误。可在固定 Playwright 容器运行检查；同时核对 Node 版本，容器内置 Node 不一定等于 CI 的 setup-node 22。本轮容器内实际为 Node 24.17，测试通过但不能据此声称 Node 22 完整复现。
+本机 Vite 若报 `spawnSync sh EPERM`，先核对错误发生在 `scripts/version.sh` 调用及执行权限/沙箱，不修改业务代码掩盖环境错误。可在固定 Playwright 容器运行检查；同时核对 Node 版本，容器内置 Node 不一定等于 CI 的 setup-node 22。2026-10-27 复核中的容器实际为 Node 24.17，不能据那次成功声称当前或 Node 22 的完整 CI 复现。
 
 若只需容器隔离检查，可复用下面的命令；它不会自动切换 Node 版本：
 
@@ -77,7 +85,7 @@ docker run --rm --ipc=host \
 - Docker：原生 amd64/arm64 各构建与 smoke，适用事件导出已测镜像。
 - Publish：依赖上面三个 jobs，通过 [发布工作流](../../.github/workflows/docker-publish.yml) 合并制品发布。
 
-增加全量 Go 覆盖是 TODO 中的改进建议，本次只校准文档，不偷偷修改 CI。
+增加全量 Go 覆盖是 [G-001](../TODO.md#g-001) 中的改进建议，未落实前不能把当前 CI 描述为全量后端验证。
 
 ## 交付
 

@@ -1,10 +1,10 @@
 # 未完成工作
 
-最近全项目复核：[2026-10-27](reviews/2026-10-27.md)，基线 `86f69e5`；[2026-10-28 设置专项](reviews/2026-10-28-settings.md) 已完成 U-002/R-001/R-002。[2026-10-31 待发行专项](reviews/2026-10-31-upcoming.md) 已完成。最新专项：[2026-10-31 日志布局与跟随](reviews/2026-10-31-logs.md)，O-001 已随 `8c071f0` 提交。需求清单更新：2026-10-31。这是唯一活动清单；用户明确提出的需求与静态复核建议分开记录。当前没有进行中的产品实现任务。
+最近全项目复核：[2026-10-27](reviews/2026-10-27.md)，基线 `86f69e5`；[2026-10-28 设置专项](reviews/2026-10-28-settings.md) 已完成 U-002/R-001/R-002。[2026-10-31 待发行专项](reviews/2026-10-31-upcoming.md) 已完成。[2026-10-31 日志布局与跟随](reviews/2026-10-31-logs.md) 已随 `8c071f0` 提交 O-001。最新静态审查：[2026-11-01 架构与项目规范](reviews/2026-11-01-project-standards.md)，基线 `71ef6fa`。清单更新：2026-11-01。这是唯一活动清单；用户明确提出的需求与审查建议分开记录。当前没有进行中的产品实现任务。
 
 状态：待处理 = 有明确事实和可执行下一步；待设计 = 需求/取舍尚需具体化。完成后从本文件移除，在复核或 Git 中保留证据。条目 ID 不复用。
 
-当前剩余 6 项：用户需求 R-003；维护缺口 G-001、G-002、S-001；未落地设计 F-001、F-002。尚未选择下一项实施任务。
+当前剩余 8 项：用户需求 R-003；维护缺口 G-001、G-002、S-001、A-001、A-002；未落地设计 F-001、F-002。新增架构项是中等维护风险，按真实改动小步收敛；本轮规范任务不启动这些实现。
 
 ## 用户提出的产品工作（2026-10-28）
 
@@ -32,7 +32,7 @@
 
 状态：待处理；建议优先级：P1。
 
-证据：[ci.yml](../.github/workflows/ci.yml) 的 Go job 只测试 graphqlapi、taskruntime 和 cmd/moji，storage、downloader、subscription、cache 等自身回归不会因为被依赖就运行。本轮全量 Go 命令通过（缓存），不证明远端已覆盖。
+证据：2026-11-01 再核对 [ci.yml](../.github/workflows/ci.yml)，Go job 仍只测试 graphqlapi、taskruntime 和 cmd/moji，storage、downloader、subscription、cache 等自身回归不会因为被依赖就运行。以前本机全量测试的成功不证明当前远端已覆盖；本轮未重跑业务 suite。
 
 验收：CI 明确运行全部后端包的默认离线测试，保留两个 Python 脚本检查；真实服务/破坏性测试仍显式 opt-in；新旧版本、连接和恢复测试不被跳过配置意外排除。
 
@@ -54,11 +54,33 @@
 
 状态：待设计；建议优先级：P1。
 
-证据：[performer.List](../internal/performer/service.go) 使用 AllPerformers；[本地场景](../internal/performer/performer_detail.go) 仍 `per_page=-1` 后合并，订阅列表也依赖全演员读取。批量选片定向查询已经实现，不属于本项未完工作。
+证据：2026-11-01 再核对，[performer.List](../internal/performer/service.go) 使用 AllPerformers；[本地场景](../internal/performer/performer_detail.go) 仍 `per_page=-1` 后合并，订阅列表也依赖全演员读取。[待发行查询](../internal/subscription/upcoming.go) 的 activeUpcomingPerformers 同样全量读取 Stash 演员后判断订阅关系。批量选片定向查询已经实现，不属于本项未完工作。
 
 验收：明确可见列表所需的分页、准确计数、搜索和跨源排序契约；用大 fixture 证明读取数量、内存和调用次数有界，不能只把全量集合藏进缓存。保留订阅真值、选片资格和跨页选择语义。
 
-下一步：从调用方测量列表/profile/场景各自的耗时与请求数，确定可由 Stash 端过滤和分页的部分，再设计跨源合并契约；未测量不先增加并发。
+下一步：从调用方测量演员/profile/场景/待发行查询的耗时与请求数，确定可由 Stash 端过滤和分页的部分，再设计跨源合并契约；未测量不先增加并发。若优化需要延迟订阅真值或改变完整结果承诺，先向用户复核。
+
+<a id="a-001"></a>
+### A-001 · 缩小跨业务设置编辑器与样式的修改影响面
+
+状态：待处理；建议优先级：P2；来源：2026-11-01 静态架构复核。
+
+证据：[PolicySettingsEditor](../web/src/components/settings/PolicySettingsEditor.tsx) 被 indexers/metadata/tasks/resources 四个业务区域真实使用，集中编码、共享表单与大段条件渲染，并重复实现公共 FieldLabel。settings 样式跨 shell、领域与组件导入。风险来自修改联动，不是文件行数本身。
+
+验收：沿实际需求按业务职责分离编辑/编码与样式所有权，复用现有公共字段控件；分区 patch、自动保存、失败重试、路由/草稿、当前规则语义与视觉保持既有契约；不引入第二套表单引擎或仅把原文件机械分段。
+
+下一步：选择下一次真实涉及的设置区域，先明确它使用的字段、查询和保存边界，再单区域提取并验证相邻区域不受影响；不要以规范任务为由启动全部设置页重写。
+
+<a id="a-002"></a>
+### A-002 · 按消费能力收窄任务运行时接口
+
+状态：待处理；建议优先级：P2；来源：2026-11-01 静态架构复核。
+
+证据：[graphqlapi.TaskRuntimeService](../internal/graphqlapi/resolver.go) 同时暴露创建、读取、生命周期、批量与同步/扫描，类型层仍允许创建调用绕过 taskflow；当前 [生产 resolver](../internal/graphqlapi/task.resolvers.go) 已正确走 TaskFlow，没有据此确认正在绕过的缺陷。
+
+验收：按真实调用方使用的读、操作或 worker 能力收窄依赖，创建入口仍受 taskflow 边界约束；mock 更聚焦，共享状态机、持久意图、后台生命周期和 API 行为不变。不因拆接口引入重复状态机或无实际消费者的新层。
+
+下一步：盘点 main、GraphQL 与领域消费者各自的方法使用，选择一个调用方先收窄；保留仍有真实消费者的兼容能力。
 
 ## 未落地的产品设计
 
