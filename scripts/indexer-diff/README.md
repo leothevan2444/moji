@@ -35,7 +35,10 @@ and keep absent defaults or explicit empty selections empty.
 Hash/title cases cover original and before pages, generated public/semi-private
 result magnets and absence of an automatic public fallback for private results.
 Case-insensitive parameter names are checked against the real host query model.
-The 87 executed cases
+Date-filter cases compare explicit positive/negative offsets, seven fractional
+digits, an invalid internal-whitespace control, and the canonical .Result.date
+text. They check both intermediate strings and final publication timestamps.
+The 92 executed cases
 include four explicitly expected rejections (invalid TV episode, captcha
 answer rejected by the site, empty numeric ID/year and overflowing ID); they do not certify the community
 library's live availability. Additional failure/cancellation

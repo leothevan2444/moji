@@ -120,6 +120,16 @@
 
 未改生产代码、配置/API/UI，不重复此前已通过的完整 Go/Web/兼容套件；该证据补足搜索缓存和正常/429 gate 测量，不覆盖 torrent ArtifactCache、大型完整应用、TLS/DNS/代理/solver 实际网络或真实站点。后续仍按 R-004 的原始完整验收推进。
 
+## 日期过滤器中间表示与精度
+
+基线 `44906e6`。实际固定 Jackett HTML 对照先复现：带偏移量的 dateparse 返回 UTC 宿主的日期文本（例如 `Wed, 30 Oct 2024 04:41:12 +0`），Moji 原先保留 `+0530`；七位小数秒的合法 .NET 格式原先无法解析、错误地保留输入。源码依据为同 pin 的 [DateTimeUtil](https://github.com/Jackett/Jackett/blob/cfdc645711c487d05cb55932e394b2370154d81e/src/Jackett.Common/Utils/DateTimeUtil.cs) 中 ParseDateTimeGoLang/Rfc1123ZPattern，以及 CardigannIndexer 的日期过滤和 date 字段投影。
+
+修正集中于日期实现：支持 1–7 位 f/F 小数秒；过滤后的中间值与 `.Result.date` 统一为 UTC 和单 z 小时偏移文本；最终日期解析识别该中间值并保留时刻，不把 `+0` 当成未知日期。非法格式继续保留原文。新增纯回归核对正/负半小时时区、跨日时刻、必需/可选小数位和二次解析；新增五条真实解释器场景核对 HTML 日期过滤、正/负偏移、七位小数、内部空白失败控制、`.Result.date` 及最终发布时间。
+
+完整实际对照 92/92（88 正常、4 精确预期拒绝），0 未解释/5 原有已解释差异，报告 `/tmp/moji-indexer-diff-dates-final.json`；未改参考程序或比较器。完整 Go、cardigann/indexer 完整 race 与相关 vet 通过。初次测试变量缺少显式 Scalar 转换导致编译失败，修正后完成全部检查。没有 API/UI/Load/schema 变化，不重复 Web 或静态全库编译；该证据覆盖明确日期格式，不代表全部文化/相对时钟语义已认证。
+
+初始 JSON 探针还识别出独立宿主行为：JSON.NET 会将 ISO 日期字符串读成日期类型，ToString 返回如 `10/30/2024 10:11:12`，而 Moji 当前保留原始 ISO 字符串。HTML 场景已隔离此因素，没有通过忽略差异获得通过；其 JSON 语义仍需单独修复/验收。旧 Go 风格日期 layout 被固定 v11 schema 明确拒绝，未放宽 schema 或将它计入合法 v11 通过样本。UTC 宿主对照不等于所有部署时区均已认证；真实日期、相对时钟和 JSON 类型转换边界继续由 R-004 跟踪。
+
 ## 附件缓存负载与取消测量
 
 基线 `8c8bd52`，新增显式 `internal/indexer/artifact_performance_test.go`；不改生产缓存、API 或配置。Linux/amd64、Xeon E5-2673 v4、GOMAXPROCS=2，每项 100 次；输入是约 1 MiB 的合法合成 torrent，获取回调只提供内存字节，不访问 HTTP。普通测试已有预算/取消/迟到成功/关闭回归，本轮相关测试通过。

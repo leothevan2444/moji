@@ -183,7 +183,7 @@ func ApplyFilters(ctx context.Context, data string, filters []Filter, fc FilterC
 			// The upstream filter leaves data unchanged when a date does not
 			// parse. Final result conversion decides how to represent unknown.
 			if parsed, err := parseRuleDate(data, arg(0), fc.Now); err == nil {
-				data = parsed.Format(time.RFC1123Z)
+				data = formatFilterDate(parsed)
 			}
 		case "timeago", "reltime", "fuzzytime":
 			parsed, err := parseRelativeDate(data, fc.Now)
@@ -193,7 +193,7 @@ func ApplyFilters(ctx context.Context, data string, filters []Filter, fc FilterC
 			if err != nil {
 				return "", err
 			}
-			data = parsed.Format(time.RFC1123Z)
+			data = formatFilterDate(parsed)
 		case "validfilename":
 			data = strings.Map(func(r rune) rune {
 				if unicode.IsControl(r) || strings.ContainsRune(`<>:"/\|?*`, r) {

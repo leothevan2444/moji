@@ -299,7 +299,7 @@ func (e *Execution) applyField(result *Result, name, value string, modifiers []s
 			return "", err
 		}
 		result.PublishedAt = &parsed
-		value = parsed.Format(time.RFC1123Z)
+		value = formatFilterDate(parsed)
 	case "category", "categorydesc":
 		var mapped []string
 		if name == "category" {

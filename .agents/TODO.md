@@ -167,7 +167,9 @@ Artifact 阶段验证：完整 Go 与相关 vet 通过，indexer/taskruntime/cmd
 
 完整内置队列验收：新增正式组装链的动态安装→关闭 Jackett→taskflow 八项并发持久入队→请求结束→正式双 worker→Cardigann/受控本地自答代理→EXCLUDE 文件筛选→核心原始附件/来源先落盘→模拟 qB，24 HTTP/8 次提交恰好一次。独立进程 p50 12.135 s/p95 23.128 s、RSS 36.66 MiB；保持生产节流，时间含队列/观察等待。完整新场景/race/相关 vet 通过，证据与限制见[记录](reviews/2026-11-03-indexer-acceptance.md#内置来源完整任务队列负载)。这是合成队列和模拟 qB，不等于真实站点或真实下载器验收。
 
-下一步：按固定收尾范围继续剩余 .NET/date/filter 边界、来源/许可、升级回退和完整验收；不增加可选产品功能。arm64 需要可执行 ARM 的环境或现有原生 CI，不能从 amd64 推断通过。真实 solver/代理与站点验收见上方未完成项。公共选择入口仍必须以服务器 run/candidate 身份解析，不能让浏览器提交替代定位符。
+日期边界验收：实际 HTML 对照复现并修正 UTC/单 z 中间文本与七位小数解析，`.Result.date` 及后续发布时间解析同步。五条正式场景全部通过，完整差分 92/92（0 未解释/5 原有解释），完整 Go/cardigann+indexer race/相关 vet 通过；具体证据见[日期记录](reviews/2026-11-03-indexer-acceptance.md#日期过滤器中间表示与精度)。另确认 JSON.NET 会将 ISO 字符串转为日期类型再取文本，与当前 JSON 保留字符串不同，仍须独立处理；未放宽 v11 schema 兼容旧 Go layout。
+
+下一步：先修复/验收 JSON 日期类型投影，再按固定收尾范围继续其余 .NET/date/filter 边界、来源/许可、升级回退和完整验收；不增加可选产品功能。arm64 需要可执行 ARM 的环境或现有原生 CI，不能从 amd64 推断通过。真实 solver/代理与站点验收见上方未完成项。公共选择入口仍必须以服务器 run/candidate 身份解析，不能让浏览器提交替代定位符。
 
 ## 用户提出的产品工作（2026-10-28）
 
