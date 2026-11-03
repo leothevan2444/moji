@@ -56,7 +56,7 @@
 | regexp, re_replace | 有预算的 regexp2；lookbehind、捕获组及字符类回归 | .NET 全部语法、超时/取消、替换组边界和不同过滤器列表的安装期验证。 |
 | tolower, toupper, diacritics, validfilename | filters.go 的字符串/正规化分支；不变文化土耳其 I/希腊/补充平面与 Linux 文件名字符集实际对照；部分变音符测试 | 其他文化、Unicode 版本/UTF-16 及 Windows 实际运行；Moji 文件路径安全验证不归此规则过滤器。 |
 | urlencode, urldecode, htmlencode, htmldecode | .NET 旧编码完整 BMP/字节摘要见请求复核；声明编码回归；HTML 引号/Latin-1/BMP/补充平面 entity 实际对照与往返 | URL 非法输入、所有 IANA charset 与全部 HTML 解码宽松规则。 |
-| dateparse, timeparse, timeago, reltime, fuzzytime | dates.go/relative_dates.go；绝对日期实际场景，timeago/reltime 与上游原函数两组固定时钟 38 输入；fuzzy ago 共用间隔 | 其他 fuzzy 日历推断、实际宿主时区/DST、日期文化及歧义格式。辅助函数对照不计为完整搜索场景。 |
+| dateparse, timeparse, timeago, reltime, fuzzytime | dates.go/relative_dates.go/fuzzy_dates.go；绝对日期与 Unix 秒完整场景；两组间隔 38 输入及两组 fuzzy 日历 44 输入实际原函数固定时钟对照；date/dateheaders 共用日历解析 | DateTimeRoutines 的其余自由文本/仅时间默认日期推断、实际宿主时区/DST、其他文化及歧义格式；Jackett 外层未来发布时间钳制尚待核对。辅助函数对照不计为完整搜索场景。 |
 | jsonjoinarray, validate | 单 token 子节点枚举、null/标量空结果、对象声明顺序、嵌套 JSON/日期与大整数实际对照；validate 固定分隔符/顺序去重实际对照 | 所有 JSONPath 方言、动态参数组合及 JSON.NET 非标准 JSON 输入；不将样本扩大为全部类型兼容。 |
 | hexdump, strdump | 保留输入的分支，无站点正文日志副作用 | 不表示提供了上游调试日志；这是脱敏诊断策略。 |
 | .Config/.Query/.Result/.Categories/.Today，if/else/range、逻辑/比较/join/re_replace | template.go、template_test.go、实际结构化查询/请求场景；编译/步数/字节/深度预算 | 日期默认、查询派生、真假值和枚举/函数组合还未完整上游认证；不暴露任意 Go 方法或脚本执行。 |
@@ -183,6 +183,18 @@
 解码限制 64 层/50,000 节点并响应取消；单节点序列化及拼接含分隔符受 MaxTemplateBytes 限制，拼接前计入预算，防止大分隔符导致扩张。正式新增三个合成 HTTP 场景（14 行类型/数值、11 行多选择、3 行嵌套路径），专项和完整实际对照均通过：113/113（109 正常、4 精确预期拒绝），0 未解释/5 原有解释；报告 `/tmp/moji-indexer-diff-jsonjoin-final.json`，参考仍为校验后的 reference-8，无新增比较例外。固定语料只读检查找到两个 jsonjoinarray，均在 amigosshare.yml，用于字符串转义解码及 genres 拼接；未重跑未变化的静态 Load。
 
 本轮完整 Go、cardigann/indexer race 与相关 vet 通过。没有 API/UI/schema 改动，不重复 Web 或镜像；尚未证明全部 JSONPath 方言、非标准 JSON 语法、所有数值/文化/时区组合或真实站点。没有操作实际配置、数据库、站点或下载器。
+
+### fuzzy 日历与日期入口（2026-11-04）
+
+固定规则只读检查发现 21 处 fuzzytime，实际用于 Today/Yesterday、星期及本地化替换后的文本。扩展既有辅助协议，让 Moji 真实过滤器与未修改的 DateTimeUtil.FromUnknown(text, null, relativeFrom) 共用固定 UTC 时钟；按原 SDK/归档/NuGet 锁完整重建 reference-9，0 警告/错误并校验 31 DLL。原 reference-8 不再用于当前 runner。红报告 `/tmp/moji-fuzzy-calendar-red.json` 复现 today/yesterday 错误继承当前时分秒、tomorrow 未识别；绝对日期偏移红报告 `/tmp/moji-fuzzy-absolute-offset-red.json` 复现普通日期被额外换算偏移。
+
+新增 fuzzy_dates.go 按日历语义实现零点、AM/PM、Today/Yesterday/Tomorrow、同周或最近星期、缺年未来日期回退一年及闰日钳制、Unix 秒与范围限制；只有 ago 分支使用间隔解析，裸 1 month 不再被当作合法日历日期。普通绝对日期沿用 DateTimeRoutines 暴露的钟面值，明确 RFC 日期和 day phrase 使用偏移换算；两者不能混为同一解析行为。date 字段与 HTML dateheaders 同样改用该入口，合成搜索回归验证其不会绕过日历语义；不改变业务发行日时区。
+
+新增两组 fuzzy 辅助场景共 44 输入（36 合法/8 声明非法），含 Unicode 空白、时区跨零点、缺年/闰年及最大 Unix 秒；与原两组间隔共 82 输入全部精确通过，报告 `/tmp/moji-fuzzy-helpers-final.json`。独立完整绝对日期搜索/取种场景覆盖 7 行；整组完整解释器 114/114（110 正常、4 精确预期拒绝），0 未解释/5 原有解释，报告 `/tmp/moji-fuzzy-all.json`。没有加入时间容差或新增差异例外；20 比较器/5 锁检查通过。CI 已单独加入辅助组，不将 82 输入冒称完整搜索场景或已运行远端 CI。
+
+最大 Unix 秒的初次完整场景报告 `/tmp/moji-fuzzy-absolute.json` 另确认 BaseIndexer 会把未来发布时间改成 DateTime.Now，而过滤器文字仍保留 9999 年；当前内置来源尚未实现该外层行为，需另行核对修正。该边界保留在精确辅助对照，完整绝对日期场景使用过去时间，不通过放宽比较隐藏问题。FromUnknown 的 ago 分支没有传 relativeFrom，因此辅助组不放入 ago；已有本地 ago 回归不能冒称该分支的固定上游时钟对照。仅时间/库默认日期、其余自由文本和文化/DST 仍不能由当前样本证明。
+
+本轮完整 Go、cardigann/indexer/replay race 与相关 vet 通过。没有 API/UI/schema/Load 变化，不重复 Web/静态全库/镜像，也未操作真实服务或数据。后续先核对未来发布时间，再继续来源/许可与原完整验收范围。
 
 ## 附件缓存负载与取消测量
 

@@ -1,0 +1,40 @@
+{
+  "definitionFile": "definition.yml",
+  "query": {
+    "mode": "search",
+    "keywords": "ABCD-123",
+    "categories": [
+      2000
+    ],
+    "limit": 100,
+    "offset": 0
+  },
+  "settings": {},
+  "authenticate": false,
+  "fetch": true,
+  "now": "2026-11-03T00:00:00Z",
+  "responses": [
+    {
+      "method": "GET",
+      "path": "/search",
+      "status": 200,
+      "headers": {
+        "Content-Type": [
+          "application/json"
+        ]
+      },
+      "bodyText": "{\"data\": [{\"name\": \"ABCD-123 0\", \"url\": \"/file.torrent?id=0\", \"stamp\": \"0\"}, {\"name\": \"ABCD-123 1\", \"url\": \"/file.torrent?id=1\", \"stamp\": \"1\"}, {\"name\": \"ABCD-123 2\", \"url\": \"/file.torrent?id=2\", \"stamp\": \"1700000000\"}, {\"name\": \"ABCD-123 4\", \"url\": \"/file.torrent?id=4\", \"stamp\": \"Thu, 14 May 2020 18:20:30 +0\"}, {\"name\": \"ABCD-123 5\", \"url\": \"/file.torrent?id=5\", \"stamp\": \"2020-05-14 18:20:30\"}, {\"name\": \"ABCD-123 6\", \"url\": \"/file.torrent?id=6\", \"stamp\": \"05/14/2020 18:20:30\"}, {\"name\": \"ABCD-123 offset\", \"url\": \"/file.torrent?id=offset\", \"stamp\": \"2020-05-14 18:20:30 +05:30\"}]}"
+    },
+    {
+      "method": "GET",
+      "path": "/file.torrent",
+      "status": 200,
+      "headers": {
+        "Content-Type": [
+          "application/x-bittorrent"
+        ]
+      },
+      "bodyText": "d4:infod4:name8:ABCD-1236:lengthi1eee"
+    }
+  ]
+}

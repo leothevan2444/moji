@@ -1,0 +1,86 @@
+{
+  "now": "2024-01-01T12:34:56Z",
+  "relativeDateFilters": [
+    {
+      "name": "fuzzytime",
+      "input": "today 10:20 +08:00"
+    },
+    {
+      "name": "fuzzytime",
+      "input": "today 00:30 +08:00"
+    },
+    {
+      "name": "fuzzytime",
+      "input": "yesterday 10:20 GMT"
+    },
+    {
+      "name": "fuzzytime",
+      "input": "Tomorrow 10:20 -05:30"
+    },
+    {
+      "name": "fuzzytime",
+      "input": "today 12:25am"
+    },
+    {
+      "name": "fuzzytime",
+      "input": "today 12:25pm"
+    },
+    {
+      "name": "fuzzytime",
+      "input": "Today, 10:20:30.12345"
+    },
+    {
+      "name": "fuzzytime",
+      "input": "ToDaY at 10:20"
+    },
+    {
+      "name": "fuzzytime",
+      "input": "02-29 10:20"
+    },
+    {
+      "name": "fuzzytime",
+      "input": "29 Feb 10:20"
+    },
+    {
+      "name": "fuzzytime",
+      "input": "01-01 23:59"
+    },
+    {
+      "name": "fuzzytime",
+      "input": "Monday at 23:59"
+    },
+    {
+      "name": "fuzzytime",
+      "input": "253402300799"
+    },
+    {
+      "name": "fuzzytime",
+      "input": "Thu, 14 May 2020 18:20:30 -5"
+    },
+    {
+      "name": "fuzzytime",
+      "input": "(today)12:25am",
+      "expectInvalid": true
+    },
+    {
+      "name": "fuzzytime",
+      "input": "253402300800",
+      "expectInvalid": true
+    },
+    {
+      "name": "fuzzytime",
+      "input": "today garbage",
+      "expectInvalid": true
+    },
+    {
+      "name": "fuzzytime",
+      "input": "yesterday 24:00",
+      "expectInvalid": true
+    },
+    {
+      "name": "fuzzytime",
+      "input": "1.5 months",
+      "expectInvalid": true
+    }
+  ]
+}

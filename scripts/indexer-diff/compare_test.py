@@ -21,6 +21,9 @@ class ComparisonTests(unittest.TestCase):
             valid = {"now": "2024-03-31T12:34:56.5Z", "relativeDateFilters": [{"name": "timeago", "input": "1 month"}]}
             scenario.write_text(json.dumps(valid))
             self.assertEqual(compare.resolve_case(scenario), (valid, [], None))
+            fuzzy = {**valid, "relativeDateFilters": [{"name": "fuzzytime", "input": "today"}]}
+            scenario.write_text(json.dumps(fuzzy))
+            self.assertEqual(compare.resolve_case(scenario), (fuzzy, [], None))
             for invalid in [{**valid, "now": "2024-03-31T12:34:56"},
                             {**valid, "responses": []},
                             {**valid, "relativeDateFilters": []},

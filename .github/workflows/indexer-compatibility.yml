@@ -27,11 +27,13 @@ jobs:
         run: python3 scripts/indexer-diff/build_reference.py --download --work-dir "$RUNNER_TEMP/indexer-reference"
       - name: Compare actual interpreters on synthetic sites
         run: python3 scripts/indexer-diff/compare.py --reference-root "$RUNNER_TEMP/indexer-reference" --report "$RUNNER_TEMP/indexer-diff.json"
-      - name: Compare relative date helpers with fixed clocks
+      - name: Compare date helpers with fixed clocks
         run: >-
           python3 scripts/indexer-diff/compare.py --reference-root "$RUNNER_TEMP/indexer-reference"
           --case scripts/indexer-diff/helper-cases/relative-dates/scenario.json
           --case scripts/indexer-diff/helper-cases/relative-dates-zero-ticks/scenario.json
+          --case scripts/indexer-diff/helper-cases/fuzzy-calendar/scenario.json
+          --case scripts/indexer-diff/helper-cases/fuzzy-calendar-boundaries/scenario.json
           --report "$RUNNER_TEMP/indexer-relative-dates.json"
       - name: Compile pinned v11 corpus
         if: success() || failure()

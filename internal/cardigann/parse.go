@@ -194,7 +194,7 @@ func (e *Execution) parseSearchResponse(ctx context.Context, response HTTPRespon
 				if err != nil || !found {
 					continue
 				}
-				parsed, err := parseRuleDate(date, "", e.now)
+				parsed, err := parseFuzzyDate(date, e.now)
 				if err != nil {
 					result.Issues = append(result.Issues, RowIssue{Field: "dateheaders", Code: "FIELD_VALUE_INVALID"})
 					ok = false

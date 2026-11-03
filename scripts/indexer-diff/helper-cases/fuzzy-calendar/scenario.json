@@ -1,0 +1,108 @@
+{
+  "now": "2024-03-31T12:34:56.5Z",
+  "relativeDateFilters": [
+    {
+      "name": "fuzzytime",
+      "input": "today"
+    },
+    {
+      "name": "fuzzytime",
+      "input": "yesterday"
+    },
+    {
+      "name": "fuzzytime",
+      "input": "tomorrow"
+    },
+    {
+      "name": "fuzzytime",
+      "input": "Today, at 10:20"
+    },
+    {
+      "name": "fuzzytime",
+      "input": "yesterday 9:05 pm"
+    },
+    {
+      "name": "fuzzytime",
+      "input": "Tomorrow, 00:01:02"
+    },
+    {
+      "name": "fuzzytime",
+      "input": "Sunday at 23:59"
+    },
+    {
+      "name": "fuzzytime",
+      "input": "Monday at 10:20"
+    },
+    {
+      "name": "fuzzytime",
+      "input": "Wednesday at 10:20"
+    },
+    {
+      "name": "fuzzytime",
+      "input": "now"
+    },
+    {
+      "name": "fuzzytime",
+      "input": "just now"
+    },
+    {
+      "name": "fuzzytime",
+      "input": "unknown"
+    },
+    {
+      "name": "fuzzytime",
+      "input": "0"
+    },
+    {
+      "name": "fuzzytime",
+      "input": "1"
+    },
+    {
+      "name": "fuzzytime",
+      "input": "1700000000"
+    },
+    {
+      "name": "fuzzytime",
+      "input": "01-01 10:20"
+    },
+    {
+      "name": "fuzzytime",
+      "input": "12-31 10:20"
+    },
+    {
+      "name": "fuzzytime",
+      "input": "1 Jan 10:30"
+    },
+    {
+      "name": "fuzzytime",
+      "input": "31 Dec 10:30"
+    },
+    {
+      "name": "fuzzytime",
+      "input": "29 Feb 10:30"
+    },
+    {
+      "name": "fuzzytime",
+      "input": "2020-05-14 18:20:30"
+    },
+    {
+      "name": "fuzzytime",
+      "input": "Thu, 14 May 2020 18:20:30 +0"
+    },
+    {
+      "name": "fuzzytime",
+      "input": "not a date",
+      "expectInvalid": true
+    },
+    {
+      "name": "fuzzytime",
+      "input": "today 25:00",
+      "expectInvalid": true
+    },
+    {
+      "name": "fuzzytime",
+      "input": "1 month",
+      "expectInvalid": true
+    }
+  ]
+}

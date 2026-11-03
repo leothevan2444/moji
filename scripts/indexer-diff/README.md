@@ -48,19 +48,32 @@ Query-string cases cover case-insensitive first-value lookup, semicolons,
 invalid percent/UTF-8 escapes, and HTML attribute entity decoding. Further
 cases check templated replacement, validate token order/delimiters, invariant
 Unicode case and the Linux validfilename character set.
-The 110 executed cases
+JSON join cases additionally check scalar/null child enumeration, one-token
+selection, property order, nested serialization, exact big integers and date
+tokens. Fuzzy absolute dates check Unix seconds and both intermediate strings
+and publication timestamps, including the different offset behavior of the
+calendar parser.
+The 114 executed cases
 include four explicitly expected rejections (invalid TV episode, captcha
 answer rejected by the site, empty numeric ID/year and overflowing ID); they do not certify the community
 library's live availability. Additional failure/cancellation
 scenarios and other challenge implementations remain.
 
-Relative dates are checked separately in `helper-cases/`: two fixed-clock
-groups contain 38 inputs. Moji runs its actual timeago/reltime filters; the
-pinned reference directly calls the unmodified DateTimeUtil.FromTimeAgo with
-the same explicit relativeFrom clock. Reports are marked relative-date-helper,
+Relative and fuzzy calendar dates are checked separately in `helper-cases/`:
+four fixed-clock groups contain 82 inputs. Moji runs its actual filters; the
+pinned reference directly calls the unmodified DateTimeUtil.FromTimeAgo or
+FromUnknown with the same explicit relativeFrom clock. Reports are marked relative-date-helper,
 including exact output text and declared invalid outcomes. They check elapsed
 month/year intervals, float32 scaling, Unicode whitespace and range failures;
-they are not additional complete search/login/download scenarios. No wall-clock
+the fuzzy groups additionally check midnight, AM/PM, weekday selection, missing
+year inference, leap-day clamping and explicit offset clocks. Fuzzy ago inputs
+are excluded from these fixed-clock groups because FromUnknown's ago branch
+does not pass relativeFrom through to FromTimeAgo; time-only/default-date
+inference likewise still reads the reference host clock. The Unix upper limit
+is checked in the helper rather than as a full publication timestamp because
+Jackett's outer BaseIndexer clamps future publications to DateTime.Now; that
+outer behavior is a separately tracked compatibility gap.
+These helpers are not additional complete search/login/download scenarios. No wall-clock
 normalization or timestamp tolerance is applied to these helper results.
 
 The user confirmed inheriting Jackett's public tracker defaults for generated
@@ -141,13 +154,15 @@ python3 scripts/indexer-diff/compare_test.py
 python3 scripts/indexer-diff/build_reference_test.py
 ```
 
-Run the two fixed-clock helper groups separately, as CI does:
+Run the four fixed-clock helper groups separately, as CI does:
 
 ```sh
 GOCACHE=/tmp/moji-go-cache python3 scripts/indexer-diff/compare.py \
   --reference-root /tmp/moji-indexer-reference \
   --case scripts/indexer-diff/helper-cases/relative-dates/scenario.json \
   --case scripts/indexer-diff/helper-cases/relative-dates-zero-ticks/scenario.json \
+  --case scripts/indexer-diff/helper-cases/fuzzy-calendar/scenario.json \
+  --case scripts/indexer-diff/helper-cases/fuzzy-calendar-boundaries/scenario.json \
   --report /tmp/moji-relative-dates.json
 ```
 

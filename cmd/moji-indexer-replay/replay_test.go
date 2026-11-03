@@ -27,6 +27,10 @@ func TestRelativeDateHelperUsesFixedSubsecondClockAndNoHTTP(t *testing.T) {
 	if report := replay(context.Background(), input); report.Error == "" {
 		t.Fatal("helper accepted an arbitrary operation")
 	}
+	input.RelativeDateFilters = []relativeDateFilter{{Name: "fuzzytime", Input: "today"}}
+	if report := replay(context.Background(), input); report.Error != "" || len(report.RelativeDates) != 1 || report.RelativeDates[0].Value != "Sun, 31 Mar 2024 00:00:00 +0" || len(report.Requests) != 0 {
+		t.Fatalf("fuzzy calendar helper lost its explicit clock: %+v", report)
+	}
 }
 
 func TestReplayManualChallengesResumeOriginalForm(t *testing.T) {

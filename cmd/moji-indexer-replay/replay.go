@@ -180,7 +180,7 @@ func replayRelativeDates(ctx context.Context, input scenario, report *replayRepo
 	}
 	report.Mode = "relative-date-helper"
 	for _, test := range input.RelativeDateFilters {
-		if (test.Name != "timeago" && test.Name != "reltime") || len(test.Input) > 4096 {
+		if (test.Name != "timeago" && test.Name != "reltime" && test.Name != "fuzzytime") || len(test.Input) > 4096 {
 			return fmt.Errorf("invalid relative-date helper input")
 		}
 		value, err := cardigann.ApplyFilters(ctx, test.Input, []cardigann.Filter{{Name: test.Name}}, cardigann.FilterContext{Now: input.Now.UTC()})

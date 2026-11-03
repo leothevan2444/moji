@@ -2,7 +2,6 @@ package cardigann
 
 import (
 	"fmt"
-	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -109,54 +108,4 @@ func parseRuleDate(data, format string, now time.Time) (time.Time, error) {
 // this distinct from API timestamps and preserve the instant before formatting.
 func formatFilterDate(parsed time.Time) string {
 	return parsed.UTC().Format("Mon, 02 Jan 2006 15:04:05") + " +0"
-}
-
-var relativeDatePattern = regexp.MustCompile(`(?i)([0-9]+(?:\.[0-9]+)?)\s*(years?|yrs?|months?|mons?|weeks?|wks?|days?|hours?|hrs?|minutes?|mins?|seconds?|secs?|[ywdhms])\b`)
-var fuzzyAgoPattern = regexp.MustCompile(`(?:^|[^\p{L}\p{Mn}\p{Nd}\p{Pc}])ago`)
-
-func parseFuzzyRelativeDate(data string, now time.Time) (time.Time, error) {
-	if now.IsZero() {
-		now = time.Now().UTC()
-	}
-	text := strings.ToLower(strings.TrimSpace(data))
-	if fuzzyAgoPattern.MatchString(text) {
-		return parseRelativeDate(data, now)
-	}
-	switch text {
-	case "now", "just now", "today", "right now":
-		return now, nil
-	case "yesterday":
-		return now.AddDate(0, 0, -1), nil
-	}
-	// Relative duration parts are summed; calendar years/months retain their
-	// calendar meaning rather than assuming every month has thirty days.
-	matches := relativeDatePattern.FindAllStringSubmatch(text, -1)
-	if len(matches) == 0 {
-		return time.Time{}, fmt.Errorf("unrecognized relative date")
-	}
-	result := now
-	for _, match := range matches {
-		n, err := strconv.ParseFloat(match[1], 64)
-		if err != nil || n > 1000000 {
-			return time.Time{}, fmt.Errorf("relative date exceeds range")
-		}
-		unit := match[2]
-		switch {
-		case strings.HasPrefix(unit, "y"):
-			result = result.AddDate(-int(n), 0, 0)
-		case strings.HasPrefix(unit, "mon"):
-			result = result.AddDate(0, -int(n), 0)
-		case strings.HasPrefix(unit, "w"):
-			result = result.AddDate(0, 0, -int(n*7))
-		case strings.HasPrefix(unit, "d"):
-			result = result.AddDate(0, 0, -int(n))
-		case strings.HasPrefix(unit, "h"):
-			result = result.Add(-time.Duration(n * float64(time.Hour)))
-		case strings.HasPrefix(unit, "m"):
-			result = result.Add(-time.Duration(n * float64(time.Minute)))
-		case strings.HasPrefix(unit, "s"):
-			result = result.Add(-time.Duration(n * float64(time.Second)))
-		}
-	}
-	return result, nil
 }

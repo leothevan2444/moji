@@ -294,7 +294,7 @@ func (e *Execution) applyField(result *Result, name, value string, modifiers []s
 		}
 		value = strconv.Itoa(count)
 	case "date":
-		parsed, err := parseRuleDate(value, "", e.now)
+		parsed, err := parseFuzzyDate(value, e.now)
 		if err != nil {
 			return "", err
 		}

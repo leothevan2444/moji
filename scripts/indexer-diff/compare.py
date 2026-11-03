@@ -44,7 +44,7 @@ def resolve_case(path):
         if clock.tzinfo is None or not isinstance(rows, list) or not 1 <= len(rows) <= 100:
             raise ValueError("relative-date helper requires a zoned clock and 1..100 inputs")
         for row in rows:
-            if not isinstance(row, dict) or set(row) - {"name", "input", "expectInvalid"} or row.get("name") not in {"timeago", "reltime"} or not isinstance(row.get("input"), str) or len(row["input"].encode("utf-8")) > 4096 or not isinstance(row.get("expectInvalid", False), bool):
+            if not isinstance(row, dict) or set(row) - {"name", "input", "expectInvalid"} or row.get("name") not in {"timeago", "reltime", "fuzzytime"} or not isinstance(row.get("input"), str) or len(row["input"].encode("utf-8")) > 4096 or not isinstance(row.get("expectInvalid", False), bool):
                 raise ValueError("invalid relative-date helper input")
         return data, [], None
     settings = data.get("settings", {})

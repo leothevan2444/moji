@@ -34,11 +34,15 @@ if (input["relativeDateFilters"] is JArray relativeFilters)
         {
             var name = test.Value<string>("name");
             var text = test.Value<string>("input");
-            if ((name != "timeago" && name != "reltime") || text == null || Encoding.UTF8.GetByteCount(text) > 4096)
+            if ((name != "timeago" && name != "reltime" && name != "fuzzytime") || text == null || Encoding.UTF8.GetByteCount(text) > 4096)
                 throw new ArgumentException("Invalid relative-date helper input");
             string value = "";
             bool invalid = false;
-            try { value = DateTimeUtil.FromTimeAgo(text, clock).ToString(DateTimeUtil.Rfc1123ZPattern, CultureInfo.InvariantCulture); }
+            try
+            {
+                var parsed = name == "fuzzytime" ? DateTimeUtil.FromUnknown(text, null, clock) : DateTimeUtil.FromTimeAgo(text, clock);
+                value = parsed.ToString(DateTimeUtil.Rfc1123ZPattern, CultureInfo.InvariantCulture);
+            }
             catch (Exception) { invalid = true; }
             if (invalid != (test.Value<bool?>("expectInvalid") ?? false))
                 throw new ArgumentException("Relative-date outcome differs from declared expectation");
