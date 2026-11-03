@@ -33,6 +33,7 @@ RUN apk add --no-cache ca-certificates curl ffmpeg tini tzdata \
 COPY --from=backend /out/moji /usr/local/bin/moji
 COPY --from=web /src/web/dist/ /opt/moji/web/dist/
 COPY docker/config.example.yaml /opt/moji/config.example.yaml
+COPY internal/cardigann/NOTICE.md internal/cardigann/DOTNET-LICENSE.txt /usr/share/licenses/moji/cardigann/
 ARG VERSION
 ARG VCS_REF=unknown
 LABEL org.opencontainers.image.title="Moji" \

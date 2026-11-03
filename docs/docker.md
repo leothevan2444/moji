@@ -21,6 +21,9 @@ runtime installs the distribution's `ffmpeg` package, which includes both
 [ffmpeg and ffprobe](https://pkgs.alpinelinux.org/package/v3.23/community/x86_64/ffmpeg),
 along with CA certificates, timezone data, curl for health checks and tini for
 process supervision. Node and Go build tools are absent from the runtime.
+The Cardigann source attribution and .NET encoding-table MIT permission text
+are included under `/usr/share/licenses/moji/cardigann/`. Production indexer
+YAML files are downloaded separately at runtime.
 
 ## Build and inspect
 
@@ -38,7 +41,8 @@ make docker-test
 
 `docker-test` checks the non-root user, H.264/AAC media with embedded subtitle
 conversion and two-part FFmpeg assembly, Docker health status, built UI,
-frontend and GraphQL versions, and the OCI version label. It starts Moji with a
+frontend and GraphQL versions, the OCI version label, and exact Cardigann notice
+contents. It starts Moji with a
 read-only root filesystem, saves settings through GraphQL, checks graceful
 shutdown, and verifies config and SQLite persistence across container replacement.
 Its application containers have no external network and no Jackett configuration;

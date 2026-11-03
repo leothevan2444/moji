@@ -196,6 +196,20 @@
 
 本轮完整 Go、cardigann/indexer/replay race 与相关 vet 通过。没有 API/UI/schema/Load 变化，不重复 Web/静态全库/镜像，也未操作真实服务或数据。后续先核对未来发布时间，再继续来源/许可与原完整验收范围。
 
+### 未来发布时间的宿主差异（2026-11-04）
+
+后续源码核对纠正“必然属于内置解析缺陷”的判断：固定 Jackett 的 [BaseIndexer.FixResults](https://github.com/Jackett/Jackett/blob/cfdc645711c487d05cb55932e394b2370154d81e/src/Jackett.Common/Indexers/BaseIndexer.cs) 在非 Debug 模式将未来 PublishDate 改成 DateTime.Now，发生在规则解析之后。固定 Prowlarr 的 [CardigannParser](https://github.com/Prowlarr/Prowlarr/blob/3326e2d4aa978f35fa7e44f66758ebfc8f553d67/src/NzbDrone.Core/Indexers/Definitions/Cardigann/CardigannParser.cs)、[IndexerBase.CleanupReleases](https://github.com/Prowlarr/Prowlarr/blob/3326e2d4aa978f35fa7e44f66758ebfc8f553d67/src/NzbDrone.Core/Indexers/IndexerBase.cs) 及 [ReleaseInfo](https://github.com/Prowlarr/Prowlarr/blob/3326e2d4aa978f35fa7e44f66758ebfc8f553d67/src/NzbDrone.Core/Parser/Model/ReleaseInfo.cs) 这条解析/清理路径保留解析值，没有对应改写。
+
+已按项目默认行为复核要求询问用户：沿用 Jackett 钳制为检索时间，还是沿用 Prowlarr 保留原解析时间。尚未收到选择，未更改该默认行为、放宽时间比较或删除原失败报告。此项单独等待选择，其他验收继续。
+
+### 来源与镜像许可文本（2026-11-04）
+
+重新读取固定 Indexers 归档，未找到独立 LICENSE/COPYING/NOTICE；当天官方 [GitHub 仓库元数据](https://github.com/Prowlarr/Indexers) 的 license 为 null，固定 README 说明自动同步 Jackett 定义。实际核对固定 Jackett GPL v2 和 Prowlarr GPL v3 根文本；这不自动建立每份 Indexers 文件的独立授权，也不选择 Moji 的发行许可证。内嵌 schema 与归档逐字节 SHA-256 相同：`376976d75daf036ead90dc55bf542ce602da8d24deb31cc10200b6bf181e3e8e`。完整事实/来源更新在 [NOTICE](../../internal/cardigann/NOTICE.md)；应用发行许可、schema 再分发授权及完整依赖许可审查仍未完成，没有对其作法律结论。
+
+发现并修正具体打包遗漏：编码表的 .NET MIT 全文虽在源码中保留，原运行镜像没有复制。Docker 现包含 `/usr/share/licenses/moji/cardigann/NOTICE.md` 与 `DOTNET-LICENSE.txt`，smoke 对两文件逐字节 SHA-256 核对；未改变许可正文或新增应用许可证。独立候选 amd64 镜像 `sha256:f350d784f1ba460a10238b713e405880c5a9bdca0df32a0571666c22a8dd4543` 构建及完整断网 smoke exit 0，版本为 `dev-53210917d6c8-dirty`，源码为 5321091 加本批改动，不冒称已提交冻结镜像。日志 `/tmp/moji-indexer-notice-build.log`、`/tmp/moji-indexer-notice-smoke.log`；shell 语法、12 版本/12 发布脚本测试、文档和 diff 检查通过。
+
+该 smoke 同时覆盖非 root、媒体工具链、无 Jackett/无规则库启动、Home 本地读取、配置保存、优雅退出和容器替换后的三库保留，但不覆盖已安装规则、真实站点或 ARM64。没有运行生产实例、推送或部署；最终冻结提交后的多架构镜像仍须另验。
+
 ## 附件缓存负载与取消测量
 
 基线 `8c8bd52`，新增显式 `internal/indexer/artifact_performance_test.go`；不改生产缓存、API 或配置。Linux/amd64、Xeon E5-2673 v4、GOMAXPROCS=2，每项 100 次；输入是约 1 MiB 的合法合成 torrent，获取回调只提供内存字节，不访问 HTTP。普通测试已有预算/取消/迟到成功/关闭回归，本轮相关测试通过。

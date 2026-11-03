@@ -31,6 +31,12 @@ clocks. The production Go implementation uses elapsed 30-day months/365-day
 years and float32 scaling; .NET remains a development-only reference.
 https://github.com/Jackett/Jackett/blob/cfdc645711c487d05cb55932e394b2370154d81e/src/Jackett.Common/Utils/DateTimeUtil.cs
 
+fuzzytime calendar branches and direct date/dateheader parsing were checked
+against FromUnknown in that same source. jsonjoinarray follows the pinned
+Cardigann JObject/SelectToken/child-enumeration contract. The Go ordered JSON
+representation, bounded formatting and calendar handling were independently
+implemented; no upstream C# runtime or source is shipped with Moji.
+
 validfilename follows the native Path.GetInvalidFileNameChars contract, which
 differs between Unix and Windows. Actual interpreter cases use the pinned Linux
 reference; this filter is separate from Moji's validation of filesystem paths.
@@ -46,6 +52,9 @@ DOTNET-LICENSE.txt. Pinned sources, checksums and regeneration instructions are
 in scripts/cardigann-encodings/. The SDK is used only to reproduce test oracles;
 Moji has no .NET runtime dependency. The independent runtime fixture is
 testdata/dotnet-encoding-v9.json.
+The Docker image carries this attribution and DOTNET-LICENSE.txt under
+/usr/share/licenses/moji/cardigann/. Standalone binary packages must likewise
+carry the attribution and encoding-table permission text.
 
 The local schema compiler makes one documented compatibility amendment:
 download.selectors accepts the boolean usebeforeresponse supported by the
@@ -66,5 +75,20 @@ Implementation dependencies:
 - jsonschema/v6: pinned schema validation without runtime schema fetching; Apache-2.0.
 - dateparse: human-readable date recognition; MIT.
 
-The application distribution license and upstream schema attribution must be
-reviewed before release. Dependency license texts remain in their source modules.
+At the pinned Indexers revision, no standalone LICENSE/COPYING/NOTICE file was
+found in the archive. The repository's GitHub metadata also reported no license
+on 2026-11-04. Its README describes automatic imports of Jackett definitions:
+https://github.com/Prowlarr/Indexers/blob/5f5db4e58d06be18619c3a858b9a91ade6f341ca/README.md
+Jackett's pinned repository contains GPL v2; the separately pinned Prowlarr
+application contains GPL v3. These facts do not establish a separate permission
+grant for every Indexers file or select an application license for Moji:
+https://github.com/Jackett/Jackett/blob/cfdc645711c487d05cb55932e394b2370154d81e/LICENSE
+https://github.com/Prowlarr/Prowlarr/blob/3326e2d4aa978f35fa7e44f66758ebfc8f553d67/LICENSE
+
+The embedded schema matches the pinned archive byte-for-byte (SHA-256
+376976d75daf036ead90dc55bf542ce602da8d24deb31cc10200b6bf181e3e8e).
+Moji's application distribution license and authorization to redistribute that
+schema remain unresolved release-review items. Runtime downloading of YAML
+does not settle the embedded schema's distribution review. Dependency license
+texts remain in their source modules; this input inventory does not replace
+the application's complete dependency/license review.
