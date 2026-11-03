@@ -25,7 +25,7 @@
 
 | 问题 | 严重性 | 证据与影响 | 处理边界 |
 | --- | --- | --- | --- |
-| CI 后端测试覆盖不完整 | P1 高：验证风险 | [ci.yml](../../.github/workflows/ci.yml) 的 Go job 仅跑 graphqlapi/taskruntime/cmd/moji，storage/subscription/downloader 等包自身测试不因被依赖而执行 | 延续 [G-001](../TODO.md#g-001)，补实际覆盖，不宣称当前 CI 已完整验证 |
+| CI 后端测试覆盖不完整 | P1 高：验证风险 | [ci.yml](../../.github/workflows/ci.yml) 的 Go job 仅跑 graphqlapi/taskruntime/cmd/moji，storage/subscription/downloader 等包自身测试不因被依赖而执行 | 当时延续 G-001；后续已[补全包配置与本地验证](2026-11-03-cardigann-requests.md#ci-go-coverage)，未声称远端运行 |
 | 演员及关联列表仍依赖上游全量读取 | P1 高：规模边界 | [performer.List](../../internal/performer/service.go) 的 AllPerformers、[场景读取](../../internal/performer/performer_detail.go) 的 per_page=-1；[upcoming](../../internal/subscription/upcoming.go) 的分页查询前也全量取演员判断订阅关系 | 延续并补充 [S-001](../TODO.md#s-001)。这是请求量/内存/延迟随库增长的边界，尚无本轮负载测量；不能靠延迟订阅真值换性能而不复核产品取舍 |
 | 设置策略编辑器同时承担多个独立领域 | P2 中：修改影响面 | [PolicySettingsEditor](../../web/src/components/settings/PolicySettingsEditor.tsx) 约 1171 行，真实调用横跨 indexers/metadata/tasks/resources，共有大表单、编码与 area 分支，且重复定义 FieldLabel；settings 样式分布在多个作用域/导入文件 | 新增 [A-001](../TODO.md#a-001)。按领域拆编辑与编码，复用公共控件及有所有权的样式，保持已验证队列/配置语义；不是仅因行数要求立即重写 |
 | 任务运行时消费接口过宽 | P2 中：边界约束不足 | [TaskRuntimeService](../../internal/graphqlapi/resolver.go) 同时暴露读、创建、重试、批量、同步和入库，虽然当前创建仍走 TaskFlow，类型层未限制绕过它；main/service 的组装与执行路径也较集中 | 新增 [A-002](../TODO.md#a-002)。按实际消费能力增量收窄；runtime 状态机保持单一所有者，不拆成互相复制阶段的服务 |

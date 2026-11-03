@@ -4,7 +4,7 @@
 
 ## 产品目标
 
-Moji 把“演员或影片意图”转为可恢复的下载与入库工作流。成功标准是后台能够持续完成自动化，失败时状态可信、原因可解释、用户有下一步可做。Stash 继续承担媒体库、元数据与播放资源管理；qBittorrent 负责 BT 传输；Jackett 负责索引搜索。
+Moji 把“演员或影片意图”转为可恢复的下载与入库工作流。成功标准是后台能够持续完成自动化，失败时状态可信、原因可解释、用户有下一步可做。Stash 继续承担媒体库、元数据与播放资源管理；qBittorrent 负责 BT 传输。2026-11-02 工作区已用统一 indexer 服务组装内置 Cardigann 与可选 Jackett；完整产品与验收仍见 [R-004](TODO.md#r-004)，未部署。
 
 长期需要适应较大的演员库与任务历史，但“存在分页和限流”不等于已验证任意规模。当前规模边界见 [架构复核](reviews/2026-11-01-project-standards.md)，历史验证保留在对应日期复核，未完成工作见 [TODO](TODO.md)。
 
@@ -16,7 +16,9 @@ flowchart TD
   UI --> Flow[taskflow：创建意图]
   Domains --> Flow
   Flow --> Tasks[taskruntime：持久任务与状态机]
-  Tasks --> Jackett[Jackett 搜索与种子验证]
+  Tasks --> Indexers[统一索引与种子验证]
+  Indexers --> Builtin[内置 Cardigann]
+  Indexers --> Jackett[可选 Jackett]
   Tasks --> QB[qBittorrent 下载与文件选择]
   Tasks --> Media[mediafiles：整理与交付]
   Tasks --> StashSync[stashsync：扫描 / 生成 / 识别 / 验证]
@@ -40,6 +42,11 @@ flowchart TD
 | `internal/graphqlapi`、`graphql/moji` | 传输契约、错误、映射；业务规则在领域层 | [开发](workflows/development.md) |
 | `internal/taskflow` | 创建意图和任务来源映射 | [任务](modules/tasks.md) |
 | `internal/taskruntime` | 任务身份、持久化、寻源、下载、阶段推进、工作台与事件 | [任务](modules/tasks.md) |
+| `internal/indexer`、`internal/cardigann`、`internal/indexerdefs`、`internal/indexeradmin`、`internal/indexercheck`、`internal/indexerlogin` | 统一搜索与取种、声明式解释器、运行时规则库、配置站点与脱敏目录、隔离诊断及有界登录挑战管理；实施中 | [方案与状态](plans/builtin-indexers.md) |
+| `internal/indexercategory` | 标准 Torznab 数字 ID/名称的只读映射，由索引适配器和 Cardigann 共用 | [方案与状态](plans/builtin-indexers.md) |
+| `internal/indexerquery` | 内置与统一搜索入口共享的命名参数资格、大小写规范化和重复别名拒绝；不拥有网络或任务状态 | [任务](modules/tasks.md) |
+| `internal/torrentsearch` | 交互搜索持久接收、逐站进度、候选分页/归属、取消与重启中断；应用 worker 复用统一索引服务 | [任务](modules/tasks.md) |
+| `internal/torrentmeta` | 有界纯 torrent 元数据与 magnet 解析；原始字节、文件路径与哈希，供索引获取缓存和任务验证共用 | [任务](modules/tasks.md) |
 | `internal/subscription` | 订阅动作、检查 reservation、待发行生命周期、发行策略和持久复核 | [订阅](modules/subscriptions.md) |
 | `internal/performer`、`internal/discovery` | 演员读取、选片资格、发现与创建入口 | [目录](modules/catalog.md) |
 | `internal/metadata`、`internal/stashboxcache` | 已配置 endpoint、演员映射和可重建目录缓存 | [目录](modules/catalog.md) |
@@ -50,7 +57,7 @@ flowchart TD
 | `internal/releasedate` | 发行日期校验与业务日历/时区，多个入口共享 | [订阅](modules/subscriptions.md) |
 | `internal/stats`、`internal/logging` | 依赖状态、运行统计、日志与事件 | [运维](modules/operations.md) |
 | `internal/controller/api`、`internal/webui` | 辅助 HTTP API、健康检查与 SPA 静态文件 | [运维](modules/operations.md) |
-| `pkg/{stash,stashbox,jackett,qbittorrent}` | 可复用的外部服务客户端 | [运维](modules/operations.md) |
+| `pkg/{stash,stashbox,jackett,qbittorrent,flaresolverr}` | 可复用的外部服务客户端 | [运维](modules/operations.md) |
 | `web/src` | 路由、实体缓存、领域 hooks、操作界面、帮助和 i18n | [Web](modules/web.md) |
 
 ## 状态真值
@@ -72,7 +79,7 @@ flowchart TD
 
 现有领域模块、任务创建入口、统一存储 owner 和前端共享组件是继续发展的基础。当前不需要以全仓重写或引入新框架解决组织问题。
 
-高优先级风险是 [G-001](TODO.md#g-001) 的实际后端 CI 覆盖和 [S-001](TODO.md#s-001) 的全量上游读取；中等维护问题是 [A-001](TODO.md#a-001) 的跨业务设置编辑热点与 [A-002](TODO.md#a-002) 的过宽消费接口。后两项按实际改动增量收敛，不为了文件行数拆散同一状态机。证据、影响和本轮验证局限见日期复核，实施规则见工程规范。
+Go CI 已随 R-004 改为全包默认离线测试，配置与本地验证见[覆盖记录](reviews/2026-11-03-cardigann-requests.md#ci-go-coverage)。高优先级风险仍有 [S-001](TODO.md#s-001) 的全量上游读取；中等维护问题是 [A-001](TODO.md#a-001) 的跨业务设置编辑热点与 [A-002](TODO.md#a-002) 的过宽消费接口。后两项按实际改动增量收敛，不为了文件行数拆散同一状态机。证据、影响和本轮验证局限见日期复核，实施规则见工程规范。
 
 ## 有意保留的实现差异
 

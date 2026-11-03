@@ -41,6 +41,9 @@ conversion and two-part FFmpeg assembly, Docker health status, built UI,
 frontend and GraphQL versions, and the OCI version label. It starts Moji with a
 read-only root filesystem, saves settings through GraphQL, checks graceful
 shutdown, and verifies config and SQLite persistence across container replacement.
+Its application containers have no external network and no Jackett configuration;
+the indexer overview and rule-library state must remain available before and
+after replacement, without an implicit rule download or update check.
 It creates and removes its own containers and volume. CI runs the same check on
 native amd64 and arm64 runners before publishing either architecture.
 
@@ -109,8 +112,11 @@ mkdir -p docker/data docker/downloads docker/library
 cp docker/config.example.yaml docker/data/config.yaml
 ```
 
-Edit `docker/data/config.yaml`: Jackett URL and API key are required at startup;
-fill in qBittorrent and Stash connection details to enable the complete workflow.
+Edit `docker/data/config.yaml`: fill in qBittorrent and Stash connection details
+to enable downloading and delivery. The v3 example starts with no enabled
+indexer sites. Download the Cardigann v11 library from **Settings → Indexers →
+Definition library**, then add sites. Jackett is optional; configure and enable
+it under **External Jackett** if needed. See [indexer setup](indexers.md).
 The example host addresses assume those services are published on the Docker
 host. If they run on a shared Docker network, use their service names and attach
 Moji to that network instead. `localhost` inside Moji means the Moji container.

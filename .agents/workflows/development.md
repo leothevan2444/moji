@@ -81,11 +81,12 @@ docker run --rm --ipc=host \
 [ci.yml](../../.github/workflows/ci.yml) 当前配置：
 
 - Web：固定 Playwright 容器，setup-node 22，npm ci、i18n、Vitest、build、Chromium 视觉。
-- Go：两个 Python 脚本测试，以及 `go test ./internal/graphqlapi ./internal/taskruntime ./cmd/moji`。它不是 `go test ./...`，例如 storage 自身测试并不会因此自动执行。
+- Go：版本、发布脚本及索引差分比较器的 Python 测试，以及 `go test ./...`，实际运行所有包的默认离线测试，包含 storage、downloader 和内置索引模块。真实服务测试仍显式 opt-in。
 - Docker：原生 amd64/arm64 各构建与 smoke，适用事件导出已测镜像。
-- Publish：依赖上面三个 jobs，通过 [发布工作流](../../.github/workflows/docker-publish.yml) 合并制品发布。
+- Indexer compatibility：调用[兼容工作流](../../.github/workflows/indexer-compatibility.yml)，固定 SDK/Jackett 构建与合成 HTTP 场景真实差分、固定 v11 语料下载/编译及报告制品；仅开发 CI 需要 .NET。
+- Publish：依赖 Web、Go、Docker 和 indexer-compatibility 四个 jobs，通过 [发布工作流](../../.github/workflows/docker-publish.yml) 合并制品发布。
 
-增加全量 Go 覆盖是 [G-001](../TODO.md#g-001) 中的改进建议，未落实前不能把当前 CI 描述为全量后端验证。
+2026-11-03 已落实全包 Go 配置并完成本地无测试结果缓存验证，见[CI 覆盖记录](../reviews/2026-11-03-cardigann-requests.md#ci-go-coverage)。兼容语料与上游首批差分 CI 已配置并验证本地同等命令，范围见[复核](../reviews/2026-11-03-cardigann-requests.md)。这不表示远端 Actions 已运行；更多差分场景及整体验收仍属 R-004 未完项。
 
 ## 交付
 

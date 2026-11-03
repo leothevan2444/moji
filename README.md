@@ -1,8 +1,8 @@
 # Moji
 
 Moji is a self-hosted companion for [Stash](https://github.com/stashapp/stash)
-that tracks JAV performers and releases, searches for torrents through
-[Jackett](https://github.com/Jackett/Jackett), and downloads them with
+that tracks JAV performers and releases, searches for torrents with built-in
+indexers or optional [Jackett](https://github.com/Jackett/Jackett), and downloads them with
 [qBittorrent](https://www.qbittorrent.org/).
 
 Moji prepares and delivers the movie files. Stash handles library scanning,
@@ -11,6 +11,8 @@ those Stash operations rather than writing movie metadata itself.
 
 ## Current features
 
+- Built-in torrent search using a runtime-downloaded Cardigann v11 definition
+  library. Definitions can be updated independently of Moji; Jackett is optional.
 - Performer subscriptions and manual movie tasks, with persisted progress,
   retries, and operator intervention in the web UI.
 - Torrent file selection that excludes recognized advertisements, samples,
@@ -48,9 +50,9 @@ built web UI, Moji, FFmpeg, and ffprobe; host installation of FFmpeg is not need
 The following steps build a local image from source, without assuming a public
 registry image.
 
-You need Docker with Compose and running Jackett, qBittorrent, and Stash services
-reachable from the Moji container. Configure Stash's library and identification
-sources for the movies Moji will deliver.
+You need Docker with Compose. Configure qBittorrent and Stash services reachable
+from the Moji container to enable downloading and delivery. Configure Stash's
+library and identification sources for the movies Moji will deliver.
 
 Clone the repository, then prepare the directories and configuration:
 
@@ -64,8 +66,6 @@ printf 'MOJI_UID=%s\nMOJI_GID=%s\n' "$(id -u)" "$(id -g)" > docker/.env
 
 Edit `docker/data/config.yaml` before starting:
 
-- Set the required Jackett URL and API key. Set its dashboard password to enable
-  the dashboard's Jackett status checks.
 - Set the qBittorrent URL, username, and password to enable downloading.
 - Set the Stash URL and API key, if authentication is enabled.
 - Set the download and library roots described below. For an existing media
@@ -81,6 +81,12 @@ Then build and start Moji:
 Open <http://localhost:10000>. The default port binding accepts connections from
 the Docker host only. To allow access from your local network, add
 `MOJI_BIND_ADDRESS=0.0.0.0` to `docker/.env` and recreate the container.
+
+In **Settings → Indexers → Definition library**, download the definitions, then
+add and configure sites under **Sites**. No sites are enabled automatically.
+For an existing Jackett installation, configure its URL and API key under
+**External Jackett** and enable it. Built-in and external sites can share the
+search order. See [indexer setup and recovery](docs/indexers.md).
 
 Use the wrapper for subsequent Compose commands so the image version is always
 derived from the checked-out Git revision:
@@ -161,7 +167,7 @@ git push origin v0.2.0
 ```
 
 CI builds and smoke-tests `linux/amd64` and `linux/arm64` images on native runners.
-After the Go, frontend and visual checks also pass, publication reuses those
+After the Go, frontend, visual and indexer-compatibility checks also pass, publication reuses those
 exact image artifacts and merges their platform manifests without rebuilding.
 Configure the repository variable `DOCKERHUB_USERNAME` and secret
 `DOCKERHUB_TOKEN` (with push access).
@@ -194,7 +200,7 @@ single-file delivery does not require either tool.
 
 Create `config.yaml` from [the example](docker/config.example.yaml), replacing
 container service URLs and `/data`, `/downloads`, and `/library` paths with your
-local values, including `logging.file_path`. Then build and run from the
+local values. Then build and run from the
 repository root:
 
 ```sh
@@ -227,7 +233,8 @@ make docker-test
 `test-media` requires FFmpeg and ffprobe and exercises real movie-part assembly
 and subtitle processing. `docker-test` uses temporary containers and a volume to
 verify H.264/AAC assembly and subtitles, Docker health status, the web UI,
-frontend and backend versions, read-only startup, graceful shutdown, and saved
+frontend and backend versions, read-only startup without Jackett or installed
+definitions, local indexer state, graceful shutdown, and saved
 settings and data across container replacement; it cleans up its test resources.
 CI runs the Docker checks on both native amd64 and arm64 runners.
 

@@ -42,7 +42,7 @@ Each file has one bounded writer and four query-only reader connections. Transac
 
 ## Upgrade and initial migration
 
-SQL migrations have ordered versions, names and immutable checksums in `schema_migrations`. Unknown/newer versions or changed checksums stop startup; there is no automatic reset. The core is currently version 2; runtime/cache are version 1. Independent checkpoint payload versions also reject unsupported data.
+SQL migrations have ordered versions, names and immutable checksums in `schema_migrations`. Unknown/newer versions or changed checksums stop startup; there is no automatic reset. The current schema versions are core 6, runtime 4 and cache 1. Independent checkpoint payload versions also reject unsupported data.
 
 Before a supported nonempty upgrade, Moji creates a protected verified backup. DDL and its ledger entry commit in the same transaction. Add future migrations instead of editing an applied migration. Keep important relations in core, evolve typed/indexed fields there, and reserve JSON for versioned recovery payloads or upstream snapshots. Rewrite large data in resumable bounded batches when a future migration requires it.
 
