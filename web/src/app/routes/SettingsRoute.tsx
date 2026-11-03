@@ -47,7 +47,7 @@ export function Component() {
   const failed = <article className="drawer-card"><div className="drawer-card__head"><h3>{t(`settings.tabs.${active}`)}</h3></div><p className="settings-feedback tone-danger">{t("errors.moduleLoad")}</p><button type="button" onClick={() => window.location.reload()}>{t("common.retry")}</button></article>;
 
   const panels: readonly string[] = SETTINGS_PANELS[active];
-  const requested = search.get("panel");
+  const requested = active === "indexers" && search.get("panel") === "queryOrder" ? "sites" : search.get("panel");
   const panel = requested && panels.includes(requested) ? requested : panels[0] ?? null;
   const selectPanel = (next: string) => setSearch(current => { const value = new URLSearchParams(current); value.set("panel", next); return value; });
 
@@ -71,7 +71,7 @@ export function Component() {
             if (target === null) return;
             event.preventDefault(); selectPanel(panels[target]);
             document.getElementById(`settings-tab-${panels[target]}`)?.focus();
-          }}>{t(`settingsLayout.panels.${item}`)}</button>)}
+          }}>{t(active === "indexers" && item === "connection" ? "indexers.external" : `settingsLayout.panels.${item}`)}</button>)}
       </div> : null}
       <div id="settings-panel" className="settings-main__panel" role={panels.length ? "tabpanel" : undefined} aria-labelledby={panel ? `settings-tab-${panel}` : undefined}>
         <Provider value={settingsClient}><SettingsAutosaveProvider><SettingsPanelContext.Provider value={panel}>

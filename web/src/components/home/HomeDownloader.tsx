@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import { Provider, useMutation, useQuery } from "urql";
 import { useTranslation } from "react-i18next";
+import { Link } from "react-router";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faArrowRight, faCircleInfo, faRotate } from "@fortawesome/free-solid-svg-icons";
 import { settingsClient } from "../../graphql/client";
@@ -28,8 +29,9 @@ function Summary({ onOpenList }: { onOpenList: () => void }) {
     ["completedBytes", formatBytes(snap.completedBytes)], ["remainingBytes", formatBytes(snap.remainingBytes)],
     ["connection", t(`downloader.connections.${snap.connectionStatus || "unknown"}`, { defaultValue: t("downloader.unknown") })]
   ] : [];
-  return <section className="home-downloader" aria-labelledby="home-downloader-title">
-    <div className="home-panel-heading"><h3 id="home-downloader-title">{t("downloader.title")}</h3><div className="profile-card__icons">
+  return <section className="home-panel home-downloader" aria-labelledby="home-downloader-title">
+    <div className="home-panel-heading"><h2 id="home-downloader-title">{t("downloader.title")}</h2><div className="profile-card__icons">
+      <Link className="home-inline-button" to="/settings/downloader">{t("home.configure")}</Link>
       <button type="button" className="home-inline-button" title={t("downloader.refresh")} aria-label={t("downloader.refresh")} aria-busy={refreshing} disabled={refreshing} onClick={() => void refresh({}).then(() => requery({ requestPolicy: "network-only" }))}><FontAwesomeIcon icon={faRotate} aria-hidden="true" /></button>
     </div></div>
     {error || refreshError ? <div className="home-module-error" role="status"><p>{describeQueryError(error || refreshError)}</p></div> : null}

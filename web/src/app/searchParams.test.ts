@@ -38,10 +38,10 @@ describe("performer search params", () => {
 });
 
 describe("discover search params", () => {
-  it("deduplicates trackers and validates source-specific sorting", () => {
+  it("maps saved Jackett links and validates source-specific sorting", () => {
     const state = parseDiscoverSearchParams(new URLSearchParams("source=jackett&sort=title-asc&trackers=b,a,b&fastRules=1"));
     expect(state.sort).toBe("relevance");
-    expect(state.trackers).toEqual(["a", "b"]);
+    expect(state.instances).toEqual(["jackett/a", "jackett/b"]);
     expect(state.fastRules).toBe(true);
   });
 

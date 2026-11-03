@@ -4,11 +4,50 @@ These settings define how Moji reaches its dependencies and how a completed down
 
 ## Service connections
 
-Jackett is under Indexers, qBittorrent under Downloader, and Stash under Stash.
+Manage built-in sites under **Indexers**, with optional external Jackett. qBittorrent is under **Downloader** and Stash under **Stash**.
 
-Configure the base URL and credentials for Stash, Jackett, and qBittorrent. Moji derives the required API endpoints from those base URLs. A service is **configured** when its minimum fields are present and **ready** only after a recent probe succeeds.
+Configure the base URL and credentials for Stash, qBittorrent, and Jackett if you use it. Moji derives the required API endpoints from those base URLs. A service is **configured** when its minimum fields are present and **ready** only after a recent probe succeeds.
 
 qBittorrent's default save path, category, and tags are applied to new tasks unless an operation supplies an override. The Jackett dashboard password is used when torrent files require authenticated retrieval. Credentials are returned to the current settings UI, so access to Moji should be restricted.
+
+## Definition library and update policy
+
+Built-in indexing uses the independently downloaded Prowlarr v11 definition library. For the first installation, choose **Download definitions** under **Indexers > Definitions**. Later checks and updates do not require updating Moji itself.
+
+The default is to check every 24 hours and apply updates manually. **Update policy** supports a check interval of 1–168 hours and automatic application. When enabled, new versions are validated and applied at the next scheduled check. Turning it off does not cancel an update already in progress; use the job's cancel action to stop it.
+
+Conflicts preserve your edits. **Load current settings** asks for confirmation before discarding unsaved changes and reading the latest server policy.
+
+
+Home’s **Indexers** section shows the current failed or interrupted definition job. **View definitions** opens its status and actions. Reloading or reconnecting restores server state; a subsequent job replaces the old notice. Reading or retrying Home status does not check for updates or download definitions.
+
+## Test a site
+
+Use **Test site** in the site list or built-in site editor. The editor tests the current unsaved fields and credentials without saving a site or creating a download task. Configuration and authentication are checked by default. Select **Test search** and enter keywords to search; **Test resource acquisition** is a separate opt-in and may consume a site download quota.
+
+Each stage has its own result. Searches that did not run do not show a zero-result count. Authentication managed by Jackett is **Not independently verified**. Editing the parameters or test scope clears the old result; start another test to check the new values. Use **Stop test** or close the dialog to stop waiting.
+
+## Log in to a site
+
+In **Indexers > Sites**, choose **Log in to site** for a built-in site. Login uses saved settings; save an editing draft first. Opening the dialog only reads an existing challenge. Select **Start login** to authenticate, then **Submit answer** if the site requests text or image verification. The answer is cleared on submission and is not saved in settings.
+
+Reopen the dialog after closing or refreshing the page to recover a challenge that is still valid. Expiry or a Moji restart requires a fresh login. **Restart login** clears the old verification first. **Cancel login** can stop an in-flight answer and release the flow. The resulting session is used for searches and resource acquisition, which are still checked separately.
+
+If the definition has no separate login flow, configure a cookie if the site requires one. Manage external Jackett authentication in Jackett.
+
+## Additional trusted origins
+
+Open a built-in site editor and expand **Advanced settings** only when authentication or resource retrieval needs another origin. Enter one full HTTP(S) origin per line, such as `https://download.example` or `https://auth.example:8443`, up to 16. Paths, query parameters, fragments, credentials and wildcards are not accepted. Clear the field and save to revoke all additional origins for new operations. Already accepted tasks retain their frozen source settings.
+
+These origins may receive site credentials and form submissions, and their cookies may update the site session. Cookie domain and secure rules still apply; listing an unrelated host does not copy account cookies to it. Unlisted origins do not receive session cookies and cannot update them, including subdomains covered by an account's domain cookie. Trusting an origin does not permit private-network access or HTTPS downgrades. Test the current draft before saving if needed; the test does not change the saved trust list.
+
+## Browser verification and network profiles
+
+Under **Indexers > Network & cache**, add a profile with a proxy, a FlareSolverr URL, or both, then select it in the site editor. Enter the service base URL (for example `http://flaresolverr:8191`) without `/v1`. URLs are not returned to the editor: leave blank to keep them, or select the explicit clear option and save. Saving does not test connectivity.
+
+FlareSolverr is an optional trusted external browser service. For recognized login or search challenges, Moji sends the site's cookies and the selected proxy credentials, then verifies the original request with the returned cookies and browser User-Agent. Moji does not automatically replay torrent acquisition or its preceding pages; a remaining challenge needs attention. Moji checks the delegated destination and returned origin but cannot constrain every navigation inside the external browser.
+
+**Browser verification timeout** defaults to 90 seconds and accepts 10–300 seconds. The remaining login, search or test deadline can shorten it; this setting does not extend the whole operation. Changes apply to subsequent new operations; tasks with frozen sources retain their original parameters.
 
 ## Ingest
 

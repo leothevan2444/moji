@@ -2,6 +2,7 @@ import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } fro
 import { Link, useNavigate, useOutletContext, useSearchParams } from "react-router";
 import { useQuery } from "urql";
 import { useTranslation } from "react-i18next";
+import { HomeIndexers } from "../../components/home/HomeIndexers";
 import { HomeDownloader } from "../../components/home/HomeDownloader";
 import { HomePage } from "../../pages/HomePage";
 import { Drawer } from "../../components/layout/Drawer";
@@ -154,7 +155,7 @@ export function Component() {
   const closeCheck = () => { const next = new URLSearchParams(params); next.delete("check"); setParams(next, { replace: true, preventScrollReset: true }); };
   const refreshAll = () => { refreshRef.current(); refreshStatus({ requestPolicy: "network-only" }); refreshSubscriptions({ requestPolicy: "network-only" }); refreshHomeChecks(); };
   return <>
-    <HomePage downloader={<HomeDownloader onOpenList={() => { setTorrentCount(null); setTorrentsOpen(true); }} />} checks={checks} checksError={checksError ? describeQueryError(checksError) : null} onRefreshChecks={refreshHomeChecks} onOpenCheck={openCheck} listUpdatePending={listUpdatePending} onApplyUpdates={() => { setDisplayed(overview); setListUpdatePending(false); }} interactionOpen={Boolean(taskId || checkId || torrentsOpen)} overview={displayed ?? overview} runtimeSettings={data?.settings ?? null} runtimeStatus={status?.settingsStatus ?? null} subscription={subscriptions?.homeSubscriptionSummary ?? null}
+    <HomePage indexers={<HomeIndexers />} downloader={<HomeDownloader onOpenList={() => { setTorrentCount(null); setTorrentsOpen(true); }} />} checks={checks} checksError={checksError ? describeQueryError(checksError) : null} onRefreshChecks={refreshHomeChecks} onOpenCheck={openCheck} listUpdatePending={listUpdatePending} onApplyUpdates={() => { setDisplayed(overview); setListUpdatePending(false); }} interactionOpen={Boolean(taskId || checkId || torrentsOpen)} overview={displayed ?? overview} runtimeSettings={data?.settings ?? null} runtimeStatus={status?.settingsStatus ?? null} subscription={subscriptions?.homeSubscriptionSummary ?? null}
       overviewError={error ? describeQueryError(error) : null} statusError={statusError ? describeQueryError(statusError) : null} subscriptionError={subscriptionError ? describeQueryError(subscriptionError) : null}
       fetching={fetching || statusFetching} connectionStatus={taskEvents.error || serviceEvents.error || subscriptionEvents.error ? "error" : taskEvents.connectionStatus} pendingTaskRetryId={pendingRetry}
       onRefresh={refreshAll} onRefreshStatus={() => refreshStatus({ requestPolicy: "network-only" })} onRefreshSubscription={() => refreshSubscriptions({ requestPolicy: "network-only" })}

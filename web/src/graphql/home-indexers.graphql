@@ -1,0 +1,13 @@
+query HomeIndexerSummary {
+  homeIndexerSummary {
+    definitionJob { id state errorCode correlationId finishedAt }
+    definitionErrorCode
+    revision total builtinEnabled builtinUnverified builtinSearchSucceeded healthErrorCode attention
+    issues { id name errorCode operation observation { startedAt finishedAt errorCode correlationId retryAt } }
+    jackett { sites stale updatedAt errorCode }
+  }
+}
+
+subscription HomeIndexerDefinitionEvents {
+ indexerDefinitionEvents { streamId revision job { id revision } }
+}

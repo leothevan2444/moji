@@ -1,0 +1,25 @@
+fragment TorrentSearchFields on TorrentSearch {
+  id state revision keywords taskId createdAt updatedAt expiresAt finishedAt
+  cancelRequested partial truncated errorCode correlationId total offset limit
+  sites { instanceId name kind state results cacheHit fetchedAt elapsedMs partial truncated errorCode correlationId retryAt }
+  candidates { id instanceId instanceName kind title detailsUrl infoHash size seeders peers publishedAt categories }
+}
+query TorrentSearch($id: ID!, $offset: Int, $limit: Int, $sortBy: TorrentSearchSort) {
+  torrentSearch(id: $id, offset: $offset, limit: $limit, sortBy: $sortBy) { ...TorrentSearchFields }
+}
+mutation StartTorrentSearch($input: StartTorrentSearchInput!) { startTorrentSearch(input: $input) { id ...TorrentSearchFields } }
+mutation CancelTorrentSearch($id: ID!) { cancelTorrentSearch(id: $id) { id ...TorrentSearchFields } }
+mutation QueueTorrentCandidate($input: QueueTorrentCandidateInput!) { queueTorrentCandidate(input: $input) { id code stage stageStatus } }
+subscription TorrentSearchEvents($id: ID!) { torrentSearchEvents(id: $id) { streamId sequence searchId } }
+mutation PreviewTorrentSelection($input: PreviewTorrentSelectionInput!) {
+ previewTorrentSelection(input: $input) {
+  searchId searchRevision total offset limit
+  candidates { id instanceId instanceName kind title detailsUrl infoHash size seeders peers publishedAt categories }
+  meta { appliedFastRules appliedFileRules inspectedCount inspectableCount inspectionCandidateLimit }
+ }
+}
+query TorrentSearchSources { indexerInstances { revision ruleErrorCode catalogErrorCode items { id name kind enabled errorCode } } }
+mutation ResolveTaskSourcingCandidate($input: ResolveTaskSourcingCandidateInput!) { resolveTaskSourcingCandidate(input: $input) { id code stage stageStatus revision version sourcingNextCheckAt stageErrorCode stageErrorMessage updatedAt } }
+mutation PrepareTorrentDownload($input: PrepareTorrentDownloadInput!) {
+ prepareTorrentDownload(input: $input) { kind downloadUrl expiresAt }
+}

@@ -1,12 +1,12 @@
-import { DiscoverSortBy, JackettSortBy } from "../graphql/generated/graphql";
+import { DiscoverSortBy, TorrentSearchSort } from "../graphql/generated/graphql";
 
 /**
  * 搜索模式分段控件的选项。
- * value 与后端订阅状态使用的字符串保持一致（"stashbox" / "jackett"）。
+ * value 是发现页 URL 的来源标识（"stashbox" / "indexers"）。
  */
 export const DISCOVERY_MODE_OPTIONS = [
   { value: "stashbox", label: "StashBox" },
-  { value: "jackett", label: "Jackett" }
+  { value: "indexers", label: "torrentSearch.label" }
 ] as const;
 
 export type DiscoveryMode = (typeof DISCOVERY_MODE_OPTIONS)[number]["value"];
@@ -20,12 +20,12 @@ export const DISCOVER_SORT_OPTIONS: ReadonlyArray<{ value: DiscoverSortBy; label
   { value: DiscoverSortBy.TitleAsc, label: "discoverUi.sorts.titleAsc" }
 ];
 
-/** Jackett 排序选项。 */
-export const JACKETT_SORT_OPTIONS: ReadonlyArray<{ value: JackettSortBy; label: string }> = [
-  { value: JackettSortBy.Relevance, label: "discoverUi.sorts.relevance" },
-  { value: JackettSortBy.SeedersDesc, label: "discoverUi.sorts.seedersDesc" },
-  { value: JackettSortBy.SizeDesc, label: "discoverUi.sorts.sizeDesc" },
-  { value: JackettSortBy.DateDesc, label: "discoverUi.sorts.publishDesc" }
+/** 资源搜索由服务器排序、分页。 */
+export const INDEXER_SORT_OPTIONS: ReadonlyArray<{ value: TorrentSearchSort; label: string }> = [
+  { value: TorrentSearchSort.Relevance, label: "discoverUi.sorts.relevance" },
+  { value: TorrentSearchSort.SeedersDesc, label: "discoverUi.sorts.seedersDesc" },
+  { value: TorrentSearchSort.SizeDesc, label: "discoverUi.sorts.sizeDesc" },
+  { value: TorrentSearchSort.DateDesc, label: "discoverUi.sorts.publishDesc" }
 ];
 
 /** placeholder 轮播文案。聚焦输入框时会停止轮播，避免抖动。 */
@@ -34,8 +34,7 @@ export const SEARCH_PLACEHOLDERS: readonly string[] = [
 ];
 
 /**
- * 单页大小。后端每次返回 50 条，前端按 PAGE_SIZE 切片显示。
- * limit 与 pageSize 配合可同时支持前 N 页的快速翻页。
+ * StashBox 结果本地分组；资源搜索按此大小向服务器请求当前页。
  */
 export const DISCOVERY_PAGE_SIZE = 10;
 export const DISCOVERY_RESULT_LIMIT = 50;

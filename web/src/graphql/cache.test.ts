@@ -35,7 +35,6 @@ describe("graphcache configuration", () => {
     expect(graphcacheKeys.Settings?.({} as any)).toBe("singleton");
     expect(graphcacheKeys.StashPerformerScene?.({ key: "scene-1" } as any)).toBe("scene-1");
     expect(graphcacheKeys.MatchedStashBox?.({ endpoint: "https://stashbox", performerId: "p1" } as any)).toBe("https://stashbox:p1");
-    expect(graphcacheKeys.JackettSearchResult?.({ trackerId: "t1", infoHash: "hash" } as any)).toBe("t1:hash");
   });
 
   it("inserts and removes tasks from the shared root list", () => {

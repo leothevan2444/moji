@@ -11,10 +11,12 @@ const mocks = vi.hoisted(() => ({ details: new Map<string, any>(), retry: vi.fn(
 vi.mock("urql", () => ({
   useQuery: ({ variables, query }: any) => query.definitions[0].name.value === "TaskDetailDocument"
     ? [{ data: { taskDetailSnapshot: { task: mocks.details.get(variables.id),sequence:0,streamId:"" } }, fetching: false }, mocks.refresh]
-    : [{ data: { blockedTaskTorrentCandidates: [] }, fetching: false }, mocks.refresh],
+    : [{ data: {}, fetching: false }, mocks.refresh],
   useMutation: (query: any) => [{ fetching: false }, query.definitions[0].name.value === "RetryTaskDocument" ? mocks.retry
     : query.definitions[0].name.value === "ResolveBlockedSourcingTaskDocument" ? mocks.source : mocks.files]
 }));
+
+vi.mock("../tasks/TaskIndexerSearch",()=>({TaskIndexerSearch:()=> <div data-testid="indexer-search"/>}));
 
 const task = (id: string, extra: Partial<DashboardTask> = {}) => ({
   id, code: id, source: "MANUAL", stage: TaskStage.Scanning, stageStatus: TaskStageStatus.Blocked,

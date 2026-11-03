@@ -1,22 +1,12 @@
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faArrowUpRightFromSquare } from "@fortawesome/free-solid-svg-icons/faArrowUpRightFromSquare";
-import { formatBytesRate, formatDateTime, formatRelative } from "../../utils";
+import { formatDateTime, formatRelative } from "../../utils";
 import type { SettingsTab } from "../../types";
-import type {
-  HomePageDocumentQuery,
-  HomeServiceStatusQuery,
-  JackettStats,
-  QBittorrentStats,
-  StashStats
-} from "../../graphql/generated/graphql";
+import type { StashStats } from "../../graphql/generated/graphql";
 import { useTranslation } from "react-i18next";
 import type { TFunction } from "i18next";
 
-type RuntimeSettings = NonNullable<HomePageDocumentQuery["settings"]>;
-type RuntimeStatus = NonNullable<HomeServiceStatusQuery["settingsStatus"]>;
-
 interface ServiceCardProps {
-  service: "stash" | "jackett" | "qbittorrent";
   title: string;
   status: { configured: boolean; ready: boolean };
   config: Array<{ key: string; value: string }>;
@@ -28,14 +18,7 @@ interface ServiceCardProps {
     | null;
   okAt: string | null;
   lastError: string | null;
-  stats:
-    | (StashStats & {
-        // optional extras computed for display
-        hasIndexerSearch?: false;
-      })
-    | (JackettStats & { hasIndexerSearch: true })
-    | (QBittorrentStats & { hasIndexerSearch: false })
-    | null;
+  stats: StashStats | null;
   onOpenSettings: (tab: SettingsTab) => void;
 }
 
@@ -154,73 +137,9 @@ export function ServiceCard({
   );
 }
 
-function renderStats(
-  stats:
-    | (StashStats & { hasIndexerSearch?: false })
-    | (JackettStats & { hasIndexerSearch: true })
-    | (QBittorrentStats & { hasIndexerSearch?: false })
-  , t: TFunction) {
-  if ("pendingMojiScanCount" in stats) {
-    return (
-      <>
-        {stats.version ? (
-          <span>
-            Stash <strong>v{stats.version}</strong>
-            {stats.sceneCount != null ? ` · ${t("home.stats.scenes", { count: stats.sceneCount })}` : ""}
-          </span>
-        ) : (
-          <span>{t("home.stats.stashMissing")}</span>
-        )}
-        <span>{t("home.stats.pendingScans", { count: stats.pendingMojiScanCount })}</span>
-      </>
-    );
-  }
-  if ("hasIndexerSearch" in stats && stats.hasIndexerSearch) {
-    const idx = stats as JackettStats & { hasIndexerSearch: true };
-    return (
-      <>
-        <span>
-          {t("home.stats.indexers", { configured: idx.configuredIndexerCount, total: idx.indexerCount })}
-        </span>
-        <span>
-          {t("home.stats.slowest", { latency: idx.lastIndexerLatencyMs })}
-          {idx.lastIndexerSearchAt ? `（${formatRelative(idx.lastIndexerSearchAt)}）` : ""}
-        </span>
-        {idx.lastIndexerError ? (
-          <span className="service-card__error-inline">{idx.lastIndexerError}</span>
-        ) : null}
-      </>
-    );
-  }
-  const q = stats as QBittorrentStats & { hasIndexerSearch?: false };
-  return (
-    <>
-      <span>
-        {t("home.stats.transfer", { download: formatBytesRate(q.downloadSpeed), upload: formatBytesRate(q.uploadSpeed) })}
-      </span>
-      <span>
-        {t("home.stats.active", { count: q.activeTorrentCount, status: q.connectionStatus })}
-      </span>
-    </>
-  );
-}
-
-export function buildStashConfig(runtime: RuntimeSettings): Array<{ key: string; value: string }> {
-  // Ingest mode / paths live on the new IngestCard; Stash card only shows
-  // connection-relevant fields (URL + API key) here.
-  return [{ key: "URL", value: runtime.stash.url }];
-}
-
-export function buildJackettConfig(runtime: RuntimeSettings): Array<{ key: string; value: string }> {
-  const j = runtime.jackett;
-  return [{ key: "URL", value: j.url }];
-}
-
-export function buildQBittorrentConfig(runtime: RuntimeSettings): Array<{ key: string; value: string }> {
-  const q = runtime.qbittorrent;
-  return [
-    { key: "URL", value: q.url },
-    { key: "home.config.user", value: q.username },
-    { key: "home.config.savePath", value: q.defaultSavePath }
-  ];
+function renderStats(stats: StashStats, t: TFunction) {
+  return <>
+    {stats.version ? <span>Stash <strong>v{stats.version}</strong>{stats.sceneCount != null ? ` · ${t("home.stats.scenes", {count:stats.sceneCount})}` : ""}</span> : <span>{t("home.stats.stashMissing")}</span>}
+    <span>{t("home.stats.pendingScans", {count:stats.pendingMojiScanCount})}</span>
+  </>;
 }

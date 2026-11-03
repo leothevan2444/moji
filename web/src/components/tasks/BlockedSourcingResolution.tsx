@@ -1,21 +1,17 @@
-import { CandidateSeeders, TorrentCandidateLinks, candidateURL } from "./TorrentCandidateLinks";
-import { type FormEvent, useId, useRef, useState } from "react";
+import { TaskIndexerSearch } from "./TaskIndexerSearch";
+import { type FormEvent, useRef, useState } from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faArrowUpFromBracket } from "@fortawesome/free-solid-svg-icons/faArrowUpFromBracket";
-import { faRotateRight } from "@fortawesome/free-solid-svg-icons/faRotateRight";
 import { faSpinner } from "@fortawesome/free-solid-svg-icons/faSpinner";
-import { useMutation, useQuery } from "urql";
+import { useMutation } from "urql";
 import { describeQueryError } from "../../services/queryError";
 import {
-  BlockedTaskTorrentCandidatesDocumentDocument,
   ResolveBlockedSourcingTaskDocumentDocument,
-  type BlockedTaskTorrentCandidatesDocumentQuery,
-  type BlockedTaskTorrentCandidatesDocumentQueryVariables,
   type ResolveBlockedSourcingTaskDocumentMutation,
   type ResolveBlockedSourcingTaskDocumentMutationVariables,
   type ResolveBlockedSourcingTaskInput
 } from "../../graphql/generated/graphql";
-import { formatBytes, type DashboardTask } from "../../utils";
+import { type DashboardTask } from "../../utils";
 import { useTranslation } from "react-i18next";
 
 interface BlockedSourcingResolutionProps {
@@ -27,25 +23,14 @@ interface BlockedSourcingResolutionProps {
   onMagnetChange?: (value: string) => void;
 }
 
-type Candidate = BlockedTaskTorrentCandidatesDocumentQuery["blockedTaskTorrentCandidates"][number];
-
 export function BlockedSourcingResolution({ task, onResolved, onNotify, onBusyChange, initialMagnetURL = "", onMagnetChange }: BlockedSourcingResolutionProps) {
   const { t } = useTranslation();
-  const headingId = useId();
   const fileInput = useRef<HTMLInputElement>(null);
   const submitting = useRef(false);
   const [magnetURL, setMagnetURL] = useState(initialMagnetURL);
   const [resolvingKey, setResolvingKey] = useState<string | null>(null);
   const [uploadName, setUploadName] = useState("");
   const [submitError, setSubmitError] = useState("");
-  const [{ data, fetching, error }, searchCandidates] = useQuery<
-    BlockedTaskTorrentCandidatesDocumentQuery,
-    BlockedTaskTorrentCandidatesDocumentQueryVariables
-  >({
-    query: BlockedTaskTorrentCandidatesDocumentDocument,
-    variables: { id: task.id, limit: 50 },
-    requestPolicy: "network-only"
-  });
   const [, resolveSourcingTask] = useMutation<
     ResolveBlockedSourcingTaskDocumentMutation,
     ResolveBlockedSourcingTaskDocumentMutationVariables
@@ -82,10 +67,9 @@ export function BlockedSourcingResolution({ task, onResolved, onNotify, onBusyCh
     }
   };
 
-  const resolve = async (torrentUrl: string, candidate?: Candidate, key = "manual-magnet") => {
+  const resolve = async (torrentUrl: string, key = "manual-magnet") => {
     if (!torrentUrl.trim()) return;
-    await submit({ torrentUrl: torrentUrl.trim(), title: candidate?.title, tracker: candidate?.tracker,
-      infoHash: candidate?.infoHash, size: candidate?.size, seeders: candidate?.seeders, peers: candidate?.peers }, key);
+    await submit({ torrentUrl: torrentUrl.trim() }, key);
   };
   const submitMagnet = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -101,8 +85,8 @@ export function BlockedSourcingResolution({ task, onResolved, onNotify, onBusyCh
     setUploadName(file.name);
     void submit({ torrentFile: file }, "torrent-file");
   };
-  const candidates = data?.blockedTaskTorrentCandidates ?? [];
-  const busy = resolvingKey !== null;
+  const [indexedBusy, setIndexedBusy] = useState(false);
+  const busy = resolvingKey !== null || indexedBusy;
 
   return <article className="drawer-card sourcing-resolution" aria-label={t("taskExperience.actions.resolve")}>
     <p className="sourcing-resolution__intro">{t("sourcingManual.intro")}</p>
@@ -127,45 +111,7 @@ export function BlockedSourcingResolution({ task, onResolved, onNotify, onBusyCh
     {resolvingKey === "torrent-file" ? <p className="sourcing-resolution__feedback" role="status">{t("sourcingManual.validatingFile", { name: uploadName })}</p> : null}
     {submitError ? <div className="sourcing-resolution__error" role="alert">{submitError}</div> : null}
 
-    <section className="sourcing-resolution__results" aria-labelledby={headingId} aria-busy={fetching}>
-      <div className="sourcing-resolution__search">
-        <div className="sourcing-resolution__result-heading">
-          <h3 id={headingId}>{t("sourcingManual.candidates")}</h3>
-          {data && !fetching && !error ? <span>{t("taskUi.resolution.found", { count: candidates.length })}</span> : null}
-        </div>
-        <button type="button" className="ghost-button" disabled={fetching || busy} onClick={() => searchCandidates({ requestPolicy: "network-only" })}>
-          <FontAwesomeIcon icon={fetching ? faSpinner : faRotateRight} aria-hidden="true" />
-          {t(fetching ? "taskUi.resolution.searching" : "taskUi.resolution.searchAgain")}
-        </button>
-      </div>
-      {fetching ? <div className="sourcing-resolution__loading" role="status">
-        <span>{t("sourcingManual.searchingFor", { code: task.code })}</span>
-        {!candidates.length ? <div className="sourcing-resolution__skeletons" aria-hidden="true"><span /><span /><span /></div> : null}
-      </div> : null}
-      {error ? <div className="sourcing-resolution__error" role="alert">{describeQueryError(error)}</div> : null}
-      {data && !fetching && !error && candidates.length === 0 ? <p className="sourcing-resolution__empty">{t("taskUi.resolution.none")}</p> : null}
-      {candidates.length > 0 ? <ul className="sourcing-resolution__candidates">
-        {candidates.map((candidate, index) => {
-          const torrentURL = candidateURL(candidate.magnetUri, true) || candidateURL(candidate.link, true) || candidateURL(candidate.link);
-          const key = `${candidate.tracker}-${candidate.infoHash || torrentURL}-${index}`;
-          return <li className="sourcing-candidate" key={key}>
-            <span className="sourcing-candidate__rank" aria-hidden="true">{String(index + 1).padStart(2, "0")}</span>
-            <div className="sourcing-candidate__copy">
-              <strong title={candidate.title}>{candidate.title}</strong>
-              <div className="sourcing-candidate__meta">
-                {candidate.tracker ? <span className="sourcing-candidate__tracker" title={candidate.tracker}>{candidate.tracker}</span> : null}
-                <span>{formatBytes(Number(candidate.size) || 0)}</span>
-                <CandidateSeeders seeders={candidate.seeders} />
-              </div>
-              <TorrentCandidateLinks candidate={candidate} />
-            </div>
-            <button type="button" className="ghost-button task-primary-action" disabled={!torrentURL || busy} aria-busy={resolvingKey === key}
-              aria-label={t("sourcingManual.selectCandidate", { title: candidate.title })} onClick={() => void resolve(torrentURL ?? "", candidate, key)}>
-              {t(resolvingKey === key ? "taskUi.resolution.selecting" : "taskUi.resolution.select")}
-            </button>
-          </li>;
-        })}
-      </ul> : null}
-    </section>
+    <TaskIndexerSearch task={task} disabled={busy} onResolved={onResolved} onNotify={onNotify}
+      onBusyChange={value => { setIndexedBusy(value); onBusyChange?.(value); }} />
   </article>;
 }

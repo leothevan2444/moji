@@ -2,7 +2,7 @@ import { createContext, useContext, type ReactNode } from "react";
 import type { SettingsTab } from "../../types";
 
 export const SETTINGS_PANELS = {
-  indexers: ["connection", "queryOrder"],
+  indexers: ["sites", "definitions", "connection", "cache"],
   downloader: ["connection", "speed", "cleanup"],
   stash: ["connection", "delivery", "metadata"],
   tasks: ["schedule", "releases", "resources", "deletion"],

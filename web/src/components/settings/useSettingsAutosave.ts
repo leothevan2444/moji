@@ -6,7 +6,8 @@ import { SettingsAutosaveContext } from "./SettingsAutosaveProvider";
 import { SettingsAutosave, type SettingsObject } from "./settingsAutosave";
 
 interface Options<T> {
-  persist?: (patch: SettingsObject) => Promise<void>;
+  persist?: (patch: SettingsObject, sourceRevision?: string) => Promise<string | void>;
+  sourceRevision?: string;
   onSaved?: (value: T, patch: SettingsObject) => void;
 }
 export function useSettingsAutosave<T>(key: string, initial: T, encode: (value: T) => SettingsObject, options: Options<T> = {}) {
@@ -17,7 +18,7 @@ export function useSettingsAutosave<T>(key: string, initial: T, encode: (value: 
   const entry = useRef<SettingsAutosave<T> | null>(null);
   if (!entry.current) {
     const existing = store.get(key) as SettingsAutosave<T> | undefined;
-    entry.current = existing ?? new SettingsAutosave(initial, encode, async () => {});
+    entry.current = existing ?? new SettingsAutosave(initial, encode, async () => {}, options.sourceRevision);
     store.set(key, entry.current as SettingsAutosave<unknown>);
   }
   const current = entry.current;
@@ -27,7 +28,11 @@ export function useSettingsAutosave<T>(key: string, initial: T, encode: (value: 
     // Floating point cleanup thresholds are intentionally supported.
     const finite = (value: unknown): boolean => typeof value === "number" ? Number.isFinite(value) : value !== null && typeof value === "object" ? Object.values(value).every(finite) : true;
     if (!(key === "downloader:policy" ? finite(patch) : valid(patch))) throw new Error(t("settings.autosave.invalid"));
-    if (options.persist) return options.persist(patch);
+    if (options.persist) {
+      const revision = await options.persist(patch, current.sourceRevision);
+      if (revision !== undefined) current.sourceRevision = revision;
+      return;
+    }
     const result = await mutate({ input: patch as SettingsPatchInput });
     if (result.error) throw result.error;
     if (!result.data) throw new Error(t("settings.autosave.noAcknowledgement"));
@@ -37,7 +42,8 @@ export function useSettingsAutosave<T>(key: string, initial: T, encode: (value: 
   // Initial query snapshots may rerender as object identities change. Compare
   // serialized data and never reinitialize on autosave state transitions.
   const serialized = JSON.stringify(initial);
-  useEffect(() => { current.initialize(JSON.parse(serialized) as T); }, [current, serialized]);
+  useEffect(() => { current.initialize(JSON.parse(serialized) as T, options.sourceRevision); }, [current, serialized, options.sourceRevision]);
   const setValue = useCallback((next: T | ((value: T) => T)) => current.edit(next), [current]);
-  return { ...snapshot, setValue, retry: current.retry };
+  const discard = useCallback((value: T, revision?: string) => current.discard(value, revision), [current]);
+  return { ...snapshot, setValue, retry: current.retry, discard };
 }

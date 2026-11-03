@@ -16,7 +16,7 @@ interface ServiceConnectionDraft {
   qbittorrent: { url: string; username: string; password: string; defaultSavePath: string; category: string; tags: string };
 }
 
-export default function ServiceConnectionSettings({ service = "stash" }: { service?: "stash" | "jackett" | "qbittorrent" }) {
+export default function ServiceConnectionSettings({ service = "stash", onSaved }: { service?: "stash" | "jackett" | "qbittorrent"; onSaved?: () => void }) {
   const { t } = useTranslation();
   const [{ data, fetching, error }, refreshSettings] = useQuery({ query: ServiceConnectionSettingsDocument });
   const [{fetching: testing}, testConnection] = useMutation(TestServiceConnectionDocument);
@@ -29,7 +29,7 @@ export default function ServiceConnectionSettings({ service = "stash" }: { servi
   const autosave = useSettingsAutosave(`${service}:connection`, initial, value => {
     const fields = Object.fromEntries(Object.entries(value[service]).map(([key, item]) => [({apiKey:"api_key",defaultSavePath:"default_save_path"} as Record<string,string>)[key] ?? key, item.trim()]));
     return service === "stash" ? { stash: { connection: fields } } : service === "jackett" ? { indexers: { jackett: fields } } : { downloader: { qbittorrent: fields } };
-  });
+  }, { onSaved });
   const {value:form,setValue:setForm} = autosave;
   const draft = `${service}:${JSON.stringify(form[service])}`;
   const currentDraft = useRef({draft,revision:0});

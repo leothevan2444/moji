@@ -1,0 +1,8 @@
+fragment IndexerNetworkSettingsFields on IndexerNetworkSettings {
+ revision requestTimeoutSeconds siteTimeoutSeconds challengeTimeoutSeconds profiles { id proxyConfigured flareSolverrConfigured usedBy }
+}
+query IndexerNetworkSettings { indexerNetworkSettings { ...IndexerNetworkSettingsFields } }
+mutation UpdateIndexerNetworkTimeouts($expectedRevision: String!, $input: IndexerNetworkTimeoutPatchInput!) { updateIndexerNetworkTimeouts(expectedRevision:$expectedRevision,input:$input) { ...IndexerNetworkSettingsFields } }
+mutation AddIndexerNetworkProfile($id:ID!, $expectedRevision:String!, $input:IndexerNetworkProfilePatchInput!) { addIndexerNetworkProfile(id:$id,expectedRevision:$expectedRevision,input:$input) { ...IndexerNetworkSettingsFields } }
+mutation UpdateIndexerNetworkProfile($id:ID!, $expectedRevision:String!, $input:IndexerNetworkProfilePatchInput!) { updateIndexerNetworkProfile(id:$id,expectedRevision:$expectedRevision,input:$input) { ...IndexerNetworkSettingsFields } }
+mutation RemoveIndexerNetworkProfile($id:ID!, $expectedRevision:String!) { removeIndexerNetworkProfile(id:$id,expectedRevision:$expectedRevision) { ...IndexerNetworkSettingsFields } }

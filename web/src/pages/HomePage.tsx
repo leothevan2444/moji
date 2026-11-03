@@ -4,7 +4,7 @@ import { useTranslation } from "react-i18next";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faArrowRight, faCheck, faCircleExclamation, faMagnifyingGlass, faRotate, faBookmark, faArrowUpRightFromSquare, faBolt } from "@fortawesome/free-solid-svg-icons";
 import { HomeSubscriptionChecks, type HomeChecksView } from "../components/home/HomeSubscriptionChecks";
-import { IngestCard, ServiceCard, buildJackettConfig, buildQBittorrentConfig } from "../components/home";
+import { IngestCard, ServiceCard } from "../components/home";
 import { TaskPrimaryAction } from "../components/tasks/TaskPrimaryAction";
 import { formatDateTime, formatRelative, taskFailureSummary, taskPresentation, taskSummary, type DashboardTask } from "../utils";
 import type { GraphQLConnectionStatus } from "../graphql/client";
@@ -12,10 +12,11 @@ import type { SettingsTab } from "../types";
 import type { HomePageDocumentQuery, HomeServiceStatusQuery, HomeSubscriptionSummaryQuery } from "../graphql/generated/graphql";
 import { useGlobalSlashShortcut } from "../hooks/useGlobalSlashShortcut";
 
-const settingsForService = (service: string): SettingsTab => service === "jackett" ? "indexers" : service === "qbittorrent" ? "downloader" : "stash";
+const settingsForService = (service: string): SettingsTab => service === "qbittorrent" ? "downloader" : "stash";
 
 export interface HomePageProps {
  downloader?: ReactNode;
+ indexers?: ReactNode;
   checks?: HomeChecksView | null;
   checksError?: string | null;
   onRefreshChecks?: () => void;
@@ -36,7 +37,7 @@ export interface HomePageProps {
   onRefresh: () => void;
   onRefreshStatus: () => void;
   onRefreshSubscription: () => void;
-  onSearch: (query: string, source: "stashbox" | "jackett") => void;
+  onSearch: (query: string, source: "stashbox" | "indexers") => void;
   onOpenTask: (id: string) => void;
   onConfirmFiles: (id: string) => void;
   onRetryTask: (id: string) => void;
@@ -49,7 +50,7 @@ export function HomePage(props: HomePageProps) {
   const { t } = useTranslation();
   const { overview, runtimeSettings: settings, runtimeStatus: status, subscription } = props;
   const [query, setQuery] = useState(() => readSession("moji:home-search"));
-  const [source, setSource] = useState<"stashbox" | "jackett">(() => readSession("moji:home-source") === "jackett" ? "jackett" : "stashbox");
+  const [source, setSource] = useState<"stashbox" | "indexers">(() => ["jackett", "indexers"].includes(readSession("moji:home-source")) ? "indexers" : "stashbox");
   const input = useRef<HTMLInputElement>(null);
   useGlobalSlashShortcut(input, !props.interactionOpen);
   const metrics = [
@@ -58,11 +59,11 @@ export function HomePage(props: HomePageProps) {
     { key: "waiting", count: overview?.waiting, to: "/tasks?status=waiting", tone: "waiting" },
     { key: "completed", count: overview?.completedLast24Hours, to: "/tasks?status=completed&completedWithin=24h", tone: "completed" }
   ];
-  const problems = status ? (["stash", "jackett", "qbittorrent"] as const).filter(service => !status[service].ready) : [];
+  const problems = status ? (["stash", "qbittorrent"] as const).filter(service => !status[service].ready) : [];
   const unconfigured = status ? problems.filter(service => !status[service].configured) : [];
   const needsSetup = Boolean(status && (!status.ingest?.configured || unconfigured.length));
   const primaryProblem = problems[0];
-  const serviceNames = { stash: "Stash", jackett: "Jackett", qbittorrent: "qBittorrent" };
+  const serviceNames = { stash: "Stash", qbittorrent: "qBittorrent" };
   const [connectionInterrupted, setConnectionInterrupted] = useState(() => ["disconnected", "error"].includes(props.connectionStatus));
   useEffect(() => {
     if (props.connectionStatus === "connected") setConnectionInterrupted(false);
@@ -80,7 +81,7 @@ export function HomePage(props: HomePageProps) {
         <button type="button" className="ghost-button" disabled={props.fetching} onClick={props.onRefresh}>{t("common.retry")}</button>
       </aside> : null}
       <form className="home-search" onSubmit={submit} role="search" aria-label={t("workbench.searchLabel")}>
-        <label className="home-search-mode"><span className="sr-only">{t("discoverUi.searchMode")}</span><select value={source} onChange={event => { setSource(event.target.value as typeof source); writeSession("moji:home-source", event.target.value); }}><option value="stashbox">{t("workbench.findMovie")}</option><option value="jackett">{t("workbench.findResource")}</option></select></label>
+        <label className="home-search-mode"><span className="sr-only">{t("discoverUi.searchMode")}</span><select value={source} onChange={event => { setSource(event.target.value as typeof source); writeSession("moji:home-source", event.target.value); }}><option value="stashbox">{t("workbench.findMovie")}</option><option value="indexers">{t("workbench.findResource")}</option></select></label>
         <FontAwesomeIcon icon={faMagnifyingGlass} aria-hidden="true" />
         <input ref={input} value={query} onChange={event => { setQuery(event.target.value); writeSession("moji:home-search", event.target.value); }} aria-label={t("workbench.searchLabel")} placeholder={t("workbench.searchPlaceholder")} />
         <button type="submit" disabled={!query.trim()}>{t("workbench.search")}<FontAwesomeIcon icon={faArrowRight} aria-hidden="true" /></button>
@@ -90,8 +91,8 @@ export function HomePage(props: HomePageProps) {
       </div>
     </section>
 
-    {needsSetup ? <section className="home-alert home-alert--setup" aria-label={t("workbench.setupTitle")}><FontAwesomeIcon icon={faBolt} aria-hidden="true" /><div><strong>{t("workbench.setupTitle")}</strong><p>{t("workbench.setupDetail")}</p><div className="home-setup-steps">{(["stash", "jackett", "qbittorrent", "ingest"] as const).map(service => <button type="button" key={service} onClick={() => props.onOpenSettings(settingsForService(service))}><FontAwesomeIcon icon={status?.[service]?.configured ? faCheck : faCircleExclamation} aria-hidden="true" />{service === "ingest" ? t("workbench.delivery") : serviceNames[service]} · {t(status?.[service]?.configured ? "workbench.configured" : "workbench.configure")}</button>)}</div></div></section>
-      : primaryProblem ? <section className="home-alert" role="status"><FontAwesomeIcon icon={faCircleExclamation} aria-hidden="true" /><div><strong>{t(`workbench.impacts.${primaryProblem}`)}</strong>{problems.length > 1 ? <p>{t("workbench.moreProblems", { count: problems.length })}</p> : null}</div><button type="button" className="ghost-button" onClick={() => props.onOpenSettings(settingsForService(primaryProblem ?? "jackett"))}>{t("workbench.checkConnection")}</button></section> : null}
+    {needsSetup ? <section className="home-alert home-alert--setup" aria-label={t("workbench.setupTitle")}><FontAwesomeIcon icon={faBolt} aria-hidden="true" /><div><strong>{t("workbench.setupTitle")}</strong><p>{t("workbench.setupDetail")}</p><div className="home-setup-steps">{(["stash", "qbittorrent", "ingest"] as const).map(service => <button type="button" key={service} onClick={() => props.onOpenSettings(settingsForService(service))}><FontAwesomeIcon icon={status?.[service]?.configured ? faCheck : faCircleExclamation} aria-hidden="true" />{service === "ingest" ? t("workbench.delivery") : serviceNames[service]} · {t(status?.[service]?.configured ? "workbench.configured" : "workbench.configure")}</button>)}</div></div></section>
+      : primaryProblem ? <section className="home-alert" role="status"><FontAwesomeIcon icon={faCircleExclamation} aria-hidden="true" /><div><strong>{t(`workbench.impacts.${primaryProblem}`)}</strong>{problems.length > 1 ? <p>{t("workbench.moreProblems", { count: problems.length })}</p> : null}</div><button type="button" className="ghost-button" onClick={() => props.onOpenSettings(settingsForService(primaryProblem ?? "stash"))}>{t("workbench.checkConnection")}</button></section> : null}
 
     {props.listUpdatePending ? <button type="button" className="ghost-button home-update-notice" onClick={props.onApplyUpdates}>{t("workbench.updates")} <FontAwesomeIcon icon={faRotate} aria-hidden="true" /></button> : null}
     <div className="home-grid">
@@ -134,11 +135,12 @@ export function HomePage(props: HomePageProps) {
       <section className="home-panel home-system" aria-labelledby="home-system-title">
         <div className="home-panel-heading"><h2 id="home-system-title">{t("workbench.system")}</h2><span className={`home-dot ${!status ? "home-dot--unknown" : problems.length || !status.ingest?.configured ? "home-dot--warning" : ""}`} /></div>
         {error(props.statusError, props.onRefreshStatus, Boolean(status))}
-        {!status ? !props.statusError && loading : <><ul className="home-service-list">{(["jackett", "qbittorrent", "stash"] as const).map(service => <li key={service}><span>{serviceNames[service]}</span><span className={status[service].ready ? "home-success" : "home-warning"}><FontAwesomeIcon icon={status[service].ready ? faCheck : faCircleExclamation} aria-hidden="true" />{t(!status[service].configured ? "workbench.unconfigured" : status[service].ready ? "workbench.ready" : "workbench.unavailable")}</span></li>)}<li><span>{t("workbench.delivery")}</span><button type="button" className="home-inline-button" onClick={() => props.onOpenSettings("stash")}>{t(status.ingest?.configured ? "workbench.configured" : "workbench.unconfigured")} <FontAwesomeIcon icon={faArrowRight} aria-hidden="true" /></button></li></ul>
+        {!status ? !props.statusError && loading : <><ul className="home-service-list">{(["stash"] as const).map(service => <li key={service}><span>{serviceNames[service]}</span><span className={status[service].ready ? "home-success" : "home-warning"}><FontAwesomeIcon icon={status[service].ready ? faCheck : faCircleExclamation} aria-hidden="true" />{t(!status[service].configured ? "workbench.unconfigured" : status[service].ready ? "workbench.ready" : "workbench.unavailable")}</span></li>)}<li><span>{t("workbench.delivery")}</span><button type="button" className="home-inline-button" onClick={() => props.onOpenSettings("stash")}>{t(status.ingest?.configured ? "workbench.configured" : "workbench.unconfigured")} <FontAwesomeIcon icon={faArrowRight} aria-hidden="true" /></button></li></ul>
           {settings ? <div className="home-task-processing"><FontAwesomeIcon icon={faBolt} aria-hidden="true" /><span>{t(settings?.automation.taskProcessingEnabled === false ? "workbench.taskProcessingPaused" : "workbench.taskProcessingEnabled")}</span><button type="button" onClick={() => props.onOpenSettings("tasks")} aria-label={t("taskSettings.openSettings")}><FontAwesomeIcon icon={faArrowRight} /></button></div> : null}
-          {settings ? <details className="home-diagnostics"><summary>{t("workbench.systemDetails")}</summary><div className="home-diagnostics-content"><ServiceCard service="stash" title="Stash" status={status.stash} config={[{ key: "URL", value: settings.stash.url }]} stats={status.stashStats} okAt={status.stashStats?.okAt ?? null} lastError={status.stashStats?.lastError ?? null} cta={{ kind: "open-settings", label: t("home.configure"), tab: "stash" }} onOpenSettings={props.onOpenSettings} /><ServiceCard service="jackett" title="Jackett" status={status.jackett} config={buildJackettConfig(settings)} stats={status.jackettStats ? { ...status.jackettStats, hasIndexerSearch: true } : null} okAt={status.jackettStats?.okAt ?? null} lastError={status.jackettStats?.lastError ?? null} cta={{ kind: "open-settings", label: t("home.configure"), tab: "indexers" }} onOpenSettings={props.onOpenSettings} /><ServiceCard service="qbittorrent" title="qBittorrent" status={status.qbittorrent} config={buildQBittorrentConfig(settings)} stats={status.qbittorrentStats ? { ...status.qbittorrentStats, hasIndexerSearch: false } : null} okAt={status.qbittorrentStats?.okAt ?? null} lastError={status.qbittorrentStats?.lastError ?? null} cta={{ kind: "open-settings", label: t("home.configure"), tab: "downloader" }} onOpenSettings={props.onOpenSettings} /><IngestCard ingest={settings.ingest} ingestStatus={status.ingest} onOpenSettings={props.onOpenSettings} /></div></details> : null}</>}
-      {props.downloader}
+          {settings ? <details className="home-diagnostics"><summary>{t("workbench.systemDetails")}</summary><div className="home-diagnostics-content"><ServiceCard title="Stash" status={status.stash} config={[{ key: "URL", value: settings.stash.url }]} stats={status.stashStats} okAt={status.stashStats?.okAt ?? null} lastError={status.stashStats?.lastError ?? null} cta={{ kind: "open-settings", label: t("home.configure"), tab: "stash" }} onOpenSettings={props.onOpenSettings} /><IngestCard ingest={settings.ingest} ingestStatus={status.ingest} onOpenSettings={props.onOpenSettings} /></div></details> : null}</>}
       </section>
+      {props.indexers}
+      {props.downloader}
       </aside>
     </div>
   </div>;

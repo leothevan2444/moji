@@ -1,0 +1,16 @@
+fragment IndexerLoginResult on IndexerLoginReport {
+ id instanceId configRevision ruleRevision state expiresAt
+ challenge { id type prompt imageData }
+}
+mutation BeginIndexerLogin($input: IndexerLoginInput!) {
+ beginIndexerLogin(input: $input) { ...IndexerLoginResult }
+}
+mutation AnswerIndexerChallenge($id: ID!, $input: IndexerLoginInput!, $answer: String!) {
+ answerIndexerChallenge(id: $id, input: $input, answer: $answer) { ...IndexerLoginResult }
+}
+mutation CancelIndexerLogin($id: ID!, $input: IndexerLoginInput!) {
+ cancelIndexerLogin(id: $id, input: $input)
+}
+query IndexerLogin($input: IndexerLoginInput!) {
+ indexerLogin(input: $input) { ...IndexerLoginResult }
+}

@@ -1,76 +1,20 @@
-import { CandidateSeeders, TorrentCandidateLinks, candidateURL } from "../tasks/TorrentCandidateLinks";
-import { formatBytes, formatDurationSeconds, formatPublishDate } from "../../utils";
+import { formatDurationSeconds } from "../../utils";
 import { SkeletonCardList } from "../common/Skeleton";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faArrowUpRightFromSquare } from "@fortawesome/free-solid-svg-icons/faArrowUpRightFromSquare";
-import type {
-  DiscoverScenesDocumentQuery,
-  SearchDocumentQuery
-} from "../../graphql/generated/graphql";
-import type { DiscoveryMode } from "../../constants";
+import type { DiscoverScenesDocumentQuery } from "../../graphql/generated/graphql";
 import { useTranslation } from "react-i18next";
-
 type DiscoverResult = DiscoverScenesDocumentQuery["discoverScenes"]["items"][number];
-type DiscoverConnection = DiscoverScenesDocumentQuery["discoverScenes"];
-type JackettResult = SearchDocumentQuery["jackettSearch"][number];
-
 interface DiscoveryDrawerProps {
-  mode: DiscoveryMode;
-  query: string;
-  searching: boolean;
-  error: Error | null;
-  pendingAddId: string | null;
-  discoverResult: DiscoverConnection | null;
-  discoverItems: DiscoverResult[];
-  jackettItems: JackettResult[];
-  hasAnyResults: boolean;
-  usedStashBoxName?: string | null;
-  onQueueDiscovered: (result: DiscoverResult) => void;
-  onAddJackett: (result: JackettResult) => void;
-  onTryJackett: () => void;
-  onClearTrackers: () => void;
-  hasActiveTrackers: boolean;
+ query:string; searching:boolean;error:Error|null;pendingAddId:string|null;
+ discoverItems:DiscoverResult[];hasAnyResults:boolean;usedStashBoxName?:string|null;
+ onQueueDiscovered:(result:DiscoverResult)=>void;onTryIndexers:()=>void;
 }
-
-export function DiscoveryDrawer({
-  mode,
-  query,
-  searching,
-  error,
-  pendingAddId,
-  discoverItems,
-  jackettItems,
-  hasAnyResults,
-  usedStashBoxName,
-  onQueueDiscovered,
-  onAddJackett,
-  onTryJackett,
-  onClearTrackers,
-  hasActiveTrackers
-}: DiscoveryDrawerProps) {
-  const { t } = useTranslation();
-  const isStashBox = mode === "stashbox";
-
-  // 首屏 loading 渲染骨架；翻页过程中 searching=true 但已有数据时不渲染骨架，
-  // 避免列表抖动。
-  const showSkeleton = searching && !hasAnyResults;
-  const showEmpty = !searching && !hasAnyResults;
-
-  return (
-    <>
-      {error ? <p className="inline-error">{error.message}</p> : null}
-
-      {showSkeleton ? (
-        <SkeletonCardList count={6} />
-      ) : showEmpty ? (
-        <EmptyState
-          isStashBox={isStashBox}
-          hasQuery={query.trim() !== ""}
-          hasActiveTrackers={hasActiveTrackers}
-          onTryJackett={onTryJackett}
-          onClearTrackers={onClearTrackers}
-        />
-      ) : isStashBox ? (
+export function DiscoveryDrawer({query,searching,error,pendingAddId,discoverItems,hasAnyResults,usedStashBoxName,onQueueDiscovered,onTryIndexers}:DiscoveryDrawerProps){
+ const {t}=useTranslation();
+ return <>
+ {error?<p className="inline-error">{error.message}</p>:null}
+ {searching && !hasAnyResults ? <SkeletonCardList count={6}/> : !hasAnyResults ? <div className="empty-card empty-card--wide"><h3>{t(query.trim()?"discoverUi.result.noStash":"discoverUi.result.enter")}</h3><p>{t(query.trim()?"torrentSearch.tryDetail":"discoverUi.result.enterDetail")}</p>{query.trim()?<button type="button" className="ghost-button" onClick={onTryIndexers}>{t("torrentSearch.search")}</button>:null}</div> : (
         <div className="discovery-results">
           {discoverItems.map((result) => (
             <article key={result.key} className="candidate-card candidate-card--stashbox">
@@ -145,95 +89,6 @@ export function DiscoveryDrawer({
             </article>
           ))}
         </div>
-      ) : (
-        <div className="discovery-results">
-          {jackettItems.map((result) => (
-            <article key={`${result.tracker}-${result.link}`} className="candidate-card candidate-card--jackett">
-              <div className="candidate-card__content">
-                <div className="candidate-card__head">
-                  <div>
-                    <h3 title={result.title}>{result.title}</h3>
-                    <p>
-                      {result.tracker} · {formatBytes(Number(result.size) || 0)} · <CandidateSeeders seeders={result.seeders} />
-                    </p>
-                  </div>
-                  <span className="status-chip tone-warn">Jackett</span>
-                </div>
-                <div className="candidate-card__foot">
-                  <span>{formatPublishDate(result.publishDate)}</span>
-                  <div className="inline-actions">
-                    <TorrentCandidateLinks candidate={result} />
-                    <button
-                      type="button"
-                      onClick={() => onAddJackett(result)}
-                      disabled={pendingAddId === result.link || !(candidateURL(result.magnetUri, true) || candidateURL(result.link, true) || candidateURL(result.link))}
-                    >
-                      {pendingAddId === result.link ? t("discoverUi.result.adding") : t("discoverUi.result.create")}
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </article>
-          ))}
-        </div>
-      )}
-    </>
-  );
-}
-
-interface EmptyStateProps {
-  isStashBox: boolean;
-  hasQuery: boolean;
-  hasActiveTrackers: boolean;
-  onTryJackett: () => void;
-  onClearTrackers: () => void;
-}
-
-function EmptyState({
-  isStashBox,
-  hasQuery,
-  hasActiveTrackers,
-  onTryJackett,
-  onClearTrackers
-}: EmptyStateProps) {
-  const { t } = useTranslation();
-  if (!hasQuery) {
-    return (
-      <div className="empty-card empty-card--wide">
-        <h3>{t("discoverUi.result.enter")}</h3>
-        <p>{t("discoverUi.result.enterDetail")}</p>
-      </div>
-    );
-  }
-
-  if (isStashBox) {
-    return (
-      <div className="empty-card empty-card--wide">
-        <h3>{t("discoverUi.result.noStash")}</h3>
-        <p>{t("discoverUi.result.tryJackettDetail")}</p>
-        <button type="button" className="ghost-button" onClick={onTryJackett} style={{ marginTop: 12 }}>
-          {t("discoverUi.result.tryJackett")}
-        </button>
-      </div>
-    );
-  }
-
-  if (hasActiveTrackers) {
-    return (
-      <div className="empty-card empty-card--wide">
-        <h3>{t("discoverUi.result.noFiltered")}</h3>
-        <p>{t("discoverUi.result.noFilteredDetail")}</p>
-        <button type="button" className="ghost-button" onClick={onClearTrackers} style={{ marginTop: 12 }}>
-          {t("discoverUi.filters.clear")}
-        </button>
-      </div>
-    );
-  }
-
-  return (
-    <div className="empty-card empty-card--wide">
-      <h3>{t("discoverUi.result.noResults")}</h3>
-      <p>{t("discoverUi.result.noJackett")}</p>
-    </div>
-  );
+ )}
+ </>;
 }

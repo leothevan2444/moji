@@ -1,0 +1,13 @@
+.torrent-search__actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-block: 12px; }
+.torrent-search__sites { margin-block: 12px; summary { cursor: pointer; } ul { padding-inline-start: 20px; } li { overflow-wrap: anywhere; margin-block: 8px; } }
+.torrent-search__queue { display: flex; flex-wrap: wrap; align-items: end; gap: 8px; border-top: 1px solid var(--line); padding-block-start: 12px; margin-block-start: 12px;
+ label { display: grid; gap: 4px; flex: 1; min-inline-size: 120px; } input { inline-size: 100%; min-inline-size: 0; } }
+.candidate-card--indexer .candidate-card__head h3 { overflow-wrap: anywhere; }
+
+.torrent-search__kind { color: var(--muted); font-size: 12px; white-space: nowrap; }
+
+// Streaming site progress and pages must not move the source-resolution panel.
+@media (min-width: 721px) {
+  .drawer--task:has(.sourcing-resolution) { height: min(88dvh, 920px); }
+}
+.prepared-torrent-download { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 8px; max-inline-size: 100%; .inline-error { overflow-wrap: anywhere; } }

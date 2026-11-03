@@ -14,17 +14,11 @@ vi.mock("urql", () => ({
 }));
 
 import { useDiscoverScenes } from "./useDiscoverScenes";
-import { useJackettSearch } from "./useJackettSearch";
 
 describe("search request policies", () => {
   beforeEach(() => {
     mocks.useQuery.mockClear();
     mocks.useMutation.mockClear();
-  });
-
-  it("always fetches fresh Jackett search results", () => {
-    renderHook(() => useJackettSearch("query", { enabled: true }));
-    expect(mocks.useQuery).toHaveBeenCalledWith(expect.objectContaining({ requestPolicy: "network-only" }));
   });
 
   it("shows cached discovery results while refreshing them", () => {

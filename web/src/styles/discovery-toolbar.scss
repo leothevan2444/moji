@@ -40,6 +40,10 @@
 
   &__preview {
     .switch-row {
+      display: inline-flex;
+      align-items: center;
+      gap: $space-2;
+      input[type="checkbox"] { margin: 0; width: auto; }
       min-width: 0;
     }
   }

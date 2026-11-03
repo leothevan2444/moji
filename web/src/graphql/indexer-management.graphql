@@ -1,0 +1,47 @@
+fragment IndexerSettingFields on IndexerSetting {
+  name type label secret configured
+  value { string boolean number }
+  defaultValue { string boolean number }
+  options { value label }
+}
+fragment IndexerInstanceFields on IndexerInstance {
+  health { search { ...IndexerObservationFields } fetch { ...IndexerObservationFields } }
+  siteUrl privacy language
+  id kind name enabled definitionId baseUrl networkProfile trustedOrigins
+  ruleDigest errorCode modes settings { ...IndexerSettingFields }
+}
+fragment IndexerInstancesFields on IndexerInstances {
+  healthErrorCode
+  revision ruleRevision ruleErrorCode catalogErrorCode jackettEnabled
+  order networkProfiles items { ...IndexerInstanceFields }
+}
+query IndexerDefinitions($input: IndexerDefinitionFilterInput) {
+  indexerDefinitions(input: $input) {
+    revision totalCount offset limit
+    items {
+      id name description language privacy digest links modes warnings
+      settings { ...IndexerSettingFields }
+    }
+  }
+}
+query IndexerInstances { indexerInstances { ...IndexerInstancesFields } }
+mutation AddBuiltinIndexer($expectedRevision: String!, $input: BuiltinIndexerInput!) {
+  addBuiltinIndexer(expectedRevision: $expectedRevision, input: $input) { revision instance { ...IndexerInstanceFields } }
+}
+mutation UpdateBuiltinIndexer($id: ID!, $expectedRevision: String!, $input: BuiltinIndexerPatchInput!) {
+  updateBuiltinIndexer(id: $id, expectedRevision: $expectedRevision, input: $input) { revision instance { ...IndexerInstanceFields } }
+}
+mutation RemoveBuiltinIndexer($id: ID!, $expectedRevision: String!) {
+  removeBuiltinIndexer(id: $id, expectedRevision: $expectedRevision) { ...IndexerInstancesFields }
+}
+mutation SetIndexerEnabled($id: ID!, $expectedRevision: String!, $enabled: Boolean!) {
+  setIndexerEnabled(id: $id, expectedRevision: $expectedRevision, enabled: $enabled) { ...IndexerInstancesFields }
+}
+mutation ReorderIndexers($expectedRevision: String!, $ids: [ID!]!) {
+  reorderIndexers(expectedRevision: $expectedRevision, ids: $ids) { ...IndexerInstancesFields }
+}
+mutation RefreshJackettIndexers { refreshJackettIndexers { ...IndexerInstancesFields } }
+
+fragment IndexerObservationFields on IndexerObservation {
+  startedAt finishedAt errorCode correlationId retryAt
+}

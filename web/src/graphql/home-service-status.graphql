@@ -4,10 +4,6 @@ query HomeServiceStatus {
       configured
       ready
     }
-    jackett {
-      configured
-      ready
-    }
     qbittorrent {
       configured
       ready
@@ -19,24 +15,6 @@ query HomeServiceStatus {
       version
       sceneCount
       pendingMojiScanCount
-      lastError
-      okAt
-    }
-    jackettStats {
-      indexerCount
-      configuredIndexerCount
-      lastIndexerLatencyMs
-      lastIndexerError
-      lastIndexerSearchAt
-      lastError
-      okAt
-    }
-    qbittorrentStats {
-      downloadSpeed
-      uploadSpeed
-      activeTorrentCount
-      connectionStatus
-      altSpeedLimitEnabled
       lastError
       okAt
     }

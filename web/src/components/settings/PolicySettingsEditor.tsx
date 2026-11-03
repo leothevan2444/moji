@@ -1,7 +1,6 @@
-import IndexerOrderList from "./IndexerOrderList";
 import { SettingsSubpanel, useSettingsPanel } from "./SettingsPanels";
 import { useMemo, useState } from "react";
-import { useMutation, useQuery } from "urql";
+import { useMutation } from "urql";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faArrowDown } from "@fortawesome/free-solid-svg-icons/faArrowDown";
 import { faArrowUp } from "@fortawesome/free-solid-svg-icons/faArrowUp";
@@ -12,7 +11,6 @@ import { faGripVertical } from "@fortawesome/free-solid-svg-icons/faGripVertical
 import { faRotate } from "@fortawesome/free-solid-svg-icons/faRotate";
 import { faTrash } from "@fortawesome/free-solid-svg-icons/faTrash";
 import {
-  JackettIndexersDocumentDocument,
   RefreshStashBoxesDocument,
   SubscriptionReleaseBehavior,
   SubscriptionReleaseDateRange,
@@ -22,8 +20,6 @@ import {
   TorrentSelectionDirection,
   TorrentSelectionRuleType,
   type SettingsPolicySectionQuery,
-  type JackettIndexersDocumentQuery,
-  type JackettIndexersDocumentQueryVariables,
   type RefreshStashBoxesMutation,
 } from "../../graphql/generated/graphql";
 import type { ToastTone } from "../../types";
@@ -38,12 +34,11 @@ import type { TFunction } from "i18next";
 import { useSettingsAutosave } from "./useSettingsAutosave";
 import { SettingsSaveStatus, SettingsLoading } from "./SettingsTabCommon";
 
-export const POLICY_SECTION_TITLE_KEYS = { tasks: "taskSettings.title", resources: "resourceRules.title", metadata: "metadataSources.title", indexers: "indexerSettings.title" } as const;
+export const POLICY_SECTION_TITLE_KEYS = { tasks: "taskSettings.title", resources: "resourceRules.title", metadata: "metadataSources.title" } as const;
 export type SettingsPolicyArea = keyof typeof POLICY_SECTION_TITLE_KEYS;
 
 type RuntimeSettings = SettingsPolicySectionQuery["settings"];
 type RuntimeSettingsStatus = SettingsPolicySectionQuery["settingsStatus"];
-type JackettIndexer = JackettIndexersDocumentQuery["jackettIndexers"][number];
 
 const TORRENT_SELECTION_RULE_KEYS: Partial<Record<TorrentSelectionRuleType, string>> = {
   [TorrentSelectionRuleType.TitleMatch]: "titleMatch",
@@ -104,7 +99,6 @@ const numeric = (value: string) => value.trim() ? Number(value) : NaN;
 function encodePolicy(form: PolicySettingsForm, area: SettingsPolicyArea) {
   if (area === "metadata") return {stash:{metadata_priority:form.stashBoxEndpoints}};
   const rules = form.torrentSelection.fastRules;
-  if (area === "indexers") return {indexers:{query_order:rules.find(rule=>rule.type===TorrentSelectionRuleType.IndexerPreference)?.indexerPreference.trackerIds ?? []}};
   if (area === "tasks") return {tasks:{
     task_processing_enabled:form.taskProcessingEnabled,
     task_progress_sync_interval_seconds:numeric(form.taskProgressSyncIntervalSeconds),
@@ -143,13 +137,6 @@ function cloneTorrentSelectionRule(rule: TorrentSelectionRuleDraft): TorrentSele
     size: { direction: rule.size.direction },
     torrentFileNameMatch: { clauses: rule.torrentFileNameMatch.clauses.map((clause) => ({ ...clause })) }
   };
-}
-
-function syncIndexerPreferenceTrackerIds(trackerIds: string[], indexers: JackettIndexer[]): string[] {
-  const enabledIds = indexers.map((indexer) => indexer.id);
-  const kept = [...new Set(trackerIds)];
-  const missing = enabledIds.filter((id) => !kept.includes(id));
-  return [...kept, ...missing];
 }
 
 function mapRuntimeTorrentSelectionRule(rule: RuntimeSettings["policies"]["torrentSelection"]["fastRules"][number]): TorrentSelectionRuleDraft {
@@ -257,15 +244,6 @@ export function PolicySettingsEditor({
   // 规则列表的展开/收起是 UI 偏好：默认按「启用规则链」决定首屏可见性，
   // 之后用户的展开/收起操作与开关状态相互独立，不被开关重置。
   const [rulesExpanded, setRulesExpanded] = useState(() => policyForm.torrentSelection.enabled);
-  const [{ data: jackettIndexersData, fetching: fetchingJackettIndexers }] = useQuery<
-    JackettIndexersDocumentQuery,
-    JackettIndexersDocumentQueryVariables
-  >({
-    query: JackettIndexersDocumentDocument,
-    pause: area !== "indexers"
-  });
-  const jackettIndexers = (jackettIndexersData?.jackettIndexers ?? []).filter((indexer: JackettIndexer) => indexer.enabled);
-
   const [{ fetching: refreshingStashBoxes }, refreshStashBoxesMutation] = useMutation<
     RefreshStashBoxesMutation
   >(RefreshStashBoxesDocument);
@@ -405,25 +383,6 @@ export function PolicySettingsEditor({
 
   if (!runtimeSettings || !runtimeStatus) {
     return <SettingsLoading title={t(POLICY_SECTION_TITLE_KEYS[area])} />;
-  }
-
-  if (area === "indexers") {
-    const orderRule = fastRules.find(rule => rule.type === TorrentSelectionRuleType.IndexerPreference);
-    const order = syncIndexerPreferenceTrackerIds(orderRule?.indexerPreference.trackerIds ?? [], jackettIndexers);
-    const moveSite = (from: number, to: number) => {
-      if (to < 0 || to >= order.length) return;
-      const next = [...order]; const [id] = next.splice(from, 1); next.splice(to, 0, id);
-      setPolicySettingsForm(current => ({ ...current, torrentSelection: { ...current.torrentSelection, fastRules: current.torrentSelection.fastRules.map(rule => rule.type === TorrentSelectionRuleType.IndexerPreference ? { ...rule, indexerPreference: { trackerIds: next } } : rule) } }));
-    };
-    return <article className="drawer-card"><div className="drawer-card__head"><h3>{t("indexerSettings.title")}</h3></div>
-      <p className="settings-note">{t("indexerSettings.detail")}</p>
-      {fetchingJackettIndexers ? <p role="status">{t("common.loading")}</p> : null}
-      <form className="settings-form" onSubmit={event => event.preventDefault()}>
-          <SettingsSaveStatus {...autosave} />
-        <IndexerOrderList order={order} indexers={jackettIndexers} onMove={moveSite} />
-        {!order.length ? <p className="settings-note">{t("indexerSettings.empty")}</p> : null}
-
-      </form></article>;
   }
 
   {

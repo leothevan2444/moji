@@ -21,7 +21,7 @@ for(const service of ["stash","jackett","qbittorrent"] as const) {
   expect(screen.queryByText("settings.tabs.connections")).toBeNull();
  });
 }
-for(const [area,title]of [["tasks","taskSettings.title"],["resources","resourceRules.title"],["metadata","metadataSources.title"],["indexers","indexerSettings.title"]] as const) {
+for(const [area,title]of [["tasks","taskSettings.title"],["resources","resourceRules.title"],["metadata","metadataSources.title"]] as const) {
  for(const failed of [false,true])it(`${area} ${failed?"failure":"loading"} uses its current section title`,()=>{
   state.fetching=!failed;state.error=failed?new Error("offline"):undefined;
   render(<SettingsPolicySection area={area}/>);

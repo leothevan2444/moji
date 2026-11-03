@@ -104,21 +104,22 @@ export function serializePerformerSearchParams(state: PerformerSearchState): URL
 
 export interface DiscoverSearchState {
   q: string;
-  source: "stashbox" | "jackett";
+  source: "stashbox" | "indexers";
   sort: string;
   page: number;
-  trackers: string[];
+  instances: string[];
+  run: string;
   fastRules?: boolean;
   fileRules?: boolean;
 }
 
 const STASHBOX_SORTS = new Set(["relevance", "date-desc", "date-asc", "duration-desc", "title-asc"]);
-const JACKETT_SORTS = new Set(["relevance", "seeders-desc", "size-desc", "date-desc"]);
+const INDEXER_SORTS = new Set(["relevance", "seeders-desc", "size-desc", "date-desc"]);
 
 export function parseDiscoverSearchParams(params: URLSearchParams): DiscoverSearchState {
-  const source = params.get("source") === "jackett" ? "jackett" : "stashbox";
+  const source = ["indexers", "jackett"].includes(params.get("source") ?? "") ? "indexers" : "stashbox";
   const rawSort = params.get("sort") ?? "relevance";
-  const allowed = source === "stashbox" ? STASHBOX_SORTS : JACKETT_SORTS;
+  const allowed = source === "stashbox" ? STASHBOX_SORTS : INDEXER_SORTS;
   const booleanParam = (key: string) => {
     const value = params.get(key);
     return value === "1" ? true : value === "0" ? false : undefined;
@@ -127,8 +128,9 @@ export function parseDiscoverSearchParams(params: URLSearchParams): DiscoverSear
     q: params.get("q")?.trim() ?? "",
     source,
     sort: allowed.has(rawSort) ? rawSort : "relevance",
-    page: positiveInt(params.get("page"), 1),
-    trackers: [...new Set((params.get("trackers") ?? "").split(",").map((item) => item.trim()).filter(Boolean))].sort(),
+    page: source === "indexers" ? Math.min(100,positiveInt(params.get("page"), 1)) : positiveInt(params.get("page"), 1),
+    instances: [...new Set((params.get("sites") ?? params.get("trackers") ?? "").split(",").map((item) => item.trim()).filter(Boolean).map(id => !params.has("sites") && !id.startsWith("jackett/") ? `jackett/${id}` : id))].sort(),
+    run: (params.get("run") ?? "").slice(0,128),
     fastRules: booleanParam("fastRules"),
     fileRules: booleanParam("fileRules")
   };
@@ -140,7 +142,8 @@ export function serializeDiscoverSearchParams(state: DiscoverSearchState): URLSe
   if (state.source !== "stashbox") params.set("source", state.source);
   if (state.sort !== "relevance") params.set("sort", state.sort);
   if (state.page !== 1) params.set("page", String(state.page));
-  if (state.trackers.length) params.set("trackers", [...new Set(state.trackers)].sort().join(","));
+  if (state.instances.length) params.set("sites", [...new Set(state.instances)].sort().join(","));
+  if (state.run) params.set("run", state.run);
   if (state.fastRules !== undefined) params.set("fastRules", state.fastRules ? "1" : "0");
   if (state.fileRules !== undefined) params.set("fileRules", state.fileRules ? "1" : "0");
   return params;

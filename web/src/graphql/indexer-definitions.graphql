@@ -1,0 +1,40 @@
+fragment IndexerDefinitionJobFields on IndexerDefinitionJob {
+  id kind state targetRevision expectedActiveRevision downloadedBytes
+  errorCode correlationId startedAt finishedAt revision
+}
+
+fragment IndexerDefinitionStatusFields on IndexerDefinitionStatus {
+  streamId
+  activeRevision previousRevision availableRevision revision available
+  lastCheckedAt checkErrorCode errorCode
+  installed { revision schemaVersion engineVersion definitionCount installedAt }
+  job { ...IndexerDefinitionJobFields }
+}
+
+query IndexerDefinitionStatus {
+  indexerDefinitionStatus { ...IndexerDefinitionStatusFields }
+}
+query IndexerDefinitionUpdate($id: ID!) {
+  indexerDefinitionUpdate(id: $id) { ...IndexerDefinitionJobFields }
+}
+mutation CheckIndexerDefinitionUpdate {
+  checkIndexerDefinitionUpdate { ...IndexerDefinitionStatusFields }
+}
+mutation InstallIndexerDefinitions($input: IndexerDefinitionChangeInput!) {
+  installIndexerDefinitions(input: $input) { ...IndexerDefinitionJobFields }
+}
+mutation UpdateIndexerDefinitions($input: IndexerDefinitionChangeInput!) {
+  updateIndexerDefinitions(input: $input) { ...IndexerDefinitionJobFields }
+}
+mutation RollbackIndexerDefinitions($input: IndexerDefinitionChangeInput!) {
+  rollbackIndexerDefinitions(input: $input) { ...IndexerDefinitionJobFields }
+}
+mutation RepairIndexerDefinitions($input: IndexerDefinitionChangeInput!) {
+  repairIndexerDefinitions(input: $input) { ...IndexerDefinitionJobFields }
+}
+mutation CancelIndexerDefinitionUpdate($id: ID!) {
+  cancelIndexerDefinitionUpdate(id: $id) { ...IndexerDefinitionJobFields }
+}
+subscription IndexerDefinitionEvents {
+  indexerDefinitionEvents { ...IndexerDefinitionStatusFields }
+}

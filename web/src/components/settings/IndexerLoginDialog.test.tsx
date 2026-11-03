@@ -1,0 +1,128 @@
+// @vitest-environment jsdom
+import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { afterEach, beforeEach, expect, it, vi } from "vitest";
+import i18n from "../../i18n/i18n";
+import { IndexerLoginDialog } from "./IndexerLoginDialog";
+const mock = vi.hoisted(() => ({ query: vi.fn(), restore: vi.fn(), execute: vi.fn() }));
+vi.mock("urql", () => ({ useClient: () => ({ query: mock.query }), useMutation: () => [{}, mock.execute] }));
+const input = { instanceId: "saved-site", expectedRevision: "configuration" };
+const waiting = () => ({ id: "public-flow", instanceId: input.instanceId, configRevision: input.expectedRevision, ruleRevision: "rules", state: "WAITING", expiresAt: new Date(Date.now() + 60000).toISOString(), challenge: { id: "public-flow", type: "text", prompt: "Synthetic question", imageData: null as string | null } });
+beforeEach(async () => {
+  await i18n.changeLanguage("en");
+  mock.query.mockReset().mockImplementation(() => ({ toPromise: mock.restore }));
+  mock.restore.mockReset().mockResolvedValue({ data: { indexerLogin: null } });
+  mock.execute.mockReset().mockImplementation(async (variables: { id?: string; answer?: string }) => variables.answer !== undefined ? { data: { answerIndexerChallenge: { ...waiting(), state: "READY", challenge: null } } } : variables.id ? { data: { cancelIndexerLogin: true } } : { data: { beginIndexerLogin: waiting() } });
+});
+afterEach(() => { cleanup(); vi.useRealTimers(); });
+it("restores state on opening but starts authentication only on an explicit action", async () => {
+  render(<IndexerLoginDialog input={input} name="Saved site" onClose={() => {}} />);
+  await waitFor(() => expect(screen.getByRole("button", { name: "Start login" }).hasAttribute("disabled")).toBe(false));
+  expect(mock.query).toHaveBeenCalledTimes(1); expect(mock.execute).not.toHaveBeenCalled();
+  expect(mock.query.mock.calls[0][1]).toEqual({ input });
+  expect(mock.query.mock.calls[0][2].requestPolicy).toBe("network-only");
+  fireEvent.click(screen.getByRole("button", { name: "Start login" }));
+  await screen.findByRole("textbox", { name: "Challenge answer" });
+  expect(mock.execute.mock.calls[0][0]).toEqual({ input });
+});
+it("recovers a pending challenge and clears the submitted answer before acknowledgement", async () => {
+  mock.restore.mockResolvedValue({ data: { indexerLogin: waiting() } });
+  let finish!: (value: unknown) => void;
+  mock.execute.mockImplementation(() => new Promise(resolve => { finish = resolve; }));
+  render(<IndexerLoginDialog input={input} name="Saved site" onClose={() => {}} />);
+  const field = await screen.findByRole("textbox", { name: "Challenge answer" });
+  expect(mock.execute).not.toHaveBeenCalled();
+  fireEvent.change(field, { target: { value: "private-answer" } });
+  fireEvent.click(screen.getByRole("button", { name: "Submit answer" }));
+  expect((field as HTMLInputElement).value).toBe("");
+  expect(mock.execute.mock.calls[0][0]).toEqual({ id: "public-flow", input, answer: "private-answer" });
+  await act(async () => finish({ data: { answerIndexerChallenge: { ...waiting(), state: "READY", challenge: null } } }));
+  await screen.findByText(/The login session is available/);
+  expect(screen.queryByRole("textbox")).toBeNull();
+});
+it("cancels explicitly and closing leaves an idle challenge recoverable", async () => {
+  mock.restore.mockResolvedValue({ data: { indexerLogin: waiting() } });
+  const close = vi.fn(); const view = render(<IndexerLoginDialog input={input} name="Saved site" onClose={close} />);
+  await screen.findByRole("textbox"); fireEvent.click(screen.getByRole("button", { name: "Close" }));
+  expect(close).toHaveBeenCalledTimes(1); expect(mock.execute).not.toHaveBeenCalled();
+  view.unmount(); render(<IndexerLoginDialog input={input} name="Saved site" onClose={close} />);
+  await screen.findByRole("textbox");
+  fireEvent.click(screen.getByRole("button", { name: "Cancel login" }));
+  await screen.findByText("Login verification cancelled.");
+  expect(mock.execute.mock.calls[0][0]).toEqual({ id: "public-flow", input });
+});
+it("aborts and ignores a late mutation when the saved configuration changes", async () => {
+  let finish!: (value: unknown) => void;
+  mock.execute.mockImplementation(() => new Promise(resolve => { finish = resolve; }));
+  const view = render(<IndexerLoginDialog input={input} name="Saved site" onClose={() => {}} />);
+  await waitFor(() => expect(screen.getByRole("button", { name: "Start login" }).hasAttribute("disabled")).toBe(false));
+  fireEvent.click(screen.getByRole("button", { name: "Start login" }));
+  const signal = mock.execute.mock.calls[0][1].fetchOptions.signal as AbortSignal;
+  const changed = { ...input, expectedRevision: "new-configuration" };
+  view.rerender(<IndexerLoginDialog input={changed} name="Saved site" onClose={() => {}} />);
+  expect(signal.aborted).toBe(true);
+  await act(async () => finish({ data: { beginIndexerLogin: waiting() } }));
+  await waitFor(() => expect(mock.query).toHaveBeenCalledTimes(2));
+  expect(mock.query.mock.calls[1][1]).toEqual({ input: changed });
+  expect(screen.queryByText("Synthetic question")).toBeNull();
+});
+it("expires locally without polling and restarts only after explicit cancellation", async () => {
+  vi.useFakeTimers(); mock.restore.mockResolvedValue({ data: { indexerLogin: { ...waiting(), expiresAt: new Date(Date.now() + 1000).toISOString() } } });
+  await act(async () => { render(<IndexerLoginDialog input={input} name="Saved site" onClose={() => {}} />); });
+  await act(async () => { vi.advanceTimersByTime(1001); });
+  expect(screen.getByText("This challenge expired. Restart login.")).toBeTruthy();
+  expect(screen.queryByRole("textbox")).toBeNull(); expect(mock.query).toHaveBeenCalledTimes(1); expect(mock.execute).not.toHaveBeenCalled();
+  await act(async () => { fireEvent.click(screen.getByRole("button", { name: "Restart login" })); });
+  expect(mock.execute.mock.calls.map(call => call[0])).toEqual([{ id: "public-flow", input }, { input }]);
+  expect(screen.getByRole("textbox")).toBeTruthy();
+});
+it("does not submit a broken image challenge and offers a fresh login", async () => {
+  const report = waiting(); report.challenge.imageData = "data:image/png;base64,synthetic";
+  mock.restore.mockResolvedValue({ data: { indexerLogin: report } });
+  render(<IndexerLoginDialog input={input} name="Saved site" onClose={() => {}} />);
+  fireEvent.error(await screen.findByRole("img", { name: "Site challenge" }));
+  expect(screen.getByRole("alert").textContent).toContain("could not be displayed");
+  expect(screen.queryByRole("button", { name: "Submit answer" })).toBeNull();
+  expect(screen.getByRole("button", { name: "Restart login" })).toBeTruthy(); expect(mock.execute).not.toHaveBeenCalled();
+});
+it("ignores a late restore after switching sites", async () => {
+  let finish!: (value: unknown) => void;
+  mock.restore.mockImplementationOnce(() => new Promise(resolve => { finish = resolve; }));
+  const view = render(<IndexerLoginDialog input={input} name="First site" onClose={() => {}} />);
+  const signal = mock.query.mock.calls[0][2].fetchOptions.signal as AbortSignal;
+  const changed = { instanceId: "second-site", expectedRevision: "new-config" };
+  view.rerender(<IndexerLoginDialog input={changed} name="Second site" onClose={() => {}} />);
+  expect(signal.aborted).toBe(true);
+  await act(async () => finish({ data: { indexerLogin: waiting() } }));
+  await waitFor(() => expect(screen.getByRole("button", { name: "Start login" }).hasAttribute("disabled")).toBe(false));
+  expect(screen.queryByText("Synthetic question")).toBeNull(); expect(mock.execute).not.toHaveBeenCalled();
+});
+it("cancels an in-flight answer and ignores its late success", async () => {
+  mock.restore.mockResolvedValue({ data: { indexerLogin: waiting() } });
+  let finish!: (value: unknown) => void;
+  mock.execute.mockImplementationOnce(() => new Promise(resolve => { finish = resolve; })).mockResolvedValueOnce({ data: { cancelIndexerLogin: true } });
+  render(<IndexerLoginDialog input={input} name="Saved site" onClose={() => {}} />);
+  fireEvent.change(await screen.findByRole("textbox"), { target: { value: "private-answer" } });
+  fireEvent.click(screen.getByRole("button", { name: "Submit answer" }));
+  const signal = mock.execute.mock.calls[0][1].fetchOptions.signal as AbortSignal;
+  fireEvent.click(screen.getByRole("button", { name: "Cancel login" }));
+  expect(signal.aborted).toBe(true);
+  await screen.findByText("Login verification cancelled.");
+  await act(async () => finish({ data: { answerIndexerChallenge: { ...waiting(), state: "READY", challenge: null } } }));
+  expect(screen.queryByText(/The login session is available/)).toBeNull();
+  expect(mock.execute.mock.calls[1][0]).toEqual({ id: "public-flow", input });
+});
+it("describes an expired server challenge without resource-search advice", async () => {
+  mock.restore.mockResolvedValue({ data: { indexerLogin: waiting() } });
+  mock.execute.mockResolvedValue({ error: { graphQLErrors: [{ message: "INDEXER_RESOURCE_EXPIRED" }] } });
+  render(<IndexerLoginDialog input={input} name="Saved site" onClose={() => {}} />);
+  fireEvent.change(await screen.findByRole("textbox"), { target: { value: "private-answer" } });
+  fireEvent.click(screen.getByRole("button", { name: "Submit answer" }));
+  expect((await screen.findByRole("alert")).textContent).toBe("This challenge expired. Restart login.");
+  expect(screen.queryByRole("textbox")).toBeNull();
+});
+it("rejects a restored capability for another account", async () => {
+  mock.restore.mockResolvedValue({ data: { indexerLogin: { ...waiting(), instanceId: "another-site" } } });
+  render(<IndexerLoginDialog input={input} name="Saved site" onClose={() => {}} />);
+  await screen.findByRole("alert");
+  expect(screen.queryByText("Synthetic question")).toBeNull(); expect(screen.queryByRole("textbox")).toBeNull(); expect(mock.execute).not.toHaveBeenCalled();
+});

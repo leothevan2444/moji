@@ -4,7 +4,7 @@ A task is Moji's durable record for one release. It keeps the selected torrent, 
 
 ## Task lifecycle
 
-1. **Sourcing** — Moji searches Jackett and ranks downloadable candidates, unless you selected a Jackett result manually.
+1. **Sourcing** — Moji searches configured indexers in order and filters resources. A manually selected candidate is acquired and validated using its saved source.
 2. **Downloading** — the torrent has been submitted to qBittorrent. Moji periodically synchronizes its name, progress, state, and content path.
 3. **Pending ingest** — the download is complete and ready for path planning.
 4. **Transferring** — Moji filters and deduplicates files, losslessly merges movie parts in order, and delivers the movie with retained matching subtitles. Single files keep their original format at `CODE/CODE.ext`; merged parts use `CODE/CODE.mkv`.
@@ -22,7 +22,11 @@ Before generation, identification, and final verification, Moji resolves the del
 
 Search includes codes, titles, trackers, stages, torrent identities, and paths. Filter by running, completed, blocked, or pending scan, then sort by creation time, update time, or progress. **Refresh** reloads stored state. **Sync progress** asks qBittorrent for current transfer state. **Trigger scans** processes eligible completed downloads. **Retry blocked tasks** retries all blocked items.
 
-When sourcing finds no acceptable torrent, open **Resolve** to search candidates and choose one manually. Before submitting, confirm the candidate belongs to the requested release. Deleting a task may also delete its qBittorrent item and files, depending on the system policy; the confirmation dialog states the active effect.
+When sourcing finds no acceptable torrent, open **Resolve** to search candidates and choose one manually. Opening starts the first search; reloading restores existing results. Expired results require an explicit new search. You can also submit a magnet or upload a torrent file. Selecting a site candidate first saves its source, then the task acquires and validates it. Closing the page does not cancel an accepted choice. If the task has changed or a previous download submission is unconfirmed, check the latest task state first. Before submitting, confirm the candidate belongs to the requested release.
+
+Deleting a task may also delete its qBittorrent item and files, depending on the system policy; the confirmation dialog states the active effect.
+
+Use **Get download link** beside a candidate to download its torrent or open its magnet without changing the task. Preparing the link may consume a site download quota. The prepared entry remains available for five minutes.
 
 ## File preparation and delivery
 

@@ -23,6 +23,9 @@ export function mergeSettings(before: SettingsObject, delta: SettingsObject): Se
 
 export interface AutosaveSnapshot<T> { value: T; state: SaveState; error: unknown; pending: SettingsObject }
 export class SettingsAutosave<T> {
+  // Revision belongs to this retained draft's acknowledged baseline. Background
+  // snapshots cannot rebase pending edits onto another window's configuration.
+  sourceRevision?: string;
   snapshot: AutosaveSnapshot<T>;
   private baseline: SettingsObject;
   private timer?: ReturnType<typeof setTimeout>;
@@ -32,7 +35,8 @@ export class SettingsAutosave<T> {
   encode: (value: T) => SettingsObject;
   persist: (patch: SettingsObject) => Promise<void>;
   onSaved?: (value: T, patch: SettingsObject) => void;
-  constructor(initial: T, encode: (value: T) => SettingsObject, persist: (patch: SettingsObject) => Promise<void>) {
+  constructor(initial: T, encode: (value: T) => SettingsObject, persist: (patch: SettingsObject) => Promise<void>, sourceRevision?: string) {
+    this.sourceRevision = sourceRevision;
     this.encode = encode; this.persist = persist; this.baseline = encode(initial);
     this.snapshot = { value: initial, state: "idle", error: null, pending: {} };
   }
@@ -42,10 +46,19 @@ export class SettingsAutosave<T> {
     this.snapshot = { ...this.snapshot, ...patch };
     this.listeners.forEach(listener => listener());
   }
-  initialize(initial: T) {
+  initialize(initial: T, sourceRevision = this.sourceRevision) {
     if (this.saving || ["pending", "error"].includes(this.snapshot.state)) return;
     this.baseline = this.encode(initial);
+    this.sourceRevision = sourceRevision;
     this.publish({ value: initial });
+  }
+  discard(initial: T, sourceRevision?: string) {
+    if (this.saving) return false;
+    if (this.timer) clearTimeout(this.timer);
+    this.sourceRevision = sourceRevision;
+    this.baseline = this.encode(initial);
+    this.publish({ value: initial, state: "idle", error: null, pending: {} });
+    return true;
   }
   edit(next: T | ((value: T) => T)) {
     const value = typeof next === "function" ? (next as (value: T) => T)(this.snapshot.value) : next;

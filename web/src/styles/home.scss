@@ -99,13 +99,15 @@
 
 @keyframes home-appear { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
 @media (max-width: 960px) {
-  .home-grid { grid-template-columns: minmax(0, 1fr); grid-template-areas: "attention" "active" "subscriptions" "recent" "system"; }
+  .home-grid { grid-template-columns: minmax(0, 1fr); grid-template-areas: "attention" "active" "subscriptions" "recent" "system" "indexers" "downloader"; }
   .home-main, .home-sidebar { display: contents; }
   .home-attention { grid-area: attention; }
   .home-active { grid-area: active; }
   .home-recent { grid-area: recent; }
   .home-subscriptions { grid-area: subscriptions; }
   .home-system { grid-area: system; }
+  .home-indexers { grid-area: indexers; }
+  .home-downloader { grid-area: downloader; }
 }
 @media (max-width: 560px) {
   .home-workspace { gap: 16px; }
@@ -167,9 +169,7 @@
   .home-check-detail .home-check-schedule { padding-inline: 0; }
 }
 
-.home-downloader { border-block-start: 1px solid var(--line); }
-.home-downloader .home-panel-heading { padding: 12px 22px; }
-.home-downloader .home-panel-heading h3 { margin: 0; font-size: 13px; font-weight: 600; }
+
 .home-downloader-metrics { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px 16px; margin: 0; padding: 0 22px 12px; }
 .home-downloader-metrics dt { display: flex; align-items: center; gap: 5px; color: var(--muted); font-size: 11px; line-height: 1.5; }
 .home-downloader-metrics dd { margin: 2px 0 0; font-size: 13px; font-weight: 600; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
@@ -178,3 +178,17 @@
 .home-downloader-footer { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px; padding: 10px 22px; }
 .home-downloader-footer .home-downloader-status { margin: 0; }
 .home-downloader-footer .home-more { margin: 0; padding: 0; border: 0; }
+
+.home-indexer-note { margin: 0 22px 12px; font-size: 12px; overflow-wrap: anywhere; }
+.home-indexer-sources:empty { display: none; }
+.home-indexer-sources li { gap: 12px; flex-wrap: wrap; }
+.home-indexer-issues { list-style: none; margin: 0; padding: 0 22px; }
+.home-indexer-issues li { display: flex; flex-direction: column; gap: 4px; padding-block: 10px; font-size: 12px; overflow-wrap: anywhere; }
+.home-indexer-issues span { color: var(--muted); }
+@media (max-width: 560px) {
+  .home-indexer-note { margin-inline: 16px; }
+  .home-indexer-issues { padding-inline: 16px; }
+  .home-downloader-metrics, .home-downloader-footer { padding-inline: 16px; }
+}
+
+.home-indexer-definition-job { display: flex; flex-direction: column; gap: 4px; code { direction: ltr; unicode-bidi: isolate; text-align: start; } }

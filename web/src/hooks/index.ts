@@ -1,9 +1,6 @@
 export { useToast } from "./useToast";
 export { useTaskMutations } from "./useTaskMutations";
 export { useDiscoverScenes } from "./useDiscoverScenes";
-export { useJackettSearch } from "./useJackettSearch";
-export { usePreviewJackettSelection } from "./usePreviewJackettSelection";
-export { useJackettIndexers } from "./useJackettIndexers";
 export { usePerformersWorkspace } from "./usePerformersWorkspace";
 export { usePerformers } from "./usePerformers";
 export { usePerformerScenes } from "./usePerformerScenes";

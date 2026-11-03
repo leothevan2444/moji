@@ -21,10 +21,10 @@ export function FieldLabel({ text, info }: { text: string; info?: string }) {
   return <span className="settings-field__label"><span>{text}</span>{info ? <span className="settings-info" tabIndex={0} aria-label={info}><FontAwesomeIcon icon={faCircleInfo} aria-hidden="true" /><span className="settings-info__tooltip" role="tooltip">{info}</span></span> : null}</span>;
 }
 
-export function SecretInput({ value, onChange, placeholder }: { value: string; onChange: (value: string) => void; placeholder?: string }) {
+export function SecretInput({ value, onChange, placeholder, id, disabled = false }: { value: string; onChange: (value: string) => void; placeholder?: string; id?: string; disabled?: boolean }) {
   const [visible, setVisible] = useState(false);
   const { t } = useTranslation();
-  return <div className="secret-input"><input className="secret-input__field" type={visible ? "text" : "password"} value={value} onChange={(event) => onChange(event.target.value)} placeholder={placeholder} autoComplete="off" spellCheck={false} /><button type="button" className="secret-input__toggle" aria-label={t(visible ? "settings.hideSecret" : "settings.showSecret")} onClick={() => setVisible((current) => !current)}><FontAwesomeIcon icon={visible ? faEyeSlash : faEye} aria-hidden="true" /></button></div>;
+  return <div className="secret-input"><input id={id} disabled={disabled} className="secret-input__field" type={visible ? "text" : "password"} value={value} onChange={(event) => onChange(event.target.value)} placeholder={placeholder} autoComplete="off" spellCheck={false} /><button type="button" disabled={disabled} className="secret-input__toggle" aria-label={t(visible ? "settings.hideSecret" : "settings.showSecret")} onClick={() => setVisible((current) => !current)}><FontAwesomeIcon icon={visible ? faEyeSlash : faEye} aria-hidden="true" /></button></div>;
 }
 
 export function SettingsCard({ title, children }: { title: string; children: ReactNode }) {

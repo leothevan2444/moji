@@ -151,6 +151,12 @@ function applyTaskBatch(cache: Cache, payload: any, deleting = false) {
 const singleton = () => "singleton";
 
 export const graphcacheKeys: KeyingConfig = {
+  // Each paged search snapshot owns its revision and candidate page.
+  TorrentSearch: () => null,
+  TorrentSearchSite: () => null,
+  TorrentSearchEvent: () => null,
+  TorrentSelectionPreview: () => null,
+  TorrentSelectionPreviewMeta: () => null,
   TaskFile: () => null,
   Settings: singleton,
   StashSettings: singleton,
@@ -173,6 +179,15 @@ export const graphcacheKeys: KeyingConfig = {
   AutomationStatus: singleton,
   StashBoxStatus: singleton,
   ImageCacheStatus: singleton,
+  IndexerDefinitionStatus: singleton,
+  IndexerDefinitionManifest: data => typeof data.revision === "string" ? data.revision : null,
+  IndexerInstances: singleton,
+  IndexerDefinitionPage: () => null,
+  IndexerDefinition: data => typeof data.id === "string" && typeof data.digest === "string" ? `${data.id}:${data.digest}` : null,
+  IndexerSetting: () => null,
+  IndexerSettingValue: () => null,
+  IndexerSettingOption: () => null,
+  BuiltinIndexerResult: () => null,
   DashboardStats: singleton,
   HomeOverview: singleton,
   HomeTaskSnapshot: singleton,
@@ -212,11 +227,6 @@ export const graphcacheKeys: KeyingConfig = {
   },
   MatchedStashBox: (data) => typeof data.endpoint === "string" && typeof data.performerId === "string" ? `${data.endpoint}:${data.performerId}` : null,
   StashSceneID: (data) => typeof data.endpoint === "string" && typeof data.stashId === "string" ? `${data.endpoint}:${data.stashId}` : null,
-  JackettSearchResult: (data) => {
-    if (typeof data.trackerId !== "string") return null;
-    const identity = typeof data.infoHash === "string" && data.infoHash ? data.infoHash : data.link;
-    return typeof identity === "string" && identity ? `${data.trackerId}:${identity}` : null;
-  },
   StashBoxEndpoint: (data) => typeof data.endpoint === "string" ? data.endpoint : null,
   StashLibrary: (data) => typeof data.path === "string" ? data.path : null,
   LogEntry: (data) => typeof data.sequence === "number" ? String(data.sequence) : null
@@ -224,6 +234,14 @@ export const graphcacheKeys: KeyingConfig = {
 
 export const graphcacheUpdates: UpdatesConfig = {
   Subscription: {
+    indexerDefinitionEvents(result, _args, cache) {
+      const event = result.indexerDefinitionEvents;
+      if (!event || typeof event !== "object" || Array.isArray(event)) return;
+      if (cache.resolve("IndexerInstances:singleton", "ruleRevision") !== event.activeRevision || (event.available && cache.resolve("IndexerInstances:singleton", "ruleErrorCode"))) {
+        cache.invalidate("Query", "indexerInstances");
+        for (const field of cache.inspectFields("Query")) if (field.fieldName === "indexerDefinitions") cache.invalidate("Query", field.fieldName, field.arguments ?? {});
+      }
+    },
     taskEvents(result: any, _args, cache) {
       const event = result.taskEvents;
       if (!event || event.type === "READY") return;
@@ -248,6 +266,9 @@ export const graphcacheUpdates: UpdatesConfig = {
     }
   },
   Mutation: {
+    patchSettings(_result, _args, cache) { cache.invalidate("Query", "indexerInstances"); },
+    addBuiltinIndexer(_result, _args, cache) { cache.invalidate("Query", "indexerInstances"); },
+    updateBuiltinIndexer(_result, _args, cache) { cache.invalidate("Query", "indexerInstances"); },
     processReleaseReviews(_result, _args, cache) {
       for (const field of cache.inspectFields("Query")) {
         if (["releaseReviews", "performerWorkspace", "subscribedPerformers"].includes(field.fieldName)) cache.invalidate("Query", field.fieldName, field.arguments ?? {});

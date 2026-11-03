@@ -1,0 +1,8 @@
+fragment IndexerCacheStatusFields on IndexerCacheStatus {
+  revision enabled ttlSeconds emptyTtlSeconds maxSizeMb entries usedBytes activeRequests activeWaiters
+}
+query IndexerCacheStatus { indexerCacheStatus { ...IndexerCacheStatusFields } }
+mutation ClearIndexerSearchCache($instanceId: ID) { clearIndexerSearchCache(instanceId: $instanceId) { ...IndexerCacheStatusFields } }
+mutation UpdateIndexerSearchCache($expectedRevision: String!, $input: IndexerSearchCachePatchInput!) {
+  updateIndexerSearchCache(expectedRevision: $expectedRevision, input: $input) { ...IndexerCacheStatusFields }
+}

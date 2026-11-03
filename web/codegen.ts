@@ -3,7 +3,7 @@ import type { CodegenConfig } from "@graphql-codegen/cli";
 const config: CodegenConfig = {
   schema: ["../graphql/moji/schema.graphql", "../graphql/moji/types/*.graphql"],
   documents: ["src/**/*.graphql"],
-  config: { scalars: { Upload: "File" } },
+  config: { scalars: { Upload: "File", Long: "number" } },
   generates: {
     "src/graphql/generated/": {
       preset: "client",

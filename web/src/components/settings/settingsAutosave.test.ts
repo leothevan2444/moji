@@ -29,3 +29,17 @@ describe("settings autosave queue",()=>{
   vi.useFakeTimers();const save=vi.fn().mockResolvedValue(undefined);const entry=new SettingsAutosave({a:1},v=>v,save);const listener=vi.fn();const unsubscribe=entry.subscribe(listener);entry.edit({a:2});unsubscribe();listener.mockClear();await advance();expect(save).toHaveBeenCalledWith({a:2});expect(listener).not.toHaveBeenCalled();
  });
 });
+
+it("keeps the editing revision with pending changes and requires explicit discard to rebase", async()=>{
+ vi.useFakeTimers();
+ const save=vi.fn().mockRejectedValue(new Error("conflict"));
+ const entry=new SettingsAutosave({value:1},v=>v,save,"original");
+ entry.edit({value:2});entry.initialize({value:9},"other-window");
+ expect(entry.sourceRevision).toBe("original");
+ await advance();
+ expect(entry.snapshot.value.value).toBe(2);expect(entry.sourceRevision).toBe("original");
+ entry.discard({value:9},"other-window");
+ expect(entry.snapshot.pending).toEqual({});expect(entry.sourceRevision).toBe("other-window");
+ expect(entry.snapshot.value.value).toBe(9);expect(entry.snapshot.state).toBe("idle");
+ vi.useRealTimers();
+});

@@ -55,7 +55,7 @@ export function DiscoveryPage({
 
   // placeholder 反映当前 mode，但 tab 已经在左侧 prefix 显示，故不再重复
   const placeholder = rawPlaceholder;
-  const submitTitle = t(mode === "stashbox" ? "discoverUi.searchStashBox" : "discoverUi.searchJackett");
+  const submitTitle = t(mode === "stashbox" ? "discoverUi.searchStashBox" : "torrentSearch.search");
 
   const canSubmit = !searching && query.trim() !== "";
 
@@ -72,7 +72,7 @@ export function DiscoveryPage({
           <div className="discovery-shell__prefix">
             <SegmentedTab
               value={mode}
-              options={DISCOVERY_MODE_OPTIONS}
+              options={DISCOVERY_MODE_OPTIONS.map(option => ({ ...option, label: option.value === "indexers" ? t(option.label) : option.label }))}
               onChange={onModeChange}
               size="sm"
               ariaLabel={t("discoverUi.searchMode")}

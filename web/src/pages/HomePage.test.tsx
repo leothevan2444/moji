@@ -45,13 +45,23 @@ describe("Home workspace", () => {
     expect(screen.getByRole("progressbar").getAttribute("aria-valuenow")).toBe("62");
   });
 
+  it.each(["jackett", "indexers"])("restores saved %s resource mode as unified indexers", async stored => {
+    sessionStorage.setItem("moji:home-source", stored);
+    const props = setup();
+    const user = userEvent.setup();
+    expect((screen.getByRole("combobox") as HTMLSelectElement).value).toBe("indexers");
+    await user.type(screen.getByRole("textbox", { name: "Search movies or resources" }), "DEMO-101");
+    await user.click(screen.getByRole("button", { name: "Search" }));
+    expect(props.onSearch).toHaveBeenCalledWith("DEMO-101", "indexers");
+  });
+
   it("preserves search drafts and sends the selected source without silently creating a task", async () => {
     const props = setup();
     const user = userEvent.setup();
     await user.type(screen.getByRole("textbox", { name: "Search movies or resources" }), "  DEMO-101  ");
-    await user.selectOptions(screen.getByRole("combobox"), "jackett");
+    await user.selectOptions(screen.getByRole("combobox"), "indexers");
     await user.click(screen.getByRole("button", { name: "Search" }));
-    expect(props.onSearch).toHaveBeenCalledWith("DEMO-101", "jackett");
+    expect(props.onSearch).toHaveBeenCalledWith("DEMO-101", "indexers");
     expect(sessionStorage.getItem("moji:home-search")).toBe("  DEMO-101  ");
     expect(props.onRetryTask).not.toHaveBeenCalled();
   });
@@ -84,7 +94,7 @@ describe("Home workspace", () => {
   });
 
   it("distinguishes a missing configuration from a configured but unavailable dependency", async () => {
-    const status = { stash: { configured: true, ready: false }, jackett: { configured: true, ready: true }, qbittorrent: { configured: true, ready: true }, ingest: { configured: true } } as HomePageProps["runtimeStatus"];
+    const status = { stash: { configured: true, ready: false }, qbittorrent: { configured: true, ready: true }, ingest: { configured: true }, stashStats: {pendingMojiScanCount:0} } satisfies NonNullable<HomePageProps["runtimeStatus"]>;
     const props = setup({ runtimeStatus: status });
     expect(screen.getByText(/Stash is unavailable/)).toBeTruthy();
     await userEvent.setup().click(screen.getByRole("button", { name: "Check connections" }));
@@ -93,7 +103,7 @@ describe("Home workspace", () => {
   });
 
   it("offers configured milestones in first-run setup and never infers readiness from configuration", () => {
-    setup({ runtimeStatus: { stash: { configured: true, ready: false }, jackett: { configured: false, ready: false }, qbittorrent: { configured: false, ready: false }, ingest: { configured: false } } as HomePageProps["runtimeStatus"] });
+    setup({ runtimeStatus: { stash: { configured: true, ready: false }, qbittorrent: { configured: false, ready: false }, ingest: { configured: false }, stashStats: {pendingMojiScanCount:0} } satisfies NonNullable<HomePageProps["runtimeStatus"]> });
     expect(screen.getByRole("region", { name: "Finish setup to start processing" })).toBeTruthy();
     expect(screen.getByRole("button", { name: "Stash · Configured" })).toBeTruthy();
     expect(screen.getByText("Unavailable")).toBeTruthy();

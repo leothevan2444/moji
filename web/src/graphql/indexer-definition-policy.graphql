@@ -1,0 +1,5 @@
+fragment IndexerDefinitionPolicyFields on IndexerDefinitionPolicy { revision source schemaVersion checkIntervalHours autoUpdate }
+query IndexerDefinitionPolicy { indexerDefinitionPolicy { ...IndexerDefinitionPolicyFields } }
+mutation UpdateIndexerDefinitionPolicy($expectedRevision:String!, $input:IndexerDefinitionPolicyPatchInput!) {
+ updateIndexerDefinitionPolicy(expectedRevision:$expectedRevision,input:$input) { ...IndexerDefinitionPolicyFields }
+}
