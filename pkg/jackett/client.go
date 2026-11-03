@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"encoding/xml"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -59,6 +60,19 @@ type Client struct {
 	password string
 
 	httpClient *http.Client
+}
+
+// NewAPIClient does not open a management session or perform network I/O.
+// The caller owns the supplied HTTP transport and request lifecycle.
+func NewAPIClient(baseURL, apiKey string, httpClient *http.Client) (*Client, error) {
+	target, err := url.Parse(baseURL)
+	if err != nil || target.Hostname() == "" || target.User != nil || target.Fragment != "" || target.RawQuery != "" || target.Scheme != "http" && target.Scheme != "https" {
+		return nil, fmt.Errorf("invalid Jackett API URL")
+	}
+	if httpClient == nil {
+		httpClient = &http.Client{Timeout: 30 * time.Second, Transport: &http.Transport{Proxy: nil}}
+	}
+	return &Client{baseURL: strings.TrimRight(baseURL, "/"), apiKey: apiKey, httpClient: httpClient}, nil
 }
 
 func NewClient(baseURL string, apiKey string, password string) *Client {
@@ -121,6 +135,15 @@ type SearchRequest struct {
 	Categories []int
 }
 
+type HTTPError struct {
+	Status     int
+	RetryAfter string
+}
+
+var ErrResponseTooLarge = errors.New("Jackett response exceeds byte budget")
+
+func (e *HTTPError) Error() string { return fmt.Sprintf("Jackett API HTTP %d", e.Status) }
+
 type SearchResult struct {
 	FirstSeen            string   `json:"FirstSeen"`
 	Tracker              string   `json:"Tracker"`
@@ -166,6 +189,8 @@ type SearchResult struct {
 	DownloadVolumeFactor float64  `json:"DownloadVolumeFactor"`
 	UploadVolumeFactor   float64  `json:"UploadVolumeFactor"`
 	Gain                 float64  `json:"Gain"`
+	PeersKnown           bool     `json:"-"`
+	SizeKnown            bool     `json:"-"`
 }
 
 // UnmarshalJSON preserves missing/null seeder counts as -1. Zero is a real
@@ -174,7 +199,9 @@ func (r *SearchResult) UnmarshalJSON(data []byte) error {
 	type plain SearchResult
 	decoded := struct {
 		*plain
-		Seeders *int `json:"Seeders"`
+		Seeders *int   `json:"Seeders"`
+		Peers   *int   `json:"Peers"`
+		Size    *int64 `json:"Size"`
 	}{plain: (*plain)(r)}
 	if err := json.Unmarshal(data, &decoded); err != nil {
 		return err
@@ -182,6 +209,14 @@ func (r *SearchResult) UnmarshalJSON(data []byte) error {
 	r.Seeders = -1
 	if decoded.Seeders != nil && *decoded.Seeders >= 0 {
 		r.Seeders = *decoded.Seeders
+	}
+	r.PeersKnown = decoded.Peers != nil && *decoded.Peers >= 0
+	if decoded.Peers != nil {
+		r.Peers = *decoded.Peers
+	}
+	r.SizeKnown = decoded.Size != nil && *decoded.Size >= 0
+	if decoded.Size != nil {
+		r.Size = *decoded.Size
 	}
 	return nil
 }
@@ -222,6 +257,12 @@ func (c *Client) SearchContext(ctx context.Context, req SearchRequest) ([]Search
 	}
 	return results, err
 }
+
+// SearchWithIndexerStatusContext returns observations to its caller without a
+// global hook; independent indexer services can own their own status updates.
+func (c *Client) SearchWithIndexerStatusContext(ctx context.Context, req SearchRequest) ([]SearchResult, []IndexerStatus, error) {
+	return c.searchContext(ctx, req)
+}
 func (c *Client) searchContext(ctx context.Context, req SearchRequest) ([]SearchResult, []IndexerStatus, error) {
 	u, err := url.Parse(fmt.Sprintf("%s/api/v2.0/indexers/all/results", c.baseURL))
 	if err != nil {
@@ -257,7 +298,7 @@ func (c *Client) searchContext(ctx context.Context, req SearchRequest) ([]Search
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		return nil, nil, fmt.Errorf("jackett API error: %s", resp.Status)
+		return nil, nil, &HTTPError{Status: resp.StatusCode, RetryAfter: resp.Header.Get("Retry-After")}
 	}
 
 	var searchResults struct {
@@ -271,7 +312,14 @@ func (c *Client) searchContext(ctx context.Context, req SearchRequest) ([]Search
 			ElapsedTime int    `json:"ElapsedTime"`
 		} `json:"Indexers"`
 	}
-	if err := json.NewDecoder(resp.Body).Decode(&searchResults); err != nil {
+	data, err := io.ReadAll(io.LimitReader(resp.Body, (16<<20)+1))
+	if err != nil {
+		return nil, nil, err
+	}
+	if len(data) > 16<<20 {
+		return nil, nil, ErrResponseTooLarge
+	}
+	if err := json.Unmarshal(data, &searchResults); err != nil {
 		return nil, nil, fmt.Errorf("failed to decode JSON response: %w", err)
 	}
 
@@ -381,7 +429,14 @@ func (c *Client) GetAPIIndexersContext(ctx context.Context) ([]Indexer, error) {
 			Type        string `xml:"type"`
 		} `xml:"indexer"`
 	}
-	if err := xml.NewDecoder(resp.Body).Decode(&result); err != nil {
+	data, readErr := io.ReadAll(io.LimitReader(resp.Body, (2<<20)+1))
+	if readErr != nil {
+		return nil, readErr
+	}
+	if len(data) > 2<<20 {
+		return nil, ErrResponseTooLarge
+	}
+	if err := xml.Unmarshal(data, &result); err != nil {
 		return nil, fmt.Errorf("invalid Jackett indexers response: %w", err)
 	}
 	sites := make([]Indexer, 0, len(result.Items))
