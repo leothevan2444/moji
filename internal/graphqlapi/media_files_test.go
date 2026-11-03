@@ -23,7 +23,7 @@ func (f *fileResolutionRuntime) ResolveTaskFiles(_ context.Context, id string, i
 }
 func TestFileSelectionGraphQLPreservesOrderAndExposesPlan(t *testing.T) {
 	runtime := &fileResolutionRuntime{}
-	resolver := NewResolver(nil, nil, nil, nil, "test")
+	resolver := NewResolver(nil, nil, nil, "test")
 	resolver.TaskRuntime = runtime
 	var response struct {
 		Data struct {
@@ -57,7 +57,7 @@ func TestIngestTranscodeSettingGraphQLContract(t *testing.T) {
 	}{{"omitted", "", false}, {"enabled", "generateTranscodes:true,", true}, {"disabled", "generateTranscodes:false,", false}} {
 		t.Run(tc.name, func(t *testing.T) {
 			editor := &fakeSettingsEditor{updateIngestSnapshot: &SettingsSnapshot{Ingest: IngestSettingsSnapshot{GenerateTranscodes: tc.enabled}}}
-			resolver := NewResolver(nil, nil, nil, nil, "test")
+			resolver := NewResolver(nil, nil, nil, "test")
 			resolver.SettingsEditor = editor
 			var response struct {
 				Data struct {
@@ -77,7 +77,7 @@ func TestIngestTranscodeSettingGraphQLContract(t *testing.T) {
 
 func TestIngestSubtitleSettingGraphQLContract(t *testing.T) {
 	editor := &fakeSettingsEditor{updateIngestSnapshot: &SettingsSnapshot{Ingest: IngestSettingsSnapshot{KeepSubtitles: true}}}
-	resolver := NewResolver(nil, nil, nil, nil, "test")
+	resolver := NewResolver(nil, nil, nil, "test")
 	resolver.SettingsEditor = editor
 	var response struct {
 		Data struct {

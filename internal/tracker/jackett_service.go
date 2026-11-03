@@ -3,6 +3,7 @@ package tracker
 import (
 	"context"
 	"errors"
+	"github.com/leothevan2444/moji/internal/indexer"
 	"github.com/leothevan2444/moji/internal/logging"
 	"net/url"
 	"strings"
@@ -102,7 +103,7 @@ func (s *JackettService) ListIndexers() ([]jackett.Indexer, error) {
 	return client.GetIndexers()
 }
 
-func (s *JackettService) Search(query string, options ...SearchOption) ([]jackett.SearchResult, error) {
+func (s *JackettService) Search(query string, options ...SearchOption) ([]indexer.SelectionCandidate, error) {
 	opts := &SearchOptions{}
 	for _, option := range options {
 		option(opts)
@@ -111,15 +112,15 @@ func (s *JackettService) Search(query string, options ...SearchOption) ([]jacket
 	if ctx == nil {
 		ctx = context.Background()
 	}
-	var results []jackett.SearchResult
-	err := s.SearchSequential(ctx, query, func(batch []jackett.SearchResult) (bool, error) {
+	var results []indexer.SelectionCandidate
+	err := s.SearchSequential(ctx, query, func(batch []indexer.SelectionCandidate) (bool, error) {
 		results = append(results, batch...)
 		return false, nil
 	}, options...)
 	return results, err
 }
 
-func (s *JackettService) SearchSequential(ctx context.Context, query string, accept func([]jackett.SearchResult) (bool, error), options ...SearchOption) error {
+func (s *JackettService) SearchSequential(ctx context.Context, query string, accept func([]indexer.SelectionCandidate) (bool, error), options ...SearchOption) error {
 	if err := ctx.Err(); err != nil {
 		return err
 	}
@@ -184,7 +185,11 @@ func (s *JackettService) SearchSequential(ctx context.Context, query string, acc
 		if opts.Limit > 0 && len(batch) > opts.Limit {
 			batch = batch[:opts.Limit]
 		}
-		accepted, err := accept(batch)
+		projected := make([]indexer.SelectionCandidate, 0, len(batch))
+		for _, row := range batch {
+			projected = append(projected, indexer.SelectionCandidate{Title: row.Title, Tracker: row.Tracker, TrackerID: row.TrackerID, CategoryDesc: row.CategoryDesc, GUID: row.GUID, Link: row.Link, Details: row.Details, PublishDate: row.PublishDate, Category: row.Category, Size: row.Size, Seeders: row.Seeders, Peers: row.Peers, InfoHash: row.InfoHash, MagnetURI: row.MagnetURI})
+		}
+		accepted, err := accept(projected)
 		if err != nil {
 			return err
 		}

@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/leothevan2444/moji/internal/indexer"
 	"path/filepath"
 	"sync"
 	"sync/atomic"
@@ -12,7 +13,6 @@ import (
 	"time"
 
 	"github.com/leothevan2444/moji/internal/tracker"
-	"github.com/leothevan2444/moji/pkg/jackett"
 	"github.com/leothevan2444/moji/pkg/qbittorrent"
 )
 
@@ -22,10 +22,10 @@ type queuedTracker struct {
 	release   <-chan struct{}
 	calls     atomic.Int32
 	options   tracker.SearchOptions
-	results   []jackett.SearchResult
+	results   []indexer.SelectionCandidate
 }
 
-func (f *queuedTracker) Search(code string, options ...tracker.SearchOption) ([]jackett.SearchResult, error) {
+func (f *queuedTracker) Search(code string, options ...tracker.SearchOption) ([]indexer.SelectionCandidate, error) {
 	f.calls.Add(1)
 	if f.entered != nil {
 		f.entered <- code
@@ -40,8 +40,8 @@ func (f *queuedTracker) Search(code string, options ...tracker.SearchOption) ([]
 	f.optionsMu.Unlock()
 	return f.results, nil
 }
-func queuedResult() []jackett.SearchResult {
-	return []jackett.SearchResult{{Title: "ABCD-123", MagnetURI: "magnet:?xt=urn:btih:abc123&dn=ABCD-123", Seeders: 10}}
+func queuedResult() []indexer.SelectionCandidate {
+	return []indexer.SelectionCandidate{{Title: "ABCD-123", MagnetURI: "magnet:?xt=urn:btih:abc123&dn=ABCD-123", Seeders: 10}}
 }
 func waitQueuedTask(t *testing.T, store TaskStore, id string, stage TaskStage) *Task {
 	t.Helper()

@@ -148,7 +148,7 @@ func TestDatabasePerformanceOwnerCloseDoesNotWaitForSlowConsumer(t *testing.T) {
 
 func TestSystemMutationUpdatesAndPreservesDeveloperMode(t *testing.T) {
 	editor := &fakeSettingsEditor{snapshot: &SettingsSnapshot{System: SystemSettingsSnapshot{DeveloperMode: true, ImageCache: ImageCacheSettingsSnapshot{Enabled: true, MaxSizeMB: 1024, RetentionDays: 30}, StashBoxDataCache: StashBoxDataCacheSettingsSnapshot{TTLHours: 24}}}}
-	resolver := NewResolver(nil, nil, nil, nil, "test")
+	resolver := NewResolver(nil, nil, nil, "test")
 	resolver.SettingsEditor = editor
 	for _, test := range []struct {
 		field string

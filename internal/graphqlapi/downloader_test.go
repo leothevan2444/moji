@@ -42,7 +42,7 @@ func TestDownloaderGraphQLFilteringPolicyAndCommands(t *testing.T) {
 	if err := service.Refresh(ctx); err != nil {
 		t.Fatal(err)
 	}
-	resolver := NewResolver(nil, nil, tasks, nil, "test")
+	resolver := NewResolver(nil, tasks, nil, "test")
 	resolver.Downloader = service
 	var response struct {
 		Data struct {
@@ -87,7 +87,7 @@ func TestDownloaderCompletedMissingSourcesAreExcludedFromAttention(t *testing.T)
 	if err := service.Refresh(ctx); err != nil {
 		t.Fatal(err)
 	}
-	r := NewResolver(nil, nil, tasks, nil, "test")
+	r := NewResolver(nil, tasks, nil, "test")
 	r.Downloader = service
 	var result struct {
 		Data   struct{ Downloader model.DownloaderOverview }
@@ -127,7 +127,7 @@ func TestDownloaderListUsesCurrentQBTorrentsBeforeFilteringAndPagination(t *test
 	if err := service.Refresh(ctx); err != nil {
 		t.Fatal(err)
 	}
-	resolver := NewResolver(nil, nil, tasks, nil, "test")
+	resolver := NewResolver(nil, tasks, nil, "test")
 	resolver.Downloader = service
 	var result struct {
 		Data   struct{ Downloader model.DownloaderOverview }

@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"github.com/leothevan2444/moji/internal/config"
+	"github.com/leothevan2444/moji/internal/indexer"
 	"github.com/leothevan2444/moji/internal/tracker"
 	"github.com/leothevan2444/moji/pkg/jackett"
 	"net/http"
@@ -22,7 +23,7 @@ func TestSourcingRejectsInvalidLocksAndFallsBackNormally(t *testing.T) {
 		site := r.URL.Query().Get("Tracker[]")
 		calls = append(calls, site)
 		titles := map[string]string{"a": "WRONG-456 required", "b": "ABCD-123 excluded required", "c": "ABCD-123 ordinary", "d": "ABCD-123 required"}
-		_ = json.NewEncoder(w).Encode(map[string]any{"Results": []jackett.SearchResult{{Title: titles[site], MagnetURI: "magnet:?xt=urn:btih:1111111111111111111111111111111111111111"}}})
+		_ = json.NewEncoder(w).Encode(map[string]any{"Results": []indexer.SelectionCandidate{{Title: titles[site], MagnetURI: "magnet:?xt=urn:btih:1111111111111111111111111111111111111111"}}})
 	}))
 	defer server.Close()
 	tr := tracker.NewJackettService(func() tracker.JackettConfig {

@@ -18,8 +18,6 @@ import (
 	"github.com/leothevan2444/moji/internal/stashboxcache"
 	"github.com/leothevan2444/moji/internal/stashsync"
 	"github.com/leothevan2444/moji/internal/taskruntime"
-	"github.com/leothevan2444/moji/internal/tracker"
-	"github.com/leothevan2444/moji/pkg/jackett"
 )
 
 func TestDownloadMediaCreatesTask(t *testing.T) {
@@ -39,7 +37,7 @@ func TestDownloadMediaCreatesTask(t *testing.T) {
 			UpdatedAt: time.Unix(200, 0).UTC(),
 		},
 	}
-	resolver := NewResolver(nil, nil, taskRuntime, nil, "test-version")
+	resolver := NewResolver(nil, taskRuntime, nil, "test-version")
 
 	resp := executeGraphQL(t, resolver, `mutation {
 		downloadMedia(input: { code: "ABCD-123", limit: 1 }) {
@@ -83,7 +81,7 @@ func TestAddTorrentCreatesTask(t *testing.T) {
 			UpdatedAt: time.Unix(200, 0).UTC(),
 		},
 	}
-	resolver := NewResolver(nil, nil, taskRuntime, nil, "test-version")
+	resolver := NewResolver(nil, taskRuntime, nil, "test-version")
 
 	resp := executeGraphQL(t, resolver, `mutation {
 		addTorrent(input: { url: "magnet:?xt=urn:btih:manual", category: "moji" }) {
@@ -118,7 +116,7 @@ func TestResolveBlockedSourcingTaskUsesSelectedCandidate(t *testing.T) {
 			TorrentURL:  "magnet:?xt=urn:btih:abc123", CreatedAt: time.Unix(100, 0), UpdatedAt: time.Unix(200, 0),
 		},
 	}
-	resolver := NewResolver(nil, nil, taskRuntime, nil, "test-version")
+	resolver := NewResolver(nil, taskRuntime, nil, "test-version")
 	resp := executeGraphQL(t, resolver, `mutation {
 		resolveBlockedSourcingTask(id: "task-blocked", input: {
 			torrentUrl: "magnet:?xt=urn:btih:abc123"
@@ -139,95 +137,6 @@ func TestResolveBlockedSourcingTaskUsesSelectedCandidate(t *testing.T) {
 	}
 }
 
-func TestBlockedTaskTorrentCandidatesSearchesTaskCode(t *testing.T) {
-	taskRuntime := &fakeTaskRuntime{findTask: &taskruntime.Task{
-		ID: "task-blocked", Code: "ABCD-123", Stage: taskruntime.TaskStageSourcing, StageStatus: taskruntime.TaskStageStatusBlocked,
-	}}
-	trackerClient := &fakeGraphQLTracker{results: []jackett.SearchResult{{Title: "ABCD-123 candidate", Tracker: "demo", MagnetURI: "magnet:?xt=urn:btih:test"}}}
-	resolver := NewResolver(trackerClient, nil, taskRuntime, nil, "test-version")
-	resp := executeGraphQL(t, resolver, `query {
-		blockedTaskTorrentCandidates(id: "task-blocked", limit: 20) { title tracker magnetUri }
-	}`)
-	if len(resp.Errors) > 0 {
-		t.Fatalf("expected no errors, got %+v", resp.Errors)
-	}
-	if trackerClient.query != "ABCD-123" || len(resp.Data.BlockedTaskTorrentCandidates) != 1 {
-		t.Fatalf("unexpected candidate search: query=%q response=%+v", trackerClient.query, resp.Data.BlockedTaskTorrentCandidates)
-	}
-}
-
-func TestPreviewJackettSelectionReturnsPreviewedResults(t *testing.T) {
-	taskRuntime := &fakeTaskRuntime{
-		previewSelection: &taskruntime.CandidateSelectionPreview{
-			Results: []jackett.SearchResult{
-				{Title: "preferred", TrackerID: "alpha", Link: "https://example.test/a.torrent"},
-				{Title: "fallback", TrackerID: "beta", Link: "https://example.test/b.torrent"},
-			},
-			Meta: taskruntime.CandidateSelectionPreviewMeta{
-				AppliedFastRules: true,
-				AppliedFileRules: false,
-				InspectedCount:   0,
-				InspectableCount: 0,
-			},
-		},
-	}
-	resolver := NewResolver(nil, nil, taskRuntime, nil, "test-version")
-
-	resp := executeGraphQL(t, resolver, `query {
-		previewJackettSelection(input: {
-			query: "ABCD-123"
-			applyFastRules: true
-			applyFileRules: false
-			results: [
-				{
-					title: "fallback"
-					size: 1
-					seeders: 1
-					peers: 1
-					tracker: "beta"
-					trackerId: "beta"
-					categoryDesc: ""
-					publishDate: ""
-					details: ""
-					link: "https://example.test/b.torrent"
-					magnetUri: ""
-					infoHash: ""
-				},
-				{
-					title: "preferred"
-					size: 1
-					seeders: 2
-					peers: 1
-					tracker: "alpha"
-					trackerId: "alpha"
-					categoryDesc: ""
-					publishDate: ""
-					details: ""
-					link: "https://example.test/a.torrent"
-					magnetUri: ""
-					infoHash: ""
-				}
-			]
-		}) {
-			results { title trackerId }
-			previewMeta { appliedFastRules appliedFileRules inspectedCount inspectableCount }
-		}
-	}`)
-
-	if len(resp.Errors) > 0 {
-		t.Fatalf("expected no errors, got %+v", resp.Errors)
-	}
-	if taskRuntime.previewRequest.Query != "ABCD-123" || !taskRuntime.previewRequest.ApplyFastRules || taskRuntime.previewRequest.ApplyFileRules {
-		t.Fatalf("unexpected preview request: %+v", taskRuntime.previewRequest)
-	}
-	if len(resp.Data.PreviewJackettSelection.Results) != 2 || resp.Data.PreviewJackettSelection.Results[0].Title != "preferred" {
-		t.Fatalf("unexpected preview response: %+v", resp.Data.PreviewJackettSelection)
-	}
-	if !resp.Data.PreviewJackettSelection.PreviewMeta.AppliedFastRules || resp.Data.PreviewJackettSelection.PreviewMeta.AppliedFileRules {
-		t.Fatalf("unexpected preview meta: %+v", resp.Data.PreviewJackettSelection.PreviewMeta)
-	}
-}
-
 func TestDeprecatedQBittorrentAddCreatesTask(t *testing.T) {
 	taskRuntime := &fakeTaskRuntime{
 		addTask: &taskruntime.Task{
@@ -239,7 +148,7 @@ func TestDeprecatedQBittorrentAddCreatesTask(t *testing.T) {
 			UpdatedAt:   time.Unix(200, 0).UTC(),
 		},
 	}
-	resolver := NewResolver(nil, nil, taskRuntime, nil, "test-version")
+	resolver := NewResolver(nil, taskRuntime, nil, "test-version")
 
 	resp := executeGraphQL(t, resolver, `mutation {
 		qbittorrentAdd(input: { url: "magnet:?xt=urn:btih:manual" })
@@ -263,7 +172,7 @@ func TestTasksQueryListsTasks(t *testing.T) {
 			{ID: "task-1", Code: "AAAA-111", Stage: taskruntime.TaskStageDownloading, StageStatus: taskruntime.TaskStageStatusBlocked, CreatedAt: time.Unix(100, 0).UTC(), UpdatedAt: time.Unix(100, 0).UTC()},
 		},
 	}
-	resolver := NewResolver(nil, nil, taskRuntime, nil, "test-version")
+	resolver := NewResolver(nil, taskRuntime, nil, "test-version")
 
 	resp := executeGraphQL(t, resolver, `{ tasks { id code stage } }`)
 	if len(resp.Errors) > 0 {
@@ -275,7 +184,7 @@ func TestTasksQueryListsTasks(t *testing.T) {
 }
 
 func TestTasksQueryWithoutTaskRuntimeReturnsEmptyList(t *testing.T) {
-	resolver := NewResolver(nil, nil, nil, nil, "test-version")
+	resolver := NewResolver(nil, nil, nil, "test-version")
 
 	resp := executeGraphQL(t, resolver, `{ tasks { id } }`)
 	if len(resp.Errors) > 0 {
@@ -295,7 +204,7 @@ func TestTasksQueryReturnsNullForUnsetOptionalFields(t *testing.T) {
 			{ID: "task-1", Code: "AAAA-111", Stage: taskruntime.TaskStageSourcing, StageStatus: taskruntime.TaskStageStatusRunning, CreatedAt: time.Unix(100, 0).UTC(), UpdatedAt: time.Unix(100, 0).UTC()},
 		},
 	}
-	resolver := NewResolver(nil, nil, taskRuntime, nil, "test-version")
+	resolver := NewResolver(nil, taskRuntime, nil, "test-version")
 
 	var resp struct {
 		Data struct {
@@ -349,7 +258,7 @@ func TestQueuePerformerScenesMutationMapsBatchResult(t *testing.T) {
 			},
 		},
 	}
-	resolver := NewResolver(nil, nil, nil, nil, "test-version")
+	resolver := NewResolver(nil, nil, nil, "test-version")
 	resolver.Performer = performerService
 
 	var resp struct {
@@ -417,7 +326,7 @@ func TestDeleteTaskMutation(t *testing.T) {
 			UpdatedAt:   time.Unix(200, 0).UTC(),
 		},
 	}
-	resolver := NewResolver(nil, nil, taskRuntime, nil, "test-version")
+	resolver := NewResolver(nil, taskRuntime, nil, "test-version")
 
 	resp := executeGraphQL(t, resolver, `mutation {
 		deleteTask(id: "task-delete") {
@@ -438,7 +347,7 @@ func TestDeleteTaskMutation(t *testing.T) {
 }
 
 func TestStashPerformersQueryPaginatesResults(t *testing.T) {
-	resolver := NewResolver(nil, nil, nil, nil, "test-version")
+	resolver := NewResolver(nil, nil, nil, "test-version")
 	service := &fakePerformerService{
 		performers: []performerdomain.Performer{
 			{ID: "performer-1", Name: "Alice", Subscribed: true},
@@ -477,7 +386,7 @@ func TestStashPerformersQueryPaginatesResults(t *testing.T) {
 }
 
 func TestLogsQueryReturnsRecentEntries(t *testing.T) {
-	resolver := NewResolver(nil, nil, nil, nil, "test-version")
+	resolver := NewResolver(nil, nil, nil, "test-version")
 	resolver.LogReader = &fakeLogReader{
 		entries: []logging.Entry{
 			{Message: "latest error", Level: "error"},
@@ -503,7 +412,7 @@ func TestLogsQueryReturnsRecentEntries(t *testing.T) {
 }
 
 func TestTaskQueryWithoutTaskRuntimeReturnsNull(t *testing.T) {
-	resolver := NewResolver(nil, nil, nil, nil, "test-version")
+	resolver := NewResolver(nil, nil, nil, "test-version")
 
 	resp := executeGraphQL(t, resolver, `{ task(id: "task-1") { id } }`)
 	if len(resp.Errors) > 0 {
@@ -532,7 +441,7 @@ func TestSyncTaskProgress(t *testing.T) {
 			},
 		},
 	}
-	resolver := NewResolver(nil, nil, taskRuntime, nil, "test-version")
+	resolver := NewResolver(nil, taskRuntime, nil, "test-version")
 
 	resp := executeGraphQL(t, resolver, `mutation {
 		syncTaskProgress {
@@ -573,7 +482,7 @@ func TestSyncTaskProgressAdvancesIngest(t *testing.T) {
 				stashTasks: []*taskruntime.Task{{ID: "task", Stage: taskruntime.TaskStageScanning, StageStatus: taskruntime.TaskStageStatusRunning}},
 				syncErr:    tc.downloadErr, ingestErr: tc.ingestErr,
 			}
-			resolver := NewResolver(nil, nil, runtime, fakeStashService{}, "test")
+			resolver := NewResolver(nil, runtime, fakeStashService{}, "test")
 			tasks, err := resolver.Mutation().SyncTaskProgress(context.Background())
 			if len(runtime.syncCalls) != 2 || runtime.syncCalls[0] != "downloads" || runtime.syncCalls[1] != "ingest" {
 				t.Fatalf("expected downloads then ingest, got %v", runtime.syncCalls)
@@ -605,7 +514,7 @@ func TestTriggerStashScans(t *testing.T) {
 			},
 		},
 	}
-	resolver := NewResolver(nil, nil, dl, fakeStashService{}, "test-version")
+	resolver := NewResolver(nil, dl, fakeStashService{}, "test-version")
 
 	resp := executeGraphQL(t, resolver, `mutation {
 		triggerStashScans {
@@ -639,7 +548,7 @@ func TestTriggerTaskStashScan(t *testing.T) {
 			UpdatedAt:      time.Unix(300, 0).UTC(),
 		},
 	}
-	resolver := NewResolver(nil, nil, dl, fakeStashService{}, "test-version")
+	resolver := NewResolver(nil, dl, fakeStashService{}, "test-version")
 
 	resp := executeGraphQL(t, resolver, `mutation {
 		triggerTaskStashScan(id: "task-single") {
@@ -683,7 +592,7 @@ func TestRetryTasksMapsBatchPayload(t *testing.T) {
 }
 
 func TestDownloadMediaRequiresTaskRuntime(t *testing.T) {
-	resolver := NewResolver(nil, nil, nil, nil, "test-version")
+	resolver := NewResolver(nil, nil, nil, "test-version")
 
 	resp := executeGraphQL(t, resolver, `mutation {
 		downloadMedia(input: { code: "ABCD-123" }) { id }
@@ -697,7 +606,7 @@ func TestDownloadMediaRequiresTaskRuntime(t *testing.T) {
 }
 
 func TestTriggerStashScansRequiresStash(t *testing.T) {
-	resolver := NewResolver(nil, nil, &fakeTaskRuntime{}, nil, "test-version")
+	resolver := NewResolver(nil, &fakeTaskRuntime{}, nil, "test-version")
 
 	resp := executeGraphQL(t, resolver, `mutation {
 		triggerStashScans { id }
@@ -711,7 +620,7 @@ func TestTriggerStashScansRequiresStash(t *testing.T) {
 }
 
 func TestStashMetadataScanRequiresStash(t *testing.T) {
-	resolver := NewResolver(nil, nil, nil, nil, "test-version")
+	resolver := NewResolver(nil, nil, nil, "test-version")
 
 	resp := executeGraphQL(t, resolver, `mutation {
 		stashMetadataScan(input: { paths: ["/library"] })
@@ -725,7 +634,7 @@ func TestStashMetadataScanRequiresStash(t *testing.T) {
 }
 
 func TestStashJobRequiresStash(t *testing.T) {
-	resolver := NewResolver(nil, nil, nil, nil, "test-version")
+	resolver := NewResolver(nil, nil, nil, "test-version")
 
 	resp := executeGraphQL(t, resolver, `{ stashJob(id: "job-1") { id } }`)
 	if len(resp.Errors) == 0 {
@@ -737,7 +646,7 @@ func TestStashJobRequiresStash(t *testing.T) {
 }
 
 func TestSettingsQueryReturnsRuntimeSnapshot(t *testing.T) {
-	resolver := NewResolver(nil, nil, nil, nil, "test-version")
+	resolver := NewResolver(nil, nil, nil, "test-version")
 	resolver.RuntimeSettings = &SettingsSnapshot{
 		Stash: StashSettingsSnapshot{
 			Configured:       true,
@@ -849,7 +758,7 @@ func TestDashboardStatsQueryAggregatesTasks(t *testing.T) {
 			{ID: "task-4", Stage: taskruntime.TaskStageCompleted, StageStatus: taskruntime.TaskStageStatusDone},
 		},
 	}
-	resolver := NewResolver(nil, nil, taskRuntime, nil, "test-version")
+	resolver := NewResolver(nil, taskRuntime, nil, "test-version")
 
 	resp := executeGraphQL(t, resolver, `{
 		dashboardStats {
@@ -871,7 +780,7 @@ func TestDashboardStatsQueryAggregatesTasks(t *testing.T) {
 }
 
 func TestSettingsQueryUsesSettingsEditorSnapshot(t *testing.T) {
-	resolver := NewResolver(nil, nil, nil, nil, "test-version")
+	resolver := NewResolver(nil, nil, nil, "test-version")
 	resolver.SettingsEditor = &fakeSettingsEditor{
 		snapshot: &SettingsSnapshot{
 			Automation: AutomationSettingsSnapshot{
@@ -932,7 +841,7 @@ func TestUpdateStashSettingsMutation(t *testing.T) {
 			},
 		},
 	}
-	resolver := NewResolver(nil, nil, nil, nil, "test-version")
+	resolver := NewResolver(nil, nil, nil, "test-version")
 	resolver.SettingsEditor = editor
 
 	resp := executeGraphQL(t, resolver, `mutation {
@@ -975,7 +884,7 @@ func TestUpdateIngestSettingsMutation(t *testing.T) {
 			},
 		},
 	}
-	resolver := NewResolver(nil, nil, nil, nil, "test-version")
+	resolver := NewResolver(nil, nil, nil, "test-version")
 	resolver.SettingsEditor = editor
 
 	resp := executeGraphQL(t, resolver, `mutation {
@@ -1031,7 +940,7 @@ func TestUpdateJackettSettingsMutation(t *testing.T) {
 			},
 		},
 	}
-	resolver := NewResolver(nil, nil, nil, nil, "test-version")
+	resolver := NewResolver(nil, nil, nil, "test-version")
 	resolver.SettingsEditor = editor
 
 	resp := executeGraphQL(t, resolver, `mutation {
@@ -1078,7 +987,7 @@ func TestUpdateAutomationSettingsMutation(t *testing.T) {
 			},
 		},
 	}
-	resolver := NewResolver(nil, nil, nil, nil, "test-version")
+	resolver := NewResolver(nil, nil, nil, "test-version")
 	resolver.SettingsEditor = editor
 
 	resp := executeGraphQL(t, resolver, `mutation {
@@ -1150,7 +1059,7 @@ func TestUpdateSystemSettingsMutation(t *testing.T) {
 			},
 		},
 	}
-	resolver := NewResolver(nil, nil, nil, nil, "test-version")
+	resolver := NewResolver(nil, nil, nil, "test-version")
 	resolver.SettingsEditor = editor
 
 	resp := executeGraphQL(t, resolver, `mutation {
@@ -1179,7 +1088,7 @@ func TestUpdateSystemSettingsMutation(t *testing.T) {
 
 func TestUpdateSystemSettingsRejectsInvalidStashBoxCacheTTL(t *testing.T) {
 	for _, ttl := range []int{11, 361} {
-		resolver := NewResolver(nil, nil, nil, nil, "test-version")
+		resolver := NewResolver(nil, nil, nil, "test-version")
 		resolver.SettingsEditor = &fakeSettingsEditor{}
 		resp := executeGraphQL(t, resolver, fmt.Sprintf(`mutation {
 			updateSystemSettings(input: {
@@ -1195,7 +1104,7 @@ func TestUpdateSystemSettingsRejectsInvalidStashBoxCacheTTL(t *testing.T) {
 
 func TestStashBoxDataCacheStatusAndClearGraphQLContract(t *testing.T) {
 	cache := &fakeStashBoxDataCache{status: stashboxcache.Status{UsedBytes: 1234, SceneCount: 3, PerformerCount: 2, SnapshotCount: 4, DatabasePath: "cache/stashbox/cache.db"}}
-	resolver := NewResolver(nil, nil, nil, nil, "test-version")
+	resolver := NewResolver(nil, nil, nil, "test-version")
 	resolver.RuntimeStatus = &SettingsStatusSnapshot{}
 	resolver.StashBoxDataCache = cache
 
@@ -1241,7 +1150,7 @@ func TestUpdateSystemSettingsRejectsInvalidImageCacheBounds(t *testing.T) {
 		`{ enabled: true, maxSizeMb: 63, retentionDays: 30 }`,
 		`{ enabled: true, maxSizeMb: 1024, retentionDays: 366 }`,
 	} {
-		resolver := NewResolver(nil, nil, nil, nil, "test-version")
+		resolver := NewResolver(nil, nil, nil, "test-version")
 		resolver.SettingsEditor = &fakeSettingsEditor{}
 		resp := executeGraphQL(t, resolver, `mutation {
 			updateSystemSettings(input: {
@@ -1256,7 +1165,7 @@ func TestUpdateSystemSettingsRejectsInvalidImageCacheBounds(t *testing.T) {
 }
 
 func TestUpdateQBittorrentSettingsRequiresEditor(t *testing.T) {
-	resolver := NewResolver(nil, nil, nil, nil, "test-version")
+	resolver := NewResolver(nil, nil, nil, "test-version")
 
 	resp := executeGraphQL(t, resolver, `mutation {
 		updateQBittorrentSettings(input: {
@@ -1283,10 +1192,8 @@ type fakeTaskRuntime struct {
 	syncCalls           []string
 	addRequest          taskruntime.AddTorrentRequest
 	downloadRequest     taskruntime.DownloadRequest
-	previewRequest      taskruntime.PreviewJackettSelectionRequest
 	addTask             *taskruntime.Task
 	downloadTask        *taskruntime.Task
-	previewSelection    *taskruntime.CandidateSelectionPreview
 	findTask            *taskruntime.Task
 	listTasks           []*taskruntime.Task
 	deleteTaskID        string
@@ -1301,16 +1208,6 @@ type fakeTaskRuntime struct {
 	batchPayload        taskruntime.TaskBatchPayload
 }
 
-type fakeGraphQLTracker struct {
-	query   string
-	results []jackett.SearchResult
-}
-
-func (f *fakeGraphQLTracker) Search(query string, _ ...tracker.SearchOption) ([]jackett.SearchResult, error) {
-	f.query = query
-	return f.results, nil
-}
-
 func (f *fakeTaskRuntime) AddTorrentContext(_ context.Context, req taskruntime.AddTorrentRequest) (*taskruntime.Task, error) {
 	f.addRequest = req
 	return f.addTask, nil
@@ -1323,11 +1220,6 @@ func (f *fakeTaskRuntime) QueueDownloadContext(ctx context.Context, req taskrunt
 func (f *fakeTaskRuntime) DownloadMediaContext(_ context.Context, req taskruntime.DownloadRequest) (*taskruntime.Task, error) {
 	f.downloadRequest = req
 	return f.downloadTask, nil
-}
-
-func (f *fakeTaskRuntime) PreviewJackettSelectionContext(_ context.Context, req taskruntime.PreviewJackettSelectionRequest) (*taskruntime.CandidateSelectionPreview, error) {
-	f.previewRequest = req
-	return f.previewSelection, nil
 }
 
 func (f *fakeTaskRuntime) FindTask(_ context.Context, _ string) (*taskruntime.Task, error) {
@@ -1401,18 +1293,6 @@ type graphQLTaskResponse struct {
 				Seeders int    `json:"seeders"`
 			} `json:"candidate"`
 		} `json:"downloadMedia"`
-		PreviewJackettSelection struct {
-			Results []struct {
-				Title     string `json:"title"`
-				TrackerID string `json:"trackerId"`
-			} `json:"results"`
-			PreviewMeta struct {
-				AppliedFastRules bool `json:"appliedFastRules"`
-				AppliedFileRules bool `json:"appliedFileRules"`
-				InspectedCount   int  `json:"inspectedCount"`
-				InspectableCount int  `json:"inspectableCount"`
-			} `json:"previewMeta"`
-		} `json:"previewJackettSelection"`
 		Tasks []struct {
 			ID    string `json:"id"`
 			Code  string `json:"code"`
@@ -1431,11 +1311,6 @@ type graphQLTaskResponse struct {
 			StageStatus string `json:"stageStatus"`
 			TorrentURL  string `json:"torrentUrl"`
 		} `json:"resolveBlockedSourcingTask"`
-		BlockedTaskTorrentCandidates []struct {
-			Title     string `json:"title"`
-			Tracker   string `json:"tracker"`
-			MagnetURI string `json:"magnetUri"`
-		} `json:"blockedTaskTorrentCandidates"`
 		SyncTaskProgress []struct {
 			ID               string  `json:"id"`
 			Stage            string  `json:"stage"`
@@ -1786,7 +1661,7 @@ func TestTaskCompletionTimestamps(t *testing.T) {
 		} `json:"data"`
 		Errors []any `json:"errors"`
 	}
-	executeGraphQLInto(t, NewResolver(nil, nil, runtime, nil, "test"), `{ tasks { lastProgressAt sourcingCompletedAt downloadCompletedAt ingestCompletedAt } }`, &response)
+	executeGraphQLInto(t, NewResolver(nil, runtime, nil, "test"), `{ tasks { lastProgressAt sourcingCompletedAt downloadCompletedAt ingestCompletedAt } }`, &response)
 	if len(response.Errors) != 0 || len(response.Data.Tasks) != 2 {
 		t.Fatalf("unexpected response: %+v", response)
 	}
@@ -1817,7 +1692,7 @@ func TestTaskResourceScheduleIsExposedWithoutDownloadCompletion(t *testing.T) {
 		} `json:"data"`
 		Errors []any `json:"errors"`
 	}
-	executeGraphQLInto(t, NewResolver(nil, nil, runtime, nil, "test"), `{ tasks { sourcingLastCheckedAt sourcingNextCheckAt sourcingCompletedAt stageErrorCode } }`, &response)
+	executeGraphQLInto(t, NewResolver(nil, runtime, nil, "test"), `{ tasks { sourcingLastCheckedAt sourcingNextCheckAt sourcingCompletedAt stageErrorCode } }`, &response)
 	if len(response.Errors) != 0 || len(response.Data.Tasks) != 2 {
 		t.Fatalf("unexpected schedule response: %+v", response)
 	}

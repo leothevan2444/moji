@@ -155,6 +155,10 @@ func (s *RelationalTaskStore) Create(ctx context.Context, task *Task) error {
 	return nil
 }
 func (s *RelationalTaskStore) Update(ctx context.Context, task *Task) error {
+	return s.update(ctx, task, false)
+}
+
+func (s *RelationalTaskStore) update(ctx context.Context, task *Task, indexedChoice bool) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	if task == nil {
@@ -183,6 +187,11 @@ func (s *RelationalTaskStore) Update(ctx context.Context, task *Task) error {
 	}
 	task.Revision++
 	err = s.core.WithWrite(ctx, func(tx *sqlx.Tx) error {
+		if indexedChoice {
+			if err := guardIndexedChoice(ctx, tx, previous); err != nil {
+				return err
+			}
+		}
 		if err := writeRelationalTask(ctx, tx, task, true); err != nil {
 			return err
 		}
@@ -192,6 +201,9 @@ func (s *RelationalTaskStore) Update(ctx context.Context, task *Task) error {
 		}
 		if task.RestartStateJSON != previous.RestartStateJSON {
 			kind = "restart-checkpoint"
+		}
+		if indexedChoice {
+			kind = "source-selection"
 		}
 		return writeAudit(ctx, tx, task, kind, string(previous.Stage), "task state changed")
 	})
@@ -302,6 +314,25 @@ func writeRelationalTask(ctx context.Context, tx *sqlx.Tx, task *Task, update bo
 	candidate := map[string]any{"task_id": task.ID, "title": task.Candidate.Title, "tracker": task.Candidate.Tracker, "info_hash": task.Candidate.InfoHash, "link": task.Candidate.Link, "magnet_uri": task.Candidate.MagnetURI, "size": task.Candidate.Size, "seeders": task.Candidate.Seeders, "peers": task.Candidate.Peers}
 	if err := upsertFields(ctx, tx, "task_candidates", strings.Fields("task_id title tracker info_hash link magnet_uri size seeders peers"), candidate, true); err != nil {
 		return err
+	}
+	if err := writeSelectedResource(ctx, tx, task); err != nil {
+		return err
+	}
+	if source := task.Candidate.Source; source != nil {
+		if source.Version != 1 {
+			return fmt.Errorf("unsupported indexer provenance version")
+		}
+		payload, err := json.Marshal(source)
+		if err != nil {
+			return err
+		}
+		if _, err := tx.ExecContext(ctx, `INSERT INTO task_indexer_sources(task_id,payload_version,payload_json) VALUES(?,1,?) ON CONFLICT(task_id) DO UPDATE SET payload_json=excluded.payload_json`, task.ID, string(payload)); err != nil {
+			return err
+		}
+	} else {
+		if _, err := tx.ExecContext(ctx, `DELETE FROM task_indexer_sources WHERE task_id=?`, task.ID); err != nil {
+			return err
+		}
 	}
 	if len(task.TorrentFileData) > 0 {
 		if err := upsertFields(ctx, tx, "task_attachments", []string{"task_id", "torrent_file_data"}, params, true); err != nil {

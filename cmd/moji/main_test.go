@@ -582,7 +582,7 @@ func (f *fakeProgressSyncService) DownloadMediaContext(context.Context, taskrunt
 	return nil, nil
 }
 
-func (f *fakeProgressSyncService) PreviewJackettSelectionContext(context.Context, taskruntime.PreviewJackettSelectionRequest) (*taskruntime.CandidateSelectionPreview, error) {
+func (f *fakeProgressSyncService) PreviewTorrentSelectionContext(context.Context, taskruntime.PreviewTorrentSelectionRequest) (*taskruntime.CandidateSelectionPreview, error) {
 	return nil, nil
 }
 

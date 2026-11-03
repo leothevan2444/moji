@@ -1,6 +1,10 @@
 package taskruntime
 
 const relationalTaskSelectSQL = `SELECT * FROM (SELECT
+ (SELECT resource_id FROM task_indexer_selections WHERE task_id=t.id) AS selected_resource_id,
+ (SELECT record_json FROM task_indexer_selections WHERE task_id=t.id) AS indexer_resource_json,
+ (SELECT payload_version FROM task_indexer_selections WHERE task_id=t.id) AS indexer_selection_version,
+	(SELECT payload_json FROM task_indexer_sources WHERE task_id=t.id) AS source_evidence_json,
  COALESCE(k.payload_version,1) AS checkpoint_version,
  COALESCE(p.payload_version,1) AS file_plan_version,
  t.id AS id,

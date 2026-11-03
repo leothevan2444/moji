@@ -1,0 +1,17 @@
+extend type Query { indexerNetworkSettings: IndexerNetworkSettings! }
+extend type Mutation {
+  updateIndexerNetworkTimeouts(expectedRevision: String!, input: IndexerNetworkTimeoutPatchInput!): IndexerNetworkSettings!
+  addIndexerNetworkProfile(id: ID!, expectedRevision: String!, input: IndexerNetworkProfilePatchInput!): IndexerNetworkSettings!
+  updateIndexerNetworkProfile(id: ID!, expectedRevision: String!, input: IndexerNetworkProfilePatchInput!): IndexerNetworkSettings!
+  removeIndexerNetworkProfile(id: ID!, expectedRevision: String!): IndexerNetworkSettings!
+}
+input IndexerNetworkTimeoutPatchInput { requestTimeoutSeconds: Int siteTimeoutSeconds: Int challengeTimeoutSeconds: Int }
+input IndexerNetworkProfilePatchInput { proxyUrl: String clearProxy: Boolean = false flareSolverrUrl: String clearFlareSolverr: Boolean = false }
+type IndexerNetworkSettings {
+ revision: String!
+ requestTimeoutSeconds: Int!
+ siteTimeoutSeconds: Int!
+ challengeTimeoutSeconds: Int!
+ profiles: [IndexerNetworkProfile!]!
+}
+type IndexerNetworkProfile { id: ID! proxyConfigured: Boolean! flareSolverrConfigured: Boolean! usedBy: Int! }

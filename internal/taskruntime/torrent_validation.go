@@ -4,13 +4,13 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/leothevan2444/moji/internal/indexer"
 	"net/url"
 	"strings"
 
 	"github.com/leothevan2444/moji/internal/config"
 	"github.com/leothevan2444/moji/internal/logging"
 	"github.com/leothevan2444/moji/internal/mediafiles"
-	"github.com/leothevan2444/moji/pkg/jackett"
 	"github.com/leothevan2444/moji/pkg/qbittorrent"
 )
 
@@ -75,6 +75,20 @@ func (s *Service) prepareTorrent(ctx context.Context, code string, candidate Can
 }
 
 func (s *Service) prepareTorrentWithMetadata(ctx context.Context, code string, candidate Candidate, torrentURL string, metadata *downloadedTorrentMetadata) (preparedTorrent, error) {
+	if strings.HasPrefix(torrentURL, "indexer-resource:") {
+		if metadata != nil {
+			return prepareTorrentFile(code, candidate, *metadata)
+		}
+		resource, magnet, err := s.resolveIndexedResource(ctx, torrentURL)
+		if err != nil {
+			return preparedTorrent{}, candidateError(TaskStageErrorTorrentMetadata, "unable to acquire indexer resource")
+		}
+		if magnet != "" {
+			candidate.MagnetURI = magnet
+			return s.prepareTorrentWithMetadata(ctx, code, candidate, magnet, nil)
+		}
+		return prepareTorrentFile(code, candidate, resource)
+	}
 	title := candidate.Title
 	if title == torrentURL {
 		// A URL (and especially its info hash or query parameters) is not
@@ -99,8 +113,15 @@ func (s *Service) prepareTorrentWithMetadata(ctx context.Context, code string, c
 		return preparedTorrent{}, candidateError(TaskStageErrorTorrentMetadata, "torrent URL must use HTTP, HTTPS or magnet")
 	}
 	if metadata == nil {
-		fetched, fetchErr := s.fetchTorrentMetadata(ctx, torrentURL)
-		metadata, err = &fetched, fetchErr
+		s.inspectionCacheMu.Lock()
+		entry, ok := s.inspectionCache[normalizeTorrentInspectionCacheKey(torrentURL, "")]
+		s.inspectionCacheMu.Unlock()
+		if ok && entry.metadata != nil && entry.expiresAt.After(s.now().UTC()) {
+			metadata = entry.metadata
+		} else {
+			fetched, fetchErr := s.fetchTorrentMetadata(ctx, torrentURL)
+			metadata, err = &fetched, fetchErr
+		}
 	}
 	if err != nil {
 		// Do not persist download URLs, which may contain indexer API keys.
@@ -155,8 +176,8 @@ func validateTorrentCode(code string, metadata downloadedTorrentMetadata) error 
 	return nil
 }
 
-func (s *Service) selectVerifiedCandidate(ctx context.Context, selector CandidateSelector, code string, results []jackett.SearchResult, cfg config.CandidateSelectionConfig, taskID string) (jackett.SearchResult, preparedTorrent, error) {
-	remaining := make([]jackett.SearchResult, 0, len(results))
+func (s *Service) selectVerifiedCandidate(ctx context.Context, selector CandidateSelector, code string, results []indexer.SelectionCandidate, cfg config.CandidateSelectionConfig, taskID string) (indexer.SelectionCandidate, preparedTorrent, error) {
+	remaining := make([]indexer.SelectionCandidate, 0, len(results))
 	var rejected error
 	for _, result := range results {
 		if _, err := validateCodeEvidence(code, result.Title, magnetDisplayName(preferredTorrentURL(result))); err != nil {
@@ -167,14 +188,14 @@ func (s *Service) selectVerifiedCandidate(ctx context.Context, selector Candidat
 	}
 	for len(remaining) > 0 {
 		if err := ctx.Err(); err != nil {
-			return jackett.SearchResult{}, preparedTorrent{}, err
+			return indexer.SelectionCandidate{}, preparedTorrent{}, err
 		}
 		result, err := selector.Select(ctx, code, remaining, cfg)
 		if err != nil {
 			if rejected != nil {
 				err = rejected
 			}
-			return jackett.SearchResult{}, preparedTorrent{}, err
+			return indexer.SelectionCandidate{}, preparedTorrent{}, err
 		}
 		prepared, err := s.prepareTorrent(ctx, code, candidateFromSearchResult(result), preferredTorrentURL(result))
 		if err == nil {
@@ -201,7 +222,7 @@ func (s *Service) selectVerifiedCandidate(ctx context.Context, selector Candidat
 	if rejected == nil {
 		rejected = errors.New("taskruntime: no downloadable torrent candidate found")
 	}
-	return jackett.SearchResult{}, preparedTorrent{}, rejected
+	return indexer.SelectionCandidate{}, preparedTorrent{}, rejected
 }
 
 func (s *Service) blockSourcingValidation(ctx context.Context, task *Task, err error) error {

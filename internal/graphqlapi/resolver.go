@@ -20,7 +20,6 @@ import (
 	"github.com/leothevan2444/moji/internal/subscription"
 	"github.com/leothevan2444/moji/internal/taskflow"
 	"github.com/leothevan2444/moji/internal/taskruntime"
-	"github.com/leothevan2444/moji/internal/tracker"
 	"github.com/leothevan2444/moji/pkg/qbittorrent"
 )
 
@@ -40,7 +39,6 @@ type TaskRuntimeService interface {
 	QueueDownloadContext(ctx context.Context, req taskruntime.DownloadRequest) (*taskruntime.Task, error)
 	AddTorrentContext(ctx context.Context, req taskruntime.AddTorrentRequest) (*taskruntime.Task, error)
 	DownloadMediaContext(ctx context.Context, req taskruntime.DownloadRequest) (*taskruntime.Task, error)
-	PreviewJackettSelectionContext(ctx context.Context, req taskruntime.PreviewJackettSelectionRequest) (*taskruntime.CandidateSelectionPreview, error)
 	FindTask(ctx context.Context, id string) (*taskruntime.Task, error)
 	ListTasks(ctx context.Context) ([]*taskruntime.Task, error)
 	DeleteTask(ctx context.Context, id string) (*taskruntime.Task, error)
@@ -384,9 +382,19 @@ type DatabasePerformanceSource interface {
 }
 
 type Resolver struct {
+	IndexerAdmin                     IndexerAdminService
+	HomeIndexers                     HomeIndexerService
+	IndexerEventSource               IndexerEventsService
+	IndexerCache                     IndexerCacheService
+	IndexerNetwork                   IndexerNetworkService
+	IndexerDefinitionPolicy          IndexerDefinitionPolicyService
+	SearchRuns                       TorrentSearchService
+	TorrentDownloads                 TorrentDownloadService
+	IndexerChecks                    IndexerCheckService
+	IndexerLogins                    IndexerLoginService
+	DefinitionLibrary                IndexerDefinitionsService
 	DatabasePerformanceSource        DatabasePerformanceSource
 	Downloader                       *downloader.Service
-	Tracker                          tracker.Tracker
 	Torrent                          TorrentClient
 	TaskRuntime                      TaskRuntimeService
 	TaskFlow                         TaskFlowService
@@ -409,9 +417,8 @@ type Resolver struct {
 	AppVersion                       string
 }
 
-func NewResolver(tr tracker.Tracker, torrent TorrentClient, taskRuntime TaskRuntimeService, stash StashService, version string) *Resolver {
+func NewResolver(torrent TorrentClient, taskRuntime TaskRuntimeService, stash StashService, version string) *Resolver {
 	resolver := &Resolver{
-		Tracker:     tr,
 		Torrent:     torrent,
 		TaskRuntime: taskRuntime,
 		Stash:       stash,

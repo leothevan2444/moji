@@ -16,6 +16,7 @@ import (
 type Handler struct {
 	tracker     tracker.Tracker
 	logFilePath string
+	downloads   preparedDownloads
 }
 
 type Option func(*Handler)
@@ -40,6 +41,7 @@ func (h *Handler) Register(mux *http.ServeMux) {
 	mux.HandleFunc("GET /healthz", h.handleHealthz)
 	mux.HandleFunc("GET /api/tracker/search", h.handleTrackerSearch)
 	mux.HandleFunc("GET /api/logs/current", h.handleCurrentLogFile)
+	mux.HandleFunc("GET /api/indexers/downloads/{handle}", h.handlePreparedDownload)
 }
 
 func (h *Handler) handleHealthz(w http.ResponseWriter, _ *http.Request) {
@@ -96,7 +98,7 @@ func (h *Handler) handleTrackerSearch(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	results, err := h.tracker.Search(q, options...)
+	results, err := h.tracker.Search(q, append(options, tracker.WithContext(r.Context()))...)
 	if err != nil {
 		writeJSON(w, http.StatusBadGateway, errorResponse{Error: err.Error()})
 		return

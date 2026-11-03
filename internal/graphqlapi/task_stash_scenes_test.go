@@ -46,7 +46,7 @@ func TestTaskStashScenesReturnsOnlyLinkedMoviesWithProxiedImages(t *testing.T) {
 		{ID: "2", Title: "Second"}, {ID: "unrelated", Title: "Unrelated"},
 	}}
 	runtime := &fakeTaskRuntime{findTask: &taskruntime.Task{ID: "task", StashScanPath: "/library/movie", StashSceneIDsJSON: `["2","1","missing","1"]`}}
-	resolver := NewResolver(nil, nil, runtime, stash, "test")
+	resolver := NewResolver(nil, runtime, stash, "test")
 	resolver.RuntimeSettings = &SettingsSnapshot{Stash: StashSettingsSnapshot{URL: "https://user:pass@stash.test/base?apikey=private", APIKey: "secret"}}
 	cache := &taskScenesImageCache{}
 	resolver.ImageCache = cache
@@ -82,7 +82,7 @@ func TestTaskStashScenesReturnsOnlyLinkedMoviesWithProxiedImages(t *testing.T) {
 func TestTaskStashScenesEmptyAndUnavailable(t *testing.T) {
 	stash := &taskScenesStash{err: errors.New("unavailable")}
 	runtime := &fakeTaskRuntime{findTask: &taskruntime.Task{ID: "pending"}}
-	resolver := NewResolver(nil, nil, runtime, stash, "test")
+	resolver := NewResolver(nil, runtime, stash, "test")
 	scenes, err := resolver.loadTaskStashScenes(context.Background(), "pending")
 	if err != nil || len(scenes) != 0 || stash.calls != 0 {
 		t.Fatalf("empty task contacted Stash: %+v %v", scenes, err)

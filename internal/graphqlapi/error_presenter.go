@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"github.com/leothevan2444/moji/internal/downloader"
+	"github.com/leothevan2444/moji/internal/torrentsearch"
 	"log/slog"
 	"net/http"
 	"net/url"
@@ -18,6 +19,8 @@ import (
 	"github.com/google/uuid"
 	"github.com/gorilla/websocket"
 	"github.com/leothevan2444/moji/internal/config"
+	"github.com/leothevan2444/moji/internal/indexer"
+	"github.com/leothevan2444/moji/internal/indexerdefs"
 	"github.com/leothevan2444/moji/internal/performer"
 	"github.com/leothevan2444/moji/internal/releasedate"
 	"github.com/leothevan2444/moji/internal/subscription"
@@ -107,6 +110,11 @@ func ErrorPresenter(ctx context.Context, err error) *gqlerror.Error {
 }
 
 func classifyError(err error) string {
+	for _, known := range []error{torrentsearch.ErrTaskScope, torrentsearch.ErrExpired, torrentsearch.ErrBusy, torrentsearch.ErrInvalid, torrentsearch.ErrNotRunning, config.ErrConfigRevision, config.ErrIndexerNetworkInUse, indexerdefs.ErrNotInstalled, indexerdefs.ErrBusy, indexerdefs.ErrConflict, indexerdefs.ErrInvalidBundle, indexerdefs.ErrIncompatible, indexerdefs.ErrUnavailable, indexerdefs.ErrNotRunning, indexerdefs.ErrNoPrevious, indexerdefs.ErrBudget, indexerdefs.ErrSource, indexerdefs.ErrJobTerminal, indexerdefs.ErrCancelling, indexer.ErrCatalogNotLoaded, indexer.ErrNotConfigured, indexer.ErrInvalidScope, indexer.ErrInvalidQuery, indexer.ErrInvalidSettings, indexer.ErrUnsupported, indexer.ErrReference, indexer.ErrExpired, indexer.ErrIncomplete, indexer.ErrBusy, indexer.ErrCoolingDown, indexer.ErrTransport, indexer.ErrUnsafeURL, indexer.ErrResponseBudget, indexer.ErrAuthentication, indexer.ErrChallenge} {
+		if errors.Is(err, known) {
+			return known.Error()
+		}
+	}
 	var checkConflict *subscription.CheckConflictError
 	if errors.As(err, &checkConflict) {
 		return "SUBSCRIPTION_CHECK_IN_PROGRESS"
@@ -134,6 +142,10 @@ func classifyError(err error) string {
 		return "RELEASE_NOT_AVAILABLE"
 	case errors.Is(err, taskruntime.ErrInvalidTorrentInput):
 		return "INVALID_TORRENT_INPUT"
+	case errors.Is(err, taskruntime.ErrSubmissionUncertain):
+		return "TASK_SUBMISSION_UNCERTAIN"
+	case errors.Is(err, taskruntime.ErrTaskRevisionConflict):
+		return "TASK_REVISION_CONFLICT"
 	case errors.Is(err, taskruntime.ErrSourcingUnavailable):
 		return "SOURCING_TASK_UNAVAILABLE"
 	case errors.Is(err, taskruntime.ErrDuplicateTorrentTask):

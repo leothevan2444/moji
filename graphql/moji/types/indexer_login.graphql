@@ -1,0 +1,23 @@
+extend type Mutation {
+ beginIndexerLogin(input: IndexerLoginInput!): IndexerLoginReport!
+ answerIndexerChallenge(id: ID!, input: IndexerLoginInput!, answer: String!): IndexerLoginReport!
+ cancelIndexerLogin(id: ID!, input: IndexerLoginInput!): Boolean!
+}
+input IndexerLoginInput { instanceId: ID! expectedRevision: String! }
+enum IndexerLoginState { NOT_REQUIRED READY WAITING }
+type IndexerLoginChallenge {
+ id: ID!
+ type: String!
+ prompt: String!
+ imageData: String
+}
+type IndexerLoginReport {
+ id: ID!
+ instanceId: ID!
+ configRevision: String!
+ ruleRevision: String!
+ state: IndexerLoginState!
+ expiresAt: String!
+ challenge: IndexerLoginChallenge
+}
+extend type Query { indexerLogin(input: IndexerLoginInput!): IndexerLoginReport }

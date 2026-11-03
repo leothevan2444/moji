@@ -1,0 +1,125 @@
+extend type Query {
+  torrentSearch(id: ID!, offset: Int = 0, limit: Int = 100, sortBy: TorrentSearchSort = RELEVANCE): TorrentSearch!
+}
+extend type Mutation {
+  startTorrentSearch(input: StartTorrentSearchInput!): TorrentSearch!
+  cancelTorrentSearch(id: ID!): TorrentSearch!
+  queueTorrentCandidate(input: QueueTorrentCandidateInput!): Task!
+}
+extend type Subscription { torrentSearchEvents(id: ID!): TorrentSearchEvent! }
+
+enum TorrentSearchState { QUEUED RUNNING COMPLETED PARTIAL FAILED CANCELLED INTERRUPTED }
+enum TorrentSearchSiteState { QUEUED RUNNING COMPLETED FAILED CANCELLED INTERRUPTED SKIPPED }
+enum TorrentSearchSort { RELEVANCE SEEDERS_DESC SIZE_DESC DATE_DESC }
+"""
+Case-insensitive structured query fields. Unknown names, duplicate case aliases,
+top-level fields and derived variables are rejected before accepting a search.
+"""
+input TorrentSearchParameterInput { key: String!, value: String! }
+input StartTorrentSearchInput {
+  keywords: String!
+  mode: String
+  instanceIds: [ID!]
+  categories: [Int!]
+  parameters: [TorrentSearchParameterInput!]
+  limit: Int
+  refresh: Boolean
+  taskId: ID
+}
+input QueueTorrentCandidateInput {
+  code: String!
+  searchId: ID!
+  candidateId: ID!
+  paused: Boolean
+  savePath: String
+  category: String
+  tags: String
+}
+"A persisted, bounded search snapshot. Events invalidate this snapshot."
+type TorrentSearch {
+  id: ID!
+  state: TorrentSearchState!
+  revision: Long!
+  keywords: String!
+  taskId: ID
+  createdAt: String!
+  updatedAt: String!
+  expiresAt: String!
+  finishedAt: String
+  cancelRequested: Boolean!
+  partial: Boolean!
+  truncated: Boolean!
+  errorCode: String
+  correlationId: String!
+  total: Int!
+  offset: Int!
+  limit: Int!
+  sites: [TorrentSearchSite!]!
+  candidates: [TorrentSearchCandidate!]!
+}
+type TorrentSearchSite {
+  instanceId: ID!
+  name: String!
+  kind: IndexerSourceKind
+  state: TorrentSearchSiteState!
+  results: Int!
+  cacheHit: Boolean!
+  fetchedAt: String
+  elapsedMs: Long!
+  partial: Boolean!
+  truncated: Boolean!
+  errorCode: String
+  correlationId: String
+  retryAt: String
+}
+"Only this server-owned candidate ID may be selected; locators and credentials are private."
+type TorrentSearchCandidate {
+  id: ID!
+  instanceId: ID!
+  instanceName: String!
+  kind: IndexerSourceKind!
+  title: String!
+  detailsUrl: String
+  infoHash: String
+  size: Long
+  seeders: Int
+  peers: Int
+  publishedAt: String
+  categories: [Int!]!
+}
+type TorrentSearchEvent { streamId: String!, sequence: Long!, searchId: ID! }
+
+extend type Mutation { previewTorrentSelection(input: PreviewTorrentSelectionInput!): TorrentSelectionPreview! }
+input PreviewTorrentSelectionInput {
+ searchId: ID!
+ candidateIds: [ID!]
+ applyFastRules: Boolean! = false
+ applyFileRules: Boolean! = false
+ offset: Int = 0
+ limit: Int = 100
+ sortBy: TorrentSearchSort = RELEVANCE
+}
+type TorrentSelectionPreview {
+ searchId: ID!
+ searchRevision: Long!
+ total: Int!
+ offset: Int!
+ limit: Int!
+ candidates: [TorrentSearchCandidate!]!
+ meta: TorrentSelectionPreviewMeta!
+}
+type TorrentSelectionPreviewMeta {
+ appliedFastRules: Boolean!
+ appliedFileRules: Boolean!
+ inspectedCount: Int!
+ inspectableCount: Int!
+ inspectionCandidateLimit: Int!
+}
+extend type Mutation { resolveTaskSourcingCandidate(input: ResolveTaskSourcingCandidateInput!): Task! }
+input ResolveTaskSourcingCandidateInput {
+ taskId: ID!
+ searchId: ID!
+ candidateId: ID!
+ expectedRevision: Long!
+ paused: Boolean
+}

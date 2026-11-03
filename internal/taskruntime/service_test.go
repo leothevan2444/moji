@@ -3,6 +3,7 @@ package taskruntime
 import (
 	"context"
 	"errors"
+	"github.com/leothevan2444/moji/internal/indexer"
 	"io"
 	"net/http"
 	"strconv"
@@ -12,16 +13,15 @@ import (
 
 	"github.com/leothevan2444/moji/internal/config"
 	"github.com/leothevan2444/moji/internal/tracker"
-	"github.com/leothevan2444/moji/pkg/jackett"
 	"github.com/leothevan2444/moji/pkg/qbittorrent"
 )
 
 type fakeTracker struct {
-	results []jackett.SearchResult
+	results []indexer.SelectionCandidate
 	err     error
 }
 
-func (f fakeTracker) Search(_ string, _ ...tracker.SearchOption) ([]jackett.SearchResult, error) {
+func (f fakeTracker) Search(_ string, _ ...tracker.SearchOption) ([]indexer.SelectionCandidate, error) {
 	return f.results, f.err
 }
 
@@ -65,7 +65,7 @@ func TestDownloadMediaContextAddsBestTorrent(t *testing.T) {
 	qbt := &fakeTorrentAdder{}
 	store := NewMemoryTaskStore()
 	service, err := NewService(
-		fakeTracker{results: []jackett.SearchResult{
+		fakeTracker{results: []indexer.SelectionCandidate{
 			{Title: "SONE-000 low seeders", Link: "https://example.test/low.torrent", Seeders: 1, Size: 100},
 			{Title: "SONE-000 best", MagnetURI: "magnet:?xt=urn:btih:best", Seeders: 10, Size: 50},
 		}},
@@ -175,7 +175,7 @@ func TestResolveBlockedSourcingTaskRejectsOtherStages(t *testing.T) {
 func TestDownloadMediaContextRecordsAddFailure(t *testing.T) {
 	qbtErr := errors.New("qbt rejected torrent")
 	service, err := NewService(
-		fakeTracker{results: []jackett.SearchResult{
+		fakeTracker{results: []indexer.SelectionCandidate{
 			{Title: "SONE-000 candidate", MagnetURI: "magnet:?xt=urn:btih:failed", Seeders: 1},
 		}},
 		&fakeTorrentAdder{err: qbtErr},
@@ -267,7 +267,7 @@ func TestDownloadMediaContextRejectsDuplicateCodeTask(t *testing.T) {
 	}
 
 	service, err := NewService(
-		fakeTracker{results: []jackett.SearchResult{
+		fakeTracker{results: []indexer.SelectionCandidate{
 			{Title: "SONE-000 best release", MagnetURI: "magnet:?xt=urn:btih:newhash", Seeders: 10},
 		}},
 		&fakeTorrentAdder{},
@@ -288,7 +288,7 @@ func TestDownloadMediaContextRejectsDuplicateCodeTask(t *testing.T) {
 
 func TestDownloadMediaContextRejectsExistingStashLibraryCode(t *testing.T) {
 	service, err := NewService(
-		fakeTracker{results: []jackett.SearchResult{
+		fakeTracker{results: []indexer.SelectionCandidate{
 			{Title: "SONE-000 best release", MagnetURI: "magnet:?xt=urn:btih:newhash", Seeders: 10},
 		}},
 		&fakeTorrentAdder{},
@@ -343,7 +343,7 @@ func TestAddTorrentContextRejectsDuplicateTorrentTask(t *testing.T) {
 
 func TestDownloadMediaContextRequiresCode(t *testing.T) {
 	service, err := NewService(
-		fakeTracker{results: []jackett.SearchResult{
+		fakeTracker{results: []indexer.SelectionCandidate{
 			{Title: "plain title without number", MagnetURI: "magnet:?xt=urn:btih:newhash", Seeders: 10},
 		}},
 		&fakeTorrentAdder{},

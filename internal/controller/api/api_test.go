@@ -2,6 +2,7 @@ package api
 
 import (
 	"encoding/json"
+	"github.com/leothevan2444/moji/internal/indexer"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -9,7 +10,6 @@ import (
 	"testing"
 
 	"github.com/leothevan2444/moji/internal/tracker"
-	"github.com/leothevan2444/moji/pkg/jackett"
 )
 
 func TestHealthzIsStableRESTHealthEndpoint(t *testing.T) {
@@ -33,7 +33,7 @@ func TestHealthzIsStableRESTHealthEndpoint(t *testing.T) {
 
 func TestTrackerSearchRESTEndpointIsDeprecatedDebugCompatibility(t *testing.T) {
 	tr := fakeTracker{
-		results: []jackett.SearchResult{
+		results: []indexer.SelectionCandidate{
 			{Title: "ABCD-123", Tracker: "demo"},
 		},
 	}
@@ -114,12 +114,12 @@ func TestCurrentLogFileEndpointReturnsNotFoundWhenMissing(t *testing.T) {
 }
 
 type fakeTracker struct {
-	results []jackett.SearchResult
+	results []indexer.SelectionCandidate
 	query   string
 	options tracker.SearchOptions
 }
 
-func (f *fakeTracker) Search(query string, options ...tracker.SearchOption) ([]jackett.SearchResult, error) {
+func (f *fakeTracker) Search(query string, options ...tracker.SearchOption) ([]indexer.SelectionCandidate, error) {
 	f.query = query
 	for _, option := range options {
 		option(&f.options)

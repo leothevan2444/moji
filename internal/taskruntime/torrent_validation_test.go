@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"errors"
+	"github.com/leothevan2444/moji/internal/indexer"
 	"io"
 	"net/http"
 	"strings"
@@ -12,7 +13,6 @@ import (
 
 	"github.com/leothevan2444/moji/internal/config"
 	"github.com/leothevan2444/moji/internal/stashsync"
-	"github.com/leothevan2444/moji/pkg/jackett"
 	"github.com/leothevan2444/moji/pkg/qbittorrent"
 )
 
@@ -51,7 +51,7 @@ func TestSourcingValidationBlocksBeforeDownloaderSubmission(t *testing.T) {
 			}
 			qbt := &fakeTorrentAdder{}
 			store := NewMemoryTaskStore()
-			s, err := NewService(fakeTracker{results: []jackett.SearchResult{{Title: tc.title, Link: "http://indexer.invalid/file?apikey=secret"}}}, qbt, store, torrentResponse(body, status))
+			s, err := NewService(fakeTracker{results: []indexer.SelectionCandidate{{Title: tc.title, Link: "http://indexer.invalid/file?apikey=secret"}}}, qbt, store, torrentResponse(body, status))
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -76,7 +76,7 @@ func TestSourcingUploadsExactVerifiedTorrentBytesAndIdentity(t *testing.T) {
 			body := testTorrentFile(alias, []string{"movie/" + alias + ".mp4", "readme.txt"})
 			qbt := &fakeTorrentAdder{}
 			store := NewMemoryTaskStore()
-			s, err := NewService(fakeTracker{results: []jackett.SearchResult{{Title: alias, Link: "http://indexer.invalid/file"}}}, qbt, store, torrentResponse(body, http.StatusOK),
+			s, err := NewService(fakeTracker{results: []indexer.SelectionCandidate{{Title: alias, Link: "http://indexer.invalid/file"}}}, qbt, store, torrentResponse(body, http.StatusOK),
 				WithMediaPreparation(func() stashsync.IntegrationConfig { return stashsync.IntegrationConfig{} }, nil))
 			if err != nil {
 				t.Fatal(err)
@@ -105,7 +105,7 @@ func TestSourcingUploadsExactVerifiedTorrentBytesAndIdentity(t *testing.T) {
 
 func TestSourcingFallsBackAfterMetadataMismatch(t *testing.T) {
 	qbt := &fakeTorrentAdder{}
-	s, err := NewService(fakeTracker{results: []jackett.SearchResult{
+	s, err := NewService(fakeTracker{results: []indexer.SelectionCandidate{
 		{Title: "OFJE657 preferred", Link: "http://indexer.invalid/wrong", Seeders: 10},
 		{Title: "OFJE657 fallback", Link: "http://indexer.invalid/right", Seeders: 1},
 	}}, qbt, NewMemoryTaskStore(), WithHTTPClient(&http.Client{Transport: roundTripFunc(func(req *http.Request) (*http.Response, error) {
@@ -138,7 +138,7 @@ func TestMagnetCodeValidation(t *testing.T) {
 	} {
 		t.Run(tc.title+"/"+tc.dn, func(t *testing.T) {
 			qbt := &fakeTorrentAdder{}
-			s, _ := NewService(fakeTracker{results: []jackett.SearchResult{{Title: tc.title, MagnetURI: "magnet:?xt=urn:btih:123&dn=" + tc.dn}}}, qbt, NewMemoryTaskStore())
+			s, _ := NewService(fakeTracker{results: []indexer.SelectionCandidate{{Title: tc.title, MagnetURI: "magnet:?xt=urn:btih:123&dn=" + tc.dn}}}, qbt, NewMemoryTaskStore())
 			task, err := s.DownloadMediaContext(context.Background(), DownloadRequest{Code: "OFJE-657"})
 			if (err != nil) != tc.wantError {
 				t.Fatalf("unexpected result: %+v %v", task, err)
@@ -229,7 +229,7 @@ func TestTorrentUTF8NamesCannotHideConflictingCodes(t *testing.T) {
 
 func TestTitleSimilarityRecognizesCodeAliases(t *testing.T) {
 	selector := defaultCandidateSelector{}
-	result, err := selector.Select(context.Background(), "OFJE-657", []jackett.SearchResult{
+	result, err := selector.Select(context.Background(), "OFJE-657", []indexer.SelectionCandidate{
 		{Title: "OFJE-667", MagnetURI: "magnet:?xt=urn:btih:wrong"},
 		{Title: "ofje00657", MagnetURI: "magnet:?xt=urn:btih:right"},
 	}, candidateSelectionConfig(true, 0, []config.CandidateSelectionRule{{Type: config.CandidateSelectionRuleTypeTitleSimilarity, Enabled: true}}))

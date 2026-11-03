@@ -29,7 +29,7 @@ func (s *reviewAPIService) SynchronizeReleaseReviewTasks(context.Context) error 
 
 func TestReleaseReviewGraphQLContract(t *testing.T) {
 	service := &reviewAPIService{}
-	resolver := NewResolver(nil, nil, nil, nil, "test")
+	resolver := NewResolver(nil, nil, nil, "test")
 	resolver.PerformerSubscription = service
 	var result struct {
 		Data struct {

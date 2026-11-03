@@ -1,0 +1,12 @@
+extend type Query { indexerDefinitionPolicy: IndexerDefinitionPolicy! }
+extend type Mutation {
+ updateIndexerDefinitionPolicy(expectedRevision: String!, input: IndexerDefinitionPolicyPatchInput!): IndexerDefinitionPolicy!
+}
+input IndexerDefinitionPolicyPatchInput { checkIntervalHours: Int autoUpdate: Boolean }
+type IndexerDefinitionPolicy {
+ revision: String!
+ source: String!
+ schemaVersion: Int!
+ checkIntervalHours: Int!
+ autoUpdate: Boolean!
+}

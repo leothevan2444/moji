@@ -28,8 +28,16 @@ func TestHTTPRuntimeProcessHelper(t *testing.T) {
 	main()
 }
 func TestHTTPRuntimeStopsWithOpenWebsocketAndReleasesStorage(t *testing.T) {
+	t.Run("jackett", func(t *testing.T) {
+		assertHTTPRuntimeLifecycle(t, []byte("connection:\n  jackett:\n    url: http://127.0.0.1:9\n    api_key: local-test\nautomation:\n  task_processing_enabled: false\n  subscription_poll_interval_hours: -1\nsystem:\n  developer_mode: true\n"))
+	})
+	t.Run("no-indexers", func(t *testing.T) {
+		assertHTTPRuntimeLifecycle(t, []byte("config_version: 3\nsystem: {developer_mode: true}\n"))
+	})
+}
+func assertHTTPRuntimeLifecycle(t *testing.T, raw []byte) {
+	t.Helper()
 	root := t.TempDir()
-	raw := []byte("connection:\n  jackett:\n    url: http://127.0.0.1:9\n    api_key: local-test\nautomation:\n  task_processing_enabled: false\n  subscription_poll_interval_hours: -1\nsystem:\n  developer_mode: true\n")
 	if err := os.WriteFile(filepath.Join(root, "config.yaml"), raw, 0o600); err != nil {
 		t.Fatal(err)
 	}
@@ -94,6 +102,41 @@ func TestHTTPRuntimeStopsWithOpenWebsocketAndReleasesStorage(t *testing.T) {
 	var event struct{ Type string }
 	if err := connection.ReadJSON(&event); err != nil || event.Type != "next" {
 		t.Fatal("performance subscription did not start", err, event)
+	}
+	if err := connection.WriteJSON(map[string]any{"id": "definitions", "type": "subscribe", "payload": map[string]any{"query": "subscription {indexerDefinitionEvents{activeRevision errorCode}}"}}); err != nil {
+		t.Fatal(err)
+	}
+	if err := connection.ReadJSON(&event); err != nil || event.Type != "next" {
+		t.Fatal("definitions subscription did not start", err, event)
+	}
+	if err := connection.WriteJSON(map[string]any{"id": "indexers", "type": "subscribe", "payload": map[string]any{"query": "subscription {indexerEvents{streamId sequence kind}}"}}); err != nil {
+		t.Fatal(err)
+	}
+	if err := connection.SetReadDeadline(time.Now().Add(3 * time.Second)); err != nil {
+		t.Fatal(err)
+	}
+	for {
+		var notification struct {
+			ID, Type string
+			Payload  struct {
+				Data struct {
+					IndexerEvents *struct {
+						StreamID string `json:"streamId"`
+						Kind     string
+					} `json:"indexerEvents"`
+				}
+				Errors []struct{ Message string }
+			}
+		}
+		if err := connection.ReadJSON(&notification); err != nil {
+			t.Fatal("indexer subscription did not start", err)
+		}
+		if notification.ID == "indexers" {
+			if notification.Type != "next" || len(notification.Payload.Errors) > 0 || notification.Payload.Data.IndexerEvents == nil || notification.Payload.Data.IndexerEvents.StreamID == "" {
+				t.Fatal("indexer subscription failed", notification)
+			}
+			break
+		}
 	}
 	if duplicate, err := storage.OpenManager(context.Background(), storage.DefaultManagerOptions(filepath.Join(root, storage.DefaultDirectory))); !errors.Is(err, storage.ErrDirectoryInUse) {
 		if duplicate != nil {

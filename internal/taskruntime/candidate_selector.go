@@ -3,6 +3,7 @@ package taskruntime
 import (
 	"context"
 	"errors"
+	"github.com/leothevan2444/moji/internal/indexer"
 	"path"
 	"regexp"
 	"sort"
@@ -14,7 +15,6 @@ import (
 	"github.com/leothevan2444/moji/internal/config"
 	"github.com/leothevan2444/moji/internal/logging"
 	"github.com/leothevan2444/moji/internal/mediafiles"
-	"github.com/leothevan2444/moji/pkg/jackett"
 )
 
 type torrentInspection struct {
@@ -29,27 +29,27 @@ type defaultCandidateSelector struct {
 	inspectTorrent torrentInspector
 }
 
-func (s defaultCandidateSelector) Select(ctx context.Context, query string, results []jackett.SearchResult, cfg config.CandidateSelectionConfig) (jackett.SearchResult, error) {
+func (s defaultCandidateSelector) Select(ctx context.Context, query string, results []indexer.SelectionCandidate, cfg config.CandidateSelectionConfig) (indexer.SelectionCandidate, error) {
 	preview, err := s.Preview(ctx, query, results, cfg, true, true)
 	if err != nil {
-		return jackett.SearchResult{}, err
+		return indexer.SelectionCandidate{}, err
 	}
 	for _, result := range preview.Results {
 		if preferredTorrentURL(result) != "" {
 			return result, nil
 		}
 	}
-	return jackett.SearchResult{}, errors.New("taskruntime: no downloadable torrent candidate found")
+	return indexer.SelectionCandidate{}, errors.New("taskruntime: no downloadable torrent candidate found")
 }
 
-func (s defaultCandidateSelector) Preview(ctx context.Context, query string, results []jackett.SearchResult, cfg config.CandidateSelectionConfig, applyFastRules bool, applyFileRules bool) (CandidateSelectionPreview, error) {
+func (s defaultCandidateSelector) Preview(ctx context.Context, query string, results []indexer.SelectionCandidate, cfg config.CandidateSelectionConfig, applyFastRules bool, applyFileRules bool) (CandidateSelectionPreview, error) {
 	if !cfg.Enabled {
-		return CandidateSelectionPreview{Results: append([]jackett.SearchResult(nil), results...)}, ctx.Err()
+		return CandidateSelectionPreview{Results: append([]indexer.SelectionCandidate(nil), results...)}, ctx.Err()
 	}
 	cfg = cfg.Effective()
 	if !applyFastRules && !applyFileRules {
 		return CandidateSelectionPreview{
-			Results: append([]jackett.SearchResult(nil), results...),
+			Results: append([]indexer.SelectionCandidate(nil), results...),
 		}, nil
 	}
 
@@ -71,7 +71,7 @@ func (s defaultCandidateSelector) Preview(ctx context.Context, query string, res
 		})
 	}
 	if len(candidates) == 0 {
-		out := make([]jackett.SearchResult, 0, len(results))
+		out := make([]indexer.SelectionCandidate, 0, len(results))
 		for _, skippedCandidate := range skipped {
 			out = append(out, skippedCandidate.result)
 		}
@@ -133,7 +133,7 @@ func (s defaultCandidateSelector) Preview(ctx context.Context, query string, res
 		candidates = locked
 	}
 
-	out := make([]jackett.SearchResult, 0, len(results))
+	out := make([]indexer.SelectionCandidate, 0, len(results))
 	for _, candidate := range candidates {
 		out = append(out, candidate.result)
 	}
@@ -147,7 +147,7 @@ func (s defaultCandidateSelector) Preview(ctx context.Context, query string, res
 type rankedCandidate struct {
 	index  int
 	rank   int
-	result jackett.SearchResult
+	result indexer.SelectionCandidate
 }
 
 type compiledRule struct {
@@ -161,6 +161,16 @@ type inspectedCandidate struct {
 }
 
 func (s *Service) inspectSearchResultTorrent(ctx context.Context, torrentURL string) (torrentInspection, error) {
+	if strings.HasPrefix(torrentURL, "indexer-resource:") {
+		metadata, magnet, err := s.resolveIndexedResource(ctx, torrentURL)
+		if err != nil {
+			return torrentInspection{}, err
+		}
+		if magnet != "" {
+			return torrentInspection{}, errors.New("magnet resource has no inspectable torrent files")
+		}
+		return inspectTorrentMetadata(metadata), nil
+	}
 	if inspection, ok := s.cachedTorrentInspection(torrentURL); ok {
 		return inspection, nil
 	}
@@ -169,7 +179,7 @@ func (s *Service) inspectSearchResultTorrent(ctx context.Context, torrentURL str
 		return torrentInspection{}, err
 	}
 	inspection := inspectTorrentMetadata(metadata)
-	s.storeCachedTorrentInspection(torrentURL, inspection)
+	s.storeCachedArtifact(torrentURL, &metadata, "")
 	return inspection, nil
 }
 
@@ -197,12 +207,10 @@ func (s *Service) storeCachedTorrentInspection(torrentURL string, inspection tor
 	if key == "" {
 		return
 	}
-	s.inspectionCacheMu.Lock()
-	defer s.inspectionCacheMu.Unlock()
-	s.inspectionCache[key] = cachedTorrentInspection{
+	s.storeInspectionEntry(torrentURL, cachedTorrentInspection{
 		inspection: inspection,
 		expiresAt:  s.now().UTC().Add(torrentInspectionCacheTTL),
-	}
+	})
 }
 
 func normalizeTorrentInspectionCacheKey(torrentURL string, infoHash string) string {
@@ -328,7 +336,7 @@ func compareInspectedCandidates(left rankedCandidate, right rankedCandidate, rul
 	return 0
 }
 
-func compareByRule(query string, left jackett.SearchResult, right jackett.SearchResult, rule compiledRule) int {
+func compareByRule(query string, left indexer.SelectionCandidate, right indexer.SelectionCandidate, rule compiledRule) int {
 	switch rule.rule.Type {
 	case config.CandidateSelectionRuleTypeIndexerPreference:
 		return compareInts(indexerPreferenceRank(left, rule.rule), indexerPreferenceRank(right, rule.rule), config.CandidateSelectionDirectionAsc)
@@ -406,7 +414,10 @@ func inspectTopTorrentCandidates(ctx context.Context, candidates []rankedCandida
 	return out, inspectableCount
 }
 
-func inspectableTorrentURL(result jackett.SearchResult) string {
+func inspectableTorrentURL(result indexer.SelectionCandidate) string {
+	if result.ResourceID != "" {
+		return preferredTorrentURL(result)
+	}
 	link := strings.TrimSpace(result.Link)
 	if link == "" || strings.HasPrefix(strings.ToLower(link), "magnet:") {
 		return ""
@@ -414,7 +425,7 @@ func inspectableTorrentURL(result jackett.SearchResult) string {
 	return link
 }
 
-func indexerPreferenceRank(result jackett.SearchResult, rule config.CandidateSelectionRule) int {
+func indexerPreferenceRank(result indexer.SelectionCandidate, rule config.CandidateSelectionRule) int {
 	trackerID := strings.TrimSpace(result.TrackerID)
 	if trackerID == "" {
 		trackerID = strings.TrimSpace(result.Tracker)

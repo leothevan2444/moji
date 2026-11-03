@@ -66,6 +66,11 @@ type ComplexityRoot struct {
 		TaskProgressSyncIntervalSeconds func(childComplexity int) int
 	}
 
+	BuiltinIndexerResult struct {
+		Instance func(childComplexity int) int
+		Revision func(childComplexity int) int
+	}
+
 	DashboardStats struct {
 		Active       func(childComplexity int) int
 		Attention    func(childComplexity int) int
@@ -197,6 +202,35 @@ type ComplexityRoot struct {
 		PerformerID func(childComplexity int) int
 	}
 
+	HomeIndexerIssue struct {
+		ErrorCode   func(childComplexity int) int
+		ID          func(childComplexity int) int
+		Name        func(childComplexity int) int
+		Observation func(childComplexity int) int
+		Operation   func(childComplexity int) int
+	}
+
+	HomeIndexerSummary struct {
+		Attention              func(childComplexity int) int
+		BuiltinEnabled         func(childComplexity int) int
+		BuiltinSearchSucceeded func(childComplexity int) int
+		BuiltinUnverified      func(childComplexity int) int
+		DefinitionErrorCode    func(childComplexity int) int
+		DefinitionJob          func(childComplexity int) int
+		HealthErrorCode        func(childComplexity int) int
+		Issues                 func(childComplexity int) int
+		Jackett                func(childComplexity int) int
+		Revision               func(childComplexity int) int
+		Total                  func(childComplexity int) int
+	}
+
+	HomeJackettSummary struct {
+		ErrorCode func(childComplexity int) int
+		Sites     func(childComplexity int) int
+		Stale     func(childComplexity int) int
+		UpdatedAt func(childComplexity int) int
+	}
+
 	HomeOverview struct {
 		Active               func(childComplexity int) int
 		ActiveTasks          func(childComplexity int) int
@@ -267,8 +301,210 @@ type ComplexityRoot struct {
 		UsedBytes      func(childComplexity int) int
 	}
 
+	IndexerCacheStatus struct {
+		ActiveRequests  func(childComplexity int) int
+		ActiveWaiters   func(childComplexity int) int
+		EmptyTTLSeconds func(childComplexity int) int
+		Enabled         func(childComplexity int) int
+		Entries         func(childComplexity int) int
+		MaxSizeMb       func(childComplexity int) int
+		Revision        func(childComplexity int) int
+		TTLSeconds      func(childComplexity int) int
+		UsedBytes       func(childComplexity int) int
+	}
+
+	IndexerCheckReport struct {
+		ConfigRevision func(childComplexity int) int
+		FinishedAt     func(childComplexity int) int
+		ID             func(childComplexity int) int
+		InstanceID     func(childComplexity int) int
+		Kind           func(childComplexity int) int
+		Partial        func(childComplexity int) int
+		Results        func(childComplexity int) int
+		RuleRevision   func(childComplexity int) int
+		Stages         func(childComplexity int) int
+		StartedAt      func(childComplexity int) int
+		Truncated      func(childComplexity int) int
+	}
+
+	IndexerCheckStage struct {
+		ElapsedMs func(childComplexity int) int
+		ErrorCode func(childComplexity int) int
+		Name      func(childComplexity int) int
+		State     func(childComplexity int) int
+	}
+
+	IndexerDefinition struct {
+		Description func(childComplexity int) int
+		Digest      func(childComplexity int) int
+		ID          func(childComplexity int) int
+		Language    func(childComplexity int) int
+		Links       func(childComplexity int) int
+		Modes       func(childComplexity int) int
+		Name        func(childComplexity int) int
+		Privacy     func(childComplexity int) int
+		Settings    func(childComplexity int) int
+		Warnings    func(childComplexity int) int
+	}
+
+	IndexerDefinitionJob struct {
+		CorrelationID          func(childComplexity int) int
+		DownloadedBytes        func(childComplexity int) int
+		ErrorCode              func(childComplexity int) int
+		ExpectedActiveRevision func(childComplexity int) int
+		FinishedAt             func(childComplexity int) int
+		ID                     func(childComplexity int) int
+		Kind                   func(childComplexity int) int
+		Revision               func(childComplexity int) int
+		StartedAt              func(childComplexity int) int
+		State                  func(childComplexity int) int
+		TargetRevision         func(childComplexity int) int
+	}
+
+	IndexerDefinitionManifest struct {
+		DefinitionCount func(childComplexity int) int
+		EngineVersion   func(childComplexity int) int
+		InstalledAt     func(childComplexity int) int
+		Revision        func(childComplexity int) int
+		SchemaVersion   func(childComplexity int) int
+	}
+
+	IndexerDefinitionPage struct {
+		Items      func(childComplexity int) int
+		Limit      func(childComplexity int) int
+		Offset     func(childComplexity int) int
+		Revision   func(childComplexity int) int
+		TotalCount func(childComplexity int) int
+	}
+
+	IndexerDefinitionPolicy struct {
+		AutoUpdate         func(childComplexity int) int
+		CheckIntervalHours func(childComplexity int) int
+		Revision           func(childComplexity int) int
+		SchemaVersion      func(childComplexity int) int
+		Source             func(childComplexity int) int
+	}
+
+	IndexerDefinitionStatus struct {
+		ActiveRevision    func(childComplexity int) int
+		Available         func(childComplexity int) int
+		AvailableRevision func(childComplexity int) int
+		CheckErrorCode    func(childComplexity int) int
+		ErrorCode         func(childComplexity int) int
+		Installed         func(childComplexity int) int
+		Job               func(childComplexity int) int
+		LastCheckedAt     func(childComplexity int) int
+		PreviousRevision  func(childComplexity int) int
+		Revision          func(childComplexity int) int
+		StreamID          func(childComplexity int) int
+	}
+
+	IndexerEvent struct {
+		Kind     func(childComplexity int) int
+		Sequence func(childComplexity int) int
+		StreamID func(childComplexity int) int
+	}
+
+	IndexerHealth struct {
+		Fetch  func(childComplexity int) int
+		Search func(childComplexity int) int
+	}
+
+	IndexerInstance struct {
+		BaseURL        func(childComplexity int) int
+		DefinitionID   func(childComplexity int) int
+		Enabled        func(childComplexity int) int
+		ErrorCode      func(childComplexity int) int
+		Health         func(childComplexity int) int
+		ID             func(childComplexity int) int
+		Kind           func(childComplexity int) int
+		Language       func(childComplexity int) int
+		Modes          func(childComplexity int) int
+		Name           func(childComplexity int) int
+		NetworkProfile func(childComplexity int) int
+		Privacy        func(childComplexity int) int
+		RuleDigest     func(childComplexity int) int
+		Settings       func(childComplexity int) int
+		SiteURL        func(childComplexity int) int
+		TrustedOrigins func(childComplexity int) int
+	}
+
+	IndexerInstances struct {
+		CatalogErrorCode func(childComplexity int) int
+		HealthErrorCode  func(childComplexity int) int
+		Items            func(childComplexity int) int
+		JackettEnabled   func(childComplexity int) int
+		NetworkProfiles  func(childComplexity int) int
+		Order            func(childComplexity int) int
+		Revision         func(childComplexity int) int
+		RuleErrorCode    func(childComplexity int) int
+		RuleRevision     func(childComplexity int) int
+	}
+
+	IndexerLoginChallenge struct {
+		ID        func(childComplexity int) int
+		ImageData func(childComplexity int) int
+		Prompt    func(childComplexity int) int
+		Type      func(childComplexity int) int
+	}
+
+	IndexerLoginReport struct {
+		Challenge      func(childComplexity int) int
+		ConfigRevision func(childComplexity int) int
+		ExpiresAt      func(childComplexity int) int
+		ID             func(childComplexity int) int
+		InstanceID     func(childComplexity int) int
+		RuleRevision   func(childComplexity int) int
+		State          func(childComplexity int) int
+	}
+
+	IndexerNetworkProfile struct {
+		FlareSolverrConfigured func(childComplexity int) int
+		ID                     func(childComplexity int) int
+		ProxyConfigured        func(childComplexity int) int
+		UsedBy                 func(childComplexity int) int
+	}
+
+	IndexerNetworkSettings struct {
+		ChallengeTimeoutSeconds func(childComplexity int) int
+		Profiles                func(childComplexity int) int
+		RequestTimeoutSeconds   func(childComplexity int) int
+		Revision                func(childComplexity int) int
+		SiteTimeoutSeconds      func(childComplexity int) int
+	}
+
+	IndexerObservation struct {
+		CorrelationID func(childComplexity int) int
+		ErrorCode     func(childComplexity int) int
+		FinishedAt    func(childComplexity int) int
+		RetryAt       func(childComplexity int) int
+		StartedAt     func(childComplexity int) int
+	}
+
 	IndexerPreferenceRule struct {
 		TrackerIds func(childComplexity int) int
+	}
+
+	IndexerSetting struct {
+		Configured   func(childComplexity int) int
+		DefaultValue func(childComplexity int) int
+		Label        func(childComplexity int) int
+		Name         func(childComplexity int) int
+		Options      func(childComplexity int) int
+		Secret       func(childComplexity int) int
+		Type         func(childComplexity int) int
+		Value        func(childComplexity int) int
+	}
+
+	IndexerSettingOption struct {
+		Label func(childComplexity int) int
+		Value func(childComplexity int) int
+	}
+
+	IndexerSettingValue struct {
+		Boolean func(childComplexity int) int
+		Number  func(childComplexity int) int
+		String  func(childComplexity int) int
 	}
 
 	IngestSettings struct {
@@ -281,30 +517,6 @@ type ComplexityRoot struct {
 
 	IngestStatus struct {
 		Configured func(childComplexity int) int
-	}
-
-	JackettIndexer struct {
-		Enabled  func(childComplexity int) int
-		ID       func(childComplexity int) int
-		Language func(childComplexity int) int
-		Name     func(childComplexity int) int
-		SiteType func(childComplexity int) int
-		SiteURL  func(childComplexity int) int
-	}
-
-	JackettSearchResult struct {
-		CategoryDesc func(childComplexity int) int
-		Details      func(childComplexity int) int
-		InfoHash     func(childComplexity int) int
-		Link         func(childComplexity int) int
-		MagnetURI    func(childComplexity int) int
-		Peers        func(childComplexity int) int
-		PublishDate  func(childComplexity int) int
-		Seeders      func(childComplexity int) int
-		Size         func(childComplexity int) int
-		Title        func(childComplexity int) int
-		Tracker      func(childComplexity int) int
-		TrackerID    func(childComplexity int) int
 	}
 
 	JackettSettings struct {
@@ -383,51 +595,80 @@ type ComplexityRoot struct {
 	}
 
 	Mutation struct {
-		AddTorrent                  func(childComplexity int, input model.QBittorrentAddInput) int
-		ClearImageCache             func(childComplexity int) int
-		ClearStashBoxDataCache      func(childComplexity int) int
-		ControlTorrent              func(childComplexity int, hash string, action model.TorrentAction) int
-		DeleteTask                  func(childComplexity int, id string) int
-		DeleteTasks                 func(childComplexity int, ids []string) int
-		DownloadMedia               func(childComplexity int, input model.DownloadMediaInput) int
-		PatchSettings               func(childComplexity int, input model.SettingsPatchInput) int
-		ProcessReleaseReviews       func(childComplexity int, input model.ProcessReleaseReviewsInput) int
-		ProcessTaskIngest           func(childComplexity int, ids []string) int
-		QbittorrentAdd              func(childComplexity int, input model.QBittorrentAddInput) int
-		QueueDiscoveredScene        func(childComplexity int, input model.QueueDiscoveredSceneInput) int
-		QueuePerformerScenes        func(childComplexity int, input model.QueuePerformerScenesInput) int
-		RefreshDownloader           func(childComplexity int) int
-		RefreshStashBoxes           func(childComplexity int) int
-		RefreshStashPerformerScenes func(childComplexity int, id string, input model.StashPerformerScenesInput) int
-		RefreshSubscribedPerformer  func(childComplexity int, stashPerformerID string) int
-		RefreshSubscribedPerformers func(childComplexity int, ids []string) int
-		RefreshSubscriptionsNow     func(childComplexity int) int
-		RefreshUpcomingRelease      func(childComplexity int, key string) int
-		ResolveBlockedSourcingTask  func(childComplexity int, id string, input model.ResolveBlockedSourcingTaskInput) int
-		ResolveTaskFiles            func(childComplexity int, id string, videoIndices []int) int
-		RestartTaskSourcing         func(childComplexity int, id string) int
-		RetryTask                   func(childComplexity int, id string) int
-		RetryTasks                  func(childComplexity int, ids []string) int
-		SetDownloaderSpeedLimit     func(childComplexity int, upload bool, kibPerSecond int) int
-		StartSubscriptionCheck      func(childComplexity int, ids []string) int
-		StashMetadataScan           func(childComplexity int, input model.StashMetadataScanInput) int
-		SubscribePerformer          func(childComplexity int, stashPerformerID string) int
-		SubscribePerformers         func(childComplexity int, ids []string) int
-		SyncTaskProgress            func(childComplexity int) int
-		TestServiceConnection       func(childComplexity int, input model.TestServiceConnectionInput) int
-		TriggerStashScans           func(childComplexity int) int
-		TriggerTaskStashScan        func(childComplexity int, id string) int
-		UnsubscribePerformer        func(childComplexity int, stashPerformerID string) int
-		UnsubscribePerformers       func(childComplexity int, ids []string) int
-		UpdateAutomationSettings    func(childComplexity int, input model.UpdateAutomationSettingsInput) int
-		UpdateDownloaderPolicy      func(childComplexity int, input model.DownloaderPolicyInput) int
-		UpdateIngestSettings        func(childComplexity int, input model.UpdateIngestSettingsInput) int
-		UpdateJackettSettings       func(childComplexity int, input model.UpdateJackettSettingsInput) int
-		UpdateQBittorrentSettings   func(childComplexity int, input model.UpdateQBittorrentSettingsInput) int
-		UpdateSettingsSection       func(childComplexity int, input model.UpdateSettingsSectionInput) int
-		UpdateStashBoxCacheSettings func(childComplexity int, ttlHours int) int
-		UpdateStashSettings         func(childComplexity int, input model.UpdateStashSettingsInput) int
-		UpdateSystemSettings        func(childComplexity int, input model.UpdateSystemSettingsInput) int
+		AddBuiltinIndexer             func(childComplexity int, expectedRevision string, input model.BuiltinIndexerInput) int
+		AddIndexerNetworkProfile      func(childComplexity int, id string, expectedRevision string, input model.IndexerNetworkProfilePatchInput) int
+		AddTorrent                    func(childComplexity int, input model.QBittorrentAddInput) int
+		AnswerIndexerChallenge        func(childComplexity int, id string, input model.IndexerLoginInput, answer string) int
+		BeginIndexerLogin             func(childComplexity int, input model.IndexerLoginInput) int
+		CancelIndexerDefinitionUpdate func(childComplexity int, id string) int
+		CancelIndexerLogin            func(childComplexity int, id string, input model.IndexerLoginInput) int
+		CancelTorrentSearch           func(childComplexity int, id string) int
+		CheckIndexerDefinitionUpdate  func(childComplexity int) int
+		ClearImageCache               func(childComplexity int) int
+		ClearIndexerSearchCache       func(childComplexity int, instanceID *string) int
+		ClearStashBoxDataCache        func(childComplexity int) int
+		ControlTorrent                func(childComplexity int, hash string, action model.TorrentAction) int
+		DeleteTask                    func(childComplexity int, id string) int
+		DeleteTasks                   func(childComplexity int, ids []string) int
+		DownloadMedia                 func(childComplexity int, input model.DownloadMediaInput) int
+		InstallIndexerDefinitions     func(childComplexity int, input model.IndexerDefinitionChangeInput) int
+		PatchSettings                 func(childComplexity int, input model.SettingsPatchInput) int
+		PrepareTorrentDownload        func(childComplexity int, input model.PrepareTorrentDownloadInput) int
+		PreviewTorrentSelection       func(childComplexity int, input model.PreviewTorrentSelectionInput) int
+		ProcessReleaseReviews         func(childComplexity int, input model.ProcessReleaseReviewsInput) int
+		ProcessTaskIngest             func(childComplexity int, ids []string) int
+		QbittorrentAdd                func(childComplexity int, input model.QBittorrentAddInput) int
+		QueueDiscoveredScene          func(childComplexity int, input model.QueueDiscoveredSceneInput) int
+		QueuePerformerScenes          func(childComplexity int, input model.QueuePerformerScenesInput) int
+		QueueTorrentCandidate         func(childComplexity int, input model.QueueTorrentCandidateInput) int
+		RefreshDownloader             func(childComplexity int) int
+		RefreshJackettIndexers        func(childComplexity int) int
+		RefreshStashBoxes             func(childComplexity int) int
+		RefreshStashPerformerScenes   func(childComplexity int, id string, input model.StashPerformerScenesInput) int
+		RefreshSubscribedPerformer    func(childComplexity int, stashPerformerID string) int
+		RefreshSubscribedPerformers   func(childComplexity int, ids []string) int
+		RefreshSubscriptionsNow       func(childComplexity int) int
+		RefreshUpcomingRelease        func(childComplexity int, key string) int
+		RemoveBuiltinIndexer          func(childComplexity int, id string, expectedRevision string) int
+		RemoveIndexerNetworkProfile   func(childComplexity int, id string, expectedRevision string) int
+		ReorderIndexers               func(childComplexity int, expectedRevision string, ids []string) int
+		RepairIndexerDefinitions      func(childComplexity int, input model.IndexerDefinitionChangeInput) int
+		ResolveBlockedSourcingTask    func(childComplexity int, id string, input model.ResolveBlockedSourcingTaskInput) int
+		ResolveTaskFiles              func(childComplexity int, id string, videoIndices []int) int
+		ResolveTaskSourcingCandidate  func(childComplexity int, input model.ResolveTaskSourcingCandidateInput) int
+		RestartTaskSourcing           func(childComplexity int, id string) int
+		RetryTask                     func(childComplexity int, id string) int
+		RetryTasks                    func(childComplexity int, ids []string) int
+		RollbackIndexerDefinitions    func(childComplexity int, input model.IndexerDefinitionChangeInput) int
+		SetDownloaderSpeedLimit       func(childComplexity int, upload bool, kibPerSecond int) int
+		SetIndexerEnabled             func(childComplexity int, id string, expectedRevision string, enabled bool) int
+		StartSubscriptionCheck        func(childComplexity int, ids []string) int
+		StartTorrentSearch            func(childComplexity int, input model.StartTorrentSearchInput) int
+		StashMetadataScan             func(childComplexity int, input model.StashMetadataScanInput) int
+		SubscribePerformer            func(childComplexity int, stashPerformerID string) int
+		SubscribePerformers           func(childComplexity int, ids []string) int
+		SyncTaskProgress              func(childComplexity int) int
+		TestIndexer                   func(childComplexity int, input model.TestIndexerInput) int
+		TestServiceConnection         func(childComplexity int, input model.TestServiceConnectionInput) int
+		TriggerStashScans             func(childComplexity int) int
+		TriggerTaskStashScan          func(childComplexity int, id string) int
+		UnsubscribePerformer          func(childComplexity int, stashPerformerID string) int
+		UnsubscribePerformers         func(childComplexity int, ids []string) int
+		UpdateAutomationSettings      func(childComplexity int, input model.UpdateAutomationSettingsInput) int
+		UpdateBuiltinIndexer          func(childComplexity int, id string, expectedRevision string, input model.BuiltinIndexerPatchInput) int
+		UpdateDownloaderPolicy        func(childComplexity int, input model.DownloaderPolicyInput) int
+		UpdateIndexerDefinitionPolicy func(childComplexity int, expectedRevision string, input model.IndexerDefinitionPolicyPatchInput) int
+		UpdateIndexerDefinitions      func(childComplexity int, input model.IndexerDefinitionChangeInput) int
+		UpdateIndexerNetworkProfile   func(childComplexity int, id string, expectedRevision string, input model.IndexerNetworkProfilePatchInput) int
+		UpdateIndexerNetworkTimeouts  func(childComplexity int, expectedRevision string, input model.IndexerNetworkTimeoutPatchInput) int
+		UpdateIndexerSearchCache      func(childComplexity int, expectedRevision string, input model.IndexerSearchCachePatchInput) int
+		UpdateIngestSettings          func(childComplexity int, input model.UpdateIngestSettingsInput) int
+		UpdateJackettSettings         func(childComplexity int, input model.UpdateJackettSettingsInput) int
+		UpdateQBittorrentSettings     func(childComplexity int, input model.UpdateQBittorrentSettingsInput) int
+		UpdateSettingsSection         func(childComplexity int, input model.UpdateSettingsSectionInput) int
+		UpdateStashBoxCacheSettings   func(childComplexity int, ttlHours int) int
+		UpdateStashSettings           func(childComplexity int, input model.UpdateStashSettingsInput) int
+		UpdateSystemSettings          func(childComplexity int, input model.UpdateSystemSettingsInput) int
 	}
 
 	PerformerBatchPayload struct {
@@ -488,16 +729,10 @@ type ComplexityRoot struct {
 		SubscribedPerformers func(childComplexity int) int
 	}
 
-	PreviewJackettSelectionMeta struct {
-		AppliedFastRules func(childComplexity int) int
-		AppliedFileRules func(childComplexity int) int
-		InspectableCount func(childComplexity int) int
-		InspectedCount   func(childComplexity int) int
-	}
-
-	PreviewJackettSelectionResult struct {
-		PreviewMeta func(childComplexity int) int
-		Results     func(childComplexity int) int
+	PreparedTorrentDownload struct {
+		DownloadURL func(childComplexity int) int
+		ExpiresAt   func(childComplexity int) int
+		Kind        func(childComplexity int) int
 	}
 
 	QBTorrent struct {
@@ -537,41 +772,47 @@ type ComplexityRoot struct {
 	}
 
 	Query struct {
-		BlockedTaskTorrentCandidates func(childComplexity int, id string, limit *int) int
-		DashboardStats               func(childComplexity int) int
-		DiscoverScenes               func(childComplexity int, input model.DiscoverScenesInput) int
-		Downloader                   func(childComplexity int, offset *int, limit *int, search *string, taskID *string, attentionOnly *bool) int
-		Health                       func(childComplexity int) int
-		HomeOverview                 func(childComplexity int) int
-		HomeSubscriptionChecks       func(childComplexity int) int
-		HomeSubscriptionSummary      func(childComplexity int) int
-		HomeTaskSnapshot             func(childComplexity int) int
-		JackettIndexers              func(childComplexity int) int
-		JackettSearch                func(childComplexity int, input model.JackettSearchInput) int
-		Logs                         func(childComplexity int, limit *int, minLevel *model.LogLevel) int
-		PerformerWorkspace           func(childComplexity int, search *string, page *int, pageSize *int, options *model.PerformerListOptions) int
-		PreviewJackettSelection      func(childComplexity int, input model.PreviewJackettSelectionInput) int
-		QbittorrentTorrents          func(childComplexity int, limit *int) int
-		ReleaseReviews               func(childComplexity int, input model.ReleaseReviewQueryInput) int
-		Settings                     func(childComplexity int) int
-		SettingsStatus               func(childComplexity int) int
-		StashJob                     func(childComplexity int, id string) int
-		StashPerformerDetail         func(childComplexity int, id string) int
-		StashPerformerProfile        func(childComplexity int, id string) int
-		StashPerformerScenes         func(childComplexity int, id string, input model.StashPerformerScenesInput) int
-		StashPerformers              func(childComplexity int, search *string, page *int, pageSize *int) int
-		SubscribedPerformers         func(childComplexity int) int
-		SubscriptionCheck            func(childComplexity int, id string) int
-		SubscriptionCheckActivity    func(childComplexity int, ids []string) int
-		Task                         func(childComplexity int, id string) int
-		TaskAttentionQueue           func(childComplexity int) int
-		TaskDetailSnapshot           func(childComplexity int, id string) int
-		TaskPage                     func(childComplexity int, input model.TaskPageInput) int
-		TaskStashScenes              func(childComplexity int, id string) int
-		TaskSummaries                func(childComplexity int, ids []string) int
-		Tasks                        func(childComplexity int) int
-		UpcomingReleases             func(childComplexity int, input model.UpcomingReleaseQueryInput) int
-		Version                      func(childComplexity int) int
+		DashboardStats            func(childComplexity int) int
+		DiscoverScenes            func(childComplexity int, input model.DiscoverScenesInput) int
+		Downloader                func(childComplexity int, offset *int, limit *int, search *string, taskID *string, attentionOnly *bool) int
+		Health                    func(childComplexity int) int
+		HomeIndexerSummary        func(childComplexity int) int
+		HomeOverview              func(childComplexity int) int
+		HomeSubscriptionChecks    func(childComplexity int) int
+		HomeSubscriptionSummary   func(childComplexity int) int
+		HomeTaskSnapshot          func(childComplexity int) int
+		IndexerCacheStatus        func(childComplexity int) int
+		IndexerDefinitionPolicy   func(childComplexity int) int
+		IndexerDefinitionStatus   func(childComplexity int) int
+		IndexerDefinitionUpdate   func(childComplexity int, id string) int
+		IndexerDefinitions        func(childComplexity int, input *model.IndexerDefinitionFilterInput) int
+		IndexerInstances          func(childComplexity int) int
+		IndexerLogin              func(childComplexity int, input model.IndexerLoginInput) int
+		IndexerNetworkSettings    func(childComplexity int) int
+		Logs                      func(childComplexity int, limit *int, minLevel *model.LogLevel) int
+		PerformerWorkspace        func(childComplexity int, search *string, page *int, pageSize *int, options *model.PerformerListOptions) int
+		QbittorrentTorrents       func(childComplexity int, limit *int) int
+		ReleaseReviews            func(childComplexity int, input model.ReleaseReviewQueryInput) int
+		Settings                  func(childComplexity int) int
+		SettingsStatus            func(childComplexity int) int
+		StashJob                  func(childComplexity int, id string) int
+		StashPerformerDetail      func(childComplexity int, id string) int
+		StashPerformerProfile     func(childComplexity int, id string) int
+		StashPerformerScenes      func(childComplexity int, id string, input model.StashPerformerScenesInput) int
+		StashPerformers           func(childComplexity int, search *string, page *int, pageSize *int) int
+		SubscribedPerformers      func(childComplexity int) int
+		SubscriptionCheck         func(childComplexity int, id string) int
+		SubscriptionCheckActivity func(childComplexity int, ids []string) int
+		Task                      func(childComplexity int, id string) int
+		TaskAttentionQueue        func(childComplexity int) int
+		TaskDetailSnapshot        func(childComplexity int, id string) int
+		TaskPage                  func(childComplexity int, input model.TaskPageInput) int
+		TaskStashScenes           func(childComplexity int, id string) int
+		TaskSummaries             func(childComplexity int, ids []string) int
+		Tasks                     func(childComplexity int) int
+		TorrentSearch             func(childComplexity int, id string, offset *int, limit *int, sortBy *model.TorrentSearchSort) int
+		UpcomingReleases          func(childComplexity int, input model.UpcomingReleaseQueryInput) int
+		Version                   func(childComplexity int) int
 	}
 
 	QueuePerformerSceneResult struct {
@@ -856,10 +1097,13 @@ type ComplexityRoot struct {
 
 	Subscription struct {
 		DatabasePerformance         func(childComplexity int) int
+		IndexerDefinitionEvents     func(childComplexity int) int
+		IndexerEvents               func(childComplexity int) int
 		LogEvents                   func(childComplexity int) int
 		PerformerSubscriptionEvents func(childComplexity int) int
 		ServiceStatusEvents         func(childComplexity int) int
 		TaskEvents                  func(childComplexity int) int
+		TorrentSearchEvents         func(childComplexity int, id string) int
 	}
 
 	SubscriptionCheckActivity struct {
@@ -1093,6 +1337,83 @@ type ComplexityRoot struct {
 		Clauses func(childComplexity int) int
 	}
 
+	TorrentSearch struct {
+		CancelRequested func(childComplexity int) int
+		Candidates      func(childComplexity int) int
+		CorrelationID   func(childComplexity int) int
+		CreatedAt       func(childComplexity int) int
+		ErrorCode       func(childComplexity int) int
+		ExpiresAt       func(childComplexity int) int
+		FinishedAt      func(childComplexity int) int
+		ID              func(childComplexity int) int
+		Keywords        func(childComplexity int) int
+		Limit           func(childComplexity int) int
+		Offset          func(childComplexity int) int
+		Partial         func(childComplexity int) int
+		Revision        func(childComplexity int) int
+		Sites           func(childComplexity int) int
+		State           func(childComplexity int) int
+		TaskID          func(childComplexity int) int
+		Total           func(childComplexity int) int
+		Truncated       func(childComplexity int) int
+		UpdatedAt       func(childComplexity int) int
+	}
+
+	TorrentSearchCandidate struct {
+		Categories   func(childComplexity int) int
+		DetailsURL   func(childComplexity int) int
+		ID           func(childComplexity int) int
+		InfoHash     func(childComplexity int) int
+		InstanceID   func(childComplexity int) int
+		InstanceName func(childComplexity int) int
+		Kind         func(childComplexity int) int
+		Peers        func(childComplexity int) int
+		PublishedAt  func(childComplexity int) int
+		Seeders      func(childComplexity int) int
+		Size         func(childComplexity int) int
+		Title        func(childComplexity int) int
+	}
+
+	TorrentSearchEvent struct {
+		SearchID func(childComplexity int) int
+		Sequence func(childComplexity int) int
+		StreamID func(childComplexity int) int
+	}
+
+	TorrentSearchSite struct {
+		CacheHit      func(childComplexity int) int
+		CorrelationID func(childComplexity int) int
+		ElapsedMs     func(childComplexity int) int
+		ErrorCode     func(childComplexity int) int
+		FetchedAt     func(childComplexity int) int
+		InstanceID    func(childComplexity int) int
+		Kind          func(childComplexity int) int
+		Name          func(childComplexity int) int
+		Partial       func(childComplexity int) int
+		Results       func(childComplexity int) int
+		RetryAt       func(childComplexity int) int
+		State         func(childComplexity int) int
+		Truncated     func(childComplexity int) int
+	}
+
+	TorrentSelectionPreview struct {
+		Candidates     func(childComplexity int) int
+		Limit          func(childComplexity int) int
+		Meta           func(childComplexity int) int
+		Offset         func(childComplexity int) int
+		SearchID       func(childComplexity int) int
+		SearchRevision func(childComplexity int) int
+		Total          func(childComplexity int) int
+	}
+
+	TorrentSelectionPreviewMeta struct {
+		AppliedFastRules         func(childComplexity int) int
+		AppliedFileRules         func(childComplexity int) int
+		InspectableCount         func(childComplexity int) int
+		InspectedCount           func(childComplexity int) int
+		InspectionCandidateLimit func(childComplexity int) int
+	}
+
 	TorrentSelectionRule struct {
 		Enabled              func(childComplexity int) int
 		IndexerPreference    func(childComplexity int) int
@@ -1167,6 +1488,30 @@ type MutationResolver interface {
 	UpdateDownloaderPolicy(ctx context.Context, input model.DownloaderPolicyInput) (*model.DownloaderPolicy, error)
 	ControlTorrent(ctx context.Context, hash string, action model.TorrentAction) (bool, error)
 	SetDownloaderSpeedLimit(ctx context.Context, upload bool, kibPerSecond int) (bool, error)
+	ClearIndexerSearchCache(ctx context.Context, instanceID *string) (*model.IndexerCacheStatus, error)
+	UpdateIndexerSearchCache(ctx context.Context, expectedRevision string, input model.IndexerSearchCachePatchInput) (*model.IndexerCacheStatus, error)
+	TestIndexer(ctx context.Context, input model.TestIndexerInput) (*model.IndexerCheckReport, error)
+	UpdateIndexerDefinitionPolicy(ctx context.Context, expectedRevision string, input model.IndexerDefinitionPolicyPatchInput) (*model.IndexerDefinitionPolicy, error)
+	CheckIndexerDefinitionUpdate(ctx context.Context) (*model.IndexerDefinitionStatus, error)
+	InstallIndexerDefinitions(ctx context.Context, input model.IndexerDefinitionChangeInput) (*model.IndexerDefinitionJob, error)
+	UpdateIndexerDefinitions(ctx context.Context, input model.IndexerDefinitionChangeInput) (*model.IndexerDefinitionJob, error)
+	RollbackIndexerDefinitions(ctx context.Context, input model.IndexerDefinitionChangeInput) (*model.IndexerDefinitionJob, error)
+	RepairIndexerDefinitions(ctx context.Context, input model.IndexerDefinitionChangeInput) (*model.IndexerDefinitionJob, error)
+	CancelIndexerDefinitionUpdate(ctx context.Context, id string) (*model.IndexerDefinitionJob, error)
+	PrepareTorrentDownload(ctx context.Context, input model.PrepareTorrentDownloadInput) (*model.PreparedTorrentDownload, error)
+	BeginIndexerLogin(ctx context.Context, input model.IndexerLoginInput) (*model.IndexerLoginReport, error)
+	AnswerIndexerChallenge(ctx context.Context, id string, input model.IndexerLoginInput, answer string) (*model.IndexerLoginReport, error)
+	CancelIndexerLogin(ctx context.Context, id string, input model.IndexerLoginInput) (bool, error)
+	AddBuiltinIndexer(ctx context.Context, expectedRevision string, input model.BuiltinIndexerInput) (*model.BuiltinIndexerResult, error)
+	UpdateBuiltinIndexer(ctx context.Context, id string, expectedRevision string, input model.BuiltinIndexerPatchInput) (*model.BuiltinIndexerResult, error)
+	RemoveBuiltinIndexer(ctx context.Context, id string, expectedRevision string) (*model.IndexerInstances, error)
+	SetIndexerEnabled(ctx context.Context, id string, expectedRevision string, enabled bool) (*model.IndexerInstances, error)
+	ReorderIndexers(ctx context.Context, expectedRevision string, ids []string) (*model.IndexerInstances, error)
+	RefreshJackettIndexers(ctx context.Context) (*model.IndexerInstances, error)
+	UpdateIndexerNetworkTimeouts(ctx context.Context, expectedRevision string, input model.IndexerNetworkTimeoutPatchInput) (*model.IndexerNetworkSettings, error)
+	AddIndexerNetworkProfile(ctx context.Context, id string, expectedRevision string, input model.IndexerNetworkProfilePatchInput) (*model.IndexerNetworkSettings, error)
+	UpdateIndexerNetworkProfile(ctx context.Context, id string, expectedRevision string, input model.IndexerNetworkProfilePatchInput) (*model.IndexerNetworkSettings, error)
+	RemoveIndexerNetworkProfile(ctx context.Context, id string, expectedRevision string) (*model.IndexerNetworkSettings, error)
 	ProcessReleaseReviews(ctx context.Context, input model.ProcessReleaseReviewsInput) (*model.ReleaseReviewPayload, error)
 	QueueDiscoveredScene(ctx context.Context, input model.QueueDiscoveredSceneInput) (*model.Task, error)
 	TestServiceConnection(ctx context.Context, input model.TestServiceConnectionInput) (*model.ServiceConnectionTestResult, error)
@@ -1193,6 +1538,11 @@ type MutationResolver interface {
 	QueuePerformerScenes(ctx context.Context, input model.QueuePerformerScenesInput) (*model.QueuePerformerScenesPayload, error)
 	RefreshStashPerformerScenes(ctx context.Context, id string, input model.StashPerformerScenesInput) (*model.StashPerformerSceneConnection, error)
 	StartSubscriptionCheck(ctx context.Context, ids []string) (*model.SubscriptionCheckRun, error)
+	StartTorrentSearch(ctx context.Context, input model.StartTorrentSearchInput) (*model.TorrentSearch, error)
+	CancelTorrentSearch(ctx context.Context, id string) (*model.TorrentSearch, error)
+	QueueTorrentCandidate(ctx context.Context, input model.QueueTorrentCandidateInput) (*model.Task, error)
+	PreviewTorrentSelection(ctx context.Context, input model.PreviewTorrentSelectionInput) (*model.TorrentSelectionPreview, error)
+	ResolveTaskSourcingCandidate(ctx context.Context, input model.ResolveTaskSourcingCandidateInput) (*model.Task, error)
 	RefreshUpcomingRelease(ctx context.Context, key string) (*model.UpcomingRelease, error)
 }
 type QueryResolver interface {
@@ -1202,13 +1552,18 @@ type QueryResolver interface {
 	HomeOverview(ctx context.Context) (*model.HomeOverview, error)
 	HomeSubscriptionSummary(ctx context.Context) (*model.HomeSubscriptionSummary, error)
 	HomeSubscriptionChecks(ctx context.Context) (*model.HomeSubscriptionChecks, error)
+	HomeIndexerSummary(ctx context.Context) (*model.HomeIndexerSummary, error)
+	IndexerCacheStatus(ctx context.Context) (*model.IndexerCacheStatus, error)
+	IndexerDefinitionPolicy(ctx context.Context) (*model.IndexerDefinitionPolicy, error)
+	IndexerDefinitionStatus(ctx context.Context) (*model.IndexerDefinitionStatus, error)
+	IndexerDefinitionUpdate(ctx context.Context, id string) (*model.IndexerDefinitionJob, error)
+	IndexerLogin(ctx context.Context, input model.IndexerLoginInput) (*model.IndexerLoginReport, error)
+	IndexerDefinitions(ctx context.Context, input *model.IndexerDefinitionFilterInput) (*model.IndexerDefinitionPage, error)
+	IndexerInstances(ctx context.Context) (*model.IndexerInstances, error)
+	IndexerNetworkSettings(ctx context.Context) (*model.IndexerNetworkSettings, error)
 	Logs(ctx context.Context, limit *int, minLevel *model.LogLevel) ([]*model.LogEntry, error)
 	ReleaseReviews(ctx context.Context, input model.ReleaseReviewQueryInput) (*model.ReleaseReviewConnection, error)
 	DiscoverScenes(ctx context.Context, input model.DiscoverScenesInput) (*model.DiscoverSceneConnection, error)
-	JackettSearch(ctx context.Context, input model.JackettSearchInput) ([]*model.JackettSearchResult, error)
-	PreviewJackettSelection(ctx context.Context, input model.PreviewJackettSelectionInput) (*model.PreviewJackettSelectionResult, error)
-	JackettIndexers(ctx context.Context) ([]*model.JackettIndexer, error)
-	BlockedTaskTorrentCandidates(ctx context.Context, id string, limit *int) ([]*model.JackettSearchResult, error)
 	Settings(ctx context.Context) (*model.Settings, error)
 	SettingsStatus(ctx context.Context) (*model.SettingsStatus, error)
 	StashJob(ctx context.Context, id string) (*model.StashJob, error)
@@ -1230,14 +1585,18 @@ type QueryResolver interface {
 	TaskSummaries(ctx context.Context, ids []string) ([]*model.TaskSummary, error)
 	TaskAttentionQueue(ctx context.Context) (*model.TaskAttentionQueue, error)
 	HomeTaskSnapshot(ctx context.Context) (*model.HomeTaskSnapshot, error)
+	TorrentSearch(ctx context.Context, id string, offset *int, limit *int, sortBy *model.TorrentSearchSort) (*model.TorrentSearch, error)
 	UpcomingReleases(ctx context.Context, input model.UpcomingReleaseQueryInput) (*model.UpcomingReleaseConnection, error)
 }
 type SubscriptionResolver interface {
 	TaskEvents(ctx context.Context) (<-chan *model.TaskEvent, error)
+	IndexerDefinitionEvents(ctx context.Context) (<-chan *model.IndexerDefinitionStatus, error)
+	IndexerEvents(ctx context.Context) (<-chan *model.IndexerEvent, error)
 	LogEvents(ctx context.Context) (<-chan *model.LogEvent, error)
 	DatabasePerformance(ctx context.Context) (<-chan *storage.DatabasePerformanceSnapshot, error)
 	PerformerSubscriptionEvents(ctx context.Context) (<-chan *model.PerformerSubscriptionEvent, error)
 	ServiceStatusEvents(ctx context.Context) (<-chan *model.ServiceStatusEvent, error)
+	TorrentSearchEvents(ctx context.Context, id string) (<-chan *model.TorrentSearchEvent, error)
 }
 
 type executableSchema struct {
@@ -1335,6 +1694,20 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.AutomationStatus.TaskProgressSyncIntervalSeconds(childComplexity), true
+
+	case "BuiltinIndexerResult.instance":
+		if e.complexity.BuiltinIndexerResult.Instance == nil {
+			break
+		}
+
+		return e.complexity.BuiltinIndexerResult.Instance(childComplexity), true
+
+	case "BuiltinIndexerResult.revision":
+		if e.complexity.BuiltinIndexerResult.Revision == nil {
+			break
+		}
+
+		return e.complexity.BuiltinIndexerResult.Revision(childComplexity), true
 
 	case "DashboardStats.active":
 		if e.complexity.DashboardStats.Active == nil {
@@ -1980,6 +2353,146 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.HomeCheckPerformer.PerformerID(childComplexity), true
 
+	case "HomeIndexerIssue.errorCode":
+		if e.complexity.HomeIndexerIssue.ErrorCode == nil {
+			break
+		}
+
+		return e.complexity.HomeIndexerIssue.ErrorCode(childComplexity), true
+
+	case "HomeIndexerIssue.id":
+		if e.complexity.HomeIndexerIssue.ID == nil {
+			break
+		}
+
+		return e.complexity.HomeIndexerIssue.ID(childComplexity), true
+
+	case "HomeIndexerIssue.name":
+		if e.complexity.HomeIndexerIssue.Name == nil {
+			break
+		}
+
+		return e.complexity.HomeIndexerIssue.Name(childComplexity), true
+
+	case "HomeIndexerIssue.observation":
+		if e.complexity.HomeIndexerIssue.Observation == nil {
+			break
+		}
+
+		return e.complexity.HomeIndexerIssue.Observation(childComplexity), true
+
+	case "HomeIndexerIssue.operation":
+		if e.complexity.HomeIndexerIssue.Operation == nil {
+			break
+		}
+
+		return e.complexity.HomeIndexerIssue.Operation(childComplexity), true
+
+	case "HomeIndexerSummary.attention":
+		if e.complexity.HomeIndexerSummary.Attention == nil {
+			break
+		}
+
+		return e.complexity.HomeIndexerSummary.Attention(childComplexity), true
+
+	case "HomeIndexerSummary.builtinEnabled":
+		if e.complexity.HomeIndexerSummary.BuiltinEnabled == nil {
+			break
+		}
+
+		return e.complexity.HomeIndexerSummary.BuiltinEnabled(childComplexity), true
+
+	case "HomeIndexerSummary.builtinSearchSucceeded":
+		if e.complexity.HomeIndexerSummary.BuiltinSearchSucceeded == nil {
+			break
+		}
+
+		return e.complexity.HomeIndexerSummary.BuiltinSearchSucceeded(childComplexity), true
+
+	case "HomeIndexerSummary.builtinUnverified":
+		if e.complexity.HomeIndexerSummary.BuiltinUnverified == nil {
+			break
+		}
+
+		return e.complexity.HomeIndexerSummary.BuiltinUnverified(childComplexity), true
+
+	case "HomeIndexerSummary.definitionErrorCode":
+		if e.complexity.HomeIndexerSummary.DefinitionErrorCode == nil {
+			break
+		}
+
+		return e.complexity.HomeIndexerSummary.DefinitionErrorCode(childComplexity), true
+
+	case "HomeIndexerSummary.definitionJob":
+		if e.complexity.HomeIndexerSummary.DefinitionJob == nil {
+			break
+		}
+
+		return e.complexity.HomeIndexerSummary.DefinitionJob(childComplexity), true
+
+	case "HomeIndexerSummary.healthErrorCode":
+		if e.complexity.HomeIndexerSummary.HealthErrorCode == nil {
+			break
+		}
+
+		return e.complexity.HomeIndexerSummary.HealthErrorCode(childComplexity), true
+
+	case "HomeIndexerSummary.issues":
+		if e.complexity.HomeIndexerSummary.Issues == nil {
+			break
+		}
+
+		return e.complexity.HomeIndexerSummary.Issues(childComplexity), true
+
+	case "HomeIndexerSummary.jackett":
+		if e.complexity.HomeIndexerSummary.Jackett == nil {
+			break
+		}
+
+		return e.complexity.HomeIndexerSummary.Jackett(childComplexity), true
+
+	case "HomeIndexerSummary.revision":
+		if e.complexity.HomeIndexerSummary.Revision == nil {
+			break
+		}
+
+		return e.complexity.HomeIndexerSummary.Revision(childComplexity), true
+
+	case "HomeIndexerSummary.total":
+		if e.complexity.HomeIndexerSummary.Total == nil {
+			break
+		}
+
+		return e.complexity.HomeIndexerSummary.Total(childComplexity), true
+
+	case "HomeJackettSummary.errorCode":
+		if e.complexity.HomeJackettSummary.ErrorCode == nil {
+			break
+		}
+
+		return e.complexity.HomeJackettSummary.ErrorCode(childComplexity), true
+
+	case "HomeJackettSummary.sites":
+		if e.complexity.HomeJackettSummary.Sites == nil {
+			break
+		}
+
+		return e.complexity.HomeJackettSummary.Sites(childComplexity), true
+
+	case "HomeJackettSummary.stale":
+		if e.complexity.HomeJackettSummary.Stale == nil {
+			break
+		}
+
+		return e.complexity.HomeJackettSummary.Stale(childComplexity), true
+
+	case "HomeJackettSummary.updatedAt":
+		if e.complexity.HomeJackettSummary.UpdatedAt == nil {
+			break
+		}
+
+		return e.complexity.HomeJackettSummary.UpdatedAt(childComplexity), true
+
 	case "HomeOverview.active":
 		if e.complexity.HomeOverview.Active == nil {
 			break
@@ -2323,12 +2836,985 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.ImageCacheStatus.UsedBytes(childComplexity), true
 
+	case "IndexerCacheStatus.activeRequests":
+		if e.complexity.IndexerCacheStatus.ActiveRequests == nil {
+			break
+		}
+
+		return e.complexity.IndexerCacheStatus.ActiveRequests(childComplexity), true
+
+	case "IndexerCacheStatus.activeWaiters":
+		if e.complexity.IndexerCacheStatus.ActiveWaiters == nil {
+			break
+		}
+
+		return e.complexity.IndexerCacheStatus.ActiveWaiters(childComplexity), true
+
+	case "IndexerCacheStatus.emptyTtlSeconds":
+		if e.complexity.IndexerCacheStatus.EmptyTTLSeconds == nil {
+			break
+		}
+
+		return e.complexity.IndexerCacheStatus.EmptyTTLSeconds(childComplexity), true
+
+	case "IndexerCacheStatus.enabled":
+		if e.complexity.IndexerCacheStatus.Enabled == nil {
+			break
+		}
+
+		return e.complexity.IndexerCacheStatus.Enabled(childComplexity), true
+
+	case "IndexerCacheStatus.entries":
+		if e.complexity.IndexerCacheStatus.Entries == nil {
+			break
+		}
+
+		return e.complexity.IndexerCacheStatus.Entries(childComplexity), true
+
+	case "IndexerCacheStatus.maxSizeMb":
+		if e.complexity.IndexerCacheStatus.MaxSizeMb == nil {
+			break
+		}
+
+		return e.complexity.IndexerCacheStatus.MaxSizeMb(childComplexity), true
+
+	case "IndexerCacheStatus.revision":
+		if e.complexity.IndexerCacheStatus.Revision == nil {
+			break
+		}
+
+		return e.complexity.IndexerCacheStatus.Revision(childComplexity), true
+
+	case "IndexerCacheStatus.ttlSeconds":
+		if e.complexity.IndexerCacheStatus.TTLSeconds == nil {
+			break
+		}
+
+		return e.complexity.IndexerCacheStatus.TTLSeconds(childComplexity), true
+
+	case "IndexerCacheStatus.usedBytes":
+		if e.complexity.IndexerCacheStatus.UsedBytes == nil {
+			break
+		}
+
+		return e.complexity.IndexerCacheStatus.UsedBytes(childComplexity), true
+
+	case "IndexerCheckReport.configRevision":
+		if e.complexity.IndexerCheckReport.ConfigRevision == nil {
+			break
+		}
+
+		return e.complexity.IndexerCheckReport.ConfigRevision(childComplexity), true
+
+	case "IndexerCheckReport.finishedAt":
+		if e.complexity.IndexerCheckReport.FinishedAt == nil {
+			break
+		}
+
+		return e.complexity.IndexerCheckReport.FinishedAt(childComplexity), true
+
+	case "IndexerCheckReport.id":
+		if e.complexity.IndexerCheckReport.ID == nil {
+			break
+		}
+
+		return e.complexity.IndexerCheckReport.ID(childComplexity), true
+
+	case "IndexerCheckReport.instanceId":
+		if e.complexity.IndexerCheckReport.InstanceID == nil {
+			break
+		}
+
+		return e.complexity.IndexerCheckReport.InstanceID(childComplexity), true
+
+	case "IndexerCheckReport.kind":
+		if e.complexity.IndexerCheckReport.Kind == nil {
+			break
+		}
+
+		return e.complexity.IndexerCheckReport.Kind(childComplexity), true
+
+	case "IndexerCheckReport.partial":
+		if e.complexity.IndexerCheckReport.Partial == nil {
+			break
+		}
+
+		return e.complexity.IndexerCheckReport.Partial(childComplexity), true
+
+	case "IndexerCheckReport.results":
+		if e.complexity.IndexerCheckReport.Results == nil {
+			break
+		}
+
+		return e.complexity.IndexerCheckReport.Results(childComplexity), true
+
+	case "IndexerCheckReport.ruleRevision":
+		if e.complexity.IndexerCheckReport.RuleRevision == nil {
+			break
+		}
+
+		return e.complexity.IndexerCheckReport.RuleRevision(childComplexity), true
+
+	case "IndexerCheckReport.stages":
+		if e.complexity.IndexerCheckReport.Stages == nil {
+			break
+		}
+
+		return e.complexity.IndexerCheckReport.Stages(childComplexity), true
+
+	case "IndexerCheckReport.startedAt":
+		if e.complexity.IndexerCheckReport.StartedAt == nil {
+			break
+		}
+
+		return e.complexity.IndexerCheckReport.StartedAt(childComplexity), true
+
+	case "IndexerCheckReport.truncated":
+		if e.complexity.IndexerCheckReport.Truncated == nil {
+			break
+		}
+
+		return e.complexity.IndexerCheckReport.Truncated(childComplexity), true
+
+	case "IndexerCheckStage.elapsedMs":
+		if e.complexity.IndexerCheckStage.ElapsedMs == nil {
+			break
+		}
+
+		return e.complexity.IndexerCheckStage.ElapsedMs(childComplexity), true
+
+	case "IndexerCheckStage.errorCode":
+		if e.complexity.IndexerCheckStage.ErrorCode == nil {
+			break
+		}
+
+		return e.complexity.IndexerCheckStage.ErrorCode(childComplexity), true
+
+	case "IndexerCheckStage.name":
+		if e.complexity.IndexerCheckStage.Name == nil {
+			break
+		}
+
+		return e.complexity.IndexerCheckStage.Name(childComplexity), true
+
+	case "IndexerCheckStage.state":
+		if e.complexity.IndexerCheckStage.State == nil {
+			break
+		}
+
+		return e.complexity.IndexerCheckStage.State(childComplexity), true
+
+	case "IndexerDefinition.description":
+		if e.complexity.IndexerDefinition.Description == nil {
+			break
+		}
+
+		return e.complexity.IndexerDefinition.Description(childComplexity), true
+
+	case "IndexerDefinition.digest":
+		if e.complexity.IndexerDefinition.Digest == nil {
+			break
+		}
+
+		return e.complexity.IndexerDefinition.Digest(childComplexity), true
+
+	case "IndexerDefinition.id":
+		if e.complexity.IndexerDefinition.ID == nil {
+			break
+		}
+
+		return e.complexity.IndexerDefinition.ID(childComplexity), true
+
+	case "IndexerDefinition.language":
+		if e.complexity.IndexerDefinition.Language == nil {
+			break
+		}
+
+		return e.complexity.IndexerDefinition.Language(childComplexity), true
+
+	case "IndexerDefinition.links":
+		if e.complexity.IndexerDefinition.Links == nil {
+			break
+		}
+
+		return e.complexity.IndexerDefinition.Links(childComplexity), true
+
+	case "IndexerDefinition.modes":
+		if e.complexity.IndexerDefinition.Modes == nil {
+			break
+		}
+
+		return e.complexity.IndexerDefinition.Modes(childComplexity), true
+
+	case "IndexerDefinition.name":
+		if e.complexity.IndexerDefinition.Name == nil {
+			break
+		}
+
+		return e.complexity.IndexerDefinition.Name(childComplexity), true
+
+	case "IndexerDefinition.privacy":
+		if e.complexity.IndexerDefinition.Privacy == nil {
+			break
+		}
+
+		return e.complexity.IndexerDefinition.Privacy(childComplexity), true
+
+	case "IndexerDefinition.settings":
+		if e.complexity.IndexerDefinition.Settings == nil {
+			break
+		}
+
+		return e.complexity.IndexerDefinition.Settings(childComplexity), true
+
+	case "IndexerDefinition.warnings":
+		if e.complexity.IndexerDefinition.Warnings == nil {
+			break
+		}
+
+		return e.complexity.IndexerDefinition.Warnings(childComplexity), true
+
+	case "IndexerDefinitionJob.correlationId":
+		if e.complexity.IndexerDefinitionJob.CorrelationID == nil {
+			break
+		}
+
+		return e.complexity.IndexerDefinitionJob.CorrelationID(childComplexity), true
+
+	case "IndexerDefinitionJob.downloadedBytes":
+		if e.complexity.IndexerDefinitionJob.DownloadedBytes == nil {
+			break
+		}
+
+		return e.complexity.IndexerDefinitionJob.DownloadedBytes(childComplexity), true
+
+	case "IndexerDefinitionJob.errorCode":
+		if e.complexity.IndexerDefinitionJob.ErrorCode == nil {
+			break
+		}
+
+		return e.complexity.IndexerDefinitionJob.ErrorCode(childComplexity), true
+
+	case "IndexerDefinitionJob.expectedActiveRevision":
+		if e.complexity.IndexerDefinitionJob.ExpectedActiveRevision == nil {
+			break
+		}
+
+		return e.complexity.IndexerDefinitionJob.ExpectedActiveRevision(childComplexity), true
+
+	case "IndexerDefinitionJob.finishedAt":
+		if e.complexity.IndexerDefinitionJob.FinishedAt == nil {
+			break
+		}
+
+		return e.complexity.IndexerDefinitionJob.FinishedAt(childComplexity), true
+
+	case "IndexerDefinitionJob.id":
+		if e.complexity.IndexerDefinitionJob.ID == nil {
+			break
+		}
+
+		return e.complexity.IndexerDefinitionJob.ID(childComplexity), true
+
+	case "IndexerDefinitionJob.kind":
+		if e.complexity.IndexerDefinitionJob.Kind == nil {
+			break
+		}
+
+		return e.complexity.IndexerDefinitionJob.Kind(childComplexity), true
+
+	case "IndexerDefinitionJob.revision":
+		if e.complexity.IndexerDefinitionJob.Revision == nil {
+			break
+		}
+
+		return e.complexity.IndexerDefinitionJob.Revision(childComplexity), true
+
+	case "IndexerDefinitionJob.startedAt":
+		if e.complexity.IndexerDefinitionJob.StartedAt == nil {
+			break
+		}
+
+		return e.complexity.IndexerDefinitionJob.StartedAt(childComplexity), true
+
+	case "IndexerDefinitionJob.state":
+		if e.complexity.IndexerDefinitionJob.State == nil {
+			break
+		}
+
+		return e.complexity.IndexerDefinitionJob.State(childComplexity), true
+
+	case "IndexerDefinitionJob.targetRevision":
+		if e.complexity.IndexerDefinitionJob.TargetRevision == nil {
+			break
+		}
+
+		return e.complexity.IndexerDefinitionJob.TargetRevision(childComplexity), true
+
+	case "IndexerDefinitionManifest.definitionCount":
+		if e.complexity.IndexerDefinitionManifest.DefinitionCount == nil {
+			break
+		}
+
+		return e.complexity.IndexerDefinitionManifest.DefinitionCount(childComplexity), true
+
+	case "IndexerDefinitionManifest.engineVersion":
+		if e.complexity.IndexerDefinitionManifest.EngineVersion == nil {
+			break
+		}
+
+		return e.complexity.IndexerDefinitionManifest.EngineVersion(childComplexity), true
+
+	case "IndexerDefinitionManifest.installedAt":
+		if e.complexity.IndexerDefinitionManifest.InstalledAt == nil {
+			break
+		}
+
+		return e.complexity.IndexerDefinitionManifest.InstalledAt(childComplexity), true
+
+	case "IndexerDefinitionManifest.revision":
+		if e.complexity.IndexerDefinitionManifest.Revision == nil {
+			break
+		}
+
+		return e.complexity.IndexerDefinitionManifest.Revision(childComplexity), true
+
+	case "IndexerDefinitionManifest.schemaVersion":
+		if e.complexity.IndexerDefinitionManifest.SchemaVersion == nil {
+			break
+		}
+
+		return e.complexity.IndexerDefinitionManifest.SchemaVersion(childComplexity), true
+
+	case "IndexerDefinitionPage.items":
+		if e.complexity.IndexerDefinitionPage.Items == nil {
+			break
+		}
+
+		return e.complexity.IndexerDefinitionPage.Items(childComplexity), true
+
+	case "IndexerDefinitionPage.limit":
+		if e.complexity.IndexerDefinitionPage.Limit == nil {
+			break
+		}
+
+		return e.complexity.IndexerDefinitionPage.Limit(childComplexity), true
+
+	case "IndexerDefinitionPage.offset":
+		if e.complexity.IndexerDefinitionPage.Offset == nil {
+			break
+		}
+
+		return e.complexity.IndexerDefinitionPage.Offset(childComplexity), true
+
+	case "IndexerDefinitionPage.revision":
+		if e.complexity.IndexerDefinitionPage.Revision == nil {
+			break
+		}
+
+		return e.complexity.IndexerDefinitionPage.Revision(childComplexity), true
+
+	case "IndexerDefinitionPage.totalCount":
+		if e.complexity.IndexerDefinitionPage.TotalCount == nil {
+			break
+		}
+
+		return e.complexity.IndexerDefinitionPage.TotalCount(childComplexity), true
+
+	case "IndexerDefinitionPolicy.autoUpdate":
+		if e.complexity.IndexerDefinitionPolicy.AutoUpdate == nil {
+			break
+		}
+
+		return e.complexity.IndexerDefinitionPolicy.AutoUpdate(childComplexity), true
+
+	case "IndexerDefinitionPolicy.checkIntervalHours":
+		if e.complexity.IndexerDefinitionPolicy.CheckIntervalHours == nil {
+			break
+		}
+
+		return e.complexity.IndexerDefinitionPolicy.CheckIntervalHours(childComplexity), true
+
+	case "IndexerDefinitionPolicy.revision":
+		if e.complexity.IndexerDefinitionPolicy.Revision == nil {
+			break
+		}
+
+		return e.complexity.IndexerDefinitionPolicy.Revision(childComplexity), true
+
+	case "IndexerDefinitionPolicy.schemaVersion":
+		if e.complexity.IndexerDefinitionPolicy.SchemaVersion == nil {
+			break
+		}
+
+		return e.complexity.IndexerDefinitionPolicy.SchemaVersion(childComplexity), true
+
+	case "IndexerDefinitionPolicy.source":
+		if e.complexity.IndexerDefinitionPolicy.Source == nil {
+			break
+		}
+
+		return e.complexity.IndexerDefinitionPolicy.Source(childComplexity), true
+
+	case "IndexerDefinitionStatus.activeRevision":
+		if e.complexity.IndexerDefinitionStatus.ActiveRevision == nil {
+			break
+		}
+
+		return e.complexity.IndexerDefinitionStatus.ActiveRevision(childComplexity), true
+
+	case "IndexerDefinitionStatus.available":
+		if e.complexity.IndexerDefinitionStatus.Available == nil {
+			break
+		}
+
+		return e.complexity.IndexerDefinitionStatus.Available(childComplexity), true
+
+	case "IndexerDefinitionStatus.availableRevision":
+		if e.complexity.IndexerDefinitionStatus.AvailableRevision == nil {
+			break
+		}
+
+		return e.complexity.IndexerDefinitionStatus.AvailableRevision(childComplexity), true
+
+	case "IndexerDefinitionStatus.checkErrorCode":
+		if e.complexity.IndexerDefinitionStatus.CheckErrorCode == nil {
+			break
+		}
+
+		return e.complexity.IndexerDefinitionStatus.CheckErrorCode(childComplexity), true
+
+	case "IndexerDefinitionStatus.errorCode":
+		if e.complexity.IndexerDefinitionStatus.ErrorCode == nil {
+			break
+		}
+
+		return e.complexity.IndexerDefinitionStatus.ErrorCode(childComplexity), true
+
+	case "IndexerDefinitionStatus.installed":
+		if e.complexity.IndexerDefinitionStatus.Installed == nil {
+			break
+		}
+
+		return e.complexity.IndexerDefinitionStatus.Installed(childComplexity), true
+
+	case "IndexerDefinitionStatus.job":
+		if e.complexity.IndexerDefinitionStatus.Job == nil {
+			break
+		}
+
+		return e.complexity.IndexerDefinitionStatus.Job(childComplexity), true
+
+	case "IndexerDefinitionStatus.lastCheckedAt":
+		if e.complexity.IndexerDefinitionStatus.LastCheckedAt == nil {
+			break
+		}
+
+		return e.complexity.IndexerDefinitionStatus.LastCheckedAt(childComplexity), true
+
+	case "IndexerDefinitionStatus.previousRevision":
+		if e.complexity.IndexerDefinitionStatus.PreviousRevision == nil {
+			break
+		}
+
+		return e.complexity.IndexerDefinitionStatus.PreviousRevision(childComplexity), true
+
+	case "IndexerDefinitionStatus.revision":
+		if e.complexity.IndexerDefinitionStatus.Revision == nil {
+			break
+		}
+
+		return e.complexity.IndexerDefinitionStatus.Revision(childComplexity), true
+
+	case "IndexerDefinitionStatus.streamId":
+		if e.complexity.IndexerDefinitionStatus.StreamID == nil {
+			break
+		}
+
+		return e.complexity.IndexerDefinitionStatus.StreamID(childComplexity), true
+
+	case "IndexerEvent.kind":
+		if e.complexity.IndexerEvent.Kind == nil {
+			break
+		}
+
+		return e.complexity.IndexerEvent.Kind(childComplexity), true
+
+	case "IndexerEvent.sequence":
+		if e.complexity.IndexerEvent.Sequence == nil {
+			break
+		}
+
+		return e.complexity.IndexerEvent.Sequence(childComplexity), true
+
+	case "IndexerEvent.streamId":
+		if e.complexity.IndexerEvent.StreamID == nil {
+			break
+		}
+
+		return e.complexity.IndexerEvent.StreamID(childComplexity), true
+
+	case "IndexerHealth.fetch":
+		if e.complexity.IndexerHealth.Fetch == nil {
+			break
+		}
+
+		return e.complexity.IndexerHealth.Fetch(childComplexity), true
+
+	case "IndexerHealth.search":
+		if e.complexity.IndexerHealth.Search == nil {
+			break
+		}
+
+		return e.complexity.IndexerHealth.Search(childComplexity), true
+
+	case "IndexerInstance.baseUrl":
+		if e.complexity.IndexerInstance.BaseURL == nil {
+			break
+		}
+
+		return e.complexity.IndexerInstance.BaseURL(childComplexity), true
+
+	case "IndexerInstance.definitionId":
+		if e.complexity.IndexerInstance.DefinitionID == nil {
+			break
+		}
+
+		return e.complexity.IndexerInstance.DefinitionID(childComplexity), true
+
+	case "IndexerInstance.enabled":
+		if e.complexity.IndexerInstance.Enabled == nil {
+			break
+		}
+
+		return e.complexity.IndexerInstance.Enabled(childComplexity), true
+
+	case "IndexerInstance.errorCode":
+		if e.complexity.IndexerInstance.ErrorCode == nil {
+			break
+		}
+
+		return e.complexity.IndexerInstance.ErrorCode(childComplexity), true
+
+	case "IndexerInstance.health":
+		if e.complexity.IndexerInstance.Health == nil {
+			break
+		}
+
+		return e.complexity.IndexerInstance.Health(childComplexity), true
+
+	case "IndexerInstance.id":
+		if e.complexity.IndexerInstance.ID == nil {
+			break
+		}
+
+		return e.complexity.IndexerInstance.ID(childComplexity), true
+
+	case "IndexerInstance.kind":
+		if e.complexity.IndexerInstance.Kind == nil {
+			break
+		}
+
+		return e.complexity.IndexerInstance.Kind(childComplexity), true
+
+	case "IndexerInstance.language":
+		if e.complexity.IndexerInstance.Language == nil {
+			break
+		}
+
+		return e.complexity.IndexerInstance.Language(childComplexity), true
+
+	case "IndexerInstance.modes":
+		if e.complexity.IndexerInstance.Modes == nil {
+			break
+		}
+
+		return e.complexity.IndexerInstance.Modes(childComplexity), true
+
+	case "IndexerInstance.name":
+		if e.complexity.IndexerInstance.Name == nil {
+			break
+		}
+
+		return e.complexity.IndexerInstance.Name(childComplexity), true
+
+	case "IndexerInstance.networkProfile":
+		if e.complexity.IndexerInstance.NetworkProfile == nil {
+			break
+		}
+
+		return e.complexity.IndexerInstance.NetworkProfile(childComplexity), true
+
+	case "IndexerInstance.privacy":
+		if e.complexity.IndexerInstance.Privacy == nil {
+			break
+		}
+
+		return e.complexity.IndexerInstance.Privacy(childComplexity), true
+
+	case "IndexerInstance.ruleDigest":
+		if e.complexity.IndexerInstance.RuleDigest == nil {
+			break
+		}
+
+		return e.complexity.IndexerInstance.RuleDigest(childComplexity), true
+
+	case "IndexerInstance.settings":
+		if e.complexity.IndexerInstance.Settings == nil {
+			break
+		}
+
+		return e.complexity.IndexerInstance.Settings(childComplexity), true
+
+	case "IndexerInstance.siteUrl":
+		if e.complexity.IndexerInstance.SiteURL == nil {
+			break
+		}
+
+		return e.complexity.IndexerInstance.SiteURL(childComplexity), true
+
+	case "IndexerInstance.trustedOrigins":
+		if e.complexity.IndexerInstance.TrustedOrigins == nil {
+			break
+		}
+
+		return e.complexity.IndexerInstance.TrustedOrigins(childComplexity), true
+
+	case "IndexerInstances.catalogErrorCode":
+		if e.complexity.IndexerInstances.CatalogErrorCode == nil {
+			break
+		}
+
+		return e.complexity.IndexerInstances.CatalogErrorCode(childComplexity), true
+
+	case "IndexerInstances.healthErrorCode":
+		if e.complexity.IndexerInstances.HealthErrorCode == nil {
+			break
+		}
+
+		return e.complexity.IndexerInstances.HealthErrorCode(childComplexity), true
+
+	case "IndexerInstances.items":
+		if e.complexity.IndexerInstances.Items == nil {
+			break
+		}
+
+		return e.complexity.IndexerInstances.Items(childComplexity), true
+
+	case "IndexerInstances.jackettEnabled":
+		if e.complexity.IndexerInstances.JackettEnabled == nil {
+			break
+		}
+
+		return e.complexity.IndexerInstances.JackettEnabled(childComplexity), true
+
+	case "IndexerInstances.networkProfiles":
+		if e.complexity.IndexerInstances.NetworkProfiles == nil {
+			break
+		}
+
+		return e.complexity.IndexerInstances.NetworkProfiles(childComplexity), true
+
+	case "IndexerInstances.order":
+		if e.complexity.IndexerInstances.Order == nil {
+			break
+		}
+
+		return e.complexity.IndexerInstances.Order(childComplexity), true
+
+	case "IndexerInstances.revision":
+		if e.complexity.IndexerInstances.Revision == nil {
+			break
+		}
+
+		return e.complexity.IndexerInstances.Revision(childComplexity), true
+
+	case "IndexerInstances.ruleErrorCode":
+		if e.complexity.IndexerInstances.RuleErrorCode == nil {
+			break
+		}
+
+		return e.complexity.IndexerInstances.RuleErrorCode(childComplexity), true
+
+	case "IndexerInstances.ruleRevision":
+		if e.complexity.IndexerInstances.RuleRevision == nil {
+			break
+		}
+
+		return e.complexity.IndexerInstances.RuleRevision(childComplexity), true
+
+	case "IndexerLoginChallenge.id":
+		if e.complexity.IndexerLoginChallenge.ID == nil {
+			break
+		}
+
+		return e.complexity.IndexerLoginChallenge.ID(childComplexity), true
+
+	case "IndexerLoginChallenge.imageData":
+		if e.complexity.IndexerLoginChallenge.ImageData == nil {
+			break
+		}
+
+		return e.complexity.IndexerLoginChallenge.ImageData(childComplexity), true
+
+	case "IndexerLoginChallenge.prompt":
+		if e.complexity.IndexerLoginChallenge.Prompt == nil {
+			break
+		}
+
+		return e.complexity.IndexerLoginChallenge.Prompt(childComplexity), true
+
+	case "IndexerLoginChallenge.type":
+		if e.complexity.IndexerLoginChallenge.Type == nil {
+			break
+		}
+
+		return e.complexity.IndexerLoginChallenge.Type(childComplexity), true
+
+	case "IndexerLoginReport.challenge":
+		if e.complexity.IndexerLoginReport.Challenge == nil {
+			break
+		}
+
+		return e.complexity.IndexerLoginReport.Challenge(childComplexity), true
+
+	case "IndexerLoginReport.configRevision":
+		if e.complexity.IndexerLoginReport.ConfigRevision == nil {
+			break
+		}
+
+		return e.complexity.IndexerLoginReport.ConfigRevision(childComplexity), true
+
+	case "IndexerLoginReport.expiresAt":
+		if e.complexity.IndexerLoginReport.ExpiresAt == nil {
+			break
+		}
+
+		return e.complexity.IndexerLoginReport.ExpiresAt(childComplexity), true
+
+	case "IndexerLoginReport.id":
+		if e.complexity.IndexerLoginReport.ID == nil {
+			break
+		}
+
+		return e.complexity.IndexerLoginReport.ID(childComplexity), true
+
+	case "IndexerLoginReport.instanceId":
+		if e.complexity.IndexerLoginReport.InstanceID == nil {
+			break
+		}
+
+		return e.complexity.IndexerLoginReport.InstanceID(childComplexity), true
+
+	case "IndexerLoginReport.ruleRevision":
+		if e.complexity.IndexerLoginReport.RuleRevision == nil {
+			break
+		}
+
+		return e.complexity.IndexerLoginReport.RuleRevision(childComplexity), true
+
+	case "IndexerLoginReport.state":
+		if e.complexity.IndexerLoginReport.State == nil {
+			break
+		}
+
+		return e.complexity.IndexerLoginReport.State(childComplexity), true
+
+	case "IndexerNetworkProfile.flareSolverrConfigured":
+		if e.complexity.IndexerNetworkProfile.FlareSolverrConfigured == nil {
+			break
+		}
+
+		return e.complexity.IndexerNetworkProfile.FlareSolverrConfigured(childComplexity), true
+
+	case "IndexerNetworkProfile.id":
+		if e.complexity.IndexerNetworkProfile.ID == nil {
+			break
+		}
+
+		return e.complexity.IndexerNetworkProfile.ID(childComplexity), true
+
+	case "IndexerNetworkProfile.proxyConfigured":
+		if e.complexity.IndexerNetworkProfile.ProxyConfigured == nil {
+			break
+		}
+
+		return e.complexity.IndexerNetworkProfile.ProxyConfigured(childComplexity), true
+
+	case "IndexerNetworkProfile.usedBy":
+		if e.complexity.IndexerNetworkProfile.UsedBy == nil {
+			break
+		}
+
+		return e.complexity.IndexerNetworkProfile.UsedBy(childComplexity), true
+
+	case "IndexerNetworkSettings.challengeTimeoutSeconds":
+		if e.complexity.IndexerNetworkSettings.ChallengeTimeoutSeconds == nil {
+			break
+		}
+
+		return e.complexity.IndexerNetworkSettings.ChallengeTimeoutSeconds(childComplexity), true
+
+	case "IndexerNetworkSettings.profiles":
+		if e.complexity.IndexerNetworkSettings.Profiles == nil {
+			break
+		}
+
+		return e.complexity.IndexerNetworkSettings.Profiles(childComplexity), true
+
+	case "IndexerNetworkSettings.requestTimeoutSeconds":
+		if e.complexity.IndexerNetworkSettings.RequestTimeoutSeconds == nil {
+			break
+		}
+
+		return e.complexity.IndexerNetworkSettings.RequestTimeoutSeconds(childComplexity), true
+
+	case "IndexerNetworkSettings.revision":
+		if e.complexity.IndexerNetworkSettings.Revision == nil {
+			break
+		}
+
+		return e.complexity.IndexerNetworkSettings.Revision(childComplexity), true
+
+	case "IndexerNetworkSettings.siteTimeoutSeconds":
+		if e.complexity.IndexerNetworkSettings.SiteTimeoutSeconds == nil {
+			break
+		}
+
+		return e.complexity.IndexerNetworkSettings.SiteTimeoutSeconds(childComplexity), true
+
+	case "IndexerObservation.correlationId":
+		if e.complexity.IndexerObservation.CorrelationID == nil {
+			break
+		}
+
+		return e.complexity.IndexerObservation.CorrelationID(childComplexity), true
+
+	case "IndexerObservation.errorCode":
+		if e.complexity.IndexerObservation.ErrorCode == nil {
+			break
+		}
+
+		return e.complexity.IndexerObservation.ErrorCode(childComplexity), true
+
+	case "IndexerObservation.finishedAt":
+		if e.complexity.IndexerObservation.FinishedAt == nil {
+			break
+		}
+
+		return e.complexity.IndexerObservation.FinishedAt(childComplexity), true
+
+	case "IndexerObservation.retryAt":
+		if e.complexity.IndexerObservation.RetryAt == nil {
+			break
+		}
+
+		return e.complexity.IndexerObservation.RetryAt(childComplexity), true
+
+	case "IndexerObservation.startedAt":
+		if e.complexity.IndexerObservation.StartedAt == nil {
+			break
+		}
+
+		return e.complexity.IndexerObservation.StartedAt(childComplexity), true
+
 	case "IndexerPreferenceRule.trackerIds":
 		if e.complexity.IndexerPreferenceRule.TrackerIds == nil {
 			break
 		}
 
 		return e.complexity.IndexerPreferenceRule.TrackerIds(childComplexity), true
+
+	case "IndexerSetting.configured":
+		if e.complexity.IndexerSetting.Configured == nil {
+			break
+		}
+
+		return e.complexity.IndexerSetting.Configured(childComplexity), true
+
+	case "IndexerSetting.defaultValue":
+		if e.complexity.IndexerSetting.DefaultValue == nil {
+			break
+		}
+
+		return e.complexity.IndexerSetting.DefaultValue(childComplexity), true
+
+	case "IndexerSetting.label":
+		if e.complexity.IndexerSetting.Label == nil {
+			break
+		}
+
+		return e.complexity.IndexerSetting.Label(childComplexity), true
+
+	case "IndexerSetting.name":
+		if e.complexity.IndexerSetting.Name == nil {
+			break
+		}
+
+		return e.complexity.IndexerSetting.Name(childComplexity), true
+
+	case "IndexerSetting.options":
+		if e.complexity.IndexerSetting.Options == nil {
+			break
+		}
+
+		return e.complexity.IndexerSetting.Options(childComplexity), true
+
+	case "IndexerSetting.secret":
+		if e.complexity.IndexerSetting.Secret == nil {
+			break
+		}
+
+		return e.complexity.IndexerSetting.Secret(childComplexity), true
+
+	case "IndexerSetting.type":
+		if e.complexity.IndexerSetting.Type == nil {
+			break
+		}
+
+		return e.complexity.IndexerSetting.Type(childComplexity), true
+
+	case "IndexerSetting.value":
+		if e.complexity.IndexerSetting.Value == nil {
+			break
+		}
+
+		return e.complexity.IndexerSetting.Value(childComplexity), true
+
+	case "IndexerSettingOption.label":
+		if e.complexity.IndexerSettingOption.Label == nil {
+			break
+		}
+
+		return e.complexity.IndexerSettingOption.Label(childComplexity), true
+
+	case "IndexerSettingOption.value":
+		if e.complexity.IndexerSettingOption.Value == nil {
+			break
+		}
+
+		return e.complexity.IndexerSettingOption.Value(childComplexity), true
+
+	case "IndexerSettingValue.boolean":
+		if e.complexity.IndexerSettingValue.Boolean == nil {
+			break
+		}
+
+		return e.complexity.IndexerSettingValue.Boolean(childComplexity), true
+
+	case "IndexerSettingValue.number":
+		if e.complexity.IndexerSettingValue.Number == nil {
+			break
+		}
+
+		return e.complexity.IndexerSettingValue.Number(childComplexity), true
+
+	case "IndexerSettingValue.string":
+		if e.complexity.IndexerSettingValue.String == nil {
+			break
+		}
+
+		return e.complexity.IndexerSettingValue.String(childComplexity), true
 
 	case "IngestSettings.downloads":
 		if e.complexity.IngestSettings.Downloads == nil {
@@ -2371,132 +3857,6 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.IngestStatus.Configured(childComplexity), true
-
-	case "JackettIndexer.enabled":
-		if e.complexity.JackettIndexer.Enabled == nil {
-			break
-		}
-
-		return e.complexity.JackettIndexer.Enabled(childComplexity), true
-
-	case "JackettIndexer.id":
-		if e.complexity.JackettIndexer.ID == nil {
-			break
-		}
-
-		return e.complexity.JackettIndexer.ID(childComplexity), true
-
-	case "JackettIndexer.language":
-		if e.complexity.JackettIndexer.Language == nil {
-			break
-		}
-
-		return e.complexity.JackettIndexer.Language(childComplexity), true
-
-	case "JackettIndexer.name":
-		if e.complexity.JackettIndexer.Name == nil {
-			break
-		}
-
-		return e.complexity.JackettIndexer.Name(childComplexity), true
-
-	case "JackettIndexer.siteType":
-		if e.complexity.JackettIndexer.SiteType == nil {
-			break
-		}
-
-		return e.complexity.JackettIndexer.SiteType(childComplexity), true
-
-	case "JackettIndexer.siteUrl":
-		if e.complexity.JackettIndexer.SiteURL == nil {
-			break
-		}
-
-		return e.complexity.JackettIndexer.SiteURL(childComplexity), true
-
-	case "JackettSearchResult.categoryDesc":
-		if e.complexity.JackettSearchResult.CategoryDesc == nil {
-			break
-		}
-
-		return e.complexity.JackettSearchResult.CategoryDesc(childComplexity), true
-
-	case "JackettSearchResult.details":
-		if e.complexity.JackettSearchResult.Details == nil {
-			break
-		}
-
-		return e.complexity.JackettSearchResult.Details(childComplexity), true
-
-	case "JackettSearchResult.infoHash":
-		if e.complexity.JackettSearchResult.InfoHash == nil {
-			break
-		}
-
-		return e.complexity.JackettSearchResult.InfoHash(childComplexity), true
-
-	case "JackettSearchResult.link":
-		if e.complexity.JackettSearchResult.Link == nil {
-			break
-		}
-
-		return e.complexity.JackettSearchResult.Link(childComplexity), true
-
-	case "JackettSearchResult.magnetUri":
-		if e.complexity.JackettSearchResult.MagnetURI == nil {
-			break
-		}
-
-		return e.complexity.JackettSearchResult.MagnetURI(childComplexity), true
-
-	case "JackettSearchResult.peers":
-		if e.complexity.JackettSearchResult.Peers == nil {
-			break
-		}
-
-		return e.complexity.JackettSearchResult.Peers(childComplexity), true
-
-	case "JackettSearchResult.publishDate":
-		if e.complexity.JackettSearchResult.PublishDate == nil {
-			break
-		}
-
-		return e.complexity.JackettSearchResult.PublishDate(childComplexity), true
-
-	case "JackettSearchResult.seeders":
-		if e.complexity.JackettSearchResult.Seeders == nil {
-			break
-		}
-
-		return e.complexity.JackettSearchResult.Seeders(childComplexity), true
-
-	case "JackettSearchResult.size":
-		if e.complexity.JackettSearchResult.Size == nil {
-			break
-		}
-
-		return e.complexity.JackettSearchResult.Size(childComplexity), true
-
-	case "JackettSearchResult.title":
-		if e.complexity.JackettSearchResult.Title == nil {
-			break
-		}
-
-		return e.complexity.JackettSearchResult.Title(childComplexity), true
-
-	case "JackettSearchResult.tracker":
-		if e.complexity.JackettSearchResult.Tracker == nil {
-			break
-		}
-
-		return e.complexity.JackettSearchResult.Tracker(childComplexity), true
-
-	case "JackettSearchResult.trackerId":
-		if e.complexity.JackettSearchResult.TrackerID == nil {
-			break
-		}
-
-		return e.complexity.JackettSearchResult.TrackerID(childComplexity), true
 
 	case "JackettSettings.apiKey":
 		if e.complexity.JackettSettings.APIKey == nil {
@@ -2876,6 +4236,30 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.MatchedStashBox.PerformerName(childComplexity), true
 
+	case "Mutation.addBuiltinIndexer":
+		if e.complexity.Mutation.AddBuiltinIndexer == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_addBuiltinIndexer_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.AddBuiltinIndexer(childComplexity, args["expectedRevision"].(string), args["input"].(model.BuiltinIndexerInput)), true
+
+	case "Mutation.addIndexerNetworkProfile":
+		if e.complexity.Mutation.AddIndexerNetworkProfile == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_addIndexerNetworkProfile_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.AddIndexerNetworkProfile(childComplexity, args["id"].(string), args["expectedRevision"].(string), args["input"].(model.IndexerNetworkProfilePatchInput)), true
+
 	case "Mutation.addTorrent":
 		if e.complexity.Mutation.AddTorrent == nil {
 			break
@@ -2888,12 +4272,91 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.Mutation.AddTorrent(childComplexity, args["input"].(model.QBittorrentAddInput)), true
 
+	case "Mutation.answerIndexerChallenge":
+		if e.complexity.Mutation.AnswerIndexerChallenge == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_answerIndexerChallenge_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.AnswerIndexerChallenge(childComplexity, args["id"].(string), args["input"].(model.IndexerLoginInput), args["answer"].(string)), true
+
+	case "Mutation.beginIndexerLogin":
+		if e.complexity.Mutation.BeginIndexerLogin == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_beginIndexerLogin_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.BeginIndexerLogin(childComplexity, args["input"].(model.IndexerLoginInput)), true
+
+	case "Mutation.cancelIndexerDefinitionUpdate":
+		if e.complexity.Mutation.CancelIndexerDefinitionUpdate == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_cancelIndexerDefinitionUpdate_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.CancelIndexerDefinitionUpdate(childComplexity, args["id"].(string)), true
+
+	case "Mutation.cancelIndexerLogin":
+		if e.complexity.Mutation.CancelIndexerLogin == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_cancelIndexerLogin_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.CancelIndexerLogin(childComplexity, args["id"].(string), args["input"].(model.IndexerLoginInput)), true
+
+	case "Mutation.cancelTorrentSearch":
+		if e.complexity.Mutation.CancelTorrentSearch == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_cancelTorrentSearch_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.CancelTorrentSearch(childComplexity, args["id"].(string)), true
+
+	case "Mutation.checkIndexerDefinitionUpdate":
+		if e.complexity.Mutation.CheckIndexerDefinitionUpdate == nil {
+			break
+		}
+
+		return e.complexity.Mutation.CheckIndexerDefinitionUpdate(childComplexity), true
+
 	case "Mutation.clearImageCache":
 		if e.complexity.Mutation.ClearImageCache == nil {
 			break
 		}
 
 		return e.complexity.Mutation.ClearImageCache(childComplexity), true
+
+	case "Mutation.clearIndexerSearchCache":
+		if e.complexity.Mutation.ClearIndexerSearchCache == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_clearIndexerSearchCache_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.ClearIndexerSearchCache(childComplexity, args["instanceId"].(*string)), true
 
 	case "Mutation.clearStashBoxDataCache":
 		if e.complexity.Mutation.ClearStashBoxDataCache == nil {
@@ -2950,6 +4413,18 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.Mutation.DownloadMedia(childComplexity, args["input"].(model.DownloadMediaInput)), true
 
+	case "Mutation.installIndexerDefinitions":
+		if e.complexity.Mutation.InstallIndexerDefinitions == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_installIndexerDefinitions_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.InstallIndexerDefinitions(childComplexity, args["input"].(model.IndexerDefinitionChangeInput)), true
+
 	case "Mutation.patchSettings":
 		if e.complexity.Mutation.PatchSettings == nil {
 			break
@@ -2961,6 +4436,30 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.Mutation.PatchSettings(childComplexity, args["input"].(model.SettingsPatchInput)), true
+
+	case "Mutation.prepareTorrentDownload":
+		if e.complexity.Mutation.PrepareTorrentDownload == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_prepareTorrentDownload_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.PrepareTorrentDownload(childComplexity, args["input"].(model.PrepareTorrentDownloadInput)), true
+
+	case "Mutation.previewTorrentSelection":
+		if e.complexity.Mutation.PreviewTorrentSelection == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_previewTorrentSelection_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.PreviewTorrentSelection(childComplexity, args["input"].(model.PreviewTorrentSelectionInput)), true
 
 	case "Mutation.processReleaseReviews":
 		if e.complexity.Mutation.ProcessReleaseReviews == nil {
@@ -3022,12 +4521,31 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.Mutation.QueuePerformerScenes(childComplexity, args["input"].(model.QueuePerformerScenesInput)), true
 
+	case "Mutation.queueTorrentCandidate":
+		if e.complexity.Mutation.QueueTorrentCandidate == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_queueTorrentCandidate_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.QueueTorrentCandidate(childComplexity, args["input"].(model.QueueTorrentCandidateInput)), true
+
 	case "Mutation.refreshDownloader":
 		if e.complexity.Mutation.RefreshDownloader == nil {
 			break
 		}
 
 		return e.complexity.Mutation.RefreshDownloader(childComplexity), true
+
+	case "Mutation.refreshJackettIndexers":
+		if e.complexity.Mutation.RefreshJackettIndexers == nil {
+			break
+		}
+
+		return e.complexity.Mutation.RefreshJackettIndexers(childComplexity), true
 
 	case "Mutation.refreshStashBoxes":
 		if e.complexity.Mutation.RefreshStashBoxes == nil {
@@ -3091,6 +4609,54 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.Mutation.RefreshUpcomingRelease(childComplexity, args["key"].(string)), true
 
+	case "Mutation.removeBuiltinIndexer":
+		if e.complexity.Mutation.RemoveBuiltinIndexer == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_removeBuiltinIndexer_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.RemoveBuiltinIndexer(childComplexity, args["id"].(string), args["expectedRevision"].(string)), true
+
+	case "Mutation.removeIndexerNetworkProfile":
+		if e.complexity.Mutation.RemoveIndexerNetworkProfile == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_removeIndexerNetworkProfile_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.RemoveIndexerNetworkProfile(childComplexity, args["id"].(string), args["expectedRevision"].(string)), true
+
+	case "Mutation.reorderIndexers":
+		if e.complexity.Mutation.ReorderIndexers == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_reorderIndexers_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.ReorderIndexers(childComplexity, args["expectedRevision"].(string), args["ids"].([]string)), true
+
+	case "Mutation.repairIndexerDefinitions":
+		if e.complexity.Mutation.RepairIndexerDefinitions == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_repairIndexerDefinitions_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.RepairIndexerDefinitions(childComplexity, args["input"].(model.IndexerDefinitionChangeInput)), true
+
 	case "Mutation.resolveBlockedSourcingTask":
 		if e.complexity.Mutation.ResolveBlockedSourcingTask == nil {
 			break
@@ -3114,6 +4680,18 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.Mutation.ResolveTaskFiles(childComplexity, args["id"].(string), args["videoIndices"].([]int)), true
+
+	case "Mutation.resolveTaskSourcingCandidate":
+		if e.complexity.Mutation.ResolveTaskSourcingCandidate == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_resolveTaskSourcingCandidate_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.ResolveTaskSourcingCandidate(childComplexity, args["input"].(model.ResolveTaskSourcingCandidateInput)), true
 
 	case "Mutation.restartTaskSourcing":
 		if e.complexity.Mutation.RestartTaskSourcing == nil {
@@ -3151,6 +4729,18 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.Mutation.RetryTasks(childComplexity, args["ids"].([]string)), true
 
+	case "Mutation.rollbackIndexerDefinitions":
+		if e.complexity.Mutation.RollbackIndexerDefinitions == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_rollbackIndexerDefinitions_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.RollbackIndexerDefinitions(childComplexity, args["input"].(model.IndexerDefinitionChangeInput)), true
+
 	case "Mutation.setDownloaderSpeedLimit":
 		if e.complexity.Mutation.SetDownloaderSpeedLimit == nil {
 			break
@@ -3163,6 +4753,18 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.Mutation.SetDownloaderSpeedLimit(childComplexity, args["upload"].(bool), args["kibPerSecond"].(int)), true
 
+	case "Mutation.setIndexerEnabled":
+		if e.complexity.Mutation.SetIndexerEnabled == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_setIndexerEnabled_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.SetIndexerEnabled(childComplexity, args["id"].(string), args["expectedRevision"].(string), args["enabled"].(bool)), true
+
 	case "Mutation.startSubscriptionCheck":
 		if e.complexity.Mutation.StartSubscriptionCheck == nil {
 			break
@@ -3174,6 +4776,18 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.Mutation.StartSubscriptionCheck(childComplexity, args["ids"].([]string)), true
+
+	case "Mutation.startTorrentSearch":
+		if e.complexity.Mutation.StartTorrentSearch == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_startTorrentSearch_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.StartTorrentSearch(childComplexity, args["input"].(model.StartTorrentSearchInput)), true
 
 	case "Mutation.stashMetadataScan":
 		if e.complexity.Mutation.StashMetadataScan == nil {
@@ -3217,6 +4831,18 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.Mutation.SyncTaskProgress(childComplexity), true
+
+	case "Mutation.testIndexer":
+		if e.complexity.Mutation.TestIndexer == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_testIndexer_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.TestIndexer(childComplexity, args["input"].(model.TestIndexerInput)), true
 
 	case "Mutation.testServiceConnection":
 		if e.complexity.Mutation.TestServiceConnection == nil {
@@ -3285,6 +4911,18 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.Mutation.UpdateAutomationSettings(childComplexity, args["input"].(model.UpdateAutomationSettingsInput)), true
 
+	case "Mutation.updateBuiltinIndexer":
+		if e.complexity.Mutation.UpdateBuiltinIndexer == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_updateBuiltinIndexer_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.UpdateBuiltinIndexer(childComplexity, args["id"].(string), args["expectedRevision"].(string), args["input"].(model.BuiltinIndexerPatchInput)), true
+
 	case "Mutation.updateDownloaderPolicy":
 		if e.complexity.Mutation.UpdateDownloaderPolicy == nil {
 			break
@@ -3296,6 +4934,66 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.Mutation.UpdateDownloaderPolicy(childComplexity, args["input"].(model.DownloaderPolicyInput)), true
+
+	case "Mutation.updateIndexerDefinitionPolicy":
+		if e.complexity.Mutation.UpdateIndexerDefinitionPolicy == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_updateIndexerDefinitionPolicy_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.UpdateIndexerDefinitionPolicy(childComplexity, args["expectedRevision"].(string), args["input"].(model.IndexerDefinitionPolicyPatchInput)), true
+
+	case "Mutation.updateIndexerDefinitions":
+		if e.complexity.Mutation.UpdateIndexerDefinitions == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_updateIndexerDefinitions_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.UpdateIndexerDefinitions(childComplexity, args["input"].(model.IndexerDefinitionChangeInput)), true
+
+	case "Mutation.updateIndexerNetworkProfile":
+		if e.complexity.Mutation.UpdateIndexerNetworkProfile == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_updateIndexerNetworkProfile_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.UpdateIndexerNetworkProfile(childComplexity, args["id"].(string), args["expectedRevision"].(string), args["input"].(model.IndexerNetworkProfilePatchInput)), true
+
+	case "Mutation.updateIndexerNetworkTimeouts":
+		if e.complexity.Mutation.UpdateIndexerNetworkTimeouts == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_updateIndexerNetworkTimeouts_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.UpdateIndexerNetworkTimeouts(childComplexity, args["expectedRevision"].(string), args["input"].(model.IndexerNetworkTimeoutPatchInput)), true
+
+	case "Mutation.updateIndexerSearchCache":
+		if e.complexity.Mutation.UpdateIndexerSearchCache == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_updateIndexerSearchCache_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.UpdateIndexerSearchCache(childComplexity, args["expectedRevision"].(string), args["input"].(model.IndexerSearchCachePatchInput)), true
 
 	case "Mutation.updateIngestSettings":
 		if e.complexity.Mutation.UpdateIngestSettings == nil {
@@ -3598,47 +5296,26 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.PerformerWorkspaceSnapshot.SubscribedPerformers(childComplexity), true
 
-	case "PreviewJackettSelectionMeta.appliedFastRules":
-		if e.complexity.PreviewJackettSelectionMeta.AppliedFastRules == nil {
+	case "PreparedTorrentDownload.downloadUrl":
+		if e.complexity.PreparedTorrentDownload.DownloadURL == nil {
 			break
 		}
 
-		return e.complexity.PreviewJackettSelectionMeta.AppliedFastRules(childComplexity), true
+		return e.complexity.PreparedTorrentDownload.DownloadURL(childComplexity), true
 
-	case "PreviewJackettSelectionMeta.appliedFileRules":
-		if e.complexity.PreviewJackettSelectionMeta.AppliedFileRules == nil {
+	case "PreparedTorrentDownload.expiresAt":
+		if e.complexity.PreparedTorrentDownload.ExpiresAt == nil {
 			break
 		}
 
-		return e.complexity.PreviewJackettSelectionMeta.AppliedFileRules(childComplexity), true
+		return e.complexity.PreparedTorrentDownload.ExpiresAt(childComplexity), true
 
-	case "PreviewJackettSelectionMeta.inspectableCount":
-		if e.complexity.PreviewJackettSelectionMeta.InspectableCount == nil {
+	case "PreparedTorrentDownload.kind":
+		if e.complexity.PreparedTorrentDownload.Kind == nil {
 			break
 		}
 
-		return e.complexity.PreviewJackettSelectionMeta.InspectableCount(childComplexity), true
-
-	case "PreviewJackettSelectionMeta.inspectedCount":
-		if e.complexity.PreviewJackettSelectionMeta.InspectedCount == nil {
-			break
-		}
-
-		return e.complexity.PreviewJackettSelectionMeta.InspectedCount(childComplexity), true
-
-	case "PreviewJackettSelectionResult.previewMeta":
-		if e.complexity.PreviewJackettSelectionResult.PreviewMeta == nil {
-			break
-		}
-
-		return e.complexity.PreviewJackettSelectionResult.PreviewMeta(childComplexity), true
-
-	case "PreviewJackettSelectionResult.results":
-		if e.complexity.PreviewJackettSelectionResult.Results == nil {
-			break
-		}
-
-		return e.complexity.PreviewJackettSelectionResult.Results(childComplexity), true
+		return e.complexity.PreparedTorrentDownload.Kind(childComplexity), true
 
 	case "QBTorrent.addedOn":
 		if e.complexity.QBTorrent.AddedOn == nil {
@@ -3829,18 +5506,6 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.QBittorrentStats.UploadSpeed(childComplexity), true
 
-	case "Query.blockedTaskTorrentCandidates":
-		if e.complexity.Query.BlockedTaskTorrentCandidates == nil {
-			break
-		}
-
-		args, err := ec.field_Query_blockedTaskTorrentCandidates_args(ctx, rawArgs)
-		if err != nil {
-			return 0, false
-		}
-
-		return e.complexity.Query.BlockedTaskTorrentCandidates(childComplexity, args["id"].(string), args["limit"].(*int)), true
-
 	case "Query.dashboardStats":
 		if e.complexity.Query.DashboardStats == nil {
 			break
@@ -3879,6 +5544,13 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.Query.Health(childComplexity), true
 
+	case "Query.homeIndexerSummary":
+		if e.complexity.Query.HomeIndexerSummary == nil {
+			break
+		}
+
+		return e.complexity.Query.HomeIndexerSummary(childComplexity), true
+
 	case "Query.homeOverview":
 		if e.complexity.Query.HomeOverview == nil {
 			break
@@ -3907,24 +5579,76 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.Query.HomeTaskSnapshot(childComplexity), true
 
-	case "Query.jackettIndexers":
-		if e.complexity.Query.JackettIndexers == nil {
+	case "Query.indexerCacheStatus":
+		if e.complexity.Query.IndexerCacheStatus == nil {
 			break
 		}
 
-		return e.complexity.Query.JackettIndexers(childComplexity), true
+		return e.complexity.Query.IndexerCacheStatus(childComplexity), true
 
-	case "Query.jackettSearch":
-		if e.complexity.Query.JackettSearch == nil {
+	case "Query.indexerDefinitionPolicy":
+		if e.complexity.Query.IndexerDefinitionPolicy == nil {
 			break
 		}
 
-		args, err := ec.field_Query_jackettSearch_args(ctx, rawArgs)
+		return e.complexity.Query.IndexerDefinitionPolicy(childComplexity), true
+
+	case "Query.indexerDefinitionStatus":
+		if e.complexity.Query.IndexerDefinitionStatus == nil {
+			break
+		}
+
+		return e.complexity.Query.IndexerDefinitionStatus(childComplexity), true
+
+	case "Query.indexerDefinitionUpdate":
+		if e.complexity.Query.IndexerDefinitionUpdate == nil {
+			break
+		}
+
+		args, err := ec.field_Query_indexerDefinitionUpdate_args(ctx, rawArgs)
 		if err != nil {
 			return 0, false
 		}
 
-		return e.complexity.Query.JackettSearch(childComplexity, args["input"].(model.JackettSearchInput)), true
+		return e.complexity.Query.IndexerDefinitionUpdate(childComplexity, args["id"].(string)), true
+
+	case "Query.indexerDefinitions":
+		if e.complexity.Query.IndexerDefinitions == nil {
+			break
+		}
+
+		args, err := ec.field_Query_indexerDefinitions_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Query.IndexerDefinitions(childComplexity, args["input"].(*model.IndexerDefinitionFilterInput)), true
+
+	case "Query.indexerInstances":
+		if e.complexity.Query.IndexerInstances == nil {
+			break
+		}
+
+		return e.complexity.Query.IndexerInstances(childComplexity), true
+
+	case "Query.indexerLogin":
+		if e.complexity.Query.IndexerLogin == nil {
+			break
+		}
+
+		args, err := ec.field_Query_indexerLogin_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Query.IndexerLogin(childComplexity, args["input"].(model.IndexerLoginInput)), true
+
+	case "Query.indexerNetworkSettings":
+		if e.complexity.Query.IndexerNetworkSettings == nil {
+			break
+		}
+
+		return e.complexity.Query.IndexerNetworkSettings(childComplexity), true
 
 	case "Query.logs":
 		if e.complexity.Query.Logs == nil {
@@ -3949,18 +5673,6 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.Query.PerformerWorkspace(childComplexity, args["search"].(*string), args["page"].(*int), args["pageSize"].(*int), args["options"].(*model.PerformerListOptions)), true
-
-	case "Query.previewJackettSelection":
-		if e.complexity.Query.PreviewJackettSelection == nil {
-			break
-		}
-
-		args, err := ec.field_Query_previewJackettSelection_args(ctx, rawArgs)
-		if err != nil {
-			return 0, false
-		}
-
-		return e.complexity.Query.PreviewJackettSelection(childComplexity, args["input"].(model.PreviewJackettSelectionInput)), true
 
 	case "Query.qbittorrentTorrents":
 		if e.complexity.Query.QbittorrentTorrents == nil {
@@ -4164,6 +5876,18 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.Query.Tasks(childComplexity), true
+
+	case "Query.torrentSearch":
+		if e.complexity.Query.TorrentSearch == nil {
+			break
+		}
+
+		args, err := ec.field_Query_torrentSearch_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Query.TorrentSearch(childComplexity, args["id"].(string), args["offset"].(*int), args["limit"].(*int), args["sortBy"].(*model.TorrentSearchSort)), true
 
 	case "Query.upcomingReleases":
 		if e.complexity.Query.UpcomingReleases == nil {
@@ -5542,6 +7266,20 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.Subscription.DatabasePerformance(childComplexity), true
 
+	case "Subscription.indexerDefinitionEvents":
+		if e.complexity.Subscription.IndexerDefinitionEvents == nil {
+			break
+		}
+
+		return e.complexity.Subscription.IndexerDefinitionEvents(childComplexity), true
+
+	case "Subscription.indexerEvents":
+		if e.complexity.Subscription.IndexerEvents == nil {
+			break
+		}
+
+		return e.complexity.Subscription.IndexerEvents(childComplexity), true
+
 	case "Subscription.logEvents":
 		if e.complexity.Subscription.LogEvents == nil {
 			break
@@ -5569,6 +7307,18 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.Subscription.TaskEvents(childComplexity), true
+
+	case "Subscription.torrentSearchEvents":
+		if e.complexity.Subscription.TorrentSearchEvents == nil {
+			break
+		}
+
+		args, err := ec.field_Subscription_torrentSearchEvents_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Subscription.TorrentSearchEvents(childComplexity, args["id"].(string)), true
 
 	case "SubscriptionCheckActivity.activeCount":
 		if e.complexity.SubscriptionCheckActivity.ActiveCount == nil {
@@ -6746,6 +8496,419 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.TorrentFileNameMatchRule.Clauses(childComplexity), true
 
+	case "TorrentSearch.cancelRequested":
+		if e.complexity.TorrentSearch.CancelRequested == nil {
+			break
+		}
+
+		return e.complexity.TorrentSearch.CancelRequested(childComplexity), true
+
+	case "TorrentSearch.candidates":
+		if e.complexity.TorrentSearch.Candidates == nil {
+			break
+		}
+
+		return e.complexity.TorrentSearch.Candidates(childComplexity), true
+
+	case "TorrentSearch.correlationId":
+		if e.complexity.TorrentSearch.CorrelationID == nil {
+			break
+		}
+
+		return e.complexity.TorrentSearch.CorrelationID(childComplexity), true
+
+	case "TorrentSearch.createdAt":
+		if e.complexity.TorrentSearch.CreatedAt == nil {
+			break
+		}
+
+		return e.complexity.TorrentSearch.CreatedAt(childComplexity), true
+
+	case "TorrentSearch.errorCode":
+		if e.complexity.TorrentSearch.ErrorCode == nil {
+			break
+		}
+
+		return e.complexity.TorrentSearch.ErrorCode(childComplexity), true
+
+	case "TorrentSearch.expiresAt":
+		if e.complexity.TorrentSearch.ExpiresAt == nil {
+			break
+		}
+
+		return e.complexity.TorrentSearch.ExpiresAt(childComplexity), true
+
+	case "TorrentSearch.finishedAt":
+		if e.complexity.TorrentSearch.FinishedAt == nil {
+			break
+		}
+
+		return e.complexity.TorrentSearch.FinishedAt(childComplexity), true
+
+	case "TorrentSearch.id":
+		if e.complexity.TorrentSearch.ID == nil {
+			break
+		}
+
+		return e.complexity.TorrentSearch.ID(childComplexity), true
+
+	case "TorrentSearch.keywords":
+		if e.complexity.TorrentSearch.Keywords == nil {
+			break
+		}
+
+		return e.complexity.TorrentSearch.Keywords(childComplexity), true
+
+	case "TorrentSearch.limit":
+		if e.complexity.TorrentSearch.Limit == nil {
+			break
+		}
+
+		return e.complexity.TorrentSearch.Limit(childComplexity), true
+
+	case "TorrentSearch.offset":
+		if e.complexity.TorrentSearch.Offset == nil {
+			break
+		}
+
+		return e.complexity.TorrentSearch.Offset(childComplexity), true
+
+	case "TorrentSearch.partial":
+		if e.complexity.TorrentSearch.Partial == nil {
+			break
+		}
+
+		return e.complexity.TorrentSearch.Partial(childComplexity), true
+
+	case "TorrentSearch.revision":
+		if e.complexity.TorrentSearch.Revision == nil {
+			break
+		}
+
+		return e.complexity.TorrentSearch.Revision(childComplexity), true
+
+	case "TorrentSearch.sites":
+		if e.complexity.TorrentSearch.Sites == nil {
+			break
+		}
+
+		return e.complexity.TorrentSearch.Sites(childComplexity), true
+
+	case "TorrentSearch.state":
+		if e.complexity.TorrentSearch.State == nil {
+			break
+		}
+
+		return e.complexity.TorrentSearch.State(childComplexity), true
+
+	case "TorrentSearch.taskId":
+		if e.complexity.TorrentSearch.TaskID == nil {
+			break
+		}
+
+		return e.complexity.TorrentSearch.TaskID(childComplexity), true
+
+	case "TorrentSearch.total":
+		if e.complexity.TorrentSearch.Total == nil {
+			break
+		}
+
+		return e.complexity.TorrentSearch.Total(childComplexity), true
+
+	case "TorrentSearch.truncated":
+		if e.complexity.TorrentSearch.Truncated == nil {
+			break
+		}
+
+		return e.complexity.TorrentSearch.Truncated(childComplexity), true
+
+	case "TorrentSearch.updatedAt":
+		if e.complexity.TorrentSearch.UpdatedAt == nil {
+			break
+		}
+
+		return e.complexity.TorrentSearch.UpdatedAt(childComplexity), true
+
+	case "TorrentSearchCandidate.categories":
+		if e.complexity.TorrentSearchCandidate.Categories == nil {
+			break
+		}
+
+		return e.complexity.TorrentSearchCandidate.Categories(childComplexity), true
+
+	case "TorrentSearchCandidate.detailsUrl":
+		if e.complexity.TorrentSearchCandidate.DetailsURL == nil {
+			break
+		}
+
+		return e.complexity.TorrentSearchCandidate.DetailsURL(childComplexity), true
+
+	case "TorrentSearchCandidate.id":
+		if e.complexity.TorrentSearchCandidate.ID == nil {
+			break
+		}
+
+		return e.complexity.TorrentSearchCandidate.ID(childComplexity), true
+
+	case "TorrentSearchCandidate.infoHash":
+		if e.complexity.TorrentSearchCandidate.InfoHash == nil {
+			break
+		}
+
+		return e.complexity.TorrentSearchCandidate.InfoHash(childComplexity), true
+
+	case "TorrentSearchCandidate.instanceId":
+		if e.complexity.TorrentSearchCandidate.InstanceID == nil {
+			break
+		}
+
+		return e.complexity.TorrentSearchCandidate.InstanceID(childComplexity), true
+
+	case "TorrentSearchCandidate.instanceName":
+		if e.complexity.TorrentSearchCandidate.InstanceName == nil {
+			break
+		}
+
+		return e.complexity.TorrentSearchCandidate.InstanceName(childComplexity), true
+
+	case "TorrentSearchCandidate.kind":
+		if e.complexity.TorrentSearchCandidate.Kind == nil {
+			break
+		}
+
+		return e.complexity.TorrentSearchCandidate.Kind(childComplexity), true
+
+	case "TorrentSearchCandidate.peers":
+		if e.complexity.TorrentSearchCandidate.Peers == nil {
+			break
+		}
+
+		return e.complexity.TorrentSearchCandidate.Peers(childComplexity), true
+
+	case "TorrentSearchCandidate.publishedAt":
+		if e.complexity.TorrentSearchCandidate.PublishedAt == nil {
+			break
+		}
+
+		return e.complexity.TorrentSearchCandidate.PublishedAt(childComplexity), true
+
+	case "TorrentSearchCandidate.seeders":
+		if e.complexity.TorrentSearchCandidate.Seeders == nil {
+			break
+		}
+
+		return e.complexity.TorrentSearchCandidate.Seeders(childComplexity), true
+
+	case "TorrentSearchCandidate.size":
+		if e.complexity.TorrentSearchCandidate.Size == nil {
+			break
+		}
+
+		return e.complexity.TorrentSearchCandidate.Size(childComplexity), true
+
+	case "TorrentSearchCandidate.title":
+		if e.complexity.TorrentSearchCandidate.Title == nil {
+			break
+		}
+
+		return e.complexity.TorrentSearchCandidate.Title(childComplexity), true
+
+	case "TorrentSearchEvent.searchId":
+		if e.complexity.TorrentSearchEvent.SearchID == nil {
+			break
+		}
+
+		return e.complexity.TorrentSearchEvent.SearchID(childComplexity), true
+
+	case "TorrentSearchEvent.sequence":
+		if e.complexity.TorrentSearchEvent.Sequence == nil {
+			break
+		}
+
+		return e.complexity.TorrentSearchEvent.Sequence(childComplexity), true
+
+	case "TorrentSearchEvent.streamId":
+		if e.complexity.TorrentSearchEvent.StreamID == nil {
+			break
+		}
+
+		return e.complexity.TorrentSearchEvent.StreamID(childComplexity), true
+
+	case "TorrentSearchSite.cacheHit":
+		if e.complexity.TorrentSearchSite.CacheHit == nil {
+			break
+		}
+
+		return e.complexity.TorrentSearchSite.CacheHit(childComplexity), true
+
+	case "TorrentSearchSite.correlationId":
+		if e.complexity.TorrentSearchSite.CorrelationID == nil {
+			break
+		}
+
+		return e.complexity.TorrentSearchSite.CorrelationID(childComplexity), true
+
+	case "TorrentSearchSite.elapsedMs":
+		if e.complexity.TorrentSearchSite.ElapsedMs == nil {
+			break
+		}
+
+		return e.complexity.TorrentSearchSite.ElapsedMs(childComplexity), true
+
+	case "TorrentSearchSite.errorCode":
+		if e.complexity.TorrentSearchSite.ErrorCode == nil {
+			break
+		}
+
+		return e.complexity.TorrentSearchSite.ErrorCode(childComplexity), true
+
+	case "TorrentSearchSite.fetchedAt":
+		if e.complexity.TorrentSearchSite.FetchedAt == nil {
+			break
+		}
+
+		return e.complexity.TorrentSearchSite.FetchedAt(childComplexity), true
+
+	case "TorrentSearchSite.instanceId":
+		if e.complexity.TorrentSearchSite.InstanceID == nil {
+			break
+		}
+
+		return e.complexity.TorrentSearchSite.InstanceID(childComplexity), true
+
+	case "TorrentSearchSite.kind":
+		if e.complexity.TorrentSearchSite.Kind == nil {
+			break
+		}
+
+		return e.complexity.TorrentSearchSite.Kind(childComplexity), true
+
+	case "TorrentSearchSite.name":
+		if e.complexity.TorrentSearchSite.Name == nil {
+			break
+		}
+
+		return e.complexity.TorrentSearchSite.Name(childComplexity), true
+
+	case "TorrentSearchSite.partial":
+		if e.complexity.TorrentSearchSite.Partial == nil {
+			break
+		}
+
+		return e.complexity.TorrentSearchSite.Partial(childComplexity), true
+
+	case "TorrentSearchSite.results":
+		if e.complexity.TorrentSearchSite.Results == nil {
+			break
+		}
+
+		return e.complexity.TorrentSearchSite.Results(childComplexity), true
+
+	case "TorrentSearchSite.retryAt":
+		if e.complexity.TorrentSearchSite.RetryAt == nil {
+			break
+		}
+
+		return e.complexity.TorrentSearchSite.RetryAt(childComplexity), true
+
+	case "TorrentSearchSite.state":
+		if e.complexity.TorrentSearchSite.State == nil {
+			break
+		}
+
+		return e.complexity.TorrentSearchSite.State(childComplexity), true
+
+	case "TorrentSearchSite.truncated":
+		if e.complexity.TorrentSearchSite.Truncated == nil {
+			break
+		}
+
+		return e.complexity.TorrentSearchSite.Truncated(childComplexity), true
+
+	case "TorrentSelectionPreview.candidates":
+		if e.complexity.TorrentSelectionPreview.Candidates == nil {
+			break
+		}
+
+		return e.complexity.TorrentSelectionPreview.Candidates(childComplexity), true
+
+	case "TorrentSelectionPreview.limit":
+		if e.complexity.TorrentSelectionPreview.Limit == nil {
+			break
+		}
+
+		return e.complexity.TorrentSelectionPreview.Limit(childComplexity), true
+
+	case "TorrentSelectionPreview.meta":
+		if e.complexity.TorrentSelectionPreview.Meta == nil {
+			break
+		}
+
+		return e.complexity.TorrentSelectionPreview.Meta(childComplexity), true
+
+	case "TorrentSelectionPreview.offset":
+		if e.complexity.TorrentSelectionPreview.Offset == nil {
+			break
+		}
+
+		return e.complexity.TorrentSelectionPreview.Offset(childComplexity), true
+
+	case "TorrentSelectionPreview.searchId":
+		if e.complexity.TorrentSelectionPreview.SearchID == nil {
+			break
+		}
+
+		return e.complexity.TorrentSelectionPreview.SearchID(childComplexity), true
+
+	case "TorrentSelectionPreview.searchRevision":
+		if e.complexity.TorrentSelectionPreview.SearchRevision == nil {
+			break
+		}
+
+		return e.complexity.TorrentSelectionPreview.SearchRevision(childComplexity), true
+
+	case "TorrentSelectionPreview.total":
+		if e.complexity.TorrentSelectionPreview.Total == nil {
+			break
+		}
+
+		return e.complexity.TorrentSelectionPreview.Total(childComplexity), true
+
+	case "TorrentSelectionPreviewMeta.appliedFastRules":
+		if e.complexity.TorrentSelectionPreviewMeta.AppliedFastRules == nil {
+			break
+		}
+
+		return e.complexity.TorrentSelectionPreviewMeta.AppliedFastRules(childComplexity), true
+
+	case "TorrentSelectionPreviewMeta.appliedFileRules":
+		if e.complexity.TorrentSelectionPreviewMeta.AppliedFileRules == nil {
+			break
+		}
+
+		return e.complexity.TorrentSelectionPreviewMeta.AppliedFileRules(childComplexity), true
+
+	case "TorrentSelectionPreviewMeta.inspectableCount":
+		if e.complexity.TorrentSelectionPreviewMeta.InspectableCount == nil {
+			break
+		}
+
+		return e.complexity.TorrentSelectionPreviewMeta.InspectableCount(childComplexity), true
+
+	case "TorrentSelectionPreviewMeta.inspectedCount":
+		if e.complexity.TorrentSelectionPreviewMeta.InspectedCount == nil {
+			break
+		}
+
+		return e.complexity.TorrentSelectionPreviewMeta.InspectedCount(childComplexity), true
+
+	case "TorrentSelectionPreviewMeta.inspectionCandidateLimit":
+		if e.complexity.TorrentSelectionPreviewMeta.InspectionCandidateLimit == nil {
+			break
+		}
+
+		return e.complexity.TorrentSelectionPreviewMeta.InspectionCandidateLimit(childComplexity), true
+
 	case "TorrentSelectionRule.enabled":
 		if e.complexity.TorrentSelectionRule.Enabled == nil {
 			break
@@ -7006,6 +9169,8 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 	opCtx := graphql.GetOperationContext(ctx)
 	ec := executionContext{opCtx, e, 0, 0, make(chan graphql.DeferredResult)}
 	inputUnmarshalMap := graphql.BuildUnmarshalerMap(
+		ec.unmarshalInputBuiltinIndexerInput,
+		ec.unmarshalInputBuiltinIndexerPatchInput,
 		ec.unmarshalInputDeliveryPatchInput,
 		ec.unmarshalInputDirectionRuleInput,
 		ec.unmarshalInputDirectionRulePatchInput,
@@ -7021,25 +9186,36 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 		ec.unmarshalInputFileRulesPatchInput,
 		ec.unmarshalInputImageCachePatchInput,
 		ec.unmarshalInputImageCacheSettingsInput,
+		ec.unmarshalInputIndexerDefinitionChangeInput,
+		ec.unmarshalInputIndexerDefinitionFilterInput,
+		ec.unmarshalInputIndexerDefinitionPolicyPatchInput,
+		ec.unmarshalInputIndexerLoginInput,
+		ec.unmarshalInputIndexerNetworkProfilePatchInput,
+		ec.unmarshalInputIndexerNetworkTimeoutPatchInput,
 		ec.unmarshalInputIndexerPreferenceRuleInput,
+		ec.unmarshalInputIndexerSearchCachePatchInput,
+		ec.unmarshalInputIndexerSettingChangeInput,
+		ec.unmarshalInputIndexerSettingValueInput,
 		ec.unmarshalInputIndexersPatchInput,
 		ec.unmarshalInputJackettPatchInput,
-		ec.unmarshalInputJackettSearchInput,
 		ec.unmarshalInputLibraryIngestSettingsInput,
 		ec.unmarshalInputLibraryRootsPatchInput,
 		ec.unmarshalInputPerformerListOptions,
-		ec.unmarshalInputPreviewJackettSelectionCandidateInput,
-		ec.unmarshalInputPreviewJackettSelectionInput,
+		ec.unmarshalInputPrepareTorrentDownloadInput,
+		ec.unmarshalInputPreviewTorrentSelectionInput,
 		ec.unmarshalInputProcessReleaseReviewsInput,
 		ec.unmarshalInputQBConnectionPatchInput,
 		ec.unmarshalInputQBittorrentAddInput,
 		ec.unmarshalInputQueueDiscoveredSceneInput,
 		ec.unmarshalInputQueuePerformerScenesInput,
+		ec.unmarshalInputQueueTorrentCandidateInput,
 		ec.unmarshalInputReleasePolicyPatchInput,
 		ec.unmarshalInputReleaseReviewQueryInput,
 		ec.unmarshalInputResolveBlockedSourcingTaskInput,
+		ec.unmarshalInputResolveTaskSourcingCandidateInput,
 		ec.unmarshalInputResourceRulesPatchInput,
 		ec.unmarshalInputSettingsPatchInput,
+		ec.unmarshalInputStartTorrentSearchInput,
 		ec.unmarshalInputStashBoxDataCacheSettingsInput,
 		ec.unmarshalInputStashCachePatchInput,
 		ec.unmarshalInputStashConnectionPatchInput,
@@ -7051,6 +9227,7 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 		ec.unmarshalInputTaskPageInput,
 		ec.unmarshalInputTaskSettingsInput,
 		ec.unmarshalInputTasksPatchInput,
+		ec.unmarshalInputTestIndexerInput,
 		ec.unmarshalInputTestServiceConnectionInput,
 		ec.unmarshalInputTitleClausePatchInput,
 		ec.unmarshalInputTitleMatchClauseInput,
@@ -7059,6 +9236,7 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 		ec.unmarshalInputToggleRulePatchInput,
 		ec.unmarshalInputTorrentFileNameMatchClauseInput,
 		ec.unmarshalInputTorrentFileNameMatchRuleInput,
+		ec.unmarshalInputTorrentSearchParameterInput,
 		ec.unmarshalInputTorrentSelectionRuleInput,
 		ec.unmarshalInputTorrentSelectionSettingsInput,
 		ec.unmarshalInputTransferIngestSettingsInput,
@@ -7325,6 +9503,355 @@ type HomeCheckPerformer {
   name: String!
 }
 `, BuiltIn: false},
+	{Name: "../../../graphql/moji/types/home_indexers.graphql", Input: `extend type Query {
+  homeIndexerSummary: HomeIndexerSummary!
+}
+
+"Local indexer overview; reading this field never contacts a remote indexer."
+type HomeIndexerSummary {
+  revision: String!
+  "Enabled site count; unknown until the enabled Jackett directory is confirmed."
+  total: Int
+  builtinEnabled: Int!
+  "Configured sites without an observed verification result; does not imply connectivity."
+  builtinUnverified: Int!
+  builtinSearchSucceeded: Int!
+  healthErrorCode: String!
+  "Latest failed or interrupted persisted definition job; null once superseded."
+  definitionJob: IndexerDefinitionJob
+  definitionErrorCode: String!
+  attention: Int!
+  "At most five enabled sites with configuration, rule or observed operation errors."
+  issues: [HomeIndexerIssue!]!
+  "Present only when the external gateway is configured and enabled."
+  jackett: HomeJackettSummary
+}
+type HomeIndexerIssue {
+  operation: String!
+  observation: IndexerObservation
+  id: ID!
+  name: String!
+  errorCode: String!
+}
+type HomeJackettSummary {
+  "Enabled remote sites; null for an unloaded directory, zero for confirmed empty."
+  sites: Int
+  stale: Boolean!
+  updatedAt: String
+  errorCode: String!
+}
+`, BuiltIn: false},
+	{Name: "../../../graphql/moji/types/indexer_cache.graphql", Input: `extend type Query { indexerCacheStatus: IndexerCacheStatus! }
+extend type Mutation { clearIndexerSearchCache(instanceId: ID): IndexerCacheStatus! }
+extend type Mutation { updateIndexerSearchCache(expectedRevision: String!, input: IndexerSearchCachePatchInput!): IndexerCacheStatus! }
+input IndexerSearchCachePatchInput {
+  enabled: Boolean
+  ttlSeconds: Int
+  emptyTtlSeconds: Int
+  maxSizeMb: Int
+}
+
+"Aggregate counters only; no query keys, source settings, candidates or locators."
+type IndexerCacheStatus {
+  revision: String!
+  enabled: Boolean!
+  ttlSeconds: Int!
+  emptyTtlSeconds: Int!
+  maxSizeMb: Int!
+  entries: Int!
+  usedBytes: Long!
+  activeRequests: Int!
+  activeWaiters: Int!
+}
+`, BuiltIn: false},
+	{Name: "../../../graphql/moji/types/indexer_check.graphql", Input: `extend type Mutation { testIndexer(input: TestIndexerInput!): IndexerCheckReport! }
+input TestIndexerInput {
+ instanceId: ID
+ expectedRevision: String!
+ definitionId: String
+ draft: BuiltinIndexerPatchInput
+ search: Boolean! = false
+ keywords: String
+ download: Boolean! = false
+}
+enum IndexerCheckStageName { CONFIGURATION AUTHENTICATION SEARCH DOWNLOAD }
+enum IndexerCheckStageState { SKIPPED NOT_REQUESTED NOT_REQUIRED NOT_OBSERVED PASSED FAILED EMPTY PARTIAL NO_CANDIDATE }
+type IndexerCheckStage { name: IndexerCheckStageName! state: IndexerCheckStageState! errorCode: String! elapsedMs: Long! }
+type IndexerCheckReport {
+ id: ID!
+ instanceId: ID!
+ kind: IndexerSourceKind
+ configRevision: String!
+ ruleRevision: String!
+ startedAt: String!
+ finishedAt: String!
+ results: Int!
+ partial: Boolean!
+ truncated: Boolean!
+ stages: [IndexerCheckStage!]!
+}
+`, BuiltIn: false},
+	{Name: "../../../graphql/moji/types/indexer_definition_policy.graphql", Input: `extend type Query { indexerDefinitionPolicy: IndexerDefinitionPolicy! }
+extend type Mutation {
+ updateIndexerDefinitionPolicy(expectedRevision: String!, input: IndexerDefinitionPolicyPatchInput!): IndexerDefinitionPolicy!
+}
+input IndexerDefinitionPolicyPatchInput { checkIntervalHours: Int autoUpdate: Boolean }
+type IndexerDefinitionPolicy {
+ revision: String!
+ source: String!
+ schemaVersion: Int!
+ checkIntervalHours: Int!
+ autoUpdate: Boolean!
+}
+`, BuiltIn: false},
+	{Name: "../../../graphql/moji/types/indexer_definitions.graphql", Input: `extend type Query {
+  indexerDefinitionStatus: IndexerDefinitionStatus!
+  indexerDefinitionUpdate(id: ID!): IndexerDefinitionJob
+}
+
+extend type Mutation {
+  checkIndexerDefinitionUpdate: IndexerDefinitionStatus!
+  installIndexerDefinitions(input: IndexerDefinitionChangeInput!): IndexerDefinitionJob!
+  updateIndexerDefinitions(input: IndexerDefinitionChangeInput!): IndexerDefinitionJob!
+  rollbackIndexerDefinitions(input: IndexerDefinitionChangeInput!): IndexerDefinitionJob!
+  repairIndexerDefinitions(input: IndexerDefinitionChangeInput!): IndexerDefinitionJob!
+  cancelIndexerDefinitionUpdate(id: ID!): IndexerDefinitionJob!
+}
+
+extend type Subscription {
+  indexerDefinitionEvents: IndexerDefinitionStatus!
+}
+
+input IndexerDefinitionChangeInput {
+  expectedActiveRevision: String!
+  targetRevision: String
+}
+
+type IndexerDefinitionStatus {
+  streamId: String!
+  activeRevision: String!
+  previousRevision: String!
+  availableRevision: String!
+  revision: Long!
+  available: Boolean!
+  lastCheckedAt: String
+  checkErrorCode: String!
+  errorCode: String!
+  installed: [IndexerDefinitionManifest!]!
+  job: IndexerDefinitionJob
+}
+
+type IndexerDefinitionManifest {
+  revision: String!
+  schemaVersion: Int!
+  engineVersion: String!
+  definitionCount: Int!
+  installedAt: String!
+}
+
+enum IndexerDefinitionJobKind { INSTALL UPDATE ROLLBACK REPAIR }
+enum IndexerDefinitionJobState {
+  QUEUED DOWNLOADING VALIDATING CHECKING_INSTANCES ACTIVATING
+  COMPLETED FAILED CANCELLED INTERRUPTED
+}
+
+type IndexerDefinitionJob {
+  id: ID!
+  kind: IndexerDefinitionJobKind!
+  state: IndexerDefinitionJobState!
+  targetRevision: String!
+  expectedActiveRevision: String!
+  downloadedBytes: Long!
+  errorCode: String!
+  correlationId: String!
+  startedAt: String!
+  finishedAt: String
+  revision: Long!
+}
+`, BuiltIn: false},
+	{Name: "../../../graphql/moji/types/indexer_downloads.graphql", Input: `"An explicitly acquired artifact; the URL only serves stored data and expires."
+type PreparedTorrentDownload {
+  kind: PreparedTorrentDownloadKind!
+  downloadUrl: String!
+  expiresAt: String!
+}
+enum PreparedTorrentDownloadKind { TORRENT MAGNET }
+input PrepareTorrentDownloadInput { searchId: ID!, candidateId: ID! }
+extend type Mutation {
+  prepareTorrentDownload(input: PrepareTorrentDownloadInput!): PreparedTorrentDownload!
+}
+`, BuiltIn: false},
+	{Name: "../../../graphql/moji/types/indexer_events.graphql", Input: `extend type Subscription { indexerEvents: IndexerEvent! }
+
+"Invalidation only: reread the relevant bounded snapshot after READY or a change."
+type IndexerEvent {
+  streamId: String!
+  sequence: Long!
+  kind: IndexerEventKind!
+}
+enum IndexerEventKind { READY CONFIGURATION CATALOG SITE CACHE }
+`, BuiltIn: false},
+	{Name: "../../../graphql/moji/types/indexer_login.graphql", Input: `extend type Mutation {
+ beginIndexerLogin(input: IndexerLoginInput!): IndexerLoginReport!
+ answerIndexerChallenge(id: ID!, input: IndexerLoginInput!, answer: String!): IndexerLoginReport!
+ cancelIndexerLogin(id: ID!, input: IndexerLoginInput!): Boolean!
+}
+input IndexerLoginInput { instanceId: ID! expectedRevision: String! }
+enum IndexerLoginState { NOT_REQUIRED READY WAITING }
+type IndexerLoginChallenge {
+ id: ID!
+ type: String!
+ prompt: String!
+ imageData: String
+}
+type IndexerLoginReport {
+ id: ID!
+ instanceId: ID!
+ configRevision: String!
+ ruleRevision: String!
+ state: IndexerLoginState!
+ expiresAt: String!
+ challenge: IndexerLoginChallenge
+}
+extend type Query { indexerLogin(input: IndexerLoginInput!): IndexerLoginReport }
+`, BuiltIn: false},
+	{Name: "../../../graphql/moji/types/indexer_management.graphql", Input: `extend type Query {
+  indexerDefinitions(input: IndexerDefinitionFilterInput): IndexerDefinitionPage!
+  indexerInstances: IndexerInstances!
+}
+extend type Mutation {
+  addBuiltinIndexer(expectedRevision: String!, input: BuiltinIndexerInput!): BuiltinIndexerResult!
+  updateBuiltinIndexer(id: ID!, expectedRevision: String!, input: BuiltinIndexerPatchInput!): BuiltinIndexerResult!
+  removeBuiltinIndexer(id: ID!, expectedRevision: String!): IndexerInstances!
+  setIndexerEnabled(id: ID!, expectedRevision: String!, enabled: Boolean!): IndexerInstances!
+  reorderIndexers(expectedRevision: String!, ids: [ID!]!): IndexerInstances!
+  refreshJackettIndexers: IndexerInstances!
+}
+enum IndexerSourceKind { BUILTIN JACKETT }
+type IndexerSettingValue { string: String boolean: Boolean number: Float }
+input IndexerSettingValueInput { string: String boolean: Boolean number: Float }
+type IndexerSettingOption { value: String! label: String! }
+type IndexerSetting {
+  name: String!
+  type: String!
+  label: String!
+  secret: Boolean!
+  configured: Boolean!
+  value: IndexerSettingValue
+  defaultValue: IndexerSettingValue
+  options: [IndexerSettingOption!]!
+}
+input IndexerSettingChangeInput {
+  name: String!
+  value: IndexerSettingValueInput
+  clear: Boolean = false
+}
+input BuiltinIndexerInput {
+  definitionId: ID!
+  name: String
+  enabled: Boolean
+  baseUrl: String
+  networkProfile: String
+  trustedOrigins: [String!]
+  settings: [IndexerSettingChangeInput!]
+}
+input BuiltinIndexerPatchInput {
+  name: String
+  enabled: Boolean
+  baseUrl: String
+  networkProfile: String
+  trustedOrigins: [String!]
+  settings: [IndexerSettingChangeInput!]
+}
+input IndexerDefinitionFilterInput {
+  query: String
+  language: String
+  privacy: String
+  capability: String
+  offset: Int = 0
+  limit: Int = 50
+}
+type IndexerDefinition {
+  id: ID!
+  name: String!
+  description: String!
+  language: String!
+  privacy: String!
+  digest: String!
+  links: [String!]!
+  modes: [String!]!
+  warnings: [String!]!
+  settings: [IndexerSetting!]!
+}
+type IndexerDefinitionPage {
+  revision: String!
+  totalCount: Int!
+  offset: Int!
+  limit: Int!
+  items: [IndexerDefinition!]!
+}
+type IndexerInstance {
+  health: IndexerHealth!
+  siteUrl: String!
+  privacy: String!
+  language: String!
+  id: ID!
+  kind: IndexerSourceKind!
+  name: String!
+  enabled: Boolean!
+  definitionId: String!
+  baseUrl: String!
+  networkProfile: String!
+  trustedOrigins: [String!]!
+  ruleDigest: String!
+  errorCode: String!
+  modes: [String!]!
+  settings: [IndexerSetting!]!
+}
+type IndexerInstances {
+  healthErrorCode: String!
+  revision: String!
+  ruleRevision: String!
+  ruleErrorCode: String!
+  catalogErrorCode: String!
+  jackettEnabled: Boolean!
+  order: [ID!]!
+  networkProfiles: [String!]!
+  items: [IndexerInstance!]!
+}
+type BuiltinIndexerResult { revision: String! instance: IndexerInstance! }
+
+"Last observed outcome of each operation; absence means no matching observation."
+type IndexerHealth {
+  search: IndexerObservation
+  fetch: IndexerObservation
+}
+type IndexerObservation {
+  startedAt: String!
+  finishedAt: String!
+  errorCode: String!
+  correlationId: String!
+  retryAt: String
+}
+`, BuiltIn: false},
+	{Name: "../../../graphql/moji/types/indexer_network.graphql", Input: `extend type Query { indexerNetworkSettings: IndexerNetworkSettings! }
+extend type Mutation {
+  updateIndexerNetworkTimeouts(expectedRevision: String!, input: IndexerNetworkTimeoutPatchInput!): IndexerNetworkSettings!
+  addIndexerNetworkProfile(id: ID!, expectedRevision: String!, input: IndexerNetworkProfilePatchInput!): IndexerNetworkSettings!
+  updateIndexerNetworkProfile(id: ID!, expectedRevision: String!, input: IndexerNetworkProfilePatchInput!): IndexerNetworkSettings!
+  removeIndexerNetworkProfile(id: ID!, expectedRevision: String!): IndexerNetworkSettings!
+}
+input IndexerNetworkTimeoutPatchInput { requestTimeoutSeconds: Int siteTimeoutSeconds: Int challengeTimeoutSeconds: Int }
+input IndexerNetworkProfilePatchInput { proxyUrl: String clearProxy: Boolean = false flareSolverrUrl: String clearFlareSolverr: Boolean = false }
+type IndexerNetworkSettings {
+ revision: String!
+ requestTimeoutSeconds: Int!
+ siteTimeoutSeconds: Int!
+ challengeTimeoutSeconds: Int!
+ profiles: [IndexerNetworkProfile!]!
+}
+type IndexerNetworkProfile { id: ID! proxyConfigured: Boolean! flareSolverrConfigured: Boolean! usedBy: Int! }
+`, BuiltIn: false},
 	{Name: "../../../graphql/moji/types/logging.graphql", Input: `extend type Query {
   "Retrieve recent Moji logs for troubleshooting"
   logs(limit: Int = 200, minLevel: LogLevel = Info): [LogEntry!]!
@@ -7488,17 +10015,7 @@ type ReleaseReviewPayload {
   "Search scene metadata from preferred StashBox sources"
   discoverScenes(input: DiscoverScenesInput!): DiscoverSceneConnection!
 
-  "Search torrents via Jackett as a fallback-only power-user tool"
-  jackettSearch(input: JackettSearchInput!): [JackettSearchResult!]!
 
-  "Preview automatic torrent-selection ordering on an existing Jackett result set"
-  previewJackettSelection(input: PreviewJackettSelectionInput!): PreviewJackettSelectionResult!
-
-  "List the indexers Jackett currently exposes. Returns [] when Jackett is not configured."
-  jackettIndexers: [JackettIndexer!]!
-
-  "Search torrent candidates for a blocked sourcing task"
-  blockedTaskTorrentCandidates(id: ID!, limit: Int = 50): [JackettSearchResult!]!
 }
 
 extend type Mutation {
@@ -7518,16 +10035,6 @@ input DiscoverScenesInput {
   query: String!
   limit: Int = 50
   sortBy: DiscoverSortBy = RELEVANCE
-}
-
-type JackettIndexer {
-  siteUrl: String!
-  siteType: String!
-  language: String!
-  id: String!
-  name: String!
-  "Mirrors Jackett's Configured flag — indexers not yet configured are hidden by Jackett's UI."
-  enabled: Boolean!
 }
 
 type DiscoverSceneConnection {
@@ -7556,71 +10063,6 @@ type DiscoveredScene {
 input QueueDiscoveredSceneInput {
   sceneId: ID!
   stashBoxEndpoint: String!
-}
-
-enum JackettSortBy {
-  RELEVANCE
-  SEEDERS_DESC
-  SIZE_DESC
-  DATE_DESC
-}
-
-input JackettSearchInput {
-  query: String!
-  trackers: [String!]
-  categories: [Int!]
-  limit: Int
-  sortBy: JackettSortBy = RELEVANCE
-}
-
-type JackettSearchResult {
-  title: String!
-  size: Long!
-  seeders: Int!
-  peers: Int!
-  tracker: String!
-  trackerId: String!
-  categoryDesc: String!
-  publishDate: String!
-  details: String!
-  link: String!
-  magnetUri: String!
-  infoHash: String!
-}
-
-input PreviewJackettSelectionInput {
-  query: String!
-  results: [PreviewJackettSelectionCandidateInput!]!
-  applyFastRules: Boolean!
-  applyFileRules: Boolean!
-  inspectionCandidateLimit: Int
-}
-
-input PreviewJackettSelectionCandidateInput {
-  title: String!
-  size: Long!
-  seeders: Int!
-  peers: Int!
-  tracker: String!
-  trackerId: String!
-  categoryDesc: String!
-  publishDate: String!
-  details: String!
-  link: String!
-  magnetUri: String!
-  infoHash: String!
-}
-
-type PreviewJackettSelectionResult {
-  results: [JackettSearchResult!]!
-  previewMeta: PreviewJackettSelectionMeta!
-}
-
-type PreviewJackettSelectionMeta {
-  appliedFastRules: Boolean!
-  appliedFileRules: Boolean!
-  inspectedCount: Int!
-  inspectableCount: Int!
 }
 `, BuiltIn: false},
 	{Name: "../../../graphql/moji/types/service_status_events.graphql", Input: `enum ExternalService {
@@ -9124,6 +11566,132 @@ extend type Query {
   homeTaskSnapshot: HomeTaskSnapshot!
 }
 `, BuiltIn: false},
+	{Name: "../../../graphql/moji/types/torrent_search.graphql", Input: `extend type Query {
+  torrentSearch(id: ID!, offset: Int = 0, limit: Int = 100, sortBy: TorrentSearchSort = RELEVANCE): TorrentSearch!
+}
+extend type Mutation {
+  startTorrentSearch(input: StartTorrentSearchInput!): TorrentSearch!
+  cancelTorrentSearch(id: ID!): TorrentSearch!
+  queueTorrentCandidate(input: QueueTorrentCandidateInput!): Task!
+}
+extend type Subscription { torrentSearchEvents(id: ID!): TorrentSearchEvent! }
+
+enum TorrentSearchState { QUEUED RUNNING COMPLETED PARTIAL FAILED CANCELLED INTERRUPTED }
+enum TorrentSearchSiteState { QUEUED RUNNING COMPLETED FAILED CANCELLED INTERRUPTED SKIPPED }
+enum TorrentSearchSort { RELEVANCE SEEDERS_DESC SIZE_DESC DATE_DESC }
+"""
+Case-insensitive structured query fields. Unknown names, duplicate case aliases,
+top-level fields and derived variables are rejected before accepting a search.
+"""
+input TorrentSearchParameterInput { key: String!, value: String! }
+input StartTorrentSearchInput {
+  keywords: String!
+  mode: String
+  instanceIds: [ID!]
+  categories: [Int!]
+  parameters: [TorrentSearchParameterInput!]
+  limit: Int
+  refresh: Boolean
+  taskId: ID
+}
+input QueueTorrentCandidateInput {
+  code: String!
+  searchId: ID!
+  candidateId: ID!
+  paused: Boolean
+  savePath: String
+  category: String
+  tags: String
+}
+"A persisted, bounded search snapshot. Events invalidate this snapshot."
+type TorrentSearch {
+  id: ID!
+  state: TorrentSearchState!
+  revision: Long!
+  keywords: String!
+  taskId: ID
+  createdAt: String!
+  updatedAt: String!
+  expiresAt: String!
+  finishedAt: String
+  cancelRequested: Boolean!
+  partial: Boolean!
+  truncated: Boolean!
+  errorCode: String
+  correlationId: String!
+  total: Int!
+  offset: Int!
+  limit: Int!
+  sites: [TorrentSearchSite!]!
+  candidates: [TorrentSearchCandidate!]!
+}
+type TorrentSearchSite {
+  instanceId: ID!
+  name: String!
+  kind: IndexerSourceKind
+  state: TorrentSearchSiteState!
+  results: Int!
+  cacheHit: Boolean!
+  fetchedAt: String
+  elapsedMs: Long!
+  partial: Boolean!
+  truncated: Boolean!
+  errorCode: String
+  correlationId: String
+  retryAt: String
+}
+"Only this server-owned candidate ID may be selected; locators and credentials are private."
+type TorrentSearchCandidate {
+  id: ID!
+  instanceId: ID!
+  instanceName: String!
+  kind: IndexerSourceKind!
+  title: String!
+  detailsUrl: String
+  infoHash: String
+  size: Long
+  seeders: Int
+  peers: Int
+  publishedAt: String
+  categories: [Int!]!
+}
+type TorrentSearchEvent { streamId: String!, sequence: Long!, searchId: ID! }
+
+extend type Mutation { previewTorrentSelection(input: PreviewTorrentSelectionInput!): TorrentSelectionPreview! }
+input PreviewTorrentSelectionInput {
+ searchId: ID!
+ candidateIds: [ID!]
+ applyFastRules: Boolean! = false
+ applyFileRules: Boolean! = false
+ offset: Int = 0
+ limit: Int = 100
+ sortBy: TorrentSearchSort = RELEVANCE
+}
+type TorrentSelectionPreview {
+ searchId: ID!
+ searchRevision: Long!
+ total: Int!
+ offset: Int!
+ limit: Int!
+ candidates: [TorrentSearchCandidate!]!
+ meta: TorrentSelectionPreviewMeta!
+}
+type TorrentSelectionPreviewMeta {
+ appliedFastRules: Boolean!
+ appliedFileRules: Boolean!
+ inspectedCount: Int!
+ inspectableCount: Int!
+ inspectionCandidateLimit: Int!
+}
+extend type Mutation { resolveTaskSourcingCandidate(input: ResolveTaskSourcingCandidateInput!): Task! }
+input ResolveTaskSourcingCandidateInput {
+ taskId: ID!
+ searchId: ID!
+ candidateId: ID!
+ expectedRevision: Long!
+ paused: Boolean
+}
+`, BuiltIn: false},
 	{Name: "../../../graphql/moji/types/upcoming.graphql", Input: `extend type Query {
   upcomingReleases(input: UpcomingReleaseQueryInput!): UpcomingReleaseConnection!
 }
@@ -9174,6 +11742,131 @@ var parsedSchema = gqlparser.MustLoadSchema(sources...)
 
 // region    ***************************** args.gotpl *****************************
 
+func (ec *executionContext) field_Mutation_addBuiltinIndexer_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := ec.field_Mutation_addBuiltinIndexer_argsExpectedRevision(ctx, rawArgs)
+	if err != nil {
+		return nil, err
+	}
+	args["expectedRevision"] = arg0
+	arg1, err := ec.field_Mutation_addBuiltinIndexer_argsInput(ctx, rawArgs)
+	if err != nil {
+		return nil, err
+	}
+	args["input"] = arg1
+	return args, nil
+}
+func (ec *executionContext) field_Mutation_addBuiltinIndexer_argsExpectedRevision(
+	ctx context.Context,
+	rawArgs map[string]any,
+) (string, error) {
+	if _, ok := rawArgs["expectedRevision"]; !ok {
+		var zeroVal string
+		return zeroVal, nil
+	}
+
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("expectedRevision"))
+	if tmp, ok := rawArgs["expectedRevision"]; ok {
+		return ec.unmarshalNString2string(ctx, tmp)
+	}
+
+	var zeroVal string
+	return zeroVal, nil
+}
+
+func (ec *executionContext) field_Mutation_addBuiltinIndexer_argsInput(
+	ctx context.Context,
+	rawArgs map[string]any,
+) (model.BuiltinIndexerInput, error) {
+	if _, ok := rawArgs["input"]; !ok {
+		var zeroVal model.BuiltinIndexerInput
+		return zeroVal, nil
+	}
+
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
+	if tmp, ok := rawArgs["input"]; ok {
+		return ec.unmarshalNBuiltinIndexerInput2githubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐBuiltinIndexerInput(ctx, tmp)
+	}
+
+	var zeroVal model.BuiltinIndexerInput
+	return zeroVal, nil
+}
+
+func (ec *executionContext) field_Mutation_addIndexerNetworkProfile_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := ec.field_Mutation_addIndexerNetworkProfile_argsID(ctx, rawArgs)
+	if err != nil {
+		return nil, err
+	}
+	args["id"] = arg0
+	arg1, err := ec.field_Mutation_addIndexerNetworkProfile_argsExpectedRevision(ctx, rawArgs)
+	if err != nil {
+		return nil, err
+	}
+	args["expectedRevision"] = arg1
+	arg2, err := ec.field_Mutation_addIndexerNetworkProfile_argsInput(ctx, rawArgs)
+	if err != nil {
+		return nil, err
+	}
+	args["input"] = arg2
+	return args, nil
+}
+func (ec *executionContext) field_Mutation_addIndexerNetworkProfile_argsID(
+	ctx context.Context,
+	rawArgs map[string]any,
+) (string, error) {
+	if _, ok := rawArgs["id"]; !ok {
+		var zeroVal string
+		return zeroVal, nil
+	}
+
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
+	if tmp, ok := rawArgs["id"]; ok {
+		return ec.unmarshalNID2string(ctx, tmp)
+	}
+
+	var zeroVal string
+	return zeroVal, nil
+}
+
+func (ec *executionContext) field_Mutation_addIndexerNetworkProfile_argsExpectedRevision(
+	ctx context.Context,
+	rawArgs map[string]any,
+) (string, error) {
+	if _, ok := rawArgs["expectedRevision"]; !ok {
+		var zeroVal string
+		return zeroVal, nil
+	}
+
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("expectedRevision"))
+	if tmp, ok := rawArgs["expectedRevision"]; ok {
+		return ec.unmarshalNString2string(ctx, tmp)
+	}
+
+	var zeroVal string
+	return zeroVal, nil
+}
+
+func (ec *executionContext) field_Mutation_addIndexerNetworkProfile_argsInput(
+	ctx context.Context,
+	rawArgs map[string]any,
+) (model.IndexerNetworkProfilePatchInput, error) {
+	if _, ok := rawArgs["input"]; !ok {
+		var zeroVal model.IndexerNetworkProfilePatchInput
+		return zeroVal, nil
+	}
+
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
+	if tmp, ok := rawArgs["input"]; ok {
+		return ec.unmarshalNIndexerNetworkProfilePatchInput2githubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐIndexerNetworkProfilePatchInput(ctx, tmp)
+	}
+
+	var zeroVal model.IndexerNetworkProfilePatchInput
+	return zeroVal, nil
+}
+
 func (ec *executionContext) field_Mutation_addTorrent_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
@@ -9199,6 +11892,243 @@ func (ec *executionContext) field_Mutation_addTorrent_argsInput(
 	}
 
 	var zeroVal model.QBittorrentAddInput
+	return zeroVal, nil
+}
+
+func (ec *executionContext) field_Mutation_answerIndexerChallenge_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := ec.field_Mutation_answerIndexerChallenge_argsID(ctx, rawArgs)
+	if err != nil {
+		return nil, err
+	}
+	args["id"] = arg0
+	arg1, err := ec.field_Mutation_answerIndexerChallenge_argsInput(ctx, rawArgs)
+	if err != nil {
+		return nil, err
+	}
+	args["input"] = arg1
+	arg2, err := ec.field_Mutation_answerIndexerChallenge_argsAnswer(ctx, rawArgs)
+	if err != nil {
+		return nil, err
+	}
+	args["answer"] = arg2
+	return args, nil
+}
+func (ec *executionContext) field_Mutation_answerIndexerChallenge_argsID(
+	ctx context.Context,
+	rawArgs map[string]any,
+) (string, error) {
+	if _, ok := rawArgs["id"]; !ok {
+		var zeroVal string
+		return zeroVal, nil
+	}
+
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
+	if tmp, ok := rawArgs["id"]; ok {
+		return ec.unmarshalNID2string(ctx, tmp)
+	}
+
+	var zeroVal string
+	return zeroVal, nil
+}
+
+func (ec *executionContext) field_Mutation_answerIndexerChallenge_argsInput(
+	ctx context.Context,
+	rawArgs map[string]any,
+) (model.IndexerLoginInput, error) {
+	if _, ok := rawArgs["input"]; !ok {
+		var zeroVal model.IndexerLoginInput
+		return zeroVal, nil
+	}
+
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
+	if tmp, ok := rawArgs["input"]; ok {
+		return ec.unmarshalNIndexerLoginInput2githubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐIndexerLoginInput(ctx, tmp)
+	}
+
+	var zeroVal model.IndexerLoginInput
+	return zeroVal, nil
+}
+
+func (ec *executionContext) field_Mutation_answerIndexerChallenge_argsAnswer(
+	ctx context.Context,
+	rawArgs map[string]any,
+) (string, error) {
+	if _, ok := rawArgs["answer"]; !ok {
+		var zeroVal string
+		return zeroVal, nil
+	}
+
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("answer"))
+	if tmp, ok := rawArgs["answer"]; ok {
+		return ec.unmarshalNString2string(ctx, tmp)
+	}
+
+	var zeroVal string
+	return zeroVal, nil
+}
+
+func (ec *executionContext) field_Mutation_beginIndexerLogin_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := ec.field_Mutation_beginIndexerLogin_argsInput(ctx, rawArgs)
+	if err != nil {
+		return nil, err
+	}
+	args["input"] = arg0
+	return args, nil
+}
+func (ec *executionContext) field_Mutation_beginIndexerLogin_argsInput(
+	ctx context.Context,
+	rawArgs map[string]any,
+) (model.IndexerLoginInput, error) {
+	if _, ok := rawArgs["input"]; !ok {
+		var zeroVal model.IndexerLoginInput
+		return zeroVal, nil
+	}
+
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
+	if tmp, ok := rawArgs["input"]; ok {
+		return ec.unmarshalNIndexerLoginInput2githubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐIndexerLoginInput(ctx, tmp)
+	}
+
+	var zeroVal model.IndexerLoginInput
+	return zeroVal, nil
+}
+
+func (ec *executionContext) field_Mutation_cancelIndexerDefinitionUpdate_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := ec.field_Mutation_cancelIndexerDefinitionUpdate_argsID(ctx, rawArgs)
+	if err != nil {
+		return nil, err
+	}
+	args["id"] = arg0
+	return args, nil
+}
+func (ec *executionContext) field_Mutation_cancelIndexerDefinitionUpdate_argsID(
+	ctx context.Context,
+	rawArgs map[string]any,
+) (string, error) {
+	if _, ok := rawArgs["id"]; !ok {
+		var zeroVal string
+		return zeroVal, nil
+	}
+
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
+	if tmp, ok := rawArgs["id"]; ok {
+		return ec.unmarshalNID2string(ctx, tmp)
+	}
+
+	var zeroVal string
+	return zeroVal, nil
+}
+
+func (ec *executionContext) field_Mutation_cancelIndexerLogin_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := ec.field_Mutation_cancelIndexerLogin_argsID(ctx, rawArgs)
+	if err != nil {
+		return nil, err
+	}
+	args["id"] = arg0
+	arg1, err := ec.field_Mutation_cancelIndexerLogin_argsInput(ctx, rawArgs)
+	if err != nil {
+		return nil, err
+	}
+	args["input"] = arg1
+	return args, nil
+}
+func (ec *executionContext) field_Mutation_cancelIndexerLogin_argsID(
+	ctx context.Context,
+	rawArgs map[string]any,
+) (string, error) {
+	if _, ok := rawArgs["id"]; !ok {
+		var zeroVal string
+		return zeroVal, nil
+	}
+
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
+	if tmp, ok := rawArgs["id"]; ok {
+		return ec.unmarshalNID2string(ctx, tmp)
+	}
+
+	var zeroVal string
+	return zeroVal, nil
+}
+
+func (ec *executionContext) field_Mutation_cancelIndexerLogin_argsInput(
+	ctx context.Context,
+	rawArgs map[string]any,
+) (model.IndexerLoginInput, error) {
+	if _, ok := rawArgs["input"]; !ok {
+		var zeroVal model.IndexerLoginInput
+		return zeroVal, nil
+	}
+
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
+	if tmp, ok := rawArgs["input"]; ok {
+		return ec.unmarshalNIndexerLoginInput2githubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐIndexerLoginInput(ctx, tmp)
+	}
+
+	var zeroVal model.IndexerLoginInput
+	return zeroVal, nil
+}
+
+func (ec *executionContext) field_Mutation_cancelTorrentSearch_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := ec.field_Mutation_cancelTorrentSearch_argsID(ctx, rawArgs)
+	if err != nil {
+		return nil, err
+	}
+	args["id"] = arg0
+	return args, nil
+}
+func (ec *executionContext) field_Mutation_cancelTorrentSearch_argsID(
+	ctx context.Context,
+	rawArgs map[string]any,
+) (string, error) {
+	if _, ok := rawArgs["id"]; !ok {
+		var zeroVal string
+		return zeroVal, nil
+	}
+
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
+	if tmp, ok := rawArgs["id"]; ok {
+		return ec.unmarshalNID2string(ctx, tmp)
+	}
+
+	var zeroVal string
+	return zeroVal, nil
+}
+
+func (ec *executionContext) field_Mutation_clearIndexerSearchCache_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := ec.field_Mutation_clearIndexerSearchCache_argsInstanceID(ctx, rawArgs)
+	if err != nil {
+		return nil, err
+	}
+	args["instanceId"] = arg0
+	return args, nil
+}
+func (ec *executionContext) field_Mutation_clearIndexerSearchCache_argsInstanceID(
+	ctx context.Context,
+	rawArgs map[string]any,
+) (*string, error) {
+	if _, ok := rawArgs["instanceId"]; !ok {
+		var zeroVal *string
+		return zeroVal, nil
+	}
+
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("instanceId"))
+	if tmp, ok := rawArgs["instanceId"]; ok {
+		return ec.unmarshalOID2ᚖstring(ctx, tmp)
+	}
+
+	var zeroVal *string
 	return zeroVal, nil
 }
 
@@ -9337,6 +12267,34 @@ func (ec *executionContext) field_Mutation_downloadMedia_argsInput(
 	return zeroVal, nil
 }
 
+func (ec *executionContext) field_Mutation_installIndexerDefinitions_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := ec.field_Mutation_installIndexerDefinitions_argsInput(ctx, rawArgs)
+	if err != nil {
+		return nil, err
+	}
+	args["input"] = arg0
+	return args, nil
+}
+func (ec *executionContext) field_Mutation_installIndexerDefinitions_argsInput(
+	ctx context.Context,
+	rawArgs map[string]any,
+) (model.IndexerDefinitionChangeInput, error) {
+	if _, ok := rawArgs["input"]; !ok {
+		var zeroVal model.IndexerDefinitionChangeInput
+		return zeroVal, nil
+	}
+
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
+	if tmp, ok := rawArgs["input"]; ok {
+		return ec.unmarshalNIndexerDefinitionChangeInput2githubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐIndexerDefinitionChangeInput(ctx, tmp)
+	}
+
+	var zeroVal model.IndexerDefinitionChangeInput
+	return zeroVal, nil
+}
+
 func (ec *executionContext) field_Mutation_patchSettings_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
@@ -9362,6 +12320,62 @@ func (ec *executionContext) field_Mutation_patchSettings_argsInput(
 	}
 
 	var zeroVal model.SettingsPatchInput
+	return zeroVal, nil
+}
+
+func (ec *executionContext) field_Mutation_prepareTorrentDownload_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := ec.field_Mutation_prepareTorrentDownload_argsInput(ctx, rawArgs)
+	if err != nil {
+		return nil, err
+	}
+	args["input"] = arg0
+	return args, nil
+}
+func (ec *executionContext) field_Mutation_prepareTorrentDownload_argsInput(
+	ctx context.Context,
+	rawArgs map[string]any,
+) (model.PrepareTorrentDownloadInput, error) {
+	if _, ok := rawArgs["input"]; !ok {
+		var zeroVal model.PrepareTorrentDownloadInput
+		return zeroVal, nil
+	}
+
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
+	if tmp, ok := rawArgs["input"]; ok {
+		return ec.unmarshalNPrepareTorrentDownloadInput2githubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐPrepareTorrentDownloadInput(ctx, tmp)
+	}
+
+	var zeroVal model.PrepareTorrentDownloadInput
+	return zeroVal, nil
+}
+
+func (ec *executionContext) field_Mutation_previewTorrentSelection_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := ec.field_Mutation_previewTorrentSelection_argsInput(ctx, rawArgs)
+	if err != nil {
+		return nil, err
+	}
+	args["input"] = arg0
+	return args, nil
+}
+func (ec *executionContext) field_Mutation_previewTorrentSelection_argsInput(
+	ctx context.Context,
+	rawArgs map[string]any,
+) (model.PreviewTorrentSelectionInput, error) {
+	if _, ok := rawArgs["input"]; !ok {
+		var zeroVal model.PreviewTorrentSelectionInput
+		return zeroVal, nil
+	}
+
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
+	if tmp, ok := rawArgs["input"]; ok {
+		return ec.unmarshalNPreviewTorrentSelectionInput2githubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐPreviewTorrentSelectionInput(ctx, tmp)
+	}
+
+	var zeroVal model.PreviewTorrentSelectionInput
 	return zeroVal, nil
 }
 
@@ -9505,6 +12519,34 @@ func (ec *executionContext) field_Mutation_queuePerformerScenes_argsInput(
 	return zeroVal, nil
 }
 
+func (ec *executionContext) field_Mutation_queueTorrentCandidate_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := ec.field_Mutation_queueTorrentCandidate_argsInput(ctx, rawArgs)
+	if err != nil {
+		return nil, err
+	}
+	args["input"] = arg0
+	return args, nil
+}
+func (ec *executionContext) field_Mutation_queueTorrentCandidate_argsInput(
+	ctx context.Context,
+	rawArgs map[string]any,
+) (model.QueueTorrentCandidateInput, error) {
+	if _, ok := rawArgs["input"]; !ok {
+		var zeroVal model.QueueTorrentCandidateInput
+		return zeroVal, nil
+	}
+
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
+	if tmp, ok := rawArgs["input"]; ok {
+		return ec.unmarshalNQueueTorrentCandidateInput2githubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐQueueTorrentCandidateInput(ctx, tmp)
+	}
+
+	var zeroVal model.QueueTorrentCandidateInput
+	return zeroVal, nil
+}
+
 func (ec *executionContext) field_Mutation_refreshStashPerformerScenes_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
@@ -9640,6 +12682,187 @@ func (ec *executionContext) field_Mutation_refreshUpcomingRelease_argsKey(
 	return zeroVal, nil
 }
 
+func (ec *executionContext) field_Mutation_removeBuiltinIndexer_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := ec.field_Mutation_removeBuiltinIndexer_argsID(ctx, rawArgs)
+	if err != nil {
+		return nil, err
+	}
+	args["id"] = arg0
+	arg1, err := ec.field_Mutation_removeBuiltinIndexer_argsExpectedRevision(ctx, rawArgs)
+	if err != nil {
+		return nil, err
+	}
+	args["expectedRevision"] = arg1
+	return args, nil
+}
+func (ec *executionContext) field_Mutation_removeBuiltinIndexer_argsID(
+	ctx context.Context,
+	rawArgs map[string]any,
+) (string, error) {
+	if _, ok := rawArgs["id"]; !ok {
+		var zeroVal string
+		return zeroVal, nil
+	}
+
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
+	if tmp, ok := rawArgs["id"]; ok {
+		return ec.unmarshalNID2string(ctx, tmp)
+	}
+
+	var zeroVal string
+	return zeroVal, nil
+}
+
+func (ec *executionContext) field_Mutation_removeBuiltinIndexer_argsExpectedRevision(
+	ctx context.Context,
+	rawArgs map[string]any,
+) (string, error) {
+	if _, ok := rawArgs["expectedRevision"]; !ok {
+		var zeroVal string
+		return zeroVal, nil
+	}
+
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("expectedRevision"))
+	if tmp, ok := rawArgs["expectedRevision"]; ok {
+		return ec.unmarshalNString2string(ctx, tmp)
+	}
+
+	var zeroVal string
+	return zeroVal, nil
+}
+
+func (ec *executionContext) field_Mutation_removeIndexerNetworkProfile_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := ec.field_Mutation_removeIndexerNetworkProfile_argsID(ctx, rawArgs)
+	if err != nil {
+		return nil, err
+	}
+	args["id"] = arg0
+	arg1, err := ec.field_Mutation_removeIndexerNetworkProfile_argsExpectedRevision(ctx, rawArgs)
+	if err != nil {
+		return nil, err
+	}
+	args["expectedRevision"] = arg1
+	return args, nil
+}
+func (ec *executionContext) field_Mutation_removeIndexerNetworkProfile_argsID(
+	ctx context.Context,
+	rawArgs map[string]any,
+) (string, error) {
+	if _, ok := rawArgs["id"]; !ok {
+		var zeroVal string
+		return zeroVal, nil
+	}
+
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
+	if tmp, ok := rawArgs["id"]; ok {
+		return ec.unmarshalNID2string(ctx, tmp)
+	}
+
+	var zeroVal string
+	return zeroVal, nil
+}
+
+func (ec *executionContext) field_Mutation_removeIndexerNetworkProfile_argsExpectedRevision(
+	ctx context.Context,
+	rawArgs map[string]any,
+) (string, error) {
+	if _, ok := rawArgs["expectedRevision"]; !ok {
+		var zeroVal string
+		return zeroVal, nil
+	}
+
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("expectedRevision"))
+	if tmp, ok := rawArgs["expectedRevision"]; ok {
+		return ec.unmarshalNString2string(ctx, tmp)
+	}
+
+	var zeroVal string
+	return zeroVal, nil
+}
+
+func (ec *executionContext) field_Mutation_reorderIndexers_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := ec.field_Mutation_reorderIndexers_argsExpectedRevision(ctx, rawArgs)
+	if err != nil {
+		return nil, err
+	}
+	args["expectedRevision"] = arg0
+	arg1, err := ec.field_Mutation_reorderIndexers_argsIds(ctx, rawArgs)
+	if err != nil {
+		return nil, err
+	}
+	args["ids"] = arg1
+	return args, nil
+}
+func (ec *executionContext) field_Mutation_reorderIndexers_argsExpectedRevision(
+	ctx context.Context,
+	rawArgs map[string]any,
+) (string, error) {
+	if _, ok := rawArgs["expectedRevision"]; !ok {
+		var zeroVal string
+		return zeroVal, nil
+	}
+
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("expectedRevision"))
+	if tmp, ok := rawArgs["expectedRevision"]; ok {
+		return ec.unmarshalNString2string(ctx, tmp)
+	}
+
+	var zeroVal string
+	return zeroVal, nil
+}
+
+func (ec *executionContext) field_Mutation_reorderIndexers_argsIds(
+	ctx context.Context,
+	rawArgs map[string]any,
+) ([]string, error) {
+	if _, ok := rawArgs["ids"]; !ok {
+		var zeroVal []string
+		return zeroVal, nil
+	}
+
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("ids"))
+	if tmp, ok := rawArgs["ids"]; ok {
+		return ec.unmarshalNID2ᚕstringᚄ(ctx, tmp)
+	}
+
+	var zeroVal []string
+	return zeroVal, nil
+}
+
+func (ec *executionContext) field_Mutation_repairIndexerDefinitions_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := ec.field_Mutation_repairIndexerDefinitions_argsInput(ctx, rawArgs)
+	if err != nil {
+		return nil, err
+	}
+	args["input"] = arg0
+	return args, nil
+}
+func (ec *executionContext) field_Mutation_repairIndexerDefinitions_argsInput(
+	ctx context.Context,
+	rawArgs map[string]any,
+) (model.IndexerDefinitionChangeInput, error) {
+	if _, ok := rawArgs["input"]; !ok {
+		var zeroVal model.IndexerDefinitionChangeInput
+		return zeroVal, nil
+	}
+
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
+	if tmp, ok := rawArgs["input"]; ok {
+		return ec.unmarshalNIndexerDefinitionChangeInput2githubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐIndexerDefinitionChangeInput(ctx, tmp)
+	}
+
+	var zeroVal model.IndexerDefinitionChangeInput
+	return zeroVal, nil
+}
+
 func (ec *executionContext) field_Mutation_resolveBlockedSourcingTask_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
@@ -9742,6 +12965,34 @@ func (ec *executionContext) field_Mutation_resolveTaskFiles_argsVideoIndices(
 	return zeroVal, nil
 }
 
+func (ec *executionContext) field_Mutation_resolveTaskSourcingCandidate_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := ec.field_Mutation_resolveTaskSourcingCandidate_argsInput(ctx, rawArgs)
+	if err != nil {
+		return nil, err
+	}
+	args["input"] = arg0
+	return args, nil
+}
+func (ec *executionContext) field_Mutation_resolveTaskSourcingCandidate_argsInput(
+	ctx context.Context,
+	rawArgs map[string]any,
+) (model.ResolveTaskSourcingCandidateInput, error) {
+	if _, ok := rawArgs["input"]; !ok {
+		var zeroVal model.ResolveTaskSourcingCandidateInput
+		return zeroVal, nil
+	}
+
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
+	if tmp, ok := rawArgs["input"]; ok {
+		return ec.unmarshalNResolveTaskSourcingCandidateInput2githubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐResolveTaskSourcingCandidateInput(ctx, tmp)
+	}
+
+	var zeroVal model.ResolveTaskSourcingCandidateInput
+	return zeroVal, nil
+}
+
 func (ec *executionContext) field_Mutation_restartTaskSourcing_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
@@ -9826,6 +13077,34 @@ func (ec *executionContext) field_Mutation_retryTasks_argsIds(
 	return zeroVal, nil
 }
 
+func (ec *executionContext) field_Mutation_rollbackIndexerDefinitions_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := ec.field_Mutation_rollbackIndexerDefinitions_argsInput(ctx, rawArgs)
+	if err != nil {
+		return nil, err
+	}
+	args["input"] = arg0
+	return args, nil
+}
+func (ec *executionContext) field_Mutation_rollbackIndexerDefinitions_argsInput(
+	ctx context.Context,
+	rawArgs map[string]any,
+) (model.IndexerDefinitionChangeInput, error) {
+	if _, ok := rawArgs["input"]; !ok {
+		var zeroVal model.IndexerDefinitionChangeInput
+		return zeroVal, nil
+	}
+
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
+	if tmp, ok := rawArgs["input"]; ok {
+		return ec.unmarshalNIndexerDefinitionChangeInput2githubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐIndexerDefinitionChangeInput(ctx, tmp)
+	}
+
+	var zeroVal model.IndexerDefinitionChangeInput
+	return zeroVal, nil
+}
+
 func (ec *executionContext) field_Mutation_setDownloaderSpeedLimit_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
@@ -9877,6 +13156,80 @@ func (ec *executionContext) field_Mutation_setDownloaderSpeedLimit_argsKibPerSec
 	return zeroVal, nil
 }
 
+func (ec *executionContext) field_Mutation_setIndexerEnabled_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := ec.field_Mutation_setIndexerEnabled_argsID(ctx, rawArgs)
+	if err != nil {
+		return nil, err
+	}
+	args["id"] = arg0
+	arg1, err := ec.field_Mutation_setIndexerEnabled_argsExpectedRevision(ctx, rawArgs)
+	if err != nil {
+		return nil, err
+	}
+	args["expectedRevision"] = arg1
+	arg2, err := ec.field_Mutation_setIndexerEnabled_argsEnabled(ctx, rawArgs)
+	if err != nil {
+		return nil, err
+	}
+	args["enabled"] = arg2
+	return args, nil
+}
+func (ec *executionContext) field_Mutation_setIndexerEnabled_argsID(
+	ctx context.Context,
+	rawArgs map[string]any,
+) (string, error) {
+	if _, ok := rawArgs["id"]; !ok {
+		var zeroVal string
+		return zeroVal, nil
+	}
+
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
+	if tmp, ok := rawArgs["id"]; ok {
+		return ec.unmarshalNID2string(ctx, tmp)
+	}
+
+	var zeroVal string
+	return zeroVal, nil
+}
+
+func (ec *executionContext) field_Mutation_setIndexerEnabled_argsExpectedRevision(
+	ctx context.Context,
+	rawArgs map[string]any,
+) (string, error) {
+	if _, ok := rawArgs["expectedRevision"]; !ok {
+		var zeroVal string
+		return zeroVal, nil
+	}
+
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("expectedRevision"))
+	if tmp, ok := rawArgs["expectedRevision"]; ok {
+		return ec.unmarshalNString2string(ctx, tmp)
+	}
+
+	var zeroVal string
+	return zeroVal, nil
+}
+
+func (ec *executionContext) field_Mutation_setIndexerEnabled_argsEnabled(
+	ctx context.Context,
+	rawArgs map[string]any,
+) (bool, error) {
+	if _, ok := rawArgs["enabled"]; !ok {
+		var zeroVal bool
+		return zeroVal, nil
+	}
+
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("enabled"))
+	if tmp, ok := rawArgs["enabled"]; ok {
+		return ec.unmarshalNBoolean2bool(ctx, tmp)
+	}
+
+	var zeroVal bool
+	return zeroVal, nil
+}
+
 func (ec *executionContext) field_Mutation_startSubscriptionCheck_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
@@ -9902,6 +13255,34 @@ func (ec *executionContext) field_Mutation_startSubscriptionCheck_argsIds(
 	}
 
 	var zeroVal []string
+	return zeroVal, nil
+}
+
+func (ec *executionContext) field_Mutation_startTorrentSearch_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := ec.field_Mutation_startTorrentSearch_argsInput(ctx, rawArgs)
+	if err != nil {
+		return nil, err
+	}
+	args["input"] = arg0
+	return args, nil
+}
+func (ec *executionContext) field_Mutation_startTorrentSearch_argsInput(
+	ctx context.Context,
+	rawArgs map[string]any,
+) (model.StartTorrentSearchInput, error) {
+	if _, ok := rawArgs["input"]; !ok {
+		var zeroVal model.StartTorrentSearchInput
+		return zeroVal, nil
+	}
+
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
+	if tmp, ok := rawArgs["input"]; ok {
+		return ec.unmarshalNStartTorrentSearchInput2githubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐStartTorrentSearchInput(ctx, tmp)
+	}
+
+	var zeroVal model.StartTorrentSearchInput
 	return zeroVal, nil
 }
 
@@ -9986,6 +13367,34 @@ func (ec *executionContext) field_Mutation_subscribePerformers_argsIds(
 	}
 
 	var zeroVal []string
+	return zeroVal, nil
+}
+
+func (ec *executionContext) field_Mutation_testIndexer_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := ec.field_Mutation_testIndexer_argsInput(ctx, rawArgs)
+	if err != nil {
+		return nil, err
+	}
+	args["input"] = arg0
+	return args, nil
+}
+func (ec *executionContext) field_Mutation_testIndexer_argsInput(
+	ctx context.Context,
+	rawArgs map[string]any,
+) (model.TestIndexerInput, error) {
+	if _, ok := rawArgs["input"]; !ok {
+		var zeroVal model.TestIndexerInput
+		return zeroVal, nil
+	}
+
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
+	if tmp, ok := rawArgs["input"]; ok {
+		return ec.unmarshalNTestIndexerInput2githubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐTestIndexerInput(ctx, tmp)
+	}
+
+	var zeroVal model.TestIndexerInput
 	return zeroVal, nil
 }
 
@@ -10129,6 +13538,80 @@ func (ec *executionContext) field_Mutation_updateAutomationSettings_argsInput(
 	return zeroVal, nil
 }
 
+func (ec *executionContext) field_Mutation_updateBuiltinIndexer_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := ec.field_Mutation_updateBuiltinIndexer_argsID(ctx, rawArgs)
+	if err != nil {
+		return nil, err
+	}
+	args["id"] = arg0
+	arg1, err := ec.field_Mutation_updateBuiltinIndexer_argsExpectedRevision(ctx, rawArgs)
+	if err != nil {
+		return nil, err
+	}
+	args["expectedRevision"] = arg1
+	arg2, err := ec.field_Mutation_updateBuiltinIndexer_argsInput(ctx, rawArgs)
+	if err != nil {
+		return nil, err
+	}
+	args["input"] = arg2
+	return args, nil
+}
+func (ec *executionContext) field_Mutation_updateBuiltinIndexer_argsID(
+	ctx context.Context,
+	rawArgs map[string]any,
+) (string, error) {
+	if _, ok := rawArgs["id"]; !ok {
+		var zeroVal string
+		return zeroVal, nil
+	}
+
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
+	if tmp, ok := rawArgs["id"]; ok {
+		return ec.unmarshalNID2string(ctx, tmp)
+	}
+
+	var zeroVal string
+	return zeroVal, nil
+}
+
+func (ec *executionContext) field_Mutation_updateBuiltinIndexer_argsExpectedRevision(
+	ctx context.Context,
+	rawArgs map[string]any,
+) (string, error) {
+	if _, ok := rawArgs["expectedRevision"]; !ok {
+		var zeroVal string
+		return zeroVal, nil
+	}
+
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("expectedRevision"))
+	if tmp, ok := rawArgs["expectedRevision"]; ok {
+		return ec.unmarshalNString2string(ctx, tmp)
+	}
+
+	var zeroVal string
+	return zeroVal, nil
+}
+
+func (ec *executionContext) field_Mutation_updateBuiltinIndexer_argsInput(
+	ctx context.Context,
+	rawArgs map[string]any,
+) (model.BuiltinIndexerPatchInput, error) {
+	if _, ok := rawArgs["input"]; !ok {
+		var zeroVal model.BuiltinIndexerPatchInput
+		return zeroVal, nil
+	}
+
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
+	if tmp, ok := rawArgs["input"]; ok {
+		return ec.unmarshalNBuiltinIndexerPatchInput2githubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐBuiltinIndexerPatchInput(ctx, tmp)
+	}
+
+	var zeroVal model.BuiltinIndexerPatchInput
+	return zeroVal, nil
+}
+
 func (ec *executionContext) field_Mutation_updateDownloaderPolicy_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
@@ -10154,6 +13637,261 @@ func (ec *executionContext) field_Mutation_updateDownloaderPolicy_argsInput(
 	}
 
 	var zeroVal model.DownloaderPolicyInput
+	return zeroVal, nil
+}
+
+func (ec *executionContext) field_Mutation_updateIndexerDefinitionPolicy_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := ec.field_Mutation_updateIndexerDefinitionPolicy_argsExpectedRevision(ctx, rawArgs)
+	if err != nil {
+		return nil, err
+	}
+	args["expectedRevision"] = arg0
+	arg1, err := ec.field_Mutation_updateIndexerDefinitionPolicy_argsInput(ctx, rawArgs)
+	if err != nil {
+		return nil, err
+	}
+	args["input"] = arg1
+	return args, nil
+}
+func (ec *executionContext) field_Mutation_updateIndexerDefinitionPolicy_argsExpectedRevision(
+	ctx context.Context,
+	rawArgs map[string]any,
+) (string, error) {
+	if _, ok := rawArgs["expectedRevision"]; !ok {
+		var zeroVal string
+		return zeroVal, nil
+	}
+
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("expectedRevision"))
+	if tmp, ok := rawArgs["expectedRevision"]; ok {
+		return ec.unmarshalNString2string(ctx, tmp)
+	}
+
+	var zeroVal string
+	return zeroVal, nil
+}
+
+func (ec *executionContext) field_Mutation_updateIndexerDefinitionPolicy_argsInput(
+	ctx context.Context,
+	rawArgs map[string]any,
+) (model.IndexerDefinitionPolicyPatchInput, error) {
+	if _, ok := rawArgs["input"]; !ok {
+		var zeroVal model.IndexerDefinitionPolicyPatchInput
+		return zeroVal, nil
+	}
+
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
+	if tmp, ok := rawArgs["input"]; ok {
+		return ec.unmarshalNIndexerDefinitionPolicyPatchInput2githubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐIndexerDefinitionPolicyPatchInput(ctx, tmp)
+	}
+
+	var zeroVal model.IndexerDefinitionPolicyPatchInput
+	return zeroVal, nil
+}
+
+func (ec *executionContext) field_Mutation_updateIndexerDefinitions_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := ec.field_Mutation_updateIndexerDefinitions_argsInput(ctx, rawArgs)
+	if err != nil {
+		return nil, err
+	}
+	args["input"] = arg0
+	return args, nil
+}
+func (ec *executionContext) field_Mutation_updateIndexerDefinitions_argsInput(
+	ctx context.Context,
+	rawArgs map[string]any,
+) (model.IndexerDefinitionChangeInput, error) {
+	if _, ok := rawArgs["input"]; !ok {
+		var zeroVal model.IndexerDefinitionChangeInput
+		return zeroVal, nil
+	}
+
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
+	if tmp, ok := rawArgs["input"]; ok {
+		return ec.unmarshalNIndexerDefinitionChangeInput2githubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐIndexerDefinitionChangeInput(ctx, tmp)
+	}
+
+	var zeroVal model.IndexerDefinitionChangeInput
+	return zeroVal, nil
+}
+
+func (ec *executionContext) field_Mutation_updateIndexerNetworkProfile_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := ec.field_Mutation_updateIndexerNetworkProfile_argsID(ctx, rawArgs)
+	if err != nil {
+		return nil, err
+	}
+	args["id"] = arg0
+	arg1, err := ec.field_Mutation_updateIndexerNetworkProfile_argsExpectedRevision(ctx, rawArgs)
+	if err != nil {
+		return nil, err
+	}
+	args["expectedRevision"] = arg1
+	arg2, err := ec.field_Mutation_updateIndexerNetworkProfile_argsInput(ctx, rawArgs)
+	if err != nil {
+		return nil, err
+	}
+	args["input"] = arg2
+	return args, nil
+}
+func (ec *executionContext) field_Mutation_updateIndexerNetworkProfile_argsID(
+	ctx context.Context,
+	rawArgs map[string]any,
+) (string, error) {
+	if _, ok := rawArgs["id"]; !ok {
+		var zeroVal string
+		return zeroVal, nil
+	}
+
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
+	if tmp, ok := rawArgs["id"]; ok {
+		return ec.unmarshalNID2string(ctx, tmp)
+	}
+
+	var zeroVal string
+	return zeroVal, nil
+}
+
+func (ec *executionContext) field_Mutation_updateIndexerNetworkProfile_argsExpectedRevision(
+	ctx context.Context,
+	rawArgs map[string]any,
+) (string, error) {
+	if _, ok := rawArgs["expectedRevision"]; !ok {
+		var zeroVal string
+		return zeroVal, nil
+	}
+
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("expectedRevision"))
+	if tmp, ok := rawArgs["expectedRevision"]; ok {
+		return ec.unmarshalNString2string(ctx, tmp)
+	}
+
+	var zeroVal string
+	return zeroVal, nil
+}
+
+func (ec *executionContext) field_Mutation_updateIndexerNetworkProfile_argsInput(
+	ctx context.Context,
+	rawArgs map[string]any,
+) (model.IndexerNetworkProfilePatchInput, error) {
+	if _, ok := rawArgs["input"]; !ok {
+		var zeroVal model.IndexerNetworkProfilePatchInput
+		return zeroVal, nil
+	}
+
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
+	if tmp, ok := rawArgs["input"]; ok {
+		return ec.unmarshalNIndexerNetworkProfilePatchInput2githubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐIndexerNetworkProfilePatchInput(ctx, tmp)
+	}
+
+	var zeroVal model.IndexerNetworkProfilePatchInput
+	return zeroVal, nil
+}
+
+func (ec *executionContext) field_Mutation_updateIndexerNetworkTimeouts_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := ec.field_Mutation_updateIndexerNetworkTimeouts_argsExpectedRevision(ctx, rawArgs)
+	if err != nil {
+		return nil, err
+	}
+	args["expectedRevision"] = arg0
+	arg1, err := ec.field_Mutation_updateIndexerNetworkTimeouts_argsInput(ctx, rawArgs)
+	if err != nil {
+		return nil, err
+	}
+	args["input"] = arg1
+	return args, nil
+}
+func (ec *executionContext) field_Mutation_updateIndexerNetworkTimeouts_argsExpectedRevision(
+	ctx context.Context,
+	rawArgs map[string]any,
+) (string, error) {
+	if _, ok := rawArgs["expectedRevision"]; !ok {
+		var zeroVal string
+		return zeroVal, nil
+	}
+
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("expectedRevision"))
+	if tmp, ok := rawArgs["expectedRevision"]; ok {
+		return ec.unmarshalNString2string(ctx, tmp)
+	}
+
+	var zeroVal string
+	return zeroVal, nil
+}
+
+func (ec *executionContext) field_Mutation_updateIndexerNetworkTimeouts_argsInput(
+	ctx context.Context,
+	rawArgs map[string]any,
+) (model.IndexerNetworkTimeoutPatchInput, error) {
+	if _, ok := rawArgs["input"]; !ok {
+		var zeroVal model.IndexerNetworkTimeoutPatchInput
+		return zeroVal, nil
+	}
+
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
+	if tmp, ok := rawArgs["input"]; ok {
+		return ec.unmarshalNIndexerNetworkTimeoutPatchInput2githubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐIndexerNetworkTimeoutPatchInput(ctx, tmp)
+	}
+
+	var zeroVal model.IndexerNetworkTimeoutPatchInput
+	return zeroVal, nil
+}
+
+func (ec *executionContext) field_Mutation_updateIndexerSearchCache_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := ec.field_Mutation_updateIndexerSearchCache_argsExpectedRevision(ctx, rawArgs)
+	if err != nil {
+		return nil, err
+	}
+	args["expectedRevision"] = arg0
+	arg1, err := ec.field_Mutation_updateIndexerSearchCache_argsInput(ctx, rawArgs)
+	if err != nil {
+		return nil, err
+	}
+	args["input"] = arg1
+	return args, nil
+}
+func (ec *executionContext) field_Mutation_updateIndexerSearchCache_argsExpectedRevision(
+	ctx context.Context,
+	rawArgs map[string]any,
+) (string, error) {
+	if _, ok := rawArgs["expectedRevision"]; !ok {
+		var zeroVal string
+		return zeroVal, nil
+	}
+
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("expectedRevision"))
+	if tmp, ok := rawArgs["expectedRevision"]; ok {
+		return ec.unmarshalNString2string(ctx, tmp)
+	}
+
+	var zeroVal string
+	return zeroVal, nil
+}
+
+func (ec *executionContext) field_Mutation_updateIndexerSearchCache_argsInput(
+	ctx context.Context,
+	rawArgs map[string]any,
+) (model.IndexerSearchCachePatchInput, error) {
+	if _, ok := rawArgs["input"]; !ok {
+		var zeroVal model.IndexerSearchCachePatchInput
+		return zeroVal, nil
+	}
+
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
+	if tmp, ok := rawArgs["input"]; ok {
+		return ec.unmarshalNIndexerSearchCachePatchInput2githubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐIndexerSearchCachePatchInput(ctx, tmp)
+	}
+
+	var zeroVal model.IndexerSearchCachePatchInput
 	return zeroVal, nil
 }
 
@@ -10381,57 +14119,6 @@ func (ec *executionContext) field_Query___type_argsName(
 	return zeroVal, nil
 }
 
-func (ec *executionContext) field_Query_blockedTaskTorrentCandidates_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
-	var err error
-	args := map[string]any{}
-	arg0, err := ec.field_Query_blockedTaskTorrentCandidates_argsID(ctx, rawArgs)
-	if err != nil {
-		return nil, err
-	}
-	args["id"] = arg0
-	arg1, err := ec.field_Query_blockedTaskTorrentCandidates_argsLimit(ctx, rawArgs)
-	if err != nil {
-		return nil, err
-	}
-	args["limit"] = arg1
-	return args, nil
-}
-func (ec *executionContext) field_Query_blockedTaskTorrentCandidates_argsID(
-	ctx context.Context,
-	rawArgs map[string]any,
-) (string, error) {
-	if _, ok := rawArgs["id"]; !ok {
-		var zeroVal string
-		return zeroVal, nil
-	}
-
-	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
-	if tmp, ok := rawArgs["id"]; ok {
-		return ec.unmarshalNID2string(ctx, tmp)
-	}
-
-	var zeroVal string
-	return zeroVal, nil
-}
-
-func (ec *executionContext) field_Query_blockedTaskTorrentCandidates_argsLimit(
-	ctx context.Context,
-	rawArgs map[string]any,
-) (*int, error) {
-	if _, ok := rawArgs["limit"]; !ok {
-		var zeroVal *int
-		return zeroVal, nil
-	}
-
-	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("limit"))
-	if tmp, ok := rawArgs["limit"]; ok {
-		return ec.unmarshalOInt2ᚖint(ctx, tmp)
-	}
-
-	var zeroVal *int
-	return zeroVal, nil
-}
-
 func (ec *executionContext) field_Query_discoverScenes_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
@@ -10580,31 +14267,87 @@ func (ec *executionContext) field_Query_downloader_argsAttentionOnly(
 	return zeroVal, nil
 }
 
-func (ec *executionContext) field_Query_jackettSearch_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+func (ec *executionContext) field_Query_indexerDefinitionUpdate_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
-	arg0, err := ec.field_Query_jackettSearch_argsInput(ctx, rawArgs)
+	arg0, err := ec.field_Query_indexerDefinitionUpdate_argsID(ctx, rawArgs)
+	if err != nil {
+		return nil, err
+	}
+	args["id"] = arg0
+	return args, nil
+}
+func (ec *executionContext) field_Query_indexerDefinitionUpdate_argsID(
+	ctx context.Context,
+	rawArgs map[string]any,
+) (string, error) {
+	if _, ok := rawArgs["id"]; !ok {
+		var zeroVal string
+		return zeroVal, nil
+	}
+
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
+	if tmp, ok := rawArgs["id"]; ok {
+		return ec.unmarshalNID2string(ctx, tmp)
+	}
+
+	var zeroVal string
+	return zeroVal, nil
+}
+
+func (ec *executionContext) field_Query_indexerDefinitions_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := ec.field_Query_indexerDefinitions_argsInput(ctx, rawArgs)
 	if err != nil {
 		return nil, err
 	}
 	args["input"] = arg0
 	return args, nil
 }
-func (ec *executionContext) field_Query_jackettSearch_argsInput(
+func (ec *executionContext) field_Query_indexerDefinitions_argsInput(
 	ctx context.Context,
 	rawArgs map[string]any,
-) (model.JackettSearchInput, error) {
+) (*model.IndexerDefinitionFilterInput, error) {
 	if _, ok := rawArgs["input"]; !ok {
-		var zeroVal model.JackettSearchInput
+		var zeroVal *model.IndexerDefinitionFilterInput
 		return zeroVal, nil
 	}
 
 	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
 	if tmp, ok := rawArgs["input"]; ok {
-		return ec.unmarshalNJackettSearchInput2githubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐJackettSearchInput(ctx, tmp)
+		return ec.unmarshalOIndexerDefinitionFilterInput2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐIndexerDefinitionFilterInput(ctx, tmp)
 	}
 
-	var zeroVal model.JackettSearchInput
+	var zeroVal *model.IndexerDefinitionFilterInput
+	return zeroVal, nil
+}
+
+func (ec *executionContext) field_Query_indexerLogin_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := ec.field_Query_indexerLogin_argsInput(ctx, rawArgs)
+	if err != nil {
+		return nil, err
+	}
+	args["input"] = arg0
+	return args, nil
+}
+func (ec *executionContext) field_Query_indexerLogin_argsInput(
+	ctx context.Context,
+	rawArgs map[string]any,
+) (model.IndexerLoginInput, error) {
+	if _, ok := rawArgs["input"]; !ok {
+		var zeroVal model.IndexerLoginInput
+		return zeroVal, nil
+	}
+
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
+	if tmp, ok := rawArgs["input"]; ok {
+		return ec.unmarshalNIndexerLoginInput2githubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐIndexerLoginInput(ctx, tmp)
+	}
+
+	var zeroVal model.IndexerLoginInput
 	return zeroVal, nil
 }
 
@@ -10753,34 +14496,6 @@ func (ec *executionContext) field_Query_performerWorkspace_argsOptions(
 	}
 
 	var zeroVal *model.PerformerListOptions
-	return zeroVal, nil
-}
-
-func (ec *executionContext) field_Query_previewJackettSelection_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
-	var err error
-	args := map[string]any{}
-	arg0, err := ec.field_Query_previewJackettSelection_argsInput(ctx, rawArgs)
-	if err != nil {
-		return nil, err
-	}
-	args["input"] = arg0
-	return args, nil
-}
-func (ec *executionContext) field_Query_previewJackettSelection_argsInput(
-	ctx context.Context,
-	rawArgs map[string]any,
-) (model.PreviewJackettSelectionInput, error) {
-	if _, ok := rawArgs["input"]; !ok {
-		var zeroVal model.PreviewJackettSelectionInput
-		return zeroVal, nil
-	}
-
-	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
-	if tmp, ok := rawArgs["input"]; ok {
-		return ec.unmarshalNPreviewJackettSelectionInput2githubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐPreviewJackettSelectionInput(ctx, tmp)
-	}
-
-	var zeroVal model.PreviewJackettSelectionInput
 	return zeroVal, nil
 }
 
@@ -11245,6 +14960,103 @@ func (ec *executionContext) field_Query_task_argsID(
 	return zeroVal, nil
 }
 
+func (ec *executionContext) field_Query_torrentSearch_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := ec.field_Query_torrentSearch_argsID(ctx, rawArgs)
+	if err != nil {
+		return nil, err
+	}
+	args["id"] = arg0
+	arg1, err := ec.field_Query_torrentSearch_argsOffset(ctx, rawArgs)
+	if err != nil {
+		return nil, err
+	}
+	args["offset"] = arg1
+	arg2, err := ec.field_Query_torrentSearch_argsLimit(ctx, rawArgs)
+	if err != nil {
+		return nil, err
+	}
+	args["limit"] = arg2
+	arg3, err := ec.field_Query_torrentSearch_argsSortBy(ctx, rawArgs)
+	if err != nil {
+		return nil, err
+	}
+	args["sortBy"] = arg3
+	return args, nil
+}
+func (ec *executionContext) field_Query_torrentSearch_argsID(
+	ctx context.Context,
+	rawArgs map[string]any,
+) (string, error) {
+	if _, ok := rawArgs["id"]; !ok {
+		var zeroVal string
+		return zeroVal, nil
+	}
+
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
+	if tmp, ok := rawArgs["id"]; ok {
+		return ec.unmarshalNID2string(ctx, tmp)
+	}
+
+	var zeroVal string
+	return zeroVal, nil
+}
+
+func (ec *executionContext) field_Query_torrentSearch_argsOffset(
+	ctx context.Context,
+	rawArgs map[string]any,
+) (*int, error) {
+	if _, ok := rawArgs["offset"]; !ok {
+		var zeroVal *int
+		return zeroVal, nil
+	}
+
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("offset"))
+	if tmp, ok := rawArgs["offset"]; ok {
+		return ec.unmarshalOInt2ᚖint(ctx, tmp)
+	}
+
+	var zeroVal *int
+	return zeroVal, nil
+}
+
+func (ec *executionContext) field_Query_torrentSearch_argsLimit(
+	ctx context.Context,
+	rawArgs map[string]any,
+) (*int, error) {
+	if _, ok := rawArgs["limit"]; !ok {
+		var zeroVal *int
+		return zeroVal, nil
+	}
+
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("limit"))
+	if tmp, ok := rawArgs["limit"]; ok {
+		return ec.unmarshalOInt2ᚖint(ctx, tmp)
+	}
+
+	var zeroVal *int
+	return zeroVal, nil
+}
+
+func (ec *executionContext) field_Query_torrentSearch_argsSortBy(
+	ctx context.Context,
+	rawArgs map[string]any,
+) (*model.TorrentSearchSort, error) {
+	if _, ok := rawArgs["sortBy"]; !ok {
+		var zeroVal *model.TorrentSearchSort
+		return zeroVal, nil
+	}
+
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("sortBy"))
+	if tmp, ok := rawArgs["sortBy"]; ok {
+		return ec.unmarshalOTorrentSearchSort2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐTorrentSearchSort(ctx, tmp)
+	}
+
+	var zeroVal *model.TorrentSearchSort
+	return zeroVal, nil
+}
+
 func (ec *executionContext) field_Query_upcomingReleases_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
@@ -11270,6 +15082,34 @@ func (ec *executionContext) field_Query_upcomingReleases_argsInput(
 	}
 
 	var zeroVal model.UpcomingReleaseQueryInput
+	return zeroVal, nil
+}
+
+func (ec *executionContext) field_Subscription_torrentSearchEvents_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := ec.field_Subscription_torrentSearchEvents_argsID(ctx, rawArgs)
+	if err != nil {
+		return nil, err
+	}
+	args["id"] = arg0
+	return args, nil
+}
+func (ec *executionContext) field_Subscription_torrentSearchEvents_argsID(
+	ctx context.Context,
+	rawArgs map[string]any,
+) (string, error) {
+	if _, ok := rawArgs["id"]; !ok {
+		var zeroVal string
+		return zeroVal, nil
+	}
+
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
+	if tmp, ok := rawArgs["id"]; ok {
+		return ec.unmarshalNID2string(ctx, tmp)
+	}
+
+	var zeroVal string
 	return zeroVal, nil
 }
 
@@ -11896,6 +15736,128 @@ func (ec *executionContext) fieldContext_AutomationStatus_subscriptionPollEnable
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _BuiltinIndexerResult_revision(ctx context.Context, field graphql.CollectedField, obj *model.BuiltinIndexerResult) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_BuiltinIndexerResult_revision(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Revision, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_BuiltinIndexerResult_revision(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "BuiltinIndexerResult",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _BuiltinIndexerResult_instance(ctx context.Context, field graphql.CollectedField, obj *model.BuiltinIndexerResult) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_BuiltinIndexerResult_instance(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Instance, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*model.IndexerInstance)
+	fc.Result = res
+	return ec.marshalNIndexerInstance2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐIndexerInstance(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_BuiltinIndexerResult_instance(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "BuiltinIndexerResult",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "health":
+				return ec.fieldContext_IndexerInstance_health(ctx, field)
+			case "siteUrl":
+				return ec.fieldContext_IndexerInstance_siteUrl(ctx, field)
+			case "privacy":
+				return ec.fieldContext_IndexerInstance_privacy(ctx, field)
+			case "language":
+				return ec.fieldContext_IndexerInstance_language(ctx, field)
+			case "id":
+				return ec.fieldContext_IndexerInstance_id(ctx, field)
+			case "kind":
+				return ec.fieldContext_IndexerInstance_kind(ctx, field)
+			case "name":
+				return ec.fieldContext_IndexerInstance_name(ctx, field)
+			case "enabled":
+				return ec.fieldContext_IndexerInstance_enabled(ctx, field)
+			case "definitionId":
+				return ec.fieldContext_IndexerInstance_definitionId(ctx, field)
+			case "baseUrl":
+				return ec.fieldContext_IndexerInstance_baseUrl(ctx, field)
+			case "networkProfile":
+				return ec.fieldContext_IndexerInstance_networkProfile(ctx, field)
+			case "trustedOrigins":
+				return ec.fieldContext_IndexerInstance_trustedOrigins(ctx, field)
+			case "ruleDigest":
+				return ec.fieldContext_IndexerInstance_ruleDigest(ctx, field)
+			case "errorCode":
+				return ec.fieldContext_IndexerInstance_errorCode(ctx, field)
+			case "modes":
+				return ec.fieldContext_IndexerInstance_modes(ctx, field)
+			case "settings":
+				return ec.fieldContext_IndexerInstance_settings(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type IndexerInstance", field.Name)
 		},
 	}
 	return fc, nil
@@ -16103,6 +20065,926 @@ func (ec *executionContext) fieldContext_HomeCheckPerformer_name(_ context.Conte
 	return fc, nil
 }
 
+func (ec *executionContext) _HomeIndexerIssue_operation(ctx context.Context, field graphql.CollectedField, obj *model.HomeIndexerIssue) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_HomeIndexerIssue_operation(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Operation, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_HomeIndexerIssue_operation(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "HomeIndexerIssue",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _HomeIndexerIssue_observation(ctx context.Context, field graphql.CollectedField, obj *model.HomeIndexerIssue) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_HomeIndexerIssue_observation(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Observation, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*model.IndexerObservation)
+	fc.Result = res
+	return ec.marshalOIndexerObservation2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐIndexerObservation(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_HomeIndexerIssue_observation(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "HomeIndexerIssue",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "startedAt":
+				return ec.fieldContext_IndexerObservation_startedAt(ctx, field)
+			case "finishedAt":
+				return ec.fieldContext_IndexerObservation_finishedAt(ctx, field)
+			case "errorCode":
+				return ec.fieldContext_IndexerObservation_errorCode(ctx, field)
+			case "correlationId":
+				return ec.fieldContext_IndexerObservation_correlationId(ctx, field)
+			case "retryAt":
+				return ec.fieldContext_IndexerObservation_retryAt(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type IndexerObservation", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _HomeIndexerIssue_id(ctx context.Context, field graphql.CollectedField, obj *model.HomeIndexerIssue) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_HomeIndexerIssue_id(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.ID, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNID2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_HomeIndexerIssue_id(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "HomeIndexerIssue",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type ID does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _HomeIndexerIssue_name(ctx context.Context, field graphql.CollectedField, obj *model.HomeIndexerIssue) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_HomeIndexerIssue_name(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Name, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_HomeIndexerIssue_name(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "HomeIndexerIssue",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _HomeIndexerIssue_errorCode(ctx context.Context, field graphql.CollectedField, obj *model.HomeIndexerIssue) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_HomeIndexerIssue_errorCode(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.ErrorCode, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_HomeIndexerIssue_errorCode(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "HomeIndexerIssue",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _HomeIndexerSummary_revision(ctx context.Context, field graphql.CollectedField, obj *model.HomeIndexerSummary) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_HomeIndexerSummary_revision(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Revision, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_HomeIndexerSummary_revision(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "HomeIndexerSummary",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _HomeIndexerSummary_total(ctx context.Context, field graphql.CollectedField, obj *model.HomeIndexerSummary) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_HomeIndexerSummary_total(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Total, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*int)
+	fc.Result = res
+	return ec.marshalOInt2ᚖint(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_HomeIndexerSummary_total(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "HomeIndexerSummary",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _HomeIndexerSummary_builtinEnabled(ctx context.Context, field graphql.CollectedField, obj *model.HomeIndexerSummary) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_HomeIndexerSummary_builtinEnabled(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.BuiltinEnabled, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int)
+	fc.Result = res
+	return ec.marshalNInt2int(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_HomeIndexerSummary_builtinEnabled(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "HomeIndexerSummary",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _HomeIndexerSummary_builtinUnverified(ctx context.Context, field graphql.CollectedField, obj *model.HomeIndexerSummary) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_HomeIndexerSummary_builtinUnverified(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.BuiltinUnverified, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int)
+	fc.Result = res
+	return ec.marshalNInt2int(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_HomeIndexerSummary_builtinUnverified(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "HomeIndexerSummary",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _HomeIndexerSummary_builtinSearchSucceeded(ctx context.Context, field graphql.CollectedField, obj *model.HomeIndexerSummary) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_HomeIndexerSummary_builtinSearchSucceeded(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.BuiltinSearchSucceeded, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int)
+	fc.Result = res
+	return ec.marshalNInt2int(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_HomeIndexerSummary_builtinSearchSucceeded(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "HomeIndexerSummary",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _HomeIndexerSummary_healthErrorCode(ctx context.Context, field graphql.CollectedField, obj *model.HomeIndexerSummary) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_HomeIndexerSummary_healthErrorCode(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.HealthErrorCode, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_HomeIndexerSummary_healthErrorCode(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "HomeIndexerSummary",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _HomeIndexerSummary_definitionJob(ctx context.Context, field graphql.CollectedField, obj *model.HomeIndexerSummary) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_HomeIndexerSummary_definitionJob(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.DefinitionJob, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*model.IndexerDefinitionJob)
+	fc.Result = res
+	return ec.marshalOIndexerDefinitionJob2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐIndexerDefinitionJob(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_HomeIndexerSummary_definitionJob(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "HomeIndexerSummary",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_IndexerDefinitionJob_id(ctx, field)
+			case "kind":
+				return ec.fieldContext_IndexerDefinitionJob_kind(ctx, field)
+			case "state":
+				return ec.fieldContext_IndexerDefinitionJob_state(ctx, field)
+			case "targetRevision":
+				return ec.fieldContext_IndexerDefinitionJob_targetRevision(ctx, field)
+			case "expectedActiveRevision":
+				return ec.fieldContext_IndexerDefinitionJob_expectedActiveRevision(ctx, field)
+			case "downloadedBytes":
+				return ec.fieldContext_IndexerDefinitionJob_downloadedBytes(ctx, field)
+			case "errorCode":
+				return ec.fieldContext_IndexerDefinitionJob_errorCode(ctx, field)
+			case "correlationId":
+				return ec.fieldContext_IndexerDefinitionJob_correlationId(ctx, field)
+			case "startedAt":
+				return ec.fieldContext_IndexerDefinitionJob_startedAt(ctx, field)
+			case "finishedAt":
+				return ec.fieldContext_IndexerDefinitionJob_finishedAt(ctx, field)
+			case "revision":
+				return ec.fieldContext_IndexerDefinitionJob_revision(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type IndexerDefinitionJob", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _HomeIndexerSummary_definitionErrorCode(ctx context.Context, field graphql.CollectedField, obj *model.HomeIndexerSummary) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_HomeIndexerSummary_definitionErrorCode(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.DefinitionErrorCode, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_HomeIndexerSummary_definitionErrorCode(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "HomeIndexerSummary",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _HomeIndexerSummary_attention(ctx context.Context, field graphql.CollectedField, obj *model.HomeIndexerSummary) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_HomeIndexerSummary_attention(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Attention, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int)
+	fc.Result = res
+	return ec.marshalNInt2int(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_HomeIndexerSummary_attention(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "HomeIndexerSummary",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _HomeIndexerSummary_issues(ctx context.Context, field graphql.CollectedField, obj *model.HomeIndexerSummary) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_HomeIndexerSummary_issues(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Issues, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]*model.HomeIndexerIssue)
+	fc.Result = res
+	return ec.marshalNHomeIndexerIssue2ᚕᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐHomeIndexerIssueᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_HomeIndexerSummary_issues(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "HomeIndexerSummary",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "operation":
+				return ec.fieldContext_HomeIndexerIssue_operation(ctx, field)
+			case "observation":
+				return ec.fieldContext_HomeIndexerIssue_observation(ctx, field)
+			case "id":
+				return ec.fieldContext_HomeIndexerIssue_id(ctx, field)
+			case "name":
+				return ec.fieldContext_HomeIndexerIssue_name(ctx, field)
+			case "errorCode":
+				return ec.fieldContext_HomeIndexerIssue_errorCode(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type HomeIndexerIssue", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _HomeIndexerSummary_jackett(ctx context.Context, field graphql.CollectedField, obj *model.HomeIndexerSummary) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_HomeIndexerSummary_jackett(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Jackett, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*model.HomeJackettSummary)
+	fc.Result = res
+	return ec.marshalOHomeJackettSummary2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐHomeJackettSummary(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_HomeIndexerSummary_jackett(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "HomeIndexerSummary",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "sites":
+				return ec.fieldContext_HomeJackettSummary_sites(ctx, field)
+			case "stale":
+				return ec.fieldContext_HomeJackettSummary_stale(ctx, field)
+			case "updatedAt":
+				return ec.fieldContext_HomeJackettSummary_updatedAt(ctx, field)
+			case "errorCode":
+				return ec.fieldContext_HomeJackettSummary_errorCode(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type HomeJackettSummary", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _HomeJackettSummary_sites(ctx context.Context, field graphql.CollectedField, obj *model.HomeJackettSummary) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_HomeJackettSummary_sites(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Sites, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*int)
+	fc.Result = res
+	return ec.marshalOInt2ᚖint(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_HomeJackettSummary_sites(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "HomeJackettSummary",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _HomeJackettSummary_stale(ctx context.Context, field graphql.CollectedField, obj *model.HomeJackettSummary) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_HomeJackettSummary_stale(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Stale, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(bool)
+	fc.Result = res
+	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_HomeJackettSummary_stale(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "HomeJackettSummary",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _HomeJackettSummary_updatedAt(ctx context.Context, field graphql.CollectedField, obj *model.HomeJackettSummary) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_HomeJackettSummary_updatedAt(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.UpdatedAt, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*string)
+	fc.Result = res
+	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_HomeJackettSummary_updatedAt(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "HomeJackettSummary",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _HomeJackettSummary_errorCode(ctx context.Context, field graphql.CollectedField, obj *model.HomeJackettSummary) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_HomeJackettSummary_errorCode(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.ErrorCode, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_HomeJackettSummary_errorCode(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "HomeJackettSummary",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _HomeOverview_total(ctx context.Context, field graphql.CollectedField, obj *model.HomeOverview) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_HomeOverview_total(ctx, field)
 	if err != nil {
@@ -18739,6 +23621,5711 @@ func (ec *executionContext) fieldContext_ImageCacheStatus_lastError(_ context.Co
 	return fc, nil
 }
 
+func (ec *executionContext) _IndexerCacheStatus_revision(ctx context.Context, field graphql.CollectedField, obj *model.IndexerCacheStatus) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_IndexerCacheStatus_revision(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Revision, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_IndexerCacheStatus_revision(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "IndexerCacheStatus",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _IndexerCacheStatus_enabled(ctx context.Context, field graphql.CollectedField, obj *model.IndexerCacheStatus) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_IndexerCacheStatus_enabled(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Enabled, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(bool)
+	fc.Result = res
+	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_IndexerCacheStatus_enabled(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "IndexerCacheStatus",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _IndexerCacheStatus_ttlSeconds(ctx context.Context, field graphql.CollectedField, obj *model.IndexerCacheStatus) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_IndexerCacheStatus_ttlSeconds(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.TTLSeconds, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int)
+	fc.Result = res
+	return ec.marshalNInt2int(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_IndexerCacheStatus_ttlSeconds(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "IndexerCacheStatus",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _IndexerCacheStatus_emptyTtlSeconds(ctx context.Context, field graphql.CollectedField, obj *model.IndexerCacheStatus) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_IndexerCacheStatus_emptyTtlSeconds(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.EmptyTTLSeconds, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int)
+	fc.Result = res
+	return ec.marshalNInt2int(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_IndexerCacheStatus_emptyTtlSeconds(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "IndexerCacheStatus",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _IndexerCacheStatus_maxSizeMb(ctx context.Context, field graphql.CollectedField, obj *model.IndexerCacheStatus) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_IndexerCacheStatus_maxSizeMb(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.MaxSizeMb, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int)
+	fc.Result = res
+	return ec.marshalNInt2int(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_IndexerCacheStatus_maxSizeMb(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "IndexerCacheStatus",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _IndexerCacheStatus_entries(ctx context.Context, field graphql.CollectedField, obj *model.IndexerCacheStatus) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_IndexerCacheStatus_entries(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Entries, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int)
+	fc.Result = res
+	return ec.marshalNInt2int(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_IndexerCacheStatus_entries(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "IndexerCacheStatus",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _IndexerCacheStatus_usedBytes(ctx context.Context, field graphql.CollectedField, obj *model.IndexerCacheStatus) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_IndexerCacheStatus_usedBytes(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.UsedBytes, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int64)
+	fc.Result = res
+	return ec.marshalNLong2int64(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_IndexerCacheStatus_usedBytes(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "IndexerCacheStatus",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Long does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _IndexerCacheStatus_activeRequests(ctx context.Context, field graphql.CollectedField, obj *model.IndexerCacheStatus) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_IndexerCacheStatus_activeRequests(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.ActiveRequests, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int)
+	fc.Result = res
+	return ec.marshalNInt2int(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_IndexerCacheStatus_activeRequests(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "IndexerCacheStatus",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _IndexerCacheStatus_activeWaiters(ctx context.Context, field graphql.CollectedField, obj *model.IndexerCacheStatus) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_IndexerCacheStatus_activeWaiters(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.ActiveWaiters, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int)
+	fc.Result = res
+	return ec.marshalNInt2int(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_IndexerCacheStatus_activeWaiters(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "IndexerCacheStatus",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _IndexerCheckReport_id(ctx context.Context, field graphql.CollectedField, obj *model.IndexerCheckReport) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_IndexerCheckReport_id(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.ID, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNID2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_IndexerCheckReport_id(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "IndexerCheckReport",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type ID does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _IndexerCheckReport_instanceId(ctx context.Context, field graphql.CollectedField, obj *model.IndexerCheckReport) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_IndexerCheckReport_instanceId(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.InstanceID, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNID2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_IndexerCheckReport_instanceId(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "IndexerCheckReport",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type ID does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _IndexerCheckReport_kind(ctx context.Context, field graphql.CollectedField, obj *model.IndexerCheckReport) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_IndexerCheckReport_kind(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Kind, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*model.IndexerSourceKind)
+	fc.Result = res
+	return ec.marshalOIndexerSourceKind2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐIndexerSourceKind(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_IndexerCheckReport_kind(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "IndexerCheckReport",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type IndexerSourceKind does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _IndexerCheckReport_configRevision(ctx context.Context, field graphql.CollectedField, obj *model.IndexerCheckReport) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_IndexerCheckReport_configRevision(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.ConfigRevision, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_IndexerCheckReport_configRevision(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "IndexerCheckReport",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _IndexerCheckReport_ruleRevision(ctx context.Context, field graphql.CollectedField, obj *model.IndexerCheckReport) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_IndexerCheckReport_ruleRevision(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.RuleRevision, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_IndexerCheckReport_ruleRevision(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "IndexerCheckReport",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _IndexerCheckReport_startedAt(ctx context.Context, field graphql.CollectedField, obj *model.IndexerCheckReport) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_IndexerCheckReport_startedAt(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.StartedAt, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_IndexerCheckReport_startedAt(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "IndexerCheckReport",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _IndexerCheckReport_finishedAt(ctx context.Context, field graphql.CollectedField, obj *model.IndexerCheckReport) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_IndexerCheckReport_finishedAt(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.FinishedAt, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_IndexerCheckReport_finishedAt(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "IndexerCheckReport",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _IndexerCheckReport_results(ctx context.Context, field graphql.CollectedField, obj *model.IndexerCheckReport) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_IndexerCheckReport_results(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Results, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int)
+	fc.Result = res
+	return ec.marshalNInt2int(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_IndexerCheckReport_results(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "IndexerCheckReport",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _IndexerCheckReport_partial(ctx context.Context, field graphql.CollectedField, obj *model.IndexerCheckReport) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_IndexerCheckReport_partial(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Partial, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(bool)
+	fc.Result = res
+	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_IndexerCheckReport_partial(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "IndexerCheckReport",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _IndexerCheckReport_truncated(ctx context.Context, field graphql.CollectedField, obj *model.IndexerCheckReport) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_IndexerCheckReport_truncated(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Truncated, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(bool)
+	fc.Result = res
+	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_IndexerCheckReport_truncated(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "IndexerCheckReport",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _IndexerCheckReport_stages(ctx context.Context, field graphql.CollectedField, obj *model.IndexerCheckReport) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_IndexerCheckReport_stages(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Stages, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]*model.IndexerCheckStage)
+	fc.Result = res
+	return ec.marshalNIndexerCheckStage2ᚕᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐIndexerCheckStageᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_IndexerCheckReport_stages(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "IndexerCheckReport",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "name":
+				return ec.fieldContext_IndexerCheckStage_name(ctx, field)
+			case "state":
+				return ec.fieldContext_IndexerCheckStage_state(ctx, field)
+			case "errorCode":
+				return ec.fieldContext_IndexerCheckStage_errorCode(ctx, field)
+			case "elapsedMs":
+				return ec.fieldContext_IndexerCheckStage_elapsedMs(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type IndexerCheckStage", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _IndexerCheckStage_name(ctx context.Context, field graphql.CollectedField, obj *model.IndexerCheckStage) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_IndexerCheckStage_name(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Name, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(model.IndexerCheckStageName)
+	fc.Result = res
+	return ec.marshalNIndexerCheckStageName2githubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐIndexerCheckStageName(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_IndexerCheckStage_name(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "IndexerCheckStage",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type IndexerCheckStageName does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _IndexerCheckStage_state(ctx context.Context, field graphql.CollectedField, obj *model.IndexerCheckStage) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_IndexerCheckStage_state(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.State, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(model.IndexerCheckStageState)
+	fc.Result = res
+	return ec.marshalNIndexerCheckStageState2githubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐIndexerCheckStageState(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_IndexerCheckStage_state(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "IndexerCheckStage",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type IndexerCheckStageState does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _IndexerCheckStage_errorCode(ctx context.Context, field graphql.CollectedField, obj *model.IndexerCheckStage) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_IndexerCheckStage_errorCode(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.ErrorCode, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_IndexerCheckStage_errorCode(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "IndexerCheckStage",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _IndexerCheckStage_elapsedMs(ctx context.Context, field graphql.CollectedField, obj *model.IndexerCheckStage) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_IndexerCheckStage_elapsedMs(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.ElapsedMs, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int64)
+	fc.Result = res
+	return ec.marshalNLong2int64(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_IndexerCheckStage_elapsedMs(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "IndexerCheckStage",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Long does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _IndexerDefinition_id(ctx context.Context, field graphql.CollectedField, obj *model.IndexerDefinition) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_IndexerDefinition_id(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.ID, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNID2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_IndexerDefinition_id(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "IndexerDefinition",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type ID does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _IndexerDefinition_name(ctx context.Context, field graphql.CollectedField, obj *model.IndexerDefinition) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_IndexerDefinition_name(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Name, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_IndexerDefinition_name(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "IndexerDefinition",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _IndexerDefinition_description(ctx context.Context, field graphql.CollectedField, obj *model.IndexerDefinition) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_IndexerDefinition_description(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Description, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_IndexerDefinition_description(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "IndexerDefinition",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _IndexerDefinition_language(ctx context.Context, field graphql.CollectedField, obj *model.IndexerDefinition) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_IndexerDefinition_language(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Language, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_IndexerDefinition_language(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "IndexerDefinition",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _IndexerDefinition_privacy(ctx context.Context, field graphql.CollectedField, obj *model.IndexerDefinition) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_IndexerDefinition_privacy(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Privacy, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_IndexerDefinition_privacy(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "IndexerDefinition",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _IndexerDefinition_digest(ctx context.Context, field graphql.CollectedField, obj *model.IndexerDefinition) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_IndexerDefinition_digest(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Digest, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_IndexerDefinition_digest(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "IndexerDefinition",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _IndexerDefinition_links(ctx context.Context, field graphql.CollectedField, obj *model.IndexerDefinition) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_IndexerDefinition_links(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Links, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]string)
+	fc.Result = res
+	return ec.marshalNString2ᚕstringᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_IndexerDefinition_links(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "IndexerDefinition",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _IndexerDefinition_modes(ctx context.Context, field graphql.CollectedField, obj *model.IndexerDefinition) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_IndexerDefinition_modes(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Modes, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]string)
+	fc.Result = res
+	return ec.marshalNString2ᚕstringᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_IndexerDefinition_modes(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "IndexerDefinition",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _IndexerDefinition_warnings(ctx context.Context, field graphql.CollectedField, obj *model.IndexerDefinition) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_IndexerDefinition_warnings(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Warnings, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]string)
+	fc.Result = res
+	return ec.marshalNString2ᚕstringᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_IndexerDefinition_warnings(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "IndexerDefinition",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _IndexerDefinition_settings(ctx context.Context, field graphql.CollectedField, obj *model.IndexerDefinition) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_IndexerDefinition_settings(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Settings, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]*model.IndexerSetting)
+	fc.Result = res
+	return ec.marshalNIndexerSetting2ᚕᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐIndexerSettingᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_IndexerDefinition_settings(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "IndexerDefinition",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "name":
+				return ec.fieldContext_IndexerSetting_name(ctx, field)
+			case "type":
+				return ec.fieldContext_IndexerSetting_type(ctx, field)
+			case "label":
+				return ec.fieldContext_IndexerSetting_label(ctx, field)
+			case "secret":
+				return ec.fieldContext_IndexerSetting_secret(ctx, field)
+			case "configured":
+				return ec.fieldContext_IndexerSetting_configured(ctx, field)
+			case "value":
+				return ec.fieldContext_IndexerSetting_value(ctx, field)
+			case "defaultValue":
+				return ec.fieldContext_IndexerSetting_defaultValue(ctx, field)
+			case "options":
+				return ec.fieldContext_IndexerSetting_options(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type IndexerSetting", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _IndexerDefinitionJob_id(ctx context.Context, field graphql.CollectedField, obj *model.IndexerDefinitionJob) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_IndexerDefinitionJob_id(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.ID, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNID2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_IndexerDefinitionJob_id(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "IndexerDefinitionJob",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type ID does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _IndexerDefinitionJob_kind(ctx context.Context, field graphql.CollectedField, obj *model.IndexerDefinitionJob) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_IndexerDefinitionJob_kind(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Kind, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(model.IndexerDefinitionJobKind)
+	fc.Result = res
+	return ec.marshalNIndexerDefinitionJobKind2githubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐIndexerDefinitionJobKind(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_IndexerDefinitionJob_kind(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "IndexerDefinitionJob",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type IndexerDefinitionJobKind does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _IndexerDefinitionJob_state(ctx context.Context, field graphql.CollectedField, obj *model.IndexerDefinitionJob) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_IndexerDefinitionJob_state(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.State, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(model.IndexerDefinitionJobState)
+	fc.Result = res
+	return ec.marshalNIndexerDefinitionJobState2githubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐIndexerDefinitionJobState(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_IndexerDefinitionJob_state(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "IndexerDefinitionJob",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type IndexerDefinitionJobState does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _IndexerDefinitionJob_targetRevision(ctx context.Context, field graphql.CollectedField, obj *model.IndexerDefinitionJob) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_IndexerDefinitionJob_targetRevision(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.TargetRevision, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_IndexerDefinitionJob_targetRevision(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "IndexerDefinitionJob",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _IndexerDefinitionJob_expectedActiveRevision(ctx context.Context, field graphql.CollectedField, obj *model.IndexerDefinitionJob) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_IndexerDefinitionJob_expectedActiveRevision(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.ExpectedActiveRevision, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_IndexerDefinitionJob_expectedActiveRevision(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "IndexerDefinitionJob",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _IndexerDefinitionJob_downloadedBytes(ctx context.Context, field graphql.CollectedField, obj *model.IndexerDefinitionJob) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_IndexerDefinitionJob_downloadedBytes(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.DownloadedBytes, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int64)
+	fc.Result = res
+	return ec.marshalNLong2int64(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_IndexerDefinitionJob_downloadedBytes(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "IndexerDefinitionJob",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Long does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _IndexerDefinitionJob_errorCode(ctx context.Context, field graphql.CollectedField, obj *model.IndexerDefinitionJob) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_IndexerDefinitionJob_errorCode(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.ErrorCode, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_IndexerDefinitionJob_errorCode(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "IndexerDefinitionJob",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _IndexerDefinitionJob_correlationId(ctx context.Context, field graphql.CollectedField, obj *model.IndexerDefinitionJob) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_IndexerDefinitionJob_correlationId(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.CorrelationID, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_IndexerDefinitionJob_correlationId(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "IndexerDefinitionJob",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _IndexerDefinitionJob_startedAt(ctx context.Context, field graphql.CollectedField, obj *model.IndexerDefinitionJob) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_IndexerDefinitionJob_startedAt(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.StartedAt, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_IndexerDefinitionJob_startedAt(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "IndexerDefinitionJob",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _IndexerDefinitionJob_finishedAt(ctx context.Context, field graphql.CollectedField, obj *model.IndexerDefinitionJob) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_IndexerDefinitionJob_finishedAt(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.FinishedAt, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*string)
+	fc.Result = res
+	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_IndexerDefinitionJob_finishedAt(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "IndexerDefinitionJob",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _IndexerDefinitionJob_revision(ctx context.Context, field graphql.CollectedField, obj *model.IndexerDefinitionJob) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_IndexerDefinitionJob_revision(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Revision, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int64)
+	fc.Result = res
+	return ec.marshalNLong2int64(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_IndexerDefinitionJob_revision(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "IndexerDefinitionJob",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Long does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _IndexerDefinitionManifest_revision(ctx context.Context, field graphql.CollectedField, obj *model.IndexerDefinitionManifest) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_IndexerDefinitionManifest_revision(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Revision, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_IndexerDefinitionManifest_revision(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "IndexerDefinitionManifest",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _IndexerDefinitionManifest_schemaVersion(ctx context.Context, field graphql.CollectedField, obj *model.IndexerDefinitionManifest) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_IndexerDefinitionManifest_schemaVersion(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.SchemaVersion, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int)
+	fc.Result = res
+	return ec.marshalNInt2int(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_IndexerDefinitionManifest_schemaVersion(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "IndexerDefinitionManifest",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _IndexerDefinitionManifest_engineVersion(ctx context.Context, field graphql.CollectedField, obj *model.IndexerDefinitionManifest) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_IndexerDefinitionManifest_engineVersion(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.EngineVersion, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_IndexerDefinitionManifest_engineVersion(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "IndexerDefinitionManifest",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _IndexerDefinitionManifest_definitionCount(ctx context.Context, field graphql.CollectedField, obj *model.IndexerDefinitionManifest) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_IndexerDefinitionManifest_definitionCount(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.DefinitionCount, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int)
+	fc.Result = res
+	return ec.marshalNInt2int(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_IndexerDefinitionManifest_definitionCount(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "IndexerDefinitionManifest",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _IndexerDefinitionManifest_installedAt(ctx context.Context, field graphql.CollectedField, obj *model.IndexerDefinitionManifest) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_IndexerDefinitionManifest_installedAt(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.InstalledAt, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_IndexerDefinitionManifest_installedAt(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "IndexerDefinitionManifest",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _IndexerDefinitionPage_revision(ctx context.Context, field graphql.CollectedField, obj *model.IndexerDefinitionPage) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_IndexerDefinitionPage_revision(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Revision, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_IndexerDefinitionPage_revision(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "IndexerDefinitionPage",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _IndexerDefinitionPage_totalCount(ctx context.Context, field graphql.CollectedField, obj *model.IndexerDefinitionPage) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_IndexerDefinitionPage_totalCount(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.TotalCount, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int)
+	fc.Result = res
+	return ec.marshalNInt2int(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_IndexerDefinitionPage_totalCount(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "IndexerDefinitionPage",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _IndexerDefinitionPage_offset(ctx context.Context, field graphql.CollectedField, obj *model.IndexerDefinitionPage) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_IndexerDefinitionPage_offset(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Offset, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int)
+	fc.Result = res
+	return ec.marshalNInt2int(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_IndexerDefinitionPage_offset(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "IndexerDefinitionPage",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _IndexerDefinitionPage_limit(ctx context.Context, field graphql.CollectedField, obj *model.IndexerDefinitionPage) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_IndexerDefinitionPage_limit(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Limit, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int)
+	fc.Result = res
+	return ec.marshalNInt2int(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_IndexerDefinitionPage_limit(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "IndexerDefinitionPage",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _IndexerDefinitionPage_items(ctx context.Context, field graphql.CollectedField, obj *model.IndexerDefinitionPage) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_IndexerDefinitionPage_items(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Items, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]*model.IndexerDefinition)
+	fc.Result = res
+	return ec.marshalNIndexerDefinition2ᚕᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐIndexerDefinitionᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_IndexerDefinitionPage_items(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "IndexerDefinitionPage",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_IndexerDefinition_id(ctx, field)
+			case "name":
+				return ec.fieldContext_IndexerDefinition_name(ctx, field)
+			case "description":
+				return ec.fieldContext_IndexerDefinition_description(ctx, field)
+			case "language":
+				return ec.fieldContext_IndexerDefinition_language(ctx, field)
+			case "privacy":
+				return ec.fieldContext_IndexerDefinition_privacy(ctx, field)
+			case "digest":
+				return ec.fieldContext_IndexerDefinition_digest(ctx, field)
+			case "links":
+				return ec.fieldContext_IndexerDefinition_links(ctx, field)
+			case "modes":
+				return ec.fieldContext_IndexerDefinition_modes(ctx, field)
+			case "warnings":
+				return ec.fieldContext_IndexerDefinition_warnings(ctx, field)
+			case "settings":
+				return ec.fieldContext_IndexerDefinition_settings(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type IndexerDefinition", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _IndexerDefinitionPolicy_revision(ctx context.Context, field graphql.CollectedField, obj *model.IndexerDefinitionPolicy) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_IndexerDefinitionPolicy_revision(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Revision, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_IndexerDefinitionPolicy_revision(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "IndexerDefinitionPolicy",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _IndexerDefinitionPolicy_source(ctx context.Context, field graphql.CollectedField, obj *model.IndexerDefinitionPolicy) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_IndexerDefinitionPolicy_source(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Source, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_IndexerDefinitionPolicy_source(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "IndexerDefinitionPolicy",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _IndexerDefinitionPolicy_schemaVersion(ctx context.Context, field graphql.CollectedField, obj *model.IndexerDefinitionPolicy) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_IndexerDefinitionPolicy_schemaVersion(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.SchemaVersion, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int)
+	fc.Result = res
+	return ec.marshalNInt2int(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_IndexerDefinitionPolicy_schemaVersion(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "IndexerDefinitionPolicy",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _IndexerDefinitionPolicy_checkIntervalHours(ctx context.Context, field graphql.CollectedField, obj *model.IndexerDefinitionPolicy) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_IndexerDefinitionPolicy_checkIntervalHours(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.CheckIntervalHours, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int)
+	fc.Result = res
+	return ec.marshalNInt2int(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_IndexerDefinitionPolicy_checkIntervalHours(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "IndexerDefinitionPolicy",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _IndexerDefinitionPolicy_autoUpdate(ctx context.Context, field graphql.CollectedField, obj *model.IndexerDefinitionPolicy) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_IndexerDefinitionPolicy_autoUpdate(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.AutoUpdate, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(bool)
+	fc.Result = res
+	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_IndexerDefinitionPolicy_autoUpdate(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "IndexerDefinitionPolicy",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _IndexerDefinitionStatus_streamId(ctx context.Context, field graphql.CollectedField, obj *model.IndexerDefinitionStatus) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_IndexerDefinitionStatus_streamId(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.StreamID, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_IndexerDefinitionStatus_streamId(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "IndexerDefinitionStatus",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _IndexerDefinitionStatus_activeRevision(ctx context.Context, field graphql.CollectedField, obj *model.IndexerDefinitionStatus) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_IndexerDefinitionStatus_activeRevision(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.ActiveRevision, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_IndexerDefinitionStatus_activeRevision(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "IndexerDefinitionStatus",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _IndexerDefinitionStatus_previousRevision(ctx context.Context, field graphql.CollectedField, obj *model.IndexerDefinitionStatus) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_IndexerDefinitionStatus_previousRevision(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.PreviousRevision, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_IndexerDefinitionStatus_previousRevision(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "IndexerDefinitionStatus",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _IndexerDefinitionStatus_availableRevision(ctx context.Context, field graphql.CollectedField, obj *model.IndexerDefinitionStatus) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_IndexerDefinitionStatus_availableRevision(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.AvailableRevision, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_IndexerDefinitionStatus_availableRevision(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "IndexerDefinitionStatus",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _IndexerDefinitionStatus_revision(ctx context.Context, field graphql.CollectedField, obj *model.IndexerDefinitionStatus) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_IndexerDefinitionStatus_revision(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Revision, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int64)
+	fc.Result = res
+	return ec.marshalNLong2int64(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_IndexerDefinitionStatus_revision(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "IndexerDefinitionStatus",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Long does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _IndexerDefinitionStatus_available(ctx context.Context, field graphql.CollectedField, obj *model.IndexerDefinitionStatus) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_IndexerDefinitionStatus_available(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Available, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(bool)
+	fc.Result = res
+	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_IndexerDefinitionStatus_available(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "IndexerDefinitionStatus",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _IndexerDefinitionStatus_lastCheckedAt(ctx context.Context, field graphql.CollectedField, obj *model.IndexerDefinitionStatus) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_IndexerDefinitionStatus_lastCheckedAt(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.LastCheckedAt, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*string)
+	fc.Result = res
+	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_IndexerDefinitionStatus_lastCheckedAt(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "IndexerDefinitionStatus",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _IndexerDefinitionStatus_checkErrorCode(ctx context.Context, field graphql.CollectedField, obj *model.IndexerDefinitionStatus) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_IndexerDefinitionStatus_checkErrorCode(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.CheckErrorCode, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_IndexerDefinitionStatus_checkErrorCode(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "IndexerDefinitionStatus",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _IndexerDefinitionStatus_errorCode(ctx context.Context, field graphql.CollectedField, obj *model.IndexerDefinitionStatus) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_IndexerDefinitionStatus_errorCode(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.ErrorCode, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_IndexerDefinitionStatus_errorCode(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "IndexerDefinitionStatus",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _IndexerDefinitionStatus_installed(ctx context.Context, field graphql.CollectedField, obj *model.IndexerDefinitionStatus) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_IndexerDefinitionStatus_installed(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Installed, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]*model.IndexerDefinitionManifest)
+	fc.Result = res
+	return ec.marshalNIndexerDefinitionManifest2ᚕᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐIndexerDefinitionManifestᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_IndexerDefinitionStatus_installed(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "IndexerDefinitionStatus",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "revision":
+				return ec.fieldContext_IndexerDefinitionManifest_revision(ctx, field)
+			case "schemaVersion":
+				return ec.fieldContext_IndexerDefinitionManifest_schemaVersion(ctx, field)
+			case "engineVersion":
+				return ec.fieldContext_IndexerDefinitionManifest_engineVersion(ctx, field)
+			case "definitionCount":
+				return ec.fieldContext_IndexerDefinitionManifest_definitionCount(ctx, field)
+			case "installedAt":
+				return ec.fieldContext_IndexerDefinitionManifest_installedAt(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type IndexerDefinitionManifest", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _IndexerDefinitionStatus_job(ctx context.Context, field graphql.CollectedField, obj *model.IndexerDefinitionStatus) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_IndexerDefinitionStatus_job(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Job, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*model.IndexerDefinitionJob)
+	fc.Result = res
+	return ec.marshalOIndexerDefinitionJob2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐIndexerDefinitionJob(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_IndexerDefinitionStatus_job(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "IndexerDefinitionStatus",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_IndexerDefinitionJob_id(ctx, field)
+			case "kind":
+				return ec.fieldContext_IndexerDefinitionJob_kind(ctx, field)
+			case "state":
+				return ec.fieldContext_IndexerDefinitionJob_state(ctx, field)
+			case "targetRevision":
+				return ec.fieldContext_IndexerDefinitionJob_targetRevision(ctx, field)
+			case "expectedActiveRevision":
+				return ec.fieldContext_IndexerDefinitionJob_expectedActiveRevision(ctx, field)
+			case "downloadedBytes":
+				return ec.fieldContext_IndexerDefinitionJob_downloadedBytes(ctx, field)
+			case "errorCode":
+				return ec.fieldContext_IndexerDefinitionJob_errorCode(ctx, field)
+			case "correlationId":
+				return ec.fieldContext_IndexerDefinitionJob_correlationId(ctx, field)
+			case "startedAt":
+				return ec.fieldContext_IndexerDefinitionJob_startedAt(ctx, field)
+			case "finishedAt":
+				return ec.fieldContext_IndexerDefinitionJob_finishedAt(ctx, field)
+			case "revision":
+				return ec.fieldContext_IndexerDefinitionJob_revision(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type IndexerDefinitionJob", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _IndexerEvent_streamId(ctx context.Context, field graphql.CollectedField, obj *model.IndexerEvent) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_IndexerEvent_streamId(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.StreamID, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_IndexerEvent_streamId(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "IndexerEvent",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _IndexerEvent_sequence(ctx context.Context, field graphql.CollectedField, obj *model.IndexerEvent) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_IndexerEvent_sequence(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Sequence, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int64)
+	fc.Result = res
+	return ec.marshalNLong2int64(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_IndexerEvent_sequence(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "IndexerEvent",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Long does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _IndexerEvent_kind(ctx context.Context, field graphql.CollectedField, obj *model.IndexerEvent) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_IndexerEvent_kind(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Kind, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(model.IndexerEventKind)
+	fc.Result = res
+	return ec.marshalNIndexerEventKind2githubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐIndexerEventKind(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_IndexerEvent_kind(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "IndexerEvent",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type IndexerEventKind does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _IndexerHealth_search(ctx context.Context, field graphql.CollectedField, obj *model.IndexerHealth) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_IndexerHealth_search(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Search, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*model.IndexerObservation)
+	fc.Result = res
+	return ec.marshalOIndexerObservation2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐIndexerObservation(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_IndexerHealth_search(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "IndexerHealth",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "startedAt":
+				return ec.fieldContext_IndexerObservation_startedAt(ctx, field)
+			case "finishedAt":
+				return ec.fieldContext_IndexerObservation_finishedAt(ctx, field)
+			case "errorCode":
+				return ec.fieldContext_IndexerObservation_errorCode(ctx, field)
+			case "correlationId":
+				return ec.fieldContext_IndexerObservation_correlationId(ctx, field)
+			case "retryAt":
+				return ec.fieldContext_IndexerObservation_retryAt(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type IndexerObservation", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _IndexerHealth_fetch(ctx context.Context, field graphql.CollectedField, obj *model.IndexerHealth) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_IndexerHealth_fetch(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Fetch, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*model.IndexerObservation)
+	fc.Result = res
+	return ec.marshalOIndexerObservation2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐIndexerObservation(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_IndexerHealth_fetch(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "IndexerHealth",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "startedAt":
+				return ec.fieldContext_IndexerObservation_startedAt(ctx, field)
+			case "finishedAt":
+				return ec.fieldContext_IndexerObservation_finishedAt(ctx, field)
+			case "errorCode":
+				return ec.fieldContext_IndexerObservation_errorCode(ctx, field)
+			case "correlationId":
+				return ec.fieldContext_IndexerObservation_correlationId(ctx, field)
+			case "retryAt":
+				return ec.fieldContext_IndexerObservation_retryAt(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type IndexerObservation", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _IndexerInstance_health(ctx context.Context, field graphql.CollectedField, obj *model.IndexerInstance) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_IndexerInstance_health(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Health, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*model.IndexerHealth)
+	fc.Result = res
+	return ec.marshalNIndexerHealth2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐIndexerHealth(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_IndexerInstance_health(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "IndexerInstance",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "search":
+				return ec.fieldContext_IndexerHealth_search(ctx, field)
+			case "fetch":
+				return ec.fieldContext_IndexerHealth_fetch(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type IndexerHealth", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _IndexerInstance_siteUrl(ctx context.Context, field graphql.CollectedField, obj *model.IndexerInstance) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_IndexerInstance_siteUrl(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.SiteURL, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_IndexerInstance_siteUrl(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "IndexerInstance",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _IndexerInstance_privacy(ctx context.Context, field graphql.CollectedField, obj *model.IndexerInstance) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_IndexerInstance_privacy(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Privacy, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_IndexerInstance_privacy(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "IndexerInstance",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _IndexerInstance_language(ctx context.Context, field graphql.CollectedField, obj *model.IndexerInstance) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_IndexerInstance_language(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Language, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_IndexerInstance_language(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "IndexerInstance",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _IndexerInstance_id(ctx context.Context, field graphql.CollectedField, obj *model.IndexerInstance) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_IndexerInstance_id(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.ID, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNID2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_IndexerInstance_id(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "IndexerInstance",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type ID does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _IndexerInstance_kind(ctx context.Context, field graphql.CollectedField, obj *model.IndexerInstance) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_IndexerInstance_kind(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Kind, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(model.IndexerSourceKind)
+	fc.Result = res
+	return ec.marshalNIndexerSourceKind2githubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐIndexerSourceKind(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_IndexerInstance_kind(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "IndexerInstance",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type IndexerSourceKind does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _IndexerInstance_name(ctx context.Context, field graphql.CollectedField, obj *model.IndexerInstance) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_IndexerInstance_name(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Name, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_IndexerInstance_name(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "IndexerInstance",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _IndexerInstance_enabled(ctx context.Context, field graphql.CollectedField, obj *model.IndexerInstance) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_IndexerInstance_enabled(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Enabled, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(bool)
+	fc.Result = res
+	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_IndexerInstance_enabled(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "IndexerInstance",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _IndexerInstance_definitionId(ctx context.Context, field graphql.CollectedField, obj *model.IndexerInstance) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_IndexerInstance_definitionId(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.DefinitionID, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_IndexerInstance_definitionId(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "IndexerInstance",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _IndexerInstance_baseUrl(ctx context.Context, field graphql.CollectedField, obj *model.IndexerInstance) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_IndexerInstance_baseUrl(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.BaseURL, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_IndexerInstance_baseUrl(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "IndexerInstance",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _IndexerInstance_networkProfile(ctx context.Context, field graphql.CollectedField, obj *model.IndexerInstance) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_IndexerInstance_networkProfile(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.NetworkProfile, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_IndexerInstance_networkProfile(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "IndexerInstance",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _IndexerInstance_trustedOrigins(ctx context.Context, field graphql.CollectedField, obj *model.IndexerInstance) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_IndexerInstance_trustedOrigins(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.TrustedOrigins, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]string)
+	fc.Result = res
+	return ec.marshalNString2ᚕstringᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_IndexerInstance_trustedOrigins(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "IndexerInstance",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _IndexerInstance_ruleDigest(ctx context.Context, field graphql.CollectedField, obj *model.IndexerInstance) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_IndexerInstance_ruleDigest(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.RuleDigest, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_IndexerInstance_ruleDigest(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "IndexerInstance",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _IndexerInstance_errorCode(ctx context.Context, field graphql.CollectedField, obj *model.IndexerInstance) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_IndexerInstance_errorCode(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.ErrorCode, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_IndexerInstance_errorCode(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "IndexerInstance",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _IndexerInstance_modes(ctx context.Context, field graphql.CollectedField, obj *model.IndexerInstance) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_IndexerInstance_modes(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Modes, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]string)
+	fc.Result = res
+	return ec.marshalNString2ᚕstringᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_IndexerInstance_modes(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "IndexerInstance",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _IndexerInstance_settings(ctx context.Context, field graphql.CollectedField, obj *model.IndexerInstance) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_IndexerInstance_settings(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Settings, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]*model.IndexerSetting)
+	fc.Result = res
+	return ec.marshalNIndexerSetting2ᚕᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐIndexerSettingᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_IndexerInstance_settings(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "IndexerInstance",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "name":
+				return ec.fieldContext_IndexerSetting_name(ctx, field)
+			case "type":
+				return ec.fieldContext_IndexerSetting_type(ctx, field)
+			case "label":
+				return ec.fieldContext_IndexerSetting_label(ctx, field)
+			case "secret":
+				return ec.fieldContext_IndexerSetting_secret(ctx, field)
+			case "configured":
+				return ec.fieldContext_IndexerSetting_configured(ctx, field)
+			case "value":
+				return ec.fieldContext_IndexerSetting_value(ctx, field)
+			case "defaultValue":
+				return ec.fieldContext_IndexerSetting_defaultValue(ctx, field)
+			case "options":
+				return ec.fieldContext_IndexerSetting_options(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type IndexerSetting", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _IndexerInstances_healthErrorCode(ctx context.Context, field graphql.CollectedField, obj *model.IndexerInstances) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_IndexerInstances_healthErrorCode(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.HealthErrorCode, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_IndexerInstances_healthErrorCode(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "IndexerInstances",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _IndexerInstances_revision(ctx context.Context, field graphql.CollectedField, obj *model.IndexerInstances) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_IndexerInstances_revision(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Revision, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_IndexerInstances_revision(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "IndexerInstances",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _IndexerInstances_ruleRevision(ctx context.Context, field graphql.CollectedField, obj *model.IndexerInstances) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_IndexerInstances_ruleRevision(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.RuleRevision, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_IndexerInstances_ruleRevision(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "IndexerInstances",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _IndexerInstances_ruleErrorCode(ctx context.Context, field graphql.CollectedField, obj *model.IndexerInstances) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_IndexerInstances_ruleErrorCode(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.RuleErrorCode, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_IndexerInstances_ruleErrorCode(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "IndexerInstances",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _IndexerInstances_catalogErrorCode(ctx context.Context, field graphql.CollectedField, obj *model.IndexerInstances) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_IndexerInstances_catalogErrorCode(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.CatalogErrorCode, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_IndexerInstances_catalogErrorCode(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "IndexerInstances",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _IndexerInstances_jackettEnabled(ctx context.Context, field graphql.CollectedField, obj *model.IndexerInstances) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_IndexerInstances_jackettEnabled(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.JackettEnabled, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(bool)
+	fc.Result = res
+	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_IndexerInstances_jackettEnabled(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "IndexerInstances",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _IndexerInstances_order(ctx context.Context, field graphql.CollectedField, obj *model.IndexerInstances) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_IndexerInstances_order(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Order, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]string)
+	fc.Result = res
+	return ec.marshalNID2ᚕstringᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_IndexerInstances_order(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "IndexerInstances",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type ID does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _IndexerInstances_networkProfiles(ctx context.Context, field graphql.CollectedField, obj *model.IndexerInstances) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_IndexerInstances_networkProfiles(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.NetworkProfiles, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]string)
+	fc.Result = res
+	return ec.marshalNString2ᚕstringᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_IndexerInstances_networkProfiles(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "IndexerInstances",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _IndexerInstances_items(ctx context.Context, field graphql.CollectedField, obj *model.IndexerInstances) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_IndexerInstances_items(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Items, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]*model.IndexerInstance)
+	fc.Result = res
+	return ec.marshalNIndexerInstance2ᚕᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐIndexerInstanceᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_IndexerInstances_items(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "IndexerInstances",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "health":
+				return ec.fieldContext_IndexerInstance_health(ctx, field)
+			case "siteUrl":
+				return ec.fieldContext_IndexerInstance_siteUrl(ctx, field)
+			case "privacy":
+				return ec.fieldContext_IndexerInstance_privacy(ctx, field)
+			case "language":
+				return ec.fieldContext_IndexerInstance_language(ctx, field)
+			case "id":
+				return ec.fieldContext_IndexerInstance_id(ctx, field)
+			case "kind":
+				return ec.fieldContext_IndexerInstance_kind(ctx, field)
+			case "name":
+				return ec.fieldContext_IndexerInstance_name(ctx, field)
+			case "enabled":
+				return ec.fieldContext_IndexerInstance_enabled(ctx, field)
+			case "definitionId":
+				return ec.fieldContext_IndexerInstance_definitionId(ctx, field)
+			case "baseUrl":
+				return ec.fieldContext_IndexerInstance_baseUrl(ctx, field)
+			case "networkProfile":
+				return ec.fieldContext_IndexerInstance_networkProfile(ctx, field)
+			case "trustedOrigins":
+				return ec.fieldContext_IndexerInstance_trustedOrigins(ctx, field)
+			case "ruleDigest":
+				return ec.fieldContext_IndexerInstance_ruleDigest(ctx, field)
+			case "errorCode":
+				return ec.fieldContext_IndexerInstance_errorCode(ctx, field)
+			case "modes":
+				return ec.fieldContext_IndexerInstance_modes(ctx, field)
+			case "settings":
+				return ec.fieldContext_IndexerInstance_settings(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type IndexerInstance", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _IndexerLoginChallenge_id(ctx context.Context, field graphql.CollectedField, obj *model.IndexerLoginChallenge) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_IndexerLoginChallenge_id(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.ID, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNID2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_IndexerLoginChallenge_id(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "IndexerLoginChallenge",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type ID does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _IndexerLoginChallenge_type(ctx context.Context, field graphql.CollectedField, obj *model.IndexerLoginChallenge) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_IndexerLoginChallenge_type(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Type, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_IndexerLoginChallenge_type(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "IndexerLoginChallenge",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _IndexerLoginChallenge_prompt(ctx context.Context, field graphql.CollectedField, obj *model.IndexerLoginChallenge) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_IndexerLoginChallenge_prompt(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Prompt, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_IndexerLoginChallenge_prompt(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "IndexerLoginChallenge",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _IndexerLoginChallenge_imageData(ctx context.Context, field graphql.CollectedField, obj *model.IndexerLoginChallenge) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_IndexerLoginChallenge_imageData(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.ImageData, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*string)
+	fc.Result = res
+	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_IndexerLoginChallenge_imageData(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "IndexerLoginChallenge",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _IndexerLoginReport_id(ctx context.Context, field graphql.CollectedField, obj *model.IndexerLoginReport) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_IndexerLoginReport_id(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.ID, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNID2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_IndexerLoginReport_id(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "IndexerLoginReport",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type ID does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _IndexerLoginReport_instanceId(ctx context.Context, field graphql.CollectedField, obj *model.IndexerLoginReport) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_IndexerLoginReport_instanceId(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.InstanceID, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNID2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_IndexerLoginReport_instanceId(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "IndexerLoginReport",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type ID does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _IndexerLoginReport_configRevision(ctx context.Context, field graphql.CollectedField, obj *model.IndexerLoginReport) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_IndexerLoginReport_configRevision(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.ConfigRevision, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_IndexerLoginReport_configRevision(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "IndexerLoginReport",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _IndexerLoginReport_ruleRevision(ctx context.Context, field graphql.CollectedField, obj *model.IndexerLoginReport) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_IndexerLoginReport_ruleRevision(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.RuleRevision, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_IndexerLoginReport_ruleRevision(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "IndexerLoginReport",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _IndexerLoginReport_state(ctx context.Context, field graphql.CollectedField, obj *model.IndexerLoginReport) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_IndexerLoginReport_state(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.State, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(model.IndexerLoginState)
+	fc.Result = res
+	return ec.marshalNIndexerLoginState2githubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐIndexerLoginState(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_IndexerLoginReport_state(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "IndexerLoginReport",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type IndexerLoginState does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _IndexerLoginReport_expiresAt(ctx context.Context, field graphql.CollectedField, obj *model.IndexerLoginReport) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_IndexerLoginReport_expiresAt(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.ExpiresAt, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_IndexerLoginReport_expiresAt(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "IndexerLoginReport",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _IndexerLoginReport_challenge(ctx context.Context, field graphql.CollectedField, obj *model.IndexerLoginReport) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_IndexerLoginReport_challenge(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Challenge, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*model.IndexerLoginChallenge)
+	fc.Result = res
+	return ec.marshalOIndexerLoginChallenge2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐIndexerLoginChallenge(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_IndexerLoginReport_challenge(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "IndexerLoginReport",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_IndexerLoginChallenge_id(ctx, field)
+			case "type":
+				return ec.fieldContext_IndexerLoginChallenge_type(ctx, field)
+			case "prompt":
+				return ec.fieldContext_IndexerLoginChallenge_prompt(ctx, field)
+			case "imageData":
+				return ec.fieldContext_IndexerLoginChallenge_imageData(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type IndexerLoginChallenge", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _IndexerNetworkProfile_id(ctx context.Context, field graphql.CollectedField, obj *model.IndexerNetworkProfile) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_IndexerNetworkProfile_id(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.ID, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNID2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_IndexerNetworkProfile_id(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "IndexerNetworkProfile",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type ID does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _IndexerNetworkProfile_proxyConfigured(ctx context.Context, field graphql.CollectedField, obj *model.IndexerNetworkProfile) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_IndexerNetworkProfile_proxyConfigured(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.ProxyConfigured, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(bool)
+	fc.Result = res
+	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_IndexerNetworkProfile_proxyConfigured(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "IndexerNetworkProfile",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _IndexerNetworkProfile_flareSolverrConfigured(ctx context.Context, field graphql.CollectedField, obj *model.IndexerNetworkProfile) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_IndexerNetworkProfile_flareSolverrConfigured(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.FlareSolverrConfigured, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(bool)
+	fc.Result = res
+	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_IndexerNetworkProfile_flareSolverrConfigured(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "IndexerNetworkProfile",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _IndexerNetworkProfile_usedBy(ctx context.Context, field graphql.CollectedField, obj *model.IndexerNetworkProfile) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_IndexerNetworkProfile_usedBy(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.UsedBy, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int)
+	fc.Result = res
+	return ec.marshalNInt2int(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_IndexerNetworkProfile_usedBy(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "IndexerNetworkProfile",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _IndexerNetworkSettings_revision(ctx context.Context, field graphql.CollectedField, obj *model.IndexerNetworkSettings) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_IndexerNetworkSettings_revision(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Revision, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_IndexerNetworkSettings_revision(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "IndexerNetworkSettings",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _IndexerNetworkSettings_requestTimeoutSeconds(ctx context.Context, field graphql.CollectedField, obj *model.IndexerNetworkSettings) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_IndexerNetworkSettings_requestTimeoutSeconds(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.RequestTimeoutSeconds, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int)
+	fc.Result = res
+	return ec.marshalNInt2int(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_IndexerNetworkSettings_requestTimeoutSeconds(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "IndexerNetworkSettings",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _IndexerNetworkSettings_siteTimeoutSeconds(ctx context.Context, field graphql.CollectedField, obj *model.IndexerNetworkSettings) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_IndexerNetworkSettings_siteTimeoutSeconds(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.SiteTimeoutSeconds, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int)
+	fc.Result = res
+	return ec.marshalNInt2int(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_IndexerNetworkSettings_siteTimeoutSeconds(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "IndexerNetworkSettings",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _IndexerNetworkSettings_challengeTimeoutSeconds(ctx context.Context, field graphql.CollectedField, obj *model.IndexerNetworkSettings) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_IndexerNetworkSettings_challengeTimeoutSeconds(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.ChallengeTimeoutSeconds, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int)
+	fc.Result = res
+	return ec.marshalNInt2int(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_IndexerNetworkSettings_challengeTimeoutSeconds(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "IndexerNetworkSettings",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _IndexerNetworkSettings_profiles(ctx context.Context, field graphql.CollectedField, obj *model.IndexerNetworkSettings) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_IndexerNetworkSettings_profiles(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Profiles, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]*model.IndexerNetworkProfile)
+	fc.Result = res
+	return ec.marshalNIndexerNetworkProfile2ᚕᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐIndexerNetworkProfileᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_IndexerNetworkSettings_profiles(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "IndexerNetworkSettings",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_IndexerNetworkProfile_id(ctx, field)
+			case "proxyConfigured":
+				return ec.fieldContext_IndexerNetworkProfile_proxyConfigured(ctx, field)
+			case "flareSolverrConfigured":
+				return ec.fieldContext_IndexerNetworkProfile_flareSolverrConfigured(ctx, field)
+			case "usedBy":
+				return ec.fieldContext_IndexerNetworkProfile_usedBy(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type IndexerNetworkProfile", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _IndexerObservation_startedAt(ctx context.Context, field graphql.CollectedField, obj *model.IndexerObservation) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_IndexerObservation_startedAt(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.StartedAt, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_IndexerObservation_startedAt(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "IndexerObservation",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _IndexerObservation_finishedAt(ctx context.Context, field graphql.CollectedField, obj *model.IndexerObservation) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_IndexerObservation_finishedAt(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.FinishedAt, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_IndexerObservation_finishedAt(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "IndexerObservation",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _IndexerObservation_errorCode(ctx context.Context, field graphql.CollectedField, obj *model.IndexerObservation) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_IndexerObservation_errorCode(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.ErrorCode, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_IndexerObservation_errorCode(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "IndexerObservation",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _IndexerObservation_correlationId(ctx context.Context, field graphql.CollectedField, obj *model.IndexerObservation) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_IndexerObservation_correlationId(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.CorrelationID, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_IndexerObservation_correlationId(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "IndexerObservation",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _IndexerObservation_retryAt(ctx context.Context, field graphql.CollectedField, obj *model.IndexerObservation) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_IndexerObservation_retryAt(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.RetryAt, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*string)
+	fc.Result = res
+	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_IndexerObservation_retryAt(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "IndexerObservation",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _IndexerPreferenceRule_trackerIds(ctx context.Context, field graphql.CollectedField, obj *model.IndexerPreferenceRule) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_IndexerPreferenceRule_trackerIds(ctx, field)
 	if err != nil {
@@ -18778,6 +29365,585 @@ func (ec *executionContext) fieldContext_IndexerPreferenceRule_trackerIds(_ cont
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _IndexerSetting_name(ctx context.Context, field graphql.CollectedField, obj *model.IndexerSetting) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_IndexerSetting_name(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Name, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_IndexerSetting_name(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "IndexerSetting",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _IndexerSetting_type(ctx context.Context, field graphql.CollectedField, obj *model.IndexerSetting) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_IndexerSetting_type(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Type, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_IndexerSetting_type(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "IndexerSetting",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _IndexerSetting_label(ctx context.Context, field graphql.CollectedField, obj *model.IndexerSetting) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_IndexerSetting_label(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Label, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_IndexerSetting_label(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "IndexerSetting",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _IndexerSetting_secret(ctx context.Context, field graphql.CollectedField, obj *model.IndexerSetting) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_IndexerSetting_secret(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Secret, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(bool)
+	fc.Result = res
+	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_IndexerSetting_secret(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "IndexerSetting",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _IndexerSetting_configured(ctx context.Context, field graphql.CollectedField, obj *model.IndexerSetting) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_IndexerSetting_configured(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Configured, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(bool)
+	fc.Result = res
+	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_IndexerSetting_configured(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "IndexerSetting",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _IndexerSetting_value(ctx context.Context, field graphql.CollectedField, obj *model.IndexerSetting) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_IndexerSetting_value(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Value, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*model.IndexerSettingValue)
+	fc.Result = res
+	return ec.marshalOIndexerSettingValue2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐIndexerSettingValue(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_IndexerSetting_value(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "IndexerSetting",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "string":
+				return ec.fieldContext_IndexerSettingValue_string(ctx, field)
+			case "boolean":
+				return ec.fieldContext_IndexerSettingValue_boolean(ctx, field)
+			case "number":
+				return ec.fieldContext_IndexerSettingValue_number(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type IndexerSettingValue", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _IndexerSetting_defaultValue(ctx context.Context, field graphql.CollectedField, obj *model.IndexerSetting) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_IndexerSetting_defaultValue(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.DefaultValue, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*model.IndexerSettingValue)
+	fc.Result = res
+	return ec.marshalOIndexerSettingValue2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐIndexerSettingValue(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_IndexerSetting_defaultValue(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "IndexerSetting",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "string":
+				return ec.fieldContext_IndexerSettingValue_string(ctx, field)
+			case "boolean":
+				return ec.fieldContext_IndexerSettingValue_boolean(ctx, field)
+			case "number":
+				return ec.fieldContext_IndexerSettingValue_number(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type IndexerSettingValue", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _IndexerSetting_options(ctx context.Context, field graphql.CollectedField, obj *model.IndexerSetting) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_IndexerSetting_options(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Options, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]*model.IndexerSettingOption)
+	fc.Result = res
+	return ec.marshalNIndexerSettingOption2ᚕᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐIndexerSettingOptionᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_IndexerSetting_options(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "IndexerSetting",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "value":
+				return ec.fieldContext_IndexerSettingOption_value(ctx, field)
+			case "label":
+				return ec.fieldContext_IndexerSettingOption_label(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type IndexerSettingOption", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _IndexerSettingOption_value(ctx context.Context, field graphql.CollectedField, obj *model.IndexerSettingOption) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_IndexerSettingOption_value(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Value, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_IndexerSettingOption_value(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "IndexerSettingOption",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _IndexerSettingOption_label(ctx context.Context, field graphql.CollectedField, obj *model.IndexerSettingOption) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_IndexerSettingOption_label(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Label, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_IndexerSettingOption_label(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "IndexerSettingOption",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _IndexerSettingValue_string(ctx context.Context, field graphql.CollectedField, obj *model.IndexerSettingValue) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_IndexerSettingValue_string(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.String, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*string)
+	fc.Result = res
+	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_IndexerSettingValue_string(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "IndexerSettingValue",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _IndexerSettingValue_boolean(ctx context.Context, field graphql.CollectedField, obj *model.IndexerSettingValue) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_IndexerSettingValue_boolean(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Boolean, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*bool)
+	fc.Result = res
+	return ec.marshalOBoolean2ᚖbool(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_IndexerSettingValue_boolean(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "IndexerSettingValue",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _IndexerSettingValue_number(ctx context.Context, field graphql.CollectedField, obj *model.IndexerSettingValue) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_IndexerSettingValue_number(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Number, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*float64)
+	fc.Result = res
+	return ec.marshalOFloat2ᚖfloat64(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_IndexerSettingValue_number(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "IndexerSettingValue",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Float does not have child fields")
 		},
 	}
 	return fc, nil
@@ -19058,798 +30224,6 @@ func (ec *executionContext) fieldContext_IngestStatus_configured(_ context.Conte
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("field of type Boolean does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _JackettIndexer_siteUrl(ctx context.Context, field graphql.CollectedField, obj *model.JackettIndexer) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_JackettIndexer_siteUrl(ctx, field)
-	if err != nil {
-		return graphql.Null
-	}
-	ctx = graphql.WithFieldContext(ctx, fc)
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.SiteURL, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(string)
-	fc.Result = res
-	return ec.marshalNString2string(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) fieldContext_JackettIndexer_siteUrl(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "JackettIndexer",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type String does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _JackettIndexer_siteType(ctx context.Context, field graphql.CollectedField, obj *model.JackettIndexer) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_JackettIndexer_siteType(ctx, field)
-	if err != nil {
-		return graphql.Null
-	}
-	ctx = graphql.WithFieldContext(ctx, fc)
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.SiteType, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(string)
-	fc.Result = res
-	return ec.marshalNString2string(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) fieldContext_JackettIndexer_siteType(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "JackettIndexer",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type String does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _JackettIndexer_language(ctx context.Context, field graphql.CollectedField, obj *model.JackettIndexer) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_JackettIndexer_language(ctx, field)
-	if err != nil {
-		return graphql.Null
-	}
-	ctx = graphql.WithFieldContext(ctx, fc)
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.Language, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(string)
-	fc.Result = res
-	return ec.marshalNString2string(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) fieldContext_JackettIndexer_language(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "JackettIndexer",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type String does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _JackettIndexer_id(ctx context.Context, field graphql.CollectedField, obj *model.JackettIndexer) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_JackettIndexer_id(ctx, field)
-	if err != nil {
-		return graphql.Null
-	}
-	ctx = graphql.WithFieldContext(ctx, fc)
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.ID, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(string)
-	fc.Result = res
-	return ec.marshalNString2string(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) fieldContext_JackettIndexer_id(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "JackettIndexer",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type String does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _JackettIndexer_name(ctx context.Context, field graphql.CollectedField, obj *model.JackettIndexer) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_JackettIndexer_name(ctx, field)
-	if err != nil {
-		return graphql.Null
-	}
-	ctx = graphql.WithFieldContext(ctx, fc)
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.Name, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(string)
-	fc.Result = res
-	return ec.marshalNString2string(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) fieldContext_JackettIndexer_name(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "JackettIndexer",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type String does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _JackettIndexer_enabled(ctx context.Context, field graphql.CollectedField, obj *model.JackettIndexer) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_JackettIndexer_enabled(ctx, field)
-	if err != nil {
-		return graphql.Null
-	}
-	ctx = graphql.WithFieldContext(ctx, fc)
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.Enabled, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(bool)
-	fc.Result = res
-	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) fieldContext_JackettIndexer_enabled(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "JackettIndexer",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type Boolean does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _JackettSearchResult_title(ctx context.Context, field graphql.CollectedField, obj *model.JackettSearchResult) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_JackettSearchResult_title(ctx, field)
-	if err != nil {
-		return graphql.Null
-	}
-	ctx = graphql.WithFieldContext(ctx, fc)
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.Title, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(string)
-	fc.Result = res
-	return ec.marshalNString2string(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) fieldContext_JackettSearchResult_title(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "JackettSearchResult",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type String does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _JackettSearchResult_size(ctx context.Context, field graphql.CollectedField, obj *model.JackettSearchResult) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_JackettSearchResult_size(ctx, field)
-	if err != nil {
-		return graphql.Null
-	}
-	ctx = graphql.WithFieldContext(ctx, fc)
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.Size, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(int64)
-	fc.Result = res
-	return ec.marshalNLong2int64(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) fieldContext_JackettSearchResult_size(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "JackettSearchResult",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type Long does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _JackettSearchResult_seeders(ctx context.Context, field graphql.CollectedField, obj *model.JackettSearchResult) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_JackettSearchResult_seeders(ctx, field)
-	if err != nil {
-		return graphql.Null
-	}
-	ctx = graphql.WithFieldContext(ctx, fc)
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.Seeders, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(int)
-	fc.Result = res
-	return ec.marshalNInt2int(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) fieldContext_JackettSearchResult_seeders(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "JackettSearchResult",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type Int does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _JackettSearchResult_peers(ctx context.Context, field graphql.CollectedField, obj *model.JackettSearchResult) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_JackettSearchResult_peers(ctx, field)
-	if err != nil {
-		return graphql.Null
-	}
-	ctx = graphql.WithFieldContext(ctx, fc)
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.Peers, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(int)
-	fc.Result = res
-	return ec.marshalNInt2int(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) fieldContext_JackettSearchResult_peers(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "JackettSearchResult",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type Int does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _JackettSearchResult_tracker(ctx context.Context, field graphql.CollectedField, obj *model.JackettSearchResult) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_JackettSearchResult_tracker(ctx, field)
-	if err != nil {
-		return graphql.Null
-	}
-	ctx = graphql.WithFieldContext(ctx, fc)
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.Tracker, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(string)
-	fc.Result = res
-	return ec.marshalNString2string(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) fieldContext_JackettSearchResult_tracker(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "JackettSearchResult",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type String does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _JackettSearchResult_trackerId(ctx context.Context, field graphql.CollectedField, obj *model.JackettSearchResult) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_JackettSearchResult_trackerId(ctx, field)
-	if err != nil {
-		return graphql.Null
-	}
-	ctx = graphql.WithFieldContext(ctx, fc)
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.TrackerID, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(string)
-	fc.Result = res
-	return ec.marshalNString2string(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) fieldContext_JackettSearchResult_trackerId(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "JackettSearchResult",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type String does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _JackettSearchResult_categoryDesc(ctx context.Context, field graphql.CollectedField, obj *model.JackettSearchResult) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_JackettSearchResult_categoryDesc(ctx, field)
-	if err != nil {
-		return graphql.Null
-	}
-	ctx = graphql.WithFieldContext(ctx, fc)
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.CategoryDesc, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(string)
-	fc.Result = res
-	return ec.marshalNString2string(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) fieldContext_JackettSearchResult_categoryDesc(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "JackettSearchResult",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type String does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _JackettSearchResult_publishDate(ctx context.Context, field graphql.CollectedField, obj *model.JackettSearchResult) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_JackettSearchResult_publishDate(ctx, field)
-	if err != nil {
-		return graphql.Null
-	}
-	ctx = graphql.WithFieldContext(ctx, fc)
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.PublishDate, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(string)
-	fc.Result = res
-	return ec.marshalNString2string(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) fieldContext_JackettSearchResult_publishDate(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "JackettSearchResult",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type String does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _JackettSearchResult_details(ctx context.Context, field graphql.CollectedField, obj *model.JackettSearchResult) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_JackettSearchResult_details(ctx, field)
-	if err != nil {
-		return graphql.Null
-	}
-	ctx = graphql.WithFieldContext(ctx, fc)
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.Details, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(string)
-	fc.Result = res
-	return ec.marshalNString2string(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) fieldContext_JackettSearchResult_details(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "JackettSearchResult",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type String does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _JackettSearchResult_link(ctx context.Context, field graphql.CollectedField, obj *model.JackettSearchResult) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_JackettSearchResult_link(ctx, field)
-	if err != nil {
-		return graphql.Null
-	}
-	ctx = graphql.WithFieldContext(ctx, fc)
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.Link, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(string)
-	fc.Result = res
-	return ec.marshalNString2string(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) fieldContext_JackettSearchResult_link(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "JackettSearchResult",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type String does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _JackettSearchResult_magnetUri(ctx context.Context, field graphql.CollectedField, obj *model.JackettSearchResult) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_JackettSearchResult_magnetUri(ctx, field)
-	if err != nil {
-		return graphql.Null
-	}
-	ctx = graphql.WithFieldContext(ctx, fc)
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.MagnetURI, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(string)
-	fc.Result = res
-	return ec.marshalNString2string(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) fieldContext_JackettSearchResult_magnetUri(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "JackettSearchResult",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type String does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _JackettSearchResult_infoHash(ctx context.Context, field graphql.CollectedField, obj *model.JackettSearchResult) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_JackettSearchResult_infoHash(ctx, field)
-	if err != nil {
-		return graphql.Null
-	}
-	ctx = graphql.WithFieldContext(ctx, fc)
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.InfoHash, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(string)
-	fc.Result = res
-	return ec.marshalNString2string(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) fieldContext_JackettSearchResult_infoHash(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "JackettSearchResult",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type String does not have child fields")
 		},
 	}
 	return fc, nil
@@ -24104,6 +34478,1704 @@ func (ec *executionContext) fieldContext_Mutation_setDownloaderSpeedLimit(ctx co
 	return fc, nil
 }
 
+func (ec *executionContext) _Mutation_clearIndexerSearchCache(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Mutation_clearIndexerSearchCache(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().ClearIndexerSearchCache(rctx, fc.Args["instanceId"].(*string))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*model.IndexerCacheStatus)
+	fc.Result = res
+	return ec.marshalNIndexerCacheStatus2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐIndexerCacheStatus(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Mutation_clearIndexerSearchCache(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "revision":
+				return ec.fieldContext_IndexerCacheStatus_revision(ctx, field)
+			case "enabled":
+				return ec.fieldContext_IndexerCacheStatus_enabled(ctx, field)
+			case "ttlSeconds":
+				return ec.fieldContext_IndexerCacheStatus_ttlSeconds(ctx, field)
+			case "emptyTtlSeconds":
+				return ec.fieldContext_IndexerCacheStatus_emptyTtlSeconds(ctx, field)
+			case "maxSizeMb":
+				return ec.fieldContext_IndexerCacheStatus_maxSizeMb(ctx, field)
+			case "entries":
+				return ec.fieldContext_IndexerCacheStatus_entries(ctx, field)
+			case "usedBytes":
+				return ec.fieldContext_IndexerCacheStatus_usedBytes(ctx, field)
+			case "activeRequests":
+				return ec.fieldContext_IndexerCacheStatus_activeRequests(ctx, field)
+			case "activeWaiters":
+				return ec.fieldContext_IndexerCacheStatus_activeWaiters(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type IndexerCacheStatus", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_clearIndexerSearchCache_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_updateIndexerSearchCache(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Mutation_updateIndexerSearchCache(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().UpdateIndexerSearchCache(rctx, fc.Args["expectedRevision"].(string), fc.Args["input"].(model.IndexerSearchCachePatchInput))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*model.IndexerCacheStatus)
+	fc.Result = res
+	return ec.marshalNIndexerCacheStatus2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐIndexerCacheStatus(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Mutation_updateIndexerSearchCache(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "revision":
+				return ec.fieldContext_IndexerCacheStatus_revision(ctx, field)
+			case "enabled":
+				return ec.fieldContext_IndexerCacheStatus_enabled(ctx, field)
+			case "ttlSeconds":
+				return ec.fieldContext_IndexerCacheStatus_ttlSeconds(ctx, field)
+			case "emptyTtlSeconds":
+				return ec.fieldContext_IndexerCacheStatus_emptyTtlSeconds(ctx, field)
+			case "maxSizeMb":
+				return ec.fieldContext_IndexerCacheStatus_maxSizeMb(ctx, field)
+			case "entries":
+				return ec.fieldContext_IndexerCacheStatus_entries(ctx, field)
+			case "usedBytes":
+				return ec.fieldContext_IndexerCacheStatus_usedBytes(ctx, field)
+			case "activeRequests":
+				return ec.fieldContext_IndexerCacheStatus_activeRequests(ctx, field)
+			case "activeWaiters":
+				return ec.fieldContext_IndexerCacheStatus_activeWaiters(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type IndexerCacheStatus", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_updateIndexerSearchCache_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_testIndexer(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Mutation_testIndexer(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().TestIndexer(rctx, fc.Args["input"].(model.TestIndexerInput))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*model.IndexerCheckReport)
+	fc.Result = res
+	return ec.marshalNIndexerCheckReport2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐIndexerCheckReport(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Mutation_testIndexer(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_IndexerCheckReport_id(ctx, field)
+			case "instanceId":
+				return ec.fieldContext_IndexerCheckReport_instanceId(ctx, field)
+			case "kind":
+				return ec.fieldContext_IndexerCheckReport_kind(ctx, field)
+			case "configRevision":
+				return ec.fieldContext_IndexerCheckReport_configRevision(ctx, field)
+			case "ruleRevision":
+				return ec.fieldContext_IndexerCheckReport_ruleRevision(ctx, field)
+			case "startedAt":
+				return ec.fieldContext_IndexerCheckReport_startedAt(ctx, field)
+			case "finishedAt":
+				return ec.fieldContext_IndexerCheckReport_finishedAt(ctx, field)
+			case "results":
+				return ec.fieldContext_IndexerCheckReport_results(ctx, field)
+			case "partial":
+				return ec.fieldContext_IndexerCheckReport_partial(ctx, field)
+			case "truncated":
+				return ec.fieldContext_IndexerCheckReport_truncated(ctx, field)
+			case "stages":
+				return ec.fieldContext_IndexerCheckReport_stages(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type IndexerCheckReport", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_testIndexer_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_updateIndexerDefinitionPolicy(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Mutation_updateIndexerDefinitionPolicy(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().UpdateIndexerDefinitionPolicy(rctx, fc.Args["expectedRevision"].(string), fc.Args["input"].(model.IndexerDefinitionPolicyPatchInput))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*model.IndexerDefinitionPolicy)
+	fc.Result = res
+	return ec.marshalNIndexerDefinitionPolicy2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐIndexerDefinitionPolicy(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Mutation_updateIndexerDefinitionPolicy(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "revision":
+				return ec.fieldContext_IndexerDefinitionPolicy_revision(ctx, field)
+			case "source":
+				return ec.fieldContext_IndexerDefinitionPolicy_source(ctx, field)
+			case "schemaVersion":
+				return ec.fieldContext_IndexerDefinitionPolicy_schemaVersion(ctx, field)
+			case "checkIntervalHours":
+				return ec.fieldContext_IndexerDefinitionPolicy_checkIntervalHours(ctx, field)
+			case "autoUpdate":
+				return ec.fieldContext_IndexerDefinitionPolicy_autoUpdate(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type IndexerDefinitionPolicy", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_updateIndexerDefinitionPolicy_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_checkIndexerDefinitionUpdate(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Mutation_checkIndexerDefinitionUpdate(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().CheckIndexerDefinitionUpdate(rctx)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*model.IndexerDefinitionStatus)
+	fc.Result = res
+	return ec.marshalNIndexerDefinitionStatus2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐIndexerDefinitionStatus(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Mutation_checkIndexerDefinitionUpdate(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "streamId":
+				return ec.fieldContext_IndexerDefinitionStatus_streamId(ctx, field)
+			case "activeRevision":
+				return ec.fieldContext_IndexerDefinitionStatus_activeRevision(ctx, field)
+			case "previousRevision":
+				return ec.fieldContext_IndexerDefinitionStatus_previousRevision(ctx, field)
+			case "availableRevision":
+				return ec.fieldContext_IndexerDefinitionStatus_availableRevision(ctx, field)
+			case "revision":
+				return ec.fieldContext_IndexerDefinitionStatus_revision(ctx, field)
+			case "available":
+				return ec.fieldContext_IndexerDefinitionStatus_available(ctx, field)
+			case "lastCheckedAt":
+				return ec.fieldContext_IndexerDefinitionStatus_lastCheckedAt(ctx, field)
+			case "checkErrorCode":
+				return ec.fieldContext_IndexerDefinitionStatus_checkErrorCode(ctx, field)
+			case "errorCode":
+				return ec.fieldContext_IndexerDefinitionStatus_errorCode(ctx, field)
+			case "installed":
+				return ec.fieldContext_IndexerDefinitionStatus_installed(ctx, field)
+			case "job":
+				return ec.fieldContext_IndexerDefinitionStatus_job(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type IndexerDefinitionStatus", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_installIndexerDefinitions(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Mutation_installIndexerDefinitions(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().InstallIndexerDefinitions(rctx, fc.Args["input"].(model.IndexerDefinitionChangeInput))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*model.IndexerDefinitionJob)
+	fc.Result = res
+	return ec.marshalNIndexerDefinitionJob2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐIndexerDefinitionJob(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Mutation_installIndexerDefinitions(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_IndexerDefinitionJob_id(ctx, field)
+			case "kind":
+				return ec.fieldContext_IndexerDefinitionJob_kind(ctx, field)
+			case "state":
+				return ec.fieldContext_IndexerDefinitionJob_state(ctx, field)
+			case "targetRevision":
+				return ec.fieldContext_IndexerDefinitionJob_targetRevision(ctx, field)
+			case "expectedActiveRevision":
+				return ec.fieldContext_IndexerDefinitionJob_expectedActiveRevision(ctx, field)
+			case "downloadedBytes":
+				return ec.fieldContext_IndexerDefinitionJob_downloadedBytes(ctx, field)
+			case "errorCode":
+				return ec.fieldContext_IndexerDefinitionJob_errorCode(ctx, field)
+			case "correlationId":
+				return ec.fieldContext_IndexerDefinitionJob_correlationId(ctx, field)
+			case "startedAt":
+				return ec.fieldContext_IndexerDefinitionJob_startedAt(ctx, field)
+			case "finishedAt":
+				return ec.fieldContext_IndexerDefinitionJob_finishedAt(ctx, field)
+			case "revision":
+				return ec.fieldContext_IndexerDefinitionJob_revision(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type IndexerDefinitionJob", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_installIndexerDefinitions_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_updateIndexerDefinitions(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Mutation_updateIndexerDefinitions(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().UpdateIndexerDefinitions(rctx, fc.Args["input"].(model.IndexerDefinitionChangeInput))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*model.IndexerDefinitionJob)
+	fc.Result = res
+	return ec.marshalNIndexerDefinitionJob2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐIndexerDefinitionJob(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Mutation_updateIndexerDefinitions(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_IndexerDefinitionJob_id(ctx, field)
+			case "kind":
+				return ec.fieldContext_IndexerDefinitionJob_kind(ctx, field)
+			case "state":
+				return ec.fieldContext_IndexerDefinitionJob_state(ctx, field)
+			case "targetRevision":
+				return ec.fieldContext_IndexerDefinitionJob_targetRevision(ctx, field)
+			case "expectedActiveRevision":
+				return ec.fieldContext_IndexerDefinitionJob_expectedActiveRevision(ctx, field)
+			case "downloadedBytes":
+				return ec.fieldContext_IndexerDefinitionJob_downloadedBytes(ctx, field)
+			case "errorCode":
+				return ec.fieldContext_IndexerDefinitionJob_errorCode(ctx, field)
+			case "correlationId":
+				return ec.fieldContext_IndexerDefinitionJob_correlationId(ctx, field)
+			case "startedAt":
+				return ec.fieldContext_IndexerDefinitionJob_startedAt(ctx, field)
+			case "finishedAt":
+				return ec.fieldContext_IndexerDefinitionJob_finishedAt(ctx, field)
+			case "revision":
+				return ec.fieldContext_IndexerDefinitionJob_revision(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type IndexerDefinitionJob", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_updateIndexerDefinitions_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_rollbackIndexerDefinitions(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Mutation_rollbackIndexerDefinitions(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().RollbackIndexerDefinitions(rctx, fc.Args["input"].(model.IndexerDefinitionChangeInput))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*model.IndexerDefinitionJob)
+	fc.Result = res
+	return ec.marshalNIndexerDefinitionJob2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐIndexerDefinitionJob(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Mutation_rollbackIndexerDefinitions(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_IndexerDefinitionJob_id(ctx, field)
+			case "kind":
+				return ec.fieldContext_IndexerDefinitionJob_kind(ctx, field)
+			case "state":
+				return ec.fieldContext_IndexerDefinitionJob_state(ctx, field)
+			case "targetRevision":
+				return ec.fieldContext_IndexerDefinitionJob_targetRevision(ctx, field)
+			case "expectedActiveRevision":
+				return ec.fieldContext_IndexerDefinitionJob_expectedActiveRevision(ctx, field)
+			case "downloadedBytes":
+				return ec.fieldContext_IndexerDefinitionJob_downloadedBytes(ctx, field)
+			case "errorCode":
+				return ec.fieldContext_IndexerDefinitionJob_errorCode(ctx, field)
+			case "correlationId":
+				return ec.fieldContext_IndexerDefinitionJob_correlationId(ctx, field)
+			case "startedAt":
+				return ec.fieldContext_IndexerDefinitionJob_startedAt(ctx, field)
+			case "finishedAt":
+				return ec.fieldContext_IndexerDefinitionJob_finishedAt(ctx, field)
+			case "revision":
+				return ec.fieldContext_IndexerDefinitionJob_revision(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type IndexerDefinitionJob", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_rollbackIndexerDefinitions_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_repairIndexerDefinitions(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Mutation_repairIndexerDefinitions(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().RepairIndexerDefinitions(rctx, fc.Args["input"].(model.IndexerDefinitionChangeInput))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*model.IndexerDefinitionJob)
+	fc.Result = res
+	return ec.marshalNIndexerDefinitionJob2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐIndexerDefinitionJob(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Mutation_repairIndexerDefinitions(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_IndexerDefinitionJob_id(ctx, field)
+			case "kind":
+				return ec.fieldContext_IndexerDefinitionJob_kind(ctx, field)
+			case "state":
+				return ec.fieldContext_IndexerDefinitionJob_state(ctx, field)
+			case "targetRevision":
+				return ec.fieldContext_IndexerDefinitionJob_targetRevision(ctx, field)
+			case "expectedActiveRevision":
+				return ec.fieldContext_IndexerDefinitionJob_expectedActiveRevision(ctx, field)
+			case "downloadedBytes":
+				return ec.fieldContext_IndexerDefinitionJob_downloadedBytes(ctx, field)
+			case "errorCode":
+				return ec.fieldContext_IndexerDefinitionJob_errorCode(ctx, field)
+			case "correlationId":
+				return ec.fieldContext_IndexerDefinitionJob_correlationId(ctx, field)
+			case "startedAt":
+				return ec.fieldContext_IndexerDefinitionJob_startedAt(ctx, field)
+			case "finishedAt":
+				return ec.fieldContext_IndexerDefinitionJob_finishedAt(ctx, field)
+			case "revision":
+				return ec.fieldContext_IndexerDefinitionJob_revision(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type IndexerDefinitionJob", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_repairIndexerDefinitions_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_cancelIndexerDefinitionUpdate(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Mutation_cancelIndexerDefinitionUpdate(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().CancelIndexerDefinitionUpdate(rctx, fc.Args["id"].(string))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*model.IndexerDefinitionJob)
+	fc.Result = res
+	return ec.marshalNIndexerDefinitionJob2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐIndexerDefinitionJob(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Mutation_cancelIndexerDefinitionUpdate(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_IndexerDefinitionJob_id(ctx, field)
+			case "kind":
+				return ec.fieldContext_IndexerDefinitionJob_kind(ctx, field)
+			case "state":
+				return ec.fieldContext_IndexerDefinitionJob_state(ctx, field)
+			case "targetRevision":
+				return ec.fieldContext_IndexerDefinitionJob_targetRevision(ctx, field)
+			case "expectedActiveRevision":
+				return ec.fieldContext_IndexerDefinitionJob_expectedActiveRevision(ctx, field)
+			case "downloadedBytes":
+				return ec.fieldContext_IndexerDefinitionJob_downloadedBytes(ctx, field)
+			case "errorCode":
+				return ec.fieldContext_IndexerDefinitionJob_errorCode(ctx, field)
+			case "correlationId":
+				return ec.fieldContext_IndexerDefinitionJob_correlationId(ctx, field)
+			case "startedAt":
+				return ec.fieldContext_IndexerDefinitionJob_startedAt(ctx, field)
+			case "finishedAt":
+				return ec.fieldContext_IndexerDefinitionJob_finishedAt(ctx, field)
+			case "revision":
+				return ec.fieldContext_IndexerDefinitionJob_revision(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type IndexerDefinitionJob", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_cancelIndexerDefinitionUpdate_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_prepareTorrentDownload(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Mutation_prepareTorrentDownload(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().PrepareTorrentDownload(rctx, fc.Args["input"].(model.PrepareTorrentDownloadInput))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*model.PreparedTorrentDownload)
+	fc.Result = res
+	return ec.marshalNPreparedTorrentDownload2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐPreparedTorrentDownload(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Mutation_prepareTorrentDownload(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "kind":
+				return ec.fieldContext_PreparedTorrentDownload_kind(ctx, field)
+			case "downloadUrl":
+				return ec.fieldContext_PreparedTorrentDownload_downloadUrl(ctx, field)
+			case "expiresAt":
+				return ec.fieldContext_PreparedTorrentDownload_expiresAt(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type PreparedTorrentDownload", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_prepareTorrentDownload_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_beginIndexerLogin(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Mutation_beginIndexerLogin(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().BeginIndexerLogin(rctx, fc.Args["input"].(model.IndexerLoginInput))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*model.IndexerLoginReport)
+	fc.Result = res
+	return ec.marshalNIndexerLoginReport2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐIndexerLoginReport(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Mutation_beginIndexerLogin(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_IndexerLoginReport_id(ctx, field)
+			case "instanceId":
+				return ec.fieldContext_IndexerLoginReport_instanceId(ctx, field)
+			case "configRevision":
+				return ec.fieldContext_IndexerLoginReport_configRevision(ctx, field)
+			case "ruleRevision":
+				return ec.fieldContext_IndexerLoginReport_ruleRevision(ctx, field)
+			case "state":
+				return ec.fieldContext_IndexerLoginReport_state(ctx, field)
+			case "expiresAt":
+				return ec.fieldContext_IndexerLoginReport_expiresAt(ctx, field)
+			case "challenge":
+				return ec.fieldContext_IndexerLoginReport_challenge(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type IndexerLoginReport", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_beginIndexerLogin_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_answerIndexerChallenge(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Mutation_answerIndexerChallenge(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().AnswerIndexerChallenge(rctx, fc.Args["id"].(string), fc.Args["input"].(model.IndexerLoginInput), fc.Args["answer"].(string))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*model.IndexerLoginReport)
+	fc.Result = res
+	return ec.marshalNIndexerLoginReport2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐIndexerLoginReport(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Mutation_answerIndexerChallenge(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_IndexerLoginReport_id(ctx, field)
+			case "instanceId":
+				return ec.fieldContext_IndexerLoginReport_instanceId(ctx, field)
+			case "configRevision":
+				return ec.fieldContext_IndexerLoginReport_configRevision(ctx, field)
+			case "ruleRevision":
+				return ec.fieldContext_IndexerLoginReport_ruleRevision(ctx, field)
+			case "state":
+				return ec.fieldContext_IndexerLoginReport_state(ctx, field)
+			case "expiresAt":
+				return ec.fieldContext_IndexerLoginReport_expiresAt(ctx, field)
+			case "challenge":
+				return ec.fieldContext_IndexerLoginReport_challenge(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type IndexerLoginReport", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_answerIndexerChallenge_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_cancelIndexerLogin(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Mutation_cancelIndexerLogin(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().CancelIndexerLogin(rctx, fc.Args["id"].(string), fc.Args["input"].(model.IndexerLoginInput))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(bool)
+	fc.Result = res
+	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Mutation_cancelIndexerLogin(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_cancelIndexerLogin_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_addBuiltinIndexer(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Mutation_addBuiltinIndexer(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().AddBuiltinIndexer(rctx, fc.Args["expectedRevision"].(string), fc.Args["input"].(model.BuiltinIndexerInput))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*model.BuiltinIndexerResult)
+	fc.Result = res
+	return ec.marshalNBuiltinIndexerResult2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐBuiltinIndexerResult(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Mutation_addBuiltinIndexer(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "revision":
+				return ec.fieldContext_BuiltinIndexerResult_revision(ctx, field)
+			case "instance":
+				return ec.fieldContext_BuiltinIndexerResult_instance(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type BuiltinIndexerResult", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_addBuiltinIndexer_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_updateBuiltinIndexer(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Mutation_updateBuiltinIndexer(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().UpdateBuiltinIndexer(rctx, fc.Args["id"].(string), fc.Args["expectedRevision"].(string), fc.Args["input"].(model.BuiltinIndexerPatchInput))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*model.BuiltinIndexerResult)
+	fc.Result = res
+	return ec.marshalNBuiltinIndexerResult2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐBuiltinIndexerResult(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Mutation_updateBuiltinIndexer(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "revision":
+				return ec.fieldContext_BuiltinIndexerResult_revision(ctx, field)
+			case "instance":
+				return ec.fieldContext_BuiltinIndexerResult_instance(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type BuiltinIndexerResult", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_updateBuiltinIndexer_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_removeBuiltinIndexer(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Mutation_removeBuiltinIndexer(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().RemoveBuiltinIndexer(rctx, fc.Args["id"].(string), fc.Args["expectedRevision"].(string))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*model.IndexerInstances)
+	fc.Result = res
+	return ec.marshalNIndexerInstances2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐIndexerInstances(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Mutation_removeBuiltinIndexer(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "healthErrorCode":
+				return ec.fieldContext_IndexerInstances_healthErrorCode(ctx, field)
+			case "revision":
+				return ec.fieldContext_IndexerInstances_revision(ctx, field)
+			case "ruleRevision":
+				return ec.fieldContext_IndexerInstances_ruleRevision(ctx, field)
+			case "ruleErrorCode":
+				return ec.fieldContext_IndexerInstances_ruleErrorCode(ctx, field)
+			case "catalogErrorCode":
+				return ec.fieldContext_IndexerInstances_catalogErrorCode(ctx, field)
+			case "jackettEnabled":
+				return ec.fieldContext_IndexerInstances_jackettEnabled(ctx, field)
+			case "order":
+				return ec.fieldContext_IndexerInstances_order(ctx, field)
+			case "networkProfiles":
+				return ec.fieldContext_IndexerInstances_networkProfiles(ctx, field)
+			case "items":
+				return ec.fieldContext_IndexerInstances_items(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type IndexerInstances", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_removeBuiltinIndexer_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_setIndexerEnabled(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Mutation_setIndexerEnabled(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().SetIndexerEnabled(rctx, fc.Args["id"].(string), fc.Args["expectedRevision"].(string), fc.Args["enabled"].(bool))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*model.IndexerInstances)
+	fc.Result = res
+	return ec.marshalNIndexerInstances2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐIndexerInstances(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Mutation_setIndexerEnabled(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "healthErrorCode":
+				return ec.fieldContext_IndexerInstances_healthErrorCode(ctx, field)
+			case "revision":
+				return ec.fieldContext_IndexerInstances_revision(ctx, field)
+			case "ruleRevision":
+				return ec.fieldContext_IndexerInstances_ruleRevision(ctx, field)
+			case "ruleErrorCode":
+				return ec.fieldContext_IndexerInstances_ruleErrorCode(ctx, field)
+			case "catalogErrorCode":
+				return ec.fieldContext_IndexerInstances_catalogErrorCode(ctx, field)
+			case "jackettEnabled":
+				return ec.fieldContext_IndexerInstances_jackettEnabled(ctx, field)
+			case "order":
+				return ec.fieldContext_IndexerInstances_order(ctx, field)
+			case "networkProfiles":
+				return ec.fieldContext_IndexerInstances_networkProfiles(ctx, field)
+			case "items":
+				return ec.fieldContext_IndexerInstances_items(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type IndexerInstances", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_setIndexerEnabled_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_reorderIndexers(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Mutation_reorderIndexers(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().ReorderIndexers(rctx, fc.Args["expectedRevision"].(string), fc.Args["ids"].([]string))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*model.IndexerInstances)
+	fc.Result = res
+	return ec.marshalNIndexerInstances2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐIndexerInstances(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Mutation_reorderIndexers(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "healthErrorCode":
+				return ec.fieldContext_IndexerInstances_healthErrorCode(ctx, field)
+			case "revision":
+				return ec.fieldContext_IndexerInstances_revision(ctx, field)
+			case "ruleRevision":
+				return ec.fieldContext_IndexerInstances_ruleRevision(ctx, field)
+			case "ruleErrorCode":
+				return ec.fieldContext_IndexerInstances_ruleErrorCode(ctx, field)
+			case "catalogErrorCode":
+				return ec.fieldContext_IndexerInstances_catalogErrorCode(ctx, field)
+			case "jackettEnabled":
+				return ec.fieldContext_IndexerInstances_jackettEnabled(ctx, field)
+			case "order":
+				return ec.fieldContext_IndexerInstances_order(ctx, field)
+			case "networkProfiles":
+				return ec.fieldContext_IndexerInstances_networkProfiles(ctx, field)
+			case "items":
+				return ec.fieldContext_IndexerInstances_items(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type IndexerInstances", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_reorderIndexers_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_refreshJackettIndexers(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Mutation_refreshJackettIndexers(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().RefreshJackettIndexers(rctx)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*model.IndexerInstances)
+	fc.Result = res
+	return ec.marshalNIndexerInstances2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐIndexerInstances(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Mutation_refreshJackettIndexers(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "healthErrorCode":
+				return ec.fieldContext_IndexerInstances_healthErrorCode(ctx, field)
+			case "revision":
+				return ec.fieldContext_IndexerInstances_revision(ctx, field)
+			case "ruleRevision":
+				return ec.fieldContext_IndexerInstances_ruleRevision(ctx, field)
+			case "ruleErrorCode":
+				return ec.fieldContext_IndexerInstances_ruleErrorCode(ctx, field)
+			case "catalogErrorCode":
+				return ec.fieldContext_IndexerInstances_catalogErrorCode(ctx, field)
+			case "jackettEnabled":
+				return ec.fieldContext_IndexerInstances_jackettEnabled(ctx, field)
+			case "order":
+				return ec.fieldContext_IndexerInstances_order(ctx, field)
+			case "networkProfiles":
+				return ec.fieldContext_IndexerInstances_networkProfiles(ctx, field)
+			case "items":
+				return ec.fieldContext_IndexerInstances_items(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type IndexerInstances", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_updateIndexerNetworkTimeouts(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Mutation_updateIndexerNetworkTimeouts(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().UpdateIndexerNetworkTimeouts(rctx, fc.Args["expectedRevision"].(string), fc.Args["input"].(model.IndexerNetworkTimeoutPatchInput))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*model.IndexerNetworkSettings)
+	fc.Result = res
+	return ec.marshalNIndexerNetworkSettings2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐIndexerNetworkSettings(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Mutation_updateIndexerNetworkTimeouts(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "revision":
+				return ec.fieldContext_IndexerNetworkSettings_revision(ctx, field)
+			case "requestTimeoutSeconds":
+				return ec.fieldContext_IndexerNetworkSettings_requestTimeoutSeconds(ctx, field)
+			case "siteTimeoutSeconds":
+				return ec.fieldContext_IndexerNetworkSettings_siteTimeoutSeconds(ctx, field)
+			case "challengeTimeoutSeconds":
+				return ec.fieldContext_IndexerNetworkSettings_challengeTimeoutSeconds(ctx, field)
+			case "profiles":
+				return ec.fieldContext_IndexerNetworkSettings_profiles(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type IndexerNetworkSettings", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_updateIndexerNetworkTimeouts_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_addIndexerNetworkProfile(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Mutation_addIndexerNetworkProfile(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().AddIndexerNetworkProfile(rctx, fc.Args["id"].(string), fc.Args["expectedRevision"].(string), fc.Args["input"].(model.IndexerNetworkProfilePatchInput))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*model.IndexerNetworkSettings)
+	fc.Result = res
+	return ec.marshalNIndexerNetworkSettings2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐIndexerNetworkSettings(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Mutation_addIndexerNetworkProfile(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "revision":
+				return ec.fieldContext_IndexerNetworkSettings_revision(ctx, field)
+			case "requestTimeoutSeconds":
+				return ec.fieldContext_IndexerNetworkSettings_requestTimeoutSeconds(ctx, field)
+			case "siteTimeoutSeconds":
+				return ec.fieldContext_IndexerNetworkSettings_siteTimeoutSeconds(ctx, field)
+			case "challengeTimeoutSeconds":
+				return ec.fieldContext_IndexerNetworkSettings_challengeTimeoutSeconds(ctx, field)
+			case "profiles":
+				return ec.fieldContext_IndexerNetworkSettings_profiles(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type IndexerNetworkSettings", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_addIndexerNetworkProfile_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_updateIndexerNetworkProfile(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Mutation_updateIndexerNetworkProfile(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().UpdateIndexerNetworkProfile(rctx, fc.Args["id"].(string), fc.Args["expectedRevision"].(string), fc.Args["input"].(model.IndexerNetworkProfilePatchInput))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*model.IndexerNetworkSettings)
+	fc.Result = res
+	return ec.marshalNIndexerNetworkSettings2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐIndexerNetworkSettings(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Mutation_updateIndexerNetworkProfile(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "revision":
+				return ec.fieldContext_IndexerNetworkSettings_revision(ctx, field)
+			case "requestTimeoutSeconds":
+				return ec.fieldContext_IndexerNetworkSettings_requestTimeoutSeconds(ctx, field)
+			case "siteTimeoutSeconds":
+				return ec.fieldContext_IndexerNetworkSettings_siteTimeoutSeconds(ctx, field)
+			case "challengeTimeoutSeconds":
+				return ec.fieldContext_IndexerNetworkSettings_challengeTimeoutSeconds(ctx, field)
+			case "profiles":
+				return ec.fieldContext_IndexerNetworkSettings_profiles(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type IndexerNetworkSettings", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_updateIndexerNetworkProfile_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_removeIndexerNetworkProfile(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Mutation_removeIndexerNetworkProfile(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().RemoveIndexerNetworkProfile(rctx, fc.Args["id"].(string), fc.Args["expectedRevision"].(string))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*model.IndexerNetworkSettings)
+	fc.Result = res
+	return ec.marshalNIndexerNetworkSettings2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐIndexerNetworkSettings(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Mutation_removeIndexerNetworkProfile(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "revision":
+				return ec.fieldContext_IndexerNetworkSettings_revision(ctx, field)
+			case "requestTimeoutSeconds":
+				return ec.fieldContext_IndexerNetworkSettings_requestTimeoutSeconds(ctx, field)
+			case "siteTimeoutSeconds":
+				return ec.fieldContext_IndexerNetworkSettings_siteTimeoutSeconds(ctx, field)
+			case "challengeTimeoutSeconds":
+				return ec.fieldContext_IndexerNetworkSettings_challengeTimeoutSeconds(ctx, field)
+			case "profiles":
+				return ec.fieldContext_IndexerNetworkSettings_profiles(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type IndexerNetworkSettings", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_removeIndexerNetworkProfile_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _Mutation_processReleaseReviews(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_Mutation_processReleaseReviews(ctx, field)
 	if err != nil {
@@ -25902,6 +37974,553 @@ func (ec *executionContext) fieldContext_Mutation_startSubscriptionCheck(ctx con
 	return fc, nil
 }
 
+func (ec *executionContext) _Mutation_startTorrentSearch(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Mutation_startTorrentSearch(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().StartTorrentSearch(rctx, fc.Args["input"].(model.StartTorrentSearchInput))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*model.TorrentSearch)
+	fc.Result = res
+	return ec.marshalNTorrentSearch2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐTorrentSearch(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Mutation_startTorrentSearch(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_TorrentSearch_id(ctx, field)
+			case "state":
+				return ec.fieldContext_TorrentSearch_state(ctx, field)
+			case "revision":
+				return ec.fieldContext_TorrentSearch_revision(ctx, field)
+			case "keywords":
+				return ec.fieldContext_TorrentSearch_keywords(ctx, field)
+			case "taskId":
+				return ec.fieldContext_TorrentSearch_taskId(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_TorrentSearch_createdAt(ctx, field)
+			case "updatedAt":
+				return ec.fieldContext_TorrentSearch_updatedAt(ctx, field)
+			case "expiresAt":
+				return ec.fieldContext_TorrentSearch_expiresAt(ctx, field)
+			case "finishedAt":
+				return ec.fieldContext_TorrentSearch_finishedAt(ctx, field)
+			case "cancelRequested":
+				return ec.fieldContext_TorrentSearch_cancelRequested(ctx, field)
+			case "partial":
+				return ec.fieldContext_TorrentSearch_partial(ctx, field)
+			case "truncated":
+				return ec.fieldContext_TorrentSearch_truncated(ctx, field)
+			case "errorCode":
+				return ec.fieldContext_TorrentSearch_errorCode(ctx, field)
+			case "correlationId":
+				return ec.fieldContext_TorrentSearch_correlationId(ctx, field)
+			case "total":
+				return ec.fieldContext_TorrentSearch_total(ctx, field)
+			case "offset":
+				return ec.fieldContext_TorrentSearch_offset(ctx, field)
+			case "limit":
+				return ec.fieldContext_TorrentSearch_limit(ctx, field)
+			case "sites":
+				return ec.fieldContext_TorrentSearch_sites(ctx, field)
+			case "candidates":
+				return ec.fieldContext_TorrentSearch_candidates(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type TorrentSearch", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_startTorrentSearch_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_cancelTorrentSearch(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Mutation_cancelTorrentSearch(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().CancelTorrentSearch(rctx, fc.Args["id"].(string))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*model.TorrentSearch)
+	fc.Result = res
+	return ec.marshalNTorrentSearch2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐTorrentSearch(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Mutation_cancelTorrentSearch(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_TorrentSearch_id(ctx, field)
+			case "state":
+				return ec.fieldContext_TorrentSearch_state(ctx, field)
+			case "revision":
+				return ec.fieldContext_TorrentSearch_revision(ctx, field)
+			case "keywords":
+				return ec.fieldContext_TorrentSearch_keywords(ctx, field)
+			case "taskId":
+				return ec.fieldContext_TorrentSearch_taskId(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_TorrentSearch_createdAt(ctx, field)
+			case "updatedAt":
+				return ec.fieldContext_TorrentSearch_updatedAt(ctx, field)
+			case "expiresAt":
+				return ec.fieldContext_TorrentSearch_expiresAt(ctx, field)
+			case "finishedAt":
+				return ec.fieldContext_TorrentSearch_finishedAt(ctx, field)
+			case "cancelRequested":
+				return ec.fieldContext_TorrentSearch_cancelRequested(ctx, field)
+			case "partial":
+				return ec.fieldContext_TorrentSearch_partial(ctx, field)
+			case "truncated":
+				return ec.fieldContext_TorrentSearch_truncated(ctx, field)
+			case "errorCode":
+				return ec.fieldContext_TorrentSearch_errorCode(ctx, field)
+			case "correlationId":
+				return ec.fieldContext_TorrentSearch_correlationId(ctx, field)
+			case "total":
+				return ec.fieldContext_TorrentSearch_total(ctx, field)
+			case "offset":
+				return ec.fieldContext_TorrentSearch_offset(ctx, field)
+			case "limit":
+				return ec.fieldContext_TorrentSearch_limit(ctx, field)
+			case "sites":
+				return ec.fieldContext_TorrentSearch_sites(ctx, field)
+			case "candidates":
+				return ec.fieldContext_TorrentSearch_candidates(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type TorrentSearch", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_cancelTorrentSearch_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_queueTorrentCandidate(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Mutation_queueTorrentCandidate(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().QueueTorrentCandidate(rctx, fc.Args["input"].(model.QueueTorrentCandidateInput))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*model.Task)
+	fc.Result = res
+	return ec.marshalNTask2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐTask(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Mutation_queueTorrentCandidate(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "version":
+				return ec.fieldContext_Task_version(ctx, field)
+			case "revision":
+				return ec.fieldContext_Task_revision(ctx, field)
+			case "id":
+				return ec.fieldContext_Task_id(ctx, field)
+			case "files":
+				return ec.fieldContext_Task_files(ctx, field)
+			case "source":
+				return ec.fieldContext_Task_source(ctx, field)
+			case "code":
+				return ec.fieldContext_Task_code(ctx, field)
+			case "stage":
+				return ec.fieldContext_Task_stage(ctx, field)
+			case "stageStatus":
+				return ec.fieldContext_Task_stageStatus(ctx, field)
+			case "stageLabel":
+				return ec.fieldContext_Task_stageLabel(ctx, field)
+			case "stageStatusLabel":
+				return ec.fieldContext_Task_stageStatusLabel(ctx, field)
+			case "stageErrorCode":
+				return ec.fieldContext_Task_stageErrorCode(ctx, field)
+			case "stageErrorMessage":
+				return ec.fieldContext_Task_stageErrorMessage(ctx, field)
+			case "candidate":
+				return ec.fieldContext_Task_candidate(ctx, field)
+			case "torrentUrl":
+				return ec.fieldContext_Task_torrentUrl(ctx, field)
+			case "savePath":
+				return ec.fieldContext_Task_savePath(ctx, field)
+			case "category":
+				return ec.fieldContext_Task_category(ctx, field)
+			case "tags":
+				return ec.fieldContext_Task_tags(ctx, field)
+			case "torrentHash":
+				return ec.fieldContext_Task_torrentHash(ctx, field)
+			case "torrentName":
+				return ec.fieldContext_Task_torrentName(ctx, field)
+			case "progress":
+				return ec.fieldContext_Task_progress(ctx, field)
+			case "qbittorrentState":
+				return ec.fieldContext_Task_qbittorrentState(ctx, field)
+			case "contentPath":
+				return ec.fieldContext_Task_contentPath(ctx, field)
+			case "sourcingCompletedAt":
+				return ec.fieldContext_Task_sourcingCompletedAt(ctx, field)
+			case "sourcingLastCheckedAt":
+				return ec.fieldContext_Task_sourcingLastCheckedAt(ctx, field)
+			case "sourcingNextCheckAt":
+				return ec.fieldContext_Task_sourcingNextCheckAt(ctx, field)
+			case "downloadCompletedAt":
+				return ec.fieldContext_Task_downloadCompletedAt(ctx, field)
+			case "ingestCompletedAt":
+				return ec.fieldContext_Task_ingestCompletedAt(ctx, field)
+			case "mojiSourcePath":
+				return ec.fieldContext_Task_mojiSourcePath(ctx, field)
+			case "transferAction":
+				return ec.fieldContext_Task_transferAction(ctx, field)
+			case "mojiTransferPath":
+				return ec.fieldContext_Task_mojiTransferPath(ctx, field)
+			case "transferError":
+				return ec.fieldContext_Task_transferError(ctx, field)
+			case "stashIngestPhase":
+				return ec.fieldContext_Task_stashIngestPhase(ctx, field)
+			case "stashGenerateJobId":
+				return ec.fieldContext_Task_stashGenerateJobId(ctx, field)
+			case "stashIdentifyJobId":
+				return ec.fieldContext_Task_stashIdentifyJobId(ctx, field)
+			case "stashSceneIds":
+				return ec.fieldContext_Task_stashSceneIds(ctx, field)
+			case "stashScanJobId":
+				return ec.fieldContext_Task_stashScanJobId(ctx, field)
+			case "stashScanPath":
+				return ec.fieldContext_Task_stashScanPath(ctx, field)
+			case "stashScanError":
+				return ec.fieldContext_Task_stashScanError(ctx, field)
+			case "stashScanHint":
+				return ec.fieldContext_Task_stashScanHint(ctx, field)
+			case "stashScanStartedAt":
+				return ec.fieldContext_Task_stashScanStartedAt(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_Task_createdAt(ctx, field)
+			case "updatedAt":
+				return ec.fieldContext_Task_updatedAt(ctx, field)
+			case "lastProgressAt":
+				return ec.fieldContext_Task_lastProgressAt(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type Task", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_queueTorrentCandidate_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_previewTorrentSelection(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Mutation_previewTorrentSelection(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().PreviewTorrentSelection(rctx, fc.Args["input"].(model.PreviewTorrentSelectionInput))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*model.TorrentSelectionPreview)
+	fc.Result = res
+	return ec.marshalNTorrentSelectionPreview2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐTorrentSelectionPreview(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Mutation_previewTorrentSelection(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "searchId":
+				return ec.fieldContext_TorrentSelectionPreview_searchId(ctx, field)
+			case "searchRevision":
+				return ec.fieldContext_TorrentSelectionPreview_searchRevision(ctx, field)
+			case "total":
+				return ec.fieldContext_TorrentSelectionPreview_total(ctx, field)
+			case "offset":
+				return ec.fieldContext_TorrentSelectionPreview_offset(ctx, field)
+			case "limit":
+				return ec.fieldContext_TorrentSelectionPreview_limit(ctx, field)
+			case "candidates":
+				return ec.fieldContext_TorrentSelectionPreview_candidates(ctx, field)
+			case "meta":
+				return ec.fieldContext_TorrentSelectionPreview_meta(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type TorrentSelectionPreview", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_previewTorrentSelection_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_resolveTaskSourcingCandidate(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Mutation_resolveTaskSourcingCandidate(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().ResolveTaskSourcingCandidate(rctx, fc.Args["input"].(model.ResolveTaskSourcingCandidateInput))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*model.Task)
+	fc.Result = res
+	return ec.marshalNTask2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐTask(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Mutation_resolveTaskSourcingCandidate(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "version":
+				return ec.fieldContext_Task_version(ctx, field)
+			case "revision":
+				return ec.fieldContext_Task_revision(ctx, field)
+			case "id":
+				return ec.fieldContext_Task_id(ctx, field)
+			case "files":
+				return ec.fieldContext_Task_files(ctx, field)
+			case "source":
+				return ec.fieldContext_Task_source(ctx, field)
+			case "code":
+				return ec.fieldContext_Task_code(ctx, field)
+			case "stage":
+				return ec.fieldContext_Task_stage(ctx, field)
+			case "stageStatus":
+				return ec.fieldContext_Task_stageStatus(ctx, field)
+			case "stageLabel":
+				return ec.fieldContext_Task_stageLabel(ctx, field)
+			case "stageStatusLabel":
+				return ec.fieldContext_Task_stageStatusLabel(ctx, field)
+			case "stageErrorCode":
+				return ec.fieldContext_Task_stageErrorCode(ctx, field)
+			case "stageErrorMessage":
+				return ec.fieldContext_Task_stageErrorMessage(ctx, field)
+			case "candidate":
+				return ec.fieldContext_Task_candidate(ctx, field)
+			case "torrentUrl":
+				return ec.fieldContext_Task_torrentUrl(ctx, field)
+			case "savePath":
+				return ec.fieldContext_Task_savePath(ctx, field)
+			case "category":
+				return ec.fieldContext_Task_category(ctx, field)
+			case "tags":
+				return ec.fieldContext_Task_tags(ctx, field)
+			case "torrentHash":
+				return ec.fieldContext_Task_torrentHash(ctx, field)
+			case "torrentName":
+				return ec.fieldContext_Task_torrentName(ctx, field)
+			case "progress":
+				return ec.fieldContext_Task_progress(ctx, field)
+			case "qbittorrentState":
+				return ec.fieldContext_Task_qbittorrentState(ctx, field)
+			case "contentPath":
+				return ec.fieldContext_Task_contentPath(ctx, field)
+			case "sourcingCompletedAt":
+				return ec.fieldContext_Task_sourcingCompletedAt(ctx, field)
+			case "sourcingLastCheckedAt":
+				return ec.fieldContext_Task_sourcingLastCheckedAt(ctx, field)
+			case "sourcingNextCheckAt":
+				return ec.fieldContext_Task_sourcingNextCheckAt(ctx, field)
+			case "downloadCompletedAt":
+				return ec.fieldContext_Task_downloadCompletedAt(ctx, field)
+			case "ingestCompletedAt":
+				return ec.fieldContext_Task_ingestCompletedAt(ctx, field)
+			case "mojiSourcePath":
+				return ec.fieldContext_Task_mojiSourcePath(ctx, field)
+			case "transferAction":
+				return ec.fieldContext_Task_transferAction(ctx, field)
+			case "mojiTransferPath":
+				return ec.fieldContext_Task_mojiTransferPath(ctx, field)
+			case "transferError":
+				return ec.fieldContext_Task_transferError(ctx, field)
+			case "stashIngestPhase":
+				return ec.fieldContext_Task_stashIngestPhase(ctx, field)
+			case "stashGenerateJobId":
+				return ec.fieldContext_Task_stashGenerateJobId(ctx, field)
+			case "stashIdentifyJobId":
+				return ec.fieldContext_Task_stashIdentifyJobId(ctx, field)
+			case "stashSceneIds":
+				return ec.fieldContext_Task_stashSceneIds(ctx, field)
+			case "stashScanJobId":
+				return ec.fieldContext_Task_stashScanJobId(ctx, field)
+			case "stashScanPath":
+				return ec.fieldContext_Task_stashScanPath(ctx, field)
+			case "stashScanError":
+				return ec.fieldContext_Task_stashScanError(ctx, field)
+			case "stashScanHint":
+				return ec.fieldContext_Task_stashScanHint(ctx, field)
+			case "stashScanStartedAt":
+				return ec.fieldContext_Task_stashScanStartedAt(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_Task_createdAt(ctx, field)
+			case "updatedAt":
+				return ec.fieldContext_Task_updatedAt(ctx, field)
+			case "lastProgressAt":
+				return ec.fieldContext_Task_lastProgressAt(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type Task", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_resolveTaskSourcingCandidate_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _Mutation_refreshUpcomingRelease(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_Mutation_refreshUpcomingRelease(ctx, field)
 	if err != nil {
@@ -27438,8 +40057,8 @@ func (ec *executionContext) fieldContext_PerformerWorkspaceSnapshot_subscribedPe
 	return fc, nil
 }
 
-func (ec *executionContext) _PreviewJackettSelectionMeta_appliedFastRules(ctx context.Context, field graphql.CollectedField, obj *model.PreviewJackettSelectionMeta) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_PreviewJackettSelectionMeta_appliedFastRules(ctx, field)
+func (ec *executionContext) _PreparedTorrentDownload_kind(ctx context.Context, field graphql.CollectedField, obj *model.PreparedTorrentDownload) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_PreparedTorrentDownload_kind(ctx, field)
 	if err != nil {
 		return graphql.Null
 	}
@@ -27452,7 +40071,7 @@ func (ec *executionContext) _PreviewJackettSelectionMeta_appliedFastRules(ctx co
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
 		ctx = rctx // use context from middleware stack in children
-		return obj.AppliedFastRules, nil
+		return obj.Kind, nil
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -27464,26 +40083,26 @@ func (ec *executionContext) _PreviewJackettSelectionMeta_appliedFastRules(ctx co
 		}
 		return graphql.Null
 	}
-	res := resTmp.(bool)
+	res := resTmp.(model.PreparedTorrentDownloadKind)
 	fc.Result = res
-	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
+	return ec.marshalNPreparedTorrentDownloadKind2githubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐPreparedTorrentDownloadKind(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_PreviewJackettSelectionMeta_appliedFastRules(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_PreparedTorrentDownload_kind(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
-		Object:     "PreviewJackettSelectionMeta",
+		Object:     "PreparedTorrentDownload",
 		Field:      field,
 		IsMethod:   false,
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type Boolean does not have child fields")
+			return nil, errors.New("field of type PreparedTorrentDownloadKind does not have child fields")
 		},
 	}
 	return fc, nil
 }
 
-func (ec *executionContext) _PreviewJackettSelectionMeta_appliedFileRules(ctx context.Context, field graphql.CollectedField, obj *model.PreviewJackettSelectionMeta) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_PreviewJackettSelectionMeta_appliedFileRules(ctx, field)
+func (ec *executionContext) _PreparedTorrentDownload_downloadUrl(ctx context.Context, field graphql.CollectedField, obj *model.PreparedTorrentDownload) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_PreparedTorrentDownload_downloadUrl(ctx, field)
 	if err != nil {
 		return graphql.Null
 	}
@@ -27496,7 +40115,7 @@ func (ec *executionContext) _PreviewJackettSelectionMeta_appliedFileRules(ctx co
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
 		ctx = rctx // use context from middleware stack in children
-		return obj.AppliedFileRules, nil
+		return obj.DownloadURL, nil
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -27508,26 +40127,26 @@ func (ec *executionContext) _PreviewJackettSelectionMeta_appliedFileRules(ctx co
 		}
 		return graphql.Null
 	}
-	res := resTmp.(bool)
+	res := resTmp.(string)
 	fc.Result = res
-	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
+	return ec.marshalNString2string(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_PreviewJackettSelectionMeta_appliedFileRules(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_PreparedTorrentDownload_downloadUrl(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
-		Object:     "PreviewJackettSelectionMeta",
+		Object:     "PreparedTorrentDownload",
 		Field:      field,
 		IsMethod:   false,
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type Boolean does not have child fields")
+			return nil, errors.New("field of type String does not have child fields")
 		},
 	}
 	return fc, nil
 }
 
-func (ec *executionContext) _PreviewJackettSelectionMeta_inspectedCount(ctx context.Context, field graphql.CollectedField, obj *model.PreviewJackettSelectionMeta) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_PreviewJackettSelectionMeta_inspectedCount(ctx, field)
+func (ec *executionContext) _PreparedTorrentDownload_expiresAt(ctx context.Context, field graphql.CollectedField, obj *model.PreparedTorrentDownload) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_PreparedTorrentDownload_expiresAt(ctx, field)
 	if err != nil {
 		return graphql.Null
 	}
@@ -27540,7 +40159,7 @@ func (ec *executionContext) _PreviewJackettSelectionMeta_inspectedCount(ctx cont
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
 		ctx = rctx // use context from middleware stack in children
-		return obj.InspectedCount, nil
+		return obj.ExpiresAt, nil
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -27552,187 +40171,19 @@ func (ec *executionContext) _PreviewJackettSelectionMeta_inspectedCount(ctx cont
 		}
 		return graphql.Null
 	}
-	res := resTmp.(int)
+	res := resTmp.(string)
 	fc.Result = res
-	return ec.marshalNInt2int(ctx, field.Selections, res)
+	return ec.marshalNString2string(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_PreviewJackettSelectionMeta_inspectedCount(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_PreparedTorrentDownload_expiresAt(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
-		Object:     "PreviewJackettSelectionMeta",
+		Object:     "PreparedTorrentDownload",
 		Field:      field,
 		IsMethod:   false,
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type Int does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _PreviewJackettSelectionMeta_inspectableCount(ctx context.Context, field graphql.CollectedField, obj *model.PreviewJackettSelectionMeta) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_PreviewJackettSelectionMeta_inspectableCount(ctx, field)
-	if err != nil {
-		return graphql.Null
-	}
-	ctx = graphql.WithFieldContext(ctx, fc)
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.InspectableCount, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(int)
-	fc.Result = res
-	return ec.marshalNInt2int(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) fieldContext_PreviewJackettSelectionMeta_inspectableCount(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "PreviewJackettSelectionMeta",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type Int does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _PreviewJackettSelectionResult_results(ctx context.Context, field graphql.CollectedField, obj *model.PreviewJackettSelectionResult) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_PreviewJackettSelectionResult_results(ctx, field)
-	if err != nil {
-		return graphql.Null
-	}
-	ctx = graphql.WithFieldContext(ctx, fc)
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.Results, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.([]*model.JackettSearchResult)
-	fc.Result = res
-	return ec.marshalNJackettSearchResult2ᚕᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐJackettSearchResultᚄ(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) fieldContext_PreviewJackettSelectionResult_results(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "PreviewJackettSelectionResult",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			switch field.Name {
-			case "title":
-				return ec.fieldContext_JackettSearchResult_title(ctx, field)
-			case "size":
-				return ec.fieldContext_JackettSearchResult_size(ctx, field)
-			case "seeders":
-				return ec.fieldContext_JackettSearchResult_seeders(ctx, field)
-			case "peers":
-				return ec.fieldContext_JackettSearchResult_peers(ctx, field)
-			case "tracker":
-				return ec.fieldContext_JackettSearchResult_tracker(ctx, field)
-			case "trackerId":
-				return ec.fieldContext_JackettSearchResult_trackerId(ctx, field)
-			case "categoryDesc":
-				return ec.fieldContext_JackettSearchResult_categoryDesc(ctx, field)
-			case "publishDate":
-				return ec.fieldContext_JackettSearchResult_publishDate(ctx, field)
-			case "details":
-				return ec.fieldContext_JackettSearchResult_details(ctx, field)
-			case "link":
-				return ec.fieldContext_JackettSearchResult_link(ctx, field)
-			case "magnetUri":
-				return ec.fieldContext_JackettSearchResult_magnetUri(ctx, field)
-			case "infoHash":
-				return ec.fieldContext_JackettSearchResult_infoHash(ctx, field)
-			}
-			return nil, fmt.Errorf("no field named %q was found under type JackettSearchResult", field.Name)
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _PreviewJackettSelectionResult_previewMeta(ctx context.Context, field graphql.CollectedField, obj *model.PreviewJackettSelectionResult) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_PreviewJackettSelectionResult_previewMeta(ctx, field)
-	if err != nil {
-		return graphql.Null
-	}
-	ctx = graphql.WithFieldContext(ctx, fc)
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.PreviewMeta, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(*model.PreviewJackettSelectionMeta)
-	fc.Result = res
-	return ec.marshalNPreviewJackettSelectionMeta2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐPreviewJackettSelectionMeta(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) fieldContext_PreviewJackettSelectionResult_previewMeta(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "PreviewJackettSelectionResult",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			switch field.Name {
-			case "appliedFastRules":
-				return ec.fieldContext_PreviewJackettSelectionMeta_appliedFastRules(ctx, field)
-			case "appliedFileRules":
-				return ec.fieldContext_PreviewJackettSelectionMeta_appliedFileRules(ctx, field)
-			case "inspectedCount":
-				return ec.fieldContext_PreviewJackettSelectionMeta_inspectedCount(ctx, field)
-			case "inspectableCount":
-				return ec.fieldContext_PreviewJackettSelectionMeta_inspectableCount(ctx, field)
-			}
-			return nil, fmt.Errorf("no field named %q was found under type PreviewJackettSelectionMeta", field.Name)
+			return nil, errors.New("field of type String does not have child fields")
 		},
 	}
 	return fc, nil
@@ -29281,6 +41732,593 @@ func (ec *executionContext) fieldContext_Query_homeSubscriptionChecks(_ context.
 	return fc, nil
 }
 
+func (ec *executionContext) _Query_homeIndexerSummary(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Query_homeIndexerSummary(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Query().HomeIndexerSummary(rctx)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*model.HomeIndexerSummary)
+	fc.Result = res
+	return ec.marshalNHomeIndexerSummary2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐHomeIndexerSummary(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Query_homeIndexerSummary(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "revision":
+				return ec.fieldContext_HomeIndexerSummary_revision(ctx, field)
+			case "total":
+				return ec.fieldContext_HomeIndexerSummary_total(ctx, field)
+			case "builtinEnabled":
+				return ec.fieldContext_HomeIndexerSummary_builtinEnabled(ctx, field)
+			case "builtinUnverified":
+				return ec.fieldContext_HomeIndexerSummary_builtinUnverified(ctx, field)
+			case "builtinSearchSucceeded":
+				return ec.fieldContext_HomeIndexerSummary_builtinSearchSucceeded(ctx, field)
+			case "healthErrorCode":
+				return ec.fieldContext_HomeIndexerSummary_healthErrorCode(ctx, field)
+			case "definitionJob":
+				return ec.fieldContext_HomeIndexerSummary_definitionJob(ctx, field)
+			case "definitionErrorCode":
+				return ec.fieldContext_HomeIndexerSummary_definitionErrorCode(ctx, field)
+			case "attention":
+				return ec.fieldContext_HomeIndexerSummary_attention(ctx, field)
+			case "issues":
+				return ec.fieldContext_HomeIndexerSummary_issues(ctx, field)
+			case "jackett":
+				return ec.fieldContext_HomeIndexerSummary_jackett(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type HomeIndexerSummary", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Query_indexerCacheStatus(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Query_indexerCacheStatus(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Query().IndexerCacheStatus(rctx)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*model.IndexerCacheStatus)
+	fc.Result = res
+	return ec.marshalNIndexerCacheStatus2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐIndexerCacheStatus(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Query_indexerCacheStatus(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "revision":
+				return ec.fieldContext_IndexerCacheStatus_revision(ctx, field)
+			case "enabled":
+				return ec.fieldContext_IndexerCacheStatus_enabled(ctx, field)
+			case "ttlSeconds":
+				return ec.fieldContext_IndexerCacheStatus_ttlSeconds(ctx, field)
+			case "emptyTtlSeconds":
+				return ec.fieldContext_IndexerCacheStatus_emptyTtlSeconds(ctx, field)
+			case "maxSizeMb":
+				return ec.fieldContext_IndexerCacheStatus_maxSizeMb(ctx, field)
+			case "entries":
+				return ec.fieldContext_IndexerCacheStatus_entries(ctx, field)
+			case "usedBytes":
+				return ec.fieldContext_IndexerCacheStatus_usedBytes(ctx, field)
+			case "activeRequests":
+				return ec.fieldContext_IndexerCacheStatus_activeRequests(ctx, field)
+			case "activeWaiters":
+				return ec.fieldContext_IndexerCacheStatus_activeWaiters(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type IndexerCacheStatus", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Query_indexerDefinitionPolicy(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Query_indexerDefinitionPolicy(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Query().IndexerDefinitionPolicy(rctx)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*model.IndexerDefinitionPolicy)
+	fc.Result = res
+	return ec.marshalNIndexerDefinitionPolicy2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐIndexerDefinitionPolicy(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Query_indexerDefinitionPolicy(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "revision":
+				return ec.fieldContext_IndexerDefinitionPolicy_revision(ctx, field)
+			case "source":
+				return ec.fieldContext_IndexerDefinitionPolicy_source(ctx, field)
+			case "schemaVersion":
+				return ec.fieldContext_IndexerDefinitionPolicy_schemaVersion(ctx, field)
+			case "checkIntervalHours":
+				return ec.fieldContext_IndexerDefinitionPolicy_checkIntervalHours(ctx, field)
+			case "autoUpdate":
+				return ec.fieldContext_IndexerDefinitionPolicy_autoUpdate(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type IndexerDefinitionPolicy", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Query_indexerDefinitionStatus(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Query_indexerDefinitionStatus(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Query().IndexerDefinitionStatus(rctx)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*model.IndexerDefinitionStatus)
+	fc.Result = res
+	return ec.marshalNIndexerDefinitionStatus2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐIndexerDefinitionStatus(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Query_indexerDefinitionStatus(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "streamId":
+				return ec.fieldContext_IndexerDefinitionStatus_streamId(ctx, field)
+			case "activeRevision":
+				return ec.fieldContext_IndexerDefinitionStatus_activeRevision(ctx, field)
+			case "previousRevision":
+				return ec.fieldContext_IndexerDefinitionStatus_previousRevision(ctx, field)
+			case "availableRevision":
+				return ec.fieldContext_IndexerDefinitionStatus_availableRevision(ctx, field)
+			case "revision":
+				return ec.fieldContext_IndexerDefinitionStatus_revision(ctx, field)
+			case "available":
+				return ec.fieldContext_IndexerDefinitionStatus_available(ctx, field)
+			case "lastCheckedAt":
+				return ec.fieldContext_IndexerDefinitionStatus_lastCheckedAt(ctx, field)
+			case "checkErrorCode":
+				return ec.fieldContext_IndexerDefinitionStatus_checkErrorCode(ctx, field)
+			case "errorCode":
+				return ec.fieldContext_IndexerDefinitionStatus_errorCode(ctx, field)
+			case "installed":
+				return ec.fieldContext_IndexerDefinitionStatus_installed(ctx, field)
+			case "job":
+				return ec.fieldContext_IndexerDefinitionStatus_job(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type IndexerDefinitionStatus", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Query_indexerDefinitionUpdate(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Query_indexerDefinitionUpdate(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Query().IndexerDefinitionUpdate(rctx, fc.Args["id"].(string))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*model.IndexerDefinitionJob)
+	fc.Result = res
+	return ec.marshalOIndexerDefinitionJob2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐIndexerDefinitionJob(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Query_indexerDefinitionUpdate(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_IndexerDefinitionJob_id(ctx, field)
+			case "kind":
+				return ec.fieldContext_IndexerDefinitionJob_kind(ctx, field)
+			case "state":
+				return ec.fieldContext_IndexerDefinitionJob_state(ctx, field)
+			case "targetRevision":
+				return ec.fieldContext_IndexerDefinitionJob_targetRevision(ctx, field)
+			case "expectedActiveRevision":
+				return ec.fieldContext_IndexerDefinitionJob_expectedActiveRevision(ctx, field)
+			case "downloadedBytes":
+				return ec.fieldContext_IndexerDefinitionJob_downloadedBytes(ctx, field)
+			case "errorCode":
+				return ec.fieldContext_IndexerDefinitionJob_errorCode(ctx, field)
+			case "correlationId":
+				return ec.fieldContext_IndexerDefinitionJob_correlationId(ctx, field)
+			case "startedAt":
+				return ec.fieldContext_IndexerDefinitionJob_startedAt(ctx, field)
+			case "finishedAt":
+				return ec.fieldContext_IndexerDefinitionJob_finishedAt(ctx, field)
+			case "revision":
+				return ec.fieldContext_IndexerDefinitionJob_revision(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type IndexerDefinitionJob", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Query_indexerDefinitionUpdate_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Query_indexerLogin(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Query_indexerLogin(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Query().IndexerLogin(rctx, fc.Args["input"].(model.IndexerLoginInput))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*model.IndexerLoginReport)
+	fc.Result = res
+	return ec.marshalOIndexerLoginReport2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐIndexerLoginReport(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Query_indexerLogin(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_IndexerLoginReport_id(ctx, field)
+			case "instanceId":
+				return ec.fieldContext_IndexerLoginReport_instanceId(ctx, field)
+			case "configRevision":
+				return ec.fieldContext_IndexerLoginReport_configRevision(ctx, field)
+			case "ruleRevision":
+				return ec.fieldContext_IndexerLoginReport_ruleRevision(ctx, field)
+			case "state":
+				return ec.fieldContext_IndexerLoginReport_state(ctx, field)
+			case "expiresAt":
+				return ec.fieldContext_IndexerLoginReport_expiresAt(ctx, field)
+			case "challenge":
+				return ec.fieldContext_IndexerLoginReport_challenge(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type IndexerLoginReport", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Query_indexerLogin_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Query_indexerDefinitions(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Query_indexerDefinitions(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Query().IndexerDefinitions(rctx, fc.Args["input"].(*model.IndexerDefinitionFilterInput))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*model.IndexerDefinitionPage)
+	fc.Result = res
+	return ec.marshalNIndexerDefinitionPage2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐIndexerDefinitionPage(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Query_indexerDefinitions(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "revision":
+				return ec.fieldContext_IndexerDefinitionPage_revision(ctx, field)
+			case "totalCount":
+				return ec.fieldContext_IndexerDefinitionPage_totalCount(ctx, field)
+			case "offset":
+				return ec.fieldContext_IndexerDefinitionPage_offset(ctx, field)
+			case "limit":
+				return ec.fieldContext_IndexerDefinitionPage_limit(ctx, field)
+			case "items":
+				return ec.fieldContext_IndexerDefinitionPage_items(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type IndexerDefinitionPage", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Query_indexerDefinitions_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Query_indexerInstances(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Query_indexerInstances(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Query().IndexerInstances(rctx)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*model.IndexerInstances)
+	fc.Result = res
+	return ec.marshalNIndexerInstances2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐIndexerInstances(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Query_indexerInstances(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "healthErrorCode":
+				return ec.fieldContext_IndexerInstances_healthErrorCode(ctx, field)
+			case "revision":
+				return ec.fieldContext_IndexerInstances_revision(ctx, field)
+			case "ruleRevision":
+				return ec.fieldContext_IndexerInstances_ruleRevision(ctx, field)
+			case "ruleErrorCode":
+				return ec.fieldContext_IndexerInstances_ruleErrorCode(ctx, field)
+			case "catalogErrorCode":
+				return ec.fieldContext_IndexerInstances_catalogErrorCode(ctx, field)
+			case "jackettEnabled":
+				return ec.fieldContext_IndexerInstances_jackettEnabled(ctx, field)
+			case "order":
+				return ec.fieldContext_IndexerInstances_order(ctx, field)
+			case "networkProfiles":
+				return ec.fieldContext_IndexerInstances_networkProfiles(ctx, field)
+			case "items":
+				return ec.fieldContext_IndexerInstances_items(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type IndexerInstances", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Query_indexerNetworkSettings(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Query_indexerNetworkSettings(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Query().IndexerNetworkSettings(rctx)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*model.IndexerNetworkSettings)
+	fc.Result = res
+	return ec.marshalNIndexerNetworkSettings2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐIndexerNetworkSettings(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Query_indexerNetworkSettings(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "revision":
+				return ec.fieldContext_IndexerNetworkSettings_revision(ctx, field)
+			case "requestTimeoutSeconds":
+				return ec.fieldContext_IndexerNetworkSettings_requestTimeoutSeconds(ctx, field)
+			case "siteTimeoutSeconds":
+				return ec.fieldContext_IndexerNetworkSettings_siteTimeoutSeconds(ctx, field)
+			case "challengeTimeoutSeconds":
+				return ec.fieldContext_IndexerNetworkSettings_challengeTimeoutSeconds(ctx, field)
+			case "profiles":
+				return ec.fieldContext_IndexerNetworkSettings_profiles(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type IndexerNetworkSettings", field.Name)
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _Query_logs(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_Query_logs(ctx, field)
 	if err != nil {
@@ -29478,287 +42516,6 @@ func (ec *executionContext) fieldContext_Query_discoverScenes(ctx context.Contex
 	}()
 	ctx = graphql.WithFieldContext(ctx, fc)
 	if fc.Args, err = ec.field_Query_discoverScenes_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
-		ec.Error(ctx, err)
-		return fc, err
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _Query_jackettSearch(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_Query_jackettSearch(ctx, field)
-	if err != nil {
-		return graphql.Null
-	}
-	ctx = graphql.WithFieldContext(ctx, fc)
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
-		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Query().JackettSearch(rctx, fc.Args["input"].(model.JackettSearchInput))
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.([]*model.JackettSearchResult)
-	fc.Result = res
-	return ec.marshalNJackettSearchResult2ᚕᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐJackettSearchResultᚄ(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) fieldContext_Query_jackettSearch(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "Query",
-		Field:      field,
-		IsMethod:   true,
-		IsResolver: true,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			switch field.Name {
-			case "title":
-				return ec.fieldContext_JackettSearchResult_title(ctx, field)
-			case "size":
-				return ec.fieldContext_JackettSearchResult_size(ctx, field)
-			case "seeders":
-				return ec.fieldContext_JackettSearchResult_seeders(ctx, field)
-			case "peers":
-				return ec.fieldContext_JackettSearchResult_peers(ctx, field)
-			case "tracker":
-				return ec.fieldContext_JackettSearchResult_tracker(ctx, field)
-			case "trackerId":
-				return ec.fieldContext_JackettSearchResult_trackerId(ctx, field)
-			case "categoryDesc":
-				return ec.fieldContext_JackettSearchResult_categoryDesc(ctx, field)
-			case "publishDate":
-				return ec.fieldContext_JackettSearchResult_publishDate(ctx, field)
-			case "details":
-				return ec.fieldContext_JackettSearchResult_details(ctx, field)
-			case "link":
-				return ec.fieldContext_JackettSearchResult_link(ctx, field)
-			case "magnetUri":
-				return ec.fieldContext_JackettSearchResult_magnetUri(ctx, field)
-			case "infoHash":
-				return ec.fieldContext_JackettSearchResult_infoHash(ctx, field)
-			}
-			return nil, fmt.Errorf("no field named %q was found under type JackettSearchResult", field.Name)
-		},
-	}
-	defer func() {
-		if r := recover(); r != nil {
-			err = ec.Recover(ctx, r)
-			ec.Error(ctx, err)
-		}
-	}()
-	ctx = graphql.WithFieldContext(ctx, fc)
-	if fc.Args, err = ec.field_Query_jackettSearch_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
-		ec.Error(ctx, err)
-		return fc, err
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _Query_previewJackettSelection(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_Query_previewJackettSelection(ctx, field)
-	if err != nil {
-		return graphql.Null
-	}
-	ctx = graphql.WithFieldContext(ctx, fc)
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
-		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Query().PreviewJackettSelection(rctx, fc.Args["input"].(model.PreviewJackettSelectionInput))
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(*model.PreviewJackettSelectionResult)
-	fc.Result = res
-	return ec.marshalNPreviewJackettSelectionResult2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐPreviewJackettSelectionResult(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) fieldContext_Query_previewJackettSelection(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "Query",
-		Field:      field,
-		IsMethod:   true,
-		IsResolver: true,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			switch field.Name {
-			case "results":
-				return ec.fieldContext_PreviewJackettSelectionResult_results(ctx, field)
-			case "previewMeta":
-				return ec.fieldContext_PreviewJackettSelectionResult_previewMeta(ctx, field)
-			}
-			return nil, fmt.Errorf("no field named %q was found under type PreviewJackettSelectionResult", field.Name)
-		},
-	}
-	defer func() {
-		if r := recover(); r != nil {
-			err = ec.Recover(ctx, r)
-			ec.Error(ctx, err)
-		}
-	}()
-	ctx = graphql.WithFieldContext(ctx, fc)
-	if fc.Args, err = ec.field_Query_previewJackettSelection_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
-		ec.Error(ctx, err)
-		return fc, err
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _Query_jackettIndexers(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_Query_jackettIndexers(ctx, field)
-	if err != nil {
-		return graphql.Null
-	}
-	ctx = graphql.WithFieldContext(ctx, fc)
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
-		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Query().JackettIndexers(rctx)
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.([]*model.JackettIndexer)
-	fc.Result = res
-	return ec.marshalNJackettIndexer2ᚕᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐJackettIndexerᚄ(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) fieldContext_Query_jackettIndexers(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "Query",
-		Field:      field,
-		IsMethod:   true,
-		IsResolver: true,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			switch field.Name {
-			case "siteUrl":
-				return ec.fieldContext_JackettIndexer_siteUrl(ctx, field)
-			case "siteType":
-				return ec.fieldContext_JackettIndexer_siteType(ctx, field)
-			case "language":
-				return ec.fieldContext_JackettIndexer_language(ctx, field)
-			case "id":
-				return ec.fieldContext_JackettIndexer_id(ctx, field)
-			case "name":
-				return ec.fieldContext_JackettIndexer_name(ctx, field)
-			case "enabled":
-				return ec.fieldContext_JackettIndexer_enabled(ctx, field)
-			}
-			return nil, fmt.Errorf("no field named %q was found under type JackettIndexer", field.Name)
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _Query_blockedTaskTorrentCandidates(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_Query_blockedTaskTorrentCandidates(ctx, field)
-	if err != nil {
-		return graphql.Null
-	}
-	ctx = graphql.WithFieldContext(ctx, fc)
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
-		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Query().BlockedTaskTorrentCandidates(rctx, fc.Args["id"].(string), fc.Args["limit"].(*int))
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.([]*model.JackettSearchResult)
-	fc.Result = res
-	return ec.marshalNJackettSearchResult2ᚕᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐJackettSearchResultᚄ(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) fieldContext_Query_blockedTaskTorrentCandidates(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "Query",
-		Field:      field,
-		IsMethod:   true,
-		IsResolver: true,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			switch field.Name {
-			case "title":
-				return ec.fieldContext_JackettSearchResult_title(ctx, field)
-			case "size":
-				return ec.fieldContext_JackettSearchResult_size(ctx, field)
-			case "seeders":
-				return ec.fieldContext_JackettSearchResult_seeders(ctx, field)
-			case "peers":
-				return ec.fieldContext_JackettSearchResult_peers(ctx, field)
-			case "tracker":
-				return ec.fieldContext_JackettSearchResult_tracker(ctx, field)
-			case "trackerId":
-				return ec.fieldContext_JackettSearchResult_trackerId(ctx, field)
-			case "categoryDesc":
-				return ec.fieldContext_JackettSearchResult_categoryDesc(ctx, field)
-			case "publishDate":
-				return ec.fieldContext_JackettSearchResult_publishDate(ctx, field)
-			case "details":
-				return ec.fieldContext_JackettSearchResult_details(ctx, field)
-			case "link":
-				return ec.fieldContext_JackettSearchResult_link(ctx, field)
-			case "magnetUri":
-				return ec.fieldContext_JackettSearchResult_magnetUri(ctx, field)
-			case "infoHash":
-				return ec.fieldContext_JackettSearchResult_infoHash(ctx, field)
-			}
-			return nil, fmt.Errorf("no field named %q was found under type JackettSearchResult", field.Name)
-		},
-	}
-	defer func() {
-		if r := recover(); r != nil {
-			err = ec.Recover(ctx, r)
-			ec.Error(ctx, err)
-		}
-	}()
-	ctx = graphql.WithFieldContext(ctx, fc)
-	if fc.Args, err = ec.field_Query_blockedTaskTorrentCandidates_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return fc, err
 	}
@@ -31398,6 +44155,101 @@ func (ec *executionContext) fieldContext_Query_homeTaskSnapshot(_ context.Contex
 			}
 			return nil, fmt.Errorf("no field named %q was found under type HomeTaskSnapshot", field.Name)
 		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Query_torrentSearch(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Query_torrentSearch(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Query().TorrentSearch(rctx, fc.Args["id"].(string), fc.Args["offset"].(*int), fc.Args["limit"].(*int), fc.Args["sortBy"].(*model.TorrentSearchSort))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*model.TorrentSearch)
+	fc.Result = res
+	return ec.marshalNTorrentSearch2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐTorrentSearch(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Query_torrentSearch(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_TorrentSearch_id(ctx, field)
+			case "state":
+				return ec.fieldContext_TorrentSearch_state(ctx, field)
+			case "revision":
+				return ec.fieldContext_TorrentSearch_revision(ctx, field)
+			case "keywords":
+				return ec.fieldContext_TorrentSearch_keywords(ctx, field)
+			case "taskId":
+				return ec.fieldContext_TorrentSearch_taskId(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_TorrentSearch_createdAt(ctx, field)
+			case "updatedAt":
+				return ec.fieldContext_TorrentSearch_updatedAt(ctx, field)
+			case "expiresAt":
+				return ec.fieldContext_TorrentSearch_expiresAt(ctx, field)
+			case "finishedAt":
+				return ec.fieldContext_TorrentSearch_finishedAt(ctx, field)
+			case "cancelRequested":
+				return ec.fieldContext_TorrentSearch_cancelRequested(ctx, field)
+			case "partial":
+				return ec.fieldContext_TorrentSearch_partial(ctx, field)
+			case "truncated":
+				return ec.fieldContext_TorrentSearch_truncated(ctx, field)
+			case "errorCode":
+				return ec.fieldContext_TorrentSearch_errorCode(ctx, field)
+			case "correlationId":
+				return ec.fieldContext_TorrentSearch_correlationId(ctx, field)
+			case "total":
+				return ec.fieldContext_TorrentSearch_total(ctx, field)
+			case "offset":
+				return ec.fieldContext_TorrentSearch_offset(ctx, field)
+			case "limit":
+				return ec.fieldContext_TorrentSearch_limit(ctx, field)
+			case "sites":
+				return ec.fieldContext_TorrentSearch_sites(ctx, field)
+			case "candidates":
+				return ec.fieldContext_TorrentSearch_candidates(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type TorrentSearch", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Query_torrentSearch_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
 	}
 	return fc, nil
 }
@@ -40699,6 +53551,154 @@ func (ec *executionContext) fieldContext_Subscription_taskEvents(_ context.Conte
 	return fc, nil
 }
 
+func (ec *executionContext) _Subscription_indexerDefinitionEvents(ctx context.Context, field graphql.CollectedField) (ret func(ctx context.Context) graphql.Marshaler) {
+	fc, err := ec.fieldContext_Subscription_indexerDefinitionEvents(ctx, field)
+	if err != nil {
+		return nil
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = nil
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Subscription().IndexerDefinitionEvents(rctx)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return nil
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return nil
+	}
+	return func(ctx context.Context) graphql.Marshaler {
+		select {
+		case res, ok := <-resTmp.(<-chan *model.IndexerDefinitionStatus):
+			if !ok {
+				return nil
+			}
+			return graphql.WriterFunc(func(w io.Writer) {
+				w.Write([]byte{'{'})
+				graphql.MarshalString(field.Alias).MarshalGQL(w)
+				w.Write([]byte{':'})
+				ec.marshalNIndexerDefinitionStatus2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐIndexerDefinitionStatus(ctx, field.Selections, res).MarshalGQL(w)
+				w.Write([]byte{'}'})
+			})
+		case <-ctx.Done():
+			return nil
+		}
+	}
+}
+
+func (ec *executionContext) fieldContext_Subscription_indexerDefinitionEvents(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Subscription",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "streamId":
+				return ec.fieldContext_IndexerDefinitionStatus_streamId(ctx, field)
+			case "activeRevision":
+				return ec.fieldContext_IndexerDefinitionStatus_activeRevision(ctx, field)
+			case "previousRevision":
+				return ec.fieldContext_IndexerDefinitionStatus_previousRevision(ctx, field)
+			case "availableRevision":
+				return ec.fieldContext_IndexerDefinitionStatus_availableRevision(ctx, field)
+			case "revision":
+				return ec.fieldContext_IndexerDefinitionStatus_revision(ctx, field)
+			case "available":
+				return ec.fieldContext_IndexerDefinitionStatus_available(ctx, field)
+			case "lastCheckedAt":
+				return ec.fieldContext_IndexerDefinitionStatus_lastCheckedAt(ctx, field)
+			case "checkErrorCode":
+				return ec.fieldContext_IndexerDefinitionStatus_checkErrorCode(ctx, field)
+			case "errorCode":
+				return ec.fieldContext_IndexerDefinitionStatus_errorCode(ctx, field)
+			case "installed":
+				return ec.fieldContext_IndexerDefinitionStatus_installed(ctx, field)
+			case "job":
+				return ec.fieldContext_IndexerDefinitionStatus_job(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type IndexerDefinitionStatus", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Subscription_indexerEvents(ctx context.Context, field graphql.CollectedField) (ret func(ctx context.Context) graphql.Marshaler) {
+	fc, err := ec.fieldContext_Subscription_indexerEvents(ctx, field)
+	if err != nil {
+		return nil
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = nil
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Subscription().IndexerEvents(rctx)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return nil
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return nil
+	}
+	return func(ctx context.Context) graphql.Marshaler {
+		select {
+		case res, ok := <-resTmp.(<-chan *model.IndexerEvent):
+			if !ok {
+				return nil
+			}
+			return graphql.WriterFunc(func(w io.Writer) {
+				w.Write([]byte{'{'})
+				graphql.MarshalString(field.Alias).MarshalGQL(w)
+				w.Write([]byte{':'})
+				ec.marshalNIndexerEvent2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐIndexerEvent(ctx, field.Selections, res).MarshalGQL(w)
+				w.Write([]byte{'}'})
+			})
+		case <-ctx.Done():
+			return nil
+		}
+	}
+}
+
+func (ec *executionContext) fieldContext_Subscription_indexerEvents(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Subscription",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "streamId":
+				return ec.fieldContext_IndexerEvent_streamId(ctx, field)
+			case "sequence":
+				return ec.fieldContext_IndexerEvent_sequence(ctx, field)
+			case "kind":
+				return ec.fieldContext_IndexerEvent_kind(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type IndexerEvent", field.Name)
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _Subscription_logEvents(ctx context.Context, field graphql.CollectedField) (ret func(ctx context.Context) graphql.Marshaler) {
 	fc, err := ec.fieldContext_Subscription_logEvents(ctx, field)
 	if err != nil {
@@ -40963,6 +53963,83 @@ func (ec *executionContext) fieldContext_Subscription_serviceStatusEvents(_ cont
 			}
 			return nil, fmt.Errorf("no field named %q was found under type ServiceStatusEvent", field.Name)
 		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Subscription_torrentSearchEvents(ctx context.Context, field graphql.CollectedField) (ret func(ctx context.Context) graphql.Marshaler) {
+	fc, err := ec.fieldContext_Subscription_torrentSearchEvents(ctx, field)
+	if err != nil {
+		return nil
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = nil
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Subscription().TorrentSearchEvents(rctx, fc.Args["id"].(string))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return nil
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return nil
+	}
+	return func(ctx context.Context) graphql.Marshaler {
+		select {
+		case res, ok := <-resTmp.(<-chan *model.TorrentSearchEvent):
+			if !ok {
+				return nil
+			}
+			return graphql.WriterFunc(func(w io.Writer) {
+				w.Write([]byte{'{'})
+				graphql.MarshalString(field.Alias).MarshalGQL(w)
+				w.Write([]byte{':'})
+				ec.marshalNTorrentSearchEvent2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐTorrentSearchEvent(ctx, field.Selections, res).MarshalGQL(w)
+				w.Write([]byte{'}'})
+			})
+		case <-ctx.Done():
+			return nil
+		}
+	}
+}
+
+func (ec *executionContext) fieldContext_Subscription_torrentSearchEvents(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Subscription",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "streamId":
+				return ec.fieldContext_TorrentSearchEvent_streamId(ctx, field)
+			case "sequence":
+				return ec.fieldContext_TorrentSearchEvent_sequence(ctx, field)
+			case "searchId":
+				return ec.fieldContext_TorrentSearchEvent_searchId(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type TorrentSearchEvent", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Subscription_torrentSearchEvents_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
 	}
 	return fc, nil
 }
@@ -48745,6 +61822,2652 @@ func (ec *executionContext) fieldContext_TorrentFileNameMatchRule_clauses(_ cont
 	return fc, nil
 }
 
+func (ec *executionContext) _TorrentSearch_id(ctx context.Context, field graphql.CollectedField, obj *model.TorrentSearch) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_TorrentSearch_id(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.ID, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNID2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_TorrentSearch_id(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "TorrentSearch",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type ID does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _TorrentSearch_state(ctx context.Context, field graphql.CollectedField, obj *model.TorrentSearch) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_TorrentSearch_state(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.State, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(model.TorrentSearchState)
+	fc.Result = res
+	return ec.marshalNTorrentSearchState2githubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐTorrentSearchState(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_TorrentSearch_state(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "TorrentSearch",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type TorrentSearchState does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _TorrentSearch_revision(ctx context.Context, field graphql.CollectedField, obj *model.TorrentSearch) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_TorrentSearch_revision(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Revision, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int64)
+	fc.Result = res
+	return ec.marshalNLong2int64(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_TorrentSearch_revision(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "TorrentSearch",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Long does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _TorrentSearch_keywords(ctx context.Context, field graphql.CollectedField, obj *model.TorrentSearch) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_TorrentSearch_keywords(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Keywords, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_TorrentSearch_keywords(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "TorrentSearch",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _TorrentSearch_taskId(ctx context.Context, field graphql.CollectedField, obj *model.TorrentSearch) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_TorrentSearch_taskId(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.TaskID, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*string)
+	fc.Result = res
+	return ec.marshalOID2ᚖstring(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_TorrentSearch_taskId(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "TorrentSearch",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type ID does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _TorrentSearch_createdAt(ctx context.Context, field graphql.CollectedField, obj *model.TorrentSearch) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_TorrentSearch_createdAt(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.CreatedAt, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_TorrentSearch_createdAt(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "TorrentSearch",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _TorrentSearch_updatedAt(ctx context.Context, field graphql.CollectedField, obj *model.TorrentSearch) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_TorrentSearch_updatedAt(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.UpdatedAt, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_TorrentSearch_updatedAt(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "TorrentSearch",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _TorrentSearch_expiresAt(ctx context.Context, field graphql.CollectedField, obj *model.TorrentSearch) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_TorrentSearch_expiresAt(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.ExpiresAt, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_TorrentSearch_expiresAt(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "TorrentSearch",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _TorrentSearch_finishedAt(ctx context.Context, field graphql.CollectedField, obj *model.TorrentSearch) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_TorrentSearch_finishedAt(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.FinishedAt, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*string)
+	fc.Result = res
+	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_TorrentSearch_finishedAt(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "TorrentSearch",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _TorrentSearch_cancelRequested(ctx context.Context, field graphql.CollectedField, obj *model.TorrentSearch) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_TorrentSearch_cancelRequested(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.CancelRequested, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(bool)
+	fc.Result = res
+	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_TorrentSearch_cancelRequested(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "TorrentSearch",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _TorrentSearch_partial(ctx context.Context, field graphql.CollectedField, obj *model.TorrentSearch) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_TorrentSearch_partial(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Partial, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(bool)
+	fc.Result = res
+	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_TorrentSearch_partial(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "TorrentSearch",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _TorrentSearch_truncated(ctx context.Context, field graphql.CollectedField, obj *model.TorrentSearch) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_TorrentSearch_truncated(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Truncated, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(bool)
+	fc.Result = res
+	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_TorrentSearch_truncated(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "TorrentSearch",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _TorrentSearch_errorCode(ctx context.Context, field graphql.CollectedField, obj *model.TorrentSearch) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_TorrentSearch_errorCode(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.ErrorCode, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*string)
+	fc.Result = res
+	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_TorrentSearch_errorCode(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "TorrentSearch",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _TorrentSearch_correlationId(ctx context.Context, field graphql.CollectedField, obj *model.TorrentSearch) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_TorrentSearch_correlationId(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.CorrelationID, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_TorrentSearch_correlationId(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "TorrentSearch",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _TorrentSearch_total(ctx context.Context, field graphql.CollectedField, obj *model.TorrentSearch) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_TorrentSearch_total(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Total, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int)
+	fc.Result = res
+	return ec.marshalNInt2int(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_TorrentSearch_total(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "TorrentSearch",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _TorrentSearch_offset(ctx context.Context, field graphql.CollectedField, obj *model.TorrentSearch) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_TorrentSearch_offset(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Offset, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int)
+	fc.Result = res
+	return ec.marshalNInt2int(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_TorrentSearch_offset(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "TorrentSearch",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _TorrentSearch_limit(ctx context.Context, field graphql.CollectedField, obj *model.TorrentSearch) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_TorrentSearch_limit(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Limit, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int)
+	fc.Result = res
+	return ec.marshalNInt2int(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_TorrentSearch_limit(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "TorrentSearch",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _TorrentSearch_sites(ctx context.Context, field graphql.CollectedField, obj *model.TorrentSearch) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_TorrentSearch_sites(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Sites, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]*model.TorrentSearchSite)
+	fc.Result = res
+	return ec.marshalNTorrentSearchSite2ᚕᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐTorrentSearchSiteᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_TorrentSearch_sites(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "TorrentSearch",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "instanceId":
+				return ec.fieldContext_TorrentSearchSite_instanceId(ctx, field)
+			case "name":
+				return ec.fieldContext_TorrentSearchSite_name(ctx, field)
+			case "kind":
+				return ec.fieldContext_TorrentSearchSite_kind(ctx, field)
+			case "state":
+				return ec.fieldContext_TorrentSearchSite_state(ctx, field)
+			case "results":
+				return ec.fieldContext_TorrentSearchSite_results(ctx, field)
+			case "cacheHit":
+				return ec.fieldContext_TorrentSearchSite_cacheHit(ctx, field)
+			case "fetchedAt":
+				return ec.fieldContext_TorrentSearchSite_fetchedAt(ctx, field)
+			case "elapsedMs":
+				return ec.fieldContext_TorrentSearchSite_elapsedMs(ctx, field)
+			case "partial":
+				return ec.fieldContext_TorrentSearchSite_partial(ctx, field)
+			case "truncated":
+				return ec.fieldContext_TorrentSearchSite_truncated(ctx, field)
+			case "errorCode":
+				return ec.fieldContext_TorrentSearchSite_errorCode(ctx, field)
+			case "correlationId":
+				return ec.fieldContext_TorrentSearchSite_correlationId(ctx, field)
+			case "retryAt":
+				return ec.fieldContext_TorrentSearchSite_retryAt(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type TorrentSearchSite", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _TorrentSearch_candidates(ctx context.Context, field graphql.CollectedField, obj *model.TorrentSearch) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_TorrentSearch_candidates(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Candidates, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]*model.TorrentSearchCandidate)
+	fc.Result = res
+	return ec.marshalNTorrentSearchCandidate2ᚕᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐTorrentSearchCandidateᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_TorrentSearch_candidates(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "TorrentSearch",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_TorrentSearchCandidate_id(ctx, field)
+			case "instanceId":
+				return ec.fieldContext_TorrentSearchCandidate_instanceId(ctx, field)
+			case "instanceName":
+				return ec.fieldContext_TorrentSearchCandidate_instanceName(ctx, field)
+			case "kind":
+				return ec.fieldContext_TorrentSearchCandidate_kind(ctx, field)
+			case "title":
+				return ec.fieldContext_TorrentSearchCandidate_title(ctx, field)
+			case "detailsUrl":
+				return ec.fieldContext_TorrentSearchCandidate_detailsUrl(ctx, field)
+			case "infoHash":
+				return ec.fieldContext_TorrentSearchCandidate_infoHash(ctx, field)
+			case "size":
+				return ec.fieldContext_TorrentSearchCandidate_size(ctx, field)
+			case "seeders":
+				return ec.fieldContext_TorrentSearchCandidate_seeders(ctx, field)
+			case "peers":
+				return ec.fieldContext_TorrentSearchCandidate_peers(ctx, field)
+			case "publishedAt":
+				return ec.fieldContext_TorrentSearchCandidate_publishedAt(ctx, field)
+			case "categories":
+				return ec.fieldContext_TorrentSearchCandidate_categories(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type TorrentSearchCandidate", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _TorrentSearchCandidate_id(ctx context.Context, field graphql.CollectedField, obj *model.TorrentSearchCandidate) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_TorrentSearchCandidate_id(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.ID, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNID2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_TorrentSearchCandidate_id(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "TorrentSearchCandidate",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type ID does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _TorrentSearchCandidate_instanceId(ctx context.Context, field graphql.CollectedField, obj *model.TorrentSearchCandidate) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_TorrentSearchCandidate_instanceId(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.InstanceID, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNID2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_TorrentSearchCandidate_instanceId(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "TorrentSearchCandidate",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type ID does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _TorrentSearchCandidate_instanceName(ctx context.Context, field graphql.CollectedField, obj *model.TorrentSearchCandidate) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_TorrentSearchCandidate_instanceName(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.InstanceName, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_TorrentSearchCandidate_instanceName(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "TorrentSearchCandidate",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _TorrentSearchCandidate_kind(ctx context.Context, field graphql.CollectedField, obj *model.TorrentSearchCandidate) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_TorrentSearchCandidate_kind(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Kind, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(model.IndexerSourceKind)
+	fc.Result = res
+	return ec.marshalNIndexerSourceKind2githubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐIndexerSourceKind(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_TorrentSearchCandidate_kind(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "TorrentSearchCandidate",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type IndexerSourceKind does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _TorrentSearchCandidate_title(ctx context.Context, field graphql.CollectedField, obj *model.TorrentSearchCandidate) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_TorrentSearchCandidate_title(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Title, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_TorrentSearchCandidate_title(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "TorrentSearchCandidate",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _TorrentSearchCandidate_detailsUrl(ctx context.Context, field graphql.CollectedField, obj *model.TorrentSearchCandidate) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_TorrentSearchCandidate_detailsUrl(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.DetailsURL, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*string)
+	fc.Result = res
+	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_TorrentSearchCandidate_detailsUrl(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "TorrentSearchCandidate",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _TorrentSearchCandidate_infoHash(ctx context.Context, field graphql.CollectedField, obj *model.TorrentSearchCandidate) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_TorrentSearchCandidate_infoHash(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.InfoHash, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*string)
+	fc.Result = res
+	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_TorrentSearchCandidate_infoHash(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "TorrentSearchCandidate",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _TorrentSearchCandidate_size(ctx context.Context, field graphql.CollectedField, obj *model.TorrentSearchCandidate) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_TorrentSearchCandidate_size(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Size, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*int64)
+	fc.Result = res
+	return ec.marshalOLong2ᚖint64(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_TorrentSearchCandidate_size(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "TorrentSearchCandidate",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Long does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _TorrentSearchCandidate_seeders(ctx context.Context, field graphql.CollectedField, obj *model.TorrentSearchCandidate) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_TorrentSearchCandidate_seeders(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Seeders, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*int)
+	fc.Result = res
+	return ec.marshalOInt2ᚖint(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_TorrentSearchCandidate_seeders(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "TorrentSearchCandidate",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _TorrentSearchCandidate_peers(ctx context.Context, field graphql.CollectedField, obj *model.TorrentSearchCandidate) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_TorrentSearchCandidate_peers(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Peers, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*int)
+	fc.Result = res
+	return ec.marshalOInt2ᚖint(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_TorrentSearchCandidate_peers(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "TorrentSearchCandidate",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _TorrentSearchCandidate_publishedAt(ctx context.Context, field graphql.CollectedField, obj *model.TorrentSearchCandidate) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_TorrentSearchCandidate_publishedAt(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.PublishedAt, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*string)
+	fc.Result = res
+	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_TorrentSearchCandidate_publishedAt(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "TorrentSearchCandidate",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _TorrentSearchCandidate_categories(ctx context.Context, field graphql.CollectedField, obj *model.TorrentSearchCandidate) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_TorrentSearchCandidate_categories(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Categories, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]int)
+	fc.Result = res
+	return ec.marshalNInt2ᚕintᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_TorrentSearchCandidate_categories(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "TorrentSearchCandidate",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _TorrentSearchEvent_streamId(ctx context.Context, field graphql.CollectedField, obj *model.TorrentSearchEvent) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_TorrentSearchEvent_streamId(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.StreamID, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_TorrentSearchEvent_streamId(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "TorrentSearchEvent",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _TorrentSearchEvent_sequence(ctx context.Context, field graphql.CollectedField, obj *model.TorrentSearchEvent) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_TorrentSearchEvent_sequence(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Sequence, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int64)
+	fc.Result = res
+	return ec.marshalNLong2int64(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_TorrentSearchEvent_sequence(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "TorrentSearchEvent",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Long does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _TorrentSearchEvent_searchId(ctx context.Context, field graphql.CollectedField, obj *model.TorrentSearchEvent) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_TorrentSearchEvent_searchId(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.SearchID, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNID2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_TorrentSearchEvent_searchId(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "TorrentSearchEvent",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type ID does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _TorrentSearchSite_instanceId(ctx context.Context, field graphql.CollectedField, obj *model.TorrentSearchSite) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_TorrentSearchSite_instanceId(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.InstanceID, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNID2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_TorrentSearchSite_instanceId(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "TorrentSearchSite",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type ID does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _TorrentSearchSite_name(ctx context.Context, field graphql.CollectedField, obj *model.TorrentSearchSite) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_TorrentSearchSite_name(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Name, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_TorrentSearchSite_name(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "TorrentSearchSite",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _TorrentSearchSite_kind(ctx context.Context, field graphql.CollectedField, obj *model.TorrentSearchSite) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_TorrentSearchSite_kind(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Kind, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*model.IndexerSourceKind)
+	fc.Result = res
+	return ec.marshalOIndexerSourceKind2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐIndexerSourceKind(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_TorrentSearchSite_kind(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "TorrentSearchSite",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type IndexerSourceKind does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _TorrentSearchSite_state(ctx context.Context, field graphql.CollectedField, obj *model.TorrentSearchSite) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_TorrentSearchSite_state(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.State, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(model.TorrentSearchSiteState)
+	fc.Result = res
+	return ec.marshalNTorrentSearchSiteState2githubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐTorrentSearchSiteState(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_TorrentSearchSite_state(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "TorrentSearchSite",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type TorrentSearchSiteState does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _TorrentSearchSite_results(ctx context.Context, field graphql.CollectedField, obj *model.TorrentSearchSite) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_TorrentSearchSite_results(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Results, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int)
+	fc.Result = res
+	return ec.marshalNInt2int(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_TorrentSearchSite_results(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "TorrentSearchSite",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _TorrentSearchSite_cacheHit(ctx context.Context, field graphql.CollectedField, obj *model.TorrentSearchSite) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_TorrentSearchSite_cacheHit(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.CacheHit, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(bool)
+	fc.Result = res
+	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_TorrentSearchSite_cacheHit(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "TorrentSearchSite",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _TorrentSearchSite_fetchedAt(ctx context.Context, field graphql.CollectedField, obj *model.TorrentSearchSite) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_TorrentSearchSite_fetchedAt(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.FetchedAt, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*string)
+	fc.Result = res
+	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_TorrentSearchSite_fetchedAt(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "TorrentSearchSite",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _TorrentSearchSite_elapsedMs(ctx context.Context, field graphql.CollectedField, obj *model.TorrentSearchSite) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_TorrentSearchSite_elapsedMs(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.ElapsedMs, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int64)
+	fc.Result = res
+	return ec.marshalNLong2int64(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_TorrentSearchSite_elapsedMs(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "TorrentSearchSite",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Long does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _TorrentSearchSite_partial(ctx context.Context, field graphql.CollectedField, obj *model.TorrentSearchSite) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_TorrentSearchSite_partial(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Partial, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(bool)
+	fc.Result = res
+	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_TorrentSearchSite_partial(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "TorrentSearchSite",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _TorrentSearchSite_truncated(ctx context.Context, field graphql.CollectedField, obj *model.TorrentSearchSite) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_TorrentSearchSite_truncated(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Truncated, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(bool)
+	fc.Result = res
+	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_TorrentSearchSite_truncated(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "TorrentSearchSite",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _TorrentSearchSite_errorCode(ctx context.Context, field graphql.CollectedField, obj *model.TorrentSearchSite) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_TorrentSearchSite_errorCode(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.ErrorCode, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*string)
+	fc.Result = res
+	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_TorrentSearchSite_errorCode(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "TorrentSearchSite",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _TorrentSearchSite_correlationId(ctx context.Context, field graphql.CollectedField, obj *model.TorrentSearchSite) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_TorrentSearchSite_correlationId(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.CorrelationID, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*string)
+	fc.Result = res
+	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_TorrentSearchSite_correlationId(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "TorrentSearchSite",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _TorrentSearchSite_retryAt(ctx context.Context, field graphql.CollectedField, obj *model.TorrentSearchSite) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_TorrentSearchSite_retryAt(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.RetryAt, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*string)
+	fc.Result = res
+	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_TorrentSearchSite_retryAt(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "TorrentSearchSite",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _TorrentSelectionPreview_searchId(ctx context.Context, field graphql.CollectedField, obj *model.TorrentSelectionPreview) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_TorrentSelectionPreview_searchId(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.SearchID, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNID2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_TorrentSelectionPreview_searchId(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "TorrentSelectionPreview",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type ID does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _TorrentSelectionPreview_searchRevision(ctx context.Context, field graphql.CollectedField, obj *model.TorrentSelectionPreview) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_TorrentSelectionPreview_searchRevision(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.SearchRevision, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int64)
+	fc.Result = res
+	return ec.marshalNLong2int64(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_TorrentSelectionPreview_searchRevision(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "TorrentSelectionPreview",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Long does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _TorrentSelectionPreview_total(ctx context.Context, field graphql.CollectedField, obj *model.TorrentSelectionPreview) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_TorrentSelectionPreview_total(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Total, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int)
+	fc.Result = res
+	return ec.marshalNInt2int(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_TorrentSelectionPreview_total(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "TorrentSelectionPreview",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _TorrentSelectionPreview_offset(ctx context.Context, field graphql.CollectedField, obj *model.TorrentSelectionPreview) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_TorrentSelectionPreview_offset(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Offset, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int)
+	fc.Result = res
+	return ec.marshalNInt2int(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_TorrentSelectionPreview_offset(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "TorrentSelectionPreview",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _TorrentSelectionPreview_limit(ctx context.Context, field graphql.CollectedField, obj *model.TorrentSelectionPreview) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_TorrentSelectionPreview_limit(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Limit, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int)
+	fc.Result = res
+	return ec.marshalNInt2int(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_TorrentSelectionPreview_limit(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "TorrentSelectionPreview",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _TorrentSelectionPreview_candidates(ctx context.Context, field graphql.CollectedField, obj *model.TorrentSelectionPreview) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_TorrentSelectionPreview_candidates(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Candidates, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]*model.TorrentSearchCandidate)
+	fc.Result = res
+	return ec.marshalNTorrentSearchCandidate2ᚕᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐTorrentSearchCandidateᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_TorrentSelectionPreview_candidates(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "TorrentSelectionPreview",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_TorrentSearchCandidate_id(ctx, field)
+			case "instanceId":
+				return ec.fieldContext_TorrentSearchCandidate_instanceId(ctx, field)
+			case "instanceName":
+				return ec.fieldContext_TorrentSearchCandidate_instanceName(ctx, field)
+			case "kind":
+				return ec.fieldContext_TorrentSearchCandidate_kind(ctx, field)
+			case "title":
+				return ec.fieldContext_TorrentSearchCandidate_title(ctx, field)
+			case "detailsUrl":
+				return ec.fieldContext_TorrentSearchCandidate_detailsUrl(ctx, field)
+			case "infoHash":
+				return ec.fieldContext_TorrentSearchCandidate_infoHash(ctx, field)
+			case "size":
+				return ec.fieldContext_TorrentSearchCandidate_size(ctx, field)
+			case "seeders":
+				return ec.fieldContext_TorrentSearchCandidate_seeders(ctx, field)
+			case "peers":
+				return ec.fieldContext_TorrentSearchCandidate_peers(ctx, field)
+			case "publishedAt":
+				return ec.fieldContext_TorrentSearchCandidate_publishedAt(ctx, field)
+			case "categories":
+				return ec.fieldContext_TorrentSearchCandidate_categories(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type TorrentSearchCandidate", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _TorrentSelectionPreview_meta(ctx context.Context, field graphql.CollectedField, obj *model.TorrentSelectionPreview) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_TorrentSelectionPreview_meta(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Meta, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*model.TorrentSelectionPreviewMeta)
+	fc.Result = res
+	return ec.marshalNTorrentSelectionPreviewMeta2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐTorrentSelectionPreviewMeta(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_TorrentSelectionPreview_meta(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "TorrentSelectionPreview",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "appliedFastRules":
+				return ec.fieldContext_TorrentSelectionPreviewMeta_appliedFastRules(ctx, field)
+			case "appliedFileRules":
+				return ec.fieldContext_TorrentSelectionPreviewMeta_appliedFileRules(ctx, field)
+			case "inspectedCount":
+				return ec.fieldContext_TorrentSelectionPreviewMeta_inspectedCount(ctx, field)
+			case "inspectableCount":
+				return ec.fieldContext_TorrentSelectionPreviewMeta_inspectableCount(ctx, field)
+			case "inspectionCandidateLimit":
+				return ec.fieldContext_TorrentSelectionPreviewMeta_inspectionCandidateLimit(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type TorrentSelectionPreviewMeta", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _TorrentSelectionPreviewMeta_appliedFastRules(ctx context.Context, field graphql.CollectedField, obj *model.TorrentSelectionPreviewMeta) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_TorrentSelectionPreviewMeta_appliedFastRules(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.AppliedFastRules, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(bool)
+	fc.Result = res
+	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_TorrentSelectionPreviewMeta_appliedFastRules(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "TorrentSelectionPreviewMeta",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _TorrentSelectionPreviewMeta_appliedFileRules(ctx context.Context, field graphql.CollectedField, obj *model.TorrentSelectionPreviewMeta) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_TorrentSelectionPreviewMeta_appliedFileRules(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.AppliedFileRules, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(bool)
+	fc.Result = res
+	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_TorrentSelectionPreviewMeta_appliedFileRules(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "TorrentSelectionPreviewMeta",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _TorrentSelectionPreviewMeta_inspectedCount(ctx context.Context, field graphql.CollectedField, obj *model.TorrentSelectionPreviewMeta) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_TorrentSelectionPreviewMeta_inspectedCount(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.InspectedCount, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int)
+	fc.Result = res
+	return ec.marshalNInt2int(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_TorrentSelectionPreviewMeta_inspectedCount(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "TorrentSelectionPreviewMeta",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _TorrentSelectionPreviewMeta_inspectableCount(ctx context.Context, field graphql.CollectedField, obj *model.TorrentSelectionPreviewMeta) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_TorrentSelectionPreviewMeta_inspectableCount(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.InspectableCount, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int)
+	fc.Result = res
+	return ec.marshalNInt2int(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_TorrentSelectionPreviewMeta_inspectableCount(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "TorrentSelectionPreviewMeta",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _TorrentSelectionPreviewMeta_inspectionCandidateLimit(ctx context.Context, field graphql.CollectedField, obj *model.TorrentSelectionPreviewMeta) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_TorrentSelectionPreviewMeta_inspectionCandidateLimit(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.InspectionCandidateLimit, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int)
+	fc.Result = res
+	return ec.marshalNInt2int(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_TorrentSelectionPreviewMeta_inspectionCandidateLimit(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "TorrentSelectionPreviewMeta",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _TorrentSelectionRule_type(ctx context.Context, field graphql.CollectedField, obj *model.TorrentSelectionRule) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_TorrentSelectionRule_type(ctx, field)
 	if err != nil {
@@ -52376,6 +68099,137 @@ func (ec *executionContext) fieldContext___Type_isOneOf(_ context.Context, field
 
 // region    **************************** input.gotpl *****************************
 
+func (ec *executionContext) unmarshalInputBuiltinIndexerInput(ctx context.Context, obj any) (model.BuiltinIndexerInput, error) {
+	var it model.BuiltinIndexerInput
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"definitionId", "name", "enabled", "baseUrl", "networkProfile", "trustedOrigins", "settings"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "definitionId":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("definitionId"))
+			data, err := ec.unmarshalNID2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.DefinitionID = data
+		case "name":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("name"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Name = data
+		case "enabled":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("enabled"))
+			data, err := ec.unmarshalOBoolean2ᚖbool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Enabled = data
+		case "baseUrl":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("baseUrl"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.BaseURL = data
+		case "networkProfile":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("networkProfile"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.NetworkProfile = data
+		case "trustedOrigins":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("trustedOrigins"))
+			data, err := ec.unmarshalOString2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.TrustedOrigins = data
+		case "settings":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("settings"))
+			data, err := ec.unmarshalOIndexerSettingChangeInput2ᚕᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐIndexerSettingChangeInputᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Settings = data
+		}
+	}
+
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputBuiltinIndexerPatchInput(ctx context.Context, obj any) (model.BuiltinIndexerPatchInput, error) {
+	var it model.BuiltinIndexerPatchInput
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"name", "enabled", "baseUrl", "networkProfile", "trustedOrigins", "settings"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "name":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("name"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Name = data
+		case "enabled":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("enabled"))
+			data, err := ec.unmarshalOBoolean2ᚖbool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Enabled = data
+		case "baseUrl":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("baseUrl"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.BaseURL = data
+		case "networkProfile":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("networkProfile"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.NetworkProfile = data
+		case "trustedOrigins":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("trustedOrigins"))
+			data, err := ec.unmarshalOString2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.TrustedOrigins = data
+		case "settings":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("settings"))
+			data, err := ec.unmarshalOIndexerSettingChangeInput2ᚕᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐIndexerSettingChangeInputᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Settings = data
+		}
+	}
+
+	return it, nil
+}
+
 func (ec *executionContext) unmarshalInputDeliveryPatchInput(ctx context.Context, obj any) (model.DeliveryPatchInput, error) {
 	var it model.DeliveryPatchInput
 	asMap := map[string]any{}
@@ -53019,6 +68873,273 @@ func (ec *executionContext) unmarshalInputImageCacheSettingsInput(ctx context.Co
 	return it, nil
 }
 
+func (ec *executionContext) unmarshalInputIndexerDefinitionChangeInput(ctx context.Context, obj any) (model.IndexerDefinitionChangeInput, error) {
+	var it model.IndexerDefinitionChangeInput
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"expectedActiveRevision", "targetRevision"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "expectedActiveRevision":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("expectedActiveRevision"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ExpectedActiveRevision = data
+		case "targetRevision":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("targetRevision"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.TargetRevision = data
+		}
+	}
+
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputIndexerDefinitionFilterInput(ctx context.Context, obj any) (model.IndexerDefinitionFilterInput, error) {
+	var it model.IndexerDefinitionFilterInput
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	if _, present := asMap["offset"]; !present {
+		asMap["offset"] = 0
+	}
+	if _, present := asMap["limit"]; !present {
+		asMap["limit"] = 50
+	}
+
+	fieldsInOrder := [...]string{"query", "language", "privacy", "capability", "offset", "limit"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "query":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("query"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Query = data
+		case "language":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("language"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Language = data
+		case "privacy":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("privacy"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Privacy = data
+		case "capability":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("capability"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Capability = data
+		case "offset":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("offset"))
+			data, err := ec.unmarshalOInt2ᚖint(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Offset = data
+		case "limit":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("limit"))
+			data, err := ec.unmarshalOInt2ᚖint(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Limit = data
+		}
+	}
+
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputIndexerDefinitionPolicyPatchInput(ctx context.Context, obj any) (model.IndexerDefinitionPolicyPatchInput, error) {
+	var it model.IndexerDefinitionPolicyPatchInput
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"checkIntervalHours", "autoUpdate"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "checkIntervalHours":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("checkIntervalHours"))
+			data, err := ec.unmarshalOInt2ᚖint(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.CheckIntervalHours = data
+		case "autoUpdate":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("autoUpdate"))
+			data, err := ec.unmarshalOBoolean2ᚖbool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.AutoUpdate = data
+		}
+	}
+
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputIndexerLoginInput(ctx context.Context, obj any) (model.IndexerLoginInput, error) {
+	var it model.IndexerLoginInput
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"instanceId", "expectedRevision"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "instanceId":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("instanceId"))
+			data, err := ec.unmarshalNID2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.InstanceID = data
+		case "expectedRevision":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("expectedRevision"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ExpectedRevision = data
+		}
+	}
+
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputIndexerNetworkProfilePatchInput(ctx context.Context, obj any) (model.IndexerNetworkProfilePatchInput, error) {
+	var it model.IndexerNetworkProfilePatchInput
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	if _, present := asMap["clearProxy"]; !present {
+		asMap["clearProxy"] = false
+	}
+	if _, present := asMap["clearFlareSolverr"]; !present {
+		asMap["clearFlareSolverr"] = false
+	}
+
+	fieldsInOrder := [...]string{"proxyUrl", "clearProxy", "flareSolverrUrl", "clearFlareSolverr"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "proxyUrl":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("proxyUrl"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ProxyURL = data
+		case "clearProxy":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("clearProxy"))
+			data, err := ec.unmarshalOBoolean2ᚖbool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ClearProxy = data
+		case "flareSolverrUrl":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("flareSolverrUrl"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.FlareSolverrURL = data
+		case "clearFlareSolverr":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("clearFlareSolverr"))
+			data, err := ec.unmarshalOBoolean2ᚖbool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ClearFlareSolverr = data
+		}
+	}
+
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputIndexerNetworkTimeoutPatchInput(ctx context.Context, obj any) (model.IndexerNetworkTimeoutPatchInput, error) {
+	var it model.IndexerNetworkTimeoutPatchInput
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"requestTimeoutSeconds", "siteTimeoutSeconds", "challengeTimeoutSeconds"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "requestTimeoutSeconds":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("requestTimeoutSeconds"))
+			data, err := ec.unmarshalOInt2ᚖint(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.RequestTimeoutSeconds = data
+		case "siteTimeoutSeconds":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("siteTimeoutSeconds"))
+			data, err := ec.unmarshalOInt2ᚖint(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.SiteTimeoutSeconds = data
+		case "challengeTimeoutSeconds":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("challengeTimeoutSeconds"))
+			data, err := ec.unmarshalOInt2ᚖint(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ChallengeTimeoutSeconds = data
+		}
+	}
+
+	return it, nil
+}
+
 func (ec *executionContext) unmarshalInputIndexerPreferenceRuleInput(ctx context.Context, obj any) (model.IndexerPreferenceRuleInput, error) {
 	var it model.IndexerPreferenceRuleInput
 	asMap := map[string]any{}
@@ -53040,6 +69161,140 @@ func (ec *executionContext) unmarshalInputIndexerPreferenceRuleInput(ctx context
 				return it, err
 			}
 			it.TrackerIds = data
+		}
+	}
+
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputIndexerSearchCachePatchInput(ctx context.Context, obj any) (model.IndexerSearchCachePatchInput, error) {
+	var it model.IndexerSearchCachePatchInput
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"enabled", "ttlSeconds", "emptyTtlSeconds", "maxSizeMb"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "enabled":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("enabled"))
+			data, err := ec.unmarshalOBoolean2ᚖbool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Enabled = data
+		case "ttlSeconds":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("ttlSeconds"))
+			data, err := ec.unmarshalOInt2ᚖint(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.TTLSeconds = data
+		case "emptyTtlSeconds":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("emptyTtlSeconds"))
+			data, err := ec.unmarshalOInt2ᚖint(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.EmptyTTLSeconds = data
+		case "maxSizeMb":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("maxSizeMb"))
+			data, err := ec.unmarshalOInt2ᚖint(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.MaxSizeMb = data
+		}
+	}
+
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputIndexerSettingChangeInput(ctx context.Context, obj any) (model.IndexerSettingChangeInput, error) {
+	var it model.IndexerSettingChangeInput
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	if _, present := asMap["clear"]; !present {
+		asMap["clear"] = false
+	}
+
+	fieldsInOrder := [...]string{"name", "value", "clear"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "name":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("name"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Name = data
+		case "value":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("value"))
+			data, err := ec.unmarshalOIndexerSettingValueInput2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐIndexerSettingValueInput(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Value = data
+		case "clear":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("clear"))
+			data, err := ec.unmarshalOBoolean2ᚖbool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Clear = data
+		}
+	}
+
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputIndexerSettingValueInput(ctx context.Context, obj any) (model.IndexerSettingValueInput, error) {
+	var it model.IndexerSettingValueInput
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"string", "boolean", "number"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "string":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("string"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.String = data
+		case "boolean":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("boolean"))
+			data, err := ec.unmarshalOBoolean2ᚖbool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Boolean = data
+		case "number":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("number"))
+			data, err := ec.unmarshalOFloat2ᚖfloat64(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Number = data
 		}
 	}
 
@@ -53115,65 +69370,6 @@ func (ec *executionContext) unmarshalInputJackettPatchInput(ctx context.Context,
 				return it, err
 			}
 			it.Password = data
-		}
-	}
-
-	return it, nil
-}
-
-func (ec *executionContext) unmarshalInputJackettSearchInput(ctx context.Context, obj any) (model.JackettSearchInput, error) {
-	var it model.JackettSearchInput
-	asMap := map[string]any{}
-	for k, v := range obj.(map[string]any) {
-		asMap[k] = v
-	}
-
-	if _, present := asMap["sortBy"]; !present {
-		asMap["sortBy"] = "RELEVANCE"
-	}
-
-	fieldsInOrder := [...]string{"query", "trackers", "categories", "limit", "sortBy"}
-	for _, k := range fieldsInOrder {
-		v, ok := asMap[k]
-		if !ok {
-			continue
-		}
-		switch k {
-		case "query":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("query"))
-			data, err := ec.unmarshalNString2string(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.Query = data
-		case "trackers":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("trackers"))
-			data, err := ec.unmarshalOString2ᚕstringᚄ(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.Trackers = data
-		case "categories":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("categories"))
-			data, err := ec.unmarshalOInt2ᚕintᚄ(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.Categories = data
-		case "limit":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("limit"))
-			data, err := ec.unmarshalOInt2ᚖint(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.Limit = data
-		case "sortBy":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("sortBy"))
-			data, err := ec.unmarshalOJackettSortBy2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐJackettSortBy(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.SortBy = data
 		}
 	}
 
@@ -53289,138 +69485,84 @@ func (ec *executionContext) unmarshalInputPerformerListOptions(ctx context.Conte
 	return it, nil
 }
 
-func (ec *executionContext) unmarshalInputPreviewJackettSelectionCandidateInput(ctx context.Context, obj any) (model.PreviewJackettSelectionCandidateInput, error) {
-	var it model.PreviewJackettSelectionCandidateInput
+func (ec *executionContext) unmarshalInputPrepareTorrentDownloadInput(ctx context.Context, obj any) (model.PrepareTorrentDownloadInput, error) {
+	var it model.PrepareTorrentDownloadInput
 	asMap := map[string]any{}
 	for k, v := range obj.(map[string]any) {
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"title", "size", "seeders", "peers", "tracker", "trackerId", "categoryDesc", "publishDate", "details", "link", "magnetUri", "infoHash"}
+	fieldsInOrder := [...]string{"searchId", "candidateId"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
 			continue
 		}
 		switch k {
-		case "title":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("title"))
-			data, err := ec.unmarshalNString2string(ctx, v)
+		case "searchId":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("searchId"))
+			data, err := ec.unmarshalNID2string(ctx, v)
 			if err != nil {
 				return it, err
 			}
-			it.Title = data
-		case "size":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("size"))
-			data, err := ec.unmarshalNLong2int64(ctx, v)
+			it.SearchID = data
+		case "candidateId":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("candidateId"))
+			data, err := ec.unmarshalNID2string(ctx, v)
 			if err != nil {
 				return it, err
 			}
-			it.Size = data
-		case "seeders":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("seeders"))
-			data, err := ec.unmarshalNInt2int(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.Seeders = data
-		case "peers":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("peers"))
-			data, err := ec.unmarshalNInt2int(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.Peers = data
-		case "tracker":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("tracker"))
-			data, err := ec.unmarshalNString2string(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.Tracker = data
-		case "trackerId":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("trackerId"))
-			data, err := ec.unmarshalNString2string(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.TrackerID = data
-		case "categoryDesc":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("categoryDesc"))
-			data, err := ec.unmarshalNString2string(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.CategoryDesc = data
-		case "publishDate":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("publishDate"))
-			data, err := ec.unmarshalNString2string(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.PublishDate = data
-		case "details":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("details"))
-			data, err := ec.unmarshalNString2string(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.Details = data
-		case "link":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("link"))
-			data, err := ec.unmarshalNString2string(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.Link = data
-		case "magnetUri":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("magnetUri"))
-			data, err := ec.unmarshalNString2string(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.MagnetURI = data
-		case "infoHash":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("infoHash"))
-			data, err := ec.unmarshalNString2string(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.InfoHash = data
+			it.CandidateID = data
 		}
 	}
 
 	return it, nil
 }
 
-func (ec *executionContext) unmarshalInputPreviewJackettSelectionInput(ctx context.Context, obj any) (model.PreviewJackettSelectionInput, error) {
-	var it model.PreviewJackettSelectionInput
+func (ec *executionContext) unmarshalInputPreviewTorrentSelectionInput(ctx context.Context, obj any) (model.PreviewTorrentSelectionInput, error) {
+	var it model.PreviewTorrentSelectionInput
 	asMap := map[string]any{}
 	for k, v := range obj.(map[string]any) {
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"query", "results", "applyFastRules", "applyFileRules", "inspectionCandidateLimit"}
+	if _, present := asMap["applyFastRules"]; !present {
+		asMap["applyFastRules"] = false
+	}
+	if _, present := asMap["applyFileRules"]; !present {
+		asMap["applyFileRules"] = false
+	}
+	if _, present := asMap["offset"]; !present {
+		asMap["offset"] = 0
+	}
+	if _, present := asMap["limit"]; !present {
+		asMap["limit"] = 100
+	}
+	if _, present := asMap["sortBy"]; !present {
+		asMap["sortBy"] = "RELEVANCE"
+	}
+
+	fieldsInOrder := [...]string{"searchId", "candidateIds", "applyFastRules", "applyFileRules", "offset", "limit", "sortBy"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
 			continue
 		}
 		switch k {
-		case "query":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("query"))
-			data, err := ec.unmarshalNString2string(ctx, v)
+		case "searchId":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("searchId"))
+			data, err := ec.unmarshalNID2string(ctx, v)
 			if err != nil {
 				return it, err
 			}
-			it.Query = data
-		case "results":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("results"))
-			data, err := ec.unmarshalNPreviewJackettSelectionCandidateInput2ᚕᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐPreviewJackettSelectionCandidateInputᚄ(ctx, v)
+			it.SearchID = data
+		case "candidateIds":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("candidateIds"))
+			data, err := ec.unmarshalOID2ᚕstringᚄ(ctx, v)
 			if err != nil {
 				return it, err
 			}
-			it.Results = data
+			it.CandidateIds = data
 		case "applyFastRules":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("applyFastRules"))
 			data, err := ec.unmarshalNBoolean2bool(ctx, v)
@@ -53435,13 +69577,27 @@ func (ec *executionContext) unmarshalInputPreviewJackettSelectionInput(ctx conte
 				return it, err
 			}
 			it.ApplyFileRules = data
-		case "inspectionCandidateLimit":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("inspectionCandidateLimit"))
+		case "offset":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("offset"))
 			data, err := ec.unmarshalOInt2ᚖint(ctx, v)
 			if err != nil {
 				return it, err
 			}
-			it.InspectionCandidateLimit = data
+			it.Offset = data
+		case "limit":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("limit"))
+			data, err := ec.unmarshalOInt2ᚖint(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Limit = data
+		case "sortBy":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("sortBy"))
+			data, err := ec.unmarshalOTorrentSearchSort2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐTorrentSearchSort(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.SortBy = data
 		}
 	}
 
@@ -53667,6 +69823,75 @@ func (ec *executionContext) unmarshalInputQueuePerformerScenesInput(ctx context.
 	return it, nil
 }
 
+func (ec *executionContext) unmarshalInputQueueTorrentCandidateInput(ctx context.Context, obj any) (model.QueueTorrentCandidateInput, error) {
+	var it model.QueueTorrentCandidateInput
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"code", "searchId", "candidateId", "paused", "savePath", "category", "tags"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "code":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("code"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Code = data
+		case "searchId":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("searchId"))
+			data, err := ec.unmarshalNID2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.SearchID = data
+		case "candidateId":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("candidateId"))
+			data, err := ec.unmarshalNID2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.CandidateID = data
+		case "paused":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("paused"))
+			data, err := ec.unmarshalOBoolean2ᚖbool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Paused = data
+		case "savePath":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("savePath"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.SavePath = data
+		case "category":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("category"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Category = data
+		case "tags":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("tags"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Tags = data
+		}
+	}
+
+	return it, nil
+}
+
 func (ec *executionContext) unmarshalInputReleasePolicyPatchInput(ctx context.Context, obj any) (model.ReleasePolicyPatchInput, error) {
 	var it model.ReleasePolicyPatchInput
 	asMap := map[string]any{}
@@ -53884,6 +70109,61 @@ func (ec *executionContext) unmarshalInputResolveBlockedSourcingTaskInput(ctx co
 	return it, nil
 }
 
+func (ec *executionContext) unmarshalInputResolveTaskSourcingCandidateInput(ctx context.Context, obj any) (model.ResolveTaskSourcingCandidateInput, error) {
+	var it model.ResolveTaskSourcingCandidateInput
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"taskId", "searchId", "candidateId", "expectedRevision", "paused"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "taskId":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("taskId"))
+			data, err := ec.unmarshalNID2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.TaskID = data
+		case "searchId":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("searchId"))
+			data, err := ec.unmarshalNID2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.SearchID = data
+		case "candidateId":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("candidateId"))
+			data, err := ec.unmarshalNID2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.CandidateID = data
+		case "expectedRevision":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("expectedRevision"))
+			data, err := ec.unmarshalNLong2int64(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ExpectedRevision = data
+		case "paused":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("paused"))
+			data, err := ec.unmarshalOBoolean2ᚖbool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Paused = data
+		}
+	}
+
+	return it, nil
+}
+
 func (ec *executionContext) unmarshalInputResourceRulesPatchInput(ctx context.Context, obj any) (model.ResourceRulesPatchInput, error) {
 	var it model.ResourceRulesPatchInput
 	asMap := map[string]any{}
@@ -53988,6 +70268,82 @@ func (ec *executionContext) unmarshalInputSettingsPatchInput(ctx context.Context
 				return it, err
 			}
 			it.System = data
+		}
+	}
+
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputStartTorrentSearchInput(ctx context.Context, obj any) (model.StartTorrentSearchInput, error) {
+	var it model.StartTorrentSearchInput
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"keywords", "mode", "instanceIds", "categories", "parameters", "limit", "refresh", "taskId"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "keywords":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("keywords"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Keywords = data
+		case "mode":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("mode"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Mode = data
+		case "instanceIds":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("instanceIds"))
+			data, err := ec.unmarshalOID2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.InstanceIds = data
+		case "categories":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("categories"))
+			data, err := ec.unmarshalOInt2ᚕintᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Categories = data
+		case "parameters":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("parameters"))
+			data, err := ec.unmarshalOTorrentSearchParameterInput2ᚕᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐTorrentSearchParameterInputᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Parameters = data
+		case "limit":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("limit"))
+			data, err := ec.unmarshalOInt2ᚖint(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Limit = data
+		case "refresh":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("refresh"))
+			data, err := ec.unmarshalOBoolean2ᚖbool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Refresh = data
+		case "taskId":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("taskId"))
+			data, err := ec.unmarshalOID2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.TaskID = data
 		}
 	}
 
@@ -54600,6 +70956,82 @@ func (ec *executionContext) unmarshalInputTasksPatchInput(ctx context.Context, o
 	return it, nil
 }
 
+func (ec *executionContext) unmarshalInputTestIndexerInput(ctx context.Context, obj any) (model.TestIndexerInput, error) {
+	var it model.TestIndexerInput
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	if _, present := asMap["search"]; !present {
+		asMap["search"] = false
+	}
+	if _, present := asMap["download"]; !present {
+		asMap["download"] = false
+	}
+
+	fieldsInOrder := [...]string{"instanceId", "expectedRevision", "definitionId", "draft", "search", "keywords", "download"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "instanceId":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("instanceId"))
+			data, err := ec.unmarshalOID2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.InstanceID = data
+		case "expectedRevision":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("expectedRevision"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ExpectedRevision = data
+		case "definitionId":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("definitionId"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.DefinitionID = data
+		case "draft":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("draft"))
+			data, err := ec.unmarshalOBuiltinIndexerPatchInput2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐBuiltinIndexerPatchInput(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Draft = data
+		case "search":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("search"))
+			data, err := ec.unmarshalNBoolean2bool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Search = data
+		case "keywords":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("keywords"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Keywords = data
+		case "download":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("download"))
+			data, err := ec.unmarshalNBoolean2bool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Download = data
+		}
+	}
+
+	return it, nil
+}
+
 func (ec *executionContext) unmarshalInputTestServiceConnectionInput(ctx context.Context, obj any) (model.TestServiceConnectionInput, error) {
 	var it model.TestServiceConnectionInput
 	asMap := map[string]any{}
@@ -54887,6 +71319,40 @@ func (ec *executionContext) unmarshalInputTorrentFileNameMatchRuleInput(ctx cont
 				return it, err
 			}
 			it.Clauses = data
+		}
+	}
+
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputTorrentSearchParameterInput(ctx context.Context, obj any) (model.TorrentSearchParameterInput, error) {
+	var it model.TorrentSearchParameterInput
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"key", "value"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "key":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("key"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Key = data
+		case "value":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("value"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Value = data
 		}
 	}
 
@@ -55637,6 +72103,50 @@ func (ec *executionContext) _AutomationStatus(ctx context.Context, sel ast.Selec
 			}
 		case "subscriptionPollEnabled":
 			out.Values[i] = ec._AutomationStatus_subscriptionPollEnabled(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var builtinIndexerResultImplementors = []string{"BuiltinIndexerResult"}
+
+func (ec *executionContext) _BuiltinIndexerResult(ctx context.Context, sel ast.SelectionSet, obj *model.BuiltinIndexerResult) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, builtinIndexerResultImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("BuiltinIndexerResult")
+		case "revision":
+			out.Values[i] = ec._BuiltinIndexerResult_revision(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "instance":
+			out.Values[i] = ec._BuiltinIndexerResult_instance(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
@@ -56541,6 +73051,190 @@ func (ec *executionContext) _HomeCheckPerformer(ctx context.Context, sel ast.Sel
 	return out
 }
 
+var homeIndexerIssueImplementors = []string{"HomeIndexerIssue"}
+
+func (ec *executionContext) _HomeIndexerIssue(ctx context.Context, sel ast.SelectionSet, obj *model.HomeIndexerIssue) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, homeIndexerIssueImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("HomeIndexerIssue")
+		case "operation":
+			out.Values[i] = ec._HomeIndexerIssue_operation(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "observation":
+			out.Values[i] = ec._HomeIndexerIssue_observation(ctx, field, obj)
+		case "id":
+			out.Values[i] = ec._HomeIndexerIssue_id(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "name":
+			out.Values[i] = ec._HomeIndexerIssue_name(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "errorCode":
+			out.Values[i] = ec._HomeIndexerIssue_errorCode(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var homeIndexerSummaryImplementors = []string{"HomeIndexerSummary"}
+
+func (ec *executionContext) _HomeIndexerSummary(ctx context.Context, sel ast.SelectionSet, obj *model.HomeIndexerSummary) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, homeIndexerSummaryImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("HomeIndexerSummary")
+		case "revision":
+			out.Values[i] = ec._HomeIndexerSummary_revision(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "total":
+			out.Values[i] = ec._HomeIndexerSummary_total(ctx, field, obj)
+		case "builtinEnabled":
+			out.Values[i] = ec._HomeIndexerSummary_builtinEnabled(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "builtinUnverified":
+			out.Values[i] = ec._HomeIndexerSummary_builtinUnverified(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "builtinSearchSucceeded":
+			out.Values[i] = ec._HomeIndexerSummary_builtinSearchSucceeded(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "healthErrorCode":
+			out.Values[i] = ec._HomeIndexerSummary_healthErrorCode(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "definitionJob":
+			out.Values[i] = ec._HomeIndexerSummary_definitionJob(ctx, field, obj)
+		case "definitionErrorCode":
+			out.Values[i] = ec._HomeIndexerSummary_definitionErrorCode(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "attention":
+			out.Values[i] = ec._HomeIndexerSummary_attention(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "issues":
+			out.Values[i] = ec._HomeIndexerSummary_issues(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "jackett":
+			out.Values[i] = ec._HomeIndexerSummary_jackett(ctx, field, obj)
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var homeJackettSummaryImplementors = []string{"HomeJackettSummary"}
+
+func (ec *executionContext) _HomeJackettSummary(ctx context.Context, sel ast.SelectionSet, obj *model.HomeJackettSummary) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, homeJackettSummaryImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("HomeJackettSummary")
+		case "sites":
+			out.Values[i] = ec._HomeJackettSummary_sites(ctx, field, obj)
+		case "stale":
+			out.Values[i] = ec._HomeJackettSummary_stale(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "updatedAt":
+			out.Values[i] = ec._HomeJackettSummary_updatedAt(ctx, field, obj)
+		case "errorCode":
+			out.Values[i] = ec._HomeJackettSummary_errorCode(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
 var homeOverviewImplementors = []string{"HomeOverview"}
 
 func (ec *executionContext) _HomeOverview(ctx context.Context, sel ast.SelectionSet, obj *model.HomeOverview) graphql.Marshaler {
@@ -57006,6 +73700,1221 @@ func (ec *executionContext) _ImageCacheStatus(ctx context.Context, sel ast.Selec
 	return out
 }
 
+var indexerCacheStatusImplementors = []string{"IndexerCacheStatus"}
+
+func (ec *executionContext) _IndexerCacheStatus(ctx context.Context, sel ast.SelectionSet, obj *model.IndexerCacheStatus) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, indexerCacheStatusImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("IndexerCacheStatus")
+		case "revision":
+			out.Values[i] = ec._IndexerCacheStatus_revision(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "enabled":
+			out.Values[i] = ec._IndexerCacheStatus_enabled(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "ttlSeconds":
+			out.Values[i] = ec._IndexerCacheStatus_ttlSeconds(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "emptyTtlSeconds":
+			out.Values[i] = ec._IndexerCacheStatus_emptyTtlSeconds(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "maxSizeMb":
+			out.Values[i] = ec._IndexerCacheStatus_maxSizeMb(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "entries":
+			out.Values[i] = ec._IndexerCacheStatus_entries(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "usedBytes":
+			out.Values[i] = ec._IndexerCacheStatus_usedBytes(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "activeRequests":
+			out.Values[i] = ec._IndexerCacheStatus_activeRequests(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "activeWaiters":
+			out.Values[i] = ec._IndexerCacheStatus_activeWaiters(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var indexerCheckReportImplementors = []string{"IndexerCheckReport"}
+
+func (ec *executionContext) _IndexerCheckReport(ctx context.Context, sel ast.SelectionSet, obj *model.IndexerCheckReport) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, indexerCheckReportImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("IndexerCheckReport")
+		case "id":
+			out.Values[i] = ec._IndexerCheckReport_id(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "instanceId":
+			out.Values[i] = ec._IndexerCheckReport_instanceId(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "kind":
+			out.Values[i] = ec._IndexerCheckReport_kind(ctx, field, obj)
+		case "configRevision":
+			out.Values[i] = ec._IndexerCheckReport_configRevision(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "ruleRevision":
+			out.Values[i] = ec._IndexerCheckReport_ruleRevision(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "startedAt":
+			out.Values[i] = ec._IndexerCheckReport_startedAt(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "finishedAt":
+			out.Values[i] = ec._IndexerCheckReport_finishedAt(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "results":
+			out.Values[i] = ec._IndexerCheckReport_results(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "partial":
+			out.Values[i] = ec._IndexerCheckReport_partial(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "truncated":
+			out.Values[i] = ec._IndexerCheckReport_truncated(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "stages":
+			out.Values[i] = ec._IndexerCheckReport_stages(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var indexerCheckStageImplementors = []string{"IndexerCheckStage"}
+
+func (ec *executionContext) _IndexerCheckStage(ctx context.Context, sel ast.SelectionSet, obj *model.IndexerCheckStage) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, indexerCheckStageImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("IndexerCheckStage")
+		case "name":
+			out.Values[i] = ec._IndexerCheckStage_name(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "state":
+			out.Values[i] = ec._IndexerCheckStage_state(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "errorCode":
+			out.Values[i] = ec._IndexerCheckStage_errorCode(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "elapsedMs":
+			out.Values[i] = ec._IndexerCheckStage_elapsedMs(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var indexerDefinitionImplementors = []string{"IndexerDefinition"}
+
+func (ec *executionContext) _IndexerDefinition(ctx context.Context, sel ast.SelectionSet, obj *model.IndexerDefinition) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, indexerDefinitionImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("IndexerDefinition")
+		case "id":
+			out.Values[i] = ec._IndexerDefinition_id(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "name":
+			out.Values[i] = ec._IndexerDefinition_name(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "description":
+			out.Values[i] = ec._IndexerDefinition_description(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "language":
+			out.Values[i] = ec._IndexerDefinition_language(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "privacy":
+			out.Values[i] = ec._IndexerDefinition_privacy(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "digest":
+			out.Values[i] = ec._IndexerDefinition_digest(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "links":
+			out.Values[i] = ec._IndexerDefinition_links(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "modes":
+			out.Values[i] = ec._IndexerDefinition_modes(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "warnings":
+			out.Values[i] = ec._IndexerDefinition_warnings(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "settings":
+			out.Values[i] = ec._IndexerDefinition_settings(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var indexerDefinitionJobImplementors = []string{"IndexerDefinitionJob"}
+
+func (ec *executionContext) _IndexerDefinitionJob(ctx context.Context, sel ast.SelectionSet, obj *model.IndexerDefinitionJob) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, indexerDefinitionJobImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("IndexerDefinitionJob")
+		case "id":
+			out.Values[i] = ec._IndexerDefinitionJob_id(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "kind":
+			out.Values[i] = ec._IndexerDefinitionJob_kind(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "state":
+			out.Values[i] = ec._IndexerDefinitionJob_state(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "targetRevision":
+			out.Values[i] = ec._IndexerDefinitionJob_targetRevision(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "expectedActiveRevision":
+			out.Values[i] = ec._IndexerDefinitionJob_expectedActiveRevision(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "downloadedBytes":
+			out.Values[i] = ec._IndexerDefinitionJob_downloadedBytes(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "errorCode":
+			out.Values[i] = ec._IndexerDefinitionJob_errorCode(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "correlationId":
+			out.Values[i] = ec._IndexerDefinitionJob_correlationId(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "startedAt":
+			out.Values[i] = ec._IndexerDefinitionJob_startedAt(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "finishedAt":
+			out.Values[i] = ec._IndexerDefinitionJob_finishedAt(ctx, field, obj)
+		case "revision":
+			out.Values[i] = ec._IndexerDefinitionJob_revision(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var indexerDefinitionManifestImplementors = []string{"IndexerDefinitionManifest"}
+
+func (ec *executionContext) _IndexerDefinitionManifest(ctx context.Context, sel ast.SelectionSet, obj *model.IndexerDefinitionManifest) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, indexerDefinitionManifestImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("IndexerDefinitionManifest")
+		case "revision":
+			out.Values[i] = ec._IndexerDefinitionManifest_revision(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "schemaVersion":
+			out.Values[i] = ec._IndexerDefinitionManifest_schemaVersion(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "engineVersion":
+			out.Values[i] = ec._IndexerDefinitionManifest_engineVersion(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "definitionCount":
+			out.Values[i] = ec._IndexerDefinitionManifest_definitionCount(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "installedAt":
+			out.Values[i] = ec._IndexerDefinitionManifest_installedAt(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var indexerDefinitionPageImplementors = []string{"IndexerDefinitionPage"}
+
+func (ec *executionContext) _IndexerDefinitionPage(ctx context.Context, sel ast.SelectionSet, obj *model.IndexerDefinitionPage) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, indexerDefinitionPageImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("IndexerDefinitionPage")
+		case "revision":
+			out.Values[i] = ec._IndexerDefinitionPage_revision(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "totalCount":
+			out.Values[i] = ec._IndexerDefinitionPage_totalCount(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "offset":
+			out.Values[i] = ec._IndexerDefinitionPage_offset(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "limit":
+			out.Values[i] = ec._IndexerDefinitionPage_limit(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "items":
+			out.Values[i] = ec._IndexerDefinitionPage_items(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var indexerDefinitionPolicyImplementors = []string{"IndexerDefinitionPolicy"}
+
+func (ec *executionContext) _IndexerDefinitionPolicy(ctx context.Context, sel ast.SelectionSet, obj *model.IndexerDefinitionPolicy) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, indexerDefinitionPolicyImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("IndexerDefinitionPolicy")
+		case "revision":
+			out.Values[i] = ec._IndexerDefinitionPolicy_revision(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "source":
+			out.Values[i] = ec._IndexerDefinitionPolicy_source(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "schemaVersion":
+			out.Values[i] = ec._IndexerDefinitionPolicy_schemaVersion(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "checkIntervalHours":
+			out.Values[i] = ec._IndexerDefinitionPolicy_checkIntervalHours(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "autoUpdate":
+			out.Values[i] = ec._IndexerDefinitionPolicy_autoUpdate(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var indexerDefinitionStatusImplementors = []string{"IndexerDefinitionStatus"}
+
+func (ec *executionContext) _IndexerDefinitionStatus(ctx context.Context, sel ast.SelectionSet, obj *model.IndexerDefinitionStatus) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, indexerDefinitionStatusImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("IndexerDefinitionStatus")
+		case "streamId":
+			out.Values[i] = ec._IndexerDefinitionStatus_streamId(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "activeRevision":
+			out.Values[i] = ec._IndexerDefinitionStatus_activeRevision(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "previousRevision":
+			out.Values[i] = ec._IndexerDefinitionStatus_previousRevision(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "availableRevision":
+			out.Values[i] = ec._IndexerDefinitionStatus_availableRevision(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "revision":
+			out.Values[i] = ec._IndexerDefinitionStatus_revision(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "available":
+			out.Values[i] = ec._IndexerDefinitionStatus_available(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "lastCheckedAt":
+			out.Values[i] = ec._IndexerDefinitionStatus_lastCheckedAt(ctx, field, obj)
+		case "checkErrorCode":
+			out.Values[i] = ec._IndexerDefinitionStatus_checkErrorCode(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "errorCode":
+			out.Values[i] = ec._IndexerDefinitionStatus_errorCode(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "installed":
+			out.Values[i] = ec._IndexerDefinitionStatus_installed(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "job":
+			out.Values[i] = ec._IndexerDefinitionStatus_job(ctx, field, obj)
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var indexerEventImplementors = []string{"IndexerEvent"}
+
+func (ec *executionContext) _IndexerEvent(ctx context.Context, sel ast.SelectionSet, obj *model.IndexerEvent) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, indexerEventImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("IndexerEvent")
+		case "streamId":
+			out.Values[i] = ec._IndexerEvent_streamId(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "sequence":
+			out.Values[i] = ec._IndexerEvent_sequence(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "kind":
+			out.Values[i] = ec._IndexerEvent_kind(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var indexerHealthImplementors = []string{"IndexerHealth"}
+
+func (ec *executionContext) _IndexerHealth(ctx context.Context, sel ast.SelectionSet, obj *model.IndexerHealth) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, indexerHealthImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("IndexerHealth")
+		case "search":
+			out.Values[i] = ec._IndexerHealth_search(ctx, field, obj)
+		case "fetch":
+			out.Values[i] = ec._IndexerHealth_fetch(ctx, field, obj)
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var indexerInstanceImplementors = []string{"IndexerInstance"}
+
+func (ec *executionContext) _IndexerInstance(ctx context.Context, sel ast.SelectionSet, obj *model.IndexerInstance) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, indexerInstanceImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("IndexerInstance")
+		case "health":
+			out.Values[i] = ec._IndexerInstance_health(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "siteUrl":
+			out.Values[i] = ec._IndexerInstance_siteUrl(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "privacy":
+			out.Values[i] = ec._IndexerInstance_privacy(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "language":
+			out.Values[i] = ec._IndexerInstance_language(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "id":
+			out.Values[i] = ec._IndexerInstance_id(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "kind":
+			out.Values[i] = ec._IndexerInstance_kind(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "name":
+			out.Values[i] = ec._IndexerInstance_name(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "enabled":
+			out.Values[i] = ec._IndexerInstance_enabled(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "definitionId":
+			out.Values[i] = ec._IndexerInstance_definitionId(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "baseUrl":
+			out.Values[i] = ec._IndexerInstance_baseUrl(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "networkProfile":
+			out.Values[i] = ec._IndexerInstance_networkProfile(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "trustedOrigins":
+			out.Values[i] = ec._IndexerInstance_trustedOrigins(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "ruleDigest":
+			out.Values[i] = ec._IndexerInstance_ruleDigest(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "errorCode":
+			out.Values[i] = ec._IndexerInstance_errorCode(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "modes":
+			out.Values[i] = ec._IndexerInstance_modes(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "settings":
+			out.Values[i] = ec._IndexerInstance_settings(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var indexerInstancesImplementors = []string{"IndexerInstances"}
+
+func (ec *executionContext) _IndexerInstances(ctx context.Context, sel ast.SelectionSet, obj *model.IndexerInstances) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, indexerInstancesImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("IndexerInstances")
+		case "healthErrorCode":
+			out.Values[i] = ec._IndexerInstances_healthErrorCode(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "revision":
+			out.Values[i] = ec._IndexerInstances_revision(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "ruleRevision":
+			out.Values[i] = ec._IndexerInstances_ruleRevision(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "ruleErrorCode":
+			out.Values[i] = ec._IndexerInstances_ruleErrorCode(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "catalogErrorCode":
+			out.Values[i] = ec._IndexerInstances_catalogErrorCode(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "jackettEnabled":
+			out.Values[i] = ec._IndexerInstances_jackettEnabled(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "order":
+			out.Values[i] = ec._IndexerInstances_order(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "networkProfiles":
+			out.Values[i] = ec._IndexerInstances_networkProfiles(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "items":
+			out.Values[i] = ec._IndexerInstances_items(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var indexerLoginChallengeImplementors = []string{"IndexerLoginChallenge"}
+
+func (ec *executionContext) _IndexerLoginChallenge(ctx context.Context, sel ast.SelectionSet, obj *model.IndexerLoginChallenge) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, indexerLoginChallengeImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("IndexerLoginChallenge")
+		case "id":
+			out.Values[i] = ec._IndexerLoginChallenge_id(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "type":
+			out.Values[i] = ec._IndexerLoginChallenge_type(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "prompt":
+			out.Values[i] = ec._IndexerLoginChallenge_prompt(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "imageData":
+			out.Values[i] = ec._IndexerLoginChallenge_imageData(ctx, field, obj)
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var indexerLoginReportImplementors = []string{"IndexerLoginReport"}
+
+func (ec *executionContext) _IndexerLoginReport(ctx context.Context, sel ast.SelectionSet, obj *model.IndexerLoginReport) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, indexerLoginReportImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("IndexerLoginReport")
+		case "id":
+			out.Values[i] = ec._IndexerLoginReport_id(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "instanceId":
+			out.Values[i] = ec._IndexerLoginReport_instanceId(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "configRevision":
+			out.Values[i] = ec._IndexerLoginReport_configRevision(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "ruleRevision":
+			out.Values[i] = ec._IndexerLoginReport_ruleRevision(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "state":
+			out.Values[i] = ec._IndexerLoginReport_state(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "expiresAt":
+			out.Values[i] = ec._IndexerLoginReport_expiresAt(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "challenge":
+			out.Values[i] = ec._IndexerLoginReport_challenge(ctx, field, obj)
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var indexerNetworkProfileImplementors = []string{"IndexerNetworkProfile"}
+
+func (ec *executionContext) _IndexerNetworkProfile(ctx context.Context, sel ast.SelectionSet, obj *model.IndexerNetworkProfile) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, indexerNetworkProfileImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("IndexerNetworkProfile")
+		case "id":
+			out.Values[i] = ec._IndexerNetworkProfile_id(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "proxyConfigured":
+			out.Values[i] = ec._IndexerNetworkProfile_proxyConfigured(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "flareSolverrConfigured":
+			out.Values[i] = ec._IndexerNetworkProfile_flareSolverrConfigured(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "usedBy":
+			out.Values[i] = ec._IndexerNetworkProfile_usedBy(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var indexerNetworkSettingsImplementors = []string{"IndexerNetworkSettings"}
+
+func (ec *executionContext) _IndexerNetworkSettings(ctx context.Context, sel ast.SelectionSet, obj *model.IndexerNetworkSettings) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, indexerNetworkSettingsImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("IndexerNetworkSettings")
+		case "revision":
+			out.Values[i] = ec._IndexerNetworkSettings_revision(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "requestTimeoutSeconds":
+			out.Values[i] = ec._IndexerNetworkSettings_requestTimeoutSeconds(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "siteTimeoutSeconds":
+			out.Values[i] = ec._IndexerNetworkSettings_siteTimeoutSeconds(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "challengeTimeoutSeconds":
+			out.Values[i] = ec._IndexerNetworkSettings_challengeTimeoutSeconds(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "profiles":
+			out.Values[i] = ec._IndexerNetworkSettings_profiles(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var indexerObservationImplementors = []string{"IndexerObservation"}
+
+func (ec *executionContext) _IndexerObservation(ctx context.Context, sel ast.SelectionSet, obj *model.IndexerObservation) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, indexerObservationImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("IndexerObservation")
+		case "startedAt":
+			out.Values[i] = ec._IndexerObservation_startedAt(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "finishedAt":
+			out.Values[i] = ec._IndexerObservation_finishedAt(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "errorCode":
+			out.Values[i] = ec._IndexerObservation_errorCode(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "correlationId":
+			out.Values[i] = ec._IndexerObservation_correlationId(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "retryAt":
+			out.Values[i] = ec._IndexerObservation_retryAt(ctx, field, obj)
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
 var indexerPreferenceRuleImplementors = []string{"IndexerPreferenceRule"}
 
 func (ec *executionContext) _IndexerPreferenceRule(ctx context.Context, sel ast.SelectionSet, obj *model.IndexerPreferenceRule) graphql.Marshaler {
@@ -57022,6 +74931,158 @@ func (ec *executionContext) _IndexerPreferenceRule(ctx context.Context, sel ast.
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var indexerSettingImplementors = []string{"IndexerSetting"}
+
+func (ec *executionContext) _IndexerSetting(ctx context.Context, sel ast.SelectionSet, obj *model.IndexerSetting) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, indexerSettingImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("IndexerSetting")
+		case "name":
+			out.Values[i] = ec._IndexerSetting_name(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "type":
+			out.Values[i] = ec._IndexerSetting_type(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "label":
+			out.Values[i] = ec._IndexerSetting_label(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "secret":
+			out.Values[i] = ec._IndexerSetting_secret(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "configured":
+			out.Values[i] = ec._IndexerSetting_configured(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "value":
+			out.Values[i] = ec._IndexerSetting_value(ctx, field, obj)
+		case "defaultValue":
+			out.Values[i] = ec._IndexerSetting_defaultValue(ctx, field, obj)
+		case "options":
+			out.Values[i] = ec._IndexerSetting_options(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var indexerSettingOptionImplementors = []string{"IndexerSettingOption"}
+
+func (ec *executionContext) _IndexerSettingOption(ctx context.Context, sel ast.SelectionSet, obj *model.IndexerSettingOption) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, indexerSettingOptionImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("IndexerSettingOption")
+		case "value":
+			out.Values[i] = ec._IndexerSettingOption_value(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "label":
+			out.Values[i] = ec._IndexerSettingOption_label(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var indexerSettingValueImplementors = []string{"IndexerSettingValue"}
+
+func (ec *executionContext) _IndexerSettingValue(ctx context.Context, sel ast.SelectionSet, obj *model.IndexerSettingValue) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, indexerSettingValueImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("IndexerSettingValue")
+		case "string":
+			out.Values[i] = ec._IndexerSettingValue_string(ctx, field, obj)
+		case "boolean":
+			out.Values[i] = ec._IndexerSettingValue_boolean(ctx, field, obj)
+		case "number":
+			out.Values[i] = ec._IndexerSettingValue_number(ctx, field, obj)
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -57117,164 +75178,6 @@ func (ec *executionContext) _IngestStatus(ctx context.Context, sel ast.Selection
 			out.Values[i] = graphql.MarshalString("IngestStatus")
 		case "configured":
 			out.Values[i] = ec._IngestStatus_configured(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
-		default:
-			panic("unknown field " + strconv.Quote(field.Name))
-		}
-	}
-	out.Dispatch(ctx)
-	if out.Invalids > 0 {
-		return graphql.Null
-	}
-
-	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
-
-	for label, dfs := range deferred {
-		ec.processDeferredGroup(graphql.DeferredGroup{
-			Label:    label,
-			Path:     graphql.GetPath(ctx),
-			FieldSet: dfs,
-			Context:  ctx,
-		})
-	}
-
-	return out
-}
-
-var jackettIndexerImplementors = []string{"JackettIndexer"}
-
-func (ec *executionContext) _JackettIndexer(ctx context.Context, sel ast.SelectionSet, obj *model.JackettIndexer) graphql.Marshaler {
-	fields := graphql.CollectFields(ec.OperationContext, sel, jackettIndexerImplementors)
-
-	out := graphql.NewFieldSet(fields)
-	deferred := make(map[string]*graphql.FieldSet)
-	for i, field := range fields {
-		switch field.Name {
-		case "__typename":
-			out.Values[i] = graphql.MarshalString("JackettIndexer")
-		case "siteUrl":
-			out.Values[i] = ec._JackettIndexer_siteUrl(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
-		case "siteType":
-			out.Values[i] = ec._JackettIndexer_siteType(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
-		case "language":
-			out.Values[i] = ec._JackettIndexer_language(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
-		case "id":
-			out.Values[i] = ec._JackettIndexer_id(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
-		case "name":
-			out.Values[i] = ec._JackettIndexer_name(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
-		case "enabled":
-			out.Values[i] = ec._JackettIndexer_enabled(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
-		default:
-			panic("unknown field " + strconv.Quote(field.Name))
-		}
-	}
-	out.Dispatch(ctx)
-	if out.Invalids > 0 {
-		return graphql.Null
-	}
-
-	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
-
-	for label, dfs := range deferred {
-		ec.processDeferredGroup(graphql.DeferredGroup{
-			Label:    label,
-			Path:     graphql.GetPath(ctx),
-			FieldSet: dfs,
-			Context:  ctx,
-		})
-	}
-
-	return out
-}
-
-var jackettSearchResultImplementors = []string{"JackettSearchResult"}
-
-func (ec *executionContext) _JackettSearchResult(ctx context.Context, sel ast.SelectionSet, obj *model.JackettSearchResult) graphql.Marshaler {
-	fields := graphql.CollectFields(ec.OperationContext, sel, jackettSearchResultImplementors)
-
-	out := graphql.NewFieldSet(fields)
-	deferred := make(map[string]*graphql.FieldSet)
-	for i, field := range fields {
-		switch field.Name {
-		case "__typename":
-			out.Values[i] = graphql.MarshalString("JackettSearchResult")
-		case "title":
-			out.Values[i] = ec._JackettSearchResult_title(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
-		case "size":
-			out.Values[i] = ec._JackettSearchResult_size(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
-		case "seeders":
-			out.Values[i] = ec._JackettSearchResult_seeders(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
-		case "peers":
-			out.Values[i] = ec._JackettSearchResult_peers(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
-		case "tracker":
-			out.Values[i] = ec._JackettSearchResult_tracker(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
-		case "trackerId":
-			out.Values[i] = ec._JackettSearchResult_trackerId(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
-		case "categoryDesc":
-			out.Values[i] = ec._JackettSearchResult_categoryDesc(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
-		case "publishDate":
-			out.Values[i] = ec._JackettSearchResult_publishDate(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
-		case "details":
-			out.Values[i] = ec._JackettSearchResult_details(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
-		case "link":
-			out.Values[i] = ec._JackettSearchResult_link(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
-		case "magnetUri":
-			out.Values[i] = ec._JackettSearchResult_magnetUri(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
-		case "infoHash":
-			out.Values[i] = ec._JackettSearchResult_infoHash(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
@@ -57942,6 +75845,174 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
+		case "clearIndexerSearchCache":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_clearIndexerSearchCache(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "updateIndexerSearchCache":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_updateIndexerSearchCache(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "testIndexer":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_testIndexer(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "updateIndexerDefinitionPolicy":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_updateIndexerDefinitionPolicy(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "checkIndexerDefinitionUpdate":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_checkIndexerDefinitionUpdate(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "installIndexerDefinitions":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_installIndexerDefinitions(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "updateIndexerDefinitions":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_updateIndexerDefinitions(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "rollbackIndexerDefinitions":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_rollbackIndexerDefinitions(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "repairIndexerDefinitions":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_repairIndexerDefinitions(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "cancelIndexerDefinitionUpdate":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_cancelIndexerDefinitionUpdate(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "prepareTorrentDownload":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_prepareTorrentDownload(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "beginIndexerLogin":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_beginIndexerLogin(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "answerIndexerChallenge":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_answerIndexerChallenge(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "cancelIndexerLogin":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_cancelIndexerLogin(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "addBuiltinIndexer":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_addBuiltinIndexer(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "updateBuiltinIndexer":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_updateBuiltinIndexer(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "removeBuiltinIndexer":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_removeBuiltinIndexer(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "setIndexerEnabled":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_setIndexerEnabled(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "reorderIndexers":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_reorderIndexers(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "refreshJackettIndexers":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_refreshJackettIndexers(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "updateIndexerNetworkTimeouts":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_updateIndexerNetworkTimeouts(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "addIndexerNetworkProfile":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_addIndexerNetworkProfile(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "updateIndexerNetworkProfile":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_updateIndexerNetworkProfile(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "removeIndexerNetworkProfile":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_removeIndexerNetworkProfile(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
 		case "processReleaseReviews":
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
 				return ec._Mutation_processReleaseReviews(ctx, field)
@@ -58120,6 +76191,41 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 		case "startSubscriptionCheck":
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
 				return ec._Mutation_startSubscriptionCheck(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "startTorrentSearch":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_startTorrentSearch(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "cancelTorrentSearch":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_cancelTorrentSearch(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "queueTorrentCandidate":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_queueTorrentCandidate(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "previewTorrentSelection":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_previewTorrentSelection(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "resolveTaskSourcingCandidate":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_resolveTaskSourcingCandidate(ctx, field)
 			})
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
@@ -58606,78 +76712,29 @@ func (ec *executionContext) _PerformerWorkspaceSnapshot(ctx context.Context, sel
 	return out
 }
 
-var previewJackettSelectionMetaImplementors = []string{"PreviewJackettSelectionMeta"}
+var preparedTorrentDownloadImplementors = []string{"PreparedTorrentDownload"}
 
-func (ec *executionContext) _PreviewJackettSelectionMeta(ctx context.Context, sel ast.SelectionSet, obj *model.PreviewJackettSelectionMeta) graphql.Marshaler {
-	fields := graphql.CollectFields(ec.OperationContext, sel, previewJackettSelectionMetaImplementors)
-
-	out := graphql.NewFieldSet(fields)
-	deferred := make(map[string]*graphql.FieldSet)
-	for i, field := range fields {
-		switch field.Name {
-		case "__typename":
-			out.Values[i] = graphql.MarshalString("PreviewJackettSelectionMeta")
-		case "appliedFastRules":
-			out.Values[i] = ec._PreviewJackettSelectionMeta_appliedFastRules(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
-		case "appliedFileRules":
-			out.Values[i] = ec._PreviewJackettSelectionMeta_appliedFileRules(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
-		case "inspectedCount":
-			out.Values[i] = ec._PreviewJackettSelectionMeta_inspectedCount(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
-		case "inspectableCount":
-			out.Values[i] = ec._PreviewJackettSelectionMeta_inspectableCount(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
-		default:
-			panic("unknown field " + strconv.Quote(field.Name))
-		}
-	}
-	out.Dispatch(ctx)
-	if out.Invalids > 0 {
-		return graphql.Null
-	}
-
-	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
-
-	for label, dfs := range deferred {
-		ec.processDeferredGroup(graphql.DeferredGroup{
-			Label:    label,
-			Path:     graphql.GetPath(ctx),
-			FieldSet: dfs,
-			Context:  ctx,
-		})
-	}
-
-	return out
-}
-
-var previewJackettSelectionResultImplementors = []string{"PreviewJackettSelectionResult"}
-
-func (ec *executionContext) _PreviewJackettSelectionResult(ctx context.Context, sel ast.SelectionSet, obj *model.PreviewJackettSelectionResult) graphql.Marshaler {
-	fields := graphql.CollectFields(ec.OperationContext, sel, previewJackettSelectionResultImplementors)
+func (ec *executionContext) _PreparedTorrentDownload(ctx context.Context, sel ast.SelectionSet, obj *model.PreparedTorrentDownload) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, preparedTorrentDownloadImplementors)
 
 	out := graphql.NewFieldSet(fields)
 	deferred := make(map[string]*graphql.FieldSet)
 	for i, field := range fields {
 		switch field.Name {
 		case "__typename":
-			out.Values[i] = graphql.MarshalString("PreviewJackettSelectionResult")
-		case "results":
-			out.Values[i] = ec._PreviewJackettSelectionResult_results(ctx, field, obj)
+			out.Values[i] = graphql.MarshalString("PreparedTorrentDownload")
+		case "kind":
+			out.Values[i] = ec._PreparedTorrentDownload_kind(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
-		case "previewMeta":
-			out.Values[i] = ec._PreviewJackettSelectionResult_previewMeta(ctx, field, obj)
+		case "downloadUrl":
+			out.Values[i] = ec._PreparedTorrentDownload_downloadUrl(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "expiresAt":
+			out.Values[i] = ec._PreparedTorrentDownload_expiresAt(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
@@ -59086,6 +77143,198 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 			}
 
 			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
+		case "homeIndexerSummary":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_homeIndexerSummary(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			rrm := func(ctx context.Context) graphql.Marshaler {
+				return ec.OperationContext.RootResolverMiddleware(ctx,
+					func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
+		case "indexerCacheStatus":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_indexerCacheStatus(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			rrm := func(ctx context.Context) graphql.Marshaler {
+				return ec.OperationContext.RootResolverMiddleware(ctx,
+					func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
+		case "indexerDefinitionPolicy":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_indexerDefinitionPolicy(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			rrm := func(ctx context.Context) graphql.Marshaler {
+				return ec.OperationContext.RootResolverMiddleware(ctx,
+					func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
+		case "indexerDefinitionStatus":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_indexerDefinitionStatus(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			rrm := func(ctx context.Context) graphql.Marshaler {
+				return ec.OperationContext.RootResolverMiddleware(ctx,
+					func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
+		case "indexerDefinitionUpdate":
+			field := field
+
+			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_indexerDefinitionUpdate(ctx, field)
+				return res
+			}
+
+			rrm := func(ctx context.Context) graphql.Marshaler {
+				return ec.OperationContext.RootResolverMiddleware(ctx,
+					func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
+		case "indexerLogin":
+			field := field
+
+			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_indexerLogin(ctx, field)
+				return res
+			}
+
+			rrm := func(ctx context.Context) graphql.Marshaler {
+				return ec.OperationContext.RootResolverMiddleware(ctx,
+					func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
+		case "indexerDefinitions":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_indexerDefinitions(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			rrm := func(ctx context.Context) graphql.Marshaler {
+				return ec.OperationContext.RootResolverMiddleware(ctx,
+					func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
+		case "indexerInstances":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_indexerInstances(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			rrm := func(ctx context.Context) graphql.Marshaler {
+				return ec.OperationContext.RootResolverMiddleware(ctx,
+					func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
+		case "indexerNetworkSettings":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_indexerNetworkSettings(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			rrm := func(ctx context.Context) graphql.Marshaler {
+				return ec.OperationContext.RootResolverMiddleware(ctx,
+					func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
 		case "logs":
 			field := field
 
@@ -59140,94 +77389,6 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 					}
 				}()
 				res = ec._Query_discoverScenes(ctx, field)
-				if res == graphql.Null {
-					atomic.AddUint32(&fs.Invalids, 1)
-				}
-				return res
-			}
-
-			rrm := func(ctx context.Context) graphql.Marshaler {
-				return ec.OperationContext.RootResolverMiddleware(ctx,
-					func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
-			}
-
-			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
-		case "jackettSearch":
-			field := field
-
-			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
-				defer func() {
-					if r := recover(); r != nil {
-						ec.Error(ctx, ec.Recover(ctx, r))
-					}
-				}()
-				res = ec._Query_jackettSearch(ctx, field)
-				if res == graphql.Null {
-					atomic.AddUint32(&fs.Invalids, 1)
-				}
-				return res
-			}
-
-			rrm := func(ctx context.Context) graphql.Marshaler {
-				return ec.OperationContext.RootResolverMiddleware(ctx,
-					func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
-			}
-
-			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
-		case "previewJackettSelection":
-			field := field
-
-			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
-				defer func() {
-					if r := recover(); r != nil {
-						ec.Error(ctx, ec.Recover(ctx, r))
-					}
-				}()
-				res = ec._Query_previewJackettSelection(ctx, field)
-				if res == graphql.Null {
-					atomic.AddUint32(&fs.Invalids, 1)
-				}
-				return res
-			}
-
-			rrm := func(ctx context.Context) graphql.Marshaler {
-				return ec.OperationContext.RootResolverMiddleware(ctx,
-					func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
-			}
-
-			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
-		case "jackettIndexers":
-			field := field
-
-			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
-				defer func() {
-					if r := recover(); r != nil {
-						ec.Error(ctx, ec.Recover(ctx, r))
-					}
-				}()
-				res = ec._Query_jackettIndexers(ctx, field)
-				if res == graphql.Null {
-					atomic.AddUint32(&fs.Invalids, 1)
-				}
-				return res
-			}
-
-			rrm := func(ctx context.Context) graphql.Marshaler {
-				return ec.OperationContext.RootResolverMiddleware(ctx,
-					func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
-			}
-
-			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
-		case "blockedTaskTorrentCandidates":
-			field := field
-
-			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
-				defer func() {
-					if r := recover(); r != nil {
-						ec.Error(ctx, ec.Recover(ctx, r))
-					}
-				}()
-				res = ec._Query_blockedTaskTorrentCandidates(ctx, field)
 				if res == graphql.Null {
 					atomic.AddUint32(&fs.Invalids, 1)
 				}
@@ -59681,6 +77842,28 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 					}
 				}()
 				res = ec._Query_homeTaskSnapshot(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			rrm := func(ctx context.Context) graphql.Marshaler {
+				return ec.OperationContext.RootResolverMiddleware(ctx,
+					func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
+		case "torrentSearch":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_torrentSearch(ctx, field)
 				if res == graphql.Null {
 					atomic.AddUint32(&fs.Invalids, 1)
 				}
@@ -61553,6 +79736,10 @@ func (ec *executionContext) _Subscription(ctx context.Context, sel ast.Selection
 	switch fields[0].Name {
 	case "taskEvents":
 		return ec._Subscription_taskEvents(ctx, fields[0])
+	case "indexerDefinitionEvents":
+		return ec._Subscription_indexerDefinitionEvents(ctx, fields[0])
+	case "indexerEvents":
+		return ec._Subscription_indexerEvents(ctx, fields[0])
 	case "logEvents":
 		return ec._Subscription_logEvents(ctx, fields[0])
 	case "databasePerformance":
@@ -61561,6 +79748,8 @@ func (ec *executionContext) _Subscription(ctx context.Context, sel ast.Selection
 		return ec._Subscription_performerSubscriptionEvents(ctx, fields[0])
 	case "serviceStatusEvents":
 		return ec._Subscription_serviceStatusEvents(ctx, fields[0])
+	case "torrentSearchEvents":
+		return ec._Subscription_torrentSearchEvents(ctx, fields[0])
 	default:
 		panic("unknown field " + strconv.Quote(fields[0].Name))
 	}
@@ -62952,6 +81141,463 @@ func (ec *executionContext) _TorrentFileNameMatchRule(ctx context.Context, sel a
 	return out
 }
 
+var torrentSearchImplementors = []string{"TorrentSearch"}
+
+func (ec *executionContext) _TorrentSearch(ctx context.Context, sel ast.SelectionSet, obj *model.TorrentSearch) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, torrentSearchImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("TorrentSearch")
+		case "id":
+			out.Values[i] = ec._TorrentSearch_id(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "state":
+			out.Values[i] = ec._TorrentSearch_state(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "revision":
+			out.Values[i] = ec._TorrentSearch_revision(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "keywords":
+			out.Values[i] = ec._TorrentSearch_keywords(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "taskId":
+			out.Values[i] = ec._TorrentSearch_taskId(ctx, field, obj)
+		case "createdAt":
+			out.Values[i] = ec._TorrentSearch_createdAt(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "updatedAt":
+			out.Values[i] = ec._TorrentSearch_updatedAt(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "expiresAt":
+			out.Values[i] = ec._TorrentSearch_expiresAt(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "finishedAt":
+			out.Values[i] = ec._TorrentSearch_finishedAt(ctx, field, obj)
+		case "cancelRequested":
+			out.Values[i] = ec._TorrentSearch_cancelRequested(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "partial":
+			out.Values[i] = ec._TorrentSearch_partial(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "truncated":
+			out.Values[i] = ec._TorrentSearch_truncated(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "errorCode":
+			out.Values[i] = ec._TorrentSearch_errorCode(ctx, field, obj)
+		case "correlationId":
+			out.Values[i] = ec._TorrentSearch_correlationId(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "total":
+			out.Values[i] = ec._TorrentSearch_total(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "offset":
+			out.Values[i] = ec._TorrentSearch_offset(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "limit":
+			out.Values[i] = ec._TorrentSearch_limit(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "sites":
+			out.Values[i] = ec._TorrentSearch_sites(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "candidates":
+			out.Values[i] = ec._TorrentSearch_candidates(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var torrentSearchCandidateImplementors = []string{"TorrentSearchCandidate"}
+
+func (ec *executionContext) _TorrentSearchCandidate(ctx context.Context, sel ast.SelectionSet, obj *model.TorrentSearchCandidate) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, torrentSearchCandidateImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("TorrentSearchCandidate")
+		case "id":
+			out.Values[i] = ec._TorrentSearchCandidate_id(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "instanceId":
+			out.Values[i] = ec._TorrentSearchCandidate_instanceId(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "instanceName":
+			out.Values[i] = ec._TorrentSearchCandidate_instanceName(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "kind":
+			out.Values[i] = ec._TorrentSearchCandidate_kind(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "title":
+			out.Values[i] = ec._TorrentSearchCandidate_title(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "detailsUrl":
+			out.Values[i] = ec._TorrentSearchCandidate_detailsUrl(ctx, field, obj)
+		case "infoHash":
+			out.Values[i] = ec._TorrentSearchCandidate_infoHash(ctx, field, obj)
+		case "size":
+			out.Values[i] = ec._TorrentSearchCandidate_size(ctx, field, obj)
+		case "seeders":
+			out.Values[i] = ec._TorrentSearchCandidate_seeders(ctx, field, obj)
+		case "peers":
+			out.Values[i] = ec._TorrentSearchCandidate_peers(ctx, field, obj)
+		case "publishedAt":
+			out.Values[i] = ec._TorrentSearchCandidate_publishedAt(ctx, field, obj)
+		case "categories":
+			out.Values[i] = ec._TorrentSearchCandidate_categories(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var torrentSearchEventImplementors = []string{"TorrentSearchEvent"}
+
+func (ec *executionContext) _TorrentSearchEvent(ctx context.Context, sel ast.SelectionSet, obj *model.TorrentSearchEvent) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, torrentSearchEventImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("TorrentSearchEvent")
+		case "streamId":
+			out.Values[i] = ec._TorrentSearchEvent_streamId(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "sequence":
+			out.Values[i] = ec._TorrentSearchEvent_sequence(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "searchId":
+			out.Values[i] = ec._TorrentSearchEvent_searchId(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var torrentSearchSiteImplementors = []string{"TorrentSearchSite"}
+
+func (ec *executionContext) _TorrentSearchSite(ctx context.Context, sel ast.SelectionSet, obj *model.TorrentSearchSite) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, torrentSearchSiteImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("TorrentSearchSite")
+		case "instanceId":
+			out.Values[i] = ec._TorrentSearchSite_instanceId(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "name":
+			out.Values[i] = ec._TorrentSearchSite_name(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "kind":
+			out.Values[i] = ec._TorrentSearchSite_kind(ctx, field, obj)
+		case "state":
+			out.Values[i] = ec._TorrentSearchSite_state(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "results":
+			out.Values[i] = ec._TorrentSearchSite_results(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "cacheHit":
+			out.Values[i] = ec._TorrentSearchSite_cacheHit(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "fetchedAt":
+			out.Values[i] = ec._TorrentSearchSite_fetchedAt(ctx, field, obj)
+		case "elapsedMs":
+			out.Values[i] = ec._TorrentSearchSite_elapsedMs(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "partial":
+			out.Values[i] = ec._TorrentSearchSite_partial(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "truncated":
+			out.Values[i] = ec._TorrentSearchSite_truncated(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "errorCode":
+			out.Values[i] = ec._TorrentSearchSite_errorCode(ctx, field, obj)
+		case "correlationId":
+			out.Values[i] = ec._TorrentSearchSite_correlationId(ctx, field, obj)
+		case "retryAt":
+			out.Values[i] = ec._TorrentSearchSite_retryAt(ctx, field, obj)
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var torrentSelectionPreviewImplementors = []string{"TorrentSelectionPreview"}
+
+func (ec *executionContext) _TorrentSelectionPreview(ctx context.Context, sel ast.SelectionSet, obj *model.TorrentSelectionPreview) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, torrentSelectionPreviewImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("TorrentSelectionPreview")
+		case "searchId":
+			out.Values[i] = ec._TorrentSelectionPreview_searchId(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "searchRevision":
+			out.Values[i] = ec._TorrentSelectionPreview_searchRevision(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "total":
+			out.Values[i] = ec._TorrentSelectionPreview_total(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "offset":
+			out.Values[i] = ec._TorrentSelectionPreview_offset(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "limit":
+			out.Values[i] = ec._TorrentSelectionPreview_limit(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "candidates":
+			out.Values[i] = ec._TorrentSelectionPreview_candidates(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "meta":
+			out.Values[i] = ec._TorrentSelectionPreview_meta(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var torrentSelectionPreviewMetaImplementors = []string{"TorrentSelectionPreviewMeta"}
+
+func (ec *executionContext) _TorrentSelectionPreviewMeta(ctx context.Context, sel ast.SelectionSet, obj *model.TorrentSelectionPreviewMeta) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, torrentSelectionPreviewMetaImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("TorrentSelectionPreviewMeta")
+		case "appliedFastRules":
+			out.Values[i] = ec._TorrentSelectionPreviewMeta_appliedFastRules(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "appliedFileRules":
+			out.Values[i] = ec._TorrentSelectionPreviewMeta_appliedFileRules(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "inspectedCount":
+			out.Values[i] = ec._TorrentSelectionPreviewMeta_inspectedCount(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "inspectableCount":
+			out.Values[i] = ec._TorrentSelectionPreviewMeta_inspectableCount(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "inspectionCandidateLimit":
+			out.Values[i] = ec._TorrentSelectionPreviewMeta_inspectionCandidateLimit(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
 var torrentSelectionRuleImplementors = []string{"TorrentSelectionRule"}
 
 func (ec *executionContext) _TorrentSelectionRule(ctx context.Context, sel ast.SelectionSet, obj *model.TorrentSelectionRule) graphql.Marshaler {
@@ -63707,6 +82353,30 @@ func (ec *executionContext) marshalNBoolean2bool(ctx context.Context, sel ast.Se
 	return res
 }
 
+func (ec *executionContext) unmarshalNBuiltinIndexerInput2githubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐBuiltinIndexerInput(ctx context.Context, v any) (model.BuiltinIndexerInput, error) {
+	res, err := ec.unmarshalInputBuiltinIndexerInput(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) unmarshalNBuiltinIndexerPatchInput2githubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐBuiltinIndexerPatchInput(ctx context.Context, v any) (model.BuiltinIndexerPatchInput, error) {
+	res, err := ec.unmarshalInputBuiltinIndexerPatchInput(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNBuiltinIndexerResult2githubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐBuiltinIndexerResult(ctx context.Context, sel ast.SelectionSet, v model.BuiltinIndexerResult) graphql.Marshaler {
+	return ec._BuiltinIndexerResult(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNBuiltinIndexerResult2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐBuiltinIndexerResult(ctx context.Context, sel ast.SelectionSet, v *model.BuiltinIndexerResult) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._BuiltinIndexerResult(ctx, sel, v)
+}
+
 func (ec *executionContext) marshalNDashboardStats2githubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐDashboardStats(ctx context.Context, sel ast.SelectionSet, v model.DashboardStats) graphql.Marshaler {
 	return ec._DashboardStats(ctx, sel, &v)
 }
@@ -64103,6 +82773,74 @@ func (ec *executionContext) marshalNHomeCheckPerformer2ᚖgithubᚗcomᚋleothev
 	return ec._HomeCheckPerformer(ctx, sel, v)
 }
 
+func (ec *executionContext) marshalNHomeIndexerIssue2ᚕᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐHomeIndexerIssueᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.HomeIndexerIssue) graphql.Marshaler {
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalNHomeIndexerIssue2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐHomeIndexerIssue(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
+}
+
+func (ec *executionContext) marshalNHomeIndexerIssue2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐHomeIndexerIssue(ctx context.Context, sel ast.SelectionSet, v *model.HomeIndexerIssue) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._HomeIndexerIssue(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNHomeIndexerSummary2githubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐHomeIndexerSummary(ctx context.Context, sel ast.SelectionSet, v model.HomeIndexerSummary) graphql.Marshaler {
+	return ec._HomeIndexerSummary(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNHomeIndexerSummary2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐHomeIndexerSummary(ctx context.Context, sel ast.SelectionSet, v *model.HomeIndexerSummary) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._HomeIndexerSummary(ctx, sel, v)
+}
+
 func (ec *executionContext) marshalNHomeOverview2githubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐHomeOverview(ctx context.Context, sel ast.SelectionSet, v model.HomeOverview) graphql.Marshaler {
 	return ec._HomeOverview(ctx, sel, &v)
 }
@@ -64283,6 +83021,511 @@ func (ec *executionContext) marshalNImageCacheStatus2ᚖgithubᚗcomᚋleothevan
 	return ec._ImageCacheStatus(ctx, sel, v)
 }
 
+func (ec *executionContext) marshalNIndexerCacheStatus2githubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐIndexerCacheStatus(ctx context.Context, sel ast.SelectionSet, v model.IndexerCacheStatus) graphql.Marshaler {
+	return ec._IndexerCacheStatus(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNIndexerCacheStatus2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐIndexerCacheStatus(ctx context.Context, sel ast.SelectionSet, v *model.IndexerCacheStatus) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._IndexerCacheStatus(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNIndexerCheckReport2githubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐIndexerCheckReport(ctx context.Context, sel ast.SelectionSet, v model.IndexerCheckReport) graphql.Marshaler {
+	return ec._IndexerCheckReport(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNIndexerCheckReport2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐIndexerCheckReport(ctx context.Context, sel ast.SelectionSet, v *model.IndexerCheckReport) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._IndexerCheckReport(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNIndexerCheckStage2ᚕᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐIndexerCheckStageᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.IndexerCheckStage) graphql.Marshaler {
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalNIndexerCheckStage2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐIndexerCheckStage(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
+}
+
+func (ec *executionContext) marshalNIndexerCheckStage2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐIndexerCheckStage(ctx context.Context, sel ast.SelectionSet, v *model.IndexerCheckStage) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._IndexerCheckStage(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalNIndexerCheckStageName2githubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐIndexerCheckStageName(ctx context.Context, v any) (model.IndexerCheckStageName, error) {
+	var res model.IndexerCheckStageName
+	err := res.UnmarshalGQL(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNIndexerCheckStageName2githubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐIndexerCheckStageName(ctx context.Context, sel ast.SelectionSet, v model.IndexerCheckStageName) graphql.Marshaler {
+	return v
+}
+
+func (ec *executionContext) unmarshalNIndexerCheckStageState2githubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐIndexerCheckStageState(ctx context.Context, v any) (model.IndexerCheckStageState, error) {
+	var res model.IndexerCheckStageState
+	err := res.UnmarshalGQL(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNIndexerCheckStageState2githubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐIndexerCheckStageState(ctx context.Context, sel ast.SelectionSet, v model.IndexerCheckStageState) graphql.Marshaler {
+	return v
+}
+
+func (ec *executionContext) marshalNIndexerDefinition2ᚕᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐIndexerDefinitionᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.IndexerDefinition) graphql.Marshaler {
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalNIndexerDefinition2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐIndexerDefinition(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
+}
+
+func (ec *executionContext) marshalNIndexerDefinition2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐIndexerDefinition(ctx context.Context, sel ast.SelectionSet, v *model.IndexerDefinition) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._IndexerDefinition(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalNIndexerDefinitionChangeInput2githubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐIndexerDefinitionChangeInput(ctx context.Context, v any) (model.IndexerDefinitionChangeInput, error) {
+	res, err := ec.unmarshalInputIndexerDefinitionChangeInput(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNIndexerDefinitionJob2githubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐIndexerDefinitionJob(ctx context.Context, sel ast.SelectionSet, v model.IndexerDefinitionJob) graphql.Marshaler {
+	return ec._IndexerDefinitionJob(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNIndexerDefinitionJob2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐIndexerDefinitionJob(ctx context.Context, sel ast.SelectionSet, v *model.IndexerDefinitionJob) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._IndexerDefinitionJob(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalNIndexerDefinitionJobKind2githubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐIndexerDefinitionJobKind(ctx context.Context, v any) (model.IndexerDefinitionJobKind, error) {
+	var res model.IndexerDefinitionJobKind
+	err := res.UnmarshalGQL(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNIndexerDefinitionJobKind2githubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐIndexerDefinitionJobKind(ctx context.Context, sel ast.SelectionSet, v model.IndexerDefinitionJobKind) graphql.Marshaler {
+	return v
+}
+
+func (ec *executionContext) unmarshalNIndexerDefinitionJobState2githubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐIndexerDefinitionJobState(ctx context.Context, v any) (model.IndexerDefinitionJobState, error) {
+	var res model.IndexerDefinitionJobState
+	err := res.UnmarshalGQL(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNIndexerDefinitionJobState2githubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐIndexerDefinitionJobState(ctx context.Context, sel ast.SelectionSet, v model.IndexerDefinitionJobState) graphql.Marshaler {
+	return v
+}
+
+func (ec *executionContext) marshalNIndexerDefinitionManifest2ᚕᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐIndexerDefinitionManifestᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.IndexerDefinitionManifest) graphql.Marshaler {
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalNIndexerDefinitionManifest2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐIndexerDefinitionManifest(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
+}
+
+func (ec *executionContext) marshalNIndexerDefinitionManifest2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐIndexerDefinitionManifest(ctx context.Context, sel ast.SelectionSet, v *model.IndexerDefinitionManifest) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._IndexerDefinitionManifest(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNIndexerDefinitionPage2githubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐIndexerDefinitionPage(ctx context.Context, sel ast.SelectionSet, v model.IndexerDefinitionPage) graphql.Marshaler {
+	return ec._IndexerDefinitionPage(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNIndexerDefinitionPage2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐIndexerDefinitionPage(ctx context.Context, sel ast.SelectionSet, v *model.IndexerDefinitionPage) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._IndexerDefinitionPage(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNIndexerDefinitionPolicy2githubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐIndexerDefinitionPolicy(ctx context.Context, sel ast.SelectionSet, v model.IndexerDefinitionPolicy) graphql.Marshaler {
+	return ec._IndexerDefinitionPolicy(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNIndexerDefinitionPolicy2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐIndexerDefinitionPolicy(ctx context.Context, sel ast.SelectionSet, v *model.IndexerDefinitionPolicy) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._IndexerDefinitionPolicy(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalNIndexerDefinitionPolicyPatchInput2githubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐIndexerDefinitionPolicyPatchInput(ctx context.Context, v any) (model.IndexerDefinitionPolicyPatchInput, error) {
+	res, err := ec.unmarshalInputIndexerDefinitionPolicyPatchInput(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNIndexerDefinitionStatus2githubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐIndexerDefinitionStatus(ctx context.Context, sel ast.SelectionSet, v model.IndexerDefinitionStatus) graphql.Marshaler {
+	return ec._IndexerDefinitionStatus(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNIndexerDefinitionStatus2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐIndexerDefinitionStatus(ctx context.Context, sel ast.SelectionSet, v *model.IndexerDefinitionStatus) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._IndexerDefinitionStatus(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNIndexerEvent2githubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐIndexerEvent(ctx context.Context, sel ast.SelectionSet, v model.IndexerEvent) graphql.Marshaler {
+	return ec._IndexerEvent(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNIndexerEvent2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐIndexerEvent(ctx context.Context, sel ast.SelectionSet, v *model.IndexerEvent) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._IndexerEvent(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalNIndexerEventKind2githubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐIndexerEventKind(ctx context.Context, v any) (model.IndexerEventKind, error) {
+	var res model.IndexerEventKind
+	err := res.UnmarshalGQL(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNIndexerEventKind2githubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐIndexerEventKind(ctx context.Context, sel ast.SelectionSet, v model.IndexerEventKind) graphql.Marshaler {
+	return v
+}
+
+func (ec *executionContext) marshalNIndexerHealth2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐIndexerHealth(ctx context.Context, sel ast.SelectionSet, v *model.IndexerHealth) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._IndexerHealth(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNIndexerInstance2ᚕᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐIndexerInstanceᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.IndexerInstance) graphql.Marshaler {
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalNIndexerInstance2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐIndexerInstance(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
+}
+
+func (ec *executionContext) marshalNIndexerInstance2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐIndexerInstance(ctx context.Context, sel ast.SelectionSet, v *model.IndexerInstance) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._IndexerInstance(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNIndexerInstances2githubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐIndexerInstances(ctx context.Context, sel ast.SelectionSet, v model.IndexerInstances) graphql.Marshaler {
+	return ec._IndexerInstances(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNIndexerInstances2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐIndexerInstances(ctx context.Context, sel ast.SelectionSet, v *model.IndexerInstances) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._IndexerInstances(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalNIndexerLoginInput2githubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐIndexerLoginInput(ctx context.Context, v any) (model.IndexerLoginInput, error) {
+	res, err := ec.unmarshalInputIndexerLoginInput(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNIndexerLoginReport2githubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐIndexerLoginReport(ctx context.Context, sel ast.SelectionSet, v model.IndexerLoginReport) graphql.Marshaler {
+	return ec._IndexerLoginReport(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNIndexerLoginReport2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐIndexerLoginReport(ctx context.Context, sel ast.SelectionSet, v *model.IndexerLoginReport) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._IndexerLoginReport(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalNIndexerLoginState2githubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐIndexerLoginState(ctx context.Context, v any) (model.IndexerLoginState, error) {
+	var res model.IndexerLoginState
+	err := res.UnmarshalGQL(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNIndexerLoginState2githubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐIndexerLoginState(ctx context.Context, sel ast.SelectionSet, v model.IndexerLoginState) graphql.Marshaler {
+	return v
+}
+
+func (ec *executionContext) marshalNIndexerNetworkProfile2ᚕᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐIndexerNetworkProfileᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.IndexerNetworkProfile) graphql.Marshaler {
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalNIndexerNetworkProfile2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐIndexerNetworkProfile(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
+}
+
+func (ec *executionContext) marshalNIndexerNetworkProfile2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐIndexerNetworkProfile(ctx context.Context, sel ast.SelectionSet, v *model.IndexerNetworkProfile) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._IndexerNetworkProfile(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalNIndexerNetworkProfilePatchInput2githubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐIndexerNetworkProfilePatchInput(ctx context.Context, v any) (model.IndexerNetworkProfilePatchInput, error) {
+	res, err := ec.unmarshalInputIndexerNetworkProfilePatchInput(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNIndexerNetworkSettings2githubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐIndexerNetworkSettings(ctx context.Context, sel ast.SelectionSet, v model.IndexerNetworkSettings) graphql.Marshaler {
+	return ec._IndexerNetworkSettings(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNIndexerNetworkSettings2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐIndexerNetworkSettings(ctx context.Context, sel ast.SelectionSet, v *model.IndexerNetworkSettings) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._IndexerNetworkSettings(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalNIndexerNetworkTimeoutPatchInput2githubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐIndexerNetworkTimeoutPatchInput(ctx context.Context, v any) (model.IndexerNetworkTimeoutPatchInput, error) {
+	res, err := ec.unmarshalInputIndexerNetworkTimeoutPatchInput(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
 func (ec *executionContext) marshalNIndexerPreferenceRule2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐIndexerPreferenceRule(ctx context.Context, sel ast.SelectionSet, v *model.IndexerPreferenceRule) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
@@ -64291,6 +83534,134 @@ func (ec *executionContext) marshalNIndexerPreferenceRule2ᚖgithubᚗcomᚋleot
 		return graphql.Null
 	}
 	return ec._IndexerPreferenceRule(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalNIndexerSearchCachePatchInput2githubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐIndexerSearchCachePatchInput(ctx context.Context, v any) (model.IndexerSearchCachePatchInput, error) {
+	res, err := ec.unmarshalInputIndexerSearchCachePatchInput(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNIndexerSetting2ᚕᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐIndexerSettingᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.IndexerSetting) graphql.Marshaler {
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalNIndexerSetting2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐIndexerSetting(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
+}
+
+func (ec *executionContext) marshalNIndexerSetting2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐIndexerSetting(ctx context.Context, sel ast.SelectionSet, v *model.IndexerSetting) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._IndexerSetting(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalNIndexerSettingChangeInput2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐIndexerSettingChangeInput(ctx context.Context, v any) (*model.IndexerSettingChangeInput, error) {
+	res, err := ec.unmarshalInputIndexerSettingChangeInput(ctx, v)
+	return &res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNIndexerSettingOption2ᚕᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐIndexerSettingOptionᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.IndexerSettingOption) graphql.Marshaler {
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalNIndexerSettingOption2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐIndexerSettingOption(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
+}
+
+func (ec *executionContext) marshalNIndexerSettingOption2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐIndexerSettingOption(ctx context.Context, sel ast.SelectionSet, v *model.IndexerSettingOption) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._IndexerSettingOption(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalNIndexerSourceKind2githubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐIndexerSourceKind(ctx context.Context, v any) (model.IndexerSourceKind, error) {
+	var res model.IndexerSourceKind
+	err := res.UnmarshalGQL(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNIndexerSourceKind2githubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐIndexerSourceKind(ctx context.Context, sel ast.SelectionSet, v model.IndexerSourceKind) graphql.Marshaler {
+	return v
 }
 
 func (ec *executionContext) marshalNIngestSettings2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐIngestSettings(ctx context.Context, sel ast.SelectionSet, v *model.IngestSettings) graphql.Marshaler {
@@ -64357,119 +83728,6 @@ func (ec *executionContext) marshalNInt2ᚕintᚄ(ctx context.Context, sel ast.S
 	}
 
 	return ret
-}
-
-func (ec *executionContext) marshalNJackettIndexer2ᚕᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐJackettIndexerᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.JackettIndexer) graphql.Marshaler {
-	ret := make(graphql.Array, len(v))
-	var wg sync.WaitGroup
-	isLen1 := len(v) == 1
-	if !isLen1 {
-		wg.Add(len(v))
-	}
-	for i := range v {
-		i := i
-		fc := &graphql.FieldContext{
-			Index:  &i,
-			Result: &v[i],
-		}
-		ctx := graphql.WithFieldContext(ctx, fc)
-		f := func(i int) {
-			defer func() {
-				if r := recover(); r != nil {
-					ec.Error(ctx, ec.Recover(ctx, r))
-					ret = nil
-				}
-			}()
-			if !isLen1 {
-				defer wg.Done()
-			}
-			ret[i] = ec.marshalNJackettIndexer2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐJackettIndexer(ctx, sel, v[i])
-		}
-		if isLen1 {
-			f(i)
-		} else {
-			go f(i)
-		}
-
-	}
-	wg.Wait()
-
-	for _, e := range ret {
-		if e == graphql.Null {
-			return graphql.Null
-		}
-	}
-
-	return ret
-}
-
-func (ec *executionContext) marshalNJackettIndexer2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐJackettIndexer(ctx context.Context, sel ast.SelectionSet, v *model.JackettIndexer) graphql.Marshaler {
-	if v == nil {
-		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
-			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
-		}
-		return graphql.Null
-	}
-	return ec._JackettIndexer(ctx, sel, v)
-}
-
-func (ec *executionContext) unmarshalNJackettSearchInput2githubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐJackettSearchInput(ctx context.Context, v any) (model.JackettSearchInput, error) {
-	res, err := ec.unmarshalInputJackettSearchInput(ctx, v)
-	return res, graphql.ErrorOnPath(ctx, err)
-}
-
-func (ec *executionContext) marshalNJackettSearchResult2ᚕᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐJackettSearchResultᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.JackettSearchResult) graphql.Marshaler {
-	ret := make(graphql.Array, len(v))
-	var wg sync.WaitGroup
-	isLen1 := len(v) == 1
-	if !isLen1 {
-		wg.Add(len(v))
-	}
-	for i := range v {
-		i := i
-		fc := &graphql.FieldContext{
-			Index:  &i,
-			Result: &v[i],
-		}
-		ctx := graphql.WithFieldContext(ctx, fc)
-		f := func(i int) {
-			defer func() {
-				if r := recover(); r != nil {
-					ec.Error(ctx, ec.Recover(ctx, r))
-					ret = nil
-				}
-			}()
-			if !isLen1 {
-				defer wg.Done()
-			}
-			ret[i] = ec.marshalNJackettSearchResult2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐJackettSearchResult(ctx, sel, v[i])
-		}
-		if isLen1 {
-			f(i)
-		} else {
-			go f(i)
-		}
-
-	}
-	wg.Wait()
-
-	for _, e := range ret {
-		if e == graphql.Null {
-			return graphql.Null
-		}
-	}
-
-	return ret
-}
-
-func (ec *executionContext) marshalNJackettSearchResult2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐJackettSearchResult(ctx context.Context, sel ast.SelectionSet, v *model.JackettSearchResult) graphql.Marshaler {
-	if v == nil {
-		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
-			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
-		}
-		return graphql.Null
-	}
-	return ec._JackettSearchResult(ctx, sel, v)
 }
 
 func (ec *executionContext) marshalNJackettSettings2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐJackettSettings(ctx context.Context, sel ast.SelectionSet, v *model.JackettSettings) graphql.Marshaler {
@@ -64943,53 +84201,38 @@ func (ec *executionContext) marshalNPerformerWorkspaceSnapshot2ᚖgithubᚗcom�
 	return ec._PerformerWorkspaceSnapshot(ctx, sel, v)
 }
 
-func (ec *executionContext) unmarshalNPreviewJackettSelectionCandidateInput2ᚕᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐPreviewJackettSelectionCandidateInputᚄ(ctx context.Context, v any) ([]*model.PreviewJackettSelectionCandidateInput, error) {
-	var vSlice []any
-	vSlice = graphql.CoerceList(v)
-	var err error
-	res := make([]*model.PreviewJackettSelectionCandidateInput, len(vSlice))
-	for i := range vSlice {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithIndex(i))
-		res[i], err = ec.unmarshalNPreviewJackettSelectionCandidateInput2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐPreviewJackettSelectionCandidateInput(ctx, vSlice[i])
-		if err != nil {
-			return nil, err
-		}
-	}
-	return res, nil
-}
-
-func (ec *executionContext) unmarshalNPreviewJackettSelectionCandidateInput2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐPreviewJackettSelectionCandidateInput(ctx context.Context, v any) (*model.PreviewJackettSelectionCandidateInput, error) {
-	res, err := ec.unmarshalInputPreviewJackettSelectionCandidateInput(ctx, v)
-	return &res, graphql.ErrorOnPath(ctx, err)
-}
-
-func (ec *executionContext) unmarshalNPreviewJackettSelectionInput2githubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐPreviewJackettSelectionInput(ctx context.Context, v any) (model.PreviewJackettSelectionInput, error) {
-	res, err := ec.unmarshalInputPreviewJackettSelectionInput(ctx, v)
+func (ec *executionContext) unmarshalNPrepareTorrentDownloadInput2githubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐPrepareTorrentDownloadInput(ctx context.Context, v any) (model.PrepareTorrentDownloadInput, error) {
+	res, err := ec.unmarshalInputPrepareTorrentDownloadInput(ctx, v)
 	return res, graphql.ErrorOnPath(ctx, err)
 }
 
-func (ec *executionContext) marshalNPreviewJackettSelectionMeta2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐPreviewJackettSelectionMeta(ctx context.Context, sel ast.SelectionSet, v *model.PreviewJackettSelectionMeta) graphql.Marshaler {
+func (ec *executionContext) marshalNPreparedTorrentDownload2githubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐPreparedTorrentDownload(ctx context.Context, sel ast.SelectionSet, v model.PreparedTorrentDownload) graphql.Marshaler {
+	return ec._PreparedTorrentDownload(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNPreparedTorrentDownload2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐPreparedTorrentDownload(ctx context.Context, sel ast.SelectionSet, v *model.PreparedTorrentDownload) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
 			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
 		}
 		return graphql.Null
 	}
-	return ec._PreviewJackettSelectionMeta(ctx, sel, v)
+	return ec._PreparedTorrentDownload(ctx, sel, v)
 }
 
-func (ec *executionContext) marshalNPreviewJackettSelectionResult2githubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐPreviewJackettSelectionResult(ctx context.Context, sel ast.SelectionSet, v model.PreviewJackettSelectionResult) graphql.Marshaler {
-	return ec._PreviewJackettSelectionResult(ctx, sel, &v)
+func (ec *executionContext) unmarshalNPreparedTorrentDownloadKind2githubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐPreparedTorrentDownloadKind(ctx context.Context, v any) (model.PreparedTorrentDownloadKind, error) {
+	var res model.PreparedTorrentDownloadKind
+	err := res.UnmarshalGQL(v)
+	return res, graphql.ErrorOnPath(ctx, err)
 }
 
-func (ec *executionContext) marshalNPreviewJackettSelectionResult2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐPreviewJackettSelectionResult(ctx context.Context, sel ast.SelectionSet, v *model.PreviewJackettSelectionResult) graphql.Marshaler {
-	if v == nil {
-		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
-			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
-		}
-		return graphql.Null
-	}
-	return ec._PreviewJackettSelectionResult(ctx, sel, v)
+func (ec *executionContext) marshalNPreparedTorrentDownloadKind2githubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐPreparedTorrentDownloadKind(ctx context.Context, sel ast.SelectionSet, v model.PreparedTorrentDownloadKind) graphql.Marshaler {
+	return v
+}
+
+func (ec *executionContext) unmarshalNPreviewTorrentSelectionInput2githubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐPreviewTorrentSelectionInput(ctx context.Context, v any) (model.PreviewTorrentSelectionInput, error) {
+	res, err := ec.unmarshalInputPreviewTorrentSelectionInput(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
 }
 
 func (ec *executionContext) unmarshalNProcessReleaseReviewsInput2githubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐProcessReleaseReviewsInput(ctx context.Context, v any) (model.ProcessReleaseReviewsInput, error) {
@@ -65172,6 +84415,11 @@ func (ec *executionContext) marshalNQueuePerformerScenesSummary2ᚖgithubᚗcom�
 		return graphql.Null
 	}
 	return ec._QueuePerformerScenesSummary(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalNQueueTorrentCandidateInput2githubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐQueueTorrentCandidateInput(ctx context.Context, v any) (model.QueueTorrentCandidateInput, error) {
+	res, err := ec.unmarshalInputQueueTorrentCandidateInput(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
 }
 
 func (ec *executionContext) marshalNReleaseReview2ᚕᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐReleaseReviewᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.ReleaseReview) graphql.Marshaler {
@@ -65394,6 +84642,11 @@ func (ec *executionContext) unmarshalNResolveBlockedSourcingTaskInput2githubᚗc
 	return res, graphql.ErrorOnPath(ctx, err)
 }
 
+func (ec *executionContext) unmarshalNResolveTaskSourcingCandidateInput2githubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐResolveTaskSourcingCandidateInput(ctx context.Context, v any) (model.ResolveTaskSourcingCandidateInput, error) {
+	res, err := ec.unmarshalInputResolveTaskSourcingCandidateInput(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
 func (ec *executionContext) unmarshalNSceneSource2githubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐSceneSource(ctx context.Context, v any) (model.SceneSource, error) {
 	var res model.SceneSource
 	err := res.UnmarshalGQL(v)
@@ -65503,6 +84756,11 @@ func (ec *executionContext) marshalNSettingsStatus2ᚖgithubᚗcomᚋleothevan24
 		return graphql.Null
 	}
 	return ec._SettingsStatus(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalNStartTorrentSearchInput2githubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐStartTorrentSearchInput(ctx context.Context, v any) (model.StartTorrentSearchInput, error) {
+	res, err := ec.unmarshalInputStartTorrentSearchInput(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
 }
 
 func (ec *executionContext) marshalNStashBoxDataCacheSettings2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐStashBoxDataCacheSettings(ctx context.Context, sel ast.SelectionSet, v *model.StashBoxDataCacheSettings) graphql.Marshaler {
@@ -66629,6 +85887,11 @@ func (ec *executionContext) marshalNTaskSummary2ᚖgithubᚗcomᚋleothevan2444�
 	return ec._TaskSummary(ctx, sel, v)
 }
 
+func (ec *executionContext) unmarshalNTestIndexerInput2githubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐTestIndexerInput(ctx context.Context, v any) (model.TestIndexerInput, error) {
+	res, err := ec.unmarshalInputTestIndexerInput(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
 func (ec *executionContext) unmarshalNTestServiceConnectionInput2githubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐTestServiceConnectionInput(ctx context.Context, v any) (model.TestServiceConnectionInput, error) {
 	res, err := ec.unmarshalInputTestServiceConnectionInput(ctx, v)
 	return res, graphql.ErrorOnPath(ctx, err)
@@ -66847,6 +86110,167 @@ func (ec *executionContext) marshalNTorrentFileNameMatchRule2ᚖgithubᚗcomᚋl
 	return ec._TorrentFileNameMatchRule(ctx, sel, v)
 }
 
+func (ec *executionContext) marshalNTorrentSearch2githubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐTorrentSearch(ctx context.Context, sel ast.SelectionSet, v model.TorrentSearch) graphql.Marshaler {
+	return ec._TorrentSearch(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNTorrentSearch2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐTorrentSearch(ctx context.Context, sel ast.SelectionSet, v *model.TorrentSearch) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._TorrentSearch(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNTorrentSearchCandidate2ᚕᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐTorrentSearchCandidateᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.TorrentSearchCandidate) graphql.Marshaler {
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalNTorrentSearchCandidate2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐTorrentSearchCandidate(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
+}
+
+func (ec *executionContext) marshalNTorrentSearchCandidate2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐTorrentSearchCandidate(ctx context.Context, sel ast.SelectionSet, v *model.TorrentSearchCandidate) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._TorrentSearchCandidate(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNTorrentSearchEvent2githubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐTorrentSearchEvent(ctx context.Context, sel ast.SelectionSet, v model.TorrentSearchEvent) graphql.Marshaler {
+	return ec._TorrentSearchEvent(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNTorrentSearchEvent2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐTorrentSearchEvent(ctx context.Context, sel ast.SelectionSet, v *model.TorrentSearchEvent) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._TorrentSearchEvent(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalNTorrentSearchParameterInput2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐTorrentSearchParameterInput(ctx context.Context, v any) (*model.TorrentSearchParameterInput, error) {
+	res, err := ec.unmarshalInputTorrentSearchParameterInput(ctx, v)
+	return &res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNTorrentSearchSite2ᚕᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐTorrentSearchSiteᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.TorrentSearchSite) graphql.Marshaler {
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalNTorrentSearchSite2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐTorrentSearchSite(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
+}
+
+func (ec *executionContext) marshalNTorrentSearchSite2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐTorrentSearchSite(ctx context.Context, sel ast.SelectionSet, v *model.TorrentSearchSite) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._TorrentSearchSite(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalNTorrentSearchSiteState2githubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐTorrentSearchSiteState(ctx context.Context, v any) (model.TorrentSearchSiteState, error) {
+	var res model.TorrentSearchSiteState
+	err := res.UnmarshalGQL(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNTorrentSearchSiteState2githubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐTorrentSearchSiteState(ctx context.Context, sel ast.SelectionSet, v model.TorrentSearchSiteState) graphql.Marshaler {
+	return v
+}
+
+func (ec *executionContext) unmarshalNTorrentSearchState2githubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐTorrentSearchState(ctx context.Context, v any) (model.TorrentSearchState, error) {
+	var res model.TorrentSearchState
+	err := res.UnmarshalGQL(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNTorrentSearchState2githubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐTorrentSearchState(ctx context.Context, sel ast.SelectionSet, v model.TorrentSearchState) graphql.Marshaler {
+	return v
+}
+
 func (ec *executionContext) unmarshalNTorrentSelectionDirection2githubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐTorrentSelectionDirection(ctx context.Context, v any) (model.TorrentSelectionDirection, error) {
 	var res model.TorrentSelectionDirection
 	err := res.UnmarshalGQL(v)
@@ -66855,6 +86279,30 @@ func (ec *executionContext) unmarshalNTorrentSelectionDirection2githubᚗcomᚋl
 
 func (ec *executionContext) marshalNTorrentSelectionDirection2githubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐTorrentSelectionDirection(ctx context.Context, sel ast.SelectionSet, v model.TorrentSelectionDirection) graphql.Marshaler {
 	return v
+}
+
+func (ec *executionContext) marshalNTorrentSelectionPreview2githubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐTorrentSelectionPreview(ctx context.Context, sel ast.SelectionSet, v model.TorrentSelectionPreview) graphql.Marshaler {
+	return ec._TorrentSelectionPreview(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNTorrentSelectionPreview2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐTorrentSelectionPreview(ctx context.Context, sel ast.SelectionSet, v *model.TorrentSelectionPreview) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._TorrentSelectionPreview(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNTorrentSelectionPreviewMeta2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐTorrentSelectionPreviewMeta(ctx context.Context, sel ast.SelectionSet, v *model.TorrentSelectionPreviewMeta) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._TorrentSelectionPreviewMeta(ctx, sel, v)
 }
 
 func (ec *executionContext) marshalNTorrentSelectionRule2ᚕᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐTorrentSelectionRuleᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.TorrentSelectionRule) graphql.Marshaler {
@@ -67421,6 +86869,14 @@ func (ec *executionContext) marshalOBoolean2ᚖbool(ctx context.Context, sel ast
 	return res
 }
 
+func (ec *executionContext) unmarshalOBuiltinIndexerPatchInput2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐBuiltinIndexerPatchInput(ctx context.Context, v any) (*model.BuiltinIndexerPatchInput, error) {
+	if v == nil {
+		return nil, nil
+	}
+	res, err := ec.unmarshalInputBuiltinIndexerPatchInput(ctx, v)
+	return &res, graphql.ErrorOnPath(ctx, err)
+}
+
 func (ec *executionContext) marshalODashboardStats2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐDashboardStats(ctx context.Context, sel ast.SelectionSet, v *model.DashboardStats) graphql.Marshaler {
 	if v == nil {
 		return graphql.Null
@@ -67543,6 +86999,13 @@ func (ec *executionContext) marshalOFloat2ᚖfloat64(ctx context.Context, sel as
 	return graphql.WrapContextMarshaler(ctx, res)
 }
 
+func (ec *executionContext) marshalOHomeJackettSummary2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐHomeJackettSummary(ctx context.Context, sel ast.SelectionSet, v *model.HomeJackettSummary) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return ec._HomeJackettSummary(ctx, sel, v)
+}
+
 func (ec *executionContext) marshalOHomeSubscriptionCheckRun2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐHomeSubscriptionCheckRun(ctx context.Context, sel ast.SelectionSet, v *model.HomeSubscriptionCheckRun) graphql.Marshaler {
 	if v == nil {
 		return graphql.Null
@@ -67620,12 +87083,97 @@ func (ec *executionContext) unmarshalOImageCacheSettingsInput2ᚖgithubᚗcomᚋ
 	return &res, graphql.ErrorOnPath(ctx, err)
 }
 
+func (ec *executionContext) unmarshalOIndexerDefinitionFilterInput2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐIndexerDefinitionFilterInput(ctx context.Context, v any) (*model.IndexerDefinitionFilterInput, error) {
+	if v == nil {
+		return nil, nil
+	}
+	res, err := ec.unmarshalInputIndexerDefinitionFilterInput(ctx, v)
+	return &res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalOIndexerDefinitionJob2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐIndexerDefinitionJob(ctx context.Context, sel ast.SelectionSet, v *model.IndexerDefinitionJob) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return ec._IndexerDefinitionJob(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalOIndexerLoginChallenge2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐIndexerLoginChallenge(ctx context.Context, sel ast.SelectionSet, v *model.IndexerLoginChallenge) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return ec._IndexerLoginChallenge(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalOIndexerLoginReport2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐIndexerLoginReport(ctx context.Context, sel ast.SelectionSet, v *model.IndexerLoginReport) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return ec._IndexerLoginReport(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalOIndexerObservation2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐIndexerObservation(ctx context.Context, sel ast.SelectionSet, v *model.IndexerObservation) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return ec._IndexerObservation(ctx, sel, v)
+}
+
 func (ec *executionContext) unmarshalOIndexerPreferenceRuleInput2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐIndexerPreferenceRuleInput(ctx context.Context, v any) (*model.IndexerPreferenceRuleInput, error) {
 	if v == nil {
 		return nil, nil
 	}
 	res, err := ec.unmarshalInputIndexerPreferenceRuleInput(ctx, v)
 	return &res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) unmarshalOIndexerSettingChangeInput2ᚕᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐIndexerSettingChangeInputᚄ(ctx context.Context, v any) ([]*model.IndexerSettingChangeInput, error) {
+	if v == nil {
+		return nil, nil
+	}
+	var vSlice []any
+	vSlice = graphql.CoerceList(v)
+	var err error
+	res := make([]*model.IndexerSettingChangeInput, len(vSlice))
+	for i := range vSlice {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithIndex(i))
+		res[i], err = ec.unmarshalNIndexerSettingChangeInput2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐIndexerSettingChangeInput(ctx, vSlice[i])
+		if err != nil {
+			return nil, err
+		}
+	}
+	return res, nil
+}
+
+func (ec *executionContext) marshalOIndexerSettingValue2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐIndexerSettingValue(ctx context.Context, sel ast.SelectionSet, v *model.IndexerSettingValue) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return ec._IndexerSettingValue(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalOIndexerSettingValueInput2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐIndexerSettingValueInput(ctx context.Context, v any) (*model.IndexerSettingValueInput, error) {
+	if v == nil {
+		return nil, nil
+	}
+	res, err := ec.unmarshalInputIndexerSettingValueInput(ctx, v)
+	return &res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) unmarshalOIndexerSourceKind2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐIndexerSourceKind(ctx context.Context, v any) (*model.IndexerSourceKind, error) {
+	if v == nil {
+		return nil, nil
+	}
+	var res = new(model.IndexerSourceKind)
+	err := res.UnmarshalGQL(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalOIndexerSourceKind2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐIndexerSourceKind(ctx context.Context, sel ast.SelectionSet, v *model.IndexerSourceKind) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return v
 }
 
 func (ec *executionContext) unmarshalOIndexersPatchInput2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐIndexersPatchInput(ctx context.Context, v any) (*model.IndexersPatchInput, error) {
@@ -67696,22 +87244,6 @@ func (ec *executionContext) unmarshalOJackettPatchInput2ᚖgithubᚗcomᚋleothe
 	}
 	res, err := ec.unmarshalInputJackettPatchInput(ctx, v)
 	return &res, graphql.ErrorOnPath(ctx, err)
-}
-
-func (ec *executionContext) unmarshalOJackettSortBy2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐJackettSortBy(ctx context.Context, v any) (*model.JackettSortBy, error) {
-	if v == nil {
-		return nil, nil
-	}
-	var res = new(model.JackettSortBy)
-	err := res.UnmarshalGQL(v)
-	return res, graphql.ErrorOnPath(ctx, err)
-}
-
-func (ec *executionContext) marshalOJackettSortBy2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐJackettSortBy(ctx context.Context, sel ast.SelectionSet, v *model.JackettSortBy) graphql.Marshaler {
-	if v == nil {
-		return graphql.Null
-	}
-	return v
 }
 
 func (ec *executionContext) unmarshalOLibraryFilter2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐLibraryFilter(ctx context.Context, v any) (*model.LibraryFilter, error) {
@@ -68169,6 +87701,40 @@ func (ec *executionContext) unmarshalOTorrentFileNameMatchRuleInput2ᚖgithubᚗ
 	}
 	res, err := ec.unmarshalInputTorrentFileNameMatchRuleInput(ctx, v)
 	return &res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) unmarshalOTorrentSearchParameterInput2ᚕᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐTorrentSearchParameterInputᚄ(ctx context.Context, v any) ([]*model.TorrentSearchParameterInput, error) {
+	if v == nil {
+		return nil, nil
+	}
+	var vSlice []any
+	vSlice = graphql.CoerceList(v)
+	var err error
+	res := make([]*model.TorrentSearchParameterInput, len(vSlice))
+	for i := range vSlice {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithIndex(i))
+		res[i], err = ec.unmarshalNTorrentSearchParameterInput2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐTorrentSearchParameterInput(ctx, vSlice[i])
+		if err != nil {
+			return nil, err
+		}
+	}
+	return res, nil
+}
+
+func (ec *executionContext) unmarshalOTorrentSearchSort2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐTorrentSearchSort(ctx context.Context, v any) (*model.TorrentSearchSort, error) {
+	if v == nil {
+		return nil, nil
+	}
+	var res = new(model.TorrentSearchSort)
+	err := res.UnmarshalGQL(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalOTorrentSearchSort2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐTorrentSearchSort(ctx context.Context, sel ast.SelectionSet, v *model.TorrentSearchSort) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return v
 }
 
 func (ec *executionContext) unmarshalOTorrentSelectionDirection2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐTorrentSelectionDirection(ctx context.Context, v any) (*model.TorrentSelectionDirection, error) {

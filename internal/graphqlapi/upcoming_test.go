@@ -24,7 +24,7 @@ func (s *upcomingAPIService) RefreshUpcomingRelease(ctx context.Context, key str
 }
 func TestUpcomingGraphQLContract(t *testing.T) {
 	service := &upcomingAPIService{}
-	resolver := NewResolver(nil, nil, nil, nil, "test")
+	resolver := NewResolver(nil, nil, nil, "test")
 	resolver.PerformerSubscription = service
 	var response struct {
 		Data struct {
@@ -51,7 +51,7 @@ func TestUpcomingGraphQLContract(t *testing.T) {
 }
 
 func TestPerformerUpcomingStateGraphQLContract(t *testing.T) {
-	resolver := NewResolver(nil, nil, nil, nil, "test")
+	resolver := NewResolver(nil, nil, nil, "test")
 	resolver.Performer = &fakePerformerService{performerPage: performer.ScenePage{Items: []performer.Scene{{Key: "future", UpcomingState: "WAITING"}, {Key: "ordinary"}}, Page: 1, PageSize: 24}}
 	for _, query := range []string{`query{stashPerformerScenes(id:"p1",input:{}){items{key upcomingState}}}`, `mutation{refreshStashPerformerScenes(id:"p1",input:{}){items{key upcomingState}}}`} {
 		var response struct {

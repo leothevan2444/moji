@@ -6,6 +6,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"github.com/leothevan2444/moji/internal/indexer"
 	"io"
 	"net/http"
 	"net/url"
@@ -21,7 +22,6 @@ import (
 	"github.com/leothevan2444/moji/internal/mediafiles"
 	"github.com/leothevan2444/moji/internal/stashsync"
 	"github.com/leothevan2444/moji/internal/tracker"
-	"github.com/leothevan2444/moji/pkg/jackett"
 	"github.com/leothevan2444/moji/pkg/qbittorrent"
 )
 
@@ -66,6 +66,8 @@ const (
 )
 
 type Task struct {
+	SelectedResourceID      string
+	IndexerResource         *indexer.ResourceRecord `json:"-"`
 	Revision                int64
 	Generation              int64
 	RestartStateJSON        string
@@ -118,6 +120,7 @@ type Task struct {
 }
 
 type Candidate struct {
+	Source    *indexer.Provenance
 	Title     string
 	Tracker   string
 	InfoHash  string
@@ -183,6 +186,9 @@ type Service struct {
 	mediaSlots            chan struct{}
 
 	tracker            tracker.Tracker
+	resourceFetcher    ResourceFetcher
+	resourceAccess     IndexedResourceAccess
+	indexers           IndexerService
 	qbt                TorrentClient
 	store              TaskStore
 	httpClient         *http.Client
@@ -203,30 +209,54 @@ type Service struct {
 
 type Option func(*Service)
 
+type ResourceFetcher interface {
+	FetchReference(context.Context, string) (indexer.Artifact, error)
+}
+
+type IndexerService interface {
+	ResourceFetcher
+	SearchSequential(context.Context, indexer.Query, func(context.Context, indexer.Batch) (bool, error)) (indexer.SearchReport, error)
+}
+
+func WithIndexers(service IndexerService) Option {
+	return func(s *Service) {
+		s.indexers = service
+		s.resourceFetcher = service
+		if access, ok := service.(IndexedResourceAccess); ok {
+			s.resourceAccess = access
+		}
+	}
+}
+
+func WithResourceFetcher(fetcher ResourceFetcher) Option {
+	return func(s *Service) { s.resourceFetcher = fetcher }
+}
+
 type FileOperator interface {
 	Transfer(ctx context.Context, sourcePath string, action stashsync.TransferAction, targetPath string) error
 }
 
 type CandidateSelector interface {
-	Select(ctx context.Context, query string, results []jackett.SearchResult, cfg config.CandidateSelectionConfig) (jackett.SearchResult, error)
-	Preview(ctx context.Context, query string, results []jackett.SearchResult, cfg config.CandidateSelectionConfig, applyFastRules bool, applyFileRules bool) (CandidateSelectionPreview, error)
+	Select(ctx context.Context, query string, results []indexer.SelectionCandidate, cfg config.CandidateSelectionConfig) (indexer.SelectionCandidate, error)
+	Preview(ctx context.Context, query string, results []indexer.SelectionCandidate, cfg config.CandidateSelectionConfig, applyFastRules bool, applyFileRules bool) (CandidateSelectionPreview, error)
 }
 
 type CandidateSelectionPreview struct {
-	Results []jackett.SearchResult
+	Results []indexer.SelectionCandidate
 	Meta    CandidateSelectionPreviewMeta
 }
 
 type CandidateSelectionPreviewMeta struct {
-	AppliedFastRules bool
-	AppliedFileRules bool
-	InspectedCount   int
-	InspectableCount int
+	AppliedFastRules         bool
+	AppliedFileRules         bool
+	InspectedCount           int
+	InspectableCount         int
+	InspectionCandidateLimit int
 }
 
-type PreviewJackettSelectionRequest struct {
+type PreviewTorrentSelectionRequest struct {
 	Query                    string
-	Results                  []jackett.SearchResult
+	Results                  []indexer.SelectionCandidate
 	ApplyFastRules           bool
 	ApplyFileRules           bool
 	InspectionCandidateLimit int
@@ -234,6 +264,8 @@ type PreviewJackettSelectionRequest struct {
 
 type cachedTorrentInspection struct {
 	inspection torrentInspection
+	metadata   *downloadedTorrentMetadata
+	magnet     string
 	expiresAt  time.Time
 }
 
@@ -262,9 +294,6 @@ func WithLibraryCodeChecker(checker LibraryCodeChecker) Option {
 }
 
 func NewService(tr tracker.Tracker, qbt TorrentClient, store TaskStore, options ...Option) (*Service, error) {
-	if tr == nil {
-		return nil, errors.New("taskruntime: tracker is required")
-	}
 	if qbt == nil {
 		return nil, errors.New("taskruntime: qBittorrent client is required")
 	}
@@ -291,6 +320,9 @@ func NewService(tr tracker.Tracker, qbt TorrentClient, store TaskStore, options 
 	}
 	for _, option := range options {
 		option(s)
+	}
+	if s.tracker == nil && s.indexers == nil {
+		return nil, errors.New("taskruntime: indexer is required")
 	}
 	return s, nil
 }
@@ -339,14 +371,14 @@ func (s *Service) DownloadMedia(code string) (*Task, error) {
 	return s.DownloadMediaContext(context.Background(), DownloadRequest{Code: code})
 }
 
-func (s *Service) PreviewJackettSelectionContext(ctx context.Context, req PreviewJackettSelectionRequest) (*CandidateSelectionPreview, error) {
+func (s *Service) PreviewTorrentSelectionContext(ctx context.Context, req PreviewTorrentSelectionRequest) (*CandidateSelectionPreview, error) {
 	query := strings.TrimSpace(req.Query)
 	if query == "" {
 		return nil, errors.New("taskruntime: query is required")
 	}
 	if !req.ApplyFastRules && !req.ApplyFileRules {
 		return &CandidateSelectionPreview{
-			Results: append([]jackett.SearchResult(nil), req.Results...),
+			Results: append([]indexer.SelectionCandidate(nil), req.Results...),
 		}, nil
 	}
 
@@ -365,6 +397,9 @@ func (s *Service) PreviewJackettSelectionContext(ctx context.Context, req Previe
 	preview, err := selector.Preview(ctx, query, req.Results, selectionConfig, req.ApplyFastRules, req.ApplyFileRules)
 	if err != nil {
 		return nil, err
+	}
+	if preview.Meta.AppliedFileRules {
+		preview.Meta.InspectionCandidateLimit = config.NormalizeTorrentInspectionCandidateLimit(selectionConfig.InspectionCandidateLimit)
 	}
 	return &preview, nil
 }
@@ -535,6 +570,8 @@ func (s *Service) ResolveBlockedSourcingTask(ctx context.Context, id string, req
 	}
 
 	next := cloneTask(task)
+	next.SelectedResourceID = ""
+	next.IndexerResource = nil
 	next.TorrentFileData = append([]byte(nil), req.TorrentData...)
 	if err := ensureSourcingRequest(next); err != nil {
 		return task, err
@@ -828,7 +865,7 @@ func (s *Service) runSourcingFlow(ctx context.Context, task *Task, req DownloadR
 		searchOptions = append(searchOptions, tracker.WithLimit(req.Limit))
 	}
 
-	var result jackett.SearchResult
+	var result indexer.SelectionCandidate
 	var prepared preparedTorrent
 	var err error
 	selectionConfig := config.DefaultCandidateSelectionConfig()
@@ -839,10 +876,31 @@ func (s *Service) runSourcingFlow(ctx context.Context, task *Task, req DownloadR
 	if selector == nil {
 		selector = defaultCandidateSelector{inspectTorrent: s.inspectSearchResultTorrent}
 	}
-	if sequential, ok := s.tracker.(tracker.SequentialSearcher); ok {
+	if s.indexers != nil {
+		accepted := false
+		var selectionErr error
+		_, err = s.indexers.SearchSequential(ctx, indexer.Query{Keywords: code, InstanceIDs: tracker.InstanceIDsFromLegacyTrackers(req.Trackers), Categories: req.Categories, Limit: req.Limit}, func(siteCtx context.Context, batch indexer.Batch) (bool, error) {
+			rows := make([]indexer.SelectionCandidate, 0, len(batch.Releases))
+			for _, release := range batch.Releases {
+				rows = append(rows, indexer.SelectionFromRelease(release))
+			}
+			result, prepared, selectionErr = s.selectVerifiedCandidate(siteCtx, selector, code, rows, selectionConfig, task.ID)
+			if ctx.Err() != nil {
+				return false, ctx.Err()
+			}
+			accepted = selectionErr == nil
+			return accepted, nil
+		})
+		if err == nil && !accepted {
+			err = selectionErr
+			if err == nil {
+				err = errors.New("taskruntime: no downloadable torrent candidate found")
+			}
+		}
+	} else if sequential, ok := s.tracker.(tracker.SequentialSearcher); ok {
 		var selectionErr error
 		accepted := false
-		err = sequential.SearchSequential(ctx, code, func(batch []jackett.SearchResult) (bool, error) {
+		err = sequential.SearchSequential(ctx, code, func(batch []indexer.SelectionCandidate) (bool, error) {
 			if len(batch) == 0 {
 				return false, nil
 			}
@@ -860,7 +918,7 @@ func (s *Service) runSourcingFlow(ctx context.Context, task *Task, req DownloadR
 			}
 		}
 	} else {
-		var results []jackett.SearchResult
+		var results []indexer.SelectionCandidate
 		results, err = s.tracker.Search(code, searchOptions...)
 		if err == nil && len(results) == 0 {
 			err = errors.New("no candidate found for the current code")
@@ -984,6 +1042,12 @@ func (s *Service) submitTaskTorrent(ctx context.Context, task *Task, torrentURL 
 func (s *Service) submitTaskTorrentWithMetadata(ctx context.Context, task *Task, torrentURL string, metadata *downloadedTorrentMetadata, savePath string, category string, tags string, paused *bool) error {
 	var prepared preparedTorrent
 	var err error
+	if task.IndexerResource != nil {
+		if err := s.acquireSelectedResource(ctx, task); err != nil {
+			return s.blockSourcingValidation(ctx, task, err)
+		}
+		torrentURL = task.TorrentURL
+	}
 	if len(task.TorrentFileData) > 0 {
 		parsed, parseErr := parseTorrentMetadata(task.TorrentFileData)
 		if parseErr != nil {
@@ -1008,6 +1072,13 @@ func (s *Service) submitTaskTorrentWithMetadata(ctx context.Context, task *Task,
 
 func (s *Service) submitPreparedTaskTorrent(ctx context.Context, task *Task, torrentURL string, prepared preparedTorrent, savePath string, category string, tags string, paused *bool) error {
 	addOptions := prepared.options
+	if len(addOptions.Torrents) > 0 {
+		task.TorrentFileData = append([]byte(nil), addOptions.Torrents[0].Data...)
+	}
+	if len(addOptions.URLs) > 0 && strings.HasPrefix(addOptions.URLs[0], "magnet:") {
+		task.TorrentURL = addOptions.URLs[0]
+		torrentURL = addOptions.URLs[0]
+	}
 	if s.mediaConfig != nil {
 		stopCondition := "MetadataReceived"
 		addOptions.StopCondition = &stopCondition
@@ -1097,15 +1168,19 @@ func (s *Service) adoptExistingTorrent(ctx context.Context, task *Task) bool {
 	return false
 }
 
-func preferredTorrentURL(result jackett.SearchResult) string {
+func preferredTorrentURL(result indexer.SelectionCandidate) string {
+	if result.ResourceID != "" {
+		return "indexer-resource:" + result.ResourceID
+	}
 	if result.MagnetURI != "" {
 		return result.MagnetURI
 	}
 	return result.Link
 }
 
-func candidateFromSearchResult(result jackett.SearchResult) Candidate {
-	return Candidate{
+func candidateFromSearchResult(result indexer.SelectionCandidate) Candidate {
+	candidate := Candidate{
+		Source:    result.Source,
 		Title:     result.Title,
 		Tracker:   result.Tracker,
 		InfoHash:  result.InfoHash,
@@ -1115,6 +1190,10 @@ func candidateFromSearchResult(result jackett.SearchResult) Candidate {
 		Seeders:   result.Seeders,
 		Peers:     result.Peers,
 	}
+	if result.ResourceID != "" {
+		candidate.Link = "indexer-resource:" + result.ResourceID
+	}
+	return candidate
 }
 
 func candidateFromTorrentURL(torrentURL string) Candidate {
@@ -1388,6 +1467,14 @@ func cloneTask(task *Task) *Task {
 		return nil
 	}
 	cp := *task
+	if task.IndexerResource != nil {
+		record := task.IndexerResource.Clone()
+		cp.IndexerResource = &record
+	}
+	if task.Candidate.Source != nil {
+		source := *task.Candidate.Source
+		cp.Candidate.Source = &source
+	}
 	cp.TorrentFileData = append([]byte(nil), task.TorrentFileData...)
 	cp.SourcingLastCheckedAt = cloneTime(task.SourcingLastCheckedAt)
 	cp.SourcingNextCheckAt = cloneTime(task.SourcingNextCheckAt)

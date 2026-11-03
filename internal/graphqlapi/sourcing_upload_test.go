@@ -2,7 +2,6 @@ package graphqlapi
 
 import (
 	"bytes"
-	"context"
 	"encoding/json"
 	"io"
 	"mime/multipart"
@@ -10,18 +9,16 @@ import (
 	"net/http/httptest"
 	"strings"
 	"testing"
-	"time"
 
 	"github.com/99designs/gqlgen/graphql"
 	"github.com/leothevan2444/moji/internal/graphqlapi/generated"
 	"github.com/leothevan2444/moji/internal/taskruntime"
-	"github.com/leothevan2444/moji/pkg/jackett"
 )
 
 func TestSourcingTorrentMultipartUpload(t *testing.T) {
 	for _, data := range []string{"torrent file contents", ""} {
 		runtime := &fakeTaskRuntime{resolveSourcingTask: &taskruntime.Task{ID: "waiting", Stage: taskruntime.TaskStageDownloading, StageStatus: taskruntime.TaskStageStatusRunning}}
-		resolver := NewResolver(nil, nil, runtime, nil, "test")
+		resolver := NewResolver(nil, runtime, nil, "test")
 		server := NewGraphQLServer(generated.NewExecutableSchema(generated.Config{Resolvers: resolver}))
 		var body bytes.Buffer
 		writer := multipart.NewWriter(&body)
@@ -64,20 +61,5 @@ func TestSourcingUploadLimitsDeclaredAndActualSize(t *testing.T) {
 		if _, err := readSourcingTorrentUpload(upload); err != taskruntime.ErrInvalidTorrentInput {
 			t.Fatalf("invalid upload accepted: %v", err)
 		}
-	}
-}
-
-func TestWaitingResourceTaskCanSearchIndexerResults(t *testing.T) {
-	next := time.Now().Add(time.Hour)
-	runtime := &fakeTaskRuntime{findTask: &taskruntime.Task{ID: "waiting", Code: "OFJE-657", Stage: taskruntime.TaskStageSourcing, StageStatus: taskruntime.TaskStageStatusPending, SourcingNextCheckAt: &next}}
-	tr := &fakeGraphQLTracker{results: []jackett.SearchResult{{Title: "OFJE657", MagnetURI: "magnet:?xt=urn:btih:match"}}}
-	resolver := NewResolver(tr, nil, runtime, nil, "test")
-	results, err := resolver.Query().BlockedTaskTorrentCandidates(context.Background(), "waiting", nil)
-	if err != nil || len(results) != 1 || tr.query != "OFJE-657" {
-		t.Fatalf("waiting task could not search: %+v %v", results, err)
-	}
-	runtime.findTask.Stage = taskruntime.TaskStageDownloading
-	if _, err := resolver.Query().BlockedTaskTorrentCandidates(context.Background(), "waiting", nil); err != taskruntime.ErrSourcingUnavailable {
-		t.Fatalf("active download accepted manual search: %v", err)
 	}
 }

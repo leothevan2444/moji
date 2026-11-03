@@ -3,13 +3,13 @@ package taskruntime
 import (
 	"context"
 	"errors"
+	"github.com/leothevan2444/moji/internal/indexer"
 	"path/filepath"
 	"sync/atomic"
 	"testing"
 	"time"
 
 	"github.com/leothevan2444/moji/internal/tracker"
-	"github.com/leothevan2444/moji/pkg/jackett"
 )
 
 func TestResourcesAreTrackedAcrossMonthAndRestartUntilValidRelease(t *testing.T) {
@@ -63,7 +63,7 @@ func TestResourcesAreTrackedAcrossMonthAndRestartUntilValidRelease(t *testing.T)
 		}
 	}
 	defer store.db.Close()
-	search.results = []jackett.SearchResult{{Title: "abcd00123", MagnetURI: "magnet:?xt=urn:btih:abc123&dn=ABCD_123"}}
+	search.results = []indexer.SelectionCandidate{{Title: "abcd00123", MagnetURI: "magnet:?xt=urn:btih:abc123&dn=ABCD_123"}}
 	if err := s.processQueuedSourcing(ctx, task.ID); err != nil {
 		t.Fatal(err)
 	}
@@ -86,7 +86,7 @@ func TestResourcesAreTrackedAcrossMonthAndRestartUntilValidRelease(t *testing.T)
 
 func TestTrackingRejectsFuzzyResultsAndManualRetryRunsImmediately(t *testing.T) {
 	ctx := context.Background()
-	search := &queuedTracker{results: []jackett.SearchResult{{Title: "ABCD124", MagnetURI: "magnet:?xt=urn:btih:wrong"}}}
+	search := &queuedTracker{results: []indexer.SelectionCandidate{{Title: "ABCD124", MagnetURI: "magnet:?xt=urn:btih:wrong"}}}
 	qbt := &fakeTorrentAdder{}
 	store := NewMemoryTaskStore()
 	s, _ := NewService(search, qbt, store)
@@ -184,7 +184,7 @@ func TestLegacyBlockedSearchAndIntervalChangesAreAdopted(t *testing.T) {
 
 type appearingResourceTracker struct{ calls atomic.Int32 }
 
-func (s *appearingResourceTracker) Search(_ string, _ ...tracker.SearchOption) ([]jackett.SearchResult, error) {
+func (s *appearingResourceTracker) Search(_ string, _ ...tracker.SearchOption) ([]indexer.SelectionCandidate, error) {
 	if s.calls.Add(1) == 1 {
 		return nil, nil
 	}

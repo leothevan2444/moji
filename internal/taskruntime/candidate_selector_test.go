@@ -2,6 +2,8 @@ package taskruntime
 
 import (
 	"context"
+	"errors"
+	"fmt"
 	"io"
 	"net/http"
 	"strings"
@@ -10,7 +12,7 @@ import (
 	"time"
 
 	"github.com/leothevan2444/moji/internal/config"
-	"github.com/leothevan2444/moji/pkg/jackett"
+	"github.com/leothevan2444/moji/internal/indexer"
 )
 
 func candidateSelectionConfig(enabled bool, inspectionCandidateLimit int, rules []config.CandidateSelectionRule) config.CandidateSelectionConfig {
@@ -19,7 +21,7 @@ func candidateSelectionConfig(enabled bool, inspectionCandidateLimit int, rules 
 
 func TestDefaultCandidateSelectorRejectsUndownloadableResults(t *testing.T) {
 	selector := defaultCandidateSelector{}
-	_, err := selector.Select(context.Background(), "ABCD-123", []jackett.SearchResult{{Title: "nope"}}, config.DefaultCandidateSelectionConfig())
+	_, err := selector.Select(context.Background(), "ABCD-123", []indexer.SelectionCandidate{{Title: "nope"}}, config.DefaultCandidateSelectionConfig())
 	if err == nil {
 		t.Fatal("expected error when no downloadable candidate exists")
 	}
@@ -27,7 +29,7 @@ func TestDefaultCandidateSelectorRejectsUndownloadableResults(t *testing.T) {
 
 func TestDefaultCandidateSelectorLeavesSiteOrderToSearch(t *testing.T) {
 	selector := defaultCandidateSelector{}
-	result, err := selector.Select(context.Background(), "ABCD-123", []jackett.SearchResult{
+	result, err := selector.Select(context.Background(), "ABCD-123", []indexer.SelectionCandidate{
 		{Title: "beta", MagnetURI: "magnet:?xt=urn:btih:beta", TrackerID: "beta", Seeders: 100},
 		{Title: "alpha", MagnetURI: "magnet:?xt=urn:btih:alpha", TrackerID: "alpha", Seeders: 1},
 	}, candidateSelectionConfig(true, 0, []config.CandidateSelectionRule{
@@ -49,7 +51,7 @@ func TestDefaultCandidateSelectorLeavesSiteOrderToSearch(t *testing.T) {
 
 func TestDefaultCandidateSelectorUsesTitleMatchClauses(t *testing.T) {
 	selector := defaultCandidateSelector{}
-	result, err := selector.Select(context.Background(), "ABCD-123", []jackett.SearchResult{
+	result, err := selector.Select(context.Background(), "ABCD-123", []indexer.SelectionCandidate{
 		{Title: "ABCD-123 无码", MagnetURI: "magnet:?xt=urn:btih:1"},
 		{Title: "ABCD-123 SAMPLE", MagnetURI: "magnet:?xt=urn:btih:2"},
 	}, candidateSelectionConfig(true, 0, []config.CandidateSelectionRule{
@@ -74,7 +76,7 @@ func TestDefaultCandidateSelectorUsesTitleMatchClauses(t *testing.T) {
 
 func TestDefaultCandidateSelectorUsesPublishDateDesc(t *testing.T) {
 	selector := defaultCandidateSelector{}
-	result, err := selector.Select(context.Background(), "ABCD-123", []jackett.SearchResult{
+	result, err := selector.Select(context.Background(), "ABCD-123", []indexer.SelectionCandidate{
 		{Title: "older", MagnetURI: "magnet:?xt=urn:btih:1", PublishDate: "2024-01-02"},
 		{Title: "newer", MagnetURI: "magnet:?xt=urn:btih:2", PublishDate: "2025-01-02"},
 	}, candidateSelectionConfig(true, 0, []config.CandidateSelectionRule{
@@ -96,7 +98,7 @@ func TestDefaultCandidateSelectorUsesPublishDateDesc(t *testing.T) {
 
 func TestDefaultCandidateSelectorUsesTitleSimilarity(t *testing.T) {
 	selector := defaultCandidateSelector{}
-	result, err := selector.Select(context.Background(), "ABCD-123", []jackett.SearchResult{
+	result, err := selector.Select(context.Background(), "ABCD-123", []indexer.SelectionCandidate{
 		{Title: "random release", MagnetURI: "magnet:?xt=urn:btih:1"},
 		{Title: "ABCD 123 uncensored", MagnetURI: "magnet:?xt=urn:btih:2"},
 	}, candidateSelectionConfig(true, 0, []config.CandidateSelectionRule{
@@ -129,7 +131,7 @@ func TestDefaultCandidateSelectorUsesTorrentSingleVideoInspection(t *testing.T) 
 			}, nil
 		},
 	}
-	result, err := selector.Select(context.Background(), "ABCD-123", []jackett.SearchResult{
+	result, err := selector.Select(context.Background(), "ABCD-123", []indexer.SelectionCandidate{
 		{Title: "multi", Link: "https://example.test/multi.torrent", Seeders: 10},
 		{Title: "single", Link: "https://example.test/single.torrent", Seeders: 10},
 	}, candidateSelectionConfig(true, 0, []config.CandidateSelectionRule{
@@ -157,7 +159,7 @@ func TestDefaultCandidateSelectorUsesTorrentFileNameLock(t *testing.T) {
 			}, nil
 		},
 	}
-	result, err := selector.Select(context.Background(), "ABCD-123", []jackett.SearchResult{
+	result, err := selector.Select(context.Background(), "ABCD-123", []indexer.SelectionCandidate{
 		{Title: "baseline", Link: "https://example.test/baseline.torrent", Seeders: 20},
 		{Title: "locked", Link: "https://example.test/locked.torrent", Seeders: 1},
 	}, candidateSelectionConfig(true, 0, []config.CandidateSelectionRule{
@@ -191,9 +193,9 @@ func TestDefaultCandidateSelectorOnlyInspectsTopFiveTorrentCandidates(t *testing
 			return torrentInspection{Paths: []string{"ABCD-123.mp4"}}, nil
 		},
 	}
-	results := make([]jackett.SearchResult, 0, 6)
+	results := make([]indexer.SelectionCandidate, 0, 6)
 	for i := 0; i < 6; i++ {
-		results = append(results, jackett.SearchResult{
+		results = append(results, indexer.SelectionCandidate{
 			Title:   "candidate-" + string(rune('A'+i)),
 			Link:    "https://example.test/" + string(rune('1'+i)) + ".torrent",
 			Seeders: 100 - i,
@@ -212,7 +214,7 @@ func TestDefaultCandidateSelectorOnlyInspectsTopFiveTorrentCandidates(t *testing
 }
 
 func TestDefaultCandidateSelectorUsesConfiguredInspectionCandidateLimit(t *testing.T) {
-	results := []jackett.SearchResult{
+	results := []indexer.SelectionCandidate{
 		{Title: "1", Link: "https://example.com/1.torrent", Seeders: 100},
 		{Title: "2", Link: "https://example.com/2.torrent", Seeders: 90},
 		{Title: "3", Link: "https://example.com/3.torrent", Seeders: 80},
@@ -251,7 +253,7 @@ func TestDefaultCandidateSelectorUsesConfiguredInspectionCandidateLimit(t *testi
 
 func TestDefaultCandidateSelectorPreviewUsesFastRulesOnly(t *testing.T) {
 	selector := defaultCandidateSelector{}
-	preview, err := selector.Preview(context.Background(), "ABCD-123", []jackett.SearchResult{
+	preview, err := selector.Preview(context.Background(), "ABCD-123", []indexer.SelectionCandidate{
 		{Title: "beta", MagnetURI: "magnet:?xt=urn:btih:beta", TrackerID: "beta", Seeders: 100},
 		{Title: "alpha", MagnetURI: "magnet:?xt=urn:btih:alpha", TrackerID: "alpha", Seeders: 1},
 	}, candidateSelectionConfig(true, 0, []config.CandidateSelectionRule{
@@ -284,7 +286,7 @@ func TestDefaultCandidateSelectorPreviewUsesInputOrderForFileRules(t *testing.T)
 			return torrentInspection{Paths: []string{"disc/movie.mp4", "sample.txt"}}, nil
 		},
 	}
-	preview, err := selector.Preview(context.Background(), "ABCD-123", []jackett.SearchResult{
+	preview, err := selector.Preview(context.Background(), "ABCD-123", []indexer.SelectionCandidate{
 		{Title: "first", Link: "https://example.test/first.torrent", Seeders: 100},
 		{Title: "second", Link: "https://example.test/second.torrent", Seeders: 1},
 	}, candidateSelectionConfig(true, 0, []config.CandidateSelectionRule{
@@ -301,7 +303,7 @@ func TestDefaultCandidateSelectorPreviewUsesInputOrderForFileRules(t *testing.T)
 	}
 }
 
-func TestPreviewJackettSelectionContextCachesTorrentInspection(t *testing.T) {
+func TestPreviewTorrentSelectionContextCachesTorrentInspection(t *testing.T) {
 	qbt := &fakeTorrentAdder{}
 	requests := 0
 	service, err := NewService(
@@ -330,17 +332,17 @@ func TestPreviewJackettSelectionContextCachesTorrentInspection(t *testing.T) {
 		t.Fatalf("NewService failed: %v", err)
 	}
 
-	req := PreviewJackettSelectionRequest{
+	req := PreviewTorrentSelectionRequest{
 		Query:          "ABCD-123",
 		ApplyFileRules: true,
-		Results: []jackett.SearchResult{
+		Results: []indexer.SelectionCandidate{
 			{Title: "cached", Link: "https://example.test/cached.torrent"},
 		},
 	}
-	if _, err := service.PreviewJackettSelectionContext(context.Background(), req); err != nil {
+	if _, err := service.PreviewTorrentSelectionContext(context.Background(), req); err != nil {
 		t.Fatalf("first preview failed: %v", err)
 	}
-	if _, err := service.PreviewJackettSelectionContext(context.Background(), req); err != nil {
+	if _, err := service.PreviewTorrentSelectionContext(context.Background(), req); err != nil {
 		t.Fatalf("second preview failed: %v", err)
 	}
 	if requests != 1 {
@@ -351,7 +353,7 @@ func TestPreviewJackettSelectionContextCachesTorrentInspection(t *testing.T) {
 func TestDownloadMediaContextUsesConfiguredCandidateSelection(t *testing.T) {
 	qbt := &fakeTorrentAdder{}
 	service, err := NewService(
-		fakeTracker{results: []jackett.SearchResult{
+		fakeTracker{results: []indexer.SelectionCandidate{
 			{Title: "ABCD-123 larger", MagnetURI: "magnet:?xt=urn:btih:1", Seeders: 10, Size: 200},
 			{Title: "ABCD-123 smaller", MagnetURI: "magnet:?xt=urn:btih:2", Seeders: 10, Size: 100},
 		}},
@@ -379,5 +381,26 @@ func TestDownloadMediaContextUsesConfiguredCandidateSelection(t *testing.T) {
 	}
 	if task.Candidate.Title != "ABCD-123 smaller" {
 		t.Fatalf("expected configured selector to choose smaller torrent, got %+v", task.Candidate)
+	}
+}
+
+func TestNeutralPreviewAppliesTitleLockAcrossAllServerCandidatesWithoutNetwork(t *testing.T) {
+	service, err := NewService(fakeTracker{}, &fakeTorrentAdder{}, NewMemoryTaskStore(), WithHTTPClient(&http.Client{Transport: roundTripFunc(func(*http.Request) (*http.Response, error) {
+		t.Error("fast preview performed network acquisition")
+		return nil, errors.New("unexpected network")
+	})}), WithCandidateSelectionProvider(func() config.CandidateSelectionConfig {
+		return candidateSelectionConfig(true, 5, []config.CandidateSelectionRule{{Type: config.CandidateSelectionRuleTypeTitleMatch, Enabled: true, TitleMatch: config.TitleMatchRuleConfig{Clauses: []config.TitleMatchClause{{Pattern: "locked", PatternMode: config.TitleMatchPatternModePlain, Effect: config.TitleMatchEffectLock}}}}})
+	}))
+	if err != nil {
+		t.Fatal(err)
+	}
+	results := []indexer.SelectionCandidate{}
+	for i := range 25 {
+		results = append(results, indexer.SelectionCandidate{GUID: fmt.Sprint(i), Title: "ABCD-123 regular", ResourceID: fmt.Sprintf("server-%d", i)})
+	}
+	results[24].Title = "ABCD-123 locked"
+	preview, err := service.PreviewTorrentSelectionContext(context.Background(), PreviewTorrentSelectionRequest{Query: "ABCD-123", Results: results, ApplyFastRules: true})
+	if err != nil || len(preview.Results) != 1 || preview.Results[0].GUID != "24" || !preview.Meta.AppliedFastRules || preview.Meta.InspectedCount != 0 {
+		t.Fatal("neutral preview did not apply existing global locking semantics", err)
 	}
 }

@@ -19,7 +19,7 @@ func (r *restartRuntime) RestartTaskSourcing(_ context.Context, id string, _ tas
 
 func TestRestartSourcingGraphQLReturnsOriginalTaskAtManualSelection(t *testing.T) {
 	runtime := &restartRuntime{}
-	r := NewResolver(nil, nil, runtime, nil, "test")
+	r := NewResolver(nil, runtime, nil, "test")
 	var response struct {
 		Data struct {
 			RestartTaskSourcing struct {

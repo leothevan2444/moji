@@ -2,11 +2,12 @@ package tracker
 
 import (
 	"context"
+	"github.com/leothevan2444/moji/internal/indexer"
 	"github.com/leothevan2444/moji/pkg/jackett"
 )
 
 type Tracker interface {
-	Search(query string, options ...SearchOption) ([]jackett.SearchResult, error)
+	Search(query string, options ...SearchOption) ([]indexer.SelectionCandidate, error)
 }
 
 // IndexerLister is optionally implemented by Tracker implementations that can
@@ -14,6 +15,12 @@ type Tracker interface {
 // supported" answer — the GraphQL resolver surfaces that as an empty list.
 type IndexerLister interface {
 	ListIndexers() ([]jackett.Indexer, error)
+}
+
+// ContextIndexerLister supports the neutral service during API migration.
+// These server-only snapshots must be mapped to public fields explicitly.
+type ContextIndexerLister interface {
+	ListIndexerInstances(context.Context) ([]indexer.InstanceSnapshot, error)
 }
 
 type SearchOption func(*SearchOptions)
@@ -46,7 +53,7 @@ func WithLimit(limit int) SearchOption {
 // SequentialSearcher stops only after the caller accepts a verified candidate.
 // Search options restrict eligible sites; configured priority orders that set.
 type SequentialSearcher interface {
-	SearchSequential(context.Context, string, func([]jackett.SearchResult) (bool, error), ...SearchOption) error
+	SearchSequential(context.Context, string, func([]indexer.SelectionCandidate) (bool, error), ...SearchOption) error
 }
 
 func WithContext(ctx context.Context) SearchOption { return func(o *SearchOptions) { o.Context = ctx } }

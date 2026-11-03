@@ -1,0 +1,37 @@
+extend type Query {
+  homeIndexerSummary: HomeIndexerSummary!
+}
+
+"Local indexer overview; reading this field never contacts a remote indexer."
+type HomeIndexerSummary {
+  revision: String!
+  "Enabled site count; unknown until the enabled Jackett directory is confirmed."
+  total: Int
+  builtinEnabled: Int!
+  "Configured sites without an observed verification result; does not imply connectivity."
+  builtinUnverified: Int!
+  builtinSearchSucceeded: Int!
+  healthErrorCode: String!
+  "Latest failed or interrupted persisted definition job; null once superseded."
+  definitionJob: IndexerDefinitionJob
+  definitionErrorCode: String!
+  attention: Int!
+  "At most five enabled sites with configuration, rule or observed operation errors."
+  issues: [HomeIndexerIssue!]!
+  "Present only when the external gateway is configured and enabled."
+  jackett: HomeJackettSummary
+}
+type HomeIndexerIssue {
+  operation: String!
+  observation: IndexerObservation
+  id: ID!
+  name: String!
+  errorCode: String!
+}
+type HomeJackettSummary {
+  "Enabled remote sites; null for an unloaded directory, zero for confirmed empty."
+  sites: Int
+  stale: Boolean!
+  updatedAt: String
+  errorCode: String!
+}

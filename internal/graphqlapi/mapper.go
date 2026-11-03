@@ -1,32 +1,13 @@
 package graphqlapi
 
 import (
-	"sort"
 	"time"
 
 	"github.com/leothevan2444/moji/internal/graphqlapi/model"
 	"github.com/leothevan2444/moji/internal/stashsync"
 	"github.com/leothevan2444/moji/internal/taskruntime"
-	"github.com/leothevan2444/moji/pkg/jackett"
 	"github.com/leothevan2444/moji/pkg/qbittorrent"
 )
-
-func jackettSearchResultToModel(result jackett.SearchResult) *model.JackettSearchResult {
-	return &model.JackettSearchResult{
-		Title:        result.Title,
-		Size:         result.Size,
-		Seeders:      result.Seeders,
-		Peers:        result.Peers,
-		Tracker:      result.Tracker,
-		TrackerID:    result.TrackerID,
-		CategoryDesc: result.CategoryDesc,
-		PublishDate:  result.PublishDate,
-		Details:      result.Details,
-		Link:         result.Link,
-		MagnetURI:    result.MagnetURI,
-		InfoHash:     result.InfoHash,
-	}
-}
 
 func taskEventToModel(event *taskruntime.TaskEvent, includeTask ...bool) *model.TaskEvent {
 	if event == nil {
@@ -58,100 +39,6 @@ func taskEventToModel(event *taskruntime.TaskEvent, includeTask ...bool) *model.
 	return result
 }
 
-func jackettSearchResultsToModel(results []jackett.SearchResult) []*model.JackettSearchResult {
-	out := make([]*model.JackettSearchResult, 0, len(results))
-	for _, result := range results {
-		out = append(out, jackettSearchResultToModel(result))
-	}
-	return out
-}
-
-func previewJackettSelectionCandidatesFromModel(input []*model.PreviewJackettSelectionCandidateInput) []jackett.SearchResult {
-	out := make([]jackett.SearchResult, 0, len(input))
-	for _, item := range input {
-		if item == nil {
-			continue
-		}
-		out = append(out, jackett.SearchResult{
-			Title:        item.Title,
-			Size:         item.Size,
-			Seeders:      item.Seeders,
-			Peers:        item.Peers,
-			Tracker:      item.Tracker,
-			TrackerID:    item.TrackerID,
-			CategoryDesc: item.CategoryDesc,
-			PublishDate:  item.PublishDate,
-			Details:      item.Details,
-			Link:         item.Link,
-			MagnetURI:    item.MagnetURI,
-			InfoHash:     item.InfoHash,
-		})
-	}
-	return out
-}
-
-func candidateSelectionPreviewToModel(preview *taskruntime.CandidateSelectionPreview) *model.PreviewJackettSelectionResult {
-	if preview == nil {
-		return &model.PreviewJackettSelectionResult{
-			Results:     []*model.JackettSearchResult{},
-			PreviewMeta: &model.PreviewJackettSelectionMeta{},
-		}
-	}
-	return &model.PreviewJackettSelectionResult{
-		Results: jackettSearchResultsToModel(preview.Results),
-		PreviewMeta: &model.PreviewJackettSelectionMeta{
-			AppliedFastRules: preview.Meta.AppliedFastRules,
-			AppliedFileRules: preview.Meta.AppliedFileRules,
-			InspectedCount:   preview.Meta.InspectedCount,
-			InspectableCount: preview.Meta.InspectableCount,
-		},
-	}
-}
-
-func jackettIndexerToModel(indexer jackett.Indexer) *model.JackettIndexer {
-	return &model.JackettIndexer{
-		SiteURL:  indexer.SiteLink,
-		SiteType: indexer.Type,
-		Language: indexer.Language,
-		ID:       indexer.ID,
-		Name:     indexer.Name,
-		Enabled:  indexer.Configured,
-	}
-}
-
-// sortJackettResults sorts in place. RELEVANCE preserves Jackett's native order.
-func sortJackettResults(results []*model.JackettSearchResult, sortBy *model.JackettSortBy) {
-	if sortBy == nil {
-		return
-	}
-	switch *sortBy {
-	case model.JackettSortByRelevance:
-		return
-	case model.JackettSortBySeedersDesc:
-		sort.SliceStable(results, func(i, j int) bool {
-			return results[i].Seeders > results[j].Seeders
-		})
-	case model.JackettSortBySizeDesc:
-		sort.SliceStable(results, func(i, j int) bool {
-			return results[i].Size > results[j].Size
-		})
-	case model.JackettSortByDateDesc:
-		sort.SliceStable(results, func(i, j int) bool {
-			a, b := results[i].PublishDate, results[j].PublishDate
-			if a == b {
-				return false
-			}
-			if a == "" {
-				return false
-			}
-			if b == "" {
-				return true
-			}
-			return a > b
-		})
-	}
-}
-
 func qbTorrentToModel(torrent qbittorrent.Torrent) *model.QBTorrent {
 	return &model.QBTorrent{
 		Hash:     torrent.Hash,
@@ -169,6 +56,7 @@ func qbTorrentToModel(torrent qbittorrent.Torrent) *model.QBTorrent {
 }
 
 func taskToModel(task *taskruntime.Task) *model.Task {
+	task = taskruntime.PublicTaskSnapshot(task)
 	if task == nil {
 		return nil
 	}

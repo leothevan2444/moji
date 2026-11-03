@@ -43,7 +43,7 @@ func TestHomeSubscriptionCheckGraphQLContract(t *testing.T) {
 		{PerformerID: "p2", Name: "Two", Status: "FAILED", Error: "source unavailable"},
 		{PerformerID: "p3", Name: "Three", Status: "SKIPPED"},
 	}}}
-	resolver := NewResolver(nil, nil, nil, nil, "test")
+	resolver := NewResolver(nil, nil, nil, "test")
 	resolver.PerformerSubscription = service
 	var result struct {
 		Data struct {
@@ -80,7 +80,7 @@ func TestHomeSubscriptionCheckGraphQLContract(t *testing.T) {
 }
 
 func TestHomeChecksUnavailableReturnsEmptyState(t *testing.T) {
-	resolver := NewResolver(nil, nil, nil, nil, "test")
+	resolver := NewResolver(nil, nil, nil, "test")
 	var result struct {
 		Data struct {
 			Checks   model.HomeSubscriptionChecks    `json:"homeSubscriptionChecks"`

@@ -30,6 +30,30 @@ type AutomationStatus struct {
 	SubscriptionPollEnabled         bool `json:"subscriptionPollEnabled"`
 }
 
+type BuiltinIndexerInput struct {
+	DefinitionID   string                       `json:"definitionId"`
+	Name           *string                      `json:"name,omitempty"`
+	Enabled        *bool                        `json:"enabled,omitempty"`
+	BaseURL        *string                      `json:"baseUrl,omitempty"`
+	NetworkProfile *string                      `json:"networkProfile,omitempty"`
+	TrustedOrigins []string                     `json:"trustedOrigins,omitempty"`
+	Settings       []*IndexerSettingChangeInput `json:"settings,omitempty"`
+}
+
+type BuiltinIndexerPatchInput struct {
+	Name           *string                      `json:"name,omitempty"`
+	Enabled        *bool                        `json:"enabled,omitempty"`
+	BaseURL        *string                      `json:"baseUrl,omitempty"`
+	NetworkProfile *string                      `json:"networkProfile,omitempty"`
+	TrustedOrigins []string                     `json:"trustedOrigins,omitempty"`
+	Settings       []*IndexerSettingChangeInput `json:"settings,omitempty"`
+}
+
+type BuiltinIndexerResult struct {
+	Revision string           `json:"revision"`
+	Instance *IndexerInstance `json:"instance"`
+}
+
 type DashboardStats struct {
 	Attention    int `json:"attention"`
 	Waiting      int `json:"waiting"`
@@ -205,6 +229,42 @@ type HomeCheckPerformer struct {
 	Name        string `json:"name"`
 }
 
+type HomeIndexerIssue struct {
+	Operation   string              `json:"operation"`
+	Observation *IndexerObservation `json:"observation,omitempty"`
+	ID          string              `json:"id"`
+	Name        string              `json:"name"`
+	ErrorCode   string              `json:"errorCode"`
+}
+
+// Local indexer overview; reading this field never contacts a remote indexer.
+type HomeIndexerSummary struct {
+	Revision string `json:"revision"`
+	// Enabled site count; unknown until the enabled Jackett directory is confirmed.
+	Total          *int `json:"total,omitempty"`
+	BuiltinEnabled int  `json:"builtinEnabled"`
+	// Configured sites without an observed verification result; does not imply connectivity.
+	BuiltinUnverified      int    `json:"builtinUnverified"`
+	BuiltinSearchSucceeded int    `json:"builtinSearchSucceeded"`
+	HealthErrorCode        string `json:"healthErrorCode"`
+	// Latest failed or interrupted persisted definition job; null once superseded.
+	DefinitionJob       *IndexerDefinitionJob `json:"definitionJob,omitempty"`
+	DefinitionErrorCode string                `json:"definitionErrorCode"`
+	Attention           int                   `json:"attention"`
+	// At most five enabled sites with configuration, rule or observed operation errors.
+	Issues []*HomeIndexerIssue `json:"issues"`
+	// Present only when the external gateway is configured and enabled.
+	Jackett *HomeJackettSummary `json:"jackett,omitempty"`
+}
+
+type HomeJackettSummary struct {
+	// Enabled remote sites; null for an unloaded directory, zero for confirmed empty.
+	Sites     *int    `json:"sites,omitempty"`
+	Stale     bool    `json:"stale"`
+	UpdatedAt *string `json:"updatedAt,omitempty"`
+	ErrorCode string  `json:"errorCode"`
+}
+
 type HomeOverview struct {
 	Total                int     `json:"total"`
 	Attention            int     `json:"attention"`
@@ -287,12 +347,273 @@ type ImageCacheStatus struct {
 	LastError      *string `json:"lastError,omitempty"`
 }
 
+// Aggregate counters only; no query keys, source settings, candidates or locators.
+type IndexerCacheStatus struct {
+	Revision        string `json:"revision"`
+	Enabled         bool   `json:"enabled"`
+	TTLSeconds      int    `json:"ttlSeconds"`
+	EmptyTTLSeconds int    `json:"emptyTtlSeconds"`
+	MaxSizeMb       int    `json:"maxSizeMb"`
+	Entries         int    `json:"entries"`
+	UsedBytes       int64  `json:"usedBytes"`
+	ActiveRequests  int    `json:"activeRequests"`
+	ActiveWaiters   int    `json:"activeWaiters"`
+}
+
+type IndexerCheckReport struct {
+	ID             string               `json:"id"`
+	InstanceID     string               `json:"instanceId"`
+	Kind           *IndexerSourceKind   `json:"kind,omitempty"`
+	ConfigRevision string               `json:"configRevision"`
+	RuleRevision   string               `json:"ruleRevision"`
+	StartedAt      string               `json:"startedAt"`
+	FinishedAt     string               `json:"finishedAt"`
+	Results        int                  `json:"results"`
+	Partial        bool                 `json:"partial"`
+	Truncated      bool                 `json:"truncated"`
+	Stages         []*IndexerCheckStage `json:"stages"`
+}
+
+type IndexerCheckStage struct {
+	Name      IndexerCheckStageName  `json:"name"`
+	State     IndexerCheckStageState `json:"state"`
+	ErrorCode string                 `json:"errorCode"`
+	ElapsedMs int64                  `json:"elapsedMs"`
+}
+
+type IndexerDefinition struct {
+	ID          string            `json:"id"`
+	Name        string            `json:"name"`
+	Description string            `json:"description"`
+	Language    string            `json:"language"`
+	Privacy     string            `json:"privacy"`
+	Digest      string            `json:"digest"`
+	Links       []string          `json:"links"`
+	Modes       []string          `json:"modes"`
+	Warnings    []string          `json:"warnings"`
+	Settings    []*IndexerSetting `json:"settings"`
+}
+
+type IndexerDefinitionChangeInput struct {
+	ExpectedActiveRevision string  `json:"expectedActiveRevision"`
+	TargetRevision         *string `json:"targetRevision,omitempty"`
+}
+
+type IndexerDefinitionFilterInput struct {
+	Query      *string `json:"query,omitempty"`
+	Language   *string `json:"language,omitempty"`
+	Privacy    *string `json:"privacy,omitempty"`
+	Capability *string `json:"capability,omitempty"`
+	Offset     *int    `json:"offset,omitempty"`
+	Limit      *int    `json:"limit,omitempty"`
+}
+
+type IndexerDefinitionJob struct {
+	ID                     string                    `json:"id"`
+	Kind                   IndexerDefinitionJobKind  `json:"kind"`
+	State                  IndexerDefinitionJobState `json:"state"`
+	TargetRevision         string                    `json:"targetRevision"`
+	ExpectedActiveRevision string                    `json:"expectedActiveRevision"`
+	DownloadedBytes        int64                     `json:"downloadedBytes"`
+	ErrorCode              string                    `json:"errorCode"`
+	CorrelationID          string                    `json:"correlationId"`
+	StartedAt              string                    `json:"startedAt"`
+	FinishedAt             *string                   `json:"finishedAt,omitempty"`
+	Revision               int64                     `json:"revision"`
+}
+
+type IndexerDefinitionManifest struct {
+	Revision        string `json:"revision"`
+	SchemaVersion   int    `json:"schemaVersion"`
+	EngineVersion   string `json:"engineVersion"`
+	DefinitionCount int    `json:"definitionCount"`
+	InstalledAt     string `json:"installedAt"`
+}
+
+type IndexerDefinitionPage struct {
+	Revision   string               `json:"revision"`
+	TotalCount int                  `json:"totalCount"`
+	Offset     int                  `json:"offset"`
+	Limit      int                  `json:"limit"`
+	Items      []*IndexerDefinition `json:"items"`
+}
+
+type IndexerDefinitionPolicy struct {
+	Revision           string `json:"revision"`
+	Source             string `json:"source"`
+	SchemaVersion      int    `json:"schemaVersion"`
+	CheckIntervalHours int    `json:"checkIntervalHours"`
+	AutoUpdate         bool   `json:"autoUpdate"`
+}
+
+type IndexerDefinitionPolicyPatchInput struct {
+	CheckIntervalHours *int  `json:"checkIntervalHours,omitempty"`
+	AutoUpdate         *bool `json:"autoUpdate,omitempty"`
+}
+
+type IndexerDefinitionStatus struct {
+	StreamID          string                       `json:"streamId"`
+	ActiveRevision    string                       `json:"activeRevision"`
+	PreviousRevision  string                       `json:"previousRevision"`
+	AvailableRevision string                       `json:"availableRevision"`
+	Revision          int64                        `json:"revision"`
+	Available         bool                         `json:"available"`
+	LastCheckedAt     *string                      `json:"lastCheckedAt,omitempty"`
+	CheckErrorCode    string                       `json:"checkErrorCode"`
+	ErrorCode         string                       `json:"errorCode"`
+	Installed         []*IndexerDefinitionManifest `json:"installed"`
+	Job               *IndexerDefinitionJob        `json:"job,omitempty"`
+}
+
+// Invalidation only: reread the relevant bounded snapshot after READY or a change.
+type IndexerEvent struct {
+	StreamID string           `json:"streamId"`
+	Sequence int64            `json:"sequence"`
+	Kind     IndexerEventKind `json:"kind"`
+}
+
+// Last observed outcome of each operation; absence means no matching observation.
+type IndexerHealth struct {
+	Search *IndexerObservation `json:"search,omitempty"`
+	Fetch  *IndexerObservation `json:"fetch,omitempty"`
+}
+
+type IndexerInstance struct {
+	Health         *IndexerHealth    `json:"health"`
+	SiteURL        string            `json:"siteUrl"`
+	Privacy        string            `json:"privacy"`
+	Language       string            `json:"language"`
+	ID             string            `json:"id"`
+	Kind           IndexerSourceKind `json:"kind"`
+	Name           string            `json:"name"`
+	Enabled        bool              `json:"enabled"`
+	DefinitionID   string            `json:"definitionId"`
+	BaseURL        string            `json:"baseUrl"`
+	NetworkProfile string            `json:"networkProfile"`
+	TrustedOrigins []string          `json:"trustedOrigins"`
+	RuleDigest     string            `json:"ruleDigest"`
+	ErrorCode      string            `json:"errorCode"`
+	Modes          []string          `json:"modes"`
+	Settings       []*IndexerSetting `json:"settings"`
+}
+
+type IndexerInstances struct {
+	HealthErrorCode  string             `json:"healthErrorCode"`
+	Revision         string             `json:"revision"`
+	RuleRevision     string             `json:"ruleRevision"`
+	RuleErrorCode    string             `json:"ruleErrorCode"`
+	CatalogErrorCode string             `json:"catalogErrorCode"`
+	JackettEnabled   bool               `json:"jackettEnabled"`
+	Order            []string           `json:"order"`
+	NetworkProfiles  []string           `json:"networkProfiles"`
+	Items            []*IndexerInstance `json:"items"`
+}
+
+type IndexerLoginChallenge struct {
+	ID        string  `json:"id"`
+	Type      string  `json:"type"`
+	Prompt    string  `json:"prompt"`
+	ImageData *string `json:"imageData,omitempty"`
+}
+
+type IndexerLoginInput struct {
+	InstanceID       string `json:"instanceId"`
+	ExpectedRevision string `json:"expectedRevision"`
+}
+
+type IndexerLoginReport struct {
+	ID             string                 `json:"id"`
+	InstanceID     string                 `json:"instanceId"`
+	ConfigRevision string                 `json:"configRevision"`
+	RuleRevision   string                 `json:"ruleRevision"`
+	State          IndexerLoginState      `json:"state"`
+	ExpiresAt      string                 `json:"expiresAt"`
+	Challenge      *IndexerLoginChallenge `json:"challenge,omitempty"`
+}
+
+type IndexerNetworkProfile struct {
+	ID                     string `json:"id"`
+	ProxyConfigured        bool   `json:"proxyConfigured"`
+	FlareSolverrConfigured bool   `json:"flareSolverrConfigured"`
+	UsedBy                 int    `json:"usedBy"`
+}
+
+type IndexerNetworkProfilePatchInput struct {
+	ProxyURL          *string `json:"proxyUrl,omitempty"`
+	ClearProxy        *bool   `json:"clearProxy,omitempty"`
+	FlareSolverrURL   *string `json:"flareSolverrUrl,omitempty"`
+	ClearFlareSolverr *bool   `json:"clearFlareSolverr,omitempty"`
+}
+
+type IndexerNetworkSettings struct {
+	Revision                string                   `json:"revision"`
+	RequestTimeoutSeconds   int                      `json:"requestTimeoutSeconds"`
+	SiteTimeoutSeconds      int                      `json:"siteTimeoutSeconds"`
+	ChallengeTimeoutSeconds int                      `json:"challengeTimeoutSeconds"`
+	Profiles                []*IndexerNetworkProfile `json:"profiles"`
+}
+
+type IndexerNetworkTimeoutPatchInput struct {
+	RequestTimeoutSeconds   *int `json:"requestTimeoutSeconds,omitempty"`
+	SiteTimeoutSeconds      *int `json:"siteTimeoutSeconds,omitempty"`
+	ChallengeTimeoutSeconds *int `json:"challengeTimeoutSeconds,omitempty"`
+}
+
+type IndexerObservation struct {
+	StartedAt     string  `json:"startedAt"`
+	FinishedAt    string  `json:"finishedAt"`
+	ErrorCode     string  `json:"errorCode"`
+	CorrelationID string  `json:"correlationId"`
+	RetryAt       *string `json:"retryAt,omitempty"`
+}
+
 type IndexerPreferenceRule struct {
 	TrackerIds []string `json:"trackerIds"`
 }
 
 type IndexerPreferenceRuleInput struct {
 	TrackerIds []string `json:"trackerIds"`
+}
+
+type IndexerSearchCachePatchInput struct {
+	Enabled         *bool `json:"enabled,omitempty"`
+	TTLSeconds      *int  `json:"ttlSeconds,omitempty"`
+	EmptyTTLSeconds *int  `json:"emptyTtlSeconds,omitempty"`
+	MaxSizeMb       *int  `json:"maxSizeMb,omitempty"`
+}
+
+type IndexerSetting struct {
+	Name         string                  `json:"name"`
+	Type         string                  `json:"type"`
+	Label        string                  `json:"label"`
+	Secret       bool                    `json:"secret"`
+	Configured   bool                    `json:"configured"`
+	Value        *IndexerSettingValue    `json:"value,omitempty"`
+	DefaultValue *IndexerSettingValue    `json:"defaultValue,omitempty"`
+	Options      []*IndexerSettingOption `json:"options"`
+}
+
+type IndexerSettingChangeInput struct {
+	Name  string                    `json:"name"`
+	Value *IndexerSettingValueInput `json:"value,omitempty"`
+	Clear *bool                     `json:"clear,omitempty"`
+}
+
+type IndexerSettingOption struct {
+	Value string `json:"value"`
+	Label string `json:"label"`
+}
+
+type IndexerSettingValue struct {
+	String  *string  `json:"string,omitempty"`
+	Boolean *bool    `json:"boolean,omitempty"`
+	Number  *float64 `json:"number,omitempty"`
+}
+
+type IndexerSettingValueInput struct {
+	String  *string  `json:"string,omitempty"`
+	Boolean *bool    `json:"boolean,omitempty"`
+	Number  *float64 `json:"number,omitempty"`
 }
 
 type IndexersPatchInput struct {
@@ -313,43 +634,10 @@ type IngestStatus struct {
 	Configured bool `json:"configured"`
 }
 
-type JackettIndexer struct {
-	SiteURL  string `json:"siteUrl"`
-	SiteType string `json:"siteType"`
-	Language string `json:"language"`
-	ID       string `json:"id"`
-	Name     string `json:"name"`
-	// Mirrors Jackett's Configured flag — indexers not yet configured are hidden by Jackett's UI.
-	Enabled bool `json:"enabled"`
-}
-
 type JackettPatchInput struct {
 	URL      *string `json:"url,omitempty"`
 	APIKey   *string `json:"api_key,omitempty"`
 	Password *string `json:"password,omitempty"`
-}
-
-type JackettSearchInput struct {
-	Query      string         `json:"query"`
-	Trackers   []string       `json:"trackers,omitempty"`
-	Categories []int          `json:"categories,omitempty"`
-	Limit      *int           `json:"limit,omitempty"`
-	SortBy     *JackettSortBy `json:"sortBy,omitempty"`
-}
-
-type JackettSearchResult struct {
-	Title        string `json:"title"`
-	Size         int64  `json:"size"`
-	Seeders      int    `json:"seeders"`
-	Peers        int    `json:"peers"`
-	Tracker      string `json:"tracker"`
-	TrackerID    string `json:"trackerId"`
-	CategoryDesc string `json:"categoryDesc"`
-	PublishDate  string `json:"publishDate"`
-	Details      string `json:"details"`
-	Link         string `json:"link"`
-	MagnetURI    string `json:"magnetUri"`
-	InfoHash     string `json:"infoHash"`
 }
 
 type JackettSettings struct {
@@ -512,39 +800,26 @@ type PerformerWorkspaceSnapshot struct {
 	SubscribedPerformers []*SubscribedPerformer    `json:"subscribedPerformers"`
 }
 
-type PreviewJackettSelectionCandidateInput struct {
-	Title        string `json:"title"`
-	Size         int64  `json:"size"`
-	Seeders      int    `json:"seeders"`
-	Peers        int    `json:"peers"`
-	Tracker      string `json:"tracker"`
-	TrackerID    string `json:"trackerId"`
-	CategoryDesc string `json:"categoryDesc"`
-	PublishDate  string `json:"publishDate"`
-	Details      string `json:"details"`
-	Link         string `json:"link"`
-	MagnetURI    string `json:"magnetUri"`
-	InfoHash     string `json:"infoHash"`
+type PrepareTorrentDownloadInput struct {
+	SearchID    string `json:"searchId"`
+	CandidateID string `json:"candidateId"`
 }
 
-type PreviewJackettSelectionInput struct {
-	Query                    string                                   `json:"query"`
-	Results                  []*PreviewJackettSelectionCandidateInput `json:"results"`
-	ApplyFastRules           bool                                     `json:"applyFastRules"`
-	ApplyFileRules           bool                                     `json:"applyFileRules"`
-	InspectionCandidateLimit *int                                     `json:"inspectionCandidateLimit,omitempty"`
+// An explicitly acquired artifact; the URL only serves stored data and expires.
+type PreparedTorrentDownload struct {
+	Kind        PreparedTorrentDownloadKind `json:"kind"`
+	DownloadURL string                      `json:"downloadUrl"`
+	ExpiresAt   string                      `json:"expiresAt"`
 }
 
-type PreviewJackettSelectionMeta struct {
-	AppliedFastRules bool `json:"appliedFastRules"`
-	AppliedFileRules bool `json:"appliedFileRules"`
-	InspectedCount   int  `json:"inspectedCount"`
-	InspectableCount int  `json:"inspectableCount"`
-}
-
-type PreviewJackettSelectionResult struct {
-	Results     []*JackettSearchResult       `json:"results"`
-	PreviewMeta *PreviewJackettSelectionMeta `json:"previewMeta"`
+type PreviewTorrentSelectionInput struct {
+	SearchID       string             `json:"searchId"`
+	CandidateIds   []string           `json:"candidateIds,omitempty"`
+	ApplyFastRules bool               `json:"applyFastRules"`
+	ApplyFileRules bool               `json:"applyFileRules"`
+	Offset         *int               `json:"offset,omitempty"`
+	Limit          *int               `json:"limit,omitempty"`
+	SortBy         *TorrentSearchSort `json:"sortBy,omitempty"`
 }
 
 type ProcessReleaseReviewsInput struct {
@@ -647,6 +922,16 @@ type QueuePerformerScenesSummary struct {
 	FailedCount    int `json:"failedCount"`
 }
 
+type QueueTorrentCandidateInput struct {
+	Code        string  `json:"code"`
+	SearchID    string  `json:"searchId"`
+	CandidateID string  `json:"candidateId"`
+	Paused      *bool   `json:"paused,omitempty"`
+	SavePath    *string `json:"savePath,omitempty"`
+	Category    *string `json:"category,omitempty"`
+	Tags        *string `json:"tags,omitempty"`
+}
+
 type ReleasePolicyPatchInput struct {
 	SoloBehavior           *SubscriptionReleaseBehavior  `json:"solo_behavior,omitempty"`
 	GroupBehavior          *SubscriptionReleaseBehavior  `json:"group_behavior,omitempty"`
@@ -728,6 +1013,14 @@ type ResolveBlockedSourcingTaskInput struct {
 	Paused      *bool           `json:"paused,omitempty"`
 }
 
+type ResolveTaskSourcingCandidateInput struct {
+	TaskID           string `json:"taskId"`
+	SearchID         string `json:"searchId"`
+	CandidateID      string `json:"candidateId"`
+	ExpectedRevision int64  `json:"expectedRevision"`
+	Paused           *bool  `json:"paused,omitempty"`
+}
+
 type ResourceRulesPatchInput struct {
 	Enabled                  *bool                      `json:"enabled,omitempty"`
 	InspectionCandidateLimit *int                       `json:"inspection_candidate_limit,omitempty"`
@@ -787,6 +1080,17 @@ type SettingsStatus struct {
 	JackettStats *JackettStats `json:"jackettStats"`
 	// Runtime stats for the qBittorrent download client. Refreshed by the stats collector.
 	QbittorrentStats *QBittorrentStats `json:"qbittorrentStats"`
+}
+
+type StartTorrentSearchInput struct {
+	Keywords    string                         `json:"keywords"`
+	Mode        *string                        `json:"mode,omitempty"`
+	InstanceIds []string                       `json:"instanceIds,omitempty"`
+	Categories  []int                          `json:"categories,omitempty"`
+	Parameters  []*TorrentSearchParameterInput `json:"parameters,omitempty"`
+	Limit       *int                           `json:"limit,omitempty"`
+	Refresh     *bool                          `json:"refresh,omitempty"`
+	TaskID      *string                        `json:"taskId,omitempty"`
 }
 
 type StashBoxDataCacheSettings struct {
@@ -1279,6 +1583,16 @@ type TasksPatchInput struct {
 	TorrentSelection                *ResourceRulesPatchInput `json:"torrent_selection,omitempty"`
 }
 
+type TestIndexerInput struct {
+	InstanceID       *string                   `json:"instanceId,omitempty"`
+	ExpectedRevision string                    `json:"expectedRevision"`
+	DefinitionID     *string                   `json:"definitionId,omitempty"`
+	Draft            *BuiltinIndexerPatchInput `json:"draft,omitempty"`
+	Search           bool                      `json:"search"`
+	Keywords         *string                   `json:"keywords,omitempty"`
+	Download         bool                      `json:"download"`
+}
+
 type TestServiceConnectionInput struct {
 	Service  SettingsConnectionService `json:"service"`
 	URL      string                    `json:"url"`
@@ -1340,6 +1654,92 @@ type TorrentFileNameMatchRule struct {
 
 type TorrentFileNameMatchRuleInput struct {
 	Clauses []*TorrentFileNameMatchClauseInput `json:"clauses"`
+}
+
+// A persisted, bounded search snapshot. Events invalidate this snapshot.
+type TorrentSearch struct {
+	ID              string                    `json:"id"`
+	State           TorrentSearchState        `json:"state"`
+	Revision        int64                     `json:"revision"`
+	Keywords        string                    `json:"keywords"`
+	TaskID          *string                   `json:"taskId,omitempty"`
+	CreatedAt       string                    `json:"createdAt"`
+	UpdatedAt       string                    `json:"updatedAt"`
+	ExpiresAt       string                    `json:"expiresAt"`
+	FinishedAt      *string                   `json:"finishedAt,omitempty"`
+	CancelRequested bool                      `json:"cancelRequested"`
+	Partial         bool                      `json:"partial"`
+	Truncated       bool                      `json:"truncated"`
+	ErrorCode       *string                   `json:"errorCode,omitempty"`
+	CorrelationID   string                    `json:"correlationId"`
+	Total           int                       `json:"total"`
+	Offset          int                       `json:"offset"`
+	Limit           int                       `json:"limit"`
+	Sites           []*TorrentSearchSite      `json:"sites"`
+	Candidates      []*TorrentSearchCandidate `json:"candidates"`
+}
+
+// Only this server-owned candidate ID may be selected; locators and credentials are private.
+type TorrentSearchCandidate struct {
+	ID           string            `json:"id"`
+	InstanceID   string            `json:"instanceId"`
+	InstanceName string            `json:"instanceName"`
+	Kind         IndexerSourceKind `json:"kind"`
+	Title        string            `json:"title"`
+	DetailsURL   *string           `json:"detailsUrl,omitempty"`
+	InfoHash     *string           `json:"infoHash,omitempty"`
+	Size         *int64            `json:"size,omitempty"`
+	Seeders      *int              `json:"seeders,omitempty"`
+	Peers        *int              `json:"peers,omitempty"`
+	PublishedAt  *string           `json:"publishedAt,omitempty"`
+	Categories   []int             `json:"categories"`
+}
+
+type TorrentSearchEvent struct {
+	StreamID string `json:"streamId"`
+	Sequence int64  `json:"sequence"`
+	SearchID string `json:"searchId"`
+}
+
+// Case-insensitive structured query fields. Unknown names, duplicate case aliases,
+// top-level fields and derived variables are rejected before accepting a search.
+type TorrentSearchParameterInput struct {
+	Key   string `json:"key"`
+	Value string `json:"value"`
+}
+
+type TorrentSearchSite struct {
+	InstanceID    string                 `json:"instanceId"`
+	Name          string                 `json:"name"`
+	Kind          *IndexerSourceKind     `json:"kind,omitempty"`
+	State         TorrentSearchSiteState `json:"state"`
+	Results       int                    `json:"results"`
+	CacheHit      bool                   `json:"cacheHit"`
+	FetchedAt     *string                `json:"fetchedAt,omitempty"`
+	ElapsedMs     int64                  `json:"elapsedMs"`
+	Partial       bool                   `json:"partial"`
+	Truncated     bool                   `json:"truncated"`
+	ErrorCode     *string                `json:"errorCode,omitempty"`
+	CorrelationID *string                `json:"correlationId,omitempty"`
+	RetryAt       *string                `json:"retryAt,omitempty"`
+}
+
+type TorrentSelectionPreview struct {
+	SearchID       string                       `json:"searchId"`
+	SearchRevision int64                        `json:"searchRevision"`
+	Total          int                          `json:"total"`
+	Offset         int                          `json:"offset"`
+	Limit          int                          `json:"limit"`
+	Candidates     []*TorrentSearchCandidate    `json:"candidates"`
+	Meta           *TorrentSelectionPreviewMeta `json:"meta"`
+}
+
+type TorrentSelectionPreviewMeta struct {
+	AppliedFastRules         bool `json:"appliedFastRules"`
+	AppliedFileRules         bool `json:"appliedFileRules"`
+	InspectedCount           int  `json:"inspectedCount"`
+	InspectableCount         int  `json:"inspectableCount"`
+	InspectionCandidateLimit int  `json:"inspectionCandidateLimit"`
 }
 
 type TorrentSelectionRule struct {
@@ -1670,52 +2070,52 @@ func (e ExternalService) MarshalJSON() ([]byte, error) {
 	return buf.Bytes(), nil
 }
 
-type JackettSortBy string
+type IndexerCheckStageName string
 
 const (
-	JackettSortByRelevance   JackettSortBy = "RELEVANCE"
-	JackettSortBySeedersDesc JackettSortBy = "SEEDERS_DESC"
-	JackettSortBySizeDesc    JackettSortBy = "SIZE_DESC"
-	JackettSortByDateDesc    JackettSortBy = "DATE_DESC"
+	IndexerCheckStageNameConfiguration  IndexerCheckStageName = "CONFIGURATION"
+	IndexerCheckStageNameAuthentication IndexerCheckStageName = "AUTHENTICATION"
+	IndexerCheckStageNameSearch         IndexerCheckStageName = "SEARCH"
+	IndexerCheckStageNameDownload       IndexerCheckStageName = "DOWNLOAD"
 )
 
-var AllJackettSortBy = []JackettSortBy{
-	JackettSortByRelevance,
-	JackettSortBySeedersDesc,
-	JackettSortBySizeDesc,
-	JackettSortByDateDesc,
+var AllIndexerCheckStageName = []IndexerCheckStageName{
+	IndexerCheckStageNameConfiguration,
+	IndexerCheckStageNameAuthentication,
+	IndexerCheckStageNameSearch,
+	IndexerCheckStageNameDownload,
 }
 
-func (e JackettSortBy) IsValid() bool {
+func (e IndexerCheckStageName) IsValid() bool {
 	switch e {
-	case JackettSortByRelevance, JackettSortBySeedersDesc, JackettSortBySizeDesc, JackettSortByDateDesc:
+	case IndexerCheckStageNameConfiguration, IndexerCheckStageNameAuthentication, IndexerCheckStageNameSearch, IndexerCheckStageNameDownload:
 		return true
 	}
 	return false
 }
 
-func (e JackettSortBy) String() string {
+func (e IndexerCheckStageName) String() string {
 	return string(e)
 }
 
-func (e *JackettSortBy) UnmarshalGQL(v any) error {
+func (e *IndexerCheckStageName) UnmarshalGQL(v any) error {
 	str, ok := v.(string)
 	if !ok {
 		return fmt.Errorf("enums must be strings")
 	}
 
-	*e = JackettSortBy(str)
+	*e = IndexerCheckStageName(str)
 	if !e.IsValid() {
-		return fmt.Errorf("%s is not a valid JackettSortBy", str)
+		return fmt.Errorf("%s is not a valid IndexerCheckStageName", str)
 	}
 	return nil
 }
 
-func (e JackettSortBy) MarshalGQL(w io.Writer) {
+func (e IndexerCheckStageName) MarshalGQL(w io.Writer) {
 	fmt.Fprint(w, strconv.Quote(e.String()))
 }
 
-func (e *JackettSortBy) UnmarshalJSON(b []byte) error {
+func (e *IndexerCheckStageName) UnmarshalJSON(b []byte) error {
 	s, err := strconv.Unquote(string(b))
 	if err != nil {
 		return err
@@ -1723,7 +2123,377 @@ func (e *JackettSortBy) UnmarshalJSON(b []byte) error {
 	return e.UnmarshalGQL(s)
 }
 
-func (e JackettSortBy) MarshalJSON() ([]byte, error) {
+func (e IndexerCheckStageName) MarshalJSON() ([]byte, error) {
+	var buf bytes.Buffer
+	e.MarshalGQL(&buf)
+	return buf.Bytes(), nil
+}
+
+type IndexerCheckStageState string
+
+const (
+	IndexerCheckStageStateSkipped      IndexerCheckStageState = "SKIPPED"
+	IndexerCheckStageStateNotRequested IndexerCheckStageState = "NOT_REQUESTED"
+	IndexerCheckStageStateNotRequired  IndexerCheckStageState = "NOT_REQUIRED"
+	IndexerCheckStageStateNotObserved  IndexerCheckStageState = "NOT_OBSERVED"
+	IndexerCheckStageStatePassed       IndexerCheckStageState = "PASSED"
+	IndexerCheckStageStateFailed       IndexerCheckStageState = "FAILED"
+	IndexerCheckStageStateEmpty        IndexerCheckStageState = "EMPTY"
+	IndexerCheckStageStatePartial      IndexerCheckStageState = "PARTIAL"
+	IndexerCheckStageStateNoCandidate  IndexerCheckStageState = "NO_CANDIDATE"
+)
+
+var AllIndexerCheckStageState = []IndexerCheckStageState{
+	IndexerCheckStageStateSkipped,
+	IndexerCheckStageStateNotRequested,
+	IndexerCheckStageStateNotRequired,
+	IndexerCheckStageStateNotObserved,
+	IndexerCheckStageStatePassed,
+	IndexerCheckStageStateFailed,
+	IndexerCheckStageStateEmpty,
+	IndexerCheckStageStatePartial,
+	IndexerCheckStageStateNoCandidate,
+}
+
+func (e IndexerCheckStageState) IsValid() bool {
+	switch e {
+	case IndexerCheckStageStateSkipped, IndexerCheckStageStateNotRequested, IndexerCheckStageStateNotRequired, IndexerCheckStageStateNotObserved, IndexerCheckStageStatePassed, IndexerCheckStageStateFailed, IndexerCheckStageStateEmpty, IndexerCheckStageStatePartial, IndexerCheckStageStateNoCandidate:
+		return true
+	}
+	return false
+}
+
+func (e IndexerCheckStageState) String() string {
+	return string(e)
+}
+
+func (e *IndexerCheckStageState) UnmarshalGQL(v any) error {
+	str, ok := v.(string)
+	if !ok {
+		return fmt.Errorf("enums must be strings")
+	}
+
+	*e = IndexerCheckStageState(str)
+	if !e.IsValid() {
+		return fmt.Errorf("%s is not a valid IndexerCheckStageState", str)
+	}
+	return nil
+}
+
+func (e IndexerCheckStageState) MarshalGQL(w io.Writer) {
+	fmt.Fprint(w, strconv.Quote(e.String()))
+}
+
+func (e *IndexerCheckStageState) UnmarshalJSON(b []byte) error {
+	s, err := strconv.Unquote(string(b))
+	if err != nil {
+		return err
+	}
+	return e.UnmarshalGQL(s)
+}
+
+func (e IndexerCheckStageState) MarshalJSON() ([]byte, error) {
+	var buf bytes.Buffer
+	e.MarshalGQL(&buf)
+	return buf.Bytes(), nil
+}
+
+type IndexerDefinitionJobKind string
+
+const (
+	IndexerDefinitionJobKindInstall  IndexerDefinitionJobKind = "INSTALL"
+	IndexerDefinitionJobKindUpdate   IndexerDefinitionJobKind = "UPDATE"
+	IndexerDefinitionJobKindRollback IndexerDefinitionJobKind = "ROLLBACK"
+	IndexerDefinitionJobKindRepair   IndexerDefinitionJobKind = "REPAIR"
+)
+
+var AllIndexerDefinitionJobKind = []IndexerDefinitionJobKind{
+	IndexerDefinitionJobKindInstall,
+	IndexerDefinitionJobKindUpdate,
+	IndexerDefinitionJobKindRollback,
+	IndexerDefinitionJobKindRepair,
+}
+
+func (e IndexerDefinitionJobKind) IsValid() bool {
+	switch e {
+	case IndexerDefinitionJobKindInstall, IndexerDefinitionJobKindUpdate, IndexerDefinitionJobKindRollback, IndexerDefinitionJobKindRepair:
+		return true
+	}
+	return false
+}
+
+func (e IndexerDefinitionJobKind) String() string {
+	return string(e)
+}
+
+func (e *IndexerDefinitionJobKind) UnmarshalGQL(v any) error {
+	str, ok := v.(string)
+	if !ok {
+		return fmt.Errorf("enums must be strings")
+	}
+
+	*e = IndexerDefinitionJobKind(str)
+	if !e.IsValid() {
+		return fmt.Errorf("%s is not a valid IndexerDefinitionJobKind", str)
+	}
+	return nil
+}
+
+func (e IndexerDefinitionJobKind) MarshalGQL(w io.Writer) {
+	fmt.Fprint(w, strconv.Quote(e.String()))
+}
+
+func (e *IndexerDefinitionJobKind) UnmarshalJSON(b []byte) error {
+	s, err := strconv.Unquote(string(b))
+	if err != nil {
+		return err
+	}
+	return e.UnmarshalGQL(s)
+}
+
+func (e IndexerDefinitionJobKind) MarshalJSON() ([]byte, error) {
+	var buf bytes.Buffer
+	e.MarshalGQL(&buf)
+	return buf.Bytes(), nil
+}
+
+type IndexerDefinitionJobState string
+
+const (
+	IndexerDefinitionJobStateQueued            IndexerDefinitionJobState = "QUEUED"
+	IndexerDefinitionJobStateDownloading       IndexerDefinitionJobState = "DOWNLOADING"
+	IndexerDefinitionJobStateValidating        IndexerDefinitionJobState = "VALIDATING"
+	IndexerDefinitionJobStateCheckingInstances IndexerDefinitionJobState = "CHECKING_INSTANCES"
+	IndexerDefinitionJobStateActivating        IndexerDefinitionJobState = "ACTIVATING"
+	IndexerDefinitionJobStateCompleted         IndexerDefinitionJobState = "COMPLETED"
+	IndexerDefinitionJobStateFailed            IndexerDefinitionJobState = "FAILED"
+	IndexerDefinitionJobStateCancelled         IndexerDefinitionJobState = "CANCELLED"
+	IndexerDefinitionJobStateInterrupted       IndexerDefinitionJobState = "INTERRUPTED"
+)
+
+var AllIndexerDefinitionJobState = []IndexerDefinitionJobState{
+	IndexerDefinitionJobStateQueued,
+	IndexerDefinitionJobStateDownloading,
+	IndexerDefinitionJobStateValidating,
+	IndexerDefinitionJobStateCheckingInstances,
+	IndexerDefinitionJobStateActivating,
+	IndexerDefinitionJobStateCompleted,
+	IndexerDefinitionJobStateFailed,
+	IndexerDefinitionJobStateCancelled,
+	IndexerDefinitionJobStateInterrupted,
+}
+
+func (e IndexerDefinitionJobState) IsValid() bool {
+	switch e {
+	case IndexerDefinitionJobStateQueued, IndexerDefinitionJobStateDownloading, IndexerDefinitionJobStateValidating, IndexerDefinitionJobStateCheckingInstances, IndexerDefinitionJobStateActivating, IndexerDefinitionJobStateCompleted, IndexerDefinitionJobStateFailed, IndexerDefinitionJobStateCancelled, IndexerDefinitionJobStateInterrupted:
+		return true
+	}
+	return false
+}
+
+func (e IndexerDefinitionJobState) String() string {
+	return string(e)
+}
+
+func (e *IndexerDefinitionJobState) UnmarshalGQL(v any) error {
+	str, ok := v.(string)
+	if !ok {
+		return fmt.Errorf("enums must be strings")
+	}
+
+	*e = IndexerDefinitionJobState(str)
+	if !e.IsValid() {
+		return fmt.Errorf("%s is not a valid IndexerDefinitionJobState", str)
+	}
+	return nil
+}
+
+func (e IndexerDefinitionJobState) MarshalGQL(w io.Writer) {
+	fmt.Fprint(w, strconv.Quote(e.String()))
+}
+
+func (e *IndexerDefinitionJobState) UnmarshalJSON(b []byte) error {
+	s, err := strconv.Unquote(string(b))
+	if err != nil {
+		return err
+	}
+	return e.UnmarshalGQL(s)
+}
+
+func (e IndexerDefinitionJobState) MarshalJSON() ([]byte, error) {
+	var buf bytes.Buffer
+	e.MarshalGQL(&buf)
+	return buf.Bytes(), nil
+}
+
+type IndexerEventKind string
+
+const (
+	IndexerEventKindReady         IndexerEventKind = "READY"
+	IndexerEventKindConfiguration IndexerEventKind = "CONFIGURATION"
+	IndexerEventKindCatalog       IndexerEventKind = "CATALOG"
+	IndexerEventKindSite          IndexerEventKind = "SITE"
+	IndexerEventKindCache         IndexerEventKind = "CACHE"
+)
+
+var AllIndexerEventKind = []IndexerEventKind{
+	IndexerEventKindReady,
+	IndexerEventKindConfiguration,
+	IndexerEventKindCatalog,
+	IndexerEventKindSite,
+	IndexerEventKindCache,
+}
+
+func (e IndexerEventKind) IsValid() bool {
+	switch e {
+	case IndexerEventKindReady, IndexerEventKindConfiguration, IndexerEventKindCatalog, IndexerEventKindSite, IndexerEventKindCache:
+		return true
+	}
+	return false
+}
+
+func (e IndexerEventKind) String() string {
+	return string(e)
+}
+
+func (e *IndexerEventKind) UnmarshalGQL(v any) error {
+	str, ok := v.(string)
+	if !ok {
+		return fmt.Errorf("enums must be strings")
+	}
+
+	*e = IndexerEventKind(str)
+	if !e.IsValid() {
+		return fmt.Errorf("%s is not a valid IndexerEventKind", str)
+	}
+	return nil
+}
+
+func (e IndexerEventKind) MarshalGQL(w io.Writer) {
+	fmt.Fprint(w, strconv.Quote(e.String()))
+}
+
+func (e *IndexerEventKind) UnmarshalJSON(b []byte) error {
+	s, err := strconv.Unquote(string(b))
+	if err != nil {
+		return err
+	}
+	return e.UnmarshalGQL(s)
+}
+
+func (e IndexerEventKind) MarshalJSON() ([]byte, error) {
+	var buf bytes.Buffer
+	e.MarshalGQL(&buf)
+	return buf.Bytes(), nil
+}
+
+type IndexerLoginState string
+
+const (
+	IndexerLoginStateNotRequired IndexerLoginState = "NOT_REQUIRED"
+	IndexerLoginStateReady       IndexerLoginState = "READY"
+	IndexerLoginStateWaiting     IndexerLoginState = "WAITING"
+)
+
+var AllIndexerLoginState = []IndexerLoginState{
+	IndexerLoginStateNotRequired,
+	IndexerLoginStateReady,
+	IndexerLoginStateWaiting,
+}
+
+func (e IndexerLoginState) IsValid() bool {
+	switch e {
+	case IndexerLoginStateNotRequired, IndexerLoginStateReady, IndexerLoginStateWaiting:
+		return true
+	}
+	return false
+}
+
+func (e IndexerLoginState) String() string {
+	return string(e)
+}
+
+func (e *IndexerLoginState) UnmarshalGQL(v any) error {
+	str, ok := v.(string)
+	if !ok {
+		return fmt.Errorf("enums must be strings")
+	}
+
+	*e = IndexerLoginState(str)
+	if !e.IsValid() {
+		return fmt.Errorf("%s is not a valid IndexerLoginState", str)
+	}
+	return nil
+}
+
+func (e IndexerLoginState) MarshalGQL(w io.Writer) {
+	fmt.Fprint(w, strconv.Quote(e.String()))
+}
+
+func (e *IndexerLoginState) UnmarshalJSON(b []byte) error {
+	s, err := strconv.Unquote(string(b))
+	if err != nil {
+		return err
+	}
+	return e.UnmarshalGQL(s)
+}
+
+func (e IndexerLoginState) MarshalJSON() ([]byte, error) {
+	var buf bytes.Buffer
+	e.MarshalGQL(&buf)
+	return buf.Bytes(), nil
+}
+
+type IndexerSourceKind string
+
+const (
+	IndexerSourceKindBuiltin IndexerSourceKind = "BUILTIN"
+	IndexerSourceKindJackett IndexerSourceKind = "JACKETT"
+)
+
+var AllIndexerSourceKind = []IndexerSourceKind{
+	IndexerSourceKindBuiltin,
+	IndexerSourceKindJackett,
+}
+
+func (e IndexerSourceKind) IsValid() bool {
+	switch e {
+	case IndexerSourceKindBuiltin, IndexerSourceKindJackett:
+		return true
+	}
+	return false
+}
+
+func (e IndexerSourceKind) String() string {
+	return string(e)
+}
+
+func (e *IndexerSourceKind) UnmarshalGQL(v any) error {
+	str, ok := v.(string)
+	if !ok {
+		return fmt.Errorf("enums must be strings")
+	}
+
+	*e = IndexerSourceKind(str)
+	if !e.IsValid() {
+		return fmt.Errorf("%s is not a valid IndexerSourceKind", str)
+	}
+	return nil
+}
+
+func (e IndexerSourceKind) MarshalGQL(w io.Writer) {
+	fmt.Fprint(w, strconv.Quote(e.String()))
+}
+
+func (e *IndexerSourceKind) UnmarshalJSON(b []byte) error {
+	s, err := strconv.Unquote(string(b))
+	if err != nil {
+		return err
+	}
+	return e.UnmarshalGQL(s)
+}
+
+func (e IndexerSourceKind) MarshalJSON() ([]byte, error) {
 	var buf bytes.Buffer
 	e.MarshalGQL(&buf)
 	return buf.Bytes(), nil
@@ -2074,6 +2844,61 @@ func (e *PerformerSubscriptionEventType) UnmarshalJSON(b []byte) error {
 }
 
 func (e PerformerSubscriptionEventType) MarshalJSON() ([]byte, error) {
+	var buf bytes.Buffer
+	e.MarshalGQL(&buf)
+	return buf.Bytes(), nil
+}
+
+type PreparedTorrentDownloadKind string
+
+const (
+	PreparedTorrentDownloadKindTorrent PreparedTorrentDownloadKind = "TORRENT"
+	PreparedTorrentDownloadKindMagnet  PreparedTorrentDownloadKind = "MAGNET"
+)
+
+var AllPreparedTorrentDownloadKind = []PreparedTorrentDownloadKind{
+	PreparedTorrentDownloadKindTorrent,
+	PreparedTorrentDownloadKindMagnet,
+}
+
+func (e PreparedTorrentDownloadKind) IsValid() bool {
+	switch e {
+	case PreparedTorrentDownloadKindTorrent, PreparedTorrentDownloadKindMagnet:
+		return true
+	}
+	return false
+}
+
+func (e PreparedTorrentDownloadKind) String() string {
+	return string(e)
+}
+
+func (e *PreparedTorrentDownloadKind) UnmarshalGQL(v any) error {
+	str, ok := v.(string)
+	if !ok {
+		return fmt.Errorf("enums must be strings")
+	}
+
+	*e = PreparedTorrentDownloadKind(str)
+	if !e.IsValid() {
+		return fmt.Errorf("%s is not a valid PreparedTorrentDownloadKind", str)
+	}
+	return nil
+}
+
+func (e PreparedTorrentDownloadKind) MarshalGQL(w io.Writer) {
+	fmt.Fprint(w, strconv.Quote(e.String()))
+}
+
+func (e *PreparedTorrentDownloadKind) UnmarshalJSON(b []byte) error {
+	s, err := strconv.Unquote(string(b))
+	if err != nil {
+		return err
+	}
+	return e.UnmarshalGQL(s)
+}
+
+func (e PreparedTorrentDownloadKind) MarshalJSON() ([]byte, error) {
 	var buf bytes.Buffer
 	e.MarshalGQL(&buf)
 	return buf.Bytes(), nil
@@ -3549,6 +4374,195 @@ func (e *TorrentFileMatchEffect) UnmarshalJSON(b []byte) error {
 }
 
 func (e TorrentFileMatchEffect) MarshalJSON() ([]byte, error) {
+	var buf bytes.Buffer
+	e.MarshalGQL(&buf)
+	return buf.Bytes(), nil
+}
+
+type TorrentSearchSiteState string
+
+const (
+	TorrentSearchSiteStateQueued      TorrentSearchSiteState = "QUEUED"
+	TorrentSearchSiteStateRunning     TorrentSearchSiteState = "RUNNING"
+	TorrentSearchSiteStateCompleted   TorrentSearchSiteState = "COMPLETED"
+	TorrentSearchSiteStateFailed      TorrentSearchSiteState = "FAILED"
+	TorrentSearchSiteStateCancelled   TorrentSearchSiteState = "CANCELLED"
+	TorrentSearchSiteStateInterrupted TorrentSearchSiteState = "INTERRUPTED"
+	TorrentSearchSiteStateSkipped     TorrentSearchSiteState = "SKIPPED"
+)
+
+var AllTorrentSearchSiteState = []TorrentSearchSiteState{
+	TorrentSearchSiteStateQueued,
+	TorrentSearchSiteStateRunning,
+	TorrentSearchSiteStateCompleted,
+	TorrentSearchSiteStateFailed,
+	TorrentSearchSiteStateCancelled,
+	TorrentSearchSiteStateInterrupted,
+	TorrentSearchSiteStateSkipped,
+}
+
+func (e TorrentSearchSiteState) IsValid() bool {
+	switch e {
+	case TorrentSearchSiteStateQueued, TorrentSearchSiteStateRunning, TorrentSearchSiteStateCompleted, TorrentSearchSiteStateFailed, TorrentSearchSiteStateCancelled, TorrentSearchSiteStateInterrupted, TorrentSearchSiteStateSkipped:
+		return true
+	}
+	return false
+}
+
+func (e TorrentSearchSiteState) String() string {
+	return string(e)
+}
+
+func (e *TorrentSearchSiteState) UnmarshalGQL(v any) error {
+	str, ok := v.(string)
+	if !ok {
+		return fmt.Errorf("enums must be strings")
+	}
+
+	*e = TorrentSearchSiteState(str)
+	if !e.IsValid() {
+		return fmt.Errorf("%s is not a valid TorrentSearchSiteState", str)
+	}
+	return nil
+}
+
+func (e TorrentSearchSiteState) MarshalGQL(w io.Writer) {
+	fmt.Fprint(w, strconv.Quote(e.String()))
+}
+
+func (e *TorrentSearchSiteState) UnmarshalJSON(b []byte) error {
+	s, err := strconv.Unquote(string(b))
+	if err != nil {
+		return err
+	}
+	return e.UnmarshalGQL(s)
+}
+
+func (e TorrentSearchSiteState) MarshalJSON() ([]byte, error) {
+	var buf bytes.Buffer
+	e.MarshalGQL(&buf)
+	return buf.Bytes(), nil
+}
+
+type TorrentSearchSort string
+
+const (
+	TorrentSearchSortRelevance   TorrentSearchSort = "RELEVANCE"
+	TorrentSearchSortSeedersDesc TorrentSearchSort = "SEEDERS_DESC"
+	TorrentSearchSortSizeDesc    TorrentSearchSort = "SIZE_DESC"
+	TorrentSearchSortDateDesc    TorrentSearchSort = "DATE_DESC"
+)
+
+var AllTorrentSearchSort = []TorrentSearchSort{
+	TorrentSearchSortRelevance,
+	TorrentSearchSortSeedersDesc,
+	TorrentSearchSortSizeDesc,
+	TorrentSearchSortDateDesc,
+}
+
+func (e TorrentSearchSort) IsValid() bool {
+	switch e {
+	case TorrentSearchSortRelevance, TorrentSearchSortSeedersDesc, TorrentSearchSortSizeDesc, TorrentSearchSortDateDesc:
+		return true
+	}
+	return false
+}
+
+func (e TorrentSearchSort) String() string {
+	return string(e)
+}
+
+func (e *TorrentSearchSort) UnmarshalGQL(v any) error {
+	str, ok := v.(string)
+	if !ok {
+		return fmt.Errorf("enums must be strings")
+	}
+
+	*e = TorrentSearchSort(str)
+	if !e.IsValid() {
+		return fmt.Errorf("%s is not a valid TorrentSearchSort", str)
+	}
+	return nil
+}
+
+func (e TorrentSearchSort) MarshalGQL(w io.Writer) {
+	fmt.Fprint(w, strconv.Quote(e.String()))
+}
+
+func (e *TorrentSearchSort) UnmarshalJSON(b []byte) error {
+	s, err := strconv.Unquote(string(b))
+	if err != nil {
+		return err
+	}
+	return e.UnmarshalGQL(s)
+}
+
+func (e TorrentSearchSort) MarshalJSON() ([]byte, error) {
+	var buf bytes.Buffer
+	e.MarshalGQL(&buf)
+	return buf.Bytes(), nil
+}
+
+type TorrentSearchState string
+
+const (
+	TorrentSearchStateQueued      TorrentSearchState = "QUEUED"
+	TorrentSearchStateRunning     TorrentSearchState = "RUNNING"
+	TorrentSearchStateCompleted   TorrentSearchState = "COMPLETED"
+	TorrentSearchStatePartial     TorrentSearchState = "PARTIAL"
+	TorrentSearchStateFailed      TorrentSearchState = "FAILED"
+	TorrentSearchStateCancelled   TorrentSearchState = "CANCELLED"
+	TorrentSearchStateInterrupted TorrentSearchState = "INTERRUPTED"
+)
+
+var AllTorrentSearchState = []TorrentSearchState{
+	TorrentSearchStateQueued,
+	TorrentSearchStateRunning,
+	TorrentSearchStateCompleted,
+	TorrentSearchStatePartial,
+	TorrentSearchStateFailed,
+	TorrentSearchStateCancelled,
+	TorrentSearchStateInterrupted,
+}
+
+func (e TorrentSearchState) IsValid() bool {
+	switch e {
+	case TorrentSearchStateQueued, TorrentSearchStateRunning, TorrentSearchStateCompleted, TorrentSearchStatePartial, TorrentSearchStateFailed, TorrentSearchStateCancelled, TorrentSearchStateInterrupted:
+		return true
+	}
+	return false
+}
+
+func (e TorrentSearchState) String() string {
+	return string(e)
+}
+
+func (e *TorrentSearchState) UnmarshalGQL(v any) error {
+	str, ok := v.(string)
+	if !ok {
+		return fmt.Errorf("enums must be strings")
+	}
+
+	*e = TorrentSearchState(str)
+	if !e.IsValid() {
+		return fmt.Errorf("%s is not a valid TorrentSearchState", str)
+	}
+	return nil
+}
+
+func (e TorrentSearchState) MarshalGQL(w io.Writer) {
+	fmt.Fprint(w, strconv.Quote(e.String()))
+}
+
+func (e *TorrentSearchState) UnmarshalJSON(b []byte) error {
+	s, err := strconv.Unquote(string(b))
+	if err != nil {
+		return err
+	}
+	return e.UnmarshalGQL(s)
+}
+
+func (e TorrentSearchState) MarshalJSON() ([]byte, error) {
 	var buf bytes.Buffer
 	e.MarshalGQL(&buf)
 	return buf.Bytes(), nil

@@ -26,7 +26,7 @@ func TestHomeOverviewGraphQLContract(t *testing.T) {
 			t.Fatal(err)
 		}
 	}
-	resolver := NewResolver(nil, nil, runtime, nil, "test")
+	resolver := NewResolver(nil, runtime, nil, "test")
 	var result struct {
 		Data struct {
 			Overview struct {

@@ -3,6 +3,7 @@ package tracker
 import (
 	"context"
 	"encoding/json"
+	"github.com/leothevan2444/moji/internal/indexer"
 	"github.com/leothevan2444/moji/pkg/jackett"
 	"net/http"
 	"net/http/httptest"
@@ -37,7 +38,7 @@ func TestSequentialSiteSearchStopsOnAcceptanceAndFallsBack(t *testing.T) {
 					cancel()
 					return
 				}
-				results := []jackett.SearchResult{{Title: id}}
+				results := []indexer.SelectionCandidate{{Title: id}}
 				if id == "a" && scenario == "empty" {
 					results = nil
 				}
@@ -47,7 +48,7 @@ func TestSequentialSiteSearchStopsOnAcceptanceAndFallsBack(t *testing.T) {
 			service := NewJackettService(func() JackettConfig {
 				return JackettConfig{URL: server.URL, QueryOrder: []string{"missing", "a", "b", "a"}}
 			})
-			err := service.SearchSequential(ctx, "ABCD-123", func(batch []jackett.SearchResult) (bool, error) {
+			err := service.SearchSequential(ctx, "ABCD-123", func(batch []indexer.SelectionCandidate) (bool, error) {
 				if len(batch) == 0 {
 					return false, nil
 				}

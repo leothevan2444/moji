@@ -45,7 +45,7 @@ func TestTaskWorkspaceGraphQLSnapshots(t *testing.T) {
 			t.Fatal(err)
 		}
 	}
-	resolver := NewResolver(nil, nil, &workspaceGraphQLRuntime{store: store}, nil, "test")
+	resolver := NewResolver(nil, &workspaceGraphQLRuntime{store: store}, nil, "test")
 	var result struct {
 		Data struct {
 			Page struct {

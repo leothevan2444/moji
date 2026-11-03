@@ -1,0 +1,26 @@
+extend type Mutation { testIndexer(input: TestIndexerInput!): IndexerCheckReport! }
+input TestIndexerInput {
+ instanceId: ID
+ expectedRevision: String!
+ definitionId: String
+ draft: BuiltinIndexerPatchInput
+ search: Boolean! = false
+ keywords: String
+ download: Boolean! = false
+}
+enum IndexerCheckStageName { CONFIGURATION AUTHENTICATION SEARCH DOWNLOAD }
+enum IndexerCheckStageState { SKIPPED NOT_REQUESTED NOT_REQUIRED NOT_OBSERVED PASSED FAILED EMPTY PARTIAL NO_CANDIDATE }
+type IndexerCheckStage { name: IndexerCheckStageName! state: IndexerCheckStageState! errorCode: String! elapsedMs: Long! }
+type IndexerCheckReport {
+ id: ID!
+ instanceId: ID!
+ kind: IndexerSourceKind
+ configRevision: String!
+ ruleRevision: String!
+ startedAt: String!
+ finishedAt: String!
+ results: Int!
+ partial: Boolean!
+ truncated: Boolean!
+ stages: [IndexerCheckStage!]!
+}

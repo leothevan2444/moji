@@ -1,0 +1,64 @@
+extend type Query {
+  indexerDefinitionStatus: IndexerDefinitionStatus!
+  indexerDefinitionUpdate(id: ID!): IndexerDefinitionJob
+}
+
+extend type Mutation {
+  checkIndexerDefinitionUpdate: IndexerDefinitionStatus!
+  installIndexerDefinitions(input: IndexerDefinitionChangeInput!): IndexerDefinitionJob!
+  updateIndexerDefinitions(input: IndexerDefinitionChangeInput!): IndexerDefinitionJob!
+  rollbackIndexerDefinitions(input: IndexerDefinitionChangeInput!): IndexerDefinitionJob!
+  repairIndexerDefinitions(input: IndexerDefinitionChangeInput!): IndexerDefinitionJob!
+  cancelIndexerDefinitionUpdate(id: ID!): IndexerDefinitionJob!
+}
+
+extend type Subscription {
+  indexerDefinitionEvents: IndexerDefinitionStatus!
+}
+
+input IndexerDefinitionChangeInput {
+  expectedActiveRevision: String!
+  targetRevision: String
+}
+
+type IndexerDefinitionStatus {
+  streamId: String!
+  activeRevision: String!
+  previousRevision: String!
+  availableRevision: String!
+  revision: Long!
+  available: Boolean!
+  lastCheckedAt: String
+  checkErrorCode: String!
+  errorCode: String!
+  installed: [IndexerDefinitionManifest!]!
+  job: IndexerDefinitionJob
+}
+
+type IndexerDefinitionManifest {
+  revision: String!
+  schemaVersion: Int!
+  engineVersion: String!
+  definitionCount: Int!
+  installedAt: String!
+}
+
+enum IndexerDefinitionJobKind { INSTALL UPDATE ROLLBACK REPAIR }
+enum IndexerDefinitionJobState {
+  QUEUED DOWNLOADING VALIDATING CHECKING_INSTANCES ACTIVATING
+  COMPLETED FAILED CANCELLED INTERRUPTED
+}
+
+type IndexerDefinitionJob {
+  id: ID!
+  kind: IndexerDefinitionJobKind!
+  state: IndexerDefinitionJobState!
+  targetRevision: String!
+  expectedActiveRevision: String!
+  downloadedBytes: Long!
+  errorCode: String!
+  correlationId: String!
+  startedAt: String!
+  finishedAt: String
+  revision: Long!
+}

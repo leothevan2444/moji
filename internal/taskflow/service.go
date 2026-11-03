@@ -215,3 +215,18 @@ func (s *Service) releaseTimezone() string {
 	}
 	return releasedate.DefaultTimezone
 }
+
+// QueueTorrentCandidate receives the server-resolved candidate identity from
+// the search application seam; it never accepts locator or account overrides.
+func (s *Service) QueueTorrentCandidate(ctx context.Context, input taskruntime.QueueIndexedResourceRequest) (*taskruntime.Task, error) {
+	if s == nil {
+		return nil, errors.New("taskflow: task runtime is not configured")
+	}
+	runtime, ok := s.taskRuntime.(interface {
+		QueueIndexedResourceContext(context.Context, taskruntime.QueueIndexedResourceRequest) (*taskruntime.Task, error)
+	})
+	if !ok {
+		return nil, errors.New("taskflow: indexed candidate queue unavailable")
+	}
+	return runtime.QueueIndexedResourceContext(ctx, input)
+}

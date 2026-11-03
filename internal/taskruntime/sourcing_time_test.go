@@ -3,11 +3,10 @@ package taskruntime
 import (
 	"context"
 	"errors"
+	"github.com/leothevan2444/moji/internal/indexer"
 	"path/filepath"
 	"testing"
 	"time"
-
-	"github.com/leothevan2444/moji/pkg/jackett"
 )
 
 func TestSourcingCompletionRequiresSuccessfulTorrentSubmission(t *testing.T) {
@@ -18,7 +17,7 @@ func TestSourcingCompletionRequiresSuccessfulTorrentSubmission(t *testing.T) {
 			qbt := &fakeTorrentAdder{err: errors.New("downloader unavailable")}
 			store := NewMemoryTaskStore()
 			url := "magnet:?xt=urn:btih:abc123&dn=ABCD-123"
-			service, err := NewService(fakeTracker{results: []jackett.SearchResult{{Title: "ABCD-123", MagnetURI: url, Seeders: 10}}}, qbt, store, WithClock(func() time.Time { return clock }), WithIDGenerator(func() string { return "sourcing" }))
+			service, err := NewService(fakeTracker{results: []indexer.SelectionCandidate{{Title: "ABCD-123", MagnetURI: url, Seeders: 10}}}, qbt, store, WithClock(func() time.Time { return clock }), WithIDGenerator(func() string { return "sourcing" }))
 			if err != nil {
 				t.Fatal(err)
 			}

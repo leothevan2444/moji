@@ -1,0 +1,118 @@
+extend type Query {
+  indexerDefinitions(input: IndexerDefinitionFilterInput): IndexerDefinitionPage!
+  indexerInstances: IndexerInstances!
+}
+extend type Mutation {
+  addBuiltinIndexer(expectedRevision: String!, input: BuiltinIndexerInput!): BuiltinIndexerResult!
+  updateBuiltinIndexer(id: ID!, expectedRevision: String!, input: BuiltinIndexerPatchInput!): BuiltinIndexerResult!
+  removeBuiltinIndexer(id: ID!, expectedRevision: String!): IndexerInstances!
+  setIndexerEnabled(id: ID!, expectedRevision: String!, enabled: Boolean!): IndexerInstances!
+  reorderIndexers(expectedRevision: String!, ids: [ID!]!): IndexerInstances!
+  refreshJackettIndexers: IndexerInstances!
+}
+enum IndexerSourceKind { BUILTIN JACKETT }
+type IndexerSettingValue { string: String boolean: Boolean number: Float }
+input IndexerSettingValueInput { string: String boolean: Boolean number: Float }
+type IndexerSettingOption { value: String! label: String! }
+type IndexerSetting {
+  name: String!
+  type: String!
+  label: String!
+  secret: Boolean!
+  configured: Boolean!
+  value: IndexerSettingValue
+  defaultValue: IndexerSettingValue
+  options: [IndexerSettingOption!]!
+}
+input IndexerSettingChangeInput {
+  name: String!
+  value: IndexerSettingValueInput
+  clear: Boolean = false
+}
+input BuiltinIndexerInput {
+  definitionId: ID!
+  name: String
+  enabled: Boolean
+  baseUrl: String
+  networkProfile: String
+  trustedOrigins: [String!]
+  settings: [IndexerSettingChangeInput!]
+}
+input BuiltinIndexerPatchInput {
+  name: String
+  enabled: Boolean
+  baseUrl: String
+  networkProfile: String
+  trustedOrigins: [String!]
+  settings: [IndexerSettingChangeInput!]
+}
+input IndexerDefinitionFilterInput {
+  query: String
+  language: String
+  privacy: String
+  capability: String
+  offset: Int = 0
+  limit: Int = 50
+}
+type IndexerDefinition {
+  id: ID!
+  name: String!
+  description: String!
+  language: String!
+  privacy: String!
+  digest: String!
+  links: [String!]!
+  modes: [String!]!
+  warnings: [String!]!
+  settings: [IndexerSetting!]!
+}
+type IndexerDefinitionPage {
+  revision: String!
+  totalCount: Int!
+  offset: Int!
+  limit: Int!
+  items: [IndexerDefinition!]!
+}
+type IndexerInstance {
+  health: IndexerHealth!
+  siteUrl: String!
+  privacy: String!
+  language: String!
+  id: ID!
+  kind: IndexerSourceKind!
+  name: String!
+  enabled: Boolean!
+  definitionId: String!
+  baseUrl: String!
+  networkProfile: String!
+  trustedOrigins: [String!]!
+  ruleDigest: String!
+  errorCode: String!
+  modes: [String!]!
+  settings: [IndexerSetting!]!
+}
+type IndexerInstances {
+  healthErrorCode: String!
+  revision: String!
+  ruleRevision: String!
+  ruleErrorCode: String!
+  catalogErrorCode: String!
+  jackettEnabled: Boolean!
+  order: [ID!]!
+  networkProfiles: [String!]!
+  items: [IndexerInstance!]!
+}
+type BuiltinIndexerResult { revision: String! instance: IndexerInstance! }
+
+"Last observed outcome of each operation; absence means no matching observation."
+type IndexerHealth {
+  search: IndexerObservation
+  fetch: IndexerObservation
+}
+type IndexerObservation {
+  startedAt: String!
+  finishedAt: String!
+  errorCode: String!
+  correlationId: String!
+  retryAt: String
+}

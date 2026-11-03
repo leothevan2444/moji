@@ -354,8 +354,9 @@ func taskChangedBeyondProgress(previous, next *Task) bool {
 	if previous == nil || next == nil {
 		return previous != next
 	}
-	left := cloneTask(previous)
-	right := cloneTask(next)
+	left := PublicTaskSnapshot(previous)
+	right := PublicTaskSnapshot(next)
+	left.IndexerResource, right.IndexerResource = nil, nil
 	left.Progress, right.Progress = 0, 0
 	left.UpdatedAt, right.UpdatedAt = time.Time{}, time.Time{}
 	left.LastProgressAt, right.LastProgressAt = nil, nil
@@ -375,13 +376,13 @@ func (s *EventingTaskStore) publishLocked(ctx context.Context, eventType TaskEve
 	listChanged := eventType != TaskEventUpdated || previous == nil || task == nil || taskWorkspaceGroup(previous) != taskWorkspaceGroup(task) || previous.Code != task.Code || previous.TorrentName != task.TorrentName || !reflect.DeepEqual(previous.IngestCompletedAt, task.IngestCompletedAt)
 	now := s.now()
 	if task != nil {
-		s.lastPublished[taskID] = publishedTaskState{task: cloneTask(task), at: now}
+		s.lastPublished[taskID] = publishedTaskState{task: PublicTaskSnapshot(task), at: now}
 	}
 	s.publisher.Publish(&TaskEvent{
 		ListChanged:    listChanged,
 		Type:           eventType,
 		TaskID:         taskID,
-		Task:           cloneTask(task),
+		Task:           PublicTaskSnapshot(task),
 		DashboardStats: stats,
 	})
 }
@@ -425,4 +426,57 @@ func CalculateTaskStats(tasks []*Task) TaskStats {
 		}
 	}
 	return stats
+}
+
+// PublicTaskSnapshot excludes acquisition credentials and private download
+// locations from UI events and API projections. Execution always reads core.
+func PublicTaskSnapshot(task *Task) *Task {
+	if task == nil {
+		return nil
+	}
+	copy := *task
+	copy.IndexerResource = nil
+	copy.TorrentFileData = nil
+	if source := task.Candidate.Source; source != nil {
+		reference := ""
+		if source.ResourceID != "" {
+			reference = "indexer-resource:" + source.ResourceID
+		}
+		copy.TorrentURL = reference
+		copy.Candidate.Link = reference
+		copy.Candidate.MagnetURI = ""
+	}
+	return cloneTask(&copy)
+}
+
+func (s *EventingTaskStore) CreateIndexedTask(ctx context.Context, task *Task) error {
+	creator, ok := s.store.(interface {
+		CreateIndexedTask(context.Context, *Task) error
+	})
+	if !ok {
+		return errors.New("taskruntime: store does not support accepted indexer resources")
+	}
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if err := creator.CreateIndexedTask(ctx, task); err != nil {
+		return err
+	}
+	s.publishLocked(ctx, TaskEventCreated, task.ID, task)
+	return nil
+}
+
+func (s *EventingTaskStore) UpdateIndexedTask(ctx context.Context, task *Task) error {
+	updater, ok := s.store.(interface {
+		UpdateIndexedTask(context.Context, *Task) error
+	})
+	if !ok {
+		return errors.New("taskruntime: store does not support accepted indexer resources")
+	}
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if err := updater.UpdateIndexedTask(ctx, task); err != nil {
+		return err
+	}
+	s.publishLocked(ctx, TaskEventUpdated, task.ID, task)
+	return nil
 }

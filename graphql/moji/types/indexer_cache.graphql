@@ -1,0 +1,22 @@
+extend type Query { indexerCacheStatus: IndexerCacheStatus! }
+extend type Mutation { clearIndexerSearchCache(instanceId: ID): IndexerCacheStatus! }
+extend type Mutation { updateIndexerSearchCache(expectedRevision: String!, input: IndexerSearchCachePatchInput!): IndexerCacheStatus! }
+input IndexerSearchCachePatchInput {
+  enabled: Boolean
+  ttlSeconds: Int
+  emptyTtlSeconds: Int
+  maxSizeMb: Int
+}
+
+"Aggregate counters only; no query keys, source settings, candidates or locators."
+type IndexerCacheStatus {
+  revision: String!
+  enabled: Boolean!
+  ttlSeconds: Int!
+  emptyTtlSeconds: Int!
+  maxSizeMb: Int!
+  entries: Int!
+  usedBytes: Long!
+  activeRequests: Int!
+  activeWaiters: Int!
+}

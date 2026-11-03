@@ -3,16 +3,16 @@ package taskruntime
 import (
 	"context"
 	"errors"
+	"github.com/leothevan2444/moji/internal/indexer"
 	"testing"
 
 	"github.com/leothevan2444/moji/internal/config"
-	"github.com/leothevan2444/moji/pkg/jackett"
 )
 
 // Regression cases found during the U-002/R-002 baseline audit.
 func TestSelectionDisabledPreservesInputOrder(t *testing.T) {
 	selector := defaultCandidateSelector{}
-	got, err := selector.Select(context.Background(), "ABCD-123", []jackett.SearchResult{
+	got, err := selector.Select(context.Background(), "ABCD-123", []indexer.SelectionCandidate{
 		{Title: "ABCD-123", Link: "https://example.test/first", Seeders: 1},
 		{Title: "ABCD-123", Link: "https://example.test/second", Seeders: 20},
 	}, candidateSelectionConfig(false, 1, []config.CandidateSelectionRule{
@@ -30,7 +30,7 @@ func TestSelectionFileAvoidDemotes(t *testing.T) {
 		}
 		return torrentInspection{Paths: []string{"movie.mp4"}}, nil
 	}}
-	got, err := selector.Select(context.Background(), "ABCD-123", []jackett.SearchResult{
+	got, err := selector.Select(context.Background(), "ABCD-123", []indexer.SelectionCandidate{
 		{Title: "ABCD-123", Link: "https://example.test/avoided"},
 		{Title: "ABCD-123", Link: "https://example.test/plain"},
 	}, candidateSelectionConfig(true, 2, []config.CandidateSelectionRule{
@@ -52,7 +52,7 @@ func TestSelectionLockFallsBackOnUnmatchedAndInspectionFailure(t *testing.T) {
 				}
 				return torrentInspection{Paths: []string{"movie.mp4"}}, nil
 			}}
-			got, err := selector.Select(context.Background(), "ABCD-123", []jackett.SearchResult{
+			got, err := selector.Select(context.Background(), "ABCD-123", []indexer.SelectionCandidate{
 				{Title: "ABCD-123", Link: "https://example.test/plain"},
 			}, candidateSelectionConfig(true, 1, []config.CandidateSelectionRule{
 				{Type: config.CandidateSelectionRuleTypeTorrentFileNameMatch, Enabled: true, TorrentFileNameMatch: config.TorrentFileNameMatchRuleConfig{
@@ -73,7 +73,7 @@ func TestSelectionTitleHardConditionsOverridePreferences(t *testing.T) {
 		{Pattern: "excluded", PatternMode: config.TitleMatchPatternModePlain, Effect: config.TitleMatchEffectExclude},
 	}}}}
 	selector := defaultCandidateSelector{}
-	results := []jackett.SearchResult{
+	results := []indexer.SelectionCandidate{
 		{Title: "ABCD-123 high required excluded", Link: "https://example.test/excluded"},
 		{Title: "ABCD-123 high", Link: "https://example.test/unmatched"},
 		{Title: "ABCD-123 required", Link: "https://example.test/eligible"},
@@ -97,7 +97,7 @@ func TestSelectionFileHardConditionsDoNotEscapeInspectionBudget(t *testing.T) {
 	cfg := candidateSelectionConfig(true, 1, []config.CandidateSelectionRule{{Type: config.CandidateSelectionRuleTypeTorrentFileNameMatch, Enabled: true, TorrentFileNameMatch: config.TorrentFileNameMatchRuleConfig{Clauses: []config.TorrentFileNameMatchClause{
 		{Pattern: "movie", PatternMode: config.TitleMatchPatternModePlain, Effect: config.TorrentFileMatchEffectExclude},
 	}}}})
-	_, err := selector.Select(context.Background(), "ABCD-123", []jackett.SearchResult{
+	_, err := selector.Select(context.Background(), "ABCD-123", []indexer.SelectionCandidate{
 		{Title: "ABCD-123", Link: "https://example.test/first"},
 		{Title: "ABCD-123", Link: "https://example.test/uninspected"},
 		{Title: "ABCD-123", MagnetURI: "magnet:?xt=urn:btih:123"},
@@ -108,7 +108,7 @@ func TestSelectionFileHardConditionsDoNotEscapeInspectionBudget(t *testing.T) {
 }
 
 func TestSelectionLocksAnyTitleOrFileMatchAfterExclusions(t *testing.T) {
-	results := []jackett.SearchResult{
+	results := []indexer.SelectionCandidate{
 		{Title: "ABCD-123 plain", Link: "https://example.test/plain", Seeders: 100},
 		{Title: "ABCD-123 title-lock", Link: "https://example.test/title", Seeders: 10},
 		{Title: "ABCD-123 other", Link: "https://example.test/file", Seeders: 20},
@@ -165,7 +165,7 @@ func TestSelectionTitleLocksUseORAndKeepNormalTieBreaking(t *testing.T) {
 		}}},
 		{Type: config.CandidateSelectionRuleTypeSeeders, Enabled: true, Seeders: config.SeedersRuleConfig{Direction: config.CandidateSelectionDirectionDesc}},
 	}
-	results := []jackett.SearchResult{
+	results := []indexer.SelectionCandidate{
 		{Title: "plain", Link: "https://example.test/plain", Seeders: 100},
 		{Title: "first", Link: "https://example.test/first", Seeders: 5},
 		{Title: "second", Link: "https://example.test/second", Seeders: 10},
@@ -194,7 +194,7 @@ func TestSelectionFileLockWithoutInspectionKeepsFallback(t *testing.T) {
 			return torrentInspection{}, nil
 		}},
 	} {
-		got, err := selector.Select(context.Background(), "ABCD-123", []jackett.SearchResult{{Title: "plain", MagnetURI: "magnet:?xt=urn:btih:123"}}, cfg)
+		got, err := selector.Select(context.Background(), "ABCD-123", []indexer.SelectionCandidate{{Title: "plain", MagnetURI: "magnet:?xt=urn:btih:123"}}, cfg)
 		if err != nil || got.Title != "plain" {
 			t.Fatalf("got %+v, err %v", got, err)
 		}
@@ -211,7 +211,7 @@ func TestSelectionFileLockRespectsInspectionBudget(t *testing.T) {
 	cfg := candidateSelectionConfig(true, 1, []config.CandidateSelectionRule{{Type: config.CandidateSelectionRuleTypeTorrentFileNameMatch, Enabled: true, TorrentFileNameMatch: config.TorrentFileNameMatchRuleConfig{Clauses: []config.TorrentFileNameMatchClause{
 		{Pattern: "lock", Effect: config.TorrentFileMatchEffectLock},
 	}}}})
-	got, err := selector.Select(context.Background(), "ABCD-123", []jackett.SearchResult{
+	got, err := selector.Select(context.Background(), "ABCD-123", []indexer.SelectionCandidate{
 		{Title: "first", Link: "https://example.test/first"},
 		{Title: "second", Link: "https://example.test/second"},
 	}, cfg)

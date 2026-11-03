@@ -53,7 +53,7 @@ func ensureSourcingRequest(task *Task) error {
 // a temporary BLOCKED event to connected task views.
 func (s *Service) recordSourcingFailure(ctx context.Context, task *Task, code, message string) error {
 	blockTask(task, code, message, s.now().UTC())
-	if task.SourcingRequestJSON != "" && resourceUnavailable(code) {
+	if task.SelectedResourceID == "" && task.SourcingRequestJSON != "" && resourceUnavailable(code) {
 		if err := s.scheduleResourceCheck(task, s.now().UTC()); err != nil {
 			return err
 		}
@@ -64,6 +64,9 @@ func (s *Service) recordSourcingFailure(ctx context.Context, task *Task, code, m
 // A future check always searches again. An expired or fuzzy selection is not
 // reused, and expected resource absence is represented as pending work.
 func (s *Service) scheduleResourceCheck(task *Task, checkedAt time.Time) error {
+	if task.SelectedResourceID != "" {
+		return nil
+	}
 	if err := ensureSourcingRequest(task); err != nil {
 		return err
 	}
@@ -86,6 +89,9 @@ func (s *Service) scheduleResourceCheck(task *Task, checkedAt time.Time) error {
 // Adopt historical blocked searches and apply changes to the configured
 // interval. Each snapshot is re-read under the same lock used by manual retry.
 func (s *Service) prepareResourceTracking(ctx context.Context, snapshot *Task) (*Task, error) {
+	if snapshot.SelectedResourceID != "" {
+		return snapshot, nil
+	}
 	if snapshot.Stage != TaskStageSourcing || (snapshot.SourcingNextCheckAt == nil && (snapshot.StageStatus != TaskStageStatusBlocked || !retryableSourcingFailure(snapshot.StageErrorCode))) {
 		return snapshot, nil
 	}

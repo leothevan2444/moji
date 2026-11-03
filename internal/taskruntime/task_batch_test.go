@@ -4,10 +4,9 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/leothevan2444/moji/internal/indexer"
 	"testing"
 	"time"
-
-	"github.com/leothevan2444/moji/pkg/jackett"
 )
 
 func TestTaskBatchNormalizesIDsAndEnforcesLimit(t *testing.T) {
@@ -38,7 +37,7 @@ func TestRetryTasksReturnsPerTaskResults(t *testing.T) {
 	if err := store.Create(context.Background(), completed); err != nil {
 		t.Fatal(err)
 	}
-	service, err := NewService(fakeTracker{results: []jackett.SearchResult{{Title: "ABCD-123", MagnetURI: "magnet:?xt=urn:btih:batch"}}}, &fakeTorrentAdder{}, store)
+	service, err := NewService(fakeTracker{results: []indexer.SelectionCandidate{{Title: "ABCD-123", MagnetURI: "magnet:?xt=urn:btih:batch"}}}, &fakeTorrentAdder{}, store)
 	if err != nil {
 		t.Fatal(err)
 	}

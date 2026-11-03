@@ -1,0 +1,11 @@
+"An explicitly acquired artifact; the URL only serves stored data and expires."
+type PreparedTorrentDownload {
+  kind: PreparedTorrentDownloadKind!
+  downloadUrl: String!
+  expiresAt: String!
+}
+enum PreparedTorrentDownloadKind { TORRENT MAGNET }
+input PrepareTorrentDownloadInput { searchId: ID!, candidateId: ID! }
+extend type Mutation {
+  prepareTorrentDownload(input: PrepareTorrentDownloadInput!): PreparedTorrentDownload!
+}

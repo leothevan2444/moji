@@ -95,13 +95,6 @@ func main() {
 		logging.Fatalf("reconfigure logger: %v", err)
 	}
 
-	if cfg.Connection.Jackett.URL == "" {
-		logging.Fatalf("invalid config: indexers.jackett.url is required")
-	}
-	if cfg.Connection.Jackett.APIKey == "" {
-		logging.Fatalf("invalid config: indexers.jackett.api_key is required")
-	}
-
 	// Dependencies: the storage owner is acquired before any background work.
 	managerOptions := storage.DefaultManagerOptions(*dataDirectory)
 	managerOptions.BackupDirectory = *backupDirectory
@@ -117,12 +110,17 @@ func main() {
 			logging.Errorf("close storage: %v", err)
 		}
 	}()
-	runtime := newHTTPRuntime(cfg, version, configStore, manager)
-	defer runtime.stashBoxCacheService.Close()
-
 	// Graceful shutdown
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
+	runtime := newHTTPRuntimeWithContext(ctx, cfg, version, configStore, manager)
+	defer runtime.stashBoxCacheService.Close()
+	if runtime.indexers != nil {
+		if err := runtime.indexers.Start(ctx); err != nil {
+			logging.Fatalf("start indexer runtime: %v", err)
+		}
+		defer runtime.indexers.Close()
+	}
 
 	var requests sync.WaitGroup
 	requestHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -156,6 +154,9 @@ func main() {
 		})
 	})
 	defer workers.Wait()
+	if runtime.indexers != nil {
+		launch(func() { runtime.indexers.Run(ctx) })
+	}
 	if preparer, ok := runtime.taskRuntimeService.(interface{ SetMediaPreparationContext(context.Context) }); ok {
 		preparer.SetMediaPreparationContext(ctx)
 	}
@@ -182,6 +183,11 @@ func main() {
 		defer close(shutdownDone)
 		<-ctx.Done()
 		manager.ClosePerformanceSubscriptions()
+		if runtime.indexers != nil {
+			runtime.indexers.definitions.CloseSubscriptions()
+			runtime.indexers.events.Close()
+			runtime.indexers.searches.CloseSubscriptions()
+		}
 		runtime.taskEventBus.Close()
 		runtime.serviceStatusEventBus.Close()
 		runtime.performerSubscriptionEventBus.Close()
@@ -218,6 +224,7 @@ func newHTTPHandler(cfg *config.Config, version string) http.Handler {
 }
 
 type httpRuntime struct {
+	indexers                      *indexerRuntime
 	downloader                    *downloader.Service
 	handler                       http.Handler
 	taskRuntimeService            graphqlapi.TaskRuntimeService
@@ -231,6 +238,10 @@ type httpRuntime struct {
 }
 
 func newHTTPRuntime(cfg *config.Config, version string, configStore *config.Store, managers ...*storage.Manager) *httpRuntime {
+	return newHTTPRuntimeWithContext(context.Background(), cfg, version, configStore, managers...)
+}
+
+func newHTTPRuntimeWithContext(ctx context.Context, cfg *config.Config, version string, configStore *config.Store, managers ...*storage.Manager) *httpRuntime {
 	var manager *storage.Manager
 	if len(managers) > 0 {
 		manager = managers[0]
@@ -263,19 +274,30 @@ func newHTTPRuntime(cfg *config.Config, version string, configStore *config.Stor
 	if err != nil {
 		logging.Fatalf("configure StashBox data cache: %v", err)
 	}
-	jackettTracker := tracker.NewJackettService(configureJackettConfigProvider(configStore, cfg))
-	{
-		current := storeJackett(cfg, configStore)
-		logging.Infof("runtime: jackett tracker configured for %s", current.URL)
-		if current.Password == "" {
-			logging.Warn("runtime: indexers.jackett.password is empty; the home service card will report Jackett as 运行异常 because /api/v2.0/indexers requires a session cookie. Set indexers.jackett.password in config.yaml to enable it.")
+	var indexers *indexerRuntime
+	var sourceTracker tracker.Tracker
+	if manager != nil {
+		indexers, err = newIndexerRuntime(ctx, cfg, configStore, manager, nil)
+		if err != nil {
+			logging.Fatalf("configure indexers: %v", err)
 		}
+		sourceTracker = tracker.NewIndexerService(indexers.service, indexers.registry)
+	} else {
+		sourceTracker = tracker.NewJackettService(configureJackettConfigProvider(configStore, cfg))
 	}
-	apiHandler := api.NewHandler(jackettTracker, api.WithLogFilePath(cfg.EffectiveLogFilePath()))
+	apiOptions := []api.Option{api.WithLogFilePath(cfg.EffectiveLogFilePath())}
+	if indexers != nil {
+		apiOptions = append(apiOptions, api.WithIndexerDownloads(indexers.downloads))
+	}
+	apiHandler := api.NewHandler(sourceTracker, apiOptions...)
 	qbittorrentClient, torrentClient := configureQBittorrent(cfg, configStore)
 	stashClient := configureStashClient(cfg, configStore)
 	taskEventBus := taskruntime.NewTaskEventBus(32)
-	taskRuntimeService := configureTaskRuntime(cfg, configStore, jackettTracker, torrentClient, stashClient, taskEventBus, manager)
+	var taskIndexers taskruntime.IndexerService
+	if indexers != nil {
+		taskIndexers = indexers.service
+	}
+	taskRuntimeService := configureTaskRuntimeWithIndexers(cfg, configStore, sourceTracker, taskIndexers, torrentClient, stashClient, taskEventBus, manager)
 	releaseTimezone := func() string {
 		if configStore != nil {
 			return configStore.Config().System.EffectiveReleaseTimezone()
@@ -304,14 +326,27 @@ func newHTTPRuntime(cfg *config.Config, version string, configStore *config.Stor
 
 	statsCollector := stats.NewCollector(
 		stashClient,
-		jackettClientOf(jackettTracker),
+		jackettClientOf(sourceTracker),
 		qbittorrentClient,
 		taskRuntimeService,
 		logging.Default().Slog(),
 	)
 	serviceStatusEventBus := stats.NewServiceStatusEventBus(8)
 	statsCollector.SetEventPublisher(serviceStatusEventBus)
-	resolver := graphqlapi.NewResolver(jackettTracker, torrentClient, taskRuntimeService, stashService, version)
+	resolver := graphqlapi.NewResolver(torrentClient, taskRuntimeService, stashService, version)
+	if indexers != nil {
+		resolver.DefinitionLibrary = indexers.definitions
+		resolver.IndexerAdmin = indexers.admin
+		resolver.HomeIndexers = indexers.admin
+		resolver.IndexerEventSource = indexers.events
+		resolver.IndexerCache = indexers.admin
+		resolver.IndexerNetwork = indexers.admin
+		resolver.IndexerDefinitionPolicy = indexers.admin
+		resolver.SearchRuns = indexers.searches
+		resolver.TorrentDownloads = indexers.downloads
+		resolver.IndexerChecks = indexers.checks
+		resolver.IndexerLogins = indexers.logins
+	}
 	if manager != nil {
 		resolver.DatabasePerformanceSource = manager
 	}
@@ -402,6 +437,7 @@ func newHTTPRuntime(cfg *config.Config, version string, configStore *config.Stor
 	})
 
 	return &httpRuntime{
+		indexers:                      indexers,
 		downloader:                    resolver.Downloader,
 		handler:                       router,
 		taskRuntimeService:            taskRuntimeService,
@@ -506,6 +542,10 @@ func jackettClientOf(tr tracker.Tracker) *jackett.Client {
 }
 
 func configureTaskRuntime(cfg *config.Config, configStore *config.Store, tr tracker.Tracker, torrent graphqlapi.TorrentClient, stashClient *stash.Client, taskEvents *taskruntime.TaskEventBus, managers ...*storage.Manager) graphqlapi.TaskRuntimeService {
+	return configureTaskRuntimeWithIndexers(cfg, configStore, tr, nil, torrent, stashClient, taskEvents, managers...)
+}
+
+func configureTaskRuntimeWithIndexers(cfg *config.Config, configStore *config.Store, tr tracker.Tracker, sources taskruntime.IndexerService, torrent graphqlapi.TorrentClient, stashClient *stash.Client, taskEvents *taskruntime.TaskEventBus, managers ...*storage.Manager) graphqlapi.TaskRuntimeService {
 	if torrent == nil {
 		logging.Infof("runtime: task runtime disabled because qBittorrent client is not available")
 		return nil
@@ -523,6 +563,7 @@ func configureTaskRuntime(cfg *config.Config, configStore *config.Store, tr trac
 		tr,
 		torrent,
 		eventingStore,
+		taskruntime.WithIndexers(sources),
 		taskruntime.WithSourcingRetryInterval(func() time.Duration {
 			current := cfg
 			if configStore != nil {

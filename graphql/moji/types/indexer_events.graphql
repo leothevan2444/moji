@@ -1,0 +1,9 @@
+extend type Subscription { indexerEvents: IndexerEvent! }
+
+"Invalidation only: reread the relevant bounded snapshot after READY or a change."
+type IndexerEvent {
+  streamId: String!
+  sequence: Long!
+  kind: IndexerEventKind!
+}
+enum IndexerEventKind { READY CONFIGURATION CATALOG SITE CACHE }

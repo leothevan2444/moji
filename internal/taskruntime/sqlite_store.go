@@ -3,6 +3,7 @@ package taskruntime
 import (
 	"context"
 	"database/sql"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"strings"
@@ -260,6 +261,10 @@ SELECT
 FROM tasks`
 
 type sqliteTaskRow struct {
+	SelectedResourceID      sql.NullString `db:"selected_resource_id"`
+	IndexerResourceJSON     sql.NullString `db:"indexer_resource_json"`
+	IndexerSelectionVersion sql.NullInt64  `db:"indexer_selection_version"`
+	SourceEvidenceJSON      sql.NullString `db:"source_evidence_json"`
 	CheckpointVersion       int            `db:"checkpoint_version"`
 	FilePlanVersion         int            `db:"file_plan_version"`
 	Revision                int64          `db:"revision"`
@@ -370,6 +375,30 @@ func (r sqliteTaskRow) toTask() (*Task, error) {
 			Seeders:   r.SelectedSeeders,
 			Peers:     r.SelectedPeers,
 		},
+	}
+	if r.IndexerSelectionVersion.Valid {
+		if r.IndexerSelectionVersion.Int64 != 1 {
+			return nil, fmt.Errorf("taskruntime: unsupported selected resource version")
+		}
+		task.SelectedResourceID = r.SelectedResourceID.String
+		if r.IndexerResourceJSON.Valid {
+			if len(r.IndexerResourceJSON.String) > 256<<10 {
+				return nil, fmt.Errorf("taskruntime: oversized accepted resource")
+			}
+			if err := json.Unmarshal([]byte(r.IndexerResourceJSON.String), &task.IndexerResource); err != nil || task.IndexerResource == nil || task.IndexerResource.Validate() != nil || task.IndexerResource.Ref.ID != task.SelectedResourceID {
+				return nil, fmt.Errorf("taskruntime: invalid accepted indexer resource")
+			}
+		}
+	}
+	if r.SourceEvidenceJSON.Valid {
+		if err := json.Unmarshal([]byte(r.SourceEvidenceJSON.String), &task.Candidate.Source); err != nil || task.Candidate.Source == nil || task.Candidate.Source.Version != 1 {
+			return nil, fmt.Errorf("taskruntime: unsupported indexer provenance for task %q", r.ID)
+		}
+	}
+	if r.IndexerSelectionVersion.Valid {
+		if err := validateSelectedResource(task); err != nil {
+			return nil, err
+		}
 	}
 	if task.Source == "" {
 		task.Source = TaskSourceManual
