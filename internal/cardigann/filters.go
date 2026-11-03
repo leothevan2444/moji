@@ -82,11 +82,7 @@ func ApplyFilters(ctx context.Context, data string, filters []Filter, fc FilterC
 		renderArg := func(i int) (string, error) { return renderText(ctx, arg(i), fc.Variables) }
 		switch filter.Name {
 		case "querystring":
-			u, err := url.Parse(html.UnescapeString(data))
-			if err != nil {
-				return "", fmt.Errorf("invalid querystring input")
-			}
-			data = u.Query().Get(arg(0))
+			data = queryStringFilter(data, arg(0))
 		case "regexp":
 			re, err := boundedRegex(arg(0))
 			if err != nil {
@@ -150,9 +146,9 @@ func ApplyFilters(ctx context.Context, data string, filters []Filter, fc FilterC
 				data += text
 			}
 		case "tolower":
-			data = strings.ToLower(data)
+			data = filterLower(data)
 		case "toupper":
-			data = strings.ToUpper(data)
+			data = filterUpper(data)
 		case "htmlencode":
 			data = htmlEncodeFilter(data)
 		case "htmldecode":
@@ -195,12 +191,7 @@ func ApplyFilters(ctx context.Context, data string, filters []Filter, fc FilterC
 			}
 			data = formatFilterDate(parsed)
 		case "validfilename":
-			data = strings.Map(func(r rune) rune {
-				if unicode.IsControl(r) || strings.ContainsRune(`<>:"/\|?*`, r) {
-					return '_'
-				}
-				return r
-			}, data)
+			data = validFilenameFilter(data)
 		case "diacritics":
 			data = norm.NFC.String(strings.Map(func(r rune) rune {
 				if unicode.Is(unicode.Mn, r) {
@@ -242,7 +233,7 @@ func ApplyFilters(ctx context.Context, data string, filters []Filter, fc FilterC
 					}
 				}
 			}
-			data = strings.Join(matches, ", ")
+			data = strings.Join(matches, ",")
 		case "hexdump", "strdump":
 			// Debug-only filters preserve the value. Response bodies are never
 			// emitted to logs by the interpreter, even in debug mode.
@@ -255,7 +246,7 @@ func ApplyFilters(ctx context.Context, data string, filters []Filter, fc FilterC
 }
 
 func wordTokens(s string) []string {
-	return strings.FieldsFunc(strings.ToLower(s), func(r rune) bool { return unicode.IsSpace(r) || strings.ContainsRune(",/)(.;[]\"|:", r) })
+	return strings.FieldsFunc(filterLower(s), func(r rune) bool { return strings.ContainsRune(", /)(.;[]\"|:", r) })
 }
 
 func jsonScalarText(value any) string {

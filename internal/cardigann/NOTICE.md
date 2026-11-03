@@ -9,6 +9,7 @@ Fixtures in this package are synthetic unless individually attributed.
 
 The andmatch row-filter semantics, query flags/IMDb short ID, checkbox values,
 single-UTF-16-character split/trim semantics, HTML entity spelling,
+query-string first-value decoding, invariant casing and validate tokenization,
 and simpleCaptcha form protocol were checked
 against Jackett/Jackett at cfdc645711c487d05cb55932e394b2370154d81e:
 https://github.com/Jackett/Jackett/blob/cfdc645711c487d05cb55932e394b2370154d81e/src/Jackett.Common/Indexers/Definitions/CardigannIndexer.cs
@@ -23,6 +24,10 @@ https://github.com/Jackett/Jackett/blob/cfdc645711c487d05cb55932e394b2370154d81e
 This is a host default, separate from dynamically downloaded site definitions.
 The comparison verifies exact URI parameters; it does not probe those trackers'
 current availability.
+
+validfilename follows the native Path.GetInvalidFileNameChars contract, which
+differs between Unix and Windows. Actual interpreter cases use the pinned Linux
+reference; this filter is separate from Moji's validation of filesystem paths.
 
 The BMP boundaries used for the IsCyrillic and IsCJKUnifiedIdeographs regular
 expression aliases follow dotnet/runtime v9.0.0 RegexCharClass.cs:

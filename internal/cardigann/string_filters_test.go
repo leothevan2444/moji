@@ -2,8 +2,41 @@ package cardigann
 
 import (
 	"context"
+	"runtime"
 	"testing"
 )
+
+func TestInvariantFilterCaseAndValidationTokens(t *testing.T) {
+	for _, test := range []struct {
+		name, input, want string
+		args              Arguments
+	}{
+		{"tolower", "Iİıi ßẞ Σςσ Éé 𐐀", "iİıi ßß σςσ éé 𐐨", nil},
+		{"toupper", "Iİıi ßẞ Σςσ Éé 𐐨", "IİıI ßẞ ΣΣΣ ÉÉ 𐐀", nil},
+		{"validate", "Action / Drama,Other", "drama,action", Arguments{"Drama, Action Drama"}},
+		{"validate", "Action\tDrama", "", Arguments{"Drama, Action"}},
+		{"validate", "Action\nDrama", "", Arguments{"Drama, Action"}},
+	} {
+		got, err := ApplyFilters(context.Background(), test.input, []Filter{{Name: test.name, Args: test.args}}, FilterContext{})
+		if err != nil || got != test.want {
+			t.Fatalf("%s: got %q, %v; want %q", test.name, got, err, test.want)
+		}
+	}
+}
+
+func TestValidFilenameFilterUsesHostCharacterSet(t *testing.T) {
+	input := "a<>:\"/\\|?*\t\x00b"
+	want := "a<>:\"_\\|?*\t_b"
+	if runtime.GOOS == "windows" {
+		want = "a___________b"
+	}
+	if got := validFilenameFilter(input); got != want {
+		t.Fatalf("%s file-name filter: got %q, want %q", runtime.GOOS, got, want)
+	}
+	if got := validFilenameFilter(""); got != "_" {
+		t.Fatalf("empty file-name filter returned %q", got)
+	}
+}
 
 func TestStringFiltersUseFirstUTF16CodeUnit(t *testing.T) {
 	for _, test := range []struct {

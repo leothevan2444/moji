@@ -2,11 +2,47 @@ package cardigann
 
 import (
 	"fmt"
+	"runtime"
 	"strconv"
 	"strings"
+	"unicode"
 	"unicode/utf16"
 	"unicode/utf8"
 )
+
+func filterLower(data string) string {
+	return strings.Map(func(r rune) rune {
+		// Invariant .NET casing preserves dotted capital I and dotless small I.
+		if r == '\u0130' {
+			return r
+		}
+		return unicode.ToLower(r)
+	}, data)
+}
+
+func filterUpper(data string) string {
+	return strings.Map(func(r rune) rune {
+		if r == '\u0131' {
+			return r
+		}
+		return unicode.ToUpper(r)
+	}, data)
+}
+
+func validFilenameFilter(data string) string {
+	data = strings.Map(func(r rune) rune {
+		// Path.GetInvalidFileNameChars is host-specific. On Unix it contains
+		// only NUL and slash; this filter is not Moji's file-path validator.
+		if r == 0 || r == '/' || runtime.GOOS == "windows" && (r < 32 || strings.ContainsRune(`<>:"\|?*`, r)) {
+			return '_'
+		}
+		return r
+	}, data)
+	if data == "" {
+		return "_"
+	}
+	return data
+}
 
 func splitFilter(data, separator string, index int) (string, error) {
 	first, _ := utf8.DecodeRuneInString(separator)

@@ -44,7 +44,11 @@ field chain. Literal selector text is not implicitly date-converted.
 String-filter cases check first-character multi-character arguments, valid
 supplementary-plane split/trim results, empty trim failure, and exact HTML
 entities (quotation marks, Latin-1, BMP and supplementary text).
-The 103 executed cases
+Query-string cases cover case-insensitive first-value lookup, semicolons,
+invalid percent/UTF-8 escapes, and HTML attribute entity decoding. Further
+cases check templated replacement, validate token order/delimiters, invariant
+Unicode case and the Linux validfilename character set.
+The 110 executed cases
 include four explicitly expected rejections (invalid TV episode, captcha
 answer rejected by the site, empty numeric ID/year and overflowing ID); they do not certify the community
 library's live availability. Additional failure/cancellation

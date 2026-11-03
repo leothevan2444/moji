@@ -52,9 +52,9 @@
 
 | 完整枚举/能力 | 当前证据 | 尚不能据此判定的范围 |
 | --- | --- | --- |
-| querystring, split, replace, trim, prepend, append | filters.go、string_filters.go 与回归；split/trim 多字符首 UTF-16 单元、负索引、补充平面和空 trim 已实际对照 | querystring/replace 全部参数与模板组合；会产生无配对代理项的 UTF-16 输出明确拒绝，不能算完整无效文本互操作。 |
+| querystring, split, replace, trim, prepend, append | filters.go、string_filters.go 与回归；split/trim 首 UTF-16 单元及 querystring 大小写/重复键/容错解码、HTML 属性、模板 replace 已实际对照 | 全部非 ASCII 键和模板组合；会产生无配对代理项的 UTF-16 输出明确拒绝，不能算完整无效文本互操作。 |
 | regexp, re_replace | 有预算的 regexp2；lookbehind、捕获组及字符类回归 | .NET 全部语法、超时/取消、替换组边界和不同过滤器列表的安装期验证。 |
-| tolower, toupper, diacritics, validfilename | filters.go 的字符串/正规化分支；部分变音符测试 | 文化大小写、.NET UTF-16 与文件名非法字符的逐项语义。 |
+| tolower, toupper, diacritics, validfilename | filters.go 的字符串/正规化分支；不变文化土耳其 I/希腊/补充平面与 Linux 文件名字符集实际对照；部分变音符测试 | 其他文化、Unicode 版本/UTF-16 及 Windows 实际运行；Moji 文件路径安全验证不归此规则过滤器。 |
 | urlencode, urldecode, htmlencode, htmldecode | .NET 旧编码完整 BMP/字节摘要见请求复核；声明编码回归；HTML 引号/Latin-1/BMP/补充平面 entity 实际对照与往返 | URL 非法输入、所有 IANA charset 与全部 HTML 解码宽松规则。 |
 | dateparse, timeparse, timeago, reltime, fuzzytime | dates.go、固定 Now 的离线样本 | 上游实际相对时钟、日期文化/时区/歧义格式全集。 |
 | jsonjoinarray, validate | JSONPath 与 validate 样本 | JSON null/非数组、动态参数及所有上游大小写/顺序语义。 |
@@ -153,6 +153,16 @@
 执行过滤器回归时发现工具缺陷：两次 compare.py 若共用 reference_root，会覆盖同名 scenario/result 文件。实际同时运行整组和 HTML 专项曾让 tested-download/HTML 场景读到其他场景的结果，旧 `/tmp/moji-indexer-diff-filter-tail-final.json` 与 `/tmp/moji-filter-tail-probes/html-control.json` 因此不作为可靠验收证据；没有把这一串场当成引擎失败或放宽差异匹配。
 
 新增可重复并发回归，以 barrier 保证两个调用都进入参考执行，旧代码确实仅使用一个 scenario 路径而失败。改为每次在参考根下分配独立临时目录，Moji/参考进程只读取该目录，结束或异常时清理；固定二进制仍可共享，不修改 runner 源码或要求重建参考。18 项比较器与 5 项参考锁检查通过。实际并发复核相同参考根的 tested-download 与 filter-querystring-html 均通过，0 未解释/1 原有已解释差异，报告 `/tmp/moji-indexer-diff-concurrent-control.json`；整组重新运行的结果另行记录。
+
+## 查询参数与剩余纯字符串过滤器（2026-11-04）
+
+基线 `dd79c20`，工具隔离修复单独提交为 `e42267c`。实际固定 Jackett 红报告复现五类差异：querystring 键应不区分大小写并取首值，不应重复 HTML 解码，允许分号及原样保留无效百分号/UTF-8；validate 仅按声明的固定字符集分词、保留参数顺序并以不带空格的逗号输出；validfilename 应按宿主原生字符集而非固定 Windows 集合；不变文化的土耳其 I 大小写应保留特定字符。普通模板 replace 实际已一致，保留控制场景，没有为其引入无关改动。源码依据为固定 ParseUtil.GetArgumentFromQueryString、StringUtil.MakeValidFileName 与 CardigannIndexer 的 applyFilters。
+
+新增 querystring_filter.go，按原始查询串取值、容错 URI 解码、保留同名首个空值；HTML 属性已在解析层完成 entity 解码，新 HTML 专项确认处理次序。tolower/toupper/validate 共用不变文化映射，保留 dotted capital I/dotless small I；validate 使用明确分隔符和原参数顺序去重。validfilename 依据 Unix/Windows 原生字符语义，空输出返回 `_`；这只是规则字段转换，不替代 Moji 的路径/种子校验。
+
+新增七条正式场景，querystring 含 17 种输入，另有 HTML 属性、模板 replace、validate、Linux 文件名和大小写。隔离后整组实际 110/110（106 正常、4 精确预期拒绝），0 未解释/5 原有解释，报告 `/tmp/moji-indexer-diff-filter-tail-isolated-final.json`。同一参考根并发专项亦通过，18 项比较器、5 项依赖锁检查、完整 Go、cardigann/indexer 完整 race 和相关 vet 通过。两个旧单测对 querystring HTML 解码及 validate 空格的预期经真实上游证据纠正；无新增比较例外、SDK/runner/锁修改。
+
+本轮没有 API/UI/schema/Load 变化，不重复 Web、全库或镜像；Windows 分支没有 Windows .NET 实测，不把 Linux 证据扩大。实际站点、全部非 ASCII 键、其他文化/Unicode 版本和相对日期仍需按 R-004 收尾。
 
 ## 附件缓存负载与取消测量
 

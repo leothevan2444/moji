@@ -1,0 +1,40 @@
+{
+  "definitionFile": "definition.yml",
+  "query": {
+    "mode": "search",
+    "keywords": "ABCD-123",
+    "categories": [
+      2000
+    ],
+    "limit": 100,
+    "offset": 0
+  },
+  "settings": {},
+  "authenticate": false,
+  "fetch": true,
+  "now": "2026-11-03T00:00:00Z",
+  "responses": [
+    {
+      "method": "GET",
+      "path": "/search",
+      "status": 200,
+      "headers": {
+        "Content-Type": [
+          "application/json"
+        ]
+      },
+      "bodyText": "{\"data\": [{\"name\": \"ABCD-123 0\", \"url\": \"/file.torrent?id=0\", \"stamp\": \"a<>:\\\"/\\\\|?*b\"}, {\"name\": \"ABCD-123 1\", \"url\": \"/file.torrent?id=1\", \"stamp\": \"a\\u0000b\"}, {\"name\": \"ABCD-123 2\", \"url\": \"/file.torrent?id=2\", \"stamp\": \"a\\tb\"}, {\"name\": \"ABCD-123 3\", \"url\": \"/file.torrent?id=3\", \"stamp\": \"a\\u0085b\"}, {\"name\": \"ABCD-123 4\", \"url\": \"/file.torrent?id=4\", \"stamp\": \"\"}, {\"name\": \"ABCD-123 5\", \"url\": \"/file.torrent?id=5\", \"stamp\": \"normal.name\"}]}"
+    },
+    {
+      "method": "GET",
+      "path": "/file.torrent",
+      "status": 200,
+      "headers": {
+        "Content-Type": [
+          "application/x-bittorrent"
+        ]
+      },
+      "bodyText": "d4:infod4:name8:ABCD-1236:lengthi1eee"
+    }
+  ]
+}

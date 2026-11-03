@@ -1,0 +1,40 @@
+{
+  "definitionFile": "definition.yml",
+  "query": {
+    "mode": "search",
+    "keywords": "ABCD-123",
+    "categories": [
+      2000
+    ],
+    "limit": 100,
+    "offset": 0
+  },
+  "settings": {},
+  "authenticate": false,
+  "fetch": true,
+  "now": "2026-11-03T00:00:00Z",
+  "responses": [
+    {
+      "method": "GET",
+      "path": "/search",
+      "status": 200,
+      "headers": {
+        "Content-Type": [
+          "text/html"
+        ]
+      },
+      "bodyText": "<article><h2>ABCD-123</h2><a href=\"/file.torrent\">get</a><span data-url=\"/get?other=one&amp;ID=first&amp;id=second\">value</span></article>"
+    },
+    {
+      "method": "GET",
+      "path": "/file.torrent",
+      "status": 200,
+      "headers": {
+        "Content-Type": [
+          "application/x-bittorrent"
+        ]
+      },
+      "bodyText": "d4:infod4:name8:ABCD-1236:lengthi1eee"
+    }
+  ]
+}

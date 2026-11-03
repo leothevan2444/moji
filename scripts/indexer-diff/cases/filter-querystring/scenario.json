@@ -1,0 +1,40 @@
+{
+  "definitionFile": "definition.yml",
+  "query": {
+    "mode": "search",
+    "keywords": "ABCD-123",
+    "categories": [
+      2000
+    ],
+    "limit": 100,
+    "offset": 0
+  },
+  "settings": {},
+  "authenticate": false,
+  "fetch": true,
+  "now": "2026-11-03T00:00:00Z",
+  "responses": [
+    {
+      "method": "GET",
+      "path": "/search",
+      "status": 200,
+      "headers": {
+        "Content-Type": [
+          "application/json"
+        ]
+      },
+      "bodyText": "{\"data\": [{\"name\": \"ABCD-123 0\", \"url\": \"/file.torrent?id=0\", \"stamp\": \"https://site.invalid/get?ID=one&id=two#end\"}, {\"name\": \"ABCD-123 1\", \"url\": \"/file.torrent?id=1\", \"stamp\": \"/get?x=1&amp;id=two\"}, {\"name\": \"ABCD-123 2\", \"url\": \"/file.torrent?id=2\", \"stamp\": \"id=raw+value\"}, {\"name\": \"ABCD-123 3\", \"url\": \"/file.torrent?id=3\", \"stamp\": \"/get?id=one;two\"}, {\"name\": \"ABCD-123 4\", \"url\": \"/file.torrent?id=4\", \"stamp\": \"/get?id=bad%zz\"}, {\"name\": \"ABCD-123 5\", \"url\": \"/file.torrent?id=5\", \"stamp\": \"/get?id\"}, {\"name\": \"ABCD-123 6\", \"url\": \"/file.torrent?id=6\", \"stamp\": \"/get?ID=first&id=second\"}, {\"name\": \"ABCD-123 7\", \"url\": \"/file.torrent?id=7\", \"stamp\": \"/get?id=one+two\"}, {\"name\": \"ABCD-123 8\", \"url\": \"/file.torrent?id=8\", \"stamp\": \"/get?id=one%2Btwo\"}, {\"name\": \"ABCD-123 9\", \"url\": \"/file.torrent?id=9\", \"stamp\": \"/get?id=%FF\"}, {\"name\": \"ABCD-123 10\", \"url\": \"/file.torrent?id=10\", \"stamp\": \"/get?id=%E4%B8%AD\"}, {\"name\": \"ABCD-123 11\", \"url\": \"/file.torrent?id=11\", \"stamp\": \"/get?id=%E4%B8\"}, {\"name\": \"ABCD-123 12\", \"url\": \"/file.torrent?id=12\", \"stamp\": \"/get?i%64=encoded\"}, {\"name\": \"ABCD-123 13\", \"url\": \"/file.torrent?id=13\", \"stamp\": \"/get?ID=&id=second\"}, {\"name\": \"ABCD-123 14\", \"url\": \"/file.torrent?id=14\", \"stamp\": \"/get?id=%2f%zz%2b+\"}, {\"name\": \"ABCD-123 15\", \"url\": \"/file.torrent?id=15\", \"stamp\": \"/get?\\u0130D=dotted&id=normal\"}, {\"name\": \"ABCD-123 16\", \"url\": \"/file.torrent?id=16\", \"stamp\": \"/get?\\u0131d=dotless&id=normal\"}]}"
+    },
+    {
+      "method": "GET",
+      "path": "/file.torrent",
+      "status": 200,
+      "headers": {
+        "Content-Type": [
+          "application/x-bittorrent"
+        ]
+      },
+      "bodyText": "d4:infod4:name8:ABCD-1236:lengthi1eee"
+    }
+  ]
+}

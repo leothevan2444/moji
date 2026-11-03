@@ -1,0 +1,40 @@
+{
+  "definitionFile": "definition.yml",
+  "query": {
+    "mode": "search",
+    "keywords": "ABCD-123",
+    "categories": [
+      2000
+    ],
+    "limit": 100,
+    "offset": 0
+  },
+  "settings": {},
+  "authenticate": false,
+  "fetch": true,
+  "now": "2026-11-03T00:00:00Z",
+  "responses": [
+    {
+      "method": "GET",
+      "path": "/search",
+      "status": 200,
+      "headers": {
+        "Content-Type": [
+          "application/json"
+        ]
+      },
+      "bodyText": "{\"data\": [{\"name\": \"ABCD-123 0\", \"url\": \"/file.torrent?id=0\", \"stamp\": \"I\\u0130\\u0131i \\u00df\\u1e9e \\u03a3\\u03c2\\u03c3 \\u00c9\\u00e9 \\u0391\\u0392\\u0393 \\ud801\\udc00\"}, {\"name\": \"ABCD-123 1\", \"url\": \"/file.torrent?id=1\", \"stamp\": \"ABCD-123 \\u4e2d\\u6587\"}]}"
+    },
+    {
+      "method": "GET",
+      "path": "/file.torrent",
+      "status": 200,
+      "headers": {
+        "Content-Type": [
+          "application/x-bittorrent"
+        ]
+      },
+      "bodyText": "d4:infod4:name8:ABCD-1236:lengthi1eee"
+    }
+  ]
+}
