@@ -136,6 +136,16 @@
 
 命令为先 `go test -c`，再显式 `-test.run=^$ -test.bench=^BenchmarkArtifactCache$ -test.benchtime=100x -test.benchmem`，取消项同样执行 `^BenchmarkArtifactCancellation64$`；`GOCACHE=/tmp/moji-go-cache`。报告 `/tmp/moji-artifact-performance.json`、`/tmp/moji-artifact-cancellation-performance.log`；五项各 1 次 race probe 均通过。该测量证明合成附件处理与预算，不代表网络延迟、真实站点、完整任务或任意规模的内存保证。
 
+## 内置来源完整任务队列负载
+
+新增 `cmd/moji/indexers_builtin_pipeline_test.go`，补足此前应用级安装/任务测试实际主要经过外部 Jackett 适配器的证据缺口。使用正式 `newIndexerRuntime`、临时 Manager 三库、运行时归档安装、网络配置及站点管理，关闭 Jackett；通过 taskflow 并发持久接收八个不同番号的任务，结束请求 context 后才启动正式双 worker。断言接收阶段零网络/零下载副作用。
+
+执行链为：持久队列 → 内置 Cardigann 解释器 → 正式受控 HTTP 与会话/节流 → 每站两条候选 → 获取 sample 和正式 torrent → 已有文件名 EXCLUDE 规则排除 sample → 将正确原始字节及内置来源保存到核心库 → 模拟 qB。模拟下载器在调用发生时重新读核心库，核对来源 kind/实例/规则修订及原始字节与提交数据一致；八项均只提交一次，每项搜索/两个附件各一次。规则只下载一次，不访问 Jackett。
+
+网络目标采用公开字面 IP，连接仅指向显式配置的本地自答 HTTP 代理；代理校验绝对请求目标，直接生成合成响应、不转发、不接触真实站点或外部 DNS。保持生产约一秒同源节流，没有测试专用放行或改变网络预算。
+
+独立测试二进制以 GOMAXPROCS=2 执行，八次接收到进入 DOWNLOADING 的观测 p50 12.135 s/p95 23.128 s，共 24 个 HTTP 和 8 次模拟 qB，峰值 RSS 37,540 KiB（36.66 MiB）。时间包含队列等待及最多约 100 ms 的状态观察间隔；只有八个样本，不能推算真实吞吐或可靠率。报告 `/tmp/moji-builtin-pipeline-measured.json`。正式测试、同一完整链路 `-race` 和相关包 vet 通过；初次测试误用来源字段名 `RuleRevision`，改为实际 `BundleRevision` 后编译及后续运行均通过。没有生产代码/API/UI 变更，本轮不重复无关 Web/差分矩阵；真实 qB/站点、TLS、真实代理/solver 和程序升级回退不由此证明。
+
 <a id="incremental-delivery"></a>
 ## 按用户要求分批提交
 
