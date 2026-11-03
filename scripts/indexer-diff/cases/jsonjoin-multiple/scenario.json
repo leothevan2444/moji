@@ -1,0 +1,40 @@
+{
+  "definitionFile": "definition.yml",
+  "query": {
+    "mode": "search",
+    "keywords": "ABCD-123",
+    "categories": [
+      2000
+    ],
+    "limit": 100,
+    "offset": 0
+  },
+  "settings": {},
+  "authenticate": false,
+  "fetch": true,
+  "now": "2026-11-03T00:00:00Z",
+  "responses": [
+    {
+      "method": "GET",
+      "path": "/search",
+      "status": 200,
+      "headers": {
+        "Content-Type": [
+          "application/json"
+        ]
+      },
+      "bodyText": "{\"data\": [{\"name\": \"ABCD-123 0\", \"url\": \"/file.torrent?id=0\", \"stamp\": \"{\\\"values\\\": [\\\"a\\\", \\\"b\\\"]}\"}, {\"name\": \"ABCD-123 1\", \"url\": \"/file.torrent?id=1\", \"stamp\": \"{\\\"values\\\": []}\"}, {\"name\": \"ABCD-123 2\", \"url\": \"/file.torrent?id=2\", \"stamp\": \"{\\\"values\\\": null}\"}, {\"name\": \"ABCD-123 3\", \"url\": \"/file.torrent?id=3\", \"stamp\": \"{\\\"values\\\": \\\"text\\\"}\"}, {\"name\": \"ABCD-123 4\", \"url\": \"/file.torrent?id=4\", \"stamp\": \"{\\\"values\\\": 12}\"}, {\"name\": \"ABCD-123 5\", \"url\": \"/file.torrent?id=5\", \"stamp\": \"{\\\"values\\\": {\\\"z\\\": 1, \\\"a\\\": 2}}\"}, {\"name\": \"ABCD-123 6\", \"url\": \"/file.torrent?id=6\", \"stamp\": \"{}\"}, {\"name\": \"ABCD-123 7\", \"url\": \"/file.torrent?id=7\", \"stamp\": \"{\\\"values\\\": [true, false, null, 12, 1.2]}\"}, {\"name\": \"ABCD-123 8\", \"url\": \"/file.torrent?id=8\", \"stamp\": \"{\\\"values\\\": [{\\\"z\\\": 1, \\\"a\\\": 2}, [\\\"a\\\", \\\"b\\\"]]}\"}, {\"name\": \"ABCD-123 9\", \"url\": \"/file.torrent?id=9\", \"stamp\": \"[{\\\"values\\\": [\\\"wrong-root\\\"]}]\"}, {\"name\": \"ABCD-123 10\", \"url\": \"/file.torrent?id=10\", \"stamp\": \"{\\\"values\\\": [9223372036854775807, 123456789012345678901234567890]}\"}]}"
+    },
+    {
+      "method": "GET",
+      "path": "/file.torrent",
+      "status": 200,
+      "headers": {
+        "Content-Type": [
+          "application/x-bittorrent"
+        ]
+      },
+      "bodyText": "d4:infod4:name8:ABCD-1236:lengthi1eee"
+    }
+  ]
+}

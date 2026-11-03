@@ -206,25 +206,11 @@ func ApplyFilters(ctx context.Context, data string, filters []Filter, fc FilterC
 				return r
 			}, norm.NFD.String(data)))
 		case "jsonjoinarray":
-			var value any
-			if err := json.Unmarshal([]byte(data), &value); err != nil {
-				return "", fmt.Errorf("jsonjoinarray requires JSON")
-			}
-			path, err := jp.ParseString(arg(0))
+			var err error
+			data, err = jsonJoinArray(ctx, data, arg(0), arg(1))
 			if err != nil {
 				return "", err
 			}
-			var parts []string
-			for _, item := range path.Get(value) {
-				if items, ok := item.([]any); ok {
-					for _, item := range items {
-						parts = append(parts, jsonScalarText(item))
-					}
-				} else {
-					parts = append(parts, jsonScalarText(item))
-				}
-			}
-			data = strings.Join(parts, arg(1))
 		case "validate":
 			allowed := wordTokens(arg(0))
 			actual := wordTokens(data)

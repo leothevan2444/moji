@@ -57,7 +57,7 @@
 | tolower, toupper, diacritics, validfilename | filters.go 的字符串/正规化分支；不变文化土耳其 I/希腊/补充平面与 Linux 文件名字符集实际对照；部分变音符测试 | 其他文化、Unicode 版本/UTF-16 及 Windows 实际运行；Moji 文件路径安全验证不归此规则过滤器。 |
 | urlencode, urldecode, htmlencode, htmldecode | .NET 旧编码完整 BMP/字节摘要见请求复核；声明编码回归；HTML 引号/Latin-1/BMP/补充平面 entity 实际对照与往返 | URL 非法输入、所有 IANA charset 与全部 HTML 解码宽松规则。 |
 | dateparse, timeparse, timeago, reltime, fuzzytime | dates.go/relative_dates.go；绝对日期实际场景，timeago/reltime 与上游原函数两组固定时钟 38 输入；fuzzy ago 共用间隔 | 其他 fuzzy 日历推断、实际宿主时区/DST、日期文化及歧义格式。辅助函数对照不计为完整搜索场景。 |
-| jsonjoinarray, validate | JSONPath 与 validate 样本 | JSON null/非数组、动态参数及所有上游大小写/顺序语义。 |
+| jsonjoinarray, validate | 单 token 子节点枚举、null/标量空结果、对象声明顺序、嵌套 JSON/日期与大整数实际对照；validate 固定分隔符/顺序去重实际对照 | 所有 JSONPath 方言、动态参数组合及 JSON.NET 非标准 JSON 输入；不将样本扩大为全部类型兼容。 |
 | hexdump, strdump | 保留输入的分支，无站点正文日志副作用 | 不表示提供了上游调试日志；这是脱敏诊断策略。 |
 | .Config/.Query/.Result/.Categories/.Today，if/else/range、逻辑/比较/join/re_replace | template.go、template_test.go、实际结构化查询/请求场景；编译/步数/字节/深度预算 | 日期默认、查询派生、真假值和枚举/函数组合还未完整上游认证；不暴露任意 Go 方法或脚本执行。 |
 
@@ -175,6 +175,14 @@
 参考新增固定时钟入口，必须重建：最新 `/tmp/moji-indexer-diff-reference-8` 在固定 SDK、原归档及三个依赖锁下 restore/build 成功，31 个 DLL 指纹验证通过；旧 reference-6 被 provenance 拒绝。准备时修正 runner 通过 Value<string> 读取日期 token 会丢子秒的问题，改为保留 DateTime ticks 后在全新目录重建；未改上游解析类。完整 Go、cardigann/indexer/回放 CLI 的 race 与 vet、20 项比较器及 5 项依赖锁检查通过。兼容 CI 追加独立辅助对照步骤及单独报告制品，不增加生产依赖；远端 Actions 尚未执行。
 
 本轮未改 API/UI/schema/Load，不重复 Web、全库静态或镜像；其他 fuzzy 日历、jsonjoinarray 空/非数组及来源/许可等未完成项仍由 R-004 跟踪。没有实际站点、配置、数据库或下载器操作。
+
+### jsonjoinarray 子节点与数值（2026-11-04）
+
+固定 Jackett 实现是 JObject.Parse → SelectToken → 枚举选中 token 的子节点 → JToken.ToString → Join；原实现错误地允许数组根、多 token 展平和标量直接输出，还通过 float64 损失大整数。真实红报告 `/tmp/moji-jsonjoin-probes/extended-red.json` 复现上述差异；后续红报告确认嵌套 JSON 日期及 NEL 转义也不同。现用有序对象、保留数字词法和既有 JSONPath 的 Keyed 接口独立实现：空/null/标量没有子节点，多个匹配拒绝，属性按声明顺序输出，重复属性替换值而不移动位置；嵌套结构使用两空格缩进及 UTC 参考宿主日期表示，保留七位小数和日期种类后缀。没有复制上游代码或新增依赖。
+
+解码限制 64 层/50,000 节点并响应取消；单节点序列化及拼接含分隔符受 MaxTemplateBytes 限制，拼接前计入预算，防止大分隔符导致扩张。正式新增三个合成 HTTP 场景（14 行类型/数值、11 行多选择、3 行嵌套路径），专项和完整实际对照均通过：113/113（109 正常、4 精确预期拒绝），0 未解释/5 原有解释；报告 `/tmp/moji-indexer-diff-jsonjoin-final.json`，参考仍为校验后的 reference-8，无新增比较例外。固定语料只读检查找到两个 jsonjoinarray，均在 amigosshare.yml，用于字符串转义解码及 genres 拼接；未重跑未变化的静态 Load。
+
+本轮完整 Go、cardigann/indexer race 与相关 vet 通过。没有 API/UI/schema 改动，不重复 Web 或镜像；尚未证明全部 JSONPath 方言、非标准 JSON 语法、所有数值/文化/时区组合或真实站点。没有操作实际配置、数据库、站点或下载器。
 
 ## 附件缓存负载与取消测量
 
