@@ -1,0 +1,50 @@
+{
+  "definitionFile": "definition.yml",
+  "query": {
+    "mode": "movie",
+    "keywords": "",
+    "categories": [
+      2000
+    ],
+    "limit": 100,
+    "offset": 0,
+    "parameters": {
+      "IMDBID": "tt1234567",
+      "TMDBID": "1",
+      "TVDBID": "2",
+      "TVRageID": "3",
+      "TVMazeID": "4",
+      "DoubanID": "5",
+      "TraktID": "6",
+      "Genre": "Drama"
+    }
+  },
+  "settings": {},
+  "authenticate": false,
+  "fetch": true,
+  "now": "2026-11-03T00:00:00Z",
+  "responses": [
+    {
+      "method": "GET",
+      "path": "/search",
+      "status": 200,
+      "headers": {
+        "Content-Type": [
+          "application/json"
+        ]
+      },
+      "bodyText": "{\"data\":[{\"name\":\"ABCD-123\",\"url\":\"/file.torrent\"}]}"
+    },
+    {
+      "method": "GET",
+      "path": "/file.torrent",
+      "status": 200,
+      "headers": {
+        "Content-Type": [
+          "application/x-bittorrent"
+        ]
+      },
+      "bodyText": "d4:infod4:name8:ABCD-1236:lengthi1eee"
+    }
+  ]
+}

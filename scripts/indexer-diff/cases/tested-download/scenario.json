@@ -1,0 +1,107 @@
+{
+  "definitionFile": "definition.yml",
+  "query": {
+    "mode": "search",
+    "keywords": "ABCD-123",
+    "categories": [
+      2000
+    ],
+    "limit": 100,
+    "offset": 0
+  },
+  "settings": {},
+  "authenticate": false,
+  "fetch": true,
+  "now": "2026-11-03T00:00:00Z",
+  "responses": [
+    {
+      "method": "GET",
+      "path": "/search",
+      "status": 200,
+      "headers": {
+        "Content-Type": [
+          "application/json"
+        ]
+      },
+      "bodyText": "{\"data\": [{\"name\": \"ABCD-123\", \"url\": \"/details?id=1\"}]}"
+    },
+    {
+      "method": "GET",
+      "path": "/details",
+      "status": 200,
+      "headers": {
+        "Content-Type": [
+          "text/html"
+        ]
+      },
+      "bodyText": "<a class=\"download\" href=\"/file.torrent\">download</a>"
+    },
+    {
+      "method": "GET",
+      "path": "/file.torrent",
+      "status": 200,
+      "headers": {
+        "Content-Type": [
+          "application/x-bittorrent"
+        ]
+      },
+      "bodyText": "d4:infod4:name8:ABCD-1236:lengthi1eee"
+    }
+  ],
+  "expectedDifferences": [
+    {
+      "path": "/requests",
+      "moji": [
+        {
+          "method": "GET",
+          "url": "https://fixture.invalid/search?q=ABCD-123&category=film",
+          "body": "",
+          "headers": {}
+        },
+        {
+          "method": "GET",
+          "url": "https://fixture.invalid/details?id=1",
+          "body": "",
+          "headers": {}
+        },
+        {
+          "method": "GET",
+          "url": "https://fixture.invalid/file.torrent",
+          "body": "",
+          "headers": {
+            "referer": "https://fixture.invalid/details?id=1"
+          }
+        }
+      ],
+      "jackett": [
+        {
+          "method": "GET",
+          "url": "https://fixture.invalid/search?q=ABCD-123&category=film",
+          "body": "",
+          "headers": {}
+        },
+        {
+          "method": "GET",
+          "url": "https://fixture.invalid/details?id=1",
+          "body": "",
+          "headers": {}
+        },
+        {
+          "method": "GET",
+          "url": "https://fixture.invalid/file.torrent",
+          "body": "",
+          "headers": {}
+        },
+        {
+          "method": "GET",
+          "url": "https://fixture.invalid/file.torrent",
+          "body": "",
+          "headers": {
+            "referer": "https://fixture.invalid/file.torrent"
+          }
+        }
+      ],
+      "reason": "Moji reuses the validated torrent bytes instead of acquiring twice, and retains the originating details page Referer. Both artifact digests must still match."
+    }
+  ]
+}

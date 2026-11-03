@@ -1,0 +1,59 @@
+{
+  "definitionFile": "definition.yml",
+  "query": {
+    "mode": "search",
+    "keywords": "ABCD-123",
+    "categories": [
+      2000
+    ],
+    "limit": 100,
+    "offset": 0
+  },
+  "settings": {},
+  "authenticate": false,
+  "fetch": true,
+  "now": "2026-11-03T00:00:00Z",
+  "responses": [
+    {
+      "method": "GET",
+      "path": "/search",
+      "status": 200,
+      "headers": {
+        "Content-Type": [
+          "application/json"
+        ]
+      },
+      "bodyText": "{\"data\": [{\"name\": \"ABCD-123\", \"url\": \"/details?id=1\"}]}"
+    },
+    {
+      "method": "POST",
+      "path": "/prepare",
+      "status": 200,
+      "headers": {
+        "Content-Type": [
+          "text/html"
+        ]
+      },
+      "bodyText": "<a class=\"download\" href=\"/file.torrent\">download</a>"
+    },
+    {
+      "method": "GET",
+      "path": "/file.torrent",
+      "status": 200,
+      "headers": {
+        "Content-Type": [
+          "application/x-bittorrent"
+        ]
+      },
+      "bodyText": "d4:infod4:name8:ABCD-1236:lengthi1eee"
+    }
+  ],
+  "expectedDifferences": [
+    {
+      "path": "/requests/2/headers/referer",
+      "moji": "https://fixture.invalid/details?id=1",
+      "jackett": "https://fixture.invalid/file.torrent",
+      "reason": "Moji keeps the originating details page as Referer for a selected download; the upstream uses the selected URL itself."
+    }
+  ]
+}

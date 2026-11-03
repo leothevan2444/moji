@@ -1,0 +1,27 @@
+id: replay-movie-query
+name: Replay movie-query fixture
+description: Synthetic comparison fixture; no real website
+language: en-US
+type: public
+encoding: UTF-8
+testlinktorrent: false
+links: [https://fixture.invalid/]
+caps:
+  categories: {film: Movies/HD}
+  modes: {search: [q], movie-search: [q, imdbid, year]}
+search:
+  paths: [{path: /search, response: {type: json}}]
+  inputs:
+    q: '{{ .Keywords }}'
+    year: '{{ .Query.Year }}'
+    imdb: '{{ .Query.IMDBID }}'
+    short: '{{ .Query.IMDBIDShort }}'
+    category: '{{ join .Categories "," }}'
+  rows: {selector: data}
+  fields:
+    title: {selector: name}
+    category: {text: film}
+    size: {text: 1GB}
+    seeders: {text: 3}
+    leechers: {text: 2}
+    download: {selector: url}

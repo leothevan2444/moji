@@ -1,0 +1,54 @@
+{
+  "definitionFile": "definition.yml",
+  "query": {
+    "mode": "search",
+    "keywords": "ABCD-123",
+    "categories": [
+      2000
+    ],
+    "limit": 100,
+    "offset": 0
+  },
+  "settings": {
+    "username": "synthetic-user",
+    "password": "synthetic-password"
+  },
+  "authenticate": true,
+  "fetch": true,
+  "now": "2026-11-03T00:00:00Z",
+  "responses": [
+    {
+      "method": "GET",
+      "path": "/login",
+      "status": 200,
+      "headers": {
+        "Content-Type": [
+          "text/html"
+        ],
+        "Set-Cookie": [
+          "landing=synthetic; Path=/; Secure"
+        ]
+      },
+      "bodyText": "<form id='login' action='/submit'><input name='csrf' value='synthetic-token'><input name='username'><input name='password'><input name='answer'><span id='challenge'>What is 3 + 4?</span></form>"
+    },
+    {
+      "method": "POST",
+      "path": "/submit",
+      "status": 200,
+      "headers": {
+        "Content-Type": [
+          "text/html"
+        ],
+        "Set-Cookie": [
+          "session=synthetic; Path=/; Secure"
+        ]
+      },
+      "bodyText": "<p id='error'>Wrong captcha answer</p>"
+    }
+  ],
+  "challengeAnswer": "wrong-answer",
+  "expectedErrors": {
+    "moji": "site reported an error condition",
+    "jackett": "ExceptionWithConfigData: Error: Wrong captcha answer"
+  }
+}

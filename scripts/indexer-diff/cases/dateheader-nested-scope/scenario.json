@@ -1,0 +1,29 @@
+{
+  "definitionFile": "definition.yml",
+  "query": {
+    "mode": "search",
+    "keywords": "ABCD-123",
+    "categories": [
+      2000
+    ],
+    "limit": 100,
+    "offset": 0
+  },
+  "settings": {},
+  "authenticate": false,
+  "fetch": true,
+  "now": "2026-11-03T00:00:00Z",
+  "responses": [
+    {
+      "method": "GET",
+      "path": "/search",
+      "status": 200,
+      "headers": {
+        "Content-Type": [
+          "text/html"
+        ]
+      },
+      "bodyText": "<h3>Mon, 02 Nov 2026 00:00:00 +0000</h3><section><div><article><h2>ABCD-123</h2><a href='/file.torrent'>file</a></article></div></section>"
+    }
+  ]
+}

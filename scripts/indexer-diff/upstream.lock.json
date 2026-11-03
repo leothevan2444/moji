@@ -1,0 +1,11 @@
+{
+  "repository": "Jackett/Jackett",
+  "commit": "cfdc645711c487d05cb55932e394b2370154d81e",
+  "archiveSha256": "461dbcb4ea06b8e69d22164948be0886acb9a2f925f6c74c65c89bf217664540",
+  "sdkImage": "mcr.microsoft.com/dotnet/sdk@sha256:6125486580cdf529a2a337d51c5557af08eaa04ef08b04f5b1d5a94f6bec7f1a",
+  "nugetLocks": {
+    "moji-reference/packages.lock.json": "7c00b965bef6d01f0d3cdfa103e38cfb2e8eabb9d26520663af46b626efdcd0d",
+    "src/DateTimeRoutines/packages.lock.json": "1d31aaa524d1ce4a40c9d93b374d555d0005dd28499c84cf04d8eb50009c15a9",
+    "src/Jackett.Common/packages.lock.json": "c6ab5d8b8dfd0d596edbba0ab12edb77efa9b83a683e333ef8387fdfcf94dc70"
+  }
+}

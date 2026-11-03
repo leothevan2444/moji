@@ -1,0 +1,37 @@
+id: replay-captcha-image
+name: Replay login fixture
+description: Synthetic comparison fixture; no real website
+language: en-US
+type: private
+encoding: UTF-8
+testlinktorrent: false
+links: [https://fixture.invalid/]
+caps:
+  categories: {film: Movies/HD}
+  modes: {search: [q]}
+settings:
+  - {name: username, type: text}
+  - {name: password, type: password}
+login:
+  method: form
+  form: form#login
+  selectors: true
+  path: /login
+  inputs:
+    'input[name=username]': '{{ .Config.username }}'
+    'input[name=password]': '{{ .Config.password }}'
+  captcha: {type: image, selector: '#challenge', input: 'input[name=answer]'}
+  test: {path: /account, selector: '#member'}
+search:
+  paths: [{path: /search}]
+  inputs:
+    q: '{{ .Keywords }}'
+    category: '{{ join .Categories "," }}'
+  rows: {selector: article}
+  fields:
+    title: {selector: h2}
+    category: {text: film}
+    size: {text: 1GB}
+    seeders: {text: 3}
+    leechers: {text: 2}
+    download: {selector: a, attribute: href}

@@ -1,0 +1,27 @@
+id: replay-tv-daily
+name: Replay tv-daily fixture
+description: Synthetic comparison fixture; no real website
+language: en-US
+type: public
+encoding: UTF-8
+testlinktorrent: false
+links: [https://fixture.invalid/]
+caps:
+  categories: {tv: TV/HD}
+  modes: {search: [q], tv-search: [q, season, ep]}
+search:
+  paths: [{path: /search, response: {type: json}}]
+  inputs:
+    q: '{{ .Keywords }}'
+    season: '{{ .Query.Season }}'
+    ep: '{{ .Query.Ep }}'
+    derived: '{{ .Query.Episode }}'
+    category: '{{ join .Categories "," }}'
+  rows: {selector: data}
+  fields:
+    title: {selector: name}
+    category: {text: tv}
+    size: {text: 1GB}
+    seeders: {text: 3}
+    leechers: {text: 2}
+    download: {selector: url}

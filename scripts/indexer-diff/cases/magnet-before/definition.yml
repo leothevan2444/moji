@@ -1,0 +1,32 @@
+id: replay-magnet-before-download-before
+name: Replay download-before fixture
+description: Synthetic comparison fixture; no real website
+language: en-US
+type: public
+encoding: UTF-8
+testlinktorrent: false
+links: [https://fixture.invalid/]
+caps:
+  categories: {film: Movies/HD}
+  modes: {search: [q]}
+search:
+  paths: [{path: /search, response: {type: json}}]
+  inputs:
+    q: '{{ .Keywords }}'
+    category: '{{ join .Categories "," }}'
+  rows: {selector: data}
+  fields:
+    title: {selector: name}
+    category: {text: film}
+    size: {text: 1GB}
+    seeders: {text: 3}
+    leechers: {text: 2}
+    download: {selector: url}
+download:
+  before:
+    path: /prepare
+    method: post
+    inputs:
+      id: '{{ .DownloadUri.Query.id }}'
+  selectors:
+    - {selector: a.download, attribute: href, usebeforeresponse: true}

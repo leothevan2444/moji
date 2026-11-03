@@ -1,0 +1,94 @@
+{
+  "definitionFile": "definition.yml",
+  "query": {
+    "mode": "search",
+    "keywords": "ABCD-123",
+    "categories": [
+      2000
+    ],
+    "limit": 100,
+    "offset": 0
+  },
+  "settings": {
+    "username": "synthetic-user",
+    "password": "synthetic-password"
+  },
+  "authenticate": true,
+  "fetch": true,
+  "now": "2026-11-03T00:00:00Z",
+  "responses": [
+    {
+      "method": "GET",
+      "path": "/login",
+      "status": 200,
+      "headers": {
+        "Content-Type": [
+          "text/html"
+        ],
+        "Set-Cookie": [
+          "landing=synthetic; Path=/; Secure"
+        ]
+      },
+      "bodyText": "<form id='login' action='/submit'><input name='csrf' value='synthetic-token'><input name='username'><input name='password'><input name='answer'><img id='challenge' src='/captcha.png'></form>"
+    },
+    {
+      "method": "GET",
+      "path": "/captcha.png",
+      "status": 200,
+      "headers": {
+        "Content-Type": [
+          "image/png"
+        ]
+      },
+      "bodyFile": "captcha.png"
+    },
+    {
+      "method": "POST",
+      "path": "/submit",
+      "status": 200,
+      "headers": {
+        "Content-Type": [
+          "text/html"
+        ],
+        "Set-Cookie": [
+          "session=synthetic; Path=/; Secure"
+        ]
+      },
+      "bodyText": "ok"
+    },
+    {
+      "method": "GET",
+      "path": "/account",
+      "status": 200,
+      "headers": {
+        "Content-Type": [
+          "text/html"
+        ]
+      },
+      "bodyText": "<div id='member'>member</div>"
+    },
+    {
+      "method": "GET",
+      "path": "/search",
+      "status": 200,
+      "headers": {
+        "Content-Type": [
+          "text/html"
+        ]
+      },
+      "bodyText": "<div id='member'></div><article><h2>ABCD-123</h2><a href='/file.torrent'>download</a></article>"
+    },
+    {
+      "method": "GET",
+      "path": "/file.torrent",
+      "status": 200,
+      "headers": {
+        "Content-Type": [
+          "application/x-bittorrent"
+        ]
+      },
+      "bodyText": "d4:infod4:name8:ABCD-1236:lengthi1eee"
+    }
+  ],
+  "challengeAnswer": "7 + reply"
+}

@@ -1,0 +1,8 @@
+{
+  "repository": "Prowlarr/Indexers",
+  "commit": "5f5db4e58d06be18619c3a858b9a91ade6f341ca",
+  "directory": "definitions/v11",
+  "schemaVersion": 11,
+  "definitions": 579,
+  "archiveSha256": "b266646ab2662c260ac6b0fad5f99794b200784f3ac865b521820e8e6814a472"
+}
