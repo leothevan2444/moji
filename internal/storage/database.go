@@ -44,6 +44,7 @@ type Database struct {
 	Path           string
 	admission      chan struct{}
 	writerGate     chan struct{}
+	assetGate      chan struct{}
 	closeMu        sync.Mutex
 	closed         atomic.Bool
 	writes         atomic.Uint64
@@ -112,7 +113,7 @@ func Open(ctx context.Context, options Options) (*Database, error) {
 	if err = file.Close(); err != nil {
 		return nil, err
 	}
-	d := &Database{Path: path, admission: make(chan struct{}, options.WriteQueue), writerGate: make(chan struct{}, 1), busyTimeout: options.BusyTimeout}
+	d := &Database{Path: path, admission: make(chan struct{}, options.WriteQueue), writerGate: make(chan struct{}, 1), assetGate: make(chan struct{}, 1), busyTimeout: options.BusyTimeout}
 	open := func(readOnly bool) (*sqlx.DB, error) {
 		u := url.URL{Scheme: "file", Path: filepath.ToSlash(path)}
 		q := url.Values{}

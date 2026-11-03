@@ -39,6 +39,12 @@ type backupConnection interface {
 // Backup uses SQLite's incremental online backup API, not a filesystem copy of
 // an open WAL database. Only verified standalone snapshots receive manifests.
 func (d *Database) Backup(ctx context.Context, directory, reason string, protect bool, extra ...BackupFile) (manifest BackupManifest, err error) {
+	// Asset deletion cannot race the interval between the SQLite snapshot and
+	// copying its referenced immutable files. Normal database writes still run.
+	if err := d.acquireAssets(ctx); err != nil {
+		return manifest, err
+	}
+	defer d.releaseAssets()
 	if d.closed.Load() {
 		return manifest, ErrClosed
 	}
@@ -265,7 +271,7 @@ func VerifyBackup(ctx context.Context, manifestPath string) (BackupManifest, err
 			return saved, fmt.Errorf("storage: backup table count mismatch: %s", table)
 		}
 	}
-	if err := verifyArtifacts(manifestPath, saved); err != nil {
+	if err := verifyArtifacts(ctx, manifestPath, saved); err != nil {
 		return saved, err
 	}
 	return saved, nil

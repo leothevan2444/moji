@@ -228,7 +228,7 @@ func (m *Manager) Maintain(ctx context.Context, report func(MaintenanceResult)) 
 			if err == nil {
 				lastBackup = time.Now()
 				result.Backup = &snapshot
-				result.Err = errors.Join(result.Err, PruneBackups(m.BackupDirectory, time.Now().UTC()))
+				result.Err = errors.Join(result.Err, PruneBackupsContext(ctx, m.BackupDirectory, time.Now().UTC()))
 			}
 		}
 		if report != nil {

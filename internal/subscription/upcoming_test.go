@@ -3,11 +3,11 @@ package subscription
 import (
 	"context"
 	"errors"
+	"os"
 	"path/filepath"
 	"testing"
 	"time"
 
-	"github.com/jmoiron/sqlx"
 	"github.com/leothevan2444/moji/internal/config"
 	"github.com/leothevan2444/moji/internal/metadata"
 	"github.com/leothevan2444/moji/internal/performer"
@@ -177,15 +177,24 @@ func TestUpcomingManagedMigrationReopenPaginationAndCAS(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	// Construct the previous production schema as an isolated upgrade fixture.
-	err = manager.Core.WithWrite(ctx, func(tx *sqlx.Tx) error {
-		_, err := tx.Exec(`DROP TABLE subscription_upcoming_performers; DROP TABLE subscription_upcoming_releases; DELETE FROM schema_migrations WHERE version=3`)
-		return err
-	})
+	// Construct a genuine v2 core in this isolated fixture. Removing a middle
+	// migration ledger row leaves a gap once later migrations exist.
+	corePath := manager.Core.Path
+	if err = manager.Close(); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Remove(corePath); err != nil {
+		t.Fatal(err)
+	}
+	previous, err := storage.Open(ctx, storage.Options{Path: corePath, Durability: storage.Durable})
 	if err != nil {
 		t.Fatal(err)
 	}
-	if err = manager.Close(); err != nil {
+	if err := previous.Migrate(ctx, storage.CoreMigrations()[:2]); err != nil {
+		previous.Close()
+		t.Fatal(err)
+	}
+	if err := previous.Close(); err != nil {
 		t.Fatal(err)
 	}
 	manager, err = storage.OpenManager(ctx, storage.DefaultManagerOptions(dir))

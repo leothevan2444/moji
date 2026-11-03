@@ -1,6 +1,7 @@
 package storage
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -15,6 +16,10 @@ import (
 // the last 24 hourly, 14 daily and 8 weekly buckets. Unknown files are untouched.
 // Only a verified new backup should trigger pruning; errors stop deletion.
 func PruneBackups(directory string, now time.Time) error {
+	return PruneBackupsContext(context.Background(), directory, now)
+}
+
+func PruneBackupsContext(ctx context.Context, directory string, now time.Time) error {
 	entries, err := os.ReadDir(directory)
 	if os.IsNotExist(err) {
 		return nil
@@ -25,6 +30,9 @@ func PruneBackups(directory string, now time.Time) error {
 	// Resume only explicit prior prune intentions, never infer deletion from an
 	// orphan database/asset file.
 	for _, entry := range entries {
+		if err := ctx.Err(); err != nil {
+			return err
+		}
 		if entry.IsDir() || !strings.HasSuffix(entry.Name(), ".json.pruning") {
 			continue
 		}
@@ -105,7 +113,7 @@ func PruneBackups(directory string, now time.Time) error {
 		if digest != m.SHA256 || size != m.Bytes {
 			return fmt.Errorf("storage: refusing to prune modified backup: %s", m.Database)
 		}
-		if err := verifyArtifacts(r.path, m); err != nil {
+		if err := verifyArtifacts(ctx, r.path, m); err != nil {
 			return err
 		}
 		tombstone := r.path + ".pruning"

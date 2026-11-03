@@ -99,6 +99,16 @@ func (d *Database) backupArtifacts(ctx context.Context, snapshot, assets string,
 			files = append(files, BackupFile{Name: archive.Path, Path: filepath.Join(filepath.Dir(d.Path), archive.Path), ExpectedSHA256: archive.SHA256})
 		}
 	}
+	definitions, err := indexerDefinitionAssets(ctx, db, filepath.Dir(d.Path))
+	if err != nil {
+		return nil, err
+	}
+	for _, file := range definitions {
+		if err := regularGenerationFile(filepath.Dir(d.Path), file.Name); err != nil {
+			return nil, err
+		}
+	}
+	files = append(files, definitions...)
 	seen := map[string]bool{}
 	out := make([]BackupArtifact, 0, len(files))
 	for _, file := range files {
@@ -130,7 +140,7 @@ func (d *Database) backupArtifacts(ctx context.Context, snapshot, assets string,
 	}
 	return out, nil
 }
-func verifyArtifacts(manifestPath string, m BackupManifest) error {
+func verifyArtifacts(ctx context.Context, manifestPath string, m BackupManifest) error {
 	known := map[string]BackupArtifact{}
 	prefix := strings.TrimSuffix(m.Database, ".sqlite") + ".assets/"
 	for _, artifact := range m.Artifacts {
@@ -156,12 +166,12 @@ func verifyArtifacts(manifestPath string, m BackupManifest) error {
 	}
 	defer db.Close()
 	var exists int
-	if err := db.Get(&exists, "SELECT count(*) FROM sqlite_master WHERE type='table' AND name='history_archives'"); err != nil {
+	if err := db.GetContext(ctx, &exists, "SELECT count(*) FROM sqlite_master WHERE type='table' AND name='history_archives'"); err != nil {
 		return err
 	}
 	if exists > 0 {
 		var archives []struct{ Path, SHA256 string }
-		if err := db.Select(&archives, "SELECT path,sha256 FROM history_archives"); err != nil {
+		if err := db.SelectContext(ctx, &archives, "SELECT path,sha256 FROM history_archives"); err != nil {
 			return err
 		}
 		for _, archive := range archives {
@@ -172,5 +182,15 @@ func verifyArtifacts(manifestPath string, m BackupManifest) error {
 		}
 	}
 
+	definitions, err := indexerDefinitionAssets(ctx, db, "")
+	if err != nil {
+		return err
+	}
+	for _, file := range definitions {
+		artifact, ok := known[filepath.ToSlash(file.Name)]
+		if !ok || artifact.SHA256 != file.ExpectedSHA256 {
+			return fmt.Errorf("storage: backup is missing referenced indexer definition %q", file.Name)
+		}
+	}
 	return nil
 }
