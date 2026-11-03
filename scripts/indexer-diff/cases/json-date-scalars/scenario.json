@@ -1,0 +1,40 @@
+{
+  "definitionFile": "definition.yml",
+  "query": {
+    "mode": "search",
+    "keywords": "ABCD-123",
+    "categories": [
+      2000
+    ],
+    "limit": 100,
+    "offset": 0
+  },
+  "settings": {},
+  "authenticate": false,
+  "fetch": true,
+  "now": "2026-11-03T00:00:00Z",
+  "responses": [
+    {
+      "method": "GET",
+      "path": "/search",
+      "status": 200,
+      "headers": {
+        "Content-Type": [
+          "application/json"
+        ]
+      },
+      "bodyText": "{\"data\": [{\"name\": \"ABCD-123 0\", \"url\": \"/file.torrent?id=0\", \"stamp\": \"2024-10-30T10:11:12Z\"}, {\"name\": \"ABCD-123 1\", \"url\": \"/file.torrent?id=1\", \"stamp\": \"2024-10-30T10:11:12+05:30\"}, {\"name\": \"ABCD-123 2\", \"url\": \"/file.torrent?id=2\", \"stamp\": \"2024-10-30T10:11:12-03:30\"}, {\"name\": \"ABCD-123 3\", \"url\": \"/file.torrent?id=3\", \"stamp\": \"2024-10-30T10:11:12\"}, {\"name\": \"ABCD-123 4\", \"url\": \"/file.torrent?id=4\", \"stamp\": \"2024-10-30T10:11:12.1234567Z\"}, {\"name\": \"ABCD-123 5\", \"url\": \"/file.torrent?id=5\", \"stamp\": \"2024-10-30\"}, {\"name\": \"ABCD-123 6\", \"url\": \"/file.torrent?id=6\", \"stamp\": \"2024-02-30T10:11:12Z\"}, {\"name\": \"ABCD-123 7\", \"url\": \"/file.torrent?id=7\", \"stamp\": \"2024-10-30t10:11:12z\"}, {\"name\": \"ABCD-123 8\", \"url\": \"/file.torrent?id=8\", \"stamp\": \"2024-10-30T10:11:12.12345678Z\"}, {\"name\": \"ABCD-123 9\", \"url\": \"/file.torrent?id=9\", \"stamp\": \"2024-10-30 10:11:12\"}, {\"name\": \"ABCD-123 10\", \"url\": \"/file.torrent?id=10\", \"stamp\": \"2024-10-30T10:11:12+0530\"}, {\"name\": \"ABCD-123 11\", \"url\": \"/file.torrent?id=11\", \"stamp\": \"/Date(1730283072000)/\"}, {\"name\": \"ABCD-123 12\", \"url\": \"/file.torrent?id=12\", \"stamp\": \"/Date(1730283072000+0530)/\"}, {\"name\": \"ABCD-123 13\", \"url\": \"/file.torrent?id=13\", \"stamp\": \"2024-10-30T10:11:12z\"}, {\"name\": \"ABCD-123 14\", \"url\": \"/file.torrent?id=14\", \"stamp\": \"2024-10-30T10:11:12+05\"}, {\"name\": \"ABCD-123 15\", \"url\": \"/file.torrent?id=15\", \"stamp\": \"2024-10-30T10:11:12+05:\"}, {\"name\": \"ABCD-123 16\", \"url\": \"/file.torrent?id=16\", \"stamp\": \"2024-10-30T24:00:00Z\"}, {\"name\": \"ABCD-123 17\", \"url\": \"/file.torrent?id=17\", \"stamp\": \"2024-10-30T24:00:00.0000000Z\"}, {\"name\": \"ABCD-123 18\", \"url\": \"/file.torrent?id=18\", \"stamp\": \"2024-10-30T24:00:00.1Z\"}, {\"name\": \"ABCD-123 19\", \"url\": \"/file.torrent?id=19\", \"stamp\": \"2024-10-30T10:11:12Z \"}, {\"name\": \"ABCD-123 20\", \"url\": \"/file.torrent?id=20\", \"stamp\": \"/Date(-1)/\"}, {\"name\": \"ABCD-123 21\", \"url\": \"/file.torrent?id=21\", \"stamp\": \"0001-01-01T00:00:00+01:00\"}, {\"name\": \"ABCD-123 22\", \"url\": \"/file.torrent?id=22\", \"stamp\": \"9999-12-31T23:59:59-01:00\"}]}"
+    },
+    {
+      "method": "GET",
+      "path": "/file.torrent",
+      "status": 200,
+      "headers": {
+        "Content-Type": [
+          "application/x-bittorrent"
+        ]
+      },
+      "bodyText": "d4:infod4:name8:ABCD-1236:lengthi1eee"
+    }
+  ]
+}

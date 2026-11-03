@@ -39,6 +39,13 @@ The local schema compiler makes one documented compatibility amendment:
 download.selectors accepts the boolean usebeforeresponse supported by the
 upstream Cardigann SelectorField model. The upstream schema file is unchanged.
 
+JSON date-to-text compatibility was independently implemented with Go's time
+and regexp packages and checked against JSON.NET 13.0.3 (MIT):
+https://github.com/JamesNK/Newtonsoft.Json/blob/13.0.3/Src/Newtonsoft.Json/Utilities/DateTimeParser.cs
+https://github.com/JamesNK/Newtonsoft.Json/blob/13.0.3/Src/Newtonsoft.Json/Utilities/DateTimeUtils.cs
+No JSON.NET source or runtime is included in Moji. The fixed actual-interpreter
+tests cover the UTC-host scalar projection and its use by filters/array joins.
+
 Implementation dependencies:
 
 - goquery/cascadia: HTML parsing and CSS selection; BSD-3-Clause/BSD-2-Clause.

@@ -130,6 +130,14 @@
 
 初始 JSON 探针还识别出独立宿主行为：JSON.NET 会将 ISO 日期字符串读成日期类型，ToString 返回如 `10/30/2024 10:11:12`，而 Moji 当前保留原始 ISO 字符串。HTML 场景已隔离此因素，没有通过忽略差异获得通过；其 JSON 语义仍需单独修复/验收。旧 Go 风格日期 layout 被固定 v11 schema 明确拒绝，未放宽 schema 或将它计入合法 v11 通过样本。UTC 宿主对照不等于所有部署时区均已认证；真实日期、相对时钟和 JSON 类型转换边界继续由 R-004 跟踪。
 
+## JSON 日期标量取值
+
+基线 `631932c`，继续处理上节识别的差异。固定实际 Jackett 红报告确认 JSON.NET 在读取 JSON 时识别 ISO/Microsoft 日期，Cardigann 的 Value<string>()/数组拼接输出固定日期文本，之后才执行 case/filters。Moji 原先一直暴露原始字符串。另核对 JSON.NET 13.0.3 的 [DateTimeParser](https://github.com/JamesNK/Newtonsoft.Json/blob/13.0.3/Src/Newtonsoft.Json/Utilities/DateTimeParser.cs) 和 [DateTimeUtils](https://github.com/JamesNK/Newtonsoft.Json/blob/13.0.3/Src/Newtonsoft.Json/Utilities/DateTimeUtils.cs)，用 Go time/regexp 独立实现有界日期文本投影，未新增依赖或移植其源码。
+
+`jsonScalarText` 统一处理合法 ISO/微软日期，UTC 宿主文本格式为 MM/dd/yyyy HH:mm:ss；显式偏移先换算时刻，微软毫秒时间不重复套用后缀偏移。支持七位小数、合法午夜跨日和日期范围端点；纯日期、非大写 T、无效日历、八位小数等维持原文。字面 Text 与 HTML 不走这一 JSON 隐式投影；普通数值/布尔/null 处理不变。投影位于取值边界，不替换整个 JSON 树或声称提供 JSON.NET 的全部动态类型/比较器。
+
+新增五个实际场景：23 种原始日期/非日期值、数组拼接、case、jsonjoinarray、JSON 取值→日期 filter→date 字段；日期过滤器面对已转换文本的失败原文回退与最终发布时间一致。新增本地回归覆盖边界、字面 Text 不变及过滤器执行次序。完整实际差分 97/97（93 正常、4 精确预期拒绝），0 未解释/5 原有解释，报告 `/tmp/moji-indexer-diff-json-dates-final.json`；无新增比较例外或参考程序修改。完整 Go、cardigann/indexer 完整 race 与相关 vet 通过。仅引擎与测试/证据变更，不重复未受影响的 Web、静态全库和镜像；来源/许可、其他过滤器和动态日期比较、真实时区/站点等剩余范围仍归 R-004。
+
 ## 附件缓存负载与取消测量
 
 基线 `8c8bd52`，新增显式 `internal/indexer/artifact_performance_test.go`；不改生产缓存、API 或配置。Linux/amd64、Xeon E5-2673 v4、GOMAXPROCS=2，每项 100 次；输入是约 1 MiB 的合法合成 torrent，获取回调只提供内存字节，不访问 HTTP。普通测试已有预算/取消/迟到成功/关闭回归，本轮相关测试通过。

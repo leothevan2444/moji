@@ -263,6 +263,9 @@ func jsonScalarText(value any) string {
 		return ""
 	}
 	if s, ok := value.(string); ok {
+		if date, ok := jsonDateText(s); ok {
+			return date
+		}
 		return s
 	}
 	if b, ok := value.(bool); ok {

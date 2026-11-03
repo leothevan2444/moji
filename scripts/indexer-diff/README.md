@@ -38,7 +38,10 @@ Case-insensitive parameter names are checked against the real host query model.
 Date-filter cases compare explicit positive/negative offsets, seven fractional
 digits, an invalid internal-whitespace control, and the canonical .Result.date
 text. They check both intermediate strings and final publication timestamps.
-The 92 executed cases
+JSON date cases compare ISO/Microsoft date scalar projections across 23 valid
+and invalid inputs, arrays, case selection, jsonjoinarray and a filter/date
+field chain. Literal selector text is not implicitly date-converted.
+The 97 executed cases
 include four explicitly expected rejections (invalid TV episode, captcha
 answer rejected by the site, empty numeric ID/year and overflowing ID); they do not certify the community
 library's live availability. Additional failure/cancellation
