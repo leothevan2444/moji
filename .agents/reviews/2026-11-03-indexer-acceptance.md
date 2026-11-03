@@ -120,6 +120,22 @@
 
 未改生产代码、配置/API/UI，不重复此前已通过的完整 Go/Web/兼容套件；该证据补足搜索缓存和正常/429 gate 测量，不覆盖 torrent ArtifactCache、大型完整应用、TLS/DNS/代理/solver 实际网络或真实站点。后续仍按 R-004 的原始完整验收推进。
 
+## 附件缓存负载与取消测量
+
+基线 `8c8bd52`，新增显式 `internal/indexer/artifact_performance_test.go`；不改生产缓存、API 或配置。Linux/amd64、Xeon E5-2673 v4、GOMAXPROCS=2，每项 100 次；输入是约 1 MiB 的合法合成 torrent，获取回调只提供内存字节，不访问 HTTP。普通测试已有预算/取消/迟到成功/关闭回归，本轮相关测试通过。
+
+| 负载 | p50 | p95 | 获取回调/op | 最终缓存 |
+| --- | --- | --- | --- | --- |
+| 已热命中 | 0.431 ms | 1.616 ms | 0 | 1 条 / 1,048,803 B |
+| 每次清空后的冷获取 | 6.805 ms | 14.111 ms | 1 | 1 条 / 1,048,803 B |
+| 100 个不同原始附件（同 infohash、不同正文） | 5.946 ms | 8.144 ms | 1 | 63 条 / 66,074,589 B，低于 64 MiB |
+| 每批 8 个同资源调用方 | 13.784 ms | 18.019 ms | 1 | 100 个 locator 共用 1 个正文 / 1,048,803 B |
+| 64 个已准入获取任务取消到调用方及 worker 全退出 | 0.215 ms | 0.321 ms | 0（仅测取消） | 无 worker/等待者/失败缓存残留 |
+
+命中仍复制不可变正文；并发共享项包括刻意等待八个调用方加入、校验及独立复制的开销，检查各自 opaque ID 和完整字节。压力项使用相同 infohash 但不同原始正文，证明没有用 hash 将不同 torrent（可能包含不同 tracker）错误合并。四项获取基准单一测试进程峰值 RSS 150,540 KiB（147.01 MiB），不将 64 MiB 缓存预算当成进程上限；取消基准单独运行，计时排除准入准备。
+
+命令为先 `go test -c`，再显式 `-test.run=^$ -test.bench=^BenchmarkArtifactCache$ -test.benchtime=100x -test.benchmem`，取消项同样执行 `^BenchmarkArtifactCancellation64$`；`GOCACHE=/tmp/moji-go-cache`。报告 `/tmp/moji-artifact-performance.json`、`/tmp/moji-artifact-cancellation-performance.log`；五项各 1 次 race probe 均通过。该测量证明合成附件处理与预算，不代表网络延迟、真实站点、完整任务或任意规模的内存保证。
+
 <a id="incremental-delivery"></a>
 ## 按用户要求分批提交
 
