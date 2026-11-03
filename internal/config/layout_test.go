@@ -57,7 +57,7 @@ custom: {untouched: true}
 	if err != nil {
 		t.Fatal(err)
 	}
-	for _, expected := range []string{"config_version: 2", "indexers:", "query_order:", "downloader:", "metadata_priority:", "tasks:", "DEMOTE", "LOCK", "logging:", "untouched: true"} {
+	for _, expected := range []string{"config_version: 3", "indexers:", "query_order:", "downloader:", "metadata_priority:", "tasks:", "DEMOTE", "LOCK", "logging:", "untouched: true"} {
 		if !strings.Contains(string(data), expected) {
 			t.Fatalf("missing canonical field %s", expected)
 		}
@@ -91,7 +91,7 @@ custom: {untouched: true}
 }
 
 func TestLayoutRejectsMixedAndUnknownVersions(t *testing.T) {
-	for _, raw := range []string{"config_version: 3\n", "config_version: 2\nconnection: {}\n", "indexers: {}\n"} {
+	for _, raw := range []string{"config_version: 4\n", "config_version: 2\nconnection: {}\n", "indexers: {}\n"} {
 		var cfg Config
 		if err := yaml.Unmarshal([]byte(raw), &cfg); err == nil {
 			t.Fatalf("accepted ambiguous config %q", raw)

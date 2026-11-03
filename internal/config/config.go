@@ -385,6 +385,7 @@ type LoggingConfig struct {
 }
 
 type Config struct {
+	Indexers   IndexersConfig   `yaml:"indexers"`
 	Connection ConnectionConfig `yaml:"connection"`
 	Ingest     IngestConfig     `yaml:"ingest"`
 	Automation AutomationConfig `yaml:"automation"`

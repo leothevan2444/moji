@@ -1,9 +1,30 @@
 indexers:
+    # Definitions are downloaded from Settings > Indexers > Definition library.
+    # No built-in sites are enabled until you add and configure them.
+    builtin:
+        definitions:
+            source: prowlarr
+            schema_version: 11
+            check_interval_hours: 24
+            auto_update: false
+        instances: {}
+        network_profiles:
+            direct: {}
+        request_timeout_seconds: 30
+        site_timeout_seconds: 120
+        challenge_timeout_seconds: 90
     jackett:
-        url: http://host.docker.internal:9117
+        # Optional alternative or additional source. Enable after configuring it.
+        enabled: false
+        url: ""
         api_key: ""
         password: ""
     query_order: []
+    search_cache:
+        enabled: true
+        ttl_seconds: 300
+        empty_ttl_seconds: 30
+        max_size_mb: 32
 downloader:
     qbittorrent:
         url: http://host.docker.internal:8080
@@ -89,4 +110,4 @@ tasks:
                 enabled: true
                 clauses: []
     task_delete_policy: KEEP_ONLY
-config_version: 2
+config_version: 3

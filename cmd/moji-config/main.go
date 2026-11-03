@@ -26,6 +26,9 @@ func main() {
 
 func effective(cfg *config.Config) []byte {
 	copy := *cfg
+	copy.Indexers = copy.Indexers.Clone()
+	copy.Indexers.QueryOrder = append([]string{}, copy.Indexers.QueryOrder...)
+	copy.Indexers.Jackett.ExcludedIndexers = append([]string{}, copy.Indexers.Jackett.ExcludedIndexers...)
 	copy.System.Language = copy.System.EffectiveLanguage()
 	copy.System.ImageCache = copy.System.ImageCache.Normalize()
 	enabled := copy.System.ImageCache.EffectiveEnabled()

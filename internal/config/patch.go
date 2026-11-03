@@ -3,6 +3,7 @@ package config
 import (
 	"fmt"
 	"math"
+	"os"
 
 	"github.com/leothevan2444/moji/internal/durablefile"
 	"gopkg.in/yaml.v3"
@@ -12,8 +13,17 @@ import (
 // while holding the same lock used by all other settings writers. Lists replace.
 // It publishes neither memory nor disk state until validation and durable write succeed.
 func (s *Store) ApplyPatch(patch map[string]any) (*Config, error) {
+	for _, section := range []string{"instances", "network_profiles"} {
+		if _, present := patchValue(patch, "indexers", "builtin", section); present {
+			return nil, fmt.Errorf("%w: use scoped indexer commands", ErrInvalidSettings)
+		}
+	}
 	s.mu.Lock()
 	defer s.mu.Unlock()
+	return s.applyPatchLocked(patch)
+}
+
+func (s *Store) applyPatchLocked(patch map[string]any) (*Config, error) {
 	var root yaml.Node
 	if err := yaml.Unmarshal(s.saved, &root); err != nil {
 		return nil, err
@@ -22,6 +32,7 @@ func (s *Store) ApplyPatch(patch map[string]any) (*Config, error) {
 	if existingMapValue(top, "config_version") == nil {
 		canonicalizeConfigNode(top)
 	}
+	normalizeIndexerV3Node(top)
 	raw, err := yaml.Marshal(patch)
 	if err != nil {
 		return nil, err
@@ -31,6 +42,7 @@ func (s *Store) ApplyPatch(patch map[string]any) (*Config, error) {
 		return nil, err
 	}
 	mergePatchNode(top, documentNode(&delta))
+	normalizeIndexerV3Node(top)
 	data, err := yaml.Marshal(&root)
 	if err != nil {
 		return nil, err
@@ -42,12 +54,28 @@ func (s *Store) ApplyPatch(patch map[string]any) (*Config, error) {
 	if err := validatePatch(patch, next.cfg); err != nil {
 		return nil, fmt.Errorf("%w: %v", ErrInvalidSettings, err)
 	}
-	if err := durablefile.Write(s.path, data, 0o600); err != nil {
+	if err := s.writeValidatedConfigLocked(next, data); err != nil {
 		return nil, err
 	}
+	return cloneConfig(s.cfg), nil
+}
+
+func (s *Store) writeValidatedConfigLocked(next *Store, data []byte) error {
+	if err := durablefile.Write(s.path, data, 0600); err != nil {
+		// Rename may have succeeded before a directory sync error. Match the actual
+		// validated file while retaining the error, so the next CAS cannot use a
+		// stale revision or overwrite an ambiguously completed edit.
+		if raw, readErr := os.ReadFile(s.path); readErr == nil {
+			if actual, parseErr := parseStore(s.path, raw); parseErr == nil {
+				s.cfg, s.root, s.saved = actual.cfg, actual.root, actual.saved
+				s.changedLocked()
+			}
+		}
+		return err
+	}
 	s.cfg, s.root, s.saved = next.cfg, next.root, next.saved
-	result := *s.cfg
-	return &result, nil
+	s.changedLocked()
+	return nil
 }
 
 func mergePatchNode(target, patch *yaml.Node) {

@@ -11,11 +11,12 @@ import (
 )
 
 type Store struct {
-	mu    sync.RWMutex
-	path  string
-	cfg   *Config
-	root  yaml.Node
-	saved []byte
+	mu      sync.RWMutex
+	path    string
+	cfg     *Config
+	root    yaml.Node
+	saved   []byte
+	changes map[chan struct{}]struct{}
 }
 
 func DefaultPath() string {
@@ -66,8 +67,7 @@ func (s *Store) Config() *Config {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 
-	clone := *s.cfg
-	return &clone
+	return cloneConfig(s.cfg)
 }
 
 func (s *Store) Path() string {
@@ -84,8 +84,7 @@ func (s *Store) UpdateStash(url, apiKey string) (*Config, error) {
 	if err := s.updateConfigNode(); err != nil {
 		return nil, err
 	}
-	clone := *s.cfg
-	return &clone, nil
+	return cloneConfig(s.cfg), nil
 }
 
 func (s *Store) UpdateIngest(
@@ -110,8 +109,7 @@ func (s *Store) UpdateIngest(
 	if err := s.updateConfigNode(); err != nil {
 		return nil, err
 	}
-	clone := *s.cfg
-	return &clone, nil
+	return cloneConfig(s.cfg), nil
 }
 
 func (s *Store) UpdateJackett(url, apiKey, password string) (*Config, error) {
@@ -125,8 +123,7 @@ func (s *Store) UpdateJackett(url, apiKey, password string) (*Config, error) {
 	if err := s.updateConfigNode(); err != nil {
 		return nil, err
 	}
-	clone := *s.cfg
-	return &clone, nil
+	return cloneConfig(s.cfg), nil
 }
 
 func (s *Store) UpdateQBittorrent(url, username, password, defaultSavePath, category, tags string) (*Config, error) {
@@ -143,8 +140,7 @@ func (s *Store) UpdateQBittorrent(url, username, password, defaultSavePath, cate
 	if err := s.updateConfigNode(); err != nil {
 		return nil, err
 	}
-	clone := *s.cfg
-	return &clone, nil
+	return cloneConfig(s.cfg), nil
 }
 
 func (s *Store) UpdateAutomation(taskProgressSyncIntervalSeconds, subscriptionPollIntervalHours int, stashBoxEndpoints []string, subscriptionReleasePolicy SubscriptionReleasePolicyConfig, torrentSelection TorrentSelectionConfig, sourcingRetryIntervalHours ...int) (*Config, error) {
@@ -190,8 +186,7 @@ func (s *Store) updateAutomationLocked(enabled *bool, taskProgressSyncIntervalSe
 	if err := s.updateConfigNode(); err != nil {
 		return nil, err
 	}
-	clone := *s.cfg
-	return &clone, nil
+	return cloneConfig(s.cfg), nil
 }
 
 func (s *Store) UpdateSystem(taskDeletePolicy TaskDeletePolicy, imageCache ...ImageCacheConfig) (*Config, error) {
@@ -229,8 +224,7 @@ func (s *Store) updateSystemLocked(taskDeletePolicy TaskDeletePolicy, imageCache
 	if err := s.updateConfigNode(); err != nil {
 		return nil, err
 	}
-	clone := *s.cfg
-	return &clone, nil
+	return cloneConfig(s.cfg), nil
 }
 
 func (s *Store) updateConfigNode() (resultErr error) {
@@ -249,6 +243,7 @@ func (s *Store) updateConfigNode() (resultErr error) {
 		}
 		if previous != nil {
 			s.cfg, s.root, s.saved = previous.cfg, previous.root, previous.saved
+			s.changedLocked()
 		}
 	}()
 
@@ -329,14 +324,25 @@ func (s *Store) updateConfigNode() (resultErr error) {
 	}
 
 	canonicalizeConfigNode(top)
+	indexers := ensureMapValue(mapValue(top, "indexers"))
+	setNodeValue(indexers, "builtin", s.cfg.Indexers.Builtin)
+	setNodeValue(indexers, "search_cache", s.cfg.Indexers.SearchCache)
+	setBoolScalar(mapValue(indexers, "jackett"), "enabled", s.cfg.Indexers.Jackett.Enabled)
+	setNodeValue(mapValue(indexers, "jackett"), "excluded_indexers", s.cfg.Indexers.Jackett.ExcludedIndexers)
 	data, err := yaml.Marshal(&s.root)
 	if err != nil {
 		return fmt.Errorf("marshal config %q: %w", s.path, err)
+	}
+	next, err := parseStore(s.path, data)
+	if err != nil {
+		return err
 	}
 	if err := durablefile.Write(s.path, data, 0o600); err != nil {
 		return fmt.Errorf("write config %q: %w", s.path, err)
 	}
 	s.saved = append(s.saved[:0], data...)
+	s.cfg, s.root = next.cfg, next.root
+	s.changedLocked()
 	return nil
 }
 
@@ -518,8 +524,7 @@ func (s *Store) UpdateStashBoxCache(ttl int) (*Config, error) {
 	if err := s.updateConfigNode(); err != nil {
 		return nil, err
 	}
-	clone := *s.cfg
-	return &clone, nil
+	return cloneConfig(s.cfg), nil
 }
 func (s *Store) UpdateSystemSection(policy TaskDeletePolicy, image ImageCacheConfig, cache *StashBoxDataCacheConfig, developer bool) (*Config, error) {
 	s.mu.Lock()
@@ -543,8 +548,7 @@ func (s *Store) UpdateTaskDeletePolicy(policy TaskDeletePolicy) (*Config, error)
 	if err := s.updateConfigNode(); err != nil {
 		return nil, err
 	}
-	clone := *s.cfg
-	return &clone, nil
+	return cloneConfig(s.cfg), nil
 }
 func (s *Store) UpdateSystemPreferences(policy TaskDeletePolicy, image ImageCacheConfig, cache *StashBoxDataCacheConfig, developer bool, language *string, preservePolicy bool) (*Config, error) {
 	if language != nil {

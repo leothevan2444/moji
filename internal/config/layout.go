@@ -2,9 +2,11 @@ package config
 
 import (
 	"fmt"
+	"strings"
 	"time"
 	_ "time/tzdata"
 
+	"github.com/google/uuid"
 	"gopkg.in/yaml.v3"
 )
 
@@ -14,6 +16,7 @@ func (c *Config) UnmarshalYAML(node *yaml.Node) error {
 	type plain Config
 	*c = Config{}
 	c.Automation.TorrentSelection = DefaultTorrentSelectionConfig()
+	c.Indexers = DefaultIndexersConfig()
 	var version struct {
 		Version int `yaml:"config_version"`
 	}
@@ -32,9 +35,13 @@ func (c *Config) UnmarshalYAML(node *yaml.Node) error {
 		if err := node.Decode((*plain)(c)); err != nil {
 			return err
 		}
+		c.Indexers.Jackett.Enabled = c.Connection.Jackett.URL != ""
+		for _, id := range c.Automation.TorrentSelection.FastRules.IndexerPreference.TrackerIDs {
+			c.Indexers.QueryOrder = append(c.Indexers.QueryOrder, "jackett/"+id)
+		}
 		return validateSystemCalendar(c.System)
 	}
-	if version.Version != 2 {
+	if version.Version != 2 && version.Version != 3 {
 		return fmt.Errorf("unsupported config_version: %d", version.Version)
 	}
 	for _, key := range []string{"connection", "automation", "ingest"} {
@@ -68,8 +75,29 @@ func (c *Config) UnmarshalYAML(node *yaml.Node) error {
 		return err
 	}
 	top := documentNode(&root)
+	if idx := existingMapValue(top, "indexers"); idx != nil {
+		if err := idx.Decode(&c.Indexers); err != nil {
+			return err
+		}
+	}
 	decanonicalizeConfigNode(top)
 	if err := top.Decode((*plain)(c)); err != nil {
+		return err
+	}
+	if version.Version < 3 {
+		c.Indexers.Jackett.Enabled = c.Connection.Jackett.URL != ""
+	}
+	for i, id := range c.Automation.TorrentSelection.FastRules.IndexerPreference.TrackerIDs {
+		c.Automation.TorrentSelection.FastRules.IndexerPreference.TrackerIDs[i] = strings.TrimPrefix(id, "jackett/")
+	}
+	if version.Version < 3 {
+		for i, id := range c.Indexers.QueryOrder {
+			if !strings.HasPrefix(id, "jackett/") {
+				c.Indexers.QueryOrder[i] = "jackett/" + id
+			}
+		}
+	}
+	if err := c.Indexers.Validate(); err != nil {
 		return err
 	}
 	return validateSystemCalendar(c.System)
@@ -122,7 +150,26 @@ func canonicalizeConfigNode(top *yaml.Node) {
 		*mapValue(top, "legacy_connection") = *conn
 	}
 	deleteMapKey(top, "connection")
-	setIntScalar(top, "config_version", 2)
+	normalizeIndexerV3Node(top)
+}
+
+func normalizeIndexerV3Node(top *yaml.Node) {
+	indexers := ensureMapValue(mapValue(top, "indexers"))
+	jackett := ensureMapValue(mapValue(indexers, "jackett"))
+	if existingMapValue(jackett, "enabled") == nil {
+		url := existingMapValue(jackett, "url")
+		setBoolScalar(jackett, "enabled", url != nil && url.Value != "")
+	}
+	if order := existingMapValue(indexers, "query_order"); order != nil {
+		for _, item := range order.Content {
+			if item.Value != "" && !strings.HasPrefix(item.Value, "jackett/") {
+				if _, err := uuid.Parse(item.Value); err != nil {
+					item.Value = "jackett/" + item.Value
+				}
+			}
+		}
+	}
+	setIntScalar(top, "config_version", 3)
 }
 
 // legacyConfigNode is used solely by Store's existing atomic update machinery.
