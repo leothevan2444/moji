@@ -1,0 +1,27 @@
+{
+  "repository": "dotnet/runtime",
+  "ref": "v9.0.0",
+  "codePages": [874, 1250, 1251, 1252, 1255, 1256, 28591, 28592],
+  "sources": [
+    {
+      "file": "codepages.nlp",
+      "path": "src/libraries/System.Text.Encoding.CodePages/src/Data/codepages.nlp",
+      "sha256": "0cad998c5e9776cdbbfc34e5687931d771018f8df9c3bf741b3e2e676533e9fb"
+    },
+    {
+      "file": "CodePageNameMappings.csv",
+      "path": "src/libraries/System.Text.Encoding.CodePages/src/Data/CodePageNameMappings.csv",
+      "sha256": "1b38a7fd3274cea7b30b9387b262901be664c951dc27389804ddce9a2ec07b9d"
+    },
+    {
+      "file": "EncoderLatin1BestFitFallback.Data.cs",
+      "path": "src/libraries/System.Private.CoreLib/src/System/Text/EncoderLatin1BestFitFallback.Data.cs",
+      "sha256": "4eeddd92b48adb8162b7c416f03bd5c8d7f92d5dc116ed0f6d2ed523dbf09980"
+    },
+    {
+      "file": "LICENSE.TXT",
+      "path": "LICENSE.TXT",
+      "sha256": "cfc21f5e8bd655ae997eec916138b707b1d290b83272c02a95c9f821b8c87310"
+    }
+  ]
+}

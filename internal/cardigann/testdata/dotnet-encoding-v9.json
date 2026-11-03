@@ -1,0 +1,302 @@
+{
+  "runtime": "9.0.0",
+  "sdkImage": "mcr.microsoft.com/dotnet/sdk@sha256:6125486580cdf529a2a337d51c5557af08eaa04ef08b04f5b1d5a94f6bec7f1a",
+  "codePages": {
+    "874": {
+      "name": "windows-874",
+      "encoderBytes": 65536,
+      "encoderSha256": "8b8fad84108a2fdcbd70bb9622525995cca230eb340d3f0a4ee11b9ba88d0ff1",
+      "decoderCharacters": 256,
+      "decoderSha256": "b4929eb52bb27fb0522bade45f94e5b1e0f62b6db21506897452c6bbeffc46b2",
+      "samples": [
+        {
+          "text": "\u0113",
+          "hex": "3f"
+        },
+        {
+          "text": "\uff21\uff22\uff11\uff12",
+          "hex": "41423132"
+        },
+        {
+          "text": "\u00e9",
+          "hex": "3f"
+        },
+        {
+          "text": "\u0416",
+          "hex": "3f"
+        },
+        {
+          "text": "\u6c49",
+          "hex": "3f"
+        },
+        {
+          "text": "\ud83d\ude00",
+          "hex": "3f3f"
+        },
+        {
+          "text": "\u0e44\u0e17\u0e22",
+          "hex": "e4b7c2"
+        }
+      ]
+    },
+    "1250": {
+      "name": "windows-1250",
+      "encoderBytes": 65536,
+      "encoderSha256": "17c065001a4557d3fd20d4bac48c85da5a0f8672fde859c8f4356a86ead20331",
+      "decoderCharacters": 256,
+      "decoderSha256": "03772ed2e875bd125544fe7f243ea9a1dd163a057030970b26d8b6dd4c79a6e5",
+      "samples": [
+        {
+          "text": "\u0113",
+          "hex": "65"
+        },
+        {
+          "text": "\uff21\uff22\uff11\uff12",
+          "hex": "41423132"
+        },
+        {
+          "text": "\u00e9",
+          "hex": "e9"
+        },
+        {
+          "text": "\u0416",
+          "hex": "3f"
+        },
+        {
+          "text": "\u6c49",
+          "hex": "3f"
+        },
+        {
+          "text": "\ud83d\ude00",
+          "hex": "3f3f"
+        },
+        {
+          "text": "\u0e44\u0e17\u0e22",
+          "hex": "3f3f3f"
+        }
+      ]
+    },
+    "1251": {
+      "name": "windows-1251",
+      "encoderBytes": 65536,
+      "encoderSha256": "b49b39de5abb95ab4c0d856fda6f43f0e68b7e8f65ed9e563056008882afa2b5",
+      "decoderCharacters": 256,
+      "decoderSha256": "b16600cf4e6d1a2d4659b6a2cc96caa5ddc3e103ecfb07c5154d05fd54b174b3",
+      "samples": [
+        {
+          "text": "\u0113",
+          "hex": "65"
+        },
+        {
+          "text": "\uff21\uff22\uff11\uff12",
+          "hex": "41423132"
+        },
+        {
+          "text": "\u00e9",
+          "hex": "65"
+        },
+        {
+          "text": "\u0416",
+          "hex": "c6"
+        },
+        {
+          "text": "\u6c49",
+          "hex": "3f"
+        },
+        {
+          "text": "\ud83d\ude00",
+          "hex": "3f3f"
+        },
+        {
+          "text": "\u0e44\u0e17\u0e22",
+          "hex": "3f3f3f"
+        }
+      ]
+    },
+    "1252": {
+      "name": "windows-1252",
+      "encoderBytes": 65536,
+      "encoderSha256": "7c1d0cbe71f69c4660bbc7ea5bca1a48ebeedb5740742cc5d297b141c1e653c6",
+      "decoderCharacters": 256,
+      "decoderSha256": "cc916e51644a12e8de4ad160910c171a58621ee5dc3a6da6f8b00f8684085f33",
+      "samples": [
+        {
+          "text": "\u0113",
+          "hex": "65"
+        },
+        {
+          "text": "\uff21\uff22\uff11\uff12",
+          "hex": "41423132"
+        },
+        {
+          "text": "\u00e9",
+          "hex": "e9"
+        },
+        {
+          "text": "\u0416",
+          "hex": "3f"
+        },
+        {
+          "text": "\u6c49",
+          "hex": "3f"
+        },
+        {
+          "text": "\ud83d\ude00",
+          "hex": "3f3f"
+        },
+        {
+          "text": "\u0e44\u0e17\u0e22",
+          "hex": "3f3f3f"
+        }
+      ]
+    },
+    "1255": {
+      "name": "windows-1255",
+      "encoderBytes": 65536,
+      "encoderSha256": "972ce6086f690932a91b363f4632622a7c4da8477fdc724ec9a46af66e8efa0b",
+      "decoderCharacters": 256,
+      "decoderSha256": "09f72b6a4d6f6f759481f8426bf2fb642b7d31eb7829bf08b5877e7881742c31",
+      "samples": [
+        {
+          "text": "\u0113",
+          "hex": "3f"
+        },
+        {
+          "text": "\uff21\uff22\uff11\uff12",
+          "hex": "41423132"
+        },
+        {
+          "text": "\u00e9",
+          "hex": "3f"
+        },
+        {
+          "text": "\u0416",
+          "hex": "3f"
+        },
+        {
+          "text": "\u6c49",
+          "hex": "3f"
+        },
+        {
+          "text": "\ud83d\ude00",
+          "hex": "3f3f"
+        },
+        {
+          "text": "\u0e44\u0e17\u0e22",
+          "hex": "3f3f3f"
+        }
+      ]
+    },
+    "1256": {
+      "name": "windows-1256",
+      "encoderBytes": 65536,
+      "encoderSha256": "ebdc1d5d33900040f2187dd2610ed8d93e69e031a01295c4640e41b6df6184ec",
+      "decoderCharacters": 256,
+      "decoderSha256": "6f6e8626197b1b6b280a079d1d842daa09600a39fdb3d1e99596e943c61cc98b",
+      "samples": [
+        {
+          "text": "\u0113",
+          "hex": "3f"
+        },
+        {
+          "text": "\uff21\uff22\uff11\uff12",
+          "hex": "41423132"
+        },
+        {
+          "text": "\u00e9",
+          "hex": "e9"
+        },
+        {
+          "text": "\u0416",
+          "hex": "3f"
+        },
+        {
+          "text": "\u6c49",
+          "hex": "3f"
+        },
+        {
+          "text": "\ud83d\ude00",
+          "hex": "3f3f"
+        },
+        {
+          "text": "\u0e44\u0e17\u0e22",
+          "hex": "3f3f3f"
+        }
+      ]
+    },
+    "28591": {
+      "name": "iso-8859-1",
+      "encoderBytes": 65536,
+      "encoderSha256": "392022eb20655ee51eb3236f435cbfe51ef75dab727d81e5622f33e2e76befea",
+      "decoderCharacters": 256,
+      "decoderSha256": "9799e3eb6096a48f515a94324200b7af24251a4131eccf9a2cd65d012a1f5c71",
+      "samples": [
+        {
+          "text": "\u0113",
+          "hex": "65"
+        },
+        {
+          "text": "\uff21\uff22\uff11\uff12",
+          "hex": "41423132"
+        },
+        {
+          "text": "\u00e9",
+          "hex": "e9"
+        },
+        {
+          "text": "\u0416",
+          "hex": "3f"
+        },
+        {
+          "text": "\u6c49",
+          "hex": "3f"
+        },
+        {
+          "text": "\ud83d\ude00",
+          "hex": "3f3f"
+        },
+        {
+          "text": "\u0e44\u0e17\u0e22",
+          "hex": "3f3f3f"
+        }
+      ]
+    },
+    "28592": {
+      "name": "iso-8859-2",
+      "encoderBytes": 65536,
+      "encoderSha256": "c1c197fa6780dadfd4bd333abc4ac20bee6c0cdacf4815b4ef466ee6242e0b95",
+      "decoderCharacters": 256,
+      "decoderSha256": "a5871b0f978b840b9fad23483563caf9edf42c1828bff529f7594779ebaf5210",
+      "samples": [
+        {
+          "text": "\u0113",
+          "hex": "65"
+        },
+        {
+          "text": "\uff21\uff22\uff11\uff12",
+          "hex": "41423132"
+        },
+        {
+          "text": "\u00e9",
+          "hex": "e9"
+        },
+        {
+          "text": "\u0416",
+          "hex": "3f"
+        },
+        {
+          "text": "\u6c49",
+          "hex": "3f"
+        },
+        {
+          "text": "\ud83d\ude00",
+          "hex": "3f3f"
+        },
+        {
+          "text": "\u0e44\u0e17\u0e22",
+          "hex": "3f3f3f"
+        }
+      ]
+    }
+  }
+}

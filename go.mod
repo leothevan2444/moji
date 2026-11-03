@@ -4,11 +4,18 @@ go 1.25.0
 
 require (
 	github.com/99designs/gqlgen v0.17.73
+	github.com/PuerkitoBio/goquery v1.10.3
 	github.com/Yamashou/gqlgenc v0.33.0
 	github.com/andybalholm/brotli v1.2.0
+	github.com/andybalholm/cascadia v1.3.3
+	github.com/araddon/dateparse v0.0.0-20210429162001-6b43995a97de
+	github.com/dlclark/regexp2 v1.12.0
 	github.com/jmoiron/sqlx v1.4.0
+	github.com/ohler55/ojg v1.28.9
+	github.com/santhosh-tekuri/jsonschema/v6 v6.0.2
 	github.com/vektah/gqlparser/v2 v2.5.32
 	golang.org/x/image v0.43.0
+	golang.org/x/net v0.54.0
 	golang.org/x/sys v0.44.0
 	golang.org/x/time v0.14.0
 	gopkg.in/yaml.v3 v3.0.1
@@ -38,7 +45,7 @@ require (
 	github.com/xrash/smetrics v0.0.0-20240521201337-686a1a2994c1 // indirect
 	golang.org/x/mod v0.36.0 // indirect
 	golang.org/x/sync v0.21.0
-	golang.org/x/text v0.38.0 // indirect
+	golang.org/x/text v0.38.0
 	golang.org/x/tools v0.45.0 // indirect
 	modernc.org/sqlite v1.46.2
 )
