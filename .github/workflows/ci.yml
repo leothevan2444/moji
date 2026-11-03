@@ -54,7 +54,9 @@ jobs:
           cache: true
       - run: python3 scripts/version_test.py
       - run: python3 scripts/docker_publish_test.py
-      - run: go test ./internal/graphqlapi ./internal/taskruntime ./cmd/moji
+      - run: python3 scripts/indexer-diff/build_reference_test.py
+      - run: python3 scripts/indexer-diff/compare_test.py
+      - run: go test ./...
 
   docker:
     name: Docker (${{ matrix.arch }})
@@ -120,11 +122,14 @@ jobs:
           retention-days: 1
           overwrite: true
 
+  indexer-compatibility:
+    uses: ./.github/workflows/indexer-compatibility.yml
+
   publish:
     if: >-
       github.event_name != 'pull_request' &&
       (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v'))
-    needs: [web, go, docker]
+    needs: [web, go, docker, indexer-compatibility]
     permissions:
       contents: read
     uses: ./.github/workflows/docker-publish.yml

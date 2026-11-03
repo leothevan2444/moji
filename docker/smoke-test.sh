@@ -14,10 +14,11 @@ trap cleanup EXIT
 trap 'exit 1' HUP INT TERM
 
 # Exercise the exact FFmpeg binaries and shared libraries shipped in the image.
-test "$(docker run --rm "$image" --version)" = "moji $version"
+test "$(docker run --rm --network none "$image" --version)" = "moji $version"
 test "$(docker image inspect "$image" --format '{{index .Config.Labels "org.opencontainers.image.version"}}')" = "$version"
-docker run --rm --entrypoint sh "$image" -ec '
+docker run --rm --network none --entrypoint sh "$image" -ec '
     test "$(id -u)" != 0
+    grep -qx "config_version: 3" /opt/moji/config.example.yaml
     ffprobe -version >/dev/null
     work=$(mktemp -d)
     trap '\''rm -rf "$work"'\'' EXIT
@@ -40,19 +41,19 @@ docker run --rm --entrypoint sh "$image" -ec '
 '
 
 docker volume create "$volume" >/dev/null
-docker run --rm -i --entrypoint sh \
+docker run --rm -i --network none --entrypoint sh \
     --mount "type=volume,src=$volume,dst=/data" "$image" \
     -c 'cat > /data/config.yaml' <<'YAML'
-connection:
-  jackett:
-    url: http://127.0.0.1:1
-    api_key: smoke-test
-automation:
+config_version: 3
+tasks:
+  task_processing_enabled: false
   task_progress_sync_interval_seconds: -1
   subscription_poll_interval_hours: -1
 YAML
 
-docker run -d --name "$name" --read-only --tmpfs /tmp:mode=1777 \
+# A fresh installation must serve its UI without Jackett or a rule download.
+# No network also prevents this test from contacting any real integration.
+docker run -d --name "$name" --network none --read-only --tmpfs /tmp:mode=1777 \
     --health-interval=1s --health-start-period=1s \
     --mount "type=volume,src=$volume,dst=/data" "$image" >/dev/null
 
@@ -69,6 +70,18 @@ wait_for_server() {
 }
 wait_for_server
 
+assert_unconfigured_indexers() {
+    response=$(docker exec "$name" curl --fail --silent --show-error http://127.0.0.1:10000/graphql \
+        -H 'Content-Type: application/json' \
+        --data '{"query":"{ homeIndexerSummary { total builtinEnabled jackett { sites } } indexerInstances { jackettEnabled items { id } } indexerDefinitionStatus { activeRevision available installed { revision } lastCheckedAt job { id } errorCode } }"}')
+    expected='{"data":{"homeIndexerSummary":{"total":0,"builtinEnabled":0,"jackett":null},"indexerInstances":{"jackettEnabled":false,"items":[]},"indexerDefinitionStatus":{"activeRevision":"","available":false,"installed":[],"lastCheckedAt":null,"job":null,"errorCode":"DEFINITION_LIBRARY_NOT_INSTALLED"}}}'
+    if [ "$response" != "$expected" ]; then
+        printf 'Unexpected unconfigured indexer state: %s\n' "$response" >&2
+        return 1
+    fi
+}
+assert_unconfigured_indexers
+
 docker exec "$name" curl --fail --silent http://127.0.0.1:10000/ \
     | grep -qi '<!doctype html>'
 docker exec "$name" curl --fail --silent http://127.0.0.1:10000/graphql \
@@ -76,7 +89,15 @@ docker exec "$name" curl --fail --silent http://127.0.0.1:10000/graphql \
     | grep -Fq "\"version\":\"$version\""
 docker exec "$name" curl --fail --silent http://127.0.0.1:10000/version.json \
     | grep -Fq "\"version\":\"$version\""
-docker exec "$name" sh -ec 'test -s /data/cache/stashbox/cache.db; printf persisted > /data/smoke-marker'
+docker exec "$name" sh -ec '
+    database_root=/data/.storage/database
+    generation_name=$(cat "$database_root/CURRENT")
+    test -s "$database_root/$generation_name/moji.db"
+    test -s "$database_root/$generation_name/runtime.db"
+    test -s "$database_root/$generation_name/cache/stashbox/cache.db"
+    printf "%s" "$generation_name" > /data/smoke-generation
+    printf persisted > /data/smoke-marker
+'
 docker exec "$name" curl --fail --silent --show-error http://127.0.0.1:10000/graphql \
     -H 'Content-Type: application/json' \
     --data '{"query":"mutation { updateSystemSettings(input: {taskDeletePolicy: KEEP_ONLY, stashBoxDataCache: {ttlHours: 72}}) { system { stashBoxDataCache { ttlHours } } } }"}' \
@@ -84,11 +105,20 @@ docker exec "$name" curl --fail --silent --show-error http://127.0.0.1:10000/gra
 docker stop --time 10 "$name" >/dev/null
 test "$(docker inspect "$name" --format '{{.State.ExitCode}}')" = 0
 docker rm "$name" >/dev/null
-docker run -d --name "$name" --read-only --tmpfs /tmp:mode=1777 \
+docker run -d --name "$name" --network none --read-only --tmpfs /tmp:mode=1777 \
     --health-interval=1s --health-start-period=1s \
     --mount "type=volume,src=$volume,dst=/data" "$image" >/dev/null
 wait_for_server
-docker exec "$name" sh -ec 'test -s /data/cache/stashbox/cache.db; test "$(cat /data/smoke-marker)" = persisted'
+assert_unconfigured_indexers
+docker exec "$name" sh -ec '
+    database_root=/data/.storage/database
+    generation_name=$(cat "$database_root/CURRENT")
+    test "$generation_name" = "$(cat /data/smoke-generation)"
+    test -s "$database_root/$generation_name/moji.db"
+    test -s "$database_root/$generation_name/runtime.db"
+    test -s "$database_root/$generation_name/cache/stashbox/cache.db"
+    test "$(cat /data/smoke-marker)" = persisted
+'
 docker exec "$name" curl --fail --silent --show-error http://127.0.0.1:10000/graphql \
     -H 'Content-Type: application/json' \
     --data '{"query":"{ settings { system { stashBoxDataCache { ttlHours } } } }"}' \

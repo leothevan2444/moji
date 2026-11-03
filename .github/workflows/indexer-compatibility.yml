@@ -1,0 +1,42 @@
+name: Indexer compatibility
+
+on:
+  workflow_call:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  compare:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+      - name: Test comparison checker
+        run: |
+          python3 scripts/indexer-diff/build_reference_test.py
+          python3 scripts/indexer-diff/compare_test.py
+      - name: Install pinned reference SDK image
+        run: docker pull mcr.microsoft.com/dotnet/sdk@sha256:6125486580cdf529a2a337d51c5557af08eaa04ef08b04f5b1d5a94f6bec7f1a
+      - name: Build pinned Jackett reference
+        run: python3 scripts/indexer-diff/build_reference.py --download --work-dir "$RUNNER_TEMP/indexer-reference"
+      - name: Compare actual interpreters on synthetic sites
+        run: python3 scripts/indexer-diff/compare.py --reference-root "$RUNNER_TEMP/indexer-reference" --report "$RUNNER_TEMP/indexer-diff.json"
+      - name: Compile pinned v11 corpus
+        if: success() || failure()
+        run: python3 scripts/indexer-definitions/check_corpus.py --download --report "$RUNNER_TEMP/indexer-corpus.json"
+      - name: Upload compatibility reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: indexer-compatibility-reports
+          path: |
+            ${{ runner.temp }}/indexer-diff.json
+            ${{ runner.temp }}/indexer-corpus.json
+          if-no-files-found: ignore
+          retention-days: 7
