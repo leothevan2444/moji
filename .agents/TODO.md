@@ -161,7 +161,9 @@ Artifact 阶段验证：完整 Go 与相关 vet 通过，indexer/taskruntime/cmd
 
 分批提交后验收：`0a34d43` 干净源码的新 amd64 镜像构建及断网 smoke 均通过，覆盖无 Jackett/规则库启动、配置保存、优雅退出及替换容器后同一 generation/三库保留；身份及范围见[镜像验收记录](reviews/2026-11-03-indexer-acceptance.md#已提交源码的新镜像验收)。没有推送或部署。
 
-下一步：按固定收尾范围继续空 select 默认及剩余 .NET/date/filter 边界、ArtifactCache/完整链路负载、来源/许可、升级回退和完整验收；不增加可选产品功能。arm64 需要可执行 ARM 的环境或现有原生 CI，不能从 amd64 推断通过。真实 solver/代理与站点验收见上方未完成项。公共选择入口仍必须以服务器 run/candidate 身份解析，不能让浏览器提交替代定位符。
+后续 select 验收：实际 Jackett 两条红报告确认空值被 Moji 排序首项替换；引擎、管理投影与编辑器已同步修正。完整差分 87/87、完整 Go、相关 race/vet、Web 编辑器 7 项/i18n 10 项/构建及索引器浏览器 36 项无更新/无重试通过，桌面/手机已人工核对；将此修正单独提交。详见[边界记录](reviews/2026-11-03-indexer-acceptance.md#select-空值边界修正)。上述镜像不包含后续 select 修正，最终交付仍需构建冻结源码。
+
+下一步：按固定收尾范围继续剩余 .NET/date/filter 边界、ArtifactCache/完整链路负载、来源/许可、升级回退和完整验收；不增加可选产品功能。arm64 需要可执行 ARM 的环境或现有原生 CI，不能从 amd64 推断通过。真实 solver/代理与站点验收见上方未完成项。公共选择入口仍必须以服务器 run/candidate 身份解析，不能让浏览器提交替代定位符。
 
 ## 用户提出的产品工作（2026-10-28）
 

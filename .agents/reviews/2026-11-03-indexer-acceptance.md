@@ -29,7 +29,7 @@
 | Caps：categories, categorymappings, modes, allowrawsearch, allowtvsearchimdb | [类别执行](../../internal/cardigann/search.go)、[目录](../../internal/indexeradmin/service.go)、category_search/result 测试 | 类别及模式有回归；后续 row filter 修正已消费 allowtvsearchimdb，并有实际对照。allowrawsearch 的上游宿主资格语义仍需核对，不能把保存字段当成功能完成。 |
 | CategoryMapping：id, cat, desc, default | search.go；category_result_test.go、request_order_test.go | ID/描述/默认/顺序已定位和回归；默认类别的上游差异在请求复核明确记录。 |
 | Modes：search, tv-search, movie-search, music-search, book-search | search.go、query_episode.go、query_numbers.go、query_derived.go、[命名参数契约](../../internal/indexerquery/parameters.go)、[实际查询场景](../../scripts/indexer-diff/README.md) | 五种路径、15 个 flag 和 IMDb 前缀已有实际样本；命名参数新回归先复现覆盖 typed 字段及小写遗漏，统一 18 字段资格/别名规范化后通过。外部 JSON 适配对未表达的条件拒绝而非忽略，仍不据此宣称全部宿主资格策略同义。 |
-| SettingsField：name, label, type, default, options, defaults | [执行默认值](../../internal/cardigann/execution.go)、[管理验证](../../internal/indexeradmin/validation.go)、[站点编辑](../../web/src/components/settings/IndexerSiteEditor.tsx) | text/password/checkbox/select 有实现。checkbox 真值已按实际 Jackett 修正并对照三种默认/覆盖；select 显式默认与覆盖已实际对照，固定库 914 个 select 均有非空默认。defaults 在 Jackett 仅用于 schema 外 multi-select；不据此要求支持该类型。info 展示、schema 允许但当前库未出现的空默认 fallback 仍未全部认证。 |
+| SettingsField：name, label, type, default, options, defaults | [执行默认值](../../internal/cardigann/execution.go)、[管理验证](../../internal/indexeradmin/validation.go)、[站点编辑](../../web/src/components/settings/IndexerSiteEditor.tsx) | text/password/checkbox/select 有实现。checkbox 真值已按实际 Jackett 修正并对照三种默认/覆盖；select 显式默认、覆盖、无默认和显式空值已实际对照，固定库 914 个 select 均有非空默认。defaults 在 Jackett 仅用于 schema 外 multi-select；不据此要求支持该类型。info 展示仍未全部认证。 |
 | Login：method, cookies, path, submitpath, form, captcha, inputs, selectors, selectorinputs, getselectorinputs, error, test, headers | [登录执行](../../internal/cardigann/login.go)、login/order 测试、[人工生命周期](../../internal/indexerlogin/service.go) | 五种 method 有分支，form/post/cookie 和 GET selector 等有局部回归；get/oneurl 未进入真实差分。初审发现的 simpleCaptcha 缺少 submitme=X 已修正，合成登录→搜索→取种实际对照通过；失败/取消另有本地回归。 |
 | PageTestBlock：path, selector | login.go 的 testLogin/checkSearchAuthentication；Cookie/认证失效测试 | 有执行/局部回归；登录验证与搜索页识别的所有 HTTP/重定向组合尚未完整对照。 |
 | CaptchaBlock：type, selector, input | login.go、captcha-text/image/rejected 场景、indexerlogin 测试 | 人工图片/文字已实际对照；可选 solver 属传输执行能力，已有 fake 协议/预算/出口测试，真实服务未验。 |
@@ -152,3 +152,9 @@
 交付文档提交 `0a34d43` 后工作区干净，实际执行 amd64 的 `make docker-build` 和同 IMAGE 的 `make docker-test`，均 exit 0。镜像版本 `dev-0a34d4383cfe`，ID `sha256:38fdecb3e05ff58ad2382e4f84c44d47e3d2925728c0a9fd49906f9a088b2111`；inspect 确认为 linux/amd64，OCI revision 为 `0a34d4383cfe1c42b0743af2547b93615cf56486`。
 
 本次验证当前镜像内的 Web/后端版本、非 root 与媒体工具、无网络/只读根启动、无 Jackett/规则库的本地概况、没有隐式规则检查、配置保存、优雅退出和容器替换后的同一 generation/三库及设置保留。仅使用独立临时容器/卷，无生产服务操作。日志 `/tmp/moji-indexer-committed-amd64-build.log` 和 `/tmp/moji-indexer-committed-amd64-smoke.log`；ARM64、真实站点/代理/solver 与远端 Actions 未由此验证。
+
+### select 空值边界修正
+
+继续验收时，固定实际 Jackett 的两条红报告均证实：Moji 在没有默认值或用户明确配置空字符串时，错误地选择排序后的第一个选项并加入请求。删除引擎与管理投影的这一回退；保留非空未知选项拒绝。编辑器显示“未选择”，不把浏览器原生第一个选项误表示为当前值；清除已配置 select 后显示规则声明默认值，提交仍仅发送 clear。
+
+新增两条正式合成场景，四种 select 默认/覆盖均无例外通过。完整差分现为 87/87（83 正常、4 精确预期拒绝），0 未解释/5 原有已解释差异，报告 `/tmp/moji-indexer-diff-select-final.json`；未改参考 runner 或比较容差。完整 Go、相关 race/vet、Web 编辑器 7 项、i18n 10 项及生产构建通过；固定 Playwright 容器 indexers.spec.ts 36 项无更新/无重试通过，桌面/手机空值截图人工核对、无横向溢出或浏览器/GraphQL 错误。此修正发生在上述 `0a34d43` 镜像之后，该镜像不包含本修正；没有操作实际配置或站点。

@@ -11,11 +11,31 @@ import { IndexerSourceKind } from "../../graphql/generated/graphql";
 const site: IndexerSite = {health:{search:null,fetch:null}, id: "source", name: "Example", definitionId: "example", kind: IndexerSourceKind.Builtin, enabled: true, baseUrl: "", siteUrl: "https://example.invalid/", language: "en-US", privacy: "private", networkProfile: "direct", trustedOrigins: [], modes: ["search"], ruleDigest: "digest", errorCode: "", settings: [{ name: "password", label: "Password", type: "password", secret: true, configured: true, value: null, defaultValue: null, options: [] }] };
 beforeEach(async () => { await i18n.changeLanguage("en"); });
 afterEach(cleanup);
-function mount(save = vi.fn().mockResolvedValue(false)) {
-  const close = vi.fn(); const router = createMemoryRouter([{ path: "/", element: <IndexerSiteEditor site={site} definition={{ id: "example", name: "Example", links: [], settings: site.settings }} revision="config-1" profiles={["direct"]} busy={false} error={null} onSave={save} onClose={close} /> }, { path: "/away", element: <p>Away</p> }], { initialEntries: ["/"] });
+function mount(save = vi.fn().mockResolvedValue(false), initial = site) {
+  const close = vi.fn(); const router = createMemoryRouter([{ path: "/", element: <IndexerSiteEditor site={initial} definition={{ id: "example", name: "Example", links: [], settings: initial.settings }} revision="config-1" profiles={["direct"]} busy={false} error={null} onSave={save} onClose={close} /> }, { path: "/away", element: <p>Away</p> }], { initialEntries: ["/"] });
   render(<RouterProvider router={router} />); return { save, close, router };
 }
 describe("built-in site editor", () => {
+  it("shows an empty select without silently choosing the first option", async () => {
+    const user = userEvent.setup();
+    const { save } = mount(vi.fn().mockResolvedValue(false), { ...site, settings: [{ name: "choice", label: "Choice", type: "select", secret: false, configured: false, value: null, defaultValue: { string: "", boolean: null, number: null }, options: [{value:"a",label:"First"},{value:"b",label:"Second"}] }] });
+    expect((screen.getByLabelText("Choice") as HTMLSelectElement).value).toBe("");
+    expect((screen.getByRole("option", {name:"No selection"}) as HTMLOptionElement).selected).toBe(true);
+    await user.type(screen.getByLabelText("Name"), " changed");
+    await user.click(screen.getByRole("button", {name:"Save"}));
+    await waitFor(() => expect(save).toHaveBeenCalledWith("source", "config-1", {name:"Example changed"}));
+    await user.selectOptions(screen.getByLabelText("Choice"), "b");
+    await user.click(screen.getByRole("button", {name:"Save"}));
+    await waitFor(() => expect(save).toHaveBeenLastCalledWith("source", "config-1", {name:"Example changed",settings:[{name:"choice",value:{string:"b"}}]}));
+  });
+  it("shows the declared default after clearing a configured selection", async () => {
+    const user = userEvent.setup();
+    const { save } = mount(vi.fn().mockResolvedValue(false), { ...site, settings: [{ name: "choice", label: "Choice", type: "select", secret: false, configured: true, value: {string:"a",boolean:null,number:null}, defaultValue: {string:"b",boolean:null,number:null}, options: [{value:"a",label:"First"},{value:"b",label:"Second"}] }] });
+    await user.click(screen.getByRole("button", {name:"Clear saved value"}));
+    expect((screen.getByLabelText("Choice") as HTMLSelectElement).value).toBe("b");
+    await user.click(screen.getByRole("button", {name:"Save"}));
+    await waitFor(() => expect(save).toHaveBeenCalledWith("source", "config-1", {settings:[{name:"choice",clear:true}]}));
+  });
   it("submits only explicit edits and retains them after a failed save", async () => {
     const user = userEvent.setup(); const { save } = mount();
     const input = screen.getByLabelText("Name"); await user.clear(input); await user.type(input, "Renamed");

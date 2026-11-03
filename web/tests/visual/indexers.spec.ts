@@ -4,6 +4,23 @@ import { test, indexerInstances, indexerLibrary } from "./fixtures";
 const observedSearch = { startedAt: "2026-01-15T11:00:00Z", finishedAt: "2026-01-15T11:00:01Z", errorCode: "", correlationId: "00000000-0000-4000-8000-000000000001", retryAt: null };
 const observedFetch = { startedAt: "2026-01-15T11:01:00Z", finishedAt: "2026-01-15T11:01:01Z", errorCode: "INDEXER_AUTHENTICATION_FAILED", correlationId: "00000000-0000-4000-8000-000000000002", retryAt: null };
 
+test.describe("empty select default", () => {
+  test.use({ graphqlOverrides: {
+    indexerInstances: { ...indexerInstances, items: [{ ...indexerInstances.items[0], settings: [{ name: "choice", type: "select", label: "Choice", secret: false, configured: false, value: null, defaultValue: {string:"",boolean:null,number:null}, options: [{value:"a",label:"First"},{value:"b",label:"Second"}] }] }] }
+  } });
+  test("an unset selection remains visibly empty until the user chooses", async ({ page }, testInfo) => {
+    await page.addInitScript(() => localStorage.setItem("moji:locale", "en"));
+    await page.goto("/settings/indexers");
+    await page.locator(".indexer-row").first().getByRole("button", {name:"Edit",exact:true}).click();
+    await expect(page.getByLabel("Choice", {exact:true})).toHaveValue("");
+    await expect(page.getByRole("option", {name:"No selection",exact:true})).toHaveJSProperty("selected", true);
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+    await page.screenshot({path:testInfo.outputPath("empty-select.png"),fullPage:true});
+    await page.getByLabel("Choice", {exact:true}).selectOption("b");
+    await expect(page.getByLabel("Choice", {exact:true})).toHaveValue("b");
+  });
+});
+
 test.describe("search cache management", () => {
   let entries = 3;
   const scopes: Array<string | null> = [];

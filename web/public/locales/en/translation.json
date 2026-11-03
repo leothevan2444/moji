@@ -129,6 +129,7 @@
     "enable": "Enabled",
     "secretSaved": "Configured; leave blank to keep",
     "clearSetting": "Clear saved value",
+    "noSelection": "No selection",
     "willClear": "Clear on save",
     "removedSetting": "This setting is no longer used by the current definition. Clear it before retrying.",
     "discardTitle": "Discard unsaved changes?",

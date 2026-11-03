@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
-	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -101,17 +100,9 @@ func (p *Plan) NewExecution(session Session, baseURL string, settings map[string
 			}
 			variables[".Config."+setting.Name] = TemplateValue{Text: text}
 		case "select":
-			if value == "" {
-				keys := make([]string, 0, len(setting.Options))
-				for key := range setting.Options {
-					keys = append(keys, key)
-				}
-				sort.Strings(keys)
-				if len(keys) > 0 {
-					value = Scalar(keys[0])
-				}
-			}
-			if _, ok := setting.Options[string(value)]; !ok {
+			// An absent default or explicit empty selection stays empty. Picking
+			// a sorted option changes the rule's requests without user intent.
+			if _, ok := setting.Options[string(value)]; value != "" && !ok {
 				return nil, fmt.Errorf("setting %s has an invalid selection", setting.Name)
 			}
 			variables[".Config."+setting.Name] = TemplateValue{Text: string(value)}

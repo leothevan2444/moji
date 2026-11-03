@@ -421,9 +421,6 @@ func settingProjection(plan *cardigann.Plan, settings map[string]config.IndexerS
 				boolean := strings.EqualFold(value, "true")
 				setting.Default = &Value{Boolean: &boolean}
 			} else if field.Type == "text" || field.Type == "select" {
-				if field.Type == "select" && value == "" && len(keys) > 0 {
-					value = keys[0]
-				}
 				setting.Default = &Value{String: &value}
 			}
 		}

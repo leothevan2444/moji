@@ -129,6 +129,7 @@
     "enable": "启用",
     "secretSaved": "已配置，留空保留",
     "clearSetting": "清除已保存值",
+    "noSelection": "未选择",
     "willClear": "保存时清除",
     "removedSetting": "当前规则已不再使用此设置，可清除后重试。",
     "discardTitle": "放弃未保存的更改？",

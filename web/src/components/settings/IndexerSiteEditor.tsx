@@ -55,13 +55,13 @@ export function IndexerSiteEditor({ site, definition, revision, profiles, busy, 
         <label className="settings-field"><span>{t("indexers.baseUrl")}</span><input type="url" value={baseUrl} disabled={busy} placeholder={definition.links[0] ?? "https://"} onChange={event => setBaseUrl(event.target.value)} /></label>
         <label className="settings-field"><span>{t("indexers.network")}</span><select value={profile} disabled={busy} onChange={event => setProfile(event.target.value)}>{profiles.map(value => <option key={value} value={value}>{value === "direct" ? t("indexers.direct") : value}</option>)}</select></label>
         {definition.settings.map(setting => {
-          const edit = changes[setting.name]; const value = edit?.value ?? setting.value ?? setting.defaultValue;
-          const text = edit?.clear ? "" : value?.string ?? (value?.number === null || value?.number === undefined ? "" : String(value.number));
+          const edit = changes[setting.name]; const value = edit?.clear && setting.type === "select" ? setting.defaultValue : edit?.value ?? setting.value ?? setting.defaultValue;
+          const text = edit?.clear && setting.type !== "select" ? "" : value?.string ?? (value?.number === null || value?.number === undefined ? "" : String(value.number));
           if (setting.type === "info") return <p className="settings-note" key={setting.name}>{setting.label}</p>;
           if (setting.type === "checkbox") return <label className="settings-toggle" key={setting.name}><input type="checkbox" disabled={busy} checked={value?.boolean ?? false} onChange={event => change(setting, event.target.checked)} /><span>{setting.label || setting.name}</span></label>;
           return <div className="settings-field" key={setting.name}><label htmlFor={`site-field-${setting.name}`}>{setting.label || setting.name}</label>
             {setting.type === "unknown" ? <span>{t("indexers.removedSetting")}</span> : setting.secret ? <SecretInput id={`site-field-${setting.name}`} disabled={busy} value={edit?.value?.string ?? ""} placeholder={setting.configured && !edit?.clear ? t("indexers.secretSaved") : ""} onChange={value => change(setting, value)} />
-              : setting.type === "select" ? <select id={`site-field-${setting.name}`} disabled={busy} value={text} onChange={event => change(setting, event.target.value)}>{setting.options.map(option => <option key={option.value} value={option.value}>{option.label}</option>)}</select>
+              : setting.type === "select" ? <select id={`site-field-${setting.name}`} disabled={busy} value={text} onChange={event => change(setting, event.target.value)}>{text === "" && !setting.options.some(option => option.value === "") ? <option value="" disabled>{t("indexers.noSelection")}</option> : null}{setting.options.map(option => <option key={option.value} value={option.value}>{option.label}</option>)}</select>
               : <input id={`site-field-${setting.name}`} disabled={busy} value={text} onChange={event => change(setting, event.target.value)} />}
             {setting.configured ? <button type="button" className="ghost-button" disabled={busy || Boolean(edit?.clear)} onClick={() => setChanges(current => ({ ...current, [setting.name]: { name: setting.name, clear: true } }))}>{t(edit?.clear ? "indexers.willClear" : "indexers.clearSetting")}</button> : null}
           </div>;

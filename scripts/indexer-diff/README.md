@@ -30,11 +30,12 @@ and preventing arbitrary ancestor traversal. Derived-query cases exercise all
 15 host flags, empty string ID/genre presence, year zero, raw episode without a
 season, and IMDb short-ID prefix behavior. Checkbox cases check raw output,
 comparison with .True, and explicit true/false overrides. Select cases preserve
-an explicit rule default and user override independently of option ordering.
+an explicit rule default and user override independently of option ordering,
+and keep absent defaults or explicit empty selections empty.
 Hash/title cases cover original and before pages, generated public/semi-private
 result magnets and absence of an automatic public fallback for private results.
 Case-insensitive parameter names are checked against the real host query model.
-The 85 executed cases
+The 87 executed cases
 include four explicitly expected rejections (invalid TV episode, captcha
 answer rejected by the site, empty numeric ID/year and overflowing ID); they do not certify the community
 library's live availability. Additional failure/cancellation
