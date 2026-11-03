@@ -1,10 +1,10 @@
 import { expect } from "@playwright/test";
-import { test, settingsSnapshot } from "./fixtures";
+import { test, settingsSnapshot, indexerInstances } from "./fixtures";
 
 test.use({graphqlOverrides:{logs:[],patchSettings:()=>({...settingsSnapshot,system:{...settingsSnapshot.system,language:"en"}})}});
 
 const panels = {
-  indexers:["connection","queryOrder"], downloader:["connection","speed","cleanup"],
+  indexers:["sites","definitions","connection","cache"], downloader:["connection","speed","cleanup"],
   stash:["connection","delivery","metadata"], tasks:["schedule","releases","resources","deletion"],
   system:["general","imageCache"], logs:[], about:[]
 } as const;
@@ -92,7 +92,7 @@ test("each connection tests its current fields and reports a result", async ({pa
     await route.fallback();
   });
   for (const [section,service] of [["indexers","JACKETT"],["downloader","QBITTORRENT"],["stash","STASH"]]) {
-    await page.goto(`/settings/${section}`);
+    await page.goto(`/settings/${section}?panel=connection`);
     await expect(page.locator(".settings-main .status-chip")).toHaveCount(0);
     const address=page.getByRole("textbox",{name:"Service address",exact:true});
     await address.fill(`http://${section}.example`);
@@ -171,47 +171,35 @@ test("connection feedback is plain text and disappears after five seconds", asyn
   await expect(result).toHaveCount(0);
 });
 
-test("indexer rows expose site metadata and drag saves only query order", async ({page}, info) => {
-  const sites = [
-    {id:"a",name:"Alpha",enabled:true,siteUrl:"https://alpha.example/",siteType:"public",language:"en-US"},
-    {id:"b",name:"Beta",enabled:true,siteUrl:"https://beta.example/",siteType:"private",language:"zh-CN"},
-    {id:"c",name:"Gamma",enabled:true,siteUrl:"",siteType:"semi-private",language:"ja-JP"},
-    {id:"off",name:"Disabled",enabled:false,siteUrl:"",siteType:"",language:""},
-  ];
-  const patches:any[]=[];
-  await page.route("**/graphql", async route => {
+test("indexer rows preserve metadata, touch dragging and scoped order", async ({page}, info) => {
+  const base=indexerInstances.items[1];
+  let snapshot={...indexerInstances,order:["jackett/a","jackett/b","jackett/c"],items:[
+    {...base,id:"jackett/a",name:"Alpha",siteUrl:"https://alpha.example/"},
+    {...base,id:"jackett/b",name:"Beta",privacy:"private",language:"zh-CN"},
+    {...base,id:"jackett/c",name:"Gamma",siteUrl:""}
+  ]};
+  const orders:string[][]=[];
+  await page.route("**/graphql",async route=>{
     const request=route.request().postDataJSON();
-    if (request.operationName === "JackettIndexersDocument") {
-      await route.fulfill({contentType:"application/json",body:JSON.stringify({data:{jackettIndexers:sites}})}); return;
+    if(request.operationName==="ReorderIndexers"){
+      const ids=request.variables.ids as string[];orders.push(ids);
+      snapshot={...snapshot,revision:`config-${orders.length+1}`,order:ids,items:ids.map(id=>snapshot.items.find(item=>item.id===id)!)};
+      await route.fulfill({contentType:"application/json",body:JSON.stringify({data:{reorderIndexers:snapshot}})});return;
     }
-    if (request.operationName === "PatchSettings") patches.push(request.variables.input);
+    if(request.operationName==="IndexerInstances"){await route.fulfill({contentType:"application/json",body:JSON.stringify({data:{indexerInstances:snapshot}})});return;}
     await route.fallback();
   });
   await page.goto("/settings/indexers?panel=queryOrder");
-  const rows = page.locator(".settings-indexer-order li");
-  await expect(rows).toHaveCount(3);
-  await expect(rows.nth(0).getByRole("link")).toHaveAttribute("href","https://alpha.example/");
-  await expect(rows.nth(1)).toContainText("private · zh-CN");
-  await expect(page.getByText("Disabled", {exact:true})).toHaveCount(0);
-  const before=await rows.allTextContents();
-  await page.evaluate(() => document.fonts.ready);
-  await expect(page).toHaveScreenshot("indexer-query-order.png", {fullPage:true});
-  if (info.project.name === "mobile") {
-    const source=await rows.nth(0).locator(".settings-indexer-order__handle").boundingBox();
-    const target=await rows.nth(2).boundingBox();
-    const touch = await page.context().newCDPSession(page);
+  const rows=page.locator(".indexer-list .indexer-row");await expect(rows).toHaveCount(3);
+  await expect(rows.nth(0).getByRole("link")).toHaveAttribute("href","https://alpha.example/");await expect(rows.nth(1)).toContainText("zh-CN");
+  await page.evaluate(()=>document.fonts.ready);await expect(page).toHaveScreenshot("indexer-query-order.png",{fullPage:true});
+  if(info.project.name==="mobile"){
+    const source=await rows.nth(0).locator(".indexer-drag").boundingBox();const target=await rows.nth(2).boundingBox();
+    const touch=await page.context().newCDPSession(page);
     await touch.send("Input.dispatchTouchEvent",{type:"touchStart",touchPoints:[{x:source!.x+4,y:source!.y+4}]});
     await touch.send("Input.dispatchTouchEvent",{type:"touchMove",touchPoints:[{x:target!.x+target!.width/2,y:target!.y+target!.height/2}]});
-    await touch.send("Input.dispatchTouchEvent",{type:"touchEnd",touchPoints:[]});
-    await touch.detach();
-  } else {
-    await rows.nth(0).locator(".settings-indexer-order__handle").dragTo(rows.nth(2));
-  }
-  await expect.poll(()=>patches.length).toBe(1);
-  expect(patches[0]).toEqual({indexers:{query_order:["b","c","a"]}});
-  await expect(rows.nth(2)).toContainText("Alpha");
-  expect(await rows.allTextContents()).not.toEqual(before);
-  await rows.nth(2).getByRole("button",{name:"Move up a",exact:true}).click();
-  await expect.poll(()=>patches.length).toBe(2);
-  expect(patches[1]).toEqual({indexers:{query_order:["b","a","c"]}});
+    await touch.send("Input.dispatchTouchEvent",{type:"touchEnd",touchPoints:[]});await touch.detach();
+  }else{await rows.nth(0).locator(".indexer-drag").dragTo(rows.nth(2));}
+  await expect.poll(()=>orders.length).toBe(1);expect(orders[0]).toEqual(["jackett/b","jackett/c","jackett/a"]);await expect(rows.nth(2)).toContainText("Alpha");
+  await rows.nth(2).getByRole("button",{name:"Move Alpha up",exact:true}).click();await expect.poll(()=>orders.length).toBe(2);expect(orders[1]).toEqual(["jackett/b","jackett/a","jackett/c"]);
 });

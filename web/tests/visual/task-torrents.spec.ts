@@ -1,5 +1,5 @@
 import { expect } from "@playwright/test";
-import { downloaderSnapshot, homeOverview, test } from "./fixtures";
+import { downloaderSnapshot, homeOverview, torrentSearchSnapshot, searchCandidate, test } from "./fixtures";
 
 const waiting = homeOverview.attentionTasks[1];
 const completed = { ...homeOverview.recentTasks[0], torrentHash: "a".repeat(40), torrentName: "MOJI-301 - Completed and seeding", torrentUrl: "magnet:?xt=urn:btih:" + "a".repeat(40), files: [
@@ -9,8 +9,7 @@ const candidate = { title: "MOJI-102 " + "Long candidate title with release and 
   magnetUri: "magnet:?xt=urn:btih:" + "b".repeat(40), link: "https://indexer.invalid/download?apikey=fixture", details: "https://indexer.invalid/details/102" };
 test.use({ graphqlOverrides: {
   tasks: [waiting, completed], task: ({ id }: { id: string }) => [waiting, completed].find(task => task.id === id),
-  jackettSearch: [candidate],
-  blockedTaskTorrentCandidates: [candidate, { ...candidate, title: "No link or seeder data supplied", infoHash: "c".repeat(40), magnetUri: "", link: "", details: "", seeders: -1 }, { ...candidate, title: "Zero seeders", infoHash: "d".repeat(40), seeders: 0 }],
+  torrentSearch: ({id,offset,limit}:{id:string;offset:number;limit:number})=>({...torrentSearchSnapshot,id,offset,limit,taskId:id.startsWith("task-search-")?id.slice(12):null,total:id.startsWith("task-search-")?3:1,candidates:[{...searchCandidate,title:candidate.title,instanceName:candidate.tracker,kind:"JACKETT",size:candidate.size,seeders:candidate.seeders,publishedAt:candidate.publishDate,detailsUrl:candidate.details},...(id.startsWith("task-search-")?[{...searchCandidate,id:"unknown",title:"No link or seeder data supplied",size:null,seeders:null,detailsUrl:null},{...searchCandidate,id:"zero",title:"Zero seeders",seeders:0,detailsUrl:null}]:[])]}),
   downloader: { ...downloaderSnapshot, total: 1, torrents: [downloaderSnapshot.torrents[0]] }
 } });
 
@@ -23,10 +22,13 @@ for (const locale of ["en", "zh-CN"] as const) {
       await page.goto(`/tasks/${waiting.id}/resolve?__locale=${locale}`);
       const candidates = page.locator(".sourcing-resolution__candidates");
       await expect(candidates.locator("li")).toHaveCount(3);
-      await expect(candidates.getByRole("link")).toHaveCount(6);
+      await expect(candidates.getByRole("link",{name:locale==="en"?"Indexer details":"站点详情"})).toHaveCount(1);
       await expect(candidates).toContainText(locale === "en" ? "Seeders unknown" : "做种数未知");
       await expect(candidates).toContainText(locale === "en" ? "0 seeders" : "0 个做种者");
       expect(await candidates.evaluate(el => el.scrollWidth <= el.clientWidth)).toBe(true);
+      await expect(page.getByRole("button",{name:locale==="en"?"Search again":"重新搜索候选",exact:true})).toBeEnabled();
+      await page.evaluate(()=>document.fonts.ready);
+      await page.evaluate(()=>Promise.all(document.getAnimations().filter(animation=>animation.effect?.getComputedTiming().iterations!==Infinity).map(animation=>animation.finished.catch(()=>undefined))));
       await expect(page).toHaveScreenshot(`${locale}-${theme}-candidates.png`);
       expect(errors).toEqual([]);
     });
@@ -50,13 +52,13 @@ for (const locale of ["en", "zh-CN"] as const) {
   }
 }
 
-test("discovery uses the same torrent links and seeder count", async ({ page }) => {
+test("discovery uses server candidates and keeps detail links and seeder counts", async ({ page }) => {
   await page.addInitScript(() => localStorage.setItem("moji:locale", "en"));
-  await page.goto("/discover?source=jackett&q=MOJI-102&fastRules=0&fileRules=0");
-  const card = page.locator(".candidate-card--jackett");
+  await page.goto("/discover?source=indexers&q=MOJI-102&run=search-one&fastRules=0&fileRules=0");
+  const card = page.locator(".candidate-card--indexer");
   await expect(card).toHaveCount(1);
   await expect(card).toContainText("23 seeders");
-  await expect(card.getByRole("link")).toHaveCount(3);
+  await expect(card.getByRole("link")).toHaveCount(1);
   expect(await card.evaluate(el => el.scrollWidth <= el.clientWidth && el.scrollHeight <= el.clientHeight)).toBe(true);
   expect(await card.evaluate(el => el.querySelector(".candidate-card__head")!.getBoundingClientRect().bottom <= el.querySelector(".candidate-card__foot")!.getBoundingClientRect().top)).toBe(true);
   await expect(card).toHaveScreenshot("discovery-candidate.png");

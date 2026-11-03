@@ -48,7 +48,50 @@ export const downloaderSnapshot = {
     ]
   };
 
+export const indexerLibrary = {
+  streamId: "visual-indexer", activeRevision: "a".repeat(40), previousRevision: "", availableRevision: "a".repeat(40), revision: 1,
+  available: true, lastCheckedAt: now, checkErrorCode: "", errorCode: "", job: null,
+  installed: [{ revision: "a".repeat(40), schemaVersion: 11, engineVersion: "cardigann-v11-1", definitionCount: 579, installedAt: now }]
+};
+export const indexerInstances = {
+  healthErrorCode: "", revision: "config-1", ruleRevision: "a".repeat(40), ruleErrorCode: "", catalogErrorCode: "", jackettEnabled: true, order: ["builtin-one", "jackett/onejav"], networkProfiles: ["direct"],
+  items: [
+    {health:{search:null,fetch:null}, id: "builtin-one", name: "Sukebei", kind: "BUILTIN", enabled: true, definitionId: "sukebei", baseUrl: "", siteUrl: "https://sukebei.nyaa.si/", privacy: "public", language: "en-US", networkProfile: "direct", trustedOrigins: [], ruleDigest: "digest", errorCode: "", modes: ["search"], settings: [
+      { name: "filter", type: "select", label: "Filter", secret: false, configured: false, value: null, defaultValue: { string: "0", boolean: null, number: null }, options: [{ value: "0", label: "All" }, { value: "1", label: "Trusted only" }] },
+      { name: "cookie", type: "text", label: "Cookie", secret: true, configured: true, value: null, defaultValue: null, options: [] }
+    ] },
+    {health:{search:null,fetch:null}, id: "jackett/onejav", name: "OneJAV", kind: "JACKETT", enabled: true, definitionId: "", baseUrl: "", siteUrl: "https://onejav.com/", privacy: "public", language: "en-US", networkProfile: "", trustedOrigins: [], ruleDigest: "", errorCode: "", modes: ["search"], settings: [] }
+  ]
+};
+export const searchCandidate = { id:"candidate-one",instanceId:"builtin-one",instanceName:"Sukebei",kind:"BUILTIN",title:"MOJI-102 Long resource title with release and encoding information",detailsUrl:"https://example.test/details?id=1",infoHash:null,size:null,seeders:null,peers:null,publishedAt:null,categories:[] };
+export const torrentSearchSnapshot = {id:"search-one",state:"COMPLETED",revision:1,keywords:"MOJI-102",taskId:null,createdAt:now,updatedAt:now,expiresAt:"2099-01-15T12:00:00Z",finishedAt:now,cancelRequested:false,partial:false,truncated:false,errorCode:null,correlationId:"search-correlation",total:1,offset:0,limit:10,
+ sites:[{instanceId:"builtin-one",name:"Sukebei",kind:"BUILTIN",state:"COMPLETED",results:1,cacheHit:true,fetchedAt:now,elapsedMs:20,partial:false,truncated:false,errorCode:null,correlationId:null,retryAt:null}],candidates:[searchCandidate]};
 const rootValue = {
+  testIndexer: ({input}:{input:{instanceId?:string;expectedRevision:string;search:boolean;download:boolean}})=>({id:"site-test",instanceId:input.instanceId??"draft-only",kind:input.instanceId?.startsWith("jackett/")?"JACKETT":"BUILTIN",configRevision:input.expectedRevision,ruleRevision:"a".repeat(40),startedAt:now,finishedAt:now,results:input.search?1:0,partial:false,truncated:false,stages:[{name:"CONFIGURATION",state:"PASSED",errorCode:"",elapsedMs:1},{name:"AUTHENTICATION",state:input.instanceId?.startsWith("jackett/")?"NOT_OBSERVED":"NOT_REQUIRED",errorCode:"",elapsedMs:0},{name:"SEARCH",state:input.search?"PASSED":"NOT_REQUESTED",errorCode:"",elapsedMs:2},{name:"DOWNLOAD",state:input.download?"PASSED":"NOT_REQUESTED",errorCode:"",elapsedMs:3}]}),
+
+  indexerDefinitionPolicy: {revision:"config-one",source:"prowlarr",schemaVersion:11,checkIntervalHours:24,autoUpdate:false},
+  updateIndexerDefinitionPolicy: ({input}:{input:{checkIntervalHours?:number;autoUpdate?:boolean}})=>({revision:"config-two",source:"prowlarr",schemaVersion:11,checkIntervalHours:input.checkIntervalHours??24,autoUpdate:input.autoUpdate??false}),
+  prepareTorrentDownload: ()=>({kind:"TORRENT",downloadUrl:"/api/indexers/downloads/"+"d".repeat(64),expiresAt:new Date(Date.now()+300000).toISOString()}),
+  torrentSearch: ({id,offset=0,limit=100}:{id:string;offset:number;limit:number})=>({...torrentSearchSnapshot,id,offset,limit,taskId:id.startsWith("task-search-")?id.slice(12):null}),
+  startTorrentSearch: ({input}:{input:{keywords:string;taskId?:string}})=>({...torrentSearchSnapshot,id:input.taskId?`task-search-${input.taskId}`:"search-one",taskId:input.taskId??null,keywords:input.keywords,state:"QUEUED",total:0,candidates:[]}),
+  resolveTaskSourcingCandidate: ({input}:{input:{taskId:string;expectedRevision:number}})=>homeTask(input.taskId,"SOURCING","PENDING",{revision:input.expectedRevision+1,sourcingNextCheckAt:null}),
+  cancelTorrentSearch: ({id}:{id:string})=>({...torrentSearchSnapshot,id,state:"CANCELLED",cancelRequested:true}),
+  previewTorrentSelection: ({input}:{input:{searchId:string;offset?:number;limit?:number;applyFastRules:boolean;applyFileRules:boolean}})=>({searchId:input.searchId,searchRevision:1,total:1,offset:input.offset??0,limit:input.limit??100,candidates:[searchCandidate],meta:{appliedFastRules:input.applyFastRules,appliedFileRules:input.applyFileRules,inspectedCount:input.applyFileRules?1:0,inspectableCount:input.applyFileRules?1:0,inspectionCandidateLimit:input.applyFileRules?5:0}}),
+  queueTorrentCandidate: homeTask("queued-candidate","SOURCING","PENDING"),
+  torrentSearchEvents: ({id}:{id:string})=>({streamId:"search-stream",sequence:0,searchId:id}),
+
+  indexerNetworkSettings: {revision:"config-1",requestTimeoutSeconds:30,siteTimeoutSeconds:120,challengeTimeoutSeconds:90,profiles:[{id:"direct",proxyConfigured:false,flareSolverrConfigured:false,usedBy:1}]},
+  indexerCacheStatus: {revision:"config-1",enabled:true,ttlSeconds:300,emptyTtlSeconds:30,maxSizeMb:32,entries:0,usedBytes:0,activeRequests:0,activeWaiters:0},
+  clearIndexerSearchCache: {revision:"config-1",enabled:true,ttlSeconds:300,emptyTtlSeconds:30,maxSizeMb:32,entries:0,usedBytes:0,activeRequests:0,activeWaiters:0},
+  indexerEvents: {streamId:"visual-indexers",sequence:0,kind:"READY"},
+  indexerDefinitionStatus: indexerLibrary,
+  indexerDefinitionEvents: indexerLibrary,
+  checkIndexerDefinitionUpdate: indexerLibrary,
+  indexerInstances,
+  indexerDefinitions: { revision: "a".repeat(40), totalCount: 1, offset: 0, limit: 30, items: [{ id: "sukebei", name: "Sukebei", description: "Public torrent index", language: "en-US", privacy: "public", digest: "digest", links: ["https://sukebei.nyaa.si/"], modes: ["search"], warnings: [], settings: indexerInstances.items[0].settings }] },
+  setIndexerEnabled: indexerInstances,
+  refreshJackettIndexers: indexerInstances,
+  reorderIndexers: indexerInstances,
  upcomingReleases: () => ({items:[],performers:[],totalCount:0,page:1,pageSize:24,totalPages:0,subscribedCount:2,automatic:true,timezone:"Asia/Shanghai",today:"2026-10-31"}),
   version: "0.0.0-visual",
   testServiceConnection: {code:"OK"},
@@ -57,14 +100,12 @@ const rootValue = {
   controlTorrent: true,
   updateDownloaderPolicy: ({input}: {input: Record<string,unknown>}) => ({...downloaderSnapshot.policy,...input}),
   downloader: downloaderSnapshot,
+  homeIndexerSummary: {definitionJob:null,definitionErrorCode:"",revision:"indexers-config-1",total:2,builtinEnabled:1,builtinUnverified:1, builtinSearchSucceeded:0,healthErrorCode:"",attention:0,issues:[],jackett:{sites:1,stale:false,updatedAt:now,errorCode:""}},
   homeOverview,
   homeSubscriptionSummary: { total: 24, attention: 1, unchecked: 0, lastCheckedAt: "2026-01-15T11:30:00Z", attentionPerformerIds: ["p1"] },
   tasks: [],
   task: ({ id }: { id: string }) => [...homeOverview.attentionTasks, ...homeOverview.activeTasks, ...homeOverview.recentTasks].find(task => task.id === id),
   taskStashScenes: [],
-  blockedTaskTorrentCandidates: [],
-  jackettSearch: [],
-  jackettIndexers: [],
   discoverScenes: { items: [], usedStashBox: null, fallbackCount: 0, searchedQuery: "" },
   dashboardStats: { total: 0, active: 0, completed: 0, downloading: 0, pendingScans: 0, failed: 0 },
   releaseReviews: ({ input }: { input: { status?: string; page?: number } }) => ({
@@ -213,7 +254,21 @@ export const test = base.extend<{ graphqlOverrides: Record<string, unknown> }>({
         if (message.type === "connection_init") socket.send(JSON.stringify({ type: "connection_ack" }));
         if (message.type === "subscribe" && message.payload?.query?.includes("subscription TaskEvents")) socket.send(JSON.stringify({id:message.id,type:"next",payload:{data:{taskEvents:{__typename:"TaskEvent",type:"READY",sequence:0,streamId:"visual",taskId:"",listChanged:false,task:null,dashboardStats:null}}}}));
         if (message.type === "ping") socket.send(JSON.stringify({ type: "pong" }));
+        if (message.type === "subscribe" && message.payload?.query?.includes("subscription TorrentSearchEvents")) {
+          const result = graphqlSync({schema,rootValue:{...rootValue,...graphqlOverrides},source:message.payload.query,variableValues:message.payload.variables,operationName:message.payload.operationName});
+          errors.push(...(result.errors??[]).map(error=>error.message));socket.send(JSON.stringify({id:message.id,type:"next",payload:result}));
+        }
+        if (message.type === "subscribe" && message.payload?.query?.includes("subscription IndexerEvents")) {
+          const result = graphqlSync({ schema, rootValue: { ...rootValue, ...graphqlOverrides }, source: message.payload.query, variableValues: message.payload.variables, operationName: message.payload.operationName });
+          errors.push(...(result.errors ?? []).map(error => error.message));
+          socket.send(JSON.stringify({ id: message.id, type: "next", payload: result }));
+        }
         if (message.type === "subscribe" && message.payload?.query?.includes("subscription DatabasePerformanceDocument")) {
+          const result = graphqlSync({ schema, rootValue: { ...rootValue, ...graphqlOverrides }, source: message.payload.query, variableValues: message.payload.variables, operationName: message.payload.operationName });
+          errors.push(...(result.errors ?? []).map(error => error.message));
+          socket.send(JSON.stringify({ id: message.id, type: "next", payload: result }));
+        }
+        if (message.type === "subscribe" && (message.payload?.query?.includes("subscription IndexerDefinitionEvents") || message.payload?.query?.includes("subscription HomeIndexerDefinitionEvents"))) {
           const result = graphqlSync({ schema, rootValue: { ...rootValue, ...graphqlOverrides }, source: message.payload.query, variableValues: message.payload.variables, operationName: message.payload.operationName });
           errors.push(...(result.errors ?? []).map(error => error.message));
           socket.send(JSON.stringify({ id: message.id, type: "next", payload: result }));
