@@ -146,3 +146,9 @@
 基础和领域批次分别在仅含当前暂存内容的导出树验证，后端集成批次完整 Go 回归通过。Web 76 文件/428 项、i18n 10 项及生产构建通过；固定 Playwright v1.61.1 容器相关 206 项全部通过，未更新基线，报告没有失败重试。CLI、比较器 17 项、依赖锁检查 5 项、版本/发布脚本各 12 项与 smoke shell 语法检查通过。PNG 合成素材明确标记为二进制，避免 Git 将其文件头误判为文本空白。
 
 交付文档另作一批，完成后先验收当前提交的新 amd64 镜像。前述旧镜像只是历史时点证据；本轮浏览器通过不代表真实站点、ARM64 或远端 CI 已通过。活动未完项仍只在 R-004 维护。
+
+### 已提交源码的新镜像验收
+
+交付文档提交 `0a34d43` 后工作区干净，实际执行 amd64 的 `make docker-build` 和同 IMAGE 的 `make docker-test`，均 exit 0。镜像版本 `dev-0a34d4383cfe`，ID `sha256:38fdecb3e05ff58ad2382e4f84c44d47e3d2925728c0a9fd49906f9a088b2111`；inspect 确认为 linux/amd64，OCI revision 为 `0a34d4383cfe1c42b0743af2547b93615cf56486`。
+
+本次验证当前镜像内的 Web/后端版本、非 root 与媒体工具、无网络/只读根启动、无 Jackett/规则库的本地概况、没有隐式规则检查、配置保存、优雅退出和容器替换后的同一 generation/三库及设置保留。仅使用独立临时容器/卷，无生产服务操作。日志 `/tmp/moji-indexer-committed-amd64-build.log` 和 `/tmp/moji-indexer-committed-amd64-smoke.log`；ARM64、真实站点/代理/solver 与远端 Actions 未由此验证。
