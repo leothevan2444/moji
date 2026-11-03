@@ -171,7 +171,9 @@ Artifact 阶段验证：完整 Go 与相关 vet 通过，indexer/taskruntime/cmd
 
 JSON 日期取值验收：已按实际 Jackett 与 JSON.NET 13.0.3 源码独立实现有界标量投影，case/filters/数组/jsonjoinarray 共用；保留非日期原文及 HTML/字面 Text，未新增 .NET 依赖。23 种原始值及四种组合共五个正式场景通过，完整实际差分 97/97（0 未解释/5 原有解释）、完整 Go/cardigann+indexer race/相关 vet 通过。具体条件见[记录](reviews/2026-11-03-indexer-acceptance.md#json-日期标量取值)，不将标量投影扩大为全部 JSON.NET 类型比较兼容。
 
-下一步：按固定收尾范围继续其余 .NET/date/filter 边界（先核对 trim/split 的多字符参数语义及固定语料影响）、来源/许可、升级回退和完整验收；不增加可选产品功能。arm64 需要可执行 ARM 的环境或现有原生 CI，不能从 amd64 推断通过。真实 solver/代理与站点验收见上方未完成项。公共选择入口仍必须以服务器 run/candidate 身份解析，不能让浏览器提交替代定位符。
+字符串过滤器验收：生产 Load 遍历固定 579 定义，split 40/trim 32，未出现多字符/空/补充平面参数，htmlencode 为 0；BMP 多字符取首字符原实现已正确。实际对照另复现并修正补充平面首 UTF-16 单元、空 trim 及 HTML entity 差异；无效 UTF-16 输出显式返回字段错误，不冒称与参考程序无法序列化的输出完全互操作。六条正式场景通过，完整差分 103/103（0 未解释/5 原有解释）、完整 Go/相关 race/vet 通过；证据及限制见[记录](reviews/2026-11-03-indexer-acceptance.md#字符串过滤器的单字符参数与-html-entity)。
+
+下一步：按固定收尾范围继续其余 .NET/date/filter 边界（querystring/replace、大小写/文件名及相对日期）、来源/许可、升级回退和完整验收；不增加可选产品功能。arm64 需要可执行 ARM 的环境或现有原生 CI，不能从 amd64 推断通过。真实 solver/代理与站点验收见上方未完成项。公共选择入口仍必须以服务器 run/candidate 身份解析，不能让浏览器提交替代定位符。
 
 ## 用户提出的产品工作（2026-10-28）
 

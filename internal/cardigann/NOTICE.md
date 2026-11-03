@@ -7,7 +7,8 @@ https://github.com/Prowlarr/Indexers/blob/5f5db4e58d06be18619c3a858b9a91ade6f341
 Production indexer definitions are downloaded at runtime, not embedded here.
 Fixtures in this package are synthetic unless individually attributed.
 
-The andmatch row-filter semantics, query flags/IMDb short ID, checkbox values
+The andmatch row-filter semantics, query flags/IMDb short ID, checkbox values,
+single-UTF-16-character split/trim semantics, HTML entity spelling,
 and simpleCaptcha form protocol were checked
 against Jackett/Jackett at cfdc645711c487d05cb55932e394b2370154d81e:
 https://github.com/Jackett/Jackett/blob/cfdc645711c487d05cb55932e394b2370154d81e/src/Jackett.Common/Indexers/Definitions/CardigannIndexer.cs

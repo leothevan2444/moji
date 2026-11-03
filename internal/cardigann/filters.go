@@ -114,16 +114,12 @@ func ApplyFilters(ctx context.Context, data string, filters []Filter, fc FilterC
 				return "", fmt.Errorf("re_replace execution: %w", err)
 			}
 		case "split":
-			separator := []rune(arg(0))[0]
-			parts := strings.Split(data, string(separator))
 			index, _ := strconv.Atoi(arg(1))
-			if index < 0 {
-				index += len(parts)
+			var err error
+			data, err = splitFilter(data, arg(0), index)
+			if err != nil {
+				return "", err
 			}
-			if index < 0 || index >= len(parts) {
-				return "", fmt.Errorf("split position out of range")
-			}
-			data = parts[index]
 		case "replace":
 			if arg(0) == "" {
 				return "", fmt.Errorf("replace source is empty")
@@ -136,8 +132,12 @@ func ApplyFilters(ctx context.Context, data string, filters []Filter, fc FilterC
 		case "trim":
 			if len(filter.Args) == 0 {
 				data = strings.TrimSpace(data)
-			} else if arg(0) != "" {
-				data = strings.Trim(data, string([]rune(arg(0))[0]))
+			} else {
+				var err error
+				data, err = trimFilter(data, arg(0))
+				if err != nil {
+					return "", err
+				}
 			}
 		case "prepend", "append":
 			text, err := renderArg(0)
@@ -154,7 +154,7 @@ func ApplyFilters(ctx context.Context, data string, filters []Filter, fc FilterC
 		case "toupper":
 			data = strings.ToUpper(data)
 		case "htmlencode":
-			data = html.EscapeString(data)
+			data = htmlEncodeFilter(data)
 		case "htmldecode":
 			data = html.UnescapeString(data)
 		case "urlencode":

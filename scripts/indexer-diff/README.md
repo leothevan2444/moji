@@ -41,7 +41,10 @@ text. They check both intermediate strings and final publication timestamps.
 JSON date cases compare ISO/Microsoft date scalar projections across 23 valid
 and invalid inputs, arrays, case selection, jsonjoinarray and a filter/date
 field chain. Literal selector text is not implicitly date-converted.
-The 97 executed cases
+String-filter cases check first-character multi-character arguments, valid
+supplementary-plane split/trim results, empty trim failure, and exact HTML
+entities (quotation marks, Latin-1, BMP and supplementary text).
+The 103 executed cases
 include four explicitly expected rejections (invalid TV episode, captcha
 answer rejected by the site, empty numeric ID/year and overflowing ID); they do not certify the community
 library's live availability. Additional failure/cancellation

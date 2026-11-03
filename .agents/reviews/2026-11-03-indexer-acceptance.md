@@ -52,10 +52,10 @@
 
 | 完整枚举/能力 | 当前证据 | 尚不能据此判定的范围 |
 | --- | --- | --- |
-| querystring, split, replace, trim, prepend, append | filters.go、filters_test.go；负索引和替换有样本 | 多字符/Unicode 分隔符、空值与越界、全部模板参数组合。 |
+| querystring, split, replace, trim, prepend, append | filters.go、string_filters.go 与回归；split/trim 多字符首 UTF-16 单元、负索引、补充平面和空 trim 已实际对照 | querystring/replace 全部参数与模板组合；会产生无配对代理项的 UTF-16 输出明确拒绝，不能算完整无效文本互操作。 |
 | regexp, re_replace | 有预算的 regexp2；lookbehind、捕获组及字符类回归 | .NET 全部语法、超时/取消、替换组边界和不同过滤器列表的安装期验证。 |
 | tolower, toupper, diacritics, validfilename | filters.go 的字符串/正规化分支；部分变音符测试 | 文化大小写、.NET UTF-16 与文件名非法字符的逐项语义。 |
-| urlencode, urldecode, htmlencode, htmldecode | .NET 旧编码完整 BMP/字节摘要见请求复核；声明编码回归 | HTML 转义细节、URL 非法输入及所有 IANA charset。 |
+| urlencode, urldecode, htmlencode, htmldecode | .NET 旧编码完整 BMP/字节摘要见请求复核；声明编码回归；HTML 引号/Latin-1/BMP/补充平面 entity 实际对照与往返 | URL 非法输入、所有 IANA charset 与全部 HTML 解码宽松规则。 |
 | dateparse, timeparse, timeago, reltime, fuzzytime | dates.go、固定 Now 的离线样本 | 上游实际相对时钟、日期文化/时区/歧义格式全集。 |
 | jsonjoinarray, validate | JSONPath 与 validate 样本 | JSON null/非数组、动态参数及所有上游大小写/顺序语义。 |
 | hexdump, strdump | 保留输入的分支，无站点正文日志副作用 | 不表示提供了上游调试日志；这是脱敏诊断策略。 |
@@ -137,6 +137,16 @@
 `jsonScalarText` 统一处理合法 ISO/微软日期，UTC 宿主文本格式为 MM/dd/yyyy HH:mm:ss；显式偏移先换算时刻，微软毫秒时间不重复套用后缀偏移。支持七位小数、合法午夜跨日和日期范围端点；纯日期、非大写 T、无效日历、八位小数等维持原文。字面 Text 与 HTML 不走这一 JSON 隐式投影；普通数值/布尔/null 处理不变。投影位于取值边界，不替换整个 JSON 树或声称提供 JSON.NET 的全部动态类型/比较器。
 
 新增五个实际场景：23 种原始日期/非日期值、数组拼接、case、jsonjoinarray、JSON 取值→日期 filter→date 字段；日期过滤器面对已转换文本的失败原文回退与最终发布时间一致。新增本地回归覆盖边界、字面 Text 不变及过滤器执行次序。完整实际差分 97/97（93 正常、4 精确预期拒绝），0 未解释/5 原有解释，报告 `/tmp/moji-indexer-diff-json-dates-final.json`；无新增比较例外或参考程序修改。完整 Go、cardigann/indexer 完整 race 与相关 vet 通过。仅引擎与测试/证据变更，不重复未受影响的 Web、静态全库和镜像；来源/许可、其他过滤器和动态日期比较、真实时区/站点等剩余范围仍归 R-004。
+
+## 字符串过滤器的单字符参数与 HTML entity
+
+基线 `2821cb2`。固定语料 `5f5db4e` 的归档摘要再次核对为 `b266646ab2662c260ac6b0fad5f99794b200784f3ac865b521820e8e6814a472`；通过生产 Load 对全部 579 个定义进行临时参数遍历，统计 split 40 处、trim 32 处，没有多字符/空参数/补充平面参数，htmlencode 为 0。报告 `/tmp/moji-trim-split-corpus.json`；临时检查程序已删除，未将生产 YAML 纳入代码。这只说明固定语料用法，不限制未来合法 v11 定义。
+
+实际 Jackett 对照确认普通 BMP 多字符参数原实现已经正确取第一个字符，没有为此改坏现有行为；红报告另复现 split/trim 将补充平面 rune 当成 C# char 的差异、显式空 trim 被忽略，以及 HTML 编码实体拼写不同。新 string_filters.go 保留 BMP 快路径，补充平面按首个 UTF-16 代码单元处理；空 trim 产生字段错误，与上游可选 description 取值失败后的空字段结果一致。HtmlEncode 使用上游的双引号命名实体、Latin-1 和补充平面数字实体，保留普通 BMP 文本；原先 Go EscapeString 的双引号数字实体及非 ASCII 原样输出已修正。
+
+新增六条正式场景（HTML 编码包含五组原始值），固定实际对照 103/103（99 正常、4 精确预期拒绝），0 未解释/5 原有解释，无新比较例外；报告 `/tmp/moji-indexer-diff-string-filters-final.json`。本地回归覆盖负索引、中日韩/补充平面参数、空 trim、无配对输出拒绝与 HTML entity 往返；完整 Go、cardigann/indexer 完整 race 和相关 vet 通过。没有 API/UI/schema/Load 修改，不重复 Web、镜像或全库编译。
+
+无效 UTF-16 边界明确保留：参考程序对 `trim("😀VALUE😀", "😀")` 的中间值产生无配对代理项，实际写出失败 EncoderFallbackException；未修改参考序列化或将其算作通过样本。Moji 在这一边界返回字段错误，不默默替换或丢字符；有效 UTF-8 输出的补充平面 split/trim 已实际对照，但不能据此声称全部无效 UTF-16 管线互操作。初次临时语料检查的绝对路径拼接有误，修正后完成全部 579 定义遍历；不是规则加载失败。所有测试仅用合成数据/固定归档，没有真实站点或下载器操作。
 
 ## 附件缓存负载与取消测量
 
