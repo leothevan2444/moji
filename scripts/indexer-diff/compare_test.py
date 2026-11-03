@@ -15,6 +15,33 @@ import compare
 
 
 class ComparisonTests(unittest.TestCase):
+    def test_relative_date_helper_requires_a_fixed_clock_and_isolated_bounded_inputs(self):
+        with tempfile.TemporaryDirectory() as directory:
+            scenario = Path(directory) / "scenario.json"
+            valid = {"now": "2024-03-31T12:34:56.5Z", "relativeDateFilters": [{"name": "timeago", "input": "1 month"}]}
+            scenario.write_text(json.dumps(valid))
+            self.assertEqual(compare.resolve_case(scenario), (valid, [], None))
+            for invalid in [{**valid, "now": "2024-03-31T12:34:56"},
+                            {**valid, "responses": []},
+                            {**valid, "relativeDateFilters": []},
+                            {**valid, "relativeDateFilters": valid["relativeDateFilters"] * 101},
+                            {**valid, "relativeDateFilters": [{"name": "execute", "input": "1 month"}]},
+                            {**valid, "relativeDateFilters": [{"name": "timeago", "input": "x" * 4097}]},
+                            {**valid, "relativeDateFilters": [{"name": "timeago", "input": "1 month", "expectInvalid": "yes"}]}]:
+                scenario.write_text(json.dumps(invalid))
+                with self.assertRaises(ValueError):
+                    compare.resolve_case(scenario)
+
+    def test_relative_date_values_and_failure_status_are_compared_exactly(self):
+        left = {"engine": "synthetic", "requests": [], "results": [], "mode": "relative-date-helper",
+                "relativeDates": [{"name": "timeago", "input": "1 month", "value": "Fri, 01 Mar 2024 12:34:56 +0", "invalid": False}]}
+        right = copy.deepcopy(left)
+        right["relativeDates"][0]["value"] = "Thu, 29 Feb 2024 12:34:56 +0"
+        self.assertEqual(compare.classify(left, right, [])["unexpected"][0]["path"], "/relativeDates/0/value")
+        right = copy.deepcopy(left)
+        right["relativeDates"][0]["invalid"] = True
+        self.assertEqual(compare.classify(left, right, [])["unexpected"][0]["path"], "/relativeDates/0/invalid")
+
     def test_concurrent_runs_cannot_share_scenario_or_result_files(self):
         barrier = threading.Barrier(2)
         scenario_paths = set()

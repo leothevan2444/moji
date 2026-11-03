@@ -1,0 +1,53 @@
+{
+  "now": "2024-03-31T12:34:56Z",
+  "relativeDateFilters": [
+    {
+      "name": "timeago",
+      "input": "0.1 month"
+    },
+    {
+      "name": "timeago",
+      "input": "0.1 year"
+    },
+    {
+      "name": "timeago",
+      "input": "0.1 week"
+    },
+    {
+      "name": "timeago",
+      "input": "1.1 months"
+    },
+    {
+      "name": "timeago",
+      "input": "1.1 weeks"
+    },
+    {
+      "name": "timeago",
+      "input": "1.1 days"
+    },
+    {
+      "name": "timeago",
+      "input": "0.1 seconds"
+    },
+    {
+      "name": "timeago",
+      "input": "1\u00a0m"
+    },
+    {
+      "name": "timeago",
+      "input": "1h\u00a02d"
+    },
+    {
+      "name": "timeago",
+      "input": "1\u0085h"
+    },
+    {
+      "name": "timeago",
+      "input": "1\u000bm"
+    },
+    {
+      "name": "timeago",
+      "input": "1\u2028d"
+    }
+  ]
+}

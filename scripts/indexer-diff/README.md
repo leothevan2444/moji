@@ -54,6 +54,15 @@ answer rejected by the site, empty numeric ID/year and overflowing ID); they do 
 library's live availability. Additional failure/cancellation
 scenarios and other challenge implementations remain.
 
+Relative dates are checked separately in `helper-cases/`: two fixed-clock
+groups contain 38 inputs. Moji runs its actual timeago/reltime filters; the
+pinned reference directly calls the unmodified DateTimeUtil.FromTimeAgo with
+the same explicit relativeFrom clock. Reports are marked relative-date-helper,
+including exact output text and declared invalid outcomes. They check elapsed
+month/year intervals, float32 scaling, Unicode whitespace and range failures;
+they are not additional complete search/login/download scenarios. No wall-clock
+normalization or timestamp tolerance is applied to these helper results.
+
 The user confirmed inheriting Jackett's public tracker defaults for generated
 magnets. Both previously pending infohash/title cases are back in `cases/`, with
 no difference exceptions. Site-provided magnets retain their original content.
@@ -130,6 +139,16 @@ GOCACHE=/tmp/moji-go-cache python3 scripts/indexer-diff/compare.py \
   --reference-root /tmp/moji-indexer-reference --report /tmp/moji-indexer-diff.json
 python3 scripts/indexer-diff/compare_test.py
 python3 scripts/indexer-diff/build_reference_test.py
+```
+
+Run the two fixed-clock helper groups separately, as CI does:
+
+```sh
+GOCACHE=/tmp/moji-go-cache python3 scripts/indexer-diff/compare.py \
+  --reference-root /tmp/moji-indexer-reference \
+  --case scripts/indexer-diff/helper-cases/relative-dates/scenario.json \
+  --case scripts/indexer-diff/helper-cases/relative-dates-zero-ticks/scenario.json \
+  --report /tmp/moji-relative-dates.json
 ```
 
 Use repeated `--case path/to/scenario.json` to select cases. Moji's replay command

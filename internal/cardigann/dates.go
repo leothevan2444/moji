@@ -112,12 +112,16 @@ func formatFilterDate(parsed time.Time) string {
 }
 
 var relativeDatePattern = regexp.MustCompile(`(?i)([0-9]+(?:\.[0-9]+)?)\s*(years?|yrs?|months?|mons?|weeks?|wks?|days?|hours?|hrs?|minutes?|mins?|seconds?|secs?|[ywdhms])\b`)
+var fuzzyAgoPattern = regexp.MustCompile(`(?:^|[^\p{L}\p{Mn}\p{Nd}\p{Pc}])ago`)
 
-func parseRelativeDate(data string, now time.Time) (time.Time, error) {
+func parseFuzzyRelativeDate(data string, now time.Time) (time.Time, error) {
 	if now.IsZero() {
 		now = time.Now().UTC()
 	}
 	text := strings.ToLower(strings.TrimSpace(data))
+	if fuzzyAgoPattern.MatchString(text) {
+		return parseRelativeDate(data, now)
+	}
 	switch text {
 	case "now", "just now", "today", "right now":
 		return now, nil

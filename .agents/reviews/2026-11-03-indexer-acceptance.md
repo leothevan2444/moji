@@ -56,7 +56,7 @@
 | regexp, re_replace | 有预算的 regexp2；lookbehind、捕获组及字符类回归 | .NET 全部语法、超时/取消、替换组边界和不同过滤器列表的安装期验证。 |
 | tolower, toupper, diacritics, validfilename | filters.go 的字符串/正规化分支；不变文化土耳其 I/希腊/补充平面与 Linux 文件名字符集实际对照；部分变音符测试 | 其他文化、Unicode 版本/UTF-16 及 Windows 实际运行；Moji 文件路径安全验证不归此规则过滤器。 |
 | urlencode, urldecode, htmlencode, htmldecode | .NET 旧编码完整 BMP/字节摘要见请求复核；声明编码回归；HTML 引号/Latin-1/BMP/补充平面 entity 实际对照与往返 | URL 非法输入、所有 IANA charset 与全部 HTML 解码宽松规则。 |
-| dateparse, timeparse, timeago, reltime, fuzzytime | dates.go、固定 Now 的离线样本 | 上游实际相对时钟、日期文化/时区/歧义格式全集。 |
+| dateparse, timeparse, timeago, reltime, fuzzytime | dates.go/relative_dates.go；绝对日期实际场景，timeago/reltime 与上游原函数两组固定时钟 38 输入；fuzzy ago 共用间隔 | 其他 fuzzy 日历推断、实际宿主时区/DST、日期文化及歧义格式。辅助函数对照不计为完整搜索场景。 |
 | jsonjoinarray, validate | JSONPath 与 validate 样本 | JSON null/非数组、动态参数及所有上游大小写/顺序语义。 |
 | hexdump, strdump | 保留输入的分支，无站点正文日志副作用 | 不表示提供了上游调试日志；这是脱敏诊断策略。 |
 | .Config/.Query/.Result/.Categories/.Today，if/else/range、逻辑/比较/join/re_replace | template.go、template_test.go、实际结构化查询/请求场景；编译/步数/字节/深度预算 | 日期默认、查询派生、真假值和枚举/函数组合还未完整上游认证；不暴露任意 Go 方法或脚本执行。 |
@@ -163,6 +163,18 @@
 新增七条正式场景，querystring 含 17 种输入，另有 HTML 属性、模板 replace、validate、Linux 文件名和大小写。隔离后整组实际 110/110（106 正常、4 精确预期拒绝），0 未解释/5 原有解释，报告 `/tmp/moji-indexer-diff-filter-tail-isolated-final.json`。同一参考根并发专项亦通过，18 项比较器、5 项依赖锁检查、完整 Go、cardigann/indexer 完整 race 和相关 vet 通过。两个旧单测对 querystring HTML 解码及 validate 空格的预期经真实上游证据纠正；无新增比较例外、SDK/runner/锁修改。
 
 本轮没有 API/UI/schema/Load 变化，不重复 Web、全库或镜像；Windows 分支没有 Windows .NET 实测，不把 Linux 证据扩大。实际站点、全部非 ASCII 键、其他文化/Unicode 版本和相对日期仍需按 R-004 收尾。
+
+## 相对间隔与固定时钟（2026-11-04）
+
+基线 `0980cca`。读取固定 DateTimeUtil.FromTimeAgo 后识别原 Go 实现将月份/年份按日历加减，与上游 30 天/365 天固定间隔不符。新增明确标记为 relative-date-helper 的独立辅助协议：Go 执行正式 ApplyFilters 的 timeago/reltime，参考程序直接调用未修改的上游 FromTimeAgo(text, relativeFrom)，共用显式子秒/整秒时钟。辅助报告仍逐字比较字符串和输入、失败状态；预期失败在场景中声明，两端不符合声明都会报告错误，未加入浮动时钟容差。
+
+真实红报告 `/tmp/moji-relative-dates-red.json` 复现 2024-03-31 减一个月 Go 得到 3 月 2 日、上游 3 月 1 日，以及 mo 别名被拒绝。第二组整秒红报告 `/tmp/moji-relative-dates-zero-red.json` 进一步复现 float32 月/周/年缩放导致的秒边界差异和 Unicode 空白不被识别。relative_dates.go 已按固定间隔、单精度数值及中间乘法、100 ns ticks、上游单位匹配和无数量时返回原时刻修正；分离整天与不足一天的间隔，避免 Go Duration 对世纪级时间的溢出；保留 DateTime 年份/总量溢出拒绝。fuzzytime 仅其明确 ago 分支共用该间隔，其他日历推断继续独立核对，不将 timeago 的 yesterday 语义混给 fuzzy 日历。
+
+两组 38 个输入（32 合法、6 声明非法）对真实上游函数全部通过，0 未解释/0 例外，报告 `/tmp/moji-relative-dates-final.json`。覆盖闰年、月末、小数日/周/月、浮点取值、混合单位、千位分隔符、Unicode 空白、365 年区间、未知/溢出单位及 now/no-match；不将这些辅助输入计为完整解释器场景。原完整搜索/登录/下载场景仍为 110/110（106 正常、4 精确预期拒绝），0 未解释/5 原有解释，报告 `/tmp/moji-indexer-diff-relative-full-final.json`。
+
+参考新增固定时钟入口，必须重建：最新 `/tmp/moji-indexer-diff-reference-8` 在固定 SDK、原归档及三个依赖锁下 restore/build 成功，31 个 DLL 指纹验证通过；旧 reference-6 被 provenance 拒绝。准备时修正 runner 通过 Value<string> 读取日期 token 会丢子秒的问题，改为保留 DateTime ticks 后在全新目录重建；未改上游解析类。完整 Go、cardigann/indexer/回放 CLI 的 race 与 vet、20 项比较器及 5 项依赖锁检查通过。兼容 CI 追加独立辅助对照步骤及单独报告制品，不增加生产依赖；远端 Actions 尚未执行。
+
+本轮未改 API/UI/schema/Load，不重复 Web、全库静态或镜像；其他 fuzzy 日历、jsonjoinarray 空/非数组及来源/许可等未完成项仍由 R-004 跟踪。没有实际站点、配置、数据库或下载器操作。
 
 ## 附件缓存负载与取消测量
 

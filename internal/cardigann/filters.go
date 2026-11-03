@@ -181,9 +181,15 @@ func ApplyFilters(ctx context.Context, data string, filters []Filter, fc FilterC
 			if parsed, err := parseRuleDate(data, arg(0), fc.Now); err == nil {
 				data = formatFilterDate(parsed)
 			}
-		case "timeago", "reltime", "fuzzytime":
+		case "timeago", "reltime":
 			parsed, err := parseRelativeDate(data, fc.Now)
-			if err != nil && filter.Name == "fuzzytime" {
+			if err != nil {
+				return "", err
+			}
+			data = formatFilterDate(parsed)
+		case "fuzzytime":
+			parsed, err := parseFuzzyRelativeDate(data, fc.Now)
+			if err != nil {
 				parsed, err = parseRuleDate(data, "", fc.Now)
 			}
 			if err != nil {

@@ -1,0 +1,115 @@
+{
+  "now": "2024-03-31T12:34:56.5Z",
+  "relativeDateFilters": [
+    {
+      "name": "timeago",
+      "input": "1 month"
+    },
+    {
+      "name": "reltime",
+      "input": "1 mo"
+    },
+    {
+      "name": "timeago",
+      "input": "1.5 months"
+    },
+    {
+      "name": "reltime",
+      "input": "1 year"
+    },
+    {
+      "name": "timeago",
+      "input": "1.5 days"
+    },
+    {
+      "name": "reltime",
+      "input": "1.5 weeks"
+    },
+    {
+      "name": "timeago",
+      "input": "2 hours 30 minutes ago"
+    },
+    {
+      "name": "reltime",
+      "input": "1,000 seconds"
+    },
+    {
+      "name": "timeago",
+      "input": "1 hr"
+    },
+    {
+      "name": "reltime",
+      "input": "2 wks"
+    },
+    {
+      "name": "timeago",
+      "input": ".5 hours"
+    },
+    {
+      "name": "reltime",
+      "input": "1.2.3 seconds"
+    },
+    {
+      "name": "timeago",
+      "input": "1 millisecond"
+    },
+    {
+      "name": "reltime",
+      "input": "just now"
+    },
+    {
+      "name": "timeago",
+      "input": "unknown"
+    },
+    {
+      "name": "reltime",
+      "input": "yesterday"
+    },
+    {
+      "name": "timeago",
+      "input": "today"
+    },
+    {
+      "name": "reltime",
+      "input": ""
+    },
+    {
+      "name": "timeago",
+      "input": "2 years 3 months 4 days"
+    },
+    {
+      "name": "reltime",
+      "input": "365 years"
+    },
+    {
+      "name": "timeago",
+      "input": "1e3 seconds",
+      "expectInvalid": true
+    },
+    {
+      "name": "timeago",
+      "input": "1 fortnight",
+      "expectInvalid": true
+    },
+    {
+      "name": "timeago",
+      "input": "1 mon",
+      "expectInvalid": true
+    },
+    {
+      "name": "timeago",
+      "input": "1 yr",
+      "expectInvalid": true
+    },
+    {
+      "name": "timeago",
+      "input": ".. hours",
+      "expectInvalid": true
+    },
+    {
+      "name": "timeago",
+      "input": "1000000 years",
+      "expectInvalid": true
+    }
+  ]
+}

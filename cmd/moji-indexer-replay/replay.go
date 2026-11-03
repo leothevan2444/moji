@@ -19,14 +19,15 @@ import (
 )
 
 type scenario struct {
-	Definition      string                      `json:"definition"`
-	Query           cardigann.Query             `json:"query"`
-	Settings        map[string]cardigann.Scalar `json:"settings"`
-	Responses       []responseFixture           `json:"responses"`
-	Authenticate    bool                        `json:"authenticate"`
-	ChallengeAnswer *string                     `json:"challengeAnswer"`
-	Fetch           bool                        `json:"fetch"`
-	Now             time.Time                   `json:"now"`
+	Definition          string                      `json:"definition"`
+	Query               cardigann.Query             `json:"query"`
+	Settings            map[string]cardigann.Scalar `json:"settings"`
+	Responses           []responseFixture           `json:"responses"`
+	Authenticate        bool                        `json:"authenticate"`
+	ChallengeAnswer     *string                     `json:"challengeAnswer"`
+	Fetch               bool                        `json:"fetch"`
+	Now                 time.Time                   `json:"now"`
+	RelativeDateFilters []relativeDateFilter        `json:"relativeDateFilters,omitempty"`
 }
 type responseFixture struct {
 	Method  string      `json:"method"`
@@ -60,12 +61,26 @@ type artifactRecord struct {
 	Magnet string `json:"magnet"`
 }
 type replayReport struct {
-	Engine    string           `json:"engine"`
-	Requests  []requestRecord  `json:"requests"`
-	Results   []resultRecord   `json:"results"`
-	Artifact  *artifactRecord  `json:"artifact,omitempty"`
-	Challenge *challengeRecord `json:"challenge,omitempty"`
-	Error     string           `json:"error,omitempty"`
+	Engine        string               `json:"engine"`
+	Requests      []requestRecord      `json:"requests"`
+	Results       []resultRecord       `json:"results"`
+	Artifact      *artifactRecord      `json:"artifact,omitempty"`
+	Challenge     *challengeRecord     `json:"challenge,omitempty"`
+	Error         string               `json:"error,omitempty"`
+	Mode          string               `json:"mode,omitempty"`
+	RelativeDates []relativeDateResult `json:"relativeDates,omitempty"`
+}
+
+type relativeDateFilter struct {
+	Name          string `json:"name"`
+	Input         string `json:"input"`
+	ExpectInvalid bool   `json:"expectInvalid"`
+}
+type relativeDateResult struct {
+	Name    string `json:"name"`
+	Input   string `json:"input"`
+	Value   string `json:"value"`
+	Invalid bool   `json:"invalid"`
 }
 
 type challengeRecord struct {
@@ -83,6 +98,9 @@ func replay(ctx context.Context, input scenario) replayReport {
 }
 
 func execute(ctx context.Context, input scenario, report *replayReport) error {
+	if input.RelativeDateFilters != nil {
+		return replayRelativeDates(ctx, input, report)
+	}
 	plan, err := cardigann.Load([]byte(input.Definition))
 	if err != nil {
 		return err
@@ -150,6 +168,26 @@ func execute(ctx context.Context, input scenario, report *replayReport) error {
 			sum := sha256.Sum256(artifact.TorrentBytes)
 			report.Artifact.SHA256 = hex.EncodeToString(sum[:])
 		}
+	}
+	return nil
+}
+
+// This helper mode compares Go filters with the real upstream date helper's
+// explicit relativeFrom argument. It does not claim to run a search scenario.
+func replayRelativeDates(ctx context.Context, input scenario, report *replayReport) error {
+	if input.Now.IsZero() || input.Definition != "" || len(input.Responses) != 0 || len(input.Settings) != 0 || input.ChallengeAnswer != nil || input.Fetch || input.Authenticate || len(input.RelativeDateFilters) == 0 || len(input.RelativeDateFilters) > 100 {
+		return fmt.Errorf("relative-date helper requires a fixed clock and 1..100 isolated inputs")
+	}
+	report.Mode = "relative-date-helper"
+	for _, test := range input.RelativeDateFilters {
+		if (test.Name != "timeago" && test.Name != "reltime") || len(test.Input) > 4096 {
+			return fmt.Errorf("invalid relative-date helper input")
+		}
+		value, err := cardigann.ApplyFilters(ctx, test.Input, []cardigann.Filter{{Name: test.Name}}, cardigann.FilterContext{Now: input.Now.UTC()})
+		if (err != nil) != test.ExpectInvalid {
+			return fmt.Errorf("relative-date outcome differs from declared expectation for %q", test.Input)
+		}
+		report.RelativeDates = append(report.RelativeDates, relativeDateResult{Name: test.Name, Input: test.Input, Value: value, Invalid: err != nil})
 	}
 	return nil
 }

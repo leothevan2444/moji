@@ -25,6 +25,12 @@ This is a host default, separate from dynamically downloaded site definitions.
 The comparison verifies exact URI parameters; it does not probe those trackers'
 current availability.
 
+timeago/reltime interval behavior is checked against the same pinned Jackett
+DateTimeUtil.FromTimeAgo, using its explicit relativeFrom argument for fixed
+clocks. The production Go implementation uses elapsed 30-day months/365-day
+years and float32 scaling; .NET remains a development-only reference.
+https://github.com/Jackett/Jackett/blob/cfdc645711c487d05cb55932e394b2370154d81e/src/Jackett.Common/Utils/DateTimeUtil.cs
+
 validfilename follows the native Path.GetInvalidFileNameChars contract, which
 differs between Unix and Windows. Actual interpreter cases use the pinned Linux
 reference; this filter is separate from Moji's validation of filesystem paths.

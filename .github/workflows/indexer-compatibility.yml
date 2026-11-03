@@ -27,6 +27,12 @@ jobs:
         run: python3 scripts/indexer-diff/build_reference.py --download --work-dir "$RUNNER_TEMP/indexer-reference"
       - name: Compare actual interpreters on synthetic sites
         run: python3 scripts/indexer-diff/compare.py --reference-root "$RUNNER_TEMP/indexer-reference" --report "$RUNNER_TEMP/indexer-diff.json"
+      - name: Compare relative date helpers with fixed clocks
+        run: >-
+          python3 scripts/indexer-diff/compare.py --reference-root "$RUNNER_TEMP/indexer-reference"
+          --case scripts/indexer-diff/helper-cases/relative-dates/scenario.json
+          --case scripts/indexer-diff/helper-cases/relative-dates-zero-ticks/scenario.json
+          --report "$RUNNER_TEMP/indexer-relative-dates.json"
       - name: Compile pinned v11 corpus
         if: success() || failure()
         run: python3 scripts/indexer-definitions/check_corpus.py --download --report "$RUNNER_TEMP/indexer-corpus.json"
@@ -37,6 +43,7 @@ jobs:
           name: indexer-compatibility-reports
           path: |
             ${{ runner.temp }}/indexer-diff.json
+            ${{ runner.temp }}/indexer-relative-dates.json
             ${{ runner.temp }}/indexer-corpus.json
           if-no-files-found: ignore
           retention-days: 7

@@ -8,9 +8,26 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/leothevan2444/moji/internal/cardigann"
 )
+
+func TestRelativeDateHelperUsesFixedSubsecondClockAndNoHTTP(t *testing.T) {
+	clock := time.Date(2024, 3, 31, 12, 34, 56, 500000000, time.UTC)
+	report := replay(context.Background(), scenario{Now: clock, RelativeDateFilters: []relativeDateFilter{{Name: "timeago", Input: "1.5 seconds"}}})
+	if report.Error != "" || report.Mode != "relative-date-helper" || len(report.Requests) != 0 || len(report.Results) != 0 || len(report.RelativeDates) != 1 || report.RelativeDates[0].Value != "Sun, 31 Mar 2024 12:34:55 +0" {
+		t.Fatalf("helper lost its fixed clock or executed a search: %+v", report)
+	}
+	input := scenario{Now: clock, RelativeDateFilters: []relativeDateFilter{{Name: "timeago", Input: "1.5 seconds", ExpectInvalid: true}}}
+	if report := replay(context.Background(), input); report.Error == "" {
+		t.Fatal("helper hid an outcome different from the declared expectation")
+	}
+	input.RelativeDateFilters[0].Name = "execute"
+	if report := replay(context.Background(), input); report.Error == "" {
+		t.Fatal("helper accepted an arbitrary operation")
+	}
+}
 
 func TestReplayManualChallengesResumeOriginalForm(t *testing.T) {
 	for _, kind := range []string{"text", "image"} {

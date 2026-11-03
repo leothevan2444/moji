@@ -1,4 +1,5 @@
 using System.Net;
+using System.Globalization;
 using System.Security.Cryptography;
 using System.Text;
 using Jackett.Common.Indexers;
@@ -8,6 +9,7 @@ using Jackett.Common.Models.Config;
 using static Jackett.Common.Models.IndexerConfig.ConfigurationData;
 using Jackett.Common.Services.Interfaces;
 using Jackett.Common.Utils.Clients;
+using Jackett.Common.Utils;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using NLog;
@@ -18,6 +20,35 @@ using WebRequest = Jackett.Common.Utils.Clients.WebRequest;
 
 Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
 var input = JObject.Parse(File.ReadAllText(args[0]));
+if (input["relativeDateFilters"] is JArray relativeFilters)
+{
+    var helper = new JObject { ["engine"] = "jackett", ["mode"] = "relative-date-helper", ["requests"] = new JArray(), ["results"] = new JArray(), ["relativeDates"] = new JArray() };
+    try
+    {
+        if (relativeFilters.Count == 0 || relativeFilters.Count > 100 || input["now"] == null)
+            throw new ArgumentException("A fixed clock and 1..100 inputs are required");
+        // JObject can already hold a DateTime token. Keep its subsecond ticks
+        // instead of converting through invariant display text (which drops them).
+        var clock = input.Value<DateTime>("now").ToUniversalTime();
+        foreach (var test in relativeFilters.Cast<JObject>())
+        {
+            var name = test.Value<string>("name");
+            var text = test.Value<string>("input");
+            if ((name != "timeago" && name != "reltime") || text == null || Encoding.UTF8.GetByteCount(text) > 4096)
+                throw new ArgumentException("Invalid relative-date helper input");
+            string value = "";
+            bool invalid = false;
+            try { value = DateTimeUtil.FromTimeAgo(text, clock).ToString(DateTimeUtil.Rfc1123ZPattern, CultureInfo.InvariantCulture); }
+            catch (Exception) { invalid = true; }
+            if (invalid != (test.Value<bool?>("expectInvalid") ?? false))
+                throw new ArgumentException("Relative-date outcome differs from declared expectation");
+            ((JArray)helper["relativeDates"]).Add(new JObject { ["name"] = name, ["input"] = text, ["value"] = value, ["invalid"] = invalid });
+        }
+    }
+    catch (Exception error) { helper["error"] = error.GetType().Name + ": " + error.Message; }
+    File.WriteAllText(args[1], helper.ToString(Formatting.Indented));
+    return;
+}
 var client = new ScriptedClient((JArray)input["responses"]);
 var result = new JObject { ["engine"] = "jackett", ["requests"] = client.Requests };
 try
