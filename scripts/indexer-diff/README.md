@@ -116,6 +116,11 @@ Moji production has no Jackett or .NET runtime requirement from this tool.
 
 ## Run comparisons
 
+Each comparison owns a temporary replay directory beneath the reference root.
+Concurrent comparisons may share the immutable reference binaries; use a
+different `--report` output for each invocation. Temporary inputs/results are
+removed on completion or failure.
+
 ```sh
 GOCACHE=/tmp/moji-go-cache python3 scripts/indexer-diff/compare.py \
   --reference-root /tmp/moji-indexer-reference --report /tmp/moji-indexer-diff.json

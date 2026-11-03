@@ -132,18 +132,23 @@ def case_passed(moji, jackett, comparison):
 def run_cases(reference_root, cases, output):
     provenance = verify_provenance(reference_root)
     reports = []
-    with tempfile.TemporaryDirectory(prefix="moji-indexer-replay-") as temporary:
+    with tempfile.TemporaryDirectory(prefix="moji-run-", dir=reference_root) as replay_directory, \
+         tempfile.TemporaryDirectory(prefix="moji-indexer-replay-") as temporary:
         binary = Path(temporary) / "moji-indexer-replay"
         subprocess.run(["go", "build", "-o", str(binary), "./cmd/moji-indexer-replay"], cwd=ROOT, check=True)
         for case in cases:
             resolved, expected, expected_errors = resolve_case(case)
             # The reference root contains only downloaded source, generated
             # binaries and these synthetic scenario/results, never user data.
-            scenario_path = reference_root / "moji-scenario.json"
-            moji_path, jackett_path = reference_root / "moji-result.json", reference_root / "jackett-result.json"
+            # Each comparison owns its files, even if another process uses the
+            # same immutable reference binaries concurrently.
+            replay = Path(replay_directory)
+            scenario_path = replay / "scenario.json"
+            moji_path, jackett_path = replay / "moji-result.json", replay / "jackett-result.json"
             scenario_path.write_text(json.dumps(resolved, ensure_ascii=True))
             subprocess.run([str(binary), "-scenario", str(scenario_path), "-output", str(moji_path)], check=True, timeout=40)
-            command = ["dotnet", "moji-reference/bin/Release/net9.0/IndexerReference.dll", "moji-scenario.json", "jackett-result.json"]
+            command = ["dotnet", "moji-reference/bin/Release/net9.0/IndexerReference.dll",
+                       scenario_path.relative_to(reference_root).as_posix(), jackett_path.relative_to(reference_root).as_posix()]
             run_container(reference_root, command, "none", 60)
             moji, jackett = json.loads(moji_path.read_text()), json.loads(jackett_path.read_text())
             comparison = classify(moji, jackett, expected, expected_errors)

@@ -148,6 +148,12 @@
 
 无效 UTF-16 边界明确保留：参考程序对 `trim("😀VALUE😀", "😀")` 的中间值产生无配对代理项，实际写出失败 EncoderFallbackException；未修改参考序列化或将其算作通过样本。Moji 在这一边界返回字段错误，不默默替换或丢字符；有效 UTF-8 输出的补充平面 split/trim 已实际对照，但不能据此声称全部无效 UTF-16 管线互操作。初次临时语料检查的绝对路径拼接有误，修正后完成全部 579 定义遍历；不是规则加载失败。所有测试仅用合成数据/固定归档，没有真实站点或下载器操作。
 
+## 对照回放并发隔离（2026-11-04）
+
+执行过滤器回归时发现工具缺陷：两次 compare.py 若共用 reference_root，会覆盖同名 scenario/result 文件。实际同时运行整组和 HTML 专项曾让 tested-download/HTML 场景读到其他场景的结果，旧 `/tmp/moji-indexer-diff-filter-tail-final.json` 与 `/tmp/moji-filter-tail-probes/html-control.json` 因此不作为可靠验收证据；没有把这一串场当成引擎失败或放宽差异匹配。
+
+新增可重复并发回归，以 barrier 保证两个调用都进入参考执行，旧代码确实仅使用一个 scenario 路径而失败。改为每次在参考根下分配独立临时目录，Moji/参考进程只读取该目录，结束或异常时清理；固定二进制仍可共享，不修改 runner 源码或要求重建参考。18 项比较器与 5 项参考锁检查通过。实际并发复核相同参考根的 tested-download 与 filter-querystring-html 均通过，0 未解释/1 原有已解释差异，报告 `/tmp/moji-indexer-diff-concurrent-control.json`；整组重新运行的结果另行记录。
+
 ## 附件缓存负载与取消测量
 
 基线 `8c8bd52`，新增显式 `internal/indexer/artifact_performance_test.go`；不改生产缓存、API 或配置。Linux/amd64、Xeon E5-2673 v4、GOMAXPROCS=2，每项 100 次；输入是约 1 MiB 的合法合成 torrent，获取回调只提供内存字节，不访问 HTTP。普通测试已有预算/取消/迟到成功/关闭回归，本轮相关测试通过。

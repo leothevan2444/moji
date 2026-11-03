@@ -1,17 +1,57 @@
 """Check that the differential checker cannot silently accept a changed result."""
 
 import copy
+from concurrent.futures import ThreadPoolExecutor
 import json
 from pathlib import Path
 import sys
 import tempfile
+import threading
 import unittest
+from unittest.mock import patch
 
 sys.dont_write_bytecode = True
 import compare
 
 
 class ComparisonTests(unittest.TestCase):
+    def test_concurrent_runs_cannot_share_scenario_or_result_files(self):
+        barrier = threading.Barrier(2)
+        scenario_paths = set()
+        lock = threading.Lock()
+
+        def report(marker):
+            return {"engine": "synthetic", "requests": [], "results": [{"title": marker}]}
+
+        def process(command, **kwargs):
+            if command[0] != "go":
+                scenario = Path(command[command.index("-scenario") + 1])
+                output = Path(command[command.index("-output") + 1])
+                output.write_text(json.dumps(report(json.loads(scenario.read_text())["marker"])))
+
+        def reference(root, command, network, timeout):
+            scenario, output = root / command[2], root / command[3]
+            with lock:
+                scenario_paths.add(scenario)
+            barrier.wait(timeout=5)
+            output.write_text(json.dumps(report(json.loads(scenario.read_text())["marker"])))
+
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            with patch.object(compare, "verify_provenance", return_value={"source": "synthetic"}), \
+                 patch.object(compare, "resolve_case", side_effect=lambda case: ({"marker": case.parent.name}, [], None)), \
+                 patch.object(compare.subprocess, "run", side_effect=process), \
+                 patch.object(compare, "run_container", side_effect=reference):
+                with ThreadPoolExecutor(max_workers=2) as workers:
+                    runs = [workers.submit(compare.run_cases, root, [root / marker / "scenario.json"], root / (marker + ".json")) for marker in ["left", "right"]]
+                    self.assertTrue(all(run.result(timeout=10) for run in runs))
+            self.assertEqual(len(scenario_paths), 2)
+            self.assertTrue(all(not path.exists() for path in scenario_paths))
+            for marker in ["left", "right"]:
+                case = json.loads((root / (marker + ".json")).read_text())["cases"][0]
+                self.assertEqual(case["moji"]["results"], [{"title": marker}])
+                self.assertEqual(case["jackett"]["results"], [{"title": marker}])
+
     def report(self):
         return {"engine": "fixture", "requests": [{"method": "GET", "url": "https://fixture.invalid/", "body": "", "headers": {}}],
                 "results": [{"title": "ABCD-123", "publishedAt": None}]}
