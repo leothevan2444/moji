@@ -283,6 +283,12 @@
 
 本次验证当前镜像内的 Web/后端版本、非 root 与媒体工具、无网络/只读根启动、无 Jackett/规则库的本地概况、没有隐式规则检查、配置保存、优雅退出和容器替换后的同一 generation/三库及设置保留。仅使用独立临时容器/卷，无生产服务操作。日志 `/tmp/moji-indexer-committed-amd64-build.log` 和 `/tmp/moji-indexer-committed-amd64-smoke.log`；ARM64、真实站点/代理/solver 与远端 Actions 未由此验证。
 
+### fea8176 干净源码镜像（2026-11-04）
+
+干净已提交 `fea81765e89f262dd694b97c4647920bb67a8ac7` 实际构建 amd64 镜像 `sha256:aa03d44596cb68a9ba2acbe0e2da116ed4a9dfb9c28979240c8649a7cbd94946`，版本 `dev-fea81765e89f`、OCI revision 与源码一致。构建及完整断网 smoke exit 0，日志 `/tmp/moji-indexer-fea8176-amd64-build.log`、`/tmp/moji-indexer-fea8176-amd64-smoke.log`。包含截至该提交的引擎、许可文本打包与来源迁移修复，覆盖非 root/只读根、媒体工具链、版本一致、NOTICE/MIT 内容摘要、无 Jackett/规则库启动、Home 本地状态、保存/优雅关闭及替换容器后三库保留；只使用临时容器和卷，没有推送或部署。
+
+同一提交再次运行固定归档的生产 Load/static compile，579/579、1 个已知可选选择器警告、0 失败；报告 `/tmp/moji-v11-fea8176-report.json`。当前未发现专用 live/acceptance 环境参数或配置，已请求用户提供允许的站点/搜索与取种范围及本地测试路径；没有将现有生产凭据当作测试授权。QEMU 用户态二进制仍不可用，未把 amd64 或交叉编译当作 ARM64 运行验收。此镜像不包含之后的代码改动；静态规则兼容、镜像 smoke、真实站点与 ARM64 继续分别报告。
+
 ### select 空值边界修正
 
 继续验收时，固定实际 Jackett 的两条红报告均证实：Moji 在没有默认值或用户明确配置空字符串时，错误地选择排序后的第一个选项并加入请求。删除引擎与管理投影的这一回退；保留非空未知选项拒绝。编辑器显示“未选择”，不把浏览器原生第一个选项误表示为当前值；清除已配置 select 后显示规则声明默认值，提交仍仅发送 clear。
