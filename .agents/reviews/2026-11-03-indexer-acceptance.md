@@ -350,6 +350,14 @@
 
 该次覆盖镜像内后端/Web/OCI 版本、非 root/只读根、媒体工具、NOTICE/MIT 摘要、断网无 Jackett/无规则库启动、本地概况/无隐式检查、配置保存、优雅关闭和替换容器后三库及设置保留。仅操作独立临时容器与卷；没有推送、部署或修改生产实例。ARM64 仍未取得可执行环境，不能由此推断通过。
 
+### 宿主构建与目标执行（2026-11-04）
+
+afabfb4 的原 Dockerfile 在独立官方 BuildKit v0.34.2/QEMU 10.2.3 中完成 ARM64 Go 编译与二进制版本执行，Go RUN 耗时 474.6 秒；Node 依赖安装仍在执行且出现 FETCH_ERROR 后继续有新请求。该修订已落后登录默认值修复，明确停止本任务专用构建器，旧构建终态为取消，不作为镜像成功或产品回归证据。
+
+按 [Docker 官方跨平台建议](https://docs.docker.com/build/building/multi-platform/) 将 Web/Go 阶段固定 BUILDPLATFORM，Go 使用 TARGETOS/TARGETARCH/CGO_ENABLED=0；版本执行移至最终目标 Alpine 阶段，保留真实目标运行门槛及原始 smoke，没有在交付镜像加入模拟器。amd64 候选 `dev-38154457553e-dirty` 构建与原始完整断网 smoke 通过，镜像 `sha256:5d2d6b3775b8d4d5d921e5171b74a4b008acd6c0172374619d253f086966b914`，含登录默认值修复。日志 `/tmp/moji-indexer-native-build-check-retry.log`、`/tmp/moji-indexer-native-build-check-smoke.log`；版本/发布脚本各 12 项通过。此为提交前候选，新的冻结 amd64/arm64 镜像仍需分别验收。
+
+首次 amd64 构建在读取 Alpine 元数据时遇 Docker Hub 429，未编译。通过 Google 公共缓存仅校验官方清单：index 摘要仍为 `ff7f0c727dd796aa36787bfcd9a64bf35a6ce72a73451b3359fde849b6703d63`，其 amd64 config 为 `742fde26380a2719b0001c4e2a63d051c60f0a56eb1305a83697ee7ce5b409b9`，与本地既有缓存完全相符；恢复本地 amd64 标签后原构建通过，未替换项目镜像源或宿主 daemon 配置。专用临时 BuildKit 容器使用公开缓存配置，验收结束后清理；不能用该候选推断 ARM64 smoke 或原生远端 CI 通过。
+
 ### 仅时间日期（2026-11-04）
 
 固定库 1337x.yml 的 date_today 确有仅时间用法（12:25am），随后通过 .Result.date_today 写入正式 date，失败会回退 now。已用本地回归及实际 reference-10 复现拒绝。辅助模式给未修改的 DateTimeRoutines 设置其公开 DefaultDate，以固定无日期输入的默认日；不改完整解释器模式的宿主时钟。全新固定 SDK/源码/NuGet 锁构建 reference-10 成功，0 警告/错误、31 DLL 校验；旧 reference-9 对当前 runner 不再有效。

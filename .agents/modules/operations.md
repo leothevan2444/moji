@@ -60,6 +60,8 @@ Docker 镜像含 Web、Moji、FFmpeg、ffprobe，非 root 运行；Dockerfile �
 
 CI 在原生 amd64/arm64 runner 构建及 smoke test，通过后发布复用同一镜像制品；发布依赖 Web、Go、Docker 和 indexer-compatibility jobs。稳定标签、预发布、edge 的含义见根 README 和 [发布脚本](../../scripts/docker_publish.py)。未运行的架构/发布不能从本机测试推断成功。
 
+Docker 的 Web/Go 构建阶段使用 BUILDPLATFORM；Go 保持 CGO_ENABLED=0，并按 TARGETOS/TARGETARCH 输出目标二进制。最终 Alpine 仍为目标平台，实际执行 moji --version 后才生成交付镜像，不能以交叉编译成功替代目标执行/完整 smoke。跨架构本地构建仍需目标运行阶段的执行能力；这一组织不在交付镜像中增加模拟器，CI 的原生架构验收不变。
+
 ## 修改时验证
 
 客户端用 fake/httptest 覆盖认证、明确拒绝、超时不明与重连；真实 qB destructive 测试需要独立显式开关。

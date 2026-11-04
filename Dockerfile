@@ -1,5 +1,5 @@
 # syntax=docker/dockerfile:1
-FROM node:22-bookworm-slim AS web
+FROM --platform=$BUILDPLATFORM node:22-bookworm-slim AS web
 WORKDIR /src/web
 COPY web/package.json web/package-lock.json ./
 RUN npm ci
@@ -7,7 +7,7 @@ COPY web/ ./
 ARG VERSION
 RUN test -n "$VERSION" && MOJI_BUILD_VERSION="$VERSION" npm run build
 
-FROM golang:1.26-bookworm AS backend
+FROM --platform=$BUILDPLATFORM golang:1.26-bookworm AS backend
 WORKDIR /src
 ENV CGO_ENABLED=0 GOTOOLCHAIN=local
 COPY go.mod go.sum ./
@@ -17,10 +17,11 @@ COPY internal/ ./internal/
 COPY pkg/ ./pkg/
 COPY version.go ./
 ARG VERSION
+ARG TARGETOS
+ARG TARGETARCH
 # Make, Compose and CI resolve VERSION from Git before sending the build context.
 RUN test -n "$VERSION" \
-    && go build -trimpath -ldflags "-s -w -X github.com/leothevan2444/moji.releaseVersion=$VERSION" -o /out/moji ./cmd/moji \
-    && test "$(/out/moji --version)" = "moji $VERSION"
+    && GOOS="$TARGETOS" GOARCH="$TARGETARCH" go build -trimpath -ldflags "-s -w -X github.com/leothevan2444/moji.releaseVersion=$VERSION" -o /out/moji ./cmd/moji
 
 FROM alpine:3.23 AS runtime
 RUN apk add --no-cache ca-certificates curl ffmpeg tini tzdata \
@@ -35,6 +36,8 @@ COPY --from=web /src/web/dist/ /opt/moji/web/dist/
 COPY docker/config.example.yaml /opt/moji/config.example.yaml
 COPY internal/cardigann/NOTICE.md internal/cardigann/DOTNET-LICENSE.txt /usr/share/licenses/moji/cardigann/
 ARG VERSION
+# Run the actual target binary, including cross-built images, before publishing.
+RUN test "$(/usr/local/bin/moji --version)" = "moji $VERSION"
 ARG VCS_REF=unknown
 LABEL org.opencontainers.image.title="Moji" \
       org.opencontainers.image.description="Moji with web UI, FFmpeg and ffprobe" \
