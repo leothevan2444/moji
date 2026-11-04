@@ -4,6 +4,8 @@
 
 ## 阶段判断
 
+初审结论与以下 A–F 表是建立时点快照；收尾按下方[逐项需求核对](#逐项需求核对2026-11-04)与 R-004 的具体未完项判断，不将初审遗留文字机械视为当前仍未实现。
+
 运行时规则管理、统一索引、任务闭环和管理/Home 界面已有实现及本地回归；完整 Cardigann 语义、真实站点证据和默认交付尚未闭合。37 个合成实际解释器场景及 579 个定义静态编译不能替代整个设计的完成条件。
 
 证据分层：源码证明入口和所有者；回归源证明测试意图；终端成功记录只证明实际执行范围。以下“有回归”不表示全部边界已覆盖或真实站点已验证。最近实际 Go/差分结果见[请求与获取复核](2026-11-03-cardigann-requests.md)，Web/持久化历史证据见 R-004；本次矩阵本身不冒充一次新的完整测试运行。
@@ -296,6 +298,35 @@
 干净 `2d1230c05b04beb8f00b9f8c8a4984f574a6abc4` 的 amd64 镜像构建及原始完整断网 smoke 通过：`sha256:1dcfc375db8eebfc23210758b9156c7d4b9af50589d79dde5cfc9898865a114c`，版本 `dev-2d1230c05b04`，日志 `/tmp/moji-indexer-2d1230c-amd64-build.log`、`/tmp/moji-indexer-2d1230c-amd64-smoke.log`。此提交包含登录默认值修复及宿主交叉编译，尚不含后续工作区的当前来源准入修复。
 
 同提交 ARM64 构建的前端已完成，Go 公共依赖下载在 x/image v0.43.0 与 x/text v0.38.0 遭 proxy.golang.org HTTP/2 peer INTERNAL_ERROR，252.9 秒后明确终止，未进入后端编译；日志 `/tmp/moji-indexer-2d1230c-arm64-build.log`。后续同源重试曾因自动审批审查额度耗尽而未执行，不是安全性否决，没有绕过；该次构建没有活跃 handle，也不把临时 BuildKit 守护进程视为构建仍在运行。其后审批正常恢复并完成上述准入修复的完整回归；下一次构建应冻结包含该修复的新提交，专用构建器在验收后清理。没有推送、部署或宿主 binfmt 修改。
+
+## 逐项需求核对（2026-11-04）
+
+基线 `1d98f93c4d6f81b923440fe05006ff3a99641ef8`；核对对象是源码、已执行报告及隔离验收，不是正在运行的生产实例。本轮重新读取方案各节、生产组装/来源获取、schema/API、Home 与缓存代码，读取下列实际报告及日志尾部；复用历史执行的项目明确列出，未把它们写成本轮重新运行。`1d98f93` 仅比已有冻结镜像多了无调用方文案清理；新源码镜像正在独立验证，成功前不沿用旧镜像身份。
+
+| 方案要求 | 当前实现及权威证据 | 判断与实际边界 |
+| --- | --- | --- |
+| §1 范围与替代路径 | [应用组装](../../cmd/moji/indexers_runtime.go)、[启动](../../cmd/moji/main.go)、两类 adapter；真实八站、无 Jackett smoke | 内置和可选 Jackett 同时具备；C# 专用站点不在范围内，不声称全部实时网站可达。 |
+| §2 上游参考、固定语料 | corpus.lock、reference-10 来源核验；实际 122 用例报告和 579 定义静态报告 | 固定引擎/语料可复核；119→122 只增加三条动态下载场景，没有更换参考源码或放宽比较。 |
+| §3 包与所有者 | cardigann/indexer/indexerdefs/torrentsearch；Manager 与 cmd 生命周期；下文 tracker 桥核对 | 领域边界已落地；按 §4 实际 REST 消费者保留窄兼容桥，已校准方案，未称整个包删除。 |
+| §4 统一接口与逐站行为 | [逐站服务](../../internal/indexer/service.go)、[来源准入](../../internal/indexer/current_reference.go)、service/current_reference 测试 | 冻结查询和来源快照、依次执行/部分失败/接受后停止，新选择校验当前来源；在途与持久任务继续冻结获取。 |
+| §5 声明式能力 | 本文 schema/过滤器逐项定位、合成 HTML/JSON/XML、五种登录与挑战；实际解释器 122/122、五组日期辅助共 101 输入、静态 579/579 | 所列能力有实现和分层样本；不把这些证据扩大成任意 .NET/文化/DST/无效 UTF-16 文本的无差别互操作。 |
+| §6 搜索→筛选→任务→下载 | [资源落盘](../../internal/taskruntime/selected_resource.go)、[正式装配测试](../../cmd/moji/indexers_builtin_pipeline_test.go)、候选/预览与重启测试 | 动态安装、搜索、获取、现有 LOCK/EXCLUDE/身份检查、核心落盘后假 qB 的八任务负载通过；不是生产 qB 提交。 |
+| §7 配置与管理 | config v3、indexeradmin 窄命令/修订 guard、settings typed patch、[实例 API](../../graphql/moji/types/indexer_management.graphql) | 旧读取/新写入、secret configured/clear、账号/镜像/网络隔离、并发冲突有回归；根配置仍只读。 |
+| §8 生命周期与预算 | [执行器](../../internal/cardigann/execution.go)、Network/Sessions、torrentsearch/indexerlogin、持久冷却测试 | core/runtime/内存所有者和关闭/取消/中断恢复、大小/队列/频率预算具备；runtime 可重建不作为任务真值。 |
+| §9 缓存 | [查询缓存](../../internal/indexer/search_cache.go)、artifact_cache、[任务复用](../../internal/taskruntime/indexer_resources.go)、缓存测试/负载报告 | 精确键隔离、绝对 TTL、正常空结果/失败分离、强制刷新围栏、合并取消与有界资源；当前规则筛选不缓存为最终决定。 |
+| §10 GraphQL/辅助 HTTP | indexer_*、home_indexers、torrent_search schema、生成文件、downloads handler | 管理/登录/诊断/搜索/预览/任务选择/附件接口具备，生成一致性已执行；旧四个 Jackett 产品字段无调用方且已移除。 |
+| §11 UI/Home | [设置入口](../../web/src/components/settings/IndexersSettingsTab.tsx)、[Home](../../web/src/pages/HomePage.tsx)、HomeIndexers/useHomeIndexers、useTorrentSearch | 四面板、独立更新与刷新恢复、同级索引器/下载器已实现；中英旧固定卡片文本已清，当前 Web 430 测试/build/i18n 通过；先前 206 视觉及后续 select 36 均通过。 |
+| §12.1–12.3 规则下载/升级/备份 | indexerdefs 的 source/bundle/activation/service 测试；实际官方更新报告与升级回退报告 | 运行时整包下载/不可变修订/全库验证/激活/修复/取消/保留引用/离线备份恢复具备；实际官方 580 定义更新并本地回滚，未替换程序。 |
+| §12.4 网络与依赖材料 | transport/tls/solver/cookie 测试、NOTICE、六模块全文 manifest；实际 solver 和认证 CONNECT 报告 | 公网站点地址/凭据边界和显式私网服务隔离具备；许可材料已打包，但应用发行许可与 schema 来源授权仍未明确，不能判定该发行项完成。 |
+| §13 迁移/回退 | config/payload 迁移测试、`/tmp/moji-indexer-upgrade-proof/report.json`、备份工具 | 实际旧二进制→core6/runtime6/cache1→受保护旧备份回退，原数据/请求 JSON 保留、未知版本拒绝；只用隔离副本。 |
+| §14 验收与交付 | 完整 Go、相关 race/vet、Web/生成/静态/实际差分/性能/升级/镜像证据见下 | 本地实际范围已分层验证，最后 locale 清理的冻结镜像尚在运行；远端 Actions 和原生 ARM 未执行，不是已跑 CI。 |
+| §15 产品边界 | 用户按完整设计授权实施；明确另行确认 tracker 默认和未来日期，均有回归及记录 | 不擅自移除可选 Jackett，不新增 C# 解析器、脚本系统、站点白名单或附加产品需求。 |
+
+本轮重新读取的实际证据：`/tmp/moji-pathselector-full-20261104.json` 为 122/122、0 未解释/6 解释；`/tmp/moji-default-login-v11-20261104.json` 为 579/579、0 失败/1 已知 warning；`/tmp/moji-builtin-pipeline-measured.json` 为 exit 0/8 个任务且无真实上游；官方更新报告为 580 定义、check-only 保持活动、原配置不变、tasks=0。旧版升级报告中配置保持、重复 v3 转换、请求字节保留及未知版本无数据变更断言均成立。完整 Go 日志 `/tmp/moji-future-publication-all-go.log`、相关 race `/tmp/moji-current-reference-race-final.log` 和日期 indexer race 均为此前实际通过，本轮未重跑未变 Go；当前 Web 则实际重跑，见下节。旧视觉结果仍明确是既有执行：`/tmp/moji-split-visual-test.log` 206，通过后再有 `/tmp/moji-select-empty-visual.log` 36，无新布局改动。
+
+当前 tracker 桥的实际消费者为 `cmd/moji/main.go` 的 `/api/tracker/search` 组装及无 Manager 构造器；生产 WithIndexers 使用新 service，taskruntime/taskflow 生产源码无 jackett.SearchResult/Indexer。测试构造协议响应和 GraphQL 连接测试的 Jackett 客户端不是生产寻源耦合。保留桥是落实 §4 兼容入口，不维护第二套生产搜索执行器。
+
+收尾未完项归 [R-004](../TODO.md#r-004)：最后资源清理的冻结镜像、来源授权/应用发行信息。真实账号、其他代理类型/solver 组合、原生 ARM/远端 Actions 未覆盖的环境仍为验证限制，不把它们写成产品成功；不靠反复增加任意输入样本代替明确需求判据。没有因此宣布整个目标完成。
 
 ## 首页固定卡片的残留文案（2026-11-04）
 

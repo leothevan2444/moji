@@ -69,7 +69,7 @@
 
 ## 3. 命名与包组织
 
-领域统一叫 indexer，规则解释器叫 cardigann。现有 internal/tracker 在迁移结束后删除，pkg/jackett 保留为外部协议客户端。
+领域统一叫 indexer，规则解释器叫 cardigann，pkg/jackett 保留为外部协议客户端。2026-11-04 按实际消费者收敛：生产任务/发现/搜索使用中性 indexer；internal/tracker 仅保留第 4 节要求的既有 REST 调试兼容桥，以及无 Manager 的测试/兼容构造器，不再作为生产索引引擎。不能为删除包名破坏仍明确保留的接口；后续删除这些实际消费者时再移除桥。
 
     internal/indexer/
       types.go                 站点实例、查询、候选、来源引用、报告
