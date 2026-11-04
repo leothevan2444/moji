@@ -121,10 +121,11 @@ func TestOptInLiveIndexerSearchAndFetch(t *testing.T) {
 	}
 	networkProfile := "direct"
 	solver := os.Getenv("MOJI_INDEXER_LIVE_SOLVER")
-	if solver != "" {
-		networkProfile = "live-solver"
-		if _, err := store.SetIndexerNetworkProfile(ctx, store.Revision(), networkProfile, &config.IndexerNetworkProfile{FlareSolverrURL: solver}); err != nil {
-			t.Fatal("cannot prepare solver in isolated configuration")
+	proxy := os.Getenv("MOJI_INDEXER_LIVE_PROXY")
+	if solver != "" || proxy != "" {
+		networkProfile = "live-network"
+		if _, err := store.SetIndexerNetworkProfile(ctx, store.Revision(), networkProfile, &config.IndexerNetworkProfile{ProxyURL: proxy, FlareSolverrURL: solver}); err != nil {
+			t.Fatal("cannot prepare network profile in isolated configuration")
 		}
 	}
 	type sitePair struct{ site, builtin, external string }
@@ -156,9 +157,10 @@ func TestOptInLiveIndexerSearchAndFetch(t *testing.T) {
 		SourceConfigurationUnchanged             bool
 		CheckBudgetSeconds                       int
 		SolverConfigured, CatalogRequested       bool
+		ProxyConfigured                          bool
 		CatalogKnown                             bool
 		Origins                                  []originComparison
-	}{RuleRevision: source.revision, Keywords: keywords, Tasks: -1, CheckBudgetSeconds: 180, SolverConfigured: solver != "", CatalogRequested: kind != "BUILTIN"}
+	}{RuleRevision: source.revision, Keywords: keywords, Tasks: -1, CheckBudgetSeconds: 180, SolverConfigured: solver != "", ProxyConfigured: proxy != "", CatalogRequested: kind != "BUILTIN"}
 	if output.CatalogRequested {
 		registry, err := runtime.registry.Refresh(ctx)
 		if err != nil {

@@ -269,6 +269,14 @@
 
 完整 Go、cardigann/admin/indexer/replay race 和相关 vet 通过；固定库 579/579 静态编译、1 个既有警告、0 失败，报告 `/tmp/moji-default-login-v11-20261104.json`。完整实际差分 119/119（115 正常、4 精确预期拒绝），0 未解释/5 原有解释差异，报告 `/tmp/moji-default-login-full-20261104.json`。本次无需 schema/API/UI 生成变更，无生产配置/实例/下载器操作。正在构建的 afabfb4 ARM64 镜像读取的是修复前源码，不包含本修正，不能作为本修正的镜像证据。
 
+## 真实 HTTP CONNECT 代理（2026-11-04）
+
+显式真实入口补可选 MOJI_INDEXER_LIVE_PROXY，仍只写临时网络 profile/内置实例，报告只含 ProxyConfigured，不输出代理 URL 或凭据。使用私有临时、仅监听 127.0.0.1、带合成 Basic 认证的 CONNECT 转发器，在授权 freejavtorrent 执行一次 SSIS 搜索/获取。转发器只允许该站域名及当次已解析的公有 IP，不解密 TLS；调用实际网站，不使用脚本响应。
+
+首轮转发器白名单只有域名，拦住 Moji 已验证的目标 IP，报告 `/tmp/moji-live-proxy-freejavtorrent-20261104.json` 搜索失败；不是未经验证的认证故障。修正私有探针 ACL 接受该站公有 IP，未改生产 transport 或地址校验。复测 `/tmp/moji-live-proxy-freejavtorrent-retry-20261104.json`：配置通过、认证无需、搜索 20 条、获取验证通过；原配置不变，tasks=0。独立隧道计数 `/tmp/moji-live-proxy-tunnel-retry-20261104.json`：2 次认证 CONNECT，0 拒绝，上行 3899 B、下行 33386 B。进程结束转发器自动关闭，不保留额外服务。
+
+默认入口跳过与 cmd/moji vet 通过。该证据证明经实际认证 HTTP 代理转发的搜索/获取；不能推断远端代理地域出口、HTTPS/SOCKS 代理或 solver+代理组合均已实测，也不是全站可靠性承诺。既有 fake 协议边界测试与本次实际联网分别记录，无生产下载器提交。
+
 ## 附件缓存负载与取消测量
 
 基线 `8c8bd52`，新增显式 `internal/indexer/artifact_performance_test.go`；不改生产缓存、API 或配置。Linux/amd64、Xeon E5-2673 v4、GOMAXPROCS=2，每项 100 次；输入是约 1 MiB 的合法合成 torrent，获取回调只提供内存字节，不访问 HTTP。普通测试已有预算/取消/迟到成功/关闭回归，本轮相关测试通过。

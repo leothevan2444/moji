@@ -56,7 +56,7 @@ GOCACHE=/tmp/moji-go-cache go test ./cmd/moji \
 
 归档由当前 corpus.lock.json 的摘要校验；报告必须是新文件，不能覆盖已有配置或记录。报告只包含阶段、数量、稳定错误码和 origin 是否一致，不输出凭据、Cookie 或下载定位 URL。程序 exit 0 仅表示安全完成观测，FAILED、EMPTY、NO_CANDIDATE 仍按各站实际状态解释，获取验证通过可能是 torrent 或 magnet，不等于已向下载器提交。
 
-可用 `MOJI_INDEXER_LIVE_SITE_IDS=site-a,site-b` 限定配置范围内的子集；`MOJI_INDEXER_LIVE_KIND=BUILTIN` 或 `JACKETT` 只复测某路径，避免重复消耗。`MOJI_INDEXER_LIVE_SOLVER=http://127.0.0.1:8191` 仅在临时配置中启用已有、已授权使用的 solver；原配置和外部服务设置均不改写。实际 Jackett 站点定义、Cookie、网络与结果时刻未被冻结，实时结果不能替代脚本响应一致的解释器差分。
+可用 `MOJI_INDEXER_LIVE_SITE_IDS=site-a,site-b` 限定配置范围内的子集；`MOJI_INDEXER_LIVE_KIND=BUILTIN` 或 `JACKETT` 只复测某路径，避免重复消耗。`MOJI_INDEXER_LIVE_SOLVER=http://127.0.0.1:8191` 及可选 `MOJI_INDEXER_LIVE_PROXY` 仅在临时网络配置中为内置实例启用已授权使用的 solver/代理；不会改变外部 Jackett 的网络设置。需要代理认证时将凭据保留在受保护的本地环境注入中，报告仅记录是否配置，不输出 URL。原配置和外部服务设置均不改写。实际 Jackett 站点定义、Cookie、网络与结果时刻未被冻结，实时结果不能替代脚本响应一致的解释器差分。
 
 独立验证官方规则更新时，额外设置 `MOJI_INDEXER_LIVE_RULE_UPDATES=1`，使用新的私有报告路径，运行 `-run TestOptInLiveOfficialRuleUpdate -count=1 -timeout=13m -v`。该入口先以固定归档引导，再切换实际官方客户端，验证只检查不激活、全库下载/校验/激活和本地回滚；不更换程序。仅提供查询词且原配置包含 52bt 时才检查更新后的该站，solver 参数仍只作用于隔离配置。规则生命周期通过不代表站点搜索/获取通过，分别阅读报告。
 
