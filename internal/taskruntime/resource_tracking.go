@@ -2,7 +2,6 @@ package taskruntime
 
 import (
 	"context"
-	"encoding/json"
 	"time"
 )
 
@@ -42,7 +41,7 @@ func ensureSourcingRequest(task *Task) error {
 	if task.SourcingRequestJSON != "" {
 		return nil
 	}
-	request, err := json.Marshal(DownloadRequest{Source: task.Source, Code: task.Code, SavePath: task.SavePath, Category: task.Category, Tags: task.Tags})
+	request, err := marshalSourcingRequest(DownloadRequest{Source: task.Source, Code: task.Code, SavePath: task.SavePath, Category: task.Category, Tags: task.Tags})
 	if err == nil {
 		task.SourcingRequestJSON = string(request)
 	}

@@ -852,13 +852,20 @@ func (s *Service) DownloadMediaContext(ctx context.Context, req DownloadRequest)
 	}
 	logging.Infof("taskruntime: created %s task %s for code %q", strings.ToLower(string(source)), task.ID, code)
 
+	if s.indexers != nil {
+		req.Trackers = tracker.InstanceIDsFromLegacyTrackers(req.Trackers)
+	}
 	return s.runSourcingFlow(ctx, task, req)
 }
 
 func (s *Service) runSourcingFlow(ctx context.Context, task *Task, req DownloadRequest) (*Task, error) {
 	code := strings.TrimSpace(task.Code)
+	legacyTrackers := append([]string(nil), req.Trackers...)
+	for i, id := range legacyTrackers {
+		legacyTrackers[i] = strings.TrimPrefix(id, "jackett/")
+	}
 	searchOptions := []tracker.SearchOption{
-		tracker.WithTrackers(req.Trackers),
+		tracker.WithTrackers(legacyTrackers),
 		tracker.WithCategories(req.Categories),
 	}
 	if req.Limit > 0 {
@@ -879,7 +886,7 @@ func (s *Service) runSourcingFlow(ctx context.Context, task *Task, req DownloadR
 	if s.indexers != nil {
 		accepted := false
 		var selectionErr error
-		_, err = s.indexers.SearchSequential(ctx, indexer.Query{Keywords: code, InstanceIDs: tracker.InstanceIDsFromLegacyTrackers(req.Trackers), Categories: req.Categories, Limit: req.Limit}, func(siteCtx context.Context, batch indexer.Batch) (bool, error) {
+		_, err = s.indexers.SearchSequential(ctx, indexer.Query{Keywords: code, InstanceIDs: req.Trackers, Categories: req.Categories, Limit: req.Limit}, func(siteCtx context.Context, batch indexer.Batch) (bool, error) {
 			rows := make([]indexer.SelectionCandidate, 0, len(batch.Releases))
 			for _, release := range batch.Releases {
 				rows = append(rows, indexer.SelectionFromRelease(release))

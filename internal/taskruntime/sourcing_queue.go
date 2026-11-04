@@ -2,7 +2,6 @@ package taskruntime
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"sync"
@@ -31,7 +30,7 @@ func (s *Service) QueueDownloadContext(ctx context.Context, req DownloadRequest)
 	if req.Source == "" {
 		req.Source = TaskSourceManual
 	}
-	request, err := json.Marshal(req)
+	request, err := marshalSourcingRequest(req)
 	if err != nil {
 		return nil, err
 	}
@@ -185,8 +184,8 @@ func (s *Service) processQueuedSourcing(parent context.Context, id string) (resu
 			resultErr = nil
 		}
 	}()
-	var req DownloadRequest
-	if err := json.Unmarshal([]byte(task.SourcingRequestJSON), &req); err != nil {
+	req, err := unmarshalSourcingRequest([]byte(task.SourcingRequestJSON))
+	if err != nil {
 		blockTask(task, TaskStageErrorSourcingRequest, "unable to read queued task request", s.now().UTC())
 		return s.store.Update(ctx, task)
 	}

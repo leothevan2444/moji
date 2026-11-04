@@ -2,7 +2,6 @@ package taskruntime
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"strings"
@@ -55,7 +54,7 @@ func (s *Service) QueueIndexedResourceContext(ctx context.Context, req QueueInde
 	}
 	release := indexer.Release{Title: record.Ref.Locator.Title, InstanceID: record.Instance.ID, InstanceName: record.Instance.Name, Kind: record.Instance.Kind, InfoHash: record.Ref.Locator.InfoHash, Resource: record.Ref}
 	candidate := candidateFromSearchResult(indexer.SelectionFromRelease(release))
-	request, err := json.Marshal(DownloadRequest{Source: TaskSourceSearch, Code: code, SavePath: req.SavePath, Category: req.Category, Tags: req.Tags, Paused: req.Paused})
+	request, err := marshalSourcingRequest(DownloadRequest{Source: TaskSourceSearch, Code: code, SavePath: req.SavePath, Category: req.Category, Tags: req.Tags, Paused: req.Paused})
 	if err != nil {
 		return nil, err
 	}
@@ -165,7 +164,8 @@ func (s *Service) ResolveIndexedResourceContext(ctx context.Context, id string, 
 	next := cloneTask(task)
 	request := DownloadRequest{Source: task.Source, Code: code, SavePath: task.SavePath, Category: task.Category, Tags: task.Tags}
 	if task.SourcingRequestJSON != "" {
-		if err = json.Unmarshal([]byte(task.SourcingRequestJSON), &request); err != nil {
+		request, err = unmarshalSourcingRequest([]byte(task.SourcingRequestJSON))
+		if err != nil {
 			return nil, candidateError(TaskStageErrorSourcingRequest, "unable to read queued task request")
 		}
 	}
@@ -177,7 +177,7 @@ func (s *Service) ResolveIndexedResourceContext(ctx context.Context, id string, 
 	if req.Paused != nil {
 		request.Paused = req.Paused
 	}
-	encoded, err := json.Marshal(request)
+	encoded, err := marshalSourcingRequest(request)
 	if err != nil {
 		return nil, err
 	}

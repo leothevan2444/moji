@@ -3,7 +3,9 @@ package config
 import (
 	"fmt"
 	"os"
+	"slices"
 	"strconv"
+	"strings"
 	"sync"
 
 	"github.com/leothevan2444/moji/internal/durablefile"
@@ -181,6 +183,18 @@ func (s *Store) updateAutomationLocked(enabled *bool, taskProgressSyncIntervalSe
 	s.cfg.Automation.SubscriptionPollIntervalHours = subscriptionPollIntervalHours
 	s.cfg.Automation.StashBoxEndpoints = cleanStrings(stashBoxEndpoints)
 	s.cfg.Automation.SubscriptionReleasePolicy = subscriptionReleasePolicy.Effective()
+	if !slices.Equal(s.cfg.Automation.TorrentSelection.FastRules.IndexerPreference.TrackerIDs, torrentSelection.FastRules.IndexerPreference.TrackerIDs) {
+		// The retained legacy settings command can still change site order.
+		// Resolve against configured builtin identities, rather than UUID shape.
+		s.cfg.Indexers.QueryOrder = nil
+		for _, id := range torrentSelection.FastRules.IndexerPreference.TrackerIDs {
+			_, builtin := s.cfg.Indexers.Builtin.Instances[id]
+			if !builtin && !strings.HasPrefix(id, "jackett/") {
+				id = "jackett/" + id
+			}
+			s.cfg.Indexers.QueryOrder = append(s.cfg.Indexers.QueryOrder, id)
+		}
+	}
 	s.cfg.Automation.TorrentSelection = torrentSelection.Effective()
 
 	if err := s.updateConfigNode(); err != nil {
@@ -325,6 +339,9 @@ func (s *Store) updateConfigNode() (resultErr error) {
 
 	canonicalizeConfigNode(top)
 	indexers := ensureMapValue(mapValue(top, "indexers"))
+	// Decanonicalized preference values no longer carry source qualification.
+	// Preserve the identities resolved from the original version on every save.
+	setNodeValue(indexers, "query_order", s.cfg.Indexers.QueryOrder)
 	setNodeValue(indexers, "builtin", s.cfg.Indexers.Builtin)
 	setNodeValue(indexers, "search_cache", s.cfg.Indexers.SearchCache)
 	setBoolScalar(mapValue(indexers, "jackett"), "enabled", s.cfg.Indexers.Jackett.Enabled)

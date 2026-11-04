@@ -154,6 +154,8 @@ func canonicalizeConfigNode(top *yaml.Node) {
 }
 
 func normalizeIndexerV3Node(top *yaml.Node) {
+	version := existingMapValue(top, "config_version")
+	legacyIDs := version == nil || version.Value != "3"
 	indexers := ensureMapValue(mapValue(top, "indexers"))
 	jackett := ensureMapValue(mapValue(indexers, "jackett"))
 	if existingMapValue(jackett, "enabled") == nil {
@@ -163,7 +165,7 @@ func normalizeIndexerV3Node(top *yaml.Node) {
 	if order := existingMapValue(indexers, "query_order"); order != nil {
 		for _, item := range order.Content {
 			if item.Value != "" && !strings.HasPrefix(item.Value, "jackett/") {
-				if _, err := uuid.Parse(item.Value); err != nil {
+				if _, err := uuid.Parse(item.Value); legacyIDs || err != nil {
 					item.Value = "jackett/" + item.Value
 				}
 			}
@@ -214,9 +216,7 @@ func decanonicalizeConfigNode(top *yaml.Node) {
 	preference := ensureMapValue(mapValue(rules, "indexer_preference"))
 	moveConfigNode(indexers, "query_order", preference, "tracker_ids")
 	setBoolScalar(preference, "enabled", true)
-	for _, key := range []string{"config_version"} {
-		deleteMapKey(top, key)
-	}
+	deleteMapKey(top, "config_version")
 }
 
 func validateSystemCalendar(system SystemConfig) error {

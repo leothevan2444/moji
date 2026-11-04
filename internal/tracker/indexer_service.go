@@ -60,9 +60,9 @@ func (s *IndexerService) SearchSequential(ctx context.Context, query string, acc
 	return err
 }
 
-// InstanceIDsFromLegacyTrackers upgrades the existing API and persisted queued
-// requests, whose Trackers field contained unqualified Jackett IDs. The new
-// neutral Query contract itself accepts only explicit source instance IDs.
+// InstanceIDsFromLegacyTrackers bridges existing API inputs. Persisted task
+// requests use their own versioned decoder: legacy UUID-shaped IDs must not be
+// inferred as builtin instances. Neutral Query accepts explicit instance IDs.
 func InstanceIDsFromLegacyTrackers(ids []string) []string {
 	qualified := append([]string(nil), ids...)
 	for i, id := range qualified {

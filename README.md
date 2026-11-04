@@ -191,6 +191,11 @@ source revision, then rebuild and recreate the container with the same mounts:
 ```
 
 Container replacement preserves data in the host-mounted directories.
+Existing Jackett settings remain enabled during the built-in indexer upgrade;
+the next settings save writes configuration v3. To downgrade, stop Moji and
+restore the matching pre-upgrade configuration and database backup before
+starting the old version. Changing only the program or image does not reverse
+configuration or database migrations; older programs reject newer formats.
 
 ## Development and verification
 

@@ -210,6 +210,20 @@
 
 该 smoke 同时覆盖非 root、媒体工具链、无 Jackett/无规则库启动、Home 本地读取、配置保存、优雅退出和容器替换后的三库保留，但不覆盖已安装规则、真实站点或 ARM64。没有运行生产实例、推送或部署；最终冻结提交后的多架构镜像仍须另验。
 
+### 旧版升级、请求版本与离线回退（2026-11-04）
+
+从基线 502cfa9 的 git archive 独立编译旧应用、旧 moji-storage 及只写合成任务的旧 TaskStore fixture；应用版本 `upgrade-old-502cfa9`。新程序基于 ed28f06 加本批修复，标为 `upgrade-new-ed28f06-working`，不冒称已提交冻结版本。所有容器断网、只读根，只挂专用 `/tmp/moji-indexer-upgrade-proof` 与测试二进制目录；旧程序启动要求的 Dashboard 登录由同容器 loopback 假服务应答，没有真实 Jackett、qB 或 Stash。初次合成配置使用了不支持的 en-US，修正为 en 后重跑；旧程序有密码时强制登录的启动失败也保留日志，未据此修改生产旧代码。
+
+实际旧版创建 core v3/runtime v1/cache v1 后，旧 TaskStore 保存包含普通及 UUID 形状 Jackett ID 的原始 DownloadRequest，并由旧 storage 工具保存带配置的受保护备份。新 Manager 逐序升级为 core v6/runtime v6/cache v1；旧 ledger 前缀（名称和 checksum）完全一致，任务主字段及请求 JSON 字节完全一致，未重建或改写历史迁移。原 v2 配置及无关 custom 值、所有模拟凭据保留；离线工具验证 v2→v3 与再次 v3 保存有效值一致，原 v2 文件逐字节不变。
+
+升级复现两项实际缺陷：配置工具首轮因 UUID 裸 ID 被当成内置实例而拒绝保存；任务原函数探针将同一旧 ID 发送为 builtin UUID，且 version 99 也会发起搜索。红报告 `/tmp/moji-sourcing-version-red.log`、`/tmp/moji-indexer-upgrade-proof/config-migration.log`。修复按原配置版本迁移 Jackett-only 身份，普通设置保存保留已解析的来源资格，旧设置命令仅在显式改变顺序时按已配置内置身份解析；重复保存、局部 patch 和既有排序保存回归通过。
+
+新增 sourcing_request codec：新写入 version 1，持久保存明确来源 ID、保留 false/true/缺省下载选项，64 KiB 预算；旧无版本请求一律解释为 Jackett-only，UUID 不例外，未知版本与非法新格式在搜索前阻塞并保留原请求。队列、资源跟踪、手动候选接收/替换均统一；运行时不再凭字符串猜已保存来源，遗留 tracker 接口单独去除已明确的 Jackett 资格。数据库 checkpoint payload_version 与此 JSON 的 version 是不同层级，本批不修改已应用迁移或公共 API。
+
+新应用在迁移后的库及 v3 配置下实际启动，GraphQL 确认 Jackett 仍启用、没有内置实例或活动规则库，优雅退出 exit 0。旧应用拒绝 v3 配置且没有打开数据目录；旧 storage 拒绝 v6，三个数据库摘要不变。另在独立副本添加连续的未来 core v7，当前 storage 也拒绝且核心库摘要不变。用旧 storage 工具离线恢复旧受保护备份，配置字节相同、请求 JSON 字节相同，回到 core v3/runtime v1/cache v1；旧应用重新启动、GraphQL 版本及退出 exit 0 均通过。新版本 restore 会按其迁移表升级，不能用它冒称生成了旧版可读数据库。
+
+完整证据、二进制 SHA-256 和报告保留在 `/tmp/moji-indexer-upgrade-proof/report.json`、`old-state.json`、`upgraded-state.json`、`app-replay.log` 及对应拒绝/恢复记录。源码/编译和仅测试 fixture 都在临时目录，未把旧配置、数据库、日志或实际站点规则提交到仓库。本轮完整 Go、config/taskruntime/taskflow/config CLI race 与相关 vet 通过；没有引擎/schema/API/UI 改动，不重复此前无变化的差分/Web/镜像。已安装规则的回滚和资产恢复仍由原独立测试证明，不能把本次旧版无规则库演练扩大成全部场景；多架构冻结镜像、真实站点/代理/solver、来源/许可仍按 R-004 继续。
+
 ## 附件缓存负载与取消测量
 
 基线 `8c8bd52`，新增显式 `internal/indexer/artifact_performance_test.go`；不改生产缓存、API 或配置。Linux/amd64、Xeon E5-2673 v4、GOMAXPROCS=2，每项 100 次；输入是约 1 MiB 的合法合成 torrent，获取回调只提供内存字节，不访问 HTTP。普通测试已有预算/取消/迟到成功/关闭回归，本轮相关测试通过。

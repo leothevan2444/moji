@@ -9,6 +9,39 @@ import (
 	"testing"
 )
 
+func TestV2UUIDShapedJackettIDStaysExternalDuringEverySave(t *testing.T) {
+	for _, scoped := range []bool{false, true} {
+		path := filepath.Join(t.TempDir(), "config.yaml")
+		original := []byte("config_version: 2\nindexers:\n  jackett: {url: 'http://jackett.example', api_key: synthetic}\n  query_order: [legacy-site, 33333333-3333-4333-8333-333333333333]\ncustom: {untouched: true}\n")
+		if err := os.WriteFile(path, original, 0600); err != nil {
+			t.Fatal(err)
+		}
+		store, err := OpenStore(path)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if scoped {
+			_, err = store.ApplyPatch(map[string]any{"logging": map[string]any{"level": "debug"}})
+		} else {
+			err = store.Migrate()
+		}
+		if err != nil {
+			t.Fatalf("scoped=%v: old Jackett ID became a builtin identity: %v", scoped, err)
+		}
+		cfg, err := LoadFromPath(path)
+		if err != nil || strings.Join(cfg.Indexers.QueryOrder, ",") != "jackett/legacy-site,jackett/33333333-3333-4333-8333-333333333333" {
+			t.Fatalf("scoped=%v: query order changed sources: %+v %v", scoped, cfg, err)
+		}
+		if err := store.Migrate(); err != nil {
+			t.Fatal("repeated save changed qualified identities", err)
+		}
+		data, _ := os.ReadFile(path)
+		if !strings.Contains(string(data), "untouched: true") {
+			t.Fatal("unrelated configuration was lost")
+		}
+	}
+}
+
 func TestLayoutMigrationRoundTripAndScopedSaves(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "config.yaml")
 	raw := `connection:
