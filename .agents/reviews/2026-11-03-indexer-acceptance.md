@@ -301,7 +301,7 @@
 
 ## 逐项需求核对（2026-11-04）
 
-基线 `1d98f93c4d6f81b923440fe05006ff3a99641ef8`；核对对象是源码、已执行报告及隔离验收，不是正在运行的生产实例。本轮重新读取方案各节、生产组装/来源获取、schema/API、Home 与缓存代码，读取下列实际报告及日志尾部；复用历史执行的项目明确列出，未把它们写成本轮重新运行。`1d98f93` 仅比已有冻结镜像多了无调用方文案清理；新源码镜像正在独立验证，成功前不沿用旧镜像身份。
+基线 `1d98f93c4d6f81b923440fe05006ff3a99641ef8`；核对对象是源码、已执行报告及隔离验收，不是正在运行的生产实例。本轮重新读取方案各节、生产组装/来源获取、schema/API、Home 与缓存代码，读取下列实际报告及日志尾部；复用历史执行的项目明确列出，未把它们写成本轮重新运行。`1d98f93` 仅比此前 e77e65f 冻结镜像多了无调用方文案清理；后续新源码双架构构建与完整 smoke 已独立通过，实际身份见下节。
 
 | 方案要求 | 当前实现及权威证据 | 判断与实际边界 |
 | --- | --- | --- |
@@ -319,14 +319,27 @@
 | §12.1–12.3 规则下载/升级/备份 | indexerdefs 的 source/bundle/activation/service 测试；实际官方更新报告与升级回退报告 | 运行时整包下载/不可变修订/全库验证/激活/修复/取消/保留引用/离线备份恢复具备；实际官方 580 定义更新并本地回滚，未替换程序。 |
 | §12.4 网络与依赖材料 | transport/tls/solver/cookie 测试、NOTICE、六模块全文 manifest；实际 solver 和认证 CONNECT 报告 | 公网站点地址/凭据边界和显式私网服务隔离具备；许可材料已打包，但应用发行许可与 schema 来源授权仍未明确，不能判定该发行项完成。 |
 | §13 迁移/回退 | config/payload 迁移测试、`/tmp/moji-indexer-upgrade-proof/report.json`、备份工具 | 实际旧二进制→core6/runtime6/cache1→受保护旧备份回退，原数据/请求 JSON 保留、未知版本拒绝；只用隔离副本。 |
-| §14 验收与交付 | 完整 Go、相关 race/vet、Web/生成/静态/实际差分/性能/升级/镜像证据见下 | 本地实际范围已分层验证，最后 locale 清理的冻结镜像尚在运行；远端 Actions 和原生 ARM 未执行，不是已跑 CI。 |
+| §14 验收与交付 | 完整 Go、相关 race/vet、Web/生成/静态/实际差分/性能/升级/镜像证据见下 | 本地实际范围已分层验证，最后 locale 清理的冻结双架构镜像通过；远端 Actions 和原生 ARM 未执行，不是已跑 CI。 |
 | §15 产品边界 | 用户按完整设计授权实施；明确另行确认 tracker 默认和未来日期，均有回归及记录 | 不擅自移除可选 Jackett，不新增 C# 解析器、脚本系统、站点白名单或附加产品需求。 |
 
 本轮重新读取的实际证据：`/tmp/moji-pathselector-full-20261104.json` 为 122/122、0 未解释/6 解释；`/tmp/moji-default-login-v11-20261104.json` 为 579/579、0 失败/1 已知 warning；`/tmp/moji-builtin-pipeline-measured.json` 为 exit 0/8 个任务且无真实上游；官方更新报告为 580 定义、check-only 保持活动、原配置不变、tasks=0。旧版升级报告中配置保持、重复 v3 转换、请求字节保留及未知版本无数据变更断言均成立。完整 Go 日志 `/tmp/moji-future-publication-all-go.log`、相关 race `/tmp/moji-current-reference-race-final.log` 和日期 indexer race 均为此前实际通过，本轮未重跑未变 Go；当前 Web 则实际重跑，见下节。旧视觉结果仍明确是既有执行：`/tmp/moji-split-visual-test.log` 206，通过后再有 `/tmp/moji-select-empty-visual.log` 36，无新布局改动。
 
 当前 tracker 桥的实际消费者为 `cmd/moji/main.go` 的 `/api/tracker/search` 组装及无 Manager 构造器；生产 WithIndexers 使用新 service，taskruntime/taskflow 生产源码无 jackett.SearchResult/Indexer。测试构造协议响应和 GraphQL 连接测试的 Jackett 客户端不是生产寻源耦合。保留桥是落实 §4 兼容入口，不维护第二套生产搜索执行器。
 
-收尾未完项归 [R-004](../TODO.md#r-004)：最后资源清理的冻结镜像、来源授权/应用发行信息。真实账号、其他代理类型/solver 组合、原生 ARM/远端 Actions 未覆盖的环境仍为验证限制，不把它们写成产品成功；不靠反复增加任意输入样本代替明确需求判据。没有因此宣布整个目标完成。
+收尾未完项归 [R-004](../TODO.md#r-004)：来源授权/应用发行信息。最后资源清理的冻结镜像已通过且构建器已清理。真实账号、其他代理类型/solver 组合、原生 ARM/远端 Actions 未覆盖的环境仍为验证限制，不把它们写成产品成功；不靠反复增加任意输入样本代替明确需求判据。没有因此宣布整个目标完成。
+
+## 1d98f93 最终源码镜像（2026-11-04）
+
+同一干净提交 `1d98f93c4d6f81b923440fe05006ff3a99641ef8`、版本 `dev-1d98f93c4d6f`，两个架构构建及原始完整断网 smoke 实际终态全部 exit 0，包含最后中英资源清理。之后 `219f28e` 及本次仅改 `.agents`，生产源码与已测试提交相同，不冒称镜像对应新的文档提交版本。
+
+| 平台 | 镜像 ID | 执行环境 |
+| --- | --- | --- |
+| linux/amd64 | `sha256:6b023dd079d68e754bc57196a3f80abad9cd1f86b76415bcffb9d1e0a11443ec` | 本机原生 |
+| linux/arm64 | `sha256:76c3218f62f620de4892a84e608cd2fcb1409d4eea5f5c25b203d39bf3ceb2fb` | QEMU 用户态模拟，不是原生 ARM CI |
+
+完整日志 `/tmp/moji-indexer-1d98f93-{amd64,arm64}-{build,smoke}.log`；架构/OCI 标签/rootfs 层记录 `/tmp/moji-indexer-1d98f93-images.json`。原脚本覆盖后端/Web/OCI 版本、全部许可材料摘要、媒体工具、非 root、断网/只读且无 Jackett/规则库启动、Home 本地读取无隐式检查、配置保存、优雅停止及替换容器后同 generation/三库/设置保留。ARM npm 安装曾长时间无 stdout，经仍存活的 build handle、构建器 npm 进程和持续增加的公共 registry 元数据日志核实仍在推进，没有因观察超时重启或改依赖；最终原构建成功。
+
+只读 QEMU 包装器/模拟器重新校验，与 e77e65f/2041d43 的记录摘要完全相同；没有改变交付镜像、健康状态或宿主 binfmt。专用 `moji-arm64-copy-final-20261104` 已移除，日志 `/tmp/moji-indexer-1d98f93-builder-cleanup.log`，原 smoke 清理临时容器/卷。镜像仅保留在本地供复核，未推送、部署或改写根配置和生产服务。
 
 ## 首页固定卡片的残留文案（2026-11-04）
 
