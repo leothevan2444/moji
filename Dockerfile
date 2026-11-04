@@ -35,6 +35,7 @@ COPY --from=backend /out/moji /usr/local/bin/moji
 COPY --from=web /src/web/dist/ /opt/moji/web/dist/
 COPY docker/config.example.yaml /opt/moji/config.example.yaml
 COPY internal/cardigann/NOTICE.md internal/cardigann/DOTNET-LICENSE.txt /usr/share/licenses/moji/cardigann/
+COPY internal/cardigann/licenses/ /usr/share/licenses/moji/cardigann/licenses/
 ARG VERSION
 # Run the actual target binary, including cross-built images, before publishing.
 RUN test "$(/usr/local/bin/moji --version)" = "moji $VERSION"

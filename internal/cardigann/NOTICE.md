@@ -65,8 +65,9 @@ in scripts/cardigann-encodings/. The SDK is used only to reproduce test oracles;
 Moji has no .NET runtime dependency. The independent runtime fixture is
 testdata/dotnet-encoding-v9.json.
 The Docker image carries this attribution and DOTNET-LICENSE.txt under
-/usr/share/licenses/moji/cardigann/. Standalone binary packages must likewise
-carry the attribution and encoding-table permission text.
+/usr/share/licenses/moji/cardigann/, with the dependency texts and pinned source
+manifest in its licenses/ subdirectory. Standalone binary packages must likewise
+carry these attribution and permission materials.
 
 The local schema compiler makes one documented compatibility amendment:
 download.selectors accepts the boolean usebeforeresponse supported by the
@@ -87,6 +88,13 @@ Implementation dependencies:
 - jsonschema/v6: pinned schema validation without runtime schema fetching; Apache-2.0.
 - dateparse: human-readable date recognition; MIT.
 
+The complete, unmodified LICENSE files from these six pinned modules are
+retained in licenses/. Its manifest.json records each module version, Go module
+checksum, original filename and license-file SHA-256. These are source-module
+texts, not a replacement application license. No separate NOTICE file was found
+in these six pinned module distributions. Docker smoke checks all packaged
+materials byte-for-byte against this directory.
+
 At the pinned Indexers revision, no standalone LICENSE/COPYING/NOTICE file was
 found in the archive. The repository's GitHub metadata also reported no license
 on 2026-11-04. Its README describes automatic imports of Jackett definitions:
@@ -101,6 +109,6 @@ The embedded schema matches the pinned archive byte-for-byte (SHA-256
 376976d75daf036ead90dc55bf542ce602da8d24deb31cc10200b6bf181e3e8e).
 Moji's application distribution license and authorization to redistribute that
 schema remain unresolved release-review items. Runtime downloading of YAML
-does not settle the embedded schema's distribution review. Dependency license
-texts remain in their source modules; this input inventory does not replace
-the application's complete dependency/license review.
+does not settle the embedded schema's distribution review. The included six
+dependency license texts do not replace the application's complete
+dependency/license review.

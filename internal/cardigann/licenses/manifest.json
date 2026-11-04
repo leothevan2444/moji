@@ -1,0 +1,56 @@
+[
+  {
+    "module": "github.com/PuerkitoBio/goquery",
+    "version": "v1.10.3",
+    "moduleSum": "h1:pFYcNSqHxBD06Fpj/KsbStFRsgRATgnf3LeXiUkhzPo=",
+    "license": "BSD-3-Clause",
+    "sourceFile": "LICENSE",
+    "file": "goquery-LICENSE",
+    "sha256": "ab79785bfa235ac1c5e16f75e0f85eb7ce0402fb72f4667fffa0729e694579b8"
+  },
+  {
+    "module": "github.com/andybalholm/cascadia",
+    "version": "v1.3.3",
+    "moduleSum": "h1:AG2YHrzJIm4BZ19iwJ/DAua6Btl3IwJX+VI4kktS1LM=",
+    "license": "BSD-2-Clause",
+    "sourceFile": "LICENSE",
+    "file": "cascadia-LICENSE",
+    "sha256": "04a8e475337d6b9959a8c47956bf713dd3362d3aadf839e74b376afb07487167"
+  },
+  {
+    "module": "github.com/araddon/dateparse",
+    "version": "v0.0.0-20210429162001-6b43995a97de",
+    "moduleSum": "h1:FxWPpzIjnTlhPwqqXc4/vE0f7GvRjuAsbW+HOIe8KnA=",
+    "license": "MIT",
+    "sourceFile": "LICENSE",
+    "file": "dateparse-LICENSE",
+    "sha256": "1056fa7893b03227b2a64c09d559a9360265dd6575c5d7797c3f59dfe5368fb3"
+  },
+  {
+    "module": "github.com/dlclark/regexp2",
+    "version": "v1.12.0",
+    "moduleSum": "h1:0j4c5qQmnC6XOWNjP3PIXURXN2gWx76rd3KvgdPkCz8=",
+    "license": "MIT",
+    "sourceFile": "LICENSE",
+    "file": "regexp2-LICENSE",
+    "sha256": "9be5d04bb4d706914d5bf943710da4afeb42048f7c529902fb57c82762a991a9"
+  },
+  {
+    "module": "github.com/ohler55/ojg",
+    "version": "v1.28.9",
+    "moduleSum": "h1:VL2vdN1CjniaNABNOFjorAW+/o7eBQDc4z5jO49jkHM=",
+    "license": "MIT",
+    "sourceFile": "LICENSE",
+    "file": "ojg-LICENSE",
+    "sha256": "319d281c7f4e4178a21f2241a236677d803a88072bd2fa491369a2f4ca11ec79"
+  },
+  {
+    "module": "github.com/santhosh-tekuri/jsonschema/v6",
+    "version": "v6.0.2",
+    "moduleSum": "h1:KRzFb2m7YtdldCEkzs6KqmJw4nqEVZGK7IN2kJkjTuQ=",
+    "license": "Apache-2.0",
+    "sourceFile": "LICENSE",
+    "file": "jsonschema-LICENSE",
+    "sha256": "c8858a5a76440bbca484e134cf7df46385d090dd18b2c58e650f939258802e5b"
+  }
+]

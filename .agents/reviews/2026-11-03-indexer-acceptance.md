@@ -206,6 +206,8 @@
 
 ### 来源与镜像许可文本（2026-11-04）
 
+后续补齐六个新增解析依赖的完整原始 LICENSE，目录 [licenses](../../internal/cardigann/licenses/manifest.json) 固定 module/version/moduleSum/原文件名及 SHA-256，版本与当前 go.mod 对齐，正文逐字节匹配本地固定模块；六个模块未发现独立 NOTICE。Docker 将该目录与现有 .NET 文本一起携带，原始 smoke 逐文件核对摘要。Shell 语法、版本/发布脚本各 12 项及文档/diff 通过；候选 amd64 镜像 `sha256:712f5bc44381e162f983711b467e9088ef4d1d3b027be124ae5f41cbbadb6bab`、`dev-05696e125c01-dirty` 构建与完整断网 smoke exit 0，包含日期修复和本批打包，不冒称冻结提交。日志 `/tmp/moji-indexer-license-candidate-build.log`、`/tmp/moji-indexer-license-candidate-smoke.log`。没有更新依赖、许可正文或应用许可证；schema 来源授权和应用发行许可问题仍按下文记录。
+
 重新读取固定 Indexers 归档，未找到独立 LICENSE/COPYING/NOTICE；当天官方 [GitHub 仓库元数据](https://github.com/Prowlarr/Indexers) 的 license 为 null，固定 README 说明自动同步 Jackett 定义。实际核对固定 Jackett GPL v2 和 Prowlarr GPL v3 根文本；这不自动建立每份 Indexers 文件的独立授权，也不选择 Moji 的发行许可证。内嵌 schema 与归档逐字节 SHA-256 相同：`376976d75daf036ead90dc55bf542ce602da8d24deb31cc10200b6bf181e3e8e`。完整事实/来源更新在 [NOTICE](../../internal/cardigann/NOTICE.md)；应用发行许可、schema 再分发授权及完整依赖许可审查仍未完成，没有对其作法律结论。
 
 发现并修正具体打包遗漏：编码表的 .NET MIT 全文虽在源码中保留，原运行镜像没有复制。Docker 现包含 `/usr/share/licenses/moji/cardigann/NOTICE.md` 与 `DOTNET-LICENSE.txt`，smoke 对两文件逐字节 SHA-256 核对；未改变许可正文或新增应用许可证。独立候选 amd64 镜像 `sha256:f350d784f1ba460a10238b713e405880c5a9bdca0df32a0571666c22a8dd4543` 构建及完整断网 smoke exit 0，版本为 `dev-53210917d6c8-dirty`，源码为 5321091 加本批改动，不冒称已提交冻结镜像。日志 `/tmp/moji-indexer-notice-build.log`、`/tmp/moji-indexer-notice-smoke.log`；shell 语法、12 版本/12 发布脚本测试、文档和 diff 检查通过。

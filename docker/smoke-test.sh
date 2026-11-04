@@ -16,11 +16,13 @@ trap 'exit 1' HUP INT TERM
 # Exercise the exact FFmpeg binaries and shared libraries shipped in the image.
 test "$(docker run --rm --network none "$image" --version)" = "moji $version"
 test "$(docker image inspect "$image" --format '{{index .Config.Labels "org.opencontainers.image.version"}}')" = "$version"
-# Preserve attribution and the complete permission text for the compiled-in
-# encoding mappings, even though build-time module sources are absent.
-for notice in NOTICE.md DOTNET-LICENSE.txt; do
-    expected_notice=$(sha256sum "$(dirname "$0")/../internal/cardigann/$notice")
-    actual_notice=$(docker run --rm --network none --entrypoint sha256sum "$image" "/usr/share/licenses/moji/cardigann/$notice")
+# Preserve attribution and complete license texts for the compiled-in encoding
+# mappings and Cardigann dependencies, without needing build-time module sources.
+cardigann_dir="$(dirname "$0")/../internal/cardigann"
+for notice in "$cardigann_dir/NOTICE.md" "$cardigann_dir/DOTNET-LICENSE.txt" "$cardigann_dir"/licenses/*; do
+    relative_notice=${notice#"$cardigann_dir/"}
+    expected_notice=$(sha256sum "$notice")
+    actual_notice=$(docker run --rm --network none --entrypoint sha256sum "$image" "/usr/share/licenses/moji/cardigann/$relative_notice")
     test "${actual_notice%% *}" = "${expected_notice%% *}"
 done
 docker run --rm --network none --entrypoint sh "$image" -ec '
