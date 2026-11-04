@@ -927,7 +927,6 @@
     },
     "impacts": {
       "stash": "Stash is unavailable. Scanning, identification and ingest verification are affected.",
-      "jackett": "Jackett is unavailable. New resource searches are affected.",
       "qbittorrent": "qBittorrent is unavailable. Download submission and progress sync are affected."
     },
     "taskProcessingEnabled": "Automatic task processing enabled",
@@ -1363,19 +1362,7 @@
     "diagnostics": {
       "stashError": "Configured but recently unreachable. Check the Stash service.",
       "stashMissing": "Configure Stash before using ingest and performer updates.",
-      "stashPending": "Stash is configured and waiting for its first check, or its status is stale.",
-      "jackettError": "Configured but recently unreachable. Check the Jackett service.",
-      "jackettMissing": "Configure Jackett to provide upstream data for task searches and performer updates.",
-      "jackettPending": "Jackett is configured and waiting for its first check, or its status is stale.",
-      "qbError": "Configured but recently unreachable. Check the qBittorrent service.",
-      "qbMissing": "Configure qBittorrent before downloads and delivery can run.",
-      "qbPending": "qBittorrent is configured and waiting for its first check, or its status is stale."
-    },
-    "blockers": {
-      "jackettSearch": "No indexer source for task searches",
-      "jackettPerformers": "No upstream data for performer updates",
-      "qbDownload": "Tasks cannot start downloads",
-      "qbLanding": "No client can finish downloaded content"
+      "stashPending": "Stash is configured and waiting for its first check, or its status is stale."
     },
     "stats": {
       "scenes": "{{count}} scene",

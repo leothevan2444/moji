@@ -297,6 +297,12 @@
 
 同提交 ARM64 构建的前端已完成，Go 公共依赖下载在 x/image v0.43.0 与 x/text v0.38.0 遭 proxy.golang.org HTTP/2 peer INTERNAL_ERROR，252.9 秒后明确终止，未进入后端编译；日志 `/tmp/moji-indexer-2d1230c-arm64-build.log`。后续同源重试曾因自动审批审查额度耗尽而未执行，不是安全性否决，没有绕过；该次构建没有活跃 handle，也不把临时 BuildKit 守护进程视为构建仍在运行。其后审批正常恢复并完成上述准入修复的完整回归；下一次构建应冻结包含该修复的新提交，专用构建器在验收后清理。没有推送、部署或宿主 binfmt 修改。
 
+## 首页固定卡片的残留文案（2026-11-04）
+
+最终需求核查发现固定 Jackett/qB 卡片虽然已移除，home.diagnostics 中六条旧卡片提示、home.blockers 四条旧阻断和 workbench.impacts.jackett 仍残留在中英资源中，包括错误的“Jackett 必须先配置”和演员上游提示。实际调用方检查确认没有读取这些键，Home 的动态 impact 范围只有 stash/qbittorrent。各语言删除 11 个键，同步生成 public/locales；保留现有 HomeIndexers/HomeDownloader 和实际下载器/连接状态文案，没有组件或布局变化。
+
+本机 Vite 初始化遭 spawnSync sh EPERM，不能把启动失败计为通过；随后按项目固定 `mcr.microsoft.com/playwright:v1.61.1-noble` 容器断网执行 i18n:check、完整 Web tests 和 build，实际 Node v24.17.0，全部通过：i18n 10 项、76 文件/430 测试、生产构建。日志 `/tmp/moji-home-legacy-web-container.log`。不是 Node 22 CI 复现；未改变可见布局，不重跑旧视觉矩阵或编写镜像删除键的测试。Go/解释器无修改，原完整结果仍分别有效；e77e65f 镜像不包含本次资源清理，不能冒称是新源码镜像。
+
 ## 动态取种路径与 selector 回退（2026-11-04）
 
 继续按矩阵补齐三条正式实际解释器场景：[before-pathselector](../../scripts/indexer-diff/cases/before-pathselector/definition.yml) 经 details→重定向→带 Cookie 的表单，选取 action 后提交 POST before，再依次跳过不存在的 selector 和缺失 href 的元素，返回完整 magnet；缺失 action 和耗尽全部 selector 的两条控制均明确拒绝，未产生下载。两条控制的原生错误文本不同，按已有 expectedErrors 精确记录各自完整错误，未放宽比较器或新增忽略条件。成功场景明确记录同源重定向 Referer 差异：Moji HTTP 传输保留原页面，固定 Jackett 手动跳转不带该头；后续 POST、Cookie 和 magnet 仍全部精确比较。

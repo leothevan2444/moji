@@ -926,7 +926,6 @@
     },
     "impacts": {
       "stash": "Stash 暂时无法连接，扫描、识别和入库校验受影响。",
-      "jackett": "Jackett 暂时无法连接，新的资源搜索受影响。",
       "qbittorrent": "qBittorrent 暂时无法连接，下载提交与进度同步受影响。"
     },
     "taskProcessingEnabled": "自动任务处理已启用",
@@ -1359,19 +1358,7 @@
     "diagnostics": {
       "stashError": "已配置但最近未联通，请检查 Stash 服务状态。",
       "stashMissing": "Stash 必须先配置，否则入库与演员更新流程无法展开。",
-      "stashPending": "Stash 已配置，等待首次探测或最近状态已过期。",
-      "jackettError": "已配置但最近未联通，请检查 Jackett 服务状态。",
-      "jackettMissing": "Jackett 必须先配置，否则任务搜索与演员更新没有上游数据。",
-      "jackettPending": "Jackett 已配置，等待首次探测或最近状态已过期。",
-      "qbError": "已配置但最近未联通，请检查 qBittorrent 服务状态。",
-      "qbMissing": "qBittorrent 必须先配置，否则下载与落地流程无法展开。",
-      "qbPending": "qBittorrent 已配置，等待首次探测或最近状态已过期。"
-    },
-    "blockers": {
-      "jackettSearch": "任务搜索无索引源",
-      "jackettPerformers": "演员更新无上游数据",
-      "qbDownload": "任务无法启动下载",
-      "qbLanding": "下载完成后无客户端落地"
+      "stashPending": "Stash 已配置，等待首次探测或最近状态已过期。"
     },
     "stats": {
       "scenes": "{{count}} 部影片",
