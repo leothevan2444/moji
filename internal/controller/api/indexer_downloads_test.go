@@ -14,7 +14,7 @@ import (
 
 type downloadFetchFunc func(context.Context, string) (indexer.Artifact, error)
 
-func (f downloadFetchFunc) FetchReference(ctx context.Context, id string) (indexer.Artifact, error) {
+func (f downloadFetchFunc) FetchCurrentReference(ctx context.Context, id string) (indexer.Artifact, error) {
 	return f(ctx, id)
 }
 func TestPreparedDownloadOnlyServesStoredAttachmentAndHeadDoesNotAcquire(t *testing.T) {

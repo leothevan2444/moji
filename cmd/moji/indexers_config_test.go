@@ -34,6 +34,48 @@ func indexerTestStore(t *testing.T) *config.Store {
 	return store
 }
 
+func TestCurrentReferenceSnapshotUsesLocalPolicyAcrossCatalogRestart(t *testing.T) {
+	ctx := context.Background()
+	store := indexerTestStore(t)
+	loaded := &runtimeIndexerRegistry{configuration: indexerConfiguration{store: store}, external: indexerCatalogFunc(func(context.Context, indexer.InstanceSnapshot) ([]indexer.InstanceSnapshot, error) {
+		return []indexer.InstanceSnapshot{{ID: "jackett/one", RemoteID: "one"}}, nil
+	})}
+	before, err := loaded.Snapshot(ctx)
+	if err != nil || len(before.Instances) != 1 {
+		t.Fatal("cannot establish original account revision", err)
+	}
+	restarted := &runtimeIndexerRegistry{configuration: indexerConfiguration{store: store}, external: indexerCatalogFunc(func(context.Context, indexer.InstanceSnapshot) ([]indexer.InstanceSnapshot, error) {
+		t.Fatal("new reference admission refreshed the external directory")
+		return nil, nil
+	})}
+	current, err := restarted.ReferenceSnapshot(ctx, "jackett/one")
+	if err != nil || current.ConfigRevision != before.Instances[0].ConfigRevision || current.RemoteID != "one" || !current.Enabled {
+		t.Fatal("unchanged configured source could not survive a cold directory", err)
+	}
+	if _, err := store.SetJackettIndexerEnabled(ctx, store.Revision(), "jackett/one", false); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := restarted.ReferenceSnapshot(ctx, "jackett/one"); !errors.Is(err, indexer.ErrReference) {
+		t.Fatal("excluded source still admitted a new reference", err)
+	}
+	if _, err := store.SetJackettIndexerEnabled(ctx, store.Revision(), "jackett/one", true); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := store.ApplyPatch(map[string]any{"indexers": map[string]any{"jackett": map[string]any{"api_key": "replacement-synthetic-key"}}}); err != nil {
+		t.Fatal(err)
+	}
+	changed, err := restarted.ReferenceSnapshot(ctx, "jackett/one")
+	if err != nil || changed.ConfigRevision == current.ConfigRevision {
+		t.Fatal("reference revision did not follow the latest account", err)
+	}
+	if _, err := store.SetJackettIndexerEnabled(ctx, store.Revision(), "jackett", false); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := restarted.ReferenceSnapshot(ctx, "jackett/one"); !errors.Is(err, indexer.ErrReference) {
+		t.Fatal("disabled Jackett still admitted references", err)
+	}
+}
+
 func TestIndexerRegistryRetainsConfirmedCatalogOnFailureWithoutCrossingAccounts(t *testing.T) {
 	store := indexerTestStore(t)
 	var calls atomic.Int32

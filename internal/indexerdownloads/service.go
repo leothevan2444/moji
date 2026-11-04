@@ -27,7 +27,7 @@ const (
 )
 
 type Fetcher interface {
-	FetchReference(context.Context, string) (indexer.Artifact, error)
+	FetchCurrentReference(context.Context, string) (indexer.Artifact, error)
 }
 type Receipt struct {
 	Handle, Kind string
@@ -87,7 +87,7 @@ func (s *Service) Prepare(ctx context.Context, resourceID string) (Receipt, erro
 	stop := context.AfterFunc(s.owner, cancel)
 	defer stop()
 	defer cancel()
-	artifact, err := s.fetcher.FetchReference(work, resourceID)
+	artifact, err := s.fetcher.FetchCurrentReference(work, resourceID)
 	if err != nil {
 		return Receipt{}, err
 	}

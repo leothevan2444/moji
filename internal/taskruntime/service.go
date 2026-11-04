@@ -392,7 +392,7 @@ func (s *Service) PreviewTorrentSelectionContext(ctx context.Context, req Previe
 
 	selector := s.selector
 	if selector == nil {
-		selector = defaultCandidateSelector{inspectTorrent: s.inspectSearchResultTorrent}
+		selector = defaultCandidateSelector{inspectTorrent: s.inspectCurrentSearchResultTorrent}
 	}
 	preview, err := selector.Preview(ctx, query, req.Results, selectionConfig, req.ApplyFastRules, req.ApplyFileRules)
 	if err != nil {

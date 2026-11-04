@@ -6,7 +6,9 @@
 
 命名查询参数资格由 [indexerquery](../../internal/indexerquery/parameters.go) 统一供搜索服务与独立 Cardigann 使用：仅接受 Year/Season/Ep、七种 ID、音乐和图书结构化字段（共 18 个），名称大小写不敏感，重复大小写别名拒绝，值和显式空串保留。模式、关键词、类别、分页与派生标记不可由参数 map 覆盖；无效查询在来源读取或持久 run 接受前拒绝。外部 Jackett 当前 JSON 搜索适配器只表达关键词/类别，不支持结构化参数或非零 offset，明确返回 INDEXER_CAPABILITY_UNSUPPORTED，不静默忽略。GraphQL 类型说明及中英文错误文案同步；当前 Web 关键词入口不增加结构化表单。
 
-显式资源下载基础：应用持有 [indexerdownloads.Service](../../internal/indexerdownloads/service.go)，通过既有引用获取服务取得验证后的原始数据，短期内存句柄只代表已获取附件，不代表任务决定。5 分钟绝对到期，64 MiB/256 项；获取前预留 8 MiB，最多 8 个并发获取、16 个读取。读取持有不可变 reader 和释放 lease，过期的活跃读取继续占预算。HTTP GET/HEAD 只返回已保存 torrent 或 magnet 附件，禁止缓存及来源泄漏，不重新抓站点、不创建任务。规则与任务 pin 不依赖这些句柄，重启后句柄失效。prepareTorrentDownload 只接受 searchID/candidateID，经持久 run 归属/过期检查后准备；发现和任务候选均显式获取下载入口，刷新不重复获取，失败不影响选源。磁力附件仅从本站句柄读取后展示原生 magnet 链接；不将私有定位信息加入候选查询。
+新引用准入：新任务选种、现有任务重新选种及新下载经 indexer.ResolveReference/FetchCurrentReference 核对当前启用状态、账号/网络配置修订和内置规则 digest；同一规则未改而其他定义更新，不使其旧结果自动失效。Jackett 本地策略验证不刷新远端目录，连接未改时冷启动目录不阻断已保存结果。文件预览在命中检查缓存前同样验证来源，并直接使用借用记录，候选随后过期不撤销本次获取。已接收任务及自动寻源中的 FetchRecord/FetchReference 继续使用其冻结快照，不被之后的停用、账号改动或短期候选过期撤销；已有附件及下载句柄也不重新抓站。回归见[当前来源准入](../../internal/indexer/current_reference_test.go)与[预览缓存边界](../../internal/taskruntime/current_reference_test.go)，完整验证进度见 R-004。
+
+显式资源下载基础：应用持有 [indexerdownloads.Service](../../internal/indexerdownloads/service.go)，通过当前有效引用获取服务取得验证后的原始数据，短期内存句柄只代表已获取附件，不代表任务决定。5 分钟绝对到期，64 MiB/256 项；获取前预留 8 MiB，最多 8 个并发获取、16 个读取。读取持有不可变 reader 和释放 lease，过期的活跃读取继续占预算。HTTP GET/HEAD 只返回已保存 torrent 或 magnet 附件，禁止缓存及来源泄漏，不重新抓站点、不创建任务。规则与任务 pin 不依赖这些句柄，重启后句柄失效。prepareTorrentDownload 只接受 searchID/candidateID，经持久 run 归属/过期检查后准备；发现和任务候选均显式获取下载入口，刷新不重复获取，失败不影响选源。磁力附件仅从本站句柄读取后展示原生 magnet 链接；不将私有定位信息加入候选查询。
 
 现有任务选源：resolveTaskSourcingCandidate 只接受任务、run、candidate 和 expectedRevision，run 必须属于该任务；taskruntime 重新核对番号、阶段、重选清理状态和提交不确定性。来源快照、任务更新、审计及规则 pin 在同一 core v6 事务保存，已有不确定 TASK_ADD 不允许被新选择覆盖。失败保留旧来源与引用；成功由原 worker 获取、验证并提交，响应 PENDING 仅表示已接收。任务关联搜索默认复用尚未过期的同范围 run，显式 refresh 才新建。验证见 [现有任务选源测试](../../internal/taskruntime/resolve_indexed_test.go)及 [API 归属测试](../../internal/graphqlapi/torrent_resolve_test.go)。
 

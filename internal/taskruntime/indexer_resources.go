@@ -4,9 +4,20 @@ import (
 	"context"
 	"errors"
 	"strings"
+
+	"github.com/leothevan2444/moji/internal/indexer"
 )
 
 func (s *Service) resolveIndexedResource(ctx context.Context, handle string) (downloadedTorrentMetadata, string, error) {
+	return s.resolveIndexedArtifact(ctx, handle, func(work context.Context) (indexer.Artifact, error) {
+		if s.resourceFetcher == nil {
+			return indexer.Artifact{}, errors.New("indexer resource fetcher unavailable")
+		}
+		return s.resourceFetcher.FetchReference(work, strings.TrimPrefix(handle, "indexer-resource:"))
+	})
+}
+
+func (s *Service) resolveIndexedArtifact(ctx context.Context, handle string, acquire func(context.Context) (indexer.Artifact, error)) (downloadedTorrentMetadata, string, error) {
 	key := normalizeTorrentInspectionCacheKey(handle, "")
 	s.inspectionCacheMu.Lock()
 	entry, ok := s.inspectionCache[key]
@@ -19,10 +30,7 @@ func (s *Service) resolveIndexedResource(ctx context.Context, handle string) (do
 			return downloadedTorrentMetadata{}, entry.magnet, nil
 		}
 	}
-	if s.resourceFetcher == nil {
-		return downloadedTorrentMetadata{}, "", errors.New("indexer resource fetcher unavailable")
-	}
-	artifact, err := s.resourceFetcher.FetchReference(ctx, strings.TrimPrefix(handle, "indexer-resource:"))
+	artifact, err := acquire(ctx)
 	if err != nil {
 		return downloadedTorrentMetadata{}, "", err
 	}

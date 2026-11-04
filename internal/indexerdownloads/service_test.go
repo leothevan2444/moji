@@ -15,7 +15,7 @@ import (
 
 type fetchFunc func(context.Context, string) (indexer.Artifact, error)
 
-func (f fetchFunc) FetchReference(ctx context.Context, id string) (indexer.Artifact, error) {
+func (f fetchFunc) FetchCurrentReference(ctx context.Context, id string) (indexer.Artifact, error) {
 	return f(ctx, id)
 }
 func testTorrent() []byte { return []byte("d4:infod6:lengthi1e4:name12:ABCD-123.mp4ee") }

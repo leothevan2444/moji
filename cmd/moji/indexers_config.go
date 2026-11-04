@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"sort"
+	"strings"
 	"sync"
 	"time"
 
@@ -75,6 +76,40 @@ func (p *runtimeIndexerRegistry) Snapshot(ctx context.Context) (indexer.Registry
 func (p *runtimeIndexerRegistry) CachedSnapshot(ctx context.Context) (indexer.Registry, error) {
 	return p.snapshot(ctx, false)
 }
+
+// ReferenceSnapshot checks local admission policy without refreshing Jackett.
+// Persisted search results remain usable after restart when that connection is
+// unchanged, even before its optional remote directory has been loaded again.
+func (p *runtimeIndexerRegistry) ReferenceSnapshot(ctx context.Context, id string) (indexer.InstanceSnapshot, error) {
+	if err := ctx.Err(); err != nil {
+		return indexer.InstanceSnapshot{}, err
+	}
+	cfg, _ := p.configuration.snapshot()
+	if source, ok := cfg.Indexers.Builtin.Instances[id]; ok && source.Enabled {
+		return indexeradmin.BuiltinSnapshot(cfg, id, source), nil
+	}
+	if !cfg.Indexers.Jackett.Enabled || !strings.HasPrefix(id, "jackett/") || len(id) <= len("jackett/") || len(id) > 256 {
+		return indexer.InstanceSnapshot{}, indexer.ErrReference
+	}
+	remoteID := strings.TrimPrefix(id, "jackett/")
+	for _, excluded := range cfg.Indexers.Jackett.ExcludedIndexers {
+		if excluded == id || excluded == remoteID {
+			return indexer.InstanceSnapshot{}, indexer.ErrReference
+		}
+	}
+	connection := jackettConnectionSnapshot(cfg)
+	if connection.BaseURL == "" || connection.JackettAPIKey == "" {
+		return indexer.InstanceSnapshot{}, indexer.ErrNotConfigured
+	}
+	connection.ID, connection.RemoteID = id, remoteID
+	return connection, nil
+}
+
+func jackettConnectionSnapshot(cfg *config.Config) indexer.InstanceSnapshot {
+	connection := indexer.InstanceSnapshot{ID: "jackett", Kind: indexer.Jackett, Enabled: true, BaseURL: cfg.Connection.Jackett.URL, JackettAPIKey: cfg.Connection.Jackett.APIKey, RequestTimeout: time.Duration(cfg.Indexers.Builtin.RequestTimeoutSeconds) * time.Second, SiteTimeout: time.Duration(cfg.Indexers.Builtin.SiteTimeoutSeconds) * time.Second}
+	connection.ConfigRevision = indexerFingerprint(connection)
+	return connection
+}
 func (p *runtimeIndexerRegistry) Refresh(ctx context.Context) (indexer.Registry, error) {
 	p.mu.Lock()
 	if time.Since(p.attemptAt) >= 30*time.Second {
@@ -99,8 +134,7 @@ func (p *runtimeIndexerRegistry) snapshot(ctx context.Context, refresh bool) (in
 	if !cfg.Indexers.Jackett.Enabled {
 		return registry, ctx.Err()
 	}
-	connection := indexer.InstanceSnapshot{ID: "jackett", Kind: indexer.Jackett, Enabled: true, BaseURL: cfg.Connection.Jackett.URL, JackettAPIKey: cfg.Connection.Jackett.APIKey, RequestTimeout: time.Duration(cfg.Indexers.Builtin.RequestTimeoutSeconds) * time.Second, SiteTimeout: time.Duration(cfg.Indexers.Builtin.SiteTimeoutSeconds) * time.Second}
-	connection.ConfigRevision = indexerFingerprint(connection)
+	connection := jackettConnectionSnapshot(cfg)
 	if connection.BaseURL == "" || connection.JackettAPIKey == "" || p.external == nil {
 		registry.Diagnostics = append(registry.Diagnostics, indexer.SiteReport{InstanceID: "jackett", Code: indexer.ErrNotConfigured.Error(), Partial: true, CorrelationID: uuid.NewString()})
 		return registry, ctx.Err()

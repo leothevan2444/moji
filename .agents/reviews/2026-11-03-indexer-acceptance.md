@@ -277,6 +277,22 @@
 
 默认入口跳过与 cmd/moji vet 通过。该证据证明经实际认证 HTTP 代理转发的搜索/获取；不能推断远端代理地域出口、HTTPS/SOCKS 代理或 solver+代理组合均已实测，也不是全站可靠性承诺。既有 fake 协议边界测试与本次实际联网分别记录，无生产下载器提交。
 
+## 新操作的当前来源准入（2026-11-04）
+
+按方案 §6/§9/§13 核查，发现原 ResolveReference 仅验证持久快照内部配对，没有在新选择时核对当前站点/账号/规则。`/tmp/moji-current-reference-before.log` 的四个负例先复现停用、删除、账号变化和规则变化仍获准。本轮修复为新选择核对当前本地实例与活动规则 digest；同内容规则跨 bundle 仍保留原快照，失败释放 lease。新增 FetchCurrentReference 供显式下载使用；文件预览在检查缓存前验证，不能用已缓存字节绕过新准入。自动寻源 FetchReference 和已接收任务 FetchRecord 不被当前策略撤销。
+
+生产 ReferenceSnapshot 只读当前配置，不刷新 Jackett 目录；连接未改时重启后的空目录不会误拒原结果。连接指纹复用同一转换，局部排除与全局禁用均阻止新选择。无 schema/API payload/数据库迁移改动，原有“引用失效，请重新搜索”错误文案适用。所有副作用均在准入后；这不等于立即撤销正在运行的任务或已获取附件。
+
+定向测试、下载服务全包、附件 HTTP handler、六项旧任务恢复/失败重试/迁移回归均通过。全包 `go test ./... -run '^$'` 只证明编译；初次发现附件 handler fake 未同步窄接口，修正后通过。再补“验证后候选立即过期”的确定性回归，先复现预览二次解析 runtime 引用丢失借用快照，再共用解析/检查缓存流程、直接获取已借用记录；该次预览通过，后续新预览仍拒绝过期来源。红/绿日志 `/tmp/moji-current-preview-lease-before.log`、`/tmp/moji-current-preview-lease-after.log`。
+
+正常审批恢复后，最终完整 Go（含真实本地应用装配）、indexer/indexerdownloads/taskruntime/cmd/controller-api 五包完整 race、相关 vet 均通过，真实集成开关关闭；日志 `/tmp/moji-current-reference-all-go-final.log`、`/tmp/moji-current-reference-race-final.log`、`/tmp/moji-current-reference-vet-final.log`。没有放宽比较或增加重试；旧 2d1230c 镜像不包含本修复，新冻结镜像验收另行完成。
+
+## 2d1230c 冻结镜像与审批状态（2026-11-04）
+
+干净 `2d1230c05b04beb8f00b9f8c8a4984f574a6abc4` 的 amd64 镜像构建及原始完整断网 smoke 通过：`sha256:1dcfc375db8eebfc23210758b9156c7d4b9af50589d79dde5cfc9898865a114c`，版本 `dev-2d1230c05b04`，日志 `/tmp/moji-indexer-2d1230c-amd64-build.log`、`/tmp/moji-indexer-2d1230c-amd64-smoke.log`。此提交包含登录默认值修复及宿主交叉编译，尚不含后续工作区的当前来源准入修复。
+
+同提交 ARM64 构建的前端已完成，Go 公共依赖下载在 x/image v0.43.0 与 x/text v0.38.0 遭 proxy.golang.org HTTP/2 peer INTERNAL_ERROR，252.9 秒后明确终止，未进入后端编译；日志 `/tmp/moji-indexer-2d1230c-arm64-build.log`。后续同源重试曾因自动审批审查额度耗尽而未执行，不是安全性否决，没有绕过；该次构建没有活跃 handle，也不把临时 BuildKit 守护进程视为构建仍在运行。其后审批正常恢复并完成上述准入修复的完整回归；下一次构建应冻结包含该修复的新提交，专用构建器在验收后清理。没有推送、部署或宿主 binfmt 修改。
+
 ## 附件缓存负载与取消测量
 
 基线 `8c8bd52`，新增显式 `internal/indexer/artifact_performance_test.go`；不改生产缓存、API 或配置。Linux/amd64、Xeon E5-2673 v4、GOMAXPROCS=2，每项 100 次；输入是约 1 MiB 的合法合成 torrent，获取回调只提供内存字节，不访问 HTTP。普通测试已有预算/取消/迟到成功/关闭回归，本轮相关测试通过。

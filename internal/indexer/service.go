@@ -492,6 +492,10 @@ func (s *Service) ResolveReference(ctx context.Context, id string) (*ResourceLea
 		lease.Release()
 		return nil, err
 	}
+	if err = s.validateCurrentResource(ctx, lease.Record); err != nil {
+		lease.Release()
+		return nil, err
+	}
 	return lease, nil
 }
 func (s *Service) FetchRecord(ctx context.Context, record ResourceRecord) (Artifact, error) {

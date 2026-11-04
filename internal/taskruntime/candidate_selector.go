@@ -160,16 +160,38 @@ type inspectedCandidate struct {
 	ok         bool
 }
 
-func (s *Service) inspectSearchResultTorrent(ctx context.Context, torrentURL string) (torrentInspection, error) {
+// A new preview must validate its source even when inspection bytes are cached.
+// Automatic sourcing keeps using its already admitted search snapshot.
+func (s *Service) inspectCurrentSearchResultTorrent(ctx context.Context, torrentURL string) (torrentInspection, error) {
 	if strings.HasPrefix(torrentURL, "indexer-resource:") {
-		metadata, magnet, err := s.resolveIndexedResource(ctx, torrentURL)
+		if s.resourceAccess == nil {
+			return torrentInspection{}, indexer.ErrNotConfigured
+		}
+		lease, err := s.resourceAccess.ResolveReference(ctx, strings.TrimPrefix(torrentURL, "indexer-resource:"))
 		if err != nil {
 			return torrentInspection{}, err
 		}
-		if magnet != "" {
-			return torrentInspection{}, errors.New("magnet resource has no inspectable torrent files")
-		}
-		return inspectTorrentMetadata(metadata), nil
+		defer lease.Release()
+		return indexedTorrentInspection(s.resolveIndexedArtifact(ctx, torrentURL, func(work context.Context) (indexer.Artifact, error) {
+			return s.resourceAccess.FetchRecord(work, lease.Record)
+		}))
+	}
+	return s.inspectSearchResultTorrent(ctx, torrentURL)
+}
+
+func indexedTorrentInspection(metadata downloadedTorrentMetadata, magnet string, err error) (torrentInspection, error) {
+	if err != nil {
+		return torrentInspection{}, err
+	}
+	if magnet != "" {
+		return torrentInspection{}, errors.New("magnet resource has no inspectable torrent files")
+	}
+	return inspectTorrentMetadata(metadata), nil
+}
+
+func (s *Service) inspectSearchResultTorrent(ctx context.Context, torrentURL string) (torrentInspection, error) {
+	if strings.HasPrefix(torrentURL, "indexer-resource:") {
+		return indexedTorrentInspection(s.resolveIndexedResource(ctx, torrentURL))
 	}
 	if inspection, ok := s.cachedTorrentInspection(torrentURL); ok {
 		return inspection, nil
