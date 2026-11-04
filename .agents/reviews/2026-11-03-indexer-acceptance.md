@@ -255,6 +255,12 @@
 
 完整 Go 和 cmd/moji vet 通过，默认离线入口跳过。最终测试报告将未查询任务数初始化为 -1，避免早期失败误报零任务；报告必须是新的私有文件。显式运行成功仅表示完成安全观测，各站失败仍保留。来源检查、更新及回滚均为测试临时状态，不涉及生产规则或服务变更。
 
+## 五种声明式登录方法对照（2026-11-04）
+
+初审表中缺少实际差分的 get/oneurl，连同 cookie 补为三条[正式合成场景](../../scripts/indexer-diff/cases/login-get/definition.yml)，各自完成认证验证→搜索→获取 torrent。GET 含空格、加号与 ampersand 编码，oneurl 验证路径直接拼接，cookie 不发登录提交；请求、Cookie、结果与资源全部精确比较。固定 reference-10 专项 3/3 无例外通过；没有修改生产实现、参考程序、比较条件或旧场景。
+
+完整实际解释器对照 117/117（113 正常、4 精确预期拒绝），0 未解释/5 原有解释差异，报告 `/tmp/moji-login-all-20261104.json`、专项 `/tmp/moji-login-methods-20261104.json`；20 项比较器测试与 replay 包测试通过。加上原有 form/post，五种 method 均有实际执行样本，不等于每种站点/重定向/错误组合全部认证，亦不替代真实账号登录验收。没有真实凭据、网络或生产下载器操作；默认离线 replay 测试与 CI 自动收集这些 fixture。
+
 ## 附件缓存负载与取消测量
 
 基线 `8c8bd52`，新增显式 `internal/indexer/artifact_performance_test.go`；不改生产缓存、API 或配置。Linux/amd64、Xeon E5-2673 v4、GOMAXPROCS=2，每项 100 次；输入是约 1 MiB 的合法合成 torrent，获取回调只提供内存字节，不访问 HTTP。普通测试已有预算/取消/迟到成功/关闭回归，本轮相关测试通过。

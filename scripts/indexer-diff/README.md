@@ -6,7 +6,7 @@ records request method/URL/body/headers, parsed common release fields, challenge
 type/prompt/image SHA-256, and final torrent SHA-256 or magnet. It loads no production profiles, calls no websites,
 and creates no Moji tasks or downloader operations.
 
-Current cases cover public HTML/JSON, POST login/cookie verification, intermediate
+Current cases cover public HTML/JSON, form/POST/GET/oneurl/cookie login and verification, intermediate
 downloads, POST download.before, testlinktorrent, and movie/music/book/TV query
 fields. TV cases distinguish raw Ep from derived Episode, season packs, daily
 dates, numeric normalization and invalid-query rejection. Text and image captcha
@@ -53,7 +53,12 @@ selection, property order, nested serialization, exact big integers and date
 tokens. Fuzzy absolute dates check Unix seconds and both intermediate strings
 and publication timestamps, including the different offset behavior of the
 calendar parser.
-The 114 executed cases
+The GET login case also checks space, plus and ampersand encoding in synthetic
+credentials; oneurl checks direct path concatenation. Each of these and cookie
+login continues through authentication verification, search and torrent fetch,
+comparing the request sequence and session cookies with the actual reference.
+These synthetic sessions do not certify a real site's account login.
+The 117 executed cases
 include four explicitly expected rejections (invalid TV episode, captcha
 answer rejected by the site, empty numeric ID/year and overflowing ID); they do not certify the community
 library's live availability. Additional failure/cancellation
