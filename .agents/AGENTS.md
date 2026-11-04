@@ -22,7 +22,7 @@ Moji 是自托管的 Stash 自动化伴侣：跟踪演员与发行，通过索�
 | qB 管理、清理、配置、客户端、运行和发布 | [集成与运维](modules/operations.md) |
 | 路由、交互、缓存、设置、本地化、无障碍 | [Web UI](modules/web.md) |
 | 设置页重构、配置结构调整与实际旧配置迁移 | [设置契约](plans/settings-redesign.md)；[实施复核](reviews/2026-10-28-settings.md) |
-| 内置索引、Cardigann v11、可选 Jackett 与索引缓存 | [实施方案](plans/builtin-indexers.md)；[阶段/schema 证据矩阵](reviews/2026-11-03-indexer-acceptance.md)；实施进展与未完项见 [R-004](TODO.md#r-004) |
+| 内置索引、Cardigann v11、可选 Jackett 与索引缓存 | [实施方案](plans/builtin-indexers.md)；[阶段/schema 证据矩阵](reviews/2026-11-03-indexer-acceptance.md)；功能验收与限制见 [完成记录](reviews/2026-11-03-indexer-acceptance.md#功能验收完成2026-11-04) |
 | 演员历史全量检查 | [未实现的设计提案](plans/performer-full-scan.md)；不要将其当作已有能力 |
 | 整理或新增指引 | [文档组织与维护](README.md) |
 
