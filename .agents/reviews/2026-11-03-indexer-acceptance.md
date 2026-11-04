@@ -322,6 +322,12 @@
 
 后续用户已明确授权参考根目录 config.yaml、按其中站点执行真实搜索并获取种子，不向生产下载器提交任务。离线配置工具只读验证 exit 0；保护日志 `/tmp/moji-live-authorized-config-validation.log` 不纳入提交。真实请求尚未开始，不把配置有效当作站点可用证据。
 
+### b91ed24 干净源码镜像（2026-11-04）
+
+已提交 `b91ed24419c96b14f702ec103877e0b3bfd65f48` 的独立 amd64 镜像构建成功，镜像 `sha256:08640ea862bd51c6ac1f2a2f4cd712491aa7dec9f0e754adb01a421477806b6a`，版本 `dev-b91ed24419c9`、OCI revision 一致，包含仅时间日期修复。构建日志 `/tmp/moji-indexer-b91ed24-amd64-build.log`。首次 smoke 启动时主工作区已新增未提交 fixture，版本脚本因此选择 dirty 标签而未找到对应镜像，未执行验收；随后在 `/tmp/moji-indexer-b91ed24-frozen` 干净隔离检出运行原 smoke，完整通过，日志 `/tmp/moji-indexer-b91ed24-amd64-smoke-final.log`。
+
+该次覆盖镜像内后端/Web/OCI 版本、非 root/只读根、媒体工具、NOTICE/MIT 摘要、断网无 Jackett/无规则库启动、本地概况/无隐式检查、配置保存、优雅关闭和替换容器后三库及设置保留。仅操作独立临时容器与卷；没有推送、部署或修改生产实例。ARM64 仍未取得可执行环境，不能由此推断通过。
+
 ### 仅时间日期（2026-11-04）
 
 固定库 1337x.yml 的 date_today 确有仅时间用法（12:25am），随后通过 .Result.date_today 写入正式 date，失败会回退 now。已用本地回归及实际 reference-10 复现拒绝。辅助模式给未修改的 DateTimeRoutines 设置其公开 DefaultDate，以固定无日期输入的默认日；不改完整解释器模式的宿主时钟。全新固定 SDK/源码/NuGet 锁构建 reference-10 成功，0 警告/错误、31 DLL 校验；旧 reference-9 对当前 runner 不再有效。
