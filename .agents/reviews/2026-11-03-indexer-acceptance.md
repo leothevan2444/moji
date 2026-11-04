@@ -297,6 +297,19 @@
 
 同提交 ARM64 构建的前端已完成，Go 公共依赖下载在 x/image v0.43.0 与 x/text v0.38.0 遭 proxy.golang.org HTTP/2 peer INTERNAL_ERROR，252.9 秒后明确终止，未进入后端编译；日志 `/tmp/moji-indexer-2d1230c-arm64-build.log`。后续同源重试曾因自动审批审查额度耗尽而未执行，不是安全性否决，没有绕过；该次构建没有活跃 handle，也不把临时 BuildKit 守护进程视为构建仍在运行。其后审批正常恢复并完成上述准入修复的完整回归；下一次构建应冻结包含该修复的新提交，专用构建器在验收后清理。没有推送、部署或宿主 binfmt 修改。
 
+## e77e65f 冻结双架构验收（2026-11-04）
+
+在同一干净提交 `e77e65f3c3349da0ad2fbfcb711239d6a08700b5` 的隔离检出重新构建并执行完整 smoke，版本 `dev-e77e65f3c334`。包含 `05696e1` 的未来发布时间策略与 `e77e65f` 的六个依赖许可全文，未复用旧镜像冒称新源码已测。
+
+| 平台 | 镜像 ID | 执行环境 |
+| --- | --- | --- |
+| linux/amd64 | `sha256:7243b56014661ffb55f6521b1cb36ac2daa26be7bc0f2b3ba5af200da794e45f` | 本机原生 |
+| linux/arm64 | `sha256:b64a168a2c17f95698d06870ac3ee2252824ce89a600f9c2fcc0e845e4fb97f6` | QEMU 用户态模拟，不是原生 ARM CI |
+
+四份构建/smoke 实际终态 exit 0，日志 `/tmp/moji-indexer-e77e65f-{amd64,arm64}-{build,smoke}.log`，实际镜像架构/OCI 标签/rootfs 层记录 `/tmp/moji-indexer-e77e65f-images.json`。原始完整 smoke 验证后端/Web/OCI 源版本一致、所有许可材料逐字节一致、媒体工具、非 root、断网/只读且无 Jackett/规则库启动、Home 本地快照不隐式检查、配置保存、优雅退出及替换容器后三库/设置/同一 generation 保留。
+
+ARM 使用下节同一私有只读 QEMU 包装器，重新核对包装器和模拟器 SHA-256 均相同，未改交付镜像或宿主 binfmt。专用 `moji-arm64-final-20261104` 构建器已移除，日志 `/tmp/moji-indexer-e77e65f-builder-cleanup.log`；临时容器/卷由原脚本清理。保留本地镜像供复核，未推送、部署或修改实际配置/服务。原生 ARM、远端 Actions 与来源授权审查不能由这次模拟运行证明。
+
 ## 2041d43 冻结双架构验收（2026-11-04）
 
 同一干净提交 `2041d4384f2645e14ebee091abc0ffc2256462a5`、版本 `dev-2041d4384f26`，实际构建并完成原始完整 smoke：
