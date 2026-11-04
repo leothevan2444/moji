@@ -202,6 +202,8 @@
 
 已按项目默认行为复核要求询问用户：沿用 Jackett 钳制为检索时间，还是沿用 Prowlarr 保留原解析时间。尚未收到选择，未更改该默认行为、放宽时间比较或删除原失败报告。此项单独等待选择，其他验收继续。
 
+后续用户明确选择沿用 Jackett，限制到本次检索时间。BuiltinAdapter 在搜索解析完成后捕获一次 UTC 检索时间，仅替换未来 PublishedAt；不改动 Cardigann 原始 date 字段与取种定位符。回归先在旧实现复现 9999 年直接进入候选（`/tmp/moji-future-publication-before.log`），修正后验证两条未来结果时间一致且指针独立、历史/未知日期保留，并实际完成 download.before→取种，确认模板仍读取原始 9999 年。定向回归、完整 Go、indexer 完整 race、vet 和文档检查通过，日志 `/tmp/moji-future-publication-targeted.log`、`/tmp/moji-future-publication-all-go.log`、`/tmp/moji-future-publication-race.log`。既有 119 条解释器差分不变，没有放宽实际 .NET 比较的时间条件；这项宿主边界由适配层回归证明。没有 API/UI/配置迁移或生产变更。
+
 ### 来源与镜像许可文本（2026-11-04）
 
 重新读取固定 Indexers 归档，未找到独立 LICENSE/COPYING/NOTICE；当天官方 [GitHub 仓库元数据](https://github.com/Prowlarr/Indexers) 的 license 为 null，固定 README 说明自动同步 Jackett 定义。实际核对固定 Jackett GPL v2 和 Prowlarr GPL v3 根文本；这不自动建立每份 Indexers 文件的独立授权，也不选择 Moji 的发行许可证。内嵌 schema 与归档逐字节 SHA-256 相同：`376976d75daf036ead90dc55bf542ce602da8d24deb31cc10200b6bf181e3e8e`。完整事实/来源更新在 [NOTICE](../../internal/cardigann/NOTICE.md)；应用发行许可、schema 再分发授权及完整依赖许可审查仍未完成，没有对其作法律结论。

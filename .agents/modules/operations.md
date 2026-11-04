@@ -28,6 +28,8 @@ FlareSolverr 前置协议与网络层：新增 [pkg/flaresolverr](../../pkg/flar
 
 配置路径优先 `-config`，否则 `MOJI_CONFIG` 或 `config.yaml`。2026-11-02 工作区已将 Jackett 改为可选依赖，无索引器时允许启动，索引动作返回未配置；qB/Stash 未配置时相关能力受限。qB 首次登录失败允许启动并由后续观测重连。YAML 按 indexers/downloader/stash/tasks/system/logging 分组；旧格式可读取但启动不重写。内置索引实施中的工作区现已支持 v3，成功保存与 moji-config 输出写 v3；v3 新增内置实例、规则库与网络配置、独立缓存设置及 Jackett 启用状态，v0/v2 读取保留既有启用状态和查询顺序。应用 provider、双向配置/规则协调门、规则库及站点管理 GraphQL 已接线；站点、规则库、外部 Jackett 以及代理/请求和搜索超时/缓存管理界面已接线；Home 已有同级索引器概况，规则更新策略和搜索迁移已接线；挑战/solver 配置已接，完整健康及真实服务验收仍未完成。未知版本或混用字段拒绝。字段映射与离线工具见 [设置说明](../../docs/settings.md)。配置 store 通过临时文件、fsync 和原子 rename 保存，失败核对实际有效文件；连接 provider 在后续调用读取已保存设置。
 
+内置索引在规则解析后的适配层沿用用户确认的 Jackett 发布时间策略：未来日期限制为本次搜索完成后的统一 UTC 检索时间，历史日期与未知值保持原状；规则字段和资源定位符中的原始日期保留，供后续取种模板使用。纯 Cardigann 解析器不承担该宿主策略。
+
 qB 明确 403 时重新认证再试；写操作超时可能已被执行，不能一概自动重放。qB 5 start/stop 的 404 回退 resume/pause 是明确兼容行为。
 
 种子元数据下载按主机串行并至少间隔一秒，Jackett `/dl/<indexer>/` 分组；429、5xx、网络超时及可能掩盖上游限流的 Jackett 404 触发退避，尊重 Retry-After。实现见 [metadata host](../../internal/taskruntime/torrent_metadata_host.go)，不要在日志输出带签名或 API key 的 URL。

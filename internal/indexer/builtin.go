@@ -68,10 +68,18 @@ func (a *BuiltinAdapter) Search(ctx context.Context, instance InstanceSnapshot, 
 		result, searchErr = execution.Search(ctx, cardigann.Query{Mode: query.Mode, Keywords: query.Keywords, Categories: query.Categories, Parameters: query.Parameters, Limit: &query.Limit, Offset: &query.Offset})
 		return searchErr
 	})
+	retrievedAt := time.Now().UTC()
 	batch := Batch{InstanceID: instance.ID, Partial: len(result.Issues) > 0, IssueCount: len(result.Issues), Truncated: result.Truncated, ReportedCount: result.ReportedCount}
 	for _, source := range result.Results {
+		// Match Jackett's host cleanup without changing rule fields used by
+		// subsequent download templates. One retrieval instant applies to the batch.
+		publishedAt := source.PublishedAt
+		if publishedAt != nil && publishedAt.After(retrievedAt) {
+			clamped := retrievedAt
+			publishedAt = &clamped
+		}
 		ref := ResourceRef{Version: 1, ID: uuid.NewString(), InstanceID: instance.ID, Kind: Builtin, BundleRevision: lease.Bundle.Manifest.Revision, DefinitionID: instance.DefinitionID, DefinitionDigest: plan.Digest, ConfigRevision: instance.ConfigRevision, Locator: Locator{DownloadURL: source.DownloadURL, MagnetURI: source.MagnetURI, InfoHash: source.InfoHash, Title: source.Title, Fields: source.Fields}}
-		release := Release{Title: source.Title, GUID: source.Fields["guid"], InstanceID: instance.ID, InstanceName: instance.Name, Kind: Builtin, DetailsURL: source.DetailsURL, PublishedAt: source.PublishedAt, Categories: categoriesFromNames(source.Categories), Seeders: source.Seeders, InfoHash: source.InfoHash, Resource: ref}
+		release := Release{Title: source.Title, GUID: source.Fields["guid"], InstanceID: instance.ID, InstanceName: instance.Name, Kind: Builtin, DetailsURL: source.DetailsURL, PublishedAt: publishedAt, Categories: categoriesFromNames(source.Categories), Seeders: source.Seeders, InfoHash: source.InfoHash, Resource: ref}
 		if source.Fields["size"] != "" {
 			value := source.Size
 			release.Size = &value

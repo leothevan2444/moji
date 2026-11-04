@@ -27,6 +27,12 @@ This is a host default, separate from dynamically downloaded site definitions.
 The comparison verifies exact URI parameters; it does not probe those trackers'
 current availability.
 
+Future publication cleanup in Moji's BuiltinAdapter follows the user's
+confirmed Jackett host policy, separate from raw Cardigann date parsing:
+https://github.com/Jackett/Jackett/blob/cfdc645711c487d05cb55932e394b2370154d81e/src/Jackett.Common/Indexers/BaseIndexer.cs
+It clamps future timestamps to the batch retrieval time and retains the
+original rule fields used by download templates.
+
 timeago/reltime interval behavior is checked against the same pinned Jackett
 DateTimeUtil.FromTimeAgo, using its explicit relativeFrom argument for fixed
 clocks. The production Go implementation uses elapsed 30-day months/365-day

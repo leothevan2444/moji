@@ -86,7 +86,12 @@ with offsets or zone names. Other free-text date inference is not certified.
 The Unix upper limit
 is checked in the helper rather than as a full publication timestamp because
 Jackett's outer BaseIndexer clamps future publications to DateTime.Now; that
-outer behavior is a separately tracked compatibility gap.
+outer behavior is implemented at Moji's BuiltinAdapter boundary following the
+user's confirmed Jackett policy. Adapter regression tests check the actual
+retrieval interval, a common batch timestamp, historical/unknown dates, and
+preservation of raw rule fields through download preparation. This is separate
+from the fixed-clock interpreter oracle; no wall-clock tolerance is added to
+the full comparison.
 These helpers are not additional complete search/login/download scenarios. No wall-clock
 normalization or timestamp tolerance is applied to these helper results.
 
