@@ -293,6 +293,21 @@
 
 同提交 ARM64 构建的前端已完成，Go 公共依赖下载在 x/image v0.43.0 与 x/text v0.38.0 遭 proxy.golang.org HTTP/2 peer INTERNAL_ERROR，252.9 秒后明确终止，未进入后端编译；日志 `/tmp/moji-indexer-2d1230c-arm64-build.log`。后续同源重试曾因自动审批审查额度耗尽而未执行，不是安全性否决，没有绕过；该次构建没有活跃 handle，也不把临时 BuildKit 守护进程视为构建仍在运行。其后审批正常恢复并完成上述准入修复的完整回归；下一次构建应冻结包含该修复的新提交，专用构建器在验收后清理。没有推送、部署或宿主 binfmt 修改。
 
+## 2041d43 冻结双架构验收（2026-11-04）
+
+同一干净提交 `2041d4384f2645e14ebee091abc0ffc2256462a5`、版本 `dev-2041d4384f26`，实际构建并完成原始完整 smoke：
+
+| 平台 | 镜像 ID | 执行环境 |
+| --- | --- | --- |
+| linux/amd64 | `sha256:e224c92df07fa3152b8313b55a2f60b8273fdbe2ec306f59f6c094624e262bbb` | 本机原生 |
+| linux/arm64 | `sha256:a6a8391ea34bc2b1adce7bc648ca44a1b9f86a881e178996a3d9125d33bb5701` | QEMU 用户态模拟，不是原生 ARM CI |
+
+四份实际终态 exit 0，日志 `/tmp/moji-indexer-2041d43-{amd64,arm64}-{build,smoke}.log`；结构化镜像身份与 rootfs 层记录 `/tmp/moji-indexer-2041d43-images.json`。包含已提交的当前来源准入及预览 lease 修复；两个架构均验证媒体生成/合并/字幕、非 root、NOTICE/MIT 摘要、后端/Web/OCI 版本、断网/只读无 Jackett/无规则库启动、Home 本地概况无隐式检查、配置保存、正常关闭和替换容器后的同一 generation/三库/设置保留。旧 2d1230c 的依赖下载失败不沿用为本修订结果；本次未改依赖版本或校验。
+
+ARM64 用私有 `/tmp/moji-arm64-smoke-bin/docker` 运行未改动的 smoke，只给实际容器入口、exec 和健康检查命令注入只读 QEMU；没有替换健康状态或退出码、删减断言或改造交付镜像。工具事先以 ARM Alpine 验证子进程、stdin、退出码 7 与真实 Docker health 状态。工具 SHA-256 `0f544df6babb13f7a9bb817d4917ad5167d7e47989776b00e2082b8616a5e278`；模拟器来自固定官方 BuildKit v0.34.2 镜像 `sha256:c5f8862f52499773af85bc07695b2379ef08e8002352b0df2c4864c91d78dabe`，QEMU 10.2.3、二进制 SHA-256 `239ff153cde81b6a6ab2c48eef9cff234751caa8e9d841363eace8db51e000e8`。这些是本地测试工具，不进入 Moji 镜像/依赖。
+
+两次 smoke 的临时容器/卷由原脚本清理；专用 `moji-arm64-acceptance-20261104` 构建器已明确移除。宿主 binfmt 条目仍仅 python3.11/register/status，没有注册 QEMU，没有修改宿主 daemon 配置。镜像保留供复核；未推送、部署、改写真实配置或提交生产下载器。原生 ARM 与远端 Actions 仍未由模拟结果证明。
+
 ## 附件缓存负载与取消测量
 
 基线 `8c8bd52`，新增显式 `internal/indexer/artifact_performance_test.go`；不改生产缓存、API 或配置。Linux/amd64、Xeon E5-2673 v4、GOMAXPROCS=2，每项 100 次；输入是约 1 MiB 的合法合成 torrent，获取回调只提供内存字节，不访问 HTTP。普通测试已有预算/取消/迟到成功/关闭回归，本轮相关测试通过。
