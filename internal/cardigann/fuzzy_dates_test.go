@@ -39,6 +39,42 @@ func TestFuzzyCalendarRulesPreserveTheirCalendarMeaning(t *testing.T) {
 	}
 }
 
+func TestFuzzyClockOnlyUsesTheExecutionDateAndRetainsWallClock(t *testing.T) {
+	now := time.Date(2024, 2, 29, 12, 34, 56, 500000000, time.UTC)
+	for _, test := range []struct{ input, want string }{
+		{"12:25am", "Thu, 29 Feb 2024 00:25:00 +0"},
+		{"12:25pm", "Thu, 29 Feb 2024 12:25:00 +0"},
+		{"1:02 PM", "Thu, 29 Feb 2024 13:02:00 +0"},
+		{"09:05:30 +0530", "Thu, 29 Feb 2024 09:05:30 +0"},
+		{"9:05pm CST", "Thu, 29 Feb 2024 21:05:00 +0"},
+		{"13:04:05.500", "Thu, 29 Feb 2024 13:04:05 +0"},
+	} {
+		got, err := ApplyFilters(context.Background(), test.input, []Filter{{Name: "fuzzytime"}}, FilterContext{Now: now})
+		if err != nil || got != test.want {
+			t.Fatalf("%q: got %q, %v; want %q", test.input, got, err, test.want)
+		}
+	}
+}
+
+func TestTimeOnlyResultFieldReachesPublicationWithoutFallingBackToNow(t *testing.T) {
+	definition := minimalDefinition + "    date_today: {selector: time, optional: true, filters: [{name: fuzzytime}]}\n    date: {text: '{{ if .Result.date_today }}{{ .Result.date_today }}{{ else }}now{{ end }}'}\n"
+	plan, err := Load([]byte(definition))
+	if err != nil {
+		t.Fatal(err)
+	}
+	session := &fakeSession{respond: func(r Request) (HTTPResponse, error) {
+		return HTTPResponse{Status: 200, URL: r.URL, Body: []byte(`<article><h2>ABCD-123</h2><a href="/file.torrent">download</a><time>12:25am</time></article>`)}, nil
+	}}
+	execution, err := plan.NewExecution(session, "https://example.invalid/", nil, time.Date(2024, 2, 29, 12, 34, 56, 0, time.UTC))
+	if err != nil {
+		t.Fatal(err)
+	}
+	result, err := execution.Search(context.Background(), Query{Keywords: "ABCD-123"})
+	if err != nil || len(result.Results) != 1 || len(result.Issues) != 0 || result.Results[0].PublishedAt == nil || result.Results[0].PublishedAt.Format(time.RFC3339) != "2024-02-29T00:25:00Z" {
+		t.Fatalf("clock-only field silently fell back to now: %+v %v", result, err)
+	}
+}
+
 func TestSearchFieldsAndDateHeadersUseTheSameCalendarParser(t *testing.T) {
 	for _, header := range []bool{false, true} {
 		definition := minimalDefinition

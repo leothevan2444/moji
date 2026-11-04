@@ -34,6 +34,7 @@ jobs:
           --case scripts/indexer-diff/helper-cases/relative-dates-zero-ticks/scenario.json
           --case scripts/indexer-diff/helper-cases/fuzzy-calendar/scenario.json
           --case scripts/indexer-diff/helper-cases/fuzzy-calendar-boundaries/scenario.json
+          --case scripts/indexer-diff/helper-cases/fuzzy-time-only/scenario.json
           --report "$RUNNER_TEMP/indexer-relative-dates.json"
       - name: Compile pinned v11 corpus
         if: success() || failure()

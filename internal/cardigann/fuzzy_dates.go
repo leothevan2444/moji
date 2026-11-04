@@ -21,6 +21,7 @@ var fuzzyMissingYear = regexp.MustCompile(`^([0-9]{1,2}-[0-9]{1,2})( |$)`)
 var fuzzyMissingYearMonth = regexp.MustCompile(`(?i)^([0-9]{1,2} +[a-z]{3}) +([0-9]{1,2}:[0-9]{1,2}.*)$`)
 var fuzzyDigits = regexp.MustCompile(`^[0-9]+$`)
 var fuzzyRfcDate = regexp.MustCompile(`^[A-Za-z]{3}, [0-9]{2} [A-Za-z]{3} [0-9]{4} [0-9]{2}:[0-9]{2}:[0-9]{2} [+-][0-9]{1,2}$`)
+var fuzzyClockOnly = regexp.MustCompile(`(?i)^([0-9]{1,2}):([0-9]{2})(?::([0-9]{2})(?:\.[0-9]+)?)? *(am|pm)?(?: *(?:UTC|GMT|CST|EST|[+-][0-9]{2}(?::?[0-9]{2})?))?$`)
 
 // FromUnknown has calendar rules distinct from the elapsed FromTimeAgo path.
 // These filters follow the pinned UTC reference host, independently of the
@@ -73,6 +74,22 @@ func parseFuzzyDate(data string, now time.Time) (time.Time, error) {
 		}
 		days := (int(now.Weekday()) - int(weekday) + 7) % 7
 		return boundedFuzzyDate(midnight.AddDate(0, 0, -days).Add(clock))
+	}
+	if match := fuzzyClockOnly.FindStringSubmatch(text); match != nil {
+		hour, _ := strconv.Atoi(match[1])
+		minute, _ := strconv.Atoi(match[2])
+		second, _ := strconv.Atoi(match[3])
+		if hour > 23 || minute > 59 || second > 59 {
+			return time.Time{}, fmt.Errorf("invalid fuzzy clock")
+		}
+		if strings.EqualFold(match[4], "pm") && hour < 12 {
+			hour += 12
+		} else if strings.EqualFold(match[4], "am") && hour == 12 {
+			hour = 0
+		}
+		// DateTimeRoutines fills absent dates from DefaultDate and exposes
+		// integer-second DateTime wall clocks, not UtcDateTime or fractions.
+		return boundedFuzzyDate(time.Date(now.Year(), now.Month(), now.Day(), hour, minute, second, 0, time.UTC))
 	}
 	missingYear := false
 	if match := fuzzyMissingYear.FindStringSubmatch(text); match != nil {

@@ -30,6 +30,10 @@ if (input["relativeDateFilters"] is JArray relativeFilters)
         // JObject can already hold a DateTime token. Keep its subsecond ticks
         // instead of converting through invariant display text (which drops them).
         var clock = input.Value<DateTime>("now").ToUniversalTime();
+        // The upstream library exposes this default specifically for inputs
+        // with no date/year. Pin it in helper mode, without modifying parsing
+        // code or the full interpreter's normal host environment.
+        DateTimeRoutines.DateTimeRoutines.DefaultDate = clock;
         foreach (var test in relativeFilters.Cast<JObject>())
         {
             var name = test.Value<string>("name");

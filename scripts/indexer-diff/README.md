@@ -60,16 +60,21 @@ library's live availability. Additional failure/cancellation
 scenarios and other challenge implementations remain.
 
 Relative and fuzzy calendar dates are checked separately in `helper-cases/`:
-four fixed-clock groups contain 82 inputs. Moji runs its actual filters; the
+five fixed-clock groups contain 101 inputs. Moji runs its actual filters; the
 pinned reference directly calls the unmodified DateTimeUtil.FromTimeAgo or
-FromUnknown with the same explicit relativeFrom clock. Reports are marked relative-date-helper,
+FromUnknown with the same explicit relativeFrom clock. Helper mode also sets
+DateTimeRoutines.DefaultDate through its public API for date-free inputs;
+it does not modify the full interpreter's normal host environment.
+Reports are marked relative-date-helper,
 including exact output text and declared invalid outcomes. They check elapsed
 month/year intervals, float32 scaling, Unicode whitespace and range failures;
 the fuzzy groups additionally check midnight, AM/PM, weekday selection, missing
 year inference, leap-day clamping and explicit offset clocks. Fuzzy ago inputs
 are excluded from these fixed-clock groups because FromUnknown's ago branch
-does not pass relativeFrom through to FromTimeAgo; time-only/default-date
-inference likewise still reads the reference host clock. The Unix upper limit
+does not pass relativeFrom through to FromTimeAgo. Clock-only inputs cover
+AM/PM, the leap-day default, integer seconds and preservation of wall clocks
+with offsets or zone names. Other free-text date inference is not certified.
+The Unix upper limit
 is checked in the helper rather than as a full publication timestamp because
 Jackett's outer BaseIndexer clamps future publications to DateTime.Now; that
 outer behavior is a separately tracked compatibility gap.
@@ -154,7 +159,7 @@ python3 scripts/indexer-diff/compare_test.py
 python3 scripts/indexer-diff/build_reference_test.py
 ```
 
-Run the four fixed-clock helper groups separately, as CI does:
+Run the five fixed-clock helper groups separately, as CI does:
 
 ```sh
 GOCACHE=/tmp/moji-go-cache python3 scripts/indexer-diff/compare.py \
@@ -163,6 +168,7 @@ GOCACHE=/tmp/moji-go-cache python3 scripts/indexer-diff/compare.py \
   --case scripts/indexer-diff/helper-cases/relative-dates-zero-ticks/scenario.json \
   --case scripts/indexer-diff/helper-cases/fuzzy-calendar/scenario.json \
   --case scripts/indexer-diff/helper-cases/fuzzy-calendar-boundaries/scenario.json \
+  --case scripts/indexer-diff/helper-cases/fuzzy-time-only/scenario.json \
   --report /tmp/moji-relative-dates.json
 ```
 

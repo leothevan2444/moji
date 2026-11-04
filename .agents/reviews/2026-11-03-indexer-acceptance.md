@@ -289,6 +289,16 @@
 
 同一提交再次运行固定归档的生产 Load/static compile，579/579、1 个已知可选选择器警告、0 失败；报告 `/tmp/moji-v11-fea8176-report.json`。当前未发现专用 live/acceptance 环境参数或配置，已请求用户提供允许的站点/搜索与取种范围及本地测试路径；没有将现有生产凭据当作测试授权。QEMU 用户态二进制仍不可用，未把 amd64 或交叉编译当作 ARM64 运行验收。此镜像不包含之后的代码改动；静态规则兼容、镜像 smoke、真实站点与 ARM64 继续分别报告。
 
+后续用户已明确授权参考根目录 config.yaml、按其中站点执行真实搜索并获取种子，不向生产下载器提交任务。离线配置工具只读验证 exit 0；保护日志 `/tmp/moji-live-authorized-config-validation.log` 不纳入提交。真实请求尚未开始，不把配置有效当作站点可用证据。
+
+### 仅时间日期（2026-11-04）
+
+固定库 1337x.yml 的 date_today 确有仅时间用法（12:25am），随后通过 .Result.date_today 写入正式 date，失败会回退 now。已用本地回归及实际 reference-10 复现拒绝。辅助模式给未修改的 DateTimeRoutines 设置其公开 DefaultDate，以固定无日期输入的默认日；不改完整解释器模式的宿主时钟。全新固定 SDK/源码/NuGet 锁构建 reference-10 成功，0 警告/错误、31 DLL 校验；旧 reference-9 对当前 runner 不再有效。
+
+当前代码已独立补仅时间钟面日期、AM/PM、偏移保持与整数秒；19 输入（14 合法/5 声明非法）与上游实际对照通过，报告 `/tmp/moji-time-only-upstream-fixed.json`。已执行的 cardigann/replay 包测试通过，新增字段→正式发布时间的本地回归也通过，日志 `/tmp/moji-time-only-local-final.log`。`make generate-moji-graphql` 实际运行成功且未产生生成文件差异，日志 `/tmp/moji-indexer-final-codegen.log`。
+
+初次完整验证曾因自动审批审查用量限额未执行；在提示的恢复时间后通过正常审批继续，没有绕过。最终完整 Go、cardigann/indexer/replay race 与相关 vet 通过；完整解释器仍为 114/114（0 未解释/5 原有解释），五组共 101 输入（82 合法/19 声明非法）精确通过，20 比较器/5 锁检查通过。报告 `/tmp/moji-time-only-full-final.json`、`/tmp/moji-time-only-helpers-final.json`。CI 加入第五辅助组；辅助输入不计为完整搜索场景，未放宽时间比较。仅时间结果字段的本地搜索回归确认不会静默回退为 now；没有 API/UI/schema 变化，不重复未受影响的 Web 或全库静态检查。fea8176 镜像不包含该修复，后续需重新冻结源码镜像；其他自由文本/DST 未由本轮证明。
+
 ### select 空值边界修正
 
 继续验收时，固定实际 Jackett 的两条红报告均证实：Moji 在没有默认值或用户明确配置空字符串时，错误地选择排序后的第一个选项并加入请求。删除引擎与管理投影的这一回退；保留非空未知选项拒绝。编辑器显示“未选择”，不把浏览器原生第一个选项误表示为当前值；清除已配置 select 后显示规则声明默认值，提交仍仅发送 clear。

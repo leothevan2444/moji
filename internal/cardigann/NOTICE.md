@@ -36,6 +36,10 @@ against FromUnknown in that same source. jsonjoinarray follows the pinned
 Cardigann JObject/SelectToken/child-enumeration contract. The Go ordered JSON
 representation, bounded formatting and calendar handling were independently
 implemented; no upstream C# runtime or source is shipped with Moji.
+Clock-only fuzzy dates follow DateTimeRoutines' default-date/DateTime contract,
+including AM/PM, discarded fractional seconds and retained wall-clock offsets.
+The development helper fixes its default date through the public DefaultDate
+property; the production Go filter uses the execution's captured date.
 
 validfilename follows the native Path.GetInvalidFileNameChars contract, which
 differs between Unix and Windows. Actual interpreter cases use the pinned Linux
