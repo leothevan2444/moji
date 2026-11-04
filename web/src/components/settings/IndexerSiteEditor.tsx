@@ -7,6 +7,7 @@ import { useBeforeUnload, useBlocker } from "react-router";
 import type { BuiltinIndexerInput, BuiltinIndexerPatchInput, IndexerSettingChangeInput } from "../../graphql/generated/graphql";
 import type { IndexerSite, SiteSetting } from "../../hooks/useIndexerManagement";
 import { Drawer } from "../layout/Drawer";
+import { SettingsSwitch } from "./SettingsSwitch";
 import { SecretInput } from "./SettingsTabCommon";
 import { describeQueryError } from "../../services/queryError";
 
@@ -48,7 +49,7 @@ export function IndexerSiteEditor({ site, definition, revision, profiles, busy, 
     if (await onSave(site?.id ?? null, revision, site ? patch : { ...patch, definitionId: definition.id })) onClose();
   };
   return createPortal(<>
-    <Drawer visibleDrawer="settings" closing={false} title={site ? t("indexers.editSite") : t("indexers.addSite")} closeDisabled={busy} onClose={close} footer={<div className="indexer-actions"><button className="primary-button" type="submit" form="indexer-site-form" disabled={busy || Boolean(origins.error) || Boolean(site && !dirty)}>{t(busy ? "indexers.saving" : "indexers.save")}</button><button type="button" className="ghost-button" disabled={busy || Boolean(origins.error)} onClick={()=>setTesting(true)}>{t("indexerCheck.title")}</button></div>}>
+    <Drawer visibleDrawer="settings" closing={false} title={site ? t("indexers.editSite") : t("indexers.addSite")} closeDisabled={busy} onClose={close} footer={<div className="indexer-actions"><button className="primary-button" type="submit" form="indexer-site-form" disabled={busy || Boolean(origins.error) || Boolean(site && !dirty)}>{t(busy ? "indexers.saving" : site ? "indexers.save" : "indexers.add")}</button><button type="button" className="ghost-button" disabled={busy || Boolean(origins.error)} onClick={()=>setTesting(true)}>{t("indexerCheck.title")}</button></div>}>
       <form id="indexer-site-form" className="settings-form indexer-editor" onSubmit={event => void submit(event)}>
         {error ? <p role="alert" className="settings-feedback tone-danger">{describeQueryError(error)}</p> : null}
         <label className="settings-field"><span>{t("indexers.name")}</span><input value={name} disabled={busy} maxLength={256} onChange={event => setName(event.target.value)} /></label>
@@ -72,7 +73,7 @@ export function IndexerSiteEditor({ site, definition, revision, profiles, busy, 
           <p id="indexer-origins-help" className="settings-note">{t("indexers.trustedOriginsHint")}</p>
           {origins.error ? <p id="indexer-origins-error" role="alert" className="settings-feedback tone-danger">{t(`indexers.${origins.error}`)}</p> : null}
         </details>
-        <label className="settings-toggle"><input type="checkbox" checked={enabled} disabled={busy} onChange={event => setEnabled(event.target.checked)} /><span>{t("indexers.enable")}</span></label>
+        <label className="switch-row"><span>{t("indexers.enable")}</span><SettingsSwitch checked={enabled} disabled={busy} label={t("indexers.enable")} onChange={setEnabled} /></label>
       </form>
     </Drawer>
     {testing?<IndexerTestDialog target={{instanceId:site?.id,expectedRevision:revision,definitionId:site?undefined:definition.id,draft:draftPatch()}} onClose={()=>setTesting(false)}/>:null}

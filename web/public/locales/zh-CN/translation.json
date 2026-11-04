@@ -185,7 +185,13 @@
     "trustedOrigins": "额外可信来源",
     "trustedOriginsHint": "仅在站点确实需要跨域认证或下载时添加。每行一个完整来源（例如 https://download.example），最多 16 个，不含路径、参数或凭据。允许向这些来源发送凭据/表单并接收 Cookie；Cookie 仍遵守域规则。此设置不会允许访问内网。清空并保存可撤销全部额外信任。",
     "invalidOrigin": "请输入完整的 HTTP(S) 来源，不含路径、参数、片段或凭据。",
-    "tooManyOrigins": "最多可添加 16 个可信来源。"
+    "tooManyOrigins": "最多可添加 16 个可信来源。",
+    "add": "添加",
+    "addAndEnable": "添加并启用",
+    "addAnother": "添加另一个配置",
+    "alreadyAdded": "已添加",
+    "enabledState": "已启用",
+    "disabledState": "未启用"
   },
   "indexerCheck": {
     "title": "测试站点",

@@ -3,13 +3,13 @@ import { expect, type Page } from "@playwright/test";
 import { test, indexerInstances } from "./fixtures";
 
 const image = `data:image/png;base64,${readFileSync(new URL("./assets/indexer-challenge.png", import.meta.url)).toString("base64")}`;
-async function loginServer(page: Page) {
+async function loginServer(page: Page, sources = indexerInstances) {
   const calls: { operation: string; variables: Record<string, unknown> }[] = [];
   let current: Record<string, unknown> | null = null;
   let starts = 0;
   await page.route("**/graphql", async route => {
     const request = route.request().postDataJSON();
-    if (request.operationName === "IndexerInstances") return route.fulfill({ json: { data: { indexerInstances: { ...indexerInstances, items: indexerInstances.items.map(site => site.id === "builtin-one" ? { ...site, loginSupported: true, privacy: "private" } : site) } } } });
+    if (request.operationName === "IndexerInstances") return route.fulfill({ json: { data: { indexerInstances: { ...sources, items: sources.items.map(site => site.id === "builtin-one" ? { ...site, loginSupported: true, privacy: "private" } : site) } } } });
     if (!["IndexerLogin", "BeginIndexerLogin", "AnswerIndexerChallenge", "CancelIndexerLogin"].includes(request.operationName)) return route.fallback();
     calls.push({ operation: request.operationName, variables: request.variables });
     let field = "indexerLogin", value: unknown = current;
@@ -91,7 +91,7 @@ test.describe("long saved site names",()=>{
  const name="SavedSiteWithAnUnbrokenName".repeat(9);
  test.use({graphqlOverrides:{indexerInstances:{...indexerInstances,items:indexerInstances.items.map(site=>site.id==="builtin-one"?{...site,name}:site)}}});
  test("site names wrap inside the login panel",async({page})=>{
-  await loginServer(page);await page.addInitScript(()=>localStorage.setItem("moji:locale","en"));await page.goto("/settings/indexers");const dialog=await openLogin(page);
+  await loginServer(page, {...indexerInstances,items:indexerInstances.items.map(site=>site.id==="builtin-one"?{...site,name}:site)});await page.addInitScript(()=>localStorage.setItem("moji:locale","en"));await page.goto("/settings/indexers");const dialog=await openLogin(page);
   await expect(dialog.getByText(name,{exact:true})).toBeVisible();
   expect(await dialog.locator(".drawer-body").evaluate(element=>element.scrollWidth<=element.clientWidth)).toBe(true);
  });

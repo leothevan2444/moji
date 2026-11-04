@@ -144,9 +144,9 @@ test("catalog selection saves only explicit source fields and hides saved creden
   await page.goto("/settings/indexers");
   await page.getByRole("button", { name: "Add site", exact: true }).click();
   await expect(page.getByRole("dialog")).toBeVisible();
-  await page.getByRole("button", { name: "Configure", exact: true }).click();
+  await page.getByRole("button", { name: "Add another configuration", exact: true }).click();
   await page.getByLabel("Name", { exact: true }).fill("Another site");
-  await page.getByRole("button", { name: "Save", exact: true }).click();
+  await page.getByRole("button", { name: "Add", exact: true }).click();
   await expect(page.getByRole("dialog")).toHaveCount(0);
   expect(sent).toMatchObject({ definitionId: "sukebei", name: "Another site", enabled: false, networkProfile: "direct" });
   expect(sent).not.toHaveProperty("settings");

@@ -185,7 +185,13 @@
     "trustedOrigins": "Additional trusted origins",
     "trustedOriginsHint": "Add only when a site needs cross-origin authentication or downloads. One full origin per line (for example https://download.example), up to 16, without paths, parameters or credentials. These origins may receive credentials/forms and set cookies; cookie domain rules still apply. This does not allow private-network access. Clear and save to revoke all additional trust.",
     "invalidOrigin": "Enter full HTTP(S) origins without paths, parameters, fragments or credentials.",
-    "tooManyOrigins": "You can add up to 16 trusted origins."
+    "tooManyOrigins": "You can add up to 16 trusted origins.",
+    "add": "Add",
+    "addAndEnable": "Add and enable",
+    "addAnother": "Add another configuration",
+    "alreadyAdded": "Already added",
+    "enabledState": "Enabled",
+    "disabledState": "Disabled"
   },
   "indexerCheck": {
     "title": "Test site",

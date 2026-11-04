@@ -8,12 +8,25 @@ Stash handles the media library and ingest.
 
 1. Open **Definition library** and choose **Download definitions**. Moji downloads
    the official Prowlarr Cardigann v11 library and validates it before activation.
-2. Open **Sites → Add site**, find a definition, and enter the site's required
-   settings. Choose a mirror or network profile if needed.
-3. Test the configuration, save it, and enable the site. Authentication is tested
-   by default; search and resource acquisition are separate choices in the test.
+2. Open **Sites → Add site** and find a definition. A public definition not yet
+   added and without a login flow offers **Add and enable**, using its defaults.
+   Use the gear button to configure a mirror, network profile or site settings
+   before adding it.
+3. Adding saves a configuration; the site's switch controls whether searches
+   use it. Test the configuration when needed. Authentication is tested by
+   default; search and resource acquisition are separate choices in the test.
 4. Arrange the site order. Moji searches in that order and applies its existing
    resource-selection rules before creating or continuing a download task.
+
+Already-added definitions remain visible with their status. **Add another
+configuration** supports a separate account or mirror. The site type appears as
+a colored label: public green, private red and semi-private yellow.
+
+**Log in to site** appears only when the rule declares a login flow. It lets
+Moji submit the configured credentials and handle a declared challenge before
+searching; it does not open the website or download a resource. The resulting
+session is reused for searches and resource acquisition. A public rule can
+still declare a login flow, so availability is based on the rule itself.
 
 The application starts without a definition library or enabled sites. Reading
 Home or opening settings does not install definitions. Sites are not enabled
