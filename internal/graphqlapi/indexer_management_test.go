@@ -31,7 +31,7 @@ func TestIndexerManagementGraphQLTypedChangesAndSecretProjection(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	plan := &cardigann.Plan{Digest: "digest", Definition: cardigann.Definition{ID: "example", Name: "Example", Links: []string{"https://example.invalid/"}, Settings: []cardigann.Setting{{Name: "password", Type: "password"}, {Name: "flag", Type: "checkbox"}}}}
+	plan := &cardigann.Plan{Digest: "digest", Definition: cardigann.Definition{Login: &cardigann.Login{Method: "cookie"}, ID: "example", Name: "Example", Links: []string{"https://example.invalid/"}, Settings: []cardigann.Setting{{Name: "password", Type: "password"}, {Name: "flag", Type: "checkbox"}}}}
 	admin := indexeradmin.NewService(store, managementDefinitions{bundle: &indexerdefs.Bundle{Manifest: indexerdefs.Manifest{Revision: strings.Repeat("a", 40)}, Plans: map[string]*cardigann.Plan{"example": plan}}}, nil)
 	resolver := NewResolver(nil, nil, nil, "test")
 	resolver.IndexerAdmin = admin
@@ -46,8 +46,8 @@ func TestIndexerManagementGraphQLTypedChangesAndSecretProjection(t *testing.T) {
 			Definitions model.IndexerDefinitionPage `json:"indexerDefinitions"`
 		}
 	}
-	executeDefinitionGraphQLInto(t, resolver, `{indexerInstances{revision items{id}} indexerDefinitions(input:{limit:1}){totalCount items{id settings{name secret value{string}}}}}`, &initial)
-	if len(initial.Errors) > 0 || initial.Data.Indexers.Revision != store.Revision() || initial.Data.Definitions.TotalCount != 1 {
+	executeDefinitionGraphQLInto(t, resolver, `{indexerInstances{revision items{id}} indexerDefinitions(input:{limit:1}){totalCount items{id loginSupported settings{name secret value{string}}}}}`, &initial)
+	if len(initial.Errors) > 0 || initial.Data.Indexers.Revision != store.Revision() || initial.Data.Definitions.TotalCount != 1 || !initial.Data.Definitions.Items[0].LoginSupported {
 		t.Fatal("management query contract", initial.Errors)
 	}
 	var added struct {
@@ -56,8 +56,8 @@ func TestIndexerManagementGraphQLTypedChangesAndSecretProjection(t *testing.T) {
 			Result model.BuiltinIndexerResult `json:"addBuiltinIndexer"`
 		}
 	}
-	executeDefinitionGraphQLInto(t, resolver, fmt.Sprintf(`mutation {addBuiltinIndexer(expectedRevision:%q,input:{definitionId:"example",enabled:true,settings:[{name:"password",value:{string:"synthetic-secret"}},{name:"flag",value:{boolean:false}}]}){revision instance{id enabled settings{name secret configured value{string boolean}}}}}`, store.Revision()), &added)
-	if len(added.Errors) > 0 || added.Data.Result.Instance == nil || !added.Data.Result.Instance.Enabled {
+	executeDefinitionGraphQLInto(t, resolver, fmt.Sprintf(`mutation {addBuiltinIndexer(expectedRevision:%q,input:{definitionId:"example",enabled:true,settings:[{name:"password",value:{string:"synthetic-secret"}},{name:"flag",value:{boolean:false}}]}){revision instance{id enabled loginSupported settings{name secret configured value{string boolean}}}}}`, store.Revision()), &added)
+	if len(added.Errors) > 0 || added.Data.Result.Instance == nil || !added.Data.Result.Instance.Enabled || !added.Data.Result.Instance.LoginSupported {
 		t.Fatal("add builtin", added.Errors)
 	}
 	body, _ := json.Marshal(added)

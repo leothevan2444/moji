@@ -20,6 +20,7 @@ type Setting struct {
 	Options            []Option
 }
 type Definition struct {
+	LoginSupported                                   bool
 	ID, Name, Description, Language, Privacy, Digest string
 	Links, Modes, Warnings                           []string
 	Settings                                         []Setting
@@ -34,6 +35,7 @@ type DefinitionPage struct {
 	Items                []Definition
 }
 type Instance struct {
+	LoginSupported                                                         bool
 	SiteURL, Privacy, Language                                             string
 	ID, Name, DefinitionID, BaseURL, NetworkProfile, RuleDigest, ErrorCode string
 	Kind                                                                   indexer.Kind

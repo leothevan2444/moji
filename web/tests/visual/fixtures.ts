@@ -56,11 +56,11 @@ export const indexerLibrary = {
 export const indexerInstances = {
   healthErrorCode: "", revision: "config-1", ruleRevision: "a".repeat(40), ruleErrorCode: "", catalogErrorCode: "", jackettEnabled: true, order: ["builtin-one", "jackett/onejav"], networkProfiles: ["direct"],
   items: [
-    {health:{search:null,fetch:null}, id: "builtin-one", name: "Sukebei", kind: "BUILTIN", enabled: true, definitionId: "sukebei", baseUrl: "", siteUrl: "https://sukebei.nyaa.si/", privacy: "public", language: "en-US", networkProfile: "direct", trustedOrigins: [], ruleDigest: "digest", errorCode: "", modes: ["search"], settings: [
+    {loginSupported:false,health:{search:null,fetch:null}, id: "builtin-one", name: "Sukebei", kind: "BUILTIN", enabled: true, definitionId: "sukebei", baseUrl: "", siteUrl: "https://sukebei.nyaa.si/", privacy: "public", language: "en-US", networkProfile: "direct", trustedOrigins: [], ruleDigest: "digest", errorCode: "", modes: ["search"], settings: [
       { name: "filter", type: "select", label: "Filter", secret: false, configured: false, value: null, defaultValue: { string: "0", boolean: null, number: null }, options: [{ value: "0", label: "All" }, { value: "1", label: "Trusted only" }] },
       { name: "cookie", type: "text", label: "Cookie", secret: true, configured: true, value: null, defaultValue: null, options: [] }
     ] },
-    {health:{search:null,fetch:null}, id: "jackett/onejav", name: "OneJAV", kind: "JACKETT", enabled: true, definitionId: "", baseUrl: "", siteUrl: "https://onejav.com/", privacy: "public", language: "en-US", networkProfile: "", trustedOrigins: [], ruleDigest: "", errorCode: "", modes: ["search"], settings: [] }
+    {loginSupported:false,health:{search:null,fetch:null}, id: "jackett/onejav", name: "OneJAV", kind: "JACKETT", enabled: true, definitionId: "", baseUrl: "", siteUrl: "https://onejav.com/", privacy: "public", language: "en-US", networkProfile: "", trustedOrigins: [], ruleDigest: "", errorCode: "", modes: ["search"], settings: [] }
   ]
 };
 export const searchCandidate = { id:"candidate-one",instanceId:"builtin-one",instanceName:"Sukebei",kind:"BUILTIN",title:"MOJI-102 Long resource title with release and encoding information",detailsUrl:"https://example.test/details?id=1",infoHash:null,size:null,seeders:null,peers:null,publishedAt:null,categories:[] };
@@ -88,7 +88,7 @@ const rootValue = {
   indexerDefinitionEvents: indexerLibrary,
   checkIndexerDefinitionUpdate: indexerLibrary,
   indexerInstances,
-  indexerDefinitions: { revision: "a".repeat(40), totalCount: 1, offset: 0, limit: 30, items: [{ id: "sukebei", name: "Sukebei", description: "Public torrent index", language: "en-US", privacy: "public", digest: "digest", links: ["https://sukebei.nyaa.si/"], modes: ["search"], warnings: [], settings: indexerInstances.items[0].settings }] },
+  indexerDefinitions: { revision: "a".repeat(40), totalCount: 1, offset: 0, limit: 30, items: [{ id: "sukebei", name: "Sukebei", description: "Public torrent index", language: "en-US", privacy: "public", loginSupported: false, digest: "digest", links: ["https://sukebei.nyaa.si/"], modes: ["search"], warnings: [], settings: indexerInstances.items[0].settings }] },
   setIndexerEnabled: indexerInstances,
   refreshJackettIndexers: indexerInstances,
   reorderIndexers: indexerInstances,

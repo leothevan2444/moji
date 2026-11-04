@@ -382,16 +382,18 @@ type IndexerCheckStage struct {
 }
 
 type IndexerDefinition struct {
-	ID          string            `json:"id"`
-	Name        string            `json:"name"`
-	Description string            `json:"description"`
-	Language    string            `json:"language"`
-	Privacy     string            `json:"privacy"`
-	Digest      string            `json:"digest"`
-	Links       []string          `json:"links"`
-	Modes       []string          `json:"modes"`
-	Warnings    []string          `json:"warnings"`
-	Settings    []*IndexerSetting `json:"settings"`
+	// Whether the rule declares a login flow; independent of site privacy.
+	LoginSupported bool              `json:"loginSupported"`
+	ID             string            `json:"id"`
+	Name           string            `json:"name"`
+	Description    string            `json:"description"`
+	Language       string            `json:"language"`
+	Privacy        string            `json:"privacy"`
+	Digest         string            `json:"digest"`
+	Links          []string          `json:"links"`
+	Modes          []string          `json:"modes"`
+	Warnings       []string          `json:"warnings"`
+	Settings       []*IndexerSetting `json:"settings"`
 }
 
 type IndexerDefinitionChangeInput struct {
@@ -479,6 +481,8 @@ type IndexerHealth struct {
 }
 
 type IndexerInstance struct {
+	// Whether the current built-in rule declares a login flow.
+	LoginSupported bool              `json:"loginSupported"`
 	Health         *IndexerHealth    `json:"health"`
 	SiteURL        string            `json:"siteUrl"`
 	Privacy        string            `json:"privacy"`

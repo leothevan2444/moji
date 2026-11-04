@@ -96,6 +96,7 @@ func (s *Service) Definitions(ctx context.Context, filter DefinitionFilter) (Def
 func definitionProjection(plan *cardigann.Plan) Definition {
 	d := plan.Definition
 	result := Definition{ID: d.ID, Name: d.Name, Description: d.Description, Language: d.Language, Privacy: d.Type, Digest: plan.Digest, Links: append([]string(nil), d.Links...), Modes: []string{}, Warnings: []string{}, Settings: settingProjection(plan, nil)}
+	result.LoginSupported = d.Login != nil
 	for mode := range d.Caps.Modes {
 		result.Modes = append(result.Modes, mode)
 	}
@@ -156,6 +157,7 @@ func (s *Service) instances(ctx context.Context, cfg *config.Config, revision st
 			plan = bundle.Plans[source.Definition]
 		}
 		if plan != nil {
+			item.LoginSupported = plan.Definition.Login != nil
 			item.RuleDigest = plan.Digest
 			item.SiteURL = source.BaseURL
 			if item.SiteURL == "" && len(plan.Definition.Links) > 0 {

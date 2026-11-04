@@ -12,6 +12,8 @@ FlareSolverr 前置协议与网络层：新增 [pkg/flaresolverr](../../pkg/flar
 
 登录挑战由 [indexerlogin](../../internal/indexerlogin/service.go) 管理，并已接 cmd 生命周期和 beginIndexerLogin/answerIndexerChallenge/cancelIndexerLogin GraphQL；indexerLogin 只读查询恢复同一待回答挑战，不重新认证或取种。只接受已保存内置实例及 expectedRevision；编辑草稿仍使用站点测试。准备逻辑复用 admin 的只读校验，持有固定规则 lease；通过 indexer.LoginSession 共享正式寻源会话，Cookie 可用于后续搜索/取种。最多 4 个登录流程、同实例 1 个、等待验证码也计入容量、总预算 5 分钟；配置过期先拒绝回答；使用服务器确认的当前配置可清理旧版本流程并重新登录，过期版本请求不能借此销毁有效流程。取消/过期/服务关闭先取消并等待在途操作，再释放本流程的挑战和规则。清理完成前保留准入占位，旧清理不能删除新流程。ChallengeFor/AnswerFor/DiscardChallenge 绑定账号、网络、来源和登录规则的会话键；Close 只丢弃该登录实际观察的 challenge，不关闭共享生产会话。公开挑战 ID 使用流程 capability，不发内部 session challenge ID，答案只作为提交参数；图片最多 8 MiB，仅投影检测到的普通图片 MIME 的 data URI，不提供上游定位 URL，无法投影会取消流程。登录面板已接开始/恢复/回答/取消/到期交互；窗口关闭后空闲挑战可恢复，在途请求会中止。取消已过期流程返回幂等成功。solver 认证/搜索执行已接，配置 API/UI 已接，代表性真实服务验收与未测环境限制见[完成记录](../reviews/2026-11-03-indexer-acceptance.md#功能验收完成2026-11-04)。
 
+管理目录与已配置实例返回 loginSupported，依据当前规则是否声明 login 块，不能按 public/private/semi-private 隐私类型推断。无登录块或缺少可用规则时为 false；外部 Jackett 不通过 Moji 的登录入口认证。该字段仅表达规则能力，不表示已认证或当前账号有效。
+
 临时会话的认证和验证码回答均不写会话数据库；回答后仅在该内存会话中保留 Cookie。正式会话仍保存派生 Cookie，答案不落盘；同一 challenge 仅可消费一次，重建生产会话不能恢复临时登录。
 
 站点诊断由 [indexercheck](../../internal/indexercheck/service.go) 与 cmd 应用生命周期管理，testIndexer GraphQL 将当前草稿映射为稀疏补丁，校验 expectedRevision；新草稿才允许传 definitionId，已有实例不可借测试更换规则。准备阶段仅合并/校验草稿并持有规则 lease，不保存配置或创建实例。实例快照转换复用 indexeradmin.BuiltinSnapshot，实际适配器在共享受控网络上执行；测试使用独立临时会话，认证、搜索、下载分阶段，未观察到的 Jackett 认证不标成功。默认无搜索/下载，搜索和下载需明确范围；最多 4 个在途、每实例一个、3 分钟、20 条搜索展示。查询缓存、生产 Cookie、候选注册表和任务不承担测试状态。公开报告只有阶段、稳定错误码、版本与关联 ID，不返回资源定位符或凭据；登录挑战交互/solver 的验收与限制见[完成记录](../reviews/2026-11-03-indexer-acceptance.md#功能验收完成2026-11-04)。

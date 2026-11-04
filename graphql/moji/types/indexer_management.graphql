@@ -55,6 +55,8 @@ input IndexerDefinitionFilterInput {
   limit: Int = 50
 }
 type IndexerDefinition {
+  "Whether the rule declares a login flow; independent of site privacy."
+  loginSupported: Boolean!
   id: ID!
   name: String!
   description: String!
@@ -74,6 +76,8 @@ type IndexerDefinitionPage {
   items: [IndexerDefinition!]!
 }
 type IndexerInstance {
+  "Whether the current built-in rule declares a login flow."
+  loginSupported: Boolean!
   health: IndexerHealth!
   siteUrl: String!
   privacy: String!

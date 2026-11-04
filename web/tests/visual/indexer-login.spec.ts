@@ -9,6 +9,7 @@ async function loginServer(page: Page) {
   let starts = 0;
   await page.route("**/graphql", async route => {
     const request = route.request().postDataJSON();
+    if (request.operationName === "IndexerInstances") return route.fulfill({ json: { data: { indexerInstances: { ...indexerInstances, items: indexerInstances.items.map(site => site.id === "builtin-one" ? { ...site, loginSupported: true, privacy: "private" } : site) } } } });
     if (!["IndexerLogin", "BeginIndexerLogin", "AnswerIndexerChallenge", "CancelIndexerLogin"].includes(request.operationName)) return route.fallback();
     calls.push({ operation: request.operationName, variables: request.variables });
     let field = "indexerLogin", value: unknown = current;

@@ -236,3 +236,27 @@ func TestManagementCanDisableBrokenSourceAndPreservesRemoteOwnership(t *testing.
 		t.Fatal("explicit refresh not routed", err)
 	}
 }
+
+func TestLoginCapabilityFollowsDeclaredFlowInsteadOfPrivacy(t *testing.T) {
+	for _, privacy := range []string{"public", "private", "semi-private"} {
+		for _, login := range []bool{false, true} {
+			t.Run(fmt.Sprintf("%s/login=%t", privacy, login), func(t *testing.T) {
+				service, store, definitions, _ := managementFixture(t)
+				plan := definitions.bundle.Plans["example"]
+				plan.Definition.Type = privacy
+				if login {
+					plan.Definition.Login = &cardigann.Login{Method: "cookie"}
+				}
+				catalog, err := service.Definitions(context.Background(), DefinitionFilter{Limit: 10})
+				if err != nil || len(catalog.Items) != 1 || catalog.Items[0].LoginSupported != login {
+					t.Fatalf("catalog login capability: %+v, %v", catalog, err)
+				}
+				definition := "example"
+				saved, err := service.SaveBuiltin(context.Background(), "", store.Revision(), BuiltinPatch{Definition: &definition})
+				if err != nil || saved.Instance.LoginSupported != login {
+					t.Fatalf("configured login capability: %+v, %v", saved, err)
+				}
+			})
+		}
+	}
+}
