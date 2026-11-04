@@ -247,6 +247,14 @@
 
 官方当前 v11 的 52bt 已更换镜像地址，提示本次固定语料并不代表社区最新修订。下一步验证真实官方规则更新及独立回滚，不为 52bt 写专用解析器，也不把固定地址 HTTP 410 归因为 Moji 正则或 JSON 解析缺陷。本批只增加验收入口/文档，完整 Go/vet 默认离线执行通过；没有修改生产 API/UI、规则或解析器，未推送或部署。
 
+## 真实官方规则更新与独立回滚（2026-11-04）
+
+新增默认跳过的 [官方更新入口](../../cmd/moji/indexers_live_rules_test.go)。原配置只读、状态和设置写入临时副本，无下载器装配。以固定 `5f5db4e58d06be18619c3a858b9a91ade6f341ca` 归档引导后，关闭并重建索引 runtime，使用实际默认 GitHub API/codeload 客户端。实际两次均发现并激活 `9ecfe4f9833d3394b27fe911a9a6242b3a9da90d`：仅检查保持旧活动版本；下载 745017 字节，580 个定义全库运行时校验通过；回滚旧修订完成，下载字节为 0，新修订保留为 previous。没有替换程序，固定回归语料仍为 579 定义的旧修订。
+
+报告 `/tmp/moji-live-official-rules-20261104.json` 与 `/tmp/moji-live-official-rules-solver-20261104.json`，同名日志均 exit 0。52bt 链接确实随社区规则更新，但搜索仍未通过：直接路径为 `INDEXER_CHALLENGE_REQUIRED`；显式配置已有 solver 的复测为 `INDEXER_OPERATION_FAILED`，不能据此断言这次 solver 调用成功。两次均无候选、未获取资源，不能把生命周期成功计为 52bt 可用。原配置字节不变，临时核心 tasks=0。两份既有报告先于 SolverConfigured 字段补充，该次 solver 配置由实际命令记录证明。
+
+完整 Go 和 cmd/moji vet 通过，默认离线入口跳过。最终测试报告将未查询任务数初始化为 -1，避免早期失败误报零任务；报告必须是新的私有文件。显式运行成功仅表示完成安全观测，各站失败仍保留。来源检查、更新及回滚均为测试临时状态，不涉及生产规则或服务变更。
+
 ## 附件缓存负载与取消测量
 
 基线 `8c8bd52`，新增显式 `internal/indexer/artifact_performance_test.go`；不改生产缓存、API 或配置。Linux/amd64、Xeon E5-2673 v4、GOMAXPROCS=2，每项 100 次；输入是约 1 MiB 的合法合成 torrent，获取回调只提供内存字节，不访问 HTTP。普通测试已有预算/取消/迟到成功/关闭回归，本轮相关测试通过。

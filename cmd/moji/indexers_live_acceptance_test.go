@@ -21,6 +21,9 @@ import (
 	"github.com/leothevan2444/moji/internal/storage"
 )
 
+const liveRulesRevision = "5f5db4e58d06be18619c3a858b9a91ade6f341ca"
+const liveRulesArchiveSHA256 = "b266646ab2662c260ac6b0fad5f99794b200784f3ac865b521820e8e6814a472"
+
 // This is never part of the default offline suite. The explicit config supplies
 // the authorized site scope; all state and config writes use private copies.
 func TestOptInLiveIndexerSearchAndFetch(t *testing.T) {
@@ -87,7 +90,7 @@ func TestOptInLiveIndexerSearchAndFetch(t *testing.T) {
 		t.Fatal("cannot read pinned rule archive")
 	}
 	digest := sha256.Sum256(archive)
-	if hex.EncodeToString(digest[:]) != "b266646ab2662c260ac6b0fad5f99794b200784f3ac865b521820e8e6814a472" {
+	if hex.EncodeToString(digest[:]) != liveRulesArchiveSHA256 {
 		t.Fatal("live rule archive differs from the reviewed corpus")
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), 26*time.Minute)
@@ -97,7 +100,7 @@ func TestOptInLiveIndexerSearchAndFetch(t *testing.T) {
 		t.Fatal("cannot open isolated storage")
 	}
 	defer manager.Close()
-	source := &runtimeRuleSource{revision: "5f5db4e58d06be18619c3a858b9a91ade6f341ca", archive: archive}
+	source := &runtimeRuleSource{revision: liveRulesRevision, archive: archive}
 	runtime, err := newIndexerRuntime(ctx, cfg, store, manager, source)
 	if err != nil {
 		t.Fatal("cannot assemble isolated indexer runtime")
@@ -155,7 +158,7 @@ func TestOptInLiveIndexerSearchAndFetch(t *testing.T) {
 		SolverConfigured, CatalogRequested       bool
 		CatalogKnown                             bool
 		Origins                                  []originComparison
-	}{RuleRevision: source.revision, Keywords: keywords, CheckBudgetSeconds: 180, SolverConfigured: solver != "", CatalogRequested: kind != "BUILTIN"}
+	}{RuleRevision: source.revision, Keywords: keywords, Tasks: -1, CheckBudgetSeconds: 180, SolverConfigured: solver != "", CatalogRequested: kind != "BUILTIN"}
 	if output.CatalogRequested {
 		registry, err := runtime.registry.Refresh(ctx)
 		if err != nil {
