@@ -93,6 +93,17 @@ func Load(data []byte) (*Plan, error) {
 	if err := root.Decode(&def); err != nil {
 		return nil, fmt.Errorf("definition fields: %w", err)
 	}
+	// Both reference hosts supply these when the declaration is absent.
+	// Preserve an explicit empty list: it opts out of the default fields.
+	if def.Settings == nil {
+		def.Settings = []Setting{
+			{Name: "username", Label: "Username", Type: "text"},
+			{Name: "password", Label: "Password", Type: "password"},
+		}
+	}
+	if def.Login != nil && def.Login.Method == "" {
+		def.Login.Method = "form"
+	}
 	if strings.TrimSpace(def.ID) == "" || strings.TrimSpace(def.Name) == "" || len(def.Links) == 0 {
 		return nil, fmt.Errorf("definition requires id, name and links")
 	}

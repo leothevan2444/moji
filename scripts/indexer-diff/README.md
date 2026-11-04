@@ -58,7 +58,11 @@ credentials; oneurl checks direct path concatenation. Each of these and cookie
 login continues through authentication verification, search and torrent fetch,
 comparing the request sequence and session cookies with the actual reference.
 These synthetic sessions do not certify a real site's account login.
-The 117 executed cases
+Default-login cases omit settings or login.method: absent settings receive the
+reference's username/password fields, while omitted method uses form login.
+Both continue through verification, search and fetch; the method case includes
+the existing text challenge and answer flow.
+The 119 executed cases
 include four explicitly expected rejections (invalid TV episode, captcha
 answer rejected by the site, empty numeric ID/year and overflowing ID); they do not certify the community
 library's live availability. Additional failure/cancellation

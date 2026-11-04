@@ -261,6 +261,14 @@
 
 完整实际解释器对照 117/117（113 正常、4 精确预期拒绝），0 未解释/5 原有解释差异，报告 `/tmp/moji-login-all-20261104.json`、专项 `/tmp/moji-login-methods-20261104.json`；20 项比较器测试与 replay 包测试通过。加上原有 form/post，五种 method 均有实际执行样本，不等于每种站点/重定向/错误组合全部认证，亦不替代真实账号登录验收。没有真实凭据、网络或生产下载器操作；默认离线 replay 测试与 CI 自动收集这些 fixture。
 
+## 声明式登录默认值（2026-11-04）
+
+审查固定 Jackett 构造器与 Prowlarr 的 Cardigann 设置投影，发现合法省略 settings 的定义未获得默认 username/password，Moji 会拒绝配置并无法登录。独立实际差分 `/tmp/moji-default-settings-before-20261104.json` 先复现 `unknown rule setting username`，参考程序已完成取种。另一个独立差分 `/tmp/moji-default-method-before-20261104.json` 复现省略 login.method 时 Moji 错发 GET，而固定 Jackett 默认 form。
+
+在生产 Load 统一补齐默认字段及 form 方法，目录/配置校验/执行读取同一个有效定义，原始字节 digest 不变；显式 settings: [] 保持空并拒绝隐式凭据。密码字段保留 password 类型。两个专项合成场景均认证验证→搜索→获取通过，method 场景包含原文字挑战，报告 `/tmp/moji-default-login-after-20261104.json`。没有修改原 schema、参考程序或比较例外；默认值范围与真实站点可达性分别解释。
+
+完整 Go、cardigann/admin/indexer/replay race 和相关 vet 通过；固定库 579/579 静态编译、1 个既有警告、0 失败，报告 `/tmp/moji-default-login-v11-20261104.json`。完整实际差分 119/119（115 正常、4 精确预期拒绝），0 未解释/5 原有解释差异，报告 `/tmp/moji-default-login-full-20261104.json`。本次无需 schema/API/UI 生成变更，无生产配置/实例/下载器操作。正在构建的 afabfb4 ARM64 镜像读取的是修复前源码，不包含本修正，不能作为本修正的镜像证据。
+
 ## 附件缓存负载与取消测量
 
 基线 `8c8bd52`，新增显式 `internal/indexer/artifact_performance_test.go`；不改生产缓存、API 或配置。Linux/amd64、Xeon E5-2673 v4、GOMAXPROCS=2，每项 100 次；输入是约 1 MiB 的合法合成 torrent，获取回调只提供内存字节，不访问 HTTP。普通测试已有预算/取消/迟到成功/关闭回归，本轮相关测试通过。

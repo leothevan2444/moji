@@ -94,7 +94,7 @@ func (e *Execution) Authenticate(ctx context.Context) (*Challenge, error) {
 		}
 	}
 	mode := login.Method
-	if mode == "get" || mode == "oneurl" || mode == "" {
+	if mode == "get" || mode == "oneurl" {
 		block := RequestBlock{Path: login.Path, Method: http.MethodGet, Inputs: login.Inputs}
 		if mode == "oneurl" {
 			path, err := e.render(ctx, login.Path, e.variables, nil)

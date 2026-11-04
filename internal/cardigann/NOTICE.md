@@ -14,6 +14,8 @@ and simpleCaptcha form protocol were checked
 against Jackett/Jackett at cfdc645711c487d05cb55932e394b2370154d81e:
 https://github.com/Jackett/Jackett/blob/cfdc645711c487d05cb55932e394b2370154d81e/src/Jackett.Common/Indexers/Definitions/CardigannIndexer.cs
 https://github.com/Jackett/Jackett/blob/cfdc645711c487d05cb55932e394b2370154d81e/src/Jackett.Common/Models/TorznabQuery.cs
+Implicit username/password settings and the form-login method default follow
+that same Cardigann constructor. An explicitly empty settings list stays empty.
 Modern Prowlarr uses different host-level andmatch cleanup; the comparison
 README records that boundary. These source references do not settle the
 application's distribution-license review below.

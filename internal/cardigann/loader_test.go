@@ -3,7 +3,35 @@ package cardigann
 import (
 	"strings"
 	"testing"
+	"time"
 )
+
+func TestLoadDefaultCredentialsPreservesExplicitEmptySettings(t *testing.T) {
+	for _, explicitEmpty := range []bool{false, true} {
+		input := minimalDefinition
+		if explicitEmpty {
+			input += "settings: []\n"
+		}
+		plan, err := Load([]byte(input))
+		if err != nil {
+			t.Fatal(err)
+		}
+		_, err = plan.NewExecution(&fakeSession{}, "", map[string]Scalar{"username": "synthetic-user", "password": "synthetic-password"}, time.Now())
+		if explicitEmpty {
+			if err == nil || len(plan.Definition.Settings) != 0 {
+				t.Fatal("explicitly empty settings accepted implicit credentials")
+			}
+		} else {
+			if err != nil {
+				t.Fatal(err)
+			}
+			fields := plan.Definition.Settings
+			if len(fields) != 2 || fields[0].Name != "username" || fields[0].Type != "text" || fields[1].Name != "password" || fields[1].Type != "password" {
+				t.Fatal("default credential fields lost their names or secret type")
+			}
+		}
+	}
+}
 
 const minimalDefinition = `id: example
 name: Example
