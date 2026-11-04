@@ -40,6 +40,24 @@ npm --prefix web ci
 
 测试应证明行为或关键不变量；不为文档或低影响格式调整补镜像实现的测试。每项检查说明通过、失败、skip 或环境受阻，不能扩大结论。
 
+## 索引器真实验收（显式 opt-in）
+
+[真实验收入口](../../cmd/moji/indexers_live_acceptance_test.go) 默认跳过。仅在已获得站点搜索和获取资源授权后设置参数；使用配置中的 Jackett 站点范围与固定 v11 归档，每站分别执行内置和 Jackett 诊断。原配置只读，所有设置与数据库写入私有临时副本，不组装下载器或创建任务。最多两站并行，沿用正式诊断三分钟总预算及配置中的请求超时，每次最多获取一个资源。
+
+```sh
+report_dir=$(mktemp -d /tmp/moji-live.XXXXXX)
+MOJI_INDEXER_LIVE_CONFIG=/path/to/authorized/config.yaml \
+MOJI_INDEXER_LIVE_RULES_ARCHIVE=/path/to/pinned-indexers.tar.gz \
+MOJI_INDEXER_LIVE_QUERY=authorized-keywords \
+MOJI_INDEXER_LIVE_REPORT="$report_dir/report.json" \
+GOCACHE=/tmp/moji-go-cache go test ./cmd/moji \
+  -run TestOptInLiveIndexerSearchAndFetch -count=1 -timeout=27m -v
+```
+
+归档由当前 corpus.lock.json 的摘要校验；报告必须是新文件，不能覆盖已有配置或记录。报告只包含阶段、数量、稳定错误码和 origin 是否一致，不输出凭据、Cookie 或下载定位 URL。程序 exit 0 仅表示安全完成观测，FAILED、EMPTY、NO_CANDIDATE 仍按各站实际状态解释，获取验证通过可能是 torrent 或 magnet，不等于已向下载器提交。
+
+可用 `MOJI_INDEXER_LIVE_SITE_IDS=site-a,site-b` 限定配置范围内的子集；`MOJI_INDEXER_LIVE_KIND=BUILTIN` 或 `JACKETT` 只复测某路径，避免重复消耗。`MOJI_INDEXER_LIVE_SOLVER=http://127.0.0.1:8191` 仅在临时配置中启用已有、已授权使用的 solver；原配置和外部服务设置均不改写。实际 Jackett 站点定义、Cookie、网络与结果时刻未被冻结，实时结果不能替代脚本响应一致的解释器差分。
+
 ## GraphQL 与生成文件
 
 Moji schema 源在 `graphql/moji/schema.graphql` 和 `graphql/moji/types/`，gqlgen 配置在 [gqlgen.yml](../../graphql/moji/gqlgen.yml)。Web 操作源在 `web/src/**/*.graphql`。

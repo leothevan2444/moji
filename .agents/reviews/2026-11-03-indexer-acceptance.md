@@ -224,6 +224,29 @@
 
 完整证据、二进制 SHA-256 和报告保留在 `/tmp/moji-indexer-upgrade-proof/report.json`、`old-state.json`、`upgraded-state.json`、`app-replay.log` 及对应拒绝/恢复记录。源码/编译和仅测试 fixture 都在临时目录，未把旧配置、数据库、日志或实际站点规则提交到仓库。本轮完整 Go、config/taskruntime/taskflow/config CLI race 与相关 vet 通过；没有引擎/schema/API/UI 改动，不重复此前无变化的差分/Web/镜像。已安装规则的回滚和资产恢复仍由原独立测试证明，不能把本次旧版无规则库演练扩大成全部场景；多架构冻结镜像、真实站点/代理/solver、来源/许可仍按 R-004 继续。
 
+## 已授权八站真实搜索与资源获取（2026-11-04）
+
+新增显式 opt-in 的 [验收入口](../../cmd/moji/indexers_live_acceptance_test.go)，正常离线 suite 跳过；参数与边界见[开发流程](../workflows/development.md#索引器真实验收显式-opt-in)。按用户授权只读根 config.yaml、复制到私有临时配置/DB，调用正式 indexer runtime、indexercheck 与两类 adapter，固定 5f5db4e 的 579 定义，关键词 SSIS；补充 u3c3 的 SONE 查询。没有组装或调用 qB/Stash，所有完成报告确认 tasks=0、原配置字节不变。报告为新建 0600 文件，不允许覆盖已有文件；已用私有配置副本证明防覆盖失败发生在联网前且文件摘要不变。
+
+本地 Jackett 镜像 `sha256:697911d750b823e9a7eaac0511dba84460e2c174a72923eca6da1a3dd5360362`，Linuxserver v0.24.2830-ls3；FlareSolverr 镜像 `sha256:680575c113318c2baa22cd507d3fb678a45799ac39af3c54b1f2ca9e83006418`。这是现场版本，不是合成对照的固定 Jackett SDK 版本。原配置没有 Moji solver/代理网络配置；先测默认直连，再在临时副本为挑战站点启用已有 localhost:8191 solver。没有开启/修改真实 Jackett 站点配置或重启服务。
+
+| 配置站点 | 内置实际结果 | 外部 Jackett 实际结果及边界 |
+| --- | --- | --- |
+| freejavtorrent | 20 条，获取及 ValidateArtifact 通过 | 20 条，获取验证通过 |
+| sukebeinyaasi | 20 条，获取验证通过 | 20 条，获取验证通过 |
+| 0magnet | 20 条，获取验证通过 | 首轮获取 30 秒请求超时；完整预算复测后 20 条及获取通过，属于观察到的波动 |
+| tokyotosho | 默认挑战页；临时启用 solver 后 20 条及获取通过 | 搜索约 30 秒请求超时；正式总预算复测仍同样超时 |
+| onejav | 默认挑战页；solver 后搜索 20 条，获取阶段仍遇挑战，按既定策略不委托/重放取种链路 | 搜索 20 条；首轮 45 秒总预算、复测正式总预算下获取均超时，后者明确为单请求约 30 秒 |
+| u3c3 | SSIS、SONE 都为空，没有取种样本 | 两关键词也均为空；不能据此证明真实下载或站点所有查询可用 |
+| 52bt | 固定规则默认地址返回 HTTP 410，尚未进入结果解析 | 搜索失败；其配置 origin 与固定默认地址不同，不能算相同页面的解析差分 |
+| torrentkitty | 守卫传输失败、无 HTTP 响应；独立直连 curl 也在 TLS 握手前失败 | 不在当前 Jackett 配置目录中，配置阶段 SCOPE_INVALID，没有执行搜索 |
+
+首轮 16 检查使用了额外 45 秒测试总预算；已纠正最终入口沿用正式三分钟预算，对三个超时 Jackett 路径独立复测，没有把人为预算当成产品故障。其余补充为两站 solver 与 u3c3 双路径，共 23 次阶段检查；这是观测数量，不是通过数。三个默认内置站点完成搜索/获取，加入 solver 后新增 tokyotosho；onejav 的取种挑战仍是明确限制。solver 时间窗私有日志含两个目标为 SSIS、host 匹配 onejav/tokyotosho 的 request.get，记录两次检测和求解成功；随后原 HTTP 搜索验证通过，未发生取种自动求解。
+
+私有证据 `/tmp/moji-live-indexers-20261104.json`、`/tmp/moji-live-jackett-full-budget-20261104.json`、`/tmp/moji-live-solver-20261104.json`、`/tmp/moji-live-u3c3-20261104.json`；仅临时原始响应诊断保留在 `/tmp/moji-live-response-diagnosis-20261104.json` 及 0600 的 body 文件，不纳入仓库。目录 origin 核对确认除 52bt 不同、torrentkitty 未配置外，其余六站与规则默认 origin 相同；没有冻结 Jackett Cookie/规则/代理或实时内容，不能将该表冒称所有配置完全相同的可重复差分。没有真实账号登录或显式转发代理验收，公开/JSON/中间页/CF 会话能力仍分别结合固定 fixture 与当前实测判断。
+
+官方当前 v11 的 52bt 已更换镜像地址，提示本次固定语料并不代表社区最新修订。下一步验证真实官方规则更新及独立回滚，不为 52bt 写专用解析器，也不把固定地址 HTTP 410 归因为 Moji 正则或 JSON 解析缺陷。本批只增加验收入口/文档，完整 Go/vet 默认离线执行通过；没有修改生产 API/UI、规则或解析器，未推送或部署。
+
 ## 附件缓存负载与取消测量
 
 基线 `8c8bd52`，新增显式 `internal/indexer/artifact_performance_test.go`；不改生产缓存、API 或配置。Linux/amd64、Xeon E5-2673 v4、GOMAXPROCS=2，每项 100 次；输入是约 1 MiB 的合法合成 torrent，获取回调只提供内存字节，不访问 HTTP。普通测试已有预算/取消/迟到成功/关闭回归，本轮相关测试通过。
