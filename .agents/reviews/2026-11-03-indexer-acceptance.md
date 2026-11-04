@@ -41,9 +41,9 @@
 | RowsBlock：after, dateheaders, selector, attribute, optional, multiple, missingAttributeEqualsNoResults, case, remove, text, filters, count | parse.go、search.go、row_count_test.go、date_headers_test.go、六个 count 与七个分组/日期实际场景 | 已核对固定两家源码：after/dateheaders 仅 HTML/XML 分支，attribute/multiple/count 在 JSON 分支；行级 case/remove/text 未调用通用字段选择器，不能按 schema 继承字段推断必须执行。JSON count/HTML 多执行已修正；日期首个匹配值无效不得借更早日期，查找只回退父元素一次，两处实际差异已修。未完整分组与全部 XML/选择器组合仍未认证，不扩大七个样本结论。 |
 | FieldsBlock：动态字段名及 append/noappend/optional 修饰 | 有序 Fields、parseFields/applyField、category_result_test.go、public HTML/JSON 场景 | 声明顺序、自定义 .Result 依赖及类别修饰已回归；其余结果元数据有些只保留 Fields，不等于 Moji 产品全部展示。 |
 | DownloadBlock：method, before, selectors, infohash, headers | [获取执行](../../internal/cardigann/download.go)、[magnet 生成](../../internal/cardigann/magnet.go)、download_test.go、download_cancel_test.go、实际下载/magnet 场景 | 中间请求和直接取种有证据；用户已确认沿用 Jackett 公开 tracker，原页/前置页 infohash 两例移回正式 cases 并通过，另覆盖 public/semi-private/private 哈希结果。原始 magnet 不改写，私有哈希不自动公开 fallback。取消原因保留与已确认资源保留有回归；其他 fallback 组合未完整认证。 |
-| BeforeBlock：path, pathselector, method, inputs, queryseparator | download.go、download.before GET/POST 空输入测试 | before/原始响应复用有证据；pathselector 全链和其失败/重定向组合证据不足。 |
+| BeforeBlock：path, pathselector, method, inputs, queryseparator | download.go、download.before GET/POST 空输入测试；新增 before-pathselector 完整实际对照 | 动态 action、重定向/Cookie/POST 与缺失 action 拒绝已有实际对照；不扩大为所有重定向/过滤器组合认证，详见下方补充。 |
 | InfoHashBlock：hash, title, usebeforeresponse | download.go、TestDownloadInfoHashAndInvalidMagnet、cases/infohash-page 与 infohash-before | 按用户确认的公开 tracker 默认，原页/前置页两条实际对照现已通过。准确 URI 投影另外核对固定 JSON 序列化，详见请求复核；无 pending 目录或隐藏用例。 |
-| SelectorField：selector, attribute, usebeforeresponse, filters | DownloadSelector、downloadField；magnet-page/before、download-page/before 场景 | 原页/前置页来源已实际对照，仍须 fallback 与失败分类样本。 |
+| SelectorField：selector, attribute, usebeforeresponse, filters | DownloadSelector、downloadField；magnet-page/before、download-page/before、before-pathselector 与 before-selectors-missing 场景 | 原页/前置页、缺失 selector/属性后的 fallback 与全部不匹配的拒绝已有实际对照；HTTP 失败/超时不自动重放的策略仍由本地取消/获取测试证明。 |
 | RowFilterBlock：name, args | [行过滤器](../../internal/cardigann/row_filters.go)、parseFields；compile.go | 初审发现的 andmatch CharacterLimit/关键词/ID 资格缺口已修正；新增 10 个实际对照场景，明确采用 Jackett 声明式语义，与现代 Prowlarr 的宽松宿主过滤不同。Unicode 大小写和重复过滤器等边界仍未认证。strdump 不输出敏感正文是有意诊断策略。 |
 | FilterBlock：name, args | [过滤器](../../internal/cardigann/filters.go)、filters_test.go、query_encoding/response_encoding 测试 | 25 个 schema 名称均有分支，全部 .NET 边界和参数语义尚未认证，见后表。 |
 | IndexerCategories：71 个 schema 枚举名 | [标准映射](../../internal/indexercategory/categories.go)、schema、类别回归 | 本轮集合比对 71 个名称全部有 ID；不以集合匹配证明每个数字与上游完全一致。 |
@@ -296,6 +296,12 @@
 干净 `2d1230c05b04beb8f00b9f8c8a4984f574a6abc4` 的 amd64 镜像构建及原始完整断网 smoke 通过：`sha256:1dcfc375db8eebfc23210758b9156c7d4b9af50589d79dde5cfc9898865a114c`，版本 `dev-2d1230c05b04`，日志 `/tmp/moji-indexer-2d1230c-amd64-build.log`、`/tmp/moji-indexer-2d1230c-amd64-smoke.log`。此提交包含登录默认值修复及宿主交叉编译，尚不含后续工作区的当前来源准入修复。
 
 同提交 ARM64 构建的前端已完成，Go 公共依赖下载在 x/image v0.43.0 与 x/text v0.38.0 遭 proxy.golang.org HTTP/2 peer INTERNAL_ERROR，252.9 秒后明确终止，未进入后端编译；日志 `/tmp/moji-indexer-2d1230c-arm64-build.log`。后续同源重试曾因自动审批审查额度耗尽而未执行，不是安全性否决，没有绕过；该次构建没有活跃 handle，也不把临时 BuildKit 守护进程视为构建仍在运行。其后审批正常恢复并完成上述准入修复的完整回归；下一次构建应冻结包含该修复的新提交，专用构建器在验收后清理。没有推送、部署或宿主 binfmt 修改。
+
+## 动态取种路径与 selector 回退（2026-11-04）
+
+继续按矩阵补齐三条正式实际解释器场景：[before-pathselector](../../scripts/indexer-diff/cases/before-pathselector/definition.yml) 经 details→重定向→带 Cookie 的表单，选取 action 后提交 POST before，再依次跳过不存在的 selector 和缺失 href 的元素，返回完整 magnet；缺失 action 和耗尽全部 selector 的两条控制均明确拒绝，未产生下载。两条控制的原生错误文本不同，按已有 expectedErrors 精确记录各自完整错误，未放宽比较器或新增忽略条件。成功场景明确记录同源重定向 Referer 差异：Moji HTTP 传输保留原页面，固定 Jackett 手动跳转不带该头；后续 POST、Cookie 和 magnet 仍全部精确比较。
+
+固定 reference-10 实际完整差分 **122/122**（116 正常、6 精确预期拒绝），0 未解释、6 个已解释差异条目，报告 `/tmp/moji-pathselector-full-20261104.json`、日志同名前缀 `.log`，终态 exit 0。新增一条解释是上述重定向 Referer，原有五条不变。比较器 20 项、锁/来源检查 5 项、文档和 diff 检查通过。初次探针误同时填写 schema 互斥的 path/pathselector，修正合法 fixture 后再执行；不是产品解析缺陷。只新增合成测试及证据，无生产引擎/API/UI/依赖修改，e77e65f 冻结镜像仍覆盖当前生产代码，不重复无变化的完整 Go、Web 和镜像。
 
 ## e77e65f 冻结双架构验收（2026-11-04）
 

@@ -1,0 +1,34 @@
+id: replay-before-pathselector
+name: Replay download-before fixture
+description: Synthetic comparison fixture; no real website
+language: en-US
+type: public
+encoding: UTF-8
+testlinktorrent: false
+links: [https://fixture.invalid/]
+caps:
+  categories: {film: Movies/HD}
+  modes: {search: [q]}
+search:
+  paths: [{path: /search, response: {type: json}}]
+  inputs:
+    q: '{{ .Keywords }}'
+    category: '{{ join .Categories "," }}'
+  rows: {selector: data}
+  fields:
+    title: {selector: name}
+    category: {text: film}
+    size: {text: 1GB}
+    seeders: {text: 3}
+    leechers: {text: 2}
+    download: {selector: url}
+download:
+  before:
+    pathselector: {selector: form.prepare, attribute: action}
+    method: post
+    inputs:
+      id: '{{ .DownloadUri.Query.id }}'
+  selectors:
+    - {selector: a.missing, attribute: href, usebeforeresponse: true}
+    - {selector: a.broken, attribute: href, usebeforeresponse: true}
+    - {selector: a.download, attribute: href, usebeforeresponse: true}

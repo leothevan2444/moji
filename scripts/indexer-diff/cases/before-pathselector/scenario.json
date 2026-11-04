@@ -1,0 +1,75 @@
+{
+  "definitionFile": "definition.yml",
+  "query": {
+    "mode": "search",
+    "keywords": "ABCD-123",
+    "categories": [
+      2000
+    ],
+    "limit": 100,
+    "offset": 0
+  },
+  "settings": {},
+  "authenticate": false,
+  "fetch": true,
+  "now": "2026-11-03T00:00:00Z",
+  "responses": [
+    {
+      "method": "GET",
+      "path": "/search",
+      "status": 200,
+      "headers": {
+        "Content-Type": [
+          "application/json"
+        ]
+      },
+      "bodyText": "{\"data\": [{\"name\": \"ABCD-123\", \"url\": \"/details?id=1\"}]}"
+    },
+    {
+      "method": "GET",
+      "path": "/details",
+      "status": 302,
+      "headers": {
+        "Location": [
+          "https://fixture.invalid/landing"
+        ]
+      },
+      "bodyText": ""
+    },
+    {
+      "method": "GET",
+      "path": "/landing",
+      "status": 200,
+      "headers": {
+        "Content-Type": [
+          "text/html"
+        ],
+        "Set-Cookie": [
+          "download=synthetic; Path=/"
+        ]
+      },
+      "bodyText": "<form class=\"prepare\" action=\"/prepare?csrf=synthetic\"></form>"
+    },
+    {
+      "method": "POST",
+      "path": "/prepare",
+      "status": 200,
+      "headers": {
+        "Content-Type": [
+          "text/html"
+        ]
+      },
+      "bodyText": "<a class=\"broken\">missing href</a><a class=\"download\" href=\"magnet:?xt=urn:btih:0123456789012345678901234567890123456789&amp;dn=ABCD-123\">download</a>"
+    }
+  ],
+  "expectedDifferences": [
+    {
+      "path": "/requests/2/headers/referer",
+      "moji": "https://fixture.invalid/details?id=1",
+      "jackett": {
+        "missing": true
+      },
+      "reason": "Moji preserves the originating page Referer across the same-origin redirect using its HTTP transport; the pinned Jackett manual redirect helper does not add it. All later preparation requests, cookies and the final magnet must still match exactly."
+    }
+  ]
+}

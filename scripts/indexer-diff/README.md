@@ -62,9 +62,14 @@ Default-login cases omit settings or login.method: absent settings receive the
 reference's username/password fields, while omitted method uses form login.
 Both continue through verification, search and fetch; the method case includes
 the existing text challenge and answer flow.
-The 119 executed cases
-include four explicitly expected rejections (invalid TV episode, captcha
-answer rejected by the site, empty numeric ID/year and overflowing ID); they do not certify the community
+The pathselector case follows a redirect and cookie, selects the preparation
+form's action, submits download.before, then skips a missing selector and a
+missing href before returning the final magnet. Two controls reject a missing
+form action and exhaustion of all download selectors without grabbing a file.
+The 122 executed cases
+include six explicitly expected rejections (invalid TV episode, captcha
+answer rejected by the site, empty numeric ID/year, overflowing ID, missing
+preparation action and exhausted download selectors); they do not certify the community
 library's live availability. Additional failure/cancellation
 scenarios and other challenge implementations remain.
 

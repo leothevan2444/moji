@@ -1,0 +1,47 @@
+{
+  "definitionFile": "definition.yml",
+  "query": {
+    "mode": "search",
+    "keywords": "ABCD-123",
+    "categories": [
+      2000
+    ],
+    "limit": 100,
+    "offset": 0
+  },
+  "settings": {},
+  "authenticate": false,
+  "fetch": true,
+  "now": "2026-11-03T00:00:00Z",
+  "responses": [
+    {
+      "method": "GET",
+      "path": "/search",
+      "status": 200,
+      "headers": {
+        "Content-Type": [
+          "application/json"
+        ]
+      },
+      "bodyText": "{\"data\": [{\"name\": \"ABCD-123\", \"url\": \"/details?id=1\"}]}"
+    },
+    {
+      "method": "GET",
+      "path": "/details",
+      "status": 200,
+      "headers": {
+        "Content-Type": [
+          "text/html"
+        ],
+        "Set-Cookie": [
+          "download=synthetic; Path=/"
+        ]
+      },
+      "bodyText": "<form class=\"prepare\"></form>"
+    }
+  ],
+  "expectedErrors": {
+    "moji": "download before path selector did not match",
+    "jackett": "Exception: Attribute \"action\" is not set for element \n<form class=\"prepare\"></form>"
+  }
+}
