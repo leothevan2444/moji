@@ -110,6 +110,10 @@
 }
 [data-theme="dark"] { @include privacy-dark; }
 @media (prefers-color-scheme: dark) { :root:not([data-theme]) { @include privacy-dark; } }
+.indexer-row__actions .icon-button:not(:disabled) {
+  color: var(--text);
+  &:hover { color: var(--accent); }
+}
 .indexer-row__actions .icon-button, .indexer-actions > .icon-button { flex: 0 0 28px; min-width: 28px; min-height: 28px; padding: 0; }
 .indexer-drag { user-select: none; -webkit-user-select: none; }
 .settings-switch:has(> input:disabled) { cursor: not-allowed; opacity: .55; }
