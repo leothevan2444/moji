@@ -63,6 +63,7 @@ type IndexerDefinition {
   language: String!
   privacy: String!
   digest: String!
+  categories: [String!]!
   links: [String!]!
   modes: [String!]!
   warnings: [String!]!
@@ -79,6 +80,7 @@ type IndexerInstance {
   "Whether the current built-in rule declares a login flow."
   loginSupported: Boolean!
   health: IndexerHealth!
+  description: String!
   siteUrl: String!
   privacy: String!
   language: String!

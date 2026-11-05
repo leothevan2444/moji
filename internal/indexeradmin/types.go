@@ -22,7 +22,7 @@ type Setting struct {
 type Definition struct {
 	LoginSupported                                   bool
 	ID, Name, Description, Language, Privacy, Digest string
-	Links, Modes, Warnings                           []string
+	Links, Modes, Warnings, Categories               []string
 	Settings                                         []Setting
 }
 type DefinitionFilter struct {
@@ -36,7 +36,7 @@ type DefinitionPage struct {
 }
 type Instance struct {
 	LoginSupported                                                         bool
-	SiteURL, Privacy, Language                                             string
+	SiteURL, Privacy, Language, Description                                string
 	ID, Name, DefinitionID, BaseURL, NetworkProfile, RuleDigest, ErrorCode string
 	Kind                                                                   indexer.Kind
 	Enabled                                                                bool

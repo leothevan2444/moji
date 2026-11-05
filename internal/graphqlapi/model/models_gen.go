@@ -390,6 +390,7 @@ type IndexerDefinition struct {
 	Language       string            `json:"language"`
 	Privacy        string            `json:"privacy"`
 	Digest         string            `json:"digest"`
+	Categories     []string          `json:"categories"`
 	Links          []string          `json:"links"`
 	Modes          []string          `json:"modes"`
 	Warnings       []string          `json:"warnings"`
@@ -484,6 +485,7 @@ type IndexerInstance struct {
 	// Whether the current built-in rule declares a login flow.
 	LoginSupported bool              `json:"loginSupported"`
 	Health         *IndexerHealth    `json:"health"`
+	Description    string            `json:"description"`
 	SiteURL        string            `json:"siteUrl"`
 	Privacy        string            `json:"privacy"`
 	Language       string            `json:"language"`

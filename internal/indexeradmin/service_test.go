@@ -260,3 +260,24 @@ func TestLoginCapabilityFollowsDeclaredFlowInsteadOfPrivacy(t *testing.T) {
 		}
 	}
 }
+
+func TestCatalogMetadataUsesDeclaredCategoriesAndDescription(t *testing.T) {
+	service, store, definitions, _ := managementFixture(t)
+	plan := definitions.bundle.Plans["example"]
+	plan.Definition.Description = "Example description"
+	plan.Definition.Caps.Categories = cardigann.ScalarFields{{Name: "1", Value: "Movies"}, {Name: "2", Value: "TV"}}
+	plan.Definition.Caps.CategoryMappings = []cardigann.CategoryMapping{{Cat: "Movies"}, {Cat: "Movies/HD"}, {Cat: ""}}
+	catalog, err := service.Definitions(context.Background(), DefinitionFilter{Limit: 10})
+	if err != nil {
+		t.Fatal(err)
+	}
+	got := catalog.Items[0]
+	if strings.Join(got.Categories, ",") != "Movies,Movies/HD,TV" {
+		t.Fatalf("declared category union: %v", got.Categories)
+	}
+	definition := "example"
+	saved, err := service.SaveBuiltin(context.Background(), "", store.Revision(), BuiltinPatch{Definition: &definition})
+	if err != nil || saved.Instance.Description != "Example description" {
+		t.Fatalf("configured description: %+v %v", saved, err)
+	}
+}

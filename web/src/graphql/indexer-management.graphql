@@ -6,7 +6,7 @@ fragment IndexerSettingFields on IndexerSetting {
 }
 fragment IndexerInstanceFields on IndexerInstance {
   health { search { ...IndexerObservationFields } fetch { ...IndexerObservationFields } }
-  siteUrl privacy language loginSupported
+  siteUrl description privacy language loginSupported
   id kind name enabled definitionId baseUrl networkProfile trustedOrigins
   ruleDigest errorCode modes settings { ...IndexerSettingFields }
 }
@@ -19,7 +19,7 @@ query IndexerDefinitions($input: IndexerDefinitionFilterInput) {
   indexerDefinitions(input: $input) {
     revision totalCount offset limit
     items {
-      id name description language privacy loginSupported digest links modes warnings
+      id name description language privacy loginSupported digest links categories modes warnings
       settings { ...IndexerSettingFields }
     }
   }

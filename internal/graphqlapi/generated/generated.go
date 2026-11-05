@@ -335,6 +335,7 @@ type ComplexityRoot struct {
 	}
 
 	IndexerDefinition struct {
+		Categories     func(childComplexity int) int
 		Description    func(childComplexity int) int
 		Digest         func(childComplexity int) int
 		ID             func(childComplexity int) int
@@ -414,6 +415,7 @@ type ComplexityRoot struct {
 	IndexerInstance struct {
 		BaseURL        func(childComplexity int) int
 		DefinitionID   func(childComplexity int) int
+		Description    func(childComplexity int) int
 		Enabled        func(childComplexity int) int
 		ErrorCode      func(childComplexity int) int
 		Health         func(childComplexity int) int
@@ -3006,6 +3008,13 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.IndexerCheckStage.State(childComplexity), true
 
+	case "IndexerDefinition.categories":
+		if e.complexity.IndexerDefinition.Categories == nil {
+			break
+		}
+
+		return e.complexity.IndexerDefinition.Categories(childComplexity), true
+
 	case "IndexerDefinition.description":
 		if e.complexity.IndexerDefinition.Description == nil {
 			break
@@ -3390,6 +3399,13 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.IndexerInstance.DefinitionID(childComplexity), true
+
+	case "IndexerInstance.description":
+		if e.complexity.IndexerInstance.Description == nil {
+			break
+		}
+
+		return e.complexity.IndexerInstance.Description(childComplexity), true
 
 	case "IndexerInstance.enabled":
 		if e.complexity.IndexerInstance.Enabled == nil {
@@ -9796,6 +9812,7 @@ type IndexerDefinition {
   language: String!
   privacy: String!
   digest: String!
+  categories: [String!]!
   links: [String!]!
   modes: [String!]!
   warnings: [String!]!
@@ -9812,6 +9829,7 @@ type IndexerInstance {
   "Whether the current built-in rule declares a login flow."
   loginSupported: Boolean!
   health: IndexerHealth!
+  description: String!
   siteUrl: String!
   privacy: String!
   language: String!
@@ -15848,6 +15866,8 @@ func (ec *executionContext) fieldContext_BuiltinIndexerResult_instance(_ context
 				return ec.fieldContext_IndexerInstance_loginSupported(ctx, field)
 			case "health":
 				return ec.fieldContext_IndexerInstance_health(ctx, field)
+			case "description":
+				return ec.fieldContext_IndexerInstance_description(ctx, field)
 			case "siteUrl":
 				return ec.fieldContext_IndexerInstance_siteUrl(ctx, field)
 			case "privacy":
@@ -25014,6 +25034,50 @@ func (ec *executionContext) fieldContext_IndexerDefinition_digest(_ context.Cont
 	return fc, nil
 }
 
+func (ec *executionContext) _IndexerDefinition_categories(ctx context.Context, field graphql.CollectedField, obj *model.IndexerDefinition) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_IndexerDefinition_categories(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Categories, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]string)
+	fc.Result = res
+	return ec.marshalNString2ᚕstringᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_IndexerDefinition_categories(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "IndexerDefinition",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _IndexerDefinition_links(ctx context.Context, field graphql.CollectedField, obj *model.IndexerDefinition) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_IndexerDefinition_links(ctx, field)
 	if err != nil {
@@ -26138,6 +26202,8 @@ func (ec *executionContext) fieldContext_IndexerDefinitionPage_items(_ context.C
 				return ec.fieldContext_IndexerDefinition_privacy(ctx, field)
 			case "digest":
 				return ec.fieldContext_IndexerDefinition_digest(ctx, field)
+			case "categories":
+				return ec.fieldContext_IndexerDefinition_categories(ctx, field)
 			case "links":
 				return ec.fieldContext_IndexerDefinition_links(ctx, field)
 			case "modes":
@@ -27219,6 +27285,50 @@ func (ec *executionContext) fieldContext_IndexerInstance_health(_ context.Contex
 	return fc, nil
 }
 
+func (ec *executionContext) _IndexerInstance_description(ctx context.Context, field graphql.CollectedField, obj *model.IndexerInstance) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_IndexerInstance_description(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Description, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_IndexerInstance_description(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "IndexerInstance",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _IndexerInstance_siteUrl(ctx context.Context, field graphql.CollectedField, obj *model.IndexerInstance) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_IndexerInstance_siteUrl(ctx, field)
 	if err != nil {
@@ -28292,6 +28402,8 @@ func (ec *executionContext) fieldContext_IndexerInstances_items(_ context.Contex
 				return ec.fieldContext_IndexerInstance_loginSupported(ctx, field)
 			case "health":
 				return ec.fieldContext_IndexerInstance_health(ctx, field)
+			case "description":
+				return ec.fieldContext_IndexerInstance_description(ctx, field)
 			case "siteUrl":
 				return ec.fieldContext_IndexerInstance_siteUrl(ctx, field)
 			case "privacy":
@@ -74079,6 +74191,11 @@ func (ec *executionContext) _IndexerDefinition(ctx context.Context, sel ast.Sele
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
+		case "categories":
+			out.Values[i] = ec._IndexerDefinition_categories(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
 		case "links":
 			out.Values[i] = ec._IndexerDefinition_links(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
@@ -74573,6 +74690,11 @@ func (ec *executionContext) _IndexerInstance(ctx context.Context, sel ast.Select
 			}
 		case "health":
 			out.Values[i] = ec._IndexerInstance_health(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "description":
+			out.Values[i] = ec._IndexerInstance_description(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}

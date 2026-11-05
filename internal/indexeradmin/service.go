@@ -97,6 +97,22 @@ func definitionProjection(plan *cardigann.Plan) Definition {
 	d := plan.Definition
 	result := Definition{ID: d.ID, Name: d.Name, Description: d.Description, Language: d.Language, Privacy: d.Type, Digest: plan.Digest, Links: append([]string(nil), d.Links...), Modes: []string{}, Warnings: []string{}, Settings: settingProjection(plan, nil)}
 	result.LoginSupported = d.Login != nil
+	categories := map[string]bool{}
+	for _, category := range d.Caps.Categories {
+		if name := strings.TrimSpace(string(category.Value)); name != "" {
+			categories[name] = true
+		}
+	}
+	for _, mapping := range d.Caps.CategoryMappings {
+		if name := strings.TrimSpace(mapping.Cat); name != "" {
+			categories[name] = true
+		}
+	}
+	result.Categories = []string{}
+	for category := range categories {
+		result.Categories = append(result.Categories, category)
+	}
+	sort.Strings(result.Categories)
 	for mode := range d.Caps.Modes {
 		result.Modes = append(result.Modes, mode)
 	}
@@ -158,6 +174,7 @@ func (s *Service) instances(ctx context.Context, cfg *config.Config, revision st
 		}
 		if plan != nil {
 			item.LoginSupported = plan.Definition.Login != nil
+			item.Description = plan.Definition.Description
 			item.RuleDigest = plan.Digest
 			item.SiteURL = source.BaseURL
 			if item.SiteURL == "" && len(plan.Definition.Links) > 0 {

@@ -40,7 +40,7 @@ func indexerSettingModels(settings []indexeradmin.Setting) []*model.IndexerSetti
 	return result
 }
 func indexerInstanceModel(instance indexeradmin.Instance) *model.IndexerInstance {
-	return &model.IndexerInstance{LoginSupported: instance.LoginSupported, Health: &model.IndexerHealth{Search: indexerObservationModel(instance.Health.Search), Fetch: indexerObservationModel(instance.Health.Fetch)}, SiteURL: instance.SiteURL, Privacy: instance.Privacy, Language: instance.Language, ID: instance.ID, Kind: model.IndexerSourceKind(instance.Kind), Name: instance.Name, Enabled: instance.Enabled, DefinitionID: instance.DefinitionID, BaseURL: instance.BaseURL, NetworkProfile: instance.NetworkProfile, TrustedOrigins: instance.TrustedOrigins, RuleDigest: instance.RuleDigest, ErrorCode: instance.ErrorCode, Modes: instance.Modes, Settings: indexerSettingModels(instance.Settings)}
+	return &model.IndexerInstance{Description: instance.Description, LoginSupported: instance.LoginSupported, Health: &model.IndexerHealth{Search: indexerObservationModel(instance.Health.Search), Fetch: indexerObservationModel(instance.Health.Fetch)}, SiteURL: instance.SiteURL, Privacy: instance.Privacy, Language: instance.Language, ID: instance.ID, Kind: model.IndexerSourceKind(instance.Kind), Name: instance.Name, Enabled: instance.Enabled, DefinitionID: instance.DefinitionID, BaseURL: instance.BaseURL, NetworkProfile: instance.NetworkProfile, TrustedOrigins: instance.TrustedOrigins, RuleDigest: instance.RuleDigest, ErrorCode: instance.ErrorCode, Modes: instance.Modes, Settings: indexerSettingModels(instance.Settings)}
 }
 func indexerInstancesModel(page indexeradmin.InstancePage) *model.IndexerInstances {
 	result := &model.IndexerInstances{HealthErrorCode: page.HealthErrorCode, Revision: page.Revision, RuleRevision: page.RuleRevision, RuleErrorCode: page.RuleErrorCode, CatalogErrorCode: page.CatalogErrorCode, JackettEnabled: page.JackettEnabled, Order: page.Order, NetworkProfiles: page.NetworkProfiles, Items: make([]*model.IndexerInstance, 0, len(page.Items))}
@@ -52,7 +52,7 @@ func indexerInstancesModel(page indexeradmin.InstancePage) *model.IndexerInstanc
 func indexerDefinitionsModel(page indexeradmin.DefinitionPage) *model.IndexerDefinitionPage {
 	result := &model.IndexerDefinitionPage{Revision: page.Revision, TotalCount: page.Total, Offset: page.Offset, Limit: page.Limit, Items: make([]*model.IndexerDefinition, 0, len(page.Items))}
 	for _, definition := range page.Items {
-		result.Items = append(result.Items, &model.IndexerDefinition{LoginSupported: definition.LoginSupported, ID: definition.ID, Name: definition.Name, Description: definition.Description, Language: definition.Language, Privacy: definition.Privacy, Digest: definition.Digest, Links: definition.Links, Modes: definition.Modes, Warnings: definition.Warnings, Settings: indexerSettingModels(definition.Settings)})
+		result.Items = append(result.Items, &model.IndexerDefinition{Categories: definition.Categories, LoginSupported: definition.LoginSupported, ID: definition.ID, Name: definition.Name, Description: definition.Description, Language: definition.Language, Privacy: definition.Privacy, Digest: definition.Digest, Links: definition.Links, Modes: definition.Modes, Warnings: definition.Warnings, Settings: indexerSettingModels(definition.Settings)})
 	}
 	return result
 }
