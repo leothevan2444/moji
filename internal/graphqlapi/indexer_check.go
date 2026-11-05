@@ -19,6 +19,9 @@ func (r *Resolver) testIndexer(ctx context.Context, input model.TestIndexerInput
 		return nil, indexer.ErrNotConfigured
 	}
 	req := indexercheck.Input{ConnectionOnly: input.ConnectionOnly, ExpectedRevision: input.ExpectedRevision, Search: input.Search, Download: input.Download}
+	if input.ExpectedConnectionRevision != nil {
+		req.ExpectedConnectionRevision = *input.ExpectedConnectionRevision
+	}
 	if input.ClientID != nil {
 		req.ClientID = *input.ClientID
 	}

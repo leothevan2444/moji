@@ -1597,16 +1597,17 @@ type TasksPatchInput struct {
 }
 
 type TestIndexerInput struct {
-	ClientID         *string                   `json:"clientId,omitempty"`
-	RequestID        *string                   `json:"requestId,omitempty"`
-	InstanceID       *string                   `json:"instanceId,omitempty"`
-	ExpectedRevision string                    `json:"expectedRevision"`
-	DefinitionID     *string                   `json:"definitionId,omitempty"`
-	Draft            *BuiltinIndexerPatchInput `json:"draft,omitempty"`
-	ConnectionOnly   bool                      `json:"connectionOnly"`
-	Search           bool                      `json:"search"`
-	Keywords         *string                   `json:"keywords,omitempty"`
-	Download         bool                      `json:"download"`
+	ClientID                   *string                   `json:"clientId,omitempty"`
+	RequestID                  *string                   `json:"requestId,omitempty"`
+	InstanceID                 *string                   `json:"instanceId,omitempty"`
+	ExpectedConnectionRevision *string                   `json:"expectedConnectionRevision,omitempty"`
+	ExpectedRevision           string                    `json:"expectedRevision"`
+	DefinitionID               *string                   `json:"definitionId,omitempty"`
+	Draft                      *BuiltinIndexerPatchInput `json:"draft,omitempty"`
+	ConnectionOnly             bool                      `json:"connectionOnly"`
+	Search                     bool                      `json:"search"`
+	Keywords                   *string                   `json:"keywords,omitempty"`
+	Download                   bool                      `json:"download"`
 }
 
 type TestServiceConnectionInput struct {

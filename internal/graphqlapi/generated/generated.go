@@ -9650,6 +9650,7 @@ input TestIndexerInput {
  clientId: ID
  requestId: ID
  instanceId: ID
+ expectedConnectionRevision: String
  expectedRevision: String!
  definitionId: String
  draft: BuiltinIndexerPatchInput
@@ -71542,7 +71543,7 @@ func (ec *executionContext) unmarshalInputTestIndexerInput(ctx context.Context, 
 		asMap["download"] = false
 	}
 
-	fieldsInOrder := [...]string{"clientId", "requestId", "instanceId", "expectedRevision", "definitionId", "draft", "connectionOnly", "search", "keywords", "download"}
+	fieldsInOrder := [...]string{"clientId", "requestId", "instanceId", "expectedConnectionRevision", "expectedRevision", "definitionId", "draft", "connectionOnly", "search", "keywords", "download"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -71570,6 +71571,13 @@ func (ec *executionContext) unmarshalInputTestIndexerInput(ctx context.Context, 
 				return it, err
 			}
 			it.InstanceID = data
+		case "expectedConnectionRevision":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("expectedConnectionRevision"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ExpectedConnectionRevision = data
 		case "expectedRevision":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("expectedRevision"))
 			data, err := ec.unmarshalNString2string(ctx, v)

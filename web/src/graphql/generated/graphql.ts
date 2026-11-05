@@ -2724,6 +2724,7 @@ export type TestIndexerInput = {
   definitionId?: InputMaybe<Scalars['String']['input']>;
   download?: Scalars['Boolean']['input'];
   draft?: InputMaybe<BuiltinIndexerPatchInput>;
+  expectedConnectionRevision?: InputMaybe<Scalars['String']['input']>;
   expectedRevision: Scalars['String']['input'];
   instanceId?: InputMaybe<Scalars['ID']['input']>;
   keywords?: InputMaybe<Scalars['String']['input']>;

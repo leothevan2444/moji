@@ -39,8 +39,8 @@ func TestIndexerCheckGraphQLPreservesActualDraftAndRequestedScopeWithoutReturnin
 		t.Fatal("stage mapping falsely reported success", got)
 	}
 	response.Errors = nil
-	executeDefinitionGraphQLInto(t, r, `mutation{testIndexer(input:{instanceId:"builtin-one",expectedRevision:"configuration",clientId:"client",requestId:"request",connectionOnly:true,search:false,download:false}){id}}`, &response)
-	if len(response.Errors) != 0 || !checker.input.ConnectionOnly || checker.input.ClientID != "client" || checker.input.RequestID != "request" || checker.input.Search || checker.input.Download {
+	executeDefinitionGraphQLInto(t, r, `mutation{testIndexer(input:{instanceId:"builtin-one",expectedRevision:"configuration",clientId:"client",requestId:"request",expectedConnectionRevision:"account-version",connectionOnly:true,search:false,download:false}){id}}`, &response)
+	if len(response.Errors) != 0 || !checker.input.ConnectionOnly || checker.input.ClientID != "client" || checker.input.RequestID != "request" || checker.input.ExpectedConnectionRevision != "account-version" || checker.input.Search || checker.input.Download {
 		t.Fatal("connection-only scope lost", response.Errors, checker.input)
 	}
 	response.Errors = nil

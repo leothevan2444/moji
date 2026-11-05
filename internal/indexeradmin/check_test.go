@@ -68,3 +68,43 @@ func TestPrepareCheckRejectsStaleDraftsAndRemoteOverrides(t *testing.T) {
 		t.Fatal("invalid draft network profile accepted", err)
 	}
 }
+
+func TestSavedConnectionChecksUseAccountVersionRatherThanUnrelatedGlobalEdits(t *testing.T) {
+	service, store, _, _ := managementFixture(t)
+	ctx := context.Background()
+	definition := "example"
+	first, err := service.SaveBuiltin(ctx, "", store.Revision(), BuiltinPatch{Definition: &definition})
+	if err != nil {
+		t.Fatal(err)
+	}
+	oldRevision := store.Revision()
+	if _, err = service.SaveBuiltin(ctx, "", store.Revision(), BuiltinPatch{Definition: &definition}); err != nil {
+		t.Fatal(err)
+	}
+	input := indexercheck.Input{InstanceID: first.Instance.ID, ExpectedRevision: oldRevision, ExpectedConnectionRevision: first.Instance.ConnectionRevision, ConnectionOnly: true}
+	prepared, err := service.PrepareCheck(ctx, input)
+	if err != nil {
+		t.Fatal("an unrelated addition invalidated the account", err)
+	}
+	prepared.Release()
+	if prepared.ConfigRevision != store.Revision() {
+		t.Fatal("did not capture current global snapshot")
+	}
+	diagnostic := input
+	diagnostic.ConnectionOnly = false
+	if _, err = service.PrepareCheck(ctx, diagnostic); !errors.Is(err, config.ErrConfigRevision) {
+		t.Fatal("ordinary diagnostics bypassed revision checks", err)
+	}
+	draft := input
+	draft.Draft = &BuiltinPatch{}
+	if _, err = service.PrepareCheck(ctx, draft); !errors.Is(err, config.ErrConfigRevision) {
+		t.Fatal("draft bypassed global revision checks", err)
+	}
+	secret := "changed-synthetic-secret"
+	if _, err = service.SaveBuiltin(ctx, first.Instance.ID, store.Revision(), BuiltinPatch{Settings: map[string]config.IndexerSettingChange{"password": {Value: &config.IndexerSettingValue{String: &secret}}}}); err != nil {
+		t.Fatal(err)
+	}
+	if _, err = service.PrepareCheck(ctx, input); !errors.Is(err, config.ErrConfigRevision) {
+		t.Fatal("changed account accepted an old connection version", err)
+	}
+}

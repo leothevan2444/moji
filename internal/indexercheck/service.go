@@ -15,6 +15,7 @@ import (
 
 type Input struct {
 	InstanceID, ExpectedRevision, Keywords string
+	ExpectedConnectionRevision             string
 	ClientID, RequestID                    string
 	Draft                                  *config.BuiltinInstancePatch
 	Search, Download, ConnectionOnly       bool
@@ -74,7 +75,7 @@ func New(owner context.Context, source Source, factory Factory) (*Service, error
 	return &Service{owner: ctx, cancel: cancel, source: source, factory: factory, active: map[string]*reservation{}, requests: map[string]*reservation{}, subscribers: map[*activitySubscriber]bool{}}, nil
 }
 func (s *Service) Check(ctx context.Context, input Input) (report Report, resultErr error) {
-	if len(input.InstanceID) > 128 || len(input.ExpectedRevision) > 128 || len(input.ClientID) > 128 || len(input.RequestID) > 128 {
+	if len(input.InstanceID) > 128 || len(input.ExpectedRevision) > 128 || len(input.ClientID) > 128 || len(input.RequestID) > 128 || len(input.ExpectedConnectionRevision) > 128 {
 		return Report{}, indexer.ErrInvalidSettings
 	}
 	var query indexer.Query
@@ -123,11 +124,27 @@ func (s *Service) Check(ctx context.Context, input Input) (report Report, result
 		}
 		return true
 	}
+	var waitErr error
+	select {
+	case <-entry.ready:
+		waitErr = work.Err()
+	case <-work.Done():
+		waitErr = work.Err()
+	}
+	if waitErr != nil {
+		if !input.ConnectionOnly {
+			return report, waitErr
+		}
+		report.Stages[1].State = "NOT_REQUESTED"
+		report.Stages = append(report.Stages, Stage{Name: "CONNECTION", State: "FAILED", ErrorCode: errorCode(waitErr)})
+		return report, nil
+	}
 	var prepared Prepared
-	// Pin the accepted configuration before waiting. Unrelated edits must not
-	// invalidate a queued test after it has been admitted.
+	var execution Execution
 	if !run(0, func() error {
 		var err error
+		// Validate the saved account version at execution time. Queueing must not
+		// reserve a configuration lease or make unrelated global edits fail a probe.
 		prepared, err = s.source.PrepareCheck(work, input)
 		if err != nil {
 			return err
@@ -136,8 +153,15 @@ func (s *Service) Check(ctx context.Context, input Input) (report Report, result
 		report.Kind = prepared.Instance.Kind
 		report.ConfigRevision = prepared.ConfigRevision
 		report.RuleRevision = prepared.RuleRevision
+		execution, err = s.factory.Open(work, prepared.Instance)
+		if err == nil && execution == nil {
+			return indexer.ErrNotConfigured
+		}
 		return err
 	}) {
+		if execution != nil {
+			execution.Close()
+		}
 		if prepared.Release != nil {
 			prepared.Release()
 		}
@@ -145,31 +169,6 @@ func (s *Service) Check(ctx context.Context, input Input) (report Report, result
 	}
 	if prepared.Release != nil {
 		defer prepared.Release()
-	}
-	select {
-	case <-entry.ready:
-	case <-work.Done():
-		return report, work.Err()
-	}
-	if err := work.Err(); err != nil {
-		return report, err
-	}
-	var execution Execution
-	preparedElapsed := report.Stages[0].Elapsed
-	opened := run(0, func() error {
-		var err error
-		execution, err = s.factory.Open(work, prepared.Instance)
-		if err == nil && execution == nil {
-			return indexer.ErrNotConfigured
-		}
-		return err
-	})
-	report.Stages[0].Elapsed += preparedElapsed
-	if !opened {
-		if execution != nil {
-			execution.Close()
-		}
-		return report, nil
 	}
 	defer execution.Close()
 	if input.ConnectionOnly {

@@ -99,11 +99,11 @@ func TestConnectionQueueIsFIFOAndCancelsBeforeNetworkExecution(t *testing.T) {
 	defer cancel()
 	start(cancelled, "f")
 	awaitActivity(t, activity, func(items []Activity) bool { return activityState(items, "f") == "QUEUED" })
-	for i := 0; i < 6; i++ {
+	for i := 0; i < 4; i++ {
 		select {
 		case <-prepared:
 		case <-time.After(time.Second):
-			t.Fatal("configuration was not pinned before waiting")
+			t.Fatal("initial configuration was not prepared")
 		}
 	}
 	// Reconnecting observes the current queue, rather than relying on old events.
@@ -133,8 +133,8 @@ func TestConnectionQueueIsFIFOAndCancelsBeforeNetworkExecution(t *testing.T) {
 		instance := <-opened
 		if instance.ID == "e" {
 			found = true
-			if instance.ConfigRevision != "1" {
-				t.Fatal("queued configuration was replaced", instance)
+			if instance.ConfigRevision != "2" {
+				t.Fatal("queued probe did not validate the current account", instance)
 			}
 		}
 	}
@@ -182,5 +182,31 @@ func TestConnectionQueueCapacityAndSubscriberBounds(t *testing.T) {
 	}
 	if s.running != 0 || len(s.active) != 0 || len(s.queue) != 0 || len(s.requests) != 0 {
 		t.Fatal("reservations leaked")
+	}
+}
+
+func TestQueuedTimeoutDoesNotOpenAnExecutionAndReportsAStableFailure(t *testing.T) {
+	s, execution, released := checkFixture(t)
+	holders := []*reservation{}
+	for i := 0; i < maxRunningChecks; i++ {
+		entry, err := s.reserve(context.Background(), Input{InstanceID: fmt.Sprint(i), ConnectionOnly: true})
+		if err != nil {
+			t.Fatal(err)
+		}
+		holders = append(holders, entry)
+	}
+	defer func() {
+		for _, entry := range holders {
+			s.release(entry)
+		}
+	}()
+	ctx, cancel := context.WithTimeout(context.Background(), 500*time.Millisecond)
+	defer cancel()
+	report, err := s.Check(ctx, Input{InstanceID: "queued", ConnectionOnly: true})
+	if err != nil || len(report.Stages) != 5 || report.Stages[4].ErrorCode != "INDEXER_TIMEOUT" {
+		t.Fatal(report, err)
+	}
+	if execution.connect != 0 || execution.closed != 0 || released.Load() != 0 {
+		t.Fatal("queued timeout prepared or opened a site execution")
 	}
 }

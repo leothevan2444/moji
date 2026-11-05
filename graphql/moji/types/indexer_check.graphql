@@ -3,6 +3,7 @@ input TestIndexerInput {
  clientId: ID
  requestId: ID
  instanceId: ID
+ expectedConnectionRevision: String
  expectedRevision: String!
  definitionId: String
  draft: BuiltinIndexerPatchInput

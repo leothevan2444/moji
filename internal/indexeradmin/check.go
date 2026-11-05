@@ -21,7 +21,8 @@ func (s *Service) PrepareCheck(ctx context.Context, input indexercheck.Input) (i
 		return indexercheck.Prepared{}, indexer.ErrNotConfigured
 	}
 	cfg, revision := s.store.Snapshot()
-	if input.ExpectedRevision == "" || input.ExpectedRevision != revision {
+	selective := input.ConnectionOnly && input.ExpectedConnectionRevision != "" && input.Draft == nil && input.InstanceID != ""
+	if input.ExpectedRevision == "" || !selective && input.ExpectedRevision != revision {
 		return indexercheck.Prepared{}, config.ErrConfigRevision
 	}
 	if strings.HasPrefix(input.InstanceID, "jackett/") {
@@ -40,6 +41,9 @@ func (s *Service) PrepareCheck(ctx context.Context, input indexercheck.Input) (i
 		}
 		for _, instance := range registry.Instances {
 			if instance.ID == input.InstanceID && instance.Kind == indexer.Jackett {
+				if selective && input.ExpectedConnectionRevision != s.connectionRevision(instance.ConfigRevision, "") {
+					return indexercheck.Prepared{}, config.ErrConfigRevision
+				}
 				return indexercheck.Prepared{Instance: instance, ConfigRevision: revision}, nil
 			}
 		}
@@ -82,11 +86,14 @@ func (s *Service) PrepareCheck(ctx context.Context, input indexercheck.Input) (i
 	if plan == nil {
 		return indexercheck.Prepared{}, indexer.ErrUnsupported
 	}
+	instance := BuiltinSnapshot(cfg, id, candidate)
+	instance.BundleRevision = lease.Bundle.Manifest.Revision
+	if selective && input.ExpectedConnectionRevision != s.connectionRevision(instance.ConfigRevision, plan.Digest) {
+		return indexercheck.Prepared{}, config.ErrConfigRevision
+	}
 	if err = ValidateSettings(plan, nil, candidate); err != nil {
 		return indexercheck.Prepared{}, fmt.Errorf("%w: invalid diagnostic definition settings", config.ErrInvalidSettings)
 	}
-	instance := BuiltinSnapshot(cfg, id, candidate)
-	instance.BundleRevision = lease.Bundle.Manifest.Revision
 	retained = true
 	return indexercheck.Prepared{Instance: instance, ConfigRevision: revision, RuleRevision: instance.BundleRevision, AuthenticationRequired: plan.Definition.Login != nil, Release: lease.Release}, nil
 }
