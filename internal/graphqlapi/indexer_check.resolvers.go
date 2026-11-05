@@ -14,3 +14,8 @@ import (
 func (r *mutationResolver) TestIndexer(ctx context.Context, input model.TestIndexerInput) (*model.IndexerCheckReport, error) {
 	return r.testIndexer(ctx, input)
 }
+
+// IndexerCheckActivity is the resolver for the indexerCheckActivity field.
+func (r *subscriptionResolver) IndexerCheckActivity(ctx context.Context, clientID string) (<-chan []*model.IndexerCheckActivity, error) {
+	return r.indexerCheckActivity(ctx, clientID)
+}

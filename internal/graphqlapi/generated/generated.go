@@ -313,6 +313,12 @@ type ComplexityRoot struct {
 		UsedBytes       func(childComplexity int) int
 	}
 
+	IndexerCheckActivity struct {
+		InstanceID func(childComplexity int) int
+		RequestID  func(childComplexity int) int
+		State      func(childComplexity int) int
+	}
+
 	IndexerCheckReport struct {
 		ConfigRevision func(childComplexity int) int
 		FinishedAt     func(childComplexity int) int
@@ -413,24 +419,25 @@ type ComplexityRoot struct {
 	}
 
 	IndexerInstance struct {
-		BaseURL        func(childComplexity int) int
-		DefinitionID   func(childComplexity int) int
-		Description    func(childComplexity int) int
-		Enabled        func(childComplexity int) int
-		ErrorCode      func(childComplexity int) int
-		Health         func(childComplexity int) int
-		ID             func(childComplexity int) int
-		Kind           func(childComplexity int) int
-		Language       func(childComplexity int) int
-		LoginSupported func(childComplexity int) int
-		Modes          func(childComplexity int) int
-		Name           func(childComplexity int) int
-		NetworkProfile func(childComplexity int) int
-		Privacy        func(childComplexity int) int
-		RuleDigest     func(childComplexity int) int
-		Settings       func(childComplexity int) int
-		SiteURL        func(childComplexity int) int
-		TrustedOrigins func(childComplexity int) int
+		BaseURL            func(childComplexity int) int
+		ConnectionRevision func(childComplexity int) int
+		DefinitionID       func(childComplexity int) int
+		Description        func(childComplexity int) int
+		Enabled            func(childComplexity int) int
+		ErrorCode          func(childComplexity int) int
+		Health             func(childComplexity int) int
+		ID                 func(childComplexity int) int
+		Kind               func(childComplexity int) int
+		Language           func(childComplexity int) int
+		LoginSupported     func(childComplexity int) int
+		Modes              func(childComplexity int) int
+		Name               func(childComplexity int) int
+		NetworkProfile     func(childComplexity int) int
+		Privacy            func(childComplexity int) int
+		RuleDigest         func(childComplexity int) int
+		Settings           func(childComplexity int) int
+		SiteURL            func(childComplexity int) int
+		TrustedOrigins     func(childComplexity int) int
 	}
 
 	IndexerInstances struct {
@@ -1101,6 +1108,7 @@ type ComplexityRoot struct {
 
 	Subscription struct {
 		DatabasePerformance         func(childComplexity int) int
+		IndexerCheckActivity        func(childComplexity int, clientID string) int
 		IndexerDefinitionEvents     func(childComplexity int) int
 		IndexerEvents               func(childComplexity int) int
 		LogEvents                   func(childComplexity int) int
@@ -1594,6 +1602,7 @@ type QueryResolver interface {
 }
 type SubscriptionResolver interface {
 	TaskEvents(ctx context.Context) (<-chan *model.TaskEvent, error)
+	IndexerCheckActivity(ctx context.Context, clientID string) (<-chan []*model.IndexerCheckActivity, error)
 	IndexerDefinitionEvents(ctx context.Context) (<-chan *model.IndexerDefinitionStatus, error)
 	IndexerEvents(ctx context.Context) (<-chan *model.IndexerEvent, error)
 	LogEvents(ctx context.Context) (<-chan *model.LogEvent, error)
@@ -2903,6 +2912,27 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.IndexerCacheStatus.UsedBytes(childComplexity), true
 
+	case "IndexerCheckActivity.instanceId":
+		if e.complexity.IndexerCheckActivity.InstanceID == nil {
+			break
+		}
+
+		return e.complexity.IndexerCheckActivity.InstanceID(childComplexity), true
+
+	case "IndexerCheckActivity.requestId":
+		if e.complexity.IndexerCheckActivity.RequestID == nil {
+			break
+		}
+
+		return e.complexity.IndexerCheckActivity.RequestID(childComplexity), true
+
+	case "IndexerCheckActivity.state":
+		if e.complexity.IndexerCheckActivity.State == nil {
+			break
+		}
+
+		return e.complexity.IndexerCheckActivity.State(childComplexity), true
+
 	case "IndexerCheckReport.configRevision":
 		if e.complexity.IndexerCheckReport.ConfigRevision == nil {
 			break
@@ -3392,6 +3422,13 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.IndexerInstance.BaseURL(childComplexity), true
+
+	case "IndexerInstance.connectionRevision":
+		if e.complexity.IndexerInstance.ConnectionRevision == nil {
+			break
+		}
+
+		return e.complexity.IndexerInstance.ConnectionRevision(childComplexity), true
 
 	case "IndexerInstance.definitionId":
 		if e.complexity.IndexerInstance.DefinitionID == nil {
@@ -7298,6 +7335,18 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.Subscription.DatabasePerformance(childComplexity), true
 
+	case "Subscription.indexerCheckActivity":
+		if e.complexity.Subscription.IndexerCheckActivity == nil {
+			break
+		}
+
+		args, err := ec.field_Subscription_indexerCheckActivity_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Subscription.IndexerCheckActivity(childComplexity, args["clientId"].(string)), true
+
 	case "Subscription.indexerDefinitionEvents":
 		if e.complexity.Subscription.IndexerDefinitionEvents == nil {
 			break
@@ -9598,6 +9647,8 @@ type IndexerCacheStatus {
 `, BuiltIn: false},
 	{Name: "../../../graphql/moji/types/indexer_check.graphql", Input: `extend type Mutation { testIndexer(input: TestIndexerInput!): IndexerCheckReport! }
 input TestIndexerInput {
+ clientId: ID
+ requestId: ID
  instanceId: ID
  expectedRevision: String!
  definitionId: String
@@ -9623,6 +9674,11 @@ type IndexerCheckReport {
  truncated: Boolean!
  stages: [IndexerCheckStage!]!
 }
+
+
+extend type Subscription { indexerCheckActivity(clientId: ID!): [IndexerCheckActivity!]! }
+enum IndexerCheckActivityState { QUEUED RUNNING }
+type IndexerCheckActivity { requestId: ID! instanceId: ID! state: IndexerCheckActivityState! }
 `, BuiltIn: false},
 	{Name: "../../../graphql/moji/types/indexer_definition_policy.graphql", Input: `extend type Query { indexerDefinitionPolicy: IndexerDefinitionPolicy! }
 extend type Mutation {
@@ -9827,6 +9883,7 @@ type IndexerDefinitionPage {
   items: [IndexerDefinition!]!
 }
 type IndexerInstance {
+ connectionRevision: String!
   "Whether the current built-in rule declares a login flow."
   loginSupported: Boolean!
   health: IndexerHealth!
@@ -15124,6 +15181,34 @@ func (ec *executionContext) field_Query_upcomingReleases_argsInput(
 	return zeroVal, nil
 }
 
+func (ec *executionContext) field_Subscription_indexerCheckActivity_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := ec.field_Subscription_indexerCheckActivity_argsClientID(ctx, rawArgs)
+	if err != nil {
+		return nil, err
+	}
+	args["clientId"] = arg0
+	return args, nil
+}
+func (ec *executionContext) field_Subscription_indexerCheckActivity_argsClientID(
+	ctx context.Context,
+	rawArgs map[string]any,
+) (string, error) {
+	if _, ok := rawArgs["clientId"]; !ok {
+		var zeroVal string
+		return zeroVal, nil
+	}
+
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("clientId"))
+	if tmp, ok := rawArgs["clientId"]; ok {
+		return ec.unmarshalNID2string(ctx, tmp)
+	}
+
+	var zeroVal string
+	return zeroVal, nil
+}
+
 func (ec *executionContext) field_Subscription_torrentSearchEvents_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
@@ -15863,6 +15948,8 @@ func (ec *executionContext) fieldContext_BuiltinIndexerResult_instance(_ context
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			switch field.Name {
+			case "connectionRevision":
+				return ec.fieldContext_IndexerInstance_connectionRevision(ctx, field)
 			case "loginSupported":
 				return ec.fieldContext_IndexerInstance_loginSupported(ctx, field)
 			case "health":
@@ -24060,6 +24147,138 @@ func (ec *executionContext) fieldContext_IndexerCacheStatus_activeWaiters(_ cont
 	return fc, nil
 }
 
+func (ec *executionContext) _IndexerCheckActivity_requestId(ctx context.Context, field graphql.CollectedField, obj *model.IndexerCheckActivity) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_IndexerCheckActivity_requestId(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.RequestID, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNID2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_IndexerCheckActivity_requestId(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "IndexerCheckActivity",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type ID does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _IndexerCheckActivity_instanceId(ctx context.Context, field graphql.CollectedField, obj *model.IndexerCheckActivity) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_IndexerCheckActivity_instanceId(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.InstanceID, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNID2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_IndexerCheckActivity_instanceId(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "IndexerCheckActivity",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type ID does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _IndexerCheckActivity_state(ctx context.Context, field graphql.CollectedField, obj *model.IndexerCheckActivity) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_IndexerCheckActivity_state(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.State, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(model.IndexerCheckActivityState)
+	fc.Result = res
+	return ec.marshalNIndexerCheckActivityState2githubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐIndexerCheckActivityState(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_IndexerCheckActivity_state(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "IndexerCheckActivity",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type IndexerCheckActivityState does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _IndexerCheckReport_id(ctx context.Context, field graphql.CollectedField, obj *model.IndexerCheckReport) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_IndexerCheckReport_id(ctx, field)
 	if err != nil {
@@ -27192,6 +27411,50 @@ func (ec *executionContext) fieldContext_IndexerHealth_fetch(_ context.Context, 
 	return fc, nil
 }
 
+func (ec *executionContext) _IndexerInstance_connectionRevision(ctx context.Context, field graphql.CollectedField, obj *model.IndexerInstance) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_IndexerInstance_connectionRevision(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.ConnectionRevision, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_IndexerInstance_connectionRevision(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "IndexerInstance",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _IndexerInstance_loginSupported(ctx context.Context, field graphql.CollectedField, obj *model.IndexerInstance) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_IndexerInstance_loginSupported(ctx, field)
 	if err != nil {
@@ -28399,6 +28662,8 @@ func (ec *executionContext) fieldContext_IndexerInstances_items(_ context.Contex
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			switch field.Name {
+			case "connectionRevision":
+				return ec.fieldContext_IndexerInstance_connectionRevision(ctx, field)
 			case "loginSupported":
 				return ec.fieldContext_IndexerInstance_loginSupported(ctx, field)
 			case "health":
@@ -53778,6 +54043,83 @@ func (ec *executionContext) fieldContext_Subscription_taskEvents(_ context.Conte
 	return fc, nil
 }
 
+func (ec *executionContext) _Subscription_indexerCheckActivity(ctx context.Context, field graphql.CollectedField) (ret func(ctx context.Context) graphql.Marshaler) {
+	fc, err := ec.fieldContext_Subscription_indexerCheckActivity(ctx, field)
+	if err != nil {
+		return nil
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = nil
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Subscription().IndexerCheckActivity(rctx, fc.Args["clientId"].(string))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return nil
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return nil
+	}
+	return func(ctx context.Context) graphql.Marshaler {
+		select {
+		case res, ok := <-resTmp.(<-chan []*model.IndexerCheckActivity):
+			if !ok {
+				return nil
+			}
+			return graphql.WriterFunc(func(w io.Writer) {
+				w.Write([]byte{'{'})
+				graphql.MarshalString(field.Alias).MarshalGQL(w)
+				w.Write([]byte{':'})
+				ec.marshalNIndexerCheckActivity2ᚕᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐIndexerCheckActivityᚄ(ctx, field.Selections, res).MarshalGQL(w)
+				w.Write([]byte{'}'})
+			})
+		case <-ctx.Done():
+			return nil
+		}
+	}
+}
+
+func (ec *executionContext) fieldContext_Subscription_indexerCheckActivity(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Subscription",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "requestId":
+				return ec.fieldContext_IndexerCheckActivity_requestId(ctx, field)
+			case "instanceId":
+				return ec.fieldContext_IndexerCheckActivity_instanceId(ctx, field)
+			case "state":
+				return ec.fieldContext_IndexerCheckActivity_state(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type IndexerCheckActivity", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Subscription_indexerCheckActivity_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _Subscription_indexerDefinitionEvents(ctx context.Context, field graphql.CollectedField) (ret func(ctx context.Context) graphql.Marshaler) {
 	fc, err := ec.fieldContext_Subscription_indexerDefinitionEvents(ctx, field)
 	if err != nil {
@@ -71200,13 +71542,27 @@ func (ec *executionContext) unmarshalInputTestIndexerInput(ctx context.Context, 
 		asMap["download"] = false
 	}
 
-	fieldsInOrder := [...]string{"instanceId", "expectedRevision", "definitionId", "draft", "connectionOnly", "search", "keywords", "download"}
+	fieldsInOrder := [...]string{"clientId", "requestId", "instanceId", "expectedRevision", "definitionId", "draft", "connectionOnly", "search", "keywords", "download"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
 			continue
 		}
 		switch k {
+		case "clientId":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("clientId"))
+			data, err := ec.unmarshalOID2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ClientID = data
+		case "requestId":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("requestId"))
+			data, err := ec.unmarshalOID2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.RequestID = data
 		case "instanceId":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("instanceId"))
 			data, err := ec.unmarshalOID2ᚖstring(ctx, v)
@@ -74016,6 +74372,55 @@ func (ec *executionContext) _IndexerCacheStatus(ctx context.Context, sel ast.Sel
 	return out
 }
 
+var indexerCheckActivityImplementors = []string{"IndexerCheckActivity"}
+
+func (ec *executionContext) _IndexerCheckActivity(ctx context.Context, sel ast.SelectionSet, obj *model.IndexerCheckActivity) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, indexerCheckActivityImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("IndexerCheckActivity")
+		case "requestId":
+			out.Values[i] = ec._IndexerCheckActivity_requestId(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "instanceId":
+			out.Values[i] = ec._IndexerCheckActivity_instanceId(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "state":
+			out.Values[i] = ec._IndexerCheckActivity_state(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
 var indexerCheckReportImplementors = []string{"IndexerCheckReport"}
 
 func (ec *executionContext) _IndexerCheckReport(ctx context.Context, sel ast.SelectionSet, obj *model.IndexerCheckReport) graphql.Marshaler {
@@ -74694,6 +75099,11 @@ func (ec *executionContext) _IndexerInstance(ctx context.Context, sel ast.Select
 		switch field.Name {
 		case "__typename":
 			out.Values[i] = graphql.MarshalString("IndexerInstance")
+		case "connectionRevision":
+			out.Values[i] = ec._IndexerInstance_connectionRevision(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
 		case "loginSupported":
 			out.Values[i] = ec._IndexerInstance_loginSupported(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
@@ -79993,6 +80403,8 @@ func (ec *executionContext) _Subscription(ctx context.Context, sel ast.Selection
 	switch fields[0].Name {
 	case "taskEvents":
 		return ec._Subscription_taskEvents(ctx, fields[0])
+	case "indexerCheckActivity":
+		return ec._Subscription_indexerCheckActivity(ctx, fields[0])
 	case "indexerDefinitionEvents":
 		return ec._Subscription_indexerDefinitionEvents(ctx, fields[0])
 	case "indexerEvents":
@@ -83290,6 +83702,70 @@ func (ec *executionContext) marshalNIndexerCacheStatus2ᚖgithubᚗcomᚋleothev
 		return graphql.Null
 	}
 	return ec._IndexerCacheStatus(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNIndexerCheckActivity2ᚕᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐIndexerCheckActivityᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.IndexerCheckActivity) graphql.Marshaler {
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalNIndexerCheckActivity2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐIndexerCheckActivity(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
+}
+
+func (ec *executionContext) marshalNIndexerCheckActivity2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐIndexerCheckActivity(ctx context.Context, sel ast.SelectionSet, v *model.IndexerCheckActivity) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._IndexerCheckActivity(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalNIndexerCheckActivityState2githubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐIndexerCheckActivityState(ctx context.Context, v any) (model.IndexerCheckActivityState, error) {
+	var res model.IndexerCheckActivityState
+	err := res.UnmarshalGQL(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNIndexerCheckActivityState2githubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐIndexerCheckActivityState(ctx context.Context, sel ast.SelectionSet, v model.IndexerCheckActivityState) graphql.Marshaler {
+	return v
 }
 
 func (ec *executionContext) marshalNIndexerCheckReport2githubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐIndexerCheckReport(ctx context.Context, sel ast.SelectionSet, v model.IndexerCheckReport) graphql.Marshaler {

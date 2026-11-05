@@ -36,7 +36,7 @@ type DefinitionPage struct {
 }
 type Instance struct {
 	LoginSupported                                                         bool
-	SiteURL, Privacy, Language, Description                                string
+	ConnectionRevision, SiteURL, Privacy, Language, Description            string
 	ID, Name, DefinitionID, BaseURL, NetworkProfile, RuleDigest, ErrorCode string
 	Kind                                                                   indexer.Kind
 	Enabled                                                                bool

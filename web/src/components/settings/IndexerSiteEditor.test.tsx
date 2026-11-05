@@ -9,7 +9,7 @@ import { IndexerSiteEditor } from "./IndexerSiteEditor";
 import type { IndexerSite } from "../../hooks/useIndexerManagement";
 import { IndexerSourceKind } from "../../graphql/generated/graphql";
 
-const site: IndexerSite = {description: "", loginSupported:true,health:{search:null,fetch:null}, id: "source", name: "Example", definitionId: "example", kind: IndexerSourceKind.Builtin, enabled: true, baseUrl: "", siteUrl: "https://example.invalid/", language: "en-US", privacy: "private", networkProfile: "direct", trustedOrigins: [], modes: ["search"], ruleDigest: "digest", errorCode: "", settings: [{ name: "password", label: "Password", type: "password", secret: true, configured: true, value: null, defaultValue: null, options: [] }] };
+const site: IndexerSite = {connectionRevision:"site-version-1",description: "", loginSupported:true,health:{search:null,fetch:null}, id: "source", name: "Example", definitionId: "example", kind: IndexerSourceKind.Builtin, enabled: true, baseUrl: "", siteUrl: "https://example.invalid/", language: "en-US", privacy: "private", networkProfile: "direct", trustedOrigins: [], modes: ["search"], ruleDigest: "digest", errorCode: "", settings: [{ name: "password", label: "Password", type: "password", secret: true, configured: true, value: null, defaultValue: null, options: [] }] };
 beforeEach(async () => { await i18n.changeLanguage("en"); });
 afterEach(cleanup);
 function mount(save = vi.fn().mockResolvedValue(false), initial = site) {

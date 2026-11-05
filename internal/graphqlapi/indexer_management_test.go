@@ -56,8 +56,8 @@ func TestIndexerManagementGraphQLTypedChangesAndSecretProjection(t *testing.T) {
 			Result model.BuiltinIndexerResult `json:"addBuiltinIndexer"`
 		}
 	}
-	executeDefinitionGraphQLInto(t, resolver, fmt.Sprintf(`mutation {addBuiltinIndexer(expectedRevision:%q,input:{definitionId:"example",enabled:true,settings:[{name:"password",value:{string:"synthetic-secret"}},{name:"flag",value:{boolean:false}}]}){revision instance{id enabled loginSupported settings{name secret configured value{string boolean}}}}}`, store.Revision()), &added)
-	if len(added.Errors) > 0 || added.Data.Result.Instance == nil || !added.Data.Result.Instance.Enabled || !added.Data.Result.Instance.LoginSupported {
+	executeDefinitionGraphQLInto(t, resolver, fmt.Sprintf(`mutation {addBuiltinIndexer(expectedRevision:%q,input:{definitionId:"example",enabled:true,settings:[{name:"password",value:{string:"synthetic-secret"}},{name:"flag",value:{boolean:false}}]}){revision instance{id connectionRevision enabled loginSupported settings{name secret configured value{string boolean}}}}}`, store.Revision()), &added)
+	if len(added.Errors) > 0 || added.Data.Result.Instance == nil || !added.Data.Result.Instance.Enabled || !added.Data.Result.Instance.LoginSupported || len(added.Data.Result.Instance.ConnectionRevision) != 64 {
 		t.Fatal("add builtin", added.Errors)
 	}
 	body, _ := json.Marshal(added)

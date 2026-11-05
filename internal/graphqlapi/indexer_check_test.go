@@ -39,8 +39,8 @@ func TestIndexerCheckGraphQLPreservesActualDraftAndRequestedScopeWithoutReturnin
 		t.Fatal("stage mapping falsely reported success", got)
 	}
 	response.Errors = nil
-	executeDefinitionGraphQLInto(t, r, `mutation{testIndexer(input:{instanceId:"builtin-one",expectedRevision:"configuration",connectionOnly:true,search:false,download:false}){id}}`, &response)
-	if len(response.Errors) != 0 || !checker.input.ConnectionOnly || checker.input.Search || checker.input.Download {
+	executeDefinitionGraphQLInto(t, r, `mutation{testIndexer(input:{instanceId:"builtin-one",expectedRevision:"configuration",clientId:"client",requestId:"request",connectionOnly:true,search:false,download:false}){id}}`, &response)
+	if len(response.Errors) != 0 || !checker.input.ConnectionOnly || checker.input.ClientID != "client" || checker.input.RequestID != "request" || checker.input.Search || checker.input.Download {
 		t.Fatal("connection-only scope lost", response.Errors, checker.input)
 	}
 	response.Errors = nil
@@ -59,5 +59,43 @@ func TestIndexerCheckRejectsDefinitionOverridesAndMalformedSettingChangesBeforeE
 		if len(reply.Errors) == 0 || checker.calls != 0 {
 			t.Fatal("invalid draft reached site test", reply)
 		}
+	}
+}
+
+type fakeCheckActivity struct {
+	fakeIndexerCheck
+	events   chan []indexercheck.Activity
+	stopped  chan struct{}
+	clientID string
+}
+
+func (f *fakeCheckActivity) SubscribeActivity(clientID string) (<-chan []indexercheck.Activity, func(), error) {
+	f.clientID = clientID
+	return f.events, func() { close(f.stopped) }, nil
+}
+func TestIndexerCheckActivityMapsCurrentSnapshotsAndReleasesSubscription(t *testing.T) {
+	source := &fakeCheckActivity{events: make(chan []indexercheck.Activity, 1), stopped: make(chan struct{})}
+	resolver := NewResolver(nil, nil, nil, "test")
+	resolver.IndexerChecks = source
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	stream, err := resolver.indexerCheckActivity(ctx, "client")
+	if err != nil || source.clientID != "client" {
+		t.Fatal(err, source.clientID)
+	}
+	source.events <- []indexercheck.Activity{{RequestID: "request", InstanceID: "site", State: "QUEUED"}}
+	select {
+	case snapshot := <-stream:
+		if len(snapshot) != 1 || snapshot[0].RequestID != "request" || snapshot[0].InstanceID != "site" || snapshot[0].State != model.IndexerCheckActivityStateQueued {
+			t.Fatal(snapshot)
+		}
+	case <-time.After(time.Second):
+		t.Fatal("missing activity snapshot")
+	}
+	cancel()
+	select {
+	case <-source.stopped:
+	case <-time.After(time.Second):
+		t.Fatal("subscription leaked")
 	}
 }

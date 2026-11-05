@@ -56,17 +56,18 @@ export const indexerLibrary = {
 export const indexerInstances = {
   healthErrorCode: "", revision: "config-1", ruleRevision: "a".repeat(40), ruleErrorCode: "", catalogErrorCode: "", jackettEnabled: true, order: ["builtin-one", "jackett/onejav"], networkProfiles: ["direct"],
   items: [
-    {description:"",loginSupported:false,health:{search:null,fetch:null}, id: "builtin-one", name: "Sukebei", kind: "BUILTIN", enabled: true, definitionId: "sukebei", baseUrl: "", siteUrl: "https://sukebei.nyaa.si/", privacy: "public", language: "en-US", networkProfile: "direct", trustedOrigins: [], ruleDigest: "digest", errorCode: "", modes: ["search"], settings: [
+    {connectionRevision:"site-version-1",description:"",loginSupported:false,health:{search:null,fetch:null}, id: "builtin-one", name: "Sukebei", kind: "BUILTIN", enabled: true, definitionId: "sukebei", baseUrl: "", siteUrl: "https://sukebei.nyaa.si/", privacy: "public", language: "en-US", networkProfile: "direct", trustedOrigins: [], ruleDigest: "digest", errorCode: "", modes: ["search"], settings: [
       { name: "filter", type: "select", label: "Filter", secret: false, configured: false, value: null, defaultValue: { string: "0", boolean: null, number: null }, options: [{ value: "0", label: "All" }, { value: "1", label: "Trusted only" }] },
       { name: "cookie", type: "text", label: "Cookie", secret: true, configured: true, value: null, defaultValue: null, options: [] }
     ] },
-    {description:"",loginSupported:false,health:{search:null,fetch:null}, id: "jackett/onejav", name: "OneJAV", kind: "JACKETT", enabled: true, definitionId: "", baseUrl: "", siteUrl: "https://onejav.com/", privacy: "public", language: "en-US", networkProfile: "", trustedOrigins: [], ruleDigest: "", errorCode: "", modes: ["search"], settings: [] }
+    {connectionRevision:"site-version-1",description:"",loginSupported:false,health:{search:null,fetch:null}, id: "jackett/onejav", name: "OneJAV", kind: "JACKETT", enabled: true, definitionId: "", baseUrl: "", siteUrl: "https://onejav.com/", privacy: "public", language: "en-US", networkProfile: "", trustedOrigins: [], ruleDigest: "", errorCode: "", modes: ["search"], settings: [] }
   ]
 };
 export const searchCandidate = { id:"candidate-one",instanceId:"builtin-one",instanceName:"Sukebei",kind:"BUILTIN",title:"MOJI-102 Long resource title with release and encoding information",detailsUrl:"https://example.test/details?id=1",infoHash:null,size:null,seeders:null,peers:null,publishedAt:null,categories:[] };
 export const torrentSearchSnapshot = {id:"search-one",state:"COMPLETED",revision:1,keywords:"MOJI-102",taskId:null,createdAt:now,updatedAt:now,expiresAt:"2099-01-15T12:00:00Z",finishedAt:now,cancelRequested:false,partial:false,truncated:false,errorCode:null,correlationId:"search-correlation",total:1,offset:0,limit:10,
  sites:[{instanceId:"builtin-one",name:"Sukebei",kind:"BUILTIN",state:"COMPLETED",results:1,cacheHit:true,fetchedAt:now,elapsedMs:20,partial:false,truncated:false,errorCode:null,correlationId:null,retryAt:null}],candidates:[searchCandidate]};
 const rootValue = {
+  indexerCheckActivity: [],
   testIndexer: ({input}:{input:{instanceId?:string;expectedRevision:string;connectionOnly?:boolean;search:boolean;download:boolean}})=>({id:"site-test",instanceId:input.instanceId??"draft-only",kind:input.instanceId?.startsWith("jackett/")?"JACKETT":"BUILTIN",configRevision:input.expectedRevision,ruleRevision:"a".repeat(40),startedAt:now,finishedAt:now,results:input.search?1:0,partial:false,truncated:false,stages:[...(input.connectionOnly?[{name:"CONNECTION",state:"PASSED",errorCode:"",elapsedMs:1}]:[]),{name:"CONFIGURATION",state:"PASSED",errorCode:"",elapsedMs:1},{name:"AUTHENTICATION",state:input.instanceId?.startsWith("jackett/")?"NOT_OBSERVED":"NOT_REQUIRED",errorCode:"",elapsedMs:0},{name:"SEARCH",state:input.search?"PASSED":"NOT_REQUESTED",errorCode:"",elapsedMs:2},{name:"DOWNLOAD",state:input.download?"PASSED":"NOT_REQUESTED",errorCode:"",elapsedMs:3}]}),
 
   indexerDefinitionPolicy: {revision:"config-one",source:"prowlarr",schemaVersion:11,checkIntervalHours:24,autoUpdate:false},
@@ -257,6 +258,11 @@ export const test = base.extend<{ graphqlOverrides: Record<string, unknown> }>({
         if (message.type === "subscribe" && message.payload?.query?.includes("subscription TorrentSearchEvents")) {
           const result = graphqlSync({schema,rootValue:{...rootValue,...graphqlOverrides},source:message.payload.query,variableValues:message.payload.variables,operationName:message.payload.operationName});
           errors.push(...(result.errors??[]).map(error=>error.message));socket.send(JSON.stringify({id:message.id,type:"next",payload:result}));
+        }
+        if (message.type === "subscribe" && message.payload?.query?.includes("subscription IndexerCheckActivity")) {
+          const result = graphqlSync({ schema, rootValue: { ...rootValue, ...graphqlOverrides }, source: message.payload.query, variableValues: message.payload.variables, operationName: message.payload.operationName });
+          errors.push(...(result.errors ?? []).map(error => error.message));
+          socket.send(JSON.stringify({ id: message.id, type: "next", payload: result }));
         }
         if (message.type === "subscribe" && message.payload?.query?.includes("subscription IndexerEvents")) {
           const result = graphqlSync({ schema, rootValue: { ...rootValue, ...graphqlOverrides }, source: message.payload.query, variableValues: message.payload.variables, operationName: message.payload.operationName });

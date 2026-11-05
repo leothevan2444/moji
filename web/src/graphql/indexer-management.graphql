@@ -6,7 +6,7 @@ fragment IndexerSettingFields on IndexerSetting {
 }
 fragment IndexerInstanceFields on IndexerInstance {
   health { search { ...IndexerObservationFields } fetch { ...IndexerObservationFields } }
-  siteUrl description privacy language loginSupported
+  connectionRevision siteUrl description privacy language loginSupported
   id kind name enabled definitionId baseUrl networkProfile trustedOrigins
   ruleDigest errorCode modes settings { ...IndexerSettingFields }
 }

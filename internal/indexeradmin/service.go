@@ -2,8 +2,12 @@ package indexeradmin
 
 import (
 	"context"
+	"crypto/hmac"
+	"crypto/sha256"
+	"encoding/hex"
 	"errors"
 	"fmt"
+	"github.com/google/uuid"
 	"net/url"
 	"sort"
 	"strings"
@@ -23,6 +27,7 @@ type Registry interface {
 	Refresh(context.Context) (indexer.Registry, error)
 }
 type Service struct {
+	connectionKey  []byte
 	definitionJobs DefinitionJobReader
 	store          *config.Store
 	definitions    Definitions
@@ -40,7 +45,8 @@ type HealthReader interface {
 func (s *Service) SetHealthReader(health HealthReader) { s.health = health }
 
 func NewService(store *config.Store, definitions Definitions, registry Registry) *Service {
-	return &Service{store: store, definitions: definitions, registry: registry}
+	key := uuid.New()
+	return &Service{connectionKey: key[:], store: store, definitions: definitions, registry: registry}
 }
 
 func (s *Service) Definitions(ctx context.Context, filter DefinitionFilter) (DefinitionPage, error) {
@@ -199,6 +205,7 @@ func (s *Service) instances(ctx context.Context, cfg *config.Config, revision st
 			}
 			sort.Slice(item.Settings, func(i, j int) bool { return item.Settings[i].Name < item.Settings[j].Name })
 		}
+		item.ConnectionRevision = s.connectionRevision(BuiltinSnapshot(cfg, id, source).ConfigRevision, item.RuleDigest)
 		result.Items = append(result.Items, item)
 	}
 	if s.registry != nil {
@@ -217,7 +224,7 @@ func (s *Service) instances(ctx context.Context, cfg *config.Config, revision st
 		}
 		for _, source := range registry.Instances {
 			if cfg.Indexers.Jackett.Enabled && source.Kind == indexer.Jackett {
-				result.Items = append(result.Items, Instance{SiteURL: source.SiteURL, Privacy: source.SiteType, Language: source.Language, ID: source.ID, Name: source.Name, Kind: source.Kind, Enabled: source.Enabled, Settings: []Setting{}, Modes: []string{"search"}})
+				result.Items = append(result.Items, Instance{ConnectionRevision: s.connectionRevision(source.ConfigRevision, ""), SiteURL: source.SiteURL, Privacy: source.SiteType, Language: source.Language, ID: source.ID, Name: source.Name, Kind: source.Kind, Enabled: source.Enabled, Settings: []Setting{}, Modes: []string{"search"}})
 			}
 		}
 		if s.health != nil {
@@ -456,4 +463,11 @@ func settingProjection(plan *cardigann.Plan, settings map[string]config.IndexerS
 		result = append(result, Setting{Name: name, Label: name, Type: "unknown", Secret: true, Configured: configured(settings[name]), Options: []Option{}})
 	}
 	return result
+}
+
+// connectionRevision does not reveal a guessable hash of account credentials.
+func (s *Service) connectionRevision(configRevision, ruleDigest string) string {
+	mac := hmac.New(sha256.New, s.connectionKey)
+	mac.Write([]byte(configRevision + "\x00" + ruleDigest))
+	return hex.EncodeToString(mac.Sum(nil))
 }

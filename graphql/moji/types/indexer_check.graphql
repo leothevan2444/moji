@@ -1,5 +1,7 @@
 extend type Mutation { testIndexer(input: TestIndexerInput!): IndexerCheckReport! }
 input TestIndexerInput {
+ clientId: ID
+ requestId: ID
  instanceId: ID
  expectedRevision: String!
  definitionId: String
@@ -25,3 +27,8 @@ type IndexerCheckReport {
  truncated: Boolean!
  stages: [IndexerCheckStage!]!
 }
+
+
+extend type Subscription { indexerCheckActivity(clientId: ID!): [IndexerCheckActivity!]! }
+enum IndexerCheckActivityState { QUEUED RUNNING }
+type IndexerCheckActivity { requestId: ID! instanceId: ID! state: IndexerCheckActivityState! }

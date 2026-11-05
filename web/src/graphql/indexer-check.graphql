@@ -1,3 +1,7 @@
 mutation TestIndexer($input:TestIndexerInput!){
  testIndexer(input:$input){id instanceId kind configRevision ruleRevision startedAt finishedAt results partial truncated stages{name state errorCode elapsedMs}}
 }
+
+subscription IndexerCheckActivity($clientId: ID!) {
+ indexerCheckActivity(clientId: $clientId) { requestId instanceId state }
+}

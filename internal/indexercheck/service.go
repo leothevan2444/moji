@@ -15,6 +15,7 @@ import (
 
 type Input struct {
 	InstanceID, ExpectedRevision, Keywords string
+	ClientID, RequestID                    string
 	Draft                                  *config.BuiltinInstancePatch
 	Search, Download, ConnectionOnly       bool
 }
@@ -51,14 +52,18 @@ type Report struct {
 }
 
 type Service struct {
-	owner   context.Context
-	cancel  context.CancelFunc
-	source  Source
-	factory Factory
-	mu      sync.Mutex
-	wg      sync.WaitGroup
-	active  map[string]bool
-	closed  bool
+	owner       context.Context
+	cancel      context.CancelFunc
+	source      Source
+	factory     Factory
+	mu          sync.Mutex
+	wg          sync.WaitGroup
+	active      map[string]*reservation
+	requests    map[string]*reservation
+	queue       []*reservation
+	running     int
+	subscribers map[*activitySubscriber]bool
+	closed      bool
 }
 
 func New(owner context.Context, source Source, factory Factory) (*Service, error) {
@@ -66,10 +71,10 @@ func New(owner context.Context, source Source, factory Factory) (*Service, error
 		return nil, indexer.ErrNotConfigured
 	}
 	ctx, cancel := context.WithCancel(owner)
-	return &Service{owner: ctx, cancel: cancel, source: source, factory: factory, active: map[string]bool{}}, nil
+	return &Service{owner: ctx, cancel: cancel, source: source, factory: factory, active: map[string]*reservation{}, requests: map[string]*reservation{}, subscribers: map[*activitySubscriber]bool{}}, nil
 }
 func (s *Service) Check(ctx context.Context, input Input) (report Report, resultErr error) {
-	if len(input.InstanceID) > 128 || len(input.ExpectedRevision) > 128 {
+	if len(input.InstanceID) > 128 || len(input.ExpectedRevision) > 128 || len(input.ClientID) > 128 || len(input.RequestID) > 128 {
 		return Report{}, indexer.ErrInvalidSettings
 	}
 	var query indexer.Query
@@ -89,27 +94,15 @@ func (s *Service) Check(ctx context.Context, input Input) (report Report, result
 	if err = ctx.Err(); err != nil {
 		return Report{}, err
 	}
-	key := input.InstanceID
-	if key == "" {
-		key = "draft"
-	}
-	s.mu.Lock()
-	if s.closed || s.owner.Err() != nil {
-		s.mu.Unlock()
-		return Report{}, context.Canceled
-	}
-	if len(s.active) >= 4 || s.active[key] {
-		s.mu.Unlock()
-		return Report{}, indexer.ErrBusy
-	}
-	s.active[key] = true
-	s.wg.Add(1)
-	s.mu.Unlock()
-	defer func() { s.mu.Lock(); delete(s.active, key); s.mu.Unlock(); s.wg.Done() }()
 	work, cancel := context.WithTimeout(ctx, 3*time.Minute)
 	stop := context.AfterFunc(s.owner, cancel)
 	defer stop()
 	defer cancel()
+	entry, err := s.reserve(work, input)
+	if err != nil {
+		return Report{}, err
+	}
+	defer s.release(entry)
 	report = Report{ID: uuid.NewString(), InstanceID: input.InstanceID, StartedAt: time.Now().UTC(), Stages: []Stage{{Name: "CONFIGURATION", State: "SKIPPED"}, {Name: "AUTHENTICATION", State: "SKIPPED"}, {Name: "SEARCH", State: "SKIPPED"}, {Name: "DOWNLOAD", State: "SKIPPED"}}}
 	if !input.Search {
 		report.Stages[2].State = "NOT_REQUESTED"
@@ -131,7 +124,8 @@ func (s *Service) Check(ctx context.Context, input Input) (report Report, result
 		return true
 	}
 	var prepared Prepared
-	var execution Execution
+	// Pin the accepted configuration before waiting. Unrelated edits must not
+	// invalidate a queued test after it has been admitted.
 	if !run(0, func() error {
 		var err error
 		prepared, err = s.source.PrepareCheck(work, input)
@@ -142,15 +136,8 @@ func (s *Service) Check(ctx context.Context, input Input) (report Report, result
 		report.Kind = prepared.Instance.Kind
 		report.ConfigRevision = prepared.ConfigRevision
 		report.RuleRevision = prepared.RuleRevision
-		execution, err = s.factory.Open(work, prepared.Instance)
-		if err == nil && execution == nil {
-			return indexer.ErrNotConfigured
-		}
 		return err
 	}) {
-		if execution != nil {
-			execution.Close()
-		}
 		if prepared.Release != nil {
 			prepared.Release()
 		}
@@ -158,6 +145,31 @@ func (s *Service) Check(ctx context.Context, input Input) (report Report, result
 	}
 	if prepared.Release != nil {
 		defer prepared.Release()
+	}
+	select {
+	case <-entry.ready:
+	case <-work.Done():
+		return report, work.Err()
+	}
+	if err := work.Err(); err != nil {
+		return report, err
+	}
+	var execution Execution
+	preparedElapsed := report.Stages[0].Elapsed
+	opened := run(0, func() error {
+		var err error
+		execution, err = s.factory.Open(work, prepared.Instance)
+		if err == nil && execution == nil {
+			return indexer.ErrNotConfigured
+		}
+		return err
+	})
+	report.Stages[0].Elapsed += preparedElapsed
+	if !opened {
+		if execution != nil {
+			execution.Close()
+		}
+		return report, nil
 	}
 	defer execution.Close()
 	if input.ConnectionOnly {
@@ -226,4 +238,16 @@ func errorCode(err error) string {
 	}
 	return indexer.ErrorCode(err)
 }
-func (s *Service) Close() { s.mu.Lock(); s.closed = true; s.cancel(); s.mu.Unlock(); s.wg.Wait() }
+func (s *Service) Close() {
+	s.mu.Lock()
+	s.closed = true
+	s.cancel()
+	s.mu.Unlock()
+	s.wg.Wait()
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	for sub := range s.subscribers {
+		delete(s.subscribers, sub)
+		close(sub.out)
+	}
+}

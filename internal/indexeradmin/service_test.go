@@ -281,3 +281,46 @@ func TestCatalogMetadataUsesDeclaredCategoriesAndDescription(t *testing.T) {
 		t.Fatalf("configured description: %+v %v", saved, err)
 	}
 }
+
+func TestConnectionVersionsOnlyInvalidateAffectedAccounts(t *testing.T) {
+	service, store, _, _ := managementFixture(t)
+	definition := "example"
+	first, err := service.SaveBuiltin(context.Background(), "", store.Revision(), BuiltinPatch{Definition: &definition})
+	if err != nil {
+		t.Fatal(err)
+	}
+	second, err := service.SaveBuiltin(context.Background(), "", store.Revision(), BuiltinPatch{Definition: &definition})
+	if err != nil {
+		t.Fatal(err)
+	}
+	tokens := func() map[string]string {
+		page, err := service.Instances(context.Background())
+		if err != nil {
+			t.Fatal(err)
+		}
+		result := map[string]string{}
+		for _, item := range page.Items {
+			result[item.ID] = item.ConnectionRevision
+		}
+		return result
+	}
+	before := tokens()
+	if _, err := service.Reorder(context.Background(), store.Revision(), []string{second.Instance.ID, first.Instance.ID}); err != nil {
+		t.Fatal(err)
+	}
+	reordered := tokens()
+	if reordered[first.Instance.ID] != before[first.Instance.ID] || reordered[second.Instance.ID] != before[second.Instance.ID] {
+		t.Fatal("ordering invalidated connection tests")
+	}
+	password := "a-new-synthetic-secret"
+	if _, err := service.SaveBuiltin(context.Background(), first.Instance.ID, store.Revision(), BuiltinPatch{Settings: map[string]config.IndexerSettingChange{"password": {Value: &config.IndexerSettingValue{String: &password}}}}); err != nil {
+		t.Fatal(err)
+	}
+	after := tokens()
+	if after[first.Instance.ID] == before[first.Instance.ID] || after[second.Instance.ID] != before[second.Instance.ID] {
+		t.Fatal("secret edits did not selectively invalidate", before, after)
+	}
+	if len(after[first.Instance.ID]) != 64 {
+		t.Fatal("missing opaque version")
+	}
+}

@@ -360,6 +360,12 @@ type IndexerCacheStatus struct {
 	ActiveWaiters   int    `json:"activeWaiters"`
 }
 
+type IndexerCheckActivity struct {
+	RequestID  string                    `json:"requestId"`
+	InstanceID string                    `json:"instanceId"`
+	State      IndexerCheckActivityState `json:"state"`
+}
+
 type IndexerCheckReport struct {
 	ID             string               `json:"id"`
 	InstanceID     string               `json:"instanceId"`
@@ -482,6 +488,7 @@ type IndexerHealth struct {
 }
 
 type IndexerInstance struct {
+	ConnectionRevision string `json:"connectionRevision"`
 	// Whether the current built-in rule declares a login flow.
 	LoginSupported bool              `json:"loginSupported"`
 	Health         *IndexerHealth    `json:"health"`
@@ -1590,6 +1597,8 @@ type TasksPatchInput struct {
 }
 
 type TestIndexerInput struct {
+	ClientID         *string                   `json:"clientId,omitempty"`
+	RequestID        *string                   `json:"requestId,omitempty"`
 	InstanceID       *string                   `json:"instanceId,omitempty"`
 	ExpectedRevision string                    `json:"expectedRevision"`
 	DefinitionID     *string                   `json:"definitionId,omitempty"`
@@ -2072,6 +2081,61 @@ func (e *ExternalService) UnmarshalJSON(b []byte) error {
 }
 
 func (e ExternalService) MarshalJSON() ([]byte, error) {
+	var buf bytes.Buffer
+	e.MarshalGQL(&buf)
+	return buf.Bytes(), nil
+}
+
+type IndexerCheckActivityState string
+
+const (
+	IndexerCheckActivityStateQueued  IndexerCheckActivityState = "QUEUED"
+	IndexerCheckActivityStateRunning IndexerCheckActivityState = "RUNNING"
+)
+
+var AllIndexerCheckActivityState = []IndexerCheckActivityState{
+	IndexerCheckActivityStateQueued,
+	IndexerCheckActivityStateRunning,
+}
+
+func (e IndexerCheckActivityState) IsValid() bool {
+	switch e {
+	case IndexerCheckActivityStateQueued, IndexerCheckActivityStateRunning:
+		return true
+	}
+	return false
+}
+
+func (e IndexerCheckActivityState) String() string {
+	return string(e)
+}
+
+func (e *IndexerCheckActivityState) UnmarshalGQL(v any) error {
+	str, ok := v.(string)
+	if !ok {
+		return fmt.Errorf("enums must be strings")
+	}
+
+	*e = IndexerCheckActivityState(str)
+	if !e.IsValid() {
+		return fmt.Errorf("%s is not a valid IndexerCheckActivityState", str)
+	}
+	return nil
+}
+
+func (e IndexerCheckActivityState) MarshalGQL(w io.Writer) {
+	fmt.Fprint(w, strconv.Quote(e.String()))
+}
+
+func (e *IndexerCheckActivityState) UnmarshalJSON(b []byte) error {
+	s, err := strconv.Unquote(string(b))
+	if err != nil {
+		return err
+	}
+	return e.UnmarshalGQL(s)
+}
+
+func (e IndexerCheckActivityState) MarshalJSON() ([]byte, error) {
 	var buf bytes.Buffer
 	e.MarshalGQL(&buf)
 	return buf.Bytes(), nil
