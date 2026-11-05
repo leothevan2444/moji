@@ -1,12 +1,122 @@
-import {expect} from "@playwright/test";
-import {test,indexerInstances} from "./fixtures";
-test("site test uses the current unsaved draft without saving or creating a task",async({page})=>{
- const inputs:Record<string,unknown>[]=[];const mutations:string[]=[];page.on("request",request=>{if(request.url().endsWith("/graphql")&&request.method()==="POST"){const body=request.postDataJSON();mutations.push(body.operationName);if(body.operationName==="TestIndexer")inputs.push(body.variables.input)}});
- await page.addInitScript(()=>localStorage.setItem("moji:locale","en"));await page.goto("/settings/indexers");const row=page.locator('.indexer-row[data-indexer-id="builtin-one"]');await row.getByRole("button",{name:"Edit",exact:true}).click();const editor=page.getByRole("dialog",{name:"Edit site",exact:true});await editor.getByRole("textbox",{name:"Name",exact:true}).fill("Unsaved diagnostic name");await editor.getByRole("button",{name:"Test site",exact:true}).click();const dialog=page.getByRole("dialog",{name:"Test site",exact:true});expect(inputs).toEqual([]);await dialog.getByRole("button",{name:"Start test",exact:true}).click();await expect(dialog.getByRole("region",{name:"Site test results"})).toBeVisible();expect(inputs).toEqual([{instanceId:"builtin-one",expectedRevision:indexerInstances.revision,draft:{name:"Unsaved diagnostic name"},search:false,download:false}]);await dialog.getByRole("button",{name:"Close",exact:true}).click();await expect(editor.getByRole("textbox",{name:"Name",exact:true})).toHaveValue("Unsaved diagnostic name");expect(mutations.some(name=>["AddBuiltinIndexer","UpdateBuiltinIndexer","QueueTorrentCandidate"].includes(name))).toBe(false);
+import { expect } from "@playwright/test";
+import { test, indexerInstances } from "./fixtures";
+
+const report = (id: string, failed = false) => ({
+  id: "connection-check", instanceId: id, kind: id.startsWith("jackett/") ? "JACKETT" : "BUILTIN",
+  configRevision: indexerInstances.revision, ruleRevision: "", startedAt: "2026-01-15T12:00:00Z", finishedAt: "2026-01-15T12:00:01Z",
+  results: 0, partial: false, truncated: false,
+  stages: [{ name: "CONNECTION", state: failed ? "FAILED" : "PASSED", errorCode: failed ? "INDEXER_TIMEOUT" : "", elapsedMs: 1 }]
 });
-test("search and acquisition are explicit and editing options clears the previous report",async({page})=>{
- const inputs:Record<string,unknown>[]=[];await page.route("**/graphql",async route=>{const body=route.request().postDataJSON();if(body.operationName==="TestIndexer")inputs.push(body.variables.input);await route.fallback()});await page.addInitScript(()=>localStorage.setItem("moji:locale","en"));await page.goto("/settings/indexers");await page.locator('.indexer-row[data-indexer-id="builtin-one"]').getByRole("button",{name:"Test site",exact:true}).click();const dialog=page.getByRole("dialog",{name:"Test site",exact:true});await dialog.getByRole("checkbox",{name:"Test search",exact:true}).check();await expect(dialog.getByRole("button",{name:"Start test",exact:true})).toBeDisabled();await dialog.getByRole("textbox",{name:"Search keywords",exact:true}).fill("ABCD-123");await dialog.getByRole("checkbox",{name:"Test resource acquisition",exact:true}).check();await dialog.getByRole("button",{name:"Start test",exact:true}).click();await expect(dialog.getByRole("region",{name:"Site test results"})).toBeVisible();expect(inputs).toEqual([{instanceId:"builtin-one",expectedRevision:indexerInstances.revision,search:true,download:true,keywords:"ABCD-123"}]);await dialog.getByRole("textbox",{name:"Search keywords",exact:true}).fill("another query");await expect(dialog.getByRole("region",{name:"Site test results"})).toHaveCount(0);expect(inputs).toHaveLength(1);
+test("clicking Test checks connectivity immediately and displays retryable outcomes", async ({ page }) => {
+  const inputs: Record<string, unknown>[] = [];
+  let failed = true;
+  await page.route("**/graphql", async route => {
+    const body = route.request().postDataJSON();
+    if (body.operationName !== "TestIndexer") return route.fallback();
+    inputs.push(body.variables.input);
+    const response = report(body.variables.input.instanceId, failed);
+    if (failed) response.stages[0].errorCode = "SYNTHETIC_UNKNOWN_ERROR";
+    await route.fulfill({ json: { data: { testIndexer: response } } });
+  });
+  await page.addInitScript(() => localStorage.setItem("moji:locale", "en"));
+  await page.goto("/settings/indexers");
+  const row = page.locator('[data-indexer-id="builtin-one"]');
+  await row.getByRole("button", { name: "Test", exact: true }).click();
+  await expect(row.getByRole("button", { name: "Failed", exact: true })).toBeVisible();
+  await expect(page.getByRole("dialog")).toHaveCount(0);
+  expect(inputs).toEqual([{ instanceId: "builtin-one", expectedRevision: indexerInstances.revision, connectionOnly: true, search: false, download: false }]);
+  failed = false;
+  await row.getByRole("button", { name: "Failed", exact: true }).click();
+  await expect(row.getByRole("button", { name: "Connected", exact: true })).toBeVisible();
+  await expect(row.locator(".indexer-history, .indexer-error")).toHaveCount(0);
+  for (const button of await row.locator(".indexer-row__actions .icon-button").all()) {
+    const box = (await button.boundingBox())!;
+    expect(box.width).toBe(26); expect(box.height).toBe(26);
+  }
+  expect((await row.getByRole("button", { name: "Connected", exact: true }).boundingBox())!.height).toBe(26);
+  const bounds = (await row.boundingBox())!, source = (await row.locator(".indexer-source").boundingBox())!;
+  expect(Math.abs(bounds.x + bounds.width - source.x - source.width)).toBeLessThanOrEqual(1);
+  expect(source.y - bounds.y).toBeLessThanOrEqual(8);
+  await expect(page).toHaveScreenshot("inline-connection-result.png", { fullPage: true });
+  await page.reload();
+  await expect(row.getByRole("button", { name: "Test", exact: true })).toBeVisible();
 });
-for(const locale of ["en","zh-CN","ar-XB","dark"] as const){test(`${locale} stage results retain unverified external authentication`,async({page})=>{
- await page.addInitScript(value=>{localStorage.setItem("moji:locale",value==="zh-CN"?"zh-CN":"en");if(value==="dark")localStorage.setItem("moji:theme","dark")},locale);await page.goto("/settings/indexers"+(locale==="ar-XB"?"?__locale=ar-XB":""));const row=page.locator('.indexer-row[data-indexer-id="jackett/onejav"]');await row.getByRole("button",{name:locale==="zh-CN"?"测试站点":"Test site",exact:true}).click();const dialog=page.getByRole("dialog");await dialog.getByRole("button",{name:locale==="zh-CN"?"开始测试":"Start test",exact:true}).click();await expect(dialog.locator(".indexer-check-result")).toBeVisible();expect(await dialog.evaluate(element=>element.scrollWidth<=element.clientWidth)).toBe(true);await page.evaluate(()=>document.fonts.ready);await expect(dialog).toHaveScreenshot(`${locale}-indexer-test.png`);
-})}
+
+test.describe("test all", () => {
+  test.use({ graphqlOverrides: {
+    indexerInstances: { ...indexerInstances, items: [...indexerInstances.items, { ...indexerInstances.items[0], id: "builtin-two", name: "Second site", enabled: false }] }
+  } });
+  test("caps concurrency at two and retains each result after partial failure", async ({ page }) => {
+    const inputs: Record<string, unknown>[] = [];
+    const release: (() => void)[] = [];
+    await page.route("**/graphql", async route => {
+      const body = route.request().postDataJSON();
+      if (body.operationName !== "TestIndexer") return route.fallback();
+      inputs.push(body.variables.input);
+      await new Promise<void>(resolve => release.push(resolve));
+      await route.fulfill({ json: { data: { testIndexer: report(body.variables.input.instanceId, body.variables.input.instanceId === "builtin-one") } } });
+    });
+    await page.addInitScript(() => localStorage.setItem("moji:locale", "en"));
+    await page.goto("/settings/indexers");
+    await page.getByRole("button", { name: "Test all", exact: true }).click();
+    await expect.poll(() => release.length).toBe(2);
+    expect(inputs).toHaveLength(2);
+    await expect(page.locator(".settings-card-actions").getByRole("button", { name: "Testing", exact: true })).toBeDisabled();
+    release[0]();
+    await expect.poll(() => release.length).toBe(3);
+    release[1](); release[2]();
+    await expect(page.getByRole("button", { name: "Some connections failed" })).toBeVisible();
+    await expect(page.getByRole("button", { name: "Connected", exact: true })).toHaveCount(2);
+    await expect(page.getByRole("button", { name: "Failed", exact: true })).toHaveCount(1);
+    for (const input of inputs) expect(input).toMatchObject({ connectionOnly: true, search: false, download: false });
+    await expect(page.getByRole("dialog")).toHaveCount(0);
+    await expect(page).toHaveScreenshot("all-connection-results.png", { fullPage: true });
+  });
+});
+
+test("draft connectivity checks do not save and changing the draft clears results", async ({ page }) => {
+  const inputs: Record<string, unknown>[] = [];
+  const writes: string[] = [];
+  await page.route("**/graphql", async route => {
+    const body = route.request().postDataJSON();
+    if (body.operationName === "TestIndexer") inputs.push(body.variables.input);
+    if (["AddBuiltinIndexer", "UpdateBuiltinIndexer", "QueueTorrentCandidate"].includes(body.operationName)) writes.push(body.operationName);
+    await route.fallback();
+  });
+  await page.addInitScript(() => localStorage.setItem("moji:locale", "en"));
+  await page.goto("/settings/indexers");
+  await page.locator('[data-indexer-id="builtin-one"]').getByRole("button", { name: "Configure", exact: true }).click();
+  const editor = page.getByRole("dialog", { name: "Configure site" });
+  await editor.getByRole("textbox", { name: "Name", exact: true }).fill("Unsaved name");
+  await editor.getByRole("button", { name: "Test", exact: true }).click();
+  await expect(editor.getByRole("button", { name: "Connected", exact: true })).toBeVisible();
+  expect(inputs).toEqual([{ instanceId: "builtin-one", expectedRevision: indexerInstances.revision, draft: { name: "Unsaved name" }, connectionOnly: true, search: false, download: false }]);
+  expect(writes).toEqual([]);
+  await editor.getByRole("textbox", { name: "Name", exact: true }).fill("Changed again");
+  await expect(editor.getByRole("button", { name: "Test", exact: true })).toBeVisible();
+  await expect(page.getByRole("dialog")).toHaveCount(1);
+});
+
+test("editing a pending draft rejects its late connection result", async ({ page }) => {
+  let release!: () => void;
+  let received = false;
+  const gate = new Promise<void>(resolve => { release = resolve; });
+  await page.route("**/graphql", async route => {
+    const body = route.request().postDataJSON();
+    if (body.operationName !== "TestIndexer") return route.fallback();
+    received = true;
+    await gate;
+    await route.fulfill({ json: { data: { testIndexer: report("builtin-one") } } }).catch(() => {});
+  });
+  await page.addInitScript(() => localStorage.setItem("moji:locale", "en"));
+  await page.goto("/settings/indexers");
+  await page.locator('[data-indexer-id="builtin-one"]').getByRole("button", { name: "Configure", exact: true }).click();
+  const editor = page.getByRole("dialog", { name: "Configure site" });
+  await editor.getByRole("button", { name: "Test", exact: true }).click();
+  await expect.poll(() => received).toBe(true);
+  await expect(editor.getByRole("button", { name: "Testing", exact: true })).toBeDisabled();
+  await editor.getByRole("textbox", { name: "Name", exact: true }).fill("A newer draft");
+  release();
+  await expect(editor.getByRole("button", { name: "Test", exact: true })).toBeEnabled();
+  await expect(editor.getByRole("button", { name: "Connected", exact: true })).toHaveCount(0);
+});

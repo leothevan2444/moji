@@ -99,6 +99,14 @@
     "discard": "放弃此页尚未保存的修改，载入服务器上的当前设置。"
   },
   "indexers": {
+    "testAll": "测试全部",
+    "connectionRunning": "测试中",
+    "connectionPassed": "连接成功",
+    "connectionFailed": "连接失败",
+    "allConnectionsPassed": "全部可连接",
+    "allConnectionsFailed": "部分连接失败",
+    "connectionScope": "仅检查服务连接；不验证登录、搜索或资源获取。",
+    "jackettConnectionScope": "仅检查 Jackett 对应站点的接口；不验证站点搜索或资源获取。",
     "test": "测试",
     "history": "记录",
     "categories": "分类",
@@ -127,7 +135,7 @@
     "currentVersion": "当前版本",
     "schemaVersion": "规则格式",
     "rollbackHelp": "切换到上一个已安装版本。已开始的搜索和已接受的任务继续使用各自的规则。",
-    "editSite": "编辑站点",
+    "editSite": "配置站点",
     "addSite": "添加站点",
     "saving": "正在保存…",
     "save": "保存",
@@ -165,7 +173,7 @@
     "empty": "尚未添加站点。",
     "drag": "拖动 {{name}} 调整顺序",
     "builtin": "内置索引",
-    "external": "外部 Jackett",
+    "external": "Jackett",
     "needsAttention": "需要处理",
     "enableSite": "启用 {{name}}",
     "moveUp": "上移 {{name}}",
@@ -173,7 +181,7 @@
     "edit": "编辑",
     "remove": "移除站点",
     "removeHelp": "移除 {{name}} 的配置。已接受的任务和下载不会删除。",
-    "useExternal": "使用外部 Jackett",
+    "useExternal": "启用",
     "privacyKinds": {
       "public": "公开站点",
       "private": "私有站点",
@@ -201,41 +209,6 @@
     "alreadyAdded": "已添加",
     "enabledState": "已启用",
     "disabledState": "未启用"
-  },
-  "indexerCheck": {
-    "title": "测试站点",
-    "cancel": "停止测试",
-    "run": "开始测试",
-    "running": "正在测试…",
-    "scope": "使用当前参数检查配置和认证，不会保存站点或创建任务。搜索和下载验证需单独选择。",
-    "search": "验证搜索",
-    "keywords": "搜索关键词",
-    "download": "验证资源获取",
-    "quota": "将获取首个结果的种子或磁力，可能消耗站点下载配额。",
-    "result": "站点测试结果",
-    "failed": "测试未能完成，请检查设置后重试。",
-    "count": "{{count}} 个搜索结果",
-    "count_one": "{{count}} 个搜索结果",
-    "count_other": "{{count}} 个搜索结果",
-    "jackett": "站点认证由 Jackett 管理，本次无法单独确认；其上游缓存也由 Jackett 决定。",
-    "correlation": "关联标识",
-    "stages": {
-      "CONFIGURATION": "配置",
-      "AUTHENTICATION": "认证",
-      "SEARCH": "搜索",
-      "DOWNLOAD": "获取资源"
-    },
-    "states": {
-      "SKIPPED": "未执行",
-      "NOT_REQUESTED": "未选择验证",
-      "NOT_REQUIRED": "无需单独登录",
-      "NOT_OBSERVED": "未单独验证",
-      "PASSED": "验证通过",
-      "FAILED": "验证失败",
-      "EMPTY": "搜索成功，未找到结果",
-      "PARTIAL": "部分结果可用",
-      "NO_CANDIDATE": "没有可验证的资源"
-    }
   },
   "indexerPolicy": {
     "title": "更新策略",
@@ -296,6 +269,7 @@
     }
   },
   "indexerErrors": {
+    "INDEXER_TIMEOUT": "站点请求超时，请重试。",
     "INDEXER_STATE_UNAVAILABLE": "无法读取或保存索引器冷却状态，请检查存储状态后重试。",
     "INDEXER_SOLVER_FAILED": "浏览器验证未能完成，请检查 FlareSolverr 配置或站点限制。",
     "TASK_SUBMISSION_UNCERTAIN": "之前的下载提交结果尚未确认，请先更新任务状态或重试原任务，再更换资源。",

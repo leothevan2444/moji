@@ -4,6 +4,7 @@ import userEvent from "@testing-library/user-event";
 import { createMemoryRouter, RouterProvider } from "react-router";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import i18n from "../../i18n/i18n";
+import { Provider, createClient } from "urql";
 import { IndexerSiteEditor } from "./IndexerSiteEditor";
 import type { IndexerSite } from "../../hooks/useIndexerManagement";
 import { IndexerSourceKind } from "../../graphql/generated/graphql";
@@ -13,7 +14,7 @@ beforeEach(async () => { await i18n.changeLanguage("en"); });
 afterEach(cleanup);
 function mount(save = vi.fn().mockResolvedValue(false), initial = site) {
   const close = vi.fn(); const router = createMemoryRouter([{ path: "/", element: <IndexerSiteEditor site={initial} definition={{ id: "example", name: "Example", links: [], settings: initial.settings }} revision="config-1" profiles={["direct"]} busy={false} error={null} onSave={save} onClose={close} /> }, { path: "/away", element: <p>Away</p> }], { initialEntries: ["/"] });
-  render(<RouterProvider router={router} />); return { save, close, router };
+  render(<Provider value={createClient({ url: "http://synthetic.invalid/graphql", exchanges: [] })}><RouterProvider router={router} /></Provider>); return { save, close, router };
 }
 describe("built-in site editor", () => {
   it("shows an empty select without silently choosing the first option", async () => {
@@ -72,7 +73,7 @@ it("sends explicit origin replacement and empty-list revocation without changing
   cleanup();
   const initial = { ...site, trustedOrigins: ["https://download.example"] };
   const router = createMemoryRouter([{ path: "/", element: <IndexerSiteEditor site={initial} definition={{id:"example",name:"Example",links:[],settings:site.settings}} revision="config-2" profiles={["direct"]} busy={false} error={null} onSave={save} onClose={()=>{}} /> }]);
-  render(<RouterProvider router={router} />);
+  render(<Provider value={createClient({ url: "http://synthetic.invalid/graphql", exchanges: [] })}><RouterProvider router={router} /></Provider>);
   await user.click(screen.getByText("Advanced settings"));
   await user.clear(screen.getByLabelText("Additional trusted origins"));
   await user.click(screen.getByRole("button", { name: "Save" }));
@@ -86,7 +87,7 @@ it("invalid origins prevent both save and draft testing and preserve unsaved inp
   for (const invalid of ["https://download.example/path", "https://user:secret@download.example", "https://download.example?", "https://download.example#", "https://download.example/.", "https://download.example\\", "https://download.example?token=secret", "https://*.example", "*.example", Array.from({length:17},(_,i)=>`https://site${i}.example`).join("\n")]) {
     await user.clear(field); await user.paste(invalid);
     expect(screen.getByRole("button", { name: "Save" }).hasAttribute("disabled")).toBe(true);
-    expect(screen.getByRole("button", { name: "Test site" }).hasAttribute("disabled")).toBe(true);
+    expect(screen.getByRole("button", { name: "Test" }).hasAttribute("disabled")).toBe(true);
     expect(screen.getByRole("alert")).toBeTruthy();
   }
   expect(save).not.toHaveBeenCalled();

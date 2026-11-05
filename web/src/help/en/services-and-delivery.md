@@ -4,7 +4,7 @@ These settings define how Moji reaches its dependencies and how a completed down
 
 ## Service connections
 
-Manage built-in sites under **Indexers**, with optional external Jackett. qBittorrent is under **Downloader** and Stash under **Stash**.
+Manage built-in sites under **Indexers**, with optional Jackett. qBittorrent is under **Downloader** and Stash under **Stash**.
 
 Configure the base URL and credentials for Stash, qBittorrent, and Jackett if you use it. Moji derives the required API endpoints from those base URLs. A service is **configured** when its minimum fields are present and **ready** only after a recent probe succeeds.
 
@@ -23,9 +23,9 @@ Home’s **Indexers** section shows the current failed or interrupted definition
 
 ## Test a site
 
-Use **Test site** in the site list or built-in site editor. The editor tests the current unsaved fields and credentials without saving a site or creating a download task. Configuration and authentication are checked by default. Select **Test search** and enter keywords to search; **Test resource acquisition** is a separate opt-in and may consume a site download quota.
+Choose **Test** in the site list or built-in site configuration. It checks connectivity immediately and displays Testing, Connected or Failed on the button. Hover for failure details. **Test all** includes disabled sites and checks at most two sites concurrently, retaining each result. Tests do not log in, search, acquire resources or create download tasks.
 
-Each stage has its own result. Searches that did not run do not show a zero-result count. Authentication managed by Jackett is **Not independently verified**. Editing the parameters or test scope clears the old result; start another test to check the new values. Use **Stop test** or close the dialog to stop waiting.
+Built-in tests request the site address; Jackett tests check the corresponding Jackett API. A reachable Jackett API does not verify upstream site search or acquisition. The configuration window tests the current draft without saving it; editing parameters clears the result. Reloading requires a new test, and leaving settings cancels unfinished checks.
 
 ## Log in to a site
 
@@ -33,13 +33,13 @@ In **Indexers > Sites**, choose **Log in to site** for a built-in site. Login us
 
 Reopen the dialog after closing or refreshing the page to recover a challenge that is still valid. Expiry or a Moji restart requires a fresh login. **Restart login** clears the old verification first. **Cancel login** can stop an in-flight answer and release the flow. The resulting session is used for searches and resource acquisition, which are still checked separately.
 
-If the definition has no separate login flow, configure a cookie if the site requires one. Manage external Jackett authentication in Jackett.
+If the definition has no separate login flow, configure a cookie if the site requires one. Manage Jackett authentication in Jackett.
 
 ## Additional trusted origins
 
 Open a built-in site editor and expand **Advanced settings** only when authentication or resource retrieval needs another origin. Enter one full HTTP(S) origin per line, such as `https://download.example` or `https://auth.example:8443`, up to 16. Paths, query parameters, fragments, credentials and wildcards are not accepted. Clear the field and save to revoke all additional origins for new operations. Already accepted tasks retain their frozen source settings.
 
-These origins may receive site credentials and form submissions, and their cookies may update the site session. Cookie domain and secure rules still apply; listing an unrelated host does not copy account cookies to it. Unlisted origins do not receive session cookies and cannot update them, including subdomains covered by an account's domain cookie. Trusting an origin does not permit private-network access or HTTPS downgrades. Test the current draft before saving if needed; the test does not change the saved trust list.
+These origins may receive site credentials and form submissions, and their cookies may update the site session. Cookie domain and secure rules still apply; listing an unrelated host does not copy account cookies to it. Unlisted origins do not receive session cookies and cannot update them, including subdomains covered by an account's domain cookie. Trusting an origin does not permit private-network access or HTTPS downgrades. Connectivity checks do not change the saved trust list or verify cross-origin authentication and retrieval.
 
 ## Browser verification and network profiles
 

@@ -11,7 +11,7 @@ test("compact sites retain links and inline controls", async ({ page, isMobile }
   const rows = page.locator(".indexer-row");
   await expect(rows).toHaveCount(2);
   for (const row of await rows.all()) {
-    expect((await row.boundingBox())!.height).toBeLessThanOrEqual(isMobile ? 80 : 64);
+    expect((await row.boundingBox())!.height).toBeLessThanOrEqual(isMobile ? 104 : 80);
   }
   const header = page.locator(".drawer-card__head").filter({ has: page.getByRole("button", { name: "Add site", exact: true }) });
   await expect(header.getByRole("button", { name: "Refresh Jackett sites" })).toBeVisible();
@@ -51,7 +51,7 @@ test("settings scroll at workspace edge and Jackett has one connection card", as
   await page.goto("/settings/indexers?panel=connection");
   await expect(page.getByRole("heading", { name: "Connect to Jackett" })).toBeVisible();
   await expect(page.locator(".settings-subpanel:not([hidden]) .drawer-card")).toHaveCount(1);
-  await expect(page.getByRole("switch", { name: "Use external Jackett" })).toBeChecked();
+  await expect(page.getByRole("switch", { name: "Enable" })).toBeChecked();
   await expect(page.getByRole("link", { name: "Manage sites" })).toHaveAttribute("href", "/settings/indexers?panel=sites");
   const edges = await page.locator(".settings-main").evaluate(node => {
     const main = node.getBoundingClientRect();
@@ -60,6 +60,11 @@ test("settings scroll at workspace edge and Jackett has one connection card", as
   });
   expect(edges).toBeLessThanOrEqual(2);
   await expect(page).toHaveScreenshot("external-jackett-connection.png", { fullPage: true });
+  const info = page.locator(".indexer-external-toggle .settings-info");
+  await expect(info.getByRole("tooltip")).not.toBeVisible();
+  await info.focus();
+  await expect(info.getByRole("tooltip")).toBeVisible();
+  await expect(info.getByRole("tooltip")).toContainText("Turning this off");
   await page.getByRole("link", { name: "Manage sites" }).click();
   await expect(page.getByRole("button", { name: "Add site", exact: true })).toBeVisible();
 });

@@ -1,5 +1,6 @@
 import { parseIndexerTrustedOrigins } from "./indexerTrustedOrigins";
-import { IndexerTestDialog } from "./IndexerTestDialog";
+import { useIndexerConnections } from "../../hooks/useIndexerConnections";
+import { IndexerConnectionButton } from "./IndexerConnectionButton";
 import { useState, type FormEvent } from "react";
 import { createPortal } from "react-dom";
 import { useTranslation } from "react-i18next";
@@ -26,7 +27,6 @@ export function IndexerSiteEditor({ site, definition, revision, profiles, busy, 
   const origins = parseIndexerTrustedOrigins(originsText);
   const [changes, setChanges] = useState<Record<string, IndexerSettingChangeInput>>({});
   const [discard, setDiscard] = useState(false);
-  const [testing,setTesting]=useState(false);
   const dirty = originsText !== initialOrigins || Object.keys(changes).length > 0 || name !== (site?.name ?? definition.name) || baseUrl !== (site?.baseUrl ?? "") || profile !== (site?.networkProfile || "direct") || enabled !== (site?.enabled ?? false);
   const blocker = useBlocker(dirty || busy);
   useBeforeUnload(event => { if (dirty || busy) { event.preventDefault(); event.returnValue = ""; } });
@@ -44,12 +44,14 @@ export function IndexerSiteEditor({ site, definition, revision, profiles, busy, 
     if (Object.keys(changes).length) patch.settings = Object.values(changes);
     return patch;
   };
+  // Draft settings (including secrets) are scoped in memory only.
+  const checks = useIndexerConnections(revision, JSON.stringify({ revision, patch: draftPatch() }));
   const submit = async (event:FormEvent) => {
     event.preventDefault();if(busy || origins.error)return;const patch=draftPatch();
     if (await onSave(site?.id ?? null, revision, site ? patch : { ...patch, definitionId: definition.id })) onClose();
   };
   return createPortal(<>
-    <Drawer visibleDrawer="settings" closing={false} title={site ? t("indexers.editSite") : t("indexers.addSite")} closeDisabled={busy} onClose={close} footer={<div className="indexer-actions"><button className="primary-button" type="submit" form="indexer-site-form" disabled={busy || Boolean(origins.error) || Boolean(site && !dirty)}>{t(busy ? "indexers.saving" : site ? "indexers.save" : "indexers.add")}</button><button type="button" className="ghost-button" disabled={busy || Boolean(origins.error)} onClick={()=>setTesting(true)}>{t("indexerCheck.title")}</button></div>}>
+    <Drawer visibleDrawer="settings" closing={false} title={site ? t("indexers.editSite") : t("indexers.addSite")} closeDisabled={busy} onClose={close} footer={<div className="indexer-actions"><button className="primary-button" type="submit" form="indexer-site-form" disabled={busy || Boolean(origins.error) || Boolean(site && !dirty)}>{t(busy ? "indexers.saving" : site ? "indexers.save" : "indexers.add")}</button><IndexerConnectionButton result={checks.results.draft} disabled={busy || checks.busy || Boolean(origins.error)} onClick={() => void checks.run(["draft"], false, { instanceId: site?.id, definitionId: site ? undefined : definition.id, draft: draftPatch() })} /></div>}>
       <form id="indexer-site-form" className="settings-form indexer-editor" onSubmit={event => void submit(event)}>
         {error ? <p role="alert" className="settings-feedback tone-danger">{describeQueryError(error)}</p> : null}
         <label className="settings-field"><span>{t("indexers.name")}</span><input value={name} disabled={busy} maxLength={256} onChange={event => setName(event.target.value)} /></label>
@@ -76,7 +78,6 @@ export function IndexerSiteEditor({ site, definition, revision, profiles, busy, 
         <label className="switch-row"><span>{t("indexers.enable")}</span><SettingsSwitch checked={enabled} disabled={busy} label={t("indexers.enable")} onChange={setEnabled} /></label>
       </form>
     </Drawer>
-    {testing?<IndexerTestDialog target={{instanceId:site?.id,expectedRevision:revision,definitionId:site?undefined:definition.id,draft:draftPatch()}} onClose={()=>setTesting(false)}/>:null}
     {discard || blocker.state === "blocked" ? <Drawer visibleDrawer="confirm" closing={false} title={t("indexers.discardTitle")} onClose={keepEditing} footer={<button disabled={busy} onClick={discardEdits}>{t("indexers.discard")}</button>}><p>{t("indexers.unsaved")}</p><button disabled={busy} onClick={keepEditing}>{t("indexers.keepEditing")}</button></Drawer> : null}
   </>, document.body);
 }

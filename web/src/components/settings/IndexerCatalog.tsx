@@ -3,7 +3,7 @@ import { createPortal } from "react-dom";
 import { useQuery } from "urql";
 import { useTranslation } from "react-i18next";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faGear, faPlus } from "@fortawesome/free-solid-svg-icons";
+import { faWrench, faPlus } from "@fortawesome/free-solid-svg-icons";
 import { IndexerDefinitionsDocument, IndexerSettingFieldsFragmentDoc, IndexerSourceKind } from "../../graphql/generated/graphql";
 import { useFragment } from "../../graphql/generated/fragment-masking";
 import type { IndexerSite } from "../../hooks/useIndexerManagement";
@@ -65,7 +65,7 @@ export function IndexerCatalog({ onSelect, onQuickAdd, onClose, sites, busy, mut
           <div className="indexer-row__controls">
           <div className="indexer-row__actions">
             {definition.privacy === "public" && !definition.loginSupported && !added ? <button className="icon-button" title={t("indexers.addAndEnable")} aria-label={t("indexers.addAndEnable")} disabled={fetching || busy} onClick={async () => { if (await onQuickAdd(editorDefinition)) setAcknowledged(current => new Set(current).add(definition.id)); }}><FontAwesomeIcon icon={faPlus} aria-hidden="true" /></button> : null}
-            <button className="icon-button" title={configureLabel} aria-label={configureLabel} disabled={fetching || busy} onClick={() => onSelect(editorDefinition)}><FontAwesomeIcon icon={faGear} aria-hidden="true" /></button>
+            <button className="icon-button" title={configureLabel} aria-label={configureLabel} disabled={fetching || busy} onClick={() => onSelect(editorDefinition)}><FontAwesomeIcon icon={faWrench} aria-hidden="true" /></button>
           </div>
           {added ? <span className="indexer-added">{t("indexers.alreadyAdded")}{instances.length ? ` · ${t(instances.some(site => site.enabled) ? "indexers.enabledState" : "indexers.disabledState")}` : ""}</span> : null}
           </div>

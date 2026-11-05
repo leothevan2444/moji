@@ -16,19 +16,12 @@
 .indexer-row__actions { display: flex; align-items: center; gap: 4px; flex-wrap: wrap; justify-content: flex-end; }
 .indexer-catalog-list .indexer-row { grid-template-columns: minmax(0, 1fr) auto; min-height: 68px; }
 .indexer-catalog-list .indexer-row__controls { align-self: stretch; align-content: space-between; }
-.indexer-history { font-size: 11px; line-height: 16px; }
-.indexer-history summary { cursor: pointer; }
-.indexer-history summary:not(.tone-danger) { color: var(--muted); }
-.indexer-history[open] { padding-block: 4px; }
-.indexer-error { font-size: 11px; line-height: 16px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.indexer-history:not([open]) > summary { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .indexer-test { display: inline-flex; gap: 5px; align-items: center; font-size: 12px; padding: 3px 6px; min-height: 28px; }
 .settings-card-actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; justify-content: flex-end; margin-inline-start: auto; }
 .settings-card-actions > button { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; min-height: 32px; }
 .settings-main .drawer-card__head:has(.settings-card-actions) { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; }
 .settings-main .drawer-card__head:has(.settings-card-actions) h3 { margin: 0; }
 .indexer-external-toggle { display: flex; align-items: center; gap: 10px; font-size: 12px; }
-.indexer-external-help { margin-block: 0 20px; line-height: 1.7; }
 .indexer-external-sites { display: flex; align-items: center; justify-content: space-between; gap: 16px; border-block-start: 1px solid var(--line); margin-block-start: 20px; padding-block-start: 16px; }
 .indexer-external-sites h4 { margin: 0 0 6px; font-size: 13px; }
 .indexer-external-sites p { margin: 0; line-height: 1.7; }
@@ -82,7 +75,6 @@
 .indexer-network-profiles span { color: var(--muted); font-size: 12px; }
 #indexer-proxy-url, #indexer-solver-url { direction: ltr; text-align: left; }
 .indexer-definition-policy { border-block-start: 1px solid var(--line); margin-block-start: 16px; padding-block-start: 16px; h3 { margin-block: 0 12px; } }
-.indexer-check-result { margin-block-start: 16px; dl > div { display: grid; grid-template-columns: minmax(100px, 1fr) minmax(0, 2fr); gap: 12px; margin-block: 12px; } dd { margin: 0; overflow-wrap: anywhere; } code { overflow-wrap: anywhere; } }
 
 .indexer-login {
   &__site { overflow-wrap: anywhere; }
@@ -92,7 +84,6 @@
 
 .indexer-editor__advanced { summary { cursor: pointer; } .settings-field { margin-block-start: 12px; } textarea { direction: ltr; text-align: left; resize: vertical; width: 100%; min-height: 96px; padding: 8px 11px; background: var(--bg); font-size: 13px; } .settings-note { font-size: 12px; line-height: 1.65; color: var(--muted); } }
 
-.indexer-row__metadata { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; }
 .indexer-privacy {
   display: inline-flex;
   align-items: center;
@@ -122,3 +113,28 @@
 .indexer-row__actions .icon-button, .indexer-actions > .icon-button { flex: 0 0 28px; min-width: 28px; min-height: 28px; padding: 0; }
 .indexer-drag { user-select: none; -webkit-user-select: none; }
 .settings-switch:has(> input:disabled) { cursor: not-allowed; opacity: .55; }
+
+// Configured sources keep their origin in a stable corner, including mobile.
+.indexer-list:not(.indexer-catalog-list) > .indexer-row {
+  position: relative;
+  padding-block: 8px;
+  > .indexer-row__content .indexer-row__identity { padding-inline-end: 88px; }
+  > .indexer-row__controls { padding-block-start: 22px; }
+  .indexer-source { position: absolute; inset-block-start: 6px; inset-inline-end: 0; }
+}
+.settings-main .indexer-row__actions {
+  .icon-button { width: 26px; height: 26px; min-width: 26px; min-height: 26px; flex: 0 0 26px; padding: 0; }
+  .indexer-test { height: 26px; min-height: 26px; padding: 0 6px; width: auto; }
+}
+.indexer-test.is-passed { color: #15803d; }
+.indexer-test.is-failed { color: #c2412f; }
+.indexer-test.is-running { color: var(--muted); }
+[data-theme="dark"] .indexer-test.is-passed { color: #86efac; }
+[data-theme="dark"] .indexer-test.is-failed { color: #fca5a5; }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme]) .indexer-test.is-passed { color: #86efac; }
+  :root:not([data-theme]) .indexer-test.is-failed { color: #fca5a5; }
+}
+@media (max-width: 640px) {
+  .indexer-list:not(.indexer-catalog-list) > .indexer-row > .indexer-row__controls { padding-block-start: 0; justify-content: flex-end; }
+}

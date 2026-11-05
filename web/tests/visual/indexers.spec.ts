@@ -11,7 +11,7 @@ test.describe("empty select default", () => {
   test("an unset selection remains visibly empty until the user chooses", async ({ page }, testInfo) => {
     await page.addInitScript(() => localStorage.setItem("moji:locale", "en"));
     await page.goto("/settings/indexers");
-    await page.locator(".indexer-row").first().getByRole("button", {name:"Edit",exact:true}).click();
+    await page.locator(".indexer-row").first().getByRole("button", {name:"Configure",exact:true}).click();
     await expect(page.getByLabel("Choice", {exact:true})).toHaveValue("");
     await expect(page.getByRole("option", {name:"No selection",exact:true})).toHaveJSProperty("selected", true);
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
@@ -62,14 +62,9 @@ test.describe("persisted site observations", () => {
     await page.addInitScript(() => localStorage.setItem("moji:locale", "en"));
     await page.goto("/settings/indexers");
     const site = page.locator(".indexer-row").first();
-    await expect(site.locator(".indexer-history > summary")).toContainText("Last search succeeded");
-    await expect(site.locator(".indexer-history > summary")).toContainText("Last acquisition failed");
+    await expect(site.locator(".indexer-history, .indexer-error, .indexer-observation")).toHaveCount(0);
     await page.reload();
-    await expect(site.locator(".indexer-history > summary")).toContainText("Last acquisition failed");
-    await site.locator(".indexer-history > summary").click();
-    await site.locator(".indexer-observation details summary").click();
-    await expect(site.getByText(observedFetch.correlationId, { exact: true })).toBeVisible();
-    await expect(page).toHaveScreenshot("indexer-operation-observations.png", { fullPage: true });
+    await expect(site.locator(".indexer-history, .indexer-error, .indexer-observation")).toHaveCount(0);
     await page.goto("/");
     const summary = page.getByRole("region", { name: "Indexers", exact: true });
     await expect(summary.getByText("Last search succeeded for 1 built-in site", { exact: true })).toBeVisible();
@@ -79,7 +74,7 @@ test.describe("persisted site observations", () => {
   });
 });
 
-for (const scenario of [{ locale: "zh-CN", theme: "light", edit: "编辑", library: "规则库" }, { locale: "en", theme: "dark", edit: "Edit", library: "Definitions" }, { locale: "ar-XB", theme: "dark", edit: "", library: "" }]) {
+for (const scenario of [{ locale: "zh-CN", theme: "light", edit: "配置", library: "规则库" }, { locale: "en", theme: "dark", edit: "Configure", library: "Definitions" }, { locale: "ar-XB", theme: "dark", edit: "", library: "" }]) {
   test(`${scenario.locale} indexer sites, editor and library`, async ({ page }) => {
     await page.addInitScript(value => { localStorage.setItem("moji:locale", value.locale); localStorage.setItem("moji:theme", value.theme); }, scenario);
     await page.goto(`/settings/indexers${scenario.locale === "ar-XB" ? "?__locale=ar-XB" : ""}`);
@@ -88,7 +83,7 @@ for (const scenario of [{ locale: "zh-CN", theme: "light", edit: "编辑", libra
     await page.evaluate(() => document.fonts.ready);
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
     await expect(page).toHaveScreenshot(`${scenario.locale}-indexers-sites.png`, { fullPage: true });
-    await page.locator(".indexer-row").first().getByRole("button", { name: scenario.locale === "zh-CN" ? "编辑" : "Edit", exact: true }).click();
+    await page.locator(".indexer-row").first().getByRole("button", { name: scenario.locale === "zh-CN" ? "配置" : "Configure", exact: true }).click();
     await expect(page.getByRole("dialog")).toBeVisible();
     await expect(page.getByLabel("Cookie", { exact: true })).toHaveValue("");
     await expect(page).toHaveScreenshot(`${scenario.locale}-indexers-editor.png`, { fullPage: true });

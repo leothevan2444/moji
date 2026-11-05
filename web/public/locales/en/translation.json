@@ -99,6 +99,14 @@
     "discard": "Discard unsaved changes on this page and load the current server settings."
   },
   "indexers": {
+    "testAll": "Test all",
+    "connectionRunning": "Testing",
+    "connectionPassed": "Connected",
+    "connectionFailed": "Failed",
+    "allConnectionsPassed": "All connected",
+    "allConnectionsFailed": "Some connections failed",
+    "connectionScope": "Checks service connectivity only; login, search and resource acquisition are not tested.",
+    "jackettConnectionScope": "Checks the site's Jackett API only; site search and resource acquisition are not tested.",
     "test": "Test",
     "history": "History",
     "categories": "Categories",
@@ -127,7 +135,7 @@
     "currentVersion": "Current version",
     "schemaVersion": "Definition format",
     "rollbackHelp": "Switch to the previous installed version. Searches in progress and accepted tasks keep their own definitions.",
-    "editSite": "Edit site",
+    "editSite": "Configure site",
     "addSite": "Add site",
     "saving": "Saving…",
     "save": "Save",
@@ -165,7 +173,7 @@
     "empty": "No sites have been added.",
     "drag": "Drag {{name}} to reorder",
     "builtin": "Built-in indexer",
-    "external": "External Jackett",
+    "external": "Jackett",
     "needsAttention": "Needs attention",
     "enableSite": "Enable {{name}}",
     "moveUp": "Move {{name}} up",
@@ -173,7 +181,7 @@
     "edit": "Edit",
     "remove": "Remove site",
     "removeHelp": "Remove the configuration for {{name}}. Accepted tasks and downloads are kept.",
-    "useExternal": "Use external Jackett",
+    "useExternal": "Enable",
     "privacyKinds": {
       "public": "Public",
       "private": "Private",
@@ -201,41 +209,6 @@
     "alreadyAdded": "Already added",
     "enabledState": "Enabled",
     "disabledState": "Disabled"
-  },
-  "indexerCheck": {
-    "title": "Test site",
-    "cancel": "Stop test",
-    "run": "Start test",
-    "running": "Testing…",
-    "scope": "Check the current configuration and authentication without saving the site or creating tasks. Search and resource acquisition are optional.",
-    "search": "Test search",
-    "keywords": "Search keywords",
-    "download": "Test resource acquisition",
-    "quota": "Acquire the first result as a torrent or magnet. This may consume a site download quota.",
-    "result": "Site test results",
-    "failed": "The test could not finish. Check the settings and try again.",
-    "count": "{{count}} search results",
-    "count_one": "{{count}} search result",
-    "count_other": "{{count}} search results",
-    "jackett": "Jackett manages site authentication, which was not independently verified. Jackett also controls its upstream cache.",
-    "correlation": "Correlation ID",
-    "stages": {
-      "CONFIGURATION": "Configuration",
-      "AUTHENTICATION": "Authentication",
-      "SEARCH": "Search",
-      "DOWNLOAD": "Resource acquisition"
-    },
-    "states": {
-      "SKIPPED": "Not executed",
-      "NOT_REQUESTED": "Not selected",
-      "NOT_REQUIRED": "No separate login required",
-      "NOT_OBSERVED": "Not independently verified",
-      "PASSED": "Passed",
-      "FAILED": "Failed",
-      "EMPTY": "Search succeeded with no results",
-      "PARTIAL": "Partial results available",
-      "NO_CANDIDATE": "No resource to verify"
-    }
   },
   "indexerPolicy": {
     "title": "Update policy",
@@ -296,6 +269,7 @@
     }
   },
   "indexerErrors": {
+    "INDEXER_TIMEOUT": "The site request timed out. Try again.",
     "INDEXER_STATE_UNAVAILABLE": "Indexer cooldown state is unavailable. Check storage and try again.",
     "INDEXER_SOLVER_FAILED": "Browser verification failed. Check FlareSolverr settings and site restrictions.",
     "TASK_SUBMISSION_UNCERTAIN": "The previous download submission is unconfirmed. Refresh or retry the original task before replacing its resource.",
