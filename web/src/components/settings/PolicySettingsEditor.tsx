@@ -6,7 +6,6 @@ import { faArrowDown } from "@fortawesome/free-solid-svg-icons/faArrowDown";
 import { faArrowUp } from "@fortawesome/free-solid-svg-icons/faArrowUp";
 import { faChevronDown } from "@fortawesome/free-solid-svg-icons/faChevronDown";
 import { faChevronUp } from "@fortawesome/free-solid-svg-icons/faChevronUp";
-import { faCircleInfo } from "@fortawesome/free-solid-svg-icons/faCircleInfo";
 import { faGripVertical } from "@fortawesome/free-solid-svg-icons/faGripVertical";
 import { faRotate } from "@fortawesome/free-solid-svg-icons/faRotate";
 import { faTrash } from "@fortawesome/free-solid-svg-icons/faTrash";
@@ -32,7 +31,7 @@ import { describeQueryError } from "../../services/queryError";
 import { useTranslation } from "react-i18next";
 import type { TFunction } from "i18next";
 import { useSettingsAutosave } from "./useSettingsAutosave";
-import { SettingsSaveStatus, SettingsLoading } from "./SettingsTabCommon";
+import { FieldLabel, SettingsSaveStatus, SettingsLoading } from "./SettingsTabCommon";
 
 export const POLICY_SECTION_TITLE_KEYS = { tasks: "taskSettings.title", resources: "resourceRules.title", metadata: "metadataSources.title" } as const;
 export type SettingsPolicyArea = keyof typeof POLICY_SECTION_TITLE_KEYS;
@@ -196,27 +195,6 @@ interface PolicySettingsEditorProps {
   pushToast: (tone: ToastTone, message: string) => void;
   refreshSection: (opts?: Record<string, unknown>) => unknown;
   area?: SettingsPolicyArea;
-}
-
-interface FieldLabelProps {
-  text: string;
-  info?: string;
-}
-
-function FieldLabel({ text, info }: FieldLabelProps) {
-  return (
-    <span className="settings-field__label">
-      <span>{text}</span>
-      {info ? (
-        <span className="settings-info" tabIndex={0} aria-label={info}>
-          <FontAwesomeIcon icon={faCircleInfo} aria-hidden="true" />
-          <span className="settings-info__tooltip" role="tooltip">
-            {info}
-          </span>
-        </span>
-      ) : null}
-    </span>
-  );
 }
 
 export function PolicySettingsEditor({

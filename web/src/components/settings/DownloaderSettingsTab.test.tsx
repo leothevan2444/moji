@@ -29,7 +29,11 @@ describe("downloader settings",()=>{
   const view=render(<SettingsAutosaveProvider><DownloaderSettingsTab/></SettingsAutosaveProvider>);
   expect(screen.queryByLabelText("Cleanup trigger")).toBeNull();
   expect(screen.queryByLabelText("Permanently delete downloaded files too")).toBeNull();
+  expect(screen.queryByText(/Only torrents whose linked/u)).toBeNull();
+  const policyInfo = view.container.querySelector(".settings-info")!;
+  fireEvent.mouseEnter(policyInfo);
   expect(screen.getByText(/Only torrents whose linked/u)).toBeTruthy();
+  fireEvent.mouseLeave(policyInfo);
   const toggle=screen.getByLabelText("Enable automatic cleanup");
   expect(toggle.parentElement?.querySelector(".switch__thumb")).toBeTruthy();
   fireEvent.click(toggle);

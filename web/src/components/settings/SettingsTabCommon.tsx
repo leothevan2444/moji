@@ -1,5 +1,5 @@
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faCircleInfo } from "@fortawesome/free-solid-svg-icons/faCircleInfo";
+import { SettingsInfoTooltip } from "./SettingsInfoTooltip";
 import { faEye } from "@fortawesome/free-solid-svg-icons/faEye";
 import { faEyeSlash } from "@fortawesome/free-solid-svg-icons/faEyeSlash";
 import { useState, type ReactNode } from "react";
@@ -7,18 +7,20 @@ import { useTranslation } from "react-i18next";
 import { describeQueryError } from "../../services/queryError";
 import "../../styles/settings-shell.scss";
 
-export function SettingsLoading({ title }: { title: string }) {
+export function SettingsLoading({ title, embedded = false }: { title: string; embedded?: boolean }) {
   const { t } = useTranslation();
-  return <article className="drawer-card"><div className="drawer-card__head"><h3>{title}</h3></div><div className="settings-loading" role="status" aria-label={t("common.loading")}><span className="settings-loading__spinner" aria-hidden="true" /></div></article>;
+  const content = <div className="settings-loading" role="status" aria-label={t("common.loading")}><span className="settings-loading__spinner" aria-hidden="true" /></div>;
+  return embedded ? content : <SettingsCard title={title}>{content}</SettingsCard>;
 }
 
-export function SettingsError({ title, error, onRetry }: { title: string; error: unknown; onRetry: () => void }) {
+export function SettingsError({ title, error, onRetry, embedded = false }: { title: string; error: unknown; onRetry: () => void; embedded?: boolean }) {
   const { t } = useTranslation();
-  return <article className="drawer-card"><div className="drawer-card__head"><h3>{title}</h3></div><p className="settings-feedback tone-danger">{describeQueryError(error as Error)}</p><button type="button" onClick={onRetry}>{t("common.retry")}</button></article>;
+  const content = <><p className="settings-feedback tone-danger">{describeQueryError(error as Error)}</p><button type="button" onClick={onRetry}>{t("common.retry")}</button></>;
+  return embedded ? content : <SettingsCard title={title}>{content}</SettingsCard>;
 }
 
 export function FieldLabel({ text, info }: { text: string; info?: string }) {
-  return <span className="settings-field__label"><span>{text}</span>{info ? <span className="settings-info" tabIndex={0} aria-label={info}><FontAwesomeIcon icon={faCircleInfo} aria-hidden="true" /><span className="settings-info__tooltip" role="tooltip">{info}</span></span> : null}</span>;
+  return <span className="settings-field__label"><span>{text}</span>{info ? <SettingsInfoTooltip info={info} /> : null}</span>;
 }
 
 export function SecretInput({ value, onChange, placeholder, id, disabled = false }: { value: string; onChange: (value: string) => void; placeholder?: string; id?: string; disabled?: boolean }) {

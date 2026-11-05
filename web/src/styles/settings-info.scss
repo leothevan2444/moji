@@ -1,0 +1,33 @@
+@use "tokens" as *;
+
+.settings-info {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: help;
+  color: var(--muted-2);
+  svg { font-size: 13px; }
+}
+
+.settings-info__tooltip {
+  display: block;
+  position: fixed;
+  // Portals need to sit above dialogs rather than inherit their stacking context.
+  z-index: $z-modal + $z-tooltip;
+  width: min(320px, calc(100vw - 16px));
+  max-height: calc(100dvh - 16px);
+  overflow: auto;
+  overflow-wrap: anywhere;
+  white-space: normal;
+  padding: 10px $space-3;
+  border: 1px solid var(--line-strong);
+  border-radius: $radius-lg;
+  background: var(--surface-strong);
+  box-shadow: var(--shadow-soft);
+  color: var(--text);
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1.55;
+  pointer-events: none;
+}

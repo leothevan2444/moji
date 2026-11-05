@@ -49,7 +49,7 @@ test("privacy follows automatic dark theme and explicit light override", async (
 test("settings scroll at workspace edge and Jackett has one connection card", async ({ page }) => {
   await page.addInitScript(() => { localStorage.setItem("moji:locale", "en"); localStorage.setItem("moji:theme", "dark"); });
   await page.goto("/settings/indexers?panel=connection");
-  await expect(page.getByRole("heading", { name: "Connect to Jackett" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Jackett", exact: true })).toBeVisible();
   await expect(page.locator(".settings-subpanel:not([hidden]) .drawer-card")).toHaveCount(1);
   await expect(page.getByRole("switch", { name: "Enable" })).toBeChecked();
   await expect(page.getByRole("link", { name: "Manage sites" })).toHaveAttribute("href", "/settings/indexers?panel=sites");
@@ -61,10 +61,10 @@ test("settings scroll at workspace edge and Jackett has one connection card", as
   expect(edges).toBeLessThanOrEqual(2);
   await expect(page).toHaveScreenshot("external-jackett-connection.png", { fullPage: true });
   const info = page.locator(".indexer-external-toggle .settings-info");
-  await expect(info.getByRole("tooltip")).not.toBeVisible();
+  await expect(page.getByRole("tooltip")).not.toBeVisible();
   await info.focus();
-  await expect(info.getByRole("tooltip")).toBeVisible();
-  await expect(info.getByRole("tooltip")).toContainText("Turning this off");
+  await expect(page.getByRole("tooltip")).toBeVisible();
+  await expect(page.getByRole("tooltip")).toContainText("Turning this off");
   await page.getByRole("link", { name: "Manage sites" }).click();
   await expect(page.getByRole("button", { name: "Add site", exact: true })).toBeVisible();
 });

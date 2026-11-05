@@ -105,7 +105,7 @@ for (const locale of ["en", "zh-CN"] as const) {
   await page.getByText(enable, {exact:true}).click();
   const panel=page.locator(".downloader-cleanup");
   await panel.locator(".settings-info").last().hover();
-  const tooltip=panel.getByRole("tooltip");
+  const tooltip=page.getByRole("tooltip");
   await expect(tooltip).toBeVisible();
   const bounds=await tooltip.boundingBox();
   expect(bounds!.x).toBeGreaterThanOrEqual(0);

@@ -29,45 +29,7 @@
   }
 }
 
-.settings-info {
-  position: relative;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  color: var(--muted-2);
-  cursor: help;
-  outline: none;
 
-  svg {
-    font-size: 13px;
-  }
-
-  &:hover .settings-info__tooltip,
-  &:focus-visible .settings-info__tooltip {
-    display: block;
-    transform: translate(0, -50%);
-  }
-
-  &__tooltip {
-    position: absolute;
-    left: calc(100% + 10px);
-    top: 50%;
-    z-index: $z-tooltip;
-    width: min(320px, calc(100vw - 48px));
-    padding: 10px $space-3;
-    border: 1px solid var(--line-strong);
-    border-radius: $radius-lg;
-    background: var(--surface-strong);
-    box-shadow: var(--shadow-soft);
-    color: var(--text);
-    font-size: 12px;
-    font-weight: 500;
-    line-height: 1.55;
-    display: none;
-    pointer-events: none;
-    transform: translate(-4px, -50%);
-  }
-}
 
 .settings-meta {
   display: flex;
@@ -1565,22 +1527,7 @@
   min-width: 28px;
 }
 
-@media (max-width: 720px) {
-  .settings-info {
-    &__tooltip {
-      left: 0;
-      top: calc(100% + 8px);
-      width: min(280px, calc(100vw - 72px));
-      transform: translateY(-4px);
-    }
 
-    &:hover .settings-info__tooltip,
-    &:focus-visible .settings-info__tooltip {
-      display: block;
-      transform: translateY(0);
-    }
-  }
-}
 
 [data-theme="dark"] {
   .menu {
@@ -1728,19 +1675,4 @@
   .settings-field { margin-top: 12px; max-width: 420px; }
   .settings-field small { color: var(--muted); font-size: 12px; line-height: 1.6; }
   &__paused { padding: 10px 12px; border-radius: 8px; background: color-mix(in srgb, #b46918 8%, var(--surface)); color: #a15c13; font-size: 13px; line-height: 1.6; }
-}
-
-// Anchor help to the field label so it fits narrow settings panels.
-.downloader-cleanup .settings-field__label {
-  position: relative;
-  .settings-info { position: static; }
-  .settings-info__tooltip {
-    left: auto;
-    right: auto;
-    inset-inline-start: 0;
-    inset-inline-end: auto;
-    top: auto;
-    bottom: calc(100% + 8px);
-    transform: none;
-  }
 }

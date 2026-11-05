@@ -13,3 +13,10 @@ it.each(["en", "zh-CN"])("unknown connection errors remain retryable in %s", asy
   expect(button.hasAttribute("disabled")).toBe(false);
   expect(button.title).not.toContain("SYNTHETIC_UNKNOWN_ERROR");
 });
+
+it.each(["passed", "failed"] as const)("the batch button hides its %s result", state => {
+  render(<IndexerConnectionButton all result={{ state }} disabled={false} onClick={() => {}} />);
+  const button = screen.getByRole("button", { name: i18n.t("indexers.testAll") });
+  expect(button.className).not.toContain("is-passed");
+  expect(button.className).not.toContain("is-failed");
+});

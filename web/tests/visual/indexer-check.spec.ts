@@ -22,18 +22,18 @@ test("clicking Test checks connectivity immediately and displays retryable outco
   await page.goto("/settings/indexers");
   const row = page.locator('[data-indexer-id="builtin-one"]');
   await row.getByRole("button", { name: "Test", exact: true }).click();
-  await expect(row.getByRole("button", { name: "Failed", exact: true })).toBeVisible();
+  await expect(row.getByRole("button", { name: "Test failed", exact: true })).toBeVisible();
   await expect(page.getByRole("dialog")).toHaveCount(0);
   expect(inputs).toEqual([{ instanceId: "builtin-one", expectedRevision: indexerInstances.revision, connectionOnly: true, search: false, download: false }]);
   failed = false;
-  await row.getByRole("button", { name: "Failed", exact: true }).click();
-  await expect(row.getByRole("button", { name: "Connected", exact: true })).toBeVisible();
+  await row.getByRole("button", { name: "Test failed", exact: true }).click();
+  await expect(row.getByRole("button", { name: "Test passed", exact: true })).toBeVisible();
   await expect(row.locator(".indexer-history, .indexer-error")).toHaveCount(0);
   for (const button of await row.locator(".indexer-row__actions .icon-button").all()) {
     const box = (await button.boundingBox())!;
     expect(box.width).toBe(26); expect(box.height).toBe(26);
   }
-  expect((await row.getByRole("button", { name: "Connected", exact: true }).boundingBox())!.height).toBe(26);
+  expect((await row.getByRole("button", { name: "Test passed", exact: true }).boundingBox())!.height).toBe(26);
   const bounds = (await row.boundingBox())!, source = (await row.locator(".indexer-source").boundingBox())!;
   expect(Math.abs(bounds.x + bounds.width - source.x - source.width)).toBeLessThanOrEqual(1);
   expect(source.y - bounds.y).toBeLessThanOrEqual(8);
@@ -65,9 +65,9 @@ test.describe("test all", () => {
     release[0]();
     await expect.poll(() => release.length).toBe(3);
     release[1](); release[2]();
-    await expect(page.getByRole("button", { name: "Some connections failed" })).toBeVisible();
-    await expect(page.getByRole("button", { name: "Connected", exact: true })).toHaveCount(2);
-    await expect(page.getByRole("button", { name: "Failed", exact: true })).toHaveCount(1);
+    await expect(page.getByRole("button", { name: "Test all", exact: true })).toBeVisible();
+    await expect(page.getByRole("button", { name: "Test passed", exact: true })).toHaveCount(2);
+    await expect(page.getByRole("button", { name: "Test failed", exact: true })).toHaveCount(1);
     for (const input of inputs) expect(input).toMatchObject({ connectionOnly: true, search: false, download: false });
     await expect(page.getByRole("dialog")).toHaveCount(0);
     await expect(page).toHaveScreenshot("all-connection-results.png", { fullPage: true });
@@ -89,7 +89,7 @@ test("draft connectivity checks do not save and changing the draft clears result
   const editor = page.getByRole("dialog", { name: "Configure site" });
   await editor.getByRole("textbox", { name: "Name", exact: true }).fill("Unsaved name");
   await editor.getByRole("button", { name: "Test", exact: true }).click();
-  await expect(editor.getByRole("button", { name: "Connected", exact: true })).toBeVisible();
+  await expect(editor.getByRole("button", { name: "Test passed", exact: true })).toBeVisible();
   expect(inputs).toEqual([{ instanceId: "builtin-one", expectedRevision: indexerInstances.revision, draft: { name: "Unsaved name" }, connectionOnly: true, search: false, download: false }]);
   expect(writes).toEqual([]);
   await editor.getByRole("textbox", { name: "Name", exact: true }).fill("Changed again");
@@ -118,5 +118,5 @@ test("editing a pending draft rejects its late connection result", async ({ page
   await editor.getByRole("textbox", { name: "Name", exact: true }).fill("A newer draft");
   release();
   await expect(editor.getByRole("button", { name: "Test", exact: true })).toBeEnabled();
-  await expect(editor.getByRole("button", { name: "Connected", exact: true })).toHaveCount(0);
+  await expect(editor.getByRole("button", { name: "Test passed", exact: true })).toHaveCount(0);
 });

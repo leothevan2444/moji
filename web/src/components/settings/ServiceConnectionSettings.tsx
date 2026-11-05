@@ -51,8 +51,8 @@ export default function ServiceConnectionSettings({ service = "stash", onSaved, 
   }, [testResult]);
 
   const serviceLabel = service === "stash" ? "Stash" : service === "jackett" ? "Jackett" : "qBittorrent";
-  if (fetching && !data) return <SettingsLoading title={serviceLabel} />;
-  if (error && !data) return <SettingsError title={serviceLabel} error={error} onRetry={() => refreshSettings({ requestPolicy: "network-only" })} />;
+  if (fetching && !data) return <SettingsLoading embedded={embedded} title={serviceLabel} />;
+  if (error && !data) return <SettingsError embedded={embedded} title={serviceLabel} error={error} onRetry={() => refreshSettings({ requestPolicy: "network-only" })} />;
 
   const serviceForm = (service: "stash" | "jackett" | "qbittorrent") => {
     return <form className="settings-form" onSubmit={event => event.preventDefault()}>

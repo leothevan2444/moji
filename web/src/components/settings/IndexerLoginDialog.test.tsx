@@ -79,8 +79,10 @@ it("does not submit a broken image challenge and offers a fresh login", async ()
   const report = waiting(); report.challenge.imageData = "data:image/png;base64,synthetic";
   mock.restore.mockResolvedValue({ data: { indexerLogin: report } });
   render(<IndexerLoginDialog input={input} name="Saved site" onClose={() => {}} />);
-  fireEvent.error(await screen.findByRole("img", { name: "Site challenge" }));
-  expect(screen.getByRole("alert").textContent).toContain("could not be displayed");
+  const image = await screen.findByRole("img", { name: "Site challenge" });
+  await waitFor(() => expect(document.activeElement).toBe(screen.getByRole("textbox")));
+  fireEvent.error(image);
+  expect((await screen.findByRole("alert")).textContent).toContain("could not be displayed");
   expect(screen.queryByRole("button", { name: "Submit answer" })).toBeNull();
   expect(screen.getByRole("button", { name: "Restart login" })).toBeTruthy(); expect(mock.execute).not.toHaveBeenCalled();
 });

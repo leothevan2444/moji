@@ -33,7 +33,7 @@ test("trusted origin draft tests, saves, restores and revokes without changing c
   await expect(editor.getByRole("button", { name: "Test", exact: true })).toBeDisabled();
   await field.fill("https://auth.example:8443\nhttps://download.example");
   await editor.getByRole("button", { name: "Test", exact: true }).click();
-  await expect(editor.getByRole("button", { name: "Connected", exact: true })).toBeVisible();
+  await expect(editor.getByRole("button", { name: "Test passed", exact: true })).toBeVisible();
   await expect(page.getByRole("dialog")).toHaveCount(1);
   expect(checked[0]).toMatchObject({ draft: { trustedOrigins: ["https://auth.example:8443", "https://download.example"] } });
   expect(saved).toHaveLength(0);
