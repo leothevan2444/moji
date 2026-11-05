@@ -482,6 +482,7 @@ export type IndexerCheckStage = {
 export enum IndexerCheckStageName {
   Authentication = 'AUTHENTICATION',
   Configuration = 'CONFIGURATION',
+  Connection = 'CONNECTION',
   Download = 'DOWNLOAD',
   Search = 'SEARCH'
 }
@@ -2699,6 +2700,7 @@ export type TasksPatchInput = {
 };
 
 export type TestIndexerInput = {
+  connectionOnly?: Scalars['Boolean']['input'];
   definitionId?: InputMaybe<Scalars['String']['input']>;
   download?: Scalars['Boolean']['input'];
   draft?: InputMaybe<BuiltinIndexerPatchInput>;

@@ -1594,6 +1594,7 @@ type TestIndexerInput struct {
 	ExpectedRevision string                    `json:"expectedRevision"`
 	DefinitionID     *string                   `json:"definitionId,omitempty"`
 	Draft            *BuiltinIndexerPatchInput `json:"draft,omitempty"`
+	ConnectionOnly   bool                      `json:"connectionOnly"`
 	Search           bool                      `json:"search"`
 	Keywords         *string                   `json:"keywords,omitempty"`
 	Download         bool                      `json:"download"`
@@ -2083,6 +2084,7 @@ const (
 	IndexerCheckStageNameAuthentication IndexerCheckStageName = "AUTHENTICATION"
 	IndexerCheckStageNameSearch         IndexerCheckStageName = "SEARCH"
 	IndexerCheckStageNameDownload       IndexerCheckStageName = "DOWNLOAD"
+	IndexerCheckStageNameConnection     IndexerCheckStageName = "CONNECTION"
 )
 
 var AllIndexerCheckStageName = []IndexerCheckStageName{
@@ -2090,11 +2092,12 @@ var AllIndexerCheckStageName = []IndexerCheckStageName{
 	IndexerCheckStageNameAuthentication,
 	IndexerCheckStageNameSearch,
 	IndexerCheckStageNameDownload,
+	IndexerCheckStageNameConnection,
 }
 
 func (e IndexerCheckStageName) IsValid() bool {
 	switch e {
-	case IndexerCheckStageNameConfiguration, IndexerCheckStageNameAuthentication, IndexerCheckStageNameSearch, IndexerCheckStageNameDownload:
+	case IndexerCheckStageNameConfiguration, IndexerCheckStageNameAuthentication, IndexerCheckStageNameSearch, IndexerCheckStageNameDownload, IndexerCheckStageNameConnection:
 		return true
 	}
 	return false

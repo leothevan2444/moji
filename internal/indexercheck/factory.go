@@ -16,6 +16,7 @@ type adapterExecution struct {
 	instance     indexer.InstanceSnapshot
 	adapter      indexer.Adapter
 	authenticate func(context.Context) error
+	connect      func(context.Context) error
 	close        func()
 }
 
@@ -33,14 +34,29 @@ func (f AdapterFactory) Open(_ context.Context, instance indexer.InstanceSnapsho
 			sessions.Close()
 			return nil, err
 		}
-		return &adapterExecution{instance: instance, adapter: adapter, authenticate: func(ctx context.Context) error { return adapter.Authenticate(ctx, instance) }, close: sessions.Close}, nil
+		return &adapterExecution{instance: instance, adapter: adapter, connect: func(ctx context.Context) error {
+			lease, err := f.Bundles.Acquire(ctx, instance.BundleRevision)
+			if err != nil {
+				return err
+			}
+			defer lease.Release()
+			plan := lease.Bundle.Plans[instance.DefinitionID]
+			if plan == nil {
+				return indexer.ErrUnsupported
+			}
+			target := instance
+			if target.BaseURL == "" {
+				target.BaseURL = plan.Definition.Links[0]
+			}
+			return f.Network.CheckConnection(ctx, target, plan.Definition.Certificates)
+		}, authenticate: func(ctx context.Context) error { return adapter.Authenticate(ctx, instance) }, close: sessions.Close}, nil
 	}
 	if instance.Kind == indexer.Jackett {
 		adapter, err := indexer.NewJackettAdapter(f.Network)
 		if err != nil {
 			return nil, err
 		}
-		return &adapterExecution{instance: instance, adapter: adapter, close: adapter.Close}, nil
+		return &adapterExecution{instance: instance, adapter: adapter, connect: func(ctx context.Context) error { return f.Network.CheckConnection(ctx, instance, nil) }, close: adapter.Close}, nil
 	}
 	return nil, indexer.ErrUnsupported
 }
@@ -57,3 +73,5 @@ func (e *adapterExecution) Fetch(ctx context.Context, ref indexer.ResourceRef) (
 	return e.adapter.Fetch(ctx, e.instance, ref)
 }
 func (e *adapterExecution) Close() { e.close() }
+
+func (e *adapterExecution) Connect(ctx context.Context) error { return e.connect(ctx) }

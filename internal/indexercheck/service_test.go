@@ -22,12 +22,12 @@ func (f factoryFunc) Open(ctx context.Context, in indexer.InstanceSnapshot) (Exe
 }
 
 type fakeExecution struct {
-	auth, search, fetch, closed  int
-	authErr, searchErr, fetchErr error
-	query                        indexer.Query
-	batch                        indexer.Batch
-	artifact                     indexer.Artifact
-	wait                         chan struct{}
+	connect, auth, search, fetch, closed int
+	authErr, searchErr, fetchErr         error
+	query                                indexer.Query
+	batch                                indexer.Batch
+	artifact                             indexer.Artifact
+	wait                                 chan struct{}
 }
 
 func (e *fakeExecution) Authenticate(context.Context) error { e.auth++; return e.authErr }
@@ -209,5 +209,17 @@ func TestDiagnosticSearchBoundsAnAdapterThatIgnoresItsLimit(t *testing.T) {
 	report, err := s.Check(context.Background(), Input{InstanceID: "instance", Search: true, Keywords: "ABCD-123"})
 	if err != nil || report.Results != 20 || !report.Truncated || report.Stages[2].State != "PASSED" || e.fetch != 0 {
 		t.Fatal("test reported an unbounded/complete upstream batch", report, err)
+	}
+}
+
+func (e *fakeExecution) Connect(context.Context) error { e.connect++; return nil }
+func TestConnectionOnlyDoesNotAuthenticateSearchOrFetch(t *testing.T) {
+	s, e, _ := checkFixture(t)
+	report, err := s.Check(context.Background(), Input{InstanceID: "instance", ConnectionOnly: true})
+	if err != nil || e.connect != 1 || e.auth != 0 || e.search != 0 || e.fetch != 0 || report.Stages[4].State != "PASSED" {
+		t.Fatalf("%+v %+v %v", report, e, err)
+	}
+	if _, err = s.Check(context.Background(), Input{InstanceID: "instance", ConnectionOnly: true, Search: true}); err == nil {
+		t.Fatal("mixed scope accepted")
 	}
 }

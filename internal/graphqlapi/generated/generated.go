@@ -9602,11 +9602,12 @@ input TestIndexerInput {
  expectedRevision: String!
  definitionId: String
  draft: BuiltinIndexerPatchInput
+ connectionOnly: Boolean! = false
  search: Boolean! = false
  keywords: String
  download: Boolean! = false
 }
-enum IndexerCheckStageName { CONFIGURATION AUTHENTICATION SEARCH DOWNLOAD }
+enum IndexerCheckStageName { CONFIGURATION AUTHENTICATION SEARCH DOWNLOAD CONNECTION }
 enum IndexerCheckStageState { SKIPPED NOT_REQUESTED NOT_REQUIRED NOT_OBSERVED PASSED FAILED EMPTY PARTIAL NO_CANDIDATE }
 type IndexerCheckStage { name: IndexerCheckStageName! state: IndexerCheckStageState! errorCode: String! elapsedMs: Long! }
 type IndexerCheckReport {
@@ -71189,6 +71190,9 @@ func (ec *executionContext) unmarshalInputTestIndexerInput(ctx context.Context, 
 		asMap[k] = v
 	}
 
+	if _, present := asMap["connectionOnly"]; !present {
+		asMap["connectionOnly"] = false
+	}
 	if _, present := asMap["search"]; !present {
 		asMap["search"] = false
 	}
@@ -71196,7 +71200,7 @@ func (ec *executionContext) unmarshalInputTestIndexerInput(ctx context.Context, 
 		asMap["download"] = false
 	}
 
-	fieldsInOrder := [...]string{"instanceId", "expectedRevision", "definitionId", "draft", "search", "keywords", "download"}
+	fieldsInOrder := [...]string{"instanceId", "expectedRevision", "definitionId", "draft", "connectionOnly", "search", "keywords", "download"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -71231,6 +71235,13 @@ func (ec *executionContext) unmarshalInputTestIndexerInput(ctx context.Context, 
 				return it, err
 			}
 			it.Draft = data
+		case "connectionOnly":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("connectionOnly"))
+			data, err := ec.unmarshalNBoolean2bool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ConnectionOnly = data
 		case "search":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("search"))
 			data, err := ec.unmarshalNBoolean2bool(ctx, v)

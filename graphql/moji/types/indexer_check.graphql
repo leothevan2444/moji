@@ -4,11 +4,12 @@ input TestIndexerInput {
  expectedRevision: String!
  definitionId: String
  draft: BuiltinIndexerPatchInput
+ connectionOnly: Boolean! = false
  search: Boolean! = false
  keywords: String
  download: Boolean! = false
 }
-enum IndexerCheckStageName { CONFIGURATION AUTHENTICATION SEARCH DOWNLOAD }
+enum IndexerCheckStageName { CONFIGURATION AUTHENTICATION SEARCH DOWNLOAD CONNECTION }
 enum IndexerCheckStageState { SKIPPED NOT_REQUESTED NOT_REQUIRED NOT_OBSERVED PASSED FAILED EMPTY PARTIAL NO_CANDIDATE }
 type IndexerCheckStage { name: IndexerCheckStageName! state: IndexerCheckStageState! errorCode: String! elapsedMs: Long! }
 type IndexerCheckReport {

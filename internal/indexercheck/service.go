@@ -16,7 +16,7 @@ import (
 type Input struct {
 	InstanceID, ExpectedRevision, Keywords string
 	Draft                                  *config.BuiltinInstancePatch
-	Search, Download                       bool
+	Search, Download, ConnectionOnly       bool
 }
 type Prepared struct {
 	Instance                     indexer.InstanceSnapshot
@@ -28,6 +28,7 @@ type Source interface {
 	PrepareCheck(context.Context, Input) (Prepared, error)
 }
 type Execution interface {
+	Connect(context.Context) error
 	Authenticate(context.Context) error
 	Search(context.Context, indexer.Query) (indexer.Batch, error)
 	Fetch(context.Context, indexer.ResourceRef) (indexer.Artifact, error)
@@ -73,6 +74,9 @@ func (s *Service) Check(ctx context.Context, input Input) (report Report, result
 	}
 	var query indexer.Query
 	var err error
+	if input.ConnectionOnly && (input.Search || input.Download) {
+		return Report{}, indexer.ErrInvalidQuery
+	}
 	if input.Download && !input.Search {
 		return Report{}, indexer.ErrInvalidQuery
 	}
@@ -156,6 +160,12 @@ func (s *Service) Check(ctx context.Context, input Input) (report Report, result
 		defer prepared.Release()
 	}
 	defer execution.Close()
+	if input.ConnectionOnly {
+		report.Stages[1].State = "NOT_REQUESTED"
+		report.Stages = append(report.Stages, Stage{Name: "CONNECTION", State: "SKIPPED"})
+		run(4, func() error { return execution.Connect(work) })
+		return report, nil
+	}
 	if prepared.Instance.Kind == indexer.Jackett {
 		report.Stages[1].State = "NOT_OBSERVED"
 	} else if !prepared.AuthenticationRequired {
