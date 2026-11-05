@@ -59,7 +59,7 @@ export function Component() {
           className={`settings-sidebar__item${active === tab ? " is-active" : ""}`} onClick={() => navigate(`/settings/${tab}`)}>{t(`settings.tabs.${tab}`)}</button>)}
       </nav>
     </aside>
-    <div className="settings-main">
+    <div className="settings-main"><div className="settings-main__content">
       <header className="settings-main__head"><h2>{t(`settings.tabs.${active}`)}</h2></header>
       {panels.length ? <div className="settings-subtabs" role="tablist" aria-label={t(`settings.tabs.${active}`)}>
         {panels.map((item, index) => <button key={item} type="button" role="tab" id={`settings-tab-${item}`} aria-selected={panel === item}
@@ -78,6 +78,6 @@ export function Component() {
           <TabErrorBoundary resetKey={active} fallback={failed}><Suspense fallback={loading}><ActiveTab /></Suspense></TabErrorBoundary>
         </SettingsPanelContext.Provider></SettingsAutosaveProvider></Provider>
       </div>
-    </div>
+    </div></div>
   </section>;
 }

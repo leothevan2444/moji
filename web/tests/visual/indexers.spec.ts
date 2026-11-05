@@ -62,11 +62,12 @@ test.describe("persisted site observations", () => {
     await page.addInitScript(() => localStorage.setItem("moji:locale", "en"));
     await page.goto("/settings/indexers");
     const site = page.locator(".indexer-row").first();
-    await expect(site.getByText(/^Last search succeeded/)).toBeVisible();
-    await expect(site.getByText(/^Last acquisition failed/)).toBeVisible();
+    await expect(site.locator(".indexer-history > summary")).toContainText("Last search succeeded");
+    await expect(site.locator(".indexer-history > summary")).toContainText("Last acquisition failed");
     await page.reload();
-    await expect(site.getByText(/^Last acquisition failed/)).toBeVisible();
-    await site.locator("details summary").click();
+    await expect(site.locator(".indexer-history > summary")).toContainText("Last acquisition failed");
+    await site.locator(".indexer-history > summary").click();
+    await site.locator(".indexer-observation details summary").click();
     await expect(site.getByText(observedFetch.correlationId, { exact: true })).toBeVisible();
     await expect(page).toHaveScreenshot("indexer-operation-observations.png", { fullPage: true });
     await page.goto("/");

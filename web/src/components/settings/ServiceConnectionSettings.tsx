@@ -16,7 +16,7 @@ interface ServiceConnectionDraft {
   qbittorrent: { url: string; username: string; password: string; defaultSavePath: string; category: string; tags: string };
 }
 
-export default function ServiceConnectionSettings({ service = "stash", onSaved }: { service?: "stash" | "jackett" | "qbittorrent"; onSaved?: () => void }) {
+export default function ServiceConnectionSettings({ service = "stash", onSaved, embedded = false }: { embedded?: boolean; service?: "stash" | "jackett" | "qbittorrent"; onSaved?: () => void }) {
   const { t } = useTranslation();
   const [{ data, fetching, error }, refreshSettings] = useQuery({ query: ServiceConnectionSettingsDocument });
   const [{fetching: testing}, testConnection] = useMutation(TestServiceConnectionDocument);
@@ -71,6 +71,7 @@ export default function ServiceConnectionSettings({ service = "stash", onSaved }
     </form>;
   };
 
+  if (embedded) return serviceForm(service);
   return <SettingsCard title={serviceLabel}>
     {serviceForm(service)}
   </SettingsCard>;

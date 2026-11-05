@@ -99,6 +99,15 @@
     "discard": "Discard unsaved changes on this page and load the current server settings."
   },
   "indexers": {
+    "test": "Test",
+    "history": "History",
+    "categories": "Categories",
+    "dragHint": "Drag to reorder, or focus and use the ↑ / ↓ keys",
+    "jackettConnection": "Connect to Jackett",
+    "jackettPurpose": "Use the sites configured in an existing Jackett service. Turning this off stops Moji from searching through Jackett; built-in sites are unaffected.",
+    "jackettSites": "Sites in Jackett",
+    "jackettSitesHelp": "Manage site accounts and configuration in Jackett. Refresh its directory, enable sites and set search order in Moji’s site list. Testing this connection does not test search or torrent retrieval for each site.",
+    "manageSites": "Manage sites",
     "library": "Definition library",
     "sites": "Sites",
     "libraryReady": "{{count}} site definitions installed",

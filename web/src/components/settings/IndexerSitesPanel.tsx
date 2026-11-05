@@ -6,7 +6,7 @@ import { createPortal } from "react-dom";
 import { useSearchParams } from "react-router";
 import { useTranslation } from "react-i18next";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faGripVertical, faPlus, faGear, faTrashCan, faArrowUp, faArrowDown, faRightToBracket, faBinoculars, faRotate } from "@fortawesome/free-solid-svg-icons";
+import { faGripVertical, faPlus, faGear, faTrashCan, faRightToBracket, faRotate } from "@fortawesome/free-solid-svg-icons";
 import { SettingsSwitch } from "./SettingsSwitch";
 import { IndexerPrivacyBadge } from "../indexers/IndexerPrivacyBadge";
 import { useIndexerManagement, type IndexerSite } from "../../hooks/useIndexerManagement";
@@ -16,7 +16,7 @@ import { IndexerSiteEditor, type SiteEditorDefinition } from "./IndexerSiteEdito
 import { SettingsCard, SettingsError, SettingsLoading } from "./SettingsTabCommon";
 import { Drawer } from "../layout/Drawer";
 import { describeQueryError } from "../../services/queryError";
-import { IndexerObservationView } from "../indexers/IndexerObservationView";
+import { IndexerSiteHistory } from "./IndexerSiteHistory";
 
 export function IndexerSitesPanel() {
   const { t } = useTranslation();
@@ -32,20 +32,34 @@ export function IndexerSitesPanel() {
   if (!management.snapshot) return <SettingsError title={t("indexers.sites")} error={management.error} onRetry={management.refresh} />;
   const { snapshot } = management;
   const add = () => { if (snapshot.ruleRevision) setAdding(true); else setSearch(current => { const next = new URLSearchParams(current); next.set("panel", "definitions"); return next; }); };
-  return <SettingsCard title={t("indexers.sites")}>
+  return <SettingsCard title={t("indexers.sites")} actions={<>
+      <button className="ghost-button" disabled={busy} onClick={add}><FontAwesomeIcon icon={faPlus} aria-hidden="true" /> {t(snapshot.ruleRevision ? "indexers.addSite" : "indexers.installFirst")}</button>
+      {snapshot.jackettEnabled ? <button className="ghost-button" disabled={busy} onClick={() => void management.refreshJackett()}><FontAwesomeIcon icon={faRotate} aria-hidden="true" /> {t("indexers.refreshExternal")}</button> : null}
+    </>}>
     {management.error ? <p role="alert" className="settings-feedback tone-danger">{describeQueryError(management.error)} <button onClick={management.refresh}>{t("common.retry")}</button></p> : null}
-    <div className="indexer-actions"><button className={snapshot.ruleRevision ? "icon-button" : "primary-button"} disabled={busy} title={t(snapshot.ruleRevision ? "indexers.addSite" : "indexers.installFirst")} aria-label={t(snapshot.ruleRevision ? "indexers.addSite" : "indexers.installFirst")} onClick={add}>{snapshot.ruleRevision ? <FontAwesomeIcon icon={faPlus} aria-hidden="true" /> : t("indexers.installFirst")}</button>{snapshot.jackettEnabled ? <button className="icon-button" title={t("indexers.refreshExternal")} aria-label={t("indexers.refreshExternal")} disabled={busy} onClick={() => void management.refreshJackett()}><FontAwesomeIcon icon={faRotate} aria-hidden="true" /></button> : null}</div>
+
     {snapshot.catalogErrorCode ? <p className="settings-feedback">{t(`indexerErrors.${snapshot.catalogErrorCode}`, { defaultValue: t("indexers.catalogFailed") })}</p> : null}
     {snapshot.healthErrorCode ? <p role="status" className="settings-feedback">{t("indexerHealth.unavailable")}</p> : null}
     <div ref={reorder.list} className="indexer-list" aria-busy={busy}>
       {!sites.length ? <p>{t("indexers.empty")}</p> : null}
-      {sites.map((site, index) => <div className={`indexer-row${reorder.dragged===site.id?" is-dragging":""}${reorder.over===site.id?" is-drop-target":""}`} key={site.id} data-indexer-id={site.id} {...reorder.row(site.id)}>
-        <button className="ghost-button indexer-drag" disabled={busy} aria-label={t("indexers.drag", { name: site.name })} {...reorder.handle(site.id)}><FontAwesomeIcon icon={faGripVertical} aria-hidden="true" /></button>
-        <div className="indexer-row__content"><strong>{site.name}</strong><span className="settings-note">{t(site.kind === IndexerSourceKind.Builtin ? "indexers.builtin" : "indexers.external")}{site.language ? ` · ${site.language}` : ""}</span><IndexerPrivacyBadge privacy={site.privacy} />{/^https?:\/\//i.test(site.siteUrl) ? <a dir="ltr" href={site.siteUrl} target="_blank" rel="noreferrer" draggable={false}>{site.siteUrl}</a> : null}{site.errorCode ? <span className="tone-danger">{t(`indexerErrors.${site.errorCode}`, { defaultValue: t("indexers.needsAttention") })}</span> : null}{site.health.search ? <IndexerObservationView operation="SEARCH" observation={site.health.search} /> : null}{site.health.fetch ? <IndexerObservationView operation="FETCH" observation={site.health.fetch} /> : null}</div>
-        <SettingsSwitch checked={site.enabled} disabled={busy} label={t("indexers.enableSite", { name: site.name })} onChange={enabled => void management.setEnabled(site.id, enabled)} />
-        <div className="indexer-row__actions"><button className="icon-button" title={t("indexers.moveUp", { name: site.name })} disabled={busy || index === 0} aria-label={t("indexers.moveUp", { name: site.name })} onClick={() => move(index, index - 1)}><FontAwesomeIcon icon={faArrowUp} aria-hidden="true" /></button><button className="icon-button" title={t("indexers.moveDown", { name: site.name })} disabled={busy || index === sites.length - 1} aria-label={t("indexers.moveDown", { name: site.name })} onClick={() => move(index, index + 1)}><FontAwesomeIcon icon={faArrowDown} aria-hidden="true" /></button>
-          <button className="icon-button" title={t("indexerCheck.title")} aria-label={t("indexerCheck.title")} disabled={busy} onClick={()=>setTesting(site)}><FontAwesomeIcon icon={faBinoculars} aria-hidden="true" /></button>
+      {sites.map(site => <div className={`indexer-row${reorder.dragged===site.id?" is-dragging":""}${reorder.over===site.id?" is-drop-target":""}`} key={site.id} data-indexer-id={site.id} {...reorder.row(site.id)}>
+        <button className="ghost-button indexer-drag" aria-disabled={busy} aria-keyshortcuts="ArrowUp ArrowDown" aria-description={t("indexers.dragHint")} title={t("indexers.dragHint")} aria-label={t("indexers.drag", { name: site.name })} {...reorder.handle(site.id)}><FontAwesomeIcon icon={faGripVertical} aria-hidden="true" /></button>
+        <div className="indexer-row__content">
+          <div className="indexer-row__identity">
+            <strong>{/^https?:\/\//i.test(site.siteUrl) ? <a href={site.siteUrl} target="_blank" rel="noreferrer" draggable={false}>{site.name}</a> : site.name}</strong>
+            <span className="indexer-language">{site.language}</span><IndexerPrivacyBadge privacy={site.privacy} />
+          </div>
+          {site.description ? <p className="indexer-description" title={site.description}>{site.description}</p> : null}
+          {site.errorCode ? <span className="indexer-error tone-danger" title={t(`indexerErrors.${site.errorCode}`, { defaultValue: t("indexers.needsAttention") })}>{t(`indexerErrors.${site.errorCode}`, { defaultValue: t("indexers.needsAttention") })}</span> : null}
+          <IndexerSiteHistory health={site.health} />
+        </div>
+        <div className="indexer-row__controls">
+          <span className="indexer-source">{t(site.kind === IndexerSourceKind.Builtin ? "indexers.builtin" : "indexers.external")}</span>
+          <div className="indexer-row__actions">
+          <button className="ghost-button indexer-test" title={t("indexerCheck.title")} aria-label={t("indexerCheck.title")} disabled={busy} onClick={()=>setTesting(site)}>{t("indexers.test")}</button>
           {site.kind === IndexerSourceKind.Builtin ? <>{site.loginSupported ? <button className="icon-button" title={t("indexerLogin.title")} aria-label={t("indexerLogin.title")} disabled={busy} onClick={()=>setLoginId(site.id)}><FontAwesomeIcon icon={faRightToBracket} aria-hidden="true" /></button> : null}<button className="icon-button" title={t("indexers.edit")} aria-label={t("indexers.edit")} disabled={busy} onClick={() => setEditor({ site, definition: { id: site.definitionId, name: site.name, links: [site.siteUrl], settings: site.settings }, revision: snapshot.revision })}><FontAwesomeIcon icon={faGear} aria-hidden="true" /></button><button className="icon-button" title={t("indexers.remove")} aria-label={t("indexers.remove")} disabled={busy} onClick={() => setRemoving(site)}><FontAwesomeIcon icon={faTrashCan} aria-hidden="true" /></button></> : null}
+          <SettingsSwitch checked={site.enabled} disabled={busy} label={t("indexers.enableSite", { name: site.name })} onChange={enabled => void management.setEnabled(site.id, enabled)} />
+          </div>
         </div>
       </div>)}
     </div>

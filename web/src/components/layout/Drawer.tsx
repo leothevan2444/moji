@@ -13,9 +13,10 @@ interface DrawerProps {
   footer?: ReactNode;
   closeDisabled?: boolean;
   variant?: "media";
+  className?: string;
 }
 
-export function Drawer({ visibleDrawer, closing, title, titleIcon, onClose, children, footer, closeDisabled = false, variant: variantOverride }: DrawerProps) {
+export function Drawer({ visibleDrawer, closing, title, titleIcon, onClose, children, footer, closeDisabled = false, variant: variantOverride, className = "" }: DrawerProps) {
   const { t } = useTranslation();
   const panelRef = useRef<HTMLElement>(null);
   const titleId = useId();
@@ -33,7 +34,7 @@ export function Drawer({ visibleDrawer, closing, title, titleIcon, onClose, chil
         aria-modal="true"
         aria-labelledby={titleId}
         tabIndex={-1}
-        className={`drawer drawer--${variant} ${closing ? "is-closing" : ""}`}
+        className={`drawer drawer--${variant} ${className} ${closing ? "is-closing" : ""}`}
         onClick={(event) => event.stopPropagation()}
       >
         <div className="drawer__head">

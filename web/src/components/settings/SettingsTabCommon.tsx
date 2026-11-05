@@ -27,8 +27,8 @@ export function SecretInput({ value, onChange, placeholder, id, disabled = false
   return <div className="secret-input"><input id={id} disabled={disabled} className="secret-input__field" type={visible ? "text" : "password"} value={value} onChange={(event) => onChange(event.target.value)} placeholder={placeholder} autoComplete="off" spellCheck={false} /><button type="button" disabled={disabled} className="secret-input__toggle" aria-label={t(visible ? "settings.hideSecret" : "settings.showSecret")} onClick={() => setVisible((current) => !current)}><FontAwesomeIcon icon={visible ? faEyeSlash : faEye} aria-hidden="true" /></button></div>;
 }
 
-export function SettingsCard({ title, children }: { title: string; children: ReactNode }) {
-  return <article className="drawer-card"><div className="drawer-card__head"><h3>{title}</h3></div>{children}</article>;
+export function SettingsCard({ title, children, actions }: { title: string; children: ReactNode; actions?: ReactNode }) {
+  return <article className="drawer-card"><div className="drawer-card__head"><h3>{title}</h3>{actions ? <div className="settings-card-actions">{actions}</div> : null}</div>{children}</article>;
 }
 
 export function SettingsSaveStatus({ state, error, retry }: { state: import("./settingsAutosave").SaveState; error: unknown; retry: () => void }) {

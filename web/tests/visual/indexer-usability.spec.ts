@@ -1,7 +1,7 @@
 import { expect, type Page } from "@playwright/test";
 import { test, indexerInstances } from "./fixtures";
 
-const definition = { description: "A synthetic site with a long description for checking narrow dialogs and wrapped actions.", language: "en-US", privacy: "public", loginSupported: false, digest: "digest", links: ["https://example.test/"], modes: ["search"], warnings: [], settings: [] };
+const definition = { categories: ["Movies", "Movies/HD", "TV"], description: "A synthetic site with a long description for checking narrow dialogs and wrapped actions.", language: "en-US", privacy: "public", loginSupported: false, digest: "digest", links: ["https://example.test/"], modes: ["search"], warnings: [], settings: [] };
 const definitions = [
   { ...definition, id: "fresh-public", name: "Fresh Public" },
   { ...definition, id: "private-login", name: "Private Account", privacy: "private", loginSupported: true },
@@ -11,7 +11,7 @@ const definitions = [
 ];
 const catalog = { revision: "a".repeat(40), totalCount: 30, offset: 0, limit: 30, items: definitions };
 async function openCatalog(page: Page) {
-  await page.locator(".settings-subpanel:not([hidden]) .indexer-actions > button").first().click();
+  await page.locator(".settings-subpanel:not([hidden]) .settings-card-actions > button").first().click();
   return page.getByRole("dialog");
 }
 
@@ -39,7 +39,7 @@ test.describe("site catalog usability", () => {
       expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
       await page.keyboard.press("Escape");
       await expect(dialog).toHaveCount(0);
-      await expect(page.locator(".settings-subpanel:not([hidden]) .indexer-actions > button").first()).toBeFocused();
+      await expect(page.locator(".settings-subpanel:not([hidden]) .settings-card-actions > button").first()).toBeFocused();
     });
   }
 
@@ -170,7 +170,7 @@ test("sorting starts from the visible handle with real mouse or touch and surviv
   await expect.poll(() => orders).toEqual([["jackett/b", "jackett/c", "jackett/a"]]);
   await page.reload();
   await expect(page.locator(".indexer-row").last()).toHaveAttribute("data-indexer-id", "jackett/a");
-  await page.getByRole("button", { name: "Move A up", exact: true }).focus(); await page.keyboard.press("Enter");
+  await page.getByRole("button", { name: "Drag A to reorder", exact: true }).focus(); await page.keyboard.press("ArrowUp");
   await expect.poll(() => orders.length).toBe(2);
   expect(orders[1]).toEqual(["jackett/b", "jackett/a", "jackett/c"]);
 });

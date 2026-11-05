@@ -99,6 +99,15 @@
     "discard": "放弃此页尚未保存的修改，载入服务器上的当前设置。"
   },
   "indexers": {
+    "test": "测试",
+    "history": "记录",
+    "categories": "分类",
+    "dragHint": "拖动调整顺序；聚焦后使用 ↑ / ↓ 键排序",
+    "jackettConnection": "连接 Jackett",
+    "jackettPurpose": "接入已有 Jackett 服务，使用其中配置的站点。关闭此开关后，Moji 不再通过 Jackett 搜索；内置站点不受影响。",
+    "jackettSites": "Jackett 中的站点",
+    "jackettSitesHelp": "站点账号和配置在 Jackett 中管理。在 Moji 的站点列表中刷新目录、启用站点并调整搜索顺序。连接测试只检查服务连接，不验证每个站点的搜索和取种。",
+    "manageSites": "管理站点",
     "library": "规则库",
     "sites": "站点",
     "libraryReady": "已安装 {{count}} 个站点定义",

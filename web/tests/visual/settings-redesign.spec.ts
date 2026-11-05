@@ -80,7 +80,7 @@ test.describe("incremental autosave", () => {
 
 test("dark settings preserve navigation and keyboard access", async ({ page }, info) => {
   await page.addInitScript(() => localStorage.setItem("moji:theme", "dark"));
-  await page.goto("/settings/indexers");
+  await page.goto("/settings/indexers?panel=connection");
   await expect(page.locator(".settings-tabs [aria-current=page]")).toHaveText("Indexers");
   const show = page.getByRole("button", { name: "Show credential" }).first();
   await show.focus();
@@ -130,11 +130,11 @@ test("slow settings queries keep the current service and section titles",async({
     if(name==="ServiceConnectionSettings" || name==="SettingsPolicySection")await gate;
     await route.fallback();
   });
-  await page.goto("/settings/indexers",{waitUntil:"domcontentloaded"});
+  await page.goto("/settings/indexers?panel=connection",{waitUntil:"domcontentloaded"});
   try {
-    await expect(page.getByRole("heading",{name:"Jackett",exact:true})).toBeVisible();
-    await page.getByRole("tab",{name:"Query order",exact:true}).click();
-    await expect(page.getByRole("heading",{name:"Indexer query order",exact:true})).toBeVisible();
+    await expect(page.getByRole("heading",{name:"Connect to Jackett",exact:true})).toBeVisible();
+    await page.getByRole("tab",{name:"Sites",exact:true}).click();
+    await expect(page.getByRole("heading",{name:"Sites",exact:true})).toBeVisible();
     await expect(page.getByRole("heading",{name:"Connections",exact:true})).toHaveCount(0);
     await expect(page.getByRole("heading",{name:"Automation",exact:true})).toHaveCount(0);
   } finally {release();}

@@ -201,5 +201,5 @@ test("indexer rows preserve metadata, touch dragging and scoped order", async ({
     await touch.send("Input.dispatchTouchEvent",{type:"touchEnd",touchPoints:[]});await touch.detach();
   }else{await rows.nth(0).locator(".indexer-drag").dragTo(rows.nth(2));}
   await expect.poll(()=>orders.length).toBe(1);expect(orders[0]).toEqual(["jackett/b","jackett/c","jackett/a"]);await expect(rows.nth(2)).toContainText("Alpha");
-  await rows.nth(2).getByRole("button",{name:"Move Alpha up",exact:true}).click();await expect.poll(()=>orders.length).toBe(2);expect(orders[1]).toEqual(["jackett/b","jackett/a","jackett/c"]);
+  await rows.nth(2).getByRole("button",{name:"Drag Alpha to reorder",exact:true}).press("ArrowUp");await expect.poll(()=>orders.length).toBe(2);expect(orders[1]).toEqual(["jackett/b","jackett/a","jackett/c"]);
 });

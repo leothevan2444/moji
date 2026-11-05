@@ -14,6 +14,13 @@ export function useIndexerReorder<T extends HTMLElement>(order: string[], onMove
   });
   const handle = (id: string): HTMLAttributes<HTMLElement> => ({
     draggable: !disabled,
+    onKeyDown: event => {
+      if (disabled || (event.key !== "ArrowUp" && event.key !== "ArrowDown")) return;
+      event.preventDefault();
+      const index = order.indexOf(id);
+      const target = order[index + (event.key === "ArrowUp" ? -1 : 1)];
+      if (target) move(id, target);
+    },
     onDragStart: event => { if (disabled) { event.preventDefault(); return; } event.dataTransfer.effectAllowed = "move"; event.dataTransfer.setData("text/plain", id); setDragged(id); },
     onDragEnd: reset,
     onPointerDown: event => { if (disabled || event.pointerType === "mouse") return; event.preventDefault(); event.currentTarget.setPointerCapture(event.pointerId); touch.current = { id, target: id }; setDragged(id); },
