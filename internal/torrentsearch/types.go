@@ -3,7 +3,9 @@ package torrentsearch
 
 import (
 	"errors"
+	"strings"
 	"time"
+	"unicode/utf8"
 
 	"github.com/leothevan2444/moji/internal/indexer"
 )
@@ -34,8 +36,10 @@ type Site struct {
 	State            string
 	Report           indexer.SiteReport
 	FetchedAt        *time.Time
+	CandidateCount   int
 }
 type Snapshot struct {
+	FilterInstanceID, CandidateQuery            string
 	ID, State, TaskID, ErrorCode, CorrelationID string
 	Revision                                    int64
 	Query                                       indexer.Query
@@ -51,11 +55,16 @@ type Input struct {
 	TaskID string
 }
 type Page struct {
-	Offset, Limit int
-	Sort          string
+	Offset, Limit              int
+	Sort                       string
+	InstanceID, CandidateQuery string
 }
 
 func (p Page) normalized() (Page, error) {
+	p.CandidateQuery = strings.TrimSpace(p.CandidateQuery)
+	if len(p.InstanceID) > 128 || !utf8.ValidString(p.CandidateQuery) || utf8.RuneCountInString(p.CandidateQuery) > 512 {
+		return p, ErrInvalid
+	}
 	if p.Limit == 0 {
 		p.Limit = 100
 	}

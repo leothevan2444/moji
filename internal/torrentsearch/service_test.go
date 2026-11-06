@@ -126,6 +126,35 @@ func TestNamedQueryQualificationPrecedesDurableAcceptance(t *testing.T) {
 	}
 }
 
+func TestCandidateFiltersCoverAllPagesAndPreserveSiteCounts(t *testing.T) {
+	service, _ := fixture(t, completedSource(45))
+	worker(t, service)
+	run, err := service.StartSearch(context.Background(), Input{Query: indexer.Query{Keywords: "ABCD-123"}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	await(t, service, run.ID, func(snapshot Snapshot) bool { return snapshot.State == "COMPLETED" })
+	filtered, err := service.Get(context.Background(), run.ID, Page{Offset: 10, Limit: 10, CandidateQuery: "  aBcD-1  ", InstanceID: "one"})
+	if err != nil || filtered.Total != 11 || len(filtered.Candidates) != 1 || filtered.Candidates[0].Title != "ABCD-19" || filtered.Sites[0].CandidateCount != 11 {
+		t.Fatalf("filtered page: %+v, %v", filtered, err)
+	}
+	if filtered.FilterInstanceID != "one" || filtered.CandidateQuery != "aBcD-1" {
+		t.Fatal("filter identity missing", filtered)
+	}
+	empty, err := service.Get(context.Background(), run.ID, Page{CandidateQuery: "ABCD-1", InstanceID: "missing"})
+	if err != nil || empty.Total != 0 || len(empty.Candidates) != 0 || empty.Sites[0].CandidateCount != 11 {
+		t.Fatal("site filter changed facet counts", empty, err)
+	}
+	literal, err := service.Get(context.Background(), run.ID, Page{CandidateQuery: "%"})
+	if err != nil || literal.Total != 0 {
+		t.Fatal("keyword treated as a SQL wildcard", literal, err)
+	}
+	all, err := service.Get(context.Background(), run.ID, Page{Limit: 10})
+	if err != nil || all.Total != 45 || all.Sites[0].CandidateCount != 45 {
+		t.Fatal("clearing filters lost results", all, err)
+	}
+}
+
 func TestSearchPersistsBeforeExecutionSurvivesCallerAndPagesServerOwnedCandidates(t *testing.T) {
 	service, manager := fixture(t, completedSource(130))
 	caller, cancel := context.WithCancel(context.Background())

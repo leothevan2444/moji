@@ -27,10 +27,10 @@ func nullableText(value string) *string {
 	return &value
 }
 func torrentSearchToModel(snapshot torrentsearch.Snapshot) *model.TorrentSearch {
-	out := &model.TorrentSearch{ID: snapshot.ID, State: model.TorrentSearchState(snapshot.State), Revision: snapshot.Revision, Keywords: snapshot.Query.Keywords, TaskID: nullableText(snapshot.TaskID), CreatedAt: snapshot.CreatedAt.UTC().Format(time.RFC3339Nano), UpdatedAt: snapshot.UpdatedAt.UTC().Format(time.RFC3339Nano), ExpiresAt: snapshot.ExpiresAt.UTC().Format(time.RFC3339Nano), FinishedAt: nullableSearchTime(snapshot.FinishedAt), CancelRequested: snapshot.CancelRequested, Partial: snapshot.Partial, Truncated: snapshot.Truncated, ErrorCode: nullableText(snapshot.ErrorCode), CorrelationID: snapshot.CorrelationID, Total: snapshot.Total, Offset: snapshot.Offset, Limit: snapshot.Limit, Sites: []*model.TorrentSearchSite{}, Candidates: []*model.TorrentSearchCandidate{}}
+	out := &model.TorrentSearch{FilterInstanceID: nullableText(snapshot.FilterInstanceID), CandidateQuery: snapshot.CandidateQuery, ID: snapshot.ID, State: model.TorrentSearchState(snapshot.State), Revision: snapshot.Revision, Keywords: snapshot.Query.Keywords, TaskID: nullableText(snapshot.TaskID), CreatedAt: snapshot.CreatedAt.UTC().Format(time.RFC3339Nano), UpdatedAt: snapshot.UpdatedAt.UTC().Format(time.RFC3339Nano), ExpiresAt: snapshot.ExpiresAt.UTC().Format(time.RFC3339Nano), FinishedAt: nullableSearchTime(snapshot.FinishedAt), CancelRequested: snapshot.CancelRequested, Partial: snapshot.Partial, Truncated: snapshot.Truncated, ErrorCode: nullableText(snapshot.ErrorCode), CorrelationID: snapshot.CorrelationID, Total: snapshot.Total, Offset: snapshot.Offset, Limit: snapshot.Limit, Sites: []*model.TorrentSearchSite{}, Candidates: []*model.TorrentSearchCandidate{}}
 	for _, site := range snapshot.Sites {
 		report := site.Report
-		item := &model.TorrentSearchSite{InstanceID: site.InstanceID, Name: site.Name, State: model.TorrentSearchSiteState(site.State), Results: report.Results, CacheHit: report.CacheHit, FetchedAt: nullableSearchTime(site.FetchedAt), ElapsedMs: report.Elapsed.Milliseconds(), Partial: report.Partial, Truncated: report.Truncated, ErrorCode: nullableText(report.Code), CorrelationID: nullableText(report.CorrelationID), RetryAt: nullableSearchTime(report.RetryAt)}
+		item := &model.TorrentSearchSite{InstanceID: site.InstanceID, Name: site.Name, State: model.TorrentSearchSiteState(site.State), Results: report.Results, CandidateCount: site.CandidateCount, CacheHit: report.CacheHit, FetchedAt: nullableSearchTime(site.FetchedAt), ElapsedMs: report.Elapsed.Milliseconds(), Partial: report.Partial, Truncated: report.Truncated, ErrorCode: nullableText(report.Code), CorrelationID: nullableText(report.CorrelationID), RetryAt: nullableSearchTime(report.RetryAt)}
 		if site.Kind != "" {
 			kind := model.IndexerSourceKind(site.Kind)
 			item.Kind = &kind
@@ -86,11 +86,17 @@ func (r *Resolver) startTorrentSearch(ctx context.Context, input model.StartTorr
 	}
 	return torrentSearchToModel(snapshot), nil
 }
-func (r *Resolver) torrentSearch(ctx context.Context, id string, offset, limit *int, sort *model.TorrentSearchSort) (*model.TorrentSearch, error) {
+func (r *Resolver) torrentSearch(ctx context.Context, id string, offset, limit *int, sort *model.TorrentSearchSort, instanceID, candidateQuery *string) (*model.TorrentSearch, error) {
 	if r.SearchRuns == nil {
 		return nil, indexer.ErrNotConfigured
 	}
 	page := torrentsearch.Page{}
+	if instanceID != nil {
+		page.InstanceID = *instanceID
+	}
+	if candidateQuery != nil {
+		page.CandidateQuery = *candidateQuery
+	}
 	if offset != nil {
 		page.Offset = *offset
 	}

@@ -1,5 +1,5 @@
 extend type Query {
-  torrentSearch(id: ID!, offset: Int = 0, limit: Int = 100, sortBy: TorrentSearchSort = RELEVANCE): TorrentSearch!
+  torrentSearch(id: ID!, offset: Int = 0, limit: Int = 100, sortBy: TorrentSearchSort = RELEVANCE, instanceId: ID, candidateQuery: String): TorrentSearch!
 }
 extend type Mutation {
   startTorrentSearch(input: StartTorrentSearchInput!): TorrentSearch!
@@ -37,6 +37,8 @@ input QueueTorrentCandidateInput {
 }
 "A persisted, bounded search snapshot. Events invalidate this snapshot."
 type TorrentSearch {
+  filterInstanceId: ID
+  candidateQuery: String!
   id: ID!
   state: TorrentSearchState!
   revision: Long!
@@ -62,6 +64,7 @@ type TorrentSearchSite {
   name: String!
   kind: IndexerSourceKind
   state: TorrentSearchSiteState!
+  candidateCount: Int!
   results: Int!
   cacheHit: Boolean!
   fetchedAt: String

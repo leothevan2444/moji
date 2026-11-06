@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"errors"
+	"strings"
 	"time"
 
 	"github.com/jmoiron/sqlx"
@@ -48,7 +49,7 @@ func (s *Store) Get(ctx context.Context, id string, page Page, now time.Time) (S
 	if row.Version != 1 {
 		return Snapshot{}, ErrInvalid
 	}
-	out := Snapshot{ID: id, State: row.State, TaskID: row.TaskID, Revision: row.Revision, CancelRequested: row.CancelRequested, Partial: row.Partial, Truncated: row.Truncated, ErrorCode: row.ErrorCode, CorrelationID: row.CorrelationID, Offset: page.Offset, Limit: page.Limit, Sites: []Site{}, Candidates: []Candidate{}}
+	out := Snapshot{FilterInstanceID: page.InstanceID, CandidateQuery: page.CandidateQuery, ID: id, State: row.State, TaskID: row.TaskID, Revision: row.Revision, CancelRequested: row.CancelRequested, Partial: row.Partial, Truncated: row.Truncated, ErrorCode: row.ErrorCode, CorrelationID: row.CorrelationID, Offset: page.Offset, Limit: page.Limit, Sites: []Site{}, Candidates: []Candidate{}}
 	if err = json.Unmarshal([]byte(row.Query), &out.Query); err != nil {
 		return Snapshot{}, ErrInvalid
 	}
@@ -94,23 +95,81 @@ func (s *Store) Get(ctx context.Context, id string, page Page, now time.Time) (S
 		}
 		out.Sites = append(out.Sites, site)
 	}
-	if err = tx.GetContext(ctx, &out.Total, `SELECT count(*) FROM torrent_search_candidates WHERE search_id=?`, id); err != nil {
-		return Snapshot{}, err
-	}
 	order := map[string]string{"RELEVANCE": "position", "SEEDERS_DESC": "seeders DESC NULLS LAST,position", "SIZE_DESC": "size DESC NULLS LAST,position", "DATE_DESC": "published_at DESC NULLS LAST,position"}[page.Sort]
 	var candidates []struct {
 		Version int    `db:"payload_version"`
 		Payload string `db:"payload_json"`
 	}
-	if err = tx.SelectContext(ctx, &candidates, `SELECT payload_version,payload_json FROM torrent_search_candidates WHERE search_id=? ORDER BY `+order+` LIMIT ? OFFSET ?`, id, page.Limit, page.Offset); err != nil {
+	counts := map[string]int{}
+	filtered := page.CandidateQuery != ""
+	if filtered {
+		// A run retains at most 1000 candidates. Match Unicode titles in Go,
+		// treating every word literally rather than as a SQL wildcard.
+		err = tx.SelectContext(ctx, &candidates, `SELECT payload_version,payload_json FROM torrent_search_candidates WHERE search_id=? ORDER BY `+order+` LIMIT 1001`, id)
+		if len(candidates) > 1000 {
+			return Snapshot{}, ErrInvalid
+		}
+	} else {
+		var facets []struct {
+			InstanceID string `db:"instance_id"`
+			Count      int    `db:"count"`
+		}
+		if err = tx.SelectContext(ctx, &facets, `SELECT instance_id,count(*) AS count FROM torrent_search_candidates WHERE search_id=? GROUP BY instance_id`, id); err != nil {
+			return Snapshot{}, err
+		}
+		for _, facet := range facets {
+			counts[facet.InstanceID] = facet.Count
+			if page.InstanceID == "" || facet.InstanceID == page.InstanceID {
+				out.Total += facet.Count
+			}
+		}
+		where := "search_id=?"
+		args := []any{id}
+		if page.InstanceID != "" {
+			where += " AND instance_id=?"
+			args = append(args, page.InstanceID)
+		}
+		args = append(args, page.Limit, page.Offset)
+		err = tx.SelectContext(ctx, &candidates, `SELECT payload_version,payload_json FROM torrent_search_candidates WHERE `+where+` ORDER BY `+order+` LIMIT ? OFFSET ?`, args...)
+	}
+	if err != nil {
 		return Snapshot{}, err
 	}
+	matched := []Candidate{}
+	words := strings.Fields(strings.ToLower(page.CandidateQuery))
 	for _, row := range candidates {
 		var candidate Candidate
 		if row.Version != 1 || json.Unmarshal([]byte(row.Payload), &candidate) != nil {
 			return Snapshot{}, ErrInvalid
 		}
-		out.Candidates = append(out.Candidates, candidate)
+
+		if !filtered {
+			out.Candidates = append(out.Candidates, candidate)
+			continue
+		}
+		title := strings.ToLower(candidate.Title)
+		matches := true
+		for _, word := range words {
+			if !strings.Contains(title, word) {
+				matches = false
+				break
+			}
+		}
+		if !matches {
+			continue
+		}
+		counts[candidate.InstanceID]++
+		if page.InstanceID == "" || candidate.InstanceID == page.InstanceID {
+			matched = append(matched, candidate)
+		}
+	}
+	if filtered {
+		out.Total = len(matched)
+		start := min(page.Offset, out.Total)
+		out.Candidates = matched[start:min(start+page.Limit, out.Total)]
+	}
+	for i := range out.Sites {
+		out.Sites[i].CandidateCount = counts[out.Sites[i].InstanceID]
 	}
 	if err = tx.Commit(); err != nil {
 		return Snapshot{}, err

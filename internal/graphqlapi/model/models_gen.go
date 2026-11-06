@@ -1675,25 +1675,27 @@ type TorrentFileNameMatchRuleInput struct {
 
 // A persisted, bounded search snapshot. Events invalidate this snapshot.
 type TorrentSearch struct {
-	ID              string                    `json:"id"`
-	State           TorrentSearchState        `json:"state"`
-	Revision        int64                     `json:"revision"`
-	Keywords        string                    `json:"keywords"`
-	TaskID          *string                   `json:"taskId,omitempty"`
-	CreatedAt       string                    `json:"createdAt"`
-	UpdatedAt       string                    `json:"updatedAt"`
-	ExpiresAt       string                    `json:"expiresAt"`
-	FinishedAt      *string                   `json:"finishedAt,omitempty"`
-	CancelRequested bool                      `json:"cancelRequested"`
-	Partial         bool                      `json:"partial"`
-	Truncated       bool                      `json:"truncated"`
-	ErrorCode       *string                   `json:"errorCode,omitempty"`
-	CorrelationID   string                    `json:"correlationId"`
-	Total           int                       `json:"total"`
-	Offset          int                       `json:"offset"`
-	Limit           int                       `json:"limit"`
-	Sites           []*TorrentSearchSite      `json:"sites"`
-	Candidates      []*TorrentSearchCandidate `json:"candidates"`
+	FilterInstanceID *string                   `json:"filterInstanceId,omitempty"`
+	CandidateQuery   string                    `json:"candidateQuery"`
+	ID               string                    `json:"id"`
+	State            TorrentSearchState        `json:"state"`
+	Revision         int64                     `json:"revision"`
+	Keywords         string                    `json:"keywords"`
+	TaskID           *string                   `json:"taskId,omitempty"`
+	CreatedAt        string                    `json:"createdAt"`
+	UpdatedAt        string                    `json:"updatedAt"`
+	ExpiresAt        string                    `json:"expiresAt"`
+	FinishedAt       *string                   `json:"finishedAt,omitempty"`
+	CancelRequested  bool                      `json:"cancelRequested"`
+	Partial          bool                      `json:"partial"`
+	Truncated        bool                      `json:"truncated"`
+	ErrorCode        *string                   `json:"errorCode,omitempty"`
+	CorrelationID    string                    `json:"correlationId"`
+	Total            int                       `json:"total"`
+	Offset           int                       `json:"offset"`
+	Limit            int                       `json:"limit"`
+	Sites            []*TorrentSearchSite      `json:"sites"`
+	Candidates       []*TorrentSearchCandidate `json:"candidates"`
 }
 
 // Only this server-owned candidate ID may be selected; locators and credentials are private.
@@ -1726,19 +1728,20 @@ type TorrentSearchParameterInput struct {
 }
 
 type TorrentSearchSite struct {
-	InstanceID    string                 `json:"instanceId"`
-	Name          string                 `json:"name"`
-	Kind          *IndexerSourceKind     `json:"kind,omitempty"`
-	State         TorrentSearchSiteState `json:"state"`
-	Results       int                    `json:"results"`
-	CacheHit      bool                   `json:"cacheHit"`
-	FetchedAt     *string                `json:"fetchedAt,omitempty"`
-	ElapsedMs     int64                  `json:"elapsedMs"`
-	Partial       bool                   `json:"partial"`
-	Truncated     bool                   `json:"truncated"`
-	ErrorCode     *string                `json:"errorCode,omitempty"`
-	CorrelationID *string                `json:"correlationId,omitempty"`
-	RetryAt       *string                `json:"retryAt,omitempty"`
+	InstanceID     string                 `json:"instanceId"`
+	Name           string                 `json:"name"`
+	Kind           *IndexerSourceKind     `json:"kind,omitempty"`
+	State          TorrentSearchSiteState `json:"state"`
+	CandidateCount int                    `json:"candidateCount"`
+	Results        int                    `json:"results"`
+	CacheHit       bool                   `json:"cacheHit"`
+	FetchedAt      *string                `json:"fetchedAt,omitempty"`
+	ElapsedMs      int64                  `json:"elapsedMs"`
+	Partial        bool                   `json:"partial"`
+	Truncated      bool                   `json:"truncated"`
+	ErrorCode      *string                `json:"errorCode,omitempty"`
+	CorrelationID  *string                `json:"correlationId,omitempty"`
+	RetryAt        *string                `json:"retryAt,omitempty"`
 }
 
 type TorrentSelectionPreview struct {

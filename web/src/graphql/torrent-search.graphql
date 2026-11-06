@@ -1,11 +1,11 @@
 fragment TorrentSearchFields on TorrentSearch {
-  id state revision keywords taskId createdAt updatedAt expiresAt finishedAt
+  id state revision keywords taskId filterInstanceId candidateQuery createdAt updatedAt expiresAt finishedAt
   cancelRequested partial truncated errorCode correlationId total offset limit
-  sites { instanceId name kind state results cacheHit fetchedAt elapsedMs partial truncated errorCode correlationId retryAt }
+  sites { instanceId name kind state candidateCount results cacheHit fetchedAt elapsedMs partial truncated errorCode correlationId retryAt }
   candidates { id instanceId instanceName kind title detailsUrl infoHash size seeders peers publishedAt categories }
 }
-query TorrentSearch($id: ID!, $offset: Int, $limit: Int, $sortBy: TorrentSearchSort) {
-  torrentSearch(id: $id, offset: $offset, limit: $limit, sortBy: $sortBy) { ...TorrentSearchFields }
+query TorrentSearch($id: ID!, $offset: Int, $limit: Int, $sortBy: TorrentSearchSort, $instanceId: ID, $candidateQuery: String) {
+  torrentSearch(id: $id, offset: $offset, limit: $limit, sortBy: $sortBy, instanceId: $instanceId, candidateQuery: $candidateQuery) { ...TorrentSearchFields }
 }
 mutation StartTorrentSearch($input: StartTorrentSearchInput!) { startTorrentSearch(input: $input) { id ...TorrentSearchFields } }
 mutation CancelTorrentSearch($id: ID!) { cancelTorrentSearch(id: $id) { id ...TorrentSearchFields } }

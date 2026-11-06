@@ -821,7 +821,7 @@ type ComplexityRoot struct {
 		TaskStashScenes           func(childComplexity int, id string) int
 		TaskSummaries             func(childComplexity int, ids []string) int
 		Tasks                     func(childComplexity int) int
-		TorrentSearch             func(childComplexity int, id string, offset *int, limit *int, sortBy *model.TorrentSearchSort) int
+		TorrentSearch             func(childComplexity int, id string, offset *int, limit *int, sortBy *model.TorrentSearchSort, instanceID *string, candidateQuery *string) int
 		UpcomingReleases          func(childComplexity int, input model.UpcomingReleaseQueryInput) int
 		Version                   func(childComplexity int) int
 	}
@@ -1350,25 +1350,27 @@ type ComplexityRoot struct {
 	}
 
 	TorrentSearch struct {
-		CancelRequested func(childComplexity int) int
-		Candidates      func(childComplexity int) int
-		CorrelationID   func(childComplexity int) int
-		CreatedAt       func(childComplexity int) int
-		ErrorCode       func(childComplexity int) int
-		ExpiresAt       func(childComplexity int) int
-		FinishedAt      func(childComplexity int) int
-		ID              func(childComplexity int) int
-		Keywords        func(childComplexity int) int
-		Limit           func(childComplexity int) int
-		Offset          func(childComplexity int) int
-		Partial         func(childComplexity int) int
-		Revision        func(childComplexity int) int
-		Sites           func(childComplexity int) int
-		State           func(childComplexity int) int
-		TaskID          func(childComplexity int) int
-		Total           func(childComplexity int) int
-		Truncated       func(childComplexity int) int
-		UpdatedAt       func(childComplexity int) int
+		CancelRequested  func(childComplexity int) int
+		CandidateQuery   func(childComplexity int) int
+		Candidates       func(childComplexity int) int
+		CorrelationID    func(childComplexity int) int
+		CreatedAt        func(childComplexity int) int
+		ErrorCode        func(childComplexity int) int
+		ExpiresAt        func(childComplexity int) int
+		FilterInstanceID func(childComplexity int) int
+		FinishedAt       func(childComplexity int) int
+		ID               func(childComplexity int) int
+		Keywords         func(childComplexity int) int
+		Limit            func(childComplexity int) int
+		Offset           func(childComplexity int) int
+		Partial          func(childComplexity int) int
+		Revision         func(childComplexity int) int
+		Sites            func(childComplexity int) int
+		State            func(childComplexity int) int
+		TaskID           func(childComplexity int) int
+		Total            func(childComplexity int) int
+		Truncated        func(childComplexity int) int
+		UpdatedAt        func(childComplexity int) int
 	}
 
 	TorrentSearchCandidate struct {
@@ -1393,19 +1395,20 @@ type ComplexityRoot struct {
 	}
 
 	TorrentSearchSite struct {
-		CacheHit      func(childComplexity int) int
-		CorrelationID func(childComplexity int) int
-		ElapsedMs     func(childComplexity int) int
-		ErrorCode     func(childComplexity int) int
-		FetchedAt     func(childComplexity int) int
-		InstanceID    func(childComplexity int) int
-		Kind          func(childComplexity int) int
-		Name          func(childComplexity int) int
-		Partial       func(childComplexity int) int
-		Results       func(childComplexity int) int
-		RetryAt       func(childComplexity int) int
-		State         func(childComplexity int) int
-		Truncated     func(childComplexity int) int
+		CacheHit       func(childComplexity int) int
+		CandidateCount func(childComplexity int) int
+		CorrelationID  func(childComplexity int) int
+		ElapsedMs      func(childComplexity int) int
+		ErrorCode      func(childComplexity int) int
+		FetchedAt      func(childComplexity int) int
+		InstanceID     func(childComplexity int) int
+		Kind           func(childComplexity int) int
+		Name           func(childComplexity int) int
+		Partial        func(childComplexity int) int
+		Results        func(childComplexity int) int
+		RetryAt        func(childComplexity int) int
+		State          func(childComplexity int) int
+		Truncated      func(childComplexity int) int
 	}
 
 	TorrentSelectionPreview struct {
@@ -1597,7 +1600,7 @@ type QueryResolver interface {
 	TaskSummaries(ctx context.Context, ids []string) ([]*model.TaskSummary, error)
 	TaskAttentionQueue(ctx context.Context) (*model.TaskAttentionQueue, error)
 	HomeTaskSnapshot(ctx context.Context) (*model.HomeTaskSnapshot, error)
-	TorrentSearch(ctx context.Context, id string, offset *int, limit *int, sortBy *model.TorrentSearchSort) (*model.TorrentSearch, error)
+	TorrentSearch(ctx context.Context, id string, offset *int, limit *int, sortBy *model.TorrentSearchSort, instanceID *string, candidateQuery *string) (*model.TorrentSearch, error)
 	UpcomingReleases(ctx context.Context, input model.UpcomingReleaseQueryInput) (*model.UpcomingReleaseConnection, error)
 }
 type SubscriptionResolver interface {
@@ -5956,7 +5959,7 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 			return 0, false
 		}
 
-		return e.complexity.Query.TorrentSearch(childComplexity, args["id"].(string), args["offset"].(*int), args["limit"].(*int), args["sortBy"].(*model.TorrentSearchSort)), true
+		return e.complexity.Query.TorrentSearch(childComplexity, args["id"].(string), args["offset"].(*int), args["limit"].(*int), args["sortBy"].(*model.TorrentSearchSort), args["instanceId"].(*string), args["candidateQuery"].(*string)), true
 
 	case "Query.upcomingReleases":
 		if e.complexity.Query.UpcomingReleases == nil {
@@ -8584,6 +8587,13 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.TorrentSearch.CancelRequested(childComplexity), true
 
+	case "TorrentSearch.candidateQuery":
+		if e.complexity.TorrentSearch.CandidateQuery == nil {
+			break
+		}
+
+		return e.complexity.TorrentSearch.CandidateQuery(childComplexity), true
+
 	case "TorrentSearch.candidates":
 		if e.complexity.TorrentSearch.Candidates == nil {
 			break
@@ -8618,6 +8628,13 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.TorrentSearch.ExpiresAt(childComplexity), true
+
+	case "TorrentSearch.filterInstanceId":
+		if e.complexity.TorrentSearch.FilterInstanceID == nil {
+			break
+		}
+
+		return e.complexity.TorrentSearch.FilterInstanceID(childComplexity), true
 
 	case "TorrentSearch.finishedAt":
 		if e.complexity.TorrentSearch.FinishedAt == nil {
@@ -8821,6 +8838,13 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.TorrentSearchSite.CacheHit(childComplexity), true
+
+	case "TorrentSearchSite.candidateCount":
+		if e.complexity.TorrentSearchSite.CandidateCount == nil {
+			break
+		}
+
+		return e.complexity.TorrentSearchSite.CandidateCount(childComplexity), true
 
 	case "TorrentSearchSite.correlationId":
 		if e.complexity.TorrentSearchSite.CorrelationID == nil {
@@ -11664,7 +11688,7 @@ extend type Query {
 }
 `, BuiltIn: false},
 	{Name: "../../../graphql/moji/types/torrent_search.graphql", Input: `extend type Query {
-  torrentSearch(id: ID!, offset: Int = 0, limit: Int = 100, sortBy: TorrentSearchSort = RELEVANCE): TorrentSearch!
+  torrentSearch(id: ID!, offset: Int = 0, limit: Int = 100, sortBy: TorrentSearchSort = RELEVANCE, instanceId: ID, candidateQuery: String): TorrentSearch!
 }
 extend type Mutation {
   startTorrentSearch(input: StartTorrentSearchInput!): TorrentSearch!
@@ -11702,6 +11726,8 @@ input QueueTorrentCandidateInput {
 }
 "A persisted, bounded search snapshot. Events invalidate this snapshot."
 type TorrentSearch {
+  filterInstanceId: ID
+  candidateQuery: String!
   id: ID!
   state: TorrentSearchState!
   revision: Long!
@@ -11727,6 +11753,7 @@ type TorrentSearchSite {
   name: String!
   kind: IndexerSourceKind
   state: TorrentSearchSiteState!
+  candidateCount: Int!
   results: Int!
   cacheHit: Boolean!
   fetchedAt: String
@@ -15080,6 +15107,16 @@ func (ec *executionContext) field_Query_torrentSearch_args(ctx context.Context, 
 		return nil, err
 	}
 	args["sortBy"] = arg3
+	arg4, err := ec.field_Query_torrentSearch_argsInstanceID(ctx, rawArgs)
+	if err != nil {
+		return nil, err
+	}
+	args["instanceId"] = arg4
+	arg5, err := ec.field_Query_torrentSearch_argsCandidateQuery(ctx, rawArgs)
+	if err != nil {
+		return nil, err
+	}
+	args["candidateQuery"] = arg5
 	return args, nil
 }
 func (ec *executionContext) field_Query_torrentSearch_argsID(
@@ -15151,6 +15188,42 @@ func (ec *executionContext) field_Query_torrentSearch_argsSortBy(
 	}
 
 	var zeroVal *model.TorrentSearchSort
+	return zeroVal, nil
+}
+
+func (ec *executionContext) field_Query_torrentSearch_argsInstanceID(
+	ctx context.Context,
+	rawArgs map[string]any,
+) (*string, error) {
+	if _, ok := rawArgs["instanceId"]; !ok {
+		var zeroVal *string
+		return zeroVal, nil
+	}
+
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("instanceId"))
+	if tmp, ok := rawArgs["instanceId"]; ok {
+		return ec.unmarshalOID2ᚖstring(ctx, tmp)
+	}
+
+	var zeroVal *string
+	return zeroVal, nil
+}
+
+func (ec *executionContext) field_Query_torrentSearch_argsCandidateQuery(
+	ctx context.Context,
+	rawArgs map[string]any,
+) (*string, error) {
+	if _, ok := rawArgs["candidateQuery"]; !ok {
+		var zeroVal *string
+		return zeroVal, nil
+	}
+
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("candidateQuery"))
+	if tmp, ok := rawArgs["candidateQuery"]; ok {
+		return ec.unmarshalOString2ᚖstring(ctx, tmp)
+	}
+
+	var zeroVal *string
 	return zeroVal, nil
 }
 
@@ -38506,6 +38579,10 @@ func (ec *executionContext) fieldContext_Mutation_startTorrentSearch(ctx context
 		IsResolver: true,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			switch field.Name {
+			case "filterInstanceId":
+				return ec.fieldContext_TorrentSearch_filterInstanceId(ctx, field)
+			case "candidateQuery":
+				return ec.fieldContext_TorrentSearch_candidateQuery(ctx, field)
 			case "id":
 				return ec.fieldContext_TorrentSearch_id(ctx, field)
 			case "state":
@@ -38601,6 +38678,10 @@ func (ec *executionContext) fieldContext_Mutation_cancelTorrentSearch(ctx contex
 		IsResolver: true,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			switch field.Name {
+			case "filterInstanceId":
+				return ec.fieldContext_TorrentSearch_filterInstanceId(ctx, field)
+			case "candidateQuery":
+				return ec.fieldContext_TorrentSearch_candidateQuery(ctx, field)
 			case "id":
 				return ec.fieldContext_TorrentSearch_id(ctx, field)
 			case "state":
@@ -44666,7 +44747,7 @@ func (ec *executionContext) _Query_torrentSearch(ctx context.Context, field grap
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Query().TorrentSearch(rctx, fc.Args["id"].(string), fc.Args["offset"].(*int), fc.Args["limit"].(*int), fc.Args["sortBy"].(*model.TorrentSearchSort))
+		return ec.resolvers.Query().TorrentSearch(rctx, fc.Args["id"].(string), fc.Args["offset"].(*int), fc.Args["limit"].(*int), fc.Args["sortBy"].(*model.TorrentSearchSort), fc.Args["instanceId"].(*string), fc.Args["candidateQuery"].(*string))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -44691,6 +44772,10 @@ func (ec *executionContext) fieldContext_Query_torrentSearch(ctx context.Context
 		IsResolver: true,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			switch field.Name {
+			case "filterInstanceId":
+				return ec.fieldContext_TorrentSearch_filterInstanceId(ctx, field)
+			case "candidateQuery":
+				return ec.fieldContext_TorrentSearch_candidateQuery(ctx, field)
 			case "id":
 				return ec.fieldContext_TorrentSearch_id(ctx, field)
 			case "state":
@@ -62392,6 +62477,91 @@ func (ec *executionContext) fieldContext_TorrentFileNameMatchRule_clauses(_ cont
 	return fc, nil
 }
 
+func (ec *executionContext) _TorrentSearch_filterInstanceId(ctx context.Context, field graphql.CollectedField, obj *model.TorrentSearch) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_TorrentSearch_filterInstanceId(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.FilterInstanceID, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*string)
+	fc.Result = res
+	return ec.marshalOID2ᚖstring(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_TorrentSearch_filterInstanceId(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "TorrentSearch",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type ID does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _TorrentSearch_candidateQuery(ctx context.Context, field graphql.CollectedField, obj *model.TorrentSearch) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_TorrentSearch_candidateQuery(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.CandidateQuery, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_TorrentSearch_candidateQuery(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "TorrentSearch",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _TorrentSearch_id(ctx context.Context, field graphql.CollectedField, obj *model.TorrentSearch) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_TorrentSearch_id(ctx, field)
 	if err != nil {
@@ -63178,6 +63348,8 @@ func (ec *executionContext) fieldContext_TorrentSearch_sites(_ context.Context, 
 				return ec.fieldContext_TorrentSearchSite_kind(ctx, field)
 			case "state":
 				return ec.fieldContext_TorrentSearchSite_state(ctx, field)
+			case "candidateCount":
+				return ec.fieldContext_TorrentSearchSite_candidateCount(ctx, field)
 			case "results":
 				return ec.fieldContext_TorrentSearchSite_results(ctx, field)
 			case "cacheHit":
@@ -64083,6 +64255,50 @@ func (ec *executionContext) fieldContext_TorrentSearchSite_state(_ context.Conte
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("field of type TorrentSearchSiteState does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _TorrentSearchSite_candidateCount(ctx context.Context, field graphql.CollectedField, obj *model.TorrentSearchSite) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_TorrentSearchSite_candidateCount(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.CandidateCount, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int)
+	fc.Result = res
+	return ec.marshalNInt2int(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_TorrentSearchSite_candidateCount(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "TorrentSearchSite",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
 		},
 	}
 	return fc, nil
@@ -81829,6 +82045,13 @@ func (ec *executionContext) _TorrentSearch(ctx context.Context, sel ast.Selectio
 		switch field.Name {
 		case "__typename":
 			out.Values[i] = graphql.MarshalString("TorrentSearch")
+		case "filterInstanceId":
+			out.Values[i] = ec._TorrentSearch_filterInstanceId(ctx, field, obj)
+		case "candidateQuery":
+			out.Values[i] = ec._TorrentSearch_candidateQuery(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
 		case "id":
 			out.Values[i] = ec._TorrentSearch_id(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
@@ -82088,6 +82311,11 @@ func (ec *executionContext) _TorrentSearchSite(ctx context.Context, sel ast.Sele
 			out.Values[i] = ec._TorrentSearchSite_kind(ctx, field, obj)
 		case "state":
 			out.Values[i] = ec._TorrentSearchSite_state(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "candidateCount":
+			out.Values[i] = ec._TorrentSearchSite_candidateCount(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}

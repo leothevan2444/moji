@@ -36,8 +36,8 @@ func (r *mutationResolver) ResolveTaskSourcingCandidate(ctx context.Context, inp
 }
 
 // TorrentSearch is the resolver for the torrentSearch field.
-func (r *queryResolver) TorrentSearch(ctx context.Context, id string, offset *int, limit *int, sortBy *model.TorrentSearchSort) (*model.TorrentSearch, error) {
-	return r.torrentSearch(ctx, id, offset, limit, sortBy)
+func (r *queryResolver) TorrentSearch(ctx context.Context, id string, offset *int, limit *int, sortBy *model.TorrentSearchSort, instanceID *string, candidateQuery *string) (*model.TorrentSearch, error) {
+	return r.torrentSearch(ctx, id, offset, limit, sortBy, instanceID, candidateQuery)
 }
 
 // TorrentSearchEvents is the resolver for the torrentSearchEvents field.
