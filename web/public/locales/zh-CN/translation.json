@@ -276,6 +276,14 @@
       "SKIPPED": "未执行"
     }
   },
+  "candidateFilters": {
+    "site": "站点",
+    "allSites": "全部站点",
+    "keyword": "筛选候选",
+    "placeholder": "输入标题关键词",
+    "pagination": "候选分页",
+    "page": "第 {{page}} 页"
+  },
   "indexerErrors": {
     "INDEXER_OPERATION_FAILED": "索引器操作失败，请重试。",
     "INDEXER_CANCELLED": "索引器操作已取消。",

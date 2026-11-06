@@ -89,6 +89,7 @@ export function BlockedSourcingResolution({ task, onResolved, onNotify, onBusyCh
   const busy = resolvingKey !== null || indexedBusy;
 
   return <article className="drawer-card sourcing-resolution" aria-label={t("taskExperience.actions.resolve")}>
+    <section className="sourcing-resolution__manual">
     <p className="sourcing-resolution__intro">{t("sourcingManual.intro")}</p>
     <form className="sourcing-resolution__magnet" onSubmit={submitMagnet}>
       <input disabled={busy} value={magnetURL} onChange={event => { setMagnetURL(event.target.value); onMagnetChange?.(event.target.value); }}
@@ -111,6 +112,7 @@ export function BlockedSourcingResolution({ task, onResolved, onNotify, onBusyCh
     {resolvingKey === "torrent-file" ? <p className="sourcing-resolution__feedback" role="status">{t("sourcingManual.validatingFile", { name: uploadName })}</p> : null}
     {submitError ? <div className="sourcing-resolution__error" role="alert">{submitError}</div> : null}
 
+    </section>
     <TaskIndexerSearch task={task} disabled={busy} onResolved={onResolved} onNotify={onNotify}
       onBusyChange={value => { setIndexedBusy(value); onBusyChange?.(value); }} />
   </article>;

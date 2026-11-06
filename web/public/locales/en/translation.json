@@ -278,6 +278,14 @@
       "SKIPPED": "Not searched"
     }
   },
+  "candidateFilters": {
+    "site": "Site",
+    "allSites": "All sites",
+    "keyword": "Filter candidates",
+    "placeholder": "Title keywords",
+    "pagination": "Candidate pages",
+    "page": "Page {{page}}"
+  },
   "indexerErrors": {
     "INDEXER_OPERATION_FAILED": "The indexer operation failed. Try again.",
     "INDEXER_CANCELLED": "The indexer operation was cancelled.",

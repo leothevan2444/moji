@@ -10,10 +10,10 @@ import { useTorrentSearchEvents } from "./useTorrentSearchEvents";
 import i18n from "../i18n/i18n";
 
 // Mounting/reconnecting reads an existing run. Only start() admits new work.
-export function useTorrentSearch(id: string | null, offset = 0, limit = 100, sortBy = TorrentSearchSort.Relevance) {
-  const [read, requery] = useQuery({ query: TorrentSearchDocument, variables: { id: id ?? "", offset, limit, sortBy }, pause: !id, requestPolicy: "network-only" });
+export function useTorrentSearch(id: string | null, offset = 0, limit = 100, sortBy = TorrentSearchSort.Relevance, instanceId = "", candidateQuery = "") {
+  const [read, requery] = useQuery({ query: TorrentSearchDocument, variables: { id: id ?? "", offset, limit, sortBy, instanceId: instanceId || undefined, candidateQuery: candidateQuery || undefined }, pause: !id, requestPolicy: "network-only" });
   const raw = read.data ? useFragment(TorrentSearchFieldsFragmentDoc, read.data.torrentSearch) : null;
-  const snapshot = raw?.id === id && raw.offset === offset && raw.limit === limit ? raw : null;
+  const snapshot = raw?.id === id && raw.offset === offset && raw.limit === limit && (raw.filterInstanceId ?? "") === instanceId && (raw.candidateQuery ?? "") === candidateQuery.trim() ? raw : null;
   const running = !snapshot || snapshot.state === TorrentSearchState.Queued || snapshot.state === TorrentSearchState.Running;
   const refresh = useCallback(() => { if (id) requery({ requestPolicy: "network-only" }); }, [id, requery]);
   const events = useTorrentSearchEvents(id, refresh, running);
@@ -45,6 +45,6 @@ export function useTorrentSearch(id: string | null, offset = 0, limit = 100, sor
     catch (failure) { if (currentID.current === id) setActionError(failure); return null; }
     finally { queueLock.current = false; }
   };
-  return { snapshot, fetching: read.fetching, starting: startState.fetching, cancelling: cancelState.fetching, queueing: queueState.fetching,
+  return { snapshot, progressSnapshot: raw?.id === id ? raw : null, fetching: read.fetching, starting: startState.fetching, cancelling: cancelState.fetching, queueing: queueState.fetching,
     error: actionError ?? read.error ?? events.error, start, cancel, queue, refresh: () => { refresh(); events.retry(); }, clearActionError: () => setActionError(null) };
 }

@@ -14,7 +14,7 @@ export function TorrentSearchProgress({ snapshot, children }: { snapshot: Pick<T
   const searching = sites.filter(site => site.state === "RUNNING").length;
   const queued = sites.filter(site => site.state === "QUEUED").length;
   const issues = sites.filter(issue).length;
-  const status = <span className="torrent-search-progress__state" role="status">{t(`torrentSearch.states.${state}`)}</span>;
+  const status = <span className="torrent-search-progress__state" role="status">{t(`torrentSearch.states.${state === "PARTIAL" ? "COMPLETED" : state}`)}</span>;
   return <div className={`torrent-search-progress${children ? " torrent-search-progress--with-actions" : ""}`}>
     {sites.length ? <details className="torrent-search-progress__details">
       <summary>
@@ -31,7 +31,7 @@ export function TorrentSearchProgress({ snapshot, children }: { snapshot: Pick<T
         {sites.map(site => <li key={site.instanceId}>
           <div className="torrent-search-progress__site-heading"><strong>{site.name}</strong>{site.kind ? <span className="torrent-search__kind">{t(site.kind === "BUILTIN" ? "torrentSearch.builtin" : "indexers.external")}</span> : null}</div>
           <div className={`torrent-search-progress__site-meta${issue(site) ? " torrent-search-progress__issue" : ""}`}>
-            <span><FontAwesomeIcon icon={issue(site) ? faCircleExclamation : site.state === "COMPLETED" ? faCheck : site.state === "RUNNING" ? faMagnifyingGlass : site.state === "QUEUED" ? faClock : faMinus} aria-hidden="true" /> {t(site.partial ? "torrentSearch.states.PARTIAL" : `torrentSearch.siteStates.${site.state}`)}</span>
+            <span><FontAwesomeIcon icon={issue(site) ? faCircleExclamation : site.state === "COMPLETED" ? faCheck : site.state === "RUNNING" ? faMagnifyingGlass : site.state === "QUEUED" ? faClock : faMinus} aria-hidden="true" /> {t(`torrentSearch.siteStates.${site.state}`)}</span>
             {site.state === "COMPLETED" || site.results > 0 ? <span>{t("torrentSearch.progress.results", { count: site.results })}</span> : null}
             {site.cacheHit ? <span>{t("torrentSearch.cached")}</span> : null}
           </div>
