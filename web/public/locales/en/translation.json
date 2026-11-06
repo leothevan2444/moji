@@ -241,6 +241,9 @@
     "searchAgain": "Search again",
     "refresh": "Refresh status",
     "truncated": "The search limit was reached. Narrow the search to see other candidates.",
+    "copyErrorHint": "(Click to copy error details)",
+    "copyError": "Click to copy error details",
+    "errorCopied": "Error details copied",
     "incompleteResults": "Incomplete results",
     "sites": "Site progress",
     "progress": {

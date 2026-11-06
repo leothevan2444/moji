@@ -33,7 +33,8 @@ it("summarizes terminal and active sites without treating failures as successful
  await userEvent.setup().click(summary);
  expect(summary.parentElement?.hasAttribute("open")).toBe(true);
  expect(screen.getByText("0 results")).toBeTruthy();
- expect(screen.getByText("Unable to reach the site. Check the network and site settings.")).toBeTruthy();
+ await userEvent.setup().hover(screen.getByRole("button",{name:/Failed site/}));
+ expect(screen.getByRole("tooltip").textContent).toContain("The indexer operation failed. Try again.");
  expect(screen.getByRole("button",{name:"Cancel search"})).toBeTruthy();
 });
 it("opening without a run admits once and saves a URL, including StrictMode",async()=>{

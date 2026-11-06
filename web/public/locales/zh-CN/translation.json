@@ -241,6 +241,9 @@
     "searchAgain": "重新搜索",
     "refresh": "刷新状态",
     "truncated": "结果达到搜索上限，部分候选未显示。可缩小搜索范围。",
+    "copyErrorHint": "（点击复制错误信息）",
+    "copyError": "点击复制错误信息",
+    "errorCopied": "错误信息已复制",
     "incompleteResults": "结果不完整",
     "sites": "站点进度",
     "progress": {

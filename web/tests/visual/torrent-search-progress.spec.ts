@@ -16,7 +16,7 @@ test.use({ graphqlOverrides: {
 } });
 
 for (const [locale, theme] of [["en", "dark"], ["zh-CN", "light"]] as const) {
-  test(`${locale} ${theme} compact progress and bounded site details`, async ({ page }) => {
+  test(`${locale} ${theme} compact progress and bounded site details`, async ({ page, context }) => {
     const errors: string[] = [];
     page.on("pageerror", error => errors.push(error.message));
     await page.addInitScript(({ locale, theme }) => { localStorage.setItem("moji:locale", locale); localStorage.setItem("moji:theme", theme); }, { locale, theme });
@@ -37,11 +37,34 @@ for (const [locale, theme] of [["en", "dark"], ["zh-CN", "light"]] as const) {
     await expect(sites.locator("li")).toHaveCount(24);
     expect(await sites.evaluate(el => el.clientHeight <= 240 && el.scrollHeight > el.clientHeight)).toBe(true);
     expect(await progress.evaluate(el => el.scrollWidth <= el.clientWidth)).toBe(true);
+    expect(await sites.evaluate(el => el.scrollWidth <= el.clientWidth)).toBe(true);
     await expect(progress).toHaveScreenshot(`${locale}-${theme}-expanded.png`);
     const failedSite = sites.locator("li").nth(3);
-    await failedSite.locator("details > summary").click();
-    await expect(failedSite.locator("details p")).toBeVisible();
-    await failedSite.locator("details > summary").click();
+    await expect(failedSite.locator("details")).toHaveCount(0);
+    expect(await sites.locator("li").evaluateAll(items => items.every(item => item.getBoundingClientRect().height === 54))).toBe(true);
+    await context.grantPermissions(["clipboard-read", "clipboard-write"]);
+    const failure = failedSite.getByRole("button");
+    await failure.hover();
+    const tooltip = page.getByRole("tooltip");
+    await expect(tooltip).toContainText(locale === "en" ? "The indexer operation failed" : "索引器操作失败");
+    const bounds = await tooltip.boundingBox();
+    expect(bounds && bounds.x >= 0 && bounds.x + bounds.width <= page.viewportSize()!.width).toBe(true);
+    await expect(tooltip).toHaveScreenshot(`${locale}-${theme}-error-tooltip.png`);
+    const originalTip = await tooltip.textContent();
+    await failure.click();
+    await expect(page.locator(".toast-card").filter({ hasText: locale === "en" ? "Error details copied" : "错误信息已复制" }).first()).toBeVisible();
+    await expect(tooltip).toHaveText(originalTip!);
+    expect(await page.evaluate(() => navigator.clipboard.readText())).toContain("INDEXER_OPERATION_FAILED");
+    await page.mouse.move(0, 0);
+    await expect(tooltip).toHaveCount(0);
+    await failure.hover();
+    await expect(tooltip).toHaveText(originalTip!);
+    const otherFailure = sites.locator("li").nth(10).getByRole("button");
+    await otherFailure.click();
+    expect(await page.evaluate(() => navigator.clipboard.readText())).toContain("Example site 11:");
+    await failure.hover();
+    await expect(tooltip).toHaveText(originalTip!);
+    expect((await failedSite.boundingBox())!.height).toBe(54);
     await summary.click();
     await expect(sites).toBeHidden();
     expect(errors).toEqual([]);
