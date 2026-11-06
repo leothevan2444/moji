@@ -99,6 +99,8 @@
     "discard": "放弃此页尚未保存的修改，载入服务器上的当前设置。"
   },
   "indexers": {
+    "connectionQueued": "排队中",
+    "connectionPending": "等待响应",
     "testAll": "测试全部",
     "connectionRunning": "测试中",
     "connectionPassed": "测试成功",

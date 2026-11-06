@@ -99,6 +99,8 @@
     "discard": "Discard unsaved changes on this page and load the current server settings."
   },
   "indexers": {
+    "connectionQueued": "Queued",
+    "connectionPending": "Awaiting response",
     "testAll": "Test all",
     "connectionRunning": "Testing",
     "connectionPassed": "Test passed",

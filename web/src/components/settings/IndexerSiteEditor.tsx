@@ -13,8 +13,8 @@ import { SecretInput } from "./SettingsTabCommon";
 import { describeQueryError } from "../../services/queryError";
 
 export interface SiteEditorDefinition { id: string; name: string; links: string[]; settings: SiteSetting[] }
-export function IndexerSiteEditor({ site, definition, revision, profiles, busy, error, onSave, onClose }: {
-  site?: IndexerSite; definition: SiteEditorDefinition; revision: string; profiles: string[]; busy: boolean; error: unknown;
+export function IndexerSiteEditor({ site, definition, revision, profiles, busy, error, onSave, onClose, connectionPending = false }: {
+  connectionPending?: boolean; site?: IndexerSite; definition: SiteEditorDefinition; revision: string; profiles: string[]; busy: boolean; error: unknown;
   onSave: (id: string | null, revision: string, input: BuiltinIndexerInput | BuiltinIndexerPatchInput) => Promise<boolean>; onClose: () => void;
 }) {
   const { t } = useTranslation();
@@ -51,7 +51,7 @@ export function IndexerSiteEditor({ site, definition, revision, profiles, busy, 
     if (await onSave(site?.id ?? null, revision, site ? patch : { ...patch, definitionId: definition.id })) onClose();
   };
   return createPortal(<>
-    <Drawer visibleDrawer="settings" closing={false} title={site ? t("indexers.editSite") : t("indexers.addSite")} closeDisabled={busy} onClose={close} footer={<div className="indexer-actions"><button className="primary-button" type="submit" form="indexer-site-form" disabled={busy || Boolean(origins.error) || Boolean(site && !dirty)}>{t(busy ? "indexers.saving" : site ? "indexers.save" : "indexers.add")}</button><IndexerConnectionButton result={checks.results.draft} disabled={busy || checks.busy || Boolean(origins.error)} onClick={() => void checks.run(["draft"], false, { instanceId: site?.id, definitionId: site ? undefined : definition.id, draft: draftPatch() })} /></div>}>
+    <Drawer visibleDrawer="settings" closing={false} title={site ? t("indexers.editSite") : t("indexers.addSite")} closeDisabled={busy} onClose={close} footer={<div className="indexer-actions"><button className="primary-button" type="submit" form="indexer-site-form" disabled={busy || Boolean(origins.error) || Boolean(site && !dirty)}>{t(busy ? "indexers.saving" : site ? "indexers.save" : "indexers.add")}</button><IndexerConnectionButton result={checks.results.draft} disabled={busy || connectionPending || checks.busy || Boolean(origins.error)} onClick={() => void checks.run(["draft"], false, { instanceId: site?.id, definitionId: site ? undefined : definition.id, draft: draftPatch() })} /></div>}>
       <form id="indexer-site-form" className="settings-form indexer-editor" onSubmit={event => void submit(event)}>
         {error ? <p role="alert" className="settings-feedback tone-danger">{describeQueryError(error)}</p> : null}
         <label className="settings-field"><span>{t("indexers.name")}</span><input value={name} disabled={busy} maxLength={256} onChange={event => setName(event.target.value)} /></label>

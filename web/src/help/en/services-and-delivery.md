@@ -23,7 +23,7 @@ Home’s **Indexers** section shows the current failed or interrupted definition
 
 ## Test a site
 
-Choose **Test** in the site list or built-in site configuration. It checks connectivity immediately and displays Testing, Test passed or Test failed on the button. Hover for failure details. **Test all** includes disabled sites and checks at most two sites concurrently, retaining each site’s result. The batch button returns to Test all when finished. Tests do not log in, search, acquire resources or create download tasks.
+Choose **Test** in the site list or built-in site configuration. It checks connectivity immediately and displays Testing, Test passed or Test failed on the button. Hover for failure details. **Test all** includes disabled sites and uses Moji’s shared limit of four concurrent checks. Additional sites show Queued, and each site retains its own result. The batch button returns to Test all when finished. Tests do not log in, search, acquire resources or create download tasks. Testing does not lock the list: adding, configuring, removing, enabling and ordering sites remain available. The same site cannot be tested twice at once. Configuration changes cancel checks and clear results only for affected sites; other checks continue.
 
 Built-in tests request the site address; Jackett tests check the corresponding Jackett API. A reachable Jackett API does not verify upstream site search or acquisition. The configuration window tests the current draft without saving it; editing parameters clears the result. Reloading requires a new test, and leaving settings cancels unfinished checks.
 

@@ -25,9 +25,9 @@ export function IndexerSitesPanel() {
   const [adding, setAdding] = useState(false);
   const [editor, setEditor] = useState<{ site?: IndexerSite; definition: SiteEditorDefinition; revision: string } | null>(null);
   const [removing, setRemoving] = useState<IndexerSite | null>(null);
-  const checks = useIndexerConnections(management.snapshot?.revision ?? "");
   const { sites } = management;
-  const busy = management.busy || checks.busy;
+  const checks = useIndexerConnections(management.snapshot?.revision ?? "", "sites", Object.fromEntries(sites.map(site => [site.id, site.connectionRevision])));
+  const busy = management.busy;
   const move=(from:number,to:number)=>{if(busy||from<0||from===to||to<0||to>=sites.length)return;const ids=sites.map(site=>site.id);const [id]=ids.splice(from,1);ids.splice(to,0,id);void management.reorder(ids);};
   const reorder=useIndexerReorder<HTMLDivElement>(sites.map(site=>site.id),move,busy);
   if (management.loading) return <SettingsLoading title={t("indexers.sites")} />;
@@ -37,7 +37,7 @@ export function IndexerSitesPanel() {
   return <SettingsCard title={t("indexers.sites")} actions={<>
       <button className="ghost-button" disabled={busy} onClick={add}><FontAwesomeIcon icon={faPlus} aria-hidden="true" /> {t(snapshot.ruleRevision ? "indexers.addSite" : "indexers.installFirst")}</button>
       {snapshot.jackettEnabled ? <button className="ghost-button" disabled={busy} onClick={() => void management.refreshJackett()}><FontAwesomeIcon icon={faRotate} aria-hidden="true" /> {t("indexers.refreshExternal")}</button> : null}
-      <IndexerConnectionButton result={checks.all} all disabled={busy || !sites.length} onClick={() => void checks.run(sites.map(site => site.id), true)} />
+      <IndexerConnectionButton result={checks.all} all disabled={busy || Boolean(checks.all) || !sites.length} onClick={() => void checks.run(sites.map(site => site.id), true)} />
     </>}>
     {management.error ? <p role="alert" className="settings-feedback tone-danger">{describeQueryError(management.error)} <button onClick={management.refresh}>{t("common.retry")}</button></p> : null}
 
@@ -58,7 +58,7 @@ export function IndexerSitesPanel() {
         <div className="indexer-row__controls">
           <span className="indexer-source">{t(site.kind === IndexerSourceKind.Builtin ? "indexers.builtin" : "indexers.external")}</span>
           <div className="indexer-row__actions">
-          <IndexerConnectionButton result={checks.results[site.id]} disabled={busy} jackett={site.kind === IndexerSourceKind.Jackett} onClick={() => void checks.run([site.id])} />
+          <IndexerConnectionButton result={checks.results[site.id]} disabled={busy || checks.isTesting(site.id)} jackett={site.kind === IndexerSourceKind.Jackett} onClick={() => void checks.run([site.id])} />
           {site.kind === IndexerSourceKind.Builtin ? <>{site.loginSupported ? <button className="icon-button" title={t("indexerLogin.title")} aria-label={t("indexerLogin.title")} disabled={busy} onClick={()=>setLoginId(site.id)}><FontAwesomeIcon icon={faRightToBracket} aria-hidden="true" /></button> : null}<button className="icon-button" title={t("indexers.configure")} aria-label={t("indexers.configure")} disabled={busy} onClick={() => setEditor({ site, definition: { id: site.definitionId, name: site.name, links: [site.siteUrl], settings: site.settings }, revision: snapshot.revision })}><FontAwesomeIcon icon={faWrench} aria-hidden="true" /></button><button className="icon-button" title={t("indexers.remove")} aria-label={t("indexers.remove")} disabled={busy} onClick={() => setRemoving(site)}><FontAwesomeIcon icon={faTrashCan} aria-hidden="true" /></button></> : null}
           <SettingsSwitch checked={site.enabled} disabled={busy} label={t("indexers.enableSite", { name: site.name })} onChange={enabled => void management.setEnabled(site.id, enabled)} />
           </div>
@@ -67,7 +67,7 @@ export function IndexerSitesPanel() {
     </div>
     {loginId && sites.some(site=>site.id===loginId)?<IndexerLoginDialog input={{instanceId:loginId,expectedRevision:snapshot.revision}} name={sites.find(site=>site.id===loginId)!.name} onClose={()=>setLoginId(null)}/>:null}
     {adding ? <IndexerCatalog sites={sites} busy={busy} mutationError={management.error} onQuickAdd={definition => management.save(null, snapshot.revision, { definitionId: definition.id, name: definition.name, enabled: true })} onClose={() => setAdding(false)} onSelect={definition => { setAdding(false); setEditor({ definition, revision: snapshot.revision }); }} /> : null}
-    {editor ? <IndexerSiteEditor key={editor.site?.id ?? editor.definition.id} {...editor} profiles={snapshot.networkProfiles} busy={busy} error={management.error} onSave={management.save} onClose={() => setEditor(null)} /> : null}
+    {editor ? <IndexerSiteEditor connectionPending={Boolean(editor.site && checks.isTesting(editor.site.id))} key={editor.site?.id ?? editor.definition.id} {...editor} profiles={snapshot.networkProfiles} busy={busy} error={management.error} onSave={management.save} onClose={() => setEditor(null)} /> : null}
     {removing ? createPortal(<Drawer visibleDrawer="confirm" closing={false} title={t("indexers.remove")} onClose={() => { if (!busy) setRemoving(null); }} footer={<button disabled={busy} onClick={async () => { if (await management.remove(removing.id)) setRemoving(null); }}>{t("indexers.remove")}</button>}><p>{t("indexers.removeHelp", { name: removing.name })}</p>{management.error ? <p role="alert">{describeQueryError(management.error)}</p> : null}</Drawer>, document.body) : null}
   </SettingsCard>;
 }
