@@ -242,6 +242,16 @@
     "refresh": "Refresh status",
     "truncated": "The search limit was reached. Narrow the search to see other candidates.",
     "sites": "Site progress",
+    "progress": {
+      "finished": "{{finished}}/{{total}} sites finished",
+      "searching": "Searching {{count}}",
+      "waiting": "Waiting {{count}}",
+      "issues": "Issues {{count}}",
+      "details": "Site details",
+      "results": "{{count}} results",
+      "results_one": "{{count}} result",
+      "results_other": "{{count}} results"
+    },
     "cached": "Cached results",
     "preview": "Apply preview",
     "clearPreview": "Clear preview",

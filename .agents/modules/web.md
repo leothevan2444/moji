@@ -22,6 +22,8 @@ Home 规则作业入口使用 homeIndexerSummary.definitionJob/definitionErrorCo
 
 2026-11-02 搜索数据层已新增 torrent-search 操作源、useTorrentSearch 与 useTorrentSearchEvents；挂载/刷新/重连只读取已有 run，显式 start 才创建工作，取消回读真实状态，入队绑定当前 run。通知按 run/stream/sequence 过滤，200ms 合并定向回读；切换 run 清理旧计时器，旧操作结果不能替换新 run 的错误。Graphcache 将分页 run 作为独立快照嵌入，避免相同 ID 的不同页面互相覆盖。中英错误及导出 locale 已更新。发现页和任务抽屉均已切换到这些 hook；界面验证按最新阶段证据。
 
+手动选种的 TorrentSearchProgress 默认折叠站点明细，摘要显示搜索状态、已结束/总站点数及非零的搜索中、等待、异常计数；“已结束”包含失败、取消、中断和未执行，不等于成功。异常计数覆盖失败、中断、部分结果或错误码。取消操作与摘要同行，移动端位于右上方；展开后站点多列自适应、列表最高 240px 并局部滚动，保留长名称、来源、实际状态、结果数、缓存命中和错误说明。更新沿用服务端搜索快照，不重新发起搜索；同一 run 保留展开状态，新 run 默认折叠。视觉与交互证据见 torrent-search-progress.spec.ts 和 task-torrents.spec.ts。
+
 最近边界核对：2026-11-01，代码基线 `71ef6fa`；功能实现证据见文内日期专项。
 
 2026-11-02 索引器第四页签“网络与缓存”沿用 ?panel=cache。缓存开关、成功/空结果保留时间及容量上限已接窄更新与版本检查，支持聚合状态、全部/指定站点清理及确认。新增 IndexerNetworkPanel、网络配置创建/修改/删除 Drawer 及请求/单站搜索超时自动保存；代理 URL 视作凭据，读取只返回是否配置，留空保留、显式清除，名称创建后不更改，直连不可改删，引用中的配置不能删除。编辑固定打开时的版本，后台通知不授权覆盖草稿；成功刷新站点网络选项。共用 SettingsAutosaveProvider、直读客户端、Drawer 与语义样式，失败保留输入，超时冲突可确认载入当前值。CACHE 仅刷新缓存区，网络区响应 CONFIGURATION/重连，不新增轮询。规则策略、FlareSolverr 地址及 10–300 秒浏览器验证超时已接。网络配置可仅设置 FlareSolverr，读取只返回是否配置，地址留空保留，独立勾选清除；自动保存沿用相同版本保护。服务根地址提示说明 Cookie/代理凭据委托及取种不自动重试，帮助记录外部浏览器信任边界。代理/solver 地址在 RTL 下仍从左到右显示；网络编辑与移除面板 Portal 挂载到 body，避免父卡片限制定位，保存栏有视口断言；代表性真实服务验收与未测环境限制见 [完成记录](../reviews/2026-11-03-indexer-acceptance.md#功能验收完成2026-11-04)。

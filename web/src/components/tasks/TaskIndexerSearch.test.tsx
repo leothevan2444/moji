@@ -19,6 +19,23 @@ beforeEach(async()=>{await i18n.changeLanguage("en");state.start.mockReset().moc
 it("a saved task run only reads and retains unknown observations and safe details",()=>{
  setup();expect(state.start).not.toHaveBeenCalled();expect(state.read).toHaveBeenCalledWith("run",0,10,"RELEVANCE");expect(screen.getByText("Seeders unknown")).toBeTruthy();expect(screen.getByText("Unknown size")).toBeTruthy();expect(screen.getByRole("link",{name:"Indexer details"}).getAttribute("href")).toBe(candidate.detailsUrl);
 });
+it("summarizes terminal and active sites without treating failures as successful searches",async()=>{
+ state.snapshot={...snapshot,state:"RUNNING",sites:[
+  {instanceId:"done",name:"Empty site",state:"COMPLETED",results:0,cacheHit:false},
+  {instanceId:"failed",name:"Failed site",state:"FAILED",results:0,errorCode:"SYNTHETIC_UNKNOWN_ERROR"},
+  {instanceId:"cancelled",name:"Cancelled site",state:"CANCELLED",results:0},
+  {instanceId:"running",name:"Running site",state:"RUNNING",results:0},
+  {instanceId:"queued",name:"Queued site",state:"QUEUED",results:0}
+ ]};
+ const view=setup();const summary=view.container.querySelector("summary")!;
+ expect(summary.textContent).toContain("3/5 sites finished");expect(summary.textContent).toContain("Issues 1");
+ expect(summary.parentElement?.hasAttribute("open")).toBe(false);
+ await userEvent.setup().click(summary);
+ expect(summary.parentElement?.hasAttribute("open")).toBe(true);
+ expect(screen.getByText("0 results")).toBeTruthy();
+ expect(screen.getByText("Unable to reach the site. Check the network and site settings.")).toBeTruthy();
+ expect(screen.getByRole("button",{name:"Cancel search"})).toBeTruthy();
+});
 it("opening without a run admits once and saves a URL, including StrictMode",async()=>{
  state.snapshot=null;render(<StrictMode><MemoryRouter initialEntries={["/?section=queue"]}><TaskIndexerSearch task={task} disabled={false} onResolved={vi.fn()}/><Location/></MemoryRouter></StrictMode>);
  await waitFor(()=>expect(screen.getByTestId("location").textContent).toContain("sourcingRun=run"));expect(state.start).toHaveBeenCalledTimes(1);expect(state.start).toHaveBeenCalledWith({keywords:"ABCD-123",taskId:"one",refresh:false});expect(screen.getByTestId("location").textContent).toContain("section=queue");

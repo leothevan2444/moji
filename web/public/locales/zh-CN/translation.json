@@ -242,6 +242,14 @@
     "refresh": "刷新状态",
     "truncated": "结果达到搜索上限，部分候选未显示。可缩小搜索范围。",
     "sites": "站点进度",
+    "progress": {
+      "finished": "已结束 {{finished}}/{{total}} 站",
+      "searching": "搜索中 {{count}}",
+      "waiting": "等待 {{count}}",
+      "issues": "异常 {{count}}",
+      "details": "站点详情",
+      "results": "{{count}} 个结果"
+    },
     "cached": "缓存结果",
     "preview": "应用预览",
     "clearPreview": "清除预览",

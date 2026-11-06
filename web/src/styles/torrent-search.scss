@@ -1,10 +1,47 @@
 .torrent-search__actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-block: 12px; }
-.torrent-search__sites { margin-block: 12px; summary { cursor: pointer; } ul { padding-inline-start: 20px; } li { overflow-wrap: anywhere; margin-block: 8px; } }
 .torrent-search__queue { display: flex; flex-wrap: wrap; align-items: end; gap: 8px; border-top: 1px solid var(--line); padding-block-start: 12px; margin-block-start: 12px;
  label { display: grid; gap: 4px; flex: 1; min-inline-size: 120px; } input { inline-size: 100%; min-inline-size: 0; } }
 .candidate-card--indexer .candidate-card__head h3 { overflow-wrap: anywhere; }
 
 .torrent-search__kind { color: var(--muted); font-size: 12px; white-space: nowrap; }
+
+.torrent-search-progress {
+  position: relative;
+  margin-block: 12px; padding-block: 8px; border-block: 1px solid var(--line);
+  font-size: 12px; color: var(--muted);
+  &__details { min-inline-size: 0; }
+  &--with-actions summary { padding-inline-end: 124px; }
+  summary { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px; min-block-size: 32px; cursor: pointer; list-style: none; }
+  summary::-webkit-details-marker { display: none; }
+  summary:focus-visible, &__list:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; border-radius: 6px; }
+  &__state { color: var(--text); font-size: 13px; font-weight: 600; line-height: 32px; }
+  &__counts { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 12px; font-variant-numeric: tabular-nums; }
+  &__counts > span { white-space: nowrap; }
+  &__toggle { display: inline-flex; align-items: center; gap: 8px; margin-inline-start: auto; white-space: nowrap; }
+  &__toggle svg { width: 10px; }
+  details[open] &__toggle svg { transform: rotate(180deg); }
+  &__list { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 240px), 1fr)); gap: 0 20px; max-block-size: 240px; overflow-y: auto; overscroll-behavior: contain; scrollbar-gutter: stable; list-style: none; padding: 0; margin: 8px 0 0; border-top: 1px solid var(--line); }
+  &__list li { min-inline-size: 0; padding-block: 10px; border-bottom: 1px solid var(--line); overflow-wrap: anywhere; }
+  &__site-heading { display: flex; align-items: baseline; gap: 8px; }
+  &__site-heading strong { flex: 1; min-inline-size: 0; color: var(--text); font-size: 13px; font-weight: 500; }
+  &__site-meta { display: flex; flex-wrap: wrap; gap: 4px 12px; margin-block-start: 4px; }
+  &__site-meta svg { width: 12px; }
+  &__issue { color: var(--text); }
+  &__error { margin: 4px 0 0; line-height: 1.5; }
+  &__actions { position: absolute; inset-block-start: 8px; inset-inline-end: 0; }
+  &__actions button { min-block-size: 32px; padding: 6px 10px; font-size: 12px; }
+}
+
+@media (max-width: 600px) {
+  .torrent-search-progress {
+    summary { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 4px 12px; }
+    &--with-actions summary { padding-inline-end: 0; }
+    &__state { grid-column: 1 / -1; }
+    &--with-actions &__state { padding-inline-end: 124px; line-height: 44px; }
+    &__counts { gap: 4px 8px; line-height: 18px; }
+    &__toggle { align-self: start; line-height: 18px; }
+  }
+}
 
 // Streaming site progress and pages must not move the source-resolution panel.
 @media (min-width: 721px) {

@@ -1,3 +1,4 @@
+import { TorrentSearchProgress } from "./TorrentSearchProgress";
 import { PreparedTorrentDownloadActions } from "./PreparedTorrentDownloadActions";
 import { useId } from "react";
 import { useTranslation } from "react-i18next";
@@ -17,13 +18,11 @@ export function TaskIndexerSearch(props:TaskIndexerSearchOptions){
   <div className="sourcing-resolution__search"><div className="sourcing-resolution__result-heading"><h3 id={heading}>{t("sourcingManual.candidates")}</h3>{snapshot?<span>{t("taskUi.resolution.found",{count:total})}</span>:null}</div>
    <button type="button" className="ghost-button" disabled={busy||search.starting} onClick={()=>void start(true)}>{t("taskUi.resolution.searchAgain")}</button>
   </div>
-  {snapshot?<p role="status">{t(`torrentSearch.states.${snapshot.state}`)}</p>:search.starting||search.fetching?<p role="status">{t("sourcingManual.searchingFor",{code:task.code})}</p>:null}
+  {snapshot?<TorrentSearchProgress key={snapshot.id} snapshot={snapshot}>{running?<button type="button" className="ghost-button" disabled={busy||!!snapshot.cancelRequested||search.cancelling} onClick={()=>void search.cancel()}>{t(snapshot.cancelRequested?"torrentSearch.cancelling":"torrentSearch.cancel")}</button>:null}</TorrentSearchProgress>:search.starting||search.fetching?<p role="status">{t("sourcingManual.searchingFor",{code:task.code})}</p>:null}
   {failure?<p className="sourcing-resolution__error" role="alert">{describeQueryError(failure)}</p>:null}
   {wrongTask?<p className="inline-error">{t("indexerErrors.TORRENT_SEARCH_TASK_SCOPE_INVALID")}</p>:null}
-  {running?<button type="button" className="ghost-button" disabled={busy||!!snapshot?.cancelRequested||search.cancelling} onClick={()=>void search.cancel()}>{t(snapshot?.cancelRequested?"torrentSearch.cancelling":"torrentSearch.cancel")}</button>:null}
   {snapshot?.errorCode?<p className="inline-error">{t(`indexerErrors.${snapshot.errorCode}`,{defaultValue:t("indexerErrors.INDEXER_SEARCH_INCOMPLETE")})}</p>:null}
   {snapshot?.truncated?<p>{t("torrentSearch.truncated")}</p>:null}
-  {snapshot?.sites.length?<details className="torrent-search__sites"><summary>{t("torrentSearch.sites")}</summary><ul>{snapshot.sites.map(site=><li key={site.instanceId}>{site.name} · {t(`torrentSearch.siteStates.${site.state}`)}{site.errorCode?` · ${t(`indexerErrors.${site.errorCode}`,{defaultValue:t("indexerErrors.INDEXER_REQUEST_FAILED")})}`:""}</li>)}</ul></details>:null}
   {snapshot?<SortAndPagination sortValue={sort} sortOptions={INDEXER_SORT_OPTIONS} onSortChange={value=>{if(runID&&!busy)location(runID,1,value)}} page={page} totalPages={pages} total={total} onPrevPage={()=>{if(runID&&!busy)location(runID,Math.max(1,page-1))}} onNextPage={()=>{if(runID&&!busy)location(runID,Math.min(pages,page+1))}}/>:null}
   {snapshot&&!running&&total===0?<p className="sourcing-resolution__empty">{t("taskUi.resolution.none")}</p>:null}
   {snapshot?.candidates.length?<ul className="sourcing-resolution__candidates">{snapshot.candidates.map((candidate,index)=><li className="sourcing-candidate" key={candidate.id}>
