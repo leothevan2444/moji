@@ -269,6 +269,8 @@
     }
   },
   "indexerErrors": {
+    "INDEXER_OPERATION_FAILED": "索引器操作失败，请重试。",
+    "INDEXER_CANCELLED": "索引器操作已取消。",
     "INDEXER_TIMEOUT": "站点请求超时，请重试。",
     "INDEXER_STATE_UNAVAILABLE": "无法读取或保存索引器冷却状态，请检查存储状态后重试。",
     "INDEXER_SOLVER_FAILED": "浏览器验证未能完成，请检查 FlareSolverr 配置或站点限制。",

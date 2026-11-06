@@ -269,6 +269,8 @@
     }
   },
   "indexerErrors": {
+    "INDEXER_OPERATION_FAILED": "The indexer operation failed. Try again.",
+    "INDEXER_CANCELLED": "The indexer operation was cancelled.",
     "INDEXER_TIMEOUT": "The site request timed out. Try again.",
     "INDEXER_STATE_UNAVAILABLE": "Indexer cooldown state is unavailable. Check storage and try again.",
     "INDEXER_SOLVER_FAILED": "Browser verification failed. Check FlareSolverr settings and site restrictions.",
