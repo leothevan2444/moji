@@ -241,6 +241,7 @@
     "searchAgain": "Search again",
     "refresh": "Refresh status",
     "truncated": "The search limit was reached. Narrow the search to see other candidates.",
+    "incompleteResults": "Incomplete results",
     "sites": "Site progress",
     "progress": {
       "finished": "{{finished}}/{{total}} sites finished",

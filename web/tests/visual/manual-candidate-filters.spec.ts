@@ -19,6 +19,8 @@ test("site and title filters cover the complete run and reset numbered paginatio
   await page.goto(`/tasks/${task.id}/resolve`);
   const panel = page.locator(".sourcing-resolution__results");
   await expect(panel.getByRole("status")).toHaveText("Search completed");
+  await expect(panel.locator(".torrent-search-progress__notice")).toHaveText("Incomplete results");
+  await expect(panel.locator(".torrent-search-progress__explanation")).toBeHidden();
   await expect(panel.getByRole("option", { name: "Alpha (23)" })).toHaveCount(1);
   await panel.getByRole("button", { name: "Page 5", exact: true }).click();
   await expect(panel.locator(".sourcing-candidate")).toHaveCount(5);

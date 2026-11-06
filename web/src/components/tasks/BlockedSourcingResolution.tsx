@@ -90,7 +90,6 @@ export function BlockedSourcingResolution({ task, onResolved, onNotify, onBusyCh
 
   return <article className="drawer-card sourcing-resolution" aria-label={t("taskExperience.actions.resolve")}>
     <section className="sourcing-resolution__manual">
-    <p className="sourcing-resolution__intro">{t("sourcingManual.intro")}</p>
     <form className="sourcing-resolution__magnet" onSubmit={submitMagnet}>
       <input disabled={busy} value={magnetURL} onChange={event => { setMagnetURL(event.target.value); onMagnetChange?.(event.target.value); }}
         placeholder={t("taskUi.resolution.magnetPlaceholder")} aria-label={t("taskUi.resolution.magnetLabel")} />

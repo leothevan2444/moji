@@ -8,13 +8,14 @@ type Site = TorrentSearchFieldsFragment["sites"][number];
 const active = (site: Site) => site.state === "RUNNING" || site.state === "QUEUED";
 const issue = (site: Site) => site.state === "FAILED" || site.state === "INTERRUPTED" || site.partial || Boolean(site.errorCode);
 
-export function TorrentSearchProgress({ snapshot, children }: { snapshot: Pick<TorrentSearchFieldsFragment, "state" | "sites">; children?: ReactNode }) {
+export function TorrentSearchProgress({ snapshot, children }: { snapshot: Pick<TorrentSearchFieldsFragment, "state" | "sites"> & Partial<Pick<TorrentSearchFieldsFragment, "errorCode">>; children?: ReactNode }) {
   const { t, i18n } = useTranslation();
   const { sites, state } = snapshot;
   const searching = sites.filter(site => site.state === "RUNNING").length;
   const queued = sites.filter(site => site.state === "QUEUED").length;
   const issues = sites.filter(issue).length;
-  const status = <span className="torrent-search-progress__state" role="status">{t(`torrentSearch.states.${state === "PARTIAL" ? "COMPLETED" : state}`)}</span>;
+  const incomplete = state === "PARTIAL" || snapshot.errorCode === "INDEXER_SEARCH_INCOMPLETE";
+  const status = <span className="torrent-search-progress__state"><span role="status">{t(`torrentSearch.states.${state === "PARTIAL" ? "COMPLETED" : state}`)}</span>{incomplete ? <span className="torrent-search-progress__notice" title={t("indexerErrors.INDEXER_SEARCH_INCOMPLETE")}>{t("torrentSearch.incompleteResults")}</span> : null}</span>;
   return <div className={`torrent-search-progress${children ? " torrent-search-progress--with-actions" : ""}`}>
     {sites.length ? <details className="torrent-search-progress__details">
       <summary>
@@ -27,15 +28,16 @@ export function TorrentSearchProgress({ snapshot, children }: { snapshot: Pick<T
         </span>
         <span className="torrent-search-progress__toggle">{t("torrentSearch.progress.details")} <FontAwesomeIcon icon={faChevronDown} aria-hidden="true" /></span>
       </summary>
+      {incomplete ? <p className="torrent-search-progress__explanation">{t("indexerErrors.INDEXER_SEARCH_INCOMPLETE")}</p> : null}
       <ul className="torrent-search-progress__list" aria-label={t("torrentSearch.sites")} tabIndex={0}>
         {sites.map(site => <li key={site.instanceId}>
-          <div className="torrent-search-progress__site-heading"><strong>{site.name}</strong>{site.kind ? <span className="torrent-search__kind">{t(site.kind === "BUILTIN" ? "torrentSearch.builtin" : "indexers.external")}</span> : null}</div>
+          <div className="torrent-search-progress__site-heading"><strong title={site.name}>{site.name}</strong>{site.kind ? <span className="torrent-search__kind">{t(site.kind === "BUILTIN" ? "torrentSearch.builtin" : "indexers.external")}</span> : null}</div>
           <div className={`torrent-search-progress__site-meta${issue(site) ? " torrent-search-progress__issue" : ""}`}>
             <span><FontAwesomeIcon icon={issue(site) ? faCircleExclamation : site.state === "COMPLETED" ? faCheck : site.state === "RUNNING" ? faMagnifyingGlass : site.state === "QUEUED" ? faClock : faMinus} aria-hidden="true" /> {t(`torrentSearch.siteStates.${site.state}`)}</span>
             {site.state === "COMPLETED" || site.results > 0 ? <span>{t("torrentSearch.progress.results", { count: site.results })}</span> : null}
             {site.cacheHit ? <span>{t("torrentSearch.cached")}</span> : null}
+            {site.errorCode ? <details className="torrent-search-progress__error"><summary>{t("indexers.details")}</summary><p>{i18n.exists(`indexerErrors.${site.errorCode}`) ? t(`indexerErrors.${site.errorCode}`) : t("indexerErrors.INDEXER_REQUEST_FAILED")}</p></details> : null}
           </div>
-          {site.errorCode ? <p className="torrent-search-progress__error">{i18n.exists(`indexerErrors.${site.errorCode}`) ? t(`indexerErrors.${site.errorCode}`) : t("indexerErrors.INDEXER_REQUEST_FAILED")}</p> : null}
         </li>)}
       </ul>
     </details> : status}

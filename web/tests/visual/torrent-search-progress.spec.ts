@@ -22,7 +22,7 @@ for (const [locale, theme] of [["en", "dark"], ["zh-CN", "light"]] as const) {
     await page.addInitScript(({ locale, theme }) => { localStorage.setItem("moji:locale", locale); localStorage.setItem("moji:theme", theme); }, { locale, theme });
     await page.goto(`/tasks/${task.id}/resolve?__locale=${locale}`);
     const progress = page.locator(".torrent-search-progress");
-    const summary = progress.locator("summary");
+    const summary = progress.locator(".torrent-search-progress__details > summary");
     const sites = progress.getByRole("list");
     await expect(summary).toContainText(locale === "en" ? "16/24 sites finished" : "已结束 16/24 站");
     await expect(sites).toBeHidden();
@@ -38,6 +38,10 @@ for (const [locale, theme] of [["en", "dark"], ["zh-CN", "light"]] as const) {
     expect(await sites.evaluate(el => el.clientHeight <= 240 && el.scrollHeight > el.clientHeight)).toBe(true);
     expect(await progress.evaluate(el => el.scrollWidth <= el.clientWidth)).toBe(true);
     await expect(progress).toHaveScreenshot(`${locale}-${theme}-expanded.png`);
+    const failedSite = sites.locator("li").nth(3);
+    await failedSite.locator("details > summary").click();
+    await expect(failedSite.locator("details p")).toBeVisible();
+    await failedSite.locator("details > summary").click();
     await summary.click();
     await expect(sites).toBeHidden();
     expect(errors).toEqual([]);

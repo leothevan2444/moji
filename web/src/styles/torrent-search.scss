@@ -7,35 +7,42 @@
 
 .torrent-search-progress {
   position: relative;
-  margin-block: 12px; padding-block: 8px; border-block: 1px solid var(--line);
+  margin: 0; padding-block: 4px; border-bottom: 1px solid var(--line);
   font-size: 12px; color: var(--muted);
   &__details { min-inline-size: 0; }
-  &--with-actions summary { padding-inline-end: 124px; }
-  summary { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px; min-block-size: 32px; cursor: pointer; list-style: none; }
-  summary::-webkit-details-marker { display: none; }
-  summary:focus-visible, &__list:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; border-radius: 6px; }
-  &__state { color: var(--text); font-size: 13px; font-weight: 600; line-height: 32px; }
+  &--with-actions &__details > summary { padding-inline-end: 124px; }
+  &__details > summary { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 16px; min-block-size: 32px; cursor: pointer; list-style: none; }
+  &__details > summary::-webkit-details-marker { display: none; }
+  &__details > summary:focus-visible, &__list:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; border-radius: 6px; }
+  &__state { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; color: var(--text); font-size: 13px; font-weight: 600; line-height: 32px; }
+  &__notice { font-size: 11px; font-weight: 400; color: var(--muted); line-height: 18px; }
+  &__explanation { margin: 4px 0; font-size: 11px; line-height: 1.5; }
   &__counts { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 12px; font-variant-numeric: tabular-nums; }
   &__counts > span { white-space: nowrap; }
   &__toggle { display: inline-flex; align-items: center; gap: 8px; margin-inline-start: auto; white-space: nowrap; }
   &__toggle svg { width: 10px; }
-  details[open] &__toggle svg { transform: rotate(180deg); }
-  &__list { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 240px), 1fr)); gap: 0 20px; max-block-size: 240px; overflow-y: auto; overscroll-behavior: contain; scrollbar-gutter: stable; list-style: none; padding: 0; margin: 8px 0 0; border-top: 1px solid var(--line); }
-  &__list li { min-inline-size: 0; padding-block: 6px; border-bottom: 1px solid var(--line); overflow-wrap: anywhere; }
+  &__details[open] &__toggle svg { transform: rotate(180deg); }
+  &__list { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr)); align-items: start; gap: 6px; max-block-size: 240px; overflow-y: auto; overscroll-behavior: contain; scrollbar-gutter: stable; list-style: none; padding: 0; margin: 6px 0 2px; }
+  &__list li { min-inline-size: 0; padding: 6px 8px; border: 1px solid var(--line); border-radius: 6px; background: var(--surface); overflow-wrap: anywhere; }
   &__site-heading { display: flex; align-items: baseline; gap: 8px; }
-  &__site-heading strong { flex: 1; min-inline-size: 0; color: var(--text); font-size: 13px; font-weight: 500; }
-  &__site-meta { display: flex; flex-wrap: wrap; gap: 4px 12px; margin-block-start: 2px; }
+  &__site-heading strong { flex: 1; min-inline-size: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--text); font-size: 12px; font-weight: 500; }
+  &__site-meta { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 12px; margin-block-start: 2px; }
   &__site-meta svg { width: 12px; }
   &__issue { color: var(--text); }
-  &__error { margin: 4px 0 0; line-height: 1.5; }
-  &__actions { position: absolute; inset-block-start: 8px; inset-inline-end: 0; }
+  &__error { line-height: 1.5; }
+  &__error summary { color: var(--accent); cursor: pointer; font-size: 11px; }
+  &__error[open] { flex-basis: 100%; }
+  &__error p { margin: 4px 0 0; }
+  &__actions { position: absolute; inset-block-start: 4px; inset-inline-end: 0; }
   &__actions button { min-block-size: 32px; padding: 6px 10px; font-size: 12px; }
 }
 
+.torrent-search-progress .torrent-search-progress__error > summary { min-height: 0; min-block-size: 0; padding: 0; line-height: 16px; }
+
 @media (max-width: 600px) {
   .torrent-search-progress {
-    summary { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 4px 12px; }
-    &--with-actions summary { padding-inline-end: 0; }
+    &__details > summary { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 0 12px; }
+    &--with-actions &__details > summary { padding-inline-end: 0; }
     &__state { grid-column: 1 / -1; }
     &--with-actions &__state { padding-inline-end: 124px; line-height: 44px; }
     &__counts { gap: 4px 8px; line-height: 18px; }
